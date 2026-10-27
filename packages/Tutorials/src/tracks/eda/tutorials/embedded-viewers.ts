@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {filter, first, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
-import {interval} from 'rxjs';
+import {timer} from 'rxjs';
 
 
 export class EmbeddedViewersTutorial extends Tutorial {
@@ -62,7 +62,7 @@ export class EmbeddedViewersTutorial extends Tutorial {
       await grok.events.onViewerAdded.pipe(map((data: DG.EventData) => data.args.viewer as DG.Viewer),
         filter((v) => v.type === DG.VIEWER.TRELLIS_PLOT), first()).toPromise() as DG.Viewer;
 
-    await this.action('Set a scatter plot as an inner viewer', interval(1000).pipe(
+    await this.action('Set a scatter plot as an inner viewer', timer(0, 200).pipe(
       map((_) => trellis.props.viewerType),
       filter((t: string) => t === DG.VIEWER.SCATTER_PLOT)),
     () => trellis.root.querySelector('[name="viewer selector"]') as HTMLElement,
@@ -71,7 +71,7 @@ export class EmbeddedViewersTutorial extends Tutorial {
     () => trellis.props.viewerType = DG.VIEWER.SCATTER_PLOT);
 
     await this.action('Set Color of the inner scatter plot to AGE',
-      interval(1000).pipe(
+      timer(0, 200).pipe(
         map((_) => (trellis.getOptions() as {[key: string]: any }).look.innerViewerLook.colorColumnName),
         filter((name: string | undefined) => name === 'AGE')),
       () => trellis.root.querySelector('[name="div-column-combobox-color"]') as HTMLElement,

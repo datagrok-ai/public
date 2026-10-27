@@ -163,15 +163,13 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     const newView = pickV;
     const breadcrumbLabel = this._friendlyName ?? this._campaignId ?? 'Pick';
 
-    setTimeout(() => {
-      this._pickViewPromise && this._pickViewPromise.then(() => {
-        const {sub} = addBreadCrumbsToRibbons(newView, this.appName, breadcrumbLabel, () => {
-          grok.shell.v = curView;
-          newView.close();
-          sub.unsubscribe();
-        });
+    this._pickViewPromise?.then(() => {
+      const {sub} = addBreadCrumbsToRibbons(newView, this.appName, breadcrumbLabel, () => {
+        grok.shell.v = curView;
+        newView.close();
+        sub.unsubscribe();
       });
-    }, 300);
+    });
     // this.multiView.addView(this._submitView.name, () => this._submitView!, false);
     grok.shell.windows.showHelp = false;
   }
@@ -331,7 +329,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       view._onAdded();
       await new Promise((r) => setTimeout(r, 1000));
 
-      const f = view.filters(this._campaignFilters ? {filters: this._campaignFilters} : undefined);
+      const f = view.filters(this._campaignFilters?.length ? {filters: this._campaignFilters} : undefined);
       const layoutViewState = this._campaign?.layout ?? this.template?.layoutViewState;
       if (layoutViewState) {
         try {
@@ -396,7 +394,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       name: campaignName,
       friendlyName: this._friendlyName ?? this.campaign?.friendlyName,
       templateName,
-      filters: filters ?? {},
+      filters: filters ?? [],
       ingest: {
         type: 'File',
         query: `${campaignPrefix}${CampaignTableName}`,

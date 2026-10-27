@@ -309,3 +309,32 @@ export class DomainBackendError extends Error {
     this.name = 'DomainBackendError';
   }
 }
+
+/** The table's noun in lower case, singular for one row. */
+export function nounOf(info: {singularName?: string, pluralName?: string}, one = false): string {
+  return (one ? info.singularName || 'row' : info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
+}
+
+export function capital(text: string): string {
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+}
+
+/** The platform's `StringUtils.toSingular` (ddt utils.dart). */
+export function toSingular(s: string): string {
+  if (s.length <= 2 || !s.endsWith('s') || s.endsWith('ss') || s.endsWith('is') || s.endsWith('us'))
+    return s;
+  if (s.endsWith('ies') && s.length > 3)
+    return s.slice(0, -3) + 'y';
+  return /(xes|zzes|ches|shes|sses|tuses)$/.test(s) ? s.slice(0, -2) : s.slice(0, -1);
+}
+
+/** The platform's `StringUtils.toPlural` (ddt utils.dart). */
+export function toPlural(s: string): string {
+  if (s.length === 0)
+    return s;
+  if (s.endsWith('is'))
+    return s.slice(0, -2) + 'es';
+  if (/(s|x|z|ch|sh)$/.test(s))
+    return s + 'es';
+  return s.length > 1 && s.endsWith('y') && !'aeiou'.includes(s[s.length - 2]) ? s.slice(0, -1) + 'ies' : s + 's';
+}

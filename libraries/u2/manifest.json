@@ -529,6 +529,11 @@
           "description": "Hover spinner inside the field."
         },
         {
+          "name": "placeholder",
+          "type": "string",
+          "bindable": true
+        },
+        {
           "name": "visible",
           "type": "bool",
           "description": "false hides the node; true by default."
@@ -3586,6 +3591,7 @@
         "min",
         "max",
         "step",
+        "placeholder",
         "visible"
       ],
       "gestures": [
@@ -4503,6 +4509,45 @@
         "placeholder",
         "busy",
         "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "type",
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "pick-input",
+      "noun": "pick input",
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "open",
+        "placeholder"
       ],
       "props": [],
       "items": {
@@ -6253,6 +6298,21 @@
     {
       "kind": "status-line",
       "noun": "status line",
+      "family": "display",
+      "role": "status",
+      "nameFrom": [
+        "text"
+      ],
+      "parts": {},
+      "state": [
+        "text"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "empty-state",
+      "noun": "empty state",
       "family": "display",
       "role": "status",
       "nameFrom": [

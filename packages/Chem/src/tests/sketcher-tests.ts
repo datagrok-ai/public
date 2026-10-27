@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
-import {category, expect, test, before, after, testEvent, delay, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, before, after, testEvent, delay, waitUntil} from '@datagrok-libraries/test/src/test';
 import {malformedMolblock, molV2000, molV3000} from './utils';
 
 
@@ -71,11 +71,12 @@ category('sketcher testing', () => {
       applied = f.apply();
       return applied;
     });
-    await awaitCheck(() => applying, 'the function of Ketcher has not been applied', 10000);
+    await waitUntil(() => applying, 'the function of Ketcher has not been applied', 10000);
     const chosen = await switchSketcher(s, 'OpenChemLib');
     release();
-    await applied;
-    await delay(500);
+    await waitUntil(() => applied !== null, 'the function of Ketcher was not applied after the release');
+    const late = await (applied as unknown as Promise<chem.SketcherBase>);
+    await waitUntil(() => late.isDetached, 'Ketcher, ready after the choice, has not been let go');
     expect(s.sketcher === chosen, true);
     expect(s.host.contains(chosen.root), true);
     expect(s.host.querySelector('.ketcher-host') === null, true);
@@ -103,23 +104,23 @@ category('sketcher testing', () => {
       };
       return implementation;
     });
-    await awaitCheck(() => initializing, 'Ketcher has not begun to initialize', 10000);
+    await waitUntil(() => initializing, 'Ketcher has not begun to initialize', 10000);
     const chosen = await switchSketcher(s, 'OpenChemLib');
     let changes = 0;
     s.onChanged.subscribe(() => changes++);
     s.setSmiles(exampleInchiSmiles);
-    await awaitCheck(() => compareTwoMols(rdkitModule, rdkitModule.get_mol(exampleInchiSmiles), s.getMolFile()),
+    await waitUntil(() => compareTwoMols(rdkitModule, rdkitModule.get_mol(exampleInchiSmiles), s.getMolFile()),
       'the chosen sketcher does not show its molecule', 5000);
     release();
     await initialized;
-    await delay(500);
+    // the host's handling of the init it awaited runs in microtasks after it: a task later it has run
+    await delay(0);
     expect(s.sketcher === chosen, true);
     expect(s.host.contains(chosen.root), true);
     expect(compareTwoMols(rdkitModule, rdkitModule.get_mol(exampleInchiSmiles), s.getMolFile()), true);
     const before = changes;
     s.setSmiles(exampleSmiles);
-    await awaitCheck(() => changes > before, 'the host hears no change of the chosen sketcher', 5000);
-    await delay(300);
+    await waitUntil(() => changes > before, 'the host hears no change of the chosen sketcher', 5000);
     expect(changes - before, 1);
     d.close();
   });
@@ -143,9 +144,12 @@ category('sketcher testing', () => {
         const d = ui.dialog().add(s).show(size ? {...size, resizable: true} : {resizable: true});
         try {
           await s.sketcherReady();
-          await delay(500);
           const where = `${func.friendlyName} in a dialog ` +
             `${size ? `of ${size.width} x ${size.height}` : 'as it opens'}${invalid ? ', the molecule invalid' : ''}`;
+          const fits = (m: ReturnType<typeof sketcherInDialog>) => Math.abs(m.gap) <= 2 && m.bodyScroll === 0 &&
+            Math.abs(m.sketcherGap) <= 2 && m.onTop === 'sketcher' && (!invalid || m.warning);
+          await waitUntil(() => fits(sketcherInDialog(s, d)),
+            () => `${where}: ${JSON.stringify(sketcherInDialog(s, d))}`);
           const {gap, bodyScroll, sketcherGap, onTop, warning} = sketcherInDialog(s, d);
           expect(Math.abs(gap) <= 2, true, `${where}: the sketcher's bottom is ${gap} px above the body's`);
           expect(bodyScroll, 0, `${where}: the dialog's body scrolls by`);
@@ -172,8 +176,13 @@ category('sketcher testing', () => {
         const d = ui.dialog().add(s).show(size ? {...size, resizable: true} : {resizable: true});
         try {
           await s.sketcherReady();
-          await delay(500);
           const where = `Ketcher in a dialog ${size ? `of ${size.width} x ${size.height}` : 'as it opens'}`;
+          const gap = () => {
+            const editor = s.host.querySelector('.Ketcher-root')?.getBoundingClientRect();
+            return editor ? Math.round(s.host.getBoundingClientRect().right - editor.right) : null;
+          };
+          await waitUntil(() => gap() !== null && Math.abs(gap()!) <= 2,
+            () => `${where}: the editor ends ${gap()} px before the host`);
           const editor = s.host.querySelector('.Ketcher-root')?.getBoundingClientRect();
           const host = s.host.getBoundingClientRect();
           expect(editor !== undefined, true, `${where}: no Ketcher editor in the host`);
@@ -262,7 +271,7 @@ async function testSmarts(rdkitModule: any, funcs: DG.Func[]) {
         }
       });
     });
-    setTimeout(()=> {s.setSmarts(convertedSmarts);}, 1000);
+    s.setSmarts(convertedSmarts);
     const resSmarts = await t;
     const qmol2 = rdkitModule.get_qmol(resSmarts);
     const match1 = mol.get_substruct_match(qmol2);
@@ -293,19 +302,17 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean, m
     const d = ui.dialog().add(s).show();
     await s.sketcherReady();
     if (input) {
-      setTimeout(() => {
-        s.molInput.value = exampleSmiles;
-        s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
-      }, 1000);
+      s.molInput.value = exampleSmiles;
+      s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
     } else
-      setTimeout(() => s.setSmiles(exampleSmiles), 1000);
+      s.setSmiles(exampleSmiles);
     if (malformed) {
-      await awaitCheck(() => {
+      await waitUntil(() => {
         const elements = d.root.getElementsByClassName('chem-invalid-molecule-warning');
         return elements.length > 0 && elements[0].children.length > 0 && elements[0].children[0].textContent === 'Malformed molecule';
-      }, 'error div has not been created', 10000, 500);
+      }, 'error div has not been created', 10000);
     } else {
-      await awaitCheck(() => {
+      await waitUntil(() => {
         const resMolblock = input ? s.getMolFile() : s.getSmiles();
         return compareTwoMols(rdkitModule, mol, resMolblock);
       }, 'mols are not equal', 3000);
@@ -326,23 +333,21 @@ async function testMolblock(rdkitModule: any, funcs: DG.Func[], ver: string, inp
     const d = ui.dialog().add(s).show();
     await s.sketcherReady();
     if (input) {
-      setTimeout(() => {
-        let dT = null;
-        try {dT = new DataTransfer();} catch (e) { }
-        const evt = new ClipboardEvent('paste', {clipboardData: dT});
-        evt.clipboardData!.setData('text/plain', molfile);
-        s.molInput.value = molfile;
-        s.molInput.dispatchEvent(evt);
-      }, 1000);
+      let dT = null;
+      try {dT = new DataTransfer();} catch (e) { }
+      const evt = new ClipboardEvent('paste', {clipboardData: dT});
+      evt.clipboardData!.setData('text/plain', molfile);
+      s.molInput.value = molfile;
+      s.molInput.dispatchEvent(evt);
     } else
-      setTimeout(() => s.setMolFile(malformed ? malformedMolblock : molfile), 1000);
+      s.setMolFile(malformed ? malformedMolblock : molfile);
     if (malformed) {
-      await awaitCheck(() => {
+      await waitUntil(() => {
         const elements = d.root.getElementsByClassName('chem-invalid-molecule-warning');
         return elements.length > 0 && elements[0].children.length > 0 && elements[0].children[0].textContent === 'Malformed molecule';
-      }, 'error div has not been created', 10000, 500);
+      }, 'error div has not been created', 10000);
     } else {
-      await awaitCheck(() => {
+      await waitUntil(() => {
         const resMolblock = s.getMolFile();
         return compareTwoMols(rdkitModule, mol, resMolblock);
       }, 'mols are not equal', 3000);
@@ -364,7 +369,7 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
     s.molInput.value = exampleInchi;
     s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
     // InChI is read by a Python script (inchiToMol), whose first call may start a kernel
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const resMolblock = s.getMolFile();
       return compareTwoMols(rdkitModule, mol, resMolblock);
     }, `${func.friendlyName}: mols are not equal`, 20000);

@@ -303,7 +303,7 @@ scoped('a validation is bound to the exact payload: a change since is not valida
   buttonNamed('VALIDATE').click();
   await flush();
   assert.equal(buttonNamed('CREATE').disabled, true, 'the footer waits');
-  assert.equal(buttonNamed('CANCEL').disabled, true);
+  assert.equal(buttonNamed('CANCEL').disabled, false, 'but CANCEL, which aborts the run');
   dialog.editor.model.friendlyName.value = 'Changed meanwhile';
   release();
   await flush();

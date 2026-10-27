@@ -57,6 +57,6 @@
 
 .u2-breadcrumbs-sep {
   flex-shrink: 0;
-  padding: 0 var(--dg-space-l);
+  padding: 0 var(--dg-space-s);
   color: var(--dg-text-color-light);
 }

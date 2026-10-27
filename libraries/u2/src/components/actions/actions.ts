@@ -15,6 +15,16 @@ export interface Action {
   /** The capability the action needs (`'delete'`, a custom permission name): denied by the
    * access in force, the action is not rendered at all — permission ⇒ hidden, state ⇒ disabled. */
   requires?: Capability;
+  /** The key shown beside it in menus ("Del"). */
+  shortcut?: string;
+  /** A check mark beside it in menus; a toggle shown unchecked when false. */
+  check?: boolean;
+  /** Grey text after the name in a menu ("3 issues"). */
+  detail?: string;
+  /** Throws something away: after a separator in menus, red in the row's icons. */
+  destructive?: boolean;
+  /** Starts a new section of a menu: a separator above it. */
+  separator?: boolean;
   run: () => void;
 }
 
@@ -31,7 +41,28 @@ export interface ActionsOptions {
 export function allowedActions(actions: Action[], options?: ActionsOptions): Action[] {
   const table = options?.access ?? Access.full;
   const access = options?.row === undefined ? table : table.row(options.row);
-  return actions.filter((action) => action.requires === undefined || access.can(action.requires));
+  const out: Action[] = [];
+  // a denied section head passes its separator to the next allowed action
+  let separator = false;
+  for (const action of actions) {
+    if (action.requires !== undefined && !access.can(action.requires)) {
+      separator ||= action.separator === true;
+      continue;
+    }
+    out.push(separator && !action.separator ? {...action, separator: true} : action);
+    separator = false;
+  }
+  return out;
+}
+
+function addItems(menu: Menu, actions: Action[]): void {
+  for (const [i, action] of actions.entries()) {
+    const previous = actions[i - 1];
+    if (previous !== undefined && (action.separator || action.destructive && !previous.destructive))
+      menu.separator();
+    menu.item(action.name, action.run,
+      {enabled: action.enabled, shortcut: action.shortcut, detail: action.detail, check: action.check});
+  }
 }
 
 /** The hover-revealed action block, Slack/Outlook style: an icon button per icon-bearing action,
@@ -49,6 +80,8 @@ export function rowActions(actions: Action[], options?: ActionsOptions): HTMLEle
         continue;
       const button = iconButton(action.icon, () => action.run(), {tooltip: action.name});
       button.dataset.u2Item = action.name;
+      if (action.destructive)
+        button.classList.add('u2-row-action-destructive');
       if (action.enabled === false)
         button.disabled = true;
       el.append(button);
@@ -72,8 +105,7 @@ export interface ActionsMenuOptions extends ActionsOptions {
 export function actionsMenu(actions: Action[], options?: ActionsMenuOptions): Menu {
   const menu = new Menu();
   const flat = allowedActions(actions, options);
-  for (const action of flat)
-    menu.item(action.name, action.run, {icon: action.icon, enabled: action.enabled});
+  addItems(menu, flat);
   let anything = flat.length > 0;
   for (const group of options?.groups ?? []) {
     const allowed = allowedActions(group.actions, options);
@@ -83,8 +115,7 @@ export function actionsMenu(actions: Action[], options?: ActionsMenuOptions): Me
       menu.separator();
     anything = true;
     menu.group(group.label);
-    for (const action of allowed)
-      menu.item(action.name, action.run, {icon: action.icon, enabled: action.enabled});
+    addItems(menu, allowed);
     menu.endGroup();
   }
   return menu;

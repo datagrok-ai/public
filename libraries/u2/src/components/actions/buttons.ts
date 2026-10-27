@@ -5,6 +5,7 @@ import {Signal} from '../../core/signals.js';
 import {Scope, debug} from '../../core/scope.js';
 import {Tooltip} from '../../core/tooltip.js';
 import {button, div, span, Text} from '../../core/elements.js';
+import type {ButtonOptions} from '../../core/elements.js';
 import {icon, IconVariant} from '../display/icon.js';
 import {Menu} from '../navigation/menu.js';
 
@@ -14,6 +15,10 @@ export interface IconButtonOptions {
   /** Pressed state: the click writes it and an effect mirrors it into `aria-pressed`, so a
    * toggling button needs an ambient Scope. */
   toggle?: Signal<boolean>;
+  /** A menu built on every press and shown under the button; pressed again, it closes. */
+  menu?: () => Menu;
+  /** As {@link button}'s: `true`, or why it is disabled (shown as its tooltip); a signal is followed. */
+  disabled?: ButtonOptions['disabled'];
 }
 
 const NO_OWNER = 'u2: signal binding needs an owner — ' +
@@ -47,14 +52,25 @@ function tip(el: HTMLElement, text: string): void {
 export function iconButton(name: string, onClick: (e: MouseEvent) => void,
   options?: IconButtonOptions): HTMLButtonElement {
   const toggle = options?.toggle;
+  let menu: Menu | undefined;
+  const disabled = options?.disabled;
+  // with `disabled`, button() owns the tooltip (the reason while disabled, the tooltip otherwise)
   const el = button(icon(name, {variant: options?.variant}), (e) => {
     if (toggle)
       toggle.value = !toggle.peek();
+    if (options?.menu !== undefined) {
+      const open = menu?.isOpen.peek() === true;
+      menu?.close();
+      menu = open ? undefined : options.menu();
+      menu?.show({anchor: el});
+    }
     onClick(e);
-  });
+  }, disabled === undefined ? undefined : {disabled, tooltip: options?.tooltip});
   el.classList.add('u2-icon-btn');
   el.dataset.u2 = 'icon-button';
-  if (options?.tooltip)
+  if (options?.tooltip && disabled !== undefined)
+    el.setAttribute('aria-label', options.tooltip);
+  else if (options?.tooltip)
     tip(el, options.tooltip);
   else if (debug.enabled && !warned.has(name)) {
     warned.add(name);
@@ -76,15 +92,21 @@ export function iconButton(name: string, onClick: (e: MouseEvent) => void,
 /** Text button with a leading (or trailing) icon. The label is its own span so a signal-bound
  * caption rewrites the label alone and never the icon. */
 export function buttonWithIcon(text: Text, iconName: string, onClick: (e: MouseEvent) => void,
-  options?: {primary?: boolean, iconRight?: boolean, tooltip?: string}): HTMLButtonElement {
-  const el = button(icon(iconName), onClick, {primary: options?.primary});
+  options?: {primary?: boolean, iconRight?: boolean, tooltip?: string,
+    disabled?: ButtonOptions['disabled']}): HTMLButtonElement {
+  const disabled = options?.disabled;
+  // with `disabled`, button() owns the tooltip (the reason while disabled, the tooltip otherwise)
+  const el = button(icon(iconName), onClick, {primary: options?.primary,
+    ...(disabled === undefined ? {} : {disabled, tooltip: options?.tooltip})});
   const label = span(text, 'u2-btn-label');
   if (options?.iconRight)
     el.prepend(label);
   else
     el.append(label);
   el.dataset.u2 = 'button';
-  if (options?.tooltip)
+  if (options?.tooltip && disabled !== undefined)
+    el.setAttribute('aria-label', options.tooltip);
+  else if (options?.tooltip)
     tip(el, options.tooltip);
   return el;
 }

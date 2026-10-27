@@ -7,10 +7,12 @@
    the table's actions. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divV, span, Filters, allowedActions,
-  actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Splitter} from '@datagrok-libraries/u2';
+import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divH, divV, span,
+  icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu, LabelColumn}
+  from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
+import {capital, nounOf} from '../core/domain-backend.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
 import {SharedSession, confirmDiscard} from '../core/session.js';
 import {domains, DomainTable} from './facade.js';
@@ -18,9 +20,13 @@ import {DomainList} from './list.js';
 import type {DomainListMode} from './list.js';
 import {SAVE_SHORTCUTS, isSaveKey, DomainForm} from './form.js';
 import {DomainFilters} from './filters.js';
+import {SavedSearches} from './saved-searches.js';
 import type {DomainFiltersOptions} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
 import {DomainAddress} from './address.js';
+import {DomainErrors} from './errors.js';
+import {DgDomainTable} from './backend.js';
+import {PropertyDialog} from './authoring/property-dialog.js';
 import {ViewSync} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {ViewState} from '@datagrok-libraries/u2/src/dg/index.js';
 
@@ -31,6 +37,9 @@ export type DomainAppMode = 'live' | 'trash';
 /** What the status bar says while a live source is behind the server ({@link DomainApp.refresh}). */
 const STALE = 'Data changed — Refresh';
 
+/** Below this width the ribbon has no room for the presets. */
+const COMPACT_WIDTH = 700;
+
 /** The trash reads newest-deleted first: a soft delete is a write, so it stamps `updated_on`. */
 const TRASH_SORT = '!updated_on';
 
@@ -38,7 +47,7 @@ const TRASH_SORT = '!updated_on';
  * spec renders the slots it wants instead of parsing text, and a refusal no longer takes the row
  * count off the line (U37). */
 export interface DomainAppStatus {
-  /** What the page holds: "50 of 2,077", "3 issues", "1 deleted issue", or the row's caption on
+  /** What the page holds: "50 of 2,077 issues", "3 issues", "1 deleted issue", or the row's caption on
    * the entity page. `''` while there is nothing to say yet. */
   count: string;
   /** How many rows a bulk action would act on; 0 on the entity page and with nothing picked. */
@@ -76,11 +85,13 @@ export interface DomainAppOptions {
   live?: boolean;
   liveMs?: number;
   mode?: DomainListMode;
+  itemHeight?: number;
   /** What every draft the app creates starts with — the preset a view that opened the app carries
    * (a location's id on a containers app). Threaded into the entity page's draft source. */
   defaults?: Record<string, unknown>;
   /** The form's columns, in this order; every column by default. */
   include?: string[];
+  exclude?: string[];
   /** The entity page's panes under the form, on by default: the child collections (a tab per
    * referring table; options narrow them) and the row's history — where the table keeps one
    * (`support.audit`); a table that keeps none has no pane. */
@@ -115,6 +126,8 @@ export class DomainApp extends Control {
   /** One row per entity page — a source of one sharing the session, replaced with the entity. */
   readonly entitySource: ReadonlySignal<DomainSource | null>;
   readonly form: ReadonlySignal<DomainForm | null>;
+  /** The entity form's label column: content lined up with the form reads its `width`. */
+  readonly labelColumn = new LabelColumn();
   readonly breadcrumbs: Breadcrumbs;
   /** The entity page below the form — where the children and history panes go. */
   readonly panes: HTMLElement;
@@ -143,6 +156,8 @@ export class DomainApp extends Control {
   readonly trash: ReadonlySignal<boolean>;
   /** See {@link DomainAppOptions.shortcuts}; a subclass may declare its own. */
   shortcuts: Record<string, string>;
+  /** The view is too narrow for the whole ribbon: the presets fold into the Actions menu. */
+  readonly compact = signal(false);
 
   private readonly _mode = signal<DomainAppMode>('live');
   private readonly _count = signal('');
@@ -156,11 +171,12 @@ export class DomainApp extends Control {
   private _panes: Control[] = [];
   private _ribbon: DomainRibbon | undefined;
   private _unloadGuard: ((e: BeforeUnloadEvent) => void) | undefined;
+  private _deleting: DomainSource | null = null;
+  private readonly _presets: Action[] = [];
   private readonly _sync: ViewSync;
 
   private static readonly _byView = new WeakMap<DG.ViewBase, DomainApp>();
   private static readonly _views = new WeakMap<DomainApp, DG.ViewBase>();
-  private static readonly _bases = new Map<string, string>();
 
   constructor(private readonly _options: DomainAppOptions) {
     super();
@@ -186,17 +202,13 @@ export class DomainApp extends Control {
     document.addEventListener('keydown', onSave);
     this.own(() => document.removeEventListener('keydown', onSave));
     DomainApp.live.add(this);
-    DomainApp._bases.set(table.address, this.base);
-    this.own(() => {
-      DomainApp.live.delete(this);
-      if (DomainApp._bases.get(table.address) === this.base)
-        DomainApp._bases.delete(table.address);
-    });
+    this.own(() => DomainApp.live.delete(this));
 
     this.listSource = this._source({query: _options.query ?? '', sort: _options.sort, pageSize: _options.pageSize,
       live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
-    this.list = this.runInScope(() => new DomainList(this.listSource, {mode: _options.mode}));
+    this.list = this.runInScope(() => new DomainList(this.listSource, {mode: _options.mode,
+      itemHeight: _options.itemHeight, create: () => void this.create()}));
     // Enter on a row is the way into the entity page
     let seen = this.listSource.activate.peek();
     this.effect(() => {
@@ -211,12 +223,11 @@ export class DomainApp extends Control {
 
     const title = DomainApp.titleOf(table.info);
     this.breadcrumbs = this.runInScope(() => new Breadcrumbs({items: [title], onClick: (index) => {
-      // in the trash the root crumb reads "Issues › Trash" and is the way back out of it; the ⋯
-      // menu's "Exit trash" must not be the only one
+      // in the trash the root crumb reads "Issues › Trash" and is the way back out of it
       if (index === 0)
         void (this.trash.peek() ? this.setTrash(false) : this.goTo('list'));
     }}));
-    this._formHost = div([], 'u2-domain-app-form');
+    this._formHost = div([], 'u2-domain-app-form u2-form-fill');
     this.panes = div([], 'u2-domain-app-panes');
     this.panes.dataset.u2Part = 'panes';
     this.filters = this.runInScope(() => domains.filters(this.listSource, _options.filters));
@@ -227,10 +238,13 @@ export class DomainApp extends Control {
       this._filterProblem.value = problem;
       this.list.stale.value = problem !== null;
     });
-    const listPage = divV(_options.filters?.placement === 'left' ? [this.runInScope(() => new Splitter([
-      divV([span('Filters', 'u2-domain-app-filters-title'), this.filters.root], 'u2-domain-app-filters-pane'),
-      this.list.root], {direction: 'horizontal', sizes: [0.3, 0.7]})).root] :
-      [this.filters.root, this.list.root], 'u2-domain-app-list');
+    const plural = nounOf(table.info);
+    const banner = this.runInScope(() => divH([icon('info-circle'),
+      span(`Deleted ${plural}. Restore what you need, then Save.`)], 'u2-domain-app-trash-banner'));
+    banner.dataset.u2Part = 'trash-banner';
+    this.effect(() => banner.hidden = !this.trash.value);
+    const listPage = divV([banner, ...(_options.filters?.placement === 'left' ? [this.filters.pane(this.list.root)] :
+      [this.filters.root, this.list.root])], 'u2-domain-app-list');
     listPage.dataset.u2Part = 'list-page';
     const entityPage = divV([this._formHost, this.panes], 'u2-domain-app-entity');
     entityPage.dataset.u2Part = 'entity-page';
@@ -255,7 +269,9 @@ export class DomainApp extends Control {
       // them) move under it without `currentRow` changing, so the caption follows the rows tick
       source?.rows.items.value;
       const row = source?.currentRow.value ?? null;
-      const caption = row === null ? '…' : table.renderer.caption(row);
+      // a row the table does not have is named by the address that asked for it
+      const caption = row !== null ? table.renderer.caption(row) :
+        source?.state.value === 'ready' && !source.isDraft ? this._entity.peek() ?? '…' : '…';
       this.breadcrumbs.setItems([title, caption]);
     });
     // the entity page over a draft: once saved, the page is the row's
@@ -282,6 +298,20 @@ export class DomainApp extends Control {
       had = rows > 0;
     });
 
+    // a row deleted from its own page: once the save has taken it, back to the list
+    this.effect(() => {
+      const source = this._entitySource.value;
+      const empty = source !== null && source.state.value === 'ready' && source.rows.items.value.length === 0;
+      const settled = !this.session.isDirty.value && !this.session.isSaving.value;
+      if (source !== this._deleting)
+        this._deleting = null;
+      if (this._deleting === null || !settled)
+        return;
+      this._deleting = null;
+      if (empty)
+        queueMicrotask(() => void this.goTo('list'));
+    });
+
     this.path = computed(() => {
       const entity = this._entity.value;
       if (this._page.value === 'entity' && entity !== null) {
@@ -294,8 +324,14 @@ export class DomainApp extends Control {
       }
       const q = this.listSource.query.value;
       const search = this.listSource.search.value;
-      const path = this._withTrash(Filters.queryPath(this.base, typeof q === 'string' ? q : Filters.format(q)));
-      return search === '' ? path : `${path}${path.includes('?') ? '&' : '?'}search=${encodeURIComponent(search)}`;
+      const sort = this.listSource.sort.value;
+      let path = this._withTrash(Filters.queryPath(this.base, typeof q === 'string' ? q : Filters.format(q)));
+      if (search !== '')
+        path = `${path}${path.includes('?') ? '&' : '?'}search=${encodeURIComponent(search)}`;
+      // only an order the user picked; the trash's is checked too, as the mode flips before the sort
+      if (!this.trash.value && sort !== TRASH_SORT && sort !== (this._options.sort ?? ''))
+        path = `${path}${path.includes('?') ? '&' : '?'}sort=${encodeURIComponent(sort)}`;
+      return path;
     });
     this._sync = new ViewSync({
       path: this.path,
@@ -323,7 +359,7 @@ export class DomainApp extends Control {
       const row = entity ? source.currentRow.value : null;
       if (row !== null && !Rows.isDraft(row))
         this._count.value = this.table.renderer.caption(row);
-      else if (source.state.value === 'error')
+      else if (source.state.value === 'error' || entity && !source.isDraft && source.state.value === 'ready')
         this._count.value = '';
       else if (source.error.value === undefined && source.changeCount.value === 0)
         this._count.value = source.summary.value;
@@ -333,14 +369,15 @@ export class DomainApp extends Control {
       const source = entity ? this._entitySource.value : this.listSource;
       const dirty = this.session.isDirty.value;
       const pending = dirty ? this._pendingSummary() : null;
-      const count = this._count.value;
+      const saved = entity ? null : SavedSearches.title(this.listSource);
+      const count = saved === null || this._count.value === '' ? this._count.value : `${saved} · ${this._count.value}`;
       // what a bulk action would act on, beside the count — the platform grid's own convention
       const selected = entity ? 0 : this.listSource.selection.value.length;
       const problem = source !== null && source.error.value !== undefined ? source.summary.value : null;
       // the rows answer the filter that was applied, not the one in the box: while that one is
       // invalid they are shown stale, and a refusal of the old one is not the news
       if (!entity && this.list.stale.value && !dirty)
-        return {count, selected, notice: this._filterProblem.value ?? 'Filter not applied', problem};
+        return {count, selected, notice: null, problem: this._filterProblem.value ?? 'Filter not applied'};
       // a live source saw the collection move while this session had changes to protect: what is
       // pending still matters, and so does that the rows under it are no longer the server's
       if (source !== null && source.stale.value)
@@ -352,6 +389,13 @@ export class DomainApp extends Control {
       (this._page.value === 'entity' ? this._entitySource.value : this.listSource)?.stale.value ?? false);
     this._wireMode();
     this.own(() => this._close());
+    const fit = new ResizeObserver(() => {
+      const width = this.root.clientWidth;
+      if (width > 0)
+        this.compact.value = width < COMPACT_WIDTH;
+    });
+    fit.observe(this.root);
+    this.own(() => fit.disconnect());
   }
 
   /** Re-points the app at the route the shell actually mounted its view at (`/apps/Stockroom`):
@@ -360,8 +404,6 @@ export class DomainApp extends Control {
   rebase(base: string): void {
     if (base === '' || base === this._base.peek())
       return;
-    if (DomainApp._bases.get(this.table.address) === this._base.peek())
-      DomainApp._bases.set(this.table.address, base);
     this._base.value = base;
   }
 
@@ -407,21 +449,47 @@ export class DomainApp extends Control {
   ribbon(): DomainRibbon {
     if (this._ribbon !== undefined)
       return this._ribbon;
-    const add = new Control(button('New', () => void this.create()));
+    const singular = nounOf(this.table.info, true);
+    const add = new Control(this.runInScope(() =>
+      iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`})));
     add.root.dataset.u2 = 'new-button';
-    add.effect(() => add.root.hidden = !this.listSource.access.value.can('insert'));
+    // in the trash the slot stays, so SAVE and DISCARD do not move
+    add.effect(() => {
+      const trash = this.trash.value;
+      add.root.hidden = !trash && !this.listSource.access.value.can('insert');
+      add.root.classList.toggle('u2-domain-app-invisible', trash);
+    });
     const save = domains.saveButton(this.session);
-    const discard = domains.discardButton(this.session);
+    const pristine = () => !this.session.isDirty.value && this._page.value === 'entity' &&
+      DomainApp._isDraft(this._entitySource.value, this._entitySource.value?.currentRow.value ?? null);
+    const discard = domains.discardButton(this.session, {leave: {when: pristine, run: () => void this.goTo('list')}});
+    // nothing on a read-only page is saved — the trash until a restore is staged
+    save.effect(() => save.root.hidden = discard.root.hidden = !this.session.isDirty.value &&
+      ((this._page.value === 'entity' ? this._entitySource.value : this.listSource)?.readOnly.value ?? false));
     const more = this._actionsMenu();
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
     const reload = new Control(button('Refresh', () => void this.refresh()));
     reload.root.dataset.u2 = 'refresh-button';
     reload.effect(() => reload.root.hidden = !this.stale.value);
     const search = domains.search(this.listSource);
-    for (const control of [add, save, discard, more, reload, search])
+    const sort = this._sortMenu();
+    const tools: Control[] = [search, sort];
+    if (this.table.table instanceof DgDomainTable)
+      tools.push(this._propertiesButton());
+    for (const control of [add, save, discard, more, reload, ...tools])
       this.own(() => control.dispose());
     this._listOnly(search);
-    return this._ribbon = {main: [add, save, discard, more, reload], tools: [search], presets: []};
+    this._listOnly(sort, () => this.trash.value);
+    return this._ribbon = {main: [add, save, discard, more, reload], tools, presets: []};
+  }
+
+  private _propertiesButton(): Control {
+    const [schema, table] = this.table.address.split('.');
+    const button = new Control(this.runInScope(() => iconButton('pencil-ruler',
+      () => void domains.editProperties(schema, table).catch((e) => DomainErrors.report(e)), {tooltip: 'Edit properties…'})));
+    button.root.hidden = true;
+    void PropertyDialog.extensible(schema).then((tables) => button.root.hidden = !tables.has(table));
+    return button;
   }
 
   /** The ribbon as `appView` takes it — `[main, tools, presets]`, empty slots dropped.
@@ -431,27 +499,27 @@ export class DomainApp extends Control {
     return [main, tools, presets].filter((group) => group.length > 0);
   }
 
-  /** The table-wide actions of the ⋯ menu: the import wizard, the bulk edit over what the list
-   * holds, and the trash. Nothing writes in the trash, so only the way out of it is offered there. */
+  /** The Actions menu: the presets on a {@link compact} ribbon, the entity page's row actions, import
+   * and bulk edit, Show deleted. Nothing in the trash: the breadcrumb is the way out. */
   menuActions(): Action[] {
     const trash = this.trash.peek();
     // what the caller may do (`requires`) and what the table can do at all are different
     // questions: a permission hides an action, an undeclared support leaves it out entirely
     const support = this.table.table.support;
-    const out: Action[] = [];
+    const table: Action[] = [];
     if (!trash && support.writes && !this.listSource.readOnly.value) {
-      out.push({name: 'Import…', icon: 'upload', requires: 'insert', run: () =>
+      table.push({name: 'Import…', icon: 'upload', requires: 'insert', run: () =>
         void domains.import(this.table).then((report) => report === null ? null : this.listSource.refresh())});
     }
     if (!trash && support.updateWhere) {
-      out.push({name: 'Bulk edit…', icon: 'edit', requires: 'edit',
+      table.push({name: 'Bulk edit…', icon: 'edit', requires: 'edit',
         run: () => void domains.bulkEdit(this.listSource)});
     }
-    if (support.deleted && support.restore) {
-      out.push({name: trash ? 'Exit trash' : 'Trash', icon: trash ? 'arrow-left' : 'trash-alt',
-        requires: 'delete', run: () => void this.setTrash(!trash)});
-    }
-    return out;
+    const mode: Action[] = trash || !support.deleted || !support.restore ? [] : [{
+      name: 'Show deleted', icon: 'history', requires: 'delete', run: () => void this.setTrash(true)}];
+    const presets = this.compact.peek() && this._page.peek() === 'list' && !trash ? this._presets : [];
+    return [presets, this._rowActions(), table, mode].filter((section) => section.length > 0)
+      .flatMap((section, i) => i === 0 ? section : [{...section[0], separator: true}, ...section.slice(1)]);
   }
 
   /** Moves between the live collection and the trash — ONE switch: the list's `deleted` mode, its
@@ -502,10 +570,17 @@ export class DomainApp extends Control {
         Filters.group('and') : bound(at);
       source.query.value = typeof q === 'string' ? Filters.format(tree) : tree;
     };
-    const group = this.runInScope(() => new ButtonGroup({toggle: 'single', density: 'ribbon',
-      items: entries.map(([label], at) => ({id: String(at), label, onClick: () =>
-        void confirmDiscard(this.session, {action: 'change the filter'}).then((ok) => ok && apply(at))}))}));
+    const press = (at: number) =>
+      void confirmDiscard(this.session, {action: 'change the filter'}).then((ok) => ok && apply(at));
+    const group = this.runInScope(() => new ButtonGroup({toggle: 'single',
+      items: entries.map(([label], at) => ({id: String(at), label, onClick: () => press(at)}))}));
     group.root.dataset.u2 = 'domain-presets';
+    group.root.setAttribute('aria-label', 'Show');
+    group.root.prepend(span('Show:', 'u2-domain-presets-label'));
+    this._presets.push(...entries.map(([label], at): Action => ({name: label, run: () => press(at),
+      get check() {
+        return group.selected.peek().includes(String(at));
+      }})));
     group.effect(() => {
       // the schema arrives with the load: read the state so the presets are bound again once it has
       source.state.value;
@@ -516,7 +591,7 @@ export class DomainApp extends Control {
       const at = entries.findIndex((_, i) => Filters.equals(bound(i), current));
       group.selected.value = at < 0 ? [] : [String(at)];
     });
-    this._listOnly(group);
+    this._listOnly(group, () => this.compact.value);
     return group;
   }
 
@@ -533,22 +608,39 @@ export class DomainApp extends Control {
   /** One status-bar panel per slot (`appView` places them side by side): the count, the selection,
    * the notice, the problem — so a refusal never takes the count off the line. */
   static statusPanels(app: DomainApp): HTMLElement[] {
-    const slot = (name: string, read: (status: DomainAppStatus) => string): HTMLElement => {
+    const reads: ((status: DomainAppStatus) => string)[] = [
+      (status) => status.count,
+      (status) => status.selected === 0 ? '' : `${status.selected} selected`,
+      (status) => status.notice ?? '',
+      (status) => app._shortProblem(status),
+    ];
+    return ['count', 'selected', 'notice', 'problem'].map((name, at) => {
       const el = span('', `u2-domain-status-${name}`);
       el.dataset.u2Part = name;
       app.effect(() => {
-        const text = read(app.status.value);
+        const status = app.status.value;
+        const text = reads[at](status);
         el.textContent = text;
         el.hidden = text === '';
+        el.classList.toggle('u2-domain-status-after', reads.slice(0, at).some((read) => read(status) !== ''));
+        el.title = name === 'problem' && text !== (status.problem ?? '') ? status.problem ?? '' : '';
       });
       return el;
-    };
-    return [
-      slot('count', (status) => status.count),
-      slot('selected', (status) => status.selected === 0 ? '' : `${status.selected} selected`),
-      slot('notice', (status) => status.notice ?? ''),
-      slot('problem', (status) => status.problem ?? ''),
-    ];
+    });
+  }
+
+  /** The problem as the status bar says it: one the list page already shows in full is named in
+   * a few words there, or not at all where the filter box shows it; the reason is the tooltip. */
+  private _shortProblem(status: DomainAppStatus): string {
+    const problem = status.problem ?? '';
+    if (problem === '' || this._page.value !== 'list')
+      return problem;
+    if (problem === this._filterProblem.value)
+      return '';
+    if (this.listSource.state.value !== 'error')
+      return problem;
+    const q = this.listSource.query.value;
+    return (typeof q === 'string' ? q.trim() !== '' : q.nodes.length > 0) ? 'Filter refused' : 'Rows not loaded';
   }
 
   /** What the pending changes are called: one dirty source words them in its own terms ("1
@@ -562,9 +654,8 @@ export class DomainApp extends Control {
 
   /** How a table is named in a view title, a breadcrumb root or a child tab: the display name
    * the schema declares, else its plural name made presentable ('order_line' → 'Order lines'). */
-  static titleOf(info: DomainTableInfoLike): string {
-    const plural = (info.pluralName || 'rows').replace(/_/g, ' ');
-    return info.friendlyName ?? `${plural.charAt(0).toUpperCase()}${plural.slice(1)}`;
+  static titleOf(info: Pick<DomainTableInfoLike, 'pluralName' | 'friendlyName'>): string {
+    return info.friendlyName ?? capital((info.pluralName || 'rows').replace(/_/g, ' '));
   }
 
   /** Plain-key shortcuts stay out of text entry; chords with Ctrl/Alt still fire there. */
@@ -618,20 +709,62 @@ export class DomainApp extends Control {
     action.run();
   }
 
-  /** The ⋯ button: the menu is built on every open, so its items read the mode in force.
+  /** The ⋮ button: the menu is built on every open, so its items read the page and the mode in force.
    * Permission ⇒ hidden — the button is gone while the access allows nothing in it. */
   private _actionsMenu(): Control {
     const control = this.runInScope(() => {
-      const el = iconButton('ellipsis-v', () => {}, {tooltip: 'More actions'});
+      const el = iconButton('ellipsis-v', () => {}, {tooltip: 'More actions',
+        menu: () => actionsMenu(this.menuActions(), {access: this.listSource.access.peek()})});
       el.dataset.u2 = 'actions-menu';
-      el.title = 'More actions';
-      el.addEventListener('click', () =>
-        actionsMenu(this.menuActions(), {access: this.listSource.access.peek()}).show({anchor: el}));
       return new Control(el);
     });
-    control.effect(() => control.root.hidden =
-      allowedActions(this.menuActions(), {access: this.listSource.access.value}).length === 0);
+    control.effect(() => {
+      this._page.value;
+      this.compact.value;
+      this.trash.value;
+      this._entitySource.value?.currentRow.value;
+      control.root.hidden = allowedActions(this.menuActions(), {access: this.listSource.access.value}).length === 0;
+    });
     return control;
+  }
+
+  /** The list's order: a column and a direction, written to the source's sort and the path's
+   * `?sort=`, through the gate as a reload drops what is pending. */
+  private _sortMenu(): Control {
+    const source = this.listSource;
+    const write = (sort: string) => void confirmDiscard(this.session, {action: 'change the order'})
+      .then((ok) => ok && (source.sort.value = sort));
+    const control = this.runInScope(() => {
+      const el = iconButton('sort-amount-down', () => {}, {tooltip: 'Sort by', menu: () => {
+        const current = source.sort.peek().split(',')[0] ?? '';
+        const desc = current.startsWith('!');
+        const column = desc ? current.slice(1) : current;
+        const menu = new Menu();
+        for (const prop of source.schema.properties.filter((p) => p.ref === undefined && p.name !== 'id')) {
+          menu.item(DomainTable.captionOf(prop), () => write(`${desc ? '!' : ''}${prop.name}`),
+            {check: prop.name === column});
+        }
+        menu.separator();
+        menu.item('Ascending', () => write(column), {check: column !== '' && !desc, enabled: column !== ''});
+        menu.item('Descending', () => write(`!${column}`), {check: desc, enabled: column !== ''});
+        return menu;
+      }});
+      el.dataset.u2 = 'sort-menu';
+      return new Control(el);
+    });
+    return control;
+  }
+
+  /** The entity page row's actions: the table's, and Delete, staged like a list row's. */
+  private _rowActions(): Action[] {
+    const source = this._page.peek() === 'entity' ? this._entitySource.peek() : null;
+    const row = source?.currentRow.peek() ?? null;
+    if (source === null || row === null || Rows.isDraft(row))
+      return [];
+    return allowedActions([...this.table.actions.for(row), DomainList.deleteAction(() => {
+      this._deleting = source;
+      source.edit.peek()?.markDeleted(row.id);
+    })], {access: source.access.peek(), row});
   }
 
   /** Trash mode is one flip of the list source's `deleted` mode: the search box, the filters and
@@ -658,12 +791,8 @@ export class DomainApp extends Control {
     return this.trash.value ? `${path}${path.includes('?') ? '&' : '?'}trash=1` : path;
   }
 
-  private _listOnly(...controls: Control[]): void {
-    this.effect(() => {
-      const list = this._page.value === 'list';
-      for (const control of controls)
-        control.root.hidden = !list;
-    });
+  private _listOnly(control: Control, folded: () => boolean = () => false): void {
+    this.effect(() => control.root.hidden = this._page.value !== 'list' || folded());
   }
 
   /** A preset's query with `$me` bound, as a tree — parsed against the table's schema once it is
@@ -697,9 +826,13 @@ export class DomainApp extends Control {
     return DomainApp._byView.get(view);
   }
 
-  /** The base path of the app last opened over a table address. */
+  static viewOf(app: DomainApp): DG.ViewBase | undefined {
+    return DomainApp._views.get(app);
+  }
+
+  /** The base path of the app open over a table address: the one the shell shows, else the last. */
   static baseOf(address: string): string | undefined {
-    return DomainApp._bases.get(address);
+    return DomainApp._pick((app) => app.table.address === address)?.base;
   }
 
   /** Ties an app to the view showing it (`DomainTable.app()`): {@link of} answers for it and
@@ -738,8 +871,14 @@ export class DomainApp extends Control {
     return DomainApp._views.get(app);
   }
 
+  /** The app at a base — several may share one: the one the shell shows, else the one opened last. */
   private static _at(base: string | undefined): DomainApp | undefined {
-    return base === undefined ? undefined : [...DomainApp.live].find((app) => app.base === base);
+    return base === undefined ? undefined : DomainApp._pick((app) => app.base === base);
+  }
+
+  private static _pick(test: (app: DomainApp) => boolean): DomainApp | undefined {
+    const apps = [...DomainApp.live].filter(test);
+    return apps.find((app) => app._isCurrentView()) ?? apps[apps.length - 1];
   }
 
   private static _front(app: DomainApp): void {
@@ -770,16 +909,19 @@ export class DomainApp extends Control {
       return false;
     const q = params.get('q') ?? '';
     const search = params.get('search') ?? '';
+    const trash = this._mode.peek() === 'trash';
+    const sort = trash ? this.listSource.sort.peek() : params.get('sort') ?? this._options.sort ?? '';
     const current = this.listSource.query.peek();
     // already on the list, the gate `goTo` skipped: the query is changing under pending changes
     if ((typeof current === 'string' ? current : Filters.format(current)) === q &&
-        this.listSource.search.peek() === search)
+        this.listSource.search.peek() === search && this.listSource.sort.peek() === sort)
       return true;
     if (!await confirmDiscard(this.session, {action: 'change the filter'}))
       return false;
     batch(() => {
       this.listSource.query.value = q;
       this.listSource.search.value = search;
+      this.listSource.sort.value = sort;
     });
     return true;
   }
@@ -841,12 +983,13 @@ export class DomainApp extends Control {
         if (source.state.value === 'ready' && rows.length > 0 && source.currentRow.peek() === null)
           source.currentRow.value = rows[0];
       });
-      const {children, history, include} = this._options;
-      const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include,
-        empty: `${this.table.info.singularName || 'Row'} "${entity}" was not found.`}));
+      const {children, history, include, exclude} = this._options;
+      const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include, exclude,
+        labelColumn: this.labelColumn, empty: `${capital(nounOf(this.table.info, true))} "${entity}" was not found.`}));
       this._panes = this.runInScope(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
-        ...(history === false || !this.table.table.support.audit ? [] : [domains.history(source)]),
+        ...(history === false || !this.table.table.support.audit ? [] :
+          [domains.history(source, undefined, {include, exclude})]),
       ]);
       this._formHost.replaceChildren(form.root);
       this.panes.replaceChildren(...this._panes.map((pane) => pane.root));

@@ -1,8 +1,10 @@
-import {Input, InputOptions} from '../../core/input-base.js';
+import {Input, InputOptions, LiveOption} from '../../core/input-base.js';
 import {signal, Signal} from '../../core/signals.js';
 import {icon} from '../display/icon.js';
 
 export interface NumberInputOptions extends InputOptions<number | null> {
+  /** Shown while the field is empty: what an empty value means ("Auto"). */
+  placeholder?: LiveOption<string>;
   /** `int` accepts an optional minus and digits; `float` (default) also decimals and exponents. */
   mode?: 'int' | 'float';
   min?: number;
@@ -40,9 +42,10 @@ const FLOAT = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
  * rail (20×20, blue, left of the units) and the slider, absolutely positioned under the field at
  * its full width. u2's own hover spinner has no Dart counterpart and is opt-in (`spinner: true`).
  *
+ * The slider hangs 9px under the field as the platform's does (`d4.css:81-89`: `bottom: -9px`), but
+ * the editor keeps that room below itself, so it never covers the next row as the platform's does.
+ *
  * Ported quirks — the platform's behavior, deliberately not improved here:
- * - the revealed slider overlaps whatever is below it by 9px (`d4.css:81-89`: `bottom: -9px;
- *   z-index: 2`), so in a form it sits over the next row;
  * - at rest nothing hints that a slider or a clicker exists — they are `visibility: hidden` until
  *   the pointer enters the input (`d4.css:130-134`);
  * - the platform's clicker steps past min/max everywhere (`number_input.dart:66-68` adds `step`
@@ -58,6 +61,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   constructor(options: NumberInputOptions = {}) {
     super(options, null);
     this.root.dataset.u2 = 'number-input';
+    this.liveOption('placeholder', options.placeholder, (x) => this._input.placeholder = x);
   }
 
   get min(): number | undefined {
@@ -113,7 +117,8 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
       const value = this.value.value;
       if (echo)
         echo = false;
-      else
+      // a float32 column echoes the typed value rounded: the typed text already says it
+      else if (!NumberInput._sameFloat32(this._parse(input.value), value))
         input.value = this._format(value);
       this._syncSlider();
     });
@@ -294,11 +299,28 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
       return format(value);
     if (this._int)
       return String(value);
+    value = NumberInput._shortest(value);
     const decimals = this._decimals(value);
     if (decimals > 0)
       return value.toFixed(decimals);
     const rounded = Number(value.toFixed(6));
     return String(rounded === 0 && value !== 0 ? value : rounded);
+  }
+
+  /** A float32 read back as a double (3.200000047683716) as the shortest decimal for it (3.2). */
+  private static _shortest(value: number): number {
+    if (Math.fround(value) !== value)
+      return value;
+    for (let digits = 1; digits <= 9; digits++) {
+      const short = Number(value.toPrecision(digits));
+      if (Math.fround(short) === value)
+        return short;
+    }
+    return value;
+  }
+
+  private static _sameFloat32(a: number | null | undefined, b: number | null): boolean {
+    return a != null && b != null && Math.fround(a) === Math.fround(b);
   }
 
   /** Dart's dynamic precision: as many decimals as the most precise of value/min/max/step carries

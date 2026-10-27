@@ -23,5 +23,4 @@ export async function awaitNgl(ngl: ngl.Stage, callLogPrefix: string): Promise<v
     () => {
       ngl!.viewer.requestRender();
     }, 1000, 'timeout creating NGL stage await');
-  await DG.delay(50);
 }

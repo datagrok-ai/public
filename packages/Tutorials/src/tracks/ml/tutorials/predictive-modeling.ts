@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter, map } from 'rxjs/operators';
 import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
-import { interval, Observable } from 'rxjs';
+import {Observable, timer} from 'rxjs';
 
 
 export class PredictiveModelingTutorial extends Tutorial {
@@ -40,11 +40,6 @@ export class PredictiveModelingTutorial extends Tutorial {
         'PredictiveModel',
         skipPMVOpening ? [] : this.getMenuItem('ML'),
       );
-
-      // UI generation delay
-      if (!skipPMVOpening) {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      }
 
       const hasNulls = this.t!.columns
         .byNames(['AGE', 'HEIGHT', 'WEIGHT'])
@@ -122,7 +117,7 @@ export class PredictiveModelingTutorial extends Tutorial {
       null, modelsViewInfo);
 
     await this.action('Expand the "Performance" pane in the context panel',
-      interval(1000).pipe(filter(() => modelPP?.getPane('Performance')?.expanded)));
+      timer(0, 200).pipe(filter(() => modelPP?.getPane('Performance')?.expanded)));
 
     await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
       `${this.t!.toString()}"`, this.t!.toString(), null, 'The result will be available in ' +

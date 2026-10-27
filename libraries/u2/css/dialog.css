@@ -145,6 +145,16 @@
   display: none;
 }
 
+.u2-dialog-reason {
+  flex: 1 1 auto;
+  justify-content: center;
+  text-align: center;
+}
+
+.u2-dialog-reason:not(.u2-status-line-problem) {
+  display: none;
+}
+
 /* the spinner a busy OK shows beside its caption, in the caption's colour */
 .u2-dialog-busy {
   box-sizing: border-box;

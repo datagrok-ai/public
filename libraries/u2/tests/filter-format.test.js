@@ -1,6 +1,6 @@
 /* `Filters.format` (schema-filters WO-2, D11): the canonical string — quoting and escapes,
    bracketed names, every operator spelling, lists, spans, refs, dates, nested groups, `not`,
-   single-node inlining, empties — and its fixed-point property through the grammar. Imports
+   one-condition groups, empties — and its fixed-point property through the grammar. Imports
    through the package barrel on purpose: the only filter suite that exercises `src/index.ts`. */
 
 import {test} from 'node:test';
@@ -92,7 +92,7 @@ test('format: a literal % or _ in a like shape is escaped, so the text reads bac
   assert.equal(Filters.format(k('o', 'like', '%50%%', {options: {raw: true}})), 'o like "50%"', 'raw stays raw');
 });
 
-test('format: groups — nesting parenthesized, single-node groups inlined, empties dropped, not', () => {
+test('format: groups — nesting parenthesized, a nested one-condition group too, empties dropped, not', () => {
   const a = k('a', '=', 1);
   const b = k('b', '=', 2);
   const c = k('c', '=', 3);
@@ -102,7 +102,7 @@ test('format: groups — nesting parenthesized, single-node groups inlined, empt
   assert.equal(Filters.format(g('or', [a, b])), 'a = 1 or b = 2');
   assert.equal(Filters.format(g('and', [a, g('or', [b, c])])), 'a = 1 and (b = 2 or c = 3)');
   assert.equal(Filters.format(g('or', [g('and', [a, b]), c])), '(a = 1 and b = 2) or c = 3');
-  assert.equal(Filters.format(g('and', [a, g('or', [b])])), 'a = 1 and b = 2');
+  assert.equal(Filters.format(g('and', [a, g('or', [b])])), 'a = 1 and (b = 2)');
   assert.equal(Filters.format(g('and', [a, g('or', [])])), 'a = 1');
   assert.equal(Filters.format(g('and', [g('or', [])])), '');
   assert.equal(Filters.format(g('and', [a, g('or', [g('and', [b, c])])])), 'a = 1 and (b = 2 and c = 3)');
@@ -112,6 +112,14 @@ test('format: groups — nesting parenthesized, single-node groups inlined, empt
   assert.equal(Filters.format(g('and', [g('or', [b, c])], {not: true})), 'not (b = 2 or c = 3)');
   assert.equal(Filters.format(g('and', [g('or', [b, c], {not: true})], {not: true})), 'not (not (b = 2 or c = 3))');
   assert.equal(Filters.format(g('and', [], {not: true})), '');
+});
+
+test('format: a one-condition group reads back as a group, so a link shows the builder it came from', () => {
+  const root = g('or', [k('a', '=', 1), k('b', '=', 2), g('and', [k('c', '=', 3)])]);
+  const text = Filters.format(root);
+  assert.equal(text, 'a = 1 or b = 2 or (c = 3)');
+  assert.ok(Filters.equals(Filters.parse(text).root, root));
+  assert.ok(Filters.equals(Filters.parse('(a = 1)').root, g('and', [k('a', '=', 1)])), 'the root is not wrapped');
 });
 
 test('format: what the grammar reads back is the pushed-down tree; formatting that is the fixed point', () => {

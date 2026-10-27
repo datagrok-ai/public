@@ -95,7 +95,6 @@ const DOCKER_API_ERROR = /API error:\s*\d{3}/i;
  * isn't available, which is infrastructure, not a Browse/UI defect => tolerate.
  */
 const DOCKER_DEPS: { key: string; container: string }[] = [
-  { key: 'MolTrack', container: 'moltrack' },
   { key: 'Admetica', container: 'admetica' },
   { key: 'Retrosynthesis', container: 'retrosynthesis' },
   { key: 'Docking', container: 'bio' },

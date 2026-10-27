@@ -5,12 +5,11 @@
    large table affordable. `expandTo` walks the row's ancestors (the platform's `GET …/{id}/path`,
    which EXCLUDES the row itself), opens every one of them and then selects the row. What the
    tree is FOR is driving a collection: `selected` feeds a source's query as `<fk> under "<id>"`. */
-import {Control, computed, signal, ReadonlySignal, div, span, VirtualTree, allowedActions,
-  loader} from '@datagrok-libraries/u2';
+import {Control, computed, signal, ReadonlySignal, div, span, VirtualTree, loader} from '@datagrok-libraries/u2';
 import type {TreeNode, Action, DomainRowLike, RowView} from '@datagrok-libraries/u2';
 import {DomainBackendError} from '../core/domain-backend.js';
 import type {DomainQueryLike} from '../core/domain-backend.js';
-import {domains, ActionRegistry, DomainTable} from './facade.js';
+import {domains, DomainTable} from './facade.js';
 import type {DomainAction} from './facade.js';
 import {DomainErrors} from './errors.js';
 
@@ -22,10 +21,10 @@ export interface DomainTreeOptions<TRow extends DomainRowLike = DomainRowLike> {
   /** Actions on top of Open and the table's own registry, per node. */
   actions?: DomainAction<TRow>[];
   /** A first row standing for the whole table ('All locations'): selecting it is `selected`
-   * null, which is what a collection bound to the tree reads as "no subtree filter". Without it
-   * the only way back to everything is clicking the selected node again. */
+   * null, which is what a collection bound to the tree reads as "no subtree filter"; it is selected
+   * whenever no node is. Without it the only way back to everything is clicking the selected node again. */
   allNode?: string;
-  /** How many children one level loads (default 500). */
+  /** How many children one request reads (default 500); a larger level is read in pages. */
   pageSize?: number;
 }
 
@@ -66,7 +65,8 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     const render = _options.render;
     this.tree = this.runInScope(() => new VirtualTree<RowView<TRow>>({
       contextActions: (node) => node.data === undefined ? [] : this.actionsFor(node.data),
-      render: render === undefined ? undefined : (node) => render(node.data!),
+      render: (node) => node.id === ALL ? span(node.label, 'u2-domain-tree-all') :
+        render === undefined ? span(node.label) : render(node.data!),
     }));
     // a node with no row behind it (the "all" row) reads as no selection, which is what makes
     // selecting it clear a collection's subtree filter
@@ -83,13 +83,13 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       if (node === null || node.id !== this.tree.selectedNode.peek()?.id)
         return;
       e.stopPropagation();
-      this.tree.clearSelection();
+      this._clear();
     }, {capture: true});
     this.scope.listen(this.root, 'keydown', (e) => {
       if ((e as KeyboardEvent).key !== 'Escape' || this.tree.selectedNode.peek() === null)
         return;
       e.stopPropagation();
-      this.tree.clearSelection();
+      this._clear();
     }, {capture: true});
     this.effect(() => {
       const problem = this._error.value;
@@ -125,6 +125,8 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       const reveal = this._options.expandTo;
       if (reveal !== undefined)
         await this.expandTo(reveal);
+      else if (this.tree.selectedNode.peek() === null)
+        this._clear();
     } catch (e) {
       this._error.value = DomainErrors.message(e);
     } finally {
@@ -152,13 +154,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
   /** Every action that applies to the node's row and that the caller may run on it: Open, the
    * table's registry, the tree's own. */
   actionsFor(row: RowView<TRow>): Action[] {
-    const table = this._table;
-    if (table === undefined)
-      return [];
-    const actions: Action[] = [{name: 'Open', icon: 'folder-open', run: () => table.open(row)}];
-    actions.push(...table.actions.for(row));
-    actions.push(...ActionRegistry.bind(this._options.actions ?? [], row));
-    return allowedActions(actions, {access: table.access, row});
+    return this._table?.rowActions(row, this._options.actions) ?? [];
   }
 
   /** The named refusal for a table the registry does not declare a hierarchy: there is no column
@@ -171,16 +167,30 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     }
   }
 
-  /** One level: the rows whose parent column is `id` — null for the roots, which is what the
-   * `is empty` operator compiles to. */
+  private _clear(): void {
+    if (this._options.allNode === undefined)
+      this.tree.clearSelection();
+    else
+      void this.tree.expandPath([ALL]);
+  }
+
+  /** One level, a page at a time: the rows whose parent column is `id` — null for the roots, which
+   * is what the `is empty` operator compiles to. */
   private async _children(id: string | null): Promise<TreeNode<RowView<TRow>>[]> {
     const table = this._table!;
+    const limit = this._options.pageSize ?? PAGE_SIZE;
     const spec: DomainQueryLike = {filter: {property: table.info.parentColumn!, operator: '=', value: id},
-      limit: this._options.pageSize ?? PAGE_SIZE, withAccess: true};
+      limit, withAccess: true};
     const name = table.info.nameColumn;
     if (name !== null)
       spec.sort = name;
-    const rows = await table.table.query(spec);
+    const rows: Record<string, unknown>[] = [];
+    for (;;) {
+      const page = await table.table.query({...spec, offset: rows.length});
+      rows.push(...page);
+      if (page.length < limit)
+        break;
+    }
     const nodes = rows.map((row) => this._node(row as unknown as RowView<TRow>));
     const all = this._options.allNode;
     return id === null && all !== undefined ? [{id: ALL, label: all, tooltip: all}, ...nodes] : nodes;

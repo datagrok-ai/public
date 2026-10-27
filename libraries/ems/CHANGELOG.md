@@ -2,6 +2,23 @@
 
 ## v.next
 
+* Properties: Added an editor for users' own columns on a plugin's extensible tables, opened from Edit properties… on the list's ribbon (`domains.editProperties`); the plugin's columns stay read-only, and a save that deletes values asks first
+* Added `domains.configure(address, fn, {id})`: an app's rules apply to every handle over the table
+* Bulk edit: Redesigned the dialog as one form with a field picker
+* Bulk edit: Refusals and the table's validators show in the dialog
+* Import: The Preview button names what lands and says why it is held
+* Import: Refused cells are tinted and a skipped row says why
+* Child tabs: Grids fit two-line captions with units
+* Child tabs: A tab that fails to open shows its error
+* Data tables: Fixed a table stopping at its first page
+* Filters: An invalid query shows its reason under the box
+* Unsaved changes: The dialog reads CANCEL · DISCARD · SAVE
+* Trash: Restore uses the undo icon
+* Forms: Fixed touching one field of a new record showing every required field's error: a field shows its message once the user edited or left it, or a save validated the form (the form re-reading its row no longer counts)
+* Save: Off while the form or the writer refuses the batch, the reason as its tooltip ("Title is required"), and Tab from the last field reaches it; `DomainSource.guard(check, problem)` takes the verdict live
+* DomainApp: A read-only page — the trash until a restore is staged — shows no Save or Discard
+* Forms: Only a valid edit reaches the row; an invalid one stays in its field and still counts as an unsaved change (`DomainSource.holdUnwritten`): every gate asks before dropping it, Discard drops it, Save stays off saying why — the unsaved-changes prompt's SAVE too. The writer's verdict on the row's value no longer blocks a new value, and a constraint is re-judged on what the fields hold
+* Bulk edit: OK says why it is off in its tooltip
 * DomainSource: Added `hosted`: the app answers a host filter condition (a structure search) with the ids of its rows, sent as an id list before every read
 * DomainApp: Added `filters: {mode: 'builder', placement: 'left'}`: the condition builder in a pane beside the list
 * Import: Added `table.importer`: an app derives columns, keeps rows out (already there, repeated in the file, unreadable), maps its own columns and shapes the preview's and report's columns and messages; the report lists every row with its outcome and key, written back to the table on request

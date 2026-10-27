@@ -1,5 +1,5 @@
 @journey
-Feature: MolTrack EMS: registering a compound
+Feature: MolTrack: registering a compound
   A chemist registers a structure no one has registered through the compound form, sees its salt
   form refused as the same compound, and finds it again by a structure search. The form derives the
   identity (formula, hashes) in the browser before Save and shows it under the form; the server
@@ -10,10 +10,10 @@ Feature: MolTrack EMS: registering a compound
     Given user is logged in
     And the "Chem" package is installed
     And no compound with the structure "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O" is registered, now and at feature end
-    And user opens the MolTrack EMS app
+    And user opens the MolTrack app
 
   Scenario: A new structure is registered through the form
-    When user clicks on "New" button in app ribbon
+    When user clicks on "New compound" button in app ribbon
     Then breadcrumbs should contain text "New compound"
     When user clicks on molecule canvas in "Structure" dart input
     And user types "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O" into molecule input of sketcher dialog
@@ -29,15 +29,14 @@ Feature: MolTrack EMS: registering a compound
     When user remembers the compound the breadcrumbs name
 
   Scenario: Its sodium salt is refused as the compound already registered
-    When user clicks on "New" button in app ribbon
+    When user clicks on "New compound" button in app ribbon
     And user clicks on molecule canvas in "Structure" dart input
     And user types "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-].[Na+]" into molecule input of sketcher dialog
     And user presses Enter in molecule input of sketcher dialog
     And user clicks on OK button in sketcher dialog
     Then compound identity should contain text "Already registered as DG-"
     And compound identity should name the remembered compound
-    When user clicks on "Save" button in app ribbon
-    Then save problem should contain text "Already registered as DG-"
+    And "Save" button in app ribbon should be disabled
     When user clicks on "Discard" button in app ribbon
     Then domain list should be visible
     And 1 compound with the structure "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O" should be registered on the server

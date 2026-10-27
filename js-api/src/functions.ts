@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import {IDartApi} from "./api/grok_api.g";
 import {ViewBase} from "./views/view";
 import {Logger} from "./logger";
+import * as ui from '../ui';
 declare let grok: any;
 declare let DG: any;
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
@@ -454,7 +455,7 @@ export class FuncCall extends Entity {
   getResultViews(): ViewBase[] {
     const views: ViewBase[] = toJs(api.grok_FuncCall_GetOutputViews(this.dart));
     for (const view of views)
-      setTimeout(() => api.grok_View_OnAdded(view.dart), 200);
+      ui.tools.waitForElementInDom(view.root).then(() => api.grok_View_OnAdded(view.dart));
     return views;
   }
 

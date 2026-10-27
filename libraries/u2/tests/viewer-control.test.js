@@ -278,3 +278,27 @@ scoped('viewerSettings builds a form whose fields read and write the look', () =
   form.dispose();
   v.dispose();
 });
+
+scoped('viewerOf links a bound option a package viewer declares a tick late', async () => {
+  const late = new WidgetDescriptor('Band chart', []);
+  WidgetDescriptor.registry.push(late);
+  const axis = signal('logarithmic');
+  const v = viewerOf((t, options) => Viewer.fromType('Band chart', t, options), demog(), {yAxisType: axis});
+  // declared a tick late, as a package (JS) viewer declares its properties
+  const prop = new Property('yAxisType', 'string', {defaultValue: 'linear'});
+  WidgetDescriptor._overLook(prop);
+  late.properties.push(prop);
+  await new Promise((r) => setTimeout(r, 80));
+  assert.equal(v.props.yAxisType, 'logarithmic', 'linked once declared');
+  axis.value = 'linear';
+  assert.equal(v.props.yAxisType, 'linear', 'and follows');
+  v.dispose();
+});
+
+scoped('a viewer disposed before its late property appears leaves nothing running', async () => {
+  const late = new WidgetDescriptor('Band chart', []);
+  WidgetDescriptor.registry.push(late);
+  const v = viewerOf((t, options) => Viewer.fromType('Band chart', t, options), demog(), {yAxisType: signal('linear')});
+  v.dispose();
+  await new Promise((r) => setTimeout(r, 80));
+});

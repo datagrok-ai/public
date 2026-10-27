@@ -46,12 +46,12 @@ smoke('per-type balloons stack in the container; strings render as text', async 
   assert.equal(balloons().length, 0);
 });
 
-smoke('info auto-hides; warning and error stay; explicit autoHide overrides', async () => {
+smoke('every type auto-hides, a warning later; explicit autoHide overrides', async () => {
   const info = notify.info('Bye', {timeout: 20});
-  const warning = notify.warning('Stay');
-  const sticky = notify.info('Also stay', {autoHide: false});
+  const warning = notify.warning('Later');
+  const sticky = notify.info('Stay', {autoHide: false});
   assert.ok(info.root.querySelector('.u2-notify-timer'), 'auto-hiding balloon shows the countdown');
-  assert.equal(warning.root.querySelector('.u2-notify-timer'), null);
+  assert.equal(warning.root.querySelector('.u2-notify-timer').style.animationDuration, '10000ms');
   assert.equal(sticky.root.querySelector('.u2-notify-timer'), null);
 
   await sleep(50);

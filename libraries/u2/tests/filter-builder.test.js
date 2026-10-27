@@ -98,9 +98,8 @@ smoke('empty tree shows the empty hint (a link that adds); + adds a row on the f
   const fb = mount(new FilterBuilder({schema: SCHEMA}));
   assert.equal(rows(fb).length, 0);
   const none = fb.root.querySelector('.u2-fb-none');
-  assert.equal(none.tagName, 'A');
   assert.equal(none.dataset.u2Part, 'none');
-  fire(none, 'click');
+  fire(none.querySelector('a'), 'click');
   assert.equal(rows(fb).length, 1, 'the empty hint adds a condition');
   fb.removeNode(fb.value.peek().nodes[0].id);
   assert.equal(rows(fb).length, 0);
@@ -116,7 +115,7 @@ smoke('empty tree shows the empty hint (a link that adds); + adds a row on the f
   assert.equal(fb.validity.peek(), fb.problems.peek()[0].message, 'validity is the first problem');
   assert.equal(rows(fb)[0].classList.contains('u2-fb-invalid'), false, 'a fresh row is quiet until touched');
   fb.touch();
-  assert.equal(rows(fb)[0].classList.contains('u2-fb-invalid'), true);
+  assert.equal(rows(fb)[0].classList.contains('u2-fb-missing'), true);
   assert.equal(rows(fb)[0].title, fb.problems.peek()[0].message);
   const problem = part(rows(fb)[0], 'problem');
   assert.equal(problem.hidden, false, 'the row tells its problem on a line of its own');
@@ -138,8 +137,8 @@ smoke('allowAdd: false keeps the empty hint plain text', () => {
   const template = {root: Filters.group('and', []), allowAdd: false};
   const fb = mount(new FilterBuilder({schema: SCHEMA, template, value: Filters.applyTemplate(template)}));
   const none = fb.root.querySelector('.u2-fb-none');
-  assert.equal(none.tagName, 'SPAN');
-  fire(none, 'click');
+  assert.equal(none.querySelector('a'), null);
+  fire(none.firstChild, 'click');
   assert.equal(rows(fb).length, 0);
 });
 
@@ -277,6 +276,40 @@ smoke('locks: value keeps the editor and hides remove, all disables everything, 
     'allowedOperators narrows the operators');
   pick(select(valueLocked, 'value'), 'M');
   assert.deepEqual(Filters.validate(fb.value.peek(), SCHEMA, undefined, template), [], 'a value edit is allowed');
+});
+
+smoke('a pick in a row, `input` then `change` as a browser fires them, lands; one edit reveals no other row\'s problem', () => {
+  const fb = mount(new FilterBuilder({schema: SCHEMA, value: Filters.group('and', [Filters.cond('age', '>')])}));
+  fb.addCondition();
+  const [first, added] = rows(fb);
+  const prop = select(added, 'prop');
+  prop.value = 'sex';
+  fire(prop, 'input');
+  fire(prop, 'change');
+  assert.equal(fb.value.peek().nodes[1].property, 'sex', 'the row is on the property picked');
+  assert.equal(part(first, 'problem').hidden, true, 'the untouched row says nothing yet');
+});
+
+smoke('disabled: every editor in every row reads and acts disabled, a row added meanwhile too; a lock survives enabling', () => {
+  const fb = mount(new FilterBuilder({schema: SCHEMA, enabled: false, value: Filters.group('and', [
+    Filters.cond('age', '>', 30), Filters.cond('created', '>', {span: '-30d'}, {lock: 'all'})])}));
+  const editors = () => [...fb.root.querySelectorAll('[data-u2-node] .u2-input-root')];
+  const live = () => [...fb.root.querySelectorAll('input, select, textarea, button')].filter((c) => !c.disabled);
+  assert.equal(editors().every((e) => e.classList.contains('u2-input-disabled') &&
+    e.getAttribute('aria-disabled') === 'true'), true, 'the value editors look disabled, not only the builder');
+  assert.deepEqual(live(), []);
+
+  fb.addCondition();
+  assert.equal(rows(fb).length, 3);
+  assert.equal(editors().every((e) => e.classList.contains('u2-input-disabled')), true, 'the new row too');
+  assert.deepEqual(live(), [], 'its controls are no live ones');
+
+  fb.enabled = true;
+  const [free, locked] = rows(fb);
+  assert.equal(part(free, 'value').classList.contains('u2-input-disabled'), false);
+  assert.equal(select(free, 'prop').disabled, false);
+  assert.equal(part(locked, 'value').classList.contains('u2-input-disabled'), true, 'a locked row keeps its lock');
+  assert.equal(part(locked, 'value').querySelectorAll('input').every((i) => i.disabled), true);
 });
 
 smoke('editors per kind: string, suggestions, int, float, bigint, choices, bool round-trip their values', () => {

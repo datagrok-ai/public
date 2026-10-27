@@ -184,9 +184,9 @@ category('U2: domain external write', () => {
       await until(previewed, 'the preview');
       const preview = document.querySelector('.u2-domain-import-preview')?.textContent ?? '';
       expect(preview.includes('Rows are checked when imported'), true, preview);
-      buttonNamed('NEXT').click();
+      buttonNamed('Import').click();
       await until(() => /merged|failed|aborted/.test(report()), 'the report');
-      expect(report().includes('0 inserted, 2 merged'), true, report());
+      expect(report().includes('2 merged'), true, report());
       buttonNamed('CLOSE').click();
       const result = await running as {merged?: number, rows: {status: string}[]};
       expect(result.merged, 2);

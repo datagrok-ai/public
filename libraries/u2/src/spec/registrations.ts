@@ -376,6 +376,7 @@ const METAS: ComponentMeta[] = [
       slider: props.slider as boolean | undefined,
       clicker: props.clicker as boolean | undefined,
       spinner: props.spinner as boolean | undefined,
+      placeholder: props.placeholder as LiveOption<string> | undefined,
     }),
     description: 'Numeric editor; text that does not parse or falls outside min/max stays on ' +
       'screen and only marks the input invalid.',
@@ -389,7 +390,8 @@ const METAS: ComponentMeta[] = [
         description: 'Range control under the box, revealed on hover; needs both bounds.'},
       {name: 'clicker', type: 'bool', structural: true,
         description: '− / + buttons on the options rail, revealed on hover.'},
-      {name: 'spinner', type: 'bool', structural: true, description: 'Hover spinner inside the field.'}),
+      {name: 'spinner', type: 'bool', structural: true, description: 'Hover spinner inside the field.'},
+      {name: 'placeholder', type: 'string', bindable: true}),
     events: ['input', 'change'],
     example: {tag: 'u2-number-input', props: {label: 'Amount', value: 10, min: 0, max: 100}},
   },

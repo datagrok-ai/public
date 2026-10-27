@@ -1,6 +1,6 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
-  "name": "moltrack_ems",
+  "name": "moltrack",
   "version": "0.1.0",
   "tables": {
     "compound": {

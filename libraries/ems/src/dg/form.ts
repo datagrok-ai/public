@@ -9,16 +9,17 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, Filters, div, span,
-  timestamp, EMPTY, isEmpty, text, loader} from '@datagrok-libraries/u2';
-import type {Input, InputOptions, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
+  timestamp, EMPTY, isEmpty, text, loader, link, iconButton, notify, PickInput} from '@datagrok-libraries/u2';
+import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
-import {propertyForm, ObjectForm, Editors, userInput, entityInput} from '@datagrok-libraries/u2/src/dg/index.js';
+import {propertyForm, ObjectForm, Editors, userPick, groupPick, kindOf} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {ObjectFormOptions} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainSource} from '../core/domain-source.js';
+import {capital, nounOf} from '../core/domain-backend.js';
 import {DomainTable} from './facade.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainErrors} from './errors.js';
-import {DomainPick, PickInput} from './pick.js';
+import {DomainPick} from './pick.js';
 import type {DomainPickOptions} from './pick.js';
 
 export type DomainFormTarget = RowView | ReadonlySignal<RowView | null> | DomainSource;
@@ -33,7 +34,7 @@ interface Constraint {
 }
 
 export interface DomainFormOptions extends Pick<ObjectFormOptions,
-  'include' | 'exclude' | 'layout' | 'condensed' | 'overrides' | 'onChanged'> {
+  'include' | 'exclude' | 'layout' | 'condensed' | 'overrides' | 'onChanged' | 'labelColumn'> {
   /** What the caller may see and edit; the source's access by default. */
   access?: Access;
   /** The source a bare row or a row signal belongs to — needed unless the signal is the
@@ -46,7 +47,6 @@ export interface DomainFormOptions extends Pick<ObjectFormOptions,
   system?: 'hidden' | 'footer';
 }
 
-const UNTOUCHED = 'u2-input-untouched';
 const CHANGED = 'u2-input-changed';
 const REQUIRED = 'u2-input-required';
 
@@ -80,8 +80,9 @@ export class DomainForm extends Control {
   /** The system block under the fields, re-read with the row: the writer lands the server-assigned
    * columns (`number`, `version`, `created_on`, `author_id`) after the insert, not with it. */
   private _system: HTMLElement | null = null;
-  /** Per readonly reference column of the current row: the id shown and the caption resolved for it. */
-  private readonly _captions = new Map<string, {id: string, caption: string}>();
+  /** Per readonly reference column of the current row: the id shown, its caption and target table. */
+  private readonly _captions = new Map<string, {id: string, caption: string, address?: string}>();
+  private _returnTo: string | undefined;
   private _editSub: {unsubscribe(): void} | undefined;
   private readonly _subs: {unsubscribe(): void}[];
 
@@ -97,7 +98,7 @@ export class DomainForm extends Control {
       for (const input of this._form.value?.inputs ?? []) {
         const message = input.validity.value;
         if (message !== null) {
-          const caption = `${input.label.charAt(0).toUpperCase()}${input.label.slice(1)}`;
+          const caption = capital(input.label);
           return message === EMPTY ? `${caption} is required` : `${caption}: ${message}`;
         }
       }
@@ -120,12 +121,14 @@ export class DomainForm extends Control {
       this._verdict.hidden = lines.length === 0;
     });
     // the keyboard path to Save: the ribbon is the shell's, outside the form's tab order — Ctrl+S
-    // saves, and Tab past the last field lands on the session's Save button
+    // saves, and Tab past the last field lands on the session's Save button while there is something
+    // to save, a Save the form holds off too: its tooltip says why
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Tab' && !e.shiftKey) {
         const target = source.session.primaryButton as HTMLButtonElement | undefined;
         const last = this._form.peek()?.inputs.at(-1);
-        if (target !== undefined && !target.disabled && last !== undefined && last.root.contains(e.target as Node)) {
+        if (target !== undefined && source.session.isDirty.peek() && !source.session.isSaving.peek() &&
+            last !== undefined && last.root.contains(e.target as Node)) {
           e.preventDefault();
           target.focus();
         }
@@ -134,8 +137,12 @@ export class DomainForm extends Control {
       if (!isSaveKey(e))
         return;
       e.preventDefault();
-      if (source.session.isDirty.peek())
-        void source.session.save();
+      if (!source.session.isDirty.peek()) {
+        this.validate();
+        return;
+      }
+      this._returnTo = this._form.peek()?.inputs.find((input) => input.root.contains(e.target as Node))?.name;
+      void source.session.save();
     };
     this.root.addEventListener('keydown', onKeyDown);
     this.own(() => this.root.removeEventListener('keydown', onKeyDown));
@@ -146,7 +153,10 @@ export class DomainForm extends Control {
       if (problem !== null)
         this.validate();
       return problem;
-    });
+    }, this.problem);
+    // an invalid edit the form never writes is still the user's unsaved change: the gates ask before
+    // dropping it, and Discard drops it
+    const unhold = source.holdUnwritten(computed(() => this._form.value?.unwritten.value ?? 0));
     // a refusal raised elsewhere (the table's validators run before this guard) shows every verdict too
     this.effect(() => {
       const code = DomainErrors.codeOf(source.error.value);
@@ -156,7 +166,11 @@ export class DomainForm extends Control {
         untracked(() => this.validate());
     });
     this._subs = [source.session.onSaved.subscribe(() => this.focus()),
-      source.session.onDiscarded.subscribe(() => this.focus())];
+      source.session.onDiscarded.subscribe(() => {
+        // an invalid edit never reached the row, so the revert left it standing: it goes too
+        this._form.peek()?.reset();
+        this.focus();
+      })];
     let seen = source.activate.peek();
     this.effect(() => {
       const bumped = source.activate.value;
@@ -167,6 +181,7 @@ export class DomainForm extends Control {
     });
     this.own(() => {
       unguard();
+      unhold();
       for (const s of this._subs)
         s.unsubscribe();
       this._shown?.dispose();
@@ -200,8 +215,6 @@ export class DomainForm extends Control {
     const form = this._form.peek();
     if (form === null)
       return false;
-    for (const input of form.inputs)
-      input.root.classList.remove(UNTOUCHED);
     this._checkConstraints();
     return form.validate();
   }
@@ -220,7 +233,13 @@ export class DomainForm extends Control {
    * change (a saved draft under its new key) may be running. */
   focus(): void {
     queueMicrotask(() => {
-      this._form.peek()?.focusFirst(DomainForm.needsValue);
+      const form = this._form.peek();
+      const input = this._returnTo === undefined ? undefined : form?.input(this._returnTo);
+      this._returnTo = undefined;
+      if (input !== undefined)
+        input.focus();
+      else
+        form?.focusFirst(DomainForm.needsValue);
       // a Ctrl+S from inside a picker leaves its popup over the form, and the re-focus would open
       // one anyway (`openOnFocus`): the form comes back with nothing covering it
       for (const input of this._form.peek()?.inputs ?? []) {
@@ -251,17 +270,6 @@ export class DomainForm extends Control {
     if (source === undefined)
       throw new Error('domains.form: pass `source` — the row alone does not name its table');
     return {source, row: signal(target as RowView | null)};
-  }
-
-  /** A `User` column's editor: the value is the user id, the box the user picker. */
-  static userPick(options: InputOptions<string | null>): PickInput<DG.User> {
-    return new PickInput<DG.User>({...options, typeAhead: () => userInput(), idOf: (user) => user.id,
-      resolve: (id) => grok.dapi.users.find(id)});
-  }
-
-  static groupPick(options: InputOptions<string | null>): PickInput<DG.Group> {
-    return new PickInput<DG.Group>({...options, typeAhead: () => entityInput('Group…', () => grok.dapi.groups),
-      idOf: (group) => group.id, resolve: (id) => grok.dapi.groups.find(id)});
   }
 
   private _show(row: RowView | null, access: Access): void {
@@ -306,13 +314,15 @@ export class DomainForm extends Control {
       const extra: Partial<DomainPickOptions> = {filter, params: () => row, siblings: source.schema};
       overrides = {...overrides, [name]: {...overrides?.[name], ...extra}};
     }
+    // a draft's empty readonly field is filled by the save
+    for (const prop of draft ? source.schema.properties : []) {
+      if (!DomainTable.isReference(prop))
+        overrides = {...overrides, [prop.name!]: {emptyText: 'assigned on save', ...overrides?.[prop.name!]}};
+    }
     const form = propertyForm(source.schema.properties.filter((p) => !system.has(p.name)), row, {
       include: options.include, exclude: options.exclude, layout: options.layout, condensed: options.condensed,
-      overrides, access: view,
-      onChanged: (name, value) => {
-        options.onChanged?.(name, value);
-        this._checkConstraints();
-      },
+      labelColumn: options.labelColumn, overrides, access: view,
+      onChanged: options.onChanged,
     });
     form.root.dataset.u2Row = row.id;
     // the schema constraints, pre-validated here; one naming a column the caller may not see is
@@ -333,22 +343,21 @@ export class DomainForm extends Control {
       if (name === undefined)
         continue;
       input.root.classList.toggle(REQUIRED, !input.nullable);
-      input.addValidator((value) =>
-        source.edit.peek()?.errorOf(row.id, name) ?? table?.validators.check(name, value, row) ?? null);
-      // a pristine draft is not wrong yet: a field's verdict shows once it was edited or left
-      if (draft) {
-        input.root.classList.add(UNTOUCHED);
-        const touched = () => input.root.classList.remove(UNTOUCHED);
+      // the writer's verdict is about the value the row holds; an edit the form has not written yet
+      // (it writes only valid ones) is judged by the table's rules alone, or it could never be written
+      const kind = kindOf(source.schema.properties.find((p) => p.name === name)!);
+      input.addValidator((value) => (ObjectForm.same(value, ObjectForm.coerce(kind, row[name])) ?
+        source.edit.peek()?.errorOf(row.id, name) : null) ?? table?.validators.check(name, value, row) ?? null);
+      // and a constraint is judged on what the fields hold, written or not
+      if (this._constraints.some((c) => c.columns.includes(name))) {
         let initial = true;
         input.effect(() => {
           input.value.value;
           if (initial)
             initial = false;
           else
-            touched();
+            untracked(() => this._checkConstraints());
         });
-        input.root.addEventListener('focusout', touched);
-        input.own(() => input.root.removeEventListener('focusout', touched));
       }
     }
     this._markChanged(form, row);
@@ -366,23 +375,45 @@ export class DomainForm extends Control {
     }
   }
 
-  /** The system columns as a compact muted block: captions, local timestamps, the author as a
-   * caption once resolved, and never a draft's key. */
+  /** The system columns as one muted line: "Created Oct 21, 2026 by Admin · Updated 11:13 PM · v2", Id copy. */
   private _footer(row: RowView): HTMLElement {
-    const draft = Rows.isDraft(row);
     const block = div([], 'u2-domain-form-system');
     block.dataset.u2Part = 'system';
-    for (const prop of DomainForm.systemProps(this.source)) {
-      const name = prop.name!;
-      // a draft has none of these yet: an empty Version / Created / Author line says nothing
-      if (draft && name !== 'id')
-        continue;
-      const caption = SYSTEM_COLUMNS.find(([column]) => column === name)?.[2] ?? name;
+    block.hidden = Rows.isDraft(row);
+    if (block.hidden)
+      return block;
+    const names = new Set(DomainForm.systemProps(this.source).map((p) => p.name!));
+    const value = (name: string): HTMLElement | null => {
       const raw = row[name];
-      const content = name === 'id' && draft ? 'assigned on save' :
-        (prop.propertyType ?? prop.type) === 'datetime' && raw !== null && raw !== undefined && raw !== '' ?
-          timestamp(raw as Date | number | string, undefined, {utcDates: true}) : text(raw);
-      block.append(ObjectForm.readonlyField(caption, name, content).row);
+      if (!names.has(name) || isEmpty(raw))
+        return null;
+      const el = span('', 'u2-domain-form-system-value');
+      el.dataset.u2Part = 'readonly-value';
+      el.append(name === 'created_on' || name === 'updated_on' ?
+        timestamp(raw as Date | number | string, undefined, {utcDates: true}) : text(raw));
+      const part = span('', 'u2-domain-form-system-part');
+      part.dataset.u2Name = name;
+      part.append(el);
+      return part;
+    };
+    const created = value('created_on');
+    const author = value('author_id');
+    if (created !== null || author !== null) {
+      block.append(div([...created === null ? [] : ['Created ', created], ...author === null ? [] :
+        [created === null ? 'By ' : ' by ', author]], 'u2-domain-form-system-item'));
+    }
+    const updated = value('updated_on');
+    if (updated !== null)
+      block.append(div(['Updated ', updated], 'u2-domain-form-system-item'));
+    const version = value('version');
+    if (version !== null)
+      block.append(div(['v', version], 'u2-domain-form-system-item'));
+    if (names.has('id')) {
+      const id = String(row.id);
+      const copy = iconButton('copy', () => void navigator.clipboard?.writeText(id)
+        .then(() => notify.info('Id copied to clipboard')), {tooltip: `Copy id ${id}`});
+      copy.classList.add('u2-domain-form-system-copy');
+      block.append(div([copy, 'Id'], 'u2-domain-form-system-item'));
     }
     return block;
   }
@@ -412,32 +443,43 @@ export class DomainForm extends Control {
       if (form.input(name) !== undefined || !DomainTable.isReference(prop) ||
           id === null || id === undefined || id === '' || this._captions.get(name)?.id === String(id))
         continue;
+      const semType = prop.semType ?? '';
+      const address = semType === 'User' || semType === 'Group' ? undefined : semType;
       const caption = row[Rows.caption(name)];
-      if (caption !== undefined) {
-        // null is not a miss: the caller may not see the target, and a lookup answers the same
-        // nothing one request later
-        this._captions.set(name, {id: String(id), caption: typeof caption === 'string' ? caption : ''});
-        projected = true;
-        continue;
-      }
-      void DomainForm.captionOf(prop, String(id)).then((caption) => {
+      const resolve = () => void DomainForm.captionOf(prop, String(id)).then((caption) => {
         if (!live || caption === null)
           return;
-        this._captions.set(name, {id: String(id), caption});
+        this._captions.set(name, {id: String(id), caption, address});
         this._applyCaptions(row);
       }, () => undefined);
+      if (caption === undefined) {
+        resolve();
+        continue;
+      }
+      // null is not a miss: the caller may not see the target, and a lookup answers the same
+      // nothing one request later
+      this._captions.set(name, {id: String(id), caption: typeof caption === 'string' ? caption : '', address});
+      projected = true;
+      // the server captions by the name column; an app renderer may caption it otherwise
+      const dressed = address === undefined || caption === null ? undefined : DomainPick.host?.caption(address);
+      void dressed?.then((app) => app === null ? undefined : resolve(), () => undefined);
     }
     if (projected)
       this._applyCaptions(row);
   }
 
   private _applyCaptions(row: RowView): void {
-    for (const [name, {id, caption}] of this._captions) {
+    for (const [name, {id, caption, address}] of this._captions) {
       if (String(row[name] ?? '') !== id)
         continue;
       const el = this.root.querySelector<HTMLElement>(`[data-u2-name="${name}"] [data-u2-part="readonly-value"]`);
-      if (el !== null)
+      if (el === null)
+        continue;
+      const host = DomainPick.host;
+      if (host === undefined || address === undefined || caption === '' || Rows.isDraft(id))
         el.textContent = caption;
+      else
+        el.replaceChildren(link(caption, () => host.open(address, id)));
     }
   }
 
@@ -556,10 +598,17 @@ export class DomainForm extends Control {
   }
 
   static emptyHint(source: DomainSource): string {
-    const name = source.schema.info.singularName.toLowerCase() || 'row';
+    const name = nounOf(source.schema.info, true);
     return `Select ${/^[aeiou]/.test(name) ? 'an' : 'a'} ${name} to edit.`;
   }
 }
+
+DomainPick.host = {
+  caption: (address) => DomainTable.shared(address).then((t) => t.renderer === t.defaultRenderer ? null :
+    (row: Record<string, unknown>) => t.renderer.caption(row as RowView)),
+  open: (address, id) => void DomainTable.shared(address).then((t) => t.open({id} as RowView)),
+  handle: (address) => DomainTable.shared(address),
+};
 
 // the editors a schema's reference columns get everywhere a form is generated: a picker over the
 // target table for a `<schema>.<table>` ref, the platform pickers for a user or a group
@@ -569,9 +618,9 @@ Editors.register({
 });
 Editors.register({
   match: (prop) => prop.semType === 'User',
-  create: (prop, options) => DomainForm.userPick(options),
+  create: (prop, options) => userPick(options),
 });
 Editors.register({
   match: (prop) => prop.semType === 'Group',
-  create: (prop, options) => DomainForm.groupPick(options),
+  create: (prop, options) => groupPick(options),
 });

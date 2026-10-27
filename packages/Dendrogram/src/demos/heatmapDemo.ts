@@ -40,10 +40,8 @@ export async function heatmapDemo() {
     tv!.grid.props.showRowHeader = false;
     tv!.grid.props.allowEdit = false;
     // this.tv!.grid.props.showAddNewRowIcon = false;
-    setTimeout(() => {
-      adjustTreeHeight();
-        tv!.grid.invalidate();
-    }, 100);
+    adjustTreeHeight();
+    tv!.grid.invalidate();
   } catch (err) {
     console.error(err);
   }

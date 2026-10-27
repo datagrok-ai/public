@@ -160,6 +160,50 @@ form('refresh() re-reads the target without writing back or reporting', () => {
   f.dispose();
 });
 
+form('an invalid edit never reaches the target; refresh keeps it while the target holds still, reset drops it', () => {
+  const source = {name: 'Aspirin', code: 'A1'};
+  const taken = new Set(['B2']);
+  const changes = [];
+  const f = mount(propertyForm([prop('name', 'string', {nullable: false}), prop('code', 'string')], source,
+    {onChanged: (name, value) => changes.push([name, value])}));
+  f.input('code').addValidator((v) => taken.has(v) ? 'Code is taken' : null);
+  assert.equal(f.unwritten.value, 0);
+  const name = editorOf(f, 'name');
+  name.value = '';
+  fire(name, 'input');
+  assert.equal(source.name, 'Aspirin', 'an empty required name is not written');
+  assert.equal(f.validity.value, 'Value can\'t be empty', 'the form says why — what Save goes by');
+  const code = editorOf(f, 'code');
+  code.value = 'B2';
+  fire(code, 'input');
+  assert.equal(source.code, 'A1');
+  assert.deepEqual(changes, [], 'nothing was reported');
+  assert.equal(f.unwritten.value, 2, 'what a caller counts as unsaved');
+
+  f.refresh();
+  assert.equal(f.input('name').value.value, '', 'a refresh keeps the refused edit while the target holds still');
+  source.code = 'C3';
+  f.refresh();
+  assert.equal(f.input('code').value.value, 'C3', 'a target that moved wins');
+
+  code.value = 'B2';
+  fire(code, 'input');
+  taken.delete('B2');
+  f.input('code').revalidate();
+  assert.equal(source.code, 'B2', 'a value that turns valid under it is written');
+  assert.equal(f.unwritten.value, 1, 'only the name is still held');
+
+  f.reset();
+  assert.equal(f.input('name').value.value, 'Aspirin', 'reset drops the refused edit');
+  assert.equal(f.unwritten.value, 0);
+  assert.equal(f.input('name').touched.value, false, 'and starts fresh');
+  name.value = 'Ibuprofen';
+  fire(name, 'input');
+  assert.equal(source.name, 'Ibuprofen');
+  assert.deepEqual(changes, [['code', 'B2'], ['name', 'Ibuprofen']]);
+  f.dispose();
+});
+
 form('nullable: false becomes a required validator and drops the empty choice', () => {
   const props = [
     prop('name', 'string', {nullable: false}),
@@ -185,27 +229,30 @@ form('nullable: false becomes a required validator and drops the empty choice', 
   f.dispose();
 });
 
-form('min and max flag the generated number input instead of clamping it', () => {
+form('min and max flag the generated number input instead of clamping it; only a valid value is written', () => {
   const source = sample();
+  const before = source.count;
   const f = mount(propertyForm(PROPS, source));
   const count = editorOf(f, 'count');
   count.value = '42';
   fire(count, 'input');
   fire(count, 'blur');
-  assert.equal(source.count, 42, 'the out-of-range value reaches the target');
+  assert.equal(f.input('count').value.value, 42, 'the field holds what was typed');
+  assert.equal(source.count, before, 'the target keeps its last valid value');
   assert.equal(f.input('count').validity.value, 'Value must be at most 10');
   assert.equal(f.validity.value, 'Value must be at most 10', 'and the form is invalid');
 
   count.value = '-1';
   fire(count, 'input');
   fire(count, 'blur');
-  assert.equal(source.count, -1);
+  assert.equal(source.count, before);
   assert.equal(f.input('count').validity.value, 'Value must be at least 0');
 
   count.value = '5';
   fire(count, 'input');
   fire(count, 'blur');
   assert.equal(f.validity.value, null);
+  assert.equal(source.count, 5, 'a value that turns valid is written');
 
   const weight = editorOf(f, 'weight');
   weight.value = '-3.5';

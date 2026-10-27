@@ -19,10 +19,15 @@ const COPIED = ['type', 'propertyType', 'semType', 'nullable', 'choices', 'min',
   'description', 'inputType', 'editor', 'defaultValue', 'format', 'units', 'showSlider', 'showPlusMinus',
   'category'] as const;
 
-/** js-api `DOMAIN_SYSTEM_COLUMNS`, typed as the frame carries them, with the captions a form shows. */
-export const SYSTEM_COLUMNS: readonly (readonly [name: string, type: string, caption: string])[] = [
-  ['id', 'string', 'Id'], ['version', 'int', 'Version'], ['created_on', 'datetime', 'Created'],
-  ['updated_on', 'datetime', 'Updated'], ['author_id', 'string', 'Author']];
+/** js-api `DOMAIN_SYSTEM_COLUMNS` as the frame types them, with a form's captions; `satisfies`
+ * fails the build when js-api's list changes. */
+const SYSTEM_SHAPES = {
+  id: ['string', 'Id'], version: ['int', 'Version'], created_on: ['datetime', 'Created'],
+  updated_on: ['datetime', 'Updated'], author_id: ['string', 'Author'],
+} satisfies Record<typeof DG.DOMAIN_SYSTEM_COLUMNS[number], readonly [type: string, caption: string]>;
+
+export const SYSTEM_COLUMNS: readonly (readonly [name: string, type: string, caption: string])[] =
+  Object.entries(SYSTEM_SHAPES).map(([name, [type, caption]]) => [name, type, caption]);
 
 export class DgDomainBackend implements DomainBackend {
   private readonly _tables = new Map<string, Promise<DgDomainTable>>();

@@ -1034,6 +1034,9 @@ export class Grid extends Viewer {
     };
   }
 
+  get onColumnResized() { return this.onEvent('d4-grid-column-resized'); }
+  get onCellClick() { return this.onEvent('d4-grid-cell-click'); }
+
   /** The editor host hook (grid.ts `attachEditor`): one editor at a time, released on detach. */
   get editor() { return this._editor ?? null; }
 

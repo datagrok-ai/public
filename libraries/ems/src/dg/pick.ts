@@ -1,138 +1,26 @@
-/* Reference pickers with an `Input<string | null>` face — the value is the id a ref column
-   holds, the box shows the name. `PickInput` is the face over any `TypeAhead`; `domains.pick` is
-   the one over a domain table, querying it by its name column through the domain seam, so it
-   works over the memory backend as it does over the server. */
-import {emsBackends} from '../core/domain-backend.js';
-import {Input, InputOptions, labelText, div, span, text, TypeAhead, Filters, Rows} from '@datagrok-libraries/u2';
+/* `domains.pick`: u2's `PickInput` over a domain table, searching it as the table's own search does
+   through the domain seam, so it works over the memory backend as it does over the server. */
+import {emsBackends, nounOf} from '../core/domain-backend.js';
+import {InputOptions, text, div, span, TypeAhead, Filters, Rows, PickInput} from '@datagrok-libraries/u2';
 import type {ObjectRenderer, DomainCondition, DomainConditionNode, DomainConditionTree,
   FilterSchema} from '@datagrok-libraries/u2';
-import type {DomainQueryLike, DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
+import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
 import {DomainSource} from '../core/domain-source.js';
+import type {DomainTable} from './facade.js';
 
 export interface PickItem {
   id: string;
   name: string;
+  /** A muted second line: the row's name where the caption is an identifier. */
+  detail?: string;
 }
 
-export interface PickInputOptions<T> extends InputOptions<string | null> {
-  /** Builds the type-ahead the input is a face of. */
-  typeAhead: () => TypeAhead<T>;
-  idOf: (item: T) => string;
-  /** The item behind a value written from outside — the id a form loaded; null when unknown. */
-  resolve: (id: string) => Promise<T | null>;
-}
-
-export class PickInput<T> extends Input<string | null, PickInputOptions<T>> {
-  private _typeAhead!: TypeAhead<T>;
-  private _hint!: HTMLElement;
-
-  constructor(options: PickInputOptions<T>) {
-    super(options, null);
-    this.root.dataset.u2 = 'pick-input';
-    this.root.append(this._hint);
-  }
-
-  get typeAhead(): TypeAhead<T> {
-    return this._typeAhead;
-  }
-
-  // runs from the base constructor, so the coupling state lives here rather than in fields the
-  // subclass initializers would reset afterwards
-  protected createEditor(): HTMLElement {
-    const {typeAhead, idOf, resolve} = this.options;
-    const picker = typeAhead();
-    this._typeAhead = picker;
-    // the last pick is held through typing, so blur can put its name back
-    let held: T | null = null;
-    let resolving: string | null = null;
-    let gen = 0;
-    const lookUp = async (id: string) => {
-      const mine = ++gen;
-      resolving = id;
-      try {
-        const item = await resolve(id);
-        if (mine === gen && this.value.peek() === id && item !== null)
-          picker.selected.value = item;
-      } catch {
-        // an unknown id keeps the value and shows nothing
-      } finally {
-        if (mine === gen)
-          resolving = null;
-      }
-    };
-    // a form seeds a string field with '' for an empty cell: empty either way, and never rewritten
-    // to null on the input's own account — that write would dirty the row on render
-    const empty = (id: string | null) => id === null || id === '';
-    this.effect(() => {
-      const id = this.value.value;
-      const current = picker.selected.peek();
-      if ((current === null ? null : idOf(current)) === id)
-        return;
-      if (empty(id))
-        picker.selected.value = null;
-      else
-        void lookUp(id!);
-    });
-    this.effect(() => {
-      const item = picker.selected.value;
-      // a value still awaiting its item is not a clear
-      if (item === null && resolving !== null)
-        return;
-      const id = item === null ? null : idOf(item);
-      const current = this.value.peek();
-      // a selection dropped by typing keeps the value; one dropped by clearing the text does not
-      if (id !== null)
-        held = item;
-      else if (picker.text.peek() !== '')
-        return;
-      else
-        held = null;
-      if (id === null ? !empty(current) : id !== current)
-        this.value.value = id;
-    });
-    const input = picker.root.querySelector('input')!;
-    const hint = span('', 'u2-pick-hint');
-    hint.dataset.u2Part = 'hint';
-    hint.hidden = true;
-    this._hint = hint;
-    // text that is not a pick never survives a blur: the held pick's name comes back (and a line
-    // says so until the next focus), else the box is cleared — text that looks chosen is worse
-    // than none (an Enter still awaiting its candidates is left to land)
-    const onBlur = () => {
-      if (picker.isPickPending || picker.selected.peek() !== null || picker.text.peek() === '')
-        return;
-      if (held !== null) {
-        const typed = picker.text.peek();
-        picker.selected.value = held;
-        hint.textContent = `No match for "${typed}" — kept ${picker.text.peek()}`;
-        hint.hidden = false;
-      } else
-        picker.resync();
-    };
-    const onFocus = () => hint.hidden = true;
-    input.addEventListener('blur', onBlur);
-    input.addEventListener('focus', onFocus);
-    this.own(() => {
-      input.removeEventListener('blur', onBlur);
-      input.removeEventListener('focus', onFocus);
-    });
-    const clear = document.createElement('button');
-    clear.type = 'button';
-    clear.className = 'u2-input-clear';
-    clear.textContent = '✕';
-    clear.setAttribute('aria-label', 'Clear');
-    const onClear = () => {
-      held = null;
-      picker.selected.value = null;
-      picker.resync();
-      this.value.value = null;
-      input.focus();
-    };
-    clear.addEventListener('click', onClear);
-    this.own(() => clear.removeEventListener('click', onClear));
-    this.effect(() => clear.hidden = empty(this.value.value) && picker.text.value === '');
-    return div([picker.root, clear], 'u2-pick-box');
-  }
+/** The app's caption for a table's rows (null without an app renderer) and how to open a row; set by
+ * `form.ts`, so this module needs no runtime import of the facade. */
+export interface PickHost {
+  caption(address: string): Promise<((row: Record<string, unknown>) => string) | null>;
+  open(address: string, id: string): void;
+  handle(address: string): Promise<DomainTable>;
 }
 
 export interface DomainPickOptions extends InputOptions<string | null> {
@@ -145,7 +33,7 @@ export interface DomainPickOptions extends InputOptions<string | null> {
   /** The schema the `$name`s belong to — the hint's captions. */
   siblings?: FilterSchema;
   placeholder?: string;
-  /** Row presentation; the name as text by default. */
+  /** Row presentation; the caption over its detail by default. */
   renderer?: ObjectRenderer<PickItem>;
   /** How many candidates one search shows (default 10). */
   limit?: number;
@@ -153,6 +41,8 @@ export interface DomainPickOptions extends InputOptions<string | null> {
 }
 
 export class DomainPick extends PickInput<PickItem> {
+  static host: PickHost | undefined;
+  private static readonly _short = new WeakMap<DomainTable, Promise<boolean>>();
   /** The target's plural name once a search has seen its table — the empty row's wording. */
   private static readonly _plural = new Map<string, string>();
 
@@ -160,65 +50,117 @@ export class DomainPick extends PickInput<PickItem> {
     const {filter, params, siblings, placeholder, renderer, limit, debounceMs, ...rest} = options;
     const listItem = renderer?.listItem?.bind(renderer);
     let unbound: string[] = [];
+    let more = false;
     const caption = (name: string) => siblings?.properties.find((p) => p.name === name)?.friendlyName ?? name;
+    const host = DomainPick.host;
     super({
       ...rest,
-      typeAhead: () => new TypeAhead<PickItem>({
-        source: (query) => {
-          const bound = DomainPick.bind(filter, params?.());
-          unbound = bound.unbound;
-          return unbound.length > 0 ? Promise.resolve([]) :
-            DomainPick.search(table, query, {filter: bound.filter, limit});
-        },
-        itemText: (item) => item.name,
-        render: listItem,
-        placeholder: placeholder ?? `${labelText(options.label) ?? table.split('.').pop()}…`,
-        debounceMs,
-        openOnFocus: true,
-        // an empty table is not a dead end: say what there is none of yet
-        emptyText: (query) => unbound.length > 0 ? `Pick a ${caption(unbound[0]).toLowerCase()} first` :
-          query.trim() === '' ?
-            `No ${(DomainPick._plural.get(table) ?? table.split('.').pop()!).toLowerCase()} yet` : 'No matches',
-      }),
+      typeAhead: () => {
+        const typeAhead: TypeAhead<PickItem> = new TypeAhead<PickItem>({
+          source: async (query) => {
+            const bound = DomainPick.bind(filter, params?.());
+            unbound = bound.unbound;
+            if (unbound.length > 0)
+              return [];
+            const page = await DomainPick.page(table, query, {filter: bound.filter, limit});
+            more = page.more;
+            // the held value opens the list, so it is never missing from it
+            const held = typeAhead.selected.peek();
+            return held === null || query.trim() !== '' ? page.items :
+              [held, ...page.items.filter((item) => item.id !== held.id)];
+          },
+          itemText: (item) => item.name,
+          keyOf: (item) => item.id,
+          render: listItem ?? DomainPick.renderItem,
+          placeholder,
+          debounceMs,
+          openOnFocus: true,
+          matchWidth: false,
+          footer: () => more ? 'More match — type to narrow' : null,
+          // an empty table is not a dead end: say what there is none of yet
+          emptyText: (query) => unbound.length > 0 ? `Pick a ${caption(unbound[0]).toLowerCase()} first` :
+            query.trim() === '' ?
+              `No ${(DomainPick._plural.get(table) ?? table.split('.').pop()!).toLowerCase()} yet` : 'No matches',
+        });
+        return typeAhead;
+      },
       idOf: (item) => item.id,
       resolve: (id) => DomainPick.resolve(table, id),
+      open: host === undefined ? undefined : (id) => {
+        if (!Rows.isDraft(id))
+          host.open(table, id);
+      },
     });
     this.root.dataset.u2 = 'domain-pick';
+    // a short lookup (a status, a priority) reads as a dropdown
+    void DomainPick.isShort(table).then((short) => {
+      if (short && !this.scope.isDisposed)
+        this.asDropdown();
+    }, () => undefined);
   }
 
-  /** The candidates for `query`: the rows whose name column contains it, in the table's own order
-   * (as seeded — statuses, priorities; a declared order is a phase-4 `views` item). */
+  /** Whether the whole table fits one popup of ten; counted once per table and backend. */
+  private static async isShort(table: string): Promise<boolean> {
+    if (DomainPick.host === undefined)
+      return false;
+    const handle = await DomainPick.host.handle(table);
+    let short = DomainPick._short.get(handle);
+    if (short === undefined)
+      DomainPick._short.set(handle, short = handle.table.count().then((n) => n <= 10));
+    return short;
+  }
+
+  /** The candidates for `query`. */
   static async search(table: string, query: string,
     options: {filter?: DomainPickOptions['filter'], limit?: number} = {}): Promise<PickItem[]> {
+    return (await DomainPick.page(table, query, options)).items;
+  }
+
+  /** One popup's worth, by the table's own search in the server's order, and whether more match. */
+  private static async page(table: string, query: string,
+    options: {filter?: DomainPickOptions['filter'], limit?: number} = {}): Promise<{items: PickItem[], more: boolean}> {
     const t = await DomainPick.table(table);
     DomainPick._plural.set(table, t.info.pluralName);
-    const nameColumn = DomainPick.nameColumn(t.info);
-    const rows = await t.query({
-      filter: DomainPick.filter(nameColumn, query, options.filter),
-      limit: options.limit ?? 10,
-    });
-    return rows.map((row) => DomainPick.item(row, nameColumn));
+    const caption = await DomainPick.host?.caption(table) ?? null;
+    const limit = options.limit ?? 10;
+    const q = query.trim();
+    const extra = DomainPick.filter(undefined, '', options.filter);
+    const key = DomainPick.keyCondition(t, q);
+    const scope = key !== undefined ? {filter: DomainPick.orKey(t.info, q, key, extra)} :
+      q !== '' && t.info.searchableColumns.length > 0 ? {search: q, filter: extra} :
+      {filter: DomainPick.filter(DomainPick.nameColumn(t.info), q, options.filter)};
+    const sort = t.info.nameColumn ?? (t.info.businessKey.length === 1 ? t.info.businessKey[0] : undefined);
+    const rows = await t.query({...scope, sort, limit: limit + 1});
+    return {items: rows.slice(0, limit).map((row) => DomainPick.item(row, t.info, caption)), more: rows.length > limit};
   }
 
   /** The item behind an id; a draft id is the draft's caption from the live source holding it,
-   * no query issued; an id the table does not answer is shown as itself. A backend that declares
-   * `resolveNames` answers it there — over the platform that is the registry's resolver, batched
-   * and cached, so a formful of refs is one call; every other backend reads the row. */
+   * no query issued; an id the table does not answer is shown as itself. A table with an app caption
+   * reads the row; otherwise a backend that declares `resolveNames` answers it there — over the
+   * platform the registry's resolver, batched and cached; every other backend reads the row. */
   static async resolve(table: string, id: string): Promise<PickItem> {
     const draft = Rows.isDraft(id) ? DomainSource.draftOf(id) : undefined;
     if (draft !== undefined) {
       const info = draft.source.schema.info;
       const name = text(draft.row[DomainPick.nameColumn(info)]);
-      return {id, name: name === '' ? `New ${info.singularName.toLowerCase() || 'row'}` : name};
+      return {id, name: name === '' ? `New ${nounOf(info, true)}` : name};
     }
+    const caption = await DomainPick.host?.caption(table) ?? null;
     const backend = emsBackends.domain;
-    if (backend?.resolveNames !== undefined) {
+    if (caption === null && backend?.resolveNames !== undefined) {
       const name = (await backend.resolveNames(table, [id]))[id];
       return {id, name: name || id};
     }
     const t = await DomainPick.table(table);
     const [row] = await t.query({filter: {property: 'id', operator: '=', value: id}, limit: 1});
-    return row === undefined ? {id, name: id} : DomainPick.item(row, DomainPick.nameColumn(t.info));
+    return row === undefined ? {id, name: id} : DomainPick.item(row, t.info, caption);
+  }
+
+  private static renderItem(item: PickItem): HTMLElement {
+    const name = span(item.name, 'u2-typeahead-text');
+    name.dataset.u2Part = 'item-label';
+    return item.detail === undefined ? name :
+      div([name, span(item.detail, 'u2-domain-pick-detail')], 'u2-domain-pick-item');
   }
 
   /** The declared name column, else the first business-key column, else the id. */
@@ -249,11 +191,11 @@ export class DomainPick extends PickInput<PickItem> {
     return {filter: unbound.length > 0 ? undefined : Filters.toDomainTree(root), unbound};
   }
 
-  static filter(nameColumn: string, query: string,
-    extra?: DomainPickOptions['filter']): DomainQueryLike['filter'] {
+  static filter(nameColumn: string | undefined, query: string,
+    extra?: DomainPickOptions['filter']): DomainConditionNode[] | undefined {
     const nodes: DomainConditionNode[] = [];
     const q = query.trim();
-    if (q !== '')
+    if (q !== '' && nameColumn !== undefined)
       nodes.push({property: nameColumn, operator: 'like', value: `%${Filters.escapeLike(q)}%`});
     const more = typeof extra === 'string' ?
       (extra.trim() === '' ? undefined : Filters.toDomainTree(Filters.parse(extra).root)) : extra;
@@ -265,9 +207,53 @@ export class DomainPick extends PickInput<PickItem> {
     return nodes.length === 0 ? undefined : nodes;
   }
 
-  static item(row: Record<string, unknown>, nameColumn: string): PickItem {
-    const name = text(row[nameColumn]);
-    return {id: String(row.id), name: name === '' ? String(row.id) : name};
+  /** The app's caption (else the name column, else the id); the name or a searchable value as its
+   * detail where the caption is not the name. */
+  static item(row: Record<string, unknown>, info: DomainTableInfoLike,
+    caption: ((row: Record<string, unknown>) => string) | null = null): PickItem {
+    const named = text(row[DomainPick.nameColumn(info)]);
+    const name = caption?.(row) || named || String(row.id);
+    if (name === named)
+      return {id: String(row.id), name};
+    const detail = [info.nameColumn, ...info.searchableColumns].filter((c): c is string => c != null)
+      .map((c) => text(row[c])).find((v) => v !== '' && v !== name);
+    return detail === undefined ? {id: String(row.id), name} : {id: String(row.id), name, detail};
+  }
+
+  /** The search over the searchable columns (else the name column) OR-ed with `key`, AND-ed with `extra`. */
+  private static orKey(info: DomainTableInfoLike, q: string, key: DomainConditionNode,
+    extra: DomainConditionNode[] | undefined): DomainConditionTree {
+    const columns = info.searchableColumns.length > 0 ? info.searchableColumns : [DomainPick.nameColumn(info)];
+    const match: DomainConditionNode[] = [key];
+    for (const c of columns)
+      match.push('or', {property: c, operator: 'like', value: `%${Filters.escapeLike(q)}%`});
+    return extra === undefined ? match : [match, 'and', ...extra];
+  }
+
+  /** The query as the name column's number in its display format (`DG-000482`): the whole ID is that
+   * number, a part after the prefix a range of numbers, bare digits a substring of the number. */
+  private static keyCondition(t: DomainTableLike, query: string): DomainConditionNode | undefined {
+    const column = DomainPick.nameColumn(t.info);
+    const prop = t.properties.find((p) => p.name === column);
+    const type = prop?.propertyType ?? prop?.type;
+    const format = prop?.format ?? '';
+    if ((type !== 'int' && type !== 'bigint') || format === '' || query === '')
+      return undefined;
+    const prefix = /^[^0#]*/.exec(format)![0];
+    const width = /^[0#]*/.exec(format.slice(prefix.length))![0].length;
+    const anchored = prefix !== '' && query.toUpperCase().startsWith(prefix.toUpperCase());
+    const digits = anchored ? query.slice(prefix.length) : query;
+    if (!/^\d{1,15}$/.test(digits))
+      return undefined;
+    if (!anchored) {
+      const bare = digits.replace(/^0+/, '');
+      return bare === '' ? undefined : {property: column, operator: 'like', value: `%${bare}%`};
+    }
+    if (digits.length >= width)
+      return {property: column, operator: '=', value: Number(digits)};
+    const scale = 10 ** (width - digits.length);
+    return [{property: column, operator: '>=', value: Number(digits) * scale}, 'and',
+      {property: column, operator: '<', value: (Number(digits) + 1) * scale}];
   }
 
   private static table(address: string): Promise<DomainTableLike> {

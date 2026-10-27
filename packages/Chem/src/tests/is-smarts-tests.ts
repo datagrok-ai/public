@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../package-test';
 import {PackageFunctions} from '../package';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {before, expect, category, test, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {before, expect, category, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {isFragment, _isSmarts} from '../utils/mol-creation_rdkit';
 // the module itself for the functions of 2026-10-14 (the prefilter), absent in the code before them
 import * as molCreation from '../utils/mol-creation_rdkit';
@@ -486,9 +486,9 @@ category('isSmarts', async () => {
           box.querySelector('canvas')!.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true}));
           const item = () => Array.from(document.querySelectorAll<HTMLElement>('.d4-menu-item-label'))
             .find((el) => el.textContent?.trim() === 'Copy SMILES');
-          await awaitCheck(() => item() !== undefined, 'the molecule menu has no Copy SMILES', 5000);
+          await waitUntil(() => item() !== undefined, 'the molecule menu has no Copy SMILES', 5000);
           item()!.click();
-          await awaitCheck(() => copied.length > 0, 'Copy SMILES copied nothing', 5000);
+          await waitUntil(() => copied.length > 0, 'Copy SMILES copied nothing', 5000);
           expect(copied.pop(), smilesOf(s), `Copy SMILES of ${s}`);
         } finally {
           box.remove();

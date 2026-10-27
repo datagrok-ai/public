@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck, delay} from '@datagrok-libraries/test/src/test';
+import {awaitCheck} from '@datagrok-libraries/test/src/test';
 
 import {
   META_COLUMNS, PUBLISHED_TAGS, PublishOptions, PublishedMetadata,
@@ -265,11 +265,9 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     // ─── Step 6.5 — REVISION B-2: re-create volcano on trimmed DF + apply lines ─
     pi.description = 'Re-rendering volcano on trimmed snapshot...';
     const trimmedTv = grok.shell.addTableView(frozen);
-    await delay(100);
     const volcano = createVolcanoPlot(frozen, {fcThreshold, pThreshold});
     trimmedTv.addViewer(volcano);
     applyVolcanoFormulaLines(volcano, fcThreshold, pThreshold);
-    await delay(100);
 
     const viewInfo = trimmedTv.getInfo();
     project.addChild(viewInfo);
@@ -284,9 +282,7 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     if (frozenEnrich) {
       pi.description = 'Re-rendering enrichment charts...';
       const enrichTv = grok.shell.addTableView(frozenEnrich);
-      await delay(100);
       dockEnrichmentCharts(enrichTv, frozenEnrich);
-      await delay(100);
       enrichViewInfo = enrichTv.getInfo();
       project.addChild(enrichViewInfo);
       // Land the user (and downstream readers of grok.shell.tv) back on the
@@ -421,7 +417,6 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
                 Number.isFinite(pFromTag) ? pFromTag : pThreshold,
               );
               try { await grok.dapi.views.save(tv.getInfo()); } catch { /* best-effort */ }
-              await delay(100);
               continue;
             }
           }
@@ -449,7 +444,6 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
 
       try {
         grok.shell.closeAll();
-        await delay(100);
         const priorReopened = await grok.dapi.projects.find(priorProjectId);
         await priorReopened.open();
         await awaitCheck(
@@ -489,7 +483,6 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     pi.description = 'Restoring your analysis...';
     try {
       grok.shell.closeAll();
-      await delay(100);
       // Restore the enrichment results view + charts (and its volcano cross-link)
       // FIRST if the user had it open. openEnrichmentVisualization focuses the
       // enrichment tab; adding the protein view next lands the user back on the

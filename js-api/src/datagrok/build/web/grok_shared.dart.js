@@ -8393,7 +8393,7 @@
         f = t1.storedCallback;
         t1.storedCallback = null;
         f.call$0();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     _AsyncRun__initializeScheduleImmediate_closure: {
       "^": "Closure:783;_box_0,div,span",
@@ -9406,7 +9406,7 @@
       "^": "Closure:0;originalSource",
       call$1: [function(_) {
         return this.originalSource;
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     _Future__propagateToListeners_handleValueCallback: {
       "^": "Closure:29;_box_0,listener,sourceResult",
@@ -9990,7 +9990,7 @@
       "^": "Closure:0;_box_0",
       call$1: [function(_) {
         ++this._box_0.count;
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     Stream_length_closure0: {
       "^": "Closure:3;_box_0,future",
@@ -10002,7 +10002,7 @@
       "^": "Closure:0;_box_0,future",
       call$1: [function(_) {
         P._cancelAndValue(this._box_0.subscription, this.future, false);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     Stream_isEmpty_closure0: {
       "^": "Closure:3;future",
@@ -11790,14 +11790,14 @@
       run$1$processed: function(arg0) {
         return this.run.call$1$processed(arg0);
       },
-      run$0: function() {
-        return this.run.call$0();
-      },
       run$2$context$report: function(arg0, arg1) {
         return this.run.call$2$context$report(arg0, arg1);
       },
       run$2: function(arg0, arg1) {
         return this.run.call$2(arg0, arg1);
+      },
+      run$0: function() {
+        return this.run.call$0();
       },
       run$2$processed$report: function(arg0, arg1) {
         return this.run.call$2$processed$report(arg0, arg1);
@@ -13632,7 +13632,7 @@
       "^": "Closure:7;result",
       call$2: [function(k, v) {
         this.result.$indexSet(0, k, v);
-      }, null, null, 4, 0, null, 24, 8, "call"]
+      }, null, null, 4, 0, null, 25, 8, "call"]
     },
     _HashSetBase: {
       "^": "SetBase;$ti",
@@ -13849,7 +13849,7 @@
       "^": "Closure:7;result",
       call$2: [function(k, v) {
         this.result.$indexSet(0, k, v);
-      }, null, null, 4, 0, null, 24, 8, "call"]
+      }, null, null, 4, 0, null, 25, 8, "call"]
     },
     ListBase: {
       "^": "Object_ListMixin;$ti"
@@ -14564,7 +14564,7 @@
         t2 = t1._contents += H.S(k);
         t1._contents = t2 + ": ";
         t1._contents += H.S(v);
-      }, null, null, 4, 0, null, 24, 8, "call"]
+      }, null, null, 4, 0, null, 25, 8, "call"]
     },
     ListQueue: {
       "^": "ListIterable;_table,_head,_tail,_modificationCount,$ti",
@@ -25269,7 +25269,7 @@
       "^": "Closure:7;$this",
       call$2: [function(k, v) {
         this.$this.setItem(k, v);
-      }, null, null, 4, 0, null, 24, 8, "call"]
+      }, null, null, 4, 0, null, 25, 8, "call"]
     },
     Storage_keys_closure: {
       "^": "Closure:7;keys",
@@ -26649,7 +26649,7 @@
       "^": "Closure:7;$this",
       call$2: [function(k, v) {
         this.$this._html$_element.setAttribute(k, v);
-      }, null, null, 4, 0, null, 24, 8, "call"]
+      }, null, null, 4, 0, null, 25, 8, "call"]
     },
     _ElementAttributeMap: {
       "^": "_AttributeMap;_html$_element",
@@ -27655,7 +27655,7 @@
       "^": "Closure:0;$this,completer",
       call$1: [function(_) {
         this.completer.complete$1(0, this.$this.db);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     Transaction_completed_closure0: {
       "^": "Closure:0;completer",
@@ -33391,7 +33391,7 @@
       $._ddtInitialized = true;
       $.Property_valueConverter = new N.initDdt_closure();
       $.Property_valueTypeResolver = new N.initDdt_closure0();
-      for (t1 = ["Math", "Logic"], t1 = P.LinkedHashSet_LinkedHashSet$from(t1, H.getTypeArgumentByIndex(t1, 0)), t2 = N.FuncParam$typed("condition", "bool", null, null, null), t3 = N.FuncParam$typed("ifTrue", "dynamic", null, null, null), t4 = N.FuncParam$typed("ifFalse", "dynamic", null, null, null), t5 = N.FuncParam$typed("result", "dynamic", null, null, null), t5.isInput = false, t6 = P.String, t7 = ["Math", "Logic"], t7 = P.LinkedHashSet_LinkedHashSet$from(t7, H.getTypeArgumentByIndex(t7, 0)), t8 = N.FuncParam$typed("condition", "bool", null, null, null), t9 = N.FuncParam$typed("a", "dynamic", null, null, null), t10 = N.FuncParam$typed("b", "dynamic", null, null, null), t11 = N.FuncParam$typed("result", "bool", null, null, null), t11.isInput = false, t12 = ["Math", "Logic"], t12 = P.LinkedHashSet_LinkedHashSet$from(t12, H.getTypeArgumentByIndex(t12, 0)), t13 = N.FuncParam$typed("condition", "bool", null, null, null), t14 = N.FuncParam$typed("a", "dynamic", null, null, null), t15 = N.FuncParam$typed("b", "dynamic", null, null, null), t16 = N.FuncParam$typed("result", "bool", null, null, null), t16.isInput = false, t17 = N.FuncParam$typed("x", "double", null, null, null), t18 = N.FuncParam$typed("q", "string", null, null, null), t19 = N.FuncParam$typed("result", "qnum", null, null, null), t19.isInput = false, t20 = N.FuncParam$typed("s", "string", null, null, null), t21 = N.FuncParam$typed("result", "qnum", null, null, null), t21.isInput = false, t22 = ["Text"], t22 = P.LinkedHashSet_LinkedHashSet$from(t22, H.getTypeArgumentByIndex(t22, 0)), t23 = N.FuncParam$typed("table", "dataframe", null, null, null), t23.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t24 = N.FuncParam$typed("column", "column", null, null, null), t24.parentTableParamName = "table", t25 = N.FuncParam$typed("splitBy", "string", null, null, null), t25.nullableRaw = true, t26 = N.FuncParam$typed("prefix", "string", null, null, null), t26.nullableRaw = true, t27 = N.FuncParam$typed("autoDetectTypes", "bool", null, null, null), t27.description = "Force auto-detection of result columns data type", t27.set$defaultValue(0, true), t28 = N.FuncParam$typed("consecutiveAsOne", "bool", null, null, null), t28.description = "Treat consecutive delimiters as one", t28.set$defaultValue(0, false), t29 = N.FuncParam$typed("byChars", "bool", null, null, null), t29.description = "Treat any of the specified characters as a delimiter", t29.set$defaultValue(0, false), t30 = N.FuncParam$typed("trim", "bool", null, null, null), t30.set$defaultValue(0, true), t31 = N.FuncParam$typed("result", "dataframe", null, null, null), t31.isInput = false, t32 = ["Text", "Transform"], t32 = P.LinkedHashSet_LinkedHashSet$from(t32, H.getTypeArgumentByIndex(t32, 0)), t33 = N.FuncParam$typed("table", "dataframe", null, null, null), t33.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t34 = N.FuncParam$typed("columns", "colfiltercall", null, null, null), t34.parentTableParamName = "table", t35 = N.FuncParam$typed("find", "string", null, null, null), t36 = N.FuncParam$typed("replace", "string", null, null, null), t36.nullableRaw = true, t37 = N.FuncParam$typed("matchCase", "bool", null, null, null), t37.set$defaultValue(0, false), t37.isOptional = true, t38 = N.FuncParam$typed("matchWholeWords", "bool", null, null, null), t38.set$defaultValue(0, false), t38.isOptional = true, t39 = N.FuncParam$typed("useRegExp", "bool", null, null, null), t39.set$defaultValue(0, false), t39.isOptional = true, t40 = N.FuncParam$typed("filteredRowsOnly", "bool", null, null, null), t40.set$defaultValue(0, false), t40.isOptional = true, t41 = N.FuncParam$typed("selectedRowsOnly", "bool", null, null, null), t41.set$defaultValue(0, false), t41.isOptional = true, t42 = N.FuncParam$typed("count", "int", null, null, null), t42.isInput = false, t43 = [t6], t44 = H.setRuntimeTypeInfo([], t43), t44 = P.LinkedHashSet_LinkedHashSet$from(t44, H.getTypeArgumentByIndex(t44, 0)), t45 = N.FuncParam$typed("table", "dataframe", null, null, null), t46 = N.FuncParam$typed("columns", "column_list", null, null, null), t46.parentTableParamName = "table", t47 = N.FuncParam$typed("result", "dataframe", null, null, null), t47.isInput = false, t48 = ["Transform"], t48 = P.LinkedHashSet_LinkedHashSet$from(t48, H.getTypeArgumentByIndex(t48, 0)), t49 = N.FuncParam$typed("table", "dataframe", null, null, null), t49.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t50 = N.FuncParam$typed("columns", "colfiltercall", null, null, null), t50.parentTableParamName = "table", t51 = N.FuncParam$typed("format", "string", null, null, null), t52 = $.$get$FloatMeta_numberFormats(), t52 = t52.get$keys(t52), t51.choices = P.List_List$from(t52, true, H.getRuntimeTypeArgument(t52, "Iterable", 0)), t52 = N.FuncParam$typed("tableName", "string", null, null, null), t53 = N.FuncParam$typed("rows", "int", null, null, null), t53.isOptional = true, t54 = N.FuncParam$typed("table", "dataframe", null, null, null), t54.isInput = false, t55 = N.FuncParam$typed("tables", "dataframe_list", null, null, null), t55.valueValidators = H.setRuntimeTypeInfo([new N.closure4800()], [{func: 1, ret: P.String, args: [P.Object]}]), t56 = N.FuncParam$typed("result", "dataframe", null, null, null), t56.isInput = false, t57 = ["Transform"], t57 = P.LinkedHashSet_LinkedHashSet$from(t57, H.getTypeArgumentByIndex(t57, 0)), t58 = N.FuncParam$typed("table", "dataframe", null, null, null), t58.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t59 = N.FuncParam$typed("column", "column", null, null, null), t59.parentTableParamName = "table", t60 = N.FuncParam$typed("nonConvertibleValue", "string", null, null, null), t60.set$defaultValue(0, null), t60.isOptional = true, t61 = N.FuncParam$typed("parseFormat", "string", null, null, null), t61.set$defaultValue(0, null), t61.isOptional = true, t62 = N.FuncParam$typed("newType", "string", null, null, null), t62.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t63 = $.$get$ColumnTypeMeta_descriptors(), t63 = t63.get$keys(t63), t62.choices = P.List_List$from(t63, true, H.getRuntimeTypeArgument(t63, "Iterable", 0)), t63 = ["Transform"], t63 = P.LinkedHashSet_LinkedHashSet$from(t63, H.getTypeArgumentByIndex(t63, 0)), t64 = N.FuncParam$typed("table", "dataframe", null, null, null), t64.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t65 = N.FuncParam$typed("columns", "column_list", null, null, null), t65.parentTableParamName = "table", t66 = N.FuncParam$typed("nonConvertibleValue", "string", null, null, null), t66.set$defaultValue(0, null), t66.isOptional = true, t67 = N.FuncParam$typed("parseFormat", "string", null, null, null), t67.set$defaultValue(0, null), t67.isOptional = true, t68 = N.FuncParam$typed("newType", "string", null, null, null), t68.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t69 = $.$get$ColumnTypeMeta_descriptors(), t69 = t69.get$keys(t69), t68.choices = P.List_List$from(t69, true, H.getRuntimeTypeArgument(t69, "Iterable", 0)), t69 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t69.isInput = false, t70 = N.FuncParam$typed("column", "column", null, null, null), t70.parentTableParamName = null, t70.defaultValueMarkup = "t.currentCol", t71 = N.FuncParam$typed("value", "string", null, null, null), t71.nullableRaw = true, t71.defaultValueMarkup = "t.currentCell", t72 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t72.isInput = false, t73 = N.FuncParam$typed("columns", "colfiltercall", null, null, null), t74 = N.FuncParam$typed("superfluousOnly", "bool", null, null, null), t74.set$defaultValue(0, false), t75 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t75.isInput = false, t76 = N.FuncParam$typed("columns", "colfiltercall", null, null, null), t77 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t77.isInput = false, t78 = N.FuncParam$typed("column", "column", null, null, null), t78.parentTableParamName = null, t79 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t79.isInput = false, t80 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t80.isInput = false, t81 = N.FuncParam$typed("count", "int", null, null, null), t82 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t82.isInput = false, t83 = N.FuncParam$typed("columns", "column_list", null, null, null), t83.parentTableParamName = null, t84 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t84.isInput = false, t85 = N.FuncParam$typed("tagKey", "string", null, null, null), t86 = N.FuncParam$typed("tagValue", "string", null, null, null), t86.set$defaultValue(0, null), t86.isOptional = true, t87 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t87.isInput = false, t88 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t88.isInput = false, t89 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t89.isInput = false, t90 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t90.isInput = false, t91 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t91.isInput = false, t92 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t92.isInput = false, t93 = N.FuncParam$typed("type", "string", null, null, null), t93.choices = C.List_46y, t94 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t94.isInput = false, t95 = N.FuncParam$typed("object", "dynamic", null, null, null), t96 = N.FuncParam$typed("propertyName", "string", null, null, null), t97 = N.FuncParam$typed("result", "dynamic", null, null, null), t97.isInput = false, t98 = N.FuncParam$typed("list", "dynamic", null, null, null), t99 = N.FuncParam$typed("num", "int", null, null, null), t100 = N.FuncParam$typed("result", "dynamic", null, null, null), t100.isInput = false, t101 = N.FuncParam$typed("object", "dynamic", null, null, null), t102 = N.FuncParam$typed("propertyName", "string", null, null, null), t103 = N.FuncParam$typed("value", "dynamic", null, null, null), t104 = N.FuncParam$typed("variableName", "string", null, null, null), t105 = N.FuncParam$typed("value", "dynamic", null, null, null), t105.isInput = false, t106 = N.FuncParam$typed("variableName", "string", null, null, null), t107 = N.FuncParam$typed("value", "dynamic", null, null, null), t108 = N.FuncParam$typed("outputName", "string", null, null, null), t108.isOptional = true, t109 = N.FuncParam$typed("object", "dynamic", null, null, null), t110 = N.FuncParam$typed("methodName", "string", null, null, null), t111 = N.FuncParam$typed("methodParams", "dynamic", null, null, null), t112 = N.FuncParam$typed("methodOptionalParams", "dynamic", null, null, null), t113 = N.FuncParam$typed("result", "dynamic", null, null, null), t113.isInput = false, t114 = N.FuncParam$typed("value", "dynamic", null, null, null), t115 = N.FuncParam$typed("result", "dynamic", null, null, null), t115.isInput = false, t116 = N.FuncParam$typed($.GetCurrentRowFieldFunc_FIELD, "string", null, null, null), t117 = N.FuncParam$typed($.GetCurrentRowFieldFunc_SEM_TYPE, "string", null, null, null), t117.isOptional = true, t118 = N.FuncParam$typed($.GetCurrentRowFieldFunc_RESULT, "dynamic", null, null, null), t118.isInput = false, t119 = N.FuncParam$typed("value", "string", null, null, null), t120 = N.FuncParam$typed("result", "column", null, null, null), t120.parentTableParamName = null, t120.isInput = false, t121 = N.FuncParam$typed("result", "string", null, null, null), t121.isInput = false, t122 = N.FuncParam$typed("tableName", "string", null, null, null), t123 = N.FuncParam$typed("columnName", "string", null, null, null), t124 = N.FuncParam$typed("result", "bool", null, null, null), t124.isInput = false, t125 = N.FuncParam$typed("tableName", "string", null, null, null), t125.isOptional = true, t125.semType = "TableName", t126 = N.FuncParam$typed("result", "dataframe", null, null, null), t126.isInput = false, t127 = P.LinkedHashMap_LinkedHashMap$_empty(t6, null), t127.$indexSet(0, "accessor", "true"), t128 = N.FuncParam$typed("columnName", "string", null, null, null), t128.semType = "ColumnName", J.$indexSet$ax(t128.options, "table", "tableName"), t129 = N.FuncParam$typed("tableName", "string", null, null, null), t129.isOptional = true, t129.semType = "TableName", t130 = N.FuncParam$typed("result", "column", null, null, null), t130.parentTableParamName = null, t130.isInput = false, t131 = P.LinkedHashMap_LinkedHashMap$_empty(t6, null), t131.$indexSet(0, "accessor", "true"), t132 = N.FuncParam$typed("columnName", "string", null, null, null), t132.semType = "ColumnName", J.$indexSet$ax(t132.options, "table", "tableName"), t133 = N.FuncParam$typed("row", "int", null, null, null), t133.isOptional = true, t134 = N.FuncParam$typed("tableName", "string", null, null, null), t134.isOptional = true, t134.semType = "TableName", t135 = N.FuncParam$typed("result", "dynamic", null, null, null), t135.isInput = false, t136 = N.FuncParam$typed("tableName", "string", null, null, null), t136.isOptional = true, t136.semType = "TableName", t137 = N.FuncParam$typed("result", "int", null, null, null), t137.isInput = false, t138 = N.FuncParam$typed("column", "column", null, null, null), t138.parentTableParamName = null, t138.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, "numerical_no_datetime", null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t139 = N.FuncParam$typed("result", "column", null, null, null), t139.parentTableParamName = null, t139.isInput = false, t140 = N.FuncParam$typed("orderBy", "column", null, null, null), t140.parentTableParamName = null, t140.isOptional = true, t141 = N.FuncParam$typed("descending", "bool", null, null, null), t141.isOptional = true, t142 = N.FuncParam$typed("by", "column", null, null, null), t142.parentTableParamName = null, t142.isOptional = true, t143 = P.LinkedHashMap_LinkedHashMap$_empty(t6, null), t143.$indexSet(0, "vectorFunc", "true"), t144 = N.FuncParam$typed("column", "column", null, null, null), t144.parentTableParamName = null, t144.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, "numerical_no_datetime", null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t145 = N.FuncParam$typed("window", "int", null, null, null), t146 = N.FuncParam$typed("minPeriods", "int", null, null, null), t146.isOptional = true, t147 = N.FuncParam$typed("result", "column", null, null, null), t147.parentTableParamName = null, t147.isInput = false, t148 = N.FuncParam$typed("orderBy", "column", null, null, null), t148.parentTableParamName = null, t148.isOptional = true, t149 = N.FuncParam$typed("descending", "bool", null, null, null), t149.isOptional = true, t150 = N.FuncParam$typed("by", "column", null, null, null), t150.parentTableParamName = null, t150.isOptional = true, t151 = P.LinkedHashMap_LinkedHashMap$_empty(t6, null), t151.$indexSet(0, "vectorFunc", "true"), t152 = N.FuncParam$typed("column", "column", null, null, null), t152.parentTableParamName = null, t153 = N.FuncParam$typed("value", "dynamic", null, null, null), t154 = N.FuncParam$typed("result", "column", null, null, null), t154.parentTableParamName = null, t154.isInput = false, t155 = N.FuncParam$typed("orderBy", "column", null, null, null), t155.parentTableParamName = null, t155.isOptional = true, t156 = N.FuncParam$typed("descending", "bool", null, null, null), t156.isOptional = true, t157 = N.FuncParam$typed("by", "column", null, null, null), t157.parentTableParamName = null, t157.isOptional = true, t158 = P.LinkedHashMap_LinkedHashMap$_empty(t6, null), t158.$indexSet(0, "vectorFunc", "true"), t159 = N.FuncParam$typed("tableName", "string", null, null, null), t159.semType = "TableName", t160 = N.FuncParam$typed("keyColumn", "string", null, null, null), t160.semType = "ColumnName", J.$indexSet$ax(t160.options, "table", "tableName"), t161 = N.FuncParam$typed("key", "dynamic", null, null, null), t162 = N.FuncParam$typed("valueColumn", "string", null, null, null), t162.semType = "ColumnName", J.$indexSet$ax(t162.options, "table", "tableName"), t163 = N.FuncParam$typed("result", "column", null, null, null), t163.parentTableParamName = null, t163.isInput = false, t164 = N.FuncParam$typed("orderBy", "column", null, null, null), t164.parentTableParamName = null, t164.isOptional = true, t165 = N.FuncParam$typed("descending", "bool", null, null, null), t165.isOptional = true, t166 = N.FuncParam$typed("by", "column", null, null, null), t166.parentTableParamName = null, t166.isOptional = true, t167 = P.LinkedHashMap_LinkedHashMap$_empty(t6, null), t167.$indexSet(0, "vectorFunc", "true"), t168 = N.FuncParam$typed("value", "dynamic", null, null, null), t169 = N.FuncParam$typed("result", "dynamic", null, null, null), t169.isInput = false, t169 = new N.ResolveTableFunc(null, t168, t169, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), t168 = ["Internal"], t169.set$tags(P.LinkedHashSet_LinkedHashSet$from(t168, H.getTypeArgumentByIndex(t168, 0))), t168 = N.FuncParam$typed("value", "dynamic", null, null, null), t170 = N.FuncParam$typed("parentTable", "dataframe", null, null, null), t171 = N.FuncParam$typed("result", "dynamic", null, null, null), t171.isInput = false, t171 = new N.ResolveColumnFunc(null, t168, t170, t171, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), t170 = ["Internal"], t171.set$tags(P.LinkedHashSet_LinkedHashSet$from(t170, H.getTypeArgumentByIndex(t170, 0))), t170 = N.FuncParam$typed("values", "dynamic", null, null, null), t168 = N.FuncParam$typed("result", "dynamic", null, null, null), t168.isInput = false, t168 = [new N._IfFunc(t1, null, t2, t3, t4, t5, new N.closure4801(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N._EqualsFunc(t7, t8, t9, t10, t11, new N.closure4802(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N._NotEqualsFunc(t12, t13, t14, t15, t16, new N.closure4803(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N._Qnum(null, t17, t18, t19, new N.closure4804(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N._ParseQnum(null, t20, t21, new N.closure4805(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.SplitColumnAction(t22, t23, t24, t25, t26, t27, t28, t29, t30, null, t31, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ReplaceValuesAction(t32, t33, t34, t35, t36, t37, t38, t39, t40, t41, t42, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ExtractColumnsAction(t44, t45, t46, t47, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.FormatColumnsAction(t48, t49, t50, t51, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.TestDataFunc(t52, t53, t54, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.AppendTablesAction(t55, t56, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ListCommandsAction("function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ChangeTypeAction(t57, t58, t59, t60, t61, t62, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ChangeColumnsTypeAction(t63, t64, t65, t66, t67, t68, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.AllRowPredicate(t69, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.CellEqualsRowPredicate(t70, t71, t72, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.DuplicatesRowPredicate(t73, t74, t75, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.HasNullsRowPredicate(t76, t77, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.IsNullRowPredicate(t78, t79, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.SelectedRowPredicate(t80, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.RandomRowPredicate(t81, t82, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.NamedColumnPredicate(t83, t84, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.TaggedColumnPredicate(t85, t86, t87, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.NumericalColumnPredicate(t88, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.CategoricalColumnPredicate(t89, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.SelectedColumnPredicate(t90, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.CurrentColumnPredicate(t91, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.AllColumnPredicate(t92, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.OfTypeColumnPredicate(t93, t94, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.GetFunc(false, t95, t96, t97, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.GetListElementFunc(false, t98, t99, t100, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.SetFunc(false, t101, t102, t103, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.GetVarFunc(false, null, t104, t105, true, new N.closure1365(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.SetVarFunc(false, t106, t107, t108, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.CallFunc(false, t109, t110, t111, t112, t113, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.RetFunc(false, t114, t115, new N.closure2674(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.GetCurrentRowFieldFunc(false, null, t116, t117, t118, true, new N.closure1394(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.GetColumnFunc(false, null, t119, t120, true, new N.closure1393(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.GetCurrentTableFunc(false, t121, true, new N.closure4806(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ColumnExistsFunc(false, null, t122, t123, t124, true, new N.closure4807(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.TableAccessorFunc(false, null, t125, t126, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], t127, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ColumnAccessorFunc(false, null, t128, t129, t130, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], t131, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ValueAccessorFunc(false, null, t132, t133, t134, t135, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.RowCountFunc(false, null, t136, t137, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.CumSumFunc(null, t138, false, t139, t140, t141, t142, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], t143, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.MovingAvgFunc(null, t144, t145, t146, false, t147, t148, t149, t150, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], t151, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.IndexOfFunc(null, t152, t153, false, t154, t155, t156, t157, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], t158, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.LookupFunc(null, t159, t160, t161, t162, false, t163, t164, t165, t166, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], t167, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), t169, t171, new N.CoalesceFunc(t170, t168, new N.closure4808(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ErrorThrowingFunc(N.FuncParam$typed("message", "dynamic", null, null, null), new N.closure4809(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false)], _i = 0; _i < 52; ++_i)
+      for (t1 = ["Math", "Logic"], t1 = P.LinkedHashSet_LinkedHashSet$from(t1, H.getTypeArgumentByIndex(t1, 0)), t2 = N.FuncParam$typed("condition", "bool", null, null, null), t3 = N.FuncParam$typed("ifTrue", "dynamic", null, null, null), t4 = N.FuncParam$typed("ifFalse", "dynamic", null, null, null), t5 = N.FuncParam$typed("result", "dynamic", null, null, null), t5.isInput = false, t6 = P.String, t7 = ["Math", "Logic"], t7 = P.LinkedHashSet_LinkedHashSet$from(t7, H.getTypeArgumentByIndex(t7, 0)), t8 = N.FuncParam$typed("condition", "bool", null, null, null), t9 = N.FuncParam$typed("a", "dynamic", null, null, null), t10 = N.FuncParam$typed("b", "dynamic", null, null, null), t11 = N.FuncParam$typed("result", "bool", null, null, null), t11.isInput = false, t12 = ["Math", "Logic"], t12 = P.LinkedHashSet_LinkedHashSet$from(t12, H.getTypeArgumentByIndex(t12, 0)), t13 = N.FuncParam$typed("condition", "bool", null, null, null), t14 = N.FuncParam$typed("a", "dynamic", null, null, null), t15 = N.FuncParam$typed("b", "dynamic", null, null, null), t16 = N.FuncParam$typed("result", "bool", null, null, null), t16.isInput = false, t17 = N.FuncParam$typed("x", "double", null, null, null), t18 = N.FuncParam$typed("q", "string", null, null, null), t19 = N.FuncParam$typed("result", "qnum", null, null, null), t19.isInput = false, t20 = N.FuncParam$typed("s", "string", null, null, null), t21 = N.FuncParam$typed("result", "qnum", null, null, null), t21.isInput = false, t22 = ["Text"], t22 = P.LinkedHashSet_LinkedHashSet$from(t22, H.getTypeArgumentByIndex(t22, 0)), t23 = N.FuncParam$typed("table", "dataframe", null, null, null), t23.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t24 = N.FuncParam$typed("column", "column", null, null, null), t24.parentTableParamName = "table", t25 = N.FuncParam$typed("splitBy", "string", null, null, null), t25.nullableRaw = true, t26 = N.FuncParam$typed("prefix", "string", null, null, null), t26.nullableRaw = true, t27 = N.FuncParam$typed("autoDetectTypes", "bool", null, null, null), t27.description = "Force auto-detection of result columns data type", t27.set$defaultValue(0, true), t28 = N.FuncParam$typed("consecutiveAsOne", "bool", null, null, null), t28.description = "Treat consecutive delimiters as one", t28.set$defaultValue(0, false), t29 = N.FuncParam$typed("byChars", "bool", null, null, null), t29.description = "Treat any of the specified characters as a delimiter", t29.set$defaultValue(0, false), t30 = N.FuncParam$typed("trim", "bool", null, null, null), t30.set$defaultValue(0, true), t31 = N.FuncParam$typed("result", "dataframe", null, null, null), t31.isInput = false, t32 = ["Text", "Transform"], t32 = P.LinkedHashSet_LinkedHashSet$from(t32, H.getTypeArgumentByIndex(t32, 0)), t33 = N.FuncParam$typed("table", "dataframe", null, null, null), t33.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t34 = N.FuncParam$typed("columns", "colfiltercall", null, null, null), t34.parentTableParamName = "table", t35 = N.FuncParam$typed("find", "string", null, null, null), t36 = N.FuncParam$typed("replace", "string", null, null, null), t36.nullableRaw = true, t37 = N.FuncParam$typed("matchCase", "bool", null, null, null), t37.set$defaultValue(0, false), t37.isOptional = true, t38 = N.FuncParam$typed("matchWholeWords", "bool", null, null, null), t38.set$defaultValue(0, false), t38.isOptional = true, t39 = N.FuncParam$typed("useRegExp", "bool", null, null, null), t39.set$defaultValue(0, false), t39.isOptional = true, t40 = N.FuncParam$typed("filteredRowsOnly", "bool", null, null, null), t40.set$defaultValue(0, false), t40.isOptional = true, t41 = N.FuncParam$typed("selectedRowsOnly", "bool", null, null, null), t41.set$defaultValue(0, false), t41.isOptional = true, t42 = N.FuncParam$typed("count", "int", null, null, null), t42.isInput = false, t43 = [t6], t44 = H.setRuntimeTypeInfo([], t43), t44 = P.LinkedHashSet_LinkedHashSet$from(t44, H.getTypeArgumentByIndex(t44, 0)), t45 = N.FuncParam$typed("table", "dataframe", null, null, null), t46 = N.FuncParam$typed("columns", "column_list", null, null, null), t46.parentTableParamName = "table", t47 = N.FuncParam$typed("result", "dataframe", null, null, null), t47.isInput = false, t48 = ["Transform"], t48 = P.LinkedHashSet_LinkedHashSet$from(t48, H.getTypeArgumentByIndex(t48, 0)), t49 = N.FuncParam$typed("table", "dataframe", null, null, null), t49.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t50 = N.FuncParam$typed("columns", "colfiltercall", null, null, null), t50.parentTableParamName = "table", t51 = N.FuncParam$typed("format", "string", null, null, null), t52 = $.$get$FloatMeta_numberFormats(), t52 = t52.get$keys(t52), t51.choices = P.List_List$from(t52, true, H.getRuntimeTypeArgument(t52, "Iterable", 0)), t52 = N.FuncParam$typed("tableName", "string", null, null, null), t53 = N.FuncParam$typed("rows", "int", null, null, null), t53.isOptional = true, t54 = N.FuncParam$typed("table", "dataframe", null, null, null), t54.isInput = false, t55 = N.FuncParam$typed("tables", "dataframe_list", null, null, null), t55.valueValidators = H.setRuntimeTypeInfo([new N.closure4800()], [{func: 1, ret: P.String, args: [P.Object]}]), t56 = N.FuncParam$typed("result", "dataframe", null, null, null), t56.isInput = false, t57 = ["Transform"], t57 = P.LinkedHashSet_LinkedHashSet$from(t57, H.getTypeArgumentByIndex(t57, 0)), t58 = N.FuncParam$typed("table", "dataframe", null, null, null), t58.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t59 = N.FuncParam$typed("column", "column", null, null, null), t59.parentTableParamName = "table", t60 = N.FuncParam$typed("nonConvertibleValue", "string", null, null, null), t60.set$defaultValue(0, null), t60.isOptional = true, t61 = N.FuncParam$typed("parseFormat", "string", null, null, null), t61.set$defaultValue(0, null), t61.isOptional = true, t62 = N.FuncParam$typed("newType", "string", null, null, null), t62.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t63 = $.$get$ColumnTypeMeta_descriptors(), t63 = t63.get$keys(t63), t62.choices = P.List_List$from(t63, true, H.getRuntimeTypeArgument(t63, "Iterable", 0)), t63 = ["Transform"], t63 = P.LinkedHashSet_LinkedHashSet$from(t63, H.getTypeArgumentByIndex(t63, 0)), t64 = N.FuncParam$typed("table", "dataframe", null, null, null), t64.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t65 = N.FuncParam$typed("columns", "column_list", null, null, null), t65.parentTableParamName = "table", t66 = N.FuncParam$typed("nonConvertibleValue", "string", null, null, null), t66.set$defaultValue(0, null), t66.isOptional = true, t67 = N.FuncParam$typed("parseFormat", "string", null, null, null), t67.set$defaultValue(0, null), t67.isOptional = true, t68 = N.FuncParam$typed("newType", "string", null, null, null), t68.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t69 = $.$get$ColumnTypeMeta_descriptors(), t69 = t69.get$keys(t69), t68.choices = P.List_List$from(t69, true, H.getRuntimeTypeArgument(t69, "Iterable", 0)), t69 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t69.isInput = false, t70 = N.FuncParam$typed("column", "column", null, null, null), t70.parentTableParamName = null, t70.defaultValueMarkup = "t.currentCol", t71 = N.FuncParam$typed("value", "string", null, null, null), t71.nullableRaw = true, t71.defaultValueMarkup = "t.currentCell", t72 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t72.isInput = false, t73 = N.FuncParam$typed("columns", "colfiltercall", null, null, null), t74 = N.FuncParam$typed("superfluousOnly", "bool", null, null, null), t74.set$defaultValue(0, false), t75 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t75.isInput = false, t76 = N.FuncParam$typed("columns", "colfiltercall", null, null, null), t77 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t77.isInput = false, t78 = N.FuncParam$typed("column", "column", null, null, null), t78.parentTableParamName = null, t79 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t79.isInput = false, t80 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t80.isInput = false, t81 = N.FuncParam$typed("count", "int", null, null, null), t82 = N.FuncParam$typed("result", "tablerowfiltercall", null, null, null), t82.isInput = false, t83 = N.FuncParam$typed("columns", "column_list", null, null, null), t83.parentTableParamName = null, t84 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t84.isInput = false, t85 = N.FuncParam$typed("tagKey", "string", null, null, null), t86 = N.FuncParam$typed("tagValue", "string", null, null, null), t86.set$defaultValue(0, null), t86.isOptional = true, t87 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t87.isInput = false, t88 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t88.isInput = false, t89 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t89.isInput = false, t90 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t90.isInput = false, t91 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t91.isInput = false, t92 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t92.isInput = false, t93 = N.FuncParam$typed("type", "string", null, null, null), t93.choices = C.List_46y, t94 = N.FuncParam$typed("result", "colfiltercall", null, null, null), t94.isInput = false, t95 = N.FuncParam$typed("object", "dynamic", null, null, null), t96 = N.FuncParam$typed("propertyName", "string", null, null, null), t97 = N.FuncParam$typed("result", "dynamic", null, null, null), t97.isInput = false, t98 = N.FuncParam$typed("list", "dynamic", null, null, null), t99 = N.FuncParam$typed("num", "int", null, null, null), t100 = N.FuncParam$typed("result", "dynamic", null, null, null), t100.isInput = false, t101 = N.FuncParam$typed("object", "dynamic", null, null, null), t102 = N.FuncParam$typed("propertyName", "string", null, null, null), t103 = N.FuncParam$typed("value", "dynamic", null, null, null), t104 = N.FuncParam$typed("variableName", "string", null, null, null), t105 = N.FuncParam$typed("value", "dynamic", null, null, null), t105.isInput = false, t106 = N.FuncParam$typed("variableName", "string", null, null, null), t107 = N.FuncParam$typed("value", "dynamic", null, null, null), t108 = N.FuncParam$typed("outputName", "string", null, null, null), t108.isOptional = true, t109 = N.FuncParam$typed("object", "dynamic", null, null, null), t110 = N.FuncParam$typed("methodName", "string", null, null, null), t111 = N.FuncParam$typed("methodParams", "dynamic", null, null, null), t112 = N.FuncParam$typed("methodOptionalParams", "dynamic", null, null, null), t113 = N.FuncParam$typed("result", "dynamic", null, null, null), t113.isInput = false, t114 = N.FuncParam$typed("value", "dynamic", null, null, null), t115 = N.FuncParam$typed("result", "dynamic", null, null, null), t115.isInput = false, t116 = N.FuncParam$typed($.GetCurrentRowFieldFunc_FIELD, "string", null, null, null), t117 = N.FuncParam$typed($.GetCurrentRowFieldFunc_SEM_TYPE, "string", null, null, null), t117.isOptional = true, t118 = N.FuncParam$typed($.GetCurrentRowFieldFunc_RESULT, "dynamic", null, null, null), t118.isInput = false, t119 = N.FuncParam$typed("value", "string", null, null, null), t120 = N.FuncParam$typed("result", "column", null, null, null), t120.parentTableParamName = null, t120.isInput = false, t121 = N.FuncParam$typed("result", "string", null, null, null), t121.isInput = false, t122 = N.FuncParam$typed("tableName", "string", null, null, null), t123 = N.FuncParam$typed("columnName", "string", null, null, null), t124 = N.FuncParam$typed("result", "bool", null, null, null), t124.isInput = false, t125 = N.FuncParam$typed("tableName", "string", null, null, null), t125.isOptional = true, t125.semType = "TableName", t126 = N.FuncParam$typed("result", "dataframe", null, null, null), t126.isInput = false, t127 = P.LinkedHashMap_LinkedHashMap$_empty(t6, null), t127.$indexSet(0, "accessor", "true"), t128 = N.FuncParam$typed("columnName", "string", null, null, null), t128.semType = "ColumnName", J.$indexSet$ax(t128.options, "table", "tableName"), t129 = N.FuncParam$typed("tableName", "string", null, null, null), t129.isOptional = true, t129.semType = "TableName", t130 = N.FuncParam$typed("result", "column", null, null, null), t130.parentTableParamName = null, t130.isInput = false, t131 = P.LinkedHashMap_LinkedHashMap$_empty(t6, null), t131.$indexSet(0, "accessor", "true"), t132 = N.FuncParam$typed("columnName", "string", null, null, null), t132.semType = "ColumnName", J.$indexSet$ax(t132.options, "table", "tableName"), t133 = N.FuncParam$typed("row", "int", null, null, null), t133.isOptional = true, t134 = N.FuncParam$typed("tableName", "string", null, null, null), t134.isOptional = true, t134.semType = "TableName", t135 = N.FuncParam$typed("result", "dynamic", null, null, null), t135.isInput = false, t136 = N.FuncParam$typed("tableName", "string", null, null, null), t136.isOptional = true, t136.semType = "TableName", t137 = N.FuncParam$typed("result", "int", null, null, null), t137.isInput = false, t138 = N.FuncParam$typed("column", "column", null, null, null), t138.parentTableParamName = null, t138.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, "numerical_no_datetime", null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t139 = N.FuncParam$typed("result", "column", null, null, null), t139.parentTableParamName = null, t139.isInput = false, t140 = N.FuncParam$typed("orderBy", "column", null, null, null), t140.parentTableParamName = null, t140.isOptional = true, t141 = N.FuncParam$typed("descending", "bool", null, null, null), t141.isOptional = true, t142 = N.FuncParam$typed("by", "column", null, null, null), t142.parentTableParamName = null, t142.isOptional = true, t143 = P.LinkedHashMap_LinkedHashMap$_empty(t6, null), t143.$indexSet(0, "vectorFunc", "true"), t144 = N.FuncParam$typed("column", "column", null, null, null), t144.parentTableParamName = null, t144.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, null, null, null, true, null, "numerical_no_datetime", null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null)), t145 = N.FuncParam$typed("window", "int", null, null, null), t146 = N.FuncParam$typed("minPeriods", "int", null, null, null), t146.isOptional = true, t147 = N.FuncParam$typed("result", "column", null, null, null), t147.parentTableParamName = null, t147.isInput = false, t148 = N.FuncParam$typed("orderBy", "column", null, null, null), t148.parentTableParamName = null, t148.isOptional = true, t149 = N.FuncParam$typed("descending", "bool", null, null, null), t149.isOptional = true, t150 = N.FuncParam$typed("by", "column", null, null, null), t150.parentTableParamName = null, t150.isOptional = true, t151 = P.LinkedHashMap_LinkedHashMap$_empty(t6, null), t151.$indexSet(0, "vectorFunc", "true"), t152 = N.FuncParam$typed("column", "column", null, null, null), t152.parentTableParamName = null, t153 = N.FuncParam$typed("value", "dynamic", null, null, null), t154 = N.FuncParam$typed("result", "column", null, null, null), t154.parentTableParamName = null, t154.isInput = false, t155 = N.FuncParam$typed("orderBy", "column", null, null, null), t155.parentTableParamName = null, t155.isOptional = true, t156 = N.FuncParam$typed("descending", "bool", null, null, null), t156.isOptional = true, t157 = N.FuncParam$typed("by", "column", null, null, null), t157.parentTableParamName = null, t157.isOptional = true, t158 = P.LinkedHashMap_LinkedHashMap$_empty(t6, null), t158.$indexSet(0, "vectorFunc", "true"), t159 = N.FuncParam$typed("tableName", "string", null, null, null), t159.semType = "TableName", t160 = N.FuncParam$typed("keyColumn", "string", null, null, null), t160.semType = "ColumnName", J.$indexSet$ax(t160.options, "table", "tableName"), t161 = N.FuncParam$typed("key", "dynamic", null, null, null), t162 = N.FuncParam$typed("valueColumn", "string", null, null, null), t162.semType = "ColumnName", J.$indexSet$ax(t162.options, "table", "tableName"), t163 = N.FuncParam$typed("result", "column", null, null, null), t163.parentTableParamName = null, t163.isInput = false, t164 = N.FuncParam$typed("orderBy", "column", null, null, null), t164.parentTableParamName = null, t164.isOptional = true, t165 = N.FuncParam$typed("descending", "bool", null, null, null), t165.isOptional = true, t166 = N.FuncParam$typed("by", "column", null, null, null), t166.parentTableParamName = null, t166.isOptional = true, t167 = P.LinkedHashMap_LinkedHashMap$_empty(t6, null), t167.$indexSet(0, "vectorFunc", "true"), t168 = N.FuncParam$typed("value", "dynamic", null, null, null), t169 = N.FuncParam$typed("result", "dynamic", null, null, null), t169.isInput = false, t169 = new N.ResolveTableFunc(null, t168, t169, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), t168 = ["Internal"], t169.set$tags(P.LinkedHashSet_LinkedHashSet$from(t168, H.getTypeArgumentByIndex(t168, 0))), t168 = N.FuncParam$typed("value", "dynamic", null, null, null), t170 = N.FuncParam$typed("parentTable", "dataframe", null, null, null), t171 = N.FuncParam$typed("result", "dynamic", null, null, null), t171.isInput = false, t171 = new N.ResolveColumnFunc(null, t168, t170, t171, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), t170 = ["Internal"], t171.set$tags(P.LinkedHashSet_LinkedHashSet$from(t170, H.getTypeArgumentByIndex(t170, 0))), t170 = N.FuncParam$typed("values", "dynamic", null, null, null), t168 = N.FuncParam$typed("result", "dynamic", null, null, null), t168.isInput = false, t168 = [new N._IfFunc(t1, null, t2, t3, t4, t5, new N.closure4801(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N._EqualsFunc(t7, t8, t9, t10, t11, new N.closure4802(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N._NotEqualsFunc(t12, t13, t14, t15, t16, new N.closure4803(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N._Qnum(null, t17, t18, t19, new N.closure4804(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N._ParseQnum(null, t20, t21, new N.closure4805(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.SplitColumnAction(t22, t23, t24, t25, t26, t27, t28, t29, t30, null, t31, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ReplaceValuesAction(t32, t33, t34, t35, t36, t37, t38, t39, t40, t41, t42, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ExtractColumnsAction(t44, t45, t46, t47, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.FormatColumnsAction(t48, t49, t50, t51, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.TestDataFunc(t52, t53, t54, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.AppendTablesAction(t55, t56, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ListCommandsAction("function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ChangeTypeAction(t57, t58, t59, t60, t61, t62, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ChangeColumnsTypeAction(t63, t64, t65, t66, t67, t68, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.AllRowPredicate(t69, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.CellEqualsRowPredicate(t70, t71, t72, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.DuplicatesRowPredicate(t73, t74, t75, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.HasNullsRowPredicate(t76, t77, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.IsNullRowPredicate(t78, t79, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.SelectedRowPredicate(t80, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.RandomRowPredicate(t81, t82, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.NamedColumnPredicate(t83, t84, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.TaggedColumnPredicate(t85, t86, t87, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.NumericalColumnPredicate(t88, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.CategoricalColumnPredicate(t89, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.SelectedColumnPredicate(t90, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.CurrentColumnPredicate(t91, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.AllColumnPredicate(t92, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.OfTypeColumnPredicate(t93, t94, false, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.GetFunc(false, t95, t96, t97, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.GetListElementFunc(false, t98, t99, t100, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.SetFunc(false, t101, t102, t103, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.GetVarFunc(false, null, t104, t105, true, new N.closure1493(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.SetVarFunc(false, t106, t107, t108, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.CallFunc(false, t109, t110, t111, t112, t113, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.RetFunc(false, t114, t115, new N.closure2674(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.GetCurrentRowFieldFunc(false, null, t116, t117, t118, true, new N.closure1522(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.GetColumnFunc(false, null, t119, t120, true, new N.closure1521(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.GetCurrentTableFunc(false, t121, true, new N.closure4806(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ColumnExistsFunc(false, null, t122, t123, t124, true, new N.closure4807(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.TableAccessorFunc(false, null, t125, t126, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], t127, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ColumnAccessorFunc(false, null, t128, t129, t130, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], t131, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ValueAccessorFunc(false, null, t132, t133, t134, t135, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.RowCountFunc(false, null, t136, t137, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.CumSumFunc(null, t138, false, t139, t140, t141, t142, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], t143, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.MovingAvgFunc(null, t144, t145, t146, false, t147, t148, t149, t150, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], t151, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.IndexOfFunc(null, t152, t153, false, t154, t155, t156, t157, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], t158, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.LookupFunc(null, t159, t160, t161, t162, false, t163, t164, t165, t166, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], t167, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), t169, t171, new N.CoalesceFunc(t170, t168, new N.closure4808(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false), new N.ErrorThrowingFunc(N.FuncParam$typed("message", "dynamic", null, null, null), new N.closure4809(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false)], _i = 0; _i < 52; ++_i)
         N.Funcs_register(t168[_i], null, false);
       t1 = new N.TableQuery("data-table-query", null, null, null, null, [], [], "and", [], [], [], [], "and", [], [], null, null, null, null, ["DataQuery", "Func"], null, "data-query", "", null, P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, true, null, null, null, ["Func"], "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t6, null), P.LinkedHashMap_LinkedHashMap$_empty(t6, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false);
       t1.helpUrl = "/help/access/databases/databases.md#query-editor";
@@ -35002,13 +35002,7 @@
               $async$handler = 3;
               $async$exception = $async$currentError;
               x = H.unwrapException($async$exception);
-              if (onError != null) {
-                $async$returnValue = onError.call$1(x);
-                // goto return
-                $async$goto = 1;
-                break;
-              } else
-                throw $async$exception;
+              throw $async$exception;
               // goto after finally
               $async$goto = 6;
               break;
@@ -59230,25 +59224,25 @@
       $isGrokJsObject: 1,
       $isJsConvertible: 1
     },
-    closure1377: {
+    closure1509: {
       "^": "Closure:106;",
       call$1: function(b) {
         return J.get$length$asx(b);
       }
     },
-    closure1378: {
+    closure1510: {
       "^": "Closure:106;",
       call$1: function(b) {
         return b.get$trueCount();
       }
     },
-    closure1379: {
+    closure1511: {
       "^": "Closure:106;",
       call$1: function(b) {
         return b.get$falseCount();
       }
     },
-    closure1380: {
+    closure1512: {
       "^": "Closure:106;",
       call$1: function(b) {
         return J.get$version$x(b);
@@ -59398,7 +59392,7 @@
     closure420: {
       "^": "Closure:0;",
       call$1: [function(_) {
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     Range: {
       "^": "Object;start>,length>",
@@ -60243,55 +60237,55 @@
         return x.get$df().get$_eventBus().fire$1(C.EventType_5eO);
       }
     },
-    closure1366: {
+    closure1498: {
       "^": "Closure:28;",
       call$1: function(c) {
         return J.get$length$asx(c);
       }
     },
-    closure1367: {
+    closure1499: {
       "^": "Closure:28;",
       call$1: function(c) {
         return c.get$parentDataFrame();
       }
     },
-    closure1368: {
+    closure1500: {
       "^": "Closure:28;",
       call$1: function(c) {
         return c.get$isNumerical();
       }
     },
-    closure1369: {
+    closure1501: {
       "^": "Closure:28;",
       call$1: function(c) {
         return c.get$isCategorical();
       }
     },
-    closure1370: {
+    closure1502: {
       "^": "Closure:28;",
       call$1: function(c) {
         return c.get$stats();
       }
     },
-    closure1371: {
+    closure1503: {
       "^": "Closure:28;",
       call$1: function(c) {
         return c.get$filteredRowsStats();
       }
     },
-    closure1372: {
+    closure1504: {
       "^": "Closure:28;",
       call$1: function(c) {
         return c.get$tags();
       }
     },
-    closure1373: {
+    closure1505: {
       "^": "Closure:28;",
       call$1: function(c) {
         return c.get$semType();
       }
     },
-    closure1374: {
+    closure1506: {
       "^": "Closure:130;",
       call$2: function(c, semType) {
         c.set$semType(semType);
@@ -60412,13 +60406,13 @@
         return J.$index$asx(this.src, J.$sub$n(row, this.dstStart));
       }
     },
-    closure1375: {
+    closure1507: {
       "^": "Closure:28;",
       call$1: function(c) {
         return J.get$name$x(c);
       }
     },
-    closure1376: {
+    closure1508: {
       "^": "Closure:130;",
       call$2: function(c, v) {
         J.set$name$x(c, v);
@@ -61629,7 +61623,7 @@
       "^": "Closure:0;",
       call$1: [function(_) {
         return;
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     BigIntColumn_setAllValues_closure: {
       "^": "Closure:0;_box_0,$this",
@@ -64081,7 +64075,7 @@
       "^": "Closure:0;",
       call$1: [function(_) {
         return "0";
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     FloatMeta_closure: {
       "^": "Closure:0;aggr",
@@ -66314,7 +66308,7 @@
       "^": "Closure:0;",
       call$1: [function(_) {
         return "";
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     StringColumn_sizeInBytes_closure: {
       "^": "Closure:0;",
@@ -67795,7 +67789,7 @@
             t3.df = t2;
             t2._columns = t3;
           }
-          t3.addMany$2$uniquifyNames(J.map$1$ax(t1.get$keys(values), new N.closure1471(values)), true);
+          t3.addMany$2$uniquifyNames(J.map$1$ax(t1.get$keys(values), new N.closure1418(values)), true);
           return t2;
         },
         DataFrame__commonColumnType: function(a, b) {
@@ -67930,31 +67924,31 @@
         return J.get$name$x(c);
       }, null, null, 2, 0, null, 3, "call"]
     },
-    closure1381: {
+    closure1513: {
       "^": "Closure:41;",
       call$1: function(df) {
         return df.get$mouseOverRow();
       }
     },
-    closure1382: {
+    closure1514: {
       "^": "Closure:41;",
       call$1: function(df) {
         return df.get$currentCell();
       }
     },
-    closure1383: {
+    closure1515: {
       "^": "Closure:41;",
       call$1: function(df) {
         return J.get$filter$x(df);
       }
     },
-    closure1384: {
+    closure1516: {
       "^": "Closure:41;",
       call$1: function(df) {
         return df.get$selection();
       }
     },
-    closure1385: {
+    closure1517: {
       "^": "Closure:41;",
       call$1: function(df) {
         return J.get$columns$x(df);
@@ -68167,7 +68161,7 @@
         return 0;
       }
     },
-    closure1471: {
+    closure1418: {
       "^": "Closure:0;values",
       call$1: [function($name) {
         var t1 = N.Column_Column$fromStrings(J.$index$asx(this.values, $name), true, null, null, null);
@@ -68273,19 +68267,19 @@
         return this.toStr.call$2(col, this.row);
       }, null, null, 2, 0, null, 6, "call"]
     },
-    closure1392: {
+    closure1520: {
       "^": "Closure:41;",
       call$1: function(t) {
         return J.get$name$x(t);
       }
     },
-    closure1391: {
+    closure1519: {
       "^": "Closure:41;",
       call$1: function(t) {
         return t.get$rowCount();
       }
     },
-    closure1390: {
+    closure1518: {
       "^": "Closure:41;",
       call$1: function(t) {
         return J.get$length$asx(J.get$columns$x(t));
@@ -68493,7 +68487,7 @@
         var t1 = this.it;
         t1.moveNext$0();
         return t1.get$current();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     BigIntListEncoder_encode_closure: {
       "^": "Closure:0;_box_0,col,values,i",
@@ -71682,7 +71676,7 @@
       }
     },
     StringMatcher: {
-      "^": "ValueMatcher;values*,col,_lowerCaseValue,_lowerCaseValues,allowedPatterns,expression,op,colName",
+      "^": "ValueMatcher;values*,col,_lowerCaseValue,_lowerCaseValues,_regExpParsed,_regExpValue,allowedPatterns,expression,op,colName",
       get$lowerCaseValues: function() {
         var t1 = this._lowerCaseValues;
         if (t1 == null) {
@@ -71690,6 +71684,21 @@
           this._lowerCaseValues = t1;
         }
         return t1;
+      },
+      get$_ddt$_regExp: function() {
+        var exception;
+        if (!this._regExpParsed) {
+          this._regExpParsed = true;
+          try {
+            this._regExpValue = P.RegExp_RegExp(J.$index$asx(this.values, 0), false, false);
+          } catch (exception) {
+            if (!!J.getInterceptor(H.unwrapException(exception)).$isFormatException)
+              this._regExpValue = null;
+            else
+              throw exception;
+          }
+        }
+        return this._regExpValue;
       },
       toJson$0: function() {
         var t1 = this.super$ValueMatcher$toJson();
@@ -71753,13 +71762,9 @@
             }
             return J.$eq$(t1, t2) !== true;
           case "regex":
-            t1 = this._lowerCaseValue;
-            if (t1 == null) {
-              t1 = J.$index$asx(this.values, 0);
-              t1 = t1 == null ? t1 : J.toLowerCase$0$s(t1);
-              this._lowerCaseValue = t1;
-            }
-            return P.RegExp_RegExp(t1, false, false)._nativeRegExp.test(H.checkString(s));
+            t1 = this.get$_ddt$_regExp();
+            t1 = t1 == null ? t1 : t1._nativeRegExp.test(H.checkString(s));
+            return t1 == null ? false : t1;
           case "in":
           case "not in":
             return J.$eq$(J.contains$1$asx(this.get$lowerCaseValues(), J.toLowerCase$0$s(s)), J.$eq$(this.op, "in"));
@@ -71791,18 +71796,14 @@
               return new N.StringMatcher_getIndexPredicate_closure();
             return new N.StringMatcher_getIndexPredicate_closure0(this, column, idx);
           case "regex":
-            t1 = this._lowerCaseValue;
-            if (t1 == null) {
-              t1 = J.$index$asx(this.values, 0);
-              t1 = t1 == null ? t1 : J.toLowerCase$0$s(t1);
-              this._lowerCaseValue = t1;
-            }
-            rex = P.RegExp_RegExp(t1, false, false);
+            rex = this.get$_ddt$_regExp();
+            if (rex == null)
+              return new N.StringMatcher_getIndexPredicate_closure1();
             t1 = L.range(J.get$length$asx(column._categories), null, null);
-            return new N.StringMatcher_getIndexPredicate_closure1(column, P.LinkedHashSet_LinkedHashSet$from(new H.WhereIterable(t1, new N.StringMatcher_getIndexPredicate_closure2(column, rex), [H.getRuntimeTypeArgument(t1, "Iterable", 0)]), P.int));
+            return new N.StringMatcher_getIndexPredicate_closure2(column, P.LinkedHashSet_LinkedHashSet$from(new H.WhereIterable(t1, new N.StringMatcher_getIndexPredicate_closure3(column, rex), [H.getRuntimeTypeArgument(t1, "Iterable", 0)]), P.int));
           case "in":
           case "not in":
-            return new N.StringMatcher_getIndexPredicate_closure3(this, column, P.LinkedHashSet_LinkedHashSet$from(J.where$1$ax(J.map$1$ax(this.values, t1), new N.StringMatcher_getIndexPredicate_closure4()), P.int));
+            return new N.StringMatcher_getIndexPredicate_closure4(this, column, P.LinkedHashSet_LinkedHashSet$from(J.where$1$ax(J.map$1$ax(this.values, t1), new N.StringMatcher_getIndexPredicate_closure5()), P.int));
           default:
             return this.super$ValueMatcher$getIndexPredicate(column);
         }
@@ -71850,7 +71851,7 @@
           var t1, match, isNullMatch, t2, key, op, vals, matchValues;
           if (query == null || J.$eq$(J.trim$0$s(query), "") === true) {
             if (matchEmptyPattern) {
-              t1 = new N.StringMatcher([], null, null, null, null, null, null, null);
+              t1 = new N.StringMatcher([], null, null, null, false, null, null, null, null, null);
               t1.op = "none";
             } else
               t1 = null;
@@ -71861,7 +71862,7 @@
           t1 = match == null;
           if (t1 && isNullMatch == null) {
             t1 = [];
-            t2 = new N.StringMatcher(t1, null, null, null, null, null, null, null);
+            t2 = new N.StringMatcher(t1, null, null, null, false, null, null, null, null, null);
             t2.expression = query;
             t2.op = defaultOp;
             t1.push(query);
@@ -71889,7 +71890,7 @@
               vals = J.toList$0$ax(J.map$1$ax(J.split$1$s(t1[1], ","), new N.StringMatcher__parse_closure()));
             }
           } else if (op === "is null" || op === "is not null") {
-            t1 = new N.StringMatcher([], null, null, null, null, null, null, null);
+            t1 = new N.StringMatcher([], null, null, null, false, null, null, null, null, null);
             t1.op = op;
             return t1;
           } else {
@@ -71898,7 +71899,7 @@
               return H.ioore(t1, 2);
             vals = [J.trim$0$s(t1[2])];
           }
-          t1 = new N.StringMatcher([], null, null, null, null, null, null, null);
+          t1 = new N.StringMatcher([], null, null, null, false, null, null, null, null, null);
           t2 = match._match;
           if (0 >= t2.length)
             return H.ioore(t2, 0);
@@ -71955,7 +71956,7 @@
       "^": "Closure:0;",
       call$1: [function(_) {
         return false;
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     StringMatcher_getIndexPredicate_closure0: {
       "^": "Closure:0;$this,column,idx",
@@ -71963,25 +71964,31 @@
         return J.$eq$(J.$eq$(J.$index$asx(this.column.get$indexes(), i), this.idx), J.$eq$(this.$this.op, "equals"));
       }, null, null, 2, 0, null, 5, "call"]
     },
-    StringMatcher_getIndexPredicate_closure2: {
+    StringMatcher_getIndexPredicate_closure1: {
+      "^": "Closure:0;",
+      call$1: [function(_) {
+        return false;
+      }, null, null, 2, 0, null, 24, "call"]
+    },
+    StringMatcher_getIndexPredicate_closure3: {
       "^": "Closure:0;cc,rex",
       call$1: function(i) {
         return this.rex._nativeRegExp.test(H.checkString(J.$index$asx(this.cc._categories, J.toInt$0$n(i))));
       }
     },
-    StringMatcher_getIndexPredicate_closure1: {
+    StringMatcher_getIndexPredicate_closure2: {
       "^": "Closure:0;column,indexes",
       call$1: [function(i) {
         return this.indexes.contains$1(0, J.$index$asx(this.column.get$indexes(), i));
       }, null, null, 2, 0, null, 5, "call"]
     },
-    StringMatcher_getIndexPredicate_closure4: {
+    StringMatcher_getIndexPredicate_closure5: {
       "^": "Closure:0;",
       call$1: [function(i) {
         return J.$eq$(i, -1) !== true;
       }, null, null, 2, 0, null, 5, "call"]
     },
-    StringMatcher_getIndexPredicate_closure3: {
+    StringMatcher_getIndexPredicate_closure4: {
       "^": "Closure:0;$this,column,indexes",
       call$1: [function(i) {
         return this.indexes.contains$1(0, J.$index$asx(this.column.get$indexes(), i)) === J.$eq$(this.$this.op, "in");
@@ -72222,25 +72229,25 @@
       $isGrokJsObject: 1,
       $isJsConvertible: 1
     },
-    closure1386: {
+    closure1494: {
       "^": "Closure:131;",
       call$1: function(cell) {
         return cell.get$row();
       }
     },
-    closure1387: {
+    closure1495: {
       "^": "Closure:131;",
       call$1: function(cell) {
         return cell.get$column();
       }
     },
-    closure1388: {
+    closure1496: {
       "^": "Closure:131;",
       call$1: function(cell) {
         return cell.get$dataFrame();
       }
     },
-    closure1389: {
+    closure1497: {
       "^": "Closure:131;",
       call$1: function(cell) {
         return J.get$value$x(cell);
@@ -73619,7 +73626,7 @@
       "^": "Closure:20;$this",
       call$1: [function(_) {
         return this.$this.onRowsFiltering$0();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     DataFrameLink_detach_closure: {
       "^": "Closure:0;",
@@ -73828,7 +73835,7 @@
         var t1 = J.toString$0$(v);
         J.$indexSet$ax(this.columnPatterns, k, t1);
         return t1;
-      }, null, null, 4, 0, null, 24, 8, "call"]
+      }, null, null, 4, 0, null, 25, 8, "call"]
     },
     RowMatcher_match_closure: {
       "^": "Closure:0;$this,row",
@@ -83086,7 +83093,7 @@
       "^": "Closure:20;$this",
       call$1: [function(k) {
         return !this.$this.get$paramMap().containsKey$1(0, k);
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     FuncCall_setValues_closure1: {
       "^": "Closure:3;",
@@ -84051,15 +84058,6 @@
       call$1$processed: function(arg0) {
         return this.$call.call$1$processed(arg0);
       },
-      call$3$body$headers: function(arg0, arg1, arg2) {
-        return this.$call.call$3$body$headers(arg0, arg1, arg2);
-      },
-      call$2$whenNull: function(arg0, arg1) {
-        return this.$call.call$2$whenNull(arg0, arg1);
-      },
-      call$2$optional: function(arg0, arg1) {
-        return this.$call.call$2$optional(arg0, arg1);
-      },
       call$1$stack: function(arg0) {
         return this.$call.call$1$stack(arg0);
       },
@@ -84080,6 +84078,15 @@
       },
       call$2$context$report: function(arg0, arg1) {
         return this.$call.call$2$context$report(arg0, arg1);
+      },
+      call$3$body$headers: function(arg0, arg1, arg2) {
+        return this.$call.call$3$body$headers(arg0, arg1, arg2);
+      },
+      call$2$whenNull: function(arg0, arg1) {
+        return this.$call.call$2$whenNull(arg0, arg1);
+      },
+      call$2$optional: function(arg0, arg1) {
+        return this.$call.call$2$optional(arg0, arg1);
       },
       call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace: function(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
         return this.$call.call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
@@ -84648,7 +84655,7 @@
       "^": "Closure:20;x",
       call$1: [function(k) {
         return '"' + H.S(k) + '": ' + H.S(N.FuncCallParam_valueToString(J.$index$asx(this.x, k)));
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     FuncCallParam_getValueForMap_closure: {
       "^": "Closure:20;",
@@ -86131,7 +86138,7 @@
         t3 = N.FuncParam$typed("value", "dynamic", null, null, null);
         t3.isInput = false;
         t4 = P.String;
-        return new N.GetVarFunc(false, null, t2, t3, true, new N.closure1365(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t4, null), P.LinkedHashMap_LinkedHashMap$_empty(t4, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false).prepare$1$paramValues(P.LinkedHashMap_LinkedHashMap$_literal(["variableName", J.trim$0$s(t1.$index(x, 1))], t4, null));
+        return new N.GetVarFunc(false, null, t2, t3, true, new N.closure1493(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t4, null), P.LinkedHashMap_LinkedHashMap$_empty(t4, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false).prepare$1$paramValues(P.LinkedHashMap_LinkedHashMap$_literal(["variableName", J.trim$0$s(t1.$index(x, 1))], t4, null));
       }, null, null, 2, 0, null, 1, "call"]
     },
     CmdParserDefinition_variableName_closure: {
@@ -86353,7 +86360,7 @@
           t4 = N.FuncParam$typed("result", "column", null, null, null);
           t4.parentTableParamName = null;
           t4.isInput = false;
-          t1 = new N.GetColumnFunc(false, null, t3, t4, true, new N.closure1393(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t1, null), P.LinkedHashMap_LinkedHashMap$_empty(t1, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false).prepare$0();
+          t1 = new N.GetColumnFunc(false, null, t3, t4, true, new N.closure1521(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t1, null), P.LinkedHashMap_LinkedHashMap$_empty(t1, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false).prepare$0();
           t1.setValues$1(H.setRuntimeTypeInfo([x], t2));
         } else {
           t3 = N.FuncParam$typed($.GetCurrentRowFieldFunc_FIELD, "string", null, null, null);
@@ -86361,7 +86368,7 @@
           t4.isOptional = true;
           t5 = N.FuncParam$typed($.GetCurrentRowFieldFunc_RESULT, "dynamic", null, null, null);
           t5.isInput = false;
-          t1 = new N.GetCurrentRowFieldFunc(false, null, t3, t4, t5, true, new N.closure1394(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t1, null), P.LinkedHashMap_LinkedHashMap$_empty(t1, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false).prepare$0();
+          t1 = new N.GetCurrentRowFieldFunc(false, null, t3, t4, t5, true, new N.closure1522(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t1, null), P.LinkedHashMap_LinkedHashMap$_empty(t1, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false).prepare$0();
           t1.setValues$1(H.setRuntimeTypeInfo([x], t2));
         }
         return t1;
@@ -86375,7 +86382,7 @@
         t2 = N.FuncParam$typed("result", "dynamic", null, null, null);
         t2.isInput = false;
         t3 = P.String;
-        t3 = new N.GetRowIndexFunc(false, null, t1, t2, true, new N.closure1417(), "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t3, null), P.LinkedHashMap_LinkedHashMap$_empty(t3, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false).prepare$0();
+        t3 = new N.GetRowIndexFunc(false, null, t1, t2, true, new N.closure1545(), "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t3, null), P.LinkedHashMap_LinkedHashMap$_empty(t3, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false).prepare$0();
         t3.setValues$1(H.setRuntimeTypeInfo([x], [P.Object]));
         return t3;
       }, null, null, 2, 0, null, 1, "call"]
@@ -86820,7 +86827,7 @@
         var t1 = $.$get$Funcs_namespacesFuncs().$index(0, k);
         t1 = t1.get$keys(t1);
         return H.MappedIterable_MappedIterable(t1, new N.Funcs_funcNames__closure(k), H.getRuntimeTypeArgument(t1, "Iterable", 0), null);
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     Funcs_funcNames__closure: {
       "^": "Closure:0;k",
@@ -87083,7 +87090,7 @@
       "^": "Closure:0;column,newColumn",
       call$1: [function(k) {
         return this.newColumn.setTag$2(k, this.column.getTag$1(k));
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     ChangeColumnsTypeAction_changeColumnsType_closure: {
       "^": "Closure:20;table",
@@ -87141,7 +87148,7 @@
       "^": "Closure:0;col,newColumn",
       call$1: [function(k) {
         return this.newColumn.setTag$2(k, this.col.getTag$1(k));
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     ChangeColumnsTypeAction_runForColumns_closure2: {
       "^": "Closure:3;table,cols,targetType,newColumns",
@@ -87348,15 +87355,6 @@
       call$1$processed: function(arg0) {
         return this.$call.call$1$processed(arg0);
       },
-      call$3$body$headers: function(arg0, arg1, arg2) {
-        return this.$call.call$3$body$headers(arg0, arg1, arg2);
-      },
-      call$2$whenNull: function(arg0, arg1) {
-        return this.$call.call$2$whenNull(arg0, arg1);
-      },
-      call$2$optional: function(arg0, arg1) {
-        return this.$call.call$2$optional(arg0, arg1);
-      },
       call$1$stack: function(arg0) {
         return this.$call.call$1$stack(arg0);
       },
@@ -87377,6 +87375,15 @@
       },
       call$2$context$report: function(arg0, arg1) {
         return this.$call.call$2$context$report(arg0, arg1);
+      },
+      call$3$body$headers: function(arg0, arg1, arg2) {
+        return this.$call.call$3$body$headers(arg0, arg1, arg2);
+      },
+      call$2$whenNull: function(arg0, arg1) {
+        return this.$call.call$2$whenNull(arg0, arg1);
+      },
+      call$2$optional: function(arg0, arg1) {
+        return this.$call.call$2$optional(arg0, arg1);
       },
       call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace: function(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
         return this.$call.call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
@@ -87858,7 +87865,7 @@
       "^": "Closure:0;",
       call$1: [function(_) {
         return;
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     CalcColErrorBehavior_applyTo_closure: {
       "^": "Closure:0;rowErrors",
@@ -88548,7 +88555,7 @@
       "^": "Closure:0;x",
       call$1: [function(_) {
         return H.S(this.x);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ExtractColumnsAction: {
       "^": "Func;tags@,table@,columns*,result*,source,helpUrl,description,dialogFunc,checkEnabled,batchEstimatorFunc,toolbox,topMenu,_nameLowerCase,_descriptionLowerCase,needsValidation,saveLog,isBatchable,maxBatchSize,shortcut,synonyms,params,options,aux,runs,Func_recurrence,Func_recurrenceRunAs,Func_nextRunTime,Func_lastRunTime,isDataTransformationValue,_inputParams,_outputParams,_roleSet,_paramMap,isCancelable,AuthorMixin_author,AuthorMixin_createdOn,AuthorMixin_updatedOn,ScheduleMixin_recurrence,ScheduleMixin_recurrenceRunAs,ScheduleMixin_nextRunTime,ScheduleMixin_lastRunTime,GrokJsObject__jsObject,TagsMixin__tags,TagsMixin_entityTags,Entity_id,securityObject,_bindId,projectRelations,isDeleted,PropMixin_changeController,PropMixin_updating,PropMixin_includeDefaultValues,PropMixin_ancestors,_grok_shared$_name,_friendlyName,namespace,Model_id,Model_included,Model_isOnServer,Model_isDirty",
@@ -89704,7 +89711,7 @@
       $asPropMixin: Isolate.functionThatReturnsNull,
       $isCompilableFunc: 1
     },
-    closure1365: {
+    closure1493: {
       "^": "Closure:7;",
       call$2: [function(v, context) {
         return J.$index$asx(context, v);
@@ -90212,7 +90219,7 @@
         J.$set$2$x(this.result, run, J.$index$asx(J.get$context$x(run), "row"));
       }
     },
-    closure1417: {
+    closure1545: {
       "^": "Closure:0;",
       call$1: [function(context) {
         return J.$index$asx(context, "row");
@@ -90269,7 +90276,7 @@
       $asPropMixin: Isolate.functionThatReturnsNull,
       $isCompilableFunc: 1
     },
-    closure1394: {
+    closure1522: {
       "^": "Closure:449;",
       call$3: [function(v, semType, context) {
         var cell = context.get$currentRow().cell$1(v);
@@ -90335,7 +90342,7 @@
       $asPropMixin: Isolate.functionThatReturnsNull,
       $isCompilableFunc: 1
     },
-    closure1393: {
+    closure1521: {
       "^": "Closure:7;",
       call$2: [function(v, context) {
         return J.$index$asx(J.$index$asx(context, "currentTable"), v);
@@ -90691,6 +90698,33 @@
     },
     CoreNamespaceResolver: {
       "^": "Object;",
+      findEntityByName$2$type: function(nqName, type) {
+        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, li;
+        var $async$findEntityByName$2$type = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
+          if ($async$errorCode === 1)
+            return P._asyncRethrow($async$result, $async$completer);
+          while (true)
+            switch ($async$goto) {
+              case 0:
+                // Function start
+                nqName = J.replaceAll$2$s(nqName, ".", ":");
+                t1 = J.getInterceptor$asx(nqName);
+                li = t1.lastIndexOf$1(nqName, ":");
+                $async$goto = 3;
+                return P._asyncAwait($async$self.findEntity$3$type(new N.Namespace(t1.substring$2(nqName, 0, li), true, false, null, false, false, [], null, null, "core:", null, false, false, false), t1.substring$1(nqName, J.$add$ns(li, 1)), type), $async$findEntityByName$2$type);
+              case 3:
+                // returning from await.
+                $async$returnValue = $async$result;
+                // goto return
+                $async$goto = 1;
+                break;
+              case 1:
+                // return
+                return P._asyncReturn($async$returnValue, $async$completer);
+            }
+        });
+        return P._asyncStart($async$findEntityByName$2$type, $async$completer);
+      },
       findEntity$3$type: ["super$CoreNamespaceResolver$findEntity", function(namespace, action, type) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue;
         var $async$findEntity$3$type = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -92021,7 +92055,7 @@
         t3 = N.FuncParam$typed($.GetCurrentRowFieldFunc_RESULT, "dynamic", null, null, null);
         t3.isInput = false;
         t4 = P.String;
-        $call.set$func(new N.GetCurrentRowFieldFunc(false, null, t1, t2, t3, true, new N.closure1394(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t4, null), P.LinkedHashMap_LinkedHashMap$_empty(t4, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false));
+        $call.set$func(new N.GetCurrentRowFieldFunc(false, null, t1, t2, t3, true, new N.closure1522(), false, null, "function", "", "", null, null, null, null, null, null, null, null, true, false, 1024, null, C.List_empty, [], P.LinkedHashMap_LinkedHashMap$_empty(t4, null), P.LinkedHashMap_LinkedHashMap$_empty(t4, null), [], null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, [], null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false));
         $call.clearCache$0();
         J.set$value$x(J.$index$asx($call.get$params(), 0), J.get$name$x(column));
       }
@@ -92338,14 +92372,14 @@
       run$1$processed: function(arg0) {
         return this.run.call$1$processed(arg0);
       },
-      run$0: function() {
-        return this.run.call$0();
-      },
       run$2$context$report: function(arg0, arg1) {
         return this.run.call$2$context$report(arg0, arg1);
       },
       run$2: function(arg0, arg1) {
         return this.run.call$2(arg0, arg1);
+      },
+      run$0: function() {
+        return this.run.call$0();
       },
       run$2$processed$report: function(arg0, arg1) {
         return this.run.call$2$processed$report(arg0, arg1);
@@ -95933,14 +95967,14 @@
       run$1$processed: function(arg0) {
         return this.run.call$1$processed(arg0);
       },
-      run$0: function() {
-        return this.run.call$0();
-      },
       run$2$context$report: function(arg0, arg1) {
         return this.run.call$2$context$report(arg0, arg1);
       },
       run$2: function(arg0, arg1) {
         return this.run.call$2(arg0, arg1);
+      },
+      run$0: function() {
+        return this.run.call$0();
       },
       run$2$processed$report: function(arg0, arg1) {
         return this.run.call$2$processed$report(arg0, arg1);
@@ -98154,7 +98188,7 @@
       "^": "Closure:0;",
       call$1: [function(_) {
         return H.setRuntimeTypeInfo([], [P.String]);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     CsvParser__onRowFromTokenizer_closure1: {
       "^": "Closure:0;",
@@ -98261,7 +98295,7 @@
       "^": "Closure:0;",
       call$1: [function(_) {
         return;
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     findAndReplace_closure2: {
       "^": "Closure:58;_box_0,query,col,matcher,newValue",
@@ -99945,7 +99979,7 @@
         var t1 = this.controller;
         if ((t1._state & 4) === 0)
           t1.close$0(0);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     StreamingColumnBuilder: {
       "^": "Object;"
@@ -100028,7 +100062,7 @@
       "^": "Closure:0;",
       call$1: [function(k) {
         return J.toLowerCase$0$s(k);
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     StringComparers_fromMap_closure0: {
       "^": "Closure:133;_box_0,caseSensitive",
@@ -100461,7 +100495,7 @@
       "^": "Closure:0;",
       call$1: [function(_) {
         return 100;
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     TestData_wells_closure4: {
       "^": "Closure:0;sampleCurveActivities,getConc,createActivityPoints,sampleIds,sampleIndicesMap",
@@ -100552,7 +100586,7 @@
       "^": "Closure:0;",
       call$1: [function(k) {
         return k;
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     Find: {
       "^": "Object;items,$ti",
@@ -100983,7 +101017,7 @@
         } else
           t1 = false;
         return t1;
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     ValidatorResult: {
       "^": "Object;message*,isError@"
@@ -102449,7 +102483,7 @@
       "^": "Closure:20;obj",
       call$1: [function(k) {
         return !!J.getInterceptor(J.$index$asx(this.obj, k)).$isList;
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     _processSpecialCases_closure1: {
       "^": "Closure:20;obj",
@@ -102458,7 +102492,7 @@
         t1 = this.obj;
         t2 = J.getInterceptor$asx(t1);
         return J.$eq$(J.get$length$asx(t2.$index(t1, k)), J.get$length$asx(H.listTypeCast(t2.$index(t1, J.get$first$ax(t2.get$keys(t1))))));
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     _processSpecialCases_closure2: {
       "^": "Closure:20;",
@@ -102898,11 +102932,11 @@
       post$2$body: function(url, body) {
         return this.post$5$body$encoding$headers$suppressException(url, body, null, null, false);
       },
-      post$3$body$headers: function(url, body, headers) {
-        return this.post$5$body$encoding$headers$suppressException(url, body, null, headers, false);
-      },
       post$4$body$headers$suppressException: function(url, body, headers, suppressException) {
         return this.post$5$body$encoding$headers$suppressException(url, body, null, headers, suppressException);
+      },
+      post$3$body$headers: function(url, body, headers) {
+        return this.post$5$body$encoding$headers$suppressException(url, body, null, headers, false);
       },
       post$3$body$headers: function(url, body, headers) {
         return this.post$5$body$encoding$headers$suppressException(url, body, null, headers, false);
@@ -103135,7 +103169,7 @@
     DelegatingHttpClient_send_closure: {
       "^": "Closure:20;",
       call$1: [function(_) {
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     DelegatingHttpClient_readBytes_closure: {
       "^": "Closure:0;",
@@ -103681,7 +103715,7 @@
             }
         });
         return P._asyncStart($async$call$1, $async$completer);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     DapiSocket_init_closure3: {
       "^": "Closure:3;$this",
@@ -104259,7 +104293,7 @@
       "^": "Closure:0;$this,onError,batch,acked",
       call$1: [function(_) {
         return this.$this._process$3(this.batch, this.acked, this.onError);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     BinaryDataSocketReceiver: {
       "^": "SocketReceiver;currentBytes,blobs,tags@,logger,socket,expectedDataLength,currentBytesAccepted,currentBatchId,currentBatchChunkId,currentTags,subscription,_processing,_pendingBytes",
@@ -104571,7 +104605,7 @@
       m.data = df;
     },
     _DbTableMutations__run: function(m, connectionId) {
-      var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, paramValues, run, result, $async$temp1;
+      var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, t1, paramValues, run, result;
       var $async$_DbTableMutations__run = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
         if ($async$errorCode === 1)
           return P._asyncRethrow($async$result, $async$completer);
@@ -104579,12 +104613,14 @@
           switch ($async$goto) {
             case 0:
               // Function start
-              $async$temp1 = m;
               $async$goto = 3;
-              return P._asyncAwait(N.Func_eval(connectionId, null, false, new X._DbTableMutations__run_closure(connectionId)), $async$_DbTableMutations__run);
+              return P._asyncAwait(O.Entity_fromName(connectionId, "DataConnection"), $async$_DbTableMutations__run);
             case 3:
               // returning from await.
-              $async$temp1.connection = $async$result;
+              t1 = $async$result;
+              m.connection = t1;
+              if (t1 == null)
+                throw H.wrapException('Connection "' + H.S(connectionId) + '" not found');
               m.fillMatchers$0();
               if (!!m.$isInsertRows && J.$eq$(m.bulk, true) === true && m.data != null) {
                 J.add$1$ax(m.DataQuery_params, N.FuncParam$typed("data", "dataframe", null, null, null));
@@ -106206,23 +106242,17 @@
         return J.get$type$x(c);
       }, null, null, 2, 0, null, 3, "call"]
     },
-    _DbTableMutations__run_closure: {
-      "^": "Closure:0;connectionId",
-      call$1: function(_) {
-        return H.throwExpression('Connection "' + H.S(this.connectionId) + '" not found');
-      }
-    },
     _DbTableMutations_insert_closure: {
       "^": "Closure:0;",
       call$1: [function(k) {
         return J.toString$0$(k);
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     _DbTableMutations_update_closure: {
       "^": "Closure:0;",
       call$1: [function(k) {
         return J.toString$0$(k);
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     _DbTableMutations_update_closure0: {
       "^": "Closure:0;setMap",
@@ -106243,7 +106273,7 @@
       "^": "Closure:0;run",
       call$1: [function(_) {
         return $.$get$FuncCall_eventBus().fire$2(C.EventType_gqt, this.run);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ra0_closure: {
       "^": "Closure:3;execute",
@@ -107434,7 +107464,7 @@
       "^": "Closure:0;e,map",
       call$1: [function(k) {
         return P.LinkedHashMap_LinkedHashMap$_literal(["entityId", J.get$id$x(this.e), "property", k, "value", J.$index$asx(this.map, k)], P.String, null);
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     initJsApi_closure98: {
       "^": "Closure:789;",
@@ -112439,7 +112469,7 @@
       "^": "Closure:0;handler",
       call$1: [function(_) {
         return this.handler.call$0();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     initJsApi_closure631: {
       "^": "Closure:106;",
@@ -114179,7 +114209,7 @@
       call$1: [function(_) {
         this._box_1.lastError = null;
         return;
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     initJsApi_closure867: {
       "^": "Closure:0;",
@@ -115837,7 +115867,7 @@
       "^": "Closure:0;$this,params",
       call$1: [function(k) {
         return this.$this.printParam$2(k, this.params.$index(0, k));
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     GrokClientBase_withQuery_closure0: {
       "^": "Closure:0;",
@@ -126910,6 +126940,45 @@
       t1 = J.getInterceptor$s(hex);
       return H.S(t1.substring$2(hex, 0, 8)) + "-" + H.S(t1.substring$2(hex, 8, 12)) + "-" + H.S(t1.substring$2(hex, 12, 16)) + "-" + H.S(t1.substring$2(hex, 16, 20)) + "-" + H.S(t1.substring$1(hex, 20));
     },
+    Entity_fromName: function(nqName, type) {
+      var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, t1, e;
+      var $async$Entity_fromName = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
+        if ($async$errorCode === 1)
+          return P._asyncRethrow($async$result, $async$completer);
+        while (true)
+          switch ($async$goto) {
+            case 0:
+              // Function start
+              if (nqName != null) {
+                t1 = J.getInterceptor$asx(nqName);
+                t1 = t1.contains$1(nqName, ":") !== true && t1.contains$1(nqName, ".") !== true;
+              } else
+                t1 = true;
+              if (t1) {
+                // goto return
+                $async$goto = 1;
+                break;
+              }
+              $async$goto = 3;
+              return P._asyncAwait($.Funcs_namespaceResolver.findEntityByName$2$type(nqName, type), $async$Entity_fromName);
+            case 3:
+              // returning from await.
+              e = $async$result;
+              if (e instanceof O.Entity)
+                t1 = e.getType$0().toLowerCase() === type.toLowerCase();
+              else
+                t1 = false;
+              $async$returnValue = t1 ? e : null;
+              // goto return
+              $async$goto = 1;
+              break;
+            case 1:
+              // return
+              return P._asyncReturn($async$returnValue, $async$completer);
+          }
+      });
+      return P._asyncStart($async$Entity_fromName, $async$completer);
+    },
     FilterNegation_negate: function(tree) {
       var result, t1, t2, n, t3, like, operator, m;
       result = [];
@@ -126949,7 +127018,7 @@
     initPrivileges: function() {
       var t1, globalPermissions, entityPermissions;
       t1 = P.String;
-      globalPermissions = P.LinkedHashMap__makeLiteral(["Admin", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "fc0d204c-0542-45f3-a796-ed3a49a292b7", "name", "CreateUser", "description", "Create a new user from Users list or with API"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "795d8ee4-ee56-44a5-90ea-124d0a1b6d9b", "name", "EditUser", "description", "Edit a user from Users list or with API"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "5593c65c-5e97-45af-a42e-da8aa775b72b", "name", "EditGroup", "description", "Edit any user group, add or remove members"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "4f8712a2-1bfe-4456-8b25-6c0f964de7ee", "name", "EditGlobalPermissions", "description", "Edit this list of permissions"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "b1e7c4d2-3f6a-4a8e-9c5b-7d2e1f9a6c40", "name", "EditSettings", "description", "Edit client and group settings, and push group defaults"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "fe230c3a-fefd-47b2-a858-790237934007", "name", "StartAdminSession", "description", "Ability to temporary disables permissions check"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "fe230c3a-fefd-47b2-a858-26571c8cd0ae", "name", "EditPluginsSettings", "description", "Change Datagrok server-side settings"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "08837831-ac19-4e8a-b7a4-5c01d643c891", "name", "PublishPackage", "description", "Install a package or deploy with Datagrok tools"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "43284301-ac19-4e8a-b7a4-234097427079", "name", "DeleteComments", "description", "Delete comments in any chat inside Datagrok"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "3e0b7c52-6f1d-4a8e-b9c4-5d27a1e8f603", "name", "ImportComments", "description", "Import comments into a chat with their original author and date"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "aaa6e55e-6648-42af-9fae-790237934007", "name", "AdminSystemConnections", "description", "Edit system data connections such as System:AppData or System:Datagrok"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "f26072e3-1ff9-4117-84d0-28f3a6a04dae", "name", "AdminStickyMeta", "description", "Ability to setup Sticky Meta"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "b3c1a8a4-bc5d-4d4e-9e6c-1a4ad33d7e2b", "name", "AdminKeys", "description", "Manage server cryptographic keys: create, rotate, move, revoke, delete"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "d4f1c7e9-5b8a-4c63-9e7d-2a5f6b8e9c12", "name", "AdminSync", "description", "Manage cross-instance sync pairs and run entity sync"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "7c3e9b1a-2d4f-4a6b-8e5c-9f1d3b7a2c48", "name", "AdminUrlAliases", "description", "Create, re-point and delete URL aliases"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "a70375c9-c507-46f6-81cb-07f0faeee76d", "name", "AdminCluster", "description", "View and manage cluster workloads, nodes, resources, scaling and placement"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "2b7e4f1c-9a3d-4c6e-8f5b-1d7a3e9c5b21", "name", "ManageAlerts", "description", "List, acknowledge, mute and resolve alerts"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "3a6d9e2b-1f4c-4b8e-9a7d-6c2e8f1b4d56", "name", "ViewTelemetry", "description", "Read platform errors, timelines and captured activity"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "d63d8e0f-729a-4c9e-84a9-1c9c68e2b75e", "name", "CreateRepository", "description", "Register a new package repository"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "e57d2a3f-56b7-4d3b-9d4b-873a81fef84a", "name", "CreateGroup", "description", "Create a new user group"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "f25a1e99-8b2e-4e7c-92da-2e89b9c3b3f1", "name", "CreateRole", "description", "Create a new user role"], t1, null)], "Create", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "fd56e55e-6648-42af-9fae-7f6670581d15", "name", "SaveEntityType", "description", "Create or edit Entity Type for Sticky Meta"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "82988f47-3532-4866-a492-f54f93244167", "name", "CreateEntity", "description", "Create any entity within Datagrok"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "f9715221-5089-4adc-a60f-184d48132fa1", "name", "CreateScript", "description", "Create a script"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "d06ce4ee-45ad-434f-8312-5aba92f35b2a", "name", "CreateSecurityConnection", "description", "Create a connection that provides credentials"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "d06ce4ee-45ad-434f-8312-654614663463", "name", "CreateDatabaseConnection", "description", "Create a connection to a database"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "d06ce4ee-45ad-434f-8312-245662457457", "name", "CreateFileConnection", "description", "Create a file share"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "a36f2a13-527b-4c5a-a0b3-1d4a8c832a91", "name", "CreateDataQuery", "description", "Create a new data query"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "b58f4e72-8c7b-4f13-9f6c-3e15e5a6e74c", "name", "CreateDashboard", "description", "Create a new dashboard"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "c42a9b9e-1c59-4f32-a16c-0a7dc5b2d90d", "name", "CreateSpace", "description", "Create a new space"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "8a7696f8-dfc8-4cf2-a232-faf2735f5a32", "name", "CreateDomainSchema", "description", "Create a user-managed domain database schema"], t1, null)], "General", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "5b032e72-683c-418d-b197-5428a05ba321", "name", "InviteUser", "description", "Invite a new user by email, explicitly or by sharing something"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "8d654a46-5089-4adc-a60f-024551513450", "name", "ShareWithEveryone", "description", "Share something with someone user does not have common groups or roles with"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "8d654a46-8237-11ee-b962-0242ac120002", "name", "SendEmail", "description", "Send email to any user using group emails"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "dd64c205-7708-4d9f-aeab-615c92f535d3", "name", "EditAllUsersFavorites", "description", "Add to and remove from the favorites every user sees (the All users group)"], t1, null)], "Browse", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "1de15967-1017-44dc-aa9e-c9ac58877fc3", "name", "BrowseFileConnections", "description", "Show Files section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "10358bb3-888a-4c5d-95e9-5c99c26296ba", "name", "BrowseDatabaseConnections", "description", "Show Databases section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "fba72edd-81e9-4f6b-a063-5e0472078da7", "name", "BrowseApps", "description", "Show Apps section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "76076bb2-e996-46c0-9b8b-bb3c19fcf567", "name", "BrowseSpaces", "description", "Show Spaces section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "6eadf356-e3f5-4d38-811b-c47ff53d9892", "name", "BrowseDashboards", "description", "Show Dashboards section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "c6286a1f-2716-4554-b4c6-c245223143e2", "name", "BrowsePlugins", "description", "Show Plugins and Repositories sections in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "c692af5b-b934-4afa-8750-016fc33bd7a9", "name", "BrowseFunctions", "description", "Show Functions section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "1c421c0c-3abc-444a-a017-1ec322805983", "name", "BrowseQueries", "description", "Show Queries section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "78a58978-e70d-4090-970f-e01671f3b809", "name", "BrowseScripts", "description", "Show Scripts section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "c434f7f0-1053-4836-8447-927b2a6d5235", "name", "BrowseOpenApi", "description", "Show Open API section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "fa0eac10-4a04-474e-bfba-9e2b8503fd35", "name", "BrowseUsers", "description", "Show Users section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "cae4eed6-6404-4698-b1f2-5bac2e17d356", "name", "BrowseGroups", "description", "Show Groups section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "b6901732-4c7c-4c53-883b-cd59d225ee95", "name", "BrowseRoles", "description", "Show Roles section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "8d5e7700-55d1-4dd1-a908-1355d6338fac", "name", "BrowseModels", "description", "Show Predictive Models section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "8b5c52d7-37dd-4f1a-9687-cb9e90ff1d97", "name", "BrowseDockers", "description", "Show Dockers section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "745402bb-5bab-4d4e-b91c-15f3404407db", "name", "BrowseLayouts", "description", "Show Layouts section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "c138c123-c50e-405a-8237-1128467a38bf", "name", "BrowseSharedData", "description", "Show Shared data in Browse Panel"], t1, null)]]);
+      globalPermissions = P.LinkedHashMap__makeLiteral(["Admin", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "fc0d204c-0542-45f3-a796-ed3a49a292b7", "name", "CreateUser", "description", "Create a new user from Users list or with API"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "795d8ee4-ee56-44a5-90ea-124d0a1b6d9b", "name", "EditUser", "description", "Edit a user from Users list or with API"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "5593c65c-5e97-45af-a42e-da8aa775b72b", "name", "EditGroup", "description", "Edit any user group, add or remove members"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "4f8712a2-1bfe-4456-8b25-6c0f964de7ee", "name", "EditGlobalPermissions", "description", "Edit this list of permissions"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "b1e7c4d2-3f6a-4a8e-9c5b-7d2e1f9a6c40", "name", "EditSettings", "description", "Edit client and group settings, and push group defaults"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "fe230c3a-fefd-47b2-a858-790237934007", "name", "StartAdminSession", "description", "Ability to temporary disables permissions check"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "fe230c3a-fefd-47b2-a858-26571c8cd0ae", "name", "EditPluginsSettings", "description", "Change Datagrok server-side settings"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "08837831-ac19-4e8a-b7a4-5c01d643c891", "name", "PublishPackage", "description", "Install a package or deploy with Datagrok tools"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "43284301-ac19-4e8a-b7a4-234097427079", "name", "DeleteComments", "description", "Delete comments in any chat inside Datagrok"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "3e0b7c52-6f1d-4a8e-b9c4-5d27a1e8f603", "name", "ImportComments", "description", "Import comments into a chat with their original author and date"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "aaa6e55e-6648-42af-9fae-790237934007", "name", "AdminSystemConnections", "description", "Edit system data connections such as System:AppData or System:Datagrok"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "f26072e3-1ff9-4117-84d0-28f3a6a04dae", "name", "AdminStickyMeta", "description", "Ability to setup Sticky Meta"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "b3c1a8a4-bc5d-4d4e-9e6c-1a4ad33d7e2b", "name", "AdminKeys", "description", "Manage server cryptographic keys: create, rotate, move, revoke, delete"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "d4f1c7e9-5b8a-4c63-9e7d-2a5f6b8e9c12", "name", "AdminSync", "description", "Manage cross-instance sync pairs and run entity sync"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "7c3e9b1a-2d4f-4a6b-8e5c-9f1d3b7a2c48", "name", "AdminUrlAliases", "description", "Create, re-point and delete URL aliases"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "4e9061d7-fecb-48ed-ba06-fdb711d355b2", "name", "ViewFeedback", "description", "Read the feedback users submit"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "a62a02c7-c94d-4ffd-9770-dd8907b66319", "name", "RunServerMaintenance", "description", "Start the garbage collector and run SQL benchmarks on demand"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "8c7d0105-b690-4e77-aa16-c3ea19a7221e", "name", "PostVulnerabilityReports", "description", "Upload Docker image vulnerability scans as reports"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "1adbaf9a-4d3a-4fcb-ac83-df98855db6c6", "name", "ExportChats", "description", "Export every chat and its comments to server storage"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "5c7cf46e-548b-4435-93ed-1070b560646a", "name", "CreateJiraTickets", "description", "Create Jira tickets from user reports"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "a70375c9-c507-46f6-81cb-07f0faeee76d", "name", "AdminCluster", "description", "View and manage cluster workloads, nodes, resources, scaling and placement"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "2b7e4f1c-9a3d-4c6e-8f5b-1d7a3e9c5b21", "name", "ManageAlerts", "description", "List, acknowledge, mute and resolve alerts"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "3a6d9e2b-1f4c-4b8e-9a7d-6c2e8f1b4d56", "name", "ViewTelemetry", "description", "Read platform errors, timelines and captured activity"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "d63d8e0f-729a-4c9e-84a9-1c9c68e2b75e", "name", "CreateRepository", "description", "Register a new package repository"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "e57d2a3f-56b7-4d3b-9d4b-873a81fef84a", "name", "CreateGroup", "description", "Create a new user group"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "f25a1e99-8b2e-4e7c-92da-2e89b9c3b3f1", "name", "CreateRole", "description", "Create a new user role"], t1, null)], "Create", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "fd56e55e-6648-42af-9fae-7f6670581d15", "name", "SaveEntityType", "description", "Create or edit Entity Type for Sticky Meta"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "82988f47-3532-4866-a492-f54f93244167", "name", "CreateEntity", "description", "Create any entity within Datagrok"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "f9715221-5089-4adc-a60f-184d48132fa1", "name", "CreateScript", "description", "Create a script"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "d06ce4ee-45ad-434f-8312-5aba92f35b2a", "name", "CreateSecurityConnection", "description", "Create a connection that provides credentials"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "d06ce4ee-45ad-434f-8312-654614663463", "name", "CreateDatabaseConnection", "description", "Create a connection to a database"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "d06ce4ee-45ad-434f-8312-245662457457", "name", "CreateFileConnection", "description", "Create a file share"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "a36f2a13-527b-4c5a-a0b3-1d4a8c832a91", "name", "CreateDataQuery", "description", "Create a new data query"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "b58f4e72-8c7b-4f13-9f6c-3e15e5a6e74c", "name", "CreateDashboard", "description", "Create a new dashboard"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "c42a9b9e-1c59-4f32-a16c-0a7dc5b2d90d", "name", "CreateSpace", "description", "Create a new space"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "8a7696f8-dfc8-4cf2-a232-faf2735f5a32", "name", "CreateDomainSchema", "description", "Create a user-managed domain database schema"], t1, null)], "General", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "5b032e72-683c-418d-b197-5428a05ba321", "name", "InviteUser", "description", "Invite a new user by email, explicitly or by sharing something"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "8d654a46-5089-4adc-a60f-024551513450", "name", "ShareWithEveryone", "description", "Share something with someone user does not have common groups or roles with"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "8d654a46-8237-11ee-b962-0242ac120002", "name", "SendEmail", "description", "Send email to any user using group emails"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "dd64c205-7708-4d9f-aeab-615c92f535d3", "name", "EditAllUsersFavorites", "description", "Add to and remove from the favorites every user sees (the All users group)"], t1, null)], "Browse", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "1de15967-1017-44dc-aa9e-c9ac58877fc3", "name", "BrowseFileConnections", "description", "Show Files section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "10358bb3-888a-4c5d-95e9-5c99c26296ba", "name", "BrowseDatabaseConnections", "description", "Show Databases section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "fba72edd-81e9-4f6b-a063-5e0472078da7", "name", "BrowseApps", "description", "Show Apps section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "76076bb2-e996-46c0-9b8b-bb3c19fcf567", "name", "BrowseSpaces", "description", "Show Spaces section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "6eadf356-e3f5-4d38-811b-c47ff53d9892", "name", "BrowseDashboards", "description", "Show Dashboards section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "c6286a1f-2716-4554-b4c6-c245223143e2", "name", "BrowsePlugins", "description", "Show Plugins and Repositories sections in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "c692af5b-b934-4afa-8750-016fc33bd7a9", "name", "BrowseFunctions", "description", "Show Functions section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "1c421c0c-3abc-444a-a017-1ec322805983", "name", "BrowseQueries", "description", "Show Queries section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "78a58978-e70d-4090-970f-e01671f3b809", "name", "BrowseScripts", "description", "Show Scripts section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "c434f7f0-1053-4836-8447-927b2a6d5235", "name", "BrowseOpenApi", "description", "Show Open API section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "fa0eac10-4a04-474e-bfba-9e2b8503fd35", "name", "BrowseUsers", "description", "Show Users section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "cae4eed6-6404-4698-b1f2-5bac2e17d356", "name", "BrowseGroups", "description", "Show Groups section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "b6901732-4c7c-4c53-883b-cd59d225ee95", "name", "BrowseRoles", "description", "Show Roles section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "8d5e7700-55d1-4dd1-a908-1355d6338fac", "name", "BrowseModels", "description", "Show Predictive Models section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "8b5c52d7-37dd-4f1a-9687-cb9e90ff1d97", "name", "BrowseDockers", "description", "Show Dockers section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "745402bb-5bab-4d4e-b91c-15f3404407db", "name", "BrowseLayouts", "description", "Show Layouts section in Browse Panel"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "c138c123-c50e-405a-8237-1128467a38bf", "name", "BrowseSharedData", "description", "Show Shared data in Browse Panel"], t1, null)]]);
       entityPermissions = P.LinkedHashMap__makeLiteral(["Common", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "34da1550-e870-11e6-9cb3-825892686412", "name", "View", "description", "See the entity, read basic attributes", "category", "use"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "34dbc300-e870-11e6-aeca-8258926864ed", "name", "Edit", "description", "Modify entity attributes", "category", ""], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "34dbc300-e870-11e6-aeca-82589268dede", "name", "Delete", "description", "Delete the entity", "category", ""], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "34dc1120-e870-11e6-a8f9-825892686fda", "name", "Share", "description", "Change entity permissions", "category", ""], t1, null)], "DataConnection", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "34da1550-e870-11e6-9cb3-eba104311e7f", "name", "DataConnection.Query", "description", "Execute any query on the data connection", "category", "use"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "84da1550-e870-11e6-9cb3-eba104311e7a", "name", "DataConnection.GetSchema", "description", "Read database schema", "category", "use"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "54da1550-e870-11e6-9cb3-eba104311e7a", "name", "DataConnection.ListFiles", "description", "List files on the file connection", "category", "use"], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "55c1a5d8-93fa-4afc-ad9e-77c2d06a3f08", "name", "DataConnection.AddRows", "description", "Insert rows (including bulk insert) into tables on the data connection", "category", "", "groups", C.List_Write], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "c2e5cb76-f215-4324-8df8-052948d41ee2", "name", "DataConnection.ChangeValues", "description", "Update existing values (by predicate or by key) on the data connection", "category", "", "groups", C.List_Write], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "9f8dfcce-cd61-4d6c-9685-1ccd9926d14d", "name", "DataConnection.RemoveRows", "description", "Delete rows by predicate on the data connection", "category", "", "groups", C.List_Write], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "682da897-412f-4d23-8375-8670444783c5", "name", "DataConnection.TruncateTable", "description", "Truncate or fully empty a table on the data connection", "category", "", "groups", C.List_Write], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "8ddc77db-f259-48e9-a3b5-874b991317d8", "name", "DataConnection.CreateTable", "description", "Create tables on the data connection", "category", "", "groups", C.List_Ddl], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "41a0e18b-877f-438c-bd97-94e87b3c92bd", "name", "DataConnection.AlterSchema", "description", "Alter schema: add, rename, or drop columns, keys, and indices", "category", "", "groups", C.List_Ddl], t1, null), P.LinkedHashMap_LinkedHashMap$_literal(["id", "dca98b6c-3274-4ae2-88ca-8b8220595002", "name", "DataConnection.DropTable", "description", "Drop tables on the data connection", "category", "", "groups", C.List_Ddl], t1, null)], "DataQuery", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "64da1550-e870-11e6-9cb3-818364311e7a", "name", "DataQuery.Execute", "description", "Execute the query", "category", "use"], t1, null)], "TableInfo", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "4da5d739-ef19-4cd8-9cc5-6bb6ec9a1dd5", "name", "Table.ReadData", "description", "Read table data", "category", "use"], t1, null)], "DomainSchema", [P.LinkedHashMap_LinkedHashMap$_literal(["id", "e3f8c2d1-7b4a-4c9e-9d21-5a8f0c6b3e77", "name", "Extend", "description", "Add user-defined tables and columns to this domain schema", "category", ""], t1, null)]]);
       globalPermissions.forEach$1(0, new O.initPrivileges_closure());
       entityPermissions.forEach$1(0, new O.initPrivileges_closure0());
@@ -133105,130 +133174,130 @@
         return $.$get$$FileInfo__properties();
       }
     },
-    closure1468: {
+    closure1415: {
       "^": "Closure:5;",
       call$1: function(x) {
         return J.get$id$x(x);
       }
     },
-    closure1469: {
+    closure1416: {
       "^": "Closure:6;",
       call$2: function(x, v) {
         J.set$id$x(x, v);
         return v;
       }
     },
-    closure1466: {
+    closure1413: {
       "^": "Closure:57;",
       call$1: function(x) {
         return J.get$dir$x(x);
       }
     },
-    closure1467: {
+    closure1414: {
       "^": "Closure:119;",
       call$2: function(x, v) {
         J.set$dir$x(x, v);
         return v;
       }
     },
-    closure1464: {
+    closure1411: {
       "^": "Closure:57;",
       call$1: function(x) {
         return J.get$isFile$x(x);
       }
     },
-    closure1465: {
+    closure1412: {
       "^": "Closure:119;",
       call$2: function(x, v) {
         J.set$isFile$x(x, v);
         return v;
       }
     },
-    closure1462: {
+    closure1409: {
       "^": "Closure:57;",
       call$1: function(x) {
         return J.get$size$x(x);
       }
     },
-    closure1463: {
+    closure1410: {
       "^": "Closure:119;",
       call$2: function(x, v) {
         J.set$size$x(x, v);
         return v;
       }
     },
-    closure1460: {
+    closure1407: {
       "^": "Closure:57;",
       call$1: function(x) {
         return x.get$createdOn();
       }
     },
-    closure1461: {
+    closure1408: {
       "^": "Closure:119;",
       call$2: function(x, v) {
         x.set$createdOn(v);
         return v;
       }
     },
-    closure1458: {
+    closure1405: {
       "^": "Closure:57;",
       call$1: function(x) {
         return x.get$updatedOn();
       }
     },
-    closure1459: {
+    closure1406: {
       "^": "Closure:119;",
       call$2: function(x, v) {
         x.set$updatedOn(v);
         return v;
       }
     },
-    closure1456: {
+    closure1403: {
       "^": "Closure:57;",
       call$1: function(x) {
         return J.get$connection$x(x);
       }
     },
-    closure1457: {
+    closure1404: {
       "^": "Closure:119;",
       call$2: function(x, v) {
         J.set$connection$x(x, v);
         return v;
       }
     },
-    closure1454: {
+    closure1401: {
       "^": "Closure:57;",
       call$1: function(x) {
         return x.get$connectionName();
       }
     },
-    closure1455: {
+    closure1402: {
       "^": "Closure:119;",
       call$2: function(x, v) {
         x.set$connectionName(v);
         return v;
       }
     },
-    closure1452: {
+    closure1399: {
       "^": "Closure:57;",
       call$1: function(x) {
         return x.get$sharedWith();
       }
     },
-    closure1453: {
+    closure1400: {
       "^": "Closure:119;",
       call$2: function(x, v) {
         x.set$sharedWith(v);
         return v;
       }
     },
-    closure1450: {
+    closure1397: {
       "^": "Closure:57;",
       call$1: function(x) {
         return x.get$tables();
       }
     },
-    closure1451: {
+    closure1398: {
       "^": "Closure:119;",
       call$2: function(x, v) {
         var t1 = G.Property_listOf(v, null);
@@ -133236,65 +133305,65 @@
         return t1;
       }
     },
-    closure1448: {
+    closure1395: {
       "^": "Closure:57;",
       call$1: function(x) {
         return J.get$path$x(x);
       }
     },
-    closure1449: {
+    closure1396: {
       "^": "Closure:119;",
       call$2: function(x, v) {
         J.set$path$x(x, v);
         return v;
       }
     },
-    closure1446: {
+    closure1393: {
       "^": "Closure:57;",
       call$1: function(x) {
         return J.get$isDirectory$x(x);
       }
     },
-    closure1447: {
+    closure1394: {
       "^": "Closure:119;",
       call$2: function(x, v) {
         J.set$isDirectory$x(x, v);
         return v;
       }
     },
-    closure1444: {
+    closure1391: {
       "^": "Closure:57;",
       call$1: function(x) {
         return x.get$eTag();
       }
     },
-    closure1445: {
+    closure1392: {
       "^": "Closure:119;",
       call$2: function(x, v) {
         x.set$eTag(v);
         return v;
       }
     },
-    closure1442: {
+    closure1389: {
       "^": "Closure:4;",
       call$1: function(x) {
         return x.get$securityObject();
       }
     },
-    closure1443: {
+    closure1390: {
       "^": "Closure:7;",
       call$2: function(x, v) {
         x.set$securityObject(v);
         return v;
       }
     },
-    closure1440: {
+    closure1387: {
       "^": "Closure:4;",
       call$1: function(x) {
         return x.get$projectRelations();
       }
     },
-    closure1441: {
+    closure1388: {
       "^": "Closure:8;",
       call$2: function(x, v) {
         var t1 = G.Property_listOf(v, null);
@@ -133302,117 +133371,117 @@
         return t1;
       }
     },
-    closure1438: {
+    closure1385: {
       "^": "Closure:4;",
       call$1: function(x) {
         return x.get$isDeleted();
       }
     },
-    closure1439: {
+    closure1386: {
       "^": "Closure:8;",
       call$2: function(x, v) {
         x.set$isDeleted(v);
         return v;
       }
     },
-    closure1436: {
+    closure1383: {
       "^": "Closure:4;",
       call$1: function(x) {
         return x.get$bindId();
       }
     },
-    closure1437: {
+    closure1384: {
       "^": "Closure:8;",
       call$2: function(x, v) {
         x.set$bindId(v);
         return v;
       }
     },
-    closure1434: {
+    closure1381: {
       "^": "Closure:4;",
       call$1: function(x) {
         return x.get$bid();
       }
     },
-    closure1435: {
+    closure1382: {
       "^": "Closure:8;",
       call$2: function(x, v) {
         x.set$bid(v);
         return v;
       }
     },
-    closure1432: {
+    closure1379: {
       "^": "Closure:10;",
       call$1: function(x) {
         return x.get$namespace();
       }
     },
-    closure1433: {
+    closure1380: {
       "^": "Closure:11;",
       call$2: function(x, v) {
         x.set$namespace(v);
         return v;
       }
     },
-    closure1430: {
+    closure1377: {
       "^": "Closure:10;",
       call$1: function(x) {
         return J.get$name$x(x);
       }
     },
-    closure1431: {
+    closure1378: {
       "^": "Closure:11;",
       call$2: function(x, v) {
         J.set$name$x(x, v);
         return v;
       }
     },
-    closure1428: {
+    closure1375: {
       "^": "Closure:10;",
       call$1: function(x) {
         return x.get$friendlyName();
       }
     },
-    closure1429: {
+    closure1376: {
       "^": "Closure:11;",
       call$2: function(x, v) {
         x.set$friendlyName(v);
         return v;
       }
     },
-    closure1426: {
+    closure1373: {
       "^": "Closure:5;",
       call$1: function(x) {
         return x.get$isOnServer();
       }
     },
-    closure1427: {
+    closure1374: {
       "^": "Closure:6;",
       call$2: function(x, v) {
         x.set$isOnServer(v);
         return v;
       }
     },
-    closure1424: {
+    closure1371: {
       "^": "Closure:5;",
       call$1: function(x) {
         return J.get$isDirty$x(x);
       }
     },
-    closure1425: {
+    closure1372: {
       "^": "Closure:6;",
       call$2: function(x, v) {
         J.set$isDirty$x(x, v);
         return v;
       }
     },
-    closure1422: {
+    closure1369: {
       "^": "Closure:44;",
       call$1: function(x) {
         return x.get$entityTags();
       }
     },
-    closure1423: {
+    closure1370: {
       "^": "Closure:43;",
       call$2: function(x, v) {
         var t1 = G.Property_listOf(v, null);
@@ -133420,13 +133489,13 @@
         return t1;
       }
     },
-    closure1420: {
+    closure1367: {
       "^": "Closure:35;",
       call$1: function(x) {
         return x.get$metaParams();
       }
     },
-    closure1421: {
+    closure1368: {
       "^": "Closure:36;",
       call$2: function(x, v) {
         var t1 = G.Property_mapOf(v, null);
@@ -133434,13 +133503,13 @@
         return t1;
       }
     },
-    closure1418: {
+    closure1365: {
       "^": "Closure:35;",
       call$1: function(x) {
         return x.get$entityMetaParams();
       }
     },
-    closure1419: {
+    closure1366: {
       "^": "Closure:36;",
       call$2: function(x, v) {
         var t1 = G.Property_listOf(v, null);
@@ -133668,91 +133737,91 @@
         return $.$get$$DataSource__properties();
       }
     },
-    closure1530: {
+    closure1477: {
       "^": "Closure:37;",
       call$1: function(x) {
         return J.get$type$x(x);
       }
     },
-    closure1531: {
+    closure1478: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         J.set$type$x(x, v);
         return v;
       }
     },
-    closure1528: {
+    closure1475: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$category();
       }
     },
-    closure1529: {
+    closure1476: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$category(v);
         return v;
       }
     },
-    closure1526: {
+    closure1473: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$requiresServer();
       }
     },
-    closure1527: {
+    closure1474: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$requiresServer(v);
         return v;
       }
     },
-    closure1524: {
+    closure1471: {
       "^": "Closure:37;",
       call$1: function(x) {
         return J.get$description$x(x);
       }
     },
-    closure1525: {
+    closure1472: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         J.set$description$x(x, v);
         return v;
       }
     },
-    closure1522: {
+    closure1469: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$commentStart();
       }
     },
-    closure1523: {
+    closure1470: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$commentStart(v);
         return v;
       }
     },
-    closure1520: {
+    closure1467: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$nameBrackets();
       }
     },
-    closure1521: {
+    closure1468: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$nameBrackets(v);
         return v;
       }
     },
-    closure1518: {
+    closure1465: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$connectionTemplate();
       }
     },
-    closure1519: {
+    closure1466: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         var t1 = G.Property_listOf(v, null);
@@ -133760,13 +133829,13 @@
         return t1;
       }
     },
-    closure1516: {
+    closure1463: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$credentialsTemplate();
       }
     },
-    closure1517: {
+    closure1464: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         var t1 = G.Property_listOf(v, null);
@@ -133774,13 +133843,13 @@
         return t1;
       }
     },
-    closure1514: {
+    closure1461: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$jdbcPropertiesTemplate();
       }
     },
-    closure1515: {
+    closure1462: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         var t1 = G.Property_listOf(v, null);
@@ -133788,13 +133857,13 @@
         return t1;
       }
     },
-    closure1512: {
+    closure1459: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$authSchemasDescription();
       }
     },
-    closure1513: {
+    closure1460: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         var t1 = G.Property_mapOf(v, null);
@@ -133802,13 +133871,13 @@
         return t1;
       }
     },
-    closure1510: {
+    closure1457: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$queryTemplate();
       }
     },
-    closure1511: {
+    closure1458: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         var t1 = G.Property_listOf(v, null);
@@ -133816,13 +133885,13 @@
         return t1;
       }
     },
-    closure1508: {
+    closure1455: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$cacheTemplate();
       }
     },
-    closure1509: {
+    closure1456: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         var t1 = G.Property_listOf(v, null);
@@ -133830,13 +133899,13 @@
         return t1;
       }
     },
-    closure1506: {
+    closure1453: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$aggregations();
       }
     },
-    closure1507: {
+    closure1454: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         var t1 = G.Property_listOf(v, null);
@@ -133844,13 +133913,13 @@
         return t1;
       }
     },
-    closure1504: {
+    closure1451: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$typesMap();
       }
     },
-    closure1505: {
+    closure1452: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         var t1 = G.Property_mapOf(v, null);
@@ -133858,182 +133927,182 @@
         return t1;
       }
     },
-    closure1502: {
+    closure1449: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$canBrowseSchema();
       }
     },
-    closure1503: {
+    closure1450: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$canBrowseSchema(v);
         return v;
       }
     },
-    closure1500: {
+    closure1447: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$defaultSchema();
       }
     },
-    closure1501: {
+    closure1448: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$defaultSchema(v);
         return v;
       }
     },
-    closure1498: {
+    closure1445: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$queryLanguage();
       }
     },
-    closure1499: {
+    closure1446: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$queryLanguage(v);
         return v;
       }
     },
-    closure1496: {
+    closure1443: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$hasConnections();
       }
     },
-    closure1497: {
+    closure1444: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$hasConnections(v);
         return v;
       }
     },
-    closure1494: {
+    closure1441: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$requiresFullyQualifiedTable();
       }
     },
-    closure1495: {
+    closure1442: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$requiresFullyQualifiedTable(v);
         return v;
       }
     },
-    closure1492: {
+    closure1439: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$supportCatalogs();
       }
     },
-    closure1493: {
+    closure1440: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$supportCatalogs(v);
         return v;
       }
     },
-    closure1490: {
+    closure1437: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$supportsWrite();
       }
     },
-    closure1491: {
+    closure1438: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$supportsWrite(v);
         return v;
       }
     },
-    closure1488: {
+    closure1435: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$supportsExpectAffected();
       }
     },
-    closure1489: {
+    closure1436: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$supportsExpectAffected(v);
         return v;
       }
     },
-    closure1486: {
+    closure1433: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$supportsUpsert();
       }
     },
-    closure1487: {
+    closure1434: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$supportsUpsert(v);
         return v;
       }
     },
-    closure1484: {
+    closure1431: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$supportsBulkInsert();
       }
     },
-    closure1485: {
+    closure1432: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$supportsBulkInsert(v);
         return v;
       }
     },
-    closure1482: {
+    closure1429: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$supportsDdl();
       }
     },
-    closure1483: {
+    closure1430: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$supportsDdl(v);
         return v;
       }
     },
-    closure1480: {
+    closure1427: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$supportsTransactionalDdl();
       }
     },
-    closure1481: {
+    closure1428: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$supportsTransactionalDdl(v);
         return v;
       }
     },
-    closure1478: {
+    closure1425: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$readOnlySessionEnforced();
       }
     },
-    closure1479: {
+    closure1426: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$readOnlySessionEnforced(v);
         return v;
       }
     },
-    closure1476: {
+    closure1423: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$dgToNativeType();
       }
     },
-    closure1477: {
+    closure1424: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         var t1 = G.Property_mapOf(v, null);
@@ -134041,26 +134110,26 @@
         return t1;
       }
     },
-    closure1474: {
+    closure1421: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$supportsGeneratedKeys();
       }
     },
-    closure1475: {
+    closure1422: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$supportsGeneratedKeys(v);
         return v;
       }
     },
-    closure1472: {
+    closure1419: {
       "^": "Closure:37;",
       call$1: function(x) {
         return x.get$oauth();
       }
     },
-    closure1473: {
+    closure1420: {
       "^": "Closure:51;",
       call$2: function(x, v) {
         x.set$oauth(v);
@@ -136044,91 +136113,91 @@
         return $.$get$$Recurrence__properties();
       }
     },
-    closure1544: {
+    closure1491: {
       "^": "Closure:198;",
       call$1: function(x) {
         return J.get$type$x(x);
       }
     },
-    closure1545: {
+    closure1492: {
       "^": "Closure:199;",
       call$2: function(x, v) {
         J.set$type$x(x, v);
         return v;
       }
     },
-    closure1542: {
+    closure1489: {
       "^": "Closure:198;",
       call$1: function(x) {
         return J.get$start$x(x);
       }
     },
-    closure1543: {
+    closure1490: {
       "^": "Closure:199;",
       call$2: function(x, v) {
         J.set$start$x(x, v);
         return v;
       }
     },
-    closure1540: {
+    closure1487: {
       "^": "Closure:198;",
       call$1: function(x) {
         return x.get$minutes();
       }
     },
-    closure1541: {
+    closure1488: {
       "^": "Closure:199;",
       call$2: function(x, v) {
         x.set$minutes(v);
         return v;
       }
     },
-    closure1538: {
+    closure1485: {
       "^": "Closure:198;",
       call$1: function(x) {
         return x.get$hours();
       }
     },
-    closure1539: {
+    closure1486: {
       "^": "Closure:199;",
       call$2: function(x, v) {
         x.set$hours(v);
         return v;
       }
     },
-    closure1536: {
+    closure1483: {
       "^": "Closure:198;",
       call$1: function(x) {
         return x.get$days();
       }
     },
-    closure1537: {
+    closure1484: {
       "^": "Closure:199;",
       call$2: function(x, v) {
         x.set$days(v);
         return v;
       }
     },
-    closure1534: {
+    closure1481: {
       "^": "Closure:198;",
       call$1: function(x) {
         return x.get$cronSchedule();
       }
     },
-    closure1535: {
+    closure1482: {
       "^": "Closure:199;",
       call$2: function(x, v) {
         x.set$cronSchedule(v);
         return v;
       }
     },
-    closure1532: {
+    closure1479: {
       "^": "Closure:198;",
       call$1: function(x) {
         return x.get$weekdays();
       }
     },
-    closure1533: {
+    closure1480: {
       "^": "Closure:199;",
       call$2: function(x, v) {
         var t1 = G.Property_listOf(v, null);
@@ -145593,104 +145662,104 @@
         return $.$get$$SemanticValue__properties();
       }
     },
-    closure1415: {
+    closure1543: {
       "^": "Closure:81;",
       call$1: function(x) {
         return J.get$value$x(x);
       }
     },
-    closure1416: {
+    closure1544: {
       "^": "Closure:115;",
       call$2: function(x, v) {
         J.set$value$x(x, v);
         return v;
       }
     },
-    closure1413: {
+    closure1541: {
       "^": "Closure:81;",
       call$1: function(x) {
         return x.get$semType();
       }
     },
-    closure1414: {
+    closure1542: {
       "^": "Closure:115;",
       call$2: function(x, v) {
         x.set$semType(v);
         return v;
       }
     },
-    closure1411: {
+    closure1539: {
       "^": "Closure:81;",
       call$1: function(x) {
         return J.get$description$x(x);
       }
     },
-    closure1412: {
+    closure1540: {
       "^": "Closure:115;",
       call$2: function(x, v) {
         J.set$description$x(x, v);
         return v;
       }
     },
-    closure1409: {
+    closure1537: {
       "^": "Closure:81;",
       call$1: function(x) {
         return x.get$notation();
       }
     },
-    closure1410: {
+    closure1538: {
       "^": "Closure:115;",
       call$2: function(x, v) {
         x.set$notation(v);
         return v;
       }
     },
-    closure1407: {
+    closure1535: {
       "^": "Closure:81;",
       call$1: function(x) {
         return x.get$units();
       }
     },
-    closure1408: {
+    closure1536: {
       "^": "Closure:115;",
       call$2: function(x, v) {
         x.set$units(v);
         return v;
       }
     },
-    closure1405: {
+    closure1533: {
       "^": "Closure:81;",
       call$1: function(x) {
         return x.get$creationScript();
       }
     },
-    closure1406: {
+    closure1534: {
       "^": "Closure:115;",
       call$2: function(x, v) {
         x.set$creationScript(v);
         return v;
       }
     },
-    closure1403: {
+    closure1531: {
       "^": "Closure:81;",
       call$1: function(x) {
         return J.get$name$x(x);
       }
     },
-    closure1404: {
+    closure1532: {
       "^": "Closure:115;",
       call$2: function(x, v) {
         J.set$name$x(x, v);
         return v;
       }
     },
-    closure1401: {
+    closure1529: {
       "^": "Closure:81;",
       call$1: function(x) {
         return x.get$tags();
       }
     },
-    closure1402: {
+    closure1530: {
       "^": "Closure:115;",
       call$2: function(x, v) {
         var t1 = G.Property_mapOf(v, null);
@@ -145698,39 +145767,39 @@
         return t1;
       }
     },
-    closure1399: {
+    closure1527: {
       "^": "Closure:81;",
       call$1: function(x) {
         return x.get$gridCell();
       }
     },
-    closure1400: {
+    closure1528: {
       "^": "Closure:115;",
       call$2: function(x, v) {
         x.set$gridCell(v);
         return v;
       }
     },
-    closure1397: {
+    closure1525: {
       "^": "Closure:81;",
       call$1: function(x) {
         return x.get$viewer();
       }
     },
-    closure1398: {
+    closure1526: {
       "^": "Closure:115;",
       call$2: function(x, v) {
         x.set$viewer(v);
         return v;
       }
     },
-    closure1395: {
+    closure1523: {
       "^": "Closure:81;",
       call$1: function(x) {
         return x.get$cell();
       }
     },
-    closure1396: {
+    closure1524: {
       "^": "Closure:115;",
       call$2: function(x, v) {
         x.set$cell(v);
@@ -151609,7 +151678,7 @@
                 objects = [];
                 t1 = P.String;
                 t1 = new Q.EntitiesClient(new Q.EntityTypesClient("entities/types", C.Map_794C7, false, false, false, null, P.LinkedHashMap_LinkedHashMap$_empty(t1, null), [], null, null, null, [], null), true, "entities", C.Map_794C7, false, false, false, null, P.LinkedHashMap_LinkedHashMap$_empty(t1, null), [], null, null, null, [], null);
-                t1.textFilter = 'shortName = "' + H.S($name) + '" and namespace = "' + H.S(namespace.get$nqName()) + ':"';
+                t1.textFilter = "shortName = " + C.JsonCodec_null_null.encode$1(H.S($name)) + " and namespace = " + C.JsonCodec_null_null.encode$1(H.S(namespace.get$nqName()) + ":");
                 $async$temp1 = C.JSArray_methods;
                 $async$temp2 = objects;
                 $async$goto = 4;
@@ -152177,7 +152246,7 @@
             }
         });
         return P._asyncStart($async$call$1, $async$completer);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ServerExecutableMixin_executeCall_closure5: {
       "^": "Closure:0;_box_0",
@@ -153185,7 +153254,7 @@
       "^": "Closure:0;$this",
       call$1: [function(k) {
         return H.S(k) + ":" + H.S(J.$index$asx(this.$this.parameters, k));
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     DataConnection_saveCredentials_closure: {
       "^": "Closure:37;$this",
@@ -153436,7 +153505,7 @@
         return this.executeTable$4$context$options$paramValues$processed(null, null, null, true);
       },
       execute$4$context$options$paramValues$processed: function(context, options, paramValues, processed) {
-        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, connResolve, $async$temp1;
+        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, connResolve, t1;
         var $async$execute$4$context$options$paramValues$processed = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
           if ($async$errorCode === 1)
             return P._asyncRethrow($async$result, $async$completer);
@@ -153449,12 +153518,14 @@
                 break;
               case 3:
                 // then
-                $async$temp1 = $async$self;
                 $async$goto = 5;
-                return P._asyncAwait(N.Func_eval(connResolve, null, false, new O.DataQuery_execute_closure(connResolve)), $async$execute$4$context$options$paramValues$processed);
+                return P._asyncAwait(O.Entity_fromName(connResolve, "DataConnection"), $async$execute$4$context$options$paramValues$processed);
               case 5:
                 // returning from await.
-                $async$temp1.connection = $async$result;
+                t1 = $async$result;
+                $async$self.connection = t1;
+                if (t1 == null)
+                  throw H.wrapException("Connection " + H.S(connResolve) + " not found");
               case 4:
                 // join
                 $async$goto = 6;
@@ -153702,12 +153773,6 @@
         return O.SqlAnnotator_annotate(this.$this, J.get$value$x(this.dfOutParam));
       }
     },
-    DataQuery_execute_closure: {
-      "^": "Closure:20;connResolve",
-      call$1: function(_) {
-        return H.throwExpression("Connection " + H.S(this.connResolve) + " not found");
-      }
-    },
     DataQuery_getDataFrameName_closure: {
       "^": "Closure:0;$call",
       call$1: [function(m) {
@@ -153735,7 +153800,7 @@
         var t1 = N.FuncParam$(null);
         t1.fromMap$1(J.$index$asx(this.maps, k));
         return t1;
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     DataQuery_extractParamsFromSql_closure2: {
       "^": "Closure:0;",
@@ -157828,7 +157893,7 @@
         t1 = this.params;
         t2 = J.getInterceptor$asx(t1);
         return J.$eq$(t2.$index(t1, k), "_____________") === true || J.$eq$(t2.$index(t1, k), "not\u2014changed") === true;
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     EntitySyncFunc__pushOne_closure0: {
       "^": "Closure:3;fc",
@@ -159931,7 +159996,7 @@
           t2 = t3;
         t1.value = J.toString$0$(J.$index$asx(t2, k));
         return t1;
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     MetaParamsMixin_entityMetaParams_closure: {
       "^": "Closure:204;",
@@ -164112,7 +164177,7 @@
           ti.dataFrame = t;
           ti.rowCount = t.get$rowCount();
           ti.colCount = J.get$length$asx(t1.get$columns(t));
-          t1 = J.toList$0$ax(J.map$1$ax(t1.get$columns(t), new O.closure1470()));
+          t1 = J.toList$0$ax(J.map$1$ax(t1.get$columns(t), new O.closure1417()));
           ti.columns = t1;
           ti.set$tags(J.toSet$0$ax(J.get$keys$x(t.get$tags())));
           a = ti.createNew$0();
@@ -164213,7 +164278,7 @@
         return J.get$name$x(c);
       }, null, null, 2, 0, null, 3, "call"]
     },
-    closure1470: {
+    closure1417: {
       "^": "Closure:0;",
       call$1: [function(c) {
         return O.ColumnInfo_ColumnInfo$fromColumn(c);
@@ -176155,7 +176220,7 @@
       call$2: [function(k, v) {
         this.$this.$indexSet(0, k, v);
         return v;
-      }, null, null, 4, 0, null, 24, 8, "call"]
+      }, null, null, 4, 0, null, 25, 8, "call"]
     },
     LinkedLruHashMap__iterable_closure: {
       "^": "Closure:3;$this",
@@ -180252,8 +180317,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "03dbecb5040d0eb9d0d7754239102d98e5253ae4");
-        t2.set$date(t1, "2026-10-26T11:39:18.935Z");
+        t2.set$commit(t1, "8024e718afb4f92e2ea9163fe43af998ed24d865");
+        t2.set$date(t1, "2026-10-26T23:46:40.772Z");
         t2.set$version(t1, "1.27.12");
         return t1;
       }, null, null, 0, 0, null, "call"]
@@ -180406,7 +180471,7 @@
       "^": "Closure:7;headers",
       call$2: [function(k, v) {
         J.$indexSet$ax(this.headers, k, v);
-      }, null, null, 4, 0, null, 24, 8, "call"]
+      }, null, null, 4, 0, null, 25, 8, "call"]
     },
     FetchClient_send_closure0: {
       "^": "Closure:389;$this,completer",
@@ -188747,7 +188812,7 @@
     return [$.$get$$PackageFunc_$source(), $.$get$$PackageFunc_$namespace(), $.$get$$PackageFunc_$entityTags(), $.$get$$PackageFunc_$recurrence(), $.$get$$PackageFunc_$recurrenceRunAs(), $.$get$$PackageFunc_$nextRunTime(), $.$get$$PackageFunc_$lastRunTime(), $.$get$$PackageFunc_$author(), $.$get$$PackageFunc_$createdOn(), $.$get$$PackageFunc_$updatedOn(), $.$get$$PackageFunc_$helpUrl(), $.$get$$PackageFunc_$description(), $.$get$$PackageFunc_$dialogFunc(), $.$get$$PackageFunc_$checkEnabled(), $.$get$$PackageFunc_$batchEstimatorFunc(), $.$get$$PackageFunc_$toolbox(), $.$get$$PackageFunc_$topMenu(), $.$get$$PackageFunc_$needsValidation(), $.$get$$PackageFunc_$saveLog(), $.$get$$PackageFunc_$isBatchable(), $.$get$$PackageFunc_$maxBatchSize(), $.$get$$PackageFunc_$shortcut(), $.$get$$PackageFunc_$synonyms(), $.$get$$PackageFunc_$params(), $.$get$$PackageFunc_$options(), $.$get$$PackageFunc_$aux(), $.$get$$PackageFunc_$runs(), $.$get$$PackageFunc_$isDataTransformationValue(), $.$get$$PackageFunc_$isCancelable(), $.$get$$PackageFunc_$searchPattern(), $.$get$$PackageFunc_$id(), $.$get$$PackageFunc_$securityObject(), $.$get$$PackageFunc_$projectRelations(), $.$get$$PackageFunc_$isDeleted(), $.$get$$PackageFunc_$bindId(), $.$get$$PackageFunc_$bid(), $.$get$$PackageFunc_$name(), $.$get$$PackageFunc_$friendlyName(), $.$get$$PackageFunc_$isOnServer(), $.$get$$PackageFunc_$isDirty(), $.$get$$PackageFunc_$package()];
   }, "$PackageFunc__properties", "BitSet__properties", "$get$BitSet__properties", function() {
     var t1 = P.int;
-    return [G.Property$int("length", new N.closure1377(), null, t1), G.Property$int("trueCount", new N.closure1378(), null, t1), G.Property$int("falseCount", new N.closure1379(), null, t1), G.Property$int("version", new N.closure1380(), null, t1)];
+    return [G.Property$int("length", new N.closure1509(), null, t1), G.Property$int("trueCount", new N.closure1510(), null, t1), G.Property$int("falseCount", new N.closure1511(), null, t1), G.Property$int("version", new N.closure1512(), null, t1)];
   }, "BitSet__properties", "BitSet__onBitCount", "$get$BitSet__onBitCount", function() {
     return H.NativeInt8List_NativeInt8List$fromList([0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8]);
   }, "BitSet__onBitCount", "BitSet__firstOnBit", "$get$BitSet__firstOnBit", function() {
@@ -188758,11 +188823,11 @@
     var t1, t2;
     t1 = P.bool;
     t2 = N.Stats;
-    return [$.$get$Column_$name(), G.Property$int("length", new N.closure1366(), null, P.int), G.Property$table("table", new N.closure1367(), null, N.DataFrame), G.Property$bool("isNumerical", new N.closure1368(), null, t1), G.Property$bool("isCategorical", new N.closure1369(), null, t1), G.Property$object("stats", new N.closure1370(), null, t2), G.Property$object("filteredRowsStats", new N.closure1371(), null, t2), G.Property$map("tags", new N.closure1372(), null, [P.Map, P.String, P.String]), G.Property$string("semType", new N.closure1373(), new N.closure1374(), P.String)];
+    return [$.$get$Column_$name(), G.Property$int("length", new N.closure1498(), null, P.int), G.Property$table("table", new N.closure1499(), null, N.DataFrame), G.Property$bool("isNumerical", new N.closure1500(), null, t1), G.Property$bool("isCategorical", new N.closure1501(), null, t1), G.Property$object("stats", new N.closure1502(), null, t2), G.Property$object("filteredRowsStats", new N.closure1503(), null, t2), G.Property$map("tags", new N.closure1504(), null, [P.Map, P.String, P.String]), G.Property$string("semType", new N.closure1505(), new N.closure1506(), P.String)];
   }, "Column__properties", "Column__parsers", "$get$Column__parsers", function() {
     return P.LinkedHashMap__makeLiteral(["datetime", N.ddt_DateTimeColumn_parse$closure(), "int", N.ddt_IntColumn_parse$closure(), "bigint", N.ddt_BigIntColumn_parse$closure(), "double", N.ddt_FloatColumn_parse$closure(), "bool", N.ddt_BoolColumn_parse$closure(), "qnum", N.ddt_QNumColumn_parse$closure()]);
   }, "Column__parsers", "Column_$name", "$get$Column_$name", function() {
-    return G.Property$("name", "string", new N.closure1375(), null, null, new N.closure1376(), P.String);
+    return G.Property$("name", "string", new N.closure1507(), null, null, new N.closure1508(), P.String);
   }, "Column_$name", "ColumnTypeMeta_descriptors", "$get$ColumnTypeMeta_descriptors", function() {
     return P.LinkedHashMap__makeLiteral(["bigint", $.$get$BigIntMeta_instance(), "bool", $.$get$_BoolMeta_instance(), "dataframe", $.$get$_DataFrameMeta_instance(), "datetime", $.$get$DateTimeMeta_instance(), "double", $.$get$FloatMeta_instance(), "qnum", $.$get$QNumMeta_instance(), "int", $.$get$IntMeta_instance(), "object", $.$get$ObjectMeta_instance(), "string", $.$get$_StringMeta_instance()]);
   }, "ColumnTypeMeta_descriptors", "BigIntMeta_instance", "$get$BigIntMeta_instance", function() {
@@ -188813,13 +188878,13 @@
     return N._VirtualMeta$();
   }, "_VirtualMeta_instance", "DataFrame__properties", "$get$DataFrame__properties", function() {
     var t1 = N.BitSet;
-    return [$.$get$DataFrame_Name(), $.$get$DataFrame_RowCount(), $.$get$DataFrame_ColCount(), G.Property$int("mouseOverRow", new N.closure1381(), null, P.int), new G.Property(null, null, "currentCell", "cell", true, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, G.Property_getterOf(new N.closure1382()), G.Property_setterOf(null), null, null, null, null, null, null, [], null, false, P.LinkedHashMap_LinkedHashMap$_empty(P.String, null), null, [], null, null, null, null, false, false, [], [N.Cell]), G.Property$bitSet("filter", new N.closure1383(), null, t1), G.Property$bitSet("selection", new N.closure1384(), null, t1), G.Property$("columns", "column_list", new N.closure1385(), null, null, null, N.ColumnList)];
+    return [$.$get$DataFrame_Name(), $.$get$DataFrame_RowCount(), $.$get$DataFrame_ColCount(), G.Property$int("mouseOverRow", new N.closure1513(), null, P.int), new G.Property(null, null, "currentCell", "cell", true, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, G.Property_getterOf(new N.closure1514()), G.Property_setterOf(null), null, null, null, null, null, null, [], null, false, P.LinkedHashMap_LinkedHashMap$_empty(P.String, null), null, [], null, null, null, null, false, false, [], [N.Cell]), G.Property$bitSet("filter", new N.closure1515(), null, t1), G.Property$bitSet("selection", new N.closure1516(), null, t1), G.Property$("columns", "column_list", new N.closure1517(), null, null, null, N.ColumnList)];
   }, "DataFrame__properties", "DataFrame_Name", "$get$DataFrame_Name", function() {
-    return G.Property$string("name", new N.closure1392(), null, P.String);
+    return G.Property$string("name", new N.closure1520(), null, P.String);
   }, "DataFrame_Name", "DataFrame_RowCount", "$get$DataFrame_RowCount", function() {
-    return G.Property$int("rowCount", new N.closure1391(), null, P.int);
+    return G.Property$int("rowCount", new N.closure1519(), null, P.int);
   }, "DataFrame_RowCount", "DataFrame_ColCount", "$get$DataFrame_ColCount", function() {
-    return G.Property$int("colCount", new N.closure1390(), null, P.int);
+    return G.Property$int("colCount", new N.closure1518(), null, P.int);
   }, "DataFrame_ColCount", "BigIntMatcher__equalsRegex", "$get$BigIntMatcher__equalsRegex", function() {
     return P.RegExp_RegExp("^\\s*(\\S+)?\\s*=\\s*(-?\\d+)\\s*$", false, false);
   }, "BigIntMatcher__equalsRegex", "BigIntMatcher__inRegex", "$get$BigIntMatcher__inRegex", function() {
@@ -188855,7 +188920,7 @@
   }, "StringMatcher_inRegex", "StringMatcher_isNullRegExp", "$get$StringMatcher_isNullRegExp", function() {
     return P.RegExp_RegExp("(\\sis null|^is null|\\sis not null|^is not null|\\sis empty|^is empty|\\sis not empty|^is not empty)$", true, false);
   }, "StringMatcher_isNullRegExp", "Cell__properties", "$get$Cell__properties", function() {
-    return [G.Property$int("row", new N.closure1386(), null, P.int), new G.Property(null, null, "column", "column", true, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, G.Property_getterOf(new N.closure1387()), G.Property_setterOf(null), null, null, null, null, null, null, [], null, false, P.LinkedHashMap_LinkedHashMap$_empty(P.String, null), null, [], null, null, null, null, false, false, [], [N.Column]), G.Property$table("table", new N.closure1388(), null, N.DataFrame), G.Property$object("value", new N.closure1389(), null, null)];
+    return [G.Property$int("row", new N.closure1494(), null, P.int), new G.Property(null, null, "column", "column", true, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, G.Property_getterOf(new N.closure1495()), G.Property_setterOf(null), null, null, null, null, null, null, [], null, false, P.LinkedHashMap_LinkedHashMap$_empty(P.String, null), null, [], null, null, null, null, false, false, [], [N.Column]), G.Property$table("table", new N.closure1496(), null, N.DataFrame), G.Property$object("value", new N.closure1497(), null, null)];
   }, "Cell__properties", "AggrFunction_selectedRowsFunc", "$get$AggrFunction_selectedRowsFunc", function() {
     return N.AggrFunction$("#selected", "int", null, null, null, false, null, null, P.int);
   }, "AggrFunction_selectedRowsFunc", "AggrFunction_filteredRowsFunc", "$get$AggrFunction_filteredRowsFunc", function() {
@@ -190928,121 +190993,121 @@
   }, "$ColumnInfo_$entityMetaParams", "$ColumnInfo__properties", "$get$$ColumnInfo__properties", function() {
     return [$.$get$$ColumnInfo_$tableInfo(), $.$get$$ColumnInfo_$name(), $.$get$$ColumnInfo_$type(), $.$get$$ColumnInfo_$semType(), $.$get$$ColumnInfo_$layoutColumnId(), $.$get$$ColumnInfo_$id(), $.$get$$ColumnInfo_$securityObject(), $.$get$$ColumnInfo_$projectRelations(), $.$get$$ColumnInfo_$isDeleted(), $.$get$$ColumnInfo_$bindId(), $.$get$$ColumnInfo_$bid(), $.$get$$ColumnInfo_$namespace(), $.$get$$ColumnInfo_$friendlyName(), $.$get$$ColumnInfo_$isOnServer(), $.$get$$ColumnInfo_$isDirty(), $.$get$$ColumnInfo_$entityTags(), $.$get$$ColumnInfo_$metaParams(), $.$get$$ColumnInfo_$entityMetaParams()];
   }, "$ColumnInfo__properties", "$FileInfo_$id", "$get$$FileInfo_$id", function() {
-    var t1 = G.Property$("id", "string", new O.closure1468(), null, null, new O.closure1469(), P.String);
+    var t1 = G.Property$("id", "string", new O.closure1415(), null, null, new O.closure1416(), P.String);
     t1.description = "Identifier";
     t1.derivedFrom = ["Entity", "Model"];
     t1.db = new G.Field(null, null, 0, null);
     return t1;
   }, "$FileInfo_$id", "$FileInfo_$dir", "$get$$FileInfo_$dir", function() {
-    var t1 = G.Property$("dir", "string", new O.closure1466(), null, null, new O.closure1467(), P.String);
+    var t1 = G.Property$("dir", "string", new O.closure1413(), null, null, new O.closure1414(), P.String);
     t1.description = "Directory path.";
     t1.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, true, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null));
     t1.db = new G.Field("path", null, 0, null);
     return t1;
   }, "$FileInfo_$dir", "$FileInfo_$isFile", "$get$$FileInfo_$isFile", function() {
-    var t1 = G.Property$("isFile", "bool", new O.closure1464(), null, null, new O.closure1465(), P.bool);
+    var t1 = G.Property$("isFile", "bool", new O.closure1411(), null, null, new O.closure1412(), P.bool);
     t1.description = "True is this is a file.";
     t1.db = new G.Field(null, null, 0, null);
     return t1;
   }, "$FileInfo_$isFile", "$FileInfo_$size", "$get$$FileInfo_$size", function() {
-    var t1 = G.Property$("size", "int", new O.closure1462(), null, null, new O.closure1463(), P.int);
+    var t1 = G.Property$("size", "int", new O.closure1409(), null, null, new O.closure1410(), P.int);
     t1.description = "Size in bytes.";
     t1.db = new G.Field(null, null, 0, null);
     return t1;
   }, "$FileInfo_$size", "$FileInfo_$createdOn", "$get$$FileInfo_$createdOn", function() {
-    var t1 = G.Property$("createdOn", "datetime", new O.closure1460(), null, null, new O.closure1461(), P.DateTime);
+    var t1 = G.Property$("createdOn", "datetime", new O.closure1407(), null, null, new O.closure1408(), P.DateTime);
     t1.description = "Creation date.";
     t1.db = new G.Field(null, null, 0, null);
     return t1;
   }, "$FileInfo_$createdOn", "$FileInfo_$updatedOn", "$get$$FileInfo_$updatedOn", function() {
-    var t1 = G.Property$("updatedOn", "datetime", new O.closure1458(), null, null, new O.closure1459(), P.DateTime);
+    var t1 = G.Property$("updatedOn", "datetime", new O.closure1405(), null, null, new O.closure1406(), P.DateTime);
     t1.description = "Modification date.";
     t1.db = new G.Field(null, null, 0, null);
     return t1;
   }, "$FileInfo_$updatedOn", "$FileInfo_$connection", "$get$$FileInfo_$connection", function() {
-    var t1 = G.Property$("connection", "dataconnection", new O.closure1456(), null, null, new O.closure1457(), O.DataConnection);
+    var t1 = G.Property$("connection", "dataconnection", new O.closure1403(), null, null, new O.closure1404(), O.DataConnection);
     t1.db = new G.BelongsTo(null, null, false, false, null);
     return t1;
   }, "$FileInfo_$connection", "$FileInfo_$connectionName", "$get$$FileInfo_$connectionName", function() {
-    return G.Property$("connectionName", "string", new O.closure1454(), null, null, new O.closure1455(), P.String);
+    return G.Property$("connectionName", "string", new O.closure1401(), null, null, new O.closure1402(), P.String);
   }, "$FileInfo_$connectionName", "$FileInfo_$sharedWith", "$get$$FileInfo_$sharedWith", function() {
-    var t1 = G.Property$("sharedWith", "dataconnection", new O.closure1452(), null, null, new O.closure1453(), O.DataConnection);
+    var t1 = G.Property$("sharedWith", "dataconnection", new O.closure1399(), null, null, new O.closure1400(), O.DataConnection);
     t1.db = new G.Uses(null, null, false, null);
     return t1;
   }, "$FileInfo_$sharedWith", "$FileInfo_$tables", "$get$$FileInfo_$tables", function() {
-    var t1 = G.Property$("tables", "list", new O.closure1450(), true, "tableinfo", new O.closure1451(), [P.List, O.TableInfo]);
+    var t1 = G.Property$("tables", "list", new O.closure1397(), true, "tableinfo", new O.closure1398(), [P.List, O.TableInfo]);
     t1.db = new G.Owns(null, null, null);
     return t1;
   }, "$FileInfo_$tables", "$FileInfo_$path", "$get$$FileInfo_$path", function() {
-    return G.Property$("path", "string", new O.closure1448(), null, null, new O.closure1449(), P.String);
+    return G.Property$("path", "string", new O.closure1395(), null, null, new O.closure1396(), P.String);
   }, "$FileInfo_$path", "$FileInfo_$isDirectory", "$get$$FileInfo_$isDirectory", function() {
-    var t1 = G.Property$("isDirectory", "bool", new O.closure1446(), null, null, new O.closure1447(), P.bool);
+    var t1 = G.Property$("isDirectory", "bool", new O.closure1393(), null, null, new O.closure1394(), P.bool);
     t1.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, true, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null));
     return t1;
   }, "$FileInfo_$isDirectory", "$FileInfo_$eTag", "$get$$FileInfo_$eTag", function() {
-    return G.Property$("eTag", "string", new O.closure1444(), null, null, new O.closure1445(), P.String);
+    return G.Property$("eTag", "string", new O.closure1391(), null, null, new O.closure1392(), P.String);
   }, "$FileInfo_$eTag", "$FileInfo_$securityObject", "$get$$FileInfo_$securityObject", function() {
-    var t1 = G.Property$("securityObject", "property", new O.closure1442(), null, "dynamic", new O.closure1443(), G.Property);
+    var t1 = G.Property$("securityObject", "property", new O.closure1389(), null, "dynamic", new O.closure1390(), G.Property);
     t1.derivedFrom = ["Entity"];
     return t1;
   }, "$FileInfo_$securityObject", "$FileInfo_$projectRelations", "$get$$FileInfo_$projectRelations", function() {
-    var t1 = G.Property$("projectRelations", "list", new O.closure1440(), true, "projectrelation", new O.closure1441(), [P.List, O.ProjectRelation]);
+    var t1 = G.Property$("projectRelations", "list", new O.closure1387(), true, "projectrelation", new O.closure1388(), [P.List, O.ProjectRelation]);
     t1.derivedFrom = ["Entity"];
     t1.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, true, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null));
     t1.db = new G.UsedBy("entity_id", null, null);
     return t1;
   }, "$FileInfo_$projectRelations", "$FileInfo_$isDeleted", "$get$$FileInfo_$isDeleted", function() {
-    var t1 = G.Property$("isDeleted", "bool", new O.closure1438(), true, null, new O.closure1439(), P.bool);
+    var t1 = G.Property$("isDeleted", "bool", new O.closure1385(), true, null, new O.closure1386(), P.bool);
     t1.description = "True is this object was deleted.";
     t1.derivedFrom = ["Entity"];
     t1.db = new G.Field(null, null, 0, null);
     return t1;
   }, "$FileInfo_$isDeleted", "$FileInfo_$bindId", "$get$$FileInfo_$bindId", function() {
-    var t1 = G.Property$("bindId", "string", new O.closure1436(), null, null, new O.closure1437(), P.String);
+    var t1 = G.Property$("bindId", "string", new O.closure1383(), null, null, new O.closure1384(), P.String);
     t1.derivedFrom = ["Entity"];
     t1.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, true, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null));
     return t1;
   }, "$FileInfo_$bindId", "$FileInfo_$bid", "$get$$FileInfo_$bid", function() {
-    var t1 = G.Property$("bid", "string", new O.closure1434(), null, null, new O.closure1435(), P.String);
+    var t1 = G.Property$("bid", "string", new O.closure1381(), null, null, new O.closure1382(), P.String);
     t1.derivedFrom = ["Entity"];
     return t1;
   }, "$FileInfo_$bid", "$FileInfo_$namespace", "$get$$FileInfo_$namespace", function() {
-    var t1 = G.Property$("namespace", "string", new O.closure1432(), true, null, new O.closure1433(), P.String);
+    var t1 = G.Property$("namespace", "string", new O.closure1379(), true, null, new O.closure1380(), P.String);
     t1.derivedFrom = ["NamedModel"];
     return t1;
   }, "$FileInfo_$namespace", "$FileInfo_$name", "$get$$FileInfo_$name", function() {
-    var t1 = G.Property$("name", "string", new O.closure1430(), null, null, new O.closure1431(), P.String);
+    var t1 = G.Property$("name", "string", new O.closure1377(), null, null, new O.closure1378(), P.String);
     t1.derivedFrom = ["NamedModel"];
     t1.set$info(new G.Prop(null, true, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null));
     t1.db = new G.Field("name", null, 0, null);
     return t1;
   }, "$FileInfo_$name", "$FileInfo_$friendlyName", "$get$$FileInfo_$friendlyName", function() {
-    var t1 = G.Property$("friendlyName", "string", new O.closure1428(), null, null, new O.closure1429(), P.String);
+    var t1 = G.Property$("friendlyName", "string", new O.closure1375(), null, null, new O.closure1376(), P.String);
     t1.derivedFrom = ["NamedModel"];
     t1.set$info(new G.Prop(null, true, null, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, "Name", null, null, null, null, null, null, null, null, true, true, null, null, null, null));
     t1.db = new G.Field("friendly_name", null, 0, null);
     return t1;
   }, "$FileInfo_$friendlyName", "$FileInfo_$isOnServer", "$get$$FileInfo_$isOnServer", function() {
-    var t1 = G.Property$("isOnServer", "bool", new O.closure1426(), true, null, new O.closure1427(), P.bool);
+    var t1 = G.Property$("isOnServer", "bool", new O.closure1373(), true, null, new O.closure1374(), P.bool);
     t1.derivedFrom = ["Model"];
     t1.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, true, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null));
     return t1;
   }, "$FileInfo_$isOnServer", "$FileInfo_$isDirty", "$get$$FileInfo_$isDirty", function() {
-    var t1 = G.Property$("isDirty", "bool", new O.closure1424(), true, null, new O.closure1425(), P.bool);
+    var t1 = G.Property$("isDirty", "bool", new O.closure1371(), true, null, new O.closure1372(), P.bool);
     t1.derivedFrom = ["Model"];
     t1.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, true, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null));
     return t1;
   }, "$FileInfo_$isDirty", "$FileInfo_$entityTags", "$get$$FileInfo_$entityTags", function() {
-    var t1 = G.Property$("entityTags", "list", new O.closure1422(), true, "entitytag", new O.closure1423(), [P.List, O.EntityTag]);
+    var t1 = G.Property$("entityTags", "list", new O.closure1369(), true, "entitytag", new O.closure1370(), [P.List, O.EntityTag]);
     t1.derivedFrom = ["TagsMixin"];
     t1.db = new G.Owns("entity_id", null, null);
     return t1;
   }, "$FileInfo_$entityTags", "$FileInfo_$metaParams", "$get$$FileInfo_$metaParams", function() {
-    var t1 = G.Property$("metaParams", "map", new O.closure1420(), null, "string,string", new O.closure1421(), [P.Map, P.String, P.String]);
+    var t1 = G.Property$("metaParams", "map", new O.closure1367(), null, "string,string", new O.closure1368(), [P.Map, P.String, P.String]);
     t1.derivedFrom = ["MetaParamsMixin"];
     return t1;
   }, "$FileInfo_$metaParams", "$FileInfo_$entityMetaParams", "$get$$FileInfo_$entityMetaParams", function() {
-    var t1 = G.Property$("entityMetaParams", "list", new O.closure1418(), null, "entitymetaparam", new O.closure1419(), [P.List, O.EntityMetaParam]);
+    var t1 = G.Property$("entityMetaParams", "list", new O.closure1365(), null, "entitymetaparam", new O.closure1366(), [P.List, O.EntityMetaParam]);
     t1.derivedFrom = ["MetaParamsMixin"];
     t1.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, true, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null));
     t1.db = new G.Owns("entity_id", null, null);
@@ -191100,111 +191165,111 @@
   }, "$TokenExchangeSpec_$scope", "$TokenExchangeSpec__properties", "$get$$TokenExchangeSpec__properties", function() {
     return [$.$get$$TokenExchangeSpec_$flavour(), $.$get$$TokenExchangeSpec_$endpointTemplate(), $.$get$$TokenExchangeSpec_$subjectTokenField(), $.$get$$TokenExchangeSpec_$subjectTokenType(), $.$get$$TokenExchangeSpec_$scope()];
   }, "$TokenExchangeSpec__properties", "$DataSource_$type", "$get$$DataSource_$type", function() {
-    var t1 = G.Property$("type", "string", new O.closure1530(), null, null, new O.closure1531(), P.String);
+    var t1 = G.Property$("type", "string", new O.closure1477(), null, null, new O.closure1478(), P.String);
     t1.description = "Data source name (such as 'Oracle'). [DataConnection.dataSource] refers to it.\n See also [DataSourceType].";
     return t1;
   }, "$DataSource_$type", "$DataSource_$category", "$get$$DataSource_$category", function() {
-    var t1 = G.Property$("category", "string", new O.closure1528(), null, null, new O.closure1529(), P.String);
+    var t1 = G.Property$("category", "string", new O.closure1475(), null, null, new O.closure1476(), P.String);
     t1.description = "Category (such as 'database').";
     return t1;
   }, "$DataSource_$category", "$DataSource_$requiresServer", "$get$$DataSource_$requiresServer", function() {
-    var t1 = G.Property$("requiresServer", "bool", new O.closure1526(), true, null, new O.closure1527(), P.bool);
+    var t1 = G.Property$("requiresServer", "bool", new O.closure1473(), true, null, new O.closure1474(), P.bool);
     t1.description = "Indicates if this data provider can work right from the browser.\n When true, a query always executes on a server. Examples: Oracle, Postgres, MS SQL\n When false, a query runs on a server or in a browser, depending on the context (queries initiated\n from the browser would run in a browser).";
     return t1;
   }, "$DataSource_$requiresServer", "$DataSource_$description", "$get$$DataSource_$description", function() {
-    var t1 = G.Property$("description", "string", new O.closure1524(), null, null, new O.closure1525(), P.String);
+    var t1 = G.Property$("description", "string", new O.closure1471(), null, null, new O.closure1472(), P.String);
     t1.description = "Free-text description.";
     return t1;
   }, "$DataSource_$description", "$DataSource_$commentStart", "$get$$DataSource_$commentStart", function() {
-    var t1 = G.Property$("commentStart", "string", new O.closure1522(), true, null, new O.closure1523(), P.String);
+    var t1 = G.Property$("commentStart", "string", new O.closure1469(), true, null, new O.closure1470(), P.String);
     t1.description = "Comment start, depends on SQL engine";
     return t1;
   }, "$DataSource_$commentStart", "$DataSource_$nameBrackets", "$get$$DataSource_$nameBrackets", function() {
-    var t1 = G.Property$("nameBrackets", "string", new O.closure1520(), true, null, new O.closure1521(), P.String);
+    var t1 = G.Property$("nameBrackets", "string", new O.closure1467(), true, null, new O.closure1468(), P.String);
     t1.description = "Name brackets, required if name contains spaces, depends on SQL engine.";
     return t1;
   }, "$DataSource_$nameBrackets", "$DataSource_$connectionTemplate", "$get$$DataSource_$connectionTemplate", function() {
-    var t1 = G.Property$("connectionTemplate", "list", new O.closure1518(), null, "property", new O.closure1519(), [P.List, G.Property]);
+    var t1 = G.Property$("connectionTemplate", "list", new O.closure1465(), null, "property", new O.closure1466(), [P.List, G.Property]);
     t1.description = "Connection template that is used for constructing UI for editing connections settings.";
     return t1;
   }, "$DataSource_$connectionTemplate", "$DataSource_$credentialsTemplate", "$get$$DataSource_$credentialsTemplate", function() {
-    var t1 = G.Property$("credentialsTemplate", "list", new O.closure1516(), null, "property", new O.closure1517(), [P.List, G.Property]);
+    var t1 = G.Property$("credentialsTemplate", "list", new O.closure1463(), null, "property", new O.closure1464(), [P.List, G.Property]);
     t1.description = "Credentials template that is used for constructing UI for editing credentials.";
     return t1;
   }, "$DataSource_$credentialsTemplate", "$DataSource_$jdbcPropertiesTemplate", "$get$$DataSource_$jdbcPropertiesTemplate", function() {
-    var t1 = G.Property$("jdbcPropertiesTemplate", "list", new O.closure1514(), null, "property", new O.closure1515(), [P.List, G.Property]);
+    var t1 = G.Property$("jdbcPropertiesTemplate", "list", new O.closure1461(), null, "property", new O.closure1462(), [P.List, G.Property]);
     t1.description = "JDBC properties template that is used for constructing UI for editing JDBC driver specific options.";
     return t1;
   }, "$DataSource_$jdbcPropertiesTemplate", "$DataSource_$authSchemasDescription", "$get$$DataSource_$authSchemasDescription", function() {
-    return G.Property$("authSchemasDescription", "map", new O.closure1512(), true, "string,string", new O.closure1513(), [P.Map, P.String, P.String]);
+    return G.Property$("authSchemasDescription", "map", new O.closure1459(), true, "string,string", new O.closure1460(), [P.Map, P.String, P.String]);
   }, "$DataSource_$authSchemasDescription", "$DataSource_$queryTemplate", "$get$$DataSource_$queryTemplate", function() {
-    var t1 = G.Property$("queryTemplate", "list", new O.closure1510(), null, "property", new O.closure1511(), [P.List, G.Property]);
+    var t1 = G.Property$("queryTemplate", "list", new O.closure1457(), null, "property", new O.closure1458(), [P.List, G.Property]);
     t1.description = "Query template that is used for constructing UI for editing query settings.";
     return t1;
   }, "$DataSource_$queryTemplate", "$DataSource_$cacheTemplate", "$get$$DataSource_$cacheTemplate", function() {
-    return G.Property$("cacheTemplate", "list", new O.closure1508(), true, "property", new O.closure1509(), [P.List, G.Property]);
+    return G.Property$("cacheTemplate", "list", new O.closure1455(), true, "property", new O.closure1456(), [P.List, G.Property]);
   }, "$DataSource_$cacheTemplate", "$DataSource_$aggregations", "$get$$DataSource_$aggregations", function() {
-    var t1 = G.Property$("aggregations", "list", new O.closure1506(), null, "aggrfunctioninfo", new O.closure1507(), [P.List, N.AggrFunctionInfo]);
+    var t1 = G.Property$("aggregations", "list", new O.closure1453(), null, "aggrfunctioninfo", new O.closure1454(), [P.List, N.AggrFunctionInfo]);
     t1.description = "List of column aggregation functions that the db provider supports.";
     return t1;
   }, "$DataSource_$aggregations", "$DataSource_$typesMap", "$get$$DataSource_$typesMap", function() {
-    var t1 = G.Property$("typesMap", "map", new O.closure1504(), null, "string,string", new O.closure1505(), [P.Map, P.String, P.String]);
+    var t1 = G.Property$("typesMap", "map", new O.closure1451(), null, "string,string", new O.closure1452(), [P.Map, P.String, P.String]);
     t1.description = "(dbType -> grok type), see [Types].\n if dbType starts with '#', the rest of it is considered a regexp. This is convenient for\n representing strings with varying length, etc.";
     return t1;
   }, "$DataSource_$typesMap", "$DataSource_$canBrowseSchema", "$get$$DataSource_$canBrowseSchema", function() {
-    var t1 = G.Property$("canBrowseSchema", "bool", new O.closure1502(), true, null, new O.closure1503(), P.bool);
+    var t1 = G.Property$("canBrowseSchema", "bool", new O.closure1449(), true, null, new O.closure1450(), P.bool);
     t1.description = "Whether 'Browse schema' command is enabled.";
     return t1;
   }, "$DataSource_$canBrowseSchema", "$DataSource_$defaultSchema", "$get$$DataSource_$defaultSchema", function() {
-    return G.Property$("defaultSchema", "string", new O.closure1500(), true, null, new O.closure1501(), P.String);
+    return G.Property$("defaultSchema", "string", new O.closure1447(), true, null, new O.closure1448(), P.String);
   }, "$DataSource_$defaultSchema", "$DataSource_$queryLanguage", "$get$$DataSource_$queryLanguage", function() {
-    var t1 = G.Property$("queryLanguage", "string", new O.closure1498(), null, null, new O.closure1499(), P.String);
+    var t1 = G.Property$("queryLanguage", "string", new O.closure1445(), null, null, new O.closure1446(), P.String);
     t1.description = "Query language (such as 'sql' or 'sparql' that is used in the [Editor].";
     return t1;
   }, "$DataSource_$queryLanguage", "$DataSource_$hasConnections", "$get$$DataSource_$hasConnections", function() {
-    return G.Property$("hasConnections", "bool", new O.closure1496(), null, null, new O.closure1497(), P.bool);
+    return G.Property$("hasConnections", "bool", new O.closure1443(), null, null, new O.closure1444(), P.bool);
   }, "$DataSource_$hasConnections", "$DataSource_$requiresFullyQualifiedTable", "$get$$DataSource_$requiresFullyQualifiedTable", function() {
-    return G.Property$("requiresFullyQualifiedTable", "bool", new O.closure1494(), true, null, new O.closure1495(), P.bool);
+    return G.Property$("requiresFullyQualifiedTable", "bool", new O.closure1441(), true, null, new O.closure1442(), P.bool);
   }, "$DataSource_$requiresFullyQualifiedTable", "$DataSource_$supportCatalogs", "$get$$DataSource_$supportCatalogs", function() {
-    return G.Property$("supportCatalogs", "bool", new O.closure1492(), true, null, new O.closure1493(), P.bool);
+    return G.Property$("supportCatalogs", "bool", new O.closure1439(), true, null, new O.closure1440(), P.bool);
   }, "$DataSource_$supportCatalogs", "$DataSource_$supportsWrite", "$get$$DataSource_$supportsWrite", function() {
-    var t1 = G.Property$("supportsWrite", "bool", new O.closure1490(), true, null, new O.closure1491(), P.bool);
+    var t1 = G.Property$("supportsWrite", "bool", new O.closure1437(), true, null, new O.closure1438(), P.bool);
     t1.description = "Whether the provider supports structured write operations (insert/update/delete).";
     return t1;
   }, "$DataSource_$supportsWrite", "$DataSource_$supportsExpectAffected", "$get$$DataSource_$supportsExpectAffected", function() {
-    var t1 = G.Property$("supportsExpectAffected", "bool", new O.closure1488(), true, null, new O.closure1489(), P.bool);
+    var t1 = G.Property$("supportsExpectAffected", "bool", new O.closure1435(), true, null, new O.closure1436(), P.bool);
     t1.description = "Whether the connector honours `UpdateRows`/`DeleteRows.expectAffected` (a mismatch rolls the\n transaction back before commit); an older connector ignores the field.";
     return t1;
   }, "$DataSource_$supportsExpectAffected", "$DataSource_$supportsUpsert", "$get$$DataSource_$supportsUpsert", function() {
-    var t1 = G.Property$("supportsUpsert", "bool", new O.closure1486(), true, null, new O.closure1487(), P.bool);
+    var t1 = G.Property$("supportsUpsert", "bool", new O.closure1433(), true, null, new O.closure1434(), P.bool);
     t1.description = "Whether the provider supports upsert (insert-or-update by match keys).";
     return t1;
   }, "$DataSource_$supportsUpsert", "$DataSource_$supportsBulkInsert", "$get$$DataSource_$supportsBulkInsert", function() {
-    var t1 = G.Property$("supportsBulkInsert", "bool", new O.closure1484(), true, null, new O.closure1485(), P.bool);
+    var t1 = G.Property$("supportsBulkInsert", "bool", new O.closure1431(), true, null, new O.closure1432(), P.bool);
     t1.description = "Whether the provider supports the bulk-insert streaming path.";
     return t1;
   }, "$DataSource_$supportsBulkInsert", "$DataSource_$supportsDdl", "$get$$DataSource_$supportsDdl", function() {
-    var t1 = G.Property$("supportsDdl", "bool", new O.closure1482(), true, null, new O.closure1483(), P.bool);
+    var t1 = G.Property$("supportsDdl", "bool", new O.closure1429(), true, null, new O.closure1430(), P.bool);
     t1.description = "Whether the provider supports DDL (create/alter table) mutations.";
     return t1;
   }, "$DataSource_$supportsDdl", "$DataSource_$supportsTransactionalDdl", "$get$$DataSource_$supportsTransactionalDdl", function() {
-    var t1 = G.Property$("supportsTransactionalDdl", "bool", new O.closure1480(), true, null, new O.closure1481(), P.bool);
+    var t1 = G.Property$("supportsTransactionalDdl", "bool", new O.closure1427(), true, null, new O.closure1428(), P.bool);
     t1.description = "Whether DDL statements participate in transactions (e.g. Postgres, MSSQL) so a\n failed multi-statement DDL op rolls back atomically; when false the dialect\n auto-commits DDL and partial state can remain.";
     return t1;
   }, "$DataSource_$supportsTransactionalDdl", "$DataSource_$readOnlySessionEnforced", "$get$$DataSource_$readOnlySessionEnforced", function() {
-    var t1 = G.Property$("readOnlySessionEnforced", "bool", new O.closure1478(), true, null, new O.closure1479(), P.bool);
+    var t1 = G.Property$("readOnlySessionEnforced", "bool", new O.closure1425(), true, null, new O.closure1426(), P.bool);
     t1.description = "Whether the driver-level read-only session actually rejects writes on this provider\n (Postgres) or is advisory only \u2014 the \xa76.2 read-only-policy honesty declaration\n mirrored from GrokConnect (connector-writes WO-B13).";
     return t1;
   }, "$DataSource_$readOnlySessionEnforced", "$DataSource_$dgToNativeType", "$get$$DataSource_$dgToNativeType", function() {
-    var t1 = G.Property$("dgToNativeType", "map", new O.closure1476(), null, "string,string", new O.closure1477(), [P.Map, P.String, P.String]);
+    var t1 = G.Property$("dgToNativeType", "map", new O.closure1423(), null, "string,string", new O.closure1424(), [P.Map, P.String, P.String]);
     t1.description = "dg type -> native column type used for DDL emission (the reverse of [typesMap],\n hand-authored per provider); non-null iff [supportsDdl].";
     return t1;
   }, "$DataSource_$dgToNativeType", "$DataSource_$supportsGeneratedKeys", "$get$$DataSource_$supportsGeneratedKeys", function() {
-    var t1 = G.Property$("supportsGeneratedKeys", "bool", new O.closure1474(), true, null, new O.closure1475(), P.bool);
+    var t1 = G.Property$("supportsGeneratedKeys", "bool", new O.closure1421(), true, null, new O.closure1422(), P.bool);
     t1.description = "Whether the provider can return generated keys from inserts.";
     return t1;
   }, "$DataSource_$supportsGeneratedKeys", "$DataSource_$oauth", "$get$$DataSource_$oauth", function() {
-    return G.Property$("oauth", "oauthspec", new O.closure1472(), null, null, new O.closure1473(), O.OAuthSpec);
+    return G.Property$("oauth", "oauthspec", new O.closure1419(), null, null, new O.closure1420(), O.OAuthSpec);
   }, "$DataSource_$oauth", "$DataSource__properties", "$get$$DataSource__properties", function() {
     return [$.$get$$DataSource_$type(), $.$get$$DataSource_$category(), $.$get$$DataSource_$requiresServer(), $.$get$$DataSource_$description(), $.$get$$DataSource_$commentStart(), $.$get$$DataSource_$nameBrackets(), $.$get$$DataSource_$connectionTemplate(), $.$get$$DataSource_$credentialsTemplate(), $.$get$$DataSource_$jdbcPropertiesTemplate(), $.$get$$DataSource_$authSchemasDescription(), $.$get$$DataSource_$queryTemplate(), $.$get$$DataSource_$cacheTemplate(), $.$get$$DataSource_$aggregations(), $.$get$$DataSource_$typesMap(), $.$get$$DataSource_$canBrowseSchema(), $.$get$$DataSource_$defaultSchema(), $.$get$$DataSource_$queryLanguage(), $.$get$$DataSource_$hasConnections(), $.$get$$DataSource_$requiresFullyQualifiedTable(), $.$get$$DataSource_$supportCatalogs(), $.$get$$DataSource_$supportsWrite(), $.$get$$DataSource_$supportsExpectAffected(), $.$get$$DataSource_$supportsUpsert(), $.$get$$DataSource_$supportsBulkInsert(), $.$get$$DataSource_$supportsDdl(), $.$get$$DataSource_$supportsTransactionalDdl(), $.$get$$DataSource_$readOnlySessionEnforced(), $.$get$$DataSource_$dgToNativeType(), $.$get$$DataSource_$supportsGeneratedKeys(), $.$get$$DataSource_$oauth()];
   }, "$DataSource__properties", "$DataConnection_$namespace", "$get$$DataConnection_$namespace", function() {
@@ -191858,19 +191923,19 @@
   }, "$DataJobReport_$averageDuration", "$DataJobReport__properties", "$get$$DataJobReport__properties", function() {
     return [$.$get$$DataJobReport_$job(), $.$get$$DataJobReport_$lastRun(), $.$get$$DataJobReport_$runCount(), $.$get$$DataJobReport_$completedRunCount(), $.$get$$DataJobReport_$averageDuration()];
   }, "$DataJobReport__properties", "$Recurrence_$type", "$get$$Recurrence_$type", function() {
-    return G.Property$("type", "string", new O.closure1544(), null, null, new O.closure1545(), P.String);
+    return G.Property$("type", "string", new O.closure1491(), null, null, new O.closure1492(), P.String);
   }, "$Recurrence_$type", "$Recurrence_$start", "$get$$Recurrence_$start", function() {
-    return G.Property$("start", "datetime", new O.closure1542(), null, null, new O.closure1543(), P.DateTime);
+    return G.Property$("start", "datetime", new O.closure1489(), null, null, new O.closure1490(), P.DateTime);
   }, "$Recurrence_$start", "$Recurrence_$minutes", "$get$$Recurrence_$minutes", function() {
-    return G.Property$("minutes", "int", new O.closure1540(), null, null, new O.closure1541(), P.int);
+    return G.Property$("minutes", "int", new O.closure1487(), null, null, new O.closure1488(), P.int);
   }, "$Recurrence_$minutes", "$Recurrence_$hours", "$get$$Recurrence_$hours", function() {
-    return G.Property$("hours", "int", new O.closure1538(), null, null, new O.closure1539(), P.int);
+    return G.Property$("hours", "int", new O.closure1485(), null, null, new O.closure1486(), P.int);
   }, "$Recurrence_$hours", "$Recurrence_$days", "$get$$Recurrence_$days", function() {
-    return G.Property$("days", "int", new O.closure1536(), null, null, new O.closure1537(), P.int);
+    return G.Property$("days", "int", new O.closure1483(), null, null, new O.closure1484(), P.int);
   }, "$Recurrence_$days", "$Recurrence_$cronSchedule", "$get$$Recurrence_$cronSchedule", function() {
-    return G.Property$("cronSchedule", "string", new O.closure1534(), null, null, new O.closure1535(), P.String);
+    return G.Property$("cronSchedule", "string", new O.closure1481(), null, null, new O.closure1482(), P.String);
   }, "$Recurrence_$cronSchedule", "$Recurrence_$weekdays", "$get$$Recurrence_$weekdays", function() {
-    return G.Property$("weekdays", "list", new O.closure1532(), true, "bool", new O.closure1533(), [P.List, P.bool]);
+    return G.Property$("weekdays", "list", new O.closure1479(), true, "bool", new O.closure1480(), [P.List, P.bool]);
   }, "$Recurrence_$weekdays", "$Recurrence__properties", "$get$$Recurrence__properties", function() {
     return [$.$get$$Recurrence_$type(), $.$get$$Recurrence_$start(), $.$get$$Recurrence_$minutes(), $.$get$$Recurrence_$hours(), $.$get$$Recurrence_$days(), $.$get$$Recurrence_$cronSchedule(), $.$get$$Recurrence_$weekdays()];
   }, "$Recurrence__properties", "$ConnectionCacheRecord_$connection", "$get$$ConnectionCacheRecord_$connection", function() {
@@ -194870,41 +194935,41 @@
   }, "$Parameter_$isDirty", "$Parameter__properties", "$get$$Parameter__properties", function() {
     return [$.$get$$Parameter_$isInput(), $.$get$$Parameter_$isOptional(), $.$get$$Parameter_$entity(), $.$get$$Parameter_$defaultValue(), $.$get$$Parameter_$serialize(), $.$get$$Parameter_$deserialize(), $.$get$$Parameter_$name(), $.$get$$Parameter_$propertyType(), $.$get$$Parameter_$includeInLayout(), $.$get$$Parameter_$propertySubType(), $.$get$$Parameter_$semType(), $.$get$$Parameter_$description(), $.$get$$Parameter_$format(), $.$get$$Parameter_$choices(), $.$get$$Parameter_$separators(), $.$get$$Parameter_$synonyms(), $.$get$$Parameter_$editor(), $.$get$$Parameter_$inputType(), $.$get$$Parameter_$columnTypeFilter(), $.$get$$Parameter_$maxCategories(), $.$get$$Parameter_$userEditable(), $.$get$$Parameter_$saveForTooltip(), $.$get$$Parameter_$min(), $.$get$$Parameter_$max(), $.$get$$Parameter_$step(), $.$get$$Parameter_$showSlider(), $.$get$$Parameter_$showPlusMinus(), $.$get$$Parameter_$groupWith(), $.$get$$Parameter_$units(), $.$get$$Parameter_$viewer(), $.$get$$Parameter_$getEnum(), $.$get$$Parameter_$setEnum(), $.$get$$Parameter_$nullableRaw(), $.$get$$Parameter_$hasDefaultValue(), $.$get$$Parameter_$js(), $.$get$$Parameter_$tags(), $.$get$$Parameter_$validators(), $.$get$$Parameter_$info(), $.$get$$Parameter_$nullable(), $.$get$$Parameter_$friendlyName(), $.$get$$Parameter_$category(), $.$get$$Parameter_$id(), $.$get$$Parameter_$isOnServer(), $.$get$$Parameter_$isDirty()];
   }, "$Parameter__properties", "$SemanticValue_$value", "$get$$SemanticValue_$value", function() {
-    return G.Property$("value", "t", new O.closure1415(), null, null, new O.closure1416(), null);
+    return G.Property$("value", "t", new O.closure1543(), null, null, new O.closure1544(), null);
   }, "$SemanticValue_$value", "$SemanticValue_$semType", "$get$$SemanticValue_$semType", function() {
-    var t1 = G.Property$("semType", "string", new O.closure1413(), null, null, new O.closure1414(), P.String);
+    var t1 = G.Property$("semType", "string", new O.closure1541(), null, null, new O.closure1542(), P.String);
     t1.description = "Name of the corresponding [SemanticType]";
     return t1;
   }, "$SemanticValue_$semType", "$SemanticValue_$description", "$get$$SemanticValue_$description", function() {
-    return G.Property$("description", "string", new O.closure1411(), null, null, new O.closure1412(), P.String);
+    return G.Property$("description", "string", new O.closure1539(), null, null, new O.closure1540(), P.String);
   }, "$SemanticValue_$description", "$SemanticValue_$notation", "$get$$SemanticValue_$notation", function() {
-    return G.Property$("notation", "string", new O.closure1409(), null, null, new O.closure1410(), P.String);
+    return G.Property$("notation", "string", new O.closure1537(), null, null, new O.closure1538(), P.String);
   }, "$SemanticValue_$notation", "$SemanticValue_$units", "$get$$SemanticValue_$units", function() {
-    var t1 = G.Property$("units", "string", new O.closure1407(), null, null, new O.closure1408(), P.String);
+    var t1 = G.Property$("units", "string", new O.closure1535(), null, null, new O.closure1536(), P.String);
     t1.description = "Units (see [Quality]).";
     return t1;
   }, "$SemanticValue_$units", "$SemanticValue_$creationScript", "$get$$SemanticValue_$creationScript", function() {
-    var t1 = G.Property$("creationScript", "string", new O.closure1405(), null, null, new O.closure1406(), P.String);
+    var t1 = G.Property$("creationScript", "string", new O.closure1533(), null, null, new O.closure1534(), P.String);
     t1.description = "Script used to (re)create the value";
     return t1;
   }, "$SemanticValue_$creationScript", "$SemanticValue_$name", "$get$$SemanticValue_$name", function() {
-    var t1 = G.Property$("name", "string", new O.closure1403(), null, null, new O.closure1404(), P.String);
+    var t1 = G.Property$("name", "string", new O.closure1531(), null, null, new O.closure1532(), P.String);
     t1.description = "Name;";
     return t1;
   }, "$SemanticValue_$name", "$SemanticValue_$tags", "$get$$SemanticValue_$tags", function() {
-    return G.Property$("tags", "map", new O.closure1401(), true, "string,string", new O.closure1402(), [P.Map, P.String, P.String]);
+    return G.Property$("tags", "map", new O.closure1529(), true, "string,string", new O.closure1530(), [P.Map, P.String, P.String]);
   }, "$SemanticValue_$tags", "$SemanticValue_$gridCell", "$get$$SemanticValue_$gridCell", function() {
-    var t1 = G.Property$("gridCell", "dynamic", new O.closure1399(), null, null, new O.closure1400(), null);
+    var t1 = G.Property$("gridCell", "dynamic", new O.closure1527(), null, null, new O.closure1528(), null);
     t1.description = "Corresponding [GridCell] the value was taken from";
     t1.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, true, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null));
     return t1;
   }, "$SemanticValue_$gridCell", "$SemanticValue_$viewer", "$get$$SemanticValue_$viewer", function() {
-    var t1 = G.Property$("viewer", "dynamic", new O.closure1397(), null, null, new O.closure1398(), null);
+    var t1 = G.Property$("viewer", "dynamic", new O.closure1525(), null, null, new O.closure1526(), null);
     t1.description = "Corresponding [ViewerBase] the value was taken from";
     t1.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, true, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null));
     return t1;
   }, "$SemanticValue_$viewer", "$SemanticValue_$cell", "$get$$SemanticValue_$cell", function() {
-    var t1 = G.Property$("cell", "cell", new O.closure1395(), null, null, new O.closure1396(), N.Cell);
+    var t1 = G.Property$("cell", "cell", new O.closure1523(), null, null, new O.closure1524(), N.Cell);
     t1.description = "Corresponding [Cell] the value was taken from";
     t1.set$info(new G.Prop(null, false, null, true, null, null, null, null, null, true, null, null, true, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true, null, null, null, null));
     return t1;
@@ -198621,7 +198686,7 @@
   }, "funcsInitCompleter"]);
   Isolate = Isolate.$finishIsolateConstructor(Isolate);
   $ = new Isolate();
-  init.metadata = [null, "x", "p", "c", "s", "i", "col", "name", "v", "call", "t", "a", "b", "e", "value", "args", "table", "key", "f", "r", "each", false, "n", "e0", "k", "_", "notify", "element", "rowCount", "m", "context", "cols", "stackTrace", "id", "pattern", "func", "list", "data", "idx", "error", "script", "rows", "message", "nums", "g", "u", "tc", "result", "self", "parent", "dt", "zone", "o", "as", "row", "resultColName", "tags", "dtqb", "y", "type", "num", "info", "columnId", "arg", "line", "w", true, "fi", "object", "ds", "projectId", "ts", "values", "map", "notification", "params", "q", "column", "report", "tag", "pi", "it", "index", "reject", "resolve", "tableName", "match", "agg", "field", 0, "text", "length", "tableId", "fields", "p1", "where", "jobId", "queryId", "flag", "sub", "count", "jobRunId", "semType", "test", "function", "layout", "logEvent", "connectionId", "entityId", "dataType", "check", "p2", "d", "queryRunId", "json", "columns", "mustPrint", "et", "datasetId", "columnFilter", "buffer", "mustPost", "time", "whereClauses", "canSave", "p3", "ed", "mustSave", "datasource", "logEventType", "other", "canPrint", "schemaName", "canPost", "start", "end", "msg", "milliseconds", "when", "eventArgs", "expression", "callback", "p4", "trace", "l", "state", "aggregations", "desc", "orderBy", "decimalPlaces", "query", "frame", "ti", "schema", "and", "cat", "wl", "joins", "pp", "propertyName", "ci", "h", "admin", "options", "limit", "format", "filters", "response", "node", "j", "invocation", "action", "bitset", "newName", "seconds", "minutes", "hours", "errorBehavior", "userId", "treatAsString", "progress", "processed", "param", "auto", "severity", "colName", "cc", "headers", "groupByFields", "p5", "pivots", "inPlace", "joinType", "keys2", "keys1", "cell", "t1", "t2", "arg1", "order", "sql", 1, "pair", "adHoc", "dc", "token", "relativeSelectors", "path", "target", "event", "db", "local", "arg2", "mask", "subscribeOnChanges", "part", "day", "month", "year", "op", "currentCall", "prefix", "queue", "fp", "group", "levelIndex", "fieldId", "ref", "s1", "s2", "levels", "limits", "url", "padding", "valueColumnName", "categoryColumnName", "filter", "p6", "favoritesOnly", "status", "whereOp", "conn", "duration", "timeLimit", "onTimeout", "needle", "rel", "file", "auditType", "normal", "level", "width", "includeTime", "units", "iterator", "eventName", "onlySelected", " ", "onlyFiltered", "arg3", "connection", "stream", "lcv", "range", "nca", "arg4", "remote", "code", "number", "dp", "fc", "arguments", "link", "pos", "cap", "elem", "obj", "root", "predicates", "by", "ascending", "having", "bigint", "sum", "newType", "columnName", "values1", "values2", "havingOp", "includeLinked", "types", "b2", "expected", "include", "base", "activityClient", "clear", "logClient", "onData", "method", "rowIdx", "Min-max", "table2", "grid", "colNames", "copyColumnNames", "mergeColumnNames", "rowMask", "columnIds", "saveSelection", "saveTags", "stack", "mode", "dt2", "columnsToAppend", "sortByColumnIds", "sortOrders", "js", "bytes", "compress", "autoName", "table1", "qnum", "qualifier", "getValue", "setValue", "columnToReplace", "newColumn", "desiredTags", "choices", "columnNames", "inner", "categories", "indexes", "rawData", "dt1", "indexToValue", "valueComparer", "aggrType", "doublePrecision", "p7", "arr", "days", "logScale", "bins", "window", "minPeriods", "valueColumn", "catColumn", "column2", "Category", "Value", "copyColumns", "mergeColumns", "reason", "getter", "setter", "defaultValue", "grainDuration", "propertyValue", "typeName", "regexp", "description", "matching", "grainOffset", "propType", "b1", "upsert", "handler", "metric", "zeroOnes", "optionsJson", "df", "whenNull", "column1", "captureThis", "stat", "permission", 26789344063684636e-50, "timeslice", "alias", "asc", "rightTable", "leftTableKeys", "rightTableKeys", "rightTableAlias", "leftTable", "dataSource", "rowCellCount", "capitalizeFirst", "capitalizeNext", "capitalizeConjunctions", "input", "millisecondSinceEpoch", "delim", "linkTypes", "initialSync", "filterAllOnNoRowsSelected", 10, "parameters", "packageName", "functionName", "meta", "resultType", "resultSemType", "inputs", "outputs", "minimum", "rowPredicate", "title", "postfix", "iterable", "archive", "encodedComponent", "comment", "isError", "chunk", "def", "dataFrame", "xBins", "yBins", "xColName", "yColName", "dispatch", "strings", "logger", "items", "delimiter", "oldColName", "version", "date", "propName", "newColName", "st", "cio", "subject", "to", "html", "bcc", "attachments", "val", ".", "useKMMultipliers", "theStackTrace", "theError", "errorCode", "zoneValues", "specification", ",", "r1", "r2", "awaitStart", "awaitStop", "groups_", "group_", "spec", "", "folderPathOrFileInfo", "recursive", "ext", "request", "run", "audit", "funcCallId", "logs", "columnNamesMap", "authorId", "includeRoot", "currentUser", "parameter1", "fullPath", "queryName", "queryParameters", "jobName", "jobParameters", "groups", "decimalSeparator", "funcList", "from", "fcp", "optional", "rp", "string", "onFinish", "cancelable", "pausable", "spinner", "shortName", "owner", "paramName", "replace", "parameter", "property", "jsObject", "deep", "regExp", "exponent", "whenEqual", "timestamp", "lst", "numberOfArguments", "isolate", "closure", "whenEmpty", "separator", "tagValue", "exception", "typedEventArgs", "messageOrException", "key1", "key2", "body", "attribute", "aggr", "impliedDigits", "howMany", "digit expected", "letter expected", "pc", "elements", "ga", "arg5", "arg6", "end of input expected", "item", "color", "sender", "startIndex", "position", "visitable", "statusText", "isBinary", "str"];
+  init.metadata = [null, "x", "p", "c", "s", "i", "col", "name", "v", "call", "t", "a", "b", "e", "value", "args", "table", "key", "f", "r", "each", false, "n", "e0", "_", "k", "notify", "element", "rowCount", "m", "context", "cols", "stackTrace", "id", "pattern", "func", "list", "data", "idx", "error", "script", "rows", "message", "nums", "g", "u", "tc", "result", "self", "parent", "dt", "zone", "o", "as", "row", "resultColName", "tags", "dtqb", "y", "type", "num", "info", "columnId", "arg", "line", "w", true, "fi", "object", "ds", "projectId", "ts", "values", "map", "notification", "params", "q", "column", "report", "tag", "pi", "it", "index", "reject", "resolve", "tableName", "match", "agg", "field", 0, "text", "length", "tableId", "fields", "p1", "where", "jobId", "queryId", "flag", "sub", "count", "jobRunId", "semType", "test", "function", "layout", "logEvent", "connectionId", "entityId", "dataType", "check", "p2", "d", "queryRunId", "json", "columns", "mustPrint", "et", "datasetId", "columnFilter", "buffer", "mustPost", "time", "whereClauses", "canSave", "p3", "ed", "mustSave", "datasource", "logEventType", "other", "canPrint", "schemaName", "canPost", "start", "end", "msg", "milliseconds", "when", "eventArgs", "expression", "callback", "p4", "trace", "l", "state", "aggregations", "desc", "orderBy", "decimalPlaces", "query", "frame", "ti", "schema", "and", "cat", "wl", "joins", "pp", "propertyName", "ci", "h", "admin", "options", "limit", "format", "filters", "response", "node", "j", "invocation", "action", "bitset", "newName", "seconds", "minutes", "hours", "errorBehavior", "userId", "treatAsString", "progress", "processed", "param", "auto", "severity", "colName", "cc", "headers", "groupByFields", "p5", "pivots", "inPlace", "joinType", "keys2", "keys1", "cell", "t1", "t2", "arg1", "order", "sql", 1, "pair", "adHoc", "dc", "token", "relativeSelectors", "path", "target", "event", "db", "local", "arg2", "mask", "subscribeOnChanges", "part", "day", "month", "year", "op", "currentCall", "prefix", "queue", "fp", "group", "levelIndex", "fieldId", "ref", "s1", "s2", "levels", "limits", "url", "padding", "valueColumnName", "categoryColumnName", "filter", "p6", "favoritesOnly", "status", "whereOp", "conn", "duration", "timeLimit", "onTimeout", "needle", "rel", "file", "auditType", "normal", "level", "width", "includeTime", "units", "iterator", "eventName", "onlySelected", " ", "onlyFiltered", "arg3", "connection", "stream", "lcv", "range", "nca", "arg4", "remote", "code", "number", "dp", "fc", "arguments", "link", "pos", "cap", "elem", "obj", "root", "predicates", "by", "ascending", "having", "bigint", "sum", "newType", "columnName", "values1", "values2", "havingOp", "includeLinked", "types", "b2", "expected", "include", "base", "activityClient", "clear", "logClient", "onData", "method", "rowIdx", "Min-max", "table2", "grid", "colNames", "copyColumnNames", "mergeColumnNames", "rowMask", "columnIds", "saveSelection", "saveTags", "stack", "mode", "dt2", "columnsToAppend", "sortByColumnIds", "sortOrders", "js", "bytes", "compress", "autoName", "table1", "qnum", "qualifier", "getValue", "setValue", "columnToReplace", "newColumn", "desiredTags", "choices", "columnNames", "inner", "categories", "indexes", "rawData", "dt1", "indexToValue", "valueComparer", "aggrType", "doublePrecision", "p7", "arr", "days", "logScale", "bins", "window", "minPeriods", "valueColumn", "catColumn", "column2", "Category", "Value", "copyColumns", "mergeColumns", "reason", "getter", "setter", "defaultValue", "grainDuration", "propertyValue", "typeName", "regexp", "description", "matching", "grainOffset", "propType", "b1", "upsert", "handler", "metric", "zeroOnes", "optionsJson", "df", "whenNull", "column1", "captureThis", "stat", "permission", 26789344063684636e-50, "timeslice", "alias", "asc", "rightTable", "leftTableKeys", "rightTableKeys", "rightTableAlias", "leftTable", "dataSource", "rowCellCount", "capitalizeFirst", "capitalizeNext", "capitalizeConjunctions", "input", "millisecondSinceEpoch", "delim", "linkTypes", "initialSync", "filterAllOnNoRowsSelected", 10, "parameters", "packageName", "functionName", "meta", "resultType", "resultSemType", "inputs", "outputs", "minimum", "rowPredicate", "title", "postfix", "iterable", "archive", "encodedComponent", "comment", "isError", "chunk", "def", "dataFrame", "xBins", "yBins", "xColName", "yColName", "dispatch", "strings", "logger", "items", "delimiter", "oldColName", "version", "date", "propName", "newColName", "st", "cio", "subject", "to", "html", "bcc", "attachments", "val", ".", "useKMMultipliers", "theStackTrace", "theError", "errorCode", "zoneValues", "specification", ",", "r1", "r2", "awaitStart", "awaitStop", "groups_", "group_", "spec", "", "folderPathOrFileInfo", "recursive", "ext", "request", "run", "audit", "funcCallId", "logs", "columnNamesMap", "authorId", "includeRoot", "currentUser", "parameter1", "fullPath", "queryName", "queryParameters", "jobName", "jobParameters", "groups", "decimalSeparator", "funcList", "from", "fcp", "optional", "rp", "string", "onFinish", "cancelable", "pausable", "spinner", "shortName", "owner", "paramName", "replace", "parameter", "property", "jsObject", "deep", "regExp", "exponent", "whenEqual", "timestamp", "lst", "numberOfArguments", "isolate", "closure", "whenEmpty", "separator", "tagValue", "exception", "typedEventArgs", "messageOrException", "key1", "key2", "body", "attribute", "aggr", "impliedDigits", "howMany", "digit expected", "letter expected", "pc", "elements", "ga", "arg5", "arg6", "end of input expected", "item", "color", "sender", "startIndex", "position", "visitable", "statusText", "isBinary", "str"];
   init.types = [{func: 1, args: [,]}, {func: 1, args: [N.Func]}, {func: 1, args: [N.Func,,]}, {func: 1}, {func: 1, args: [O.Entity]}, {func: 1, args: [O.Model]}, {func: 1, args: [O.Model,,]}, {func: 1, args: [,,]}, {func: 1, args: [O.Entity,,]}, {func: 1, args: [G.Property]}, {func: 1, args: [O.NamedModel]}, {func: 1, args: [O.NamedModel,,]}, {func: 1, args: [O.AuthorMixin]}, {func: 1, args: [O.AuthorMixin,,]}, {func: 1, ret: Q.Parser}, {func: 1, args: [G.Property,,]}, {func: 1, args: [O.ScheduleMixin]}, {func: 1, args: [O.ScheduleMixin,,]}, {func: 1, args: [O.DataQuery]}, {func: 1, args: [O.DataQuery,,]}, {func: 1, args: [P.Object]}, {func: 1, args: [N.TableMutation]}, {func: 1, args: [N.TableMutation,,]}, {func: 1, args: [P.String]}, {func: 1, args: [N.FuncCall]}, {func: 1, ret: P.Future}, {func: 1, args: [O.ScriptHandler,,]}, {func: 1, args: [O.ScriptHandler]}, {func: 1, args: [N.Column]}, {func: 1, v: true}, {func: 1, args: [O.UsersServiceSettings,,]}, {func: 1, args: [O.UsersServiceSettings]}, {func: 1, args: [P.DateTime]}, {func: 1, args: [O.PackageEntityMixin]}, {func: 1, args: [O.PackageEntityMixin,,]}, {func: 1, args: [O.MetaParamsMixin]}, {func: 1, args: [O.MetaParamsMixin,,]}, {func: 1, args: [O.DataSource]}, {func: 1, args: [O.GrokStartupData]}, {func: 1, args: [O.GrokStartupData,,]}, {func: 1, args: [N.FuncCall,,]}, {func: 1, args: [N.DataFrame]}, {func: 1, args: [N.FuncCallParam]}, {func: 1, args: [O.TagsMixin,,]}, {func: 1, args: [O.TagsMixin]}, {func: 1, args: [O.UserLoginTry]}, {func: 1, args: [O.AdminPluginSettings]}, {func: 1, args: [O.AdminPluginSettings,,]}, {func: 1, args: [O.UserLoginTry,,]}, {func: 1, args: [O.GrokPublishedPackage]}, {func: 1, args: [O.User]}, {func: 1, args: [O.DataSource,,]}, {func: 1, args: [O.DomainTable]}, {func: 1, args: [O.LogExportSettings,,]}, {func: 1, args: [O.LogExportSettings]}, {func: 1, args: [N.TableQuery]}, {func: 1, ret: P.Future, args: [,]}, {func: 1, args: [O.FileInfo]}, {func: 1, args: [P.int]}, {func: 1, args: [O.GrokPublishedPackage,,]}, {func: 1, ret: P.DateTime, args: [P.String]}, {func: 1, args: [O.AlertingSettings]}, {func: 1, args: [O.Project]}, {func: 1, args: [O.AlertingSettings,,]}, {func: 1, args: [N.InsertRows]}, {func: 1, args: [N.InsertRows,,]}, {func: 1, args: [G.Property, P.String]}, {func: 1, args: [O.UserReport]}, {func: 1, ret: P.bool, args: [P.int]}, {func: 1, args: [O.DomainTable,,]}, {func: 1, ret: P.int, args: [P.int]}, {func: 1, args: [O.DataConnection]}, {func: 1, args: [N.TableQuery,,]}, {func: 1, args: [O.DockerImage]}, {func: 1, ret: P.double, args: [P.num]}, {func: 1, args: [O.User,,]}, {func: 1, ret: P.String, args: [P.String]}, {func: 1, ret: P.bool, args: [P.Object]}, {func: 1, args: [O.DomainSchema]}, {func: 1, args: [O.ActionLoggerSettings,,]}, {func: 1, args: [O.ActionLoggerSettings]}, {func: 1, args: [O.SemanticValue]}, {func: 1, args: [N.Stats]}, {func: 1, args: [O.GarbageCollectorSettings,,]}, {func: 1, args: [O.UserReport,,]}, {func: 1, args: [O.UserNotification]}, {func: 1, args: [N.CsvImportOptions]}, {func: 1, ret: P.int, args: [P.int, P.int]}, {func: 1, args: [O.DataConnection,,]}, {func: 1, args: [N.CsvImportOptions,,]}, {func: 1, args: [O.GarbageCollectorSettings]}, {func: 1, args: [O.UserReportData,,]}, {func: 1, args: [O.AIProviderConfig,,]}, {func: 1, args: [O.AIProviderConfig]}, {func: 1, args: [O.LogEvent]}, {func: 1, args: [O.GrokChat]}, {func: 1, args: [O.GrokChat,,]}, {func: 1, args: [O.UserReportData]}, {func: 1, args: [O.UserGroup]}, {func: 1, args: [O.Credentials]}, {func: 1, args: [N.CsvExportOptions,,]}, {func: 1, args: [O.LoggerSettings,,]}, {func: 1, args: [O.LoggerSettings]}, {func: 1, args: [O.TableInfo]}, {func: 1, args: [O.DomainSchema,,]}, {func: 1, args: [N.CsvExportOptions]}, {func: 1, args: [N.BitSet]}, {func: 1, args: [N.FuncCallParam,,]}, {func: 1, args: [O.Project,,]}, {func: 1, args: [O.GrokPackage]}, {func: 1, args: [O.GrokServiceInfo]}, {func: 1, args: [O.GrokServiceInfo,,]}, {func: 1, args: [O.UserSession]}, {func: 1, args: [O.GrokPackage,,]}, {func: 1, args: [O.UserGroup,,]}, {func: 1, args: [O.SemanticValue,,]}, {func: 1, args: [P.Map]}, {func: 1, args: [O.DomainTableColumn]}, {func: 1, ret: P.int, args: [P.DateTime]}, {func: 1, args: [O.FileInfo,,]}, {func: 1, args: [O.DockerContainer]}, {func: 1, args: [O.Credentials,,]}, {func: 1, args: [O.ServerKey]}, {func: 1, args: [N.FuncParam]}, {func: 1, args: [N.FieldPredicate]}, {func: 1, args: [O.ServerKey,,]}, {func: 1, ret: N.QueryBuilder, args: [P.String], named: {as: P.String}}, {func: 1, args: [O.DockerContainerConfig]}, {func: 1, args: [O.DockerContainerConfig,,]}, {func: 1, args: [O.UserLoginResponse,,]}, {func: 1, args: [N.Column, P.String]}, {func: 1, args: [N.Cell]}, {func: 1, ret: N.GroupByBuilder, args: [P.String], named: {resultColName: P.String}}, {func: 1, args: [P.String, P.String]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String]}, {func: 1, args: [O.DomainTableColumn,,]}, {func: 1, args: [O.DomainRow]}, {func: 1, args: [O.LogEventType]}, {func: 1, args: [O.Script]}, {func: 1, args: [G.Property, P.bool]}, {func: 1, args: [O.DockerContainer,,]}, {func: 1, args: [O.UserLoginResponse]}, {func: 1, args: [O.PredictiveModelInfo]}, {func: 1, args: [O.GrokComment,,]}, {func: 1, args: [O.GrokComment]}, {func: 1, args: [O.EntityPropertyValue]}, {func: 1, args: [O.UserSession,,]}, {func: 1, args: [O.UserSignupTry,,]}, {func: 1, args: [O.UserSignupTry]}, {func: 1, ret: P.double, args: [,]}, {func: 1, ret: P.double, args: [P.int]}, {func: 1, v: true, args: [P.Object]}, {func: 1, ret: P.double, args: [N.BitSet, N.BitSet]}, {func: 1, args: [O.PredictiveModelInfo,,]}, {func: 1, args: [O.PictureMixin]}, {func: 1, args: [P.List]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,]}, {func: 1, args: [O.ViewInfo]}, {func: 1, args: [N.ColumnList]}, {func: 1, args: [O.EntityPropertyValue,,]}, {func: 1, args: [O.ColumnInfo]}, {func: 1, args: [P.num]}, {func: 1, ret: P.int, args: [P.String]}, {func: 1, args: [O.DockerImage, P.String]}, {func: 1, args: [O.GrokPackageRepository]}, {func: 1, ret: P.String, args: [P.int]}, {func: 1, args: [N.FuncParam,,]}, {func: 1, args: [O.DockerImage,,]}, {func: 1, ret: P.bool, args: [P.String]}, {func: 1, args: [O.FolderIndexingRule,,]}, {func: 1, args: [O.FolderIndexingRule]}, {func: 1, args: [O.LogEvent,,]}, {func: 1, args: [O.TableInfo,,]}, {func: 1, ret: P.Future, args: [P.String]}, {func: 1, args: [O.DataQueryRunResult]}, {func: 1, args: [P.String,,]}, {func: 1, args: [O.GrokPackageRepository,,]}, {func: 1, args: [P.Duration]}, {func: 1, args: [O.PictureMixin,,]}, {func: 1, args: [O.SyncPair]}, {func: 1, args: [O.UserKey]}, {func: 1, args: [O.UserKey,,]}, {func: 1, args: [O.LogEventType,,]}, {func: 1, args: [O.DataQueryRunResult,,]}, {func: 1, args: [N.FieldPredicate,,]}, {func: 1, args: [N.FuncCall, P.String]}, {func: 1, args: [N.DataFrameLink]}, {func: 1, args: [N.UpdateRows]}, {func: 1, args: [O.LogEventParameterValue]}, {func: 1, args: [O.ViewLayout]}, {func: 1, args: [N.DataFrameLink,,]}, {func: 1, args: [O.OpenTelemetrySettings]}, {func: 1, args: [O.OpenTelemetrySettings,,]}, {func: 1, args: [O.SyncPair,,]}, {func: 1, args: [O.GrokServerInfo]}, {func: 1, args: [O.GrokServerInfo,,]}, {func: 1, args: [Q.DomainsClient, P.String]}, {func: 1, args: [N.AlterTable]}, {func: 1, args: [O.Recurrence]}, {func: 1, args: [O.Recurrence,,]}, {func: 1, args: [N.AlterTable,,]}, {func: 1, args: [O.TablesBlob]}, {func: 1, args: [O.TablesBlob,,]}, {func: 1, args: [O.ProgressIndicator]}, {func: 1, args: [O.EntityMetaParam]}, {func: 1, args: [N.TableJoin]}, {func: 1, args: [N.TableQuery, P.List]}, {func: 1, args: [O.Feedback]}, {func: 1, args: [O.ObjectDataSource]}, {func: 1, args: [N.UpdateRows,,]}, {func: 1, args: [N.CreateTable]}, {func: 1, args: [G.Property, P.num]}, {func: 1, args: [N.Column, P.int]}, {func: 1, args: [N.TableJoin,,]}, {func: 1, args: [P.double], opt: [P.String]}, {func: 1, args: [O.EntityPermission,,]}, {func: 1, args: [O.EntityPermission]}, {func: 1, args: [N.CreateTable,,]}, {func: 1, args: [O.EntityTypePermission,,]}, {func: 1, args: [O.EntityTypePermission]}, {func: 1, args: [O.HistoryEntry]}, {func: 1, args: [P.bool]}, {func: 1, ret: N.EncodingEstimate, args: [N.IntColumn]}, {func: 1, args: [O.Feedback,,]}, {func: 1, args: [N.DbTableQueryBuilder, P.List]}, {func: 1, args: [O.UserNotification,,]}, {func: 1, ret: P.double, args: [P.num, P.num]}, {func: 1, args: [O.ConnectionCacheRecord,,]}, {func: 1, args: [O.UserCode]}, {func: 1, args: [O.ConnectionCacheRecord]}, {func: 1, ret: P.bool, args: [,]}, {func: 1, ret: P.Future, args: [P.Object]}, {func: 1, args: [O.DataJobReport,,]}, {func: 1, args: [O.DataJobReport]}, {func: 1, args: [N.EventData]}, {func: 1, args: [O.ApiError]}, {func: 1, args: [O.RuleAction,,]}, {func: 1, args: [O.ApiError,,]}, {func: 1, args: [O.RuleAction]}, {func: 1, args: [N.BitSet, N.BitSet, P.bool]}, {func: 1, args: [O.EntityRecord]}, {func: 1, args: [N.DeleteRows,,]}, {func: 1, args: [O.EntityRecord,,]}, {func: 1, ret: N.EncodingEstimate, args: [N.FloatColumn]}, {func: 1, args: [Q.SpaceFilesClient,,]}, {func: 1, args: [N.DeleteRows]}, {func: 1, args: [O.TokenExchangeSpec,,]}, {func: 1, args: [O.TokenExchangeSpec]}, {func: 1, args: [N.GroupAggregation,,]}, {func: 1, ret: N.EncodingEstimate, args: [N.StringColumn]}, {func: 1, args: [O.OAuthSpec,,]}, {func: 1, args: [O.ViewInfo,,]}, {func: 1, args: [O.OAuthSpec]}, {func: 1, args: [O.User, P.String]}, {func: 1, args: [O.UserNotificationPreference,,]}, {func: 1, args: [P.int, P.int]}, {func: 1, args: [O.EntityPropertySchema]}, {func: 1, args: [N.GroupAggregation]}, {func: 1, args: [O.UserNotificationPreference]}, {func: 1, args: [O.UserNotificationType,,]}, {func: 1, args: [O.UserNotificationType]}, {func: 1, args: [O.GroupMembershipRequest,,]}, {func: 1, args: [O.GroupMembershipRequest]}, {func: 1, v: true, args: [N.BufferAccessor]}, {func: 1, args: [O.LogEventParameter]}, {func: 1, args: [O.UserCode,,]}, {func: 1, args: [N.AggrFunctionInfo,,]}, {func: 1, args: [O.EmailHistory,,]}, {func: 1, args: [O.EmailHistory]}, {func: 1, args: [N.AddKey]}, {func: 1, ret: P.num, args: [P.num, P.num]}, {func: 1, args: [O.Script, P.String]}, {func: 1, args: [N.AddKey,,]}, {func: 1, args: [N.AggrFunctionInfo]}, {func: 1, args: [O.EntityType]}, {func: 1, args: [O.UserSettingsRecord,,]}, {func: 1, ret: P.String, args: [P.String, P.String, P.String]}, {func: 1, ret: P.double, args: [P.String]}, {func: 1, ret: P.Future, args: [N.FuncCall]}, {func: 1, v: true, args: [P.Object], opt: [P.StackTrace]}, {func: 1, ret: P.String, args: [P.String, P.int]}, {func: 1, args: [O.DataJob,,]}, {func: 1, args: [P.Match]}, {func: 1, args: [O.DataJob]}, {func: 1, args: [O.EntitySyncFunc]}, {func: 1, args: [O.Notebook]}, {func: 1, ret: [P.Future, N.FuncCall], args: [P.String]}, {func: 1, args: [O.Notebook,,]}, {func: 1, ret: P.int, args: [,]}, {func: 1, args: [O.UrlAlias,,]}, {func: 1, args: [O.UrlAlias]}, {func: 1, args: [O.ServerTaskProgress]}, {func: 1, args: [Q.DomainsClient, P.String, P.String]}, {func: 1, args: [O.ServerTaskProgress,,]}, {func: 1, args: [O.UserReportsRule,,]}, {func: 1, v: true, args: [P.String]}, {func: 1, args: [O.GroupRelation]}, {func: 1, args: [O.GroupRelation,,]}, {func: 1, args: [, P.String]}, {func: 1, args: [O.LogEventParameterValue,,]}, {func: 1, args: [O.UserReportsRule]}, {func: 1, ret: P.bool, args: [P.num, P.num]}, {func: 1, ret: P.double, args: [P.double]}, {func: 1, args: [N.RowMatcher]}, {func: 1, args: [O.EntityPropertyCategories,,]}, {func: 1, args: [N.FuncCall, P.String,,]}, {func: 1, v: true, args: [,]}, {func: 1, ret: P.int, args: [P.double]}, {func: 1, args: [[P.Iterable, P.String]]}, {func: 1, args: [O.HistoryEntry,,]}, {func: 1, args: [O.CachePluginSettings,,]}, {func: 1, args: [O.CachePluginSettings]}, {func: 1, args: [O.UserPasswordMixin]}, {func: 1, args: [O.Entity, P.String]}, {func: 1, args: [O.UserSettingsRecord]}, {func: 1, v: true, args: [N.Context1, P.String]}, {func: 1, args: [O.ViewLayout,,]}, {func: 1, args: [O.EntityMetaParam,,]}, {func: 1, args: [O.UserPasswordMixin,,]}, {func: 1, ret: P.bool, args: [P.String, P.String]}, {func: 1, args: [O.EntityTag,,]}, {func: 1, args: [O.EntityTag]}, {func: 1, args: [O.SettingsOverride,,]}, {func: 1, args: [O.SettingsOverride]}, {func: 1, args: [N.ColumnList, P.String]}, {func: 1, args: [,,,]}, {func: 1, args: [O.ColumnInfo,,]}, {func: 1, args: [O.AzureOpenAIConfig,,]}, {func: 1, args: [O.EntityPropertyCategories]}, {func: 1, args: [O.AzureOpenAIConfig]}, {func: 1, args: [O.LogEventView]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String]}, {func: 1, args: [O.CommentRef,,]}, {func: 1, args: [O.CommentRef]}, {func: 1, args: [O.ChatCommentVote,,]}, {func: 1, args: [O.ChatCommentVote]}, {func: 1, args: [O.ChatRead,,]}, {func: 1, ret: N.QueryBuilder, args: [P.String, P.String], named: {dataType: P.String}}, {func: 1, args: [O.ChatRead]}, {func: 1, args: [O.ChatWatch,,]}, {func: 1, args: [O.ChatWatch]}, {func: 1, args: [O.WebQuery,,]}, {func: 1, args: [P.Object, P.Object]}, {func: 1, args: [O.SparqlQuery,,]}, {func: 1, args: [P.String,, P.bool]}, {func: 1, args: [P.Symbol0,,]}, {func: 1, args: [[P.Iterable, P.Object], N.Column, N.GroupAggregation]}, {func: 1, ret: P.DateTime, args: [[P.Iterable, P.DateTime]]}, {func: 1, args: [N.CreateIndex]}, {func: 1, args: [O.SparqlQuery]}, {func: 1, v: true, args: [N.DataFrame, N.TableRowFilterCall]}, {func: 1, args: [N.CalcColErrorBehavior,,]}, {func: 1, args: [O.ObjectDataSource, P.String]}, {func: 1, args: [Q.SpacesClient, P.String]}, {func: 1, args: [O.PackageScriptHandler]}, {func: 1, args: [N.ValueMatcher,,]}, {func: 1, args: [O.LogEventView,,]}, {func: 1, args: [X.DartHandle]}, {func: 1, ret: P.String, args: [,]}, {func: 1, ret: P.String}, {func: 1, ret: Q.Parser, opt: [P.String]}, {func: 1, args: [O.LogEventParameter,,]}, {func: 1, args: [O.Script,,]}, {func: 1, args: [O.EntityType,,]}, {func: 1, args: [O.EntityUserPermission,,]}, {func: 1, args: [O.DbSchemaInfo]}, {func: 1, args: [O.EntityUserPermission]}, {func: 1, args: [N.RowList]}, {func: 1, ret: N.EncodingEstimate, args: [N.DateTimeColumn]}, {func: 1, args: [P.Map,,]}, {func: 1, args: [N.CreateIndex,,]}, {func: 1, ret: P.String, args: [[P.Iterable, P.String]]}, {func: 1, ret: [P.Future, U.Response]}, {func: 1, args: [Q.DomainsClient, P.String,,]}, {func: 1, ret: P.int, args: [P.num]}, {func: 1, args: [O.Parameter]}, {func: 1, args: [O.DbInfo]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.String, P.String]}, {func: 1, args: [O.CredentialsMixin]}, {func: 1, args: [O.EntitySyncFunc,,]}, {func: 1, ret: P.bool, args: [P.bool, P.bool]}, {func: 1, args: [O.ConsentRequiredException,,]}, {func: 1, args: [O.ConsentRequiredException]}, {func: 1, ret: W.Element, args: [P.String]}, {func: 1, args: [O.DockerFunc]}, {func: 1, args: [O.ProjectRelation]}, {func: 1, args: [O.DockerFunc,,]}, {func: 1, args: [O.CredentialsMixin,,]}, {func: 1, args: [N.EventType]}, {func: 1, args: [,,,,]}, {func: 1, ret: [P.Future, P.String]}, {func: 1, args: [O.TagsMixin, P.String]}, {func: 1, args: [N.DataFrame, P.Function]}, {func: 1, ret: [P.Future, P.Null], args: [N.FuncCall]}, {func: 1, v: true, args: [N.DataFrame]}, {func: 1, args: [O.DomainSavedFilter]}, {func: 1, args: [O.DomainSavedFilter,,]}, {func: 1, args: [N.DataFrame, P.String]}, {func: 1, args: [N.CalcColErrorBehavior]}, {func: 1, ret: N.EncodingEstimate, args: [N.BigIntColumn]}, {func: 1, v: true, args: [{func: 1, v: true}]}, {func: 1, args: [O.WebQuery]}, {func: 1, args: [P.String, P.double]}, {func: 1, args: [O.ProjectLayout,,]}, {func: 1, args: [N.Row]}, {func: 1, args: [N.DataFrame, P.int]}, {func: 1, ret: P.int, args: [P.Object, P.Object]}, {func: 1, args: [O.ViewInfo, P.String]}, {func: 1, args: [O.ViewLayout, P.String]}, {func: 1, args: [N.TypedEventArgs]}, {func: 1, args: [N.DataFrame, N.DataFrame, P.bool, P.List]}, {func: 1, args: [N.DataFrame, N.DataFrame]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.String]}, {func: 1, args: [O.ApiException]}, {func: 1, args: [O.ApiException,,]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,,]}, {func: 1, args: [, P.StackTrace]}, {func: 1, args: [Q.SpaceFilesClient,, P.String]}, {func: 1, args: [Q.SpaceClient]}, {func: 1, args: [Q.SpaceClient, P.String]}, {func: 1, args: [N.MutationBatch]}, {func: 1, args: [O.ObjectDataSource, P.int]}, {func: 1, args: [O.EntityPropertySchema,,]}, {func: 1, args: [O.Entity, O.UserGroup, P.bool]}, {func: 1, args: [O.HostSuffixRule,,]}, {func: 1, args: [O.HostSuffixRule]}, {func: 1, ret: P.bool, args: [P.double]}, {func: 1, args: [P.String, P.String, P.bool]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, P.List]}, {func: 1, args: [N.MutationBatch,,]}, {func: 1, args: [Q.UserClient]}, {func: 1, args: [O.ObjectDataSource, O.Entity]}, {func: 1, args: [P.String, P.bool]}, {func: 1, ret: P.Object, args: [P.Object]}, {func: 1, args: [P.String, P.String, P.int]}, {func: 1, args: [O.GrokServerMetric]}, {func: 1, args: [O.GrokServerMetric,,]}, {func: 1, args: [X.DartHandle,,]}, {func: 1, args: [X.DartHandle, P.int,,]}, {func: 1, args: [O.Favorite]}, {func: 1, args: [O.Favorite,,]}, {func: 1, args: [Q._NodeStats]}, {func: 1, v: true, args: [, P.String]}, {func: 1, v: true, args: [N.Func], named: {override: P.bool}}, {func: 1, args: [N.DataFrame, P.num]}, {func: 1, v: true, args: [P.double]}, {func: 1, args: [P.int, P.String]}, {func: 1, args: [O.ProjectRelation,,]}, {func: 1, args: [O.Parameter,,]}, {func: 1, args: [P.String, P.String, N.Context1]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, N.DataFrame, P.String]}, {func: 1, ret: P.bool, args: [P.Object, P.Object]}, {func: 1, args: [N.Column, P.String, P.String]}, {func: 1, ret: [P.Future, P.Null]}, {func: 1, ret: P.Future, args: [P.Map]}, {func: 1, v: true, args: [P.Uint8List, P.String, P.int]}, {func: 1, args: [N.Column, N.BitSet]}, {func: 1, args: [P.String, P.String,,]}, {func: 1, ret: N.FuncCall, args: [,]}, {func: 1, v: true, args: [P.String, P.String]}, {func: 1, ret: Q.Parser, args: [Q.Parser]}, {func: 1, ret: P.bool, args: [P.bool]}, {func: 1, v: true, args: [P.String,,]}, {func: 1, ret: Q.Parser, args: [P.String]}, {func: 1, ret: [P.Future, N.DataFrame]}, {func: 1, args: [O.CloudWatchLogSettings,,]}, {func: 1, ret: P.String, args: [N.Column, P.int]}, {func: 1, ret: [P.Future, [P.List, O.Entity]]}, {func: 1, ret: P.String, args: [P.String, P.String]}, {func: 1, args: [N.Stats, N.Column]}, {func: 1, ret: [P.Future, P.Null], args: [P.String], opt: [P.bool]}, {func: 1, ret: [P.Future, [P.Map, P.String,,]]}, {func: 1, args: [O.CloudWatchLogSettings]}, {func: 1, args: [N.RowList, P.int], opt: [P.int, P.bool]}, {func: 1, ret: [P.Future, P.bool]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [,], opt: [P.String]}, {func: 1, args: [P.bool], opt: [P.String]}, {func: 1, ret: P.bool, args: [[P.List, N._Node0]]}, {func: 1, args: [N.RowList,,]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, ret: P.bool, args: [N._Vec, P.int]}, {func: 1, ret: N._Kernel, args: [P.String, P.bool]}, {func: 1, ret: P.Future, args: [O.DbInfo]}, {func: 1, args: [O.ProjectLayout]}, {func: 1, ret: P.DateTime, args: [P.int]}, {func: 1, ret: N._Kernel, args: [P.String, P.int]}, {func: 1, args: [O.GrokPublishedPackage, P.String]}, {func: 1, ret: N.QueryBuilder, args: [P.String], named: {as: P.String, function: P.String}}, {func: 1, ret: [P.List, P.String], args: [[P.List, P.int]]}, {func: 1, args: [O.UserGroup, P.bool]}, {func: 1, args: [O.UserGroup, O.UserGroup, P.bool]}, {func: 1, args: [O.UserGroup, O.UserGroup]}, {func: 1, args: [N.FieldOrder]}, {func: 1, args: [Q.DockerContainersClient, P.String, P.bool]}, {func: 1, args: [N.FieldOrder,,]}, {func: 1, ret: P.int, args: [P.DateTime, P.DateTime]}, {func: 1, ret: P.String, args: [P.Match]}, {func: 1, ret: N.GroupByBuilder, args: [P.String], named: {function: P.String, resultColName: P.String}}, {func: 1, v: true, opt: [P.num]}, {func: 1, v: true, args: [N.DataFrame, N.Column, P.String]}, {func: 1, args: [P.Iterator]}, {func: 1, args: [O.SemanticValue, P.String]}, {func: 1, args: [, P.List]}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall]}, {func: 1, args: [N.Func, P.String]}, {func: 1, ret: P.DateTime}, {func: 1, args: [O.EntityType, P.String]}, {func: 1, ret: P.bool, args: [P.DateTime, P.bool]}, {func: 1, args: [O.EntityPropertySchema, P.List]}, {func: 1, args: [N.FuncCall, P.bool]}, {func: 1, ret: N.Column, args: [N.DataFrame, P.String]}, {func: 1, args: [O.ScriptEnvironment]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.TableRowFilterCall]}, {func: 1, v: true, args: [P.Int8List]}, {func: 1, v: true, args: [P.Int16List]}, {func: 1, ret: P.String, args: [P.String, P.int], named: {padding: P.String}}, {func: 1, args: [N.BitSet, P.int, P.bool]}, {func: 1, ret: P.Int16List}, {func: 1, args: [N.DbTableQueryBuilder]}, {func: 1, ret: P.num, args: [P.num]}, {func: 1, v: true, args: [, P.StackTrace]}, {func: 1, args: [O.DataQuery, P.String]}, {func: 1, ret: P.Int8List}, {func: 1, ret: P.String, args: [P.num]}, {func: 1, ret: P.int, args: [P.String, P.String]}, {func: 1, args: [N.ValueMatcher]}, {func: 1, args: [O.Project, O.Entity]}, {func: 1, args: [O.Project, P.String]}, {func: 1, args: [O.Project, O.Entity, P.bool]}, {func: 1, args: [O.TableInfo, P.String]}, {func: 1, args: [O.Project, P.bool]}, {func: 1, ret: [P.Future, P.bool], args: [P.Object]}, {func: 1, args: [N.BitSet, P.Uint32List, P.bool]}, {func: 1, args: [O.DataQuery, P.bool]}, {func: 1, args: [O.DataQuery, O.DataConnection]}, {func: 1, ret: P.Future, args: [O.DataQuery]}, {func: 1, args: [P.ByteBuffer, P.int]}, {func: 1, args: [N.TableQuery, P.String]}, {func: 1, args: [N.BitSet, N.BitSet, P.String]}, {func: 1, ret: P.Future, args: [N.TableQuery]}, {func: 1, args: [N.TableQuery, P.int]}, {func: 1, args: [N.BitSet, P.Function]}, {func: 1, args: [N.BitSet, P.int, P.bool, P.bool]}, {func: 1, args: [N.BitSet, P.int]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.bool]}, {func: 1, args: [N.DbTableQueryBuilder, P.int]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.String, P.List, P.List, P.String, P.String]}, {func: 1, args: [N.BitSet, P.bool, P.bool]}, {func: 1, args: [O.DataConnection, P.String, P.String]}, {func: 1, args: [N.BitSet, P.bool]}, {func: 1, args: [N.BitSet, P.Uint32List]}, {func: 1, ret: P.Future, args: [O.EntityPropertySchema]}, {func: 1, args: [O.ProgressIndicator, P.String]}, {func: 1, args: [O.ProgressIndicator, P.num, P.String]}, {func: 1, args: [O.ProgressIndicator,,]}, {func: 1, args: [S.LogMessage]}, {func: 1, args: [P.String, P.bool, P.bool, P.bool]}, {func: 1, args: [N.Context1, P.String]}, {func: 1, args: [N.Context1, P.String,,]}, {func: 1, ret: P.Future, args: [O.EntityPropertySchema, N.Column]}, {func: 1, args: [N.FuncCall, N.Func]}, {func: 1, args: [N.FuncCall, P.int]}, {func: 1, args: [N.FuncCall, N.FuncCall]}, {func: 1, args: [N.FuncCall, N.Context1]}, {func: 1, args: [N.FuncCallParam, P.Function]}, {func: 1, args: [P.String, P.int, P.int]}, {func: 1, args: [N.DataFrame, N.DataFrame, P.List, P.List, P.List, P.bool, P.bool]}, {func: 1, args: [N.DataFrame, N.DataFrame, P.List, P.List, P.List, P.List, P.String, P.bool]}, {func: 1, args: [P.StreamSubscription]}, {func: 1, args: [P.String, P.String, P.String]}, {func: 1, args: [N.Func, P.List]}, {func: 1, args: [P.String, P.String, P.List,, P.String, P.String]}, {func: 1, ret: P.Future, args: [N.FuncCall, P.bool, O.ProgressIndicator, P.bool, P.bool]}, {func: 1, args: [N.FuncCall, P.bool, P.bool]}, {func: 1, args: [P.List, P.List, P.String]}, {func: 1, v: true, args: [,], opt: [,]}, {func: 1, args: [O.SemanticValue, P.String,,]}, {func: 1, args: [O.Script, P.List]}, {func: 1, ret: P.Future, args: [P.String, N.Context1]}, {func: 1, args: [, P.String, P.Function]}, {func: 1, args: [P.String, P.Uint8List]}, {func: 1, args: [P.Zone, P.ZoneDelegate, P.Zone,, P.StackTrace]}, {func: 1, args: [P.List,,]}, {func: 1, args: [, P.bool, P.String, P.String]}, {func: 1, args: [O.SemanticValue, N.Cell]}, {func: 1, args: [P.Iterable]}, {func: 1, args: [,], opt: [,]}, {func: 1, v: true, args: [[P.Iterable, P.int]]}, {func: 1, args: [O.LogEventType, P.String]}, {func: 1, args: [O.LogEventType, P.bool]}, {func: 1, args: [P.EventSink]}, {func: 1, args: [P.String, G.Property]}, {func: 1, args: [G.Property, P.String,,]}, {func: 1, args: [G.PropMixin]}, {func: 1, args: [G.PropMixin, P.String]}, {func: 1, args: [G.PropMixin, P.String,,]}, {func: 1, args: [Q.TablesClient, N.DataFrame]}, {func: 1, args: [Q.TablesClient, P.String]}, {func: 1, args: [Q.DockerImagesClient, P.String]}, {func: 1, args: [P.String, P.String, P.Function, P.Function,,]}, {func: 1, args: [Q.DockerContainersClient, P.String, P.int]}, {func: 1, args: [P.String, P.int]}, {func: 1, v: true, args: [P.Uint8List, P.int, P.int]}, {func: 1, args: [N.DataFrame, P.int, P.int, P.String, P.String]}, {func: 1, ret: P.int, args: [, P.int]}, {func: 1, v: true, args: [P.int, P.int]}, {func: 1, args: [S.Logger, P.String, P.String, P.Map, P.String, P.String]}, {func: 1, args: [N.HavingPredicate,,]}, {func: 1, args: [N.HavingPredicate]}, {func: 1, args: [N.Cell,,]}, {func: 1, args: [O.DbInfo, P.String]}, {func: 1, args: [N.RowGroup]}, {func: 1, args: [O.DbInfo, P.String,,]}, {func: 1, ret: P.Future, args: [O.DbInfo, P.String, P.List, P.String, P.List, P.Object]}, {func: 1, args: [O.DbRelationInfo, P.String]}, {func: 1, args: [O.DbRelationInfo]}, {func: 1, args: [N.RowList, P.bool, P.bool]}, {func: 1, args: [O.DbSchemaInfo, P.String]}, {func: 1, args: [O.DbSchemaInfo, P.String,,]}, {func: 1, ret: P.Future, args: [O.DbSchemaInfo]}, {func: 1, args: [O.DbSchemaInfo, P.String, P.Object]}, {func: 1, args: [O.DbSchemaInfo, P.String, P.String, P.Object]}, {func: 1, args: [P.String, P.double, P.int, P.List]}, {func: 1, args: [N.RowList, P.int, P.List, P.bool]}, {func: 1, ret: [P.Future, P.Null], args: [P.String, [P.List, P.String]], named: {attachments: [P.List, O.FileInfo], bcc: [P.List, P.String], html: P.String, text: P.String}}, {func: 1, ret: Q.ChatsClient, args: [P.String]}, {func: 1, ret: Q.ChatsClient, args: [[P.Map, P.String,,]]}, {func: 1, args: [N.RowList], opt: [P.List, P.bool]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [N.Row]}]}, {func: 1, ret: Q.ChatsClient, named: {entityId: P.String, ref: P.String, userId: P.String}}, {func: 1, ret: Q.ConnectionsClient, args: [P.String]}, {func: 1, ret: Q.ConnectionsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, args: [N.Column, N.Column]}, {func: 1, ret: Q.QueriesClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.JobsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.QueryRunsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.JobRunsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, args: [O.DataSource, O.DataSource]}, {func: 1, args: [N.Stats, P.int, P.int, P.List, P.List, P.List, P.List]}, {func: 1, args: [N.Stats, P.List, P.List, P.List, P.List]}, {func: 1, ret: O.DomainSchema, args: [P.String]}, {func: 1, ret: O.DomainTable, args: [P.String, P.String]}, {func: 1, ret: [P.List, P.String], args: [P.String, P.String]}, {func: 1, args: [N.ColumnsArgs,,]}, {func: 1, ret: [P.Future, [P.List, O.DomainRow]]}, {func: 1, ret: [P.Future, O.DomainRow]}, {func: 1, ret: [P.Future, [P.List, [P.Map, P.String,,]]], args: [P.String, P.String], opt: [[P.Map, P.String,,]]}, {func: 1, ret: [P.Future, [P.Map, P.String,,]], args: [P.String, P.String]}, {func: 1, ret: Q.DomainRowsDataSource, args: [P.String, P.String]}, {func: 1, ret: [P.Future, P.bool], args: [P.String, P.String], named: {id: P.String}}, {func: 1, args: [N.ColumnsArgs]}, {func: 1, ret: Q.EntitiesClient, args: [[P.Map, P.String,,]]}, {func: 1, ret: Q.EntitiesClient, args: [P.String], named: {desc: P.bool}}, {func: 1, ret: Q.EnvironmentsClient, args: [P.String]}, {func: 1, ret: [P.Future, P.Uint8List], args: [,], named: {format: P.String}}, {func: 1, ret: [P.Future, [P.List, O.FileInfo]], args: [,], named: {ext: P.String, recursive: P.bool, root: P.String}}, {func: 1, ret: Q.LayoutClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, N.Func]]}, {func: 1, ret: Q.FunctionsClient, named: {name: P.String}}, {func: 1, ret: [P.Future, N.FuncCall], args: [N.FuncCall]}, {func: 1, ret: Q.ActivityClient, named: {end: P.DateTime, start: P.DateTime, userId: P.String}}, {func: 1, ret: Q.LogClient, args: [P.String]}, {func: 1, ret: [P.Future, O.LogEvent]}, {func: 1, ret: Q.LogClient, named: {end: P.DateTime, entityId: P.String, favoritesOnly: P.bool, start: P.DateTime}}, {func: 1, ret: [P.Future, P.bool], args: [O.LogAudit]}, {func: 1, ret: [P.Future, P.Null], args: [P.String, N.DataFrame]}, {func: 1, ret: Q.MLClient, args: [P.String]}, {func: 1, ret: [P.Future, N.DataFrame], args: [P.String], named: {columnNamesMap: [P.Map, P.String, P.String]}}, {func: 1, ret: Q.MLClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.NotebooksClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, [P.List, P.String]]], args: [P.String, P.String]}, {func: 1, ret: Q.ProjectRelationClient, named: {entityId: P.String, projectId: P.String, type: P.String}}, {func: 1, ret: Q.ProjectClient, args: [P.String]}, {func: 1, ret: Q.ProjectClient, named: {authorId: P.String, entityId: P.String, includeRoot: P.bool, projectId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, P.String]], named: {query: P.String}}, {func: 1, ret: Q.ScriptRunsClient, args: [P.String]}, {func: 1, ret: Q.ScriptingClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.SpaceClient, args: [P.String]}, {func: 1, ret: Q.SpaceChildrenClient, args: [[P.Map, P.String,,]]}, {func: 1, ret: Q.SpaceChildrenClient, args: [P.String], named: {desc: P.bool}}, {func: 1, ret: Q.SpaceChildrenClient, named: {includeLinked: P.bool, types: P.String}}, {func: 1, ret: Q.FuncCallsClient, args: [P.String]}, {func: 1, ret: Q.TablesClient, args: [P.String]}, {func: 1, ret: Q.TablesClient, named: {jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tags: [P.List, P.String], text: P.String}}, {func: 1, ret: P.Future, args: [O.ProgressIndicator]}, {func: 1, args: [N.DateTimeColumn, P.int,, P.bool]}, {func: 1, ret: [P.Future, O.UserSession]}, {func: 1, ret: [P.Future, O.User]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String], named: {currentUser: P.bool}}, {func: 1, v: true, args: [P.String, P.int]}, {func: 1, args: [N.DateTimeColumn, P.int]}, {func: 1, args: [N.BigInt]}, {func: 1, args: [N.BigIntColumn, P.int, P.String, P.bool]}, {func: 1, args: [N.BigIntColumn, P.int]}, {func: 1, args: [N.FloatColumn, P.bool]}, {func: 1, v: true, args: [P.String], opt: [,]}, {func: 1, args: [P.Object, G.Property]}, {func: 1, args: [N.FloatColumn]}, {func: 1, args: [N.Column, P.String, P.String, P.bool]}, {func: 1, ret: P.Uint8List, args: [,,]}, {func: 1, args: [N.Column, {func: 1, ret: P.int, args: [,,]}]}, {func: 1, args: [N.Column,,]}, {func: 1, args: [N.Column, {func: 1, args: [P.int]}]}, {func: 1, args: [N.StringColumn]}, {func: 1, args: [N.StringColumn, P.List]}, {func: 1, args: [N.Column, P.int, P.String, P.bool]}, {func: 1, args: [N.Column, P.int,, P.bool]}, {func: 1, args: [N.Column,,], opt: [P.bool]}, {func: 1, args: [P.String, N.BitSet]}, {func: 1, ret: P.Object, opt: [P.Object]}, {func: 1, v: true, args: [P.String,,], opt: [P.String]}, {func: 1, v: true, opt: [P.int]}, {func: 1, args: [O.UserPwdChange]}, {func: 1, args: [O.UserPwdChange,,]}, {func: 1, args: [O.UserEmailChange]}, {func: 1, args: [O.UserEmailChange,,]}, {func: 1, args: [P.String, P.List, P.Int32List]}, {func: 1, args: [P.String, P.String, P.List]}, {func: 1, args: [P.String, P.Float64List, P.int]}, {func: 1, args: [P.String, P.Float32List, P.int]}, {func: 1, args: [P.String, P.Int32List, P.int]}, {func: 1, args: [P.String, P.List]}, {func: 1, args: [N.ColumnList, P.List]}, {func: 1, args: [N.ColumnList, P.String, P.List]}, {func: 1, args: [N.ColumnList,,]}, {func: 1, args: [N.ColumnList,, N.Column, P.bool]}, {func: 1, args: [N.ColumnList, P.String, P.bool]}, {func: 1, args: [N.ColumnList, P.String, {func: 1, args: [P.int]}, {func: 1, v: true, args: [P.int,,]}, P.String]}, {func: 1, ret: P.Future, args: [N.ColumnList, P.String, P.String, P.String, P.bool]}, {func: 1, args: [N.ColumnList, P.String, P.String, P.String, P.bool, P.bool,,]}, {func: 1, args: [N.QNumColumn, N.Column, N.Column]}, {func: 1, args: [N.ColumnList, P.String, P.String]}, {func: 1, args: [N.ColumnList, N.Column, P.int, P.bool]}, {func: 1, args: [N.ColumnList, N.Column, P.bool]}, {func: 1, args: [N.ColumnList, P.int]}, {func: 1, args: [N.GroupByBuilder,,]}, {func: 1, args: [N.GroupByBuilder]}, {func: 1, args: [N.GroupByBuilder, P.String, P.String, P.String]}, {func: 1, args: [N.GroupByBuilder, N.BitSet]}, {func: 1, args: [N.GroupByBuilder, P.bool]}, {func: 1, args: [P.Map,,,]}, {func: 1, args: [N.DataFrame, P.bool]}, {func: 1, args: [P.Uint8List]}, {func: 1, args: [N.DataFrame, P.List, P.List, N.BitSet]}, {func: 1, ret: P.Future, args: [P.List]}, {func: 1, args: [N.DataFrame, P.List, P.String, P.String]}, {func: 1, args: [N.DataFrame, P.String, P.Function]}, {func: 1, args: [N.DataFrame, N.BitSet, P.List, P.bool, P.bool]}, {func: 1, args: [N.DataFrame, P.List, P.List, P.String, P.String]}, {func: 1, args: [N.DataFrame, P.List]}, {func: 1, args: [N.DataFrame,,,]}, {func: 1, args: [N.DataFrame, P.int, P.String]}, {func: 1, args: [N.DataFrame, N.Cell]}, {func: 1, args: [N.DataFrame, N.Column]}, {func: 1, args: [N.DataFrame, P.String, P.String]}, {func: 1, args: [O.ViewInfo, P.String, P.String]}, {func: 1, args: [O.ViewLayout, P.String, P.String]}, {func: 1, ret: P.bool, args: [P.Pattern], opt: [P.int]}, {func: 1, args: [P.int,,]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,, P.String]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.String, P.String]}, {func: 1, args: [Q.DomainsClient, P.String,, P.bool]}, {func: 1, args: [Q.DomainsClient,,]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,,]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,, P.String,,]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.Object, P.Object]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,,,]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,,,]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,, P.bool]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.bool, P.String]}, {func: 1, args: [Q.DomainsClient]}, {func: 1, args: [Q.SpaceFilesClient, P.List, P.String]}, {func: 1, args: [Q.SpaceFilesClient, P.List,,]}, {func: 1, args: [Q.SpaceFilesClient,, P.List]}, {func: 1, args: [O.EntityProperty]}, {func: 1, args: [O.EntityProperty,,]}, {func: 1, args: [Q.SpaceChildrenClient, P.String, P.bool]}, {func: 1, args: [Q.SpaceClient, P.String, P.bool]}, {func: 1, args: [Q.SpaceClient,, P.bool]}, {func: 1, args: [O.ObjectDataSource, P.String, P.bool]}, {func: 1, args: [Q.LayoutClient, N.DataFrame]}, {func: 1, args: [O.ScriptEnvironment,,]}, {func: 1, args: [{func: 1, v: true}]}, {func: 1, args: [P.String, P.String, P.String, P.bool]}, {func: 1, args: [Q.CredentialsClient, O.Credentials]}, {func: 1, args: [Q.CredentialsClient, O.Entity]}, {func: 1, args: [O.SocrataQuery]}, {func: 1, args: [O.SocrataQuery,,]}, {func: 1, ret: P.Future, args: [, P.List]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.Entity,,]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.Entity]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.UserGroup]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient]}, {func: 1, args: [Q.GroupClient, O.UserGroup]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String, P.String]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String, P.String, P.String]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.bool]}, {func: 1, args: [Q.ProjectClient, O.Project, P.bool]}, {func: 1, args: [Q.ActivityClient, P.String, P.DateTime, P.DateTime]}, {func: 1, ret: P.Future, args: [P.String,,]}, {func: 1, ret: P.Future, args: [P.String,,,]}, {func: 1, ret: P.Future, args: [P.String, P.String]}, {func: 1, ret: O.GrokComment, args: [P.String,,,]}, {func: 1, ret: P.Future, args: [P.String, P.String, P.String]}, {func: 1, args: [P.String, P.String, P.DateTime, P.DateTime, P.String, P.int]}, {func: 1, args: [Q.LogClient, P.String, P.DateTime, P.DateTime, P.bool]}, {func: 1, ret: P.Future, args: [Q.InfoClient]}, {func: 1, args: [Q.AdminClient, P.String, P.Map, P.List]}, {func: 1, args: [P.Stream, {func: 1, v: true, args: [,]}]}, {func: 1, args: [P.Completer,,,]}, {func: 1, args: [P.Completer,,]}, {func: 1, args: [X.DartHandle, P.int]}, {func: 1, args: [,,,,,,,]}, {func: 1, args: [,,,,,,]}, {func: 1, args: [,,,,,]}, {func: 1, args: [, P.EventSink]}, {func: 1, args: [P.Object, P.EventSink]}, {func: 1, ret: [P.Future, P.String], args: [P.Object], named: {headers: [P.Map, P.String, P.String]}}, {func: 1, args: [,,,], named: {group: null}}, {func: 1, args: [N.DropIndex]}, {func: 1, args: [N.DropIndex,,]}, {func: 1, ret: N.ValueFunction, args: [P.String, {func: 1, args: [P.DateTime]}, P.String]}, {func: 1, ret: [P.List, P.double], args: [[P.List, P.double]]}, {func: 1, ret: P.double, args: [[P.List, P.double], P.double]}, {func: 1, ret: P.double, args: [P.double, P.double]}, {func: 1, ret: P.double, args: [P.String], named: {whenNull: P.double}}, {func: 1, v: true, args: [N.MapChangeArgs]}, {func: 1, ret: P.String, args: [P.int, P.String]}, {func: 1, args: [P.int, N.DataFrame]}, {func: 1, args: [P.String], named: {rowCount: P.int}}, {func: 1, args: [P.int, [P.List, P.String]]}, {func: 1, v: true, args: [[P.List, P.String]]}, {func: 1, args: [P.int, [P.Map, P.int, N.BigInt]]}, {func: 1, v: true, args: [P.int, P.int, P.int, P.int]}, {func: 1, v: true, args: [P.int]}, {func: 1, ret: P.int, args: [[P.List, P.String]]}, {func: 1, ret: P.int, args: [[P.List, P.int], P.int]}, {func: 1, ret: P.int, args: [[P.List, P.double]]}, {func: 1, ret: P.int, args: [P.Float32List]}, {func: 1, v: true, args: [N.BufferAccessor], named: {archive: P.int}}, {func: 1, ret: N._FlatBufTable, args: [P.int]}, {func: 1, ret: P.bool, args: [P.int], opt: [P.bool]}, {func: 1, v: true, args: [N.FuncCall, N.Column]}, {func: 1, ret: P.bool, args: [W.Node]}, {func: 1, args: [O.JsScriptHandler]}, {func: 1, args: [O.JsScriptHandler,,]}, {func: 1, ret: N.Column, args: [P.String]}, {func: 1, ret: N.DataFrame, args: [P.String]}, {func: 1, args: [N.Context1]}, {func: 1, ret: N.Column}, {func: 1, ret: N.Column, args: [N.Column, P.String]}, {func: 1, v: true, args: [N.Column, P.String]}, {func: 1, v: true, args: [[P.Iterable, P.String]]}, {func: 1, ret: P.bool}, {func: 1, ret: N.FuncCall, args: [P.String]}, {func: 1, ret: [P.List, W.RtcStatsReport]}, {func: 1, v: true, args: [P.String, P.Object]}, {func: 1, ret: P.List, args: [,]}, {func: 1, args: [N.Column, N.BitSet, P.bool, P.int, P.bool]}, {func: 1, v: true, args: [P.String, P.Object], opt: [P.Object]}, {func: 1, args: [P.String, N.Context1]}, {func: 1, ret: O.SemanticValue, args: [P.String]}, {func: 1, args: [, [P.Map, P.int, P.Function]]}, {func: 1, args: [, P.Function]}, {func: 1, ret: W.Node}, {func: 1, args: [, [P.Map,, P.Function], [P.Map,, [P.Map, P.int, P.Function]]]}, {func: 1, v: true, args: [P.Map]}, {func: 1, ret: N.Cell, args: [P.int]}, {func: 1, ret: P.Object, args: [, {func: 1, ret: P.Object, args: [[P.Map, P.String,,]]}]}, {func: 1, ret: N.FuncCall, args: [P.List], named: {optional: P.Map}}, {func: 1, args: [P.Object, P.StackTrace]}, {func: 1, v: true, args: [S.LogMessage]}, {func: 1, ret: O.DataQuery, named: {name: P.String, params: [P.Map, P.String, P.String], shortName: P.String, sql: P.String}}, {func: 1, ret: [P.Future, N.FuncCall], named: {context: N.Context1, processed: P.bool, queue: P.bool, report: P.bool}}, {func: 1, v: true, args: [P.String, P.String, P.String]}, {func: 1, ret: P.String, args: [O._TableRef, P.String]}, {func: 1, ret: O._TableRef, args: [P.String]}, {func: 1, ret: P.Object}, {func: 1, v: true, args: [P.String, P.String, P.String], opt: [P.String, P.String]}, {func: 1, ret: P.bool, args: [O.UserGroup]}, {func: 1, v: true, args: [[P.Map, P.String,,]]}, {func: 1, v: true, args: [P.String], named: {owner: O.UserGroup, type: P.String}}, {func: 1, v: true, args: [P.Object, P.StackTrace]}, {func: 1, v: true, args: [N.Column]}, {func: 1, ret: [P.Future, P.Null], args: [P.int, P.int]}, {func: 1, ret: P.Future, args: [O.Script]}, {func: 1, ret: [P.List, P.String], args: [P.String]}, {func: 1, ret: [P.Future, N.FuncCall], args: [N.FuncCall], named: {context: N.Context1, processed: P.bool, queue: P.bool, report: P.bool}}, {func: 1, ret: N.DbTableQueryBuilder}, {func: 1, ret: [P.Map, P.String,,], args: [[P.Map, P.String,,], P.String]}, {func: 1, args: [W.Node, W.Node]}, {func: 1, v: true, opt: [P.Object]}, {func: 1, ret: N._Kernel, args: [P.String, P.int, P.String, {func: 1, args: [P.List]}]}, {func: 1, ret: P.Length, args: [P.int]}, {func: 1, ret: N._Kernel, args: [P.String, P.int, {func: 1, ret: P.String, args: [P.List]}], named: {prepare: {func: 1, ret: {func: 1, ret: P.String, args: [P.String]}, args: [P.List]}}}, {func: 1, ret: P.List, args: [P.List]}, {func: 1, ret: N._Kernel, args: [P.String, {func: 1, ret: P.double, args: [N.Stats]}], named: {toInt: P.bool}}, {func: 1, args: [P.Object], opt: [P.String]}, {func: 1, args: [O.GoogleCloudLoggingSettings]}, {func: 1, args: [O.GoogleCloudLoggingSettings,,]}, {func: 1, ret: N._Kernel, args: [P.String, {func: 1, ret: P.double, args: [P.double]}], named: {fails: {func: 1, ret: P.bool, args: [P.double]}, result: P.String}}, {func: 1, ret: N._Kernel, args: [P.String, {func: 1, ret: P.int, args: [P.DateTime]}], named: {modulus: P.double, unit: P.double}}, {func: 1, ret: P.int, args: [N.BigInt, N.BigInt]}, {func: 1, ret: P.int, args: [P.bool, P.bool]}, {func: 1, ret: N._Kernel, args: [P.String, {func: 1, ret: P.double, args: [[P.List, P.double]]}]}, {func: 1, ret: P.int, args: [P.Uint8List, P.Uint8List]}, {func: 1, ret: P.int, args: [N.DataFrame, N.DataFrame]}, {func: 1, ret: P.double, args: [P.double, P.int]}, {func: 1, args: [O.AnthropicConfig]}, {func: 1, args: [O.AnthropicConfig,,]}, {func: 1, ret: N._Vec}, {func: 1, ret: N.QueryBuilder, args: [P.int]}, {func: 1, ret: N.Column, args: [N.GroupAggregation, [P.Iterable, P.Object]]}, {func: 1, ret: [P.List, N.Column], args: [P.String]}, {func: 1, ret: P.String, args: [N.Column]}, {func: 1, ret: N.TableMutationBuilder, args: [P.String, P.String], named: {dataType: P.String}}, {func: 1, args: [O.ScriptingServiceSettings]}, {func: 1, args: [O.ScriptingServiceSettings,,]}, {func: 1, ret: P.int, args: [[P.Iterable, P.DateTime]]}, {func: 1, ret: P.num, args: [P.int]}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: [P.Map, P.String,,], time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, includeTime: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: [P.Map, P.String,,], stackTrace: P.StackTrace, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: [P.Map, P.String,,], severity: P.String, stackTrace: P.StackTrace, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.Object, P.Object], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: [P.Map, P.String,,], remote: P.bool, severity: P.String, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String, P.Object], named: {auditType: P.String, canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, includeTime: P.bool, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: [P.Map, P.String,,], remote: P.bool, severity: P.String, stackTrace: P.Object, time: P.DateTime}}, {func: 1, ret: P.bool, args: [N.UserException], named: {params: [P.Map, P.String,,]}}, {func: 1, ret: P.bool, args: [P.String, P.String], opt: [[P.Map, P.String,,]]}, {func: 1, ret: [P.Future, P.String], args: [,], named: {headers: [P.Map, P.String, P.String]}}, {func: 1, args: [[P.List, N.Column], P.int]}, {func: 1, opt: [P.int]}, {func: 1, ret: Q.Parser, args: [P.Function], opt: [,,,,,,]}, {func: 1, ret: Q.Parser, args: [L.Reference]}, {func: 1, v: true, args: [[P.List, N.Column], P.int, P.bool, P.bool]}, {func: 1, args: [G.Property, P.Object]}, {func: 1, args: [G.Property, P.int]}, {func: 1, ret: Y.FileSpan, args: [P.int], opt: [P.int]}, {func: 1, ret: Y.FileLocation, args: [P.int]}, {func: 1, ret: P.String, args: [P.String], named: {color: null}}, {func: 1, ret: P.String, named: {color: null}}, {func: 1, v: true, args: [P.String], named: {length: P.int, match: P.Match, position: P.int}}, {func: 1, ret: L.XmlName, args: [P.String]}, {func: 1, ret: V.XmlText, args: [P.String]}, {func: 1, ret: [P.Stream, M.XmlEvent]}, {func: 1, args: [,], named: {headers: null}}, {func: 1, args: [P.String, P.Function]}, {func: 1, args: [,], opt: [P.bool]}, {func: 1, ret: N.FuncParam, args: [P.String, P.String]}, {func: 1, ret: P.bool, args: [N.Func], named: {override: P.bool}}, {func: 1, ret: P.num}, {func: 1, ret: N.GroupByBuilder, args: [{func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, ret: N.RowList, args: [{func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, ret: P.AsyncError, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Object, P.StackTrace]}, {func: 1, v: true, args: [P.Zone, P.ZoneDelegate, P.Zone, {func: 1}]}, {func: 1, ret: P.Timer, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Duration, {func: 1, v: true}]}, {func: 1, ret: P.Timer, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Duration, {func: 1, v: true, args: [P.Timer]}]}, {func: 1, v: true, args: [P.Zone, P.ZoneDelegate, P.Zone, P.String]}, {func: 1, ret: P.Zone, args: [P.Zone, P.ZoneDelegate, P.Zone, P.ZoneSpecification, P.Map]}, {func: 1, ret: P.bool, args: [,,]}, {func: 1, ret: [P.Iterable, P.int], named: {onlyFiltered: P.bool, onlySelected: P.bool}}, {func: 1, ret: P.int, args: [,,]}, {func: 1, ret: P.int, args: [P.Comparable, P.Comparable]}, {func: 1, ret: P.int, args: [P.Object]}, {func: 1, ret: P.Object, args: [,]}, {func: 1, ret: P.int, args: [P.num, P.num]}, {func: 1, ret: N.BigInt, args: [P.String]}, {func: 1, ret: N.GroupAggregation, args: [P.String]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.DataFrame, P.Iterable, P.Iterable, P.Iterable, P.Iterable], named: {inPlace: P.bool, joinType: P.String}}, {func: 1, ret: P.String, args: [P.Object]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame], named: {aggregations: [P.List, P.Object], fields: [P.List, P.String], filter: N.TableRowFilterCall, groupByFields: [P.List, P.String], joins: [P.List, P.Object], pivots: [P.List, P.String], whereClauses: [P.List, P.Object]}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, [P.List, P.String], [P.List, P.String]], named: {categoryColumnName: P.String, valueColumnName: P.String}}, {func: 1, ret: P.String, args: [P.num, [P.List, P.num]]}, {func: 1, ret: P.int, args: [P.DateTime, P.String, P.int]}, {func: 1, v: true, args: [N.DataFrame, P.String, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.Column], named: {decimalSeparator: P.String, useKMMultipliers: P.bool}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.ColFilterCall, N.TableRowFilterCall]}, {func: 1, v: true, args: [P.num]}, {func: 1, ret: N.Cell, args: [P.Object]}, {func: 1, ret: [P.Future, N.Column], args: [N.DataFrame, P.String, P.String], named: {context: N.Context1, currentCall: N.FuncCall, errorBehavior: P.Map, progress: O.ProgressIndicator, subscribeOnChanges: P.bool, treatAsString: P.bool, type: P.String}}, {func: 1, ret: [P.Future, [P.List, N.Column]], args: [N.DataFrame, P.String, P.String], named: {context: N.Context1, currentCall: N.FuncCall, errorBehavior: P.Map, progress: O.ProgressIndicator, subscribeOnChanges: P.bool, treatAsString: P.bool, type: P.String}}, {func: 1, ret: [P.Future, N.Column], args: [N.DataFrame, P.String, P.String], named: {errorBehavior: P.Map, treatAsString: P.bool, type: P.String}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall], named: {flag: P.bool}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String], named: {tagValue: P.String}}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int]}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int, P.int, P.int, P.int, P.int]}, {func: 1, v: true, args: [[P.List, P.Object]], named: {notify: P.bool}}, {func: 1, v: true, args: [P.num], opt: [P.num, P.num]}, {func: 1, v: true, args: [N.DataFrame, N.Column, P.DateTime, P.String, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.Column, N.Column, P.String, P.String]}, {func: 1, ret: P.int, args: [P.int, P.int, P.int, P.int, P.int]}, {func: 1, ret: P.DateTime, args: [P.DateTime, P.int]}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int, P.int]}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String], named: {decimalPlaces: P.int}}, {func: 1, v: true, args: [N.DataFrame, N.Column], named: {method: P.String}}, {func: 1, ret: N.NumericMatcher}, {func: 1, ret: N.DateTimeMatcher}, {func: 1, v: true, args: [,,], named: {message: P.String}}, {func: 1, ret: P.Future, args: [P.int]}, {func: 1, ret: N.EncodingEstimate, args: [N.QNumColumn]}, {func: 1, v: true, args: [N.Context1]}, {func: 1, v: true, args: [N.Context1,,]}, {func: 1, ret: P.Future, args: [N.DataFrame, P.String], named: {context: N.Context1, progress: O.ProgressIndicator}}, {func: 1, ret: N.EncodingEstimate, args: [N.ObjectColumn]}, {func: 1, v: true, args: [N.DataFrame, N.TableRowFilterCall], named: {clear: P.bool, flag: P.bool}}, {func: 1, ret: P.Int8List, args: [P.Int8List, P.int]}, {func: 1, ret: P.String, args: [P.String, P.int, P.int]}, {func: 1, ret: P.Int16List, args: [P.Int16List, P.int]}, {func: 1, ret: P.String, args: [P.String, P.String, P.int]}, {func: 1, ret: P.Transform, args: [P.int]}, {func: 1, ret: N.EncodingEstimate, args: [N.DataFrameColumn]}, {func: 1, ret: N.EncodingEstimate, args: [N.ByteArrayColumn]}, {func: 1, ret: N.EncodingEstimate, args: [N.BoolColumn]}, {func: 1, v: true, args: [N.BitSet, N.BitSet]}, {func: 1, ret: P.String, args: [P.num, P.String]}, {func: 1, ret: P.String, args: [P.num, P.num]}, {func: 1, ret: P.Point0, args: [P.int]}, {func: 1, ret: N.Cell, args: [P.Object, P.int]}, {func: 1, ret: P.int, args: [P.double, P.double]}, {func: 1, ret: P.Number, args: [P.int]}, {func: 1, ret: P.num, args: [P.List, P.num]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame]}, {func: 1, v: true, args: [N.DataFrame, N.StringColumn, P.String], named: {prefix: P.String}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String]}, {func: 1, ret: P.String, args: [P.String, P.String, P.int], named: {group: P.int}}, {func: 1, ret: P.String, args: [P.String], named: {delimiter: P.String}}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, N.DataFrame, P.String], named: {upsert: P.bool}}, {func: 1, ret: P.String, args: [P.double]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, P.String, P.String]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, P.String, P.bool]}, {func: 1, v: true, args: [P.String, P.Function]}, {func: 1, ret: P.Future, args: [{func: 1, ret: P.Future}]}, {func: 1, ret: P.Future, args: [P.String,, P.bool, O.ProgressIndicator]}, {func: 1, ret: P.String, args: [O.ColumnInfo, P.String]}, {func: 1, ret: [P.Future, N.DataFrame], args: [N.DataFrame]}, {func: 1, ret: [P.Future, P.Uint8List], args: [P.Uint8List]}, {func: 1, ret: [P.Future, P.Null], args: [O.DataConnection]}, {func: 1, ret: [P.Future, N.DataFrame], args: [P.String]}, {func: 1, ret: [P.Future, P.Null], args: [O.DataQuery]}, {func: 1, ret: [P.Future, P.Null], args: [N.Func]}, {func: 1, ret: [P.Future, N.FuncCall], args: [P.String, P.Map], named: {adHoc: P.bool}}, {func: 1, ret: [P.Future, N.DataFrame], args: [N.Context1, P.String, P.Map]}, {func: 1, ret: [P.Future, N.DataFrame], args: [O.DataConnection, P.String], named: {aggregations: [P.List, P.String], fields: [P.List, P.String], groupByFields: [P.List, P.String], having: [P.List, P.String], havingOp: P.String, joins: [P.List, P.String], limit: P.int, orderBy: [P.List, P.String], pivots: [P.List, P.String], schemaName: P.String, whereClauses: [P.List, P.String], whereOp: P.String}}, {func: 1, ret: P.Future, args: [O.DataConnection, P.String], named: {aggregations: [P.List, P.String], fields: [P.List, P.String], groupByFields: [P.List, P.String], having: [P.List, P.String], havingOp: P.String, joins: [P.List, P.String], limit: P.int, orderBy: [P.List, P.String], pivots: [P.List, P.String], schemaName: P.String, whereClauses: [P.List, P.String], whereOp: P.String}}, {func: 1, ret: [P.Map, P.String,,], args: [,], named: {deep: P.bool}}, {func: 1, ret: P.String, args: [B.NumberSymbols]}, {func: 1, args: [O.Entity, O.UserGroup]}];
   function convertToFastObject(properties) {
     function MyClass() {

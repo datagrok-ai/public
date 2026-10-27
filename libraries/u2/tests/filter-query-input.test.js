@@ -52,6 +52,10 @@ function box(q) {
   return q.root.querySelector('input');
 }
 
+function skin(q) {
+  return q.root.querySelector('[data-u2-part="editor"]');
+}
+
 /** Types the whole text — the shim has no caret, so completion runs at the end. */
 async function type(q, text) {
   const input = box(q);
@@ -75,7 +79,7 @@ smoke('renders as a combobox editor showing the formatted tree', () => {
   assert.equal(q.root.dataset.u2, 'filter-query-input');
   assert.equal(q.root.dataset.u2Name, 'q');
   const input = box(q);
-  assert.equal(input.dataset.u2Part, 'editor');
+  assert.equal(input.parentElement, skin(q));
   assert.equal(input.getAttribute('role'), 'combobox');
   assert.equal(input.value, 'age > 30 and sex = "F"');
   assert.equal(q.text.value, 'age > 30 and sex = "F"');
@@ -203,7 +207,7 @@ smoke('commit parses the text into the tree; a problem keeps the old tree and su
   assert.equal(q.value.peek(), root, 'the tree is untouched');
   assert.equal(q.problems.value[0].code, 'syntax');
   assert.match(q.validity.value, /^Expected /);
-  assert.equal(box(q).classList.contains('u2-invalid'), true);
+  assert.equal(skin(q).classList.contains('u2-invalid'), true);
 
   q.text.value = 'height > 5';
   assert.equal(q.commit(), false);
@@ -442,13 +446,30 @@ spec('registration: value binds two-way as the context signal itself; query read
   instance.dispose();
 });
 
+smoke('a regex that does not compile is refused like any bad value; the builder over the same tree says so on its row', async () => {
+  const tree = signal(Filters.group('and', [Filters.cond('age', '>', 30)]));
+  const q = mount(new FilterQueryInput({schema: SCHEMA, bind: tree}));
+  const fb = mount(new FilterBuilder({schema: SCHEMA, bind: tree}));
+  const root = tree.peek();
+  q.text.value = 'name matches "("';
+  assert.equal(q.commit(), false, 'refused, nothing thrown');
+  assert.equal(tree.peek(), root, 'the tree in force stays');
+  assert.match(q.validity.value, /is not a regular expression/);
+  assert.equal(skin(q).classList.contains('u2-invalid'), true, 'shown at once: the commit was the user\'s');
+  tree.value = Filters.group('and', [Filters.cond('name', 'matches', '(')]);
+  assert.match(fb.validity.value, /is not a regular expression/, 'what keeps an Apply or OK off');
+  const problem = fb.root.querySelector('[data-u2-part="problem"]');
+  assert.equal(problem.hidden, false);
+  assert.match(problem.textContent, /Unterminated group/);
+});
+
 smoke('a validation failure shows exactly like a parse failure: the red editor, the tooltip, no new tree', async () => {
   const schema = Filters.schema([{name: 'priority_id', type: TYPE.STRING, ref: 'grit.priority'},
     {name: 'number', type: TYPE.INT}, {name: 'title', type: TYPE.STRING}]);
   const q = mount(new FilterQueryInput({schema, target: 'domain', inline: true,
     value: Filters.group('and', [Filters.cond('number', '=', 1)])}));
   const root = q.value.peek();
-  const editor = box(q);
+  const editor = skin(q);
   for (const [text, message] of [
     ['priority =', 'Expected a value'],
     ['priority = High', 'Unknown property "priority" — did you mean `priority_id.name`?'],

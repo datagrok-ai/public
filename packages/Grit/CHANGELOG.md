@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Issues: Cards show the status on their second line
+* Issues: The closing rule, actions and card apply wherever an issue is edited, including a project's Issues tab and bulk edit
 * u2: Took u2's stylesheet from u2 itself (installed once per page, the newest copy any package carries) instead of the EMS sheet bundle; republish with the other u2 packages
 * EMS: imports from `@datagrok-libraries/ems`
 * GROK-20753: Issues: ribbon slots — `IssuesApp.ribbon()` returns the named `{main, tools, presets}` record and declares the Mine / Open switch as the `presets` slot, instead of appending a positional group

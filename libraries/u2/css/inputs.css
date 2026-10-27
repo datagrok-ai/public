@@ -205,6 +205,33 @@ textarea.u2-input-editor {
   padding: 0;
 }
 
+/* as wide as the platform input in it, so the verdict wraps under it instead of clipping beside it */
+.u2-input-root[data-u2='dart-input'] > .u2-input-box {
+  flex: 0 1 auto;
+}
+
+/* a bridged input's own caption carries the required asterisk, hanging as u2's own does */
+.u2-input-required[data-u2='dart-input'] .ui-input-label::after {
+  content: '*';
+  margin-left: var(--dg-space-xs);
+  color: var(--dg-error);
+}
+
+.u2-form:not(.u2-form-captions-left):not(.u2-form-tall) .u2-input-required[data-u2='dart-input'] .ui-input-label {
+  position: relative;
+  overflow: visible;
+}
+
+.u2-form:not(.u2-form-captions-left):not(.u2-form-tall) .u2-input-required[data-u2='dart-input'] .ui-input-label::after {
+  position: absolute;
+  left: 100%;
+  margin-left: 1px;
+}
+
+.u2-input-root[data-u2='dart-input'] .d4-input-molecule-canvas-hint {
+  color: var(--dg-text-color-light);
+}
+
 /* a whole line of its own under the editor, whatever room is left beside it: the editors are as
    wide as the platform pins them, so a message that fit beside a 100px color field but not beside a
    460px one would land off the pane on one row and under the field on the next. Long verdicts
@@ -409,7 +436,7 @@ textarea.u2-input-editor {
   padding: 0;
   font-size: var(--dg-font-size-xs);
   line-height: 1;
-  color: var(--dg-text-color-light);
+  color: var(--dg-accent);
   visibility: hidden;
   background: none;
   border: none;
@@ -423,8 +450,7 @@ textarea.u2-input-editor {
 }
 
 .u2-input-clear:hover {
-  color: var(--dg-text-color);
-  background: var(--dg-hover-subtle);
+  color: var(--dg-accent-secondary);
 }
 
 .u2-input-clear[hidden] {
@@ -996,6 +1022,10 @@ textarea.u2-list-area {
   background: var(--dg-selection-bg);
 }
 
+.u2-suggest-option-current {
+  font-weight: var(--dg-font-weight-bold);
+}
+
 .u2-suggest-loading,
 .u2-suggest-empty,
 .u2-suggest-error,
@@ -1005,6 +1035,21 @@ textarea.u2-list-area {
   gap: var(--dg-space-m);
   padding: var(--dg-space-xs) var(--dg-space-m);
   color: var(--dg-text-color-light);
+}
+
+.u2-suggest-footer {
+  /* in view while the rows scroll */
+  position: sticky;
+  bottom: 0;
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  background: var(--dg-bg);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
+}
+
+.u2-suggest-footer[hidden] {
+  display: none;
 }
 
 .u2-suggest-retry {

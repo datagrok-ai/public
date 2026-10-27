@@ -107,7 +107,7 @@ scoped('an edit through the source paints its cell, and a refusal paints and exp
   src.dispose();
 });
 
-scoped('a cell the caller may not write reads as read-only', async () => {
+scoped('a read-only table greys no cell: one the caller may not write reads like any other', async () => {
   emsBackends.domain = backend({access: {can: {view: true, edit: true},
     fields: {id: 'readonly', title: 'editable', priority: 'readonly'}}});
   const table = await domains.table('grit.issue');
@@ -117,7 +117,7 @@ scoped('a cell the caller may not write reads as read-only', async () => {
   await flush();
   dt.table.value.root.clientHeight = 400;
   await flush();
-  assert.equal(cell(dt, 0, 'priority').className.includes('u2-cell-readonly'), true);
+  assert.equal(cell(dt, 0, 'priority').className.includes('u2-cell-readonly'), false);
   assert.equal(cell(dt, 0, 'title').className.includes('u2-cell-readonly'), false);
   dt.dispose();
   src.dispose();

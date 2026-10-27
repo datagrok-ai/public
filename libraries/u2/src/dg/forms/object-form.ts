@@ -2,7 +2,7 @@
    per-field overrides. Everything the generator reads off a property is declared by IProperty,
    which DG.Property satisfies structurally; the platform itself is only reached by `editors:
    'auto'`, through the global the bundler binds `datagrok-api/dg` to. */
-import {batch} from '../../core/signals.js';
+import {batch, computed, signal, ReadonlySignal} from '../../core/signals.js';
 import type {IProperty} from '../../core/property-like.js';
 import {Input, InputOptions, labelText} from '../../core/input-base.js';
 import {EMPTY, isEmpty, text} from '../../core/text.js';
@@ -11,14 +11,15 @@ import type {FieldAccess} from '../../core/access.js';
 import type {IFieldStatus, IWidgetStatus} from '../../core/widget-like.js';
 import {div, span} from '../../core/elements.js';
 import {Form} from '../../components/forms/form.js';
-import type {FormLayout} from '../../components/forms/form.js';
+import type {FormLayout, LabelColumn} from '../../components/forms/form.js';
 import {TextInput} from '../../components/inputs/text-input.js';
 import {NumberInput, NumberInputOptions} from '../../components/inputs/number-input.js';
 import {BigIntInput} from '../../components/inputs/bigint-input.js';
 import {QNumInput} from '../../components/inputs/qnum-input.js';
 import {BoolInput} from '../../components/inputs/bool-input.js';
 import {ChoiceInput, MultiChoiceInput} from '../../components/inputs/choice-input.js';
-import {DateTimeInput} from '../../components/inputs/date-input.js';
+import {DateInput, DateTimeInput} from '../../components/inputs/date-input.js';
+import {Dates} from '../../core/dates.js';
 import {TextArea} from '../../components/inputs/text-input.js';
 import {RadioInput} from '../../components/inputs/radio-input.js';
 import {ColorInput} from '../../components/inputs/color-input.js';
@@ -38,6 +39,8 @@ export interface FieldOverride extends Partial<InputOptions<any>> {
   /** Replaces the generated input entirely — a semType-specific editor, say. The form wires it to
    * the property and lays it out, but never owns it: dispose it with whatever created it. */
   input?: Input<any>;
+  /** A readonly field's text while its value is empty, muted ("assigned on save"). */
+  emptyText?: string;
 }
 
 export interface ObjectFormOptions {
@@ -50,6 +53,8 @@ export interface ObjectFormOptions {
    * color…), generating one only where it has none; `generated` (the default) never asks. */
   editors?: 'auto' | 'generated';
   layout?: FormLayout;
+  /** Shared with other forms, or read (`width`) by content that lines up with this one. */
+  labelColumn?: LabelColumn;
   /** The DG.InputForm-contract flag; in the platform condensed IS the tall view, so it maps to
    * `layout: 'tall'` where {@link layout} is not given. */
   condensed?: boolean;
@@ -80,6 +85,9 @@ interface Field {
   input: Input<any> | null;
   access: FieldAccess;
   text?: HTMLElement;
+  emptyText?: string;
+  /** What the target held when the field last read or wrote it. */
+  synced?: unknown;
 }
 
 export type InputFactory = (prop: IProperty, options: InputOptions<any>) => Input<any>;
@@ -161,7 +169,7 @@ export function kindOf(prop: IProperty, assumeWritable = false): Kind {
   if (!prop.set && !assumeWritable)
     return 'readonly';
   const type = prop.propertyType ?? prop.type;
-  if (type === 'list')
+  if (type === 'list' || type === 'string_list')
     return 'list';
   if (type === 'map')
     return 'map';
@@ -235,6 +243,13 @@ function formatter(prop: IProperty): ((value: number) => string) | undefined {
   return (value) => dgFormat(value, format);
 }
 
+/** A `datetime` whose display format names no time of day (`yyyy-MM-dd`) holds a calendar day,
+ * stored as its UTC midnight: it edits and reads as that day in every time zone. */
+function dateOnly(prop: IProperty): boolean {
+  const format = prop.format;
+  return (prop.propertyType ?? prop.type) === 'datetime' && format != null && format !== '' && !/[Hhms]/.test(format);
+}
+
 /** What `NumberInput.bindProperty` applies Dart-side (`number_input.dart`): bounds, step
  * and format from the property, a clicker on bounded ints, a slider on floats or on explicit
  * `showSlider`, units as the postfix. */
@@ -290,7 +305,7 @@ export function inputForProperty(prop: IProperty | null,
     case 'qnum':
       return new QNumInput({...merged, format: formatter(prop)});
     case 'datetime':
-      return new DateTimeInput(merged);
+      return dateOnly(prop) ? new DateInput({...merged, utcDates: true}) : new DateTimeInput(merged);
     case 'list':
       return prop.choices != null && prop.choices.length > 0 ?
         new MultiChoiceInput({...merged, items: prop.choices}) : new ListInput(merged);
@@ -304,20 +319,31 @@ export function inputForProperty(prop: IProperty | null,
 }
 
 /** A {@link Form} generated from property metadata and kept in sync with {@link target} both ways:
- * an edit runs `prop.set`, {@link refresh} re-reads `prop.get`. It mutates the object and nothing
+ * a valid edit runs `prop.set` (an invalid one stays in its field, the object keeping its last valid
+ * value), {@link refresh} re-reads `prop.get`. It mutates the object and nothing
  * else — persisting it (`grok.dapi.*.save`, a domain insert) stays with the caller. */
 export class ObjectForm extends Form {
   readonly target: object;
+  /** How many fields hold an edit the target has not taken — an invalid one, which is never written:
+   * what a caller counts as unsaved, and drops with {@link reset}. */
+  readonly unwritten: ReadonlySignal<number>;
 
   private readonly _fields: Field[] = [];
   private readonly _onChanged: ((name: string, value: unknown) => void) | undefined;
   private readonly _auto: boolean;
   private readonly _access: Access;
   private _refreshing = false;
+  /** Bumped whenever a field's `synced` moves, so {@link unwritten} re-reads it. */
+  private readonly _synced = signal(0);
 
   constructor(props: IProperty[], target: object, options: ObjectFormOptions = {}) {
-    super({layout: options.layout ?? (options.condensed ? 'tall' : undefined)});
+    super({layout: options.layout ?? (options.condensed ? 'tall' : undefined), labelColumn: options.labelColumn});
     this.target = target;
+    this.unwritten = computed(() => {
+      this._synced.value;
+      return this._fields.filter((f) => f.input !== null && f.kind !== null &&
+        !ObjectForm.same(f.input.value.value, f.synced)).length;
+    });
     this._onChanged = options.onChanged;
     this._auto = options.editors === 'auto';
     this._access = options.access ?? Access.full;
@@ -339,19 +365,40 @@ export class ObjectForm extends Form {
   }
 
   /** Re-reads every field off {@link target} — after a save, an external edit, a server refresh.
-   * Echo-suppressed: nothing is written back and `onChanged` does not fire. */
+   * Echo-suppressed: nothing is written back and `onChanged` does not fire. An invalid edit, which
+   * never reached the target, stays in its field while the target still holds what the field last saw. */
   refresh(): void {
+    this._reread(false);
+  }
+
+  /** {@link refresh} as a fresh start: an invalid edit goes too, and no field shows a verdict until it
+   * is touched again (`Input.reset`) — what a discard comes back to. */
+  reset(): void {
+    this._reread(true);
+  }
+
+  private _reread(fresh: boolean): void {
     // a plain call, so this flag still holds when the batch flushes the effects it triggered —
     // unlike a write made inside an effect, which is flushed only after that effect returns
     this._refreshing = true;
     try {
       batch(() => {
         for (const field of this._fields) {
-          if (field.input !== null)
-            field.input.value.value = this._read(field.prop, field.kind);
+          if (field.input === null) {
+            this._showText(field);
+            continue;
+          }
+          const value = this._read(field.prop, field.kind);
+          if (!fresh && field.kind !== null && field.input.validity.peek() !== null &&
+              ObjectForm.same(value, field.synced))
+            continue;
+          if (fresh)
+            field.input.reset(value);
           else
-            field.text!.textContent = text(this._read(field.prop, 'readonly'));
+            field.input.value.value = value;
+          field.synced = value;
         }
+        this._synced.value = this._synced.peek() + 1;
       });
     } finally {
       this._refreshing = false;
@@ -385,12 +432,14 @@ export class ObjectForm extends Form {
     const access = this._access.field(prop.name!);
     if (access === 'readonly') {
       const {row, value} = ObjectForm.readonlyField(labelText(override.label) ?? ObjectForm._caption(prop),
-        prop.name!, text(this._read(prop, 'readonly')));
+        prop.name!, '');
       const tooltip = labelText(override.tooltipText) ?? prop.description;
       if (tooltip)
         row.title = tooltip;
       this.addElement(row);
-      this._fields.push({prop, kind: 'readonly', input: null, access, text: value});
+      const field: Field = {prop, kind: 'readonly', input: null, access, text: value, emptyText: override.emptyText};
+      this._showText(field);
+      this._fields.push(field);
       return;
     }
     const kind = kindOf(prop);
@@ -408,13 +457,14 @@ export class ObjectForm extends Form {
     const input = custom ?? registered ?? platform ??
       this.runInScope(() => inputForProperty(prop, options));
     const native = input === platform;
+    const field: Field = {prop, kind: native ? null : kind, input, access};
     if (!native) {
-      input.value.value = this._read(prop, kind);
+      input.value.value = field.synced = this._read(prop, kind);
       if (prop.nullable === false)
         input.addValidator((value) => isEmpty(value) ? EMPTY : null);
     }
     this.add(input);
-    this._fields.push({prop, kind: native ? null : kind, input, access});
+    this._fields.push(field);
 
     // a platform editor is bound to the target by `forProperty` and writes the property itself
     if (native) {
@@ -432,15 +482,45 @@ export class ObjectForm extends Form {
     const set = prop.set;
     if (kind === 'readonly' || !set)
       return;
-    // echo suppression by comparison, not by a flag: a write made inside an effect is flushed
-    // after that effect returns, so a transient flag would already be down (as in PropertyGrid)
+    // only a valid value reaches the target: an invalid one stays in the field, which says why, and
+    // is written once it turns valid. Echo suppression by comparison, not by a flag: a write made
+    // inside an effect is flushed after that effect returns, so a transient flag would already be
+    // down (as in PropertyGrid)
     this.effect(() => {
       const value = input.value.value;
-      if (ObjectForm.same(value, this._read(prop, kind)))
+      if (input.validity.value !== null || ObjectForm.same(value, this._read(prop, kind)))
         return;
       set(this.target, value);
+      field.synced = this._read(prop, kind);
+      this._synced.value = this._synced.peek() + 1;
       this._onChanged?.(prop.name!, value);
     });
+  }
+
+  private _showText(field: Field): void {
+    const shown = ObjectForm._display(field.prop, this._read(field.prop, null));
+    field.text!.textContent = shown || (field.emptyText ?? '');
+    field.text!.classList.toggle('u2-form-readonly-empty', shown === '' && field.emptyText !== undefined);
+  }
+
+  /** A value as its property's `format` shows it. */
+  private static _display(prop: IProperty, value: unknown): string {
+    if (value === null || value === undefined || value === '')
+      return '';
+    const format = formatter(prop);
+    if (typeof value === 'number' && format !== undefined)
+      return format(value);
+    if (dateOnly(prop)) {
+      const date = ObjectForm.coerce('datetime', value) as Date | null;
+      if (date !== null) {
+        const {year, month, day} = Dates.utcParts(date);
+        const name = (month: 'long' | 'short') => date.toLocaleString('en-US', {month, timeZone: 'UTC'});
+        const parts: Record<string, string> = {yyyy: String(year), MMMM: name('long'), MMM: name('short'),
+          MM: String(month).padStart(2, '0'), M: String(month), dd: String(day).padStart(2, '0'), d: String(day)};
+        return prop.format!.replace(/yyyy|M{1,4}|dd?/g, (token) => parts[token]);
+      }
+    }
+    return text(value);
   }
 
   /** The caption + value line a field renders as where it is text rather than an editor —

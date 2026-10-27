@@ -14,8 +14,9 @@ export interface DateInputOptions extends InputOptions<Date | null> {
   /** Inclusive: days outside are disabled in the calendar, typed values clamp on commit. */
   min?: Date;
   max?: Date;
-  /** 0 Sunday, 1 Monday (the default). */
-  firstDayOfWeek?: 0 | 1;
+  /** The column the calendar's weeks start in, 0 Sunday … 6 Saturday; the browser locale's own by
+   * default ({@link Dates.firstDayOfWeek}). */
+  firstDayOfWeek?: number;
   /** The box also takes a span relative to now (`-1w`, `2d`, `now`); the value is the resolved `Date`
    * tagged with its text (`spanOf`), shown as typed. A picked calendar day is a plain date. */
   relative?: boolean;
@@ -139,9 +140,11 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
     let echo = false;
     this.effect(() => {
       const value = this.value.value;
+      // an equal Date re-sent mid-typing must not reformat "09:3" into "09:03"
+      const shown = this._parse(input.value);
       if (echo)
         echo = false;
-      else
+      else if (shown === undefined || shown?.getTime() !== value?.getTime())
         input.value = this._format(value);
     });
     this.scope.listen(input, 'input', () => {
@@ -195,7 +198,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   }
 
   private get _firstDay(): number {
-    return this.options.firstDayOfWeek ?? 1;
+    return this.options.firstDayOfWeek ?? Dates.firstDayOfWeek();
   }
 
   private _buildPopup(): HTMLElement {

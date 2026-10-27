@@ -2,6 +2,11 @@
 
 ## v.next
 
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): Manage Monomers sets its column widths once semantic types are detected and scrolls to a saved monomer right after, instead of after 200 and 500 ms; the MSA header refreshes on filter at once; demos: no waits before applying a layout, and the siRNA demo detects types before its layout
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): Substructure filters: Fixed a second change event emitted a task after each edit; Monomer libraries: Fixed a 60 s timer left running after every awaited load; Duplicate monomers: refreshes right after the preference is saved; MSA header: Drawn right after the grid is added instead of a second later (it is set up again when columns or semantic types change, so nothing waits on the second)
+* Activity Cliffs: The Activities input defaults to a column named like an activity or potency, else the first float column, instead of the first numeric one (Length on the FASTA sample)
+* Substructure filter, Subsequence Search: The typed text is matched as it is: `(` or `[` no longer fail with "Invalid regular expression", and `.` or `*` no longer act as wildcards
+* Motif Search: An invalid regular expression is reported in a warning and gives no rows instead of throwing
 * Macromolecule 3D structure: the coordinates come from Chem's `embed3d` (it follows Chem's engine setting: Crux's ETKDGv3 embedding with a 10 s deadline in Crux mode, so a long peptide no longer hangs the server's Python kernel) instead of Bio's own `Embed` script, now removed
 * [core#1067](https://github.com/datagrok-ai/core/issues/1067): Subsequence Search: Fixed an error when the current table has no macromolecule column
 * Tests: Added BDD scenarios for a FASTA file opened by drop and by a double click in Browse, and for a FASTA table and a Sequence Space result (GROK-19928) coming back from a saved project

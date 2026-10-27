@@ -1,5 +1,11 @@
 # HitTriage changelog
 
+## v.next
+
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): Campaigns: breadcrumbs are added when the pick view is ready, without an extra 300 ms
+* Hit Triage, PepTriage: Fixed saved campaigns opening with a blank view: a campaign saved without filters no longer passes `{}` as the filter state
+* All apps: Fixed the campaigns list hiding campaigns shared with All users from everyone but their author: they are listed for everyone, and editing, deleting and sharing a campaign follow its stored edit permissions (All users by default); an unreadable campaign is skipped with a warning naming it
+
 ## 1.10.9 (2026-10-15)
 
 * Hit Design, PeptiHit: Fixed the "Campaing Name" typo in the new-campaign form

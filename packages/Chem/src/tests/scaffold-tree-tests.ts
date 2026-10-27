@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {category, test, before, awaitCheck, delay, expect} from '@datagrok-libraries/test/src/test';
+import {category, test, before, waitUntil, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
@@ -25,6 +25,11 @@ category('scaffold tree', () => {
     return {tv, scaffoldTree, table};
   }
 
+  async function frameAttached(scaffoldTree: ScaffoldTreeViewer): Promise<void> {
+    await waitUntil(() => scaffoldTree.root.querySelector('.chem-scaffold-tree-toolbar') !== null,
+      'scaffold tree hasn\'t been attached to its table');
+  }
+
   before(async () => {
     grok.shell.closeAll();
     if (!chemCommonRdKit.moduleInitialized) {
@@ -45,23 +50,23 @@ category('scaffold tree', () => {
       df.rows.removeAt(5, df.rowCount - 5);
     await grok.data.detectSemanticTypes(df);
     const tv = grok.shell.addTableView(df);
-    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    await waitUntil(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     tv.addViewer(ScaffoldTreeViewer.TYPE);
-    await awaitCheck(() => Array.from(tv.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE).length > 0,
+    await waitUntil(() => Array.from(tv.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE).length > 0,
       'cannot create viewer', 3000);
     const generateLink = document.querySelector('.chem-scaffold-tree-generate-hint') as HTMLElement;
     if (generateLink)
       generateLink.click();
     const stviewer = Array.from(tv.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE)[0] as ScaffoldTreeViewer;
-    await awaitCheck(() => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0].children.length > 0,
+    const host = () => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0];
+    await waitUntil(() => (host()?.children.length ?? 0) > 0 && !stviewer.progressBar,
       'scaffold tree has not been generated', DG.Test.isInBenchmark ? 3600000 : 180000);
-    await delay(2000); //need to scaffold to finish generation
     tv.close();
   }, {timeout: 190000, benchmark: true, stressTest: true, benchmarkTimeout: 300000, skipReason: 'GROK-17648'});
 
   test('parent node contains H atom', async () => {
     const {tv, scaffoldTree} = openScaffoldTree(mol1K);
-    await delay(1000);
+    await frameAttached(scaffoldTree);
 
     const molStr = 'Nc1ccccc1';
     const rootGroup = await scaffoldTree.createGroup(molStr, scaffoldTree.tree);
@@ -121,7 +126,9 @@ category('scaffold tree', () => {
     grok.shell.addView(DG.View.create());
     const table = sarSmall.clone();
     const viewer = DG.Viewer.fromType(ScaffoldTreeViewer.TYPE, table);
-    await awaitCheck(() => viewer.props.moleculeColumnName === 'smiles', 'molecule column is not set', 3000);
+    // the package's viewer brings the property: before it attaches, reading it throws
+    await waitUntil(() => viewer.getProperties().some((p) => p.name === 'moleculeColumnName') &&
+      viewer.props.moleculeColumnName === 'smiles', 'molecule column is not set', 3000);
     expect(viewer.props.Table, table.name);
     grok.shell.closeAll();
   });
@@ -155,7 +162,7 @@ category('scaffold tree', () => {
 
   test('Generate is open on a large table, from a 750-molecule sample its tooltip names', async () => {
     const {tv, scaffoldTree} = openScaffoldTree(await largeTable(5));
-    await delay(500);
+    await frameAttached(scaffoldTree);
     expect(scaffoldTree.generateBlockedReason(), null);
     expect(scaffoldTree.generateHint(), 'Generate from a sample of 750 of 4,950 molecules');
     expect(scaffoldTree._iconGenerate?.classList.contains('inactive'), false, 'Generate is enabled');
@@ -170,7 +177,7 @@ category('scaffold tree', () => {
     tv.close();
     // a table of at most 750 molecules: as before, all of them
     const small = openScaffoldTree(sarSmall);
-    await delay(500);
+    await frameAttached(small.scaffoldTree);
     expect(small.scaffoldTree.generateBlockedReason(), null);
     expect(small.scaffoldTree.generateHint(), 'Generate from molecular column');
     small.tv.close();

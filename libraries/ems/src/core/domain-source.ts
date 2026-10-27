@@ -10,7 +10,7 @@ import type {FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterSca
   RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource, ComponentEnv,
   ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
-import {emsBackends, DomainBackendError} from './domain-backend.js';
+import {emsBackends, DomainBackendError, capital, nounOf} from './domain-backend.js';
 import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike, DomainReadScope,
   DomainTableInfoLike, DomainTableLike} from './domain-backend.js';
 import {SharedSession} from './session.js';
@@ -126,6 +126,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** How a refusal the writer raised over one cell is worded; the table's registry sets it (the
    * row's caption and the column's), and without it the writer's own message stands. */
   nameCell: ((row: RowView, column: string, problem: string) => string) | undefined;
+  /** The row's caption as the table's renderer gives it; the registry sets it. */
+  caption: ((row: RowView) => string) | undefined;
   /** The ids of the rows one host condition (`FilterOperator.host`) matches — the app's answer, put in place
    * of the condition before every read. */
   hosted: ((condition: FilterCondition, signal?: AbortSignal) => Promise<string[]>) | undefined;
@@ -137,6 +139,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly isDirty: ReadonlySignal<boolean>;
   readonly changeCount: ReadonlySignal<number>;
   readonly validity: ReadonlySignal<string | null>;
+  /** Why Save stays off: an unanswered refusal, then {@link validity}. */
+  readonly blocked: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   /** "50 of 2,077", "12 issues", "3 unsaved changes" — what a status bar shows. */
   readonly summary: ReadonlySignal<string>;
@@ -166,6 +170,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _rows: FrameRows;
   private readonly _columns = new Map<string, Signal<unknown>>();
   private readonly _guards = new Set<() => string | null>();
+  /** The guards' verdicts, live — what {@link validity} reads first. */
+  private readonly _problems = signal<readonly ReadonlySignal<string | null>[]>([]);
+  /** Edits controls hold that no row has taken ({@link holdUnwritten}). */
+  private readonly _unwritten = signal<readonly ReadonlySignal<number>[]>([]);
   /** What the caller listed as {@link DomainSourceOptions.captions}; undefined is the default. */
   private readonly _captionOption: string[] | undefined;
   private _table: DomainTableLike | undefined;
@@ -229,9 +237,22 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._rows = new FrameRows(this._df, this.scope,
       {onWrite: (id, column, value) => this._edit.peek()?.setValue(id, column, value)});
     this.rows = this._rows as RowsLike<RowView> as RowsLike<RowView<TRow>>;
-    this.isDirty = computed(() => this._edit.value?.isDirty.value ?? false);
-    this.changeCount = computed(() => this._edit.value?.changeCount.value ?? 0);
-    this.validity = computed(() => this._edit.value?.validity.value ?? null);
+    this.isDirty = computed(() => (this._edit.value?.isDirty.value ?? false) || this._held() > 0);
+    this.changeCount = computed(() => (this._edit.value?.changeCount.value ?? 0) + this._held());
+    this.validity = computed(() => {
+      for (const problem of this._problems.value) {
+        if (problem.value !== null)
+          return problem.value;
+      }
+      return this._edit.value?.validity.value ?? null;
+    });
+    this.blocked = computed(() => {
+      const error = this._error.value;
+      const code = (error as {code?: unknown} | undefined)?.code;
+      if ((code === 'validation' || code === DomainSource.REFUSED) && this._state.value !== 'error')
+        return DomainSource._message(error);
+      return this.validity.value;
+    });
     this.isSaving = computed(() => this._edit.value?.isSaving.value ?? false);
     this.summary = computed(() => this._summary());
     this.session = options.session ?? SharedSession.ambient ?? new SharedSession();
@@ -499,10 +520,29 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   /** A check Save runs first — a form registers its own, so a refusal names the field ("Cannot
-   * save: Title is required"). Answers the unregister. */
-  guard(check: () => string | null): () => void {
+   * save: Title is required"). `problem` is the same verdict live: it joins {@link validity}, which
+   * keeps Save off and says why from the first render. Answers the unregister. */
+  guard(check: () => string | null, problem?: ReadonlySignal<string | null>): () => void {
     this._guards.add(check);
-    return () => this._guards.delete(check);
+    if (problem !== undefined)
+      this._problems.value = [...this._problems.peek(), problem];
+    return () => {
+      this._guards.delete(check);
+      if (problem !== undefined)
+        this._problems.value = this._problems.peek().filter((p) => p !== problem);
+    };
+  }
+
+  /** Edits a control holds that the rows have not taken — a form's fields left invalid, which a form
+   * never writes: they count as unsaved changes (every gate asks, Discard drops them) though no row
+   * carries them. Answers the unregister. */
+  holdUnwritten(count: ReadonlySignal<number>): () => void {
+    this._unwritten.value = [...this._unwritten.peek(), count];
+    return () => this._unwritten.value = this._unwritten.peek().filter((c) => c !== count);
+  }
+
+  private _held(): number {
+    return this._unwritten.value.reduce((n, count) => n + count.value, 0);
   }
 
   /** What keeps this source's batch from being sent — a guard's refusal, then the writer's
@@ -990,22 +1030,22 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return plural(changes, 'unsaved change', 'unsaved changes');
     }
     const state = this.state.value;
-    const singular = this._schema.info.singularName.toLowerCase() || 'row';
+    const singular = nounOf(this._schema.info, true);
     // a draft is a row, not a row of the table yet; a draft source is a create form until the
     // draft is saved — then it holds the row it made, and says so, until the next New
     const loaded = items.filter((r) => !Rows.isDraft(r)).length;
     if (this.isDraft && (loaded === 0 || (this.currentRow.value !== null && Rows.isDraft(this.currentRow.value))))
       return state === 'ready' ? `New ${singular}` : state === 'loading' ? 'Loading…' : '';
     if (this.isDraft)
-      return `${singular.charAt(0).toUpperCase()}${singular.slice(1)} saved`;
+      return `${capital(singular)} saved`;
     if (state !== 'ready' && loaded === 0)
       return state === 'loading' ? 'Loading…' : '';
     const total = this.total.value;
-    const many = this._schema.info.pluralName.toLowerCase() || 'rows';
+    const many = nounOf(this._schema.info);
     if (this.deleted.value === 'only')
       return plural(total ?? loaded, `deleted ${singular}`, `deleted ${many}`);
     return !this.isDraft && total !== null && loaded < total ?
-      `${loaded.toLocaleString()} of ${total.toLocaleString()}` :
+      `${loaded.toLocaleString()} of ${total.toLocaleString()} ${many}` :
       plural(loaded, singular, many);
   }
 

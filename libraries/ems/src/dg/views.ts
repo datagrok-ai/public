@@ -3,10 +3,12 @@
    one of the tables opens from anywhere: the app's own view of the table, not the platform's entity view. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {domains} from './facade.js';
-import type {DomainAppViewOptions, DomainTable} from './facade.js';
+import {domains, DomainTable} from './facade.js';
+import type {DomainAppViewOptions} from './facade.js';
 import {DomainApp} from './app.js';
 import {DomainAddress} from './address.js';
+import {SavedSearches} from './saved-searches.js';
+import {rawEffect} from 'datagrok-api/u2core';
 
 /** What `DomainTable.app()` takes for one view, less what the views decide: its name and path. */
 export type DomainViewOptions = Omit<DomainAppViewOptions, 'name' | 'path'>;
@@ -36,6 +38,7 @@ export interface DomainViewsOptions {
 export class DomainViews {
   /** Where each table's rows open: the views made over it last. */
   private static readonly _byTable = new Map<string, DomainViews>();
+  private static _deleteSaved: {unsubscribe(): void} | undefined;
 
   constructor(private readonly _options: DomainViewsOptions) {
     for (const entry of _options.views)
@@ -83,10 +86,43 @@ export class DomainViews {
     return view;
   }
 
-  /** An item per view under `node` — the app's tree browser: one selected brings its view forward at the list. */
+  static async reload(schema: string): Promise<void> {
+    DomainTable.forget(schema);
+    for (const app of [...DomainApp.live]) {
+      const old = DomainApp.viewOf(app);
+      if (!app.table.address.startsWith(`${schema}.`) || old === undefined || app.session.isDirty.peek())
+        continue;
+      const views = DomainViews._byTable.get(app.table.address);
+      const view = views !== undefined ? await views.open(app.path.peek().slice(views._options.path.length)) :
+        (await domains.table(app.table.address)).app({path: app.base});
+      grok.shell.addView(view);
+      old.close();
+    }
+  }
+
+  /** An item per view under `node` — the app's tree browser: one selected brings its view forward at the list —
+   * then the user's saved searches. */
   tree(node: DG.TreeViewGroup): void {
     for (const entry of this._options.views)
       node.item(entry.name).onSelected.subscribe(() => void this.show(this._segment(entry)));
+    const saved = node.group('Saved searches', null, false);
+    rawEffect(() => {
+      SavedSearches.changed.value;
+      for (const child of [...saved.children])
+        child.remove();
+      for (const entry of this._options.views) {
+        for (const [name, search] of SavedSearches.saved(entry.table)) {
+          saved.item(`${entry.name}: ${name}`, {savedSearch: {table: entry.table, name}})
+            .onSelected.subscribe(() => void this.show(`${this._segment(entry)}${SavedSearches.query(search)}`));
+        }
+      }
+    });
+    type ContextMenu = {args: {item?: DG.TreeViewNode, menu: DG.Menu}};
+    DomainViews._deleteSaved ??= grok.events.onContextMenu.subscribe((e: ContextMenu) => {
+      const saved = e.args.item?.value?.savedSearch;
+      if (saved !== undefined)
+        e.args.menu.item('Delete', () => SavedSearches.remove(saved.table, saved.name));
+    });
   }
 
   /** The route of a table's view: the app's path and the view's segment. */

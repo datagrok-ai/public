@@ -220,9 +220,13 @@ export const shell = new Shell();
 
 /** What pickers.tableInput's follow and import action read (the platform-stub shapes). */
 export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shell.dart.tableRemoved,
-  onViewAdded: new Stream(), onViewRemoving: new Stream(), onCurrentViewChanged: new Stream()};
+  onViewAdded: new Stream(), onViewRemoving: new Stream(), onCurrentViewChanged: new Stream(), onContextMenu: new Stream()};
 
 export const data = {parseCsv: () => new DataFrame()};
+
+export const userSettings = {values: {}, get: (name) => userSettings.values[name],
+  add: (name, key, value) => (userSettings.values[name] ??= {})[key] = value,
+  delete: (name, key) => delete userSettings.values[name]?.[key]};
 
 /** Ad-hoc function registration (js-api functions.ts:137): every registration, newest last, and
  * the Func it hands back — the platform's own is a dart wrapper over the same record. */

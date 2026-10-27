@@ -4,6 +4,9 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {TypeAhead} from '../../components/inputs/typeahead.js';
+import {PickInput} from '../../components/inputs/pick-input.js';
+import type {InputOptions} from '../../core/input-base.js';
+import {entityInput} from '../entities/entity.js';
 
 export interface GroupInputOptions {
   placeholder?: string;
@@ -70,4 +73,10 @@ function line(cls: string, text: string): HTMLElement {
   el.className = cls;
   el.textContent = text;
   return el;
+}
+
+/** A `Group` reference's editor: the value is the group id, the box a picker over the groups. */
+export function groupPick(options: InputOptions<string | null> = {}): PickInput<DG.Group> {
+  return new PickInput<DG.Group>({...options, typeAhead: () => entityInput('', () => grok.dapi.groups),
+    idOf: (group) => group.id, resolve: (id) => grok.dapi.groups.find(id)});
 }

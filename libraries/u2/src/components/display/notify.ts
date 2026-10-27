@@ -1,6 +1,7 @@
 /* Notifications — the u2 counterpart of the platform's `Balloon` (d4/widgets/balloon): a
-   top-right stack of per-type balloons. Ported semantics: info auto-hides, warning and error
-   stay until closed; hovering pauses the countdown; `oneTimeKey` persists across sessions,
+   top-right stack of per-type balloons; on a platform page the platform layer routes them into the
+   platform's own stack instead (`presenter`, src/dg). Every type auto-hides, a warning or an error
+   after twice an info's time; hovering pauses the countdown; `oneTimeKey` persists across sessions,
    `singleKey` dedupes concurrent balloons; copy and close reveal on hover; a click anywhere
    on the balloon closes it. Deliberately not ported: `appendHtml` for string content — a
    string renders as text, never as markup. */
@@ -13,9 +14,9 @@ import {iconButton} from '../actions/buttons.js';
 export type NotifyType = 'info' | 'warning' | 'error';
 
 export interface NotifyOptions {
-  /** Close after {@link timeout}; info balloons by default, warnings and errors stay until closed. */
+  /** Close after {@link timeout}; on by default. */
   autoHide?: boolean;
-  /** Auto-hide delay in milliseconds; 5000 by default. */
+  /** Auto-hide delay in milliseconds; 5000 for an info, 10000 for a warning or an error. */
   timeout?: number;
   /** Shown once ever — remembered in localStorage under `u2-notify-<key>`. */
   oneTimeKey?: string;
@@ -32,11 +33,19 @@ export interface NotifyHandle {
   close(): void;
 }
 
+/** Shows a balloon somewhere else than u2's own stack — the platform's, inside the platform
+ * (`src/dg`) — and calls `closed` once it is gone; undefined leaves it to u2's stack. Runs after the
+ * `oneTimeKey` and `singleKey` checks, which u2 keeps. */
+export type NotifyPresenter = (content: string | HTMLElement, type: NotifyType, options: NotifyOptions,
+  closed: () => void) => NotifyHandle | undefined;
+
 const TYPE_ICONS: Record<NotifyType, string> = {
   info: 'info-circle', warning: 'exclamation-triangle', error: 'times-circle',
 };
 
 class Notify {
+  /** Set by the platform layer: one balloon stack, the platform's, on a platform page. */
+  static presenter: NotifyPresenter | undefined;
   private static _container: HTMLElement | undefined;
   private static readonly _singleKeys = new Set<string>();
   private static readonly _open = new Set<() => void>();
@@ -73,6 +82,24 @@ class Notify {
       return null;
     if (singleKey !== undefined)
       Notify._singleKeys.add(singleKey);
+
+    let routedClose: (() => void) | undefined;
+    let gone = false;
+    const released = () => {
+      gone = true;
+      if (routedClose !== undefined)
+        Notify._open.delete(routedClose);
+      if (singleKey !== undefined)
+        Notify._singleKeys.delete(singleKey);
+    };
+    const routed = Notify.presenter?.(content, type, options, released);
+    if (routed !== undefined) {
+      routedClose = routed.close;
+      // a presenter that could not show it released it already
+      if (!gone)
+        Notify._open.add(routed.close);
+      return routed;
+    }
 
     const body = div([], 'u2-notify-content');
     if (typeof content === 'string')
@@ -115,8 +142,8 @@ class Notify {
       balloon.addEventListener('click', close);
 
     let timer = 0;
-    if (options.autoHide ?? type === 'info') {
-      const timeout = options.timeout ?? 5000;
+    if (options.autoHide ?? true) {
+      const timeout = options.timeout ?? (type === 'info' ? 5000 : 10000);
       const bar = div([], 'u2-notify-timer');
       bar.style.animationDuration = `${timeout}ms`;
       balloon.append(bar);

@@ -251,7 +251,7 @@ test('the field offer: the external vocabulary under create and view; the other 
   const edit = fieldOffer({mode: 'edit', storage: 'external'});
   assert.deepEqual([edit.editable, edit.identifier, edit.description, edit.type, edit.writable], [true, false, true, 'readonly', true]);
   assert.throws(() => fieldOffer({mode: 'create', storage: 'domain'}), /not built yet/);
-  assert.throws(() => fieldOffer({mode: 'extend', storage: 'external'}), /"extend" mode is not built yet/);
+  assert.throws(() => fieldOffer({mode: 'extend', storage: 'external'}), /only a platform-stored schema is extended/);
 });
 
 test('the identifier follows the friendly name, harmonized and free of the registered names, until set by hand', () => {

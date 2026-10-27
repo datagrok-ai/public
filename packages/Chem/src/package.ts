@@ -820,12 +820,23 @@ export class PackageFunctions {
     const filterHeader = Array.from(fg.root!.getElementsByClassName('d4-filter-header'))
       .find((el) => Array.from(el!.getElementsByTagName('label')).find((it) => it.textContent === molecules.name));
     if (filterHeader) {
-      setTimeout(() => {
-        const sketchLink = (filterHeader.parentElement as HTMLElement).getElementsByClassName('sketch-link')[0];
-        const element = sketchLink ?? (filterHeader.parentElement as HTMLElement)
-          .getElementsByClassName('chem-canvas')[0];
-        (element as HTMLElement).click();
-      }, 500);
+      // the filter builds its sketch link once it is attached; open it as soon as it is there
+      const host = filterHeader.parentElement as HTMLElement;
+      const target = () => (host.getElementsByClassName('sketch-link')[0] ??
+        host.getElementsByClassName('chem-canvas')[0]) as HTMLElement | undefined;
+      const existing = target();
+      if (existing)
+        existing.click();
+      else {
+        const observer = new MutationObserver(() => {
+          const element = target();
+          if (element) {
+            observer.disconnect();
+            element.click();
+          }
+        });
+        observer.observe(host, {childList: true, subtree: true});
+      }
     }
   }
 

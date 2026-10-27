@@ -41,4 +41,32 @@ export class Dates {
   static fromUtcParts(parts: {year: number, month: number, day: number, hours?: number, minutes?: number}): Date {
     return new Date(Date.UTC(parts.year, parts.month - 1, parts.day, parts.hours ?? 0, parts.minutes ?? 0));
   }
+
+  /** Where an engine has no `Intl.Locale` week info, the regions whose week starts on Sunday. */
+  private static readonly _SUNDAY_REGIONS = ['US', 'CA', 'MX', 'BR', 'JP', 'KR', 'TW', 'HK', 'IL', 'IN', 'PH', 'ZA'];
+
+  /** The day a week starts on in `locale` — the browser's by default — numbered as `Date.getDay()`
+   * numbers it (0 Sunday … 6 Saturday): the locale's week info where the engine has it, else Sunday
+   * for the US and the regions that count as it does, Monday everywhere else. */
+  static firstDayOfWeek(locale: string = globalThis.navigator?.language ?? 'en-US'): number {
+    let day = Dates._firstDays.get(locale);
+    if (day === undefined)
+      Dates._firstDays.set(locale, day = Dates._weekStart(locale));
+    return day;
+  }
+
+  private static readonly _firstDays = new Map<string, number>();
+
+  private static _weekStart(locale: string): number {
+    try {
+      const tag = new Intl.Locale(locale) as Intl.Locale & {getWeekInfo?: () => {firstDay: number},
+        weekInfo?: {firstDay: number}};
+      const info = tag.getWeekInfo?.() ?? tag.weekInfo;
+      if (info !== undefined)
+        return info.firstDay % 7;
+      return Dates._SUNDAY_REGIONS.includes(tag.maximize().region ?? '') ? 0 : 1;
+    } catch {
+      return 1;
+    }
+  }
 }

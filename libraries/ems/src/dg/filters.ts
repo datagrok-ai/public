@@ -5,13 +5,15 @@
    puts the previous filter back. A query set in code is the source's to skip. */
 import {domainFilterSchema} from './filter-schema.js';
 import {emsBackends} from '../core/domain-backend.js';
-import {Control, computed, signal, ReadonlySignal, Filters, FilterQueryInput,
-  FilterBuilder} from '@datagrok-libraries/u2';
-import type {FilterGroup, FilterProblem, FilterProperty, FilterSchema, FilterValueItem} from '@datagrok-libraries/u2';
+import {Control, computed, signal, ReadonlySignal, Filters, FilterQueryInput, FilterBuilder, Splitter,
+  div, divH, divV, span} from '@datagrok-libraries/u2';
+import type {FilterGroup, FilterOperator, FilterProblem, FilterProperty, FilterSchema,
+  FilterValueItem} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
 import {DomainPick} from './pick.js';
-import {DgDomainBackend} from './backend.js';
+import {DgDomainBackend, SYSTEM_COLUMNS} from './backend.js';
+import {SavedSearches} from './saved-searches.js';
 
 export type DomainFiltersMode = 'query' | 'builder';
 
@@ -39,13 +41,15 @@ export class DomainFilters extends Control {
   /** The input, once the table's schema is known. */
   readonly input: ReadonlySignal<FilterQueryInput | FilterBuilder | null>;
   /** What is wrong with the filter in the box while it is one the rows do NOT answer — a refused
-   * commit standing over the applied query; null while the two agree, the query in force having
-   * been refused included (the list's error says what happened to that one). */
+   * commit, or a link's query the grammar refuses, standing over the applied query; null while the
+   * two agree. A builder row still waiting for its value is a draft, not a problem. */
   readonly problem: ReadonlySignal<string | null>;
 
   /** Per source: how a query a control wrote bound is spelled in the box — `DomainApp.presets`
    * registers `assignee = "<id>"` → `assignee = $me`, so the switch does not paste a uuid there. */
   private static readonly _shownAs = new WeakMap<DomainSource, Map<string, string>>();
+  /** Per table address: the operators {@link registerOperators} offers only there. */
+  private static readonly _scoped = new Map<string, FilterOperator[]>();
 
   private readonly _input = signal<FilterQueryInput | FilterBuilder | null>(null);
   /** The tree the source's query stands for — what a cancelled change goes back to. */
@@ -57,6 +61,8 @@ export class DomainFilters extends Control {
   private _syncing = false;
   /** What the builder last sent: its own query coming back must not overwrite the rows still being written. */
   private _echo: string | FilterGroup | undefined;
+  private readonly _tools = divH([], 'u2-domain-filters-tools');
+  private _paned = false;
 
   constructor(readonly source: DomainSource, private readonly _options: DomainFiltersOptions = {}) {
     super();
@@ -64,10 +70,9 @@ export class DomainFilters extends Control {
     this.input = this._input;
     this.problem = computed(() => {
       const input = this._input.value;
-      const message = input?.problems.value[0]?.message ?? null;
-      if (message === null || !(input instanceof FilterQueryInput))
-        return message;
-      return input.query.value === input.raw.value ? null : message;
+      if (input instanceof FilterBuilder)
+        return input.problems.value.find((p) => p.code !== 'missing-value')?.message ?? null;
+      return input?.problems.value[0]?.message ?? null;
     });
     this.root.classList.add('u2-domain-filters');
     this.root.dataset.u2 = 'domain-filters';
@@ -89,13 +94,21 @@ export class DomainFilters extends Control {
   /** The table's schema with the platform's values behind it; over another backend (the gallery,
    * the tests) the properties alone. Either way the offer is narrowed the same way. */
   private async _schema(): Promise<FilterSchema> {
-    const own = this.source.schema;
+    const own = {...this.source.schema, properties: this._ordered()};
     const operators = await this._operators();
     if (!(emsBackends.domain instanceof DgDomainBackend))
       return {...own, operators, values: (prop, query, signal, ctx) => this._under(prop, query, ctx) ?? EMPTY};
     const {values, resolveRef, renderer} = await domainFilterSchema(this.source.table);
     return {...own, operators, resolveRef, renderer,
       values: (prop, query, signal, ctx) => this._under(prop, query, ctx) ?? values!(prop, query, signal, ctx)};
+  }
+
+  /** The name column first and the system columns last, so a new condition starts on the name. */
+  private _ordered(): FilterProperty[] {
+    const {properties, info} = this.source.schema;
+    const name = info.nameColumn ?? info.businessKey[0];
+    const rank = (p: FilterProperty) => p.name === name ? 0 : SYSTEM_COLUMNS.some(([n]) => n === p.name) ? 2 : 1;
+    return [...properties].sort((a, b) => rank(a) - rank(b));
   }
 
   /** The candidates for an `under` term: the ROWS of the hierarchy it walks — every location,
@@ -136,13 +149,17 @@ export class DomainFilters extends Control {
     }
     const applies = (prop: FilterProperty) => prop.ref !== undefined ? hierarchies.has(prop.ref) :
       prop.name === 'id' && own.info.hierarchy === true;
+    const scopedTo = (table: string, o: FilterOperator) =>
+      (DomainFilters._scoped.get(table) ?? []).some((s) => s.id === o.id && s.semType === o.semType);
+    const offered = (o: FilterOperator) => scopedTo(this.source.table, o) ||
+      ![...DomainFilters._scoped.keys()].some((table) => scopedTo(table, o));
     const runs = (prop: FilterProperty, id: string) => {
       const kind = Filters.kindOf(prop);
       return !NOT_BASIC.has(id) && !(kind === Filters.KIND.DATE_TIME && id === '!=') &&
         !(kind === Filters.KIND.BOOL && NULL_TESTS.has(id));
     };
-    return (prop, offered) => {
-      const out = applies(prop) ? offered : offered.filter((o) => o.id !== UNDER);
+    return (prop, ops) => {
+      const out = (applies(prop) ? ops : ops.filter((o) => o.id !== UNDER)).filter(offered);
       return basic ? out.filter((o) => runs(prop, o.id)) : out;
     };
   }
@@ -152,13 +169,15 @@ export class DomainFilters extends Control {
     const input = this.runInScope(() => this.mode === 'builder' ?
       new FilterBuilder({schema, target: 'domain', inline: true}) :
       new FilterQueryInput({schema, target: 'domain', inline: true, name: 'filters',
-        placeholder: this._options.placeholder ?? 'Filter…',
+        placeholder: this._options.placeholder ?? (schema.properties.length === 0 ? 'Filter…' :
+          `Filter, e.g. ${Filters.formatProperty(schema.properties[0].name)} = …`),
         display: (tree) => DomainFilters._shownAs.get(source)?.get(Filters.format(tree)) ?? null}));
     const box = input instanceof FilterQueryInput ? input : null;
     this.effect(() => {
       const q = source.query.value;
       if (q === this._echo)
         return;
+      this._echo = undefined;
       const parsed = typeof q === 'string' && q.trim() !== '' ? Filters.parse(q, schema, 'domain') : null;
       this._accepted = parsed === null ? DomainFilters.treeOf(q, schema) : parsed.root;
       // a query the grammar or the schema refuses would leave the box empty and the user with no
@@ -167,8 +186,16 @@ export class DomainFilters extends Control {
       // the same wording a typed refusal gets: a `?q=` a link carried fails the same way
       this._rawProblems = parsed === null ? [] :
         FilterQueryInput.worded(q as string, schema, parsed.problems);
+      // nor does it go to the server: the rows answer no filter, and the box says why
+      if (this._raw !== null && box !== null) {
+        this._accepted = Filters.group('and');
+        this._echo = '';
+        source.query.value = '';
+      }
       this._write(input, this._accepted);
       box?.showText(this._raw, this._rawProblems);
+      if (input instanceof FilterBuilder)
+        input.setMode(Filters.isFlat(this._accepted) ? 'simple' : 'advanced');
     });
     this.effect(() => {
       const tree = input.value.value;
@@ -184,7 +211,17 @@ export class DomainFilters extends Control {
         }
       });
     });
-    this.root.replaceChildren(input.root);
+    const note = div([], 'u2-domain-filters-note');
+    this.effect(() => {
+      note.hidden = this.problem.value === null;
+      note.textContent = this._accepted.nodes.length === 0 ? 'Filter not applied: showing all rows' :
+        'Showing results for the last valid filter';
+    });
+    this._tools.replaceChildren(...this.runInScope(() =>
+      [SavedSearches.historyButton(source), SavedSearches.saveButton(source)]));
+    this.effect(() => SavedSearches.track(source));
+    const row = this._paned ? input.root : divH([input.root, this._tools], 'u2-domain-filters-row');
+    this.root.replaceChildren(row, note);
     this._input.value = input;
   }
 
@@ -199,6 +236,21 @@ export class DomainFilters extends Control {
     this.source.query.value = this._echo;
   }
 
+  /** The filters in a pane on `list`'s left, the builder's mode switch on its title row. */
+  pane(list: HTMLElement): HTMLElement {
+    this._paned = true;
+    return this.runInScope(() => {
+      const head = divH([span('Filters', 'u2-domain-app-filters-title'), this._tools], 'u2-domain-app-filters-head');
+      const pane = divV([head, this.root], 'u2-domain-app-filters-pane u2-fb-narrow');
+      this.effect(() => {
+        const input = this._input.value;
+        if (input instanceof FilterBuilder)
+          head.append(input.modeSwitch);
+      });
+      return new Splitter([pane, list], {direction: 'horizontal', sizes: [0.3, 0.7], minSize: 220}).root;
+    });
+  }
+
   private _write(input: FilterQueryInput | FilterBuilder, tree: FilterGroup): void {
     if (Filters.equals(tree, input.value.peek()))
       return;
@@ -208,6 +260,17 @@ export class DomainFilters extends Control {
     } finally {
       this._syncing = false;
     }
+  }
+
+  /** Registers `ops` with the operator registry, but offers them only in the filters over `table`,
+   * so one app's operators do not reach another app's columns of the same kind. Answers the unregister. */
+  static registerOperators(table: string, ops: FilterOperator[]): () => void {
+    const unregister = Filters.operators.register(ops);
+    DomainFilters._scoped.set(table, [...DomainFilters._scoped.get(table) ?? [], ...ops]);
+    return () => {
+      unregister();
+      DomainFilters._scoped.set(table, (DomainFilters._scoped.get(table) ?? []).filter((op) => !ops.includes(op)));
+    };
   }
 
   /** Spells `bound` as `unbound` in the box over `source` — the form a control wrote the query

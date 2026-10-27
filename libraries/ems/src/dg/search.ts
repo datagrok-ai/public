@@ -6,13 +6,18 @@
    and refuses while a batch is being written back; cancel puts the previous text back. */
 import {computed, TextInput} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
+import {nounOf} from '../core/domain-backend.js';
 import {confirmDiscard} from '../core/session.js';
+import {DomainTable} from './facade.js';
 
 export interface DomainSearchOptions {
   placeholder?: string;
   /** How long the box waits after the last keystroke before it searches (default 300 ms). */
   debounceMs?: number;
 }
+
+/** The longest column list the placeholder spells out. */
+const PLACEHOLDER_CHARS = 20;
 
 export class DomainSearch extends TextInput {
   private _timer: ReturnType<typeof setTimeout> | undefined;
@@ -21,10 +26,20 @@ export class DomainSearch extends TextInput {
     super({search: true, inline: true, name: 'search', value: source.search.peek(),
       placeholder: options.placeholder ?? computed(() => {
         source.state.value;
-        return `Search ${source.schema.info.pluralName.toLowerCase() || 'rows'}…`;
+        const columns = DomainSearch.columns(source).join(', ');
+        // a list too long for the box is left to the tooltip
+        return columns === '' || columns.length > PLACEHOLDER_CHARS ? `Search ${nounOf(source.schema.info)}…` :
+          `Search ${columns}…`;
       })});
     this.root.classList.add('u2-domain-search');
     this.root.dataset.u2 = 'domain-search';
+    const box = this.root.querySelector('input')!;
+    this.effect(() => {
+      source.state.value;
+      const columns = DomainSearch.columns(source);
+      box.title = columns.length === 0 ? '' : `Finds the ${nounOf(source.schema.info)} whose ` +
+        `${columns.join(', ')} contain the text — within what the filter shows`;
+    });
     const wait = options.debounceMs ?? 300;
     const write = () => {
       this._cancel();
@@ -66,6 +81,14 @@ export class DomainSearch extends TextInput {
     this.own(() => {
       input.removeEventListener('keydown', onKeyDown);
       this._cancel();
+    });
+  }
+
+  private static columns(source: DomainSource): string[] {
+    const props = source.schema.properties;
+    return source.schema.info.searchableColumns.map((name) => {
+      const prop = props.find((p) => p.name === name);
+      return DomainTable.captionOf(prop ?? {name}).toLowerCase();
     });
   }
 

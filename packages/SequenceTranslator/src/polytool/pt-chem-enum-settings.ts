@@ -145,6 +145,9 @@ export async function markushSettingsEditorWidget(propList: DG.Property[]): Prom
     w.root.appendChild(monomersInput.root);
   }
 
-  setTimeout(() => w.root.parentElement?.style && (w.root.parentElement.style.overflow = 'visible'), 200);
+  ui.tools.waitForElementInDom(w.root).then(() => {
+    if (w.root.parentElement)
+      w.root.parentElement.style.overflow = 'visible';
+  });
   return w;
 }

@@ -28,6 +28,10 @@ export class DomainErrors {
     return typeof code === 'string' ? code : '';
   }
 
+  static isNotFound(e: unknown): boolean {
+    return (e as {status?: unknown} | null)?.status === 404 || DomainErrors.codeOf(e) === 'not-found';
+  }
+
   /** `source` is what the sentence is worded from where the refusal is about one of its rows. */
   static message(e: unknown, source?: DomainSource): string {
     const raw = e instanceof Error ? e.message : String((e as {message?: unknown} | null)?.message ?? e);

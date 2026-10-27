@@ -54,12 +54,7 @@ export class TextInput extends Input<string, TextInputOptions> {
 
     const editor = document.createElement('div');
     editor.className = 'u2-input-search';
-    const clear = document.createElement('button');
-    clear.type = 'button';
-    clear.className = 'u2-input-clear';
-    clear.textContent = '✕';
-    clear.setAttribute('aria-label', 'Clear');
-    this.scope.listen(clear, 'click', () => {
+    const clear = this.createClearButton(() => {
       this.value.value = '';
       input.focus();
     });

@@ -273,3 +273,18 @@ fileTest('a local read still running when the input goes away lands nowhere', as
   await flush();
   assert.equal(input.value.peek(), null, 'nothing is written into a disposed input');
 });
+
+fileTest('emptying the box clears the file', async () => {
+  const input = fileInput('Path');
+  grok.dapi.files.exists = async () => true;
+  grok.dapi.files.list = async () => [new FileInfo('geo/cities.csv')];
+  type(input, 'geo/cities.csv');
+  await wait(DEBOUNCE);
+  assert.equal(input.value.peek().fullPath, 'geo/cities.csv');
+
+  type(input, '');
+  assert.equal(input.value.peek(), null, 'no path, no file');
+  await wait(DEBOUNCE);
+  assert.equal(input.value.peek(), null, 'and no late answer brings it back');
+  input.dispose();
+});

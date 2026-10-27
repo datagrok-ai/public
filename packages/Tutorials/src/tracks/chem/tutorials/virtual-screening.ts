@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {interval} from 'rxjs';
+import {timer} from 'rxjs';
 import wu from 'wu';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
 
@@ -163,8 +163,6 @@ export class VirtualScreeningTutorial extends Tutorial {
     this.title('Train a model to predict activity based on molecule structure');
     const pmv = await this.openViewByType('Click on "ML | Models | Train Model..."', 'PredictiveModel', this.getMenuItem('ML'));
 
-    // UI generation delay
-    await new Promise((resolve) => setTimeout(resolve, 2000));
     await this.choiceInputAction(pmv.root, `Set "Table" to "${this.t!.name}"`, 'Table', this.t!.name);
     await this.columnInpAction(pmv.root, `Set "Predict" to "${activityColName}"`, 'Predict', activityColName);
 
@@ -252,12 +250,10 @@ export class VirtualScreeningTutorial extends Tutorial {
       filters.setOptions({columnNames: [curatedMolColName]});
     
 
-    // UI generation delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    const sketcherInput = $(filters.root).find('div.grok-sketcher-input > input')[0];
+    const sketcherInput = await Tutorial.waitFor(() => $(filters.root).find('div.grok-sketcher-input > input')[0]);
     if (!sketcherInput) return;
 
-    await this.action('Filter the compounds by the substituents "CCl.OCc1ccccc1C"', interval(1000).pipe(
+    await this.action('Filter the compounds by the substituents "CCl.OCc1ccccc1C"', timer(0, 200).pipe(
       map(() => wu(screeningData.rows.filters).toArray()),
       // TODO: check if this string replacement is ok
       filter((filters: string[]) => filters.some((f) => f === `${curatedMolColName}: contains Cc1ccccc1CO.CCl`))),
@@ -311,7 +307,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       'profits, but may involve more risks during synthesis and further research stages.';
     chemblPane!.expanded = false;
     await this.action('Search the scaffold in the ChEMBL database',
-      interval(3000).pipe(filter(() => chemblPane!.expanded)),
+      timer(0, 200).pipe(filter(() => chemblPane!.expanded)),
       chemblPane!.root,
       chemblSearch);
 

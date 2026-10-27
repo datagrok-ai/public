@@ -9,9 +9,10 @@ import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {Overlay, OverlayDialog} from '../../core/overlay.js';
 import {Tooltip} from '../../core/tooltip.js';
-import {button} from '../../core/elements.js';
+import {button, describeDisabled} from '../../core/elements.js';
 import {icon} from '../display/icon.js';
 import {Form} from '../forms/form.js';
+import {statusLine} from '../display/badge.js';
 
 export interface DialogOptions {
   /** The automation id (`data-u2-name`). */
@@ -71,6 +72,7 @@ export class Dialog extends Control implements OverlayDialog {
   private readonly _onClose: ((reason: DialogCloseReason) => void)[] = [];
   private _okBtn: HTMLButtonElement | undefined;
   private _cancelBtn: HTMLButtonElement | undefined;
+  private _reasonLine: HTMLElement | undefined;
   private readonly _okOn = signal<ReadonlySignal<boolean> | undefined>(undefined);
   private readonly _okOff = signal<ReadonlySignal<boolean | string | null> | undefined>(undefined);
   /** The form in the body, found on show: OK waits for its verdict, as the platform's does. */
@@ -190,10 +192,12 @@ export class Dialog extends Control implements OverlayDialog {
   }
 
   /** A footer button. `onClick` gets the event and the dialog and runs owned by whoever added the
-   * button; it does not close the dialog. */
-  addButton(text: string, onClick: (e: MouseEvent, dialog: Dialog) => unknown, options?: {primary?: boolean}): this {
+   * button; it does not close the dialog. `disabled` is `button()`'s: off while it says why. */
+  addButton(text: string, onClick: (e: MouseEvent, dialog: Dialog) => unknown,
+    options?: {primary?: boolean, disabled?: ReadonlySignal<boolean | string | null>}): this {
     const run = Dialog._owned(onClick);
-    this._buttons.insertBefore(this._button(text, (e) => run(e, this), options?.primary), this._okBtn ?? null);
+    this._buttons.insertBefore(this._button(text, (e) => run(e, this), options?.primary, options?.disabled),
+      this._okBtn ?? null);
     this._cancelButton();
     return this;
   }
@@ -221,10 +225,13 @@ export class Dialog extends Control implements OverlayDialog {
   /** The OK action — the button and Enter alike. Answering `false` keeps the dialog open (a pick
    * that is not one yet). A promise keeps it open and busy until it settles: it closes unless the
    * promise answers `false`; a rejection, like a throw, stays open with the message in the error
-   * row. Escape or ✕ while busy aborts `signal`. `text` is the button's caption. */
-  onOK(fn: (ctx: DialogOkContext) => unknown, options?: {text?: string}): this {
+   * row. Escape or ✕ while busy aborts `signal`. `text` is the button's caption; `primary` raises
+   * it, for an OK that commits something. */
+  onOK(fn: (ctx: DialogOkContext) => unknown, options?: {text?: string, primary?: boolean}): this {
     this._onOK = Dialog._owned(fn);
-    this._okButton(options?.text);
+    const ok = this._okButton(options?.text);
+    if (options?.primary !== undefined)
+      ok.classList.toggle('u2-btn-primary', options.primary);
     return this;
   }
 
@@ -238,10 +245,17 @@ export class Dialog extends Control implements OverlayDialog {
 
   /** OK is off while `reason` says why — a string becomes the button's tooltip, so the user learns
    * what is missing (`'Select at least one monomer'`); `true` turns it off without a reason, `null`
-   * or `false` leave it on. A form in the body adds its own: "Name: Value can't be empty". */
-  okDisabled(reason: ReadonlySignal<boolean | string | null>): this {
+   * or `false` leave it on. A form in the body adds its own: "Name: Value can't be empty". `footer`
+   * also shows the reason as a warning beside the buttons. */
+  okDisabled(reason: ReadonlySignal<boolean | string | null>, options?: {footer?: boolean}): this {
     this._okButton();
     this._okOff.value = reason;
+    if (options?.footer === true && this._reasonLine === undefined) {
+      const line = this._reasonLine = this.runInScope(() => statusLine(computed(() => this._okReason.value || null)));
+      line.classList.add('u2-dialog-reason', 'u2-status-line-warning');
+      line.dataset.u2Part = 'reason';
+      this._buttons.prepend(line);
+    }
     return this;
   }
 
@@ -393,13 +407,15 @@ export class Dialog extends Control implements OverlayDialog {
         if (!this._busy.peek())
           ok.disabled = !allowed;
       });
+      this.effect(() => describeDisabled(ok, this._okReason.value));
     } else if (text !== undefined)
       this._okBtn.textContent = text;
     return this._okBtn;
   }
 
-  private _button(text: string, onClick: (e: MouseEvent) => void, primary?: boolean): HTMLButtonElement {
-    return this.runInScope(() => button(text, onClick, {primary}));
+  private _button(text: string, onClick: (e: MouseEvent) => void, primary?: boolean,
+    disabled?: ReadonlySignal<boolean | string | null>): HTMLButtonElement {
+    return this.runInScope(() => button(text, onClick, {primary, disabled}));
   }
 
   private _accept(): void {
@@ -474,7 +490,7 @@ export class Dialog extends Control implements OverlayDialog {
     this._busy.value = busy;
     const ok = this._okBtn;
     if (busy) {
-      // a disabled button drops the focus onto the page, where Escape and the Tab trap cannot reach
+      // the dialog holds the focus while busy, not a footer button a key could press again
       if (this._buttons.contains(document.activeElement))
         this.root.focus();
       this._held = [...this._buttons.querySelectorAll<HTMLButtonElement>('button')].filter((b) => !b.disabled);
@@ -595,8 +611,12 @@ export class Dialog extends Control implements OverlayDialog {
       this.cancelByKey();
     } else if (this._okBtn && Dialog.entersDefault(e)) {
       e.preventDefault();
+      // an OK held off never runs: Enter shows every field's verdict instead, or — the fields all
+      // valid — focuses OK, whose tooltip says why
       if (!this._okBtn.disabled)
         this._accept();
+      else if (!this._busy.peek() && this._form.peek()?.validate() !== false)
+        this._okBtn.focus();
     } else if (e.key === 'Tab')
       this._trapTab(e);
   }

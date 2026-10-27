@@ -49,7 +49,12 @@ export function fieldOffer(context: EditorContext): FieldOffer {
       unique: false, choices: false};
     break;
   case 'domain':
-    throw new Error('u2: the manifest editor over a platform-stored schema is not built yet (ui2/ems ruling 6)');
+    if (context.mode !== 'extend')
+      throw new Error('u2: the manifest editor over a platform-stored schema is not built yet (ui2/ems ruling 6)');
+    vocabulary = {type: 'editable', refs: 'relations', remoteNames: false, writable: false, required: false,
+      nameColumn: false, searchable: false, defaultValue: true, autoNumber: false, immutable: false,
+      unique: false, choices: true};
+    break;
   default:
     throw new Error(`u2: unknown manifest storage "${String(context.storage)}"`);
   }
@@ -61,7 +66,9 @@ export function fieldOffer(context: EditorContext): FieldOffer {
   case 'view':
     return {editable: false, identifier: false, description: false, ...vocabulary};
   case 'extend':
-    throw new Error(`u2: the manifest editor's "${context.mode}" mode is not built yet`);
+    if (context.storage !== 'domain')
+      throw new Error('u2: only a platform-stored schema is extended');
+    return {editable: true, identifier: false, description: false, ...vocabulary};
   default:
     throw new Error(`u2: unknown manifest editor mode "${String(context.mode)}"`);
   }
