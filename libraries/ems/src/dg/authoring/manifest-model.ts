@@ -143,6 +143,7 @@ export interface TableView {
   /** In the registered manifest (edit mode): its logical name and remote mapping are locked. */
   registered: boolean;
   drift?: DriftView;
+  extensible: boolean;
 }
 
 export interface RelationView {
@@ -186,7 +187,11 @@ export interface ColumnView {
   relations: RelationView[];
   registered: boolean;
   drift?: DriftView;
+  owned: boolean;
+  decl: Readonly<ManifestColumnJson>;
 }
+
+export type ExtendPatch = Record<string, {columns: Record<string, ManifestColumnJson>}>;
 
 /** One line of the Review change list; `id` is stable across re-plans, by LOGICAL names (a
  * candidate's id follows its logical name, so renaming one renames its lines), so a server
@@ -234,6 +239,7 @@ export interface ManifestModelOptions {
   takenNames?: string[];
   /** Edit mode: the registered manifest, the immutable baseline the draft annotates and extends. */
   baseline?: ManifestJson;
+  extend?: boolean;
 }
 
 interface ColumnState {
@@ -248,6 +254,8 @@ interface ColumnState {
   target?: string;
   demoted?: string;
   registered: boolean;
+  owned: boolean;
+  named?: boolean;
 }
 
 interface TableState {
@@ -354,6 +362,7 @@ export class ManifestModel {
   readonly revision: ReadonlySignal<number>;
 
   private readonly _rev = signal(0);
+  private readonly _extend: boolean;
   private _baseline: ManifestJson | null;
   /** The manifest whose storage and unexposed keys `toJSON` carries: the draft's, or the baseline. */
   private _source!: ManifestJson;
@@ -375,6 +384,7 @@ export class ManifestModel {
 
   constructor(draft: DraftEnvelope | null, options: ManifestModelOptions = {}) {
     this._baseline = options.baseline ?? null;
+    this._extend = options.extend === true;
     this.name = signal('');
     this.friendlyName = signal(options.friendlyName ?? '');
     this.description = signal(options.description ?? '');
@@ -425,6 +435,14 @@ export class ManifestModel {
 
   get incarnation(): string | undefined {
     return this._baseline?.incarnation;
+  }
+
+  get extending(): boolean {
+    return this._extend;
+  }
+
+  get extVersion(): string | undefined {
+    return this._baseline?.extVersion as string | undefined;
   }
 
   table(remote: string): TableView | undefined {
@@ -489,9 +507,46 @@ export class ManifestModel {
     const state = this._tables.get(table);
     const column = state?.columns.get(remote);
     if (state === undefined || column === undefined || state.key.includes(remote) || column.included === on ||
-        column.demoted !== undefined)
+        column.demoted !== undefined || !column.owned)
       return;
-    this._mutate(() => column.included = on);
+    this._mutate(() => {
+      if (this._extend && !column.registered)
+        state.columns.delete(remote);
+      else
+        column.included = on;
+    });
+  }
+
+  addColumn(table: string): string | null {
+    const state = this._tables.get(table);
+    if (!this._extend || state?.decl?.extensible !== true)
+      return null;
+    const name = ManifestModel._free('property', [...state.columns.keys()]);
+    this._mutate(() => state.columns.set(name, {remote: name, logical: name, decl: {type: 'string'}, included: true,
+      type: 'string', registered: false, owned: true}));
+    return name;
+  }
+
+  setColumn(table: string, remote: string, key: string, value: unknown): void {
+    const state = this._tables.get(table);
+    const column = state?.columns.get(remote);
+    if (state === undefined || column === undefined || !column.owned || key === 'type' && column.registered)
+      return;
+    this._mutate(() => {
+      if (key === 'type') {
+        const {friendlyName, description} = column.decl;
+        column.type = String(value);
+        column.decl = {type: column.type, friendlyName, description};
+      }
+      else if (value == null || value === '' || Array.isArray(value) && value.length === 0)
+        delete column.decl[key];
+      else
+        column.decl[key] = value;
+      if (key === 'friendlyName' && !column.registered && !column.named) {
+        column.logical = ManifestModel._free(ManifestRules.identifier(String(value ?? '')) || 'property',
+          [...state.columns.values()].filter((c) => c !== column).map((c) => c.logical));
+      }
+    });
   }
 
   /** A suggested foreign key becomes a ref (its target included), or a ref this edit made becomes
@@ -619,8 +674,12 @@ export class ManifestModel {
     if (column === undefined)
       return null;
     const problem = this.checkColumnName(table, remote, logical);
-    if (problem === null && column.logical !== logical)
-      this._mutate(() => column.logical = logical);
+    if (problem === null && column.logical !== logical) {
+      this._mutate(() => {
+        column.logical = logical;
+        column.named = true;
+      });
+    }
     return problem;
   }
 
@@ -650,7 +709,7 @@ export class ManifestModel {
   setRequired(table: string, remote: string, on: boolean): void {
     const state = this._tables.get(table);
     const column = state?.columns.get(remote);
-    if (state === undefined || column === undefined || state.key.includes(remote))
+    if (state === undefined || column === undefined || state.key.includes(remote) || !column.owned)
       return;
     this._mutate(() => ManifestModel._flag(column.decl, 'required', on));
   }
@@ -722,7 +781,26 @@ export class ManifestModel {
         continue;
       out.push(this._describe(d));
     }
+    for (const state of this._tables.values()) {
+      for (const column of state.columns.values()) {
+        if (this._extend && !column.registered)
+          out.push(ManifestModel._added(state, column));
+      }
+    }
     return out;
+  }
+
+  extendPatch(): ExtendPatch {
+    const patch: ExtendPatch = {};
+    for (const state of this._tables.values()) {
+      const own = [...state.columns.values()].filter((c) => c.owned && (c.registered || c.included));
+      const now = Object.fromEntries(own.filter((c) => c.included).map((c) => [c.logical, this._columnJSON(c, false)]));
+      const before = Object.fromEntries(Object.entries(this._baseline!.tables[state.logical]?.columns ?? {})
+        .filter(([, c]) => c.origin === 'user').map(([name, {origin: _o, ...c}]) => [name, c]));
+      if (own.length > 0 && !Fields.same(before, now))
+        patch[state.logical] = {columns: now};
+    }
+    return patch;
   }
 
   /** The apply body's manifest half (edit mode); empty when nothing changed. A changed table
@@ -760,6 +838,8 @@ export class ManifestModel {
     options: {friendlyName: string, description: string}): RebaseReport {
     const before = this._loaded;
     const ops = Fields.diff(before, this._surface());
+    const added = [...this._tables.values()].flatMap((t) => [...t.columns.values()]
+      .filter((c) => this._extend && !c.registered).map((c) => [t.remote, c] as const));
     this._baseline = baseline;
     this.friendlyName.value = options.friendlyName;
     this.description.value = options.description;
@@ -775,8 +855,29 @@ export class ManifestModel {
     };
     const report = Fields.replay(ops, before, after, {exists, fallback: () => undefined,
       apply: (d) => this._apply(d), surface: () => this._surface(), describe: (d) => this._describe(d)});
+    for (const [table, column] of added) {
+      const state = this._tables.get(table);
+      const op = {...ManifestModel._added(state ?? null, column), from: null, to: column.logical};
+      if (state?.decl?.extensible !== true) {
+        report.dropped.push(op);
+        continue;
+      }
+      const logical = ManifestModel._free(column.logical, [...state.columns.values()].map((c) => c.logical));
+      const remote = ManifestModel._free(column.remote, [...state.columns.keys()]);
+      state.columns.set(remote, {...column, remote, logical});
+      if (logical === column.logical)
+        report.applied.push(op);
+      else
+        report.conflicts.push({...op, note: `"${column.logical}" is taken now — added as "${logical}"`});
+    }
     this._rev.value = this._rev.peek() + 1;
     return report;
+  }
+
+  private static _added(state: TableState | null, column: ColumnState): ManifestChange {
+    const table = state?.logical ?? '';
+    return {id: `column:${table}.${column.logical}`, text: `Column ${table}.${column.logical} added (${column.type})`,
+      table, column: column.logical, removes: false};
   }
 
   private _apply(d: FieldDiff): void {
@@ -815,6 +916,11 @@ export class ManifestModel {
       this.setRequired(f.table, column, to as boolean);
     else if (f.name === 'ref')
       this.setRef(f.table, column, to !== null);
+    else if (f.name === 'decl') {
+      const state = this._tables.get(f.table)?.columns.get(column);
+      if (state?.owned)
+        this._mutate(() => state.decl = JSON.parse(to as string));
+    }
   }
 
   /** The Review wording of one field change, by the current logical names. */
@@ -851,7 +957,9 @@ export class ManifestModel {
       const target = (remote: unknown): string => this._tables.get(String(remote))?.logical ?? String(remote);
       text = d.to === null ? `Column ${at}: ref to ${target(d.from)} demoted to a plain ${cs?.type ?? 'value'}` :
         `Column ${at}: now a ref to ${target(d.to)}`;
-    } else
+    } else if (f.name === 'decl')
+      text = `Column ${at} changed`;
+    else
       text = `Column ${at}: required ${onOff(d.to)}`;
     return {id, text, table, column, removes: f.name === 'included' && d.to === false && cs?.registered === true};
   }
@@ -881,6 +989,8 @@ export class ManifestModel {
         s.set(`${c}.logical`, column.logical);
         s.set(`${c}.required`, column.decl.required === true);
         s.set(`${c}.ref`, column.type === 'ref' ? column.target ?? null : null);
+        if (this._extend && column.owned)
+          s.set(`${c}.decl`, Fields.stable(column.decl));
       }
     }
     return s;
@@ -938,8 +1048,9 @@ export class ManifestModel {
     this._plainTypes.clear();
     this._listed.clear();
     this._relations = draft?.inventory?.relations ?? [];
-    this._catalog = draft !== null && !(draft.diagnostics ?? []).some((d) => CATALOG_UNKNOWN_CODES.includes(d.code)) ?
-      'known' : 'unknown';
+    const external = source.storage?.kind === 'external';
+    this._catalog = !external ||
+      draft !== null && !(draft.diagnostics ?? []).some((d) => CATALOG_UNKNOWN_CODES.includes(d.code)) ? 'known' : 'unknown';
     for (const [logical, decl] of Object.entries(source.tables))
       this._addTable(decl.table ?? logical, logical, decl, source, {registered: baseline !== null, included: true});
     if (baseline !== null && draft !== null)
@@ -972,7 +1083,7 @@ export class ManifestModel {
             column.target = relation.targetTable;
         }
       }
-    } else {
+    } else if (external) {
       // a read that lists none of the registered tables is a grants or catalog problem, not a warehouse
       // that lost every one of them
       const registered = [...this._tables.values()].filter((t) => t.registered);
@@ -1002,7 +1113,7 @@ export class ManifestModel {
         // the registered table already has its name and searchable columns
         const {isName: _isName, searchable: _searchable, ...rest} = c;
         state.columns.set(columnRemote, {remote: columnRemote, logical: free, decl: rest, included: false,
-          type: c.type, target: ManifestModel._refTarget(draft, c), registered: false});
+          type: c.type, target: ManifestModel._refTarget(draft, c), registered: false, owned: true});
       }
     }
   }
@@ -1025,11 +1136,13 @@ export class ManifestModel {
     options: {registered: boolean, included: boolean, inventory?: InventoryTable}): void {
     const columns = new Map<string, ColumnState>();
     const keyByLogical = new Map<string, string>();
-    for (const [name, c] of Object.entries(decl?.columns ?? {})) {
+    // `origin` is the registry's read-only ownership stamp, never sent back
+    for (const [name, {origin, ...c}] of Object.entries(decl?.columns ?? {})) {
       const columnRemote = c.column ?? name;
       keyByLogical.set(name, columnRemote);
-      columns.set(columnRemote, {remote: columnRemote, logical: name, decl: {...c}, included: true, type: c.type,
-        target: ManifestModel._refTarget(source, c), registered: options.registered});
+      columns.set(columnRemote, {remote: columnRemote, logical: name, decl: c, included: true, type: c.type,
+        target: ManifestModel._refTarget(source, c), registered: options.registered,
+        owned: !this._extend || origin === 'user'});
     }
     const key = decl?.businessKey?.map((k) => keyByLogical.get(k) ?? k) ?? options.inventory?.key ?? [];
     this._tables.set(remote, {remote, logical, decl: decl === null ? null : {...decl},
@@ -1199,7 +1312,7 @@ export class ManifestModel {
         drafted ? state.drift?.reason : 'not in this draft — it was read over other tables',
       code: !bindable ? inventory?.code : drafted ? undefined : 'external-table-not-drafted',
       key: state.key, readOnly: state.decl?.writable === false,
-      registered: state.registered, drift: state.drift,
+      registered: state.registered, drift: state.drift, extensible: state.decl?.extensible === true,
     };
   }
 
@@ -1235,7 +1348,7 @@ export class ManifestModel {
       required: isKey || column.decl.required === true,
       isName: column.decl.isName === true, searchable: column.decl.searchable === true,
       supported: true, reason: column.demoted ?? drift?.reason, relations,
-      registered: column.registered, drift,
+      registered: column.registered, drift, owned: column.owned, decl: column.decl,
     };
   }
 
@@ -1243,7 +1356,8 @@ export class ManifestModel {
     return {
       table: state.remote, remote: u.remote, logical: u.remote, type: u.dbType ?? '',
       dbType: u.dbType, included: false, isKey: false, required: false, isName: false, searchable: false,
-      supported: false, reason: u.message, code: u.code, relations: [], registered: false,
+      supported: false, reason: u.message, code: u.code, relations: [], registered: false, owned: false,
+      decl: {type: u.dbType ?? ''},
     };
   }
 

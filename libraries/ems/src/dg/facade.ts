@@ -19,7 +19,7 @@ import {SharedSession, confirmDiscard} from '../core/session.js';
 import {handlerRenderer, appView, mountView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainApp} from './app.js';
 import {authoring} from './authoring/index.js';
-import {SYSTEM_COLUMNS} from './backend.js';
+import {SYSTEM_COLUMNS, DgDomainBackend} from './backend.js';
 import {saveButton, discardButton, newButton} from './buttons.js';
 import {DomainChildren} from './children.js';
 import {DomainErrors} from './errors.js';
@@ -32,6 +32,7 @@ import {DomainViews} from './views.js';
 import type {DomainViewsOptions} from './views.js';
 import type {DomainImporter} from './import.js';
 import {bulkEdit} from './bulk.js';
+import {PropertyDialog} from './authoring/property-dialog.js';
 import {BindingDialog, BindingWizard, createBinding} from './authoring/binding-dialog.js';
 import {BindingEditDialog, editBinding} from './authoring/binding-edit-dialog.js';
 // the cycles with the control modules are function-scoped only: none reads another at load time
@@ -156,6 +157,17 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   constructor(readonly address: string, readonly table: DomainTableLike, readonly access: Access) {
     this.handler = new DG.DomainObjectHandler(address);
     this.renderer = this.defaultRenderer = DomainTable.handlerRenderer(this);
+  }
+
+  static forget(schema: string): void {
+    const backend = emsBackends.domain;
+    const handles = backend === undefined ? undefined : DomainTable._shared.get(backend);
+    for (const address of [...handles?.keys() ?? []]) {
+      if (address.startsWith(`${schema}.`))
+        handles!.delete(address);
+    }
+    if (backend instanceof DgDomainBackend)
+      backend.invalidate();
   }
 
   /** One configured handle over `address` per backend, for whoever only reads it. */
@@ -510,6 +522,13 @@ export const domains = {
   bulkEdit,
   /** The import wizard over a table: source → mapping → preview → the server's report. */
   import: openImport,
+  async editProperties(schema: string, table?: string): Promise<boolean> {
+    const saved = await PropertyDialog.open(schema, table);
+    if (saved)
+      await DomainViews.reload(schema);
+    return saved;
+  },
+  extensible: (schema: string): Promise<Set<string>> => PropertyDialog.extensible(schema),
   saveButton,
   discardButton,
   newButton,

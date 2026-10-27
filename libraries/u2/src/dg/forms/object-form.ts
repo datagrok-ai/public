@@ -169,7 +169,7 @@ export function kindOf(prop: IProperty, assumeWritable = false): Kind {
   if (!prop.set && !assumeWritable)
     return 'readonly';
   const type = prop.propertyType ?? prop.type;
-  if (type === 'list')
+  if (type === 'list' || type === 'string_list')
     return 'list';
   if (type === 'map')
     return 'map';
