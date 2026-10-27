@@ -14,8 +14,10 @@ defect blocks the path, or the check belongs to another test layer.
 
 ### Waiting for core#1042 (Link of a file into a space)
 
-2. **The same file linked twice into one space.** Expected behaviour to be confirmed once the Link works.
-3. **A linked file gone with its source**: the source file deleted, and what the target space then shows.
+2. **The same file linked twice into one space**: the second Link changes nothing, the space shows the file once
+   and no error is logged (decided).
+3. **A linked file gone with its source**: the source file deleted, the link goes from the target space too, a
+   Link being the same entity (decided).
 4. **core#382 with a file**: a linked file whose original moved to another space. The project variant is claimed
    (green) in `space-content-edge-cases`.
 

@@ -178,3 +178,24 @@ Feature: Save project dialog edge cases: CANCEL, names without a letter, a local
     When user closes all views
     And user signs in as themselves again
     Then the running account should be signed in
+
+  @edge-cases @known-failure:195 @realizes:core#1161
+  Scenario: With every table left out, OK stays disabled until a table is brought back
+    core#1161: OK stays enabled with every table left out, and saves a project with no table.
+    Remove the tag when OK is disabled while no table is included.
+    Given Files tree node inside browse tree is expanded
+    And Files---Demo tree node inside browse tree is expanded
+    When user double-clicks Files---Demo---cars.csv tree node inside browse tree
+    Then the "cars" view should be current
+    When user clicks on Save ribbon item
+    Then "Save project" dialog should be visible
+    When user enters "BDDEdgeSave{time}" into Name text input in "Save project" dialog
+    And user clicks on times icon in "cars" project table in "Save project" dialog
+    Then plus icon in "cars" project table in "Save project" dialog should be visible
+    And OK button in "Save project" dialog should be disabled
+    When user clicks on plus icon in "cars" project table in "Save project" dialog
+    Then OK button in "Save project" dialog should be enabled
+    When user clicks on CANCEL button in "Save project" dialog
+    Then the "Save project" dialog should close
+    And 0 projects named "BDDEdgeSave{time}" should be on the server
+    And no errors should have been logged

@@ -4,7 +4,7 @@
 /* ---
 generated: features/projects/save-project-dialog-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [views.projects, sharing.share-dialog]
+sub_features_covered: [views.projects, sharing.share-dialog, core#1161]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -26,7 +26,7 @@ import {openRememberedAddress, rememberAddress} from '@datagrok-libraries/bdd/bi
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {browsePanelOpen, closeAllViews, contextPanelOpen, dialogCloses, doubleClickOpensProject, noProjectOnServer, pickSharingUser, projectsOnServer, runningAccountSignedIn, sharingUserSignedIn, signInAsSelf, signInAsSharingUser, urlShouldContain, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {el, feature} from '@datagrok-libraries/bdd/runtime';
+import {el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Save project dialog edge cases: CANCEL, names without a letter, a local file, a View and use recipient", () => {
   const session = feature(test, "features/projects/save-project-dialog-edge-cases.feature", import.meta.url);
@@ -249,5 +249,31 @@ test.describe("Save project dialog edge cases: CANCEL, names without a letter, a
     await session.step(178, "When user closes all views", () => closeAllViews(page));
     await session.step(179, "And user signs in as themselves again", () => signInAsSelf(page));
     await session.step(180, "Then the running account should be signed in", () => runningAccountSignedIn(page));
+  });
+  test("With every table left out, OK stays disabled until a table is brought back", {tag: ["@realizes:views.projects", "@edge-cases", "@known-failure:195", "@realizes:core#1161"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(29, "Given user is logged in", () => loggedIn(page));
+    await session.step(30, "And the context panel is open", () => contextPanelOpen(page));
+    await session.step(31, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(32, "And no project named \"BDDEdgeSave{time}\" is on the server", () => noProjectOnServer(page, session.text("BDDEdgeSave{time}")));
+    await session.step(33, "And no project named \"BDDEdge/Slash{time}\" is on the server", () => noProjectOnServer(page, session.text("BDDEdge/Slash{time}")));
+    await knownFailure(async () => {
+      await session.step(186, "Given Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
+      await session.step(187, "And Files---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Files---Demo tree node inside browse tree")));
+      await session.step(188, "When user double-clicks Files---Demo---cars.csv tree node inside browse tree", () => doubleClickOn(page, el("Files---Demo---cars.csv tree node inside browse tree")));
+      await session.step(189, "Then the \"cars\" view should be current", () => viewIsCurrent(page, "cars"));
+      await session.step(190, "When user clicks on Save ribbon item", () => clickOn(page, el("Save ribbon item")));
+      await session.step(191, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
+      await session.step(192, "When user enters \"BDDEdgeSave{time}\" into Name text input in \"Save project\" dialog", () => enterInto(page, session.text("BDDEdgeSave{time}"), el("Name text input in \"Save project\" dialog")));
+      await session.step(193, "And user clicks on times icon in \"cars\" project table in \"Save project\" dialog", () => clickOn(page, el("times icon in \"cars\" project table in \"Save project\" dialog")));
+      await session.step(194, "Then plus icon in \"cars\" project table in \"Save project\" dialog should be visible", () => shouldBe(page, el("plus icon in \"cars\" project table in \"Save project\" dialog"), "visible"));
+      await session.step(195, "And OK button in \"Save project\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "disabled"));
+      await session.step(196, "When user clicks on plus icon in \"cars\" project table in \"Save project\" dialog", () => clickOn(page, el("plus icon in \"cars\" project table in \"Save project\" dialog")));
+      await session.step(197, "Then OK button in \"Save project\" dialog should be enabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "enabled"));
+      await session.step(198, "When user clicks on CANCEL button in \"Save project\" dialog", () => clickOn(page, el("CANCEL button in \"Save project\" dialog")));
+      await session.step(199, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
+      await session.step(200, "And 0 projects named \"BDDEdgeSave{time}\" should be on the server", () => projectsOnServer(page, 0, session.text("BDDEdgeSave{time}")));
+      await session.step(201, "And no errors should have been logged", () => noErrors(page));
+    }, 195);
   });
 });

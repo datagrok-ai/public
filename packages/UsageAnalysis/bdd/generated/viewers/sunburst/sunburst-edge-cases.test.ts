@@ -126,4 +126,21 @@ test.describe("Sunburst edge cases: no rows, an empty hierarchy, a hierarchy col
       await session.step(78, "And no errors should have been logged", () => noErrors(page));
     }, 77);
   });
+  test("Switching On Click from Filter to Select gives back the rows its clicked segment filtered out", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sunburst", "@known-failure:86", "@realizes:public#4425"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(17, "Given user is logged in", () => loggedIn(page));
+    await session.step(18, "And the package autostarts have completed", () => autostartsCompleted(page));
+    await session.step(19, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(20, "And user adds a sunburst viewer with:", () => addViewerWith(page, "sunburst", [["hierarchyColumnNames","SEX, RACE"]]), [["hierarchyColumnNames","SEX, RACE"]]);
+    await session.step(22, "Then the \"hierarchy columns\" reading of sunburst viewer should be \"SEX, RACE\"", () => readingReads(page, "hierarchy columns", el("sunburst viewer"), "SEX, RACE"));
+    await session.step(23, "And the \"segments\" reading of sunburst viewer should be 10", () => readingIs(page, "segments", el("sunburst viewer"), 10));
+    await knownFailure(async () => {
+      await session.step(82, "When user sets \"onClick\" property of sunburst viewer to \"Filter\"", () => setProperty(page, "onClick", el("sunburst viewer"), "Filter"));
+      await session.step(83, "And user clicks on the \"segment F\" area of sunburst viewer", () => clickArea(page, "segment F", el("sunburst viewer")));
+      await session.step(84, "Then 553 rows should pass the filter", () => filterPasses(page, 553));
+      await session.step(85, "When user sets \"onClick\" property of sunburst viewer to \"Select\"", () => setProperty(page, "onClick", el("sunburst viewer"), "Select"));
+      await session.step(86, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(87, "And no errors should have been logged", () => noErrors(page));
+    }, 86);
+  });
 });

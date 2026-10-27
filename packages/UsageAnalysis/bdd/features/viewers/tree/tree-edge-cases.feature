@@ -114,3 +114,12 @@ Feature: Tree edge cases: renamed and removed columns, empty values, no rows, ou
     Then the open tableview should have 0 tree viewers
     And all rows should pass the filter
     And no errors should have been logged
+
+  @known-failure:124 @realizes:public#4425
+  Scenario: Switching On Click from Filter to Select gives back the rows its clicked branch filtered out
+    When user sets "onClick" property of tree viewer to "Filter"
+    And user clicks on the "branch All | false | F | Asian" area of tree viewer
+    Then 7 rows should pass the filter
+    When user sets "onClick" property of tree viewer to "Select"
+    Then all rows should pass the filter
+    And no errors should have been logged

@@ -1,5 +1,5 @@
 @realizes:views.projects
-Feature: Project gallery edge cases: Rename with no letter, CANCEL on Rename and Delete, the address of a deleted project
+Feature: Project gallery edge cases: Rename with no letter, CANCEL on Rename and Delete, the address of a deleted project, a recipient's card menu
   Guards for a project's card in Browse > Dashboards. cars.csv from Browse > Files > Demo is saved
   through the ribbon's Save dialog, the address the page shows after the save is remembered, and the
   card is found by the gallery search.
@@ -13,6 +13,8 @@ Feature: Project gallery edge cases: Rename with no letter, CANCEL on Rename and
   - The address of a deleted project names nothing, and opening it says so and leaves the shell as it
     was: an error balloon "Unable to get project asset", the current view kept (the contract
     `browse/browse-routing.feature` states for an address that names nothing).
+  - A recipient with View and use may not rename or delete the project, so its card menu shows
+    Rename... and Delete Project disabled (core#1162: today both are enabled, a known failure).
 
   The project names carry the run's time (letters and digits only: the Dashboards search misses "-"
   and "_"); every project of these names is removed with its table and view when a scenario starts
@@ -95,3 +97,27 @@ Feature: Project gallery edge cases: Rename with no letter, CANCEL on Rename and
     Then an error balloon containing "Unable to get project asset" should have been shown
     And the "demog-1000" view should be current
     And no errors should have been logged
+
+  @edge-cases @realizes:sharing.share-dialog @known-failure:119 @realizes:core#1162
+  Scenario: A View and use recipient sees Rename and Delete Project disabled in the card menu
+    core#1162: both items are enabled for a View and use recipient. Remove the tag when they are
+    disabled.
+    When user picks "Share..." from the context menu of BDDEdgeGal{time} gallery card
+    Then "Share BDDEdgeGal{time}" dialog should be visible
+    When user picks the sharing user in "User, group, or email" input in "Share BDDEdgeGal{time}" dialog
+    And user unchecks "Send notifications" input in "Share BDDEdgeGal{time}" dialog
+    And user clicks on OK button in "Share BDDEdgeGal{time}" dialog
+    Then the "Share BDDEdgeGal{time}" dialog should close
+    When user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDEdgeGal{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then BDDEdgeGal{time} gallery card should be visible
+    When user opens the context menu of BDDEdgeGal{time} gallery card
+    Then the open menu should list "Rename..." as disabled
+    And the open menu should list "Delete Project" as disabled
+    When user presses Escape
+    And user signs in as themselves again
+    Then the running account should be signed in

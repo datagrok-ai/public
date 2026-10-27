@@ -9,8 +9,10 @@ Feature: Connection edge cases: names the dialogs refuse, CANCEL, and a delete t
   connection goes with it.
 
   Every connection and query is the feature's own: Postgres connections to db.datagrok.ai:54322/northwind
-  saved through the API without credentials (nothing here connects to the database), named with the
-  run's time and deleted, with their queries, when the feature ends. A connection with the same name as
+  saved through the API without credentials, named with the run's time and deleted, with their
+  queries, when the feature ends. The one that connects is a clone of the stand's NorthwindTest
+  (the DBTests package's connection): a clone is expected to carry the credentials, and a rename in
+  its Edit dialog to keep them, so its schemas are listed both times. A connection with the same name as
   another (core#546's class) is an ApiTests case, and what TEST answers for a wrong host or password is
   the database server's reply, not the dialog's: see MISSING.md.
 
@@ -83,3 +85,32 @@ Feature: Connection edge cases: names the dialogs refuse, CANCEL, and a delete t
     And 0 queries named "BDDConnCascadeQ{time}" should be on the server
     And Databases---Postgres---BDDConnCascade{time} tree node inside browse tree should be absent
     And no errors should have been logged
+
+  @known-failure:102 @ticket-pending
+  Scenario: A clone keeps the credentials, and so does a rename in its Edit dialog
+    Today a clone of NorthwindTest says "Unavailable" under its node: the copy does not carry the
+    credentials. No ticket yet. Remove the tag when the clone lists its schemas.
+    Given no connection named "BDDConnClone{time}, BDDConnCloneRen{time}" is on the server
+    And Databases---Postgres tree node inside browse tree is expanded
+    When user picks "Clone..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
+    Then "Edit Connection" dialog should be visible
+    When user enters "BDDConnClone{time}" into Name input in "Edit Connection" dialog
+    And user clicks on OK button in "Edit Connection" dialog
+    Then the "Edit Connection" dialog should close
+    And 1 connection named "BDDConnClone{time}" should be on the server
+    Given Databases---Postgres---BDDConnClone{time} tree node inside browse tree is expanded
+    Then Databases---Postgres---BDDConnClone{time}---Schemas tree node inside browse tree should become visible within 60 seconds
+    Given Databases---Postgres---BDDConnClone{time}---Schemas tree node inside browse tree is expanded
+    Then Databases---Postgres---BDDConnClone{time}---Schemas---public tree node inside browse tree should be visible
+    When user picks "Edit..." from the context menu of Databases---Postgres---BDDConnClone{time} tree node inside browse tree
+    Then "Edit Connection" dialog should be visible
+    When user enters "BDDConnCloneRen{time}" into Name input in "Edit Connection" dialog
+    And user clicks on OK button in "Edit Connection" dialog
+    Then the "Edit Connection" dialog should close
+    And 1 connection named "BDDConnCloneRen{time}" should be on the server
+    Given Databases---Postgres---BDDConnCloneRen{time} tree node inside browse tree is expanded
+    Then Databases---Postgres---BDDConnCloneRen{time}---Schemas tree node inside browse tree should become visible within 60 seconds
+    Given Databases---Postgres---BDDConnCloneRen{time}---Schemas tree node inside browse tree is expanded
+    Then Databases---Postgres---BDDConnCloneRen{time}---Schemas---public tree node inside browse tree should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown

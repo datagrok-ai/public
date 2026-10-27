@@ -3,7 +3,9 @@ Feature: Filter panel edge cases
   Guards for the filter panel at the edges of its input and of its data, on demog-1000 (DIS_POP:
   Psoriasis 204 and PsA 38; RACE: Asian 15; HEIGHT: 128 blank cells).
   A card on a column that is removed goes with the column and releases its rows (the panel drops
-  the card of a removed column, `filters_core.dart` `onColumnsRemoved`). The missing-values menu of a numeric card keeps, drops or keeps
+  the card of a removed column, `filters_core.dart` `onColumnsRemoved`): a categorical and a numeric
+  card do; a flag of the Combined Boolean card and a rule of the Expression card keep the table
+  filtered (known failures, no ticket yet). The missing-values menu of a numeric card keeps, drops or keeps
   only the blank rows (help filters.md "Missing values"). The expression card's `is null` and
   `is not null` operations of a numeric column keep the blank and the filled rows (help filters.md,
   "numerical columns"). A free-text rule that does not parse is refused on Enter: no rule is added
@@ -15,7 +17,7 @@ Feature: Filter panel edge cases
     And user opens demog-1000 dataset
     And user opens an empty filter panel
 
-  @edge-cases @known-failure:29 @realizes:core#1134
+  @edge-cases @known-failure:31 @realizes:core#1134
   Scenario: An opening bracket typed into a categorical card's search logs no error
     core#1134: the categorical card compiles each search word as a regular expression without
     escaping it, so "Ps(" throws "Unterminated group" on the keystroke. Remove the tag when core#1134
@@ -80,4 +82,40 @@ Feature: Filter panel edge cases
     And user presses Enter
     Then the "categories of Expression" reading of filter panel should be "${HEIGHT} < 150"
     And 16 rows should pass the filter
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: Removing the column of a filtering numeric card releases its rows
+    When user adds a card for "AGE" to the filter panel
+    And user picks "Min / max" from the indicator menu of the "AGE" filter card
+    And user closes the context menu
+    And user enters "40" into the max field of the "AGE" filter card
+    Then fewer than 1000 rows should pass the filter
+    When user removes "AGE" column
+    Then the filter panel should have 0 filters
+    And all rows should pass the filter
+    And no errors should have been logged
+
+  @edge-cases @known-failure:107 @ticket-pending
+  Scenario: Removing the column of a filtering flag in the Combined Boolean card releases its rows
+    The flag goes from the card, but the table stays filtered to its true rows. No ticket yet. Remove
+    the tag when the removal releases the rows.
+    When user picks "Add Filter | Combined Boolean" from the filter panel menu
+    And user clicks on the "category CONTROL of Flags" area of filter panel
+    Then 6 rows should pass the filter
+    When user removes "CONTROL" column
+    Then all rows should pass the filter
+    And no errors should have been logged
+
+  @edge-cases @known-failure:120 @ticket-pending
+  Scenario: Removing the column of a filtering Expression card rule releases its rows
+    The table stays filtered by a rule on a column that is gone. No ticket yet. Remove the tag when
+    the removal releases the rows.
+    When user picks "Add Filter | Expression" from the filter panel menu
+    And user selects "HEIGHT" in Column input in "Expression" filter card
+    And user selects "is null" in Operation input in "Expression" filter card
+    And user clicks on "Add filter" button in "Expression" filter card
+    Then 128 rows should pass the filter
+    When user removes "HEIGHT" column
+    Then all rows should pass the filter
     And no errors should have been logged

@@ -83,32 +83,22 @@ written with no library, binding or code change.
    error "…"` answers only for u2 controls. A reading of the message a Dart `InputBase` shows (or puts in its
    tooltip) would let `project-gallery-edge-cases` claim the words as well as the invalid mark and the disabled OK.
 
-**Questions for owners**
+**Decided and written**
 
-1. **Every table left out with the cross icon, then OK.** The dialog saves a project with no table, or refuses?
-   core#945 settled only the quick-OK path; nothing states this one.
-2. **The data-synced file deleted from Files, or the creation script deleted (not broken), then the project
-   reopened.** Is the Data loading error dialog the expected answer, as for a deleted query (`dashboard.md`, "When
-   the source changes", names only the query)?
-3. **A View and use recipient's card menu.** Rename... and Delete Project: hidden, or shown disabled? The server's
-   refusal is ApiTests `permissions.ts`; the menu has no stated behaviour (core#305 is the same class for Share).
-4. **The owner deletes a project a recipient has open, then the recipient clicks SAVE or REFRESH.** `browse.md`
-   documents only the deleted-table variant.
-5. **A URL parameter value of the wrong type** (`?maxId=abc` for an int parameter), for a dashboard address and for a
-   function run link: back to the form, as core#446 settled for a missing value, or an error?
-6. **A URL parameter alias emptied, or set to another parameter's name.**
-
-**Cases with a source, not written in this round**
-
-1. **A URL parameter value with `&`, `#`, a space or a non-ASCII letter** goes through Source > copy link > the
-   address and comes back unchanged (the link carries the value typed, `project-url-parameters.md`). It needs the
-   parameterized-query journey of `projects-url-parameters.feature` as its set-up.
-2. **A column a calculated column uses removed from the query output**: the dashboard opens with a warning and an
-   empty calculated column (`dashboard.md`, "When the source changes"). The calculated-column chain over a renamed
-   source is ApiTests `dapi/projects.ts`; the warning the user sees is not claimed anywhere.
+The answers of 2026-10-27 are scenarios now: every table left out keeps OK disabled (core#1161, a known failure,
+`save-project-dialog-edge-cases`); a deleted data-synced file gives the Data loading error, and a column a
+calculated column reads removed from the query gives the "Some calculated columns may not work" warning
+(`data-sync-edge-cases`); a View and use recipient's card menu shows Rename... and Delete Project disabled
+(core#1162, a known failure, `project-gallery-edge-cases`); a value of the wrong type in a dashboard address is
+refused with a balloon naming the parameter, an emptied alias falls back to the parameter's name, and one alias for
+two parameters is refused on save (the last two known failures with no ticket yet, `url-parameters-edge-cases`).
 
 ### Won't do
 
 - Two sessions both saving the original project: `dashboard.md` ("Versioning") documents that the last save wins
   without a warning; nothing to guard while that stays the documented behaviour.
 - A long project name: the only bound is the 255-character `friendly_name` column, a datlas assertion if any.
+- **The owner deletes a project a recipient has open, then the recipient clicks SAVE or REFRESH.** It needs two
+  sessions at once, which CI cannot hold; the server's refusal alone (an ApiTests case) would not show what the
+  recipient sees, so it is left out.
+- **Special characters in a URL parameter value** (`&`, `#`, a space, a non-ASCII letter): not written, by decision.

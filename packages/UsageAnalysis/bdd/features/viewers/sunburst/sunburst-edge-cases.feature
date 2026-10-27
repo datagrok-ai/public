@@ -76,3 +76,12 @@ Feature: Sunburst edge cases: no rows, an empty hierarchy, a hierarchy column re
     Then the open tableview should have 0 sunburst viewers
     And all rows should pass the filter
     And no errors should have been logged
+
+  @known-failure:86 @realizes:public#4425
+  Scenario: Switching On Click from Filter to Select gives back the rows its clicked segment filtered out
+    When user sets "onClick" property of sunburst viewer to "Filter"
+    And user clicks on the "segment F" area of sunburst viewer
+    Then 553 rows should pass the filter
+    When user sets "onClick" property of sunburst viewer to "Select"
+    Then all rows should pass the filter
+    And no errors should have been logged

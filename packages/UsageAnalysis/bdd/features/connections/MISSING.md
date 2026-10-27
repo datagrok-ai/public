@@ -5,28 +5,18 @@ Each item names the case, why it is not a scenario yet, and what would make it o
 
 ## Still open
 
-### Questions for owners
+### Decided and written
 
-1. **Edit... that changes only the name keeps the credentials.** The password field comes back masked, and
-   `files/TestTrack/Connections/COVERAGE.md` notes a credential-cache lag in edit. Is the contract that
-   credentials not touched in the dialog stay as they were (a query of the connection still runs)?
-2. **Two connections with one name on one provider.** The server suffixes the grok name (`_1`) but keeps the
-   friendly name, so the tree shows two identical nodes (`makeUniqueName`, `repository_query.dart`). Refused,
-   renamed, or allowed? Once decided, an ApiTests case (the class of core#546).
-3. **Port 0, 65536 or letters in the New connection dialog.** The only numeric field; its validation is not
-   stated anywhere.
-4. **Clone... then OK.** Only Clone + CANCEL is claimed (`connections-edit.feature`). Does the copy carry the
-   credentials?
-5. **The Delete confirmation of a connection that has queries.** It reads `Delete connection "<name>"?` and the
-   queries go with it (help `access/databases/databases.md`, the caution under Query Editor, claimed in
-   `connection-edge-cases.feature`). Should it name the queries it will delete?
+A clone of a connection carries its credentials, and a rename in the Edit dialog keeps them (decided 2026-10-27):
+`connection-edge-cases` clones the stand's NorthwindTest and lists its schemas before and after the rename. Today
+the clone says "Unavailable": a known failure with no ticket yet.
 
 ### API or server tests to write
 
-6. **A connection delete removes its queries.** No ApiTests case checks it (`dapi/connection.ts` deletes
+1. **A connection delete removes its queries.** No ApiTests case checks it (`dapi/connection.ts` deletes
    connections without queries). The feature claims it through the UI delete; the server rule belongs in
    ApiTests `dapi/connection.ts`.
-7. **core#607, credentials row and wrapper project left after a delete** — already requested in
+2. **core#607, credentials row and wrapper project left after a delete** — already requested in
    `projects/MISSING.md` §3 (datlas).
 
 ## Won't do
@@ -35,3 +25,8 @@ Each item names the case, why it is not a scenario yet, and what would make it o
   not the dialog's (the bdd library's CLAUDE.md, "What never becomes a feature"; the feature headers of
   `connections-add` and `connections-edit` say the same).
 - **Special characters in Server or Db.** A connector concern, for grok-connect's tests.
+- **Two connections with one name on one provider**: kept as it is, by decision (the grok name gets `_1`, the
+  friendly name stays).
+- **Port 0, 65536 or letters in the New connection dialog**: the port may also come in the server name or the
+  connection string, so the field is not bounded; TEST is the check, by decision.
+- **The Delete confirmation naming the queries it deletes**: the present text is enough, by decision.
