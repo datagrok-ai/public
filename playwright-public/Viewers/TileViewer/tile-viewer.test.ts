@@ -391,7 +391,7 @@ test('Tile Viewer tests', async ({page}) => {
     const h = root.querySelector('.d4-tile-viewer-lane-header') as HTMLElement | null;
     const tileInput = root.querySelector('.d4-tile-viewer-form input[name="input-AGE"]') as HTMLElement | null;
     return {
-      size: h?.style.fontSize ?? '', line: h?.style.lineHeight ?? '', font: h?.style.font ?? '',
+      size: h?.style.fontSize ?? '', line: h ? getComputedStyle(h).lineHeight : '', font: h?.style.font ?? '',
       tile: tileInput ? getComputedStyle(tileInput).fontSize : '',
       tileFamily: tileInput ? getComputedStyle(tileInput).fontFamily : '',
     };
