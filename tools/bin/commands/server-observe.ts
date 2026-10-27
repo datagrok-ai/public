@@ -72,6 +72,7 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
                                        Only the flags given change
   groups rm <name|id>
   groups put --json groups.json        Replace every log group with a JSON array
+  groups reset                         Back to the default log groups
   endpoints [list] | endpoints rm <name|id>
                                        Where log groups can send records (OTLP, CloudWatch, Google, ClickHouse)
   logs request <logId>                 What the requests of one command logged (grok s ... --log prints
@@ -452,6 +453,11 @@ async function logGroups(dapi: NodeDapi, command: string, verb: string | undefin
       printOutput({removed: g.name ?? g.id}, output);
       return true;
     }
+    case 'reset':
+      current.logGroups = null;
+      await save(current);
+      printOutput({reset: 'the default log groups apply'}, output);
+      return true;
     case 'put': {
       if (argv.json === undefined)
         throw new Error('Usage: grok s observe groups put --json groups.json   (a JSON array: replaces every log group)');
@@ -464,7 +470,7 @@ async function logGroups(dapi: NodeDapi, command: string, verb: string | undefin
       return true;
     }
   }
-  throw new Error('Usage: grok s observe groups list | get <name|id> | add --name <n> ... | set <name|id> ... | rm <name|id> | put --json <file>');
+  throw new Error('Usage: grok s observe groups list | get <name|id> | add --name <n> ... | set <name|id> ... | rm <name|id> | put --json <file> | reset');
 }
 
 /// The log filter text of `logs match`: the expression given, and a condition per flag, joined by `and`.

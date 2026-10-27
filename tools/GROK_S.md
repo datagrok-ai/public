@@ -549,6 +549,7 @@ grok s o groups add --name Chembl --levels error,warning --filter 'package = Che
 grok s o groups set Chembl --when 'level = error and package = Chembl' --scope session --for 15m --before 60s --flags db
 grok s o groups set Chembl --enabled false                  # only the flags given change; groups rm Chembl deletes it
 grok s o groups put --json groups.json                      # replace every log group (the GROK_PARAMETERS settings.logger.logGroups shape)
+grok s o groups reset                                       # back to the default groups; the audit group needs EditAuditLogging to change
 grok s o endpoints                                          # where groups can send records; endpoints rm grafana
 grok s o logs activations                                   # triggered groups on now; logs activations stop <group id> <key>
 ```

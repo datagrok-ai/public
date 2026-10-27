@@ -416,6 +416,10 @@ describe('groups', () => {
     expect(body.logGroups[0].saveTo).toEqual([{destination: 'db'}]);
   });
 
+  it('resets to the default groups', async () => {
+    expect(posted((await observe('groups', 'reset', [], {}, answer(current()))).calls).logGroups).toBeNull();
+  });
+
   it('lists groups as a table', async () => {
     const {printed} = await observe('groups', 'list', [], {}, answer(current()), 'table');
     expect(printed).toContain('Errors');
