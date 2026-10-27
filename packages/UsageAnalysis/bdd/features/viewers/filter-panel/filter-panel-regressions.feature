@@ -18,8 +18,8 @@ Feature: Filter panel regressions
   Not translated: the range of public#2364 is 88.2 to 88.8, inside the column's span, since the min
   and max fields clamp a typed end to it (filter-panel-ladder.feature: 999 becomes 89) and 95 to 120
   becomes 89 to 89, which keeps the one row aged 89; the categorical half of public#2943 — the column
-  popup reports no `category <label>` areas (grid/MISSING.md); public#344 (an invalid viewer Filter
-  formula) logs an error on the current master and is in MISSING.md; the close and menu icons of
+  popup reports no `category <label>` areas (grid/MISSING.md); public#344 (an invalid viewer Filter formula) is in
+  `viewer-filter-formula-regressions.feature`, a known failure of core#1141; the close and menu icons of
   the single-value row (core#479) are not claimed — the row reports no parts.
 
   Background:

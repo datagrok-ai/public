@@ -66,3 +66,37 @@ Written while turning the closed scatter plot issues into `scatter-plot-regressi
   remembered value range` failed: the window went on narrowing (x 79.3..127.3, then 85.5..121.1), so
   the zoom animation is not in `isRenderPending`. The regression features set a window with the range
   slider instead; a claim on a wheel zoom's end needs the animation in the pending flags.
+
+### Regressions found 27 Oct 2026
+
+Written while turning the closed viewer-chrome issues into `scatter-plot-chrome-regressions.feature`.
+
+- **A viewer's picture logs three errors for a font the page cannot fetch (public#942, public#3052).**
+  General > Save as PNG downloads `*.png`, and Control+C on the plot puts a PNG of over 2000 bytes on
+  the clipboard with the "image copied to clipboard" balloon: what the two issues fixed holds. But each
+  picture logs, from `js-api.js`, `cannot fetch resource: http://localhost:8889/font/MaterialIcons-Regular.woff2,
+  status: 404` and the same for `.woff` and `.ttf`, so the scenarios' `no errors should have been
+  logged` fails (twice each on localhost:8889, 27 Oct 2026; `/font/MaterialIcons-Regular.woff2` answers
+  404 on :8888 as well). The picture embeds every `@font-face` of the page, and
+  `core/client/xamgle/web/google_fonts.css:313-318` still declares Material Icons from `/font/`, whose
+  files left the repository in 2018 (`70272c5e29c`, GROK-3443). Either the `@font-face` goes or the
+  files come back; then:
+
+  ```gherkin
+  @realizes:public#942
+  Scenario: General > Save as PNG downloads the viewer as a .png file (public#942)
+    Given user adds a scatter plot viewer
+    And user watches downloads
+    When user picks "General > Save as PNG" from the viewer menu of scatter plot viewer
+    Then a file matching "\.png$" should have been downloaded
+    And no errors should have been logged
+
+  @realizes:public#3052
+  Scenario: Control+C on a viewer copies its picture and says so (public#3052)
+    Given user adds a scatter plot viewer
+    When user clicks on empty plot space of scatter plot viewer
+    And user presses Control+C
+    Then the clipboard should hold a PNG image of at least 2000 bytes
+    And an info balloon containing "image copied to clipboard" should have been shown
+    And no errors should have been logged
+  ```

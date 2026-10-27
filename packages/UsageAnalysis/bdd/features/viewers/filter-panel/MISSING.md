@@ -11,40 +11,10 @@ public#2501, #2943) and `filter-panel-layout-regressions.feature` (public#3059, 
 
 ### Regressions found 26 Oct 2026
 
-- **An invalid viewer Filter formula logs a RangeError** ([public#344](https://github.com/datagrok-ai/public/issues/344)).
-  The page keeps working and the formula is ignored (the scatter plot keeps showing all 1000 rows), but
-  every time the formula is set the console gets an unhandled
-  `RangeError (index): Index out of range: no indices are valid: 0`, thrown at
-  `packages/d4/src/viewer_base/data_frame_viewer.dart 474:26 DataFrameViewer.createCombinedRowFilter`:
-  `getNewColumn(dataFrame, filterFormula, …)` answers an empty list for a formula that does not parse,
-  and `columns[0]` is read before the `column is BoolColumn` check that already handles a formula
-  that is not boolean. Measured in three runs of the scenario below and once in a scratch Playwright
-  probe on the local master stand (26 Oct 2026). Steps by hand: open demog, add a scatter plot, open
-  its properties, set Filter to `${RACE} = "Black"` (one `=`) and press Enter; the console shows the
-  RangeError. Expected (the issue): the filter is not applied or shows no data, and nothing breaks —
-  the first half holds, the error is the regression. Then:
-
-  ```gherkin
-  Scenario: An invalid viewer Filter formula leaves the page working (public#344)
-    Given user adds a scatter plot viewer with:
-      | X | AGE    |
-      | Y | WEIGHT |
-    Then scatter plot viewer should show 1000 rows
-    When user sets "Filter" property of scatter plot viewer to '${RACE} = "Black"'
-    Then all rows should pass the filter
-    And scatter plot viewer should show 1000 rows
-    And no errors should have been logged
-    When user sets "Filter" property of scatter plot viewer to '${RACE} == "Black"'
-    Then scatter plot viewer should show 27 rows
-    And all rows should pass the filter
-    When user sets "Filter" property of scatter plot viewer to ""
-    Then scatter plot viewer should show 1000 rows
-    And no errors should have been logged
-  ```
-
-  It fails on the first `no errors should have been logged`. It goes back into
-  `filter-panel-regressions.feature` (demog-1000, X and Y on AGE and WEIGHT, which have no blanks —
-  the default axes include HEIGHT and draw 872) once the error is gone.
+- **An invalid viewer Filter formula logs a RangeError** ([public#344](https://github.com/datagrok-ai/public/issues/344)),
+  filed as core#1141 (`DataFrameViewer.createCombinedRowFilter` reads `columns[0]` of the empty list
+  `getNewColumn` answers for a formula that does not parse). Claimed in
+  `viewer-filter-formula-regressions.feature` as `@known-failure:24`, pinned to core#1141 (27 Oct 2026).
 
 ### Still open
 

@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Tests: Added BDD regression scenarios for closed formula-line issues: an axis-token line after the axes change, viewer lines on two scatter plots through a project, bands on renamed columns, a valid line next to an invalid one through a layout, the dialog opened from a trellis cell and after a log axis (`formula-lines-closed-issues.feature`)
+* Tests: Added BDD regression scenarios for closed formula-line issues: an axis-token line after the axes change, viewer lines on two scatter plots through a project, bands on renamed columns, a valid line next to an invalid one through a layout, the dialog opened from a trellis cell and after a log axis (`formula-lines-closed-issues.feature`), and a viewer over a calculated column redrawn after its formula changes ([public#434](https://github.com/datagrok-ai/public/issues/434), `calculated-column-viewer-regressions.feature`)
 * Formula Lines: Marked the OK button `aria-disabled` while the formula is invalid, as the platform's dialogs mark a disabled button
 * Tests: Added BDD scenarios for the box plot's axis Annotations (Add Line, Band, Region on the value axis, none on the category axis) and a lasso region on the scatter plot, with MISSING.md for the region shape and its value span
 * [core#770](https://github.com/datagrok-ai/core/issues/770): Added `chatMessageInput` (`tags: chatInput`) — the u2 MessageInput with @-mentions of users, the compose and edit box of the platform chat
