@@ -6,7 +6,7 @@ Feature: Script run edge cases: Run... with no table to give
   `datagrok/concepts/functions/func-params-annotation.md`, "Initial values and optional parameters").
   With no table open the dialog's Table input is empty, yet OK is enabled, and OK runs the script
   without a table: it throws "Cannot read properties of undefined (reading 'rowCount')". That is a
-  known failure with no ticket yet (`@ticket-pending`). The same check for a scalar input (empty, out
+  known failure (core#1155). The same check for a scalar input (empty, out
   of its bounds, of the wrong type) is claimed once, on the query dialog
   (queries/query-parameters-edge-cases.feature), where it holds; a Run... with a table open is
   scripts-run.feature.
@@ -28,10 +28,10 @@ Feature: Script run edge cases: Run... with no table to give
     And no table view is open
     And user opens the Scripts view
 
-  @known-failure:41 @ticket-pending
+  @known-failure:41 @realizes:core#1155
   Scenario: Run... with no table open keeps OK disabled
     The defect: with no table open the Table input is empty and OK stays enabled; OK then runs the
-    script without its table, which throws. No ticket yet. Remove the tag when the dialog keeps OK
+    script without its table, which throws (core#1155). Remove the tag when the dialog keeps OK
     disabled while its required table input is empty.
     When user clears gallery search
     And user types "BddScriptNoTable{time}" into gallery search

@@ -10,7 +10,7 @@ Feature: Sunburst edge cases: no rows, an empty hierarchy, a hierarchy column re
   removal itself should release that filter is not defined: see MISSING.md. A layout naming a
   hierarchy column the table no longer has is applied without an error. Closing the sunburst should
   give back the rows its clicked segment filtered out (a filter that outlives its viewer is a defect,
-  core#233); it does not, a known failure with no ticket yet (`@ticket-pending`). Data: demog-1000
+  core#233); it does not, a known failure (public#4425). Data: demog-1000
   (SEX F 553 / M 447; 10 segments over SEX, RACE).
 
   Background:
@@ -65,10 +65,10 @@ Feature: Sunburst edge cases: no rows, an empty hierarchy, a hierarchy column re
     And the "hierarchy columns" reading of sunburst viewer should be "RACE"
     And no errors should have been logged
 
-  @known-failure:77 @ticket-pending
+  @known-failure:77 @realizes:public#4425
   Scenario: Closing the sunburst gives back the rows its clicked segment filtered out
     Closing the sunburst leaves the table filtered to the clicked segment, with no viewer left to
-    clear it. No ticket yet. Remove the tag when closing the sunburst gives every row back.
+    clear it (public#4425). Remove the tag when closing the sunburst gives every row back.
     When user sets "onClick" property of sunburst viewer to "Filter"
     And user clicks on the "segment F" area of sunburst viewer
     Then 553 rows should pass the filter

@@ -4,7 +4,7 @@
 /* ---
 generated: features/scripts/script-run-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [views.scripts]
+sub_features_covered: [views.scripts, core#1155]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -29,7 +29,7 @@ import {el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Script run edge cases: Run... with no table to give", () => {
   const session = feature(test, "features/scripts/script-run-edge-cases.feature", import.meta.url);
-  test("Run... with no table open keeps OK disabled", {tag: ["@serial", "@edge-cases", "@realizes:views.scripts", "@known-failure:41", "@ticket-pending"]}, async ({browser}) => {
+  test("Run... with no table open keeps OK disabled", {tag: ["@serial", "@edge-cases", "@realizes:views.scripts", "@known-failure:41", "@realizes:core#1155"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(20, "Given user is logged in", () => loggedIn(page));
     await session.step(21, "And a script \"BddScriptNoTable{time}\" is on the server:", () => scriptOnServer(page, session.text("BddScriptNoTable{time}"), "//language: javascript\n//input: dataframe table\n//output: int count\ncount = table.rowCount;"));

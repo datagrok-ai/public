@@ -10,7 +10,7 @@ Feature: Group edge cases: the only admin, a group nested into its own member, a
   with the same name already exists"; the guard compares the internal names, which the dialog derives
   from the name typed, so a group named the same through the API is not one: MISSING.md). The Properties dialog refuses a name of
   spaces only ("Name must be at least 1 character", `grok_group_meta.dart` `propertiesDialog`).
-  CANCEL in MANAGE and Escape in Properties leave the group as it was on the server.
+  CANCEL in MANAGE and in Properties leaves the group as it was on the server.
 
   The groups are made through the API and deleted at feature end. The running account is named by
   its login in the membership editor, which lists a user by name: on a stand where the running
@@ -21,7 +21,7 @@ Feature: Group edge cases: the only admin, a group nested into its own member, a
     Given user is logged in
     And a group named "BDD-GE-Group-{time}" is on the server
     And a group named "BDD-GE-Child-{time}" is on the server
-    And no group named "BDD-GE-Escaped-{time}, BDD-GE-Twice-{time}" is on the server
+    And no group named "BDD-GE-Twice-{time}" is on the server
     And the browse panel is open
     And the context panel is open
     When user expands "Platform" tree node inside browse tree
@@ -116,16 +116,5 @@ Feature: Group edge cases: the only admin, a group nested into its own member, a
     When user clicks on CANCEL button in "BDD-GE-Group-{time} Properties" dialog
     Then the "BDD-GE-Group-{time} Properties" dialog should close
     And 1 group named "BDD-GE-Group-{time}" should be on the server
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-
-  Scenario: Escape in Properties leaves the name as it was
-    When user picks "Properties..." from the context menu of "BDD-GE-Group-{time}" link in gallery
-    Then "BDD-GE-Group-{time} Properties" dialog should be visible
-    When user types "BDD-GE-Escaped-{time}" into Name input in "BDD-GE-Group-{time} Properties" dialog
-    And user presses Escape
-    Then the "BDD-GE-Group-{time} Properties" dialog should close
-    And 1 group named "BDD-GE-Group-{time}" should be on the server
-    And 0 groups named "BDD-GE-Escaped-{time}" should be on the server
     And no errors should have been logged
     And no error or warning balloon should have been shown

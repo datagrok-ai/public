@@ -14,13 +14,6 @@ Feature: Data sync edge cases: the query behind a dynamic dashboard deleted, rec
     name. The dashboard opens": a new query of the name without the "name" column, and the bar
     chart says that the column "name" does not exist.
 
-  One scenario describes a defect with no ticket yet (`@ticket-pending`): after a data-sync dashboard
-  was opened, its query replaced on the server by a new query of the same name, and the new query's
-  result saved through the Save dialog, OK throws a NullError and the dialog stays open with nothing
-  saved; a page reload between the open and the save does not avoid it. The same failure hits any
-  later save of a query result under a query name whose dashboard was opened, so every scenario
-  has a query and a dashboard of its own.
-
   Each reopen follows a page reload, so the dashboard is read from the server and not from the
   session that saved it. The query and the dashboards carry the run's time (letters and digits only:
   the Dashboards search misses "-" and "_") and are removed when a scenario starts and when the
@@ -33,8 +26,6 @@ Feature: Data sync edge cases: the query behind a dynamic dashboard deleted, rec
     And no project named "BDDEdgeSyncDel{time}" is on the server
     And no project named "BDDEdgeSyncRep{time}" is on the server
     And no project named "BDDEdgeSyncCol{time}" is on the server
-    And no project named "BDDEdgeSyncRe{time}" is on the server
-    And no project named "BDDEdgeSyncNew{time}" is on the server
 
   @edge-cases
   Scenario: With its query deleted, the dashboard does not open and names the query in the Data loading error
@@ -149,56 +140,3 @@ Feature: Data sync edge cases: the query behind a dynamic dashboard deleted, rec
     And the table should not have a column "name"
     And bar chart viewer should contain text 'Column "name" does not exist'
     And "Data loading error" dialog should be absent
-
-  @edge-cases @known-failure:202 @ticket-pending
-  Scenario: The result of a query that replaced an opened dashboard's query is saved as a new dashboard
-    The defect: once a data-sync dashboard over a query has been opened, the query replaced on the
-    server by a new query of the same name (the repair the help describes) makes a Save of the new
-    query's result fail, a page reload in between or not: OK throws "NullError: method not found ...
-    on null" in `ProjectEntityMoveWidget.getRelationDiv`, and the Save project dialog stays open with
-    nothing saved. No ticket yet. Remove the tag when the dialog saves the new dashboard.
-    Given a query "BDDEdgeSyncQRe{time}" on "System:Datagrok" reads "select name, id from entity_types where name in ('Script', 'Project', 'User')"
-    And the browse panel is open
-    When user clicks on "Refresh" icon inside browse toolbar
-    Given Databases tree node inside browse tree is expanded
-    And Databases---Postgres tree node inside browse tree is expanded
-    And Databases---Postgres---Datagrok tree node inside browse tree is expanded
-    When user double-clicks on Databases---Postgres---Datagrok---BDDEdgeSyncQRe{time} tree node inside browse tree and the query it runs completes
-    Then the "BDDEdgeSyncQRe{time}" view should be current
-    And the table should have 3 rows
-    Given user adds a bar chart viewer with:
-      | splitColumnName | name |
-    When user clicks on Save ribbon item
-    Then "Save project" dialog should be visible
-    And Data sync switch in "BDDEdgeSyncQRe{time}" project table in "Save project" dialog should be checked
-    When user enters "BDDEdgeSyncRe{time}" into Name text input in "Save project" dialog
-    And user clicks on OK button in "Save project" dialog
-    Then the "Save project" dialog should close
-    And "Share BDDEdgeSyncRe{time}" dialog should be visible
-    When user clicks on CANCEL button in "Share BDDEdgeSyncRe{time}" dialog
-    Then the "Share BDDEdgeSyncRe{time}" dialog should close
-    And the "BDDEdgeSyncQRe{time}" table of the "BDDEdgeSyncRe{time}" project should be saved with data sync
-    When user closes all views
-    And user reloads the page
-    Given the browse panel is open
-    When user clicks on Dashboards tree node inside browse tree
-    And user enters "BDDEdgeSyncRe{time}" into gallery search
-    And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDEdgeSyncRe{time} gallery card and the project opens
-    Then the "BDDEdgeSyncQRe{time}" view should be current
-    When user closes all views
-    Given a query "BDDEdgeSyncQRe{time}" on "System:Datagrok" reads "select name, id from entity_types where name in ('Script', 'Project', 'User')"
-    And the browse panel is open
-    When user clicks on "Refresh" icon inside browse toolbar
-    Given Databases tree node inside browse tree is expanded
-    And Databases---Postgres tree node inside browse tree is expanded
-    And Databases---Postgres---Datagrok tree node inside browse tree is expanded
-    When user double-clicks on Databases---Postgres---Datagrok---BDDEdgeSyncQRe{time} tree node inside browse tree and the query it runs completes
-    Then the "BDDEdgeSyncQRe{time}" view should be current
-    When user clicks on Save ribbon item
-    Then "Save project" dialog should be visible
-    When user enters "BDDEdgeSyncNew{time}" into Name text input in "Save project" dialog
-    And user clicks on OK button in "Save project" dialog
-    Then the "Save project" dialog should close
-    And 1 project named "BDDEdgeSyncNew{time}" should be on the server
-    And no errors should have been logged

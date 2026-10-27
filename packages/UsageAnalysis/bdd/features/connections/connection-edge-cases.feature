@@ -1,10 +1,10 @@
 @connections @edge-cases
-Feature: Connection edge cases: names the dialogs refuse, CANCEL and Escape, and a delete that takes the queries
+Feature: Connection edge cases: names the dialogs refuse, CANCEL, and a delete that takes the queries
   Guards for the connection dialogs and for the delete of a connection that has a query. The New
   connection and Edit Connection dialogs refuse a name of spaces ("Can't be empty", `Validators.notEmpty`
   on the name, `data_connection_meta.dart`); the Rename dialog refuses a name with no letter in it
-  ("Name must contain at least one letter", `DbEntityMeta.getRenameDialog`). Escape and CANCEL save
-  nothing, a changed name included. "Deleting a connection also deletes a query" (help
+  ("Name must contain at least one letter", `DbEntityMeta.getRenameDialog`). CANCEL saves nothing, a
+  changed name included. "Deleting a connection also deletes a query" (help
   `access/databases/databases.md`, the caution under Query Editor): the query saved under a
   connection goes with it.
 
@@ -19,7 +19,7 @@ Feature: Connection edge cases: names the dialogs refuse, CANCEL and Escape, and
     And the browse panel is open
     And Databases tree node inside browse tree is expanded
 
-  Scenario: A name of spaces keeps OK disabled, and Escape saves nothing
+  Scenario: A name of spaces keeps OK disabled, and CANCEL saves nothing
     Given no connection named "BDDConnSpaces{time}" is on the server
     When user picks "New connection..." from the context menu of Databases---Postgres tree node inside browse tree
     Then "Add new connection" dialog should be visible
@@ -28,7 +28,7 @@ Feature: Connection edge cases: names the dialogs refuse, CANCEL and Escape, and
     Then OK button in "Add new connection" dialog should be disabled
     When user enters "BDDConnSpaces{time}" into Name input in "Add new connection" dialog
     Then OK button in "Add new connection" dialog should be enabled
-    When user presses Escape
+    When user clicks on CANCEL button in "Add new connection" dialog
     Then the "Add new connection" dialog should close
     And 0 connections named "BDDConnSpaces{time}" should be on the server
     And no errors should have been logged

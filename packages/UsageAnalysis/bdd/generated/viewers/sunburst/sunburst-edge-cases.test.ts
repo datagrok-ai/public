@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/sunburst/sunburst-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [charts.viewer.sunburst]
+sub_features_covered: [charts.viewer.sunburst, public#4425]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -108,7 +108,7 @@ test.describe("Sunburst edge cases: no rows, an empty hierarchy, a hierarchy col
     await session.step(65, "And the \"hierarchy columns\" reading of sunburst viewer should be \"RACE\"", () => readingReads(page, "hierarchy columns", el("sunburst viewer"), "RACE"));
     await session.step(66, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Closing the sunburst gives back the rows its clicked segment filtered out", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sunburst", "@known-failure:77", "@ticket-pending"]}, async ({browser}) => {
+  test("Closing the sunburst gives back the rows its clicked segment filtered out", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sunburst", "@known-failure:77", "@realizes:public#4425"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
     await session.step(18, "And the package autostarts have completed", () => autostartsCompleted(page));

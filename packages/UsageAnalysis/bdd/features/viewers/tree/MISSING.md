@@ -20,7 +20,7 @@ None.
 2. **Every row filtered out**: an empty tree with the root "All", or a message? (No error and the
    branches coming back are claimed.)
 3. **The Size and Color columns removed.** The removal handler cleans the hierarchy only
-   (`:629-633`); a removed Size or Color column then throws on every render (pinned, `@ticket-pending`; file a ticket).
+   (`:629-633`); a removed Size or Color column then throws on every render (pinned, public#4423).
    Should Size and Color fall back to their defaults?
 4. **A negative Label Rotate** (no minimum declared, `:130`), and values above the declared maximum
    typed in the panel: should the panel take them (see the trellis plot's MISSING.md)?

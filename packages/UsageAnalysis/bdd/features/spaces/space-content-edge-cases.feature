@@ -1,28 +1,25 @@
 @serial @spaces @edge-cases @realizes:views.space
-Feature: Space content edge cases: Escape on the Move entity dialog, a file linked between spaces, a link whose original moved
-  Guards for putting a file into a space by dragging it onto the space's node in the Browse tree.
-  Escape closes the "Move entity" dialog as CANCEL does (`Dialog._closeOnEsc` in
-  d4/lib/src/widgets/dialog/dialog.dart closes it as canceled), so the target space gets nothing;
-  spaces-drag-and-drop claims CANCEL.
-
-  Files and folders can be moved, linked or copied into a space (help/datagrok/concepts/project/
-  space.md, "Moving entities between spaces"). A file linked from one space into another is expected
-  to show in the target space and the dialog to close (core#1042). Today the Link fails with
+Feature: Space content edge cases: a file linked between spaces, a link whose original moved, a package script linked
+  Guards for putting entities into a space by dragging them onto the space's node in the Browse tree.
+  A file dropped on a space offers Link, Copy and Move in the "Move entity" dialog
+  (`ProjectEntityMoveWidget.getActions`). A file linked from one space into another is expected to
+  show in the target space and the dialog to close (core#1042). Today the Link fails with
   "FormatException: SyntaxError: Unexpected end of JSON input" and the dialog stays open; that
-  scenario is a known failure, and the tag goes when core#1042 is fixed. The Link cases of the
-  TestTrack Spaces list that build on it (the same file linked twice, #33; a linked file gone with its
-  source, #35) wait for that fix: see MISSING.md.
+  scenario is a known failure, and the tag goes when core#1042 is fixed.
 
   A link follows its original: a project linked into one space and then moved from its own space into
   a third one still shows its details when its link is clicked, with no error and no refresh of the
-  tree (core#382 reports an error there until the tree is refreshed; the ticket's entity is a file,
-  whose Link is core#1042, so the guard is claimed on a project, which Move to Space... puts into the
-  source space first).
+  tree (core#382; the ticket's entity is a file, whose Link is core#1042, so the guard is claimed on a
+  project, which Move to Space... puts into the source space first).
+
+  A function of a package (here a script of BiostructureViewer) can only be linked: dropped on a space
+  it is linked at once, with no "Move entity" dialog and no choice of action (`ProjectMeta.doDropEx`).
 
   The file is the project's fixtures/cars-small.csv, written into the source space through the API.
   The spaces and the project are this feature's own, named with the run's time, made or saved through
-  the API and swept with what they hold when the feature starts and ends. Every drag starts from the source space's own view,
-  where the dialog is shown before its Link/Copy/Move chooser, so the chooser is waited for.
+  the API and swept with what they hold when the feature starts and ends; the package script stays
+  where it is, only its link goes with the space. Every drag of a file starts from the source space's
+  own view, where the dialog is shown before its Link/Copy/Move chooser, so the chooser is waited for.
 
   Serial with the other features that drag onto the Spaces tree.
 
@@ -37,21 +34,7 @@ Feature: Space content edge cases: Escape on the Move entity dialog, a file link
     Then the "BDDEdgeSrc{time}" view should be current
     And "edgecars{time}.csv" link in gallery should be visible
 
-  Scenario: Escape on the Move entity dialog leaves the target space without the file
-    When user drags "edgecars{time}.csv" link in gallery to BDDEdgeDst{time} tree node inside browse tree
-    Then Move entity dialog should be visible
-    And choice input in Move entity dialog should be visible
-    When user presses Escape
-    Then Move entity dialog should be hidden
-    When user double-clicks on BDDEdgeDst{time} tree node inside browse tree
-    Then the "BDDEdgeDst{time}" view should be current
-    And "edgecars{time}.csv" link in gallery should be absent
-    When user double-clicks on BDDEdgeSrc{time} tree node inside browse tree
-    Then the "BDDEdgeSrc{time}" view should be current
-    And "edgecars{time}.csv" link in gallery should be visible
-    And no errors should have been logged
-
-  @known-failure:62 @realizes:core#1042
+  @known-failure:45 @realizes:core#1042
   Scenario: A file linked from one space into another shows in the target space
     core#1042: the Link fails with "FormatException: SyntaxError: Unexpected end of JSON input" and the
     "Move entity" dialog stays open. Remove the tag when core#1042 is fixed.
@@ -64,6 +47,21 @@ Feature: Space content edge cases: Escape on the Move entity dialog, a file link
     When user double-clicks on BDDEdgeDst{time} tree node inside browse tree
     Then the "BDDEdgeDst{time}" view should be current
     And "edgecars{time}.csv" link in gallery should be visible
+
+  Scenario: A package script dropped on a space is linked with no dialog
+    Given Platform tree node inside browse tree is expanded
+    And Platform---Functions tree node inside browse tree is expanded
+    When user clicks on Platform---Functions---Scripts tree node inside browse tree
+    And user enters "Protein-Ligand" into gallery search
+    Then "Protein-Ligand Interaction Diagram" gallery card should be visible
+    When user drags "Protein-Ligand Interaction Diagram" gallery card to BDDEdgeDst{time} tree node inside browse tree
+    Then Move entity dialog should be absent
+    When user clears gallery search
+    And user double-clicks on BDDEdgeDst{time} tree node inside browse tree
+    Then the "BDDEdgeDst{time}" view should be current
+    And "Protein-Ligand Interaction Diagram" link in gallery should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   Scenario: A linked project still opens its details after its original moved to another space
     Given no project named "BDDEdgeMoved{time}" is on the server

@@ -3,8 +3,8 @@ Feature: Word cloud edge cases: no rows, Rotation Step below its minimum, the wo
   Guards for the data shapes, the property bounds and the changes under an open word cloud. A filter
   that removes every row leaves no row counted and no error, and the words come back with the rows.
   Rotation Step declares a minimum of 1 (`word-cloud-viewer.ts`), yet 0 typed in the context panel
-  is taken, the cloud goes blank and an error is logged: a known failure with no ticket yet
-  (`@ticket-pending`). Removing the word column while the cloud is open throws "No such column" on
+  is taken, the cloud goes blank and an error is logged: a known failure
+  (public#4424). Removing the word column while the cloud is open throws "No such column" on
   the removal and on every later filter change and resize (core#1136): that scenario is a known
   failure, and the tag goes when core#1136 is fixed. What the cloud should show over no rows, and
   after its column is gone, is not defined: see MISSING.md. Data: demog-1000, words from RACE
@@ -30,10 +30,10 @@ Feature: Word cloud edge cases: no rows, Rotation Step below its minimum, the wo
     And the "rows of word \"Caucasian\"" reading of word cloud viewer should be 896
     And no errors should have been logged
 
-  @known-failure:43 @ticket-pending
+  @known-failure:43 @realizes:public#4424
   Scenario: Rotation Step 0 typed in the context panel keeps the words drawn without an error
     Rotation Step declares a minimum of 1, yet 0 typed in the context panel is taken: the cloud goes
-    blank and an error is logged. No ticket yet. Remove the tag when the panel keeps Rotation Step
+    blank and an error is logged (public#4424). Remove the tag when the panel keeps Rotation Step
     at 1 or more, or the cloud draws its words at 0.
     When user clicks on settings icon of word cloud viewer
     Then context panel should be visible

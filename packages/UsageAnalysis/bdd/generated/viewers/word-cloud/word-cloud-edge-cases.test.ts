@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/word-cloud/word-cloud-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.word-cloud, core#1136]
+sub_features_covered: [viewers.word-cloud, public#4424, core#1136]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -48,7 +48,7 @@ test.describe("Word cloud edge cases: no rows, Rotation Step below its minimum, 
     await session.step(30, "And the \"rows of word \\\"Caucasian\\\"\" reading of word cloud viewer should be 896", () => readingIs(page, "rows of word \"Caucasian\"", el("word cloud viewer"), 896));
     await session.step(31, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Rotation Step 0 typed in the context panel keeps the words drawn without an error", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.word-cloud", "@known-failure:43", "@ticket-pending"]}, async ({browser}) => {
+  test("Rotation Step 0 typed in the context panel keeps the words drawn without an error", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.word-cloud", "@known-failure:43", "@realizes:public#4424"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And the package autostarts have completed", () => autostartsCompleted(page));

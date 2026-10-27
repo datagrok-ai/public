@@ -28,7 +28,7 @@ None.
 5. **More than 20 hierarchy columns** are cut to 20 silently (`:429`): a message, or a limit in the
    dialog?
 6. **Closing the sunburst in Filter mode** leaves the table filtered to the clicked segment (pinned
-   as a known failure, `@ticket-pending`): the expectation that closing gives every row back is
+   as a known failure, public#4425): the expectation that closing gives every row back is
    taken from core#233, where the calendar keeping its filter after close is a defect. Confirm it is
    a defect for the sunburst too, and file it.
 7. **A layout naming a missing hierarchy column** keeps the remaining levels (claimed: RACE); is

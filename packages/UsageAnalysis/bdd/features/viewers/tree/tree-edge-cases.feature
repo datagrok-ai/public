@@ -5,8 +5,7 @@ Feature: Tree edge cases: renamed and removed columns, empty values, no rows, ou
   where the viewer skips its category check; the tree keeps drawing and logs no error. A hierarchy
   column removed from the table is dropped from the hierarchy (the viewer's column-removed handler).
   Removing the Size or the Color column throws "No such column" on every later render (the viewer
-  drops a removed column from the hierarchy only): two known failures with no ticket yet
-  (`@ticket-pending`). An empty value is a branch named `(empty)` only while Include Nulls is on
+  drops a removed column from the hierarchy only): two known failures (public#4423). An empty value is a branch named `(empty)` only while Include Nulls is on
   (the property's meaning; Charts tree/CLAUDE.md). A filter that removes every row logs no error and
   the branches come back with the rows. Initial Tree Depth declares 0..5 and Font Size at most 30: a
   larger value typed in the context panel logs no error and the tree keeps drawing (whether the
@@ -44,10 +43,10 @@ Feature: Tree edge cases: renamed and removed columns, empty values, no rows, ou
     And tree viewer should not have a "branch All | false | F | Asian" area
     And no errors should have been logged
 
-  @known-failure:55 @ticket-pending
+  @known-failure:54 @realizes:public#4423
   Scenario: Removing the Size column logs no error
     The Tree drops a removed column from its hierarchy only: a removed Size column stays in the
-    settings and every later render throws "No such column". No ticket yet. Remove the tag when the
+    settings and every later render throws "No such column" (public#4423). Remove the tag when the
     removal logs no error.
     When user sets "sizeColumnName" property of tree viewer to "HEIGHT"
     And user removes "HEIGHT" column
@@ -55,10 +54,10 @@ Feature: Tree edge cases: renamed and removed columns, empty values, no rows, ou
     And no errors should have been logged
     And tree viewer should have a "branch All | false | F | Asian" area
 
-  @known-failure:66 @ticket-pending
+  @known-failure:65 @realizes:public#4423
   Scenario: Removing the Color column logs no error
     The Tree drops a removed column from its hierarchy only: a removed Color column stays in the
-    settings and every later render throws "No such column". No ticket yet. Remove the tag when the
+    settings and every later render throws "No such column" (public#4423). Remove the tag when the
     removal logs no error.
     When user sets "colorColumnName" property of tree viewer to "AGE"
     And user removes "AGE" column
@@ -101,4 +100,17 @@ Feature: Tree edge cases: renamed and removed columns, empty values, no rows, ou
     And user enters "31" into "Font Size" property in context panel
     Then tree viewer should have finished updating
     And tree viewer should have a "branch All | false | F | Asian" area
+    And no errors should have been logged
+
+  @known-failure:115 @realizes:public#4425
+  Scenario: Closing the tree gives back the rows its clicked branch filtered out
+    Closing the tree leaves the table filtered to the clicked branch, with no viewer left to clear it,
+    as the sunburst does (public#4425). Remove the tag when closing gives every row back.
+    When user sets "onClick" property of tree viewer to "Filter"
+    Then all rows should pass the filter
+    When user clicks on the "branch All | false | F | Asian" area of tree viewer
+    Then 7 rows should pass the filter
+    When user clicks on close icon of tree viewer
+    Then the open tableview should have 0 tree viewers
+    And all rows should pass the filter
     And no errors should have been logged

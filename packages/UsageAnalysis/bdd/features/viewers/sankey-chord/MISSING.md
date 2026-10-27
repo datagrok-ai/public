@@ -13,7 +13,7 @@ Written for `sankey-chord-edge-cases.feature`: the edge cases of this viewer tha
 1. Sankey Source set through the property to a column with more than 50 categories (demog SUBJ): the 50-category rule is checked on the table only. Refuse the column?
 2. Sankey Value column with negative values, or all zeros: refuse with a message as the pie does, or draw?
 3. Sankey with a blank Source value: a node with an empty name, or skipped?
-4. The Source / From column removed from the table: fall back to another column or show the requires-message? (The feature claims only "no error", tagged `@ticket-pending`: both viewers log "No such column".)
+4. The Source / From column removed from the table: fall back to another column or show the requires-message? (The feature claims only "no error", public#4420 and public#4421: both viewers log "No such column".)
 
 ## Won't do
 

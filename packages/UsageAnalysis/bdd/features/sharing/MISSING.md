@@ -94,23 +94,29 @@ use test covers it.
 
 ## 8. Edge cases (`share-dialog-edge-cases`) — still open
 
-Written for the edge-case feature, with no library, binding or code change. That feature claims Escape after a
-recipient is picked, a removal cancelled, and core#980 (an email with no account, a known failure).
+Written for the edge-case feature, with no library, binding or code change. That feature claims a removal
+cancelled, and OK disabled until a recipient is accepted (core#980, a known failure: an email becomes a
+recipient only once Enter accepts it).
 
-### Questions for owners
+### Steps requested
 
-1. **OK with no recipient, or with text typed that never became a recipient** (not an email): today the dialog
-   says "Shared" and nothing is granted (the root cause of core#980). Should OK be disabled, or say that nobody
-   was picked?
-2. **A disabled user in the suggestions**: is a disabled account offered as a recipient? Disabling keeps the
-   shares a user has (`help/govern/access-control/users-and-groups.md`); nothing says whether new ones may be made.
-3. **A grant revoked while the recipient has the entity open**: what the recipient's session shows on its next
-   refresh or save. Help documents last-write-wins for edits, nothing for a revoke.
-4. **A user who holds Share through a group** (core#379): "You don't have a permission to share". The consistency
-   the ticket asks for is a server rule; once decided, the UI part is the refusal balloon or the share going
-   through, and the matrix belongs to ApiTests `permissions.ts`.
+1. **A disabled user is not offered in the suggestions** (decided). Needs a set-up step that disables an account
+   made for the feature (`a disabled user named {string} is on the server`) and a reading of the suggestions
+   (`the user suggestions should not offer {string}`, beside the existing `the user suggestions should not offer
+   the current user`). Then:
+
+   ```gherkin
+   When user types "<disabled user's name>" into "User, group, or email" input in "Share ShareEdgeA{time}" dialog
+   Then the user suggestions should not offer "<disabled user's name>"
+   ```
+2. **A grant revoked while the recipient has the entity open** (decided): the revoked privilege is closed on the
+   recipient's next save, refresh or reopen of the entity, whichever privilege it was. Needs the recipient's session kept open while the owner revokes,
+   which one browser page cannot do (`user signs in as the sharing user` replaces the running session): a second
+   page for the sharing user, or a step that revokes a grant through the API while the recipient's page stays open.
 
 ### Won't do
 
 - **What a View-and-use recipient may do with a shared query or space** beyond re-sharing and putting it into a
   view-only space: the server's answer is ApiTests `permissions.ts` (§7); `sharing-recipient` claims the UI side.
+- **Escape on the Share dialog**: it closes as CANCEL does (`Dialog._closeOnEsc`); `sharing-dialog` claims CANCEL
+  and the one branch of its own, Escape closing the list of levels first.

@@ -21,10 +21,10 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {deleteSelected, filterBetween, filterPasses, filterPassesAll, rowCount, selectAllRows} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {clickOn, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {deleteSelected, filterBetween, filterPasses, filterPassesAll, filterPassesFewer, rowCount, selectAllRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, areaPainted, clickArea, hoverArea, noErrors, readingIs, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, areaPainted, clickArea, hoverArea, noErrors, readingIs, setProperty, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {clickEmptySpace} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -87,5 +87,17 @@ test.describe("Bar chart edge cases", () => {
     await session.step(79, "Then 0 rows should pass the filter", () => filterPasses(page, 0));
     await session.step(80, "And the \"bars\" reading of bar chart viewer should be 4", () => readingIs(page, "bars", el("bar chart viewer"), 4));
     await session.step(81, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("Closing the bar chart gives back the rows its clicked bar filtered out", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(13, "Given user is logged in", () => loggedIn(page));
+    await session.step(85, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(86, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"],["On Click","Filter"]]), [["Split","RACE"],["On Click","Filter"]]);
+    await session.step(89, "When user clicks on the \"bar Asian\" area of bar chart viewer", () => clickArea(page, "bar Asian", el("bar chart viewer")));
+    await session.step(90, "Then fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
+    await session.step(91, "When user clicks on close icon of bar chart viewer", () => clickOn(page, el("close icon of bar chart viewer")));
+    await session.step(92, "Then the open tableview should have 0 bar chart viewers", () => viewerCount(page, 0, "bar chart"));
+    await session.step(93, "And all rows should pass the filter", () => filterPassesAll(page));
+    await session.step(94, "And no errors should have been logged", () => noErrors(page));
   });
 });

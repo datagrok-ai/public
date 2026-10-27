@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/sankey-chord/sankey-chord-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [charts.viewer.sankey, charts.viewer.chord]
+sub_features_covered: [charts.viewer.sankey, charts.viewer.chord, public#4420, public#4421]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -60,7 +60,7 @@ test.describe("Sankey and Chord edge cases — Source equal to Target, too many 
     await session.step(37, "And \"Too many categories to render.\" text in chord viewer should be absent", () => shouldBe(page, el("\"Too many categories to render.\" text in chord viewer"), "absent"));
     await session.step(38, "And no errors should have been logged", () => noErrors(page));
   });
-  test("The Sankey's Source column removed from the table raises no error", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sankey", "@realizes:charts.viewer.chord", "@known-failure:50", "@ticket-pending"]}, async ({browser}) => {
+  test("The Sankey's Source column removed from the table raises no error", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sankey", "@realizes:charts.viewer.chord", "@known-failure:50", "@realizes:public#4420"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -75,7 +75,7 @@ test.describe("Sankey and Chord edge cases — Source equal to Target, too many 
       await session.step(50, "And no errors should have been logged", () => noErrors(page));
     }, 50);
   });
-  test("The Chord's From column removed from the table raises no error", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sankey", "@realizes:charts.viewer.chord", "@known-failure:62", "@ticket-pending"]}, async ({browser}) => {
+  test("The Chord's From column removed from the table raises no error", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sankey", "@realizes:charts.viewer.chord", "@known-failure:62", "@realizes:public#4421"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And the package autostarts have completed", () => autostartsCompleted(page));

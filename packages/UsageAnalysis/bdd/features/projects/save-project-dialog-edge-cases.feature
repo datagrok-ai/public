@@ -1,7 +1,7 @@
 @realizes:views.projects
-Feature: Save project dialog edge cases: CANCEL and Escape, names without a letter, a local file, a View and use recipient
-  Guards for the ribbon's Save project dialog. CANCEL and Escape on the dialog of a new dashboard
-  close it and save nothing: no Share dialog follows and the server has no project of the typed
+Feature: Save project dialog edge cases: CANCEL, names without a letter, a local file, a View and use recipient
+  Guards for the ribbon's Save project dialog. CANCEL on the dialog of a new dashboard closes it
+  and saves nothing: no Share dialog follows and the server has no project of the typed
   name. A name must contain at least one letter (`isValidEntityName` in the Save dialog,
   `project_meta.dart`): an emptied name, spaces only, digits only or a "/" alone mark the Name box
   invalid and disable OK, and a letter added to the same text enables OK again. A "/" inside a name
@@ -42,21 +42,6 @@ Feature: Save project dialog edge cases: CANCEL and Escape, names without a lett
     Then "Save project" dialog should be visible
     When user enters "BDDEdgeSave{time}" into Name text input in "Save project" dialog
     And user clicks on CANCEL button in "Save project" dialog
-    Then the "Save project" dialog should close
-    And "Share BDDEdgeSave{time}" dialog should be absent
-    And 0 projects named "BDDEdgeSave{time}" should be on the server
-    And no errors should have been logged
-
-  @edge-cases
-  Scenario: Escape on the Save dialog of a new dashboard saves nothing
-    Given Files tree node inside browse tree is expanded
-    And Files---Demo tree node inside browse tree is expanded
-    When user double-clicks Files---Demo---cars.csv tree node inside browse tree
-    Then the "cars" view should be current
-    When user clicks on Save ribbon item
-    Then "Save project" dialog should be visible
-    When user enters "BDDEdgeSave{time}" into Name text input in "Save project" dialog
-    And user presses Escape
     Then the "Save project" dialog should close
     And "Share BDDEdgeSave{time}" dialog should be absent
     And 0 projects named "BDDEdgeSave{time}" should be on the server

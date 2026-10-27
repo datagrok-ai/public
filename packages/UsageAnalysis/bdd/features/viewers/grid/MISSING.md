@@ -37,8 +37,6 @@ Added with `grid-edge-cases.feature` (edge-case round of 2026-10-26, localhost).
    a property row of the context panel (`user types "<v>" into the "<caption>" property of grid`).
 2. **Questions for owners**:
    - Frozen Columns above the column count or below 0: clamp, or refuse (core#1137 is the error only).
-   - The message, if any, for text typed into a numeric cell (`@ticket-pending` scenario claims the
-     edit event only).
    - Add New Row On Last Row Edit with a rejected value in the last row: is a row added?
    - Allow Edit off: does Control+V show the read-only notice, and may Shift+Delete remove rows?
    - Where empty values go in a sort, ascending and descending.

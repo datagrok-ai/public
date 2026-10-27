@@ -7,7 +7,7 @@ Feature: Sankey and Chord edge cases — Source equal to Target, too many catego
   pairs says "Too many categories to render." (`chord-viewer.ts`, `maxLinkNumber`): USUBJID holds
   1000 categories on demog-1000, and with SEX that is 2000 pairs. A Source column removed from the
   table while the Sankey shows it, and a From column removed while the Chord shows it, should leave
-  the viewers without an error; both log "No such column" (no ticket yet). demog-1000; the Sankey
+  the viewers without an error; both log "No such column" (public#4420, public#4421). demog-1000; the Sankey
   opens on SEX, RACE and AGE, the Chord on SEX and RACE.
 
   Background:
@@ -37,10 +37,10 @@ Feature: Sankey and Chord edge cases — Source equal to Target, too many catego
     And "Too many categories to render." text in chord viewer should be absent
     And no errors should have been logged
 
-  @known-failure:50 @ticket-pending
+  @known-failure:50 @realizes:public#4420
   Scenario: The Sankey's Source column removed from the table raises no error
     The Sankey keeps reading the removed column and logs "No such column: SEX" (`sankey.ts`,
-    `getCol` in `prepareData`); no ticket yet. Remove the tag once the removal is handled.
+    `getCol` in `prepareData`); public#4420. Remove the tag once the removal is handled.
     When user adds a sankey viewer
     Then "Source" property of sankey viewer should be "SEX"
     When user removes "SEX" column
@@ -49,10 +49,10 @@ Feature: Sankey and Chord edge cases — Source equal to Target, too many catego
     Then 494 rows should pass the filter
     And no errors should have been logged
 
-  @known-failure:62 @ticket-pending
+  @known-failure:62 @realizes:public#4421
   Scenario: The Chord's From column removed from the table raises no error
     The Chord keeps reading the removed column and logs "No such column: SEX" (`chord-viewer.ts`,
-    `getCol` in `draw`); no ticket yet. Remove the tag once the removal is handled.
+    `getCol` in `draw`); public#4421. Remove the tag once the removal is handled.
     When user adds a chord viewer
     Then "From" property of chord viewer should be "SEX"
     When user removes "SEX" column

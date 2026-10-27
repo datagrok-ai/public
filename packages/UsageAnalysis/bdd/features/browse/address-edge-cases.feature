@@ -11,11 +11,10 @@ Feature: Address edge cases: a space, a folder, a function, a script and a proje
   shell's router. A space address that names nothing leads to the Spaces list; a function address
   that names nothing says "Unable to find function" and keeps the view that was open; a deleted
   project's address says "Unable to get project asset" as a never-saved name does.
-
-  Two scenarios describe defects with no ticket yet (`@ticket-pending`): a folder address that names
-  nothing opens an empty folder view with an "error" label and logs "File or Directory ... not
-  exists", and a script address that names nothing opens an empty Script view with an "error" label
-  and logs the server's 404.
+  Two scenarios describe defects. A folder address that names nothing opens an empty folder view
+  with an "error" label and logs "File or Directory ... not exists"; a script address that names
+  nothing opens an empty Script view with an "error" label and logs the server's 404. Both are
+  core#1152.
 
   The project and the space are this feature's own, named with the run's time, and removed through
   the API before their address is followed; they are swept again at feature end.
@@ -69,22 +68,22 @@ Feature: Address edge cases: a space, a folder, a function, a script and a proje
     And the "demog-1000" view should be current
     And no errors should have been logged
 
-  @known-failure:80 @ticket-pending
+  @known-failure:79 @realizes:core#1152
   Scenario: A folder address that names nothing says the folder is not there
     The defect: the address of a folder the file share does not have opens an empty folder view named
     after it, with an "error" label in the context panel and no message, and logs "File or Directory
-    ... not exists" with a stack trace. Remove the tag when such an address says the folder is not
+    ... not exists" with a stack trace (core#1152). Remove the tag when such an address says the folder is not
     there without logging an error (if the fix leads to a safe screen instead, this claim changes).
     Given user opens demog-1000 dataset
     When user opens the address "/files/System.AppData/UsageAnalysis/bdd-edge-no-folder-{time}"
     Then an error or warning balloon matching "not found|not exist|n't exist" should have been shown
     And no errors should have been logged
 
-  @known-failure:92 @ticket-pending
+  @known-failure:91 @realizes:core#1152
   Scenario: A script address that names nothing says the script is not there
     The defect: the address of a script the server does not have opens an empty, unnamed Script view
     with an "error" label and no message, and logs the server's 404 with a stack trace; the next
-    address followed while that view is open throws "NullError: method not found" in the router.
+    address followed while that view is open throws "NullError: method not found" in the router (core#1152).
     Remove the tag when such an address says the script is not there without logging an error (if
     the fix leads to a safe screen instead, this claim changes).
     Given user opens demog-1000 dataset

@@ -20,14 +20,14 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, enterInto, isExpanded, pressKey, replaceCode, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, enterInto, isExpanded, replaceCode, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {browsePanelOpen, closeAllViews, connectionOnServer, connectionsOnServer, currentViewType, dialogCloses, noConnectionOnServer, noQueryOnServer, queriesOnServer} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
-test.describe("Connection edge cases: names the dialogs refuse, CANCEL and Escape, and a delete that takes the queries", () => {
+test.describe("Connection edge cases: names the dialogs refuse, CANCEL, and a delete that takes the queries", () => {
   const session = feature(test, "features/connections/connection-edge-cases.feature", import.meta.url);
-  test("A name of spaces keeps OK disabled, and Escape saves nothing", {tag: ["@connections", "@edge-cases"]}, async ({browser}) => {
+  test("A name of spaces keeps OK disabled, and CANCEL saves nothing", {tag: ["@connections", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And the browse panel is open", () => browsePanelOpen(page));
@@ -40,7 +40,7 @@ test.describe("Connection edge cases: names the dialogs refuse, CANCEL and Escap
     await session.step(28, "Then OK button in \"Add new connection\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Add new connection\" dialog"), "disabled"));
     await session.step(29, "When user enters \"BDDConnSpaces{time}\" into Name input in \"Add new connection\" dialog", () => enterInto(page, session.text("BDDConnSpaces{time}"), el("Name input in \"Add new connection\" dialog")));
     await session.step(30, "Then OK button in \"Add new connection\" dialog should be enabled", () => shouldBe(page, el("OK button in \"Add new connection\" dialog"), "enabled"));
-    await session.step(31, "When user presses Escape", () => pressKey(page, "Escape"));
+    await session.step(31, "When user clicks on CANCEL button in \"Add new connection\" dialog", () => clickOn(page, el("CANCEL button in \"Add new connection\" dialog")));
     await session.step(32, "Then the \"Add new connection\" dialog should close", () => dialogCloses(page, "Add new connection"));
     await session.step(33, "And 0 connections named \"BDDConnSpaces{time}\" should be on the server", () => connectionsOnServer(page, 0, session.text("BDDConnSpaces{time}")));
     await session.step(34, "And no errors should have been logged", () => noErrors(page));

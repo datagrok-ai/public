@@ -79,3 +79,16 @@ Feature: Bar chart edge cases
     Then 0 rows should pass the filter
     And the "bars" reading of bar chart viewer should be 4
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: Closing the bar chart gives back the rows its clicked bar filtered out
+    Given user opens demog-1000 dataset
+    And user adds a bar chart viewer with:
+      | Split    | RACE   |
+      | On Click | Filter |
+    When user clicks on the "bar Asian" area of bar chart viewer
+    Then fewer than 1000 rows should pass the filter
+    When user clicks on close icon of bar chart viewer
+    Then the open tableview should have 0 bar chart viewers
+    And all rows should pass the filter
+    And no errors should have been logged
