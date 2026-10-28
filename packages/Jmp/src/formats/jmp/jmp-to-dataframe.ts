@@ -21,8 +21,7 @@ export function skippedColumns(table: JmpTable): {name: string, reason: string}[
     .map((c) => ({name: c.info.name, reason: c.decodeError!}));
 }
 
-/** Columns hidden in JMP. The hidden-column index is taken to hold column positions; one fixture
- * supports that and none contradicts it (JMP_PLUGIN.md §4.4). */
+/** Columns hidden in JMP: the hidden-column index holds column positions (JMP_PLUGIN.md §4.4). */
 function hiddenColumns(table: JmpTable): Set<JmpColumn> {
   return new Set(table.info.hiddenIndex.filter((i) => i < table.columns.length).map((i) => table.columns[i]));
 }

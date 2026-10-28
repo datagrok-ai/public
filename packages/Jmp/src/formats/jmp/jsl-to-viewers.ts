@@ -158,11 +158,16 @@ const NOT_PLATFORMS = new Set(['namesdefaulttohere', 'currentdatatable', 'datata
 const PROGRAM = new Set(['for', 'while', 'if', 'foreachrow', 'getcolumnnames', 'newwindow', 'columndialog',
   'dialog', 'function', 'try', 'eval', 'expr']);
 
+/** Column names as notes and reasons write them: quoted, so tools can tell them from JSL's own words. */
+function quoted(names: string[]): string {
+  return names.map((n) => `"${n}"`).join(', ');
+}
+
 /** Options that change what a viewer shows and that we don't carry over. */
 function noteIgnored(call: Call, notes: string[]): void {
   const by = findArg(call, 'By');
   if (by)
-    notes.push(`Separate analyses by ${columnNames(by).join(', ')} not reproduced`);
+    notes.push(`Separate analyses by ${quoted(columnNames(by))} not reproduced`);
   if (findArg(call, 'Where'))
     notes.push('The Where() row filter isn\'t applied');
   if (findArg(call, 'Weight') || findArg(call, 'Freq'))
@@ -259,7 +264,7 @@ function fitYByX(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
       ...call.args.filter((a) => !isCall(a, 'Y') && !isCall(a, 'X'))]};
     try {
       if (!y.numeric && x.numeric)
-        throw new Unconvertible(`${y.name} by ${x.name} is a logistic fit, which isn't converted yet`);
+        throw new Unconvertible(`"${y.name}" by "${x.name}" is a logistic fit, which isn't converted yet`);
       out.push(...(!y.numeric ? contingency(one, cols) :
         x.numeric ? bivariate(one, cols, notes) : oneway(one, cols, notes)));
     } catch (e) {
@@ -287,7 +292,7 @@ function graphBuilder(call: Call, cols: Columns, notes: string[]): JmpViewerSpec
   const groupX = [...role('Group X'), ...role('Wrap')].map((c) => c.name);
   const groupY = role('Group Y').map((c) => c.name);
   if (role('Page').length > 0)
-    notes.push(`Pages by ${role('Page').map((c) => c.name).join(', ')} not reproduced`);
+    notes.push(`Pages by ${quoted(role('Page').map((c) => c.name))} not reproduced`);
   if (groupX.length === 0 && groupY.length === 0)
     return [inner];
   return [{type: TRELLIS, options: {
@@ -329,7 +334,7 @@ function graphBuilderViewer(call: Call, role: (r: string) => JmpColumnRef[], not
     const overlay = role('Overlay')[0];
     const perGroup = fit && overlay !== undefined && overlay === color && !overlay.numeric;
     if (fit && overlay && !perGroup)
-      notes.push(`Line of Fit by ${overlay.name} shown as one line`);
+      notes.push(`Line of Fit by "${overlay.name}" shown as one line`);
     return {type: SCATTER, options: {
       xColumnName: x.name, yColumnName: y.name,
       ...(color ? {colorColumnName: color.name} : {}), ...(size ? {sizeColumnName: size.name} : {}),

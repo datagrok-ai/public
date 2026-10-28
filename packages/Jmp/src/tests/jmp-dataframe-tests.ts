@@ -174,7 +174,8 @@ category('JMP: dataframe', () => {
   });
 
   test('file handler', async () => {
-    const result: DG.DataFrame[] = await grok.functions.call('JmpReader:importJmp', {bytes: await fixtureBytes('example1')});
+    const bytes = await fixtureBytes('example1');
+    const result: DG.DataFrame[] = await grok.functions.call('JmpReader:importJmp', {bytes});
     expect(result.length, 1);
     expect(result[0].rowCount, 4);
     expect(result[0].columns.length, 12);

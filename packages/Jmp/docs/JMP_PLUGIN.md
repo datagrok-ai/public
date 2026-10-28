@@ -2,7 +2,7 @@
 
 > **Purpose:** This spec defines the Datagrok JMP plugin: a browser-side reader for SAS JMP data tables (`.jmp`). It is written for the developer (human or AI agent) building the package. It covers scope, architecture, the file format as far as it is known, type mapping, testing, and the phased roadmap. The [Minitab plugin](../../Minitab/docs/MINITAB_PLUGIN.md) is the structural template.
 
-**Status:** Phase 1 built, 2026-10-21; Phase 2 in progress, 2026-10-23 (v0.1.0, not yet released). The parser matches JMPReader.jl on all 19 reference files; 112 package tests and 12 BDD scenarios pass on a local stand. §11 lists what is left.
+**Status:** Phase 1 built, 2026-10-21; Phase 2 in progress, 2026-10-23 (v0.1.0, not yet released). The parser matches JMPReader.jl on all 19 reference files; 116 package tests and 12 BDD scenarios pass on a local stand. §11 lists what is left.
 
 ---
 
@@ -72,7 +72,7 @@ packages/Jmp/
 │   ├── jmpreader/          # JMPReader.jl's 19 test files (MIT), unchanged
 │   ├── golden/             # what JMPReader.jl reads from each (tools/jmp2json.jl), committed
 │   ├── tests/              # made here: unsupported-column, truncated, not-a-jmp, saved-bar-chart, saved-fit-model; jmp15-graph-builder (saved by JMP 15, anonymized)
-│   └── zenodo/             # four CC0 research files saved by JMP 11–13 (§9.2, CREDITS.md §5)
+│   └── public/             # eight openly licensed research files saved by JMP 10–18 (§9.2, CREDITS.md §5)
 ├── tools/
 │   ├── jmp2json.jl         # golden-output generator (Julia + JMPReader.jl), dev-only
 │   ├── jmp-corpus.ts       # `npm run corpus -- <dir>`: read a folder of .jmp files, report (§9.4)
@@ -175,11 +175,11 @@ Each column block starts with the column name, followed by six descriptor bytes 
 
 | Classification | Rule (from JMPReader.jl `constants.jl`) |
 |---|---|
-| Plain number / fixed decimal | `dt4 == dt5 ∈ {0x00, 0x03, 0x42, 0x43, 0x44, 0x59, 0x60, 0x63}` or `dt5 ∈ {0x5E, 0x63}` |
+| Plain number / fixed decimal | `dt4 == dt5 ∈ {0x00, 0x03, 0x42, 0x43, 0x44, 0x59, 0x60, 0x61, 0x63}` or `dt5 ∈ {0x5E, 0x63}`. `0x61` is ours, not JMPReader.jl's: the p-value format of `Prob>\|t\|` columns (values in [0, 1], JMP 15). |
 | Currency | `dt4 == dt5 == 0x5F` |
 | Longitude | `dt4 == dt5 ∈ {0x54, 0x55, 0x56}` |
 | Latitude | `dt4 == dt5 ∈ {0x51, 0x52, 0x53}` |
-| Date | `dt4 ∈ {0x65, 0x66, 0x67, 0x6E–0x72, 0x75, 0x76, 0x7A, 0x7F, 0x88, 0x8B}` |
+| Date | `dt4 ∈ {0x65, 0x66, 0x67, 0x6E–0x72, 0x75, 0x76, 0x7A, 0x7F, 0x88, 0x8B, 0x90}`. `0x90` is ours: a date column saved by JMP 18, every value a midnight. |
 | Date-time | `dt4 ∈ {0x69, 0x6A, 0x73, 0x74, 0x77–0x79, 0x7B–0x7E, 0x80–0x82, 0x86, 0x87, 0x89, 0x8A}` |
 | Duration | `dt4 ∈ {0x6C, 0x6D, 0x83, 0x84, 0x85}`. The ambiguous `:day:hr:m` / `:day:hr:m:s` formats are treated as durations. |
 
@@ -210,7 +210,7 @@ A row-state **column** is data the user saved, one state per row. The table's ow
 - Saved table scripts: the scan (§4.5) found all 45 scripts in the public corpus (§9.4); long scripts and run-on-open scripts are still unconfirmed
 - Row-state flags (selected / excluded / hidden / labelled), and the table's own row states (§4.3)
 - Column groups
-- The visible/hidden column split is read but only provisionally understood: two lists of column positions, visible then hidden. In `byteintegers.jmp`, the one fixture with a hidden entry, the lists are `[1, 2, 3]` and `[0]`, so the reader takes column 0 ("Column 1") as hidden. The same file has a column (the last) with a display width of 0, which a hidden column might also explain. Needs a file where we know which column is hidden.
+- The visible/hidden column split: two lists of column positions, visible then hidden. In all 305 public files read (§9.4) the two lists together hold every column exactly once, and the hidden ones are what people hide: survey bookkeeping ("Response Type", "Start Date", "Recorded Date", "Survey duration (seconds)") and source details ("Source Table", "Plan File Name"). Display width doesn't track it. Taken as confirmed, though no file says which columns JMP shows hidden.
 
 These are reverse-engineering targets for Phases 2–3. Each new decoding gets a fixture file and a note in §4.
 
@@ -276,7 +276,7 @@ The vendored `example1.jmp` carries `Formula(:ints * 2)` and `Units("kPa")`. The
 
 **Column properties** (§4.6): `Notes` → `description`; `Units` → `units`; `Formula` → `jmp.formula`, the JSL expression (the column keeps JMP's cached values); `Value Order` with a custom order, or `"Value Ordering"` → the column's category order (through its labels); `Spec Limits` → `jmp.specLimits`, `{"lsl", "usl", "target"}`. Every property, mapped or not, is kept as JSL text in `jmp.properties`, `[{"name", "text"}]`.
 
-**Column-level tags**: `jmp.format` (raw `dt1..dt6` as hex, for debugging and future decoding), `jmp.displayWidth`, and `jmp.hidden` = `true` on a column JMP hides (provisional, §4.4). A hidden column stays in the table, as in JMP, and is hidden in the grid of a table view the package opens.
+**Column-level tags**: `jmp.format` (raw `dt1..dt6` as hex, for debugging and future decoding), `jmp.displayWidth`, and `jmp.hidden` = `true` on a column JMP hides (§4.4). A hidden column stays in the table, as in JMP, and is hidden in the grid of a table view the package opens.
 
 Column order follows the file. Duplicate names can't happen in JMP, but names are passed through `DG.DataFrame`'s normal de-duplication anyway.
 
@@ -367,7 +367,7 @@ The model is the way Crux validates against RDKit: **JMPReader.jl is the referen
 | Files made here from the vendored ones (`files/tests/`: a column with a layout byte no JMP writes, a truncated file, CSV under a `.jmp` name) | Ours | **Yes** |
 | Synthetic saved analyses (`files/tests/saved-bar-chart.jmp`, `saved-fit-model.jmp`): `compact_UInt8.jmp` with its `Source` script replaced by one of the same length, so nothing in the file moves (`tools/make-script-fixtures.ts`). They test what the package does with an analysis, not where JMP keeps one (§4.5). | Ours | **Yes**, until files saved by JMP with analyses replace them |
 | A table saved by JMP 15 with a Graph Builder (`files/tests/jmp15-graph-builder.jmp`, 12 rows). Shared by a user and anonymized in place: the `Source` path replaced by one of the same length, the measured values moved by up to ±0.15. JMP 15 writes the script and column names bare (`HC Met255 %Oxidation vs. Week_5C(…)`, `:HC Met255 %Oxidation`). | Shared, anonymized | **Yes**, with the owner's permission |
-| Research data published under CC0 on Dryad, taken from Zenodo (`files/zenodo/`, 4 files, 1.7–40 KB): JMP 13 in Japanese with Oneway analyses, JMP 12 and 11 with formulas and notes. Chosen from the corpus run (§9.4) for what the other fixtures lack. | CC0, credited in `CREDITS.md` §5 | **Yes** |
+| Research data published openly (`files/public/`, 8 files, 1.7–77 KB; CC0 from Dryad and Harvard Dataverse, one CC BY 4.0 from figshare): JMP 13 in Japanese with Oneway analyses; JMP 12 and 11 with formulas and notes; JMP 10 with 21 hidden columns, value labels and Value Colors; JMP 11 with value labels and a Graph Builder; JMP 15 with the p-value format and text value labels; JMP 18 with its new date format. Chosen from the corpus runs (§9.4) for what the other fixtures lack. | CC0, one CC BY 4.0; credited in `CREDITS.md` §5 | **Yes** |
 | Files made in JMP for us (edge cases: empty table, 0 rows, 1 col, all-missing, very wide, Unicode names, every display format) | — | **No.** We don't use JMP or ask customers to make files in it for us (§10). Edge cases come from files people already have, or from editing vendored files as `files/tests/` does. |
 | JMP's own Samples/Data library (~600 files per version) | SAS copyright | **No.** Not used: it comes with a JMP install (§10). |
 | Customer files | Customer confidential | **No.** Run locally only, with permission. |
@@ -385,7 +385,7 @@ The model is the way Crux validates against RDKit: **JMPReader.jl is the referen
 
 8. **JMP: performance** (browser) times the 100 MB file of §8. It runs only with `grok test --benchmark`.
 
-Result on the local stand (2026-10-27): Node pass 97 passed; browser pass 15 passed, the benchmark skipped (and passed when run with `--benchmark`).
+Result on the local stand (2026-10-28): Node pass 101 passed; browser pass 15 passed, the benchmark skipped (and passed when run with `--benchmark`).
 
 ### 9.4 Corpus run (local, not CI)
 
@@ -394,6 +394,8 @@ Result on the local stand (2026-10-27): Node pass 97 passed; browser pass 15 pas
 For files that can't leave their owner, `tools/jmp-survey.ts` is bundled into a single `jmp-survey.mjs` (command at the top of the file; no dependencies, Node 18 or later) and run where the files are: `node jmp-survey.mjs <folder> --summary-only`. It reports files read by JMP version; saved analyses by platform, with how many become viewers and why the rest don't; what each platform's conversion leaves out; and the JSL keywords each platform's scripts use, as a tree with counts. `--summary-only` prints no file paths, script names, column names or values, so the output can be sent back. A first run at a customer (2026-10-27) covered 4 files saved by JMP 15, with one Graph Builder.
 
 A **public corpus** stands in until then: 14 `.jmp` files from GitHub repositories, mostly course and lab data saved by JMP 14–17 (`gm105/JMP`, `whippo/Whippo-NCE-2024`, `heyselbi/Marketing-Analytics-auditing`, `pineapplefart/S5_Hackathon_Supplementary`, `ArvindRajen/Salary_Prediction`, `BreakOnExecute/JMPReader`). They have no licence, so they stay outside the repo. Run on 2026-10-23: 13 of 14 read with every column decoded; the 14th is the older `(3,4,3)` format, refused as expected. 45 saved scripts were found and all read (Graph Builder, Distribution, Oneway, Bivariate, Contingency and Tabulate convert; Fit Model, DOE, Multivariate, Partition, Neural and screening don't). 87 column properties in 12 kinds and 2 value-labelled columns, all read. A larger **open corpus** came from Zenodo (2026-10-27): every `.jmp` file in its 32 records that have one, 224 files (505 MB) of published research data, all openly licensed (157 CC-BY 4.0, 57 CC0, 9 MIT, 1 GPL-3), saved by JMP 11–19, mostly 16. It stays outside the repo apart from the four CC0 fixtures in §9.2. 206 of 223 read with every column decoded; the other 17 are the old big-endian format (§4.1), from three records of 2007–08 data, refused with the old-format message. Of 333 saved scripts, 331 read once the parser took `;` statements inside arguments, matrix literals and `i++` (2 use names JSL can't parse bare). 160 are hand-written programs. Of the analyses, Tabulate, Oneway, Graph Builder, Distribution and Contingency convert (49); Fit Model (36), Fit Group (22), Fit Curve (14) and DOE (10) don't yet. In Graph Builder, Smoother is the most used element (8 of 10 scripts) and isn't shown yet. 3,406 column properties in 14 kinds (2,401 formulas) and 55 value-labelled columns, all read.
+
+A **sweep of other open archives** (2026-10-28) added 72 files with open licences: Figshare (59, mostly CC BY 4.0), Harvard Dataverse (10, CC0) and OSF (4, CC BY). Dryad lists 158 more CC0 files not on Zenodo, but downloading them needs an API token; files without a licence were left out. All 72 read; 31 of the public files are now from JMP 17–19, and none of the new ones is the old format. Two display formats were new (`0x61`, `0x90`, §4.3) and a few JSL forms (`#`, `%`, `'` and dots in names, a column given a format as `:Age(10, 1)`, associative arrays `["en" => "…"]`). With them, all 305 files read with every column decoded, and all 1,054 saved scripts and every column property parse. Graph Builder across the public files: 93 scripts, 86 convert; Points (43), Line of Fit (32), Bar (25), Box Plot (19), Line (15), Smoother (10); Overlay (49), Group X (22), Color (20); nearly all set a size and a title, about 20 set axis limits. No file had row-state flags set.
 
 **Acceptance for Phase 1:** ≥ 99% of the files in customer corpora open (counted by `jmp-survey.mjs` where the files are), with zero files throwing on supported versions.
 
@@ -444,7 +446,7 @@ Result on the local stand (2026-10-23): 12 passed, 0 audit findings, run with `-
 - [ ] Corpus run on customer files, with `jmp-survey.mjs` where they are (first run, 2026-10-27: 4 files, all read)
 - [x] A 100 MB file against the §8 target: 3.0–6.1 s in the browser, on a synthetic file (a real one would still be worth timing)
 - [x] Help page: `.jmp` row in `help/access/files/supported-formats.md` (help submodule; not committed yet)
-- [x] Format details: the currency code (confirmed), fixed-decimal formats and `jmp.hidden` (both provisional, §4.3–4.4)
+- [x] Format details: the currency code (confirmed), `jmp.hidden` (confirmed on the public files) and fixed-decimal formats (provisional, §4.3–4.4)
 - [x] Row-state columns as marker and colour columns (§5); flags still to decode
 
 **Exit criteria:** all golden tests pass (done), the corpus run passes at ≥ 99%, and the 100 MB file meets the target in §8.

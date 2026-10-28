@@ -82,14 +82,11 @@ function keywordPaths(root: Extract<JslNode, {type: 'call'}>, spelling: Map<stri
   return out;
 }
 
-/** Takes the user's words out of a message: column names, then any quoted text longer than a character. */
-function redact(message: string, columns: string[]): string {
-  let out = message;
-  for (const c of [...columns].sort((a, b) => b.length - a.length)) {
-    if (c.length > 0)
-      out = out.split(c).join('<column>');
-  }
-  return out.replace(/"[^"]{2,}"/g, '"…"');
+/** Takes the user's words out of a message: anything quoted longer than a character. The converter quotes
+ * every column name it writes, so JSL's own words, such as "Fit Model", are left alone even when a column
+ * shares one. */
+function redact(message: string): string {
+  return message.replace(/"[^"]{2,}"/g, '"…"');
 }
 
 async function main(): Promise<void> {
@@ -114,12 +111,10 @@ async function main(): Promise<void> {
 
   for (const file of files) {
     const shown = relative(dir, file);
-    let columns: string[] = [];
     try {
       const table = await readJmp(new Uint8Array(await readFile(file)));
       read++;
       versions.add(table.info.jmpVersion.split('.')[0] || '?');
-      columns = table.columns.map((c) => c.info.name);
       const saved = table.scripts.filter((s) => !isSourceScript(s));
       const analyses = convertScripts(saved, table.columns.filter((c) => !c.decodeError && c.kind !== 'rowstate')
         .map((c) => ({name: c.info.name, numeric: c.kind !== 'string'})));
@@ -130,12 +125,12 @@ async function main(): Promise<void> {
         const script = saved[i];
         if (script.error) {
           unreadable++;
-          reasons.add(redact(a.reason!, columns));
+          reasons.add(redact(a.reason!));
         }
         if (!a.platform) {
           if (!script.error) {
             noPlatform++;
-            reasons.add(redact(a.reason!, columns));
+            reasons.add(redact(a.reason!));
           }
           return;
         }
@@ -145,10 +140,10 @@ async function main(): Promise<void> {
         if (a.viewers.length > 0)
           p.converted++;
         else
-          reasons.add(`${a.platform}: ${redact(a.reason!, columns)}`);
+          reasons.add(`${a.platform}: ${redact(a.reason!)}`);
         platforms.set(key, p);
         const n = notes.get(key) ?? new Counter();
-        for (const note of new Set(a.notes.map((x) => redact(x, columns))))
+        for (const note of new Set(a.notes.map((x) => redact(x))))
           n.add(note);
         notes.set(key, n);
         const root = script.body && platformCall(script.body, key);
@@ -165,7 +160,7 @@ async function main(): Promise<void> {
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
-      failures.add(redact(message, columns));
+      failures.add(redact(message));
       if (!summaryOnly)
         console.log(`${shown}: FAILED ${message}`);
     }

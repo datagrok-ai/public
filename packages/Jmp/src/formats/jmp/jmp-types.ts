@@ -25,7 +25,8 @@ export const JMP_EPOCH_OFFSET_S = 2082844800;
 // Column display formats (dt4). 0x6c=":day:hr:m" and 0x6d=":day:hr:m:s" could be time or
 // duration; like upstream, we treat them as duration.
 export const DATE_FORMATS = new Set([
-  0x65, 0x66, 0x67, 0x6e, 0x6f, 0x70, 0x71, 0x72, 0x75, 0x76, 0x7a, 0x7f, 0x88, 0x8b]);
+  0x65, 0x66, 0x67, 0x6e, 0x6f, 0x70, 0x71, 0x72, 0x75, 0x76, 0x7a, 0x7f, 0x88, 0x8b,
+  0x90]); // 0x90: a date column saved by JMP 18 (Harvard Dataverse doi:10.7910/DVN/JVINZU, Rat.jmp)
 export const DATETIME_FORMATS = new Set([
   0x69, 0x6a, 0x73, 0x74, 0x77, 0x78, 0x79, 0x7b, 0x7c, 0x7d, 0x7e, 0x80, 0x81, 0x82, 0x86, 0x87, 0x89, 0x8a]);
 export const DURATION_FORMATS = new Set([0x6c, 0x6d, 0x83, 0x84, 0x85]);
@@ -78,7 +79,7 @@ export interface JmpInfo {
   nrows: number;
   ncols: number;
   columns: JmpColumnInfo[];
-  /** Raw entries of the visible- and hidden-column indexes; their meaning isn't confirmed yet (JMP_PLUGIN.md §4.4). */
+  /** Positions of the visible and the hidden columns; together they hold every column once (JMP_PLUGIN.md §4.4). */
   visibleIndex: number[];
   hiddenIndex: number[];
   /** Byte range between the build string and the first column, where table properties such as saved

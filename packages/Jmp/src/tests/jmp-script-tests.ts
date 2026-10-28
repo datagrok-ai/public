@@ -80,6 +80,28 @@ category('JMP: JSL', () => {
     expect(bare.args[1].type, 'binary');
   });
 
+  test('names with #, %, \' and dots, columns given a format', async () => {
+    const names = (text: string) => (parseJsl(text) as Extract<JslNode, {type: 'call'}>).args
+      .map((a) => a.type === 'call' ? a.name : '');
+    expectArray(names('Profiler(DAS28#0M(5.1984, Lock(0)), Peptides%CV(30, Hi Limit(30)))'),
+      ['DAS28#0M', 'Peptides%CV']);
+    expectArray(names('Multivariate(Spearman\'s ρ(1), Scatterplot Matrix(1))'),
+      ['Spearman\'s ρ', 'Scatterplot Matrix']);
+    const assign = parseJsl('Ratio5_25.5_50_mean = Numeric');
+    expect(assign.type === 'binary' && assign.left.type === 'name' && assign.left.name, 'Ratio5_25.5_50_mean');
+    const format = parseJsl('Set Format(Mean(:"Age (years)"n(10, 1), :Sqrt AEX(10, 2)))') as
+      Extract<JslNode, {type: 'call'}>;
+    const mean = format.args[0] as Extract<JslNode, {type: 'call'}>;
+    expect(mean.args.length, 2);
+    const first = mean.args[0];
+    expect(first.type === 'index' && first.target.type === 'column' && first.target.name, 'Age (years)');
+    expect(first.type === 'index' && first.args.length, 2);
+    const aliases = parseJsl('Aliases(["en" => "Pred Formula", "ja" => "予測式"])') as Extract<JslNode, {type: 'call'}>;
+    const map = aliases.args[0];
+    expect(map.type === 'list' && map.items.length, 2);
+    expect(map.type === 'list' && map.items[1].type === 'binary' && map.items[1].op, '=>');
+  });
+
   test('statements in arguments, matrices, loops, any script', async () => {
     const glued = parseJsl('Trend(dt = Current Data Table(); L = dt << Get Column Names(continuous); )') as
       Extract<JslNode, {type: 'call'}>;
@@ -246,7 +268,7 @@ category('JMP: analyses', () => {
     expect(v.type, 'Box plot');
     expect(v.options.valueColumnName, 'height');
     expectArray(v.options.categoryColumnNames as string[], ['sex']);
-    expect(c.notes.some((n) => /Separate analyses by age/.test(n)), true);
+    expect(c.notes.some((n) => /Separate analyses by "age"/.test(n)), true);
   });
 
   test('Fit Y by X picks the analysis from the column types', async () => {
@@ -271,7 +293,7 @@ category('JMP: analyses', () => {
     const byAge = convert('Graph Builder(Variables(X(:height), Y(:weight), Overlay(:age)), ' +
       'Elements(Points(X, Y), Line Of Fit(X, Y)))');
     expect(byAge.viewers[0].options.regressionPerCategory === undefined, true);
-    expectArray(byAge.notes, ['Line of Fit by age shown as one line']);
+    expectArray(byAge.notes, ['Line of Fit by "age" shown as one line']);
     v = gb('X(:age), Y(:height)', 'Line(X, Y, Legend(3))');
     expect(v.type, 'Line chart');
     expectArray(v.options.yColumnNames as string[], ['height']);
@@ -308,7 +330,7 @@ category('JMP: analyses', () => {
     const c = convert('Graph Builder(Variables(X(:height), Y(:weight), Page(:sex)), ' +
       'Elements(Points(X, Y), Smoother(X, Y)))');
     only(c);
-    expect(c.notes.some((n) => /Pages by sex/.test(n)), true);
+    expect(c.notes.some((n) => /Pages by "sex"/.test(n)), true);
     expect(c.notes.some((n) => /Smoother/.test(n)), true);
     expect(/Contour/.test(convert('Graph Builder(Variables(X(:height), Y(:weight)), Elements(Contour(X, Y)))').reason!),
       true);
@@ -349,9 +371,9 @@ category('JMP: analyses', () => {
   });
 }, {node: true});
 
-// Files researchers published under CC0 (CREDITS.md §5): what JMP 11–13 saved, in English and Japanese.
+// Files researchers published openly (CREDITS.md §5): what JMP 10–18 saved, in English and Japanese.
 category('JMP: public files', () => {
-  const read = async (name: string) => readJmp(await _package.files.readAsBytes(`zenodo/${name}.jmp`));
+  const read = async (name: string) => readJmp(await _package.files.readAsBytes(`public/${name}.jmp`));
 
   test('JMP 13, in Japanese: Oneway analyses', async () => {
     const t = await read('dryad-t76hdr7xq-hadmsc');
@@ -385,5 +407,42 @@ category('JMP: public files', () => {
     const groups = acoustic.columns.find((c) => c.info.name === 'MaxFreq Groups')!;
     expect(groups.properties!.properties[0].node !== undefined, true);
     expect(groups.properties!.properties[0].text, 'Formula(If(:MaxFreq_mean > 1900, 1, 2))');
+  });
+
+  test('JMP 10: hidden columns, value labels and colors', async () => {
+    const t = await read('dataverse-jylsxj-rlrva');
+    expect(t.info.jmpVersion, '10.0.0');
+    expect(t.info.hiddenIndex.length, 21);
+    expect(t.info.visibleIndex.length + t.info.hiddenIndex.length, t.info.ncols);
+    expect(t.columns[t.info.hiddenIndex[0]].info.name, 'Source Table');
+    const labels = t.columns.find((c) => c.info.name === 'Labels')!.properties!;
+    expectArray(labels.valueLabels!.keys, [0, 1, 2, 3, 4]);
+    expectArray(labels.valueLabels!.labels, ['', 'A', 'V', 'R', 'D']);
+    expect(labels.properties.some((p) => p.name === 'Value Colors' && p.node !== undefined), true);
+  });
+
+  test('JMP 11: value labels and a Graph Builder', async () => {
+    const t = await read('dataverse-hqaihu-figure4');
+    expect(t.info.jmpVersion, '11.2.0');
+    expectArray(t.columns.find((c) => c.info.name === 'Adopted')!.properties!.valueLabels!.labels, ['', 'A']);
+    const cols = t.columns.map((c) => ({name: c.info.name, numeric: c.kind !== 'string'}));
+    const figure = convertScript(t.scripts.find((s) => s.name === 'Figure 4')!, cols);
+    expect(figure.platform, 'Graph Builder');
+    expect(figure.viewers.length, 1);
+  });
+
+  test('JMP 15 and 18: p-value and date display formats', async () => {
+    const das = await read('figshare-15044331-das28');
+    const p = das.columns.find((c) => c.info.name === 'Prob>|t|')!;
+    expect(p.kind, 'float');
+    expect(p.descriptor[3], 0x61);
+    expect(p.data.type === 'float' && Array.from(p.data.values).every((v) => isNaN(v) || (v >= 0 && v <= 1)), true);
+    expectArray(das.columns.find((c) => c.info.name === 'Source Table')!.properties!.valueLabels!.labels.slice(0, 2),
+      ['FIGS', 'Module 1']);
+    const rat = await read('dataverse-jvinzu-rat');
+    expect(rat.info.jmpVersion, '18.1.0');
+    const date = rat.columns.find((c) => c.info.name === 'Date')!;
+    expect(date.kind, 'date');
+    expect(date.descriptor[3], 0x90);
   });
 }, {node: true});

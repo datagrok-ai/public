@@ -93,15 +93,20 @@ users of the plugin.
 
 ---
 
-## 5. Test data (`files/zenodo/`, not bundled)
+## 5. Test data (`files/public/`, not bundled)
 
-Data files that researchers published on Dryad under **CC0 1.0** (public domain),
-taken from their Zenodo copies and renamed. CC0 asks for no attribution; they are
-credited here anyway. Used only by the package tests.
+Data files that researchers published openly, renamed after their source. Used only by the
+package tests. CC0 asks for no attribution; those files are credited here anyway. The CC BY 4.0
+file is used under that licence (https://creativecommons.org/licenses/by/4.0/), unchanged apart
+from its name.
 
-| File | Original name | Dataset |
-|---|---|---|
-| `dryad-t76hdr7xq-hadmsc.jmp` | `hAdMSC_siTcad+APN.jmp` | Nakamura, Kita, Tanaka et al. (2020), *Adiponectin stimulates exosome release to enhance mesenchymal stem cell driven therapy of heart failure in mice*. https://doi.org/10.5061/dryad.t76hdr7xq |
-| `dryad-t76hdr7xq-tac2wks.jmp` | `TAC2wks_hMSC(siTcad).jmp` | same dataset |
-| `dryad-60nn7-keiser-2016.jmp` | `Keiser et al 2016 - Data File for Proceedings B.jmp` | Keiser, Pinter-Wollman, Augustine et al. (2016), *Data from: Individual differences in boldness influence patterns of social interactions and the transmission of cuticular bacteria among group-mates*. https://doi.org/10.5061/dryad.60nn7 |
-| `dryad-6b340-acoustic.jmp` | `Acoustic_Dryad.jmp` | Warwick, Travis, Lemmon (2015), *Data from: Geographic variation in the Pine Barrens Treefrog (Hyla andersonii): concordance of genetic, morphometric, and acoustic signal data*. https://doi.org/10.5061/dryad.6b340 |
+| File | Original name | Licence | Dataset |
+|---|---|---|---|
+| `dryad-t76hdr7xq-hadmsc.jmp` | `hAdMSC_siTcad+APN.jmp` | CC0 1.0 | Nakamura, Kita, Tanaka et al. (2020), *Adiponectin stimulates exosome release to enhance mesenchymal stem cell driven therapy of heart failure in mice*. Dryad, https://doi.org/10.5061/dryad.t76hdr7xq |
+| `dryad-t76hdr7xq-tac2wks.jmp` | `TAC2wks_hMSC(siTcad).jmp` | CC0 1.0 | same dataset |
+| `dryad-60nn7-keiser-2016.jmp` | `Keiser et al 2016 - Data File for Proceedings B.jmp` | CC0 1.0 | Keiser, Pinter-Wollman, Augustine et al. (2016), *Data from: Individual differences in boldness influence patterns of social interactions and the transmission of cuticular bacteria among group-mates*. Dryad, https://doi.org/10.5061/dryad.60nn7 |
+| `dryad-6b340-acoustic.jmp` | `Acoustic_Dryad.jmp` | CC0 1.0 | Warwick, Travis, Lemmon (2015), *Data from: Geographic variation in the Pine Barrens Treefrog (Hyla andersonii): concordance of genetic, morphometric, and acoustic signal data*. Dryad, https://doi.org/10.5061/dryad.6b340 |
+| `dataverse-jylsxj-rlrva.jmp` | `RLRVAsummary_with_code.jmp` | CC0 1.0 | Altman, McDonald (2013), *Replication data for: A Half-Century of Virginia Redistricting Battles: Shifting from Rural Malapportionment to Voting Rights to Public Participation*. Harvard Dataverse, https://doi.org/10.7910/DVN/JYLSXJ |
+| `dataverse-hqaihu-figure4.jmp` | `Figure4Replication.jmp` | CC0 1.0 | Altman, McDonald (2015), *Replication Data for: Redistricting and Polarization*. Harvard Dataverse, https://doi.org/10.7910/DVN/HQAIHU |
+| `dataverse-jvinzu-rat.jmp` | `Rat.jmp` | CC0 1.0 | Bender (2025), *Closed-Loop Electrical Block of Vagus Nerve Scales from Rodent to Porcine Cardiac Models*. Harvard Dataverse, https://doi.org/10.7910/DVN/JVINZU |
+| `figshare-15044331-das28.jmp` | `DAS280M v BL IGS.jmp` | CC BY 4.0 | Thirkettle (2021), *On A Knife Edge: the role of interferon pathways in the adaptive immune response and potential progression to RA pathogenesis*. Newcastle University, figshare, https://doi.org/10.25405/data.ncl.15044331.v1 |

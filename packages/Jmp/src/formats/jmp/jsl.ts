@@ -33,8 +33,12 @@ type Token =
   | {kind: 'punct', text: string, pos: number}
   | {kind: 'end', text: '', pos: number};
 
-const PUNCT = ['++', '--', '<<', '>>', '==', '!=', '<=', '>=', '||', '&&', '::', '+=', '-=', '*=', '/=',
+const PUNCT = ['++', '--', '=>', '<<', '>>', '==', '!=', '<=', '>=', '||', '&&', '::', '+=', '-=', '*=', '/=',
   '(', ')', '{', '}', '[', ']', ',', ';', ':', '=', '<', '>', '+', '-', '*', '/', '!', '|', '&', '^', '?'];
+
+const NAME_WORD = /[\p{L}\p{M}\p{N}_#%']*(?:\.[\p{L}\p{M}\p{N}_#%']+)*/u.source;
+const NAME = new RegExp(`^[\\p{L}_]${NAME_WORD}(?:[ \\t]+(?:[\\p{L}\\p{N}_]${NAME_WORD}|%))*`, 'u');
+const COLUMN_NAME = /^[\w%.#$@'\u0080-\uffff]+(?:[ \t]+[\w%.#$@'\u0080-\uffff]+)*/u;
 
 const ESCAPES: Record<string, string> = {'"': '"', 'n': '\n', 'r': '\r', 't': '\t', '\\': '\\', '0': '\0', 'N': '\n'};
 
@@ -115,11 +119,10 @@ function tokenize(src: string): Token[] {
     const afterColon = prev?.kind === 'punct' && (prev.text === ':' || prev.text === '::');
     if (/[\p{L}_]/u.test(c) || (afterColon && c >= '\u0080')) {
       // a name may contain spaces between words, `Fit Y by X` or `Col %`, and letters of any script: `Arbeitsblätter`.
-      // After `:`, JMP 15 writes a column name such as `:HC Met255 %Oxidation` or `:（説明）` bare, so a column
-      // name may also hold characters that aren't operators.
-      const m = (afterColon ?
-        /^[\w%.#$@'\u0080-\uffff]+(?:[ \t]+[\w%.#$@'\u0080-\uffff]+)*/u :
-        /^[\p{L}_][\p{L}\p{M}\p{N}_]*(?:[ \t]+(?:[\p{L}\p{N}_][\p{L}\p{M}\p{N}_]*|%))*/u).exec(src.slice(i))!;
+      // JMP also writes names with `#`, `%`, `'` or a `.` between word characters bare (`DAS28#0M`, `Peptides%CV`,
+      // `Spearman's ρ`, `Ratio5_25.5_50_mean`); none of these is a JSL operator. After `:`, JMP 15 writes a column
+      // name such as `:HC Met255 %Oxidation` or `:（説明）` bare, so a column name may hold other characters too.
+      const m = (afterColon ? COLUMN_NAME : NAME).exec(src.slice(i))!;
       tokens.push({kind: 'name', text: m[0], pos});
       i += m[0].length;
       continue;
@@ -137,7 +140,7 @@ function tokenize(src: string): Token[] {
 // Binary operators by precedence, loosest first. `;` glues statements; `<<` sends a message.
 const BINARY_LEVELS: string[][] = [
   [';'],
-  ['=', '+=', '-=', '*=', '/='],
+  ['=', '+=', '-=', '*=', '/=', '=>'],
   ['||', '|'],
   ['&&', '&'],
   ['==', '!=', '<', '>', '<=', '>='],
@@ -308,6 +311,15 @@ export function parseJsl(src: string): JslNode {
 
   /** After `:`: a column reference such as `:Age`, `:"Age at start"n` or `:Name("Age at start")`. */
   function column(): JslNode {
+    const col = columnRef();
+    // `Set Format(Mean(:Age(10, 1)))` gives a column its display format: kept as the column indexed by it
+    if (!isPunct('('))
+      return col;
+    k++;
+    return {type: 'index', target: col, args: args(')')};
+  }
+
+  function columnRef(): JslNode {
     const t = tokens[k];
     if (t.kind === 'nameLiteral') {
       k++;
