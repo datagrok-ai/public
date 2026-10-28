@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Word cloud: Fixed errors logged after the viewer is closed while a render waits for its size
 * Radar: Fixed the legend overlapping the chart
 * [public#4422](https://github.com/datagrok-ai/public/issues/4422): Charts: Sunburst does not show rows selected in the grid
 * [public#4423](https://github.com/datagrok-ai/public/issues/4423): Tree viewer: Doesn't handle removal of the Size and Color columns
