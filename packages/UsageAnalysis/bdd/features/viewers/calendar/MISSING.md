@@ -16,11 +16,11 @@ Added with `calendar-edge-cases.feature` (edge-case round of 2026-10-26, localho
 
 ### Still open
 
-1. **Questions for owners**:
-   - A Filter click, then a category toggled in the filter panel: the calendar takes no part in the
-     panel's filtering, so its filter is dropped on the next refilter. Intended?
-   - A date column whose values are all empty: the calendar draws a 1970 grid with no "no data" cue.
-   - The date column removed while the calendar is open: a placeholder 2023 grid, no message.
+1. **Decided, scenarios to write** (2026-10-28):
+   - A Filter click, then a category toggled in the filter panel: the calendar's filter stays. It goes
+     only when the calendar is closed or its On Click is switched to Select.
+   - A date column whose values are all empty: a "no data" message instead of the 1970 grid.
+   - The date column removed while the calendar is open: the same message instead of the 2023 grid.
 2. **Dart test to write**: rows at 00:00 and 23:59 local time and across a DST change are counted on
    their local day.
 3. **Help**: `calendar.md` says "Click on year" and "Click on week"; the calendar hit-tests only days,

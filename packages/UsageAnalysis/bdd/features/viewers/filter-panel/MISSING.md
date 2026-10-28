@@ -15,28 +15,30 @@ Added with `filter-panel-edge-cases.feature` (edge-case round of 2026-10-26, loc
    and the input gets `d4-invalid` with an error tooltip (`text_filter.dart`). The scenario claims only
    that no rule is added and the rows stay. Wanted: the state of the Expression card's search input.
 
-### Questions for owners
+### Waiting for core#1174
 
-3. **Combined boolean card, the kept flag's column removed.** Observed on localhost: Combined Boolean
-   card, click CONTROL (6 rows pass), remove the CONTROL column. The card lists no flag, but the table
-   stays filtered (not every row passes). A card on a removed column otherwise goes and releases its
-   rows (`filter-panel-edge-cases.feature`). Is this a defect? It has no ticket; the scenario waits
-   for the answer.
-4. **What the categorical search does with `(`, `.`, `+`, `[`.** core#1134 is the error; whether the
-   search should match the literal text or treat the word as a regular expression is not documented
-   (only `,` and `*` are search syntax).
-5. **A range card's min typed above its max**: which rows pass while the validator flags the fields.
+3. **Expression and Combined Boolean cards, a column they use removed** while the panel has no card of
+   that column (with the column's own card present, its removal refilters the table and the rows come
+   back): the table stays filtered. Three known failures in `filter-panel-edge-cases`.
+
+### Decided, scenarios to write (2026-10-28)
+
+4. **The categorical search with `(`, `.`, `+`, `[`** finds the literal text (core#1134, fixed, no error any more).
+5. **A range card's min typed above its max**: the present handling is right (the fields are flagged
+   with a message); claimed once a step reads the flag (item 1).
 6. **Hierarchical card when a level column is removed**, and a layout naming a removed level column:
-   drop the level, drop the card, or fall back to auto-detection.
-7. **An expression rule naming a removed column** (`${HEIGHT} < 150`, then HEIGHT removed): drop the
-   rule or flag it.
-8. **A saved filter state saved twice under one name** (overwritten silently today), and a state
-   applied to a table of the same shape that lacks the saved category.
-9. **The text card's extended-search operators** (`!malt`, `^hop`) at fuzziness above 0: operators or
-   literal text (help filters.md says only "fuzzy search").
-10. **Combined Boolean added to a table with no boolean column**: a message, an empty card, or a
-    disabled menu item.
-11. **Linked tables: the source view closed while its filter narrows the target**: release or keep.
+   the level is dropped.
+7. **An expression rule naming a removed column**: covered by the rule "a filter goes with its
+   column".
+8. **A saved filter state saved twice under one name** asks before it overwrites; a state that cannot
+   be applied to the table is not offered.
+9. **Combined Boolean on a table with no boolean column**: the menu item is disabled.
+
+10. **The text card's `!malt` and `^hop`**: right as it is. At Fuzzyness 0 the term is literal text
+    (a plain "contains"); above 0 the card searches with Fuse.js extended search, where `!` is "does not
+    contain" and `^` is "starts with" (`text_filter.dart`).
+11. **Linked tables, filter to filter: the source view closed** while its filter narrows the target:
+    the target's filter is released.
 
 ### API or Dart tests to write
 

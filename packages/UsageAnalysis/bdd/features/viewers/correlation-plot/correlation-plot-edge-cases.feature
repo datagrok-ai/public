@@ -4,7 +4,8 @@ Feature: Correlation plot edge cases
   correlation plot of AGE, HEIGHT, WEIGHT and STARTED. A column renamed while the plot is open is
   renamed in the plot's axes and cells, and its coefficients stay as they were (a viewer rewrites the
   column names it holds on a rename, `data_frame_viewer.dart`). A table filter that leaves no row
-  logs no error.
+  logs no error. A column removed from axes narrowed to AGE, HEIGHT, WEIGHT is the defect core#1172:
+  both axes go back to every numeric column instead of keeping AGE, HEIGHT.
 
   Background:
     Given user is logged in
@@ -29,4 +30,15 @@ Feature: Correlation plot edge cases
     Then 0 rows should pass the filter
     And the "rows shown" reading of correlation plot viewer should be 0
     And correlation plot viewer should report no error
+    And no errors should have been logged
+
+  @edge-cases @known-failure:42 @realizes:core#1172
+  Scenario: A column removed from narrowed axes leaves only that column
+    When user sets properties of correlation plot viewer:
+      | xColumnNames | AGE, HEIGHT, WEIGHT |
+      | yColumnNames | AGE, HEIGHT, WEIGHT |
+    Then the "x columns" reading of correlation plot viewer should be "AGE, HEIGHT, WEIGHT"
+    When user removes "WEIGHT" column
+    Then the "x columns" reading of correlation plot viewer should be "AGE, HEIGHT"
+    And the "y columns" reading of correlation plot viewer should be "AGE, HEIGHT"
     And no errors should have been logged

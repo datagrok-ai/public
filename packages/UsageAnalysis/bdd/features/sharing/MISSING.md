@@ -33,9 +33,8 @@ Question: which entities are expected to show it — a query and its connection,
 
 ## 2. The level the Sharing pane names for a connection
 
-Filed into core#977 (2026-10-21): right after a View and use share the Sharing pane of a connection says
-"has special permissions", not "can view and use". `sharing-connection` claims the label in a
-`@known-failure` scenario; drop the tag when core#977 is fixed.
+core#977 is fixed: right after a View and use share the Sharing pane of a connection says "can view and
+use". `sharing-connection` guards the label (`@realizes:core#977`, no longer a known failure).
 
 ## 3. Steps the Share dialog lacks
 

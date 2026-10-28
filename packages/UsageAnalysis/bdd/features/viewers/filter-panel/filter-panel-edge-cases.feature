@@ -4,24 +4,22 @@ Feature: Filter panel edge cases
   Psoriasis 204 and PsA 38; RACE: Asian 15; HEIGHT: 128 blank cells).
   A card on a column that is removed goes with the column and releases its rows (the panel drops
   the card of a removed column, `filters_core.dart` `onColumnsRemoved`): a categorical and a numeric
-  card do; a flag of the Combined Boolean card and a rule of the Expression card keep the table
-  filtered (known failures, no ticket yet). The missing-values menu of a numeric card keeps, drops or keeps
+  card do. The panel is opened empty, so no card of the removed column refilters the table: then a
+  flag of the Combined Boolean card and a rule of the Expression card, on one column or on Numeric
+  Columns, keep the table filtered (core#1174). The missing-values menu of a numeric card keeps, drops or keeps
   only the blank rows (help filters.md "Missing values"). The expression card's `is null` and
   `is not null` operations of a numeric column keep the blank and the filled rows (help filters.md,
   "numerical columns"). A free-text rule that does not parse is refused on Enter: no rule is added
-  and the rows stay (`text_filter.dart`). A bracket typed into a categorical card's search is the
-  defect core#1134.
+  and the rows stay (`text_filter.dart`). A bracket typed into a categorical card's search logs
+  no error (core#1134).
 
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
     And user opens an empty filter panel
 
-  @edge-cases @known-failure:31 @realizes:core#1134
+  @edge-cases @realizes:core#1134
   Scenario: An opening bracket typed into a categorical card's search logs no error
-    core#1134: the categorical card compiles each search word as a regular expression without
-    escaping it, so "Ps(" throws "Unterminated group" on the keystroke. Remove the tag when core#1134
-    is fixed and this scenario passes.
     When user adds a card for "DIS_POP" to the filter panel
     And user hovers over "DIS_POP" filter card
     And user clicks on search icon of "DIS_POP" filter card
@@ -96,26 +94,40 @@ Feature: Filter panel edge cases
     And all rows should pass the filter
     And no errors should have been logged
 
-  @edge-cases @known-failure:107 @ticket-pending
+  @edge-cases @known-failure:105 @realizes:core#1174
   Scenario: Removing the column of a filtering flag in the Combined Boolean card releases its rows
-    The flag goes from the card, but the table stays filtered to its true rows. No ticket yet. Remove
-    the tag when the removal releases the rows.
+    core#1174: the flag goes from the card, but the table stays filtered to its true rows. Remove the
+    tag when the removal releases the rows.
     When user picks "Add Filter | Combined Boolean" from the filter panel menu
     And user clicks on the "category CONTROL of Flags" area of filter panel
     Then 6 rows should pass the filter
-    When user removes "CONTROL" column
+    When user picks "Remove" from the context menu of the "header CONTROL" area of grid
     Then all rows should pass the filter
     And no errors should have been logged
 
-  @edge-cases @known-failure:120 @ticket-pending
+  @edge-cases @known-failure:118 @realizes:core#1174
   Scenario: Removing the column of a filtering Expression card rule releases its rows
-    The table stays filtered by a rule on a column that is gone. No ticket yet. Remove the tag when
-    the removal releases the rows.
+    core#1174: the table stays filtered by a rule on a column that is gone. Remove the tag when the
+    removal releases the rows.
     When user picks "Add Filter | Expression" from the filter panel menu
     And user selects "HEIGHT" in Column input in "Expression" filter card
     And user selects "is null" in Operation input in "Expression" filter card
     And user clicks on "Add filter" button in "Expression" filter card
     Then 128 rows should pass the filter
-    When user removes "HEIGHT" column
+    When user picks "Remove" from the context menu of the "header HEIGHT" area of grid
     Then all rows should pass the filter
+    And no errors should have been logged
+
+  @edge-cases @known-failure:132 @realizes:core#1174
+  Scenario: Removing a column under a Numeric Columns rule recalculates the rule over the rest
+    core#1174: "> 100" over the numeric columns keeps 884 rows (HEIGHT or WEIGHT above 100); with
+    HEIGHT gone only WEIGHT counts, 131 rows, but the table stays at 884. Remove the tag when it is 131.
+    When user picks "Add Filter | Expression" from the filter panel menu
+    And user selects "Numeric Columns" in Column input in "Expression" filter card
+    And user selects ">" in Operation input in "Expression" filter card
+    And user enters "100" into Value input in "Expression" filter card
+    And user clicks on "Add filter" button in "Expression" filter card
+    Then 884 rows should pass the filter
+    When user picks "Remove" from the context menu of the "header HEIGHT" area of grid
+    Then 131 rows should pass the filter
     And no errors should have been logged

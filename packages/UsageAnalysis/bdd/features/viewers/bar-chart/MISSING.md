@@ -38,13 +38,17 @@ Added with `bar-chart-edge-cases.feature` (edge-case round of 2026-10-26, localh
 
 ### Still open
 
-1. **Questions for owners**:
-   - Value axis Min above Max (the box plot swaps them; the bar chart draws an inverted range).
-   - Max Bar Height, Max Category Width or Category Value Width at 0 or below (no declared bounds).
-   - The Stack column removed while the chart is stacked.
-   - Sort by value with a category whose aggregate is empty: where it goes, ascending and descending.
-   - Zoomed to two bars, then the table filtered to one category.
-   - `abc` typed into the value axis Min.
+1. **Decided, scenarios to write** (2026-10-28):
+   - Value axis Min above Max: the two are swapped, as in the box plot.
+   - Max Bar Height, Max Category Width and Category Value Width have a lower bound in the property
+     declaration; 0 or below is not taken.
+   - The Stack column removed while the chart is stacked: stacking is dropped, with no error.
+   - Zoomed to two bars, then the table filtered to one category: the zoom is reset and the remaining
+     bar is shown.
+   - `abc` typed into a numeric property (the value axis Min and every other numeric input) is not
+     taken; the old value stays.
+   - Bar Sort Type "by value" with a category whose aggregate is empty: that bar is last, in either
+     Bar Sort Order.
 2. **API or Dart tests to write**: a Stack Map that is not a date categorization (ApiTests, the editor
    cannot produce it); the category strip no wider than Max Category Width for a 200-character name
    (regTest); frame-time budgets for 25 stacks × 400 categories, 600 vertical categories and a

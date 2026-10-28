@@ -66,7 +66,11 @@ Added with `box-plot-edge-cases.feature` (edge-case round of 2026-10-26, localho
      types into a property row (the property step goes through the API).
 2. **Data**: the group comparison shown at 30 categories and hidden at 31 (help box-plot.md) needs a
    categorical column with exactly 30 and 31 categories; demog-1000 has none.
-3. **Questions for owners**: the Category 1 column removed while in use; a group of one row (does the
-   info tooltip give the variance reason); the control group filtered out.
+3. **Decided, scenario to write** (2026-10-28): the Category column removed while in use drops the
+   grouping, with no error. A group of one row under Show Group Comparison gets the info mark whose
+   tooltip says it has only 1 value and is left out of the comparison (`_leafNaReason`).
+   The control group (picked on the chart) filtered out: the control moves to the next group, and the
+   picked group is the control again once the filter is released (checked by hand 2026-10-28); a step
+   reading the chart's control selector is needed to claim it.
 4. **Dart tests to write**: a value column holding NaN (not an empty value) with the violin style, and
    retained listeners after ten add/close cycles and ten table swaps (core#960).

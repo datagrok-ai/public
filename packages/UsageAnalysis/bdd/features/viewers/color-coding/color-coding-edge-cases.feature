@@ -5,7 +5,8 @@ Feature: Color coding edge cases
   coloring leaves the menu item disabled on a numeric column, and applied to a selection of columns
   it colours the ones it fits and leaves the rest (`grid_popup_menu.dart`, "<type> type is not
   applicable" and the selected-columns branch). A linked coloring whose source column is renamed is
-  the defect core#1139, described in its scenario.
+  kept, and one whose source column is removed paints nothing (core#1139). Bin... with fewer than
+  one bin is the defect core#1171: the dialog takes 0, and the coloring is gone.
 
   Background:
     Given user is logged in
@@ -42,11 +43,8 @@ Feature: Color coding edge cases
     And "SEX" column should have no color coding
     And no errors should have been logged
 
-  @edge-cases @known-failure:57 @realizes:core#1139
+  @edge-cases @realizes:core#1139
   Scenario: A linked coloring keeps following its source column after the source is renamed
-    core#1139 (case 2): the link is kept by the source column's name and nothing updates it on a
-    rename, so RACE falls back to the colours of the first other column (USUBJID) while the link still
-    names AGE. Remove the tag when core#1139 is fixed and RACE keeps AGE2's colours after the rename.
     When user colors "AGE" column linearly from "#0000FF" to "#FF0000"
     And user colors "RACE" column linked to "AGE" column
     Then the coloring of "RACE" column should be linked to "AGE" column
@@ -55,3 +53,27 @@ Feature: Color coding edge cases
     When user renames "AGE" column to "AGE2"
     Then "AGE2" column should be color-coded linearly
     And the "color of cell 2 of RACE" and "color of cell 2 of AGE2" readings of grid should be the same
+
+  @edge-cases @known-failure:66 @realizes:core#1171
+  Scenario: Bin... refuses a number of bins below one and keeps the coloring
+    When user picks "Color Coding > Conditional" from the context menu of the "header AGE" area of grid
+    And user picks "Color Coding > Edit..." from the context menu of the "header AGE" area of grid
+    Then "Color-coding: AGE" dialog should be visible
+    When user clicks on "Bin..." link in "Color-coding: AGE" dialog
+    Then "Edit" dialog should be visible
+    When user enters "0" into "Number of bins" input in "Edit" dialog
+    And user clicks on OK button in "Edit" dialog
+    Then "Edit" dialog should be visible
+    When user clicks on CANCEL button in "Edit" dialog
+    Then "AGE" column should be color-coded conditionally
+    And no errors should have been logged
+
+  @edge-cases @realizes:core#1139
+  Scenario: A linked coloring whose source column is removed paints nothing
+    When user colors "AGE" column linearly from "#0000FF" to "#FF0000"
+    And user colors "RACE" column linked to "AGE" column
+    Then the "color of cell 1 of RACE" and "color of cell 1 of AGE" readings of grid should be the same
+    When user removes "AGE" column
+    Then the "color of cell 1 of RACE" and "color of cell 1 of SEX" readings of grid should be the same
+    And the "color of cell 2 of RACE" and "color of cell 2 of SEX" readings of grid should be the same
+    And no errors should have been logged
