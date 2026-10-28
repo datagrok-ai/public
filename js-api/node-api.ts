@@ -26,6 +26,7 @@ export * from './src/sticky_meta';
 export * from './src/data';
 export * from './src/helpers';
 export * from './src/logger';
+export {AIChat, AIEngine} from './src/ai';
 
 export * from './src/chem';
 export * from './src/ml';

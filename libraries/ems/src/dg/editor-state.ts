@@ -1,13 +1,10 @@
-/* `EditState` over the js-api `DomainFrameEditor` — the third host of the editing state
-   (STATE-CONTRACT "u2 DomainSource"): the editor stays the single writer of the frame (H3), every
-   write here goes through it by row index, and its `onChanged` is the one signal the mirrored
-   state follows (H10). Keys are what `FrameRows` uses — the `id` cell, a draft's `~new:` id the
-   editor stamps — so the source, the form and the list address a row the same way. */
 import type * as DG from 'datagrok-api/dg';
 import {signal, computed, ReadonlySignal, Emitter, FrameRows} from '@datagrok-libraries/u2';
 import type {EditSaved, EditState} from '../core/edit-state.js';
 import type {DataFrameLike} from '@datagrok-libraries/u2';
 
+/** `EditState` over the js-api `DomainFrameEditor`: the editor stays the single writer of the frame, and its
+ * `onChanged` is the one signal the mirrored state follows. Keys are what `FrameRows` uses. */
 export class EditorEditState implements EditState {
   readonly isDirty: ReadonlySignal<boolean>;
   readonly changeCount: ReadonlySignal<number>;
@@ -20,9 +17,8 @@ export class EditorEditState implements EditState {
   problem: string | null = null;
 
   private readonly _subs: {unsubscribe(): void}[];
-  /** Bumped on every editor change: the validity walk runs when it is read, not per keystroke. */
+  // bumped on every editor change: the validity walk runs when it is read, not per keystroke
   private readonly _version = signal(0);
-  /** id → row index, built on demand and dropped whenever the frame's cells or rows move. */
   private _index: Map<string, number> | undefined;
 
   constructor(readonly editor: DG.DomainFrameEditor) {
@@ -142,8 +138,7 @@ export class EditorEditState implements EditState {
     this.editor.detach();
   }
 
-  /** The first blocking problem on a row that is neither deleted nor restored — what the editor's
-   * own save refuses on. */
+  // what the editor's own save refuses on
   private _validity(): string | null {
     const editor = this.editor;
     for (let row = 0; row < this.df.rowCount; row++) {

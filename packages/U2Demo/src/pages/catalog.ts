@@ -43,12 +43,14 @@ export function catalogPage(): HTMLElement {
         .map((state) => {
           const name = `${short}-${state}`;
           let body = sample(reg, meta, name, state);
+          const wide = meta.tag === 'u2-splitter' && typeof body !== 'string';
           if (typeof body === 'string') {
             failed++;
             body = span(`failed: ${body}`, 'u2demo-error');
             body.dataset.u2CatalogError = name;
           }
-          return divV([span(state, 'u2demo-catalog-state'), body], 'u2demo-catalog-cell');
+          return divV([span(state, 'u2demo-catalog-state'), body],
+            wide ? 'u2demo-catalog-cell u2demo-catalog-cell-wide' : 'u2demo-catalog-cell');
         });
       samples += cells.length;
       sections.push(new Section({title: meta.label ?? short}).add(divH(cells, 'u2demo-catalog-cells')));

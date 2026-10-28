@@ -346,6 +346,26 @@ category('Add new column', () => {
     }
   });
 
+  test('a formula over the whole table is previewed on the whole table', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n',
+      Array.from({length: 30}, (_, i) => i))]);
+    const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0].prepare({table: t}));
+    try {
+      await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+      for (const [expression, value, type] of [['RowCount()', 30, DG.COLUMN_TYPE.INT],
+        ['Avg($[n])', 14.5, DG.COLUMN_TYPE.FLOAT]] as [string, number, string][]) {
+        await dlg.updatePreview(expression, false);
+        const preview = dlg.gridPreview!.dataFrame;
+        expect(preview.col(dlg.currentCalculatedColName)?.get(0), value, `the preview of ${expression}`);
+        expect(dlg.resultColumnType, type, `the type of ${expression}`);
+        expect(preview.rowCount, dlg.maxPreviewRowCount, `the preview rows of ${expression}`);
+      }
+    }
+    finally {
+      dlg.close();
+    }
+  });
+
   test('a numeric formula is added as a string or as plain text', async () => {
     const t = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n', [1, 2])]);
     const expression = '${n} + 1';

@@ -4,7 +4,7 @@
    is the defect the P4 binding picker shipped with. The wiring half is driven through the stub's
    `ui.drops` registry — payload → patch, with no browser. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import './dom-shim.js';

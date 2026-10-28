@@ -8,7 +8,8 @@
 import {signal, computed, untracked, batch, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
-import {button, describeDisabled} from '../../core/elements.js';
+import {button} from '../../core/elements.js';
+import {Reason} from '../../core/reason.js';
 import {Tooltip} from '../../core/tooltip.js';
 import {Dialog} from './dialog.js';
 import {statusLine} from '../display/badge.js';
@@ -26,9 +27,9 @@ export interface WizardStep {
   title: string;
   /** A function is lazy: built on first visit. */
   content: HTMLElement | (() => HTMLElement);
-  /** Gates NEXT/FINISH: `false` blocks silently, a string blocks and shows the reason next to the
-   * buttons. A `ReadonlySignal<string | null>` (null = ok) composes directly with `Form.validity`. */
-  canProceed?: ReadonlySignal<boolean> | ReadonlySignal<string | null> | (() => boolean | string | null);
+  /** Gates NEXT/FINISH: a reason blocks and shows next to the buttons and as NEXT's tooltip; `null` lets the user
+   * on. A `ReadonlySignal<string | null>` composes directly with `Form.validity`. */
+  canProceed?: Reason | (() => string | null);
   /** A step reached only once the work is done — a report over what was written. There is
    * nothing to go back to and nothing to cancel, so only the closing button stands, reading
    * CLOSE; a plain Enter does not press it. */
@@ -53,8 +54,8 @@ export interface WizardStep {
 export interface WizardAction {
   text: string;
   run: (ctx: WizardRunContext) => void | Promise<void>;
-  /** Follows the signal; enabled otherwise. */
-  enabled?: ReadonlySignal<boolean>;
+  /** Why the button is off — its tooltip while off; a signal is followed. On while absent. */
+  disabled?: Reason;
   /** Follows the signal; shown on its step otherwise. */
   visible?: ReadonlySignal<boolean>;
 }
@@ -90,6 +91,13 @@ const ABANDON_MS = 2000;
 
 /** Events: `step` (the step id, on every visit), `finish`, `cancel`. */
 export class Wizard extends Control {
+  /** Why the footer waits while a commit, an action or the finish runs. */
+  static readonly WAITING = 'Wait for the running step to finish';
+  /** Why a step ahead of the user is out of reach on the rail. */
+  static readonly NOT_REACHED = 'Not reached yet: get there with NEXT';
+  /** Why a step whose work was committed cannot be visited again. */
+  static readonly COMMITTED = 'Already saved: it cannot be changed now';
+
   readonly currentStep: ReadonlySignal<string>;
   readonly completed: ReadonlySignal<boolean>;
   /** A commit, an action or the finish is running. */
@@ -138,7 +146,7 @@ export class Wizard extends Control {
     this.error = this._error;
     this._blockReason = computed(() => {
       this._recheck.value;
-      return this._busy.value ? '' : Wizard._gate(this._steps[this._index.value].options.canProceed);
+      return this._busy.value ? Wizard.WAITING : Wizard._gate(this._steps[this._index.value].options.canProceed);
     });
 
     this.root.classList.add('u2-wizard');
@@ -161,7 +169,8 @@ export class Wizard extends Control {
     this._back = this._button('BACK', () => this.back());
     this._next = this._button('NEXT', () => this.next());
     // a disabled NEXT keeps its tab stop: the keyboard reaches it, and its tooltip says why
-    Tooltip.bind(this._next, () => this._blockReason.peek() ?? '', this.scope);
+    Tooltip.bind(this._next, () => this._blockReason.peek() ?? '', {owner: this.scope});
+    Tooltip.bind(this._back, () => Reason.of(this._back) ?? '', {owner: this.scope});
     this._footer.append(left, this._back, this._next);
     this.root.append(this._rail, this._content, this._footer);
 
@@ -178,7 +187,7 @@ export class Wizard extends Control {
     for (const step of options.steps.slice(0, start))
       this._visited.add(step.id);
     this._index.value = start;
-    this._reason = this.runInScope(() => statusLine(computed(() => this._blockReason.value || null)));
+    this._reason = this.build(() => statusLine(computed(() => this._busy.value ? null : this._blockReason.value)));
     this._reason.classList.add('u2-wizard-reason', 'u2-status-line-warning');
     this._reason.dataset.u2Part = 'reason';
     left.append(this.status, this._reason, this._errorRow);
@@ -272,7 +281,7 @@ export class Wizard extends Control {
   /** Shows the wizard as a modal dialog; repeated calls reopen the same one. */
   openInDialog(title: string, options: {width?: number, height?: number} = {}): Dialog {
     if (!this._dialog) {
-      const dialog = this.runInScope(() => Dialog.create(title, {keepAlive: true}).add(this)
+      const dialog = this.build(() => Dialog.create(title, {keepAlive: true}).add(this)
         .closeGuard(() => this._guard())
         // ✕ and Esc on a done step are the CLOSE button; anywhere else they are a cancel
         .onClose(() => {
@@ -300,7 +309,7 @@ export class Wizard extends Control {
     const reason = this._blockReason.peek();
     const error = this._error.peek();
     return {...super.getState(), current: this.currentStep.peek(), busy: this._busy.peek(),
-      valid: reason === null && error === null, error: error ?? (reason || null)};
+      valid: reason === null && error === null, error: error ?? (this._busy.peek() ? null : reason)};
   }
 
   getItems(): IItemsState {
@@ -328,6 +337,7 @@ export class Wizard extends Control {
     title.dataset.u2Part = 'item-label';
     title.textContent = step.title;
     marker.append(circle, title);
+    Tooltip.bind(marker, () => Reason.of(marker) ?? '', {owner: this.scope});
     this._rail.append(marker);
 
     const panel = document.createElement('div');
@@ -343,6 +353,7 @@ export class Wizard extends Control {
       panel.append(step.content as HTMLElement);
     const actions = (step.actions ?? []).map((action) => {
       const b = this._button(action.text, () => this._run(action.run));
+      Tooltip.bind(b, () => Reason.of(b) ?? '', {owner: this.scope});
       this.effect(() => b.style.display =
         this._index.value === index && action.visible?.value !== false ? '' : 'none');
       this._footer.insertBefore(b, this._next);
@@ -367,7 +378,8 @@ export class Wizard extends Control {
       this._fail(e);
       return;
     }
-    if (typeof (answer as PromiseLike<unknown> | null)?.then !== 'function') {
+    const promise = Scope.thenable(answer);
+    if (promise === undefined) {
       done?.(answer);
       return;
     }
@@ -384,7 +396,7 @@ export class Wizard extends Control {
         fn();
       });
     };
-    (answer as PromiseLike<unknown>).then((ok) => settle(() => done?.(ok)), (e) => settle(() => this._fail(e)));
+    promise.then((ok) => settle(() => done?.(ok)), (e) => settle(() => this._fail(e)));
   }
 
   /** The callbacks of the options run with the scope that built the wizard ambient (none once it
@@ -434,7 +446,10 @@ export class Wizard extends Control {
       step.marker.classList.toggle('u2-wizard-step-current', on);
       step.marker.classList.toggle('u2-wizard-step-done', done);
       step.marker.classList.toggle('u2-wizard-step-failed', failed.has(step.options.id));
-      step.marker.setAttribute('aria-disabled', String(!on && (!visited || i <= this._committed)));
+      const off = on ? null : !visited ? Wizard.NOT_REACHED : i <= this._committed ? Wizard.COMMITTED : null;
+      Reason.apply(step.marker, off);
+      if (off === null)
+        step.marker.setAttribute('aria-disabled', 'false');
       step.marker.tabIndex = on ? 0 : -1;
       step.circle.textContent = failed.has(step.options.id) ? '!' : done ? '✓' : String(i + 1);
       step.panel.style.display = on ? '' : 'none';
@@ -458,7 +473,7 @@ export class Wizard extends Control {
       const builder = current.builder;
       if (builder) {
         current.builder = undefined;
-        current.panel.append(Scope.runWith(current.scope, builder));
+        current.panel.append(current.scope.build(builder));
       }
       const onActivate = current.options.onActivate;
       if (onActivate) {
@@ -485,12 +500,12 @@ export class Wizard extends Control {
     const reason = this._blockReason.value;
     const busy = this._busy.value;
     const current = this._steps[this._index.value];
-    this._next.disabled = reason !== null;
-    describeDisabled(this._next, reason);
-    this._back.disabled = busy;
+    const waiting = busy ? Wizard.WAITING : null;
+    Reason.apply(this._next, reason);
+    Reason.apply(this._back, waiting);
     this.root.classList.toggle('u2-wizard-busy', busy);
     this.root.setAttribute('aria-busy', String(busy));
-    current.actions.forEach((b, i) => b.disabled = busy || current.options.actions![i].enabled?.value === false);
+    current.actions.forEach((b, i) => Reason.apply(b, waiting ?? Reason.read(current.options.actions![i].disabled)));
   }
 
   private _finish(): void {
@@ -518,7 +533,7 @@ export class Wizard extends Control {
   }
 
   private _button(text: string, onClick: () => void, primary?: boolean): HTMLButtonElement {
-    return this.runInScope(() => button(text, () => onClick(), {primary}));
+    return this.build(() => button(text, () => onClick(), {primary}));
   }
 
   private _focusStep(index: number): void {
@@ -568,11 +583,6 @@ export class Wizard extends Control {
   }
 
   private static _gate(gate: WizardStep['canProceed']): string | null {
-    if (!gate)
-      return null;
-    const value = typeof gate === 'function' ? gate() : gate.value;
-    if (value === true || value === null)
-      return null;
-    return value === false ? '' : value;
+    return typeof gate === 'function' ? gate() || null : Reason.read(gate);
   }
 }

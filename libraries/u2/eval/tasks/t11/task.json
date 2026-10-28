@@ -1,0 +1,10 @@
+{
+  "name": "layout-css",
+  "entry": "template-editor.ts",
+  "title": "An editor laid out without package CSS reaching into u2",
+  "source": "HitTriage CSS grew 63 -> 216 lines, 52 internal u2 selectors across 5 consumers, !important and inline width/gap hacks",
+  "bad": {
+    "bad-u2-selectors": ["package-css-clean"],
+    "bad-inline-styles": ["no-inline-styles"]
+  }
+}

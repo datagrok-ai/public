@@ -102,6 +102,31 @@
   display: none !important;
 }
 
+/* the icons and links acting on the body, after the title */
+.u2-section-actions {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  margin-left: var(--dg-space-m);
+  font-weight: var(--dg-font-weight-regular);
+}
+
+/* why the body is off, after the title */
+.u2-section-reason {
+  min-width: 0;
+  margin-left: var(--dg-space-m);
+  overflow: hidden;
+  font-weight: var(--dg-font-weight-regular);
+  color: var(--dg-text-color-light);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-section-reason:empty {
+  display: none;
+}
+
 /* chevron: 'end' — after the title and hint, always shown, down while folded and up while open */
 .u2-section-header.u2-section-chevron-end > .u2-section-chevron {
   position: static;

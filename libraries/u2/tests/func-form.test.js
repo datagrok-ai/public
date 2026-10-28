@@ -1,7 +1,7 @@
 /* The W1 FuncCallForm contract over the FuncCall doubles: routing, captions, categories,
    validation, literal defaults, and the two-way echo-suppressed binding. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -82,7 +82,7 @@ form('the W1 scalar set routes to the type editors, choices to a choice input', 
   assert.deepEqual(kinds(f), ['text-input', 'number-input', 'number-input', 'bool-input',
     'datetime-input', 'choice-input']);
   assert.deepEqual(f.unsupported, []);
-  assert.ok(f.inputs.every((i) => i.enabled !== false), 'a func param is editable despite carrying no set');
+  assert.ok(f.inputs.every((i) => i.disabled === null), 'a func param is editable despite carrying no set');
   f.dispose();
 });
 
@@ -220,7 +220,7 @@ form('every category renders as a collapsible Section whose header carries the c
 form('a header click collapses only the section body — field visibility and values untouched', async () => {
   const call = callOf(fp('a', 'string'), fp('b', 'int', {category: 'Advanced'}));
   const f = mount(funcForm(call));
-  f.getInput('b').value.value = 7;
+  f.getInput('b').value = 7;
   await flush();
   const header = [...f.root.querySelectorAll('.u2-section-header')]
     .find((h) => h.textContent === 'Advanced');
@@ -233,7 +233,7 @@ form('a header click collapses only the section body — field visibility and va
 
   fire(header, 'click');
   assert.notEqual(body.style.display, 'none');
-  assert.equal(f.getInput('b').value.value, 7, 'the edited value survives the fold');
+  assert.equal(f.getInput('b').value, 7, 'the edited value survives the fold');
   assert.equal(call.inputs.b, 7);
   f.dispose();
 });
@@ -269,8 +269,8 @@ form('a nullable choice gets the empty option; a non-nullable one does not, and 
     fp('stage', 'string', {choices: ['a', 'b'], nullable: true}),
     fp('route', 'string', {choices: ['oral', 'iv'], nullable: false}));
   const f = mount(funcForm(call));
-  assert.deepEqual(editorOf(f, 'stage', 'select').children.map((o) => o.value), ['', 'a', 'b']);
-  assert.deepEqual(editorOf(f, 'route', 'select').children.map((o) => o.value), ['oral', 'iv']);
+  assert.deepEqual([...editorOf(f, 'stage', 'select').children].map((o) => o.value), ['', 'a', 'b']);
+  assert.deepEqual([...editorOf(f, 'route', 'select').children].map((o) => o.value), ['oral', 'iv']);
   f.dispose();
 });
 
@@ -312,8 +312,8 @@ form('a literal default the call does not hold is never displayed — display ==
     fp('count', 'int', {defaultValue: 3}),
     fp('stage', 'string', {isOptional: true, defaultValue: 'a'}));
   const {f, sets, changes} = wired(call);
-  assert.equal(f.getInput('count').value.value, null, 'a defaulted nullable param shows what the run will use — nothing');
-  assert.equal(f.getInput('stage').value.value, 'a', 'an optional param answers it through value, so the run agrees');
+  assert.equal(f.getInput('count').value, null, 'a defaulted nullable param shows what the run will use — nothing');
+  assert.equal(f.getInput('stage').value, 'a', 'an optional param answers it through value, so the run agrees');
   assert.deepEqual([sets, changes], [[], []], 'no setParamValue, no onInputChanged');
   assert.equal(call.dart.params[0].dart.value, undefined);
   assert.equal(call.dart.params[1].dart.value, undefined);
@@ -325,9 +325,9 @@ form('a source rebind seeds fields from the new call, never from defaultValue', 
   const filled = callOf(fp('count', 'int', {defaultValue: 3}));
   filled.setParamValue('count', 7);
   f.source = filled;
-  assert.equal(f.getInput('count').value.value, 7, 'refreshed from the new call');
+  assert.equal(f.getInput('count').value, 7, 'refreshed from the new call');
   f.source = callOf(fp('count', 'int', {defaultValue: 3}));
-  assert.equal(f.getInput('count').value.value, null, 'display == call after a rebind too');
+  assert.equal(f.getInput('count').value, null, 'display == call after a rebind too');
   f.dispose();
 });
 
@@ -351,7 +351,7 @@ form('a param fire refreshes the field with zero onInputChanged, and writes noth
   const {f, sets, changes} = wired(call);
   call.setParamValue('name', 'Ibuprofen');
   await flush();
-  assert.equal(f.getInput('name').value.value, 'Ibuprofen', 'the field follows the call');
+  assert.equal(f.getInput('name').value, 'Ibuprofen', 'the field follows the call');
   assert.equal(editorOf(f, 'name').value, 'Ibuprofen');
   assert.deepEqual(changes, [], 'a param write is not an input change');
   assert.deepEqual(sets, [['name', 'Ibuprofen']], 'only the external write itself — no echo write-back');
@@ -369,7 +369,7 @@ form('a param fire with an unchanged value — the Dart List always-fire — wri
   await flush();
   assert.deepEqual(sets, [], 'zero setParamValue calls — the echo terminates at the value comparison');
   assert.deepEqual(changes, []);
-  assert.equal(f.getInput('name').value.value, 'Aspirin');
+  assert.equal(f.getInput('name').value, 'Aspirin');
   f.dispose();
 });
 
@@ -379,7 +379,7 @@ form('a datetime edit crosses the write boundary as dayjs when the platform glob
     const call = callOf(fp('started', 'datetime'));
     const {f, sets} = wired(call);
     const date = new Date(2026, 7, 25, 10, 30);
-    f.getInput('started').value.value = date;
+    f.getInput('started').value = date;
     await flush();
     assert.equal(sets.length, 1);
     const [name, sent] = sets[0];
@@ -387,7 +387,7 @@ form('a datetime edit crosses the write boundary as dayjs when the platform glob
     assert.equal(sent.$isDayjsObject, true, 'the Date went out wrapped as dayjs');
     assert.equal(sent.ms, date.getTime());
     assert.equal(call.dart.params[0].dart.value, sent);
-    assert.equal(f.getInput('started').value.value, date, 'the echo settles — coerce reads it back as the same Date');
+    assert.equal(f.getInput('started').value, date, 'the echo settles — coerce reads it back as the same Date');
     f.dispose();
   } finally {
     delete globalThis.dayjs;
@@ -398,7 +398,7 @@ form('without the platform global a datetime edit passes the Date through', asyn
   const call = callOf(fp('started', 'datetime'));
   const {f, sets} = wired(call);
   const date = new Date(2026, 0, 2);
-  f.getInput('started').value.value = date;
+  f.getInput('started').value = date;
   await flush();
   assert.deepEqual(sets, [['started', date]]);
   f.dispose();
@@ -420,10 +420,10 @@ form('replacing source rebinds: old subscriptions die, fields refresh and edit t
   assert.equal(f.source, b);
   assert.equal(pa.onChanged.count, 0, 'the old call\'s subscriptions are dead');
   assert.equal(pb.onChanged.count, 1, 'the new call is live');
-  assert.equal(f.getInput('name').value.value, 'two', 'refreshed from the new call');
+  assert.equal(f.getInput('name').value, 'two', 'refreshed from the new call');
 
   a.setParamValue('name', 'stale');
-  assert.equal(f.getInput('name').value.value, 'two', 'the old call no longer reaches the form');
+  assert.equal(f.getInput('name').value, 'two', 'the old call no longer reaches the form');
 
   const name = editorOf(f, 'name');
   name.value = 'three';
@@ -441,7 +441,7 @@ form('a field whose param the new call lacks goes dormant: disabled, unsubscribe
   assert.equal(pCount.onChanged.count, 1);
 
   f.source = b;
-  assert.equal(f.getInput('count').enabled, false, 'the stale field is disabled');
+  assert.equal(f.getInput('count').disabled === null, false, 'the stale field is disabled');
   assert.equal(pCount.onChanged.count, 0, 'its old-call subscription is dropped');
   assert.deepEqual([...f.unsupported], ['table'], 'unsupported recomputed over the new call');
 
@@ -452,7 +452,7 @@ form('a field whose param the new call lacks goes dormant: disabled, unsubscribe
   assert.deepEqual(b.inputs, {name: undefined, table: undefined}, 'the dead call took no write');
 
   f.source = a;
-  assert.equal(f.getInput('count').enabled, true, 'a call that carries the param again revives the field');
+  assert.equal(f.getInput('count').disabled === null, true, 'a call that carries the param again revives the field');
   assert.equal(pCount.onChanged.count, 1);
   assert.deepEqual([...f.unsupported], []);
   const revived = editorOf(f, 'count');
@@ -467,7 +467,7 @@ form('twoWayBinding: false is one-way — edits reach the call, the call does no
   const call = callOf(fp('name', 'string'));
   const {f, changes} = wired(call, {twoWayBinding: false});
   call.setParamValue('name', 'Ibuprofen');
-  assert.notEqual(f.getInput('name').value.value, 'Ibuprofen', 'no refresh from the call');
+  assert.notEqual(f.getInput('name').value, 'Ibuprofen', 'no refresh from the call');
 
   const name = editorOf(f, 'name');
   name.value = 'Aspirin';
@@ -548,13 +548,13 @@ function selectOf(f, name) {
 
 /** The choice items on offer, the nullable empty option dropped. */
 function items(f, name) {
-  return selectOf(f, name).children.map((o) => o.value).filter((v) => v !== '');
+  return [...selectOf(f, name).children].map((o) => o.value).filter((v) => v !== '');
 }
 
 function boxes(f, name) {
   const input = f.getInput(name);
   assert.ok(input, `${name} gets a field`);
-  return input.root.querySelectorAll('.u2-multi-choice-item input').map((b) => b.value);
+  return [...input.root.querySelectorAll('.u2-multi-choice-item input')].map((b) => b.value);
 }
 
 function stateOf(f, name) {
@@ -732,7 +732,7 @@ w2('a call without evalParamChoices renders a visible error state instead of thr
   assert.ok(state, 'a visible error state, never a silent skip');
   assert.ok(state.classList.contains('u2-param-source-error'));
   assert.ok(state.textContent.includes('Couldn\'t load choices:'), 'the operation prefixes the message');
-  assert.equal(f.getInput('city').enabled, true, 'the field is not stuck loading');
+  assert.equal(f.getInput('city').disabled === null, true, 'the field is not stuck loading');
   f.dispose();
 });
 
@@ -751,7 +751,7 @@ w2('a dep edit re-evals through the debounce; a vanished value is pruned INTO th
   await f.settled;
   assert.equal(runs, 1);
   assert.deepEqual(items(f, 'city'), ['FR-1', 'FR-2']);
-  assert.equal(f.getInput('city').value.value, 'FR-1', 'a value still on offer survives setItems');
+  assert.equal(f.getInput('city').value, 'FR-1', 'a value still on offer survives setItems');
   assert.equal(call.inputs.city, 'FR-1');
   sets.length = 0;
 
@@ -761,7 +761,7 @@ w2('a dep edit re-evals through the debounce; a vanished value is pruned INTO th
   await until(() => items(f, 'city').includes('DE-1'), 'the dependent items to refresh');
   assert.equal(runs, 2, 'one dep edit is exactly one re-eval');
   await until(() => call.inputs.city === null, 'the prune to reach the call');
-  assert.equal(f.getInput('city').value.value, null, 'the vanished value is pruned from the field');
+  assert.equal(f.getInput('city').value, null, 'the vanished value is pruned from the field');
   await sleep(250);
   assert.deepEqual(sets.filter(([n]) => n === 'city'), [['city', null]],
     'exactly one write — the refresh compares equal and the echo stops (divergence #9)');
@@ -777,7 +777,7 @@ w2('a multi-choice prune writes the filtered list into the call', async () => {
   const {f, sets} = wired(call);
   await f.settled;
   assert.deepEqual(boxes(f, 'tags'), ['a', 'b', 'c']);
-  assert.deepEqual(f.getInput('tags').value.value, ['a', 'c'], 'the checked set follows the call');
+  assert.deepEqual(f.getInput('tags').value, ['a', 'c'], 'the checked set follows the call');
   sets.length = 0;
 
   call.setParamValue('country', 'DE');
@@ -997,7 +997,7 @@ w2('propagate: a pick fills siblings through their input signals and the cascade
   fire(select, 'change');
   await until(() => call.inputs.mpg === 21, 'the lookup row to reach the call through the sibling');
   assert.equal(call.inputs.model, 'Mazda');
-  assert.equal(f.getInput('mpg').value.value, 21, 'the sibling input signal took the write');
+  assert.equal(f.getInput('mpg').value, 21, 'the sibling input signal took the write');
   assert.equal(call.inputs.cyl, 6);
   await until(() => doseRuns === 2, 'the propagated mpg to re-eval its dependent source');
   await until(() => items(f, 'dose').includes('d21'), 'the dependent items with the propagated value');
@@ -1087,7 +1087,7 @@ w2('a computed default is evaluated once and written through one setParamValue',
   await f.settled;
   assert.deepEqual(sets, [['count', 4]]);
   assert.equal(call.inputs.count, 4);
-  assert.equal(f.getInput('count').value.value, 4, 'the write refreshed the field through the normal path');
+  assert.equal(f.getInput('count').value, 4, 'the write refreshed the field through the normal path');
   assert.equal(runs, 1);
   await sleep(250);
   assert.equal(runs, 1, 'defaults never re-run on their own');
@@ -1125,7 +1125,7 @@ w2('a failing default shows the error state, writes nothing, and Retry re-runs t
   assert.ok(state.textContent.includes('Couldn\'t compute the default: no default for you'),
     'the operation prefixes the raw message');
   assert.deepEqual(sets, [], 'a failed default writes nothing');
-  assert.equal(f.getInput('count').enabled, true, 'the field stays usable');
+  assert.equal(f.getInput('count').disabled === null, true, 'the field stays usable');
 
   const name = editorOf(f, 'name');
   name.value = 'Aspirin';
@@ -1166,7 +1166,7 @@ w2('twoWayBinding: false — a user write still clears a failed default\'s error
   await f.settled;
   assert.ok(stateOf(f, 'count')?.classList.contains('u2-param-source-error'));
 
-  f.getInput('count').value.value = 7;
+  f.getInput('count').value = 7;
   await until(() => stateOf(f, 'count')?.classList.contains('u2-param-source-error') !== true,
     'the user write to clear the error without a param subscription');
   assert.equal(call.inputs.count, 7);
@@ -1189,7 +1189,7 @@ w2('Retry never overwrites a value typed while the re-eval was in flight', async
   fail = false;
   call.dart.evalDelayMs = 40;
   fire(state.querySelector('.u2-param-source-retry'), 'click');
-  assert.equal(f.getInput('count').enabled, true, 'a retry is a refresh — the field stays editable');
+  assert.equal(f.getInput('count').disabled === null, true, 'a retry is a refresh — the field stays editable');
   const count = editorOf(f, 'count');
   count.value = '7';
   fire(count, 'input');
@@ -1239,7 +1239,7 @@ w2('default-vs-items race: both landing orders settle on the ruled value', async
       return def;
     });
     const call = callOf(fp('city', 'string', {options: {choices: 'opts()', default: 'pick()'}}));
-    const f = mount(funcForm(call));
+    const f = mount(testOwner().build(() => funcForm(call)));
     await f.settled;
     await flush();
     return {call, f};
@@ -1247,7 +1247,7 @@ w2('default-vs-items race: both landing orders settle on the ruled value', async
 
   const first = await build(1, 60, 'a');
   assert.equal(first.call.inputs.city, 'a', 'items first, default after — on offer, kept');
-  assert.equal(first.f.getInput('city').value.value, 'a');
+  assert.equal(first.f.getInput('city').value, 'a');
   first.f.dispose();
 
   const second = await build(60, 1, 'a');
@@ -1278,7 +1278,7 @@ w2('settled resolves once the initial loads land, immediately for a static form,
   const call = callOf(
     fp('city', 'string', {options: {choices: 'slow()'}}),
     fp('count', 'int', {options: {default: 'boom()'}}));
-  const f = mount(funcForm(call));
+  const f = mount(testOwner().build(() => funcForm(call)));
   await f.settled;
   assert.deepEqual(items(f, 'city'), ['a'], 'settled waited for the slow eval');
   assert.ok(stateOf(f, 'count')?.classList.contains('u2-param-source-error'),
@@ -1362,7 +1362,7 @@ w2('suggestions: the fetch receives the typed text, a pick writes through, rows 
     rows[0].querySelector('[title="first match"]') !== null, 'the tooltip rides the row');
   fire(rows[0], 'pointerdown');
   await flush();
-  assert.equal(f.getInput('drug').value.value, 'asp-1');
+  assert.equal(f.getInput('drug').value, 'asp-1');
   assert.equal(call.inputs.drug, 'asp-1', 'the pick reaches the call');
 
   input.value = '';
@@ -1373,7 +1373,7 @@ w2('suggestions: the fetch receives the typed text, a pick writes through, rows 
   fire(input, 'keydown', {key: 'Escape'});
   fire(input, 'keydown', {key: 'Escape'});
   await flush();
-  assert.equal(f.getInput('drug').value.value, 'asp-1',
+  assert.equal(f.getInput('drug').value, 'asp-1',
     'Escape with the popup closed reverts the type-over to the committed pick');
   assert.equal(call.inputs.drug, 'asp-1', 'and the revert reaches the call');
   f.dispose();
@@ -1393,22 +1393,22 @@ w2('the initial load disables the input and shows the grace-delayed spinner; rea
     const f = mount(funcForm(withCity()));
     const city = f.getInput('city');
     await flush();
-    assert.equal(city.enabled, false, 'disabled while the initial load is in flight');
+    assert.equal(city.disabled === null, false, 'disabled while the initial load is in flight');
     const state = stateOf(f, 'city');
     assert.ok(state, 'the state element rides input.box');
     assert.equal(state.querySelector('.u2-loader-spinner'), null, 'no spinner before the grace elapses');
     await until(() => state.classList.contains('u2-param-source-loading'), 'the spinner after the grace');
     assert.ok(state.querySelector('.u2-loader-spinner'));
     await f.settled;
-    assert.equal(city.enabled, true, 'ready re-enables');
+    assert.equal(city.disabled === null, true, 'ready re-enables');
     assert.equal(city.box.querySelector('.u2-param-source-loading'), null);
     assert.equal(city.box.querySelector('.u2-param-source-error'), null);
 
     f.source = callOf(fp('other', 'string'));
-    assert.equal(city.enabled, false, 'orphaned');
+    assert.equal(city.disabled === null, false, 'orphaned');
     f.source = withCity();
     await f.settled;
-    assert.equal(city.enabled, true, 'orphan → rebind → load ends enabled');
+    assert.equal(city.disabled === null, true, 'orphan → rebind → load ends enabled');
     f.dispose();
   } finally {
     ParamState.graceMs = grace;
@@ -1434,10 +1434,10 @@ w2('the default error\'s Retry stays clickable while the other slot runs an init
 
   failChoices = false;
   fire(state.querySelector('.u2-param-source-retry'), 'click');
-  await until(() => f.getInput('city').enabled === false, 'the retried initial load to disable the input');
+  await until(() => f.getInput('city').disabled !== null, 'the retried initial load to disable the input');
   assert.equal(state.querySelector('.u2-param-source-retry').disabled, false,
     'the disable sweep spares the default error\'s Retry');
-  await until(() => f.getInput('city').enabled === true, 'the landing to re-enable');
+  await until(() => f.getInput('city').disabled === null, 'the landing to re-enable');
   f.dispose();
 });
 
@@ -1461,12 +1461,12 @@ w2('a dependent refresh keeps the landed input enabled and swaps the items atomi
   const f = mount(funcForm(call));
   await f.settled;
   const city = f.getInput('city');
-  assert.equal(city.enabled, true);
+  assert.equal(city.disabled === null, true);
 
   const seen = [];
   call.setParamValue('country', 'DE');
   await until(() => {
-    seen.push(city.enabled);
+    seen.push(city.disabled === null);
     return items(f, 'city').includes('DE-1');
   }, 'the refreshed items');
   assert.ok(seen.every((enabled) => enabled === true),
@@ -1493,7 +1493,7 @@ w2('an eval error keeps the stale items usable and the input enabled', async () 
   assert.ok(stateOf(f, 'city').textContent.includes('Couldn\'t load choices: backend down'),
     'the operation prefixes the raw message');
   assert.deepEqual(items(f, 'city'), ['a', 'b'], 'the previous items stay, as the Dart select does');
-  assert.equal(f.getInput('city').enabled, true, 'the input stays enabled on error');
+  assert.equal(f.getInput('city').disabled === null, true, 'the input stays enabled on error');
   assert.ok(stateOf(f, 'city').querySelector('.u2-param-source-retry'), 'with a Retry');
 
   fail = false;

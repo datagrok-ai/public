@@ -158,7 +158,7 @@ export class Tray extends Control {
     const tables = backends.workspace?.tableNames() ?? [];
     menu.group('Open tables');
     if (tables.length === 0)
-      menu.item('No open tables', () => {}, {enabled: false});
+      menu.item('No open tables', () => {}, {disabled: 'Open a table in Datagrok to add it here'});
     for (const table of tables)
       menu.item(table, () => this._addTable(instance, table));
     menu.endGroup();
@@ -174,22 +174,22 @@ export class Tray extends Control {
   }
 
   private _addFunc(instance: SpecInstance): void {
-    this.runInScope(() => funcPicker({title: 'Data source: function or query', instance,
+    this.build(() => funcPicker({title: 'Data source: function or query', instance,
       onPick: (pick) => this._options.onAdd(nameForTag(FUNC), (name) =>
         funcSourceNode(instance.registry.get(FUNC), name, pick))}));
   }
 
   private _addEntities(instance: SpecInstance): void {
-    this.runInScope(() => {
+    this.build(() => {
       const collection = new ChoiceInput({label: 'Collection', items: COLLECTIONS, value: COLLECTIONS[0]});
       const filter = new TextInput({label: 'Filter', placeholder: 'A smart-search filter'});
       const pageSize = new NumberInput({label: 'Page size', mode: 'int', value: 20});
       const dialog = new Dialog('Data source: entity collection');
       dialog.add(collection).add(filter).add(pageSize)
         .onOK(() => {
-          const props: Record<string, unknown> = {entity: collection.value.peek() ?? COLLECTIONS[0],
-            pageSize: pageSize.value.peek() ?? 20};
-          const text = filter.value.peek().trim();
+          const props: Record<string, unknown> = {entity: collection.peek() ?? COLLECTIONS[0],
+            pageSize: pageSize.peek() ?? 20};
+          const text = filter.peek().trim();
           if (text !== '')
             props.filter = text;
           dialog.dispose();

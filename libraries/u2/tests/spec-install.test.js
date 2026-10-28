@@ -3,7 +3,7 @@
    naming a tag of a library the host has not installed says which one to install. The "ems" here
    is a stand-in: u2 never imports the real one. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';

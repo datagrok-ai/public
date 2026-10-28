@@ -1,5 +1,3 @@
-/* The schema.json and rows the domain tests share — a two-table slice of Grit's, with one column
-   of every type the memory backend maps. Not a test file: `node --test tests/*.test.js` skips it. */
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 
 export const SCHEMA = {

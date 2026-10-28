@@ -1,19 +1,11 @@
-/* `domains.form` — `propertyForm` over a domain row: the fields come from the table's schema,
-   the access decides which are inputs and which are text, every write goes through the source's
-   `EditState` (the row proxy's `set`), and validity is the union of the field rules, the table's
-   validators and what the writer reports per cell. The form follows its row: a new current row
-   is a new form under a fresh scope, the previous one released. Paired through the source: it
-   guards the source's Save (a refusal names the field), takes the focus back when the session
-   saved or discarded, and when a list bumps `activate`. A refused save is one balloon (the
-   platform editor maps the server's column errors onto the cells itself). */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, Filters, div, span,
   timestamp, EMPTY, isEmpty, text, loader, link, iconButton, notify, PickInput} from '@datagrok-libraries/u2';
 import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
-import {propertyForm, ObjectForm, Editors, userPick, groupPick, kindOf} from '@datagrok-libraries/u2/src/dg/index.js';
-import type {ObjectFormOptions} from '@datagrok-libraries/u2/src/dg/index.js';
+import {propertyForm, ObjectForm, Editors, userPick, groupPick, kindOf} from '@datagrok-libraries/u2/dg';
+import type {ObjectFormOptions} from '@datagrok-libraries/u2/dg';
 import {DomainSource} from '../core/domain-source.js';
 import {capital, nounOf} from '../core/domain-backend.js';
 import {DomainTable} from './facade.js';
@@ -48,9 +40,8 @@ export interface DomainFormOptions extends Pick<ObjectFormOptions,
 }
 
 const CHANGED = 'u2-input-changed';
-const REQUIRED = 'u2-input-required';
 
-/** The keys that save. `DomainApp` listens for them across the whole view, since `appView` puts
+/** The keys that save. `DomainApp` listens for them across the whole view, since the view's host puts
  * the ribbon — where Tab from the last field lands — outside the app root. */
 export const SAVE_SHORTCUTS: Record<string, string> = {'Ctrl+S': 'Save', 'Ctrl+Enter': 'Save'};
 
@@ -59,6 +50,9 @@ export function isSaveKey(e: KeyboardEvent): boolean {
   return (e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.key === 'Enter');
 }
 
+/** `propertyForm` over a domain row: every write goes through the source's `EditState`, and validity is the
+ * union of the field rules, the table's validators and what the writer reports per cell. A new current row is
+ * a new form under a fresh scope. */
 export class DomainForm extends Control {
   readonly source: DomainSource;
   readonly row: ReadonlySignal<RowView | null>;
@@ -69,7 +63,6 @@ export class DomainForm extends Control {
 
   private readonly _form = signal<ObjectForm | null>(null);
   private static readonly _parsed = new WeakMap<DomainTable, Constraint[]>();
-  /** The schema constraints the current form checks; a violated one's message by name. */
   private _constraints: Constraint[] = [];
   private readonly _violations = new Map<string, string>();
   private readonly _violationsVersion = signal(0);
@@ -77,10 +70,8 @@ export class DomainForm extends Control {
   private _checkGen = 0;
   private readonly _verdict: HTMLElement;
   private _shown: Scope | undefined;
-  /** The system block under the fields, re-read with the row: the writer lands the server-assigned
-   * columns (`number`, `version`, `created_on`, `author_id`) after the insert, not with it. */
+  // re-read with the row: the writer lands the server-assigned columns after the insert, not with it
   private _system: HTMLElement | null = null;
-  /** Per readonly reference column of the current row: the id shown, its caption and target table. */
   private readonly _captions = new Map<string, {id: string, caption: string, address?: string}>();
   private _returnTo: string | undefined;
   private _editSub: {unsubscribe(): void} | undefined;
@@ -156,7 +147,10 @@ export class DomainForm extends Control {
     }, this.problem);
     // an invalid edit the form never writes is still the user's unsaved change: the gates ask before
     // dropping it, and Discard drops it
-    const unhold = source.holdUnwritten(computed(() => this._form.value?.unwritten.value ?? 0));
+    const unhold = source.holdUnwritten(computed(() => {
+      const form = this._form.value;
+      return form === null ? null : {row: (form.target as RowView).id, values: form.unwrittenValues.value};
+    }));
     // a refusal raised elsewhere (the table's validators run before this guard) shows every verdict too
     this.effect(() => {
       const code = DomainErrors.codeOf(source.error.value);
@@ -251,7 +245,7 @@ export class DomainForm extends Control {
 
   /** A required field without a value — what the focus goes to first. */
   static needsValue(input: Input<any>): boolean {
-    return !input.nullable && isEmpty(input.value.peek());
+    return !input.nullable && isEmpty(input.peek());
   }
 
   /** The source and the row signal behind a target: a source's current row, a signal a
@@ -276,7 +270,7 @@ export class DomainForm extends Control {
     this._shown?.dispose();
     const scope = new Scope();
     this._shown = scope;
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       if (row === null) {
         this._form.value = null;
         this._system = null;
@@ -342,7 +336,7 @@ export class DomainForm extends Control {
       const name = input.name;
       if (name === undefined)
         continue;
-      input.root.classList.toggle(REQUIRED, !input.nullable);
+      input.required = !input.nullable;
       // the writer's verdict is about the value the row holds; an edit the form has not written yet
       // (it writes only valid ones) is judged by the table's rules alone, or it could never be written
       const kind = kindOf(source.schema.properties.find((p) => p.name === name)!);
@@ -352,7 +346,7 @@ export class DomainForm extends Control {
       if (this._constraints.some((c) => c.columns.includes(name))) {
         let initial = true;
         input.effect(() => {
-          input.value.value;
+          input.value;
           if (initial)
             initial = false;
           else
@@ -364,8 +358,7 @@ export class DomainForm extends Control {
     return form;
   }
 
-  /** The amber edge on every field the writer holds a change for — an edited row's cells; a
-   * draft is new whole, so none of its. */
+  // a draft is new whole: none of its fields is marked
   private _markChanged(form: ObjectForm, row: RowView): void {
     const edit = this.source.edit.peek();
     const draft = Rows.isDraft(row);
@@ -375,7 +368,6 @@ export class DomainForm extends Control {
     }
   }
 
-  /** The system columns as one muted line: "Created Oct 21, 2026 by Admin · Updated 11:13 PM · v2", Id copy. */
   private _footer(row: RowView): HTMLElement {
     const block = div([], 'u2-domain-form-system');
     block.dataset.u2Part = 'system';
@@ -430,9 +422,7 @@ export class DomainForm extends Control {
     return found;
   }
 
-  /** A readonly reference shows what it points at, not the uuid it holds: the caption the query
-   * projected for it (`~caption_<column>`) where the frame carries one, resolved the way the
-   * picker resolves a preset id where it does not — a draft, a user, a group. */
+  // `~caption_<column>` where the frame carries one, else resolved as the picker resolves a preset id
   private _resolveCaptions(form: ObjectForm, row: RowView, scope: Scope, extra: IProperty[]): void {
     let live = true;
     scope.own(() => live = false);
@@ -494,8 +484,6 @@ export class DomainForm extends Control {
     return DomainPick.resolve(semType, id).then((item) => item.name);
   }
 
-  /** What stands in for the form while there is no row: the load in progress, its failure, or
-   * the invitation to pick one. */
   private _hint(scope: Scope): HTMLElement {
     const source = this.source;
     const el = div([], 'u2-domain-form-empty');
@@ -564,10 +552,7 @@ export class DomainForm extends Control {
     return parsed;
   }
 
-  /** Evaluates every constraint over the row as the fields hold it, with the null semantics a SQL
-   * CHECK has ({@link Filters.toCheckMask}): an empty column makes its own comparison unknown, not
-   * the whole constraint — `a > 0 and b > 0` with a = -1 and b empty is still refused. The
-   * verdicts land asynchronously on the first named column's field, or under the form. */
+  // SQL CHECK null semantics: an empty column makes its own comparison unknown, not the whole constraint
   private _checkConstraints(): void {
     const form = this._form.peek();
     const row = this.row.peek();

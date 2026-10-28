@@ -1,13 +1,3 @@
-/* `domains.bulkEdit` — one value written into many rows at once, through the platform's
-   `POST …/{table}/update`. A field picker decides what is sent, so "clear this field" (chosen, left
-   empty) and "leave it alone" (not chosen) are different requests. The target is the selection, or
-   everything the list's filter matches; the server narrows both by the Edit predicate.
-
-   Whatever blocks the button is the footer's warning, and a refusal is the dialog's error line,
-   never a balloon: a balloon says what landed, nothing else.
-
-   A bulk edit is NOT part of the unit of work — it lands the moment the button is pressed — so the
-   session's pending changes are settled through `confirmDiscard` first. */
 import {signal, computed, Filters, div, span, Dialog, Input, MultiSelect, RadioInput, notify, text}
   from '@datagrok-libraries/u2';
 import type {IProperty, ReadonlySignal, RowView} from '@datagrok-libraries/u2';
@@ -15,7 +5,7 @@ import {confirmDiscard} from '../core/session.js';
 import type {DomainSource} from '../core/domain-source.js';
 import {nounOf} from '../core/domain-backend.js';
 import type {DomainQueryLike} from '../core/domain-backend.js';
-import {ObjectForm, propertyForm} from '@datagrok-libraries/u2/src/dg/index.js';
+import {ObjectForm, propertyForm} from '@datagrok-libraries/u2/dg';
 import {DomainTable, firstProblem} from './facade.js';
 import {DomainErrors} from './errors.js';
 
@@ -37,7 +27,8 @@ interface BulkTarget {
 }
 
 /** Writes the chosen columns into the rows the dialog's target names; resolves to how many rows
- * the server touched, or null where the dialog was cancelled. */
+ * the server touched, or null where the dialog was cancelled. A field picker decides what is sent, so clearing
+ * a field and leaving it alone differ. Not part of the unit of work: pending changes are settled first. */
 export async function bulkEdit(source: DomainSource, options: DomainBulkEditOptions = {}): Promise<number | null> {
   const table = DomainTable.of(source)?.table;
   if (table?.updateWhere === undefined) {
@@ -104,13 +95,13 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
   const handle = DomainTable.of(source)!;
   const dialog = Dialog.create(`Bulk edit ${nounOf(source.schema.info)}`, {name: 'bulk-edit'});
   dialog.root.classList.add('u2-domain-bulk');
-  const form = dialog.runInScope(() =>
+  const form = dialog.build(() =>
     propertyForm(props, {}, {access: source.access.peek().columnPolicy(), layout: 'normal'}));
 
   const header = div([], 'u2-domain-bulk-header');
   form.root.prepend(header);
   const target = _applyTo(dialog, form, header, targets, _preferred(source, targets));
-  const picker = dialog.runInScope(() => new MultiSelect({label: 'Change', name: 'fields', items: [],
+  const picker = dialog.build(() => new MultiSelect({label: 'Change', name: 'fields', items: [],
     placeholder: 'Choose the fields to change', fill: true}));
   form.add(picker, header);
   // one value on many rows can only collide on a business key
@@ -127,21 +118,23 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
     const current = _current(selection, prop.name!);
     const hint = span('', 'u2-domain-bulk-current u2-form-note');
     input.root.append(hint);
+    // the asterisk alone: a field is required only once it is chosen, and the dialog says so (`problem`) — the
+    // input's own `required` would refuse an empty value of a field left out of the change
     input.root.classList.toggle('u2-input-required', required.has(prop.name!));
     input.effect(() => {
-      input.visible = picker.value.value.includes(prop.name!);
-      hint.textContent = !Input.isEmpty(input.value.value) ? (target.value.kind === SELECTED ? current : '') :
+      input.visible = picker.value.includes(prop.name!);
+      hint.textContent = !Input.isEmpty(input.value) ? (target.value.kind === SELECTED ? current : '') :
         required.has(prop.name!) ? 'Required: it cannot be cleared' : 'Will be cleared';
     });
   }
 
   const problem = computed(() => {
     const {kind, count} = target.value;
-    const chosen = picker.value.value;
+    const chosen = picker.value;
     if (chosen.length === 0)
       return 'Choose the fields to change';
     const cleared = props.find((p) => chosen.includes(p.name!) && required.has(p.name!) &&
-      Input.isEmpty(form.input(p.name!)?.value.value));
+      Input.isEmpty(form.input(p.name!)?.value));
     if (cleared !== undefined)
       return `${DomainTable.captionOf(cleared)} is required: enter a value, or take it out of the change`;
     if (kind === SELECTED && count > MAX_ROWS) {
@@ -167,7 +160,7 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
   };
   // a refused write throws: the dialog keeps what the user chose and shows the reason
   const run = async () => {
-    const columns = props.map((p) => p.name!).filter((name) => picker.value.peek().includes(name));
+    const columns = props.map((p) => p.name!).filter((name) => picker.peek().includes(name));
     finish(await _run(source, form, columns, target.peek().kind === SELECTED));
   };
   dialog.effect(() => {
@@ -183,10 +176,10 @@ function _applyTo(dialog: Dialog, form: ObjectForm, header: HTMLElement, targets
     header.append(ObjectForm.readonlyField('Apply to', 'target', targets[0].label).row);
     return signal(targets[0]);
   }
-  const radio = dialog.runInScope(() => new RadioInput({label: 'Apply to', name: 'target',
+  const radio = dialog.build(() => new RadioInput({label: 'Apply to', name: 'target',
     items: targets.map((t) => t.label), value: preferred.label, nullable: false}));
   form.add(radio, header);
-  return computed(() => targets.find((t) => t.label === radio.value.value) ?? targets[0]);
+  return computed(() => targets.find((t) => t.label === radio.value) ?? targets[0]);
 }
 
 function _current(rows: readonly RowView[], column: string): string {
@@ -214,7 +207,7 @@ async function _run(source: DomainSource, form: ObjectForm, columns: string[], s
     _filterOf(source);
   // a chosen column left empty clears the column; one not chosen is not in the request
   const written = Object.fromEntries(columns.map((name) => {
-    const value = form.input(name)?.value.peek();
+    const value = form.input(name)?.peek();
     return [name, Input.isEmpty(value) ? null : value];
   }));
   const refused = await _check(source, handle, filter, written, selection);

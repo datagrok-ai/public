@@ -6,10 +6,11 @@
    tests/dg-stub.mjs; the panel lives in the platform's context pane, so only its DOM is
    exercised here. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {Signal, signal} from '../src/core/signals.js';
 import {Control} from '../src/core/component.js';
@@ -191,7 +192,7 @@ function picker() {
   const dialog = document.querySelector('.u2-bind-picker');
   const list = dialog?.querySelector('.u2-list');
   if (list) {
-    list.clientHeight = 400;
+    layout(list, {clientHeight: 400});
     fire(list, 'scroll');
   }
   return dialog;
@@ -774,7 +775,7 @@ tier('a property-tier node binds through one "Add binding…" row: the bound pro
     assert.deepEqual(rows(shown), ['table', 'add-binding'], 'what is bound, and the row that adds');
     assert.equal(field(shown, 'Bindings', 'table').value, '$.orders');
     const select = section(shown, 'Bindings').querySelector('[data-u2-prop="add-binding"] select');
-    const offered = select.querySelectorAll('option').map((o) => o.value).filter((v) => v !== '');
+    const offered = [...select.querySelectorAll('option')].map((o) => o.value).filter((v) => v !== '');
     assert.ok(offered.includes('xColumnName') && !offered.includes('table'), `the unbound props: ${offered}`);
 
     const said = [];

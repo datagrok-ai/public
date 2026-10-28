@@ -1,8 +1,3 @@
-/* Fills the domain seam (`emsBackends.domain`) at dg import, next to the other platform backends:
-   one table handle per address over `grok.dapi.domains`, the registry's metadata as plain
-   property records, and `frame()` — the path that makes `DomainSource` a frame host: `queryDf`
-   for the rows, the js-api `DomainFrameEditor` attached over them as the single writer, the next
-   page appended into the same frame. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import type {IProperty, DataFrameLike} from '@datagrok-libraries/u2';
@@ -29,6 +24,8 @@ const SYSTEM_SHAPES = {
 export const SYSTEM_COLUMNS: readonly (readonly [name: string, type: string, caption: string])[] =
   Object.entries(SYSTEM_SHAPES).map(([name, [type, caption]]) => [name, type, caption]);
 
+/** Fills `emsBackends.domain` at dg import over `grok.dapi.domains`; its `frame()` makes `DomainSource` a frame
+ * host: `queryDf` for the rows, the js-api `DomainFrameEditor` over them as the single writer. */
 export class DgDomainBackend implements DomainBackend {
   private readonly _tables = new Map<string, Promise<DgDomainTable>>();
 
@@ -171,10 +168,7 @@ export class DgDomainTable implements DomainTableLike {
     await this.client.restore(id);
   }
 
-  /** ONE aggregate for the poll: how many rows match, and when the newest of them was written —
-   * or, over the whole live table, ONE read of the change token, which moves once per write
-   * transaction and costs no scan at all. `count: -1` says nothing was counted; a source compares
-   * the pair against its own previous poll and re-baselines whenever the scope changes. */
+  // over the whole live table the change token answers with no scan; `count: -1` says nothing was counted
   private async _probe(spec: DomainReadScope = {}): Promise<DomainProbeLike> {
     if (this._token && isUnscoped(spec)) {
       try {
@@ -200,8 +194,7 @@ export class DgDomainTable implements DomainTableLike {
     return grok.dapi.domains.transaction(this.client.schema, ops as DG.DomainTransactionOp[]);
   }
 
-  /** The row's history as the seam shapes it: `id` is the ROW (the memory backend's key), the
-   * platform's audit sequence number is `seq`. */
+  // the seam's `id` is the row (the memory backend's key); the platform's audit sequence number is `seq`
   private async _audit(id: string, page?: {limit?: number, before?: number}): Promise<AuditEntryLike[]> {
     const entries = await this.client.audit(id, page);
     return entries.map((e) => ({...e, id, seq: e.id, tx_id: e.tx_id === null ? '' : String(e.tx_id)}));

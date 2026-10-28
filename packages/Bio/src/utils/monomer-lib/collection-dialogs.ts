@@ -43,11 +43,13 @@ export class CollectionDialogs {
     done: () => unknown): Promise<void> {
     const taken = await CollectionDialogs._names(libHelper, existing?.name);
     const shownName = existing === null ? '' : CollectionDialogs.displayName(existing.name);
-    const name = CollectionDialogs._nameInput('Name', shownName, taken);
-    const description = new TextInput({label: 'Description', name: 'description',
-      value: existing?.data.description ?? '', placeholder: 'Optional description'});
-    const tags = new TagsInput<string>({label: 'Tags', name: 'tags', value: [...existing?.data.tags ?? []],
-      allowNew: true, placeholder: 'Type a tag and press Enter'});
+    const title = existing === null ? 'New Monomer Collection' : `Edit Collection: ${shownName}`;
+    const dialog = Dialog.create(title, {name: existing === null ? 'newCollection' : 'editCollection'});
+    const name = dialog.build(() => CollectionDialogs._nameInput('Name', shownName, taken));
+    const description = dialog.build(() => new TextInput({label: 'Description', name: 'description',
+      value: existing?.data.description ?? '', placeholder: 'Optional description'}));
+    const tags = dialog.build(() => new TagsInput<string>({label: 'Tags', name: 'tags',
+      value: [...existing?.data.tags ?? []], allowNew: true, placeholder: 'Type a tag and press Enter'}));
     const symbols = [...existing?.data.monomerSymbols ?? []];
     // an edited collection searches where its monomers are: Sugars among RNA's
     const type = POLYMER_TYPES.find((t) => {
@@ -55,22 +57,20 @@ export class CollectionDialogs {
       return symbols.some((s) => known.has(s));
     }) ?? 'PEPTIDE';
     const monomers = new MonomerSelectionWidget(monomerLib, type, symbols, libHelper);
-    const polymerType = new ChoiceInput({label: 'Search in', name: 'polymerType', items: POLYMER_TYPES,
-      value: type, nullable: false, onInput: (t) => monomers.setPolymerType(t as PolymerType),
-      tooltipText: 'The polymer type whose monomers the search below offers'});
+    const polymerType = dialog.build(() => new ChoiceInput({label: 'Search in', name: 'polymerType',
+      items: POLYMER_TYPES, value: type, nullable: false, onInput: (t) => monomers.setPolymerType(t as PolymerType),
+      tooltipText: 'The polymer type whose monomers the search below offers'}));
     const picked = signal(monomers.getSelectedMonomers().length);
     const changes = monomers.onChanged.subscribe((symbols) => picked.value = symbols.length);
 
-    const title = existing === null ? 'New Monomer Collection' : `Edit Collection: ${shownName}`;
-    const dialog = Dialog.create(title, {name: existing === null ? 'newCollection' : 'editCollection'});
-    dialog.add(div([new Form({layout: 'normal'}).addAll([name, description, tags, polymerType]).root,
+    dialog.add(() => div([new Form({layout: 'normal'}).addAll([name, description, tags, polymerType]).root,
       div([monomers.root], 'monomer-collection-dialog-monomers')], 'monomer-collection-dialog'))
       .okDisabled(computed(() => picked.value === 0 ? 'Select at least one monomer' : null))
       .onOK(async () => {
-        const newName = name.value.peek().trim();
+        const newName = name.peek().trim();
         const symbols = monomers.getSelectedMonomers();
-        const tagList = tags.value.peek();
-        await libHelper.addOrUpdateMonomerCollection(newName, symbols, description.value.peek() || undefined,
+        const tagList = tags.peek();
+        await libHelper.addOrUpdateMonomerCollection(newName, symbols, description.peek() || undefined,
           tagList.length > 0 ? tagList : undefined);
         // renamed: the old file goes once the new one is written, so a failed write loses nothing
         if (existing !== null && newName !== shownName)
@@ -110,12 +110,13 @@ export class CollectionDialogs {
 
   /** A copy of a collection under a new name. */
   static async duplicate(libHelper: MonomerLibManager, ref: CollectionRef, done: () => unknown): Promise<void> {
-    const name = CollectionDialogs._nameInput('New Name', `${CollectionDialogs.displayName(ref.name)} (copy)`,
-      await CollectionDialogs._names(libHelper));
-    Dialog.create('Duplicate Collection', {name: 'duplicateCollection'})
-      .add(new Form({layout: 'normal'}).add(name))
+    const taken = await CollectionDialogs._names(libHelper);
+    const dialog = Dialog.create('Duplicate Collection', {name: 'duplicateCollection'});
+    const name = dialog.build(() => CollectionDialogs._nameInput('New Name',
+      `${CollectionDialogs.displayName(ref.name)} (copy)`, taken));
+    dialog.add(() => new Form({layout: 'normal'}).add(name))
       .onOK(async () => {
-        const newName = name.value.peek().trim();
+        const newName = name.peek().trim();
         await libHelper.addOrUpdateMonomerCollection(newName, [...ref.data.monomerSymbols], ref.data.description,
           ref.data.tags ? [...ref.data.tags] : undefined);
         grok.shell.info(`Collection "${newName}" created`);
@@ -127,19 +128,20 @@ export class CollectionDialogs {
   /** One collection with every monomer and tag of `refs`. */
   static async merge(libHelper: MonomerLibManager, refs: CollectionRef[], done: () => unknown): Promise<void> {
     const taken = await CollectionDialogs._names(libHelper);
-    const name = CollectionDialogs._nameInput('Merged Name', 'Merged Collection', taken);
-    const description = new TextInput({label: 'Description', name: 'description', placeholder: 'Optional description'});
+    const dialog = Dialog.create(`Merge ${refs.length} Collections`, {name: 'mergeCollections'});
+    const name = dialog.build(() => CollectionDialogs._nameInput('Merged Name', 'Merged Collection', taken));
+    const description = dialog.build(() =>
+      new TextInput({label: 'Description', name: 'description', placeholder: 'Optional description'}));
     const symbols = [...new Set(refs.flatMap((r) => r.data.monomerSymbols))];
     const tags = [...new Set(refs.flatMap((r) => r.data.tags ?? []))];
-    Dialog.create(`Merge ${refs.length} Collections`, {name: 'mergeCollections'})
-      .add(div([
+    dialog.add(() => div([
         span(`${refs.map((r) => CollectionDialogs.displayName(r.name)).join(', ')} — ` +
           CollectionDialogs.count(symbols.length, 'monomer'), 'monomer-collection-dialog-note'),
         new Form({layout: 'normal'}).addAll([name, description]).root,
       ], 'monomer-collection-dialog'))
       .onOK(async () => {
-        const newName = name.value.peek().trim();
-        await libHelper.addOrUpdateMonomerCollection(newName, symbols, description.value.peek() || undefined,
+        const newName = name.peek().trim();
+        await libHelper.addOrUpdateMonomerCollection(newName, symbols, description.peek() || undefined,
           tags.length > 0 ? tags : undefined);
         grok.shell.info(`Merged collection "${newName}" created with ` +
           CollectionDialogs.count(symbols.length, 'monomer'));

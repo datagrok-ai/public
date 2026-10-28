@@ -3,14 +3,15 @@
    (query, problems, status). Popup-opening tests dispose the builder in `finally` — an overlay
    left open loops the animation-frame updater and OOMs node --test. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope, signal, Filters, FilterBuilder, TextInput, Control, EMPTY} from '../src/index.js';
 import {Registry} from '../src/spec/registry.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
 import {registerAll} from '../src/spec/registrations.js';
-import {TYPE} from 'datagrok-api/u2core';
+import {TYPE, operability} from 'datagrok-api/u2core';
 
 const SCHEMA = Filters.schema([
   {name: 'name', type: TYPE.STRING, friendlyName: 'Name'},
@@ -49,7 +50,7 @@ function mount(component) {
 }
 
 function rows(fb) {
-  return fb.root.querySelectorAll('[data-u2-node]');
+  return [...fb.root.querySelectorAll('[data-u2-node]')];
 }
 
 function part(row, name) {
@@ -87,9 +88,9 @@ smoke('renders one row per condition, addressed by node id and part', () => {
   assert.equal(part(a, 'value').querySelector('input').value, '30');
   assert.equal(part(a, 'remove').tagName, 'BUTTON');
   assert.equal(part(b, 'value').dataset.u2, 'text-input');
-  assert.deepEqual(select(a, 'prop').querySelectorAll('option').map((o) => o.textContent),
+  assert.deepEqual([...select(a, 'prop').querySelectorAll('option')].map((o) => o.textContent),
     ['Name', 'age', 'mw', 'big', 'sex', 'active', 'created'], 'friendly names, no empty option');
-  assert.deepEqual(select(a, 'op').querySelectorAll('option').map((o) => o.value),
+  assert.deepEqual([...select(a, 'op').querySelectorAll('option')].map((o) => o.value),
     Filters.operators.for(SCHEMA.properties[1]).map((o) => o.id), 'operators of the property kind');
   assert.equal(fb.root.querySelector('.u2-fb-none'), null);
 });
@@ -101,13 +102,13 @@ smoke('empty tree shows the empty hint (a link that adds); + adds a row on the f
   assert.equal(none.dataset.u2Part, 'none');
   fire(none.querySelector('a'), 'click');
   assert.equal(rows(fb).length, 1, 'the empty hint adds a condition');
-  fb.removeNode(fb.value.peek().nodes[0].id);
+  fb.removeNode(fb.peek().nodes[0].id);
   assert.equal(rows(fb).length, 0);
   const add = fb.root.querySelector('[data-u2-part="add"]');
   fire(add, 'click');
   assert.equal(rows(fb).length, 1);
   assert.equal(fb.root.querySelector('.u2-fb-none'), null);
-  const cond = fb.value.peek().nodes[0];
+  const cond = fb.peek().nodes[0];
   assert.equal(cond.property, 'name');
   assert.equal(cond.operator, Filters.operators.for(SCHEMA.properties[0])[0].id);
   assert.equal(cond.value, undefined);
@@ -147,7 +148,7 @@ smoke('property pick resets the operator to the first applicable and clears the 
   const fb = mount(new FilterBuilder({schema: SCHEMA, value: tree(Filters.cond('age', '>', 30))}));
   const row = rows(fb)[0];
   pick(select(row, 'prop'), 'name');
-  let cond = fb.value.peek().nodes[0];
+  let cond = fb.peek().nodes[0];
   assert.equal(cond.property, 'name');
   assert.equal(cond.operator, '=', '> is not applicable to a string');
   assert.equal(cond.value, undefined);
@@ -155,7 +156,7 @@ smoke('property pick resets the operator to the first applicable and clears the 
   assert.equal(rows(fb)[0] === row, true, 'same row element');
 
   pick(select(row, 'prop'), 'mw');
-  cond = fb.value.peek().nodes[0];
+  cond = fb.peek().nodes[0];
   assert.equal(cond.operator, '=', 'still applicable, kept');
   assert.equal(part(row, 'value').dataset.u2, 'number-input');
 });
@@ -165,10 +166,10 @@ smoke('operator pick keeps the value across a same-shape swap and clears it acro
   const row = rows(fb)[0];
   const editor = part(row, 'value');
   pick(select(row, 'op'), '<=');
-  assert.deepEqual(fb.value.peek().nodes[0], {id: 'f1', property: 'age', operator: '<=', value: 30});
+  assert.deepEqual(fb.peek().nodes[0], {id: 'f1', property: 'age', operator: '<=', value: 30});
   assert.equal(part(row, 'value') === editor, true, 'the number editor survived');
   pick(select(row, 'op'), 'between');
-  assert.equal(fb.value.peek().nodes[0].value, undefined);
+  assert.equal(fb.peek().nodes[0].value, undefined);
   assert.equal(part(row, 'value').dataset.u2, 'number-input');
   assert.equal(part(row, 'value2').dataset.u2, 'number-input');
   pick(select(row, 'op'), 'is null');
@@ -179,11 +180,11 @@ smoke('operator pick keeps the value across a same-shape swap and clears it acro
 smoke('a value edit writes a new root, keeps the untouched sibling node and the row element', () => {
   const fb = mount(new FilterBuilder({schema: SCHEMA,
     value: tree(Filters.cond('age', '>', 30), Filters.cond('name', 'like', 'an'))}));
-  const before = fb.value.peek();
+  const before = fb.peek();
   const [row] = rows(fb);
   const editor = part(row, 'value');
   type(editor.querySelector('input'), '40');
-  const after = fb.value.peek();
+  const after = fb.peek();
   assert.notEqual(after, before, 'a new root');
   assert.equal(after.nodes[1], before.nodes[1], 'the sibling keeps its identity');
   assert.equal(after.nodes[0].value, 40);
@@ -213,8 +214,8 @@ smoke('the and|or toggle writes the root op, and the root op drives the toggle',
   const connector = fb.root.querySelector('[data-u2-part="connector"]');
   assert.equal(connector.querySelector('[data-id="and"]').classList.contains('u2-btn-group-selected'), true);
   fire(connector.querySelector('[data-id="or"]'), 'click');
-  assert.equal(fb.value.peek().op, 'or');
-  fb.value.value = Filters.update(fb.value.peek(), fb.value.peek().id, {op: 'and'});
+  assert.equal(fb.peek().op, 'or');
+  fb.value = Filters.update(fb.peek(), fb.peek().id, {op: 'and'});
   assert.equal(connector.querySelector('[data-id="and"]').classList.contains('u2-btn-group-selected'), true);
 });
 
@@ -225,20 +226,29 @@ smoke('horizontal: rows inline with a join chip between them that flips the op; 
   assert.equal(editor.classList.contains('u2-fb-horizontal'), true);
   assert.equal(fb.root.querySelector('.u2-fb-header').hidden, true);
   const host = fb.root.querySelector('[data-u2-part="rows"]');
-  const kinds = host.children.map((el) => el.classList.contains('u2-fb-join') ? 'join' :
+  const kinds = [...host.children].map((el) => el.classList.contains('u2-fb-join') ? 'join' :
     el.dataset.u2Part === 'add' ? 'add' : 'row');
   assert.deepEqual(kinds, ['row', 'join', 'row', 'join', 'row', 'add']);
-  const joins = host.querySelectorAll('.u2-fb-join');
+  const joins = [...host.querySelectorAll('.u2-fb-join')];
   assert.deepEqual(joins.map((j) => j.textContent), ['and', 'and']);
   assert.equal(joins[0].tagName, 'BUTTON', 'a real button: Enter and Space click it natively');
   assert.equal(joins[0].getAttribute('aria-label'), 'Switch and/or');
   assert.equal(joins[0].title, '', 'the tooltip service, not title');
   fire(joins[0], 'click');
-  assert.equal(fb.value.peek().op, 'or');
-  assert.deepEqual(host.querySelectorAll('.u2-fb-join').map((j) => j.textContent), ['or', 'or']);
+  assert.equal(fb.peek().op, 'or');
+  assert.deepEqual([...host.querySelectorAll('.u2-fb-join')].map((j) => j.textContent), ['or', 'or']);
   fb.removeNode('f2');
-  assert.deepEqual(host.children.map((el) => el.dataset.u2Node ?? el.className),
+  assert.deepEqual([...host.children].map((el) => el.dataset.u2Node ?? el.className),
     ['f1', 'u2-btn u2-fb-join', 'f3', 'u2-btn u2-icon-btn u2-fb-add']);
+});
+
+smoke('horizontal: a chip\'s pickers are as wide as their choices, never the vertical builder\'s 120px column', () => {
+  const sheet = readFileSync(new URL('../css/filter.css', import.meta.url), 'utf8');
+  // the chip is sized to its content; a 120px basis over a select whose own width is less shrank the operator
+  // past its text ("greater tha…") once the remove became an icon button
+  assert.match(sheet, /\.u2-fb-cond > \.u2-fb-prop,\s*\.u2-fb-cond > \.u2-fb-op \{\s*flex: 0 1 120px;/);
+  assert.match(sheet,
+    /\.u2-fb-horizontal \.u2-fb-cond > \.u2-fb-prop,\s*\.u2-fb-horizontal \.u2-fb-cond > \.u2-fb-op \{\s*flex-basis: auto;/);
 });
 
 smoke('locks: value keeps the editor and hides remove, all disables everything, allowAdd hides +', () => {
@@ -266,16 +276,16 @@ smoke('locks: value keeps the editor and hides remove, all disables everything, 
   assert.equal(part(free, 'prop').hidden, false);
   assert.equal(select(valueLocked, 'value').disabled, false, 'the value stays editable');
   assert.equal(part(allLocked, 'remove').hidden, true);
-  assert.equal(part(allLocked, 'value').querySelectorAll('input').every((i) => i.disabled), true);
+  assert.equal([...part(allLocked, 'value').querySelectorAll('input')].every((i) => i.disabled), true);
   assert.equal(part(allLocked, 'value').dataset.u2, 'datetime-input');
   assert.equal(free.classList.contains('u2-fb-locked'), false);
   assert.equal(part(free, 'remove').hidden, false);
-  assert.deepEqual(select(free, 'prop').querySelectorAll('option').map((o) => o.value), ['age', 'sex', 'created'],
+  assert.deepEqual([...select(free, 'prop').querySelectorAll('option')].map((o) => o.value), ['age', 'sex', 'created'],
     'allowedProperties narrows the picker, schema order kept');
-  assert.deepEqual(select(free, 'op').querySelectorAll('option').map((o) => o.value), ['>', '<'],
+  assert.deepEqual([...select(free, 'op').querySelectorAll('option')].map((o) => o.value), ['>', '<'],
     'allowedOperators narrows the operators');
   pick(select(valueLocked, 'value'), 'M');
-  assert.deepEqual(Filters.validate(fb.value.peek(), SCHEMA, undefined, template), [], 'a value edit is allowed');
+  assert.deepEqual(Filters.validate(fb.peek(), SCHEMA, undefined, template), [], 'a value edit is allowed');
 });
 
 smoke('a pick in a row, `input` then `change` as a browser fires them, lands; one edit reveals no other row\'s problem', () => {
@@ -286,12 +296,12 @@ smoke('a pick in a row, `input` then `change` as a browser fires them, lands; on
   prop.value = 'sex';
   fire(prop, 'input');
   fire(prop, 'change');
-  assert.equal(fb.value.peek().nodes[1].property, 'sex', 'the row is on the property picked');
+  assert.equal(fb.peek().nodes[1].property, 'sex', 'the row is on the property picked');
   assert.equal(part(first, 'problem').hidden, true, 'the untouched row says nothing yet');
 });
 
 smoke('disabled: every editor in every row reads and acts disabled, a row added meanwhile too; a lock survives enabling', () => {
-  const fb = mount(new FilterBuilder({schema: SCHEMA, enabled: false, value: Filters.group('and', [
+  const fb = mount(new FilterBuilder({schema: SCHEMA, disabled: 'Locked while the query runs', value: Filters.group('and', [
     Filters.cond('age', '>', 30), Filters.cond('created', '>', {span: '-30d'}, {lock: 'all'})])}));
   const editors = () => [...fb.root.querySelectorAll('[data-u2-node] .u2-input-root')];
   const live = () => [...fb.root.querySelectorAll('input, select, textarea, button')].filter((c) => !c.disabled);
@@ -304,12 +314,37 @@ smoke('disabled: every editor in every row reads and acts disabled, a row added 
   assert.equal(editors().every((e) => e.classList.contains('u2-input-disabled')), true, 'the new row too');
   assert.deepEqual(live(), [], 'its controls are no live ones');
 
-  fb.enabled = true;
+  fb.disabled = null;
   const [free, locked] = rows(fb);
   assert.equal(part(free, 'value').classList.contains('u2-input-disabled'), false);
   assert.equal(select(free, 'prop').disabled, false);
   assert.equal(part(locked, 'value').classList.contains('u2-input-disabled'), true, 'a locked row keeps its lock');
-  assert.equal(part(locked, 'value').querySelectorAll('input').every((i) => i.disabled), true);
+  assert.equal([...part(locked, 'value').querySelectorAll('input')].every((i) => i.disabled), true);
+});
+
+smoke('disabled: the builder\'s own buttons and links say its reason and do nothing; on again, they are free', () => {
+  const reason = 'Fill in the fields above first';
+  const fb = mount(new FilterBuilder({schema: SCHEMA, mode: 'advanced', disabled: reason, value: Filters.group('and', [
+    Filters.cond('age', '>', 30), Filters.group('or', [Filters.cond('sex', '=', 'F')])])}));
+  const own = (b) => [...b.root.querySelectorAll('[data-u2-part="connector"] button, [data-u2-part="not"], ' +
+    '[data-u2-part="add"], [data-u2-part="add-group"], [data-u2-part="remove"], [data-u2-part="mode"]')];
+  const said = (b) => own(b).map((el) => [el.dataset.u2Part ?? el.textContent, el.getAttribute('aria-description')]);
+  assert.equal(own(fb).length, 14);
+  assert.deepEqual(said(fb).filter(([, r]) => r !== reason), [], 'each says why it is off');
+  assert.deepEqual(operability(fb.root).map((f) => f.detail), [], 'nothing off without a reason, nothing dead');
+  fb.disabled = 'Locked while the query runs';
+  assert.deepEqual(said(fb).filter(([, r]) => r !== 'Locked while the query runs'), [], 'a new reason replaces the old');
+  fb.disabled = null;
+  assert.deepEqual(said(fb).filter(([, r]) => r !== null), [], 'on again: no reason left behind');
+
+  const flat = mount(new FilterBuilder({schema: SCHEMA, disabled: reason, value: tree(Filters.cond('age', '>', 30))}));
+  const advanced = part(flat.root, 'mode');
+  fire(advanced, 'keydown', {key: 'Enter'});
+  fire(advanced, 'click');
+  assert.equal(flat.mode.peek(), 'simple', 'Advanced does nothing while the builder is off');
+  flat.disabled = null;
+  fire(advanced, 'keydown', {key: 'Enter'});
+  assert.equal(flat.mode.peek(), 'advanced', 'and works again once it is on');
 });
 
 smoke('editors per kind: string, suggestions, int, float, bigint, choices, bool round-trip their values', () => {
@@ -330,10 +365,10 @@ smoke('editors per kind: string, suggestions, int, float, bigint, choices, bool 
   type(part(big, 'value').querySelector('input'), '99999999999999999999');
   pick(select(sex, 'value'), 'M');
   pick(select(active, 'value'), 'false');
-  assert.deepEqual(fb.value.peek().nodes.map((n) => n.value), ['y', 7, 2.5, '99999999999999999999', 'M', false]);
+  assert.deepEqual(fb.peek().nodes.map((n) => n.value), ['y', 7, 2.5, '99999999999999999999', 'M', false]);
   assert.deepEqual(fb.problems.peek(), []);
   type(part(name, 'value').querySelector('input'), '');
-  assert.equal(fb.value.peek().nodes[0].value, undefined, 'a cleared editor clears the value');
+  assert.equal(fb.peek().nodes[0].value, undefined, 'a cleared editor clears the value');
   assert.deepEqual(fb.problems.peek().map((p) => p.code), ['missing-value']);
 });
 
@@ -345,8 +380,8 @@ smoke('string over schema values gets a suggest input; the popup is closed with 
     type(editor.querySelector('input'), 'Op');
     await new Promise((resolve) => setTimeout(resolve, 200)); // the source's default debounce
     await flush();
-    assert.equal(fb.value.peek().nodes[0].value, 'Op');
-    assert.deepEqual(document.body.querySelectorAll('.u2-typeahead-option').map((r) => r.textContent), ['Open']);
+    assert.equal(fb.peek().nodes[0].value, 'Op');
+    assert.deepEqual([...document.body.querySelectorAll('.u2-typeahead-option')].map((r) => r.textContent), ['Open']);
   } finally {
     fb.dispose();
   }
@@ -355,7 +390,7 @@ smoke('string over schema values gets a suggest input; the popup is closed with 
 
 smoke('the suggest editor opens the whole list on focus, on a click and on Space in an empty box', async () => {
   const fb = mount(new FilterBuilder({schema: WITH_VALUES, value: tree(Filters.cond('status', '=', 'Op'))}));
-  const options = () => document.body.querySelectorAll('.u2-typeahead-option').map((r) => r.textContent);
+  const options = () => [...document.body.querySelectorAll('.u2-typeahead-option')].map((r) => r.textContent);
   const settle = async () => {
     await new Promise((resolve) => setTimeout(resolve, 200));
     await flush();
@@ -378,7 +413,7 @@ smoke('the suggest editor opens the whole list on focus, on a click and on Space
     await settle();
     assert.equal(typed, false, 'the space is not typed');
     assert.deepEqual(options(), ['Open', 'Blocked', 'Closed'], 'Space in an empty box opens the list');
-    assert.equal(fb.value.peek().nodes[0].value, undefined, 'the value stays empty');
+    assert.equal(fb.peek().nodes[0].value, undefined, 'the value stays empty');
     type(input, 'x');
     fire(input, 'keydown', {key: 'Escape'});
     assert.equal(fire(input, 'keydown', {key: ' '}), true, 'Space in a non-empty box types');
@@ -392,16 +427,16 @@ smoke('in → tags over the schema values; a typed value becomes a chip and a li
   try {
     const editor = part(rows(fb)[0], 'value');
     assert.equal(editor.dataset.u2, 'tags-input');
-    assert.deepEqual(editor.querySelectorAll('.u2-tag-text').map((t) => t.textContent), ['Open']);
+    assert.deepEqual([...editor.querySelectorAll('.u2-tag-text')].map((t) => t.textContent), ['Open']);
     const box = editor.querySelector('.u2-tags-input');
     type(box, 'Closed');
     fire(box, 'keydown', {key: 'Enter'});
-    assert.deepEqual(fb.value.peek().nodes[0].value, ['Open', 'Closed']);
+    assert.deepEqual(fb.peek().nodes[0].value, ['Open', 'Closed']);
     assert.equal(fb.query.peek(), 'status in ("Open", "Closed")');
     fire(editor.querySelector('.u2-tag-remove'), 'click');
-    assert.deepEqual(fb.value.peek().nodes[0].value, ['Closed']);
-    fb.value.value = Filters.update(fb.value.peek(), 'f1', {value: ['Blocked', 'Open']});
-    assert.deepEqual(editor.querySelectorAll('.u2-tag-text').map((t) => t.textContent), ['Blocked', 'Open']);
+    assert.deepEqual(fb.peek().nodes[0].value, ['Closed']);
+    fb.value = Filters.update(fb.peek(), 'f1', {value: ['Blocked', 'Open']});
+    assert.deepEqual([...editor.querySelectorAll('.u2-tag-text')].map((t) => t.textContent), ['Blocked', 'Open']);
   } finally {
     fb.dispose();
   }
@@ -414,11 +449,11 @@ smoke('between → two editors writing the bounds pair', () => {
   const hi = part(row, 'value2').querySelector('input');
   assert.deepEqual([lo.value, hi.value], ['18', '65']);
   type(hi, '70');
-  assert.deepEqual(fb.value.peek().nodes[0].value, [18, 70]);
+  assert.deepEqual(fb.peek().nodes[0].value, [18, 70]);
   type(lo, '');
-  assert.deepEqual(fb.value.peek().nodes[0].value, [null, 70]);
+  assert.deepEqual(fb.peek().nodes[0].value, [null, 70]);
   assert.deepEqual(fb.problems.peek().map((p) => p.code), ['invalid-value']);
-  fb.value.value = Filters.update(fb.value.peek(), 'f1', {value: [20, 30]});
+  fb.value = Filters.update(fb.peek(), 'f1', {value: [20, 30]});
   assert.deepEqual([lo.value, hi.value], ['20', '30']);
 });
 
@@ -434,19 +469,19 @@ smoke('datetime → one date-time box that takes an absolute date or a typed spa
   assert.equal(part(relative, 'value').querySelector('input').value, '-1w', 'a span shows as typed');
 
   type(box, '-2d');
-  assert.deepEqual(fb.value.peek().nodes[0].value, {span: '-2d'});
+  assert.deepEqual(fb.peek().nodes[0].value, {span: '-2d'});
   assert.equal(fb.query.peek(), 'created > -2d and created < -1w');
   type(box, 'soon');
-  assert.deepEqual(fb.value.peek().nodes[0].value, {span: '-2d'}, 'unparseable text never reaches the model');
+  assert.deepEqual(fb.peek().nodes[0].value, {span: '-2d'}, 'unparseable text never reaches the model');
   assert.equal(part(absolute, 'value').querySelector('.u2-input-error').textContent, 'Not a date-time');
   type(box, '2026-02-01 08:00');
-  assert.equal(fb.value.peek().nodes[0].value.getTime(), new Date(2026, 1, 1, 8).getTime());
+  assert.equal(fb.peek().nodes[0].value.getTime(), new Date(2026, 1, 1, 8).getTime());
 
-  fb.value.value = Filters.update(fb.value.peek(), 'f1', {value: {span: 'now'}});
+  fb.value = Filters.update(fb.peek(), 'f1', {value: {span: 'now'}});
   assert.equal(box.value, 'now', 'a span set from the model shows as its text');
-  fb.value.value = Filters.update(fb.value.peek(), 'f1', {value: when});
+  fb.value = Filters.update(fb.peek(), 'f1', {value: when});
   assert.equal(box.value, '2026-01-15 10:30', 'a date set from the model shows as the date');
-  fb.value.value = Filters.update(fb.value.peek(), 'f1', {value: undefined});
+  fb.value = Filters.update(fb.peek(), 'f1', {value: undefined});
   assert.equal(box.value, '');
 });
 
@@ -467,8 +502,8 @@ smoke('a custom editor factory wins over the kind default and round-trips the va
   assert.equal(part(name, 'value').dataset.custom, '1');
   assert.equal(part(age, 'value').dataset.u2, 'number-input', 'null falls back to the kind default');
   type(part(name, 'value').querySelector('input'), 'b');
-  assert.equal(fb.value.peek().nodes[0].value, 'b');
-  fb.value.value = Filters.update(fb.value.peek(), 'f1', {value: 'c'});
+  assert.equal(fb.peek().nodes[0].value, 'b');
+  fb.value = Filters.update(fb.peek(), 'f1', {value: 'c'});
   assert.equal(part(name, 'value').querySelector('input').value, 'c');
 });
 
@@ -502,7 +537,7 @@ smoke('a nested tree in simple mode: a summary row, the hint, flatten when the c
   assert.equal(hintMode.hidden, true, 'already in advanced mode: only flatten is offered');
   assert.equal(flatten.hidden, false);
   fire(flatten, 'click');
-  assert.equal(Filters.isFlat(fb.value.peek()), true);
+  assert.equal(Filters.isFlat(fb.peek()), true);
   assert.equal(hint.hidden, true);
   assert.deepEqual(rows(fb).map((r) => r.dataset.u2Node), ['f1', 'f2'], 'the inlined condition keeps its id');
   assert.equal(rows(fb)[1].classList.contains('u2-fb-nested'), false, 'the condition got a real row');
@@ -527,7 +562,7 @@ smoke('setMode: advanced adopts, back to simple is refused with the hint while n
   assert.equal(hint.hidden, true);
   assert.equal(fb.addGroup().startsWith('f'), true);
   assert.equal(rows(fb)[1].classList.contains('u2-fb-nested'), true);
-  assert.equal(fb.value.peek().nodes[1].op, 'or', 'the other connector');
+  assert.equal(fb.peek().nodes[1].op, 'or', 'the other connector');
 });
 
 smoke('orientation is ignored in advanced mode, with one warning', () => {
@@ -585,7 +620,7 @@ smoke('a spec template without node ids seeds the value, locks its rows and neve
     const fb = Control.forElement(instance.root.querySelector('[data-u2="filter-builder"]'));
     const [locked, free] = rows(fb);
     assert.equal(rows(fb).length, 2, 'the template is the starting value');
-    assert.equal(typeof fb.value.peek().nodes[0].id, 'string');
+    assert.equal(typeof fb.peek().nodes[0].id, 'string');
     assert.equal(locked.classList.contains('u2-fb-locked'), true);
     assert.equal(part(locked, 'remove').hidden, true);
     assert.equal(free.classList.contains('u2-fb-locked'), false);
@@ -615,13 +650,13 @@ smoke('showQuery footer, getWidgetStatus and the onChanged hook', () => {
   fb.addCondition();
   assert.equal(footer.textContent, 'age > 30 and name =');
   const status = fb.getWidgetStatus();
-  assert.equal(status.tree === fb.value.peek(), true);
+  assert.equal(status.tree === fb.peek(), true);
   assert.equal(status.query, 'age > 30 and name =');
   assert.deepEqual(status.problems.map((p) => p.code), ['missing-value']);
   assert.equal(status.mode, 'simple');
   assert.deepEqual(Object.keys(status.parts).sort(), ['add', 'connector', 'editor', 'error', 'mode', 'query', 'rows']);
   assert.deepEqual(changes, ['age > 30 and name =']);
-  fb.value.value = Filters.update(fb.value.peek(), 'f1', {value: 40});
+  fb.value = Filters.update(fb.peek(), 'f1', {value: 40});
   assert.deepEqual(changes, ['age > 30 and name =', 'age > 40 and name ='], 'the editor does not echo a model write');
   const plain = mount(new FilterBuilder({schema: SCHEMA, value: tree(Filters.cond('age', '>', 30))}));
   assert.equal(plain.root.querySelector('[data-u2-part="query"]'), null, 'the footer is off by default');
@@ -634,7 +669,7 @@ smoke('bindStep answers query (read-only) and mode (writable); bindProps adverti
     {name: 'query', type: TYPE.STRING}, {name: 'mode', type: TYPE.STRING}]};
   assert.equal(fb.bindStep('query').value, 'age > 30');
   assert.equal(fb.bindStep('mode') === fb.mode, true);
-  assert.equal(fb.bindStep('') === fb.value, true);
+  assert.equal(fb.bindStep('') === fb.signal, true);
   const props = Object.fromEntries(fb.bindProps().map((p) => [p.name, p.writable]));
   assert.deepEqual(props, {value: true, query: false, mode: true});
 });
@@ -654,7 +689,7 @@ smoke('required: a tree without a condition is invalid once touched; a condition
   assert.equal(fb.getState().error, null, 'not shown before a touch');
   fb.touch();
   assert.equal(fb.getState().error, EMPTY);
-  fb.value.value = tree(Filters.cond('age', '>', 30));
+  fb.value = tree(Filters.cond('age', '>', 30));
   assert.equal(fb.getState().valid, true);
   const groups = mount(new FilterBuilder({schema: SCHEMA, required: true, value: tree(Filters.group('or'))}));
   assert.equal(groups.getState().valid, false, 'empty sub-groups are still no condition');

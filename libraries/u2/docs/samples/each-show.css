@@ -1,0 +1,3 @@
+.order-reagent { width: 120px; }
+.order-note { color: var(--dg-text-color-light); }
+.order-warning { color: var(--dg-failure); }

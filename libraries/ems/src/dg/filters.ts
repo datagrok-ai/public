@@ -1,8 +1,3 @@
-/* `domains.filters` — the query box (or the builder) over a source's query: the table's own
-   filter schema, the platform's facet values where there is a platform, two-way with
-   `source.query`. A change the USER makes goes through the gate (STATE-CONTRACT H6) — it answers
-   at once while there is nothing to lose and refuses while a batch is being written back; cancel
-   puts the previous filter back. A query set in code is the source's to skip. */
 import {domainFilterSchema} from './filter-schema.js';
 import {emsBackends} from '../core/domain-backend.js';
 import {Control, computed, signal, ReadonlySignal, Filters, FilterQueryInput, FilterBuilder, Splitter,
@@ -19,11 +14,10 @@ export type DomainFiltersMode = 'query' | 'builder';
 
 /** The subtree operator, offered only where the hierarchy it walks exists. */
 const UNDER = 'under';
-/** What a `'basic'` backend (`support.filters`) runs on no column at all; the datetime `!=` and
- * the bool null tests it also lacks go by kind (ARCHITECTURE §5.2 of the external bindings). */
 /** What a `'basic'` backend is not offered: the operators it refuses by name, and the two whose
  * emitted payload is a nested group it cannot run — `fuzzy` (two clauses under an `or`) and
- * `between` (a pair under an `and`, on every kind). */
+ * `between` (a pair under an `and`, on every kind). The datetime `!=` and the bool null tests it
+ * also lacks go by kind. */
 const NOT_BASIC = new Set([UNDER, 'matches', '!matches', '!like', 'fuzzy', 'between']);
 const NULL_TESTS = new Set(['is null', 'is not null']);
 /** How many rows of the target table an `under` value slot offers at once. */
@@ -36,6 +30,8 @@ export interface DomainFiltersOptions {
   placeholder?: string;
 }
 
+/** The query box (or the builder), two-way with `source.query`. A change the user makes goes through the
+ * unsaved gate, and a cancel puts the previous filter back; a query set in code is the source's to skip. */
 export class DomainFilters extends Control {
   readonly mode: DomainFiltersMode;
   /** The input, once the table's schema is known. */
@@ -45,21 +41,17 @@ export class DomainFilters extends Control {
    * two agree. A builder row still waiting for its value is a draft, not a problem. */
   readonly problem: ReadonlySignal<string | null>;
 
-  /** Per source: how a query a control wrote bound is spelled in the box — `DomainApp.presets`
-   * registers `assignee = "<id>"` → `assignee = $me`, so the switch does not paste a uuid there. */
+  // `DomainApp.presets` registers `assignee = "<id>"` → `assignee = $me`, so the switch does not paste a uuid
   private static readonly _shownAs = new WeakMap<DomainSource, Map<string, string>>();
-  /** Per table address: the operators {@link registerOperators} offers only there. */
   private static readonly _scoped = new Map<string, FilterOperator[]>();
 
   private readonly _input = signal<FilterQueryInput | FilterBuilder | null>(null);
-  /** The tree the source's query stands for — what a cancelled change goes back to. */
+  // what a cancelled change goes back to
   private _accepted: FilterGroup = Filters.group('and');
-  /** The query text the grammar or the schema refuses, kept in the box beside the tree it did not
-   * make; null while the query and the tree agree. */
   private _raw: string | null = null;
   private _rawProblems: FilterProblem[] = [];
   private _syncing = false;
-  /** What the builder last sent: its own query coming back must not overwrite the rows still being written. */
+  // the builder's own query coming back must not overwrite the rows still being written
   private _echo: string | FilterGroup | undefined;
   private readonly _tools = divH([], 'u2-domain-filters-tools');
   private _paned = false;
@@ -91,8 +83,6 @@ export class DomainFilters extends Control {
     });
   }
 
-  /** The table's schema with the platform's values behind it; over another backend (the gallery,
-   * the tests) the properties alone. Either way the offer is narrowed the same way. */
   private async _schema(): Promise<FilterSchema> {
     const own = {...this.source.schema, properties: this._ordered()};
     const operators = await this._operators();
@@ -103,7 +93,7 @@ export class DomainFilters extends Control {
       values: (prop, query, signal, ctx) => this._under(prop, query, ctx) ?? values!(prop, query, signal, ctx)};
   }
 
-  /** The name column first and the system columns last, so a new condition starts on the name. */
+  // the name column first, so a new condition starts on it
   private _ordered(): FilterProperty[] {
     const {properties, info} = this.source.schema;
     const name = info.nameColumn ?? info.businessKey[0];
@@ -111,10 +101,7 @@ export class DomainFilters extends Control {
     return [...properties].sort((a, b) => rank(a) - rank(b));
   }
 
-  /** The candidates for an `under` term: the ROWS of the hierarchy it walks — every location,
-   * not the handful the column happens to hold — read through the same search `u2-domain-pick`
-   * uses, so a caption is shown and the id is what lands in the query. Null for anything else,
-   * which leaves the schema's own values in force. */
+  // the rows of the hierarchy, not the handful the column holds, by `u2-domain-pick`'s search: a caption shows
   private _under(prop: FilterProperty, query: string,
     ctx?: {operator?: string}): Promise<FilterValueItem[]> | null {
     if (ctx?.operator !== UNDER)
@@ -126,12 +113,8 @@ export class DomainFilters extends Control {
       value: {type: address, id: item.id, name: item.name}, label: item.name})));
   }
 
-  /** `under` is registered for every ref and string column — the operator registry cannot know
-   * which target is a hierarchy, and "is under" on a column the server would refuse is a dead end.
-   * Offered here on a ref column whose target IS one, and on `id` when this table is; the value
-   * slot's candidates are the target's rows, which the schema's `values` already answers. A
-   * `'basic'` backend is offered nothing it cannot run ({@link NOT_BASIC}); whatever is typed
-   * regardless is still refused by name in the status line. */
+  // the operator registry offers `under` on every ref and string column, as it cannot know which target is a
+  // hierarchy; "is under" on a column the server would refuse is a dead end
   private async _operators(): Promise<FilterSchema['operators']> {
     const backend = emsBackends.domain;
     const own = this.source.schema;
@@ -166,7 +149,7 @@ export class DomainFilters extends Control {
 
   private _build(schema: FilterSchema): void {
     const source = this.source;
-    const input = this.runInScope(() => this.mode === 'builder' ?
+    const input = this.build(() => this.mode === 'builder' ?
       new FilterBuilder({schema, target: 'domain', inline: true}) :
       new FilterQueryInput({schema, target: 'domain', inline: true, name: 'filters',
         placeholder: this._options.placeholder ?? (schema.properties.length === 0 ? 'Filter…' :
@@ -198,7 +181,7 @@ export class DomainFilters extends Control {
         input.setMode(Filters.isFlat(this._accepted) ? 'simple' : 'advanced');
     });
     this.effect(() => {
-      const tree = input.value.value;
+      const tree = input.value;
       const raw = box?.raw.value ?? null;
       if (this._syncing || (raw === this._raw && Filters.equals(tree, this._accepted)))
         return;
@@ -217,7 +200,7 @@ export class DomainFilters extends Control {
       note.textContent = this._accepted.nodes.length === 0 ? 'Filter not applied: showing all rows' :
         'Showing results for the last valid filter';
     });
-    this._tools.replaceChildren(...this.runInScope(() =>
+    this._tools.replaceChildren(...this.build(() =>
       [SavedSearches.historyButton(source), SavedSearches.saveButton(source)]));
     this.effect(() => SavedSearches.track(source));
     const row = this._paned ? input.root : divH([input.root, this._tools], 'u2-domain-filters-row');
@@ -225,8 +208,7 @@ export class DomainFilters extends Control {
     this._input.value = input;
   }
 
-  /** The tree goes to the source in the form its query has: text stays text. A builder sends only its complete
-   * conditions and keeps `shown`, the rows being written. */
+  // text stays text; a builder sends only its complete conditions and keeps `shown`, the rows being written
   private _apply(tree: FilterGroup, shown = tree): void {
     const q = this.source.query.peek();
     this._accepted = shown;
@@ -239,7 +221,7 @@ export class DomainFilters extends Control {
   /** The filters in a pane on `list`'s left, the builder's mode switch on its title row. */
   pane(list: HTMLElement): HTMLElement {
     this._paned = true;
-    return this.runInScope(() => {
+    return this.build(() => {
       const head = divH([span('Filters', 'u2-domain-app-filters-title'), this._tools], 'u2-domain-app-filters-head');
       const pane = divV([head, this.root], 'u2-domain-app-filters-pane u2-fb-narrow');
       this.effect(() => {
@@ -252,11 +234,11 @@ export class DomainFilters extends Control {
   }
 
   private _write(input: FilterQueryInput | FilterBuilder, tree: FilterGroup): void {
-    if (Filters.equals(tree, input.value.peek()))
+    if (Filters.equals(tree, input.peek()))
       return;
     this._syncing = true;
     try {
-      input.value.value = tree;
+      input.value = tree;
     } finally {
       this._syncing = false;
     }

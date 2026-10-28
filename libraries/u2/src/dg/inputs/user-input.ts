@@ -60,7 +60,7 @@ function renderUser(user: DG.User): HTMLElement {
 
 /** `User.picture` is typed `string | object` but the Dart binding renders the avatar element
  * (grok_api.dart: `User_Get_Picture` → `UserMeta.renderIcon`); initials cover anything else. */
-function avatar(user: DG.User): HTMLElement {
+export function avatar(user: DG.User): HTMLElement {
   const picture = user.picture;
   if (picture instanceof HTMLElement) {
     const host = line('u2-avatar u2-avatar-picture');

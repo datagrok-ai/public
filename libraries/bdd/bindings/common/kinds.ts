@@ -1,10 +1,3 @@
-/* Generic kinds: "<qualifier> <kind>" resolves without a registry entry. The u2 nouns come from the
-   u2 and EMS manifests (u2-kinds.g.ts, `npm run vocab`): every `data-u2` value the libraries stamp has
-   a kind there, and `OVERRIDES` adds only what the manifests cannot know — the Dart client's
-   selectors and `name=` conventions (`annotate()` in html_utils.dart), legacy aliases, part names and
-   gestures, and the strategy order of a noun whose phrases resolve today — so the same phrase works on
-   both UI generations. Inputs share the u2 parts (label, editor, options, error) as `<part> of <input>`.
-   The kinds below the u2 nouns are not u2's: the Dart shell, item kinds and generic words. */
 import {kind, MatchStrategy} from '../../src/registry.js';
 import {registerU2Kinds, type U2Override} from '../../src/u2-vocabulary.js';
 import {U2_KINDS} from './u2-kinds.g.js';
@@ -23,6 +16,7 @@ const INPUT_MATCH: MatchStrategy[] = ['name', 'label', 'placeholder', 'dart'];
 const PRIMARY_TEXT = '.u2-fb-label, .u2-tree-label, .u2-typeahead-text, .u2-typeahead-user-name, .u2-multi-select-text, ' +
   '.u2-menu-label, .u2-card-title, .d4-tree-view-node-label';
 const ITEM_LABEL = '[data-u2-part="item-label"]';
+const SHELL_PARENT_CRUMB = '.d4-view-ribbon > .d4-ribbon-name:not(.grok-ns-entity-name):not(:has(a))';
 
 function u2(...ids: string[]): string {
   return ids.map((id) => `[data-u2="${id}"]`).join(', ');
@@ -37,6 +31,7 @@ function input(dart: string, aliases: string[] = [], extra: U2Override = {}): U2
 // a noun whose phrases resolve by data-u2-name today: the manifest's aria source would be tried first
 const BY_NAME: U2Override = {match: ['name']};
 
+// only what the manifests cannot know: the Dart client's selectors and names, legacy aliases, parts, strategy pins
 const OVERRIDES: Record<string, U2Override> = {
   // --- inputs ---
   // a bare <input> outside any input host that names itself (aria-label) is a text input too: the
@@ -93,7 +88,10 @@ const OVERRIDES: Record<string, U2Override> = {
   'history browser': BY_NAME,
 
   // --- display ---
-  'icon': {selector: '.u2-icon, .grok-icon, [name^="icon-"], i[class*="fa-"]', match: ['aria', 'name', 'dart'], dartNames: ['icon-{q}', '{q}']},
+  // a u2 icon button is the icon a person sees: its tooltip is its aria-label, the glyph inside carries none
+  'icon': {selector: '.u2-icon, .grok-icon, button.u2-icon-btn, [name^="icon-"], i[class*="fa-"]', match: ['aria', 'name', 'dart'], dartNames: ['icon-{q}', '{q}'],
+    description: 'a glyph by its tooltip or name; a u2 icon button is an `icon button`, and is matched here too only so ' +
+      'features written before u2 icons became buttons keep passing'},
   'tag': {selector: '.d4-tag', items: false},
   'notification': {u2Selector: '[data-u2="notify"] .u2-notify', selector: '.d4-balloon'},
   'progress bar': {selector: '[role="progressbar"]', labelSelector: '.u2-progress-description'},
@@ -202,7 +200,9 @@ kind('table row', {
 // --- display --------------------------------------------------------------------------------------
 kind('heading', {aliases: ['header', 'title'], selector: 'h1, h2, h3, h4, h5, h6', match: ['text']});
 kind('text', {aliases: ['label'], selector: '*', match: ['exact-text']});
-kind('link', {selector: 'a, .d4-link-label', match: ['text', 'name', 'aria', 'dart'], dartNames: ['label-{q}']});
+// the shell's crumb of a view's parent goes back to it, as a link does; an app's crumb holds a real link
+kind('link', {selector: `a, .d4-link-label, ${SHELL_PARENT_CRUMB}`, match: ['text', 'name', 'aria', 'dart'],
+  dartNames: ['label-{q}']});
 kind('action', {aliases: ['action link'], selector: '.d4-link-action', match: ['exact-text', 'text'],
   description: 'a function link of the context panel\'s Actions pane ("Convert Notation...")'});
 
@@ -222,9 +222,10 @@ kind('ribbon item', {
   selector: '.d4-ribbon-item',
   match: ['text', 'name', 'aria'],
 });
+// the shell's ribbon reads "Parent › View": the parent's crumb, then the view's name
 kind('breadcrumb', {
   aliases: ['crumb'],
-  selector: '.u2-breadcrumbs-item, .u2-breadcrumbs-current, ' + u2('breadcrumbs') + ' a',
+  selector: '.u2-breadcrumbs-item, .u2-breadcrumbs-current, ' + u2('breadcrumbs') + ' a, .d4-view-ribbon > .d4-ribbon-name',
   match: ['text', 'aria', 'item'],
   items: true,
 });

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Locations: The containers' source is built under an owner the view disposes, so the view no longer fails with a u2 `owner-missing` error where u2 is strict (dev, tests)
 * Locations: Added New container to a location's context menu
 * Locations: Showed the container count in the Containers header
 * Locations: Fixed the containers table not scrolling to every container

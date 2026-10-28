@@ -1,12 +1,13 @@
 /* Form layouts: the layout enum's class emission, the captionAlign live toggle, the
    Form.add(input, host) seam, and the auto machinery — _pickLayout's platform truth table
    (threshold + 10px hysteresis, js-api ui.ts:1443-1448) and the class toggle over stubbed
-   widths. Layout metrics are dom-shim fakes; nothing here asserts pixels. */
+   widths. Layout metrics are given by layout.mjs; nothing here asserts pixels. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {signal, Scope} from '../src/index.js';
 import {Form, LabelColumn} from '../src/components/forms/form.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
@@ -32,8 +33,8 @@ function mount(f) {
 
 /** A labeled input whose label measures `width` in the fake layout. */
 function input(label, width) {
-  const it = new TextInput({label, name: label});
-  it.root.querySelector('.u2-input-label').offsetWidth = width;
+  const it = testOwner().build(() => new TextInput({label, name: label}));
+  layout(it.root.querySelector('.u2-input-label'), {offsetWidth: width});
   return it;
 }
 
@@ -118,8 +119,8 @@ ui('add(input, host) lays the row out in the host while the input still joins th
   assert.equal(name.root.parentNode, host);
   assert.equal(plain.root.parentNode, f.root.querySelector('.u2-form-rows'));
   assert.deepEqual(f.inputs, [name, plain], 'both joined the form');
-  name.value.value = 'Aspirin';
-  plain.value.value = 'x';
+  name.value = 'Aspirin';
+  plain.value = 'x';
   assert.deepEqual(f.getValues(), {name: 'Aspirin', plain: 'x'});
   await flush();
   assert.equal(f.root.style.getPropertyValue('--u2-form-label-width'), '60px',
@@ -132,7 +133,7 @@ ui('add(input, host) lays the row out in the host while the input still joins th
 ui('auto: the measure pass flips to tall when squeezed and to WIDE when roomy', async () => {
   const f = mount(new Form());
   const name = input('Compound name', 120);
-  f.root.clientWidth = 200;
+  layout(f.root, {clientWidth: 200});
   f.add(name);
   await flush();
   assert.equal(tall(f), true, '200 - 120 < 150 → tall');
@@ -140,7 +141,7 @@ ui('auto: the measure pass flips to tall when squeezed and to WIDE when roomy', 
   assert.equal(f.root.style.getPropertyValue('--u2-form-label-width'), '120px',
     'label measuring keeps running while auto-tall');
 
-  f.root.clientWidth = 400;
+  layout(f.root, {clientWidth: 400});
   f._scheduleAlign();
   await flush();
   assert.equal(tall(f), false, '400 - 120 > 160 → the roomy state');
@@ -152,30 +153,30 @@ ui('auto: the measure pass flips to tall when squeezed and to WIDE when roomy', 
 ui('auto: no flip inside the 10px hysteresis band, and a hidden host keeps the current state', async () => {
   const f = mount(new Form());
   const name = input('Compound name', 120);
-  f.root.clientWidth = 275; // 155 sits inside [150, 160]
+  layout(f.root, {clientWidth: 275}); // 155 sits inside [150, 160]
   f.add(name);
   await flush();
   assert.equal(tall(f) || wide(f), false, 'the band keeps the never-measured plain state');
 
-  f.root.clientWidth = 200;
+  layout(f.root, {clientWidth: 200});
   f._scheduleAlign();
   await flush();
   assert.equal(tall(f), true);
-  f.root.clientWidth = 275;
+  layout(f.root, {clientWidth: 275});
   f._scheduleAlign();
   await flush();
   assert.equal(tall(f), true, 'the band keeps tall too — no flicker');
 
-  f.root.clientWidth = 0;
+  layout(f.root, {clientWidth: 0});
   f._scheduleAlign();
   await flush();
   assert.equal(tall(f), true, 'clientWidth 0 (hidden host) never rewrites the state');
 
-  f.root.clientWidth = 400;
+  layout(f.root, {clientWidth: 400});
   f._scheduleAlign();
   await flush();
   assert.equal(wide(f), true);
-  f.root.clientWidth = 275;
+  layout(f.root, {clientWidth: 275});
   f._scheduleAlign();
   await flush();
   assert.equal(wide(f), true, 'the band keeps wide from the wide side too');
@@ -186,7 +187,7 @@ ui('auto: no flip inside the 10px hysteresis band, and a hidden host keeps the c
 ui('explicit normal never switches; explicit tall skips label measuring entirely', async () => {
   const never = mount(new Form({layout: 'normal'}));
   const a = input('Compound name', 120);
-  never.root.clientWidth = 200;
+  layout(never.root, {clientWidth: 200});
   never.add(a);
   await flush();
   assert.equal(tall(never), false);
@@ -194,9 +195,9 @@ ui('explicit normal never switches; explicit tall skips label measuring entirely
   never.dispose();
   a.dispose();
 
-  const forced = mount(new Form({layout: 'tall'}));
+  const forced = mount(testOwner().build(() => new Form({layout: 'tall'})));
   const b = input('Compound name', 120);
-  forced.root.clientWidth = 200;
+  layout(forced.root, {clientWidth: 200});
   forced.add(b);
   await flush();
   assert.equal(tall(forced), true);
@@ -213,7 +214,7 @@ ui('dialogs are exempt: an auto form inside .u2-dialog never flips tall', async 
   const f = new Form();
   dialog.append(f.root);
   const name = input('Compound name', 120);
-  f.root.clientWidth = 200;
+  layout(f.root, {clientWidth: 200});
   f.add(name);
   await flush();
   assert.equal(tall(f), false, 'the platform exempts dialog forms (ui.ts:1437-1441)');
@@ -232,7 +233,7 @@ ui('the --dg-form-min-editor-width token drives the threshold, and the 150 fallb
   const f = mount(new Form());
   const name = input('Compound name', 120);
   // token not served yet (detached-stylesheet boot): 300 - 120 = 180 > 160 → wide on the fallback
-  f.root.clientWidth = 300;
+  layout(f.root, {clientWidth: 300});
   f.add(name);
   await flush();
   assert.equal(tall(f), false, 'the 150 fallback keeps caption-left');
@@ -279,13 +280,13 @@ ui('folding a section (labels measuring 0) never reflows the shared label column
 
   // fold: the widest label goes display:none and measures 0 — its remembered width stands in
   const label = long.root.querySelector('.u2-input-label');
-  label.offsetWidth = 0;
+  layout(label, {offsetWidth: 0});
   f._scheduleAlign();
   await flush();
   assert.equal(f.root.style.getPropertyValue('--u2-form-label-width'), '88px',
     'the column held through the fold');
 
-  label.offsetWidth = 88;
+  layout(label, {offsetWidth: 88});
   f._scheduleAlign();
   await flush();
   assert.equal(f.root.style.getPropertyValue('--u2-form-label-width'), '88px', 'and after expand');
@@ -308,7 +309,7 @@ ui('alignment lands before the next task: a form built and attached in one go is
 ui('labelWidth: a fixed column — nothing measured, the auto layout decides with it', async () => {
   const f = mount(new Form({labelWidth: 28}));
   f.add(input('R1', 20));
-  f.root.clientWidth = 400;
+  layout(f.root, {clientWidth: 400});
   f.layoutNow();
   assert.equal(f.root.style.getPropertyValue('--u2-form-label-width'), '28px');
   assert.equal(wide(f), true);
@@ -364,7 +365,7 @@ ui('a nested form leaves the auto switching to the outer one', async () => {
   const inner = new Form();
   outer.root.append(inner.root);
   const name = input('Compound name', 120);
-  inner.root.clientWidth = 200;
+  layout(inner.root, {clientWidth: 200});
   inner.add(name);
   await flush();
   assert.equal(tall(inner), false, 'the nested form never flips itself (ui.ts:1419-1424 parity)');
@@ -412,7 +413,7 @@ ui('auto survives a missing ResizeObserver (the headless guard)', async () => {
   try {
     const f = mount(new Form());
     const name = input('Compound name', 120);
-    f.root.clientWidth = 200;
+    layout(f.root, {clientWidth: 200});
     f.add(name);
     await flush();
     assert.equal(tall(f), true, 'the rAF pass still runs without an observer');
@@ -426,7 +427,7 @@ ui('auto survives a missing ResizeObserver (the headless guard)', async () => {
 ui('validity skips hidden and disabled inputs (P79); validate() shows every counted verdict', async () => {
   const f = mount(new Form({layout: 'normal'}));
   const hidden = new TextInput({label: 'Code', name: 'code', required: true});
-  const off = new TextInput({label: 'Note', name: 'note', required: true, enabled: false});
+  const off = new TextInput({label: 'Note', name: 'note', required: true, disabled: 'Filled in by the server'});
   f.addAll([hidden, off]);
   hidden.visible = false;
   assert.equal(f.validity.peek(), null);
@@ -529,7 +530,7 @@ ui('addGroup: one caption over several inputs — the group caption sizes the co
   const line = input('Line', 30);
   const background = input('A long background caption', 160);
   f.add(name).addGroup('Colors', [line, background], {captionsAfter: true});
-  f.root.querySelector('.u2-form-group-label').offsetWidth = 52;
+  layout(f.root.querySelector('.u2-form-group-label'), {offsetWidth: 52});
   f.layoutNow();
   assert.equal(f.root.style.getPropertyValue('--u2-form-label-width'), '52px', 'the group caption, not its inputs\'');
   assert.deepEqual(f.inputs.map((i) => i.name), ['Name', 'Line', 'A long background caption']);
@@ -581,9 +582,9 @@ ui('quiet: the form says so, and an input says while it is empty', async () => {
   f.add(name);
   assert.equal(f.root.classList.contains('u2-quiet'), true);
   assert.equal(name.root.classList.contains('u2-input-empty'), true, 'nothing typed: it keeps its underline');
-  name.value.value = 'Cysteine';
+  name.value = 'Cysteine';
   assert.equal(name.root.classList.contains('u2-input-empty'), false);
-  name.value.value = '';
+  name.value = '';
   assert.equal(name.root.classList.contains('u2-input-empty'), true);
   const sheet = readFileSync(new URL('../css/inputs.css', import.meta.url), 'utf8');
   assert.match(sheet, /\.u2-quiet \{\s+--dg-input-border: var\(--dg-border-width\) solid transparent;/);

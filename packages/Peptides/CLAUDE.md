@@ -154,7 +154,8 @@ Receives a chunk of the upper-triangular pairwise comparison matrix. For each pa
 - `@datagrok-libraries/ml` — distance matrices, dimensionality reduction (UMAP/tSNE), MCL clustering, macromolecule distance functions
 - `@datagrok-libraries/math` — DBSCAN worker, WebGPU utilities
 - `@datagrok-libraries/statistics` — statistical functions
-- `@datagrok-libraries/utils` — BitArray, UI helpers (`u2.appHeader`)
+- `@datagrok-libraries/utils` — BitArray
+- `@datagrok-libraries/u2` — `AppHeader` (the app landing's header)
 - `@datagrok-libraries/tutorials` — tutorial framework
 - `wu` — lazy iteration
 - `cash-dom` — jQuery-like DOM manipulation

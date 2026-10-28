@@ -9,42 +9,15 @@ import {divV, link, span} from '@datagrok-libraries/u2';
 import type {DemoLeaf} from './nav';
 import {setPageShownHook} from './nav';
 import {SRC_ROOT} from './const';
-import convergenceSource from './convergence?raw';
-import funcConvergenceSource from './func-convergence?raw';
-import funcsSource from './funcs?raw';
-import funcHistorySource from './func-history?raw';
-import catalogSource from './pages/catalog?raw';
-import collectionsSource from './pages/collections?raw';
-import containersSource from './pages/containers?raw';
-import displaySource from './pages/display?raw';
-import filtersSource from './pages/filters?raw';
-import formsSource from './pages/forms?raw';
-import inputsSource from './pages/inputs?raw';
-import overviewSource from './pages/overview?raw';
-import platformSource from './pages/platform?raw';
-import msaWorkbenchSource from './pages/msa-workbench?raw';
 import '../css/u2demo-source.css';
 
 const BLOB = 'https://github.com/datagrok-ai/public/blob/master/';
 
-/** Every file a `SourceRef` can name, keyed the way `nav.ts` names it. A leaf pointing anywhere
- * else renders the "not bundled" state — the one place this map can drift. */
-const SOURCES: Record<string, string> = {
-  [`${SRC_ROOT}/convergence.ts`]: convergenceSource,
-  [`${SRC_ROOT}/func-convergence.ts`]: funcConvergenceSource,
-  [`${SRC_ROOT}/funcs.ts`]: funcsSource,
-  [`${SRC_ROOT}/func-history.ts`]: funcHistorySource,
-  [`${SRC_ROOT}/pages/catalog.ts`]: catalogSource,
-  [`${SRC_ROOT}/pages/collections.ts`]: collectionsSource,
-  [`${SRC_ROOT}/pages/containers.ts`]: containersSource,
-  [`${SRC_ROOT}/pages/display.ts`]: displaySource,
-  [`${SRC_ROOT}/pages/filters.ts`]: filtersSource,
-  [`${SRC_ROOT}/pages/forms.ts`]: formsSource,
-  [`${SRC_ROOT}/pages/inputs.ts`]: inputsSource,
-  [`${SRC_ROOT}/pages/overview.ts`]: overviewSource,
-  [`${SRC_ROOT}/pages/platform.ts`]: platformSource,
-  [`${SRC_ROOT}/pages/msa-workbench.ts`]: msaWorkbenchSource,
-};
+/** Every module of this folder and of `pages/` as text (the `?raw` rule applies to each), keyed the way `nav.ts`
+ * names a `SourceRef`: a page added there is bundled with nothing to list. */
+const bundled = import.meta.webpackContext('./?raw', {recursive: true, regExp: /^\.\/(pages\/)?[\w-]+\.ts$/});
+const SOURCES: Record<string, string> = Object.fromEntries(bundled.keys().map((key) =>
+  [`${SRC_ROOT}/${key.slice(2)}`, bundled<string>(key)]));
 
 /** From `function <symbol>(` to the first line that is exactly `}` — every page factory in this
  * package is a top-level function closed at column 0. Both line endings: the checkout is CRLF,

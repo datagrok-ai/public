@@ -4,9 +4,8 @@ import {
   TextInput, TextArea, BoolInput, NumberInput, ChoiceInput, MultiChoiceInput, IconInput,
   SuggestInput, DynamicInput, Combobox, AsyncView, RangeSlider, MultiSelect, ButtonGroup,
 } from '@datagrok-libraries/u2';
-import {functionInput} from '@datagrok-libraries/u2/src/dg/index.js';
+import {functionInput} from '@datagrok-libraries/u2/dg';
 import {readout, CITIES} from './common';
-import '../../css/u2demo-inputs.css';
 
 export function basicInputsPage(): HTMLElement {
   const query = signal('');
@@ -35,7 +34,7 @@ export function basicInputsPage(): HTMLElement {
   // DynamicInput shows its value instead of editing it: only code ever writes it, here an effect
   const preview = new DynamicInput<string>({label: 'Preview',
     render: (v) => v ? span(v, 'u2demo-code') : null});
-  Scope.ambient!.effect(() => preview.value.value = query.value || null);
+  Scope.ambient!.effect(() => preview.value = query.value || null);
 
   return divV([
     span('Every input is a signal owner: bind to it, or pass your own signal through the bind option.',
@@ -45,11 +44,11 @@ export function basicInputsPage(): HTMLElement {
     readout('search', computed(() => query.value || '(empty)')),
     readout('notifications', computed(() => String(notify.value))),
     readout('dose * replicates', computed(() =>
-      String((dose.value.value ?? 0) * (replicates.value.value ?? 0)))),
+      String((dose.value ?? 0) * (replicates.value ?? 0)))),
     readout('code validity', computed(() => code.validity.value ?? 'valid')),
-    readout('icon', glyph.value),
-    readout('scorer', computed(() => scorer.value.value || '(none)')),
-    readout('city', computed(() => city.value.value || '(empty)')),
+    readout('icon', glyph.signal),
+    readout('scorer', computed(() => scorer.value || '(none)')),
+    readout('city', computed(() => city.value || '(empty)')),
   ], 'u2demo-page');
 }
 
@@ -80,18 +79,18 @@ export function multiSelectPage(): HTMLElement {
     items: ['GPCR', 'Kinase', 'Ion channel', 'Protease', 'Transporter', 'Nuclear receptor']});
 
   const actions = new ButtonGroup({items: [
-    {id: 'copy', label: 'Copy', icon: 'copy'},
-    {id: 'paste', label: 'Paste', icon: 'paste'},
-    {id: 'delete', label: 'Delete', icon: 'trash'},
+    {id: 'copy', text: 'Copy', icon: 'copy'},
+    {id: 'paste', text: 'Paste', icon: 'paste'},
+    {id: 'delete', text: 'Delete', icon: 'trash'},
   ]});
   const layout = new ButtonGroup({toggle: 'single', density: 'toolbar', items: [
-    {id: 'grid', label: 'Grid'}, {id: 'cards', label: 'Cards'}, {id: 'list', label: 'List'},
+    {id: 'grid', text: 'Grid'}, {id: 'cards', text: 'Cards'}, {id: 'list', text: 'List'},
   ]});
   layout.selected.value = ['grid'];
   const style = new ButtonGroup({toggle: 'multi', iconOnly: true, density: 'ribbon', items: [
-    {id: 'bold', label: 'Bold', icon: 'bold'},
-    {id: 'italic', label: 'Italic', icon: 'italic'},
-    {id: 'underline', label: 'Underline', icon: 'underline'},
+    {id: 'bold', text: 'Bold', icon: 'bold'},
+    {id: 'italic', text: 'Italic', icon: 'italic'},
+    {id: 'underline', text: 'Underline', icon: 'underline'},
   ]});
 
   return divV([
@@ -99,7 +98,7 @@ export function multiSelectPage(): HTMLElement {
       'buttons when it is short enough to show whole. A ButtonGroup with no toggle mode is a ' +
       'plain action bar.', 'u2demo-hint'),
     h3('MultiSelect'), targets,
-    readout('targets', computed(() => targets.value.value.join(', ') || '(none)')),
+    readout('targets', computed(() => targets.value.join(', ') || '(none)')),
     h3('ButtonGroup'),
     divH([actions, layout, style], 'u2demo-row'),
     readout('layout', computed(() => layout.selected.value.join(', ') || '(none)')),
@@ -131,7 +130,7 @@ export function asyncPage(): HTMLElement {
       'u2demo-hint'),
     h3('Combobox, local items'), local,
     h3('Combobox, async items'), remote,
-    readout('local', local.value), readout('remote', remote.value),
+    readout('local', local.signal), readout('remote', remote.signal),
     h3('AsyncView'), filter, view,
   ], 'u2demo-page');
 }

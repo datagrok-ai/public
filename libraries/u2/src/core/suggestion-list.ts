@@ -91,7 +91,7 @@ export class SuggestionList<T> {
     options.scope.listen(this.popup, 'pointerdown', (e) => this._onPointerDown(e));
     options.scope.listen(this.popup, OVERLAY_CLOSE_EVENT, () => options.onDismiss());
     const keyOf = options.keyOf;
-    Scope.runWith(options.scope, () => each(this._list, this._shown,
+    options.scope.build(() => each(this._list, this._shown,
       (item, index) => keyOf ? keyOf(item) : SuggestionList.keyOf(item, index), (item) => this._option(item)));
     options.scope.effect(() => this._renderStatus());
     options.scope.effect(() => {
@@ -111,8 +111,8 @@ export class SuggestionList<T> {
     if (this._open.peek())
       return;
     this._open.value = true;
-    this._closeOverlay = Overlay.show(this._options.anchor, this.popup, this._options.scope,
-      {maxHeight: this._options.maxHeight, matchWidth: this._options.matchWidth});
+    this._closeOverlay = Overlay.show(this._options.anchor, this.popup,
+      {owner: this._options.scope, maxHeight: this._options.maxHeight, matchWidth: this._options.matchWidth});
   }
 
   dismiss(): void {

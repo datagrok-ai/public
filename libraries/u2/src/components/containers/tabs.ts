@@ -12,19 +12,19 @@ import type {IItemsState} from '../../core/widget-like.js';
 
 export interface TabOptions {
   id: string;
-  /** An empty label with an icon makes an icon-only tab (the platform's `d4-tab-icons` mode). */
-  label: string;
+  /** An empty title with an icon makes an icon-only tab (the platform's `d4-tab-icons` mode). */
+  title: string;
   /** A Font Awesome name (rendered through `icon`) or a ready element. */
   icon?: string | HTMLElement;
-  /** Header tooltip; defaults to the label, so an icon-only tab should set it. */
+  /** Header tooltip; defaults to the title, so an icon-only tab should set it. */
   tooltip?: string;
   closable?: boolean;
   /** An element or a control, or a function building one; either is placed in the tab's panel on its
    * first activation, unless the strip is {@link TabStripOptions.eager}. */
   content: HTMLElement | Control | (() => HTMLElement | Control);
   /** Why the tab's content needs the user, followed live: the tab is marked while it says something
-   * ({@link TabStrip.setInvalid}). Unset and the content is a `Form`, the form's shown error
-   * ({@link Form.error}) — nothing on a fresh form, the first failing field after a Save attempt. */
+   * ({@link TabStrip.setInvalid}). Unset and the content is a `Form`, the form's shown error with its field
+   * ({@link Form.shownProblem}) — nothing on a fresh form, the first failing field after a Save attempt. */
   validity?: ReadonlySignal<string | null>;
 }
 
@@ -127,7 +127,7 @@ export class TabStrip extends Control {
     header.dataset.id = tab.id;
     header.dataset.u2Item = tab.id;
     header.tabIndex = -1;
-    header.title = tab.tooltip ?? tab.label;
+    header.title = tab.tooltip ?? tab.title;
     header.setAttribute('role', 'tab');
     header.setAttribute('aria-selected', 'false');
     header.setAttribute('aria-controls', `${this._idPrefix}-panel-${tab.id}`);
@@ -135,7 +135,7 @@ export class TabStrip extends Control {
     const label = document.createElement('span');
     label.className = 'u2-tabs-label';
     label.dataset.u2Part = 'item-label';
-    label.textContent = tab.label;
+    label.textContent = tab.title;
     const mark = document.createElement('span');
     mark.className = tab.closable ? 'u2-tabs-close' : 'u2-tabs-mark';
     if (tab.closable) {
@@ -177,7 +177,9 @@ export class TabStrip extends Control {
   }
 
   private _watchContent(tab: Tab, content: HTMLElement | Control): void {
-    const error = (content as {error?: unknown}).error;
+    // a Form says which field it shows in error ("Name: Value can't be empty")
+    const shown = content as {shownProblem?: unknown, error?: unknown};
+    const error = shown.shownProblem instanceof Signal ? shown.shownProblem : shown.error;
     if (content instanceof Control && error instanceof Signal)
       this._watchValidity(tab, error as ReadonlySignal<string | null>);
   }
@@ -208,8 +210,8 @@ export class TabStrip extends Control {
   getItems(): IItemsState {
     const active = this.activeTab.peek();
     const list = this._tabs.peek().map((tab, index) => {
-      const {id, label, tooltip} = tab.options;
-      return {key: id, label: label || tooltip || id, index, selected: id === active, current: id === active,
+      const {id, title, tooltip} = tab.options;
+      return {key: id, label: title || tooltip || id, index, selected: id === active, current: id === active,
         ...tab.invalid ? {invalid: true} : {}, rendered: true};
     });
     return {count: list.length, list, truncated: false};
@@ -233,7 +235,7 @@ export class TabStrip extends Control {
       tab.header.removeAttribute('aria-invalid');
     else
       tab.header.setAttribute('aria-invalid', 'true');
-    tab.header.title = message ?? tab.options.tooltip ?? tab.options.label;
+    tab.header.title = message ?? tab.options.tooltip ?? tab.options.title;
   }
 
   private static _icon(source: string | HTMLElement): HTMLElement {
@@ -244,14 +246,14 @@ export class TabStrip extends Control {
   }
 
   /** Renames a tab in place — a bound tab title following its source. */
-  setTabLabel(id: string, label: string): void {
+  setTabTitle(id: string, title: string): void {
     const tab = this._find(id);
     if (tab === undefined)
       return;
-    tab.options = {...tab.options, label};
-    tab.header.querySelector('.u2-tabs-label')!.textContent = label;
+    tab.options = {...tab.options, title};
+    tab.header.querySelector('.u2-tabs-label')!.textContent = title;
     if (tab.options.tooltip === undefined && !tab.invalid)
-      tab.header.title = label;
+      tab.header.title = title;
     this._tabs.value = [...this._tabs.peek()];
   }
 
@@ -273,7 +275,7 @@ export class TabStrip extends Control {
         tab.built = true;
         const content = tab.options.content;
         // built once and kept: owned by the strip, not by this effect run (disposed on the next switch)
-        Scope.runWith(this.scope.child('tab'), () => untracked(() => {
+        this.scope.child('tab').build(() => untracked(() => {
           const built = typeof content === 'function' ? content() : content;
           tab.panel.append(built instanceof Control ? built.root : built);
           if (typeof content === 'function' && tab.options.validity === undefined)
@@ -407,7 +409,7 @@ export class TabStrip extends Control {
     run.listen(document, 'keydown', (e) => this._onDocumentKeyDown(e as KeyboardEvent));
     const active = this.activeTab.value;
     this._menu.replaceChildren(...this._tabs.value.map((tab) => {
-      const {id, label, icon, tooltip} = tab.options;
+      const {id, title, icon, tooltip} = tab.options;
       const item = document.createElement('div');
       item.className = 'u2-tabs-overflow-item';
       item.dataset.id = id;
@@ -416,7 +418,7 @@ export class TabStrip extends Control {
       // the header owns its icon element, so the menu gets a copy
       if (icon !== undefined)
         item.append(TabStrip._icon(typeof icon === 'string' ? icon : icon.cloneNode(true) as HTMLElement));
-      item.append(label || tooltip || id);
+      item.append(title || tooltip || id);
       return item;
     }));
   }

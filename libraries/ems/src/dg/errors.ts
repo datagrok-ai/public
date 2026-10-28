@@ -1,9 +1,3 @@
-/* What a domain control says when the source reports a failure. Over the platform backend the
-   js-api editor never throws from `save()`: it balloons, maps the server's column errors onto
-   the cells (which `errorOf` surfaces per field) and resolves a 409 through the platform's own
-   reload/overwrite dialog — so nothing here duplicates that. What reaches `DomainSource.error`
-   is the memory backend's refusal (the gallery, the tests) or a failed load, and both are one
-   message; a 403 additionally drops the access caches so the affordances re-gate. */
 import {emsBackends} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Rows, notify} from '@datagrok-libraries/u2';
@@ -11,14 +5,14 @@ import type {NotifyHandle} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {DgDomainBackend} from './backend.js';
 
-/** How both backends word the veto on restoring a child whose parent is still deleted
- * (the server's `_checkParentsLive`, the memory backend's `restore` arm): a column and the table
- * it points at. Matched
- * by its shape wherever it stands, whatever the code says: over the platform backend the server's
- * `restrict` reaches this as the session's refusal text ("Cannot save: …"), whose code is
- * `'refused'` — the sentence is the only thing both paths share. */
+/** How both backends word the veto on restoring a child whose parent is still deleted. Matched by its shape,
+ * whatever the code says: over the platform it arrives as the session's refusal text (code `'refused'`), and
+ * the sentence is the only thing both paths share. */
 const RESTRICT_PARENT = /Column "(.+?)" references a deleted row in "(.+?)"/;
 
+/** What a domain control says when the source reports a failure. Over the platform the js-api editor never
+ * throws from `save()` (it balloons, maps column errors onto the cells, resolves a 409 itself), so nothing here
+ * duplicates that. */
 export class DomainErrors {
   /** The seam's one code, from either backend: the memory one throws `DomainBackendError`, the
    * platform's `DomainError.code` is the server's `body.error` — so `'unsupported'` reads the

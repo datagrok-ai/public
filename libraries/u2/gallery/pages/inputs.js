@@ -101,8 +101,8 @@ export async function render(main) {
       span('Selected only'),
       button('Toggle enabled', () => {
         enabled.value = !enabled.value;
-        filter.enabled = enabled.value;
-        selected.enabled = enabled.value;
+        filter.disabled = enabled.value ? null : 'Turned off by the toolbar\'s toggle';
+        selected.disabled = enabled.value ? null : 'Turned off by the toolbar\'s toggle';
       }),
     ]);
     toolbar.style.gap = 'var(--dg-space-m)';

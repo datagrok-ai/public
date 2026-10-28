@@ -1,16 +1,11 @@
-/* `domains.grid` — the platform grid over a source's frame with the source's writer attached
-   (GOAL "Grid, subclass or hook": `Grid.attachEditor`, no subclass): in-cell edits go to the
-   js-api editor the source already holds, its state paints the cells, the table's handler
-   decorates the columns. Selection and the current row are the frame's, so the source sees them
-   without a wire; Save and Discard are the session's, not the grid's. */
 import * as DG from 'datagrok-api/dg';
 import {Control, signal, text, textWidth, Dates, span, timestamp, DataTable, Rows} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, IProperty, ObjectRenderer, CellStateLike, DataTableColumn,
   RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
-import {viewers} from '@datagrok-libraries/u2/src/dg/index.js';
-import {collectionSelection} from '@datagrok-libraries/u2/src/dg/index.js';
-import type {Bindable} from '@datagrok-libraries/u2/src/dg/index.js';
+import {viewers} from '@datagrok-libraries/u2/dg';
+import {collectionSelection} from '@datagrok-libraries/u2/dg';
+import type {Bindable} from '@datagrok-libraries/u2/dg';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {EditorEditState} from './editor-state.js';
 import {DomainTable} from './facade.js';
@@ -42,18 +37,20 @@ const COLUMN_WIDTH = {flag: 48, number: 64, date: 96, text: 96, name: 160, refer
 const SCROLLBAR = 12;
 const HEADER_MARGIN = 8;
 
+/** The platform grid over a source's frame with the source's writer attached (`Grid.attachEditor`, no subclass).
+ * Selection and the current row are the frame's; Save and Discard are the session's, not the grid's. */
 export class DomainGrid extends Control {
   readonly grid: DG.Grid;
   private _refused: {unsubscribe(): void} | undefined;
   private _rows: {unsubscribe(): void}[] = [];
-  /** Fitted once per frame, so a column the user resized keeps its width. */
+  // fitted once per frame, so a column the user resized keeps its width
   private _fittedTo: unknown;
 
   constructor(readonly source: DomainSource, private readonly _options: DomainGridOptions = {}) {
     super();
     this.root.classList.add('u2-domain-grid');
     this.root.dataset.u2 = 'domain-grid';
-    this.grid = this.runInScope(() =>
+    this.grid = this.build(() =>
       viewers.grid(source.df as unknown as ReadonlySignal<DG.DataFrame | undefined>, _options.look));
     this.root.append(this.grid.root);
     if (_options.look?.colHeaderHeight === undefined)
@@ -100,10 +97,8 @@ export class DomainGrid extends Control {
     });
   }
 
-  /** The platform's decoration over the frame the grid HOLDS — the ref-cell renderers that draw a
-   * `<schema>.<table>` cell as the target row's name are resolved against the grid's own frame,
-   * and the grid re-resolves them on its own only at its first render (`grid_core` render latch):
-   * a frame decorated before the viewer repoints to it keeps drawing raw ids. */
+  // only over the frame the grid holds: it re-resolves the ref-cell renderers on its own only at its first
+  // render (`grid_core` render latch), so a frame decorated before the viewer repoints keeps drawing raw ids
   private _decorate(df: DG.DataFrame): void {
     if (this.grid.dataFrame?.dart !== df.dart)
       return;
@@ -113,7 +108,6 @@ export class DomainGrid extends Control {
     this._formats(df);
   }
 
-  /** A ref column sorts by the name it shows (`~caption_<column>`), else by the id. */
   private static sortByCaption(df: DG.DataFrame): void {
     for (const column of df.columns.toList()) {
       const captions = df.columns.byName(Rows.caption(column.name));
@@ -130,7 +124,7 @@ export class DomainGrid extends Control {
     }
   }
 
-  /** A wrapped text is clipped mid-line by the row height; the tooltip shows it whole. */
+  // a wrapped text is clipped mid-line by the row height; the tooltip shows it whole
   private _singleLine(): void {
     for (const column of this._columns()) {
       if (column.column === null)
@@ -140,7 +134,7 @@ export class DomainGrid extends Control {
     }
   }
 
-  /** `--u2-domain-grid-height`: what a child pane caps the grid at, so a short table has no empty rules. */
+  // what a child pane caps the grid at, so a short table has no empty rules
   private _fitHeight(): void {
     const rows = Math.max(1, this.grid.dataFrame?.rowCount ?? 0);
     const look = this.grid.props;
@@ -156,7 +150,7 @@ export class DomainGrid extends Control {
     this._fitHeight();
   }
 
-  /** The platform sizes a column by the first frame it saw, for a child often an empty one. */
+  // the platform sizes a column by the first frame it saw, for a child often an empty one
   private _fitColumns(): void {
     const df = this.grid.dataFrame;
     if (df === null || df === undefined || this._fittedTo === df.dart)
@@ -174,7 +168,6 @@ export class DomainGrid extends Control {
     }
   }
 
-  /** The narrowest width that fits `caption` in the header's two lines, broken between words. */
   private static _captionWidth(caption: string, font: string): number {
     const words = caption.split(/\s+/).filter((w) => w !== '');
     let best = textWidth(words.join(' '), font);
@@ -198,9 +191,7 @@ export class DomainGrid extends Control {
       .filter((c): c is DG.GridColumn => c !== null);
   }
 
-  /** The schema's captions where `decorateGrid` found no per-table meta to take them from —
-   * written as the column's friendly name, not the grid column's, so the editor still matches
-   * its writable columns by name. */
+  // the column's friendly name, not the grid column's, so the editor still matches its writable columns by name
   private _caption(df: DG.DataFrame): void {
     for (const p of this.source.schema.properties) {
       const column = df.columns.byName(p.name);
@@ -209,7 +200,6 @@ export class DomainGrid extends Control {
     }
   }
 
-  /** The columns a form keeps in its footer, and whatever the caller hid, are not the grid's to show. */
   private _hideSystem(): void {
     const shown = this._options.columns;
     if (shown !== undefined) {
@@ -224,7 +214,6 @@ export class DomainGrid extends Control {
     }
   }
 
-  /** The schema's format where the column has none; a datetime without one is a date when all are midnight. */
   private _formats(df: DG.DataFrame): void {
     for (const p of this.source.schema.properties) {
       const column = df.columns.byName(p.name!);
@@ -275,7 +264,7 @@ export class DomainDataTable extends Control {
   readonly table: ReadonlySignal<DataTable<RowView> | null>;
 
   private readonly _table = signal<DataTable<RowView> | null>(null);
-  /** `<semType>|<id>` → the caption a lookup answered for a ref the query did not project. */
+  // `<semType>|<id>` → the caption a lookup answered for a ref the query did not project
   private readonly _looked = new Map<string, string>();
   private _tick: {unsubscribe(): void} | undefined;
   private _plain: ObjectRenderer<RowView> | undefined;
@@ -325,19 +314,18 @@ export class DomainDataTable extends Control {
       ...(DomainDataTable.isNumeric(byName.get(name)) ? {align: 'right' as const} : {}),
       render: (row) => this._cell(row, name, byName.get(name)),
     }));
-    const table = this.runInScope(() => new DataTable<RowView>({columns, rowHeight: this._options.rowHeight,
+    const table = this.build(() => new DataTable<RowView>({columns, rowHeight: this._options.rowHeight,
       items: source.rows, sort: source.sort, cellState: this._cellState(), fitColumns: true,
       contextActions: (row) => DomainTable.of(source)?.rowActions(row, this._options.actions) ?? [],
       onActivate: this._options.onActivate ??
         (() => source.activate.value = source.activate.peek() + 1)}));
-    collectionSelection(this, source, table);
+    collectionSelection(source, table, {owner: this});
     pageOnScroll(this, table, source);
     this.root.replaceChildren(table.root);
     this._table.value = table;
   }
 
-  /** The source's writer as the table reads a cell: keyed by ROW KEY, which is what the edit
-   * state is keyed by too — the frame index never leaves it. */
+  // keyed by row key, as the edit state is: the frame index never leaves it
   private _cellState(): CellStateLike {
     const source = this.source;
     return {
@@ -376,11 +364,7 @@ export class DomainDataTable extends Control {
     }
   }
 
-  /** What a cell shows: the name column as the table's renderer captions the row (a draft as
-   * "New <singular>"), a reference as the row it points at, a datetime through the same
-   * `timestamp` every other u2 surface uses (a value at midnight is a date, the rest keep the
-   * time), a number through the platform's formatter where the schema declares a format — and a
-   * raw uuid or a `1.7999999999999998` nowhere. */
+  // never a raw uuid or a `1.7999999999999998`: the renderer's caption, the referenced row, `timestamp`, the format
   private _cell(row: RowView, column: string, prop: IProperty | undefined): HTMLElement | string {
     if (column === this.source.schema.info.nameColumn) {
       const renderer = DomainTable.of(this.source)?.renderer ??

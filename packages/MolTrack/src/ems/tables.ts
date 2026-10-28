@@ -93,8 +93,8 @@ export class MolTrackTables {
       row.structure ? grok.chem.drawMolecule(row.structure, 120, 80) : span(''),
       divV([
         span(caption(row), 'u2-domain-card-title'),
-        span(row.common_name ?? '', 'u2-domain-card-description'),
-        span(row.formula ?? '', 'u2-domain-card-description'),
+        span(row.common_name ?? '', 'u2-domain-card-description moltrack-card-line'),
+        span(row.formula ?? '', 'u2-domain-card-description moltrack-card-line'),
       ], 'moltrack-card-text'),
     ], 'moltrack-card');
     table.renderer = {...table.renderer, caption, card};
@@ -136,7 +136,7 @@ export class MolTrackTables {
       `${MolTrackTables._number(table, 'dosed_concentration', row.dosed_concentration!)} uM`;
     table.renderer = {...table.renderer, caption, listItem: (row) => Rows.isDraft(row) ?
       span(caption(row), 'u2-domain-list-name') : divH([
-        span(batch(row), 'u2-domain-list-name'),
+        span(batch(row), 'u2-domain-list-name moltrack-batch'),
         span(run(row), 'moltrack-run'),
         span([dosed(row), clint(row)].filter((d) => d !== '').join(' · '), 'u2-domain-list-details'),
       ], 'u2-domain-list-line moltrack-result')};

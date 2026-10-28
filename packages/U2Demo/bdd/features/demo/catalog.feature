@@ -56,6 +56,10 @@ Feature: Component catalog
 
   Scenario: button in every state
     Then "button-default" button should be enabled
+    And "button-disabled" button should be disabled
+
+  Scenario: horizontal stack in every state
+    Then "form-buttons-default" horizontal stack should be enabled
 
   Scenario: splitter in every state
     Then "splitter-default" splitter should be enabled
@@ -126,6 +130,19 @@ Feature: Component catalog
     And "map-input-readOnly" map input should be read-only
     And "map-input-invalid" map input should be invalid
 
+  Scenario: records input in every state
+    Then "records-input-default" records input should be enabled
+    And "records-input-disabled" records input should be disabled
+    And "records-input-readOnly" records input should be read-only
+    And "records-input-invalid" records input should be invalid
+
+  Scenario: checklist in every state
+    Then "checklist-input-default" checklist should be enabled
+    And "checklist-input-disabled" checklist should be disabled
+    And "checklist-input-readOnly" checklist should be read-only
+    And "checklist-input-invalid" checklist should be invalid
+    And "checklist-input-empty" checklist should have 0 items in total
+
   Scenario: chips input in every state
     Then "chips-input-default" chips input should be enabled
     And "chips-input-disabled" chips input should be disabled
@@ -164,9 +181,17 @@ Feature: Component catalog
   Scenario: stat card in every state
     Then "stat-card-default" stat card should be enabled
 
+  Scenario: app header in every state
+    Then "app-header-default" app header should be enabled
+    And "app-header-empty" app header should have 0 items in total
+
   Scenario: table in every state
     Then "data-table-default" table should be enabled
     And "data-table-empty" table should have 0 items in total
+
+  Scenario: catalog table in every state
+    Then "catalog-table-default" catalog table should be enabled
+    And "catalog-table-empty" catalog table should have 0 items in total
 
   Scenario: filter builder in every state
     Then "filter-builder-default" filter builder should be enabled

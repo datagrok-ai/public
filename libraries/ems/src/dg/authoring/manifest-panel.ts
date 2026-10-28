@@ -1,20 +1,8 @@
-/* The Design step's right pane: one panel per selection kind, rebuilt when the selection or the
-   model changes as keyed parts (title, form, sections), each in its own scope: a part that comes out
-   of the rebuild as it is shown — the same make-up, its controls holding what the user left in them —
-   stays, so the focus and the caret in it survive; a changed part is replaced, and focus inside it is
-   put back on the element with the same keys. Schema:
-   name, friendly name, writable, the access grid for every table. Table: logical and friendly
-   names, the key (read-only), the name and searchable pickers, the read-only opt-out under a
-   writable binding, the relationships with an "include <target>" link where including the
-   target would make a ref, the access grid with the schema's rows inherited. Column: logical
-   name, the mapped type beside the warehouse's, required, name, searchable, its reference with
-   its status, visibility. The field offer follows the editor context: `view` renders every
-   field as text, never as a dead input. Access is modelled beside the manifest and rendered
-   here; the dialog applies it after Create. */
 import {Control, Scope, signal, ReadonlySignal, div, link, span, each, focusMark, refocus, Form, Section, TextInput,
-  BoolInput, ChoiceInput, RadioInput, ChipsInput, AccessGrid, Access, badge, camelCaseToWords} from '@datagrok-libraries/u2';
+  BoolInput, ChoiceInput, RadioInput, ChipsInput, AccessGrid, Access, badge, camelCaseToWords, computed}
+  from '@datagrok-libraries/u2';
 import type {Input, AccessRow, InheritedAccessRow, IProperty, FieldAccess} from '@datagrok-libraries/u2';
-import {ObjectForm, propertyForm} from '@datagrok-libraries/u2/src/dg/forms/object-form.js';
+import {ObjectForm, propertyForm} from '@datagrok-libraries/u2/dg';
 import type {EditorContext, FieldOffer} from './editor-context.js';
 import {fieldOffer} from './editor-context.js';
 import {AccessModel, ManifestModel} from './manifest-model.js';
@@ -69,6 +57,9 @@ interface Part {
   values: string;
 }
 
+/** The Design step's right pane, one panel per selection kind, rebuilt as keyed parts: a part that comes out of
+ * the rebuild as it is shown stays, so the focus and the caret in it survive. `view` renders every field as
+ * text, never as a dead input. */
 export class ManifestContextPanel extends Control {
   readonly offer: FieldOffer;
 
@@ -91,7 +82,7 @@ export class ManifestContextPanel extends Control {
     this._options = options;
     this.root.classList.add('u2-manifest-panel');
     this.root.dataset.u2 = 'manifest-panel';
-    this.runInScope(() => each(this.root, () => this._parts(options.selected.value), (p) => p.key, (p) => {
+    this.build(() => each(this.root, () => this._parts(options.selected.value), (p) => p.key, (p) => {
       Scope.ambient!.own(() => p.scope.dispose());
       this._shapes.set(p.el, p.shape);
       return p.el;
@@ -103,8 +94,7 @@ export class ManifestContextPanel extends Control {
     }}));
   }
 
-  /** The parts the selection shows now, keyed by the selection and the part. Focus on an element a
-   * replaced part takes away goes to the element with the same keys in its replacement. */
+  // focus on an element a replaced part takes away goes to the element with the same keys in its replacement
   private _parts(selection: ManifestSelection): Part[] {
     this.model.revision.value;
     this.model.name.value;
@@ -135,7 +125,7 @@ export class ManifestContextPanel extends Control {
 
   private _part(key: string, build: () => HTMLElement | Control): Part {
     const scope = new Scope(this.scope, {label: 'part', lazy: true});
-    const built = Scope.runWith(scope, build);
+    const built = scope.build(build);
     const el = Control.is(built) ? built.root : built;
     return {key, el, scope, shape: ManifestContextPanel._shape(el), values: ManifestContextPanel._values(el)};
   }
@@ -185,7 +175,7 @@ export class ManifestContextPanel extends Control {
     if (this.offer.writable) {
       const hint = this._writableDisabled;
       this._field(form, 'Writable', 'writable', writable ? 'Yes' : 'No', (extra) => new BoolInput({label: 'Writable',
-        name: 'writable', value: writable, enabled: hint === undefined, tooltipText: hint,
+        name: 'writable', value: writable, disabled: hint ?? null, tooltipText: hint,
         onChanged: (v) => model.setWritable(v), ...extra}),
       hint ?? 'users with Edit on a table may insert, update and delete rows in the warehouse');
     }
@@ -307,8 +297,10 @@ export class ManifestContextPanel extends Control {
     const access = new Section({title: 'Access — this table', collapsible: false});
     if (this._access.editing) {
       const editable = this._access.canEdit(scope);
+      const off = !editable ? 'You cannot share this table' : live ? null :
+        'Unregistered on Save: check it in the tree to keep it';
       access.add(this._accessGrid(remote, rows, [], locked, (changed) => this._access.setGrants(scope, changed),
-        {enabled: editable && live}));
+        {disabled: off}));
       if (!editable) {
         access.add(ManifestContextPanel._note(table.registered ?
           'You cannot share this table: its grants cannot be read here and stay as they are.' :
@@ -373,7 +365,8 @@ export class ManifestContextPanel extends Control {
     form.addElement(typeField.row);
     if (this.offer.required) {
       this._field(form, 'Required', 'required', column.required ? 'Yes' : 'No', (hint) => new BoolInput({
-        label: 'Required', name: 'required', value: column.required, enabled: !column.isKey,
+        label: 'Required', name: 'required', value: column.required,
+        disabled: column.isKey ? 'A key column is always required' : null,
         onChanged: (v) => model.setRequired(table, remote, v), ...hint}),
       column.isKey ? 'key columns are always required' :
         'NOT NULL is not reported by the warehouse; tick it if you know');
@@ -381,13 +374,15 @@ export class ManifestContextPanel extends Control {
     const isString = column.type === 'string';
     if (this.offer.nameColumn) {
       this._field(form, 'Name column', 'isName', column.isName ? 'Yes' : 'No', (hint) => new BoolInput({
-        label: 'Name column', name: 'isName', value: column.isName, enabled: isString,
+        label: 'Name column', name: 'isName', value: column.isName,
+        disabled: isString ? null : 'Only a string column can be the name column',
         onChanged: (v) => model.setNameColumn(table, v ? remote : null), ...hint}),
       'shown wherever a row is referred to');
     }
     if (this.offer.searchable) {
       this._field(form, 'Searchable', 'searchable', column.searchable ? 'Yes' : 'No', (hint) => new BoolInput({
-        label: 'Searchable', name: 'searchable', value: column.searchable, enabled: isString,
+        label: 'Searchable', name: 'searchable', value: column.searchable,
+        disabled: isString ? null : 'Only a string column can be searched',
         onChanged: (v) => model.setSearchable(table, v ? remote : null), ...hint}), 'one per table');
     }
     return form;
@@ -457,7 +452,8 @@ export class ManifestContextPanel extends Control {
       }});
     const known = this._known(current ?? []);
     const chips = new ChipsInput({label: 'Groups', name: 'visibleTo', items: known.map(ManifestContextPanel._item),
-      value: (current ?? []).map((g) => g.id), enabled: some, emptyText: 'No groups to pick from',
+      value: (current ?? []).map((g) => g.id), disabled: computed(() => some.value ? null : `Pick "${SOME}" first`),
+      emptyText: 'No groups to pick from',
       onChanged: (ids) => access.setVisibility(table, remote, ids.map((id) => known.find((g) => g.id === id)!))});
     const form = new Form({layout: 'wide'});
     form.add(radio).add(chips);
@@ -468,8 +464,8 @@ export class ManifestContextPanel extends Control {
           known.push(principal);
           chips.setItems(known.map(ManifestContextPanel._item));
         }
-        if (!chips.value.peek().includes(principal.id))
-          chips.value.value = [...chips.value.peek(), principal.id];
+        if (!chips.peek().includes(principal.id))
+          chips.value = [...chips.peek(), principal.id];
       });
       chips.box.append(picker);
       chips.effect(() => picker.style.display = some.value ? '' : 'none');
@@ -496,16 +492,16 @@ export class ManifestContextPanel extends Control {
     return row;
   }
 
-  /** The grid over [rows], handing every change to [onChanged] with the groups resolved;
-   * `inheritedGroups` label the inherited rows, which carry group ids alone. */
+  // `inheritedGroups` label the inherited rows, which carry group ids alone
   private _accessGrid(name: string, rows: Omit<AccessGrant, 'scope'>[], inherited: InheritedAccessRow[],
     locked: string[], onChanged: (rows: Omit<AccessGrant, 'scope'>[]) => void,
-    options: {inheritedGroups?: AccessPrincipal[], enabled?: boolean} = {}): AccessGrid {
+    options: {inheritedGroups?: AccessPrincipal[], disabled?: string | null} = {}): AccessGrid {
     const known = this._known([...rows.map((g) => g.group), ...(options.inheritedGroups ?? [])]);
     const picker = this._picker;
     return new AccessGrid({name: `access-${name}`, inline: true,
       capabilities: CAPABILITIES, principals: known.map(ManifestContextPanel._item), inherited, locked,
-      enabled: this.offer.editable && options.enabled !== false, value: rows.map((g) => ManifestContextPanel._row(g)),
+      disabled: this.offer.editable ? options.disabled ?? null : 'Opened to view: nothing here is changed',
+      value: rows.map((g) => ManifestContextPanel._row(g)),
       picker: picker === undefined ? undefined : (add) => picker((principal) => {
         if (!known.some((g) => g.id === principal.id))
           known.push(principal);
@@ -516,7 +512,7 @@ export class ManifestContextPanel extends Control {
         view: r.can.view === true, edit: r.can.edit === true, delete: r.can.delete === true})))});
   }
 
-  /** The offered groups plus the ones already granted — a row reopened from elsewhere keeps its label. */
+  // plus the ones already granted: a row reopened from elsewhere keeps its label
   private _known(granted: AccessPrincipal[]): AccessPrincipal[] {
     return [...this._groups, ...granted.filter((g) => !this._groups.some((k) => k.id === g.id))];
   }
@@ -525,9 +521,6 @@ export class ManifestContextPanel extends Control {
     return {value: g.id, label: g.label};
   }
 
-  /** An editor where the offer allows an edit — and the field is not `locked` for this item — the
-   * value as text otherwise; the hint sits on the same line, after the editor — the input's
-   * postfix, or a span after the text. */
   private _field(form: Form, label: string, name: string, text: string,
     build: (hint: {postfix?: string}) => Input<any>, hint?: string, editable = true): void {
     if (this.offer.editable && editable)
@@ -548,7 +541,6 @@ export class ManifestContextPanel extends Control {
     return {principal: g.group.id, can: {view: g.view, edit: g.edit, delete: g.delete}};
   }
 
-  /** The catalog's verdict on a registered item, on its title, with its reason. */
   private static _drift(title: HTMLElement, drift: DriftView | undefined): void {
     const label = ManifestTree.driftLabel(drift);
     if (label !== null)

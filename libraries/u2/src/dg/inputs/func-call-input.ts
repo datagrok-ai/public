@@ -58,7 +58,7 @@ export class FuncCallInput extends Input<string, FuncCallInputOptions> {
     for (const [k, v] of [['role', 'button'], ['aria-haspopup', 'listbox'], ['aria-expanded', 'false']])
       control.setAttribute(k, v);
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       const picked = this._picked.value;
       if (value !== '' && picked?.id !== value)
         this._resolve(value);
@@ -71,7 +71,7 @@ export class FuncCallInput extends Input<string, FuncCallInputOptions> {
     control.addEventListener('keydown', (e) => {
       const clear = (e.key === 'Backspace' || e.key === 'Delete') && this.nullable;
       if (clear)
-        this.value.value = '';
+        this.value = '';
       else if (e.key === 'Enter' || e.key === ' ')
         this._toggle();
       else
@@ -83,7 +83,7 @@ export class FuncCallInput extends Input<string, FuncCallInputOptions> {
   }
 
   private _toggle(): void {
-    if (!this.enabled) // the editor is a div, so the base's disabled sweep never reaches it
+    if (this.disabled !== null) // the editor is a div, so the base's disabled sweep never reaches it
       return;
     if (this._popup)
       return this._close();
@@ -92,7 +92,7 @@ export class FuncCallInput extends Input<string, FuncCallInputOptions> {
       {functionName: this.functionName}, // the same signal — the popup follows retargets live
       (call) => {
         this._picked.value = call;
-        this.value.value = call.id;
+        this.value = call.id;
       });
     scope.own(() => {
       this._popup = undefined;
@@ -110,7 +110,7 @@ export class FuncCallInput extends Input<string, FuncCallInputOptions> {
     void grok.dapi.functions.calls.allPackageVersions()
       .include('func.package,func.params,inputs').find(id)
       .then((call) => {
-        if (call != null && gen === this._resolveGen && this.value.peek() === id)
+        if (call != null && gen === this._resolveGen && this.peek() === id)
           this._picked.value = call;
       })
       .catch(() => {}); // an unknown id keeps showing raw — the value stands

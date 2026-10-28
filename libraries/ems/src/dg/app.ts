@@ -1,16 +1,9 @@
-/* The app shape over one table (GOAL "What it looks like"): a list page and an entity page under
-   one `SharedSession`, the URL following the page (`?q=` the list's query, `?entity=` the row),
-   `open(path)` the way back from the address bar, and the unsaved gate in front of every move
-   between them. `DomainTable.app()` (WO 2-9) wraps it in an `appView`; the pieces are public so a
-   hand-built page composes the same ribbon and status. Made to be subclassed (`app({app: Sub})`):
-   `ribbon()` is overridden, `presets()` builds a query switch for it, `shortcuts` maps keys onto
-   the table's actions. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divH, divV, span,
-  icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu, LabelColumn}
+  icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu, LabelColumn, Reason}
   from '@datagrok-libraries/u2';
-import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
+import type {FilterGroup, IWidgetStatus, Action, RowView, Scope} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {capital, nounOf} from '../core/domain-backend.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
@@ -27,8 +20,8 @@ import {DomainAddress} from './address.js';
 import {DomainErrors} from './errors.js';
 import {DgDomainTable} from './backend.js';
 import {PropertyDialog} from './authoring/property-dialog.js';
-import {ViewSync} from '@datagrok-libraries/u2/src/dg/index.js';
-import type {ViewState} from '@datagrok-libraries/u2/src/dg/index.js';
+import {ViewSync} from '@datagrok-libraries/u2/dg';
+import type {ViewState} from '@datagrok-libraries/u2/dg';
 
 export type DomainAppPage = 'list' | 'entity';
 
@@ -43,9 +36,8 @@ const COMPACT_WIDTH = 700;
 /** The trash reads newest-deleted first: a soft delete is a write, so it stamps `updated_on`. */
 const TRASH_SORT = '!updated_on';
 
-/** What the app's status bar says, as VALUES rather than one composed sentence: a phase-4 view
- * spec renders the slots it wants instead of parsing text, and a refusal no longer takes the row
- * count off the line (U37). */
+/** What the app's status bar says, as VALUES rather than one composed sentence: a view spec renders
+ * the slots it wants instead of parsing text. */
 export interface DomainAppStatus {
   /** What the page holds: "50 of 2,077 issues", "3 issues", "1 deleted issue", or the row's caption on
    * the entity page. `''` while there is nothing to say yet. */
@@ -59,7 +51,7 @@ export interface DomainAppStatus {
   problem: string | null;
 }
 
-/** The ribbon as slots rather than positions: a subclass adds to the slot it means, and a phase-4
+/** The ribbon as slots rather than positions: the `ribbon` option adds to the slot it means, and a
  * view spec composes them without counting groups. */
 export interface DomainRibbon {
   /** New, Save, Discard, the ⋯ menu, Refresh — the app's own verbs. */
@@ -104,8 +96,19 @@ export interface DomainAppOptions {
    * the focus: `{'Ctrl+Shift+C': 'Close'}` (modifiers in the order Ctrl, Alt, Shift; Cmd counts
    * as Ctrl). */
   shortcuts?: Record<string, string>;
+  /** The ribbon from the one the app builds, once:
+   * `(base, app) => ({...base, presets: [app.presets(['Mine', 'assignee = $me'])]})`. */
+  ribbon?: (base: DomainRibbon, app: DomainApp) => DomainRibbon;
+  /** The Actions menu from the one the app builds, on every open — extend `base` rather than replace it. */
+  menu?: (base: Action[], app: DomainApp) => Action[];
+  /** What the app wires beyond its options, run once it is built under its owner `self`: validators,
+   * effects over its pages, a hosted filter on `listSource`. */
+  setup?: (app: DomainApp, self: Scope) => void;
 }
 
+/** The app shape over one table: a list page and an entity page under one `SharedSession`, the URL following
+ * the page, and the unsaved gate in front of every move between them. `DomainTable.app()` hosts it in a view
+ * (`ViewHost`). An app's own parts are options, not a subclass: `ribbon`, `menu`, `presets()`, `shortcuts`, `setup`. */
 export class DomainApp extends Control {
   /** The `entity` that stands for a draft: `?entity=new` opens a create page. */
   static readonly NEW = 'new';
@@ -154,7 +157,7 @@ export class DomainApp extends Control {
   readonly mode: ReadonlySignal<DomainAppMode>;
   /** {@link mode} as the one question most of the app asks of it. */
   readonly trash: ReadonlySignal<boolean>;
-  /** See {@link DomainAppOptions.shortcuts}; a subclass may declare its own. */
+  /** See {@link DomainAppOptions.shortcuts}. */
   shortcuts: Record<string, string>;
   /** The view is too narrow for the whole ribbon: the presets fold into the Actions menu. */
   readonly compact = signal(false);
@@ -174,6 +177,7 @@ export class DomainApp extends Control {
   private _deleting: DomainSource | null = null;
   private readonly _presets: Action[] = [];
   private readonly _sync: ViewSync;
+  private _opening: {address: string, done: Promise<boolean>} | undefined;
 
   private static readonly _byView = new WeakMap<DG.ViewBase, DomainApp>();
   private static readonly _views = new WeakMap<DomainApp, DG.ViewBase>();
@@ -197,7 +201,7 @@ export class DomainApp extends Control {
     const onKeyDown = (e: KeyboardEvent) => this._shortcut(e);
     this.root.addEventListener('keydown', onKeyDown);
     this.own(() => this.root.removeEventListener('keydown', onKeyDown));
-    // the chrome `appView` places sits outside the app root, so Save has to be caught above both
+    // the chrome the view's host places sits outside the app root, so Save has to be caught above both
     const onSave = (e: KeyboardEvent) => this._save(e);
     document.addEventListener('keydown', onSave);
     this.own(() => document.removeEventListener('keydown', onSave));
@@ -207,7 +211,7 @@ export class DomainApp extends Control {
     this.listSource = this._source({query: _options.query ?? '', sort: _options.sort, pageSize: _options.pageSize,
       live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
-    this.list = this.runInScope(() => new DomainList(this.listSource, {mode: _options.mode,
+    this.list = this.build(() => new DomainList(this.listSource, {mode: _options.mode,
       itemHeight: _options.itemHeight, create: () => void this.create()}));
     // Enter on a row is the way into the entity page
     let seen = this.listSource.activate.peek();
@@ -222,7 +226,7 @@ export class DomainApp extends Control {
     });
 
     const title = DomainApp.titleOf(table.info);
-    this.breadcrumbs = this.runInScope(() => new Breadcrumbs({items: [title], onClick: (index) => {
+    this.breadcrumbs = this.build(() => new Breadcrumbs({items: [title], onClick: (index) => {
       // in the trash the root crumb reads "Issues › Trash" and is the way back out of it
       if (index === 0)
         void (this.trash.peek() ? this.setTrash(false) : this.goTo('list'));
@@ -230,7 +234,7 @@ export class DomainApp extends Control {
     this._formHost = div([], 'u2-domain-app-form u2-form-fill');
     this.panes = div([], 'u2-domain-app-panes');
     this.panes.dataset.u2Part = 'panes';
-    this.filters = this.runInScope(() => domains.filters(this.listSource, _options.filters));
+    this.filters = this.build(() => domains.filters(this.listSource, _options.filters));
     // the rows answer the filter that was applied, not the one being written: while the box is
     // invalid they are shown as stale and the count stands down
     this.effect(() => {
@@ -239,7 +243,7 @@ export class DomainApp extends Control {
       this.list.stale.value = problem !== null;
     });
     const plural = nounOf(table.info);
-    const banner = this.runInScope(() => divH([icon('info-circle'),
+    const banner = this.build(() => divH([icon('info-circle'),
       span(`Deleted ${plural}. Restore what you need, then Save.`)], 'u2-domain-app-trash-banner'));
     banner.dataset.u2Part = 'trash-banner';
     this.effect(() => banner.hidden = !this.trash.value);
@@ -270,7 +274,7 @@ export class DomainApp extends Control {
       source?.rows.items.value;
       const row = source?.currentRow.value ?? null;
       // a row the table does not have is named by the address that asked for it
-      const caption = row !== null ? table.renderer.caption(row) :
+      const caption = row !== null ? this._caption(source!, row) :
         source?.state.value === 'ready' && !source.isDraft ? this._entity.peek() ?? '…' : '…';
       this.breadcrumbs.setItems([title, caption]);
     });
@@ -284,7 +288,8 @@ export class DomainApp extends Control {
     // and once the draft is discarded — by the Discard button or by a gate's DISCARD — the page
     // has no row left, so the app goes back to the list. `had` keeps the load's own empty window
     // (the frame arrives before `newRow` fills it) from counting as a discard; the move is
-    // deferred past the discard that is running, which reads dirty until it has settled.
+    // deferred past the discard that is running, which reads dirty until it has settled. A saved
+    // delete of the row the draft became empties it too, mid-batch: that move is the next effect's.
     let had = false;
     this.effect(() => {
       const source = this._entitySource.value;
@@ -293,7 +298,7 @@ export class DomainApp extends Control {
         return;
       }
       const rows = source.rows.items.value.length;
-      if (rows === 0 && had)
+      if (rows === 0 && had && !this.session.isSaving.peek())
         queueMicrotask(() => void this.goTo('list'));
       had = rows > 0;
     });
@@ -340,11 +345,9 @@ export class DomainApp extends Control {
       open: (address) => this.open(address),
       owns: (path) => DomainAddress.restOf(path, this._bases) !== null,
       isCurrentView: () => this._isCurrentView(),
-    }, this);
-    // What the page HOLDS, and nothing else: a refusal, the pending changes and the poll's news
-    // are slots of their own, while the source folds all of them into its one summary line — so
-    // the count is taken while the source is saying nothing else, and stands until it can be
-    // taken again. A failed load holds nothing, and says nothing.
+    }, {owner: this});
+    // the source folds a refusal, the pending changes and the poll's news into its one summary line, which are
+    // slots of their own here: the count is taken while the source says nothing else, and stands until then
     this.effect(() => {
       const entity = this._page.value === 'entity';
       const source = entity ? this._entitySource.value : this.listSource;
@@ -358,7 +361,7 @@ export class DomainApp extends Control {
       // the entity page shows one row, not a collection: it says which row, never "1 substance"
       const row = entity ? source.currentRow.value : null;
       if (row !== null && !Rows.isDraft(row))
-        this._count.value = this.table.renderer.caption(row);
+        this._count.value = this._caption(source, row);
       else if (source.state.value === 'error' || entity && !source.isDraft && source.state.value === 'ready')
         this._count.value = '';
       else if (source.error.value === undefined && source.changeCount.value === 0)
@@ -396,6 +399,7 @@ export class DomainApp extends Control {
     });
     fit.observe(this.root);
     this.own(() => fit.disconnect());
+    this.build(() => _options.setup?.(this, this.scope));
   }
 
   /** Re-points the app at the route the shell actually mounted its view at (`/apps/Stockroom`):
@@ -412,9 +416,21 @@ export class DomainApp extends Control {
    * unsaved changes asks first. A path is authoritative — `open('')` is the list; with no argument
    * the address bar is read instead, which is how a cold deep link reaches the app (the router
    * hands an app func only the path under its root, `routing.dart` ~:351, never the query). This
-   * is the restore side of the URL, so no move it makes costs a history entry. */
+   * is the restore side of the URL, so no move it makes costs a history entry. Asked again for the
+   * address it is restoring — a Back reaches both the app func and the view's own Back handler —
+   * it joins that move: one gate. */
   async open(path?: string): Promise<boolean> {
-    return this._sync.restore(() => this._open(path));
+    const address = path ?? `${location.pathname}${location.search}`;
+    if (this._opening?.address !== address) {
+      const opening = {address, done: this._sync.restore(() => this._open(address))};
+      const clear = () => {
+        if (this._opening === opening)
+          this._opening = undefined;
+      };
+      this._opening = opening;
+      void opening.done.then(clear, clear);
+    }
+    return this._opening!.done;
   }
 
   /** Moves between the pages through the gate: resolves to whether the move was made — a cancel
@@ -443,14 +459,14 @@ export class DomainApp extends Control {
     return info.rowAddress === 'id' ? row.id : DomainAddress.keyOf(row, info.businessKey);
   }
 
-  /** The ribbon `appView` places, in named slots: New, Save, Discard, the ⋯ menu and Refresh in
-   * `main`, the search box in `tools`, a subclass's query switch in `presets`. Built once, owned
-   * by the app. */
+  /** The ribbon the view's host places, in named slots: New, Save, Discard, the ⋯ menu and Refresh in
+   * `main`, the search box in `tools`, the `ribbon` option's query switch in `presets`. Built once,
+   * owned by the app. */
   ribbon(): DomainRibbon {
     if (this._ribbon !== undefined)
       return this._ribbon;
     const singular = nounOf(this.table.info, true);
-    const add = new Control(this.runInScope(() =>
+    const add = new Control(this.build(() =>
       iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`})));
     add.root.dataset.u2 = 'new-button';
     // in the trash the slot stays, so SAVE and DISCARD do not move
@@ -480,19 +496,20 @@ export class DomainApp extends Control {
       this.own(() => control.dispose());
     this._listOnly(search);
     this._listOnly(sort, () => this.trash.value);
-    return this._ribbon = {main: [add, save, discard, more, reload], tools, presets: []};
+    const base: DomainRibbon = {main: [add, save, discard, more, reload], tools, presets: []};
+    return this._ribbon = this._options.ribbon?.(base, this) ?? base;
   }
 
   private _propertiesButton(): Control {
     const [schema, table] = this.table.address.split('.');
-    const button = new Control(this.runInScope(() => iconButton('pencil-ruler',
+    const button = new Control(this.build(() => iconButton('pencil-ruler',
       () => void domains.editProperties(schema, table).catch((e) => DomainErrors.report(e)), {tooltip: 'Edit properties…'})));
     button.root.hidden = true;
     void PropertyDialog.extensible(schema).then((tables) => button.root.hidden = !tables.has(table));
     return button;
   }
 
-  /** The ribbon as `appView` takes it — `[main, tools, presets]`, empty slots dropped.
+  /** The ribbon as `ViewHost.create` takes it — `[main, tools, presets]`, empty slots dropped.
    * @deprecated build or override {@link ribbon}; this is the shape the platform wants. */
   ribbonGroups(): (Control | HTMLElement)[][] {
     const {main, tools, presets} = this.ribbon();
@@ -500,7 +517,8 @@ export class DomainApp extends Control {
   }
 
   /** The Actions menu: the presets on a {@link compact} ribbon, the entity page's row actions, import
-   * and bulk edit, Show deleted. Nothing in the trash: the breadcrumb is the way out. */
+   * and bulk edit, Show deleted — then as the `menu` option changes it. Nothing in the trash: the
+   * breadcrumb is the way out. */
   menuActions(): Action[] {
     const trash = this.trash.peek();
     // what the caller may do (`requires`) and what the table can do at all are different
@@ -508,18 +526,19 @@ export class DomainApp extends Control {
     const support = this.table.table.support;
     const table: Action[] = [];
     if (!trash && support.writes && !this.listSource.readOnly.value) {
-      table.push({name: 'Import…', icon: 'upload', requires: 'insert', run: () =>
+      table.push({text: 'Import…', icon: 'upload', requires: 'insert', run: () =>
         void domains.import(this.table).then((report) => report === null ? null : this.listSource.refresh())});
     }
     if (!trash && support.updateWhere) {
-      table.push({name: 'Bulk edit…', icon: 'edit', requires: 'edit',
+      table.push({text: 'Bulk edit…', icon: 'edit', requires: 'edit',
         run: () => void domains.bulkEdit(this.listSource)});
     }
     const mode: Action[] = trash || !support.deleted || !support.restore ? [] : [{
-      name: 'Show deleted', icon: 'history', requires: 'delete', run: () => void this.setTrash(true)}];
+      text: 'Show deleted', icon: 'history', requires: 'delete', run: () => void this.setTrash(true)}];
     const presets = this.compact.peek() && this._page.peek() === 'list' && !trash ? this._presets : [];
-    return [presets, this._rowActions(), table, mode].filter((section) => section.length > 0)
+    const base = [presets, this._rowActions(), table, mode].filter((section) => section.length > 0)
       .flatMap((section, i) => i === 0 ? section : [{...section[0], separator: true}, ...section.slice(1)]);
+    return this._options.menu?.(base, this) ?? base;
   }
 
   /** Moves between the live collection and the trash — ONE switch: the list's `deleted` mode, its
@@ -541,7 +560,7 @@ export class DomainApp extends Control {
     return true;
   }
 
-  /** {@link setMode} as the ⋯ menu and a subclass ask for it. */
+  /** {@link setMode} as the ⋯ menu and an app's own code ask for it. */
   async setTrash(on: boolean): Promise<boolean> {
     return this.setMode(on ? 'trash' : 'live');
   }
@@ -572,12 +591,12 @@ export class DomainApp extends Control {
     };
     const press = (at: number) =>
       void confirmDiscard(this.session, {action: 'change the filter'}).then((ok) => ok && apply(at));
-    const group = this.runInScope(() => new ButtonGroup({toggle: 'single',
-      items: entries.map(([label], at) => ({id: String(at), label, onClick: () => press(at)}))}));
+    const group = this.build(() => new ButtonGroup({toggle: 'single',
+      items: entries.map(([label], at) => ({id: String(at), text: label, onClick: () => press(at)}))}));
     group.root.dataset.u2 = 'domain-presets';
     group.root.setAttribute('aria-label', 'Show');
     group.root.prepend(span('Show:', 'u2-domain-presets-label'));
-    this._presets.push(...entries.map(([label], at): Action => ({name: label, run: () => press(at),
+    this._presets.push(...entries.map(([label], at): Action => ({text: label, run: () => press(at),
       get check() {
         return group.selected.peek().includes(String(at));
       }})));
@@ -605,7 +624,7 @@ export class DomainApp extends Control {
     return [head, status.problem ?? status.notice].filter((part) => part !== null && part !== '').join(' — ');
   }
 
-  /** One status-bar panel per slot (`appView` places them side by side): the count, the selection,
+  /** One status-bar panel per slot (the view's host places them side by side): the count, the selection,
    * the notice, the problem — so a refusal never takes the count off the line. */
   static statusPanels(app: DomainApp): HTMLElement[] {
     const reads: ((status: DomainAppStatus) => string)[] = [
@@ -629,8 +648,7 @@ export class DomainApp extends Control {
     });
   }
 
-  /** The problem as the status bar says it: one the list page already shows in full is named in
-   * a few words there, or not at all where the filter box shows it; the reason is the tooltip. */
+  // the list page shows the problem in full: here it is a few words (the reason is the tooltip), or none
   private _shortProblem(status: DomainAppStatus): string {
     const problem = status.problem ?? '';
     if (problem === '' || this._page.value !== 'list')
@@ -643,13 +661,17 @@ export class DomainApp extends Control {
     return (typeof q === 'string' ? q.trim() !== '' : q.nodes.length > 0) ? 'Filter refused' : 'Rows not loaded';
   }
 
-  /** What the pending changes are called: one dirty source words them in its own terms ("1
-   * restore pending", "2 deletions pending"), several can only be counted. */
   private _pendingSummary(): string {
     const dirty = this.session.sources.value.filter((s) => s.isDirty.value);
     // a source's summary leads with its refusal, which is the `problem` slot already
     return dirty.length === 1 && dirty[0].error.value === undefined ?
       dirty[0].summary.value : this.session.summary.value;
+  }
+
+  private _caption(source: DomainSource, row: RowView): string {
+    const shown = this.table.renderer.caption(source.current(row));
+    // an emptied name leaves a saved row nameless (a blank, or the bare id): it keeps the name the row holds
+    return shown === '' || shown === row.id ? this.table.renderer.caption(row) : shown;
   }
 
   /** How a table is named in a view title, a breadcrumb root or a child tab: the display name
@@ -672,9 +694,7 @@ export class DomainApp extends Control {
       .filter((part) => part !== '').join('+');
   }
 
-  /** Ctrl+S / Ctrl+Enter → the session's Save, from everywhere the app reaches: its pages and the
-   * ribbon, the toolbox and the status bar `appView` placed outside them. A `DomainForm` inside
-   * the app sees the event first and marks it handled, so the two never save twice. */
+  // a `DomainForm` inside the app sees the event first and marks it handled, so the two never save twice
   private _save(e: KeyboardEvent): void {
     if (e.defaultPrevented || !isSaveKey(e))
       return;
@@ -685,8 +705,7 @@ export class DomainApp extends Control {
       void this.session.save();
   }
 
-  /** Whether the shell shows this app's view — what makes its chrome, outside the app root, the
-   * app's own. A hand-built page that never registered a view answers false. */
+  // the chrome the view's host places outside the app root is the app's own only while the shell shows its view
   private _isCurrentView(): boolean {
     const view = DomainApp._views.get(this);
     return view !== undefined && (grok.shell.v as DG.ViewBase | undefined)?.dart === view.dart;
@@ -702,17 +721,16 @@ export class DomainApp extends Control {
     if (name === undefined || source === null || row === null)
       return;
     const action = allowedActions(this.table.actions.for(row), {access: source.access.peek(), row})
-      .find((a) => a.name === name);
-    if (action === undefined || action.enabled === false)
+      .find((a) => a.text === name);
+    if (action === undefined || Reason.now(action.disabled) !== null)
       return;
     e.preventDefault();
     action.run();
   }
 
-  /** The ⋮ button: the menu is built on every open, so its items read the page and the mode in force.
-   * Permission ⇒ hidden — the button is gone while the access allows nothing in it. */
+  // the menu is built on every open, so its items read the page and the mode in force
   private _actionsMenu(): Control {
-    const control = this.runInScope(() => {
+    const control = this.build(() => {
       const el = iconButton('ellipsis-v', () => {}, {tooltip: 'More actions',
         menu: () => actionsMenu(this.menuActions(), {access: this.listSource.access.peek()})});
       el.dataset.u2 = 'actions-menu';
@@ -728,13 +746,12 @@ export class DomainApp extends Control {
     return control;
   }
 
-  /** The list's order: a column and a direction, written to the source's sort and the path's
-   * `?sort=`, through the gate as a reload drops what is pending. */
+  // through the gate: the reload a new order makes drops what is pending
   private _sortMenu(): Control {
     const source = this.listSource;
     const write = (sort: string) => void confirmDiscard(this.session, {action: 'change the order'})
       .then((ok) => ok && (source.sort.value = sort));
-    const control = this.runInScope(() => {
+    const control = this.build(() => {
       const el = iconButton('sort-amount-down', () => {}, {tooltip: 'Sort by', menu: () => {
         const current = source.sort.peek().split(',')[0] ?? '';
         const desc = current.startsWith('!');
@@ -745,8 +762,9 @@ export class DomainApp extends Control {
             {check: prop.name === column});
         }
         menu.separator();
-        menu.item('Ascending', () => write(column), {check: column !== '' && !desc, enabled: column !== ''});
-        menu.item('Descending', () => write(`!${column}`), {check: desc, enabled: column !== ''});
+        const unsorted = column === '' ? 'Pick a column to sort by' : null;
+        menu.item('Ascending', () => write(column), {check: column !== '' && !desc, disabled: unsorted});
+        menu.item('Descending', () => write(`!${column}`), {check: desc, disabled: unsorted});
         return menu;
       }});
       el.dataset.u2 = 'sort-menu';
@@ -755,7 +773,6 @@ export class DomainApp extends Control {
     return control;
   }
 
-  /** The entity page row's actions: the table's, and Delete, staged like a list row's. */
   private _rowActions(): Action[] {
     const source = this._page.peek() === 'entity' ? this._entitySource.peek() : null;
     const row = source?.currentRow.peek() ?? null;
@@ -767,8 +784,6 @@ export class DomainApp extends Control {
     })], {access: source.access.peek(), row});
   }
 
-  /** Trash mode is one flip of the list source's `deleted` mode: the search box, the filters and
-   * the list stay bound to the one source, and its access narrows itself to read-only. */
   private _wireMode(): void {
     let saved: string | null = null;
     this.effect(() => {
@@ -795,8 +810,7 @@ export class DomainApp extends Control {
     this.effect(() => control.root.hidden = this._page.value !== 'list' || folded());
   }
 
-  /** A preset's query with `$me` bound, as a tree — parsed against the table's schema once it is
-   * loaded, so a column-typed value round-trips the way the filters' own do. */
+  // parsed against the loaded schema, so a column-typed value round-trips the way the filters' own do
   private _bound(query: string) {
     const schema = this.listSource.schema;
     return Filters.bind(Filters.parse(query, schema).root, {me: grok.shell.user.id}, schema);
@@ -860,8 +874,7 @@ export class DomainApp extends Control {
   /** What `domains.route` reaches an app that is already open with: the whole address under its
    * base — the row segment, `?q=`, `?search=` — and its view comes to the front. Answers THAT
    * view, which the resolver hands back to the platform: an address the platform is told nothing
-   * was found for falls through to the Dart domain view, which is how Back off a `/domains`
-   * address used to close the app it should have restored. */
+   * was found for falls through to the Dart domain view. */
   static openAt(base: string | undefined, address: string): DG.ViewBase | undefined {
     const app = DomainApp._at(base);
     if (app === undefined)
@@ -871,7 +884,6 @@ export class DomainApp extends Control {
     return DomainApp._views.get(app);
   }
 
-  /** The app at a base — several may share one: the one the shell shows, else the one opened last. */
   private static _at(base: string | undefined): DomainApp | undefined {
     return base === undefined ? undefined : DomainApp._pick((app) => app.base === base);
   }
@@ -926,8 +938,7 @@ export class DomainApp extends Control {
     return true;
   }
 
-  /** `query` is how the row was addressed when it was not by its id — the business key an address
-   * segment spelled. `draft` is the create page; an entity of "new" without it is the row so keyed. */
+  // `draft` is the create page: an entity of "new" without it is the row so keyed
   private async _goTo(page: DomainAppPage, entity: string | null,
     query: FilterGroup | null = null, draft = false): Promise<boolean> {
     if (page === this._page.peek() && (page === 'list' || entity === this._entity.peek()))
@@ -938,9 +949,6 @@ export class DomainApp extends Control {
     return true;
   }
 
-  /** How the entity page addresses its row: the loaded row spells it — the business key where the
-   * app addresses rows by a segment, the id otherwise — and until the row is in, the address the
-   * page was opened by. */
   private _entityAddress(entity: string): string {
     const row = this._entitySource.value?.currentRow.value ?? null;
     if (row === null || Rows.isDraft(row))
@@ -948,8 +956,7 @@ export class DomainApp extends Control {
     return this.entityPath ? this.keyOf(row) : row.id;
   }
 
-  /** Both of the app's routes: the one the shell mounted the view at, and the one it was built
-   * with — a `/domains/…` link still reaches an app that has rebased onto `/apps/…`. */
+  // both routes: a `/domains/…` link still reaches an app that has rebased onto `/apps/…`
   private get _bases(): string[] {
     return [this.base, this._options.base];
   }
@@ -965,8 +972,6 @@ export class DomainApp extends Control {
       mode: this._mode.peek()};
   }
 
-  /** The create page: a draft source whose row is still a draft, or not in yet — once saved, the
-   * page is the row's and its key is spelled like any other. */
   private static _isDraft(source: DomainSource | null, row: RowView | null): boolean {
     return source !== null && source.isDraft && (row === null || Rows.isDraft(row));
   }
@@ -975,8 +980,8 @@ export class DomainApp extends Control {
     draft = false): void {
     this._close();
     if (page === 'entity' && entity !== null) {
-      const source = draft ? this._source({draft: true, defaults: this._options.defaults}) :
-        this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1});
+      const source = this.build(() => draft ? this._source({draft: true, defaults: this._options.defaults}) :
+        this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1}));
       // a source of one has no list to make its row current
       source.effect(() => {
         const rows = source.rows.items.value;
@@ -984,9 +989,9 @@ export class DomainApp extends Control {
           source.currentRow.value = rows[0];
       });
       const {children, history, include, exclude} = this._options;
-      const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include, exclude,
+      const form = this.build(() => new DomainForm(source, {system: 'footer', include, exclude,
         labelColumn: this.labelColumn, empty: `${capital(nounOf(this.table.info, true))} "${entity}" was not found.`}));
-      this._panes = this.runInScope(() => [
+      this._panes = this.build(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
         ...(history === false || !this.table.table.support.audit ? [] :
           [domains.history(source, undefined, {include, exclude})]),

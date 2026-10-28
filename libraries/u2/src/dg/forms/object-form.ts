@@ -20,6 +20,7 @@ import {BoolInput} from '../../components/inputs/bool-input.js';
 import {ChoiceInput, MultiChoiceInput} from '../../components/inputs/choice-input.js';
 import {DateInput, DateTimeInput} from '../../components/inputs/date-input.js';
 import {Dates} from '../../core/dates.js';
+import {Format} from '../../core/format.js';
 import {TextArea} from '../../components/inputs/text-input.js';
 import {RadioInput} from '../../components/inputs/radio-input.js';
 import {ColorInput} from '../../components/inputs/color-input.js';
@@ -225,7 +226,7 @@ function fileInputFor(prop: IProperty, options: InputOptions<any>): Input<any> {
 
 function readonlyText(options: InputOptions<any>): Input<any> {
   const input = new TextInput(options);
-  input.enabled = false;
+  input.disabled = 'A file is picked with the platform\'s file input, which is not here';
   return input;
 }
 
@@ -327,6 +328,8 @@ export class ObjectForm extends Form {
   /** How many fields hold an edit the target has not taken — an invalid one, which is never written:
    * what a caller counts as unsaved, and drops with {@link reset}. */
   readonly unwritten: ReadonlySignal<number>;
+  /** What those fields hold, by property name: the target as the user sees it is these over its own values. */
+  readonly unwrittenValues: ReadonlySignal<Readonly<Record<string, unknown>>>;
 
   private readonly _fields: Field[] = [];
   private readonly _onChanged: ((name: string, value: unknown) => void) | undefined;
@@ -339,11 +342,16 @@ export class ObjectForm extends Form {
   constructor(props: IProperty[], target: object, options: ObjectFormOptions = {}) {
     super({layout: options.layout ?? (options.condensed ? 'tall' : undefined), labelColumn: options.labelColumn});
     this.target = target;
-    this.unwritten = computed(() => {
+    this.unwrittenValues = computed(() => {
       this._synced.value;
-      return this._fields.filter((f) => f.input !== null && f.kind !== null &&
-        !ObjectForm.same(f.input.value.value, f.synced)).length;
+      const values: Record<string, unknown> = {};
+      for (const f of this._fields) {
+        if (f.input !== null && f.kind !== null && (f.input.unreadable || !ObjectForm.same(f.input.value, f.synced)))
+          values[f.prop.name!] = f.input.value;
+      }
+      return values;
     });
+    this.unwritten = computed(() => Object.keys(this.unwrittenValues.value).length);
     this._onChanged = options.onChanged;
     this._auto = options.editors === 'auto';
     this._access = options.access ?? Access.full;
@@ -395,7 +403,7 @@ export class ObjectForm extends Form {
           if (fresh)
             field.input.reset(value);
           else
-            field.input.value.value = value;
+            field.input.value = value;
           field.synced = value;
         }
         this._synced.value = this._synced.peek() + 1;
@@ -417,7 +425,7 @@ export class ObjectForm extends Form {
         caption: input?.label ?? ObjectForm._caption(field.prop),
         type: field.prop.propertyType ?? field.prop.type ?? 'string',
         semType: field.prop.semType ?? undefined,
-        value: input !== null ? input.value.peek() : this._read(field.prop, 'readonly'),
+        value: input !== null ? input.peek() : this._read(field.prop, 'readonly'),
         choices: field.prop.choices ?? undefined,
         required: field.prop.nullable === false,
         valid: error === undefined || error === null,
@@ -451,15 +459,15 @@ export class ObjectForm extends Form {
       nullable: prop.nullable,
       ...rest,
     };
-    const registered = custom ? null : this.runInScope(() => Editors.resolve(prop, options));
+    const registered = custom ? null : this.build(() => Editors.resolve(prop, options));
     const platform = (custom ?? registered) != null ? null :
       ObjectForm.platformInput(this, prop, this.target, this._auto);
     const input = custom ?? registered ?? platform ??
-      this.runInScope(() => inputForProperty(prop, options));
+      this.build(() => inputForProperty(prop, options));
     const native = input === platform;
     const field: Field = {prop, kind: native ? null : kind, input, access};
     if (!native) {
-      input.value.value = field.synced = this._read(prop, kind);
+      input.value = field.synced = this._read(prop, kind);
       if (prop.nullable === false)
         input.addValidator((value) => isEmpty(value) ? EMPTY : null);
     }
@@ -470,7 +478,7 @@ export class ObjectForm extends Form {
     if (native) {
       let initial = true;
       this.effect(() => {
-        const value = input.value.value;
+        const value = input.value;
         if (initial)
           initial = false;
         else if (!this._refreshing)
@@ -487,7 +495,7 @@ export class ObjectForm extends Form {
     // inside an effect is flushed after that effect returns, so a transient flag would already be
     // down (as in PropertyGrid)
     this.effect(() => {
-      const value = input.value.value;
+      const value = input.value;
       if (input.validity.value !== null || ObjectForm.same(value, this._read(prop, kind)))
         return;
       set(this.target, value);
@@ -513,11 +521,9 @@ export class ObjectForm extends Form {
     if (dateOnly(prop)) {
       const date = ObjectForm.coerce('datetime', value) as Date | null;
       if (date !== null) {
+        // the calendar day it holds is its UTC one: handed on as that day's UTC midnight, it reads as a date
         const {year, month, day} = Dates.utcParts(date);
-        const name = (month: 'long' | 'short') => date.toLocaleString('en-US', {month, timeZone: 'UTC'});
-        const parts: Record<string, string> = {yyyy: String(year), MMMM: name('long'), MMM: name('short'),
-          MM: String(month).padStart(2, '0'), M: String(month), dd: String(day).padStart(2, '0'), d: String(day)};
-        return prop.format!.replace(/yyyy|M{1,4}|dd?/g, (token) => parts[token]);
+        return Format.date(new Date(Date.UTC(year, month - 1, day)), {format: prop.format!, utcDates: true});
       }
     }
     return text(value);
@@ -546,7 +552,7 @@ export class ObjectForm extends Form {
       return null;
     try {
       const input = dg.InputBase.forProperty(prop as any, target);
-      return input == null ? null : form.runInScope(() => fromDartInput(input, prop.name));
+      return input == null ? null : form.build(() => fromDartInput(input, prop.name));
     } catch {
       return null;
     }

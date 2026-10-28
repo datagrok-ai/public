@@ -1,13 +1,3 @@
-/* The `viewers` tier, part two: steps that were written for one viewer and turned out to say
-   nothing about it. A phrase belongs here as soon as a second viewer wants it — the tile viewer's
-   description placement is every viewer's Description Position, the pie chart's category selector
-   is the scatter plot's X selector under another name, the trellis plot's cells are the matrix
-   plot's. Each one reads a hit area or a reading the viewer reports, so a viewer joins simply by
-   reporting the same key; where a name is a convention rather than a rectangle, the convention is
-   written next to the step.
-   What stays in a package binding is a gesture that only that viewer's DOM has (the tile viewer's
-   sketch designer, the pc plot's axis-label drag) or an arithmetic only it can check (the pivot's
-   aggregation against a groupBy). */
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Then, When} from '../../../src/registry.js';

@@ -1,4 +1,4 @@
-# Recipe: a domain app in code (actions, validators, renderers, an app subclass)
+# Recipe: a domain app in code (actions, validators, renderers, the app's own options)
 
 The third tier of a domain (EMS) app: everything the [zero-code](crud-app.md) and
 [spec](spec-app.md) tiers give, plus what only code can say — an action on a row, a rule across
@@ -11,8 +11,8 @@ registry each on the table handle, nothing re-implemented. Reference implementat
 ```ts
 import * as grok from 'datagrok-api/grok';
 import {badge, divV, span, timestamp} from '@datagrok-libraries/u2';
-import {DomainApp, domains} from '@datagrok-libraries/ems/src/dg';
-import type {DomainRibbon} from '@datagrok-libraries/ems/src/dg';
+import {domains} from '@datagrok-libraries/ems/src/dg';
+import type {DomainViewOptions} from '@datagrok-libraries/ems/src/dg';
 import {gritDb, IssueRow} from './generated/db';           // grok api: typed data clients
 import {getGritDb} from './generated/db-ui';               // grok api --ui: typed u2 handles
 
@@ -31,15 +31,13 @@ domains.configure<IssueRow>('grit.issue', async (issues) => {
     span(r.title, 'u2-domain-card-title'), badge(r.status_id ?? 'new'), timestamp(r.created_on)])};
 }, {id: 'grit'});                                          // a second evaluation replaces, never doubles
 
-class IssuesApp extends DomainApp {
-  shortcuts = {'m': 'Assign to me', 'c': 'Close'};        // plain keys fire outside text entry; chords (Ctrl+Shift+C) everywhere
-  ribbon(): DomainRibbon {
-    // built once: a second presets() would add a second switch
-    return this._ribbon ??= {...super.ribbon(),
-      presets: [this.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]};   // a FK path
-  }
-  private _ribbon: DomainRibbon | undefined;
-}
+// the app's own parts are options of the view, never a DomainApp subclass
+const issuesOptions: DomainViewOptions = {
+  children: {tables: ['comment'], mode: 'list'},
+  shortcuts: {'m': 'Assign to me', 'c': 'Close'},         // plain keys fire outside text entry; chords (Ctrl+Shift+C) everywhere
+  ribbon: (base, app) => ({...base,                        // run once, over the ribbon the app builds
+    presets: [app.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]}),   // a FK path
+};
 
 //name: Issues
 //tags: app
@@ -47,7 +45,7 @@ class IssuesApp extends DomainApp {
 export async function issuesApp(): Promise<DG.ViewBase> {
   const db = await getGritDb();                            // one await: schema, data clients, u2 handles
   const {issues} = db.tables;                              // DomainTable<IssueRow>, configured
-  return issues.app({app: IssuesApp, path: '/apps/Grit/Issues', children: {tables: ['comment'], mode: 'list'}});
+  return issues.app({...issuesOptions, path: '/apps/Grit/Issues'});
 }
 ```
 
@@ -63,14 +61,14 @@ registered for the address over it (awaited in order; a throw rejects the handle
 |---|---|
 | `getGritDb(): Promise<GritDb>` | generated (`grok api --ui`): `{schema, data, tables}` — `data` the typed dapi clients (`gritDb.issues.query(...)`), `tables` one `DomainTable<XRow>` per table, opened in parallel. Without the generator: `await domains.table<IssueRow>('grit.issue')` |
 | `domains.configure<TRow>(address, fn, {id})` | `fn(table)`, sync or async, dresses every handle `domains.table(address)` makes from then on (the `/domains` route's once the app's bundle has loaded). Register at module load under a stable `id`: the same `id` again replaces the entry. Returns the unregister function |
-| `table.actions.add({name, icon?, requires?, enabled?, when?(row), run(row)})` | the ribbon, the row's hover actions, the context menu, the shortcuts. `requires` names a capability (`'edit'`, a schema `permissions` name such as `'approve'`) — denied, the action is not rendered; `when` narrows it per row; returns the unregister |
+| `table.actions.add({name, icon?, requires?, disabled?, when?(row), run(row)})` | the ribbon, the row's hover actions, the context menu, the shortcuts. `requires` names a capability (`'edit'`, a schema `permissions` name such as `'approve'`) — denied, the action is not rendered; `when` narrows it per row; `disabled` keeps it shown but off, saying why (`'Only the reporter can reopen it'`); returns the unregister |
 | `table.validators.add(column, (value, row) => message \| null)` | a rule the form checks on every change, beside the schema's and the server's; the message shows on the column's field and refuses Save |
 | `table.renderer: ObjectRenderer<RowView<TRow>>` | `caption`, `icon?`, `listItem?`, `markup?`, `tooltip?`, `card?` — lists, cards, pickers, chips, breadcrumbs; spread the default to override one |
-| `class X extends DomainApp` | `ribbon()` returns `{main, tools, presets}` — extend a slot (see [dg.md](../dg.md)); `presets(...[label, query])` is a query switch (`$me` = the current user's id; the one matching the query in force is pressed; hidden off the list page; a press while dirty goes through the gate); `shortcuts` maps `'Ctrl+Shift+C'`-style keys onto action names, run over the current row while the app has the focus; `panes` is below the entity form |
-| `table.app({app: X, ...})` | the view: `name`, `path`, `query`, `sort`, `pageSize`, `live`, `mode`, `itemHeight`, `defaults`, `include`, `children`, `history`, `filters`, `shortcuts`, `menu` — see [dg.md](../dg.md) |
+| `ribbon`, `menu`, `shortcuts`, `setup` | the app's own parts, as options: `ribbon(base, app)` gets `{main, tools, presets}` and answers the ribbon — extend a slot (see [dg.md](../dg.md)); `app.presets(...[label, query])` is a query switch (`$me` = the current user's id; the one matching the query in force is pressed; hidden off the list page; a press while dirty goes through the gate); `menu(base, app)` answers the Actions menu from the app's; `shortcuts` maps `'Ctrl+Shift+C'`-style keys onto action names, run over the current row while the app has the focus; `setup(app, self)` wires the rest under the app's owner — `app.panes` is below the entity form |
+| `table.app({...})` | the view: `name`, `path`, `query`, `sort`, `pageSize`, `live`, `mode`, `itemHeight`, `defaults`, `include`, `children`, `history`, `filters`, `shortcuts`, `ribbon`, `menu`, `setup` — see [dg.md](../dg.md) |
 | `table.importer` | how the import wizard reads the app's columns: derived columns, rows kept out, the preview's and the report's columns and messages (see the CHANGELOG entry) |
 | `source` option `hosted` | a host filter condition (a structure search) the app answers with ids, sent before every read |
-| `domains.app({table, base, ...})` | the `DomainApp` control alone, for a hand-built `appView` with its own chrome |
+| `domains.app({table, base, ...})` | the `DomainApp` control alone, for a hand-built view (`ViewHost.create`) with its own chrome |
 
 ## Master–detail in one session
 
@@ -80,7 +78,7 @@ project form over a grid of its issues, one Save:
 
 ```ts
 import {Splitter, computed} from '@datagrok-libraries/u2';
-import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 import {SharedSession} from '@datagrok-libraries/ems';
 import {domains} from '@datagrok-libraries/ems/src/dg';
 
@@ -89,13 +87,16 @@ const session = new SharedSession();                       // or build under Sha
 const project = projects.source({query: `id = "${id}"`, pageSize: 1, session});
 const kids = issues.source({query: `project_id = "${id}"`, defaults: {project_id: id}, session});
 
-grok.shell.addView(appView({
-  name: 'Project',
-  content: new Splitter([domains.form(project), domains.grid(kids)], {sizes: [40, 60]}),
-  own: [project, kids],
+const host = ViewHost.create({name: 'Project', content: () => ({   // built under the view's host, gone with it
+  root: new Splitter([domains.form(project), domains.grid(kids)], {sizes: [40, 60]}),
   ribbon: [[domains.newButton(kids), domains.saveButton(session), domains.discardButton(session)]],
   status: computed(() => session.summary.value || kids.summary.value),
-}));
+})});
+host.own(() => {                                           // after the content: the sources outlive the controls
+  project.dispose();
+  kids.dispose();
+});
+grok.shell.addView(host.view);
 ```
 
 A draft parent works the same way — its child holds the draft id, the server orders the inserts:
@@ -130,8 +131,10 @@ ambient session, so their sources join it without the option.
 
 ## Anti-patterns
 
-- `class IssuesApp extends DomainApp { constructor() { … this.root.append(myToolbar) } }` — the
-  ribbon is `ribbon()`; the shell owns the chrome.
+- `class IssuesApp extends DomainApp { … }` — an app's parts are `app()` options (`ribbon`, `menu`,
+  `shortcuts`, `setup`).
+- `setup: (app) => app.root.append(myToolbar)` — the ribbon is the `ribbon` option; the shell owns
+  the chrome.
 - A validator that fetches (`await dapi…`) — validators are synchronous; a server-side rule is a
   constraint or a server-mapped column error.
 - `issues.actions.add({name: 'Approve', run})` without `requires: 'approve'` — the permission is

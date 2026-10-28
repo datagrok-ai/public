@@ -1,18 +1,12 @@
-/* `domains.list` — a `VirtualList` over a source's rows: rendered through the table's renderer,
-   each row carrying its actions (hover block and context menu alike, permission-filtered per
-   row), selection and the source's current row one thing, Enter handing the row to the form
-   paired through the source, the next page loaded near the bottom, a row marked deleted kept
-   struck through with Restore until the save, and the source's loading, empty and error states
-   shown under the rows. */
 import {Control, signal, button, iconButton, div, divH, span, timestamp, text, VirtualList, allowedActions, rowActions,
-  loader, emptyState, Rows} from '@datagrok-libraries/u2';
+  loader, emptyState, Rows, Reason} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, Signal, ObjectRenderer, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {nounOf} from '../core/domain-backend.js';
 import {ActionRegistry, DomainTable} from './facade.js';
 import type {DomainAction} from './facade.js';
 import {DomainErrors} from './errors.js';
-import {collectionSelection} from '@datagrok-libraries/u2/src/dg/index.js';
+import {collectionSelection} from '@datagrok-libraries/u2/dg';
 
 export type DomainListMode = 'cards' | 'brief';
 
@@ -35,6 +29,8 @@ export interface DomainListOptions {
 const HEIGHTS: Record<DomainListMode, number> = {brief: 28, cards: 64};
 const NEAR_BOTTOM_ROWS = 5;
 
+/** A `VirtualList` over a source's rows through the table's renderer: selection and the source's current row are
+ * one thing, Enter hands the row to the paired form, a row marked deleted stays struck through until the save. */
 export class DomainList extends Control {
   readonly list: VirtualList<RowView>;
   readonly mode: DomainListMode;
@@ -53,7 +49,7 @@ export class DomainList extends Control {
     this.root.classList.add('u2-domain-list', `u2-domain-list-${this.mode}`);
     this.root.dataset.u2 = 'domain-list';
 
-    this.list = this.runInScope(() => new VirtualList<RowView>({
+    this.list = this.build(() => new VirtualList<RowView>({
       itemHeight,
       keyOf: (row) => row.id,
       // a row is a live proxy over the frame: an edit changes it without a new object
@@ -65,14 +61,14 @@ export class DomainList extends Control {
         return selected.length < 2 ? this.actionsFor(row) : this.selectionActions(selected);
       },
       contextGroups: (row) => this._selected().length < 2 ? [] :
-        [{label: this.renderer.caption(row), actions: this.actionsFor(row)}],
+        [{text: this.renderer.caption(row), actions: this.actionsFor(row)}],
       onEnter: () => source.activate.value = source.activate.peek() + 1,
-      onDelete: (row) => this.actionsFor(row).find((a) => a.name === 'Delete')?.run(),
+      onDelete: (row) => this.actionsFor(row).find((a) => a.text === 'Delete')?.run(),
     }));
     this.list.root.classList.add('u2-domain-list-rows', 'u2-list-no-ring');
     this.list.setItems(source.rows.items as ReadonlySignal<RowView[]>);
 
-    collectionSelection(this, source, this.list);
+    collectionSelection(source, this.list, {owner: this});
     // a list over a table starts on its first row; a draft source is a form's, not a list's
     let seeded = source.isDraft;
     this.effect(() => {
@@ -139,11 +135,11 @@ export class DomainList extends Control {
     const source = this.source;
     const table = this._table;
     if (row[Rows.STATE] === 'restored')
-      return [{name: 'Undo restore', icon: 'undo', run: () => source.unstageRestore([row.id])}];
+      return [{text: 'Undo restore', icon: 'undo', run: () => source.unstageRestore([row.id])}];
     if (row[Rows.STATE] === 'deleted')
-      return [{name: 'Restore', icon: 'undo', run: () => source.edit.peek()?.unmarkDeleted(row.id)}];
+      return [{text: 'Restore', icon: 'undo', run: () => source.edit.peek()?.unmarkDeleted(row.id)}];
     if (Rows.isDeleted(row)) {
-      return allowedActions([{name: 'Restore', icon: 'undo', requires: 'delete',
+      return allowedActions([{text: 'Restore', icon: 'undo', requires: 'delete',
         run: () => source.stageRestore([row.id])}], {access: source.access.peek(), row});
     }
     const extra = this._options.actions ?? [];
@@ -154,7 +150,7 @@ export class DomainList extends Control {
   }
 
   static deleteAction(run: () => void): Action {
-    return {name: 'Delete', icon: 'trash-alt', requires: 'delete', shortcut: 'Del', destructive: true, run};
+    return {text: 'Delete', icon: 'trash-alt', requires: 'delete', shortcut: 'Del', destructive: true, run};
   }
 
   /** The context menu of a row that is part of a multi-selection: every action that applies to ALL
@@ -165,16 +161,16 @@ export class DomainList extends Control {
     if (rows.length === 0)
       return [];
     // Open takes one page: everything else a row offers means the same over many
-    const per = rows.map((row) => this.actionsFor(row).filter((a) => a.name !== 'Open'));
+    const per = rows.map((row) => this.actionsFor(row).filter((a) => a.text !== 'Open'));
     const shared = per[0].filter((action) => per.every((actions) => {
-      const same = actions.find((a) => a.name === action.name);
-      return same !== undefined && same.enabled !== false;
+      const same = actions.find((a) => a.text === action.text);
+      return same !== undefined && Reason.now(same.disabled) === null;
     }));
     const detail = `${rows.length} ${nounOf(this.source.schema.info)}`;
-    return shared.map((action) => ({name: action.name, icon: action.icon, detail, destructive: action.destructive,
+    return shared.map((action) => ({text: action.text, icon: action.icon, detail, destructive: action.destructive,
       run: () => {
         for (const actions of per)
-          actions.find((a) => a.name === action.name)!.run();
+          actions.find((a) => a.text === action.text)!.run();
       }}));
   }
 
@@ -196,7 +192,6 @@ export class DomainList extends Control {
     return state;
   }
 
-  /** The rows the multi-selection holds, in selection order. */
   private _selected(): RowView[] {
     const items = this.source.rows.items.peek();
     return [...this.list.selectedIndices.peek()].map((i) => items[i]).filter((row) => row !== undefined);
@@ -213,13 +208,12 @@ export class DomainList extends Control {
     const content = render ? render(row) : this._content(row);
     content.classList.add('u2-domain-list-content');
     const actions = this.actionsFor(row);
-    const undo = state === 'deleted' ? actions.find((a) => a.name === 'Restore') : undefined;
+    const undo = state === 'deleted' ? actions.find((a) => a.text === 'Restore') : undefined;
     const tail = undo === undefined ? rowActions(actions) :
       div([iconButton('undo', () => undo.run(), {tooltip: 'Undo delete'})], 'u2-domain-list-undo');
     return div([content, tail], 'u2-domain-list-item');
   }
 
-  /** The row a refusal names, marked while it stands — the way a pending delete is marked. */
   private _markProblem(el: HTMLElement): void {
     const problem = this.source.problemRow.peek();
     const mine = problem !== null && el.dataset.u2Row === problem;
@@ -249,8 +243,7 @@ export class DomainList extends Control {
     return line.length === 1 ? line[0] : divH(line, 'u2-domain-list-line');
   }
 
-  /** What a bare table shows beside the name: the columns a search matches, so a hit says why it
-   * is one. A table whose app brought its own renderer says what that renderer says. */
+  // the columns a search matches, so a hit says why it is one
   private _details(row: RowView): string {
     const info = this.source.schema.info;
     if (this._options.renderer !== undefined || this._table === undefined ||

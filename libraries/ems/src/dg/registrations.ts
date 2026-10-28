@@ -1,6 +1,3 @@
-/* The `u2-domain-*` tags (ruling 8: every domain control is spec-registered from day one). A
-   control binds to its source as a whole — `bind: {source: "$.issues.source"}` — and inherits the
-   source's access; a host registers them with `installEms()`. */
 import {Signal, Registry, registry as globalRegistry} from '@datagrok-libraries/u2';
 import type {LiveOption, ComponentMeta, FormLayout, U2Plugin} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
@@ -122,7 +119,7 @@ const METAS: ComponentMeta[] = [
         label: props.label as LiveOption<string> | undefined,
         name: props.name as string | undefined,
         tooltipText: props.tooltipText as LiveOption<string> | undefined,
-        enabled: props.enabled as LiveOption<boolean> | undefined,
+        disabled: props.disabled as LiveOption<string | null> | undefined,
         nullable: props.nullable as boolean | undefined,
         placeholder: props.placeholder as string | undefined,
         filter: props.filter as string | undefined,
@@ -144,7 +141,8 @@ const METAS: ComponentMeta[] = [
       {name: 'filter', type: 'string', structural: true, description: 'A smart filter the candidates must match.'},
       {name: 'nullable', type: 'bool', structural: true},
       {name: 'tooltipText', type: 'string', bindable: true},
-      {name: 'enabled', type: 'bool', bindable: true},
+      {name: 'disabled', type: 'string', bindable: true,
+        description: 'Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on.'},
     ],
     example: {tag: 'u2-domain-pick', props: {label: 'Project', table: 'grit.project'}},
   },

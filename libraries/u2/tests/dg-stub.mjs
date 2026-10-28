@@ -28,7 +28,7 @@ const STUB = `
 import {DartWidget, JsViewer, Viewer, platform} from '${DOUBLES}';
 import {levenshteinDistance, jaroWinklerDistance} from '${DISTANCES}';
 export {BitSet, Column, DartWidget, DataFrame, DataQuery, Entity, EventType, FileInfo, FilterGroup, Func,
-  Grid, JsViewer, ObjectPropertyBag, Package, Property, PropertyGrid, Script, TableQuery, User, View, Viewer,
+  Grid, JsViewer, ObjectPropertyBag, Package, Property, PropertyGrid, Row, Script, TableQuery, User, View, Viewer,
   ViewerMetaHelper, Widget, WidgetDescriptor, platform,
   FuncCall, FuncCallParam, FuncParam} from '${DOUBLES}';
 
@@ -169,6 +169,7 @@ export class JsInputBase {
   constructor() {
     this.root = document.createElement('div');
     this.root.classList.add('ui-input-root');
+    this.root.setAttribute('data-widget', 'true');
     // validators live dart-side, on the proxy \`grok_InputBase_FromJS\` builds — a second proxy
     // (\`JsInputProxy.fromFunc\`) re-homes the input and carries its own list
     this.dart = {validators: []};
@@ -220,7 +221,8 @@ export const shell = new Shell();
 
 /** What pickers.tableInput's follow and import action read (the platform-stub shapes). */
 export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shell.dart.tableRemoved,
-  onViewAdded: new Stream(), onViewRemoving: new Stream(), onCurrentViewChanged: new Stream(), onContextMenu: new Stream()};
+  onViewAdded: new Stream(), onViewRemoving: new Stream(), onCurrentViewChanged: new Stream(),
+  onViewRemoved: new Stream(), onViewLayoutApplied: new Stream(), onContextMenu: new Stream()};
 
 export const data = {parseCsv: () => new DataFrame()};
 
@@ -243,8 +245,31 @@ const UI_STUB = `
 /** Every registration, newest last — a test drives the platform drop channel through it. */
 export const drops = [];
 
+/** The platform's hint pulse (js-api ui.ts:2635): every element it was put on, newest last. */
+export const hints = {
+  added: [],
+  removed: [],
+  /** Answers the target, as the platform's does: what remove() takes. */
+  addHintIndicator(el, clickToClose, autoClose) {
+    hints.added.push({el, clickToClose, autoClose});
+    return el;
+  },
+  remove(el) {
+    hints.removed.push(el);
+    return el;
+  },
+};
+
 export function makeDroppable(element, options) {
   drops.push({element, ...options});
+}
+
+/** The platform's "Select a file" dialog (js-api \`ui.pickFileFromFiles\`): absent, as on a host
+ * without it, until a test installs an answer with \`setPickFileFromFiles\` (undefined removes it). */
+export let pickFileFromFiles = undefined;
+
+export function setPickFileFromFiles(pick) {
+  pickFileFromFiles = pick;
 }
 
 /** The platform inputs u2 bridges through \`fromDartInput\`, as much of \`DG.InputBase\` as the
@@ -254,6 +279,7 @@ export const input = {
   table(name) {
     const root = document.createElement('div');
     root.className = 'ui-input-root ui-input-table';
+    root.setAttribute('data-widget', 'true');
     const editor = document.createElement('select');
     editor.className = 'ui-input-editor';
     root.append(editor);

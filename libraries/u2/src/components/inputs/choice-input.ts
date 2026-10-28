@@ -1,5 +1,6 @@
 import {signal, untracked, Signal} from '../../core/signals.js';
 import type {ReadonlySignal} from '../../core/signals.js';
+import {Usage} from '../../core/scope.js';
 import {Input, InputOptions} from '../../core/input-base.js';
 import {iconOf} from '../display/icon.js';
 import type {IItemsState} from '../../core/widget-like.js';
@@ -12,6 +13,16 @@ function itemValue(item: ChoiceItem): string {
 
 function itemLabel(item: ChoiceItem): string {
   return typeof item === 'string' ? item : item.label;
+}
+
+/** The items less any null one — `grok.shell.tableNames` lists a nameless table as `undefined` (SEAM S-23) —
+ * which is reported and skipped, so the rest still render. */
+function present(items: ChoiceItem[]): ChoiceItem[] {
+  if (items.every((item) => item != null))
+    return items;
+  Usage.report('item-null', 'a choice list holds a null item, which is skipped: pass strings or {value, label} ' +
+    'items (for open tables, `Platform.tableNames()`)');
+  return items.filter((item) => item != null);
 }
 
 export interface ChoiceInputOptions extends InputOptions<string | null> {
@@ -55,16 +66,16 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
   /** Replaces the item list, keeping the current value if it is still one of the items. Dropping
    * a value whose item vanished is a {@link Input.system} write, not a user edit. */
   setItems(items: ChoiceItem[]): void {
-    this._items = items;
+    this._items = present(items);
     this._fill();
-    const value = this.value.peek();
-    this.systemWrite(value !== null && items.some((i) => itemValue(i) === value) ? value : null);
-    this._select.value = this.value.peek() ?? '';
+    const value = this.peek();
+    this.systemWrite(value !== null && this._items.some((i) => itemValue(i) === value) ? value : null);
+    this._select.value = this.peek() ?? '';
   }
 
   /** One item per choice (the empty option is none), keyed by its value, the chosen one selected. */
   getItems(opts?: {all?: boolean}): IItemsState {
-    const value = this.value.peek();
+    const value = this.peek();
     return Input.itemsState(this._items.map((item, index) => ({key: itemValue(item), label: itemLabel(item),
       index, selected: itemValue(item) === value, rendered: true})), opts?.all);
   }
@@ -73,10 +84,10 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
     const select = document.createElement('select');
     this._select = select;
     const items = this.options.items;
-    this._items = items instanceof Signal ? items.peek() : items;
+    this._items = present(items instanceof Signal ? items.peek() : items);
     this._fill();
-    this.scope.listen(select, 'change', () => this.value.value = select.value === '' ? null : select.value);
-    this.effect(() => select.value = this.value.value ?? '');
+    this.scope.listen(select, 'change', () => this.value = select.value === '' ? null : select.value);
+    this.effect(() => select.value = this.value ?? '');
     return select;
   }
 
@@ -133,16 +144,16 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
       empty.textContent = this.emptyText;
   }
 
-  get enabled(): boolean {
-    return super.enabled;
+  get disabled(): string | null {
+    return super.disabled;
   }
 
   // the base sweep disables the native controls; the collapse toggle is a span and must give up
   // its tab stop and gestures itself
-  set enabled(x: boolean) {
-    super.enabled = x;
+  set disabled(reason: string | null) {
+    super.disabled = reason;
     if (this._summaryToggle !== undefined)
-      this._summaryToggle.tabIndex = x ? 0 : -1;
+      this._summaryToggle.tabIndex = this.disabled === null ? 0 : -1;
   }
 
   constructor(options: MultiChoiceInputOptions) {
@@ -160,7 +171,7 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
 
   /** One item per choice, keyed by its value; the checked ones are the selection. */
   getItems(opts?: {all?: boolean}): IItemsState {
-    const checked = new Set(this.value.peek() ?? []);
+    const checked = new Set(this.peek() ?? []);
     return Input.itemsState(this._items.map((item, index) => {
       const on = checked.has(itemValue(item));
       return {key: itemValue(item), label: itemLabel(item), index, checked: on, selected: on, rendered: true};
@@ -169,7 +180,7 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
 
   /** The checked captions, in item order. */
   protected displayText(): string {
-    const checked = new Set(this.value.peek() ?? []);
+    const checked = new Set(this.peek() ?? []);
     return this._items.filter((i) => checked.has(itemValue(i))).map(itemLabel).join(', ');
   }
 
@@ -185,8 +196,8 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
    * can neither see nor uncheck. */
   setItems(items: ChoiceItem[]): void {
     this._fill(items);
-    const current = new Set(this.value.peek() ?? []);
-    const pruned = items.filter((i) => current.has(itemValue(i))).map(itemValue);
+    const current = new Set(this.peek() ?? []);
+    const pruned = this._items.filter((i) => current.has(itemValue(i))).map(itemValue);
     if (pruned.length !== current.size)
       this.systemWrite(pruned);
   }
@@ -204,13 +215,13 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
         if (this._items.length === 0)
           this._updateSummary();
         else
-          this.value.value = this._summaryBox.checked ? this._items.map(itemValue) : [];
+          this.value = this._summaryBox.checked ? this._items.map(itemValue) : [];
         return;
       }
-      this.value.value = this._boxes.filter((b) => b.checked).map((b) => b.value);
+      this.value = this._boxes.filter((b) => b.checked).map((b) => b.value);
     });
     this.effect(() => {
-      const selected = new Set(this.value.value ?? []);
+      const selected = new Set(this.value ?? []);
       for (const box of this._boxes)
         box.checked = selected.has(box.value);
       this._updateSummary();
@@ -249,7 +260,7 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
     const expanded = signal(true);
     this._expanded = expanded;
     const flip = () => {
-      if (this.enabled)
+      if (this.disabled === null)
         expanded.value = !expanded.peek();
     };
     const onKeyDown = (e: Event) => {
@@ -279,9 +290,10 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
     this._summaryText!.textContent = `${checked} of ${total}`;
   }
 
-  private _fill(items: ChoiceItem[]): void {
+  private _fill(list: ChoiceItem[]): void {
+    const items = present(list);
     this._items = items;
-    const selected = new Set(this.value.peek() ?? []);
+    const selected = new Set(this.peek() ?? []);
     this._itemsHost.textContent = '';
     this._boxes = [];
     if (items.length === 0) {
@@ -310,6 +322,6 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
       this._boxes.push(box);
     }
     this._updateSummary();
-    this.refreshEnabled();
+    this.refreshDisabled();
   }
 }

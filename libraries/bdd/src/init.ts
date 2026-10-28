@@ -1,6 +1,3 @@
-/* `grok-bdd init`: the bdd/ project of a package — folders, config, the bindings to start from, a
-   smoke feature that passes on any stand, the manifest entries, the editor settings. Run in the
-   package directory (where package.json is). Never overwrites: what exists is reported as such. */
 import {appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {dirname, join, relative, sep} from 'node:path';
 import {listFiles} from './discover.js';

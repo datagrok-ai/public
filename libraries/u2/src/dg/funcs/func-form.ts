@@ -13,7 +13,8 @@
    categoryGroups plan with header auto-hide, and `missingRequired` as the Run-gate member. */
 import {batch, computed, signal, Signal, ReadonlySignal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
-import {button} from '../../core/elements.js';
+import {button, span} from '../../core/elements.js';
+import {Reason} from '../../core/reason.js';
 import * as grok from 'datagrok-api/grok';
 import {iconButton} from '../../components/actions/buttons.js';
 import {FuncCallHistoryBrowser} from '../entities/func-call-history-browser.js';
@@ -34,6 +35,8 @@ import {Editors} from '../forms/editors.js';
 import {ParamSource, ParamState} from './param-sources.js';
 import type {ChoicesResult} from './param-sources.js';
 import {tableInput} from '../inputs/pickers.js';
+import type {TableInput} from '../inputs/pickers.js';
+import {Platform} from '../shell/platform.js';
 import {ColumnInput} from '../inputs/column-combo.js';
 import {ColumnsInput} from '../inputs/columns.js';
 import {TableBinding, columnPredicate, parentTableName, tableByName, preferredTable,
@@ -162,10 +165,6 @@ export interface FuncField {
   /** The full underlying failure behind a shortened `Couldn't validate` verdict — the error
    * element's tooltip carries it while the plain verdict shows. */
   namedDetail?: string;
-  /** The root title while disabled-by-expression (`Enabled when: …`, divergence #23) and the
-   * title it displaced — released, never clobbered, on re-enable. On the root, not the box:
-   * the label and a disabled checkbox are what the user actually hovers. */
-  enabledTitle?: {text: string, saved: string};
 }
 
 /** The W1 scalar set; everything else lands in {@link FuncCallForm.unsupported}. */
@@ -207,6 +206,7 @@ export class FuncCallForm extends Form {
   private readonly _running = signal(false);
   /** Bumped on `source` rebinds — orphan flips are not signals (FP-W4-7). */
   private readonly _genSig = signal(0);
+  private readonly _problems = signal<{name: string, message: string}[]>([]);
 
   constructor(call: FuncCallLike, options: FuncFormOptions = {}) {
     super({layout: options.layout ?? (options.condensed ? 'tall' : undefined)});
@@ -221,7 +221,7 @@ export class FuncCallForm extends Form {
       for (const field of this._fields) {
         if (field.orphaned || field.param.property.nullable !== false || !field.active.value)
           continue;
-        if (FuncCallForm._empty(field.input.value.value))
+        if (FuncCallForm._empty(field.input.value))
           missing.push(field.input.label || field.param.name);
       }
       return missing;
@@ -250,7 +250,7 @@ export class FuncCallForm extends Form {
   }
 
   private _buildRunButton(show: LiveOption<boolean>): void {
-    const run = this.runInScope(() => button('Run', () => void this._runAndSave(), {primary: true}));
+    const run = this.build(() => button('Run', () => void this._runAndSave(), {primary: true}));
     run.dataset.u2 = 'ff-run';
     this.addButtons((row) => row.append(run));
     if (show instanceof Signal)
@@ -260,9 +260,10 @@ export class FuncCallForm extends Form {
     this.effect(() => {
       const missing = this.missingRequired.value;
       const invalid = this.invalidFields.value;
-      run.disabled = missing.length > 0 || invalid.length > 0 || this._running.value;
-      run.title = missing.length > 0 ? `Missing: ${missing.join(', ')}` :
+      const why = missing.length > 0 ? `Missing: ${missing.join(', ')}` :
         invalid.length > 0 ? `Invalid: ${invalid.join(', ')}` : '';
+      Reason.apply(run, why || (this._running.value ? 'Running…' : null));
+      run.title = why;
     });
   }
 
@@ -287,7 +288,7 @@ export class FuncCallForm extends Form {
   }
 
   private _buildHistoryIcon(show: LiveOption<boolean>): void {
-    const icon = this._historyIcon = this.runInScope(() => iconButton('history',
+    const icon = this._historyIcon = this.build(() => iconButton('history',
       () => this._toggleHistory(), {tooltip: 'Apply a previous run'}));
     icon.dataset.u2 = 'ff-history-icon';
     this.addButtons((row) => row.prepend(icon));
@@ -362,7 +363,7 @@ export class FuncCallForm extends Form {
           if (param === undefined)
             continue;
           field.param = param;
-          field.input.value.value = this._read(field);
+          field.input.value = this._show(field);
         }
       });
     } finally {
@@ -410,6 +411,12 @@ export class FuncCallForm extends Form {
    * the seam W6's per-capability fallback reads. */
   get unsupported(): ReadonlyArray<string> {
     return this._unsupported;
+  }
+
+  /** The params whose editor could not be built, by name, with why: each shows as an error row in its place, and
+   * the rest of the form is built as usual. */
+  get problems(): ReadonlySignal<{name: string, message: string}[]> {
+    return this._problems;
   }
 
   private _build(): void {
@@ -470,7 +477,7 @@ export class FuncCallForm extends Form {
     // no fields (a group heading, a duplicate) renders plain — a chevron over nothing lies
     const folded = new Set(this._formOptions.collapsedCategories ?? []);
     const section = (name: string, collapsible: boolean, levelClass?: string): Section => {
-      const s = this.runInScope(() => new Section({title: name, collapsible,
+      const s = this.build(() => new Section({title: name, collapsible,
         expanded: !(collapsible && folded.has(name))}));
       s.header.classList.add('u2-form-category');
       if (levelClass !== undefined)
@@ -573,13 +580,42 @@ export class FuncCallForm extends Form {
     return editor === null || HINTS.has(String(editor).toLowerCase()) ? 'field' : 'unsupported';
   }
 
+  // one field that cannot be built never takes the form down with it (B-3: a nameless open table broke every form)
   private _addField(param: FuncCallParamLike, routed: FuncField['route'],
+    parent?: FuncCallParamLike, host?: HTMLElement): void {
+    const caption = FuncCallForm._caption(param.property, param.name);
+    const built: Input<any>[] = [];
+    try {
+      this._buildField(param, routed, caption, built, parent, host);
+    }
+    catch (e) {
+      const custom = this._formOptions.overrides?.[param.name]?.input;
+      for (const input of built) {
+        this.remove(input);
+        if (input !== custom)
+          input.dispose();
+      }
+      const at = this._fields.findIndex((f) => f.param === param);
+      if (at >= 0)
+        this._fields.splice(at, 1);
+      const message = e instanceof Error ? e.message : String(e);
+      const {row} = ObjectForm.readonlyField(caption, param.name,
+        span(`Could not show ${caption}: ${message}`, 'u2-param-source-error'));
+      if (host === undefined)
+        this.addElement(row);
+      else
+        host.append(row);
+      this._problems.value = [...this._problems.peek(), {name: param.name, message}];
+    }
+  }
+
+  private _buildField(param: FuncCallParamLike, routed: FuncField['route'], caption: string, built: Input<any>[],
     parent?: FuncCallParamLike, host?: HTMLElement): void {
     const prop = param.property;
     const {input: custom, ...rest} = this._formOptions.overrides?.[param.name] ?? {};
     const options: InputOptions<any> = {
       name: param.name,
-      label: FuncCallForm._caption(prop, param.name),
+      label: caption,
       tooltipText: prop.description ?? undefined,
       nullable: prop.nullable,
       // the form words and gates the required verdict itself (visibility, a null parent table)
@@ -587,18 +623,18 @@ export class FuncCallForm extends Form {
       postfix: prop.units || prop.options?.['units'] || undefined,
       ...rest,
     };
-    const registered = custom ? null : this.runInScope(() => Editors.resolve(prop, options));
+    const registered = custom ? null : this.build(() => Editors.resolve(prop, options));
     // a custom editor owns its field entirely and gets no dynamic wiring (the W1 override contract)
     const route: FuncField['route'] = (custom ?? registered) != null ? 'field' : routed;
     const filter = route === 'column' || route === 'columns' ? columnPredicate(prop) : undefined;
     let input: Input<any>;
     let kind: Kind | null;
     if (route === 'choices') {
-      input = this.runInScope(() => new ChoiceInput({...options, items: []}));
+      input = this.build(() => new ChoiceInput({...options, items: []}));
       kind = 'choice';
     }
     else if (route === 'multiChoices') {
-      input = this.runInScope(() => new MultiChoiceInput({...options, items: [], showSummaryCheckbox: true}));
+      input = this.build(() => new MultiChoiceInput({...options, items: [], showSummaryCheckbox: true}));
       kind = 'list';
     }
     else if (route === 'suggestions') {
@@ -607,16 +643,16 @@ export class FuncCallForm extends Form {
     }
     else if (route === 'table') {
       const {label: caption, ...tableOptions} = options;
-      input = this.runInScope(() => tableInput(caption ?? param.name, tableOptions));
+      input = this.build(() => tableInput(caption ?? param.name, tableOptions));
       kind = 'string';
     }
     else if (route === 'column') {
-      input = this.runInScope(() => new ColumnInput({...options,
+      input = this.build(() => new ColumnInput({...options,
         table: asTable(parent?.value), filter}));
       kind = 'string';
     }
     else if (route === 'columns') {
-      input = this.runInScope(() => new ColumnsInput({...options,
+      input = this.build(() => new ColumnsInput({...options,
         table: asTable(parent?.value), filter}));
       kind = 'list';
     }
@@ -624,15 +660,16 @@ export class FuncCallForm extends Form {
       const platform = (custom ?? registered) != null ? null :
         ObjectForm.platformInput(this, prop, this._call, this._formOptions.editors === 'auto');
       input = custom ?? registered ?? platform ??
-        this.runInScope(() => inputForProperty(prop, {...options, assumeWritable: true}));
+        this.build(() => inputForProperty(prop, {...options, assumeWritable: true}));
       kind = platform !== null && input === platform ? null : kindOf(prop, true);
     }
+    built.push(input);
     const field: FuncField = {param, input, kind, route, filter, orphaned: false,
       propagate: route === 'choices' && prop.options?.['propagateChoice'] === 'all',
       applying: false, exprVisible: true, exprEnabled: true, active: signal(true)};
     if (route === 'table') {
       field.fromParam = (v) => asNamed(v)?.name ?? null;
-      field.toParam = (name) => name == null ? null : tableByName(name);
+      field.toParam = () => (input as TableInput).table;
     }
     else if (route === 'column' || route === 'columns') {
       field.parentName = parent!.name;
@@ -650,7 +687,7 @@ export class FuncCallForm extends Form {
       }
     }
     if (kind !== null) {
-      input.value.value = this._read(field);
+      input.value = this._show(field);
       if (prop.nullable === false)
         input.addValidator((value) => field.active.peek() && FuncCallForm._empty(value) ?
           this._requiredMessage(field) : null);
@@ -699,14 +736,14 @@ export class FuncCallForm extends Form {
     // editor area, so the label keeps the property description
     if (descriptions != null && typeof descriptions === 'object')
       this.effect(() => {
-        const value = input.value.value;
+        const value = input.value;
         input.box.title = (value != null ? descriptions[value] : undefined) ??
           prop.description ?? '';
       });
 
     let initial = true;
     this.effect(() => {
-      const value = input.value.value;
+      const value = input.value;
       if (initial) {
         initial = false;
         return;
@@ -738,7 +775,7 @@ export class FuncCallForm extends Form {
 
   private _suggestInput(name: string, options: InputOptions<any>): Input<string> {
     let tooltips: Record<string, string> = {};
-    return this.runInScope(() => new SuggestInput({
+    return this.build(() => new SuggestInput({
       ...options,
       minChars: 1,
       source: async (text: string, abort: AbortSignal) => {
@@ -774,7 +811,7 @@ export class FuncCallForm extends Form {
         retry: () => this._wireSource(field)});
       return;
     }
-    field.source = this.runInScope(() => new ParamSource(this._call, field.param.name,
+    field.source = this.build(() => new ParamSource(this._call, field.param.name,
       (r) => this._applyItems(field, r), state));
   }
 
@@ -791,7 +828,7 @@ export class FuncCallForm extends Form {
   private _stateOf(field: FuncField): ParamState {
     let state = field.state;
     if (state === undefined) {
-      const created = this.runInScope(() => new ParamState());
+      const created = this.build(() => new ParamState());
       state = created;
       field.state = created;
       field.input.box.append(created.root);
@@ -833,28 +870,17 @@ export class FuncCallForm extends Form {
     }
   }
 
-  /** The one owner of `input.enabled`: orphaned × the `enabled:` expression × initial loading
-   * (a refresh never disables). While the `enabled:` expression is the cause, the root title
-   * says so — `Enabled when: <expr>` (divergence #23; Dart shows nothing) — displacing a
-   * pre-existing title (the description tooltip included) only for that while. */
+  /** The one owner of `input.disabled`: orphaned × the `enabled:` expression × initial loading (a refresh never
+   * disables), each with its reason — the expression's is `Enabled when: <expr>` (divergence #23; Dart shows
+   * nothing). */
   private _applyEnabled(field: FuncField): void {
-    field.input.enabled = !field.orphaned && field.exprEnabled &&
-      !(field.state?.busy.peek() ?? false);
-    const root = field.input.root;
     const expr = field.param.property.options?.['enabled'];
-    if (!field.orphaned && !field.exprEnabled && expr != null) {
-      if (field.enabledTitle === undefined) {
-        field.enabledTitle = {text: 'Enabled when: ' + String(expr), saved: root.title};
-        root.title = field.enabledTitle.text;
-      }
-    }
-    else if (field.enabledTitle !== undefined) {
-      if (root.title === field.enabledTitle.text)
-        root.title = field.enabledTitle.saved;
-      field.enabledTitle = undefined;
-    }
+    const columns = field.route === 'column' || field.route === 'columns';
+    field.input.disabled = field.orphaned ? columns ? 'Its table is not on the form' : 'Gone from the function' :
+      !field.exprEnabled ? `Enabled when: ${String(expr)}` :
+        field.state?.busy.peek() ? 'Loading its choices…' : null;
     // the disable sweeps every button under root — the state element's Retry must stay clickable
-    if (!field.input.enabled) {
+    if (field.input.disabled !== null) {
       const retry = field.state?.root.querySelector<HTMLButtonElement>('.u2-param-source-retry');
       retry?.removeAttribute('disabled');
     }
@@ -871,7 +897,7 @@ export class FuncCallForm extends Form {
       const sibling = this._fields.find((f) => f.param.name === name && !f.orphaned && f !== field);
       if (sibling === undefined)
         continue;
-      sibling.input.value.value = sibling.kind === null ? row[name] :
+      sibling.input.value = sibling.kind === null ? row[name] :
         ObjectForm.coerce(sibling.kind, row[name]);
     }
   }
@@ -932,9 +958,9 @@ export class FuncCallForm extends Form {
       if (f.orphaned)
         continue;
       vars[f.param.name] = f.toParam !== undefined ? f.param.value :
-        (track ? f.input.value.value : f.input.value.peek());
+        (track ? f.input.value : f.input.peek());
     }
-    vars['value'] = self.toParam !== undefined ? self.param.value : self.input.value.peek();
+    vars['value'] = self.toParam !== undefined ? self.param.value : self.input.peek();
     return vars;
   }
 
@@ -953,7 +979,7 @@ export class FuncCallForm extends Form {
       field.namedVerdict = verdict;
       field.input.revalidate();
     };
-    const value = field.input.value.peek();
+    const value = field.input.peek();
     if (!field.active.peek() || FuncCallForm._empty(value)) {
       set(null);
       return;
@@ -1066,17 +1092,25 @@ export class FuncCallForm extends Form {
     // a param the user (or anyone) filled no longer misses its computed default
     if (field.param.value != null)
       field.state?.set(1, {kind: 'idle'});
-    const value = this._read(field);
-    if (ObjectForm.same(value, field.input.value.peek()))
-      return;
     this._refreshing = true;
     try {
-      field.input.value.value = value;
+      const value = this._show(field);
+      if (ObjectForm.same(value, field.input.peek()))
+        return;
+      field.input.value = value;
     } finally {
       this._refreshing = false;
     }
     if (field.named)
       void this._runNamed(field);
+  }
+
+  // a table field holds the call's own frame, so of two open tables under one name it writes back that one
+  private _show(field: FuncField): any {
+    const frame = field.route === 'table' ? asTable(field.param.value) : null;
+    if (frame !== null && Platform.tableNames().includes(frame.name) && Platform.isOpen(frame))
+      (field.input as TableInput).table = frame;
+    return this._read(field);
   }
 
   private _read(field: FuncField): any {
@@ -1096,7 +1130,7 @@ export class FuncCallForm extends Form {
     const table = resolveTable(this._parentField(field)?.param.value);
     if (table === null)
       return null;
-    return table.columns.toList().some((c) => field.filter!(c)) ? 'Value can\'t be empty' :
+    return Platform.listedColumns(table, field.filter).length > 0 ? 'Value can\'t be empty' :
       noMatchMessage(field.param.property, table.name);
   }
 
@@ -1134,7 +1168,7 @@ export class FuncCallForm extends Form {
     for (const field of this._fields) {
       if (field.orphaned || (field.route !== 'table' && !dependents.has(field)))
         continue;
-      const binding = this.runInScope(() => new TableBinding(this._call, field.param,
+      const binding = this.build(() => new TableBinding(this._call, field.param,
         (name) => tableByName(name), dependents.get(field) ?? [],
         (dep, oldTableName) => this._clearedNotice(dep.field, oldTableName)));
       this._tableBindings.push(binding);

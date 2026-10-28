@@ -6,8 +6,15 @@ chase upstream. Update this table with every addition or local change.
 
 | Path | Upstream project | Version | License | Local changes |
 |------|------------------|---------|---------|---------------|
-| `signals-core/` | [@preact/signals-core](https://github.com/preactjs/signals) | 1.14.4 | MIT | none (verbatim `src/index.ts`) |
 | `fontawesome-pro/` | [Font Awesome Pro](https://fontawesome.com) | 5.15.4 | Font Awesome Pro Commercial License (held by Datagrok) | `webfonts/fa-{light-300,regular-400,solid-900,brands-400}.woff2` copied verbatim from the platform's own assets (`core/client/xamgle/web/font/font-awesome/webfonts`); the same webfonts already ship publicly via `public/docusaurus/static/font/font-awesome`. The `.u2-standalone`-gated name→codepoint map in `../css/icons.css` is extracted from the platform's `fontawesome.css` |
+
+## Carried by the engine
+
+u2 takes its signals from the engine, `datagrok-api/u2core`, which holds this copy.
+
+| File | Upstream project | Version | License | Local changes |
+|------|------------------|---------|---------|---------------|
+| `js-api/src/u2core/signals-core.ts` | [@preact/signals-core](https://github.com/preactjs/signals) | 1.14.4 | MIT | none (verbatim `src/index.ts`) |
 
 ## Ported (adapted, not vendored verbatim)
 

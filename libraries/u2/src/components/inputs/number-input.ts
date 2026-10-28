@@ -43,7 +43,8 @@ const FLOAT = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
  * its full width. u2's own hover spinner has no Dart counterpart and is opt-in (`spinner: true`).
  *
  * The slider hangs 9px under the field as the platform's does (`d4.css:81-89`: `bottom: -9px`), but
- * the editor keeps that room below itself, so it never covers the next row as the platform's does.
+ * the input's box keeps that room below the field and its rail, so it never covers the next row as
+ * the platform's does, and the unit stays on the field's line.
  *
  * Ported quirks — the platform's behavior, deliberately not improved here:
  * - at rest nothing hints that a slider or a clicker exists — they are `visibility: hidden` until
@@ -114,7 +115,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     // handler, when its batch ends — so the text being typed is never reformatted
     let echo = false;
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (echo)
         echo = false;
       // a float32 column echoes the typed value rounded: the typed text already says it
@@ -128,9 +129,9 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
         this._int && FLOAT.test(input.value.trim()) ? 'Must be a whole number' : 'Not a number';
       if (parsed === undefined || this.options.commitOn === 'change')
         return;
-      const before = this.value.peek();
-      this.value.value = parsed;
-      echo = !Object.is(this.value.peek(), before);
+      const before = this.peek();
+      this.value = parsed;
+      echo = !Object.is(this.peek(), before);
     });
     this.scope.listen(input, 'blur', () => this._commit());
     this.scope.listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
@@ -152,8 +153,8 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     editor.append(box);
     // the pair goes on the shared rail, as `showPlusMinus` does (`number_input.dart:70-71`)
     if (this.options.clicker) {
-      this.addOptions(this._createClicker('minus', -1, 'Decrease'));
-      this.addOptions(this._createClicker('plus', 1, 'Increase'));
+      this.addRail(this._createClicker('minus', -1, 'Decrease'), {edits: true});
+      this.addRail(this._createClicker('plus', 1, 'Increase'), {edits: true});
     }
     const slider = this._createSlider();
     if (slider !== null)
@@ -220,7 +221,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   private _syncSlider(): void {
     if (this._slider === null)
       return;
-    const value = this.value.peek();
+    const value = this.peek();
     this._slider.value = value == null ? '' : String(value);
   }
 
@@ -237,7 +238,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   }
 
   private _step(multiplier: number): void {
-    const current = this.value.peek();
+    const current = this.peek();
     if (current == null || this.readOnly)
       return;
     const next = current + multiplier * (this.options.step ?? 1);
@@ -247,8 +248,12 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
 
   protected resetEditor(): void {
     this._bad.value = null;
-    this._input.value = this._format(this.value.peek());
+    this._input.value = this._format(this.peek());
     this._syncSlider();
+  }
+
+  get unreadable(): boolean {
+    return this._bad.value !== null;
   }
 
   private _commit(): void {
@@ -259,8 +264,8 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
 
   private _set(value: number | null): void {
     this._bad.value = null;
-    this.value.value = value;
-    this._input.value = this._format(this.value.peek());
+    this.value = value;
+    this._input.value = this._format(this.peek());
     this._syncSlider();
   }
 

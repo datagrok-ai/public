@@ -2,8 +2,7 @@
 import {readFileSync, realpathSync, writeFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import '@datagrok-libraries/u2/tests/dom-shim.js';
-import {Registry, SpecContext, renderSpec} from '@datagrok-libraries/u2';
-import {kindCatalog} from '@datagrok-libraries/u2/src/core/kinds.js';
+import {Registry, SpecContext, renderSpec, kindCatalog} from '@datagrok-libraries/u2';
 
 /** The manifest the checked-in file must equal. `base` is where the compiled sources are: `dist/src/`
  * for the script, the in-place emit (`src/`) for the drift test. */

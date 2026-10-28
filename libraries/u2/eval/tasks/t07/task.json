@@ -1,0 +1,10 @@
+{
+  "name": "save-reason",
+  "entry": "new-template-form.ts",
+  "title": "A disabled SAVE that says why",
+  "source": "'reasonless disables': 12 surfaces took a boolean, and reasons were written as \"Disabled\"",
+  "bad": {
+    "bad-boolean-disable": ["save-says-why"],
+    "bad-generic-reason": ["save-says-why"]
+  }
+}

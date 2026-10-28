@@ -1,9 +1,3 @@
-/* `DomainBackend` over a schema.json held in memory (GOAL step-back "A local in-memory domain
-   backend"): the same seam the platform fills, answered without a server — the gallery, the
-   headless tests, an agent iterating on an app. Filters are evaluated with the filter feature's
-   own `toMask`, so a query means here what it means on the server; a transaction is ordered the
-   way the server orders it (forward `$ref`s, child-first deletes) and lands on every table it
-   touches or on none. */
 import {uuid4} from 'datagrok-api/u2core';
 import {Filters, notify, Access, MemoryFrame, Rows, isEmpty, Component} from '@datagrok-libraries/u2';
 import type {FilterCondition, FilterGroup, IProperty, AccessData, FieldAccess,
@@ -85,6 +79,8 @@ const CORE_REF_SEM_TYPES: Record<string, string> = {user: 'User', group: 'Group'
  * `Rows.DELETED`; not a declared property, so no form or filter sees it. */
 const IS_DELETED = 'is_deleted';
 
+/** `DomainBackend` over a schema.json in memory, meaning what the server means: filters through the filter
+ * feature's own `toMask`, a transaction ordered as the server orders it and landing on every table or none. */
 export class MemoryDomainBackend implements DomainBackend {
   private readonly _tables = new Map<string, MemoryTable>();
   private readonly _schema: string;
@@ -315,8 +311,7 @@ export class MemoryDomainBackend implements DomainBackend {
     return results;
   }
 
-  /** What an op answers with: the id and version the server answers, plus the system columns the
-   * stamp wrote — the platform editor re-reads the row for those, and a writer here has it. */
+  // more than the server's {id, version}: the platform editor re-reads the row for the stamped columns
   private static _stamped(row: Row, version: number): DomainTransactionResultLike {
     return {id: row.id as string, version, created_on: row.created_on as string,
       updated_on: row.updated_on as string, author_id: row.author_id as string};
@@ -329,7 +324,6 @@ export class MemoryDomainBackend implements DomainBackend {
     return table;
   }
 
-  /** Every `$name` in a value, lists included; `$$` is a literal. */
   private static _uses(v: unknown, into: Set<string>): void {
     if (Array.isArray(v)) {
       for (const x of v)
@@ -449,9 +443,7 @@ export class MemoryTable implements DomainTableLike {
     });
   }
 
-  /** The ref columns a `captions` entry names, resolved to their target tables — the server's
-   * `_compileCaptionExpand` refusals, word for word: an unknown, hidden or non-ref column is the
-   * ONE message (no-oracle), a nested name and a repeat their own. */
+  // the server's `_compileCaptionExpand` refusals word for word: unknown, hidden and non-ref share one (no oracle)
   private _captionTargets(names: string[] | undefined): [string, MemoryTable][] {
     if (names === undefined)
       return [];
@@ -620,9 +612,7 @@ export class MemoryTable implements DomainTableLike {
       willSkip: duplicate.size, errorCount: errors.size, rows: lines};
   }
 
-  /** What a batch WOULD do: the payload's columns checked against column security, every row
-   * against the schema's rules, and business-key duplicates — inside the batch and against the
-   * live rows — resolved into the ops the commit sends. Nothing is written. */
+  // shared by the dry run and the commit: resolves the ops, writes nothing
   private _plan(rows: Record<string, unknown>[], options: DomainBatchOptionsLike) {
     const upsert = options.mode === 'upsert';
     const key = this.info.businessKey;
@@ -697,10 +687,7 @@ export class MemoryTable implements DomainTableLike {
     return {errors, duplicate, ops, posted, failed};
   }
 
-  /** The row's ancestors along `info.parentColumn`, ROOT FIRST and without the row itself — the
-   * server's `GET …/{id}/path`. The SEED level alone takes a deleted row, so a row opened from a
-   * trash list still has its breadcrumb; the walk stops at an ancestor the caller cannot see
-   * (here: a deleted one), at a cycle, and at {@link maxPathDepth}. */
+  // the seed alone may be deleted, so a row opened from a trash list still has its breadcrumb
   private async _ancestors(id: string): Promise<{id: string, name: string}[]> {
     const parent = this.info.parentColumn!;
     const visible = (key: unknown) => typeof key !== 'string' ? undefined :
@@ -749,7 +736,6 @@ export class MemoryTable implements DomainTableLike {
     return row;
   }
 
-  /** The row's own `~can_edit`, else the table's — the shape `query` projects. */
   private _canEdit(row: Row): boolean {
     const own = row[`${Access.ROW_PREFIX}edit`];
     return typeof own === 'boolean' ? own : this._access.can.edit === true;
@@ -780,17 +766,13 @@ export class MemoryTable implements DomainTableLike {
     return rows;
   }
 
-  /** Every `under` term of the tree resolved over the store — the only operator with no
-   * DataFrame form the server answers, so the mask never sees one. */
+  // `under` is the only operator with no DataFrame form, so the mask never sees one
   private _resolved(root: FilterGroup): FilterGroup {
     return {...root, nodes: root.nodes.map((node) => 'nodes' in node ? this._resolved(node) :
       node.operator === 'under' ? this._subtree(node) : node)};
   }
 
-  /** The hierarchy subtree term as the server compiles it: `<column> under <id>` matches the rows
-   * whose column points into the subtree rooted at that id, the seed included. The recursion
-   * walks the TARGET's live rows, so a deleted branch truncates the subtree instead of leaking
-   * it, and the seed is in the set whether or not a row carries it. */
+  // walks the target's live rows, as the server does: a deleted branch truncates the subtree instead of leaking it
   private _subtree(condition: FilterCondition): FilterCondition {
     const property = condition.property;
     const target = property === 'id' ? this : this._backend.tableSync(this.refs[property] ?? '');
@@ -840,8 +822,6 @@ export class MemoryTable implements DomainTableLike {
     });
   }
 
-  /** The manifest's `invalid-hierarchy` refusal: a hierarchy table declares exactly one ref
-   * column targeting itself. */
   private static _parentColumn(address: string, refs: Record<string, string>): string {
     const self = Object.entries(refs).filter(([, target]) => target === address).map(([column]) => column);
     if (self.length !== 1) {

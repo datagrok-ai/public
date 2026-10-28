@@ -2,7 +2,7 @@
    fall back to the generated editor, and unregister restores the default. Structural — the
    molecule seed lives in the platform-bound module and is not loaded here. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {Scope, TextInput} from '../src/index.js';
@@ -44,9 +44,9 @@ smoke('a matching rule supplies the editor, wired to the property both ways', as
     const form = propertyForm([nameProp, structureProp], target);
     const input = form.input('smiles');
     assert.equal(input.root.dataset.test, 'registered');
-    assert.equal(input.value.value, target.smiles, 'seeded from the property');
+    assert.equal(input.value, target.smiles, 'seeded from the property');
 
-    input.value.value = 'c1ccccc1';
+    input.value = 'c1ccccc1';
     await flush();
     assert.equal(target.smiles, 'c1ccccc1', 'edit writes through');
     assert.equal(form.input('name').root.dataset.test, undefined, 'unmatched prop stays generated');

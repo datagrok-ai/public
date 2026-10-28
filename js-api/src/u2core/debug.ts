@@ -214,6 +214,9 @@ function isCapture(options: unknown): boolean {
     (options as AddEventListenerOptions).capture === true);
 }
 
+// a lazy scope is tracked once it owns something: what describes or marks it before then waits here
+const untrackedMarks = new WeakMap<object, {component?: WeakRef<object>, singleton?: boolean}>();
+
 /** @internal Records a scope (when tracking is on); `parent` links it to its owner. */
 export function trackScope(scope: object, label: string, parent: object | undefined): void {
   if (!registry.enabled)
@@ -221,7 +224,7 @@ export function trackScope(scope: object, label: string, parent: object | undefi
   const id = registry.nextId++;
   registry.ids.set(scope, id);
   registry.scopes.set(id, {id, label, createdAt: now(), stack: captureStack(),
-    parent: parent === undefined ? undefined : registry.ids.get(parent)});
+    parent: parent === undefined ? undefined : registry.ids.get(parent), ...untrackedMarks.get(scope)});
 }
 
 /** @internal */
@@ -239,6 +242,8 @@ export function describeScope(scope: object, component: object): void {
   const entry = id === undefined ? undefined : registry.scopes.get(id);
   if (entry !== undefined)
     entry.component = new WeakRef(component);
+  else
+    untrackedMarks.set(scope, {...untrackedMarks.get(scope), component: new WeakRef(component)});
 }
 
 /** @internal Records an owned timer; answers its id for {@link forgetTimer}. */
@@ -568,11 +573,14 @@ export const debug: U2Debug = {
   sweep,
 
   markSingleton(scopeOrComponent: object): void {
-    const scope = registry.ids.has(scopeOrComponent) ? scopeOrComponent : (scopeOrComponent as {scope?: object}).scope;
-    const id = scope === undefined ? undefined : registry.ids.get(scope);
+    const scope = registry.ids.has(scopeOrComponent) ? scopeOrComponent :
+      (scopeOrComponent as {scope?: object}).scope ?? scopeOrComponent;
+    const id = registry.ids.get(scope);
     const entry = id === undefined ? undefined : registry.scopes.get(id);
     if (entry !== undefined)
       entry.singleton = true;
+    else if (registry.enabled)
+      untrackedMarks.set(scope, {...untrackedMarks.get(scope), singleton: true});
   },
 };
 

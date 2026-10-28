@@ -37,7 +37,7 @@
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && grok tsc -p tsconfig.json && npm run manifest:check",
     "lint": "eslint --ext .ts,.tsx src",
     "prepublishOnly": "npm run build",
-    "test": "grok tsc -p tsconfig.json --outDir . && node ../u2/scripts/run-tests.mjs --dist-of ../u2",
+    "test": "grok tsc -p tsconfig.json --outDir .test-build && node ../u2/scripts/run-tests.mjs --dist-of ../u2",
     "e2e:local": "node ../u2/e2e/run.mjs --checks e2e/checks",
     "e2e:stand-domain": "node e2e/domain.stand.spec.mjs",
     "manifest": "node scripts/gen-manifest.mjs",

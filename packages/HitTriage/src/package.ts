@@ -28,8 +28,10 @@ export class HTPackage extends DG.Package {
     );
   }
 
-  async loadCampaigns<T extends AppName>(appName: T, deletedCampaigns?: string[]) {
-    if (!this.campaignsCache[appName])
+  /** The app's campaigns the user may view, read once per page (the Browse tree, the landing and the assistant share
+   * the list); `fresh` reads them again from the server. */
+  async loadCampaigns<T extends AppName>(appName: T, deletedCampaigns?: string[], fresh = false) {
+    if (fresh || !this.campaignsCache[appName])
       this.campaignsCache[appName] = (await loadCampaigns(appName, deletedCampaigns ?? [])) as typeof this.campaignsCache[T];
 
     return this.campaignsCache[appName]! as { [name: string]: CampaignsType[T] };
@@ -38,7 +40,9 @@ export class HTPackage extends DG.Package {
   async saveCampaignJson<T extends AppName>(appName: T, campaign: CampaignsType[T]) {
     const path = `${appName}/campaigns/${campaign.name}/${CampaignJsonName}`;
     await this.files.writeAsText(path, JSON.stringify(campaign));
-    (this.campaignsCache[appName] as { [name: string]: CampaignsType[T] })[campaign.name] = campaign as any;
+    const cached = this.campaignsCache[appName] as { [name: string]: CampaignsType[T] } | undefined;
+    if (cached)
+      cached[campaign.name] = campaign;
   }
 }
 

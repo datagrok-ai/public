@@ -1,0 +1,85 @@
+/* Records input (src/components/inputs/records-input.ts): rows on one grid of tracks — [handle] cells [remove],
+   set inline as --u2-records-tracks — 28px each, under a 20px header naming the fields; the add link under the
+   last row. A cell's verdict is its red underline; the input's own line names the row. */
+.u2-input-editor.u2-records {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+}
+
+/* captioned, the rows fill the form's row, as a map input's do */
+.u2-input-root:not(.u2-input-inline)[data-u2='records-input'] > .u2-input-box {
+  flex: 1 1 0;
+  min-width: var(--dg-form-min-editor-width);
+  max-width: none;
+}
+
+.u2-records-row {
+  display: grid;
+  grid-template-columns: var(--u2-records-tracks);
+  align-items: center;
+  column-gap: var(--dg-space-m);
+  min-height: var(--dg-control-height);
+}
+
+.u2-records-head {
+  min-height: 20px;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-records-head[hidden] {
+  display: none;
+}
+
+.u2-records-header {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-records-cell {
+  min-width: 0;
+}
+
+.u2-records-cell > .u2-input-box {
+  width: 100%;
+}
+
+.u2-records-row .u2-records-cell .u2-input-editor {
+  width: 100%;
+  min-width: 0;
+}
+
+.u2-records-cell > .u2-input-error {
+  display: none;
+}
+
+/* the failing cell is underlined, not the whole list under its add link */
+.u2-input-editor.u2-records.u2-invalid,
+.u2-input-editor.u2-records.u2-invalid:focus-within {
+  border-bottom: none;
+}
+
+.u2-records-add {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--dg-space-s);
+  height: var(--dg-control-height);
+}
+
+.u2-records-add-icon {
+  font-size: 11px;
+}
+
+/* nothing to add or remove while the input takes no edits (nor to move: reorder.css) */
+.u2-input-disabled .u2-records-add,
+.u2-input-readonly .u2-records-add,
+.u2-input-disabled .u2-records-remove,
+.u2-input-readonly .u2-records-remove {
+  visibility: hidden;
+}

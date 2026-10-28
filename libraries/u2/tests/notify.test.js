@@ -46,19 +46,26 @@ smoke('per-type balloons stack in the container; strings render as text', async 
   assert.equal(balloons().length, 0);
 });
 
-smoke('every type auto-hides, a warning later; explicit autoHide overrides', async () => {
-  const info = notify.info('Bye', {timeout: 20});
-  const warning = notify.warning('Later');
-  const sticky = notify.info('Stay', {autoHide: false});
-  assert.ok(info.root.querySelector('.u2-notify-timer'), 'auto-hiding balloon shows the countdown');
-  assert.equal(warning.root.querySelector('.u2-notify-timer').style.animationDuration, '10000ms');
-  assert.equal(sticky.root.querySelector('.u2-notify-timer'), null);
+smoke('an info or a warning auto-hides after 10 s, an error stays until closed; explicit autoHide overrides',
+  async () => {
+    assert.equal(notify.info('Saved').root.querySelector('.u2-notify-timer').style.animationDuration, '10000ms');
+    assert.equal(notify.warning('Later').root.querySelector('.u2-notify-timer').style.animationDuration, '10000ms');
+    const info = notify.info('Bye', {timeout: 20});
+    const warning = notify.warning('Careful', {timeout: 20});
+    const error = notify.error('Broke', {timeout: 20});
+    const sticky = notify.info('Stay', {autoHide: false});
+    const hiding = notify.error('Gone', {autoHide: true, timeout: 20});
+    assert.ok(warning.root.querySelector('.u2-notify-timer'), 'auto-hiding balloon shows the countdown');
+    assert.ok(error.root.querySelector('.u2-notify-timer') === null, 'an error has no countdown');
+    assert.equal(sticky.root.querySelector('.u2-notify-timer'), null);
 
-  await sleep(50);
-  assert.equal(info.root.isConnected, false, 'info closed itself');
-  assert.equal(warning.root.isConnected, true);
-  assert.equal(sticky.root.isConnected, true);
-});
+    await sleep(50);
+    assert.equal(info.root.isConnected, false, 'info closed itself');
+    assert.equal(warning.root.isConnected, false, 'warning closed itself');
+    assert.equal(error.root.isConnected, true, 'the error is still shown after the timeout');
+    assert.equal(sticky.root.isConnected, true);
+    assert.equal(hiding.root.isConnected, false, 'autoHide: true hides an error too');
+  });
 
 smoke('hovering pauses the countdown; leaving resumes it', async () => {
   const handle = notify.info('Hover me', {timeout: 30});

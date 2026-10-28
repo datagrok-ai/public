@@ -1,9 +1,3 @@
-/* The Design step's left pane: schema › tables › columns as a `VirtualTree` over the manifest
-   model. A checkbox per table and column includes it (keys and unsupported columns locked), the
-   badges say what the manifest will carry (key, `→ target` as a ref or a plain value, name), and
-   a view, a keyless table or an unsupported column stays in the tree greyed with its reason —
-   never hidden. The roots are rebuilt from the model on every change; the tree keeps the
-   selection and the expansion by node id. */
 import {Control, computed, ReadonlySignal, div, link, span, icon, plural, VirtualTree, badge} from '@datagrok-libraries/u2';
 import type {TreeNode} from '@datagrok-libraries/u2';
 import {ManifestModel} from './manifest-model.js';
@@ -27,6 +21,8 @@ export interface ManifestTreeOptions {
 
 const SCHEMA_ID = 'schema';
 
+/** The Design step's left pane: schema › tables › columns. A view, a keyless table or an unsupported column
+ * stays in the tree greyed with its reason, never hidden. */
 export class ManifestTree extends Control {
   readonly tree: VirtualTree<ManifestNode>;
   /** What is selected — the schema until a row is chosen. */
@@ -41,12 +37,12 @@ export class ManifestTree extends Control {
     this._diagnostics = options.diagnostics;
     this.root.classList.add('u2-manifest-tree');
     this.root.dataset.u2 = 'manifest-tree';
-    this.tree = this.runInScope(() => new VirtualTree<ManifestNode>({
+    this.tree = this.build(() => new VirtualTree<ManifestNode>({
       render: (node) => this._label(node),
       onCheck: (node, checked) => this._check(node.data!, checked),
     }));
     this.selected = computed(() => this.tree.selectedNode.value?.data?.selection ?? {kind: 'schema'});
-    this.root.append(this.runInScope(() => this._header()), this.tree.root);
+    this.root.append(this.build(() => this._header()), this.tree.root);
     this.effect(() => this.tree.setRoots([this._schemaNode()]));
     const first = model.tables.peek().find((t) => t.included && (!model.extending || t.extensible));
     this.tree.expanded.value = new Set(first === undefined ? [SCHEMA_ID] :
@@ -124,8 +120,9 @@ export class ManifestTree extends Control {
       tooltip: ManifestTree._tooltip(t.reason ?? t.remote, problems),
       data: {selection, table: t, problems}, children,
     };
+    const disabled = t.drafted ? null : t.reason ?? 'Not in this draft';
     if (!this.model.extending)
-      return {...node, checked: t.included, locked: !t.drafted || !this._editable, disabled: !t.drafted};
+      return {...node, checked: t.included, locked: !t.drafted || !this._editable, disabled};
     if (this._editable)
       children.push({id: `a:${t.remote}`, label: 'Add property', data: {selection, table: t, problems: [], add: true}});
     return node;
@@ -142,7 +139,7 @@ export class ManifestTree extends Control {
     return this.model.extending ? {...node, label: c.logical} : {...node,
       checked: c.supported && t.included && (c.isKey || c.included),
       locked: c.isKey || !c.supported || !t.included || !this._editable,
-      disabled: !c.supported};
+      disabled: c.supported ? null : c.reason ?? 'Its warehouse type cannot be bound'};
   }
 
   private _label(node: TreeNode<ManifestNode>): HTMLElement {

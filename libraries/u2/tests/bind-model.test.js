@@ -2,7 +2,7 @@
    assembles to. The laziness contract is the load-bearing assertion here — enumerating a frame's
    columns must not allocate a single column signal — so the fake frame counts its reads. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from './dom-shim.js';
@@ -74,7 +74,7 @@ function model(name, body) {
     registerAll(reg);
     reg.register(BROKEN);
     const df = frame();
-    const orders = Scope.runWith(scope, () => new TableSource(df, scope));
+    const orders = scope.build(() => new TableSource(df, scope));
     const ctx = new SpecContext({data: {reagent: 'Ethanol', orders}});
     const instance = renderSpec(JSON.parse(JSON.stringify(SPEC)), ctx, reg);
     try {
@@ -158,7 +158,7 @@ test('a walkable step with nothing under it explains itself, and the note is not
     const scope = new Scope();
     const reg = new Registry();
     registerAll(reg);
-    const empty = Scope.runWith(scope, () => new TableSource(undefined, scope));
+    const empty = scope.build(() => new TableSource(undefined, scope));
     const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-form', name: 'form'}},
       new SpecContext({data: {orders: empty}}), reg);
     try {
@@ -188,7 +188,7 @@ test('a viewer node walks through table to the seven frame steps; its writable l
     const reg = new Registry();
     registerPlatformComponents(reg);
     const df = frame();
-    const orders = Scope.runWith(scope, () => new TableSource(df, scope));
+    const orders = scope.build(() => new TableSource(df, scope));
     const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-div-v', name: 'box', children: [
       {tag: 'u2-viewer-grid', name: 'grid', bind: {table: '$.orders'}}]}},
     new SpecContext({data: {orders}}), reg);

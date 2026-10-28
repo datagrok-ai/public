@@ -1,12 +1,14 @@
 /* Platform group and user picker over the plain TypeAhead: the same look-up the platform's Share
    dialog and `ui.input.userGroups` run (`groups/lookup` — groups, and users through their personal
-   groups), a two-line row (name over the kind). The sibling of `userInput`. */
+   groups), a two-line row (picture, name over the kind). The sibling of `userInput`. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {TypeAhead} from '../../components/inputs/typeahead.js';
 import {PickInput} from '../../components/inputs/pick-input.js';
+import {icon} from '../../components/display/icon.js';
 import type {InputOptions} from '../../core/input-base.js';
 import {entityInput} from '../entities/entity.js';
+import {avatar} from './user-input.js';
 
 export interface GroupInputOptions {
   placeholder?: string;
@@ -64,8 +66,18 @@ function renderGroup(group: DG.Group, label: string): HTMLElement {
   name.dataset.u2Part = 'item-label';
   text.append(name,
     line('u2-typeahead-user-secondary', label === group.friendlyName ? kind : `${kind} · ${group.id.slice(0, 8)}`));
-  row.append(text);
+  row.append(groupIcon(group), text);
   return row;
+}
+
+/** A group's picture as the platform's group picker shows it: the user's picture or initials for a personal
+ * group, the two-person glyph for any other. */
+export function groupIcon(group: DG.Group): HTMLElement {
+  if (group.personal)
+    return avatar(group.user);
+  const box = line('u2-avatar u2-avatar-group', '');
+  box.append(icon('user-friends'));
+  return box;
 }
 
 function line(cls: string, text: string): HTMLElement {

@@ -1,11 +1,8 @@
-/* Claims a u2 control answers through its status (`DG.U2.state`, R10): its error, all of its items, an
-   item's state, its selection, the current tab or step, its raw value. Steps only — no nouns. An element
-   that is not a u2 control root fails saying so, unless the step names a DOM reading to fall back to;
-   several visible matches of the phrase fail naming them (R9). */
 import {Page} from '@playwright/test';
 import {Then} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';
 import {refOf} from '../../src/runtime/locate.js';
+import {expectOperable} from '../../src/runtime/operability.js';
 import {ControlReading, expectControl, reportsNo, U2ItemState} from '../../src/runtime/u2-state.js';
 import type {State} from '../../src/states.js';
 
@@ -154,6 +151,49 @@ export const shouldBeOnStep = Then('{element} should be on the {string} step', (
 
 export const shouldShowTab = Then('{element} should show the {string} tab', (page: Page, target: ElementRef, tab: string) =>
   expectCurrent(page, target, tab, 'tab'), {description: 'the current tab of the u2 control by key, else by caption (any case)'});
+
+export const shouldListInOrder = Then('{element} should list the items {string} in this order', (page: Page, target: ElementRef, list: string) => {
+  const want = list.split(/\s*,\s*/).filter(Boolean);
+  return expectControl(page, target, (r) => {
+    if (!r.state?.items || !r.found)
+      return reportsNo(target.phrase, r, 'items');
+    const at: number[] = [];
+    for (const [i, match] of r.found.matches.entries()) {
+      if (match.length !== 1)
+        return match.length === 0 ? `${target.phrase} does not list "${want[i]}"; it lists: ${listed(r)}` :
+          `"${want[i]}" matches ${match.length} items of ${target.phrase}: ${match.map((m) => m.key).join(', ')}`;
+      at.push(match[0].index);
+    }
+    const out = at.findIndex((index, i) => i > 0 && index < at[i - 1]);
+    return out < 0 ? '' : `"${want[out]}" comes before "${want[out - 1]}" in ${target.phrase}; it lists: ${listed(r)}`;
+  }, {find: want});
+}, {description: 'each item of the u2 control, by key else label, rendered or not, in that relative order (other items may lie between)'});
+
+export const shouldReportReading = Then('{element} should report {string} as {string}', (page: Page, target: ElementRef, name: string, value: string) =>
+  expectControl(page, target, (r) => {
+    const extra = r.state?.extra;
+    if (!extra || !(name in extra))
+      return `${target.phrase} reports no "${name}"; it reports: ${Object.keys(extra ?? {}).join(', ') || 'nothing'}`;
+    return String(extra[name]) === value ? '' : `${target.phrase} reports "${name}" as "${extra[name]}", expected "${value}"`;
+  }),
+{description: 'a reading of the u2 status beyond the typed keys (`extra`): a catalog table\'s sort ("Molecules desc"), groupBy, columns, groups; compared as text'});
+
+export const shouldBeDisabledBecause = Then('{element} should be disabled because {string}', (page: Page, target: ElementRef, reason: string) =>
+  expectControl(page, target, (r) => {
+    if (r.state ? r.state.enabled : !r.dom.disabled)
+      return `${target.phrase} is enabled`;
+    const shown = (r.state ? r.state.disabledReason ?? '' : r.dom.reason).replace(/\s+/g, ' ').trim();
+    if (shown === reason.replace(/\s+/g, ' ').trim())
+      return '';
+    return shown ? `${target.phrase} is disabled because "${shown}", expected "${reason}"` :
+      `${target.phrase} is disabled and says no reason, expected "${reason}"`;
+  }),
+{description: 'off, and the reason it gives, whitespace aside: the u2 status\'s disabledReason; outside u2 its aria-description, else its title'});
+
+export const everyControlOperable = Then('every control in {element} should be operable', (page: Page, target: ElementRef) =>
+  expectOperable(page, target),
+{description: 'the engine\'s probe (DG.U2.operability, hit-testing on) finds nothing: no control covered at its centre, taking no pointer, ' +
+  'inert or off without a reason, no icon button named unlike its tooltip, no option taller than its rail; fails on an element with no control'});
 
 export const shouldReportValue = Then('{element} should report the value {string}', (page: Page, target: ElementRef, value: string) => {
   let parsed: unknown;

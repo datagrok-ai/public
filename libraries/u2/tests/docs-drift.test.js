@@ -12,16 +12,22 @@ import {join} from 'node:path';
 import './dom-shim.js';
 import * as u2 from '../src/index.js';
 import * as core from 'datagrok-api/u2core';
+import {U2_RULES} from '../src/core/rules.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const CORE_UI2 = join(root, '..', '..', '..', 'core', 'docs', 'features', 'ui2');
 const CORE_DOCS = ['CONTRACT.md', 'AUTOMATION.md'];
 
+/** A doc's text less the rules' wrong lines, which show on purpose what does not exist or must not be written. */
+const WRONG = U2_RULES.map((r) => `\`${r.wrong}\``);
+const readDoc = (file) => WRONG.reduce((text, wrong) => text.split(wrong).join('``'), readFileSync(file, 'utf8'));
+
 function docs() {
-  const out = [join(root, 'README.md'), join(root, 'manifest.json')];
-  for (const f of readdirSync(join(root, 'docs', 'recipes')))
-    if (f.endsWith('.md'))
-      out.push(join(root, 'docs', 'recipes', f));
+  const out = [join(root, 'README.md'), join(root, 'AGENTS.md'), join(root, 'manifest.json')];
+  for (const dir of ['recipes', 'samples'])
+    for (const f of readdirSync(join(root, 'docs', dir)))
+      if (f.endsWith('.md'))
+        out.push(join(root, 'docs', dir, f));
   if (existsSync(CORE_UI2))
     out.push(...CORE_DOCS.map((f) => join(CORE_UI2, f)).filter(existsSync));
   return out;
@@ -103,10 +109,39 @@ const ELSEWHERE = new Set(['fetch', 'setTimeout', 'requestAnimationFrame', 'queu
   'appendChild', 'remove', 'click', 'focus', 'blur', 'scrollIntoView', 'getBoundingClientRect', 'evaluate',
   'locator', 'waitFor', 'fill', 'press', 'goto', 'screenshot', 'step', 'stepName', 'toDate']);
 
+/** Where a package path lands under `exports`, as a source file: `./src/dg/index.js` → `src/dg/index.ts`. */
+function exportSource(subpath) {
+  const exports = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).exports;
+  for (const [key, entry] of Object.entries(exports)) {
+    const target = typeof entry === 'string' ? entry : entry.default;
+    const star = key.indexOf('*');
+    const match = star < 0 ? (key === subpath ? '' : null) :
+      subpath.startsWith(key.slice(0, star)) && subpath.endsWith(key.slice(star + 1)) ?
+        subpath.slice(star, subpath.length - (key.length - star - 1)) : null;
+    if (match !== null)
+      return target.replace('*', match).replace(/^\.\/dist\//, './').replace(/\.js$/, '.ts');
+  }
+  return null;
+}
+
+test('every u2 import path the living docs show resolves', () => {
+  const broken = [];
+  const files = [...docs(), join(root, 'src', 'dg', 'README.md')];
+  for (const file of files) {
+    const text = readDoc(file);
+    for (const [, path] of text.matchAll(/from '(@datagrok-libraries\/u2[^']*)'/g)) {
+      const source = exportSource(`.${path.slice('@datagrok-libraries/u2'.length)}`);
+      if (source === null || !existsSync(join(root, source)))
+        broken.push(`${file.slice(root.length - 1)}: ${path}`);
+    }
+  }
+  assert.deepEqual(broken, []);
+});
+
 test('every API the living docs name exists', () => {
   const missing = [];
   for (const file of docs()) {
-    const text = readFileSync(file, 'utf8');
+    const text = readDoc(file);
     for (const [, span] of text.matchAll(/`([^`\n]+)`/g)) {
       const member = /^([A-Z]\w*)\.(\w+)(?:\(.*\))?$/.exec(span);
       if (member !== null && exported[member[1]] !== undefined) {
@@ -120,4 +155,29 @@ test('every API the living docs name exists', () => {
     }
   }
   assert.deepEqual(missing, []);
+});
+
+/** Claims u2's own docs once made that no longer hold, each with what holds instead. */
+const STALE_CLAIMS = [
+  [/custom-element tags|framework wrappers|fluent `u2\.\*`/, 'u2 has no custom elements, framework wrappers or fluent API'],
+  [/enforced by eslint|eslint enforces/i, 'the layer boundary is held by tests/boundaries.test.js'],
+  [/^\| `signals-core\/`/m, 'the signal core is the engine\'s copy (js-api/src/u2core/signals-core.ts)'],
+  [/\b(?:appView|ownView|viewSignals|showInView|tableViewChrome)\b/, 'gone: a view is owned through ViewHost'],
+  [/\bokEnabled\(|\brunInScope\(|\bControl\.build\(/, 'gone: okDisabled(reason), owner.build(fn), component(fn)'],
+];
+
+test('u2\'s own docs make none of the stale claims', () => {
+  const files = [...docs().filter((f) => f.startsWith(root)), join(root, 'src', 'dg', 'README.md'),
+    join(root, 'vendor', 'LICENSES.md')];
+  const found = [];
+  for (const file of files)
+    for (const [claim, now] of STALE_CLAIMS)
+      if (claim.test(readDoc(file)))
+        found.push(`${file.slice(root.length - 1)}: ${claim} — ${now}`);
+  assert.deepEqual(found, []);
+});
+
+test('mutation: a stale claim put back is found', () => {
+  assert.ok(STALE_CLAIMS.some(([claim]) => claim.test('- **L3 delivery** — fluent `u2.*` API, custom-element tags')));
+  assert.ok(STALE_CLAIMS.some(([claim]) => claim.test('A view is owned through `ownView`.')));
 });

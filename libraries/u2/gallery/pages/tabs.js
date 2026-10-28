@@ -81,9 +81,9 @@ export async function render(main) {
   memo.placeholder = 'Scratch…';
   stateful.append(memo);
 
-  const defs = FILES.map((name) => ({id: name, label: name, content: paragraph(`Contents of ${name}`)}));
-  defs.splice(1, 0, {id: 'draft.md', label: 'draft.md', closable: true, content: stateful});
-  defs.push({id: 'lazy.json', label: 'lazy.json', closable: true, content: lazy});
+  const defs = FILES.map((name) => ({id: name, title: name, content: paragraph(`Contents of ${name}`)}));
+  defs.splice(1, 0, {id: 'draft.md', title: 'draft.md', closable: true, content: stateful});
+  defs.push({id: 'lazy.json', title: 'lazy.json', closable: true, content: lazy});
 
   const tabs = new TabStrip({tabs: defs});
   tabs.root.style.height = '260px';
@@ -93,7 +93,7 @@ export async function render(main) {
 
   const active = el('b');
   const closed = el('code');
-  bindText(tabs.scope, active, computed(() => tabs.activeTab.value ?? '(none)'));
+  bindText(active, computed(() => tabs.activeTab.value ?? '(none)'), {owner: tabs.scope});
   closed.textContent = '(none)';
   tabs.on('tabClosed', (id) => closed.textContent = id);
   const readout = el('p', 'u2-gallery-status');
@@ -125,9 +125,9 @@ export async function render(main) {
     '<code>variant: \'document\'</code> — the IDE editor-group skin: secondary stripe, accent top border, ' +
     'active tab on the page background.'));
   const documents = new TabStrip({variant: 'document', tabs: [
-    {id: 'package.ts', label: 'package.ts', closable: true, content: paragraph('Contents of package.ts')},
-    {id: 'README.md', label: 'README.md', closable: true, content: paragraph('Contents of README.md')},
-    {id: 'tokens.css', label: 'tokens.css', content: paragraph('Contents of tokens.css')},
+    {id: 'package.ts', title: 'package.ts', closable: true, content: paragraph('Contents of package.ts')},
+    {id: 'README.md', title: 'README.md', closable: true, content: paragraph('Contents of README.md')},
+    {id: 'tokens.css', title: 'tokens.css', content: paragraph('Contents of tokens.css')},
   ]});
   documents.root.style.height = '120px';
   documents.root.style.maxWidth = '620px';
@@ -140,10 +140,10 @@ export async function render(main) {
     '<code>icon</code> is a Font Awesome name or an element, and a tab with an empty label is ' +
     'icon-only (its <code>tooltip</code> carries the name).'));
   const vertical = new TabStrip({orientation: 'vertical', tabs: [
-    {id: 'home', label: 'Home', icon: 'home', content: paragraph('Home')},
-    {id: 'settings', label: 'Settings', icon: 'cog', content: paragraph('Settings')},
-    {id: 'charts', label: 'Charts', icon: 'chart-line', content: paragraph('Charts')},
-    {id: 'help', label: '', icon: 'question-circle', tooltip: 'Help', content: paragraph('Help (icon-only tab)')},
+    {id: 'home', title: 'Home', icon: 'home', content: paragraph('Home')},
+    {id: 'settings', title: 'Settings', icon: 'cog', content: paragraph('Settings')},
+    {id: 'charts', title: 'Charts', icon: 'chart-line', content: paragraph('Charts')},
+    {id: 'help', title: '', icon: 'question-circle', tooltip: 'Help', content: paragraph('Help (icon-only tab)')},
   ]});
   vertical.root.style.height = '180px';
   vertical.root.style.maxWidth = '620px';

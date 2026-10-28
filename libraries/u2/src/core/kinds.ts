@@ -13,7 +13,7 @@ export type U2Gesture =
   | 'open' | 'close' | 'drag' | 'resize' | 'hover' | 'scroll' | 'add' | 'remove' | 'rename';
 
 /** The keys of `IControlState` (js-api `u2core/protocol.ts`). */
-export type U2StateKey = 'kind' | 'tag' | 'name' | 'label' | 'enabled' | 'visible' | 'focused' |
+export type U2StateKey = 'kind' | 'tag' | 'name' | 'label' | 'enabled' | 'disabledReason' | 'visible' | 'focused' |
   'readOnly' | 'required' | 'valid' | 'error' | 'busy' | 'value' | 'text' | 'placeholder' | 'open' |
   'expanded' | 'checked' | 'pressed' | 'selected' | 'items' | 'selection' | 'current' | 'extra';
 
@@ -48,6 +48,14 @@ export interface U2KindEntry {
   /** Legacy sub-element ids stamped as `data-u2` (fb-search, ff-run …): the kind they are a part of.
    * Such an entry's `noun` is its part name, not a vocabulary noun. */
   partOf?: string;
+  /** Parts a user operates that are no native control or interactive role (`DG.U2.operability` checks them too). */
+  interactive?: string[];
+  /** The custom properties a package may set to style it: `--u2-…` name → what it sets. */
+  styling?: Record<string, string>;
+  /** One line: when this kind is the one to use rather than a neighbour. */
+  whenToUse?: string;
+  /** Jobs this kind looks fit for, each with what does it instead. */
+  notFor?: string[];
 }
 
 /** An entry as written here; the generator adds `tag` and `props` from the registry. */
@@ -55,9 +63,11 @@ export type U2KindDef = Omit<U2KindEntry, 'tag' | 'props'>;
 
 /** The manifest's `kinds`: every definition with the registry tag building it and that tag's
  * settable props, keys in one order; a `partOf` entry also becomes a part of its owner under its
- * noun. Shared by the u2 and ems generators and their drift tests. */
+ * noun, and `notes` (from the usage rules) give a kind its `whenToUse` and `notFor`. Shared by the u2 and ems
+ * generators and their drift tests. */
 export function kindCatalog(defs: readonly U2KindDef[], tagOf: (kind: string) => string | undefined,
-  propsOf: (tag: string) => string[]): U2KindEntry[] {
+  propsOf: (tag: string) => string[],
+  notes: Record<string, Pick<U2KindEntry, 'whenToUse' | 'notFor'>> = {}): U2KindEntry[] {
   const children = new Map<string, Record<string, string>>();
   for (const def of defs) {
     if (def.partOf !== undefined)
@@ -68,7 +78,9 @@ export function kindCatalog(defs: readonly U2KindDef[], tagOf: (kind: string) =>
     const entry: U2KindEntry = {kind: def.kind, noun: def.noun, aliases: def.aliases, family: def.family, tag,
       role: def.role, focusRole: def.focusRole, nameFrom: def.nameFrom,
       parts: {...def.parts, ...children.get(def.kind)}, state: def.state,
-      props: tag === undefined ? [] : propsOf(tag), items: def.items, gestures: def.gestures, partOf: def.partOf};
+      props: tag === undefined ? [] : propsOf(tag), items: def.items, gestures: def.gestures, partOf: def.partOf,
+      interactive: def.interactive, styling: def.styling, whenToUse: notes[def.kind]?.whenToUse ?? def.whenToUse,
+      notFor: notes[def.kind]?.notFor ?? def.notFor};
     for (const key of Object.keys(entry) as (keyof U2KindEntry)[]) {
       if (entry[key] === undefined)
         delete entry[key];
@@ -121,6 +133,15 @@ const INPUT_STATE: U2StateKey[] = ['value', 'text', 'valid', 'error', 'readOnly'
 const PICKER_STATE: U2StateKey[] = [...INPUT_STATE, 'open'];
 const COMBO_STATE: U2StateKey[] = ['value', 'text', 'open', 'placeholder'];
 
+/** What a table's rows are painted with, settable on any element around it. */
+const ROW_STYLING: Record<string, string> = {
+  '--u2-row-base-bg': 'a row at rest',
+  '--u2-row-hover-bg': 'the tint over the row under the pointer',
+  '--u2-row-hover-stripe': 'the stripe at the start of the row under the pointer',
+  '--u2-row-selected-bg': 'a selected row',
+  '--u2-section-header-bg': 'a group\'s header row',
+};
+
 export const U2_KINDS: readonly U2KindDef[] = [
   // --- inputs ---------------------------------------------------------------------------------------
   input('text-input', 'text input', 'textbox', TEXT_STATE, ['type', 'clear'], {aliases: ['text field', 'textbox']}),
@@ -147,6 +168,12 @@ export const U2_KINDS: readonly U2KindDef[] = [
     {items: {role: 'listitem', noun: 'tag', gestures: ['remove']}}),
   input('map-input', 'map input', 'grid', [...INPUT_STATE, 'items'], ['add', 'remove', 'type'],
     {aliases: ['key value input'], items: {role: 'row', noun: 'item', gestures: ['remove']}}),
+  input('records-input', 'records input', 'grid', [...INPUT_STATE, 'items'], ['add', 'remove', 'type', 'drag'],
+    {aliases: ['records editor', 'editable list'], parts: {...INPUT_PARTS, add: '[data-u2-part="add"]',
+      handle: '[data-u2-part="handle"]'}, items: {role: 'row', noun: 'item', gestures: ['remove', 'drag']}}),
+  input('checklist-input', 'checklist', 'list', [...INPUT_STATE, 'items', 'selection'], ['toggle', 'drag'],
+    {aliases: ['checklist input', 'orderable checklist'], parts: {...INPUT_PARTS, handle: '[data-u2-part="handle"]'},
+      items: {role: 'listitem', noun: 'item', gestures: ['toggle', 'drag'], multi: true}}),
   input('color-input', 'color input', 'textbox', INPUT_STATE, ['type', 'pick'], {aliases: ['color picker']}),
   input('icon-input', 'icon input', 'button', PICKER_STATE, ['open', 'pick'], {aliases: ['icon picker']}),
   input('font-input', 'font input', 'textbox', [...PICKER_STATE, 'items', 'selection'], ['open', 'pick'],
@@ -204,6 +231,11 @@ export const U2_KINDS: readonly U2KindDef[] = [
     state: ['label', 'pressed'], gestures: ['press']}),
   def('action', 'dropdown-button', 'dropdown button', {aliases: ['menu button', 'split button'], role: 'button',
     state: ['label', 'open'], gestures: ['press', 'open', 'pick']}),
+  // a value with no form row: its label inside it, its choices in a menu
+  def('action', 'choice-chip', 'choice chip', {role: 'button', nameFrom: ['label', 'aria', 'text'],
+    parts: {label: '[data-u2-part="label"]', value: '[data-u2-part="value"]'},
+    state: ['label', 'value', 'text', 'valid', 'error', 'open', 'items', 'selection'],
+    items: {role: 'menuitemcheckbox', noun: 'menu item', gestures: ['pick']}, gestures: ['open', 'pick']}),
   def('action', 'button-group', 'button group', {aliases: ['segmented control'], role: 'group', nameFrom: ['aria'],
     state: ['value', 'current', 'items'], items: {role: 'button', noun: 'button', gestures: ['press']},
     gestures: ['pick']}),
@@ -244,7 +276,23 @@ export const U2_KINDS: readonly U2KindDef[] = [
       actions: ':scope > [data-u2-part="header"] > [data-u2-part="actions"]'},
     state: ['label', 'selected'], gestures: ['press'],
   }),
-  def('container', 'form', 'form', {role: 'form', nameFrom: ['aria'], state: ['valid', 'error', 'items']}),
+  def('container', 'page', 'page', {nameFrom: ['aria'],
+    parts: {header: ':scope > [data-u2-part="header"]', body: ':scope > [data-u2-part="body"]',
+      footer: ':scope > [data-u2-part="footer"]', 'section title': ':scope > [data-u2-part="body"] > ' +
+        '[data-u2-part="section"] > [data-u2-part="section-header"] > [data-u2-part="section-title"]'},
+    styling: {
+      '--u2-page-max-width': 'the body\'s widest (a CSS length); its forms go as wide',
+      '--u2-page-padding-x': 'the space left and right of the header, the body and the action row; 24px',
+      '--u2-page-padding-y': 'the space above the header and the body; 12px',
+      '--u2-page-gap': 'the space between the sections; 24px',
+      '--u2-page-section-indent': 'how far a section\'s content sits in from its heading; 0',
+    }}),
+  def('container', 'form', 'form', {role: 'form', nameFrom: ['aria'], state: ['valid', 'error', 'items'],
+    styling: {
+      '--u2-form-max-width': 'the widest a form gets (a CSS length); 700px, or as wide as the page in a Page',
+      '--u2-form-label-width': 'the label column\'s width, set by the form as it measures (labelWidth fixes it)',
+      '--u2-form-section-gap': 'the space between two sections of the form; 0',
+    }}),
   def('container', 'object-form', 'object form', {role: 'form', nameFrom: ['aria'],
     state: ['valid', 'error', 'items']}),
   def('container', 'func-form', 'function form', {aliases: ['func form'], role: 'form', nameFrom: ['aria'],
@@ -265,10 +313,26 @@ export const U2_KINDS: readonly U2KindDef[] = [
     gestures: ['select', 'expand', 'collapse']}),
   def('collection', 'table', 'table', {role: 'table', state: ['items', 'selection'],
     parts: {'item-label': '[data-u2-part="item-label"]', 'section': '[data-u2-part="section"]'},
-    items: {role: 'row', noun: 'table row', gestures: ['select']}, gestures: ['select', 'scroll']}),
+    items: {role: 'row', noun: 'table row', gestures: ['select']}, gestures: ['select', 'scroll'],
+    styling: ROW_STYLING}),
   def('collection', 'data-table', 'table', {role: 'grid', state: ['items', 'selection'],
     parts: {'item-label': '[data-u2-part="item-label"]'},
     items: {role: 'row', noun: 'table row', gestures: ['select']}, gestures: ['select', 'scroll']}),
+  // a record list: the extra readings are the sort, the grouping, the columns and the groups' counts
+  def('collection', 'catalog-table', 'catalog table', {aliases: ['records table'], nameFrom: ['aria'],
+    parts: {'item-label': '[data-u2-part="item-label"]', 'section': '[data-u2-part="section"]',
+      'footer': ':scope > [data-u2-part="footer"]'},
+    state: ['items', 'busy', 'extra'],
+    items: {role: 'row', noun: 'table row', gestures: ['expand', 'collapse']}, gestures: ['scroll'],
+    styling: ROW_STYLING}),
+  def('collection', 'master-detail', 'master detail', {aliases: ['list with details'], nameFrom: ['aria'],
+    parts: {list: '[data-u2-part="list"]', detail: '[data-u2-part="detail"]', reason: '[data-u2-part="reason"]'},
+    state: ['current', 'items', 'selection'],
+    items: {role: 'option', noun: 'item', gestures: ['select', 'toggle']}, gestures: ['select', 'toggle'],
+    styling: {'--u2-master-detail-height': 'its height (a CSS length); it fills its host by default',
+      '--u2-row-selected-bg': 'the current row'}}),
+  def('collection', 'column-header', 'column header', {role: 'columnheader', nameFrom: ['text', 'aria'],
+    gestures: ['press']}),
   def('collection', 'grid', 'grid', {aliases: ['virtual grid', 'cell grid'], role: 'listbox',
     state: ['items', 'selection'], items: {role: 'option', noun: 'cell', gestures: ['select', 'pick']},
     gestures: ['select', 'scroll']}),
@@ -293,6 +357,11 @@ export const U2_KINDS: readonly U2KindDef[] = [
     items: {role: 'menuitem', noun: 'menu item', gestures: ['open', 'pick']}, gestures: ['open', 'pick']}),
   def('navigation', 'toolbar', 'toolbar', {role: 'toolbar', state: ['items'],
     items: {role: 'button', noun: 'button', gestures: ['press']}, gestures: ['press']}),
+  // a package's group on a platform view's ribbon (u2/dg ViewHost.ribbon): `extra.folded` once the icons
+  // are in its "…" menu
+  def('navigation', 'ribbon-group', 'ribbon group', {aliases: ['package ribbon'], role: 'toolbar',
+    parts: {'more button': '[data-u2-part="more"]'}, state: ['items', 'extra'],
+    items: {role: 'button', noun: 'ribbon button', gestures: ['press']}, gestures: ['press']}),
 
   // --- overlays -------------------------------------------------------------------------------------
   def('overlay', 'dialog', 'dialog', {role: 'dialog',
@@ -322,6 +391,10 @@ export const U2_KINDS: readonly U2KindDef[] = [
   def('display', 'stat-card', 'stat card', {aliases: ['stat'], nameFrom: ['label', 'text'],
     parts: {label: '[data-u2-part="label"]', value: '[data-u2-part="value"]', delta: '[data-u2-part="delta"]'},
     state: ['label', 'value', 'text', 'extra']}),
+  def('display', 'app-header', 'app header', {aliases: ['app hero'], nameFrom: ['label', 'aria'],
+    parts: {'icon': '[data-u2-part="icon"]', 'title': '[data-u2-part="title"]',
+      'subtitle': '[data-u2-part="subtitle"]', 'learn more': '[data-u2-part="learn-more"]'},
+    state: ['label', 'items', 'extra'], items: {role: 'listitem', noun: 'header item', gestures: []}}),
   def('display', 'progress-bar', 'progress bar', {aliases: ['progress'], role: 'progressbar',
     nameFrom: ['label', 'aria'], parts: {label: '[data-u2-part="label"]', track: '[data-u2-part="track"]',
       percent: '[data-u2-part="percent"]'}, state: ['value', 'text', 'busy']}),

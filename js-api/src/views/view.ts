@@ -120,6 +120,9 @@ export class ViewBase extends Widget {
   get parentCall(): FuncCall | undefined { return toJs(api.grok_View_Get_ParentCall(this.dart)); }
   set parentCall(s: FuncCall | undefined) { api.grok_View_Set_ParentCall(this.dart, toDart(s)); }
 
+  /** The view this one was opened from. The ribbon shows it as a crumb before this view's name (a
+   * {@link TableView} only with {@link TableView.showParentCrumb}), and closing this view while it is current makes
+   * the parent current if the parent is still open. */
   get parentView(): ViewBase { return toJs(api.grok_View_Get_ParentView(this.dart)); }
   set parentView(s: ViewBase) { api.grok_View_Set_ParentView(this.dart, toDart(s)); }
 
@@ -641,6 +644,26 @@ export class TableView extends View {
 
   get syncCurrentObject(): boolean { return api.grok_TableView_Get_SyncCurrentObject(this.dart); }
   set syncCurrentObject(x: boolean) { api.grok_TableView_Set_SyncCurrentObject(this.dart, x); }
+
+  /** Whether the ribbon shows {@link parentView} as a crumb before the table's name: "Parent › Table", the
+   * parent a link as in {@link ui.breadcrumbs}, the table's name as the ribbon shows it, and a click on the parent
+   * makes it current. Off by default, since a table opened from a view's tree inherits that view as its parent.
+   * Takes effect at once, also on the current view.
+   * @example
+   * const home = grok.shell.newView('Home');
+   * const tv = grok.shell.addTableView(grok.data.demo.demog());
+   * tv.parentView = home;
+   * tv.showParentCrumb = true;
+   * @see {@link https://public.datagrok.ai/js/samples/ui/views/table-view-parent-crumb} */
+  get showParentCrumb(): boolean { return api.grok_TableView_Get_ShowParentCrumb(this.dart); }
+  set showParentCrumb(x: boolean) { api.grok_TableView_Set_ShowParentCrumb(this.dart, x); }
+
+  /** Whether the ribbon shows the Save button, which saves the table's project (on by default). An app that
+   * saves the data its own way turns it off; the rest of the ribbon, `getRibbonPanels()` /
+   * `setRibbonPanels()` round-trips included, stays as it is.
+   * @see {@link https://public.datagrok.ai/js/samples/ui/views/table-view-no-save} */
+  get showSaveButton(): boolean { return api.grok_TableView_Get_ShowSaveButton(this.dart); }
+  set showSaveButton(x: boolean) { api.grok_TableView_Set_ShowSaveButton(this.dart, x); }
 
   saveState(): string {
     return api.grok_TableView_SaveState(this.dart);

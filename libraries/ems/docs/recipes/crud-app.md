@@ -18,8 +18,8 @@ export async function stockroomApp(): Promise<DG.ViewBase> {
 ```
 
 The other two tiers build on the same handle: [spec-app](spec-app.md) lays the page out as a
-designer-editable spec, [custom-app](custom-app.md) adds actions, validators, renderers and an app
-subclass in code.
+designer-editable spec, [custom-app](custom-app.md) adds actions, validators, renderers and the
+app's own ribbon, menu, shortcuts and setup in code.
 
 ## What the schema declares → what the app shows
 
@@ -60,9 +60,10 @@ under its own `SharedSession`:
 - **The ribbon** is `DomainApp.ribbon()`, three named slots: `main` — New as an icon button,
   Save (Ctrl+S; Tab from the form's last field lands on it) the one raised button, Discard, the
   ⋮ **Actions** menu (below), Refresh shown only while the page is stale; `tools` — the
-  search box and the Sort by menu, on the list page only; `presets` — empty unless a subclass
-  fills it. New is hidden without `insert`; Discard is disabled while there is nothing to save,
-  except on an untouched create page, which it leaves. The filter box is a row of the list page,
+  search box and the Sort by menu, on the list page only; `presets` — empty unless the `ribbon`
+  option fills it. New is hidden without `insert`; Save and Discard are off while there is nothing to save
+  and say so ("No changes to save", "Nothing to discard"), except Discard on an untouched create page,
+  which it leaves. The filter box is a row of the list page,
   under the ribbon.
 - **The status bar** is the session's summary while it is dirty ("3 unsaved changes in 2 tables"),
   else the page's ("50 of 2,077 substances", "New substance", "Substance saved"). A `live` source that has
@@ -76,19 +77,19 @@ under its own `SharedSession`:
 |---|---|
 | `name`, `path` | the view's name (the plural name by default) and its base path |
 | `query`, `sort`, `pageSize`, `mode: 'brief' \| 'cards'`, `itemHeight` | the list page's initial query, order, page size, row shape and row height |
-| `live`, `defaults`, `filters`, `menu` | following the server, what a draft starts with, the filter box or builder (`placement: 'left'`), and `{bulkEdit: false}` to drop Bulk edit — see [dg.md](../dg.md) |
+| `live`, `defaults`, `filters` | following the server, what a draft starts with, the filter box or builder (`placement: 'left'`) — see [dg.md](../dg.md) |
 | `include: string[]` | the form's columns, in this order |
 | `children: false \| {tables, mode: 'grid' \| 'list', grids}`, `history: false` | the entity-page panes (both on by default) |
-| `shortcuts`, `app` | keys onto the table's actions, and a `DomainApp` subclass — the [code tier](custom-app.md) |
+| `shortcuts`, `ribbon`, `menu`, `setup` | keys onto the table's actions, and the app's own ribbon, Actions menu and wiring — the [code tier](custom-app.md) |
 
 ## The Actions menu: import, bulk edit, the deleted rows
 
 The ribbon's ⋮ Actions menu is `DomainApp.menuActions()`, in sections, each item gated on the
 capability it needs, so a caller without it never sees the item: on the entity page the row's own
 actions first (the table's row actions, then Delete); Import… and Bulk edit…; then **Show deleted**.
-`menu: {bulkEdit: false}` drops a built-in item. A `DomainApp` subclass that adds to the
-ribbon keeps them (`({...super.ribbon(), presets: [this.presets(…)]})`); one that overrides
-`menuActions()` should extend the result rather than replace it.
+The `menu` option drops or adds an item (`menu: (base) => base.filter((a) => a.name !== 'Bulk edit…')`);
+it should extend the list rather than replace it. A `ribbon` option that adds to the ribbon keeps
+them (`ribbon: (base, app) => ({...base, presets: [app.presets(…)]})`).
 
 ### Trash and restore
 
@@ -169,7 +170,7 @@ renamed source column never reaches the server, and the source frame is never to
 ## Rules the controls follow (so the app does not re-implement them)
 
 - **Permission ⇒ hidden, state ⇒ disabled.** A column the caller may not see is absent; a row
-  action they may not run is absent; Save is disabled while there is nothing to save.
+  action they may not run is absent; Save is off while there is nothing to save, and says why.
 - **Readonly is text.** A column the caller may not write — the table says so, the row does
   (`~can_edit`), or a draft under a caller without `insert` — is caption + value, never a dead
   input, and never in the payload.
@@ -194,7 +195,7 @@ renamed source column never reaches the server, and the source frame is never to
 
 - A `grok.dapi.domains.table(...).update(...)` behind a Save button — `app()` already saves every
   pending row as one transaction.
-- Re-declaring in code what the schema says (`if (!access.can.edit) input.enabled = false`, a
+- Re-declaring in code what the schema says (`if (!access.can('edit')) input.disabled = 'Read-only'`, a
   hand-written "required" check) — declare it in `schema.json` and every tier gets it.
 - A second view over the same table for "create" — New is the entity page over a draft.
 - A `for (const id of selected) await client.update(id, values)` loop behind a "Close all" button —

@@ -1,7 +1,7 @@
 /* TagsInput: chips over T, suggestion popup (sync and async), free creation, the keyboard
    contract, and the per-render scopes that keep rendered rows and chips leak-free. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
@@ -37,7 +37,7 @@ function box(input) {
 }
 
 function chips(input) {
-  return input.root.querySelectorAll('.u2-tags-chip .u2-tag-text').map((el) => el.textContent);
+  return [...input.root.querySelectorAll('.u2-tags-chip .u2-tag-text')].map((el) => el.textContent);
 }
 
 function popup() {
@@ -45,7 +45,7 @@ function popup() {
 }
 
 function rows() {
-  return popup().querySelectorAll('.u2-tags-option');
+  return [...popup().querySelectorAll('.u2-tags-option')];
 }
 
 function type(input, text) {
@@ -97,7 +97,7 @@ smoke('picking a suggestion adds a chip, clears the box and drops the item from 
 
     fire(rows()[0], 'pointerdown');
     await flush();
-    assert.deepEqual(input.value.value, ['acid']);
+    assert.deepEqual(input.value, ['acid']);
     assert.deepEqual(chips(input), ['acid']);
     assert.equal(changes.length, 1);
     assert.equal(box(input).value, '', 'the box is cleared for the next tag');
@@ -110,7 +110,7 @@ smoke('picking a suggestion adds a chip, clears the box and drops the item from 
 
     fire(input.root.querySelectorAll('.u2-tag-remove')[0], 'click');
     await flush();
-    assert.deepEqual(input.value.value, []);
+    assert.deepEqual(input.value, []);
     assert.deepEqual(chips(input), []);
     input.dispose();
   });
@@ -136,7 +136,7 @@ smoke('keyboard: arrows and Home/End move, Enter accepts, Esc closes, Backspace 
 
     key(input, 'Enter');
     await flush();
-    assert.deepEqual(input.value.value, ['acid']);
+    assert.deepEqual(input.value, ['acid']);
     assert.equal(input.isOpen.value, false);
 
     key(input, 'ArrowDown');
@@ -147,12 +147,12 @@ smoke('keyboard: arrows and Home/End move, Enter accepts, Esc closes, Backspace 
     assert.equal(popup(), null, 'the overlay is gone');
 
     key(input, 'Backspace');
-    assert.deepEqual(input.value.value, [], 'Backspace on an empty box drops the last chip');
+    assert.deepEqual(input.value, [], 'Backspace on an empty box drops the last chip');
 
-    input.value.value = ['acid'];
+    input.value = ['acid'];
     type(input, 'ba');
     key(input, 'Backspace');
-    assert.deepEqual(input.value.value, ['acid'], 'but never while something is typed');
+    assert.deepEqual(input.value, ['acid'], 'but never while something is typed');
     input.dispose();
   });
 
@@ -170,7 +170,7 @@ smoke('an Enter that adds a chip is consumed; one that does nothing reaches the 
   key(input, 'ArrowDown');
   key(input, 'Enter');
   await flush();
-  assert.deepEqual(input.value.value, ['acid']);
+  assert.deepEqual(input.value, ['acid']);
   assert.deepEqual(seen, [], 'the accepting Enter never bubbles to the dialog around it');
 
   key(input, 'Enter');
@@ -191,14 +191,14 @@ smoke('Ctrl+Enter belongs to the hosting dialog, not to the box', async () => {
   type(input, 'ketone');
   await flush();
   key(input, 'Enter', {ctrlKey: true});
-  assert.deepEqual(input.value.value, [], 'Ctrl+Enter never creates a tag');
+  assert.deepEqual(input.value, [], 'Ctrl+Enter never creates a tag');
   assert.deepEqual(seen, ['ctrl'], 'and reaches the dialog OK it is meant for');
 
   key(input, 'Enter', {metaKey: true});
-  assert.deepEqual(input.value.value, [], 'the same on macOS');
+  assert.deepEqual(input.value, [], 'the same on macOS');
 
   key(input, 'Enter');
-  assert.deepEqual(input.value.value, ['ketone'], 'a plain Enter still creates');
+  assert.deepEqual(input.value, ['ketone'], 'a plain Enter still creates');
   document.body.removeEventListener('keydown', host);
   input.dispose();
 });
@@ -208,30 +208,30 @@ smoke('allowNew: Enter turns the typed text into an item, deduplicating by text'
   type(plain, 'ketone');
   await flush();
   key(plain, 'Enter');
-  assert.deepEqual(plain.value.value, [], 'creating is off by default');
+  assert.deepEqual(plain.value, [], 'creating is off by default');
   plain.dispose();
 
-  const input = mount(new TagsInput({label: 'Tags', items: KEYWORDS, allowNew: true}));
+  const input = mount(testOwner().build(() => new TagsInput({label: 'Tags', items: KEYWORDS, allowNew: true})));
   type(input, 'ketone');
   await flush();
   key(input, 'Enter');
   await flush();
-  assert.deepEqual(input.value.value, ['ketone']);
+  assert.deepEqual(input.value, ['ketone']);
   assert.deepEqual(chips(input), ['ketone']);
   assert.equal(box(input).value, '');
 
   type(input, 'ketone');
   await flush();
   key(input, 'Enter');
-  assert.deepEqual(input.value.value, ['ketone'], 'the same text never doubles up');
+  assert.deepEqual(input.value, ['ketone'], 'the same text never doubles up');
   input.dispose();
 
-  const typed = mount(new TagsInput({label: 'Users', items: USERS, allowNew: true,
-    itemText: (u) => u.name, createItem: (text) => ({id: 0, name: text})}));
+  const typed = mount(testOwner().build(() => new TagsInput({label: 'Users', items: USERS, allowNew: true,
+    itemText: (u) => u.name, createItem: (text) => ({id: 0, name: text})})));
   type(typed, 'Dave');
   await flush();
   key(typed, 'Enter');
-  assert.deepEqual(typed.value.value, [{id: 0, name: 'Dave'}], 'createItem builds the object');
+  assert.deepEqual(typed.value, [{id: 0, name: 'Dave'}], 'createItem builds the object');
   typed.dispose();
 });
 
@@ -253,31 +253,31 @@ smoke('renderer: chips use markup, rows use listItem, and caption is the fallbac
       },
     };
     const input = mount(new TagsInput({label: 'Users', items: USERS, renderer, value: [USERS[0]]}));
-    assert.deepEqual(input.root.querySelectorAll('.demo-chip').map((el) => el.textContent), ['@Alice']);
+    assert.deepEqual([...input.root.querySelectorAll('.demo-chip')].map((el) => el.textContent), ['@Alice']);
 
     type(input, 'o');
     await flush();
-    assert.deepEqual(popup().querySelectorAll('.demo-row').map((el) => el.textContent),
+    assert.deepEqual([...popup().querySelectorAll('.demo-row')].map((el) => el.textContent),
       ['Bob (2)', 'Carol (3)']);
 
     fire(rows()[0], 'pointerdown');
     await flush();
-    assert.deepEqual(input.value.value.map((u) => u.name), ['Alice', 'Bob']);
-    assert.deepEqual(input.root.querySelectorAll('.demo-chip').map((el) => el.textContent),
+    assert.deepEqual(input.value.map((u) => u.name), ['Alice', 'Bob']);
+    assert.deepEqual([...input.root.querySelectorAll('.demo-chip')].map((el) => el.textContent),
       ['@Alice', '@Bob']);
     input.dispose();
   });
 
-smoke('deleteEnabled hides the ✕ and protects the chip from Backspace', async () => {
+smoke('deletable hides the ✕ and protects the chip from Backspace', async () => {
   const input = mount(new TagsInput({label: 'Tags', items: KEYWORDS, value: ['acid', 'base'],
-    deleteEnabled: (item) => item !== 'acid'}));
-  assert.deepEqual(input.root.querySelectorAll('.u2-tag-remove').map((b) => b.getAttribute('aria-label')),
+    deletable: (item) => item !== 'acid'}));
+  assert.deepEqual([...input.root.querySelectorAll('.u2-tag-remove')].map((b) => b.getAttribute('aria-label')),
     ['Remove base']);
 
   key(input, 'Backspace');
-  assert.deepEqual(input.value.value, ['acid'], 'the deletable one goes');
+  assert.deepEqual(input.value, ['acid'], 'the deletable one goes');
   key(input, 'Backspace');
-  assert.deepEqual(input.value.value, ['acid'], 'the protected one stays');
+  assert.deepEqual(input.value, ['acid'], 'the protected one stays');
   input.dispose();
 });
 

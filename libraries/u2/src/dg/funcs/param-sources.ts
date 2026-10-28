@@ -128,7 +128,7 @@ export class ParamSource {
     const cleanup = () => this._dispose();
     owner.own(cleanup);
     this._disown = () => owner.disown(cleanup);
-    Scope.runWith(this._scope, () => {
+    this._scope.build(() => {
       this._av = new AsyncValue(() => this._call.evalParamChoices!(this._name),
         {deps: () => { this._version.value; }, debounceMs: 200});
       this._scope.effect(() => this._onState(this._av.state.value));

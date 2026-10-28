@@ -10,7 +10,7 @@ import {asDartInput, tableInput, columnInput, leakReport, propertyForm, IPropert
   userInput, entityInput, chip, EntityChip, entityCard, handlerRenderer,
   moleculeInput, moleculeRenderer, fileInput, filesInput, rsaInput, tablesInput,
   columnsInput, columnsMapInput, aggregatedColumnsInput}
-  from '@datagrok-libraries/u2/src/dg/index.js';
+  from '@datagrok-libraries/u2/dg';
 import {readout, DRUGS} from './common';
 
 export function filesPage(): HTMLElement {
@@ -28,11 +28,11 @@ export function filesPage(): HTMLElement {
     'u2demo-hint'),
     h3('File and key pickers'),
     form.root,
-    readout('file', computed(() => file.value.value?.name ?? '(none)')),
+    readout('file', computed(() => file.value?.name ?? '(none)')),
     readout('files', computed(() =>
-      files.value.value.map((f) => f.name).join(', ') || '(none)')),
+      files.value.map((f) => f.name).join(', ') || '(none)')),
     readout('key', computed(() => {
-      const v = key.value.value;
+      const v = key.value;
       return v ? `${v.length} characters` : '(none)';
     })),
   ], 'u2demo-page');
@@ -55,13 +55,13 @@ export function dataframesPage(): HTMLElement {
   return divV([
     h3('Tables and columns'),
     form.root,
-    readout('table', table.value),
-    readout('demog column', demogColumn.value),
-    readout('column', computed(() => column.value.value ?? '(none)')),
-    readout('tables', computed(() => tables.value.value.join(', ') || '(none)')),
-    readout('columns', computed(() => columns.value.value.join(', ') || '(none)')),
-    readout('mapping', computed(() => JSON.stringify(mapping.value.value))),
-    readout('aggregations', computed(() => JSON.stringify(aggregations.value.value))),
+    readout('table', table.signal),
+    readout('demog column', demogColumn.signal),
+    readout('column', computed(() => column.value ?? '(none)')),
+    readout('tables', computed(() => tables.value.join(', ') || '(none)')),
+    readout('columns', computed(() => columns.value.join(', ') || '(none)')),
+    readout('mapping', computed(() => JSON.stringify(mapping.value))),
+    readout('aggregations', computed(() => JSON.stringify(aggregations.value))),
   ], 'u2demo-page');
 }
 
@@ -127,7 +127,7 @@ export function spacesPage(): HTMLElement {
     const x = picked.value;
     shown?.dispose();
     shown = new Scope();
-    preview.replaceChildren(Scope.runWith(shown, () => x ?
+    preview.replaceChildren(shown.build(() => x ?
       divV([
         entityCard(x).root,
         divH([chip(x).root, button('Open', () => void x.open())], 'u2demo-row'),
@@ -155,7 +155,7 @@ export function moleculesPage(): HTMLElement {
       'has Chem published.', 'u2demo-hint')], 'u2demo-page');
   }
   const structure = moleculeInput('Structure');
-  structure.value.value = DRUGS[0].smiles;
+  structure.value = DRUGS[0].smiles;
 
   const compound = {name: 'Aspirin', smiles: DRUGS[0].smiles, mw: 180.16};
   const props: IProperty[] = [
@@ -191,7 +191,7 @@ export function moleculesPage(): HTMLElement {
     'u2demo-hint'),
     h3('moleculeInput — the platform sketcher as a u2 Input<string>'),
     structure,
-    readout('smiles', computed(() => structure.value.value || '(empty)')),
+    readout('smiles', computed(() => structure.value || '(empty)')),
     h3('propertyForm — the Structure field is picked by semType: Molecule'),
     form.root,
     readout('compound', computed(() => {
@@ -215,7 +215,7 @@ export function bridgePage(): HTMLElement {
     bridged.addValidator((v) => v.trim() ? null : 'Required');
     ui.dialog('u2 input, platform dialog')
       .add(asDartInput(bridged))
-      .onOK(() => grok.shell.info(`Compound: ${bridged.value.value}`))
+      .onOK(() => grok.shell.info(`Compound: ${bridged.value}`))
       .show();
   };
 

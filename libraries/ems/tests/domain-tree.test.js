@@ -1,14 +1,9 @@
-/* `domains.tree` (WO 3-10) over the memory backend's 3-level location tree: the roots are the
-   rows with no parent, a branch reads its children when it is opened, `expandTo` walks the row's
-   ancestors (which EXCLUDE the row) and lands on it, the selection is a signal, and a table the
-   schema does not declare a hierarchy is refused by name. The rows are plain query records —
-   nothing here loads a frame or a writer. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, Registry, SpecContext, renderSpec, registerAll} from '@datagrok-libraries/u2';
 import {backend, hierarchyBackend, TREE} from './domain-fixtures.mjs';
 
@@ -39,17 +34,17 @@ function scoped(name, body) {
 }
 
 /** The rows the tree has flattened into the list, in order. */
-const labels = (t) => t.tree.root.querySelectorAll('.u2-tree-label').map((el) => el.textContent);
+const labels = (t) => [...t.tree.root.querySelectorAll('.u2-tree-label')].map((el) => el.textContent);
 
-/** The shim lays nothing out: the scroller inside the tree is the element that needs a viewport. */
+/** The test DOM lays nothing out: the scroller inside the tree is the element that needs a viewport. */
 function viewport(t, height = 400) {
-  t.tree.root.querySelector('.u2-list').clientHeight = height;
+  layout(t.tree.root.querySelector('.u2-list'), {clientHeight: height});
 }
 
 async function tree(options = {}, be = hierarchyBackend()) {
   emsBackends.domain = be;
   const table = await domains.table('stock.location');
-  const t = domains.tree(table, options);
+  const t = testOwner().build(() => domains.tree(table, options));
   document.body.append(t.root);
   viewport(t);
   await flush();
@@ -58,7 +53,7 @@ async function tree(options = {}, be = hierarchyBackend()) {
 
 /** Opens the branch the label names by clicking its twistie. */
 async function open(t, label) {
-  const row = t.tree.root.querySelectorAll('.u2-tree-row')
+  const row = [...t.tree.root.querySelectorAll('.u2-tree-row')]
     .find((el) => el.querySelector('.u2-tree-label')?.textContent === label);
   fire(row.querySelector('.u2-tree-twistie'), 'click', {bubbles: true});
   await flush();
@@ -203,7 +198,7 @@ scoped('the selected node can be given back: clicking it again, Escape, and the 
 
 scoped('a branch that answers with no children keeps no twistie', async () => {
   const {tree: t} = await tree();
-  const twistie = (label) => t.tree.root.querySelectorAll('.u2-tree-row')
+  const twistie = (label) => [...t.tree.root.querySelectorAll('.u2-tree-row')]
     .find((el) => el.querySelector('.u2-tree-label')?.textContent === label)
     .querySelector('.u2-tree-twistie');
   assert.equal(twistie('Other site').className.includes('u2-tree-twistie-hidden'), false,

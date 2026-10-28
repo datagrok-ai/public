@@ -26,7 +26,7 @@ export class PropertyDialog {
     const manifest = await handle.manifest() as unknown as ManifestJson;
     const name = table === undefined ? manifest.name : manifest.tables[table]?.['singularName'] as string ?? table;
     const dialog = Dialog.create(`${name.charAt(0).toUpperCase()}${name.slice(1)} properties`, {name: 'properties'});
-    const editor = dialog.runInScope(() => new ManifestEditor(null, {context: {mode: 'extend', storage: 'domain'},
+    const editor = dialog.build(() => new ManifestEditor(null, {context: {mode: 'extend', storage: 'domain'},
       baseline: manifest, columnOptions: OPTIONS.map((option) => DG.Property.propertyOptions[option]!)}));
     const changes = computed(() => {
       editor.model.revision.value;
@@ -95,7 +95,7 @@ export class PropertyDialog {
     return new Promise((resolve) => {
       let answer = false;
       const dialog = Dialog.create('Save these changes?', {name: 'properties-confirm'});
-      const box = dialog.runInScope(() => new BoolInput({label: `Delete ${plural(lost, 'stored value', 'stored values')}`,
+      const box = dialog.build(() => new BoolInput({label: `Delete ${plural(lost, 'stored value', 'stored values')}`,
         name: 'confirmDestructive', visible: lost > 0, onChanged: (v) => confirmed.value = v}));
       dialog.add(divV([...lines, box.root], 'u2-binding-changes'))
         .okDisabled(computed(() => confirmed.value ? null : 'Confirm the deletion first'))

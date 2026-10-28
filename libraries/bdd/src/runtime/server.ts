@@ -1,6 +1,3 @@
-/* Endpoints the JS API does not wrap (chats, global permissions), called with the page's session —
-   shared by the platform bindings and by a package's own bindings, so a suite never hand-rolls a
-   fetch against the server. */
 import {Page} from '@playwright/test';
 import {atFeatureEnd} from './harness.js';
 import {expect, pollMs} from './patience.js';

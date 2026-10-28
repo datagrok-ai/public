@@ -4,15 +4,16 @@ import * as DG from 'datagrok-api/dg';
 import {domains} from '@datagrok-libraries/ems/src/dg';
 import type {DomainApp, DomainViewEntry} from '@datagrok-libraries/ems/src/dg';
 import {moltrackDb} from '../generated/db';
-import {CompoundsApp} from './compounds';
+import {Compounds} from './compounds';
 import {MolTrackTables, SCHEMA} from './tables';
-import {u2} from '@datagrok-libraries/utils/src/u2';
+import {AppHeader} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 import {_package} from '../package';
 
 import '@datagrok-libraries/ems/src/dg/styles.js';
 import '../../css/moltrack.css';
 
-export const APP_PATH = '/apps/Moltrack/MolTrack';
+export const APP_PATH = '/apps/Moltrack';
 
 const FILTERS = {filters: {mode: 'builder' as const, placement: 'left' as const}};
 
@@ -22,8 +23,8 @@ const BATCH_GRID = {open: 'batch_regno', columns: ['batch_regno', 'source', 'sou
 const KEYS: Record<string, string> = {[`${SCHEMA}.compound`]: 'molregno', [`${SCHEMA}.compound_batch`]: 'batch_regno'};
 
 const ENTRIES: DomainViewEntry[] = [
-  {table: `${SCHEMA}.compound`, name: 'Compounds', options: {...FILTERS, sort: '!molregno', app: CompoundsApp,
-    mode: 'cards', itemHeight: 88, exclude: CompoundsApp.DERIVED,
+  {table: `${SCHEMA}.compound`, name: 'Compounds', options: {...FILTERS, sort: '!molregno',
+    mode: 'cards', itemHeight: 88, exclude: Compounds.DERIVED, setup: Compounds.setup, menu: Compounds.menu,
     children: {tables: ['compound_batch'], grids: {compound_batch: BATCH_GRID}}}},
   {table: `${SCHEMA}.compound_batch`, name: 'Batches', options: {...FILTERS, sort: '!batch_regno',
     children: {tables: ['batch_addition', 'assay_result']}}},
@@ -43,7 +44,7 @@ const VIEWS = domains.views({
 });
 
 export class MolTrackEms {
-  static async open(address = ''): Promise<DG.ViewBase> {
+  static async open(address = ''): Promise<DG.ViewBase | null> {
     const target = await MolTrackEms._corporateLink(address) ?? address;
     return target.replace(/^\//, '') === '' ? MolTrackEms.home() : VIEWS.open(target);
   }
@@ -74,7 +75,9 @@ export class MolTrackEms {
     });
     const content = ui.divH([counts, actions]);
     content.classList.add('moltrack-home');
-    const view = DG.View.fromRoot(ui.divV([MolTrackEms._header(), content]));
+    const page = ui.divV([content]);
+    const view = DG.View.fromRoot(page);
+    page.prepend(ViewHost.of(view).build(() => MolTrackEms._header()));
     view.name = 'MolTrack';
     view.path = APP_PATH;
     return view;
@@ -96,16 +99,18 @@ export class MolTrackEms {
   }
 
   private static _header(): HTMLElement {
-    return u2.appHeader({
-      iconPath: _package.webRoot + '/images/moltrack.png',
-      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/MolTrack/README.md',
-      description: '- Chemical compound registration system\n' +
-        '- Analyze assay data\n' +
-        '- Find contextual information on molecules.\n',
-      appTitle: 'MolTrack',
-      appSubTitle: 'Track, analyze, and manage chemical data',
+    return new AppHeader({
+      icon: _package.webRoot + '/images/moltrack.png',
+      learnMore: 'https://github.com/datagrok-ai/public/blob/master/packages/MolTrack/README.md',
+      items: [
+        'Chemical compound registration system',
+        'Analyze assay data',
+        'Find contextual information on molecules.',
+      ],
+      title: 'MolTrack',
+      subtitle: 'Track, analyze, and manage chemical data',
       bottomLine: true,
-    });
+    }).root;
   }
 
   private static _quickActions(links: {label: string; run: () => void}[]): HTMLElement {

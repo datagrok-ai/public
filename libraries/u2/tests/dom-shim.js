@@ -1,6 +1,7 @@
 /* Minimal DOM for node: enough to construct u2 components, dispatch events and read back
    attributes, classes and text. Layout metrics (rects, offsetWidth, clientWidth) are settable
-   fakes — nothing here lays anything out. Installed on import; no dependencies. */
+   fakes — nothing here lays anything out. Installed on import; no dependencies. The test runner uses happy-dom
+   (happy-dom.mjs) and sends this module's imports there; `U2_DOM=shim` and importers outside it get this shim. */
 
 const DEFAULT_STYLE = {
   position: 'static', display: 'block', direction: 'ltr',
@@ -283,6 +284,15 @@ class Node extends EventTargetBase {
     return node === document;
   }
 
+  /** What a failing `assert.equal(elementA, elementB)` prints: the tag, never a walk of the whole node graph (which
+   * took ~90 s). */
+  [Symbol.for('nodejs.util.inspect.custom')]() {
+    if (!(this instanceof Element))
+      return this.nodeName;
+    const cls = this.className;
+    return `<${this.tagName.toLowerCase()}${cls ? ` class="${cls}"` : ''}>`;
+  }
+
   get parentElement() {
     return this.parentNode instanceof Element ? this.parentNode : null;
   }
@@ -416,6 +426,10 @@ class Element extends Node {
 
   get children() {
     return this.childNodes.filter((c) => c instanceof Element);
+  }
+
+  get firstElementChild() {
+    return this.children[0] ?? null;
   }
 
   get lastElementChild() {
@@ -699,8 +713,8 @@ function collect(root, visit) {
   }
 }
 
-/* Selector subset: tag, .class, #id, [attr], [attr="value"], :not(...), comma lists and
-   descendant combinators. Any other pseudo-class never matches. */
+/* Selector subset: tag, .class, #id, [attr], [attr="value"], :not(...), comma lists, descendant and
+   child (`>`) combinators. Any other pseudo-class never matches. */
 const selectorCache = new Map();
 
 function splitTop(text, separator) {
@@ -749,13 +763,41 @@ function parseCompound(text) {
   return compound;
 }
 
+/** Each comma part as its compounds left to right; `child` says the one before is its parent, not an ancestor. */
 function parseSelector(selector) {
   let parsed = selectorCache.get(selector);
   if (!parsed) {
-    parsed = splitTop(selector, ',').map((part) => splitTop(part, ' ').map(parseCompound));
+    parsed = splitTop(selector, ',').map((part) => {
+      const chain = [];
+      let child = false;
+      for (const token of splitTop(part.replace(/>/g, ' > '), ' ')) {
+        if (token === '>')
+          child = true;
+        else {
+          chain.push({...parseCompound(token), child});
+          child = false;
+        }
+      }
+      return chain;
+    });
     selectorCache.set(selector, parsed);
   }
   return parsed;
+}
+
+/** Whether `el` matches `chain[index]` and an ancestor (its parent, for a child combinator) the part before it. */
+function matchesChain(el, chain, index) {
+  if (!matchesCompound(el, chain[index]))
+    return false;
+  if (index === 0)
+    return true;
+  if (chain[index].child)
+    return el.parentNode instanceof Element && matchesChain(el.parentNode, chain, index - 1);
+  for (let ancestor = el.parentNode; ancestor instanceof Element; ancestor = ancestor.parentNode) {
+    if (matchesChain(ancestor, chain, index - 1))
+      return true;
+  }
+  return false;
 }
 
 function matchesCompound(el, compound) {
@@ -779,20 +821,7 @@ function matchesCompound(el, compound) {
 }
 
 function matchesSelector(el, selector) {
-  for (const chain of parseSelector(selector)) {
-    if (!matchesCompound(el, chain[chain.length - 1]))
-      continue;
-    let index = chain.length - 2;
-    let ancestor = el.parentNode;
-    while (index >= 0 && ancestor instanceof Element) {
-      if (matchesCompound(ancestor, chain[index]))
-        index--;
-      ancestor = ancestor.parentNode;
-    }
-    if (index < 0)
-      return true;
-  }
-  return false;
+  return parseSelector(selector).some((chain) => matchesChain(el, chain, chain.length - 1));
 }
 
 class Document extends EventTargetBase {
@@ -864,8 +893,27 @@ function getComputedStyle(el) {
 const windowTarget = new EventTargetBase();
 const location = {href: 'http://localhost/', pathname: '/', search: '', hash: ''};
 
+/** The address bar moves, with no navigation and no back stack. */
+class History {
+  constructor() {
+    this.state = null;
+  }
+
+  pushState(state, title, url) {
+    History.prototype.replaceState.call(this, state, title, url);
+  }
+
+  replaceState(state, _title, url) {
+    this.state = state;
+    if (url === undefined || url === null)
+      return;
+    const next = new URL(url, location.href);
+    Object.assign(location, {href: next.href, pathname: next.pathname, search: next.search, hash: next.hash});
+  }
+}
+
 Object.assign(globalThis, {
-  window: globalThis, document, location, Node, Text, Element, HTMLElement, HTMLDivElement, HTMLInputElement,
+  window: globalThis, document, location, History, history: new History(), Node, Text, Element, HTMLElement, HTMLDivElement, HTMLInputElement,
   HTMLTextAreaElement, HTMLSelectElement, HTMLButtonElement, HTMLAnchorElement, HTMLOptionElement,
   ShadowRoot, DOMRect, Option, Event: DomEvent, CustomEvent, KeyboardEvent, MouseEvent, PointerEvent,
   WheelEvent, MutationObserver, ResizeObserver, getComputedStyle, requestAnimationFrame,

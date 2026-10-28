@@ -83,7 +83,7 @@ export async function render(main) {
   section('Changing the items', () => {
     series = new RadioInput({label: 'Series', items: ['Series A', 'Series B', 'Series C'],
       value: 'Series B'});
-    return [series, readout('series', computed(() => shown(series.value.value)))];
+    return [series, readout('series', computed(() => shown(series.value)))];
   });
   main.append(el('p', 'u2-gallery-status',
     'setItems keeps the value while its item survives, and clears it when the item is gone.'));

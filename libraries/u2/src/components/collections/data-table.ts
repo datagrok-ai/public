@@ -5,9 +5,11 @@
 
 import {Signal} from '../../core/signals.js';
 import type {ReadonlySignal} from '../../core/signals.js';
+import {Format} from '../../core/format.js';
 import {icon} from '../display/icon.js';
 import {textWidth} from '../../core/text.js';
 import {VirtualRows} from './list.js';
+import {SortOrder} from './sort-order.js';
 import type {VirtualRowsOptions} from './list.js';
 import type {RowsLike} from '../../sources/rows-like.js';
 
@@ -16,12 +18,13 @@ export interface DataTableColumn<T> {
   name: string;
   /** The header text; the column name by default. */
   header?: string;
-  /** A CSS grid track (`'120px'`, `'2fr'`); an equal share of the width by default. */
+  /** A CSS grid track (`'120px'`, `'2fr'`); by default an equal share of the width, never under 80px — a pane too
+   * narrow for the columns scrolls sideways instead of drawing them one letter wide. */
   width?: string;
   align?: 'left' | 'right' | 'center';
   /** A string becomes the cell text, an element its content; `cell` is the pooled cell element,
    * reset before each call — set `title` and extra classes on it. The item's own `name` value by
-   * default. */
+   * default, as `Format.value` reads it. */
   render?: (item: T, index: number, cell: HTMLElement) => HTMLElement | string;
 }
 
@@ -63,6 +66,8 @@ export interface DataTableOptions<T> extends Omit<VirtualRowsOptions<T>, 'itemHe
 
 const MAX_HEADER_HEIGHT = 28;
 const MIN_COLUMN_WIDTH = 32;
+/** The floor of a column without a width: ten characters or so beside the cell's padding. */
+const SHARE_MIN_WIDTH = 80;
 const FIT = {rows: 100, padding: 16, sort: 20, max: 400};
 
 export class DataTable<T> extends VirtualRows<T> {
@@ -166,7 +171,7 @@ export class DataTable<T> extends VirtualRows<T> {
       const target = e.target as Element;
       const head = target.closest('.u2-data-table-head') as HTMLElement | null;
       if (head !== null && this._sort !== undefined && target.closest('.u2-data-table-resize') === null)
-        this._sort.value = DataTable._nextSort(this._sort.peek(), head.dataset.column!);
+        this._sort.value = SortOrder.next(this._sort.peek(), head.dataset.column!);
     });
     scope.listen(this.root, 'pointerdown', (e) => {
       const handle = (e.target as Element).closest('.u2-data-table-resize');
@@ -193,23 +198,15 @@ export class DataTable<T> extends VirtualRows<T> {
     this._endResize = end;
   }
 
-  /** Ascending, then descending, then none. */
-  private static _nextSort(sort: string, column: string): string {
-    const first = sort.split(',')[0];
-    return first === column ? `!${column}` : first === `!${column}` ? '' : column;
-  }
-
   private _showSort(sort: string, header = this._head): void {
-    const first = sort.split(',')[0];
-    const descending = first.startsWith('!');
-    const column = descending ? first.slice(1) : first;
+    const key = SortOrder.parse(sort);
     for (const head of header.children) {
       const cell = head as HTMLElement;
-      const sorted = cell.dataset.column === column;
-      cell.setAttribute('aria-sort', !sorted ? 'none' : descending ? 'descending' : 'ascending');
+      const sorted = key !== null && cell.dataset.column === key.column;
+      cell.setAttribute('aria-sort', !sorted ? 'none' : key.descending ? 'descending' : 'ascending');
       cell.querySelector('.u2-data-table-sort')?.remove();
       if (sorted) {
-        cell.insertBefore(icon(descending ? 'arrow-down' : 'arrow-up', {cls: 'u2-data-table-sort'}),
+        cell.insertBefore(icon(key.descending ? 'arrow-down' : 'arrow-up', {cls: 'u2-data-table-sort'}),
           cell.querySelector('.u2-data-table-resize'));
       }
     }
@@ -337,6 +334,7 @@ export class DataTable<T> extends VirtualRows<T> {
     for (const column of this._columns) {
       const cell = document.createElement('div');
       cell.className = `${DataTable._cellClass(column)} u2-data-table-head`;
+      cell.dataset.u2 = 'column-header';
       cell.setAttribute('role', 'columnheader');
       cell.dataset.column = column.name;
       const label = document.createElement('span');
@@ -353,7 +351,7 @@ export class DataTable<T> extends VirtualRows<T> {
   }
 
   private static _templateOf<T>(columns: DataTableColumn<T>[]): string {
-    return columns.map((c) => c.width ?? 'minmax(0, 1fr)').join(' ');
+    return columns.map((c) => c.width ?? `minmax(${SHARE_MIN_WIDTH}px, 1fr)`).join(' ');
   }
 
   private static _cellClass<T>(column: DataTableColumn<T>): string {
@@ -362,7 +360,6 @@ export class DataTable<T> extends VirtualRows<T> {
   }
 
   private static _text<T>(item: T, name: string): string {
-    const value = (item as Record<string, unknown>)[name];
-    return value === null || value === undefined ? '' : String(value);
+    return Format.value((item as Record<string, unknown>)[name]);
   }
 }

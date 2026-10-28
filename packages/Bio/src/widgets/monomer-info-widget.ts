@@ -9,14 +9,14 @@ import {MONOMER_MOTIF_SPLITTER, MONOMER_CANONICALIZER_TEMP} from '@datagrok-libr
 import {IMonomerCanonicalizer} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 import {getCorrectedSmiles} from '../utils/monomer-lib/monomer-manager/monomer-manager';
-import {MonomerEditor} from '../utils/monomer-lib/monomer-manager/monomer-editor';
+import {canonicalize} from '../utils/monomer-lib/monomer-manager/monomer-editor';
 import {CapGroups} from '../utils/monomer-lib/monomer-manager/cap-groups';
 
 /** Caps the monomer (replaces R-groups with cap atoms) and returns capped SMILES. */
 function getCappedSmiles(monomer: Monomer): string | null {
   try {
     const corrected = getCorrectedSmiles(monomer[REQ.RGROUPS], monomer.smiles, monomer.molfile);
-    return CapGroups.capped(corrected, monomer[REQ.RGROUPS], MonomerEditor.canonicalize);
+    return CapGroups.capped(corrected, monomer[REQ.RGROUPS], canonicalize);
   } catch { /* capping may fail for some monomers */ }
   return null;
 }

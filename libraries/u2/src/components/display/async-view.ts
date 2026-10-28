@@ -91,7 +91,7 @@ export class AsyncView<T> extends Control {
     this._skeleton = options?.skeleton ?? false;
     this.root.classList.add('u2-async-view');
     this.root.dataset.u2 = 'async-view';
-    this._retry = this.runInScope(() => button('Retry', () => source.retry()));
+    this._retry = this.build(() => button('Retry', () => source.retry()));
     this.own(() => this._releaseContent());
     this.effect(() => this._apply(source.state.value));
   }
@@ -128,7 +128,7 @@ export class AsyncView<T> extends Control {
     this._releaseContent();
     const scope = new Scope();
     this._content = scope;
-    const content = Scope.runWith(scope, () => this._build(state));
+    const content = scope.build(() => this._build(state));
     this.root.setAttribute('aria-busy', String(state.kind === 'loading'));
     this.root.replaceChildren(...(content ? [content] : []));
   }

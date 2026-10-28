@@ -92,7 +92,7 @@ export class Tour {
     const labels = options.buttons ?? {};
     this._nextLabel = labels.next ?? 'NEXT';
     this._doneLabel = labels.done ?? 'DONE';
-    const [skip, next] = Scope.runWith(this._scope, () => [
+    const [skip, next] = this._scope.build(() => [
       button(labels.skip ?? 'SKIP', () => this.skip()),
       button(this._nextLabel, () => this.next(), {primary: true}),
     ]);
@@ -174,7 +174,7 @@ export class Tour {
     if (typeof step.content === 'string')
       this._content.textContent = step.content;
     else
-      this._content.append(typeof step.content === 'function' ? Scope.runWith(scope, step.content) : step.content);
+      this._content.append(typeof step.content === 'function' ? scope.build(step.content) : step.content);
     // a step whose target is not on screen is skipped, so it is not counted either
     const live = this._steps.map((s, i) => i === at || Tour._renderable(this._element(s.target)));
     const position = live.slice(0, at + 1).filter(Boolean).length;

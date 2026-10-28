@@ -1,6 +1,3 @@
-/* The generic step vocabulary: gestures (When) and outcomes (Then) over any element phrase.
-   Expressions are cucumber expressions: `(on )` optional text, `in(to)` optional suffix, `be/become`
-   alternation. Every definition is an exported const — the compiler imports it by name. */
 import {readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';

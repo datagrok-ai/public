@@ -144,7 +144,7 @@ export async function render(main) {
     const inline = new IconInput({inline: true, names: ['star', 'heart', 'flag', 'bookmark']});
     return [
       row([picker, brand, inline]),
-      readout('picked', computed(() => `${picker.value.value} · ${brand.value.value} · ${inline.value.value || '(none)'}`)),
+      readout('picked', computed(() => `${picker.value} · ${brand.value} · ${inline.value || '(none)'}`)),
       el('div', 'u2-gallery-status',
         'A click (or Enter) opens the grid; type to filter; click or Enter picks, Esc cancels, Backspace clears. ' +
         'A brand name renders in its own face without being told.'),

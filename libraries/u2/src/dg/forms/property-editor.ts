@@ -150,7 +150,7 @@ export class PropertyEditor extends Control {
     const scope = new Scope();
     this._scope = scope;
     this.root.textContent = '';
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       this._identityForm = this._form(IDENTITY);
       this.root.append(this._identityForm.root, this._typed);
       this._renderTyped();
@@ -164,7 +164,7 @@ export class PropertyEditor extends Control {
     this._typed.textContent = '';
     const type = this._record.type ?? '';
     const fields = TYPED.filter((field) => PropertyEditor._applies(field, type));
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       this._typedForm = this._form(fields);
       this._typed.append(this._typedForm.root);
     });

@@ -5,11 +5,11 @@
 import {
   signal, computed, Scope,
   divV, divH, span, h3, button,
-  Card, StatCard, ProgressBar, Tour, BasicTable, VirtualGrid,
+  Card, StatCard, AppHeader, ProgressBar, Tour, BasicTable, VirtualGrid,
   MultiSelect, Section, Wizard, TextInput, notify,
 } from '@datagrok-libraries/u2';
 import type {NotifyHandle} from '@datagrok-libraries/u2';
-import {messageInput} from '@datagrok-libraries/u2/src/dg/index.js';
+import {messageInput} from '@datagrok-libraries/u2/dg';
 import {readout, DRUGS} from './common';
 
 const PICKED = DRUGS.slice(0, 3);
@@ -65,6 +65,26 @@ export function cardsPage(): HTMLElement {
   ], 'u2demo-page');
 }
 
+export function appHeaderPage(): HTMLElement {
+  const actions = signal(0);
+  return divV([
+    span('An app home\'s hero: the app\'s icon beside what it does, one bullet each, and Learn more. An item ' +
+      'is text, an element or a link; a title puts the app\'s name beside a smaller icon.', 'u2demo-hint'),
+    h3('Default'),
+    new AppHeader({icon: 'flask', name: 'hit-design', items: [
+      'Configure your own workflow using the template editor',
+      'Sketch molecules in the molecular spreadsheet',
+      {text: 'Open the samples', onClick: () => actions.value++},
+    ], learnMore: 'https://datagrok.ai/help'}),
+    h3('With a title'),
+    new AppHeader({icon: 'atom', name: 'moltrack', title: 'MolTrack',
+      subtitle: 'Track, analyze, and manage chemical data', bottomLine: true,
+      description: '- Chemical compound registration system\n- Analyze [assay data](https://datagrok.ai/help)',
+      learnMore: {text: 'Open the help', onClick: () => actions.value++}}),
+    readout('actions', computed(() => String(actions.value))),
+  ], 'u2demo-page');
+}
+
 export function feedbackPage(): HTMLElement {
   const scope = Scope.ambient!;
 
@@ -78,10 +98,10 @@ export function feedbackPage(): HTMLElement {
   scope.own(stop);
   const run = (): void => {
     stop();
-    bar.value.value = 0;
+    bar.value = 0;
     timer = window.setInterval(() => {
-      bar.value.value = Math.min(1, bar.value.peek() + 0.05);
-      if (bar.value.peek() >= 1)
+      bar.value = Math.min(1, bar.peek() + 0.05);
+      if (bar.peek() >= 1)
         stop();
     }, 120);
   };
@@ -117,10 +137,10 @@ export function feedbackPage(): HTMLElement {
     bar,
     divH([button('Run', run), button('Reset', () => {
       stop();
-      bar.value.value = 0;
+      bar.value = 0;
     })], 'u2demo-row'),
     busy,
-    readout('progress', computed(() => bar.value.value.toFixed(2))),
+    readout('progress', computed(() => bar.value.toFixed(2))),
     h3('Notifications'),
     span('Info auto-hides; warnings and errors stay until closed. Leaving this sub-demo closes ' +
       'the ones it raised.', 'u2demo-hint'),
@@ -201,11 +221,11 @@ export function sectionsPage(): HTMLElement {
   const wizard = new Wizard({
     steps: [
       {id: 'name', title: 'Name', content: () => divV([project]),
-        canProceed: computed(() => project.value.value.trim() ? null : 'Enter a project name')},
+        canProceed: computed(() => project.value.trim() ? null : 'Enter a project name')},
       {id: 'data', title: 'Data', content: () =>
         divV([span('Lazily built on first visit; its state survives BACK.'), targets])},
       {id: 'review', title: 'Review', content: () => divV([span(computed(() =>
-        `Creating "${project.value.value}" for ${targets.value.value.join(', ') || 'no target'}.`))])},
+        `Creating "${project.value}" for ${targets.value.join(', ') || 'no target'}.`))])},
     ],
     onFinish: () => {
       finished.value = 'finished';

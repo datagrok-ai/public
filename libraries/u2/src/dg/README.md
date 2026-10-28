@@ -1,22 +1,46 @@
 # u2/dg — the platform layer
 
-The only part of u2 that imports the platform surface of `datagrok-api` — eslint enforces it
-(D3 in the u2 plan, `core/docs/features/ui2/PLAN.md`; since V-4 the core files re-export the
-platform-free `datagrok-api/u2core`, the one allowed exception). Everything here bridges the
-core onto Datagrok lifecycle, events, and value editors.
+The only part of u2 that imports the platform surface of `datagrok-api`; the platform-free layers import only the
+signal core, `datagrok-api/u2core` (`tests/boundaries.test.js` holds both). Everything here bridges the core onto
+Datagrok lifecycle, events, and value editors.
+
+## Code that lives in a view: `ViewHost`
+
+A platform view is an owner through its `ViewHost`. Whatever is built under it — the ribbon group, the
+signals, the dialogs, the docked panels, the work after an `await` — goes when the shell removes the view:
+
+```ts
+const host = ViewHost.of(tv);                          // the same host for every wrapper of tv
+host.ribbon({actions, buttons, hideSave: true});       // the package's ribbon group (TableViewChrome)
+host.effect(() => watchGrid(host.signals.grid.value)); // a layout swaps the grid: this re-runs
+host.subscribe(grok.events.onFileImportRequest, (args) => importFile(args));
+host.show(trackerDialog, {modal: true});               // hidden while another view is current
+host.dock(detailsPanel(), 'right', {title: 'Details'});
+host.task(async (t) => {
+  const rows = await loadRows();                       // nothing is building after an await…
+  t.build(() => fill(rows));                           // …so get back in; skipped once the view is gone
+});
+```
+
+A new view is `ViewHost.create({name, content: (host) => ({root, ribbon, toolbox, status, path})})` (or just the
+content): the builder runs under the host, so the content and its chrome are built owned, and `host.view` is the view
+to answer from the app function. `ViewHost.of(grok.shell.v)` answers the same host later, whichever wrapper the shell
+hands out. `host.dock` also ends the control when its panel is closed from code (`dockManager.close`), and disposing
+the control closes the panel.
 
 | Export | What it does |
 |---|---|
+| `ViewHost.of(view)` / `ViewHost.create({name, content})` | a view as the owner of what code living in it builds: `signals`, `ribbon()`, `show()`, `dock()`, `build`/`task`/`subscribe`/`effect`/`own`; disposed with the view; `create`'s builder answers the content or `{root, ribbon?, toolbox?, status?, path?}` |
 | `toSignal` / `toObservable` | rxjs ↔ signals, both directions |
 | `leakReport()` | live u2 scopes vs registered widgets |
-| `appView({name, content, own?, ribbon?, toolbox?, status?})` | a u2 component tree as a platform view, riding the shell's own chrome; chrome controls and whatever `own` lists (the sources) are disposed with the content |
 | `designerView(spec, options?)` | the spec designer as a view: live canvas, structure tree in the toolbox, Design/Run toggle, selection path in the status bar |
 | `registerSpecNodeHandler()` | the `ObjectHandler` that renders a selected spec node (`SpecNodeRef`) in the context panel |
 | `makeDesignerDroppable({element, active, onDragActive, onDrop})` | the platform's drag channel pointed at an element: a file or a function dragged out of Browse arrives as a `DropReading` (`readDrop`), each item ready for `dropNode` to make a `u2-func-source` of it |
 | `asDartInput(input, {dataType?})` | u2 `Input` → `DG.JsInputBase` (a `DG.InputBase` everywhere) |
 | `dartInputFor(build, {dataType?})` | the same, built from the bound property at `getInput()` time |
 | `inputForProperty(prop, options?)` | the u2 editor a `Property` maps to, metadata and all |
-| `columnInput(label, table, {filter?, rich?})` / `tableInput(label)` / `tablesInput(label)` | platform-bound choice inputs over columns and open tables |
+| `columnInput(label, table, {filter?, rich?, grid?, value?, nullable?, required?, …})` / `tableInput(label)` / `tablesInput(label)` | the column and table pickers — take `columnInput` for any column choice, never a `ChoiceInput` over `df.columns`: every listing offers what the platform's pickers do (no hidden `~` column, no nameless column or table); `TableInput.table` holds the picked DataFrame itself (the value stays its name) |
+| `Platform.tableNames()` / `Platform.listedColumns(table, filter?)` | the open tables and a frame's columns as the platform's pickers list them, for a listing of your own |
 | `columnRenderer(table)` | `ObjectRenderer<string>` over column names — type glyph, name, semType |
 | `columnsInput(label, table, {filter?})` | many columns, picked in a searchable dialog |
 | `columnsMapInput(label, keys, table)` / `aggregatedColumnsInput(label, table)` | key → column rows; column + aggregation rows |
@@ -26,8 +50,7 @@ core onto Datagrok lifecycle, events, and value editors.
 | `propertyForm(props, source, options?)` / `objectForm(source, options?)` | a whole form out of `Property` metadata |
 | `propertyEditor(record, options?)` | the editor of property metadata itself — the `IProperty` options |
 
-Import path today: `@datagrok-libraries/u2/src/dg/index.js` (the `@datagrok-libraries/u2/dg`
-subpath needs an `exports` map in `package.json`).
+Import path: `@datagrok-libraries/u2/dg`, never a path inside the package (`…/u2/src/…`).
 
 ## Registering a u2 input as a platform value editor
 
@@ -39,7 +62,7 @@ dialogs, `InputForm`, `Dialog.add()`:
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {TextInput} from '@datagrok-libraries/u2';
-import {asDartInput} from '@datagrok-libraries/u2/src/dg/index.js';
+import {asDartInput} from '@datagrok-libraries/u2/dg';
 
 export class PackageFunctions {
   @grok.decorators.func({
@@ -58,7 +81,7 @@ Or ad hoc, without registration:
 
 ```ts
 const barcode = new TextInput({label: 'Barcode'});
-const dlg = ui.dialog('Register').add(asDartInput(barcode).root).onOK(() => save(barcode.value.peek()));
+const dlg = ui.dialog('Register').add(asDartInput(barcode).root).onOK(() => save(barcode.peek()));
 dlg.show();
 dlg.onClose.subscribe(() => barcode.dispose());
 ```
@@ -71,10 +94,11 @@ What the platform owns and what stays with u2:
 - **Validation display** — the platform's. The u2 `validity` signal is registered as a platform
   validator, so the message shows once, in the platform's style; u2's own error line lives in the
   unmounted root and never appears.
-- **`enabled` / `readOnly`** — set them on the object `asDartInput` returned, not on the u2 input
-  (whose setter looks for controls under its own root, which no longer holds the editor).
-- **Value** — u2's. The `value` signal stays the source of truth; read it with
-  `input.value.peek()` or bind it. User edits fire `onInput` + `onChanged`; `setValue()` fires
+- **`enabled` / `readOnly`** — the platform's: set them on the object `asDartInput` returned, not on the u2
+  input (whose setter looks for controls under its own root, which no longer holds the editor). Turned off
+  there, the editor says why: the platform tooltip it was given, else "Not available here".
+- **Value** — u2's. The input's `signal` stays the source of truth; read it with
+  `input.peek()` or bind `input.signal`. User edits fire `onInput` + `onChanged`; `setValue()` fires
   `onChanged` only, and nothing when the value is unchanged (echo suppression both ways).
 
 ## Property-aware value editors: `dartInputFor`
@@ -138,19 +162,15 @@ dialog's OK stays enabled.
 ## Lifecycle
 
 Since V-4 every `DG.Widget` IS a u2 `Control` (`DG.Widget extends DG.U2.Control`): the Dart
-kill-walk (view close) disposes its scope, and disposing the scope kills the widget. To put a
-plain component under the kill-walk, give its root the channel `appView` uses:
-
-```ts
-component.root.setAttribute('data-kill-on-close', 'true');
-DG.Widget.registerCleanup(component.root, () => component.dispose());
-grok.shell.dockManager.dock(component.root, DG.DOCK_TYPE.RIGHT);
-```
+kill-walk (view close) disposes its scope, and disposing the scope kills the widget. In a view,
+dock a component with `ViewHost.of(view).dock(component, 'right')`. Platform chrome that is not a
+view (a context-panel widget, an accordion pane) takes `host(component)`: the root, wired to the kill
+channel (`data-kill-on-close` + `DG.Widget.registerCleanup`), which a pane's ✕ or the view's close
+runs; a panel closed from code with `dockManager.close` skips it.
 
 Introspection is inherited, not delegated: `getProperties()`, `onEvent()`, `aiDescription` and
 `getWidgetStatus()` are one surface on `DG.Widget`/`Control`, so the shell, the context panel and
 the copilot interrogate a u2 component with the calls they already use on every platform widget.
-(`host()` and its `grok.functions.register` minting were dropped in V-4.)
 
 **Components that are never mounted are yours to dispose.** The kill-walk only reaches roots that
 made it into the DOM — a lazily-built container (a collapsed accordion pane, a tab never opened)
@@ -170,9 +190,10 @@ const tbls = tablesInput('Tables');                        // value: string[]
 `columnInput`, `tableInput` and `tablesInput` are ordinary choice inputs whose items follow the
 platform (`onColumnsChanged`, `onTableAdded`/`onTableRemoved`) through the input's own scope —
 dispose the input and the subscriptions go with it. The value is the **name** (names, for the
-multi-choice ones); the caller resolves it (`table.col(col.value.peek())`,
-`grok.shell.table(tbl.value.peek())`), which keeps the value serializable and the input identical
-to any other choice input. Whatever a picker holds when its column or table goes away is cleared.
+multi-choice ones); the caller resolves it (`table.col(col.peek())`; a table picker answers
+`tbl.table`, the frame itself, which tells apart two open tables of one name), which keeps the value
+serializable and the input identical to any other choice input. Whatever a picker holds when its
+column or table goes away is cleared.
 
 `{rich: true}` swaps the native select for a type-ahead whose rows carry the column's type glyph,
 name and semantic type — Dart's ColumnComboBox affordances, and a `ColumnPicker` rather than a
@@ -221,7 +242,13 @@ const batch = filesInput('Batch', {accept: ['.csv', '.sdf']});        // value: 
 const key = rsaInput('Private key');                                  // value: PEM text or BASE64
 ```
 
-`fileInput` takes a path, a dropped file, or one chosen from disk. A typed path is checked against
+`fileInput` takes a path, a dropped file, one chosen from disk, or one picked in the platform's
+"Select a file" dialog over the shares (the "Add file from Files" icon, where the platform has
+`ui.pickFileFromFiles`; on an input bound to a `connection`, "Choose directory or file" over that share
+alone). `filesInput` takes the same dialog for several files at once: share files join its rows already
+loaded, keyed by their share path. The value says where it came from:
+a share's file has its `fullPath` (`<namespace>:<share>/<path>`), a local one is in memory, its path
+its name. A typed path is checked against
 the share — debounced 250 ms, one check at a time, a late answer to an abandoned path dropped —
 and the input reports the platform's three states: empty (when not nullable), still checking, and
 does not exist. A `connection` namespaces the path with its `nqName` before the check and drops
@@ -252,7 +279,7 @@ place. It is the primary surface: properties come from wherever the caller alrea
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {propertyForm} from '@datagrok-libraries/u2/src/dg/index.js';
+import {propertyForm} from '@datagrok-libraries/u2/dg';
 
 const props = [
   DG.Property.fromOptions({name: 'friendlyName', type: 'string', friendlyName: 'Name', nullable: false}),
@@ -274,7 +301,8 @@ grok.shell.newView('Script', [form.root]);
 
 **The form never saves anything.** `prop.set` mutates the object, with valid values only: an
 invalid edit stays in its field, which says why, the object keeps its last valid value, and the
-edit is written once it turns valid; `form.unwritten` counts the fields holding such an edit. The
+edit is written once it turns valid; `form.unwritten` counts the fields holding such an edit and
+`form.unwrittenValues` says what they hold. The
 exception is a platform editor under `editors: 'auto'`, bound by the platform, which writes the
 property itself whatever its verdict. Persisting it is the caller's call (`grok.dapi.*.save`, a
 domain `insert`), which keeps the platform's dapi flows — permissions, validation, audit — exactly
@@ -287,7 +315,7 @@ The generated form is inspectable: `form.properties` lists the rendered properti
 order, and `form.input(name)` returns the input editing a property — generated,
 override-supplied, or a platform editor wrapped by `fromDartInput` — keyed by property name
 regardless of its caption. From there, everything on `Input<T>` applies: `value`, `validity`,
-`addValidator`, `enabled`.
+`addValidator`, `disabled`.
 
 How an input is picked — `inputType` first, then `editor`, then `propertyType` (or `type`), the
 order `InputBase.forProperty` uses (`input_base.dart:668,689-714`):

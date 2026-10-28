@@ -53,7 +53,7 @@ export class PickInput<T> extends Input<string | null, PickInputOptions<T>> {
       const mine = ++gen;
       try {
         const item = await resolve(id);
-        if (mine === gen && this.value.peek() === id && item !== null)
+        if (mine === gen && this.peek() === id && item !== null)
           picker.selected.value = item;
       } catch {
         // an unknown id keeps the value and shows nothing
@@ -63,7 +63,7 @@ export class PickInput<T> extends Input<string | null, PickInputOptions<T>> {
     // to null on the input's own account — that write would dirty the row on render
     const empty = (id: string | null) => id === null || id === '';
     this.effect(() => {
-      const id = this.value.value;
+      const id = this.value;
       const current = picker.selected.peek();
       if ((current === null ? null : idOf(current)) === id)
         return;
@@ -79,8 +79,8 @@ export class PickInput<T> extends Input<string | null, PickInputOptions<T>> {
         return;
       held = item;
       const id = idOf(item);
-      if (id !== this.value.peek())
-        this.value.value = id;
+      if (id !== this.peek())
+        this.value = id;
     });
     const input = picker.root.querySelector('input')!;
     const hint = span('', 'u2-pick-hint');
@@ -111,20 +111,20 @@ export class PickInput<T> extends Input<string | null, PickInputOptions<T>> {
       held = null;
       picker.selected.value = null;
       picker.resync();
-      this.value.value = null;
+      this.value = null;
       input.focus();
     });
-    this.effect(() => clear.hidden = empty(this.value.value) && picker.text.value === '');
+    this.effect(() => clear.hidden = empty(this.value) && picker.text.value === '');
     const follow = this.options.open;
     if (follow === undefined)
       return div([picker.root, clear], 'u2-pick-box');
     const open = iconButton('external-link', () => {
-      const id = this.value.peek();
+      const id = this.peek();
       if (!empty(id))
         follow(id!);
     }, {tooltip: 'Open'});
     open.classList.add('u2-pick-open');
-    this.effect(() => open.hidden = empty(this.value.value));
+    this.effect(() => open.hidden = empty(this.value));
     return div([picker.root, open, clear], 'u2-pick-box u2-pick-box-open');
   }
 }

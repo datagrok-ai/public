@@ -1,6 +1,7 @@
 /* u2 inputs as platform value editors (PLAN.md D8, "InputBase-conformant"). */
 import * as DG from 'datagrok-api/dg';
 import {Input} from '../../core/input-base.js';
+import {Reason} from '../../core/reason.js';
 import {Scope} from '../../core/scope.js';
 import {BigIntInput} from '../../components/inputs/bigint-input.js';
 import {PlatformInput} from './from-dart-input.js';
@@ -67,6 +68,7 @@ export class DartInput<T> extends DG.JsInputBase<T> {
   private _queued = false;
   private _userEdit = false;
   private _unparsed = false;
+  private _tip: string | null = null;
 
   constructor(input: Input<T> | PropertyInputBuilder<T>, options: DartInputOptions = {}) {
     super();
@@ -80,13 +82,22 @@ export class DartInput<T> extends DG.JsInputBase<T> {
     }
   }
 
+  /** What the editor says it is off for when the platform turns it off and was given no tooltip. */
+  static readonly NOT_HERE = 'Not available here';
+
   get inputType(): string { return `u2-${this._id}`; }
+
+  /** The platform's tooltip; it is also why the editor is off while the platform has it off. */
+  setTooltip(msg: string, tooltipCheck: (() => boolean) | null = null): DG.InputBase<T> {
+    this._tip = msg || null;
+    return super.setTooltip(msg, tooltipCheck);
+  }
 
   get dataType(): string {
     return this._options.dataType ?? DATA_TYPES[this._id] ?? this._inferDataType();
   }
 
-  /** The wrapped u2 input — its `value` signal stays the source of truth. Null until a deferred
+  /** The wrapped u2 input — its `signal` stays the source of truth. Null until a deferred
    * editor is built. */
   get u2(): Input<T> | null { return this._input; }
 
@@ -96,7 +107,7 @@ export class DartInput<T> extends DG.JsInputBase<T> {
     // deferred input's effects would belong to nobody and outlive the editor
     if (this._editor === null) {
       const prop = this._boundProperty();
-      this._attach(Scope.runWith(this._scope, () => this._build!(prop)));
+      this._attach(this._scope.build(() => this._build!(prop)));
       DartInput._dropPostfix(this._editor!, prop);
     }
     // the platform never detaches a JS input (`JsInputProxy` has no hook): the kill-walk of
@@ -111,7 +122,7 @@ export class DartInput<T> extends DG.JsInputBase<T> {
 
   getValue(): T {
     if (this._input !== null)
-      return this._input.value.peek();
+      return this._input.peek();
     return (this._pending === null ? null : this._pending[0]) as T;
   }
 
@@ -125,7 +136,7 @@ export class DartInput<T> extends DG.JsInputBase<T> {
     }
     this._programmatic = true;
     try {
-      this._input.value.value = value;
+      this._input.value = value;
     } finally {
       this._programmatic = false;
     }
@@ -169,6 +180,13 @@ export class DartInput<T> extends DG.JsInputBase<T> {
     this._input = input;
     this._editor = input.box;
     this.root.dataset.u2 = this._id;
+    // the platform turns a JS input off on its own root (`ui-input-disabled`, input_base.dart); the editor says why
+    const off = () => Reason.apply(input.box,
+      this.root.classList.contains('ui-input-disabled') ? this._tip ?? DartInput.NOT_HERE : null);
+    const watch = new MutationObserver(off);
+    watch.observe(this.root, {attributes: true, attributeFilter: ['class']});
+    this._scope.own(() => watch.disconnect());
+    off();
     if (this._pending !== null) {
       const [value] = this._pending;
       this._pending = null;
@@ -177,7 +195,7 @@ export class DartInput<T> extends DG.JsInputBase<T> {
 
     let initial = true;
     this._scope.effect(() => {
-      input.value.value; // subscribes the effect to user and programmatic edits alike
+      input.value; // subscribes the effect to user and programmatic edits alike
       if (initial) {
         initial = false;
         return;
@@ -277,7 +295,7 @@ export class DartInput<T> extends DG.JsInputBase<T> {
   private _inferDataType(): string {
     if (this._input === null)
       return DG.TYPE.OBJECT;
-    const value = this._input.value.peek();
+    const value = this._input.peek();
     if (typeof value === 'string')
       return DG.TYPE.STRING;
     if (typeof value === 'number')

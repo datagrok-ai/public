@@ -2,7 +2,10 @@
 
 ## v.next
 
+* Compounds: Fixed the Identity pane's form staying alive after going back from a compound or a new registration to the list
+* App: Fixed reloading a view, opening a view link and Back from a record opening Compounds: the views live under `/apps/Moltrack`, where the platform serves the app
 * Added Compound properties and Batch properties: add your own fields to compounds and batches, which then show on forms, grids and filters
+* App: The header is u2's `AppHeader` (moved out of `@datagrok-libraries/utils`): the same icon, title, bullets, Learn more and rule
 * Compounds: Added a batches grid to type new batches into
 * Compounds: A saved compound shows its stored identity
 * Compounds: Added ⋯ > Open as table

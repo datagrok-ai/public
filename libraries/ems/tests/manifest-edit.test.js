@@ -1,17 +1,14 @@
-/* The manifest editor over a REGISTERED binding (edit mode): the baseline round-trips as a no-op
-   apply, registered names are locked by membership, the draft supplies candidates and the
-   catalog facts that mark drift, declared refs stay authoritative and a new foreign key is a
-   suggestion, dormant opt-outs and unexposed keys survive, the access snapshot round-trips and
-   edits become exact permission-triple deltas, and the three-way rebase keeps what still
-   applies, reports conflicts and drops what vanished; the panels in edit mode. */
-
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {Scope} from '@datagrok-libraries/u2';
-import {ManifestEditor} from '../src/dg/authoring/manifest-editor.js';
 import {ManifestModel, AccessModel} from '../src/dg/authoring/manifest-model.js';
+
+register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
+const {ManifestEditor} = await import('../src/dg/authoring/manifest-editor.js');
 
 const FIXTURE = JSON.parse(readFileSync(new URL('./fixtures/authoring/northwind-registered.json', import.meta.url), 'utf8'));
 const copy = (x) => JSON.parse(JSON.stringify(x));
@@ -25,8 +22,9 @@ const ME = {id: 'g-me', label: 'askalkin'};
 const DEV = {id: 'g-dev', label: 'Developers'};
 
 const model = (d = draft()) => new ManifestModel(d, {baseline: baseline(), friendlyName: 'Northwind sales', description: 'Sales data'});
-const editor = (options = {}, d = draft()) => new ManifestEditor(d, {context: {mode: 'edit', storage: 'external'},
-  baseline: baseline(), snapshot: snapshot(), friendlyName: 'Northwind sales', description: 'Sales data', ...options});
+const editor = (options = {}, d = draft()) => testOwner().build(() => new ManifestEditor(d, {context: {mode: 'edit',
+  storage: 'external'}, baseline: baseline(), snapshot: snapshot(), friendlyName: 'Northwind sales',
+  description: 'Sales data', ...options}));
 const column = (m, table, remote) => m.columns(table).value.find((c) => c.remote === remote);
 const ids = (changes) => changes.map((c) => c.id);
 const bare = (ops) => ops.map(({change: _change, ...op}) => op);
@@ -368,7 +366,7 @@ test('column access: restrict with the groups let in (Edit where they may edit t
 test('rebase: disjoint edits kept on both sides, a same-field change is a conflict, a vanished item is dropped, absorbed edits count as applied', async () => {
   const e = editor();
   document.body.append(e.root);
-  e.tree.tree.root.querySelector('.u2-list').clientHeight = 800;
+  layout(e.tree.tree.root.querySelector('.u2-list'), {clientHeight: 800});
   await flush();
   e.model.setRequired('orders', 'freight', true);
   e.model.setFriendlyName('orders', 'Sales orders');
@@ -422,7 +420,7 @@ test('rebase: disjoint edits kept on both sides, a same-field change is a confli
   assert.deepEqual(e.access.grantsOf(ORDERS).value.map((g) => [g.group.id, g.view, g.edit, g.delete]),
     [['g-me', true, true, true], ['g-sales', true, false, true], ['g-dev', true, false, false]]);
   await flush();
-  const names = e.tree.root.querySelectorAll('.u2-tree-row').map((r) => r.querySelector('.u2-manifest-node-name').textContent);
+  const names = [...e.tree.root.querySelectorAll('.u2-tree-row')].map((r) => r.querySelector('.u2-manifest-node-name').textContent);
   assert.equal(names.includes('employees'), true, 'the tree follows the new baseline');
   assert.deepEqual(badges(rowOf(e, 'shippers')), ['new']);
   e.dispose();
@@ -601,18 +599,18 @@ function ui(name, body) {
 async function shown(options = {}) {
   const e = editor(options);
   document.body.append(e.root);
-  e.tree.tree.root.querySelector('.u2-list').clientHeight = 800;
+  layout(e.tree.tree.root.querySelector('.u2-list'), {clientHeight: 800});
   await flush();
   return e;
 }
 
-const rows = (e) => e.tree.root.querySelectorAll('.u2-tree-row');
+const rows = (e) => [...e.tree.root.querySelectorAll('.u2-tree-row')];
 const rowOf = (e, name) => rows(e).find((r) => r.querySelector('.u2-manifest-node-name').textContent === name);
-const badges = (row) => row.querySelectorAll('.u2-badge').map((b) => b.textContent);
+const badges = (row) => [...row.querySelectorAll('.u2-badge')].map((b) => b.textContent);
 const panel = (e) => e.panel.root;
-const inputNames = (e) => panel(e).querySelectorAll('.u2-input-root').map((i) => i.dataset.u2Name);
-const readonlyNames = (e) => panel(e).querySelectorAll('[data-u2="readonly-field"]').map((f) => f.dataset.u2Name);
-const notes = (e) => panel(e).querySelectorAll('.u2-manifest-panel-note').map((n) => n.textContent);
+const inputNames = (e) => [...panel(e).querySelectorAll('.u2-input-root')].map((i) => i.dataset.u2Name);
+const readonlyNames = (e) => [...panel(e).querySelectorAll('[data-u2="readonly-field"]')].map((f) => f.dataset.u2Name);
+const notes = (e) => [...panel(e).querySelectorAll('.u2-manifest-panel-note')].map((n) => n.textContent);
 
 async function select(e, name) {
   fire(rowOf(e, name), 'click');
@@ -624,7 +622,7 @@ ui('edit mode panels: the identifier as text, a description, no creator row, the
   assert.deepEqual(inputNames(e), ['friendlyName', 'description', 'writable', 'access-schema']);
   assert.deepEqual(readonlyNames(e), ['name']);
   const grid = panel(e).querySelector('.u2-access-grid');
-  assert.deepEqual(grid.querySelectorAll('tbody .u2-access-grid-principal').map((p) => p.textContent), ['Sales'],
+  assert.deepEqual([...grid.querySelectorAll('tbody .u2-access-grid-principal')].map((p) => p.textContent), ['Sales'],
     'the groups every shareable table grants alike; no "You (creator)" row');
   assert.match(notes(e).join(' '), /written on each of them/);
   grid.querySelectorAll('tbody .u2-access-grid-check')[0].click();
@@ -649,10 +647,11 @@ ui('edit mode rows and panels: drift badges with their reasons, "new" candidates
   await select(e, 'orders');
   assert.deepEqual(readonlyNames(e), ['logical', 'key']);
   assert.match(panel(e).querySelector('[data-u2-name="logical"]').textContent, /for life/);
-  assert.deepEqual(panel(e).querySelectorAll('.u2-access-grid tbody .u2-access-grid-principal').map((p) => p.textContent), ['askalkin', 'Sales']);
+  assert.deepEqual([...panel(e).querySelectorAll('.u2-access-grid tbody .u2-access-grid-principal')]
+    .map((p) => p.textContent), ['askalkin', 'Sales']);
   assert.match(notes(e).join(' '), /askalkin also holds Share/);
   await select(e, 'shippers');
-  assert.deepEqual(panel(e).querySelectorAll('.u2-manifest-panel-title .u2-badge').map((b) => b.textContent), ['missing remotely']);
+  assert.deepEqual([...panel(e).querySelectorAll('.u2-manifest-panel-title .u2-badge')].map((b) => b.textContent), ['missing remotely']);
   const friendly = panel(e).querySelector('.u2-input-root[data-u2-name="friendlyName"] input');
   assert.deepEqual([friendly.value, friendly.placeholder], ['', 'Shippers'], 'the derived friendly name is shown, not set');
   await select(e, 'employees');
@@ -685,7 +684,7 @@ ui('a registered table taken out is read, not edited: its fields as text and its
   fire(rowOf(e, 'shippers').querySelector('.u2-tree-check'), 'click');
   await flush();
   await select(e, 'shippers');
-  assert.deepEqual(panel(e).querySelectorAll('.u2-manifest-panel-title .u2-badge').map((b) => b.textContent), ['removed']);
+  assert.deepEqual([...panel(e).querySelectorAll('.u2-manifest-panel-title .u2-badge')].map((b) => b.textContent), ['removed']);
   assert.deepEqual(inputNames(e).filter((n) => !n.startsWith('access-')), []);
   assert.deepEqual(readonlyNames(e), ['logical', 'friendlyName', 'key', 'nameColumn', 'searchable']);
   assert.equal(panel(e).querySelector('.u2-access-grid-add').disabled, true);

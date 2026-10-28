@@ -5,24 +5,25 @@ import {Signal} from '../../core/signals.js';
 import {Scope, debug} from '../../core/scope.js';
 import {Tooltip} from '../../core/tooltip.js';
 import {button, div, span, Text} from '../../core/elements.js';
-import type {ButtonOptions} from '../../core/elements.js';
+import type {Reason} from '../../core/reason.js';
 import {icon, IconVariant} from '../display/icon.js';
 import {Menu} from '../navigation/menu.js';
 
 export interface IconButtonOptions {
   variant?: IconVariant;
-  tooltip?: string;
+  /** Hover text and accessible name; a signal is followed by both ("Group by. Current: Status"). */
+  tooltip?: Text;
   /** Pressed state: the click writes it and an effect mirrors it into `aria-pressed`, so a
    * toggling button needs an ambient Scope. */
   toggle?: Signal<boolean>;
   /** A menu built on every press and shown under the button; pressed again, it closes. */
   menu?: () => Menu;
-  /** As {@link button}'s: `true`, or why it is disabled (shown as its tooltip); a signal is followed. */
-  disabled?: ButtonOptions['disabled'];
+  /** As {@link button}'s: why it is off (shown as its tooltip), `null` while on; a signal is followed. */
+  disabled?: Reason;
 }
 
-const NO_OWNER = 'u2: signal binding needs an owner — ' +
-  'wrap the code in Control.build(...) or component.runInScope(...)';
+const NO_OWNER = 'u2: signal binding needs an owner — build under `owner.build(…)` or ' +
+  '`component((self) => …)`; after an `await`, inside `owner.task(async (t) => … t.build(…))`';
 
 const warned = new Set<string>();
 
@@ -35,16 +36,29 @@ export function ownScope<T>(label: string, build: (scope: Scope | undefined) => 
   return Scope.runWith(scope, () => build(scope));
 }
 
-/** Hover text in the icon.ts convention: the tooltip service when there is a scope to own it,
- * the native `title` otherwise. The tooltip doubles as the accessible name — the u2 tooltip
- * leaves no `title` attribute, so without `aria-label` an icon-only button would be nameless. */
-function tip(el: HTMLElement, text: string): void {
-  el.setAttribute('aria-label', text);
+/** The tooltip as the accessible name — the u2 tooltip leaves no `title` attribute, so without `aria-label` an
+ * icon-only button would be nameless — following a signal. */
+function accessibleName(el: HTMLElement, text: Text): void {
+  if (typeof text === 'string') {
+    el.setAttribute('aria-label', text);
+    return;
+  }
+  const scope = Scope.ambient;
+  if (!scope)
+    throw new Error(NO_OWNER);
+  scope.effect(() => el.setAttribute('aria-label', String(text.value ?? '')));
+}
+
+/** Hover text in the icon.ts convention — the tooltip service when there is a scope to own it, the native `title`
+ * otherwise — and the accessible name. */
+function tip(el: HTMLElement, text: Text): void {
+  accessibleName(el, text);
+  const now = () => typeof text === 'string' ? text : String(text.peek() ?? '');
   const scope = Scope.ambient;
   if (scope)
-    Tooltip.bind(el, text, scope);
+    Tooltip.bind(el, now, {owner: scope});
   else
-    el.title = text;
+    el.title = now();
 }
 
 /** Square icon-only button — flat until hover, sized by its context (the form metric standalone,
@@ -64,14 +78,15 @@ export function iconButton(name: string, onClick: (e: MouseEvent) => void,
       menu = open ? undefined : options.menu();
       menu?.show({anchor: el});
     }
-    onClick(e);
+    return onClick(e);
   }, disabled === undefined ? undefined : {disabled, tooltip: options?.tooltip});
   el.classList.add('u2-icon-btn');
   el.dataset.u2 = 'icon-button';
-  if (options?.tooltip && disabled !== undefined)
-    el.setAttribute('aria-label', options.tooltip);
-  else if (options?.tooltip)
-    tip(el, options.tooltip);
+  const tooltip = options?.tooltip;
+  if (tooltip && disabled !== undefined)
+    accessibleName(el, tooltip);
+  else if (tooltip)
+    tip(el, tooltip);
   else if (debug.enabled && !warned.has(name)) {
     warned.add(name);
     console.warn(`u2: iconButton("${name}") has no tooltip — an icon-only button needs one for its accessible name`);
@@ -93,7 +108,7 @@ export function iconButton(name: string, onClick: (e: MouseEvent) => void,
  * caption rewrites the label alone and never the icon. */
 export function buttonWithIcon(text: Text, iconName: string, onClick: (e: MouseEvent) => void,
   options?: {primary?: boolean, iconRight?: boolean, tooltip?: string,
-    disabled?: ButtonOptions['disabled']}): HTMLButtonElement {
+    disabled?: Reason}): HTMLButtonElement {
   const disabled = options?.disabled;
   // with `disabled`, button() owns the tooltip (the reason while disabled, the tooltip otherwise)
   const el = button(icon(iconName), onClick, {primary: options?.primary,
