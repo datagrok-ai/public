@@ -391,7 +391,7 @@ category('UI', () => {
       const metrics = results.dataFrame.getCol('Metric').toList();
       for (const caption of ['Accuracy', 'F1'])
         expect(metrics.includes(caption), true, `${caption} is missing: ${metrics}`);
-      expect(metrics.includes('Sensitivity'), false, 'Sensitivity on three classes');
+      expect(metrics.includes('Recall (Sensitivity)'), false, 'Recall (Sensitivity) on three classes');
       expect(text.includes('Seed: '), true, 'No seed line');
       expect(text.includes('Save...'), false, 'Save... is still in Results');
       measured = expectRowsFit('Results', results);
@@ -1015,19 +1015,25 @@ category('UI: Train', () => {
       await awaitCheck(() => isShown(cutoff.root), 'No Positive class cutoff', WAIT_MS);
       expect(cutoff.value, 0.5);
       await awaitTrained(view);
+      expect(view.methodInput.value, 'XGBoost', 'Predict probability switched the method');
+      expect(view.lastTraining?.engine.name, 'XGBoost');
       const trained = view.lastTraining?.result;
       expect(trained?.task, 'regression');
+      expect(trainPredictionOf(trained!).categories.includes(''), false, 'The cut labels list an empty class');
       expect(view.methodInput.items.includes('Softmax'), false, 'Softmax is listed for the probability');
       const auc = trained?.metrics.validation.auc;
       expect(auc !== undefined && auc > 0.5 && auc <= 1, true, `Validation AUC-ROC ${auc}`);
       expect(hasMetric(view.root, 'AUC-ROC'), true, 'No AUC-ROC row in Results');
       const probabilityGrid = gridWith(view.root, 'Metric');
       expect(probabilityGrid.root === classificationGrid, true, 'The same metric rows built a new grid');
+      expectArray(probabilityGrid.dataFrame.getCol('Metric').toList(), ['Accuracy', 'F1',
+        'Recall (Sensitivity)', 'Specificity', 'Precision', 'Negative Predictive Value', 'AUC-ROC', 'Balanced accuracy',
+        'MCC', 'Average precision']);
       const runCount = (await runsOf([demog])).length;
 
       cutoff.value = 0.9;
-      await awaitCheck(() => view.lastTraining?.result.options.binaryClassificationThreshold === 0.9,
-        'The cutoff does not re-cut the result', WAIT_MS);
+      await awaitCheck(() => view.lastTraining?.result.options.binaryClassificationThreshold === 0.9 &&
+        !view.isTraining, 'The cutoff does not re-cut the result', WAIT_MS);
       await delay(CHECK_DELAY_MS * 3);
       expect(view.isTraining, false, 'The cutoff retrains');
       expect((await runsOf([demog])).length, runCount, 'The cutoff recorded a run');
@@ -1037,7 +1043,7 @@ category('UI: Train', () => {
         recut?.specificity !== trained?.metrics.train.specificity, true, 'The cutoff left the shares as they were');
       const recutGrid = gridWith(view.root, 'Metric');
       expect(recutGrid.root === probabilityGrid.root, true, 'The cutoff built a new metrics grid');
-      const sensitivityRow = recutGrid.dataFrame.getCol('Metric').toList().indexOf('Sensitivity');
+      const sensitivityRow = recutGrid.dataFrame.getCol('Metric').toList().indexOf('Recall (Sensitivity)');
       // The column stores single-precision floats.
       expect(Math.abs((recutGrid.dataFrame.getCol('Train').get(sensitivityRow) ?? NaN) - (recut?.sensitivity ?? NaN)) <
         1e-6, true, 'The grid shows the old sensitivity');
@@ -1160,7 +1166,42 @@ function expectUnderTitles(view: TrainView): void {
 /** The row of the metric [label] in a metrics grid. */
 const metricRow = (grid: DG.Grid, label: string) => grid.dataFrame.getCol('Metric').toList().indexOf(label);
 
-/** Predict probability on two iris species: ROC Curve over its own frame, kept by a cutoff change and a retrain. */
+/** The title of [view]'s PR Curve panel (`PR Curve (AP = ...)`); '' when there is none. */
+const prTitleOf = (view: TrainView | EvaluationView) =>
+  rowTitles(view).flat().find((t) => t.startsWith('PR Curve')) ?? '';
+
+/** The row of a curve frame's `Threshold` that [cutoff] labels: the last at or above it ([fromEnd], the ROC's
+ * decreasing thresholds), else the first (the PR's increasing ones); -1 for none. */
+function markRow(frame: DG.DataFrame, cutoff: number, fromEnd = true): number {
+  const thresholds = frame.getCol('Threshold').toList();
+  const rows = thresholds.map((_, i) => i).filter((i) => thresholds[i] >= cutoff);
+  return rows.length === 0 ? -1 : fromEnd ? rows[rows.length - 1] : rows[0];
+}
+
+/** [viewer]'s current point is [row] of its frame, the only `cutoff` (circle) of its `Mark` column. The canvas itself
+ * is not checked. */
+function expectMarked(viewer: DG.Viewer, row: number, name: string): void {
+  expect(viewer.dataFrame.currentRowIdx, row, `${name}: the cutoff is not marked`);
+  expect(viewer.props.showCurrentPoint, true, `${name}: no current point`);
+  expect(viewer.props.markersColumnName, 'Mark', `${name}: no markers column`);
+  const marks = viewer.dataFrame.getCol('Mark').toList();
+  expect(marks.filter((m) => m === 'cutoff').length, row < 0 ? 0 : 1, `${name}: not one circle`);
+  if (row >= 0)
+    expect(marks[row], 'cutoff', `${name}: the circle is not at the cutoff`);
+}
+
+/** [viewer] draws a 3 px line on automatic axes. */
+function expectCurveStyle(viewer: DG.Viewer, name: string): void {
+  expect(viewer.props.linesWidth, 3, `${name}: line width`);
+  const {xMin, xMax, yMin, yMax} = viewer.props;
+  expect([xMin, xMax, yMin, yMax].every((v) => v == null), true, `${name}: a fixed axis range`);
+}
+
+/** [frame]'s columns as lists, to tell a changed curve. */
+const curveValues = (frame: DG.DataFrame) => JSON.stringify(frame.columns.toList().map((c) => c.toList()));
+
+/** Predict probability on two iris species: ROC Curve and PR Curve over their own frames of Crux's curves, kept by a
+ * cutoff change (the mark moves), given new frames by a retrain. */
 async function expectRocCurve(): Promise<void> {
   const iris = await twoSpeciesIris();
   const view = await openTrainView(iris);
@@ -1168,30 +1209,44 @@ async function expectRocCurve(): Promise<void> {
   try {
     predictProbability.value = true;
     const rocTitle = () => rocTitleOf(view);
+    const prTitle = () => prTitleOf(view);
     await awaitCheck(() => rocTitle() !== '' && view.lastTraining?.result.scores !== undefined && !view.isTraining,
       'No ROC Curve', TIMEOUT);
     const aucTitle = () => `ROC Curve (AUC = ${view.lastTraining?.result.metrics.train.auc?.toFixed(3)})`;
+    const apTitle = () =>
+      `PR Curve (AP = ${view.lastTraining?.result.metrics.train.averagePrecision?.toFixed(3)})`;
     expect(rocTitle(), aucTitle());
+    expect(prTitle(), apTitle());
+    expectRows(rowTitles(view)[0], ['Predicted Species vs Actual', rocTitle(), prTitle()]);
+    expect(rowTitles(view)[1].includes('Performance'), true, 'Performance is not in row 2');
     const roc = panelViewer(view, rocTitle());
     const frame = roc.dataFrame;
     expect(roc.type, DG.VIEWER.SCATTER_PLOT);
-    const [fprName, tprName] = ['False Positive Rate', 'True Positive Rate'];
+    const [fprName, recallName] = ['FPR (1 − Specificity)', 'Recall (Sensitivity)'];
     expectArray([roc.props.xColumnName, roc.props.yColumnName, roc.props.linesOrderColumnName],
-      [fprName, tprName, fprName]);
-    expectArray(frame.columns.names(), ['Threshold', fprName, tprName]);
-    expect(frame.rowCount, 101);
+      [fprName, recallName, 'Threshold']);
+    expectArray(frame.columns.names(), ['Threshold', fprName, recallName, 'Mark']);
+    expectCurveStyle(roc, 'ROC Curve');
+    expect(frame.rowCount, view.lastTraining?.result.curves?.roc.fpr.length);
     expect(view.resultsPane.frames.some((f) => f.dart === frame.dart), false, 'ROC Curve is on the preview frame');
     expect(frame.meta.formulaLines.items.some((line) => line.title === 'Non-informative baseline'), true,
       'No baseline');
-    expect(frame.currentRowIdx, 50, 'The cutoff 0.5 is not marked');
+    expectMarked(roc, markRow(frame, 0.5), 'ROC Curve');
+    const pr = panelViewer(view, prTitle());
+    const prFrame = pr.dataFrame;
+    expectArray(prFrame.columns.names(), ['Threshold', 'Recall (Sensitivity)', 'Precision', 'Mark']);
+    expectCurveStyle(pr, 'PR Curve');
+    const base = prFrame.meta.formulaLines.items.find((l) => l.title === 'Non-informative baseline');
+    expect(base?.formula, `\${Precision} = ${view.lastTraining?.result.curves?.pr.precision[0].toFixed(4)}`);
+    expectMarked(pr, markRow(prFrame, 0.5, false), 'PR Curve');
     const content = (title: string) => panelOf(view, title).lastElementChild;
     const confusions = content('Confusions');
     let curveChanges = 0;
     const sub = frame.onValuesChanged.subscribe(() => curveChanges++);
     try {
       cutoff.value = 0.9;
-      await awaitCheck(() => view.lastTraining?.result.options.binaryClassificationThreshold === 0.9,
-        'The cutoff does not re-cut the result', WAIT_MS);
+      await awaitCheck(() => view.lastTraining?.result.options.binaryClassificationThreshold === 0.9 &&
+        !view.isTraining, 'The cutoff does not re-cut the result', WAIT_MS);
       await delay(CHECK_DELAY_MS * 3);
     } finally {
       sub.unsubscribe();
@@ -1200,11 +1255,11 @@ async function expectRocCurve(): Promise<void> {
     expect(recut.root === roc.root && roc.root.isConnected && recut.dataFrame.dart === frame.dart, true,
       'The cutoff rebuilt ROC Curve');
     expect(curveChanges, 0, 'The cutoff changed the curve');
-    expect(frame.currentRowIdx, 90, 'The mark did not move to the cutoff 0.9');
+    expect(frame.currentRowIdx, markRow(frame, 0.9), 'The mark did not move to the cutoff 0.9');
+    expect(prFrame.currentRowIdx, markRow(prFrame, 0.9, false), 'The PR mark did not move to the cutoff 0.9');
     expect(content('Confusions') === confusions, true, 'The cutoff rebuilt Confusions');
 
-    const fpr = frame.getCol(fprName).toList();
-    const tpr = frame.getCol(tprName).toList();
+    const values = curveValues(frame);
     const before = view.lastTraining;
     if (before?.engine.name === 'XGBoost')
       setHyperparameter(view, 'iterations', 1);
@@ -1214,55 +1269,68 @@ async function expectRocCurve(): Promise<void> {
       !view.isTraining, 'No XGBoost retrain', TIMEOUT);
     await delay(CHECK_DELAY_MS * 3);
     const retrained = panelViewer(view, rocTitle());
-    expect(retrained.root === roc.root && retrained.dataFrame.dart === frame.dart && frame.rowCount === 101, true,
-      'The retrain rebuilt ROC Curve or its frame');
+    const newFrame = retrained.dataFrame;
+    expect(retrained.root === roc.root && newFrame.dart !== frame.dart, true,
+      'The retrain rebuilt ROC Curve or kept its frame');
+    expectArray([retrained.props.xColumnName, retrained.props.yColumnName, retrained.props.linesOrderColumnName],
+      [fprName, recallName, 'Threshold']);
+    expectCurveStyle(retrained, 'ROC Curve after a retrain');
+    expect(newFrame.rowCount, view.lastTraining?.result.curves?.roc.fpr.length);
     expect(rocTitle(), aucTitle());
-    expect(frame.getCol(fprName).toList().some((v, i) => v !== fpr[i]) ||
-      frame.getCol(tprName).toList().some((v, i) => v !== tpr[i]), true, 'The retrain left the curve as it was');
-    expect(frame.currentRowIdx, 90, 'The retrain moved the mark');
+    expect(prTitle(), apTitle());
+    expect(curveValues(newFrame) !== values, true, 'The retrain left the curve as it was');
+    expectMarked(retrained, markRow(newFrame, 0.9), 'ROC Curve after a retrain');
+    const newPr = panelViewer(view, prTitle());
+    expectCurveStyle(newPr, 'PR Curve after a retrain');
+    expectMarked(newPr, markRow(newPr.dataFrame, 0.9, false), 'PR Curve after a retrain');
   } finally {
     await closeTrainView(view, [iris]);
   }
 }
 
-/** XGBoost on two iris species: ROC Curve from the class probabilities, no mark, refilled by a retrain; none for SVM
- * (no class probabilities), a regression or three classes, which still get the AUC-ROC row. */
+/** XGBoost on two iris species: ROC Curve and PR Curve from the class probabilities, no mark, new frames on a
+ * retrain; none for SVM (no class probabilities, MCC still), a regression or three classes, which get the AUC-ROC and
+ * Average precision rows and the Per-class parallel coordinates plot, refilled by a retrain. */
 async function expectProbabilityRocCurve(): Promise<void> {
   const iris = await twoSpeciesIris();
   const view = await openTrainView(iris);
   const rocTitle = () => rocTitleOf(view);
+  const prTitle = () => prTitleOf(view);
   let other: TrainView | undefined;
   let threeSpecies: DG.DataFrame | undefined;
   try {
     await awaitCheck(() => rocTitle() !== '' && !view.isTraining, 'No ROC Curve', TIMEOUT);
-    expectRows(rowTitles(view)[0], ['Predicted Species vs Actual', rocTitle(), 'Performance']);
+    expectRows(rowTitles(view)[0], ['Predicted Species vs Actual', rocTitle(), prTitle()]);
+    expect(rowTitles(view)[1].includes('Performance'), true, 'Performance is not in row 2');
     expect(view.lastTraining?.result.scores === undefined, true, 'Scores without Predict probability');
     expect(rocTitle(), `ROC Curve (AUC = ${view.lastTraining?.result.metrics.train.auc?.toFixed(3)})`);
     const roc = panelViewer(view, rocTitle());
     const frame = roc.dataFrame;
-    expectArray(frame.columns.names(), ['Threshold', 'False Positive Rate', 'True Positive Rate']);
-    expect(frame.rowCount, 101);
+    expectArray(frame.columns.names(), ['Threshold', 'FPR (1 − Specificity)', 'Recall (Sensitivity)', 'Mark']);
+    expect(frame.rowCount, view.lastTraining?.result.curves?.roc.fpr.length);
     expect(frame.currentRowIdx, -1, 'A curve without a cutoff has a marked point');
+    expect(frame.getCol('Mark').toList().includes('cutoff'), false, 'A curve without a cutoff has a circle');
+    expect(panelViewer(view, prTitle()).dataFrame.currentRowIdx, -1, 'A PR curve without a cutoff has a mark');
     expect(view.resultsPane.frames.some((f) => f.dart === frame.dart), false, 'ROC Curve is on the preview frame');
-    const fpr = frame.getCol('False Positive Rate').toList();
-    const tpr = frame.getCol('True Positive Rate').toList();
+    const values = curveValues(frame);
 
     const before = view.lastTraining;
     setHyperparameter(view, 'iterations', 1);
     await awaitCheck(() => view.lastTraining !== before && !view.isTraining, 'No retrain', TIMEOUT);
     await delay(CHECK_DELAY_MS * 3);
     const retrained = panelViewer(view, rocTitle());
-    expect(retrained.root === roc.root && retrained.dataFrame.dart === frame.dart, true,
-      'The retrain rebuilt ROC Curve or its frame');
-    expect(frame.getCol('False Positive Rate').toList().some((v, i) => v !== fpr[i]) ||
-      frame.getCol('True Positive Rate').toList().some((v, i) => v !== tpr[i]), true,
-    'The retrain left the curve as it was');
+    expect(retrained.root === roc.root && retrained.dataFrame.dart !== frame.dart, true,
+      'The retrain rebuilt ROC Curve or kept its frame');
+    expect(curveValues(retrained.dataFrame) !== values, true, 'The retrain left the curve as it was');
 
     view.methodInput.value = 'SVM';
     await awaitCheck(() => view.lastTraining?.engine.name === 'SVM' && !view.isTraining, 'No SVM training', TIMEOUT);
     await delay(CHECK_DELAY_MS * 3);
     expect(rocTitle(), '', 'SVM has a ROC Curve');
+    expect(prTitle(), '', 'SVM has a PR Curve');
     expect(hasMetric(view.root, 'AUC-ROC'), false, 'SVM has an AUC-ROC row');
+    expect(hasMetric(view.root, 'Average precision'), false, 'SVM has an Average precision row');
+    expect(hasMetric(view.root, 'MCC'), true, 'SVM has no MCC row');
 
     view.methodInput.value = 'XGBoost';
     view.featuresInput.value = columnsOf(iris, ['Sepal.Length', 'Sepal.Width']);
@@ -1276,6 +1344,43 @@ async function expectProbabilityRocCurve(): Promise<void> {
     other = await openTrainView(threeSpecies);
     expect(rocTitleOf(other), '', 'Three classes have ROC Curve');
     expect(hasMetric(other.root, 'AUC-ROC'), true, 'Three classes have no AUC-ROC row');
+    expect(hasMetric(other.root, 'Average precision'), true, 'Three classes have no Average precision row');
+    const trained = other;
+    await awaitCheck(() => rowTitles(trained)[0]?.includes('Per-class') === true, 'No Per-class panel', WAIT_MS);
+    expectRows(rowTitles(other)[0], ['Predicted Species vs Actual', 'Confusions', 'Per-class']);
+    const pcPlot = panelViewer(other, 'Per-class');
+    expect(pcPlot.type, DG.VIEWER.PC_PLOT);
+    const perClass = pcPlot.dataFrame;
+    expect(perClass.rowCount, 3);
+    expectArray(perClass.columns.names(), ['Class', 'Precision', 'Recall', 'F1', 'AUC-ROC']);
+    expectArray(pcPlot.props.columnNames, ['Precision', 'Recall', 'F1', 'AUC-ROC']);
+    expect(pcPlot.props.colorColumnName, 'Class');
+    expect(pcPlot.props.legendVisibility, 'Always', 'The three species have no legend');
+    expect(pcPlot.props.legendPosition, 'Top', 'The three species\' legend is not on top');
+    expect(pcPlot.props.showFilters, false, 'Per-class shows its in-chart filters');
+    expect(pcPlot.props.showColorSelector, false, 'Per-class shows its color selector');
+    const target = other.lastTraining!.request.target;
+    const texts = target.toList().map(String);
+    for (const [k, label] of perClass.getCol('Class').toList().entries()) {
+      expect(DG.Color.getRowColor(perClass.getCol('Class'), k), DG.Color.getRowColor(target, texts.indexOf(label)),
+        `${label}: another color than the target's`);
+    }
+    expect(other.resultsPane.frames.some((f) => f.dart === perClass.dart), false, 'Per-class is on the preview frame');
+    const perClassValues = curveValues(perClass);
+    const beforeRetrain = other.lastTraining;
+    setHyperparameter(other, 'iterations', 1);
+    await awaitCheck(() => other!.lastTraining !== beforeRetrain && !other!.isTraining, 'No retrain', TIMEOUT);
+    await delay(CHECK_DELAY_MS * 3);
+    const refilled = panelViewer(other, 'Per-class');
+    expect(refilled.root === pcPlot.root && refilled.dataFrame.dart === perClass.dart, true,
+      'The retrain rebuilt Per-class');
+    expect(curveValues(perClass) !== perClassValues, true, 'The retrain left the per-class values as they were');
+    other.methodInput.value = 'SVM';
+    await awaitCheck(() => other!.lastTraining?.engine.name === 'SVM' && !other!.isTraining, 'No SVM training',
+      TIMEOUT);
+    await delay(CHECK_DELAY_MS * 3);
+    expectArray(panelViewer(other, 'Per-class').dataFrame.columns.names(),
+      ['Class', 'Precision', 'Recall', 'F1']);
   } finally {
     if (other !== undefined && threeSpecies !== undefined)
       await closeTrainView(other, [threeSpecies]);
@@ -1304,7 +1409,9 @@ async function expectProbabilityToggle(): Promise<void> {
     await awaitCheck(() => view.lastTraining?.result.scores !== undefined && !view.isTraining && rocTitle() !== '',
       'No ROC Curve with Predict probability', TIMEOUT);
     await delay(CHECK_DELAY_MS * 3);
-    expect(rocFrame().currentRowIdx, 50, 'The cutoff 0.5 is not marked');
+    expectMarked(panelViewer(view, rocTitle()), markRow(rocFrame(), 0.5), 'ROC Curve');
+    const pr = panelViewer(view, prTitleOf(view));
+    expectMarked(pr, markRow(pr.dataFrame, 0.5, false), 'PR Curve');
     expect(gridWith(view.root, 'Metric').root === grid, true, 'Predict probability built a new metrics grid');
 
     predictProbability.value = false;
@@ -1312,6 +1419,8 @@ async function expectProbabilityToggle(): Promise<void> {
       rocTitle() !== '', 'No ROC Curve after Predict probability is off', TIMEOUT);
     await delay(CHECK_DELAY_MS * 3);
     expect(rocFrame().currentRowIdx, -1, 'The mark stayed without Predict probability');
+    expect(rocFrame().getCol('Mark').toList().includes('cutoff'), false,
+      'The circle stayed without Predict probability');
     expect(gridWith(view.root, 'Metric').root === grid, true, 'Turning Predict probability off built a new grid');
   } finally {
     await closeTrainView(view, [demog]);
@@ -1330,10 +1439,14 @@ async function expectEvaluationRocCurve(): Promise<void> {
     view = await EvaluationView.open(model, loaded, iris, iris.getCol('Species'), exactMapping(loaded.features, iris));
     const titles = rowTitles(view)[0];
     const roc = rocTitleOf(view);
-    expectRows(titles, ['Predicted Species vs Actual', roc, 'Performance']);
+    const pr = prTitleOf(view);
+    expectRows(titles, ['Predicted Species vs Actual', roc, pr]);
+    expect(rowTitles(view)[1].includes('Performance'), true, 'Performance is not in row 2');
     const metrics = gridWith(view.resultsPane.root, 'Metric').dataFrame;
     const aucRow = metricRow(gridWith(view.resultsPane.root, 'Metric'), 'AUC-ROC');
     expect(roc, `ROC Curve (AUC = ${metrics.get('Evaluation', aucRow).toFixed(3)})`);
+    const apRow = metricRow(gridWith(view.resultsPane.root, 'Metric'), 'Average precision');
+    expect(pr, `PR Curve (AP = ${metrics.get('Evaluation', apRow).toFixed(3)})`);
   } finally {
     view?.close();
     await deleteModel(id);
@@ -1388,13 +1501,13 @@ async function expectFailedBuildReleased(): Promise<void> {
 
 category('UI: Results', () => {
   test('resultsLayout: the template rows, the absent panels dropped, the method\'s rows', async () => {
-    const all = new Set<PanelKey>(['predictedVsActual', 'rocCurve', 'metrics', 'confusions', 'insights',
-      'wrongPredictions', 'features', 'correlation', 'classBalance']);
+    const all = new Set<PanelKey>(['predictedVsActual', 'rocCurve', 'prCurve', 'perClass', 'metrics', 'confusions',
+      'insights', 'wrongPredictions', 'features', 'correlation', 'classBalance']);
     const binary = resultsLayout('binary', all, 0);
-    expectRows(binary.map((r) => r.panels), [['predictedVsActual', 'rocCurve', 'metrics'],
-      ['insights', 'confusions', 'wrongPredictions'], ['features', 'correlation', 'classBalance']]);
-    expectArray(binary.map((r) => r.height), [350, 300, 450]);
-    expectRows(binary.map((r) => r.weights), [[2, 2, 1], [1, 1.5, 2.5], [1, 1, 1]]);
+    expectRows(binary.map((r) => r.panels), [['predictedVsActual', 'rocCurve', 'prCurve'],
+      ['insights', 'confusions', 'metrics'], ['features', 'correlation', 'classBalance'], ['wrongPredictions']]);
+    expectArray(binary.map((r) => r.height), [350, 350, 450, 300]);
+    expectRows(binary.map((r) => r.weights), [[1, 1, 1], [1, 1.5, 1.5], [1, 1, 1], [1]]);
     const multiclass = resultsLayout('multiclass', new Set<PanelKey>(['predictedVsActual', 'features', 'correlation',
       'classBalance']), 0);
     expectRows(multiclass.map((r) => r.panels), [['predictedVsActual'], ['metrics', 'classBalance'],
@@ -1404,7 +1517,7 @@ category('UI: Results', () => {
       'distributions', 'statistics']), 4);
     expectRows(regression.map((r) => r.panels), [['predictedVsActual', 'residuals', 'distributions'],
       ['metrics', 'statistics'], ['visualize:0', 'visualize:1', 'visualize:2'], ['visualize:3']]);
-    expectArray(regression.map((r) => r.height), [350, 300, 350, 350]);
+    expectArray(regression.map((r) => r.height), [350, 350, 350, 350]);
     expectRows(regression.map((r) => r.weights), [[1, 1, 1], [1.5, 1.5], [1, 1, 1], [1]]);
     expectRows(resultsLayout('binary', new Set<PanelKey>(['metrics']), 0).map((r) => r.panels), [['metrics']]);
   });
@@ -1414,14 +1527,14 @@ category('UI: Results', () => {
       'classBalance']);
     expectRows(resultsLayout('multiclass', withoutWrong, 0).map((r) => r.panels), [['predictedVsActual', 'confusions'],
       ['insights', 'metrics', 'classBalance'], ['features', 'correlation']]);
-    expectRows(resultsLayout('binary', withoutWrong, 0).map((r) => r.panels), [['predictedVsActual', 'metrics'],
-      ['insights', 'confusions', 'classBalance'], ['features', 'correlation']]);
+    expectRows(resultsLayout('binary', withoutWrong, 0).map((r) => r.panels), [['predictedVsActual'],
+      ['insights', 'confusions', 'metrics'], ['features', 'correlation', 'classBalance']]);
     const withoutInsights = new Set<PanelKey>(['predictedVsActual', 'confusions', 'wrongPredictions', 'classBalance']);
-    expectRows(resultsLayout('binary', withoutInsights, 0).map((r) => r.panels), [['predictedVsActual', 'metrics'],
-      ['confusions', 'wrongPredictions', 'classBalance']]);
-    const full = new Set<PanelKey>([...withoutWrong, 'wrongPredictions']);
-    expectRows(resultsLayout('multiclass', full, 0).map((r) => r.panels), [['predictedVsActual', 'confusions'],
-      ['insights', 'metrics', 'wrongPredictions'], ['features', 'correlation', 'classBalance']]);
+    expectRows(resultsLayout('binary', withoutInsights, 0).map((r) => r.panels), [['predictedVsActual'],
+      ['confusions', 'metrics', 'classBalance'], ['wrongPredictions']]);
+    const full = new Set<PanelKey>([...withoutWrong, 'wrongPredictions', 'perClass']);
+    expectRows(resultsLayout('multiclass', full, 0).map((r) => r.panels), [['predictedVsActual', 'confusions',
+      'perClass'], ['insights', 'metrics', 'classBalance'], ['features', 'correlation'], ['wrongPredictions']]);
   });
 
   test('iris: Insights & Tips, the classifier rows, Class balance, the frames given back on close', async () => {
@@ -1437,10 +1550,9 @@ category('UI: Results', () => {
       const target = training.request.target;
       const hasWrong = Array.from({length: target.length}, (_, i) => i)
         .some((i) => String(target.get(i)) !== String(labels.get(i)));
-      // Without wrong predictions row 2 has two panels and takes Class balance.
-      expectRows(rowTitles(view), [['Predicted Species vs Actual', 'Confusions'],
-        ['Insights & Tips', 'Performance', hasWrong ? 'Wrong predictions' : 'Class balance'],
-        ['Features', 'Features correlation', ...(hasWrong ? ['Class balance'] : [])]]);
+      expectRows(rowTitles(view), [['Predicted Species vs Actual', 'Confusions', 'Per-class'],
+        ['Insights & Tips', 'Performance', 'Class balance'], ['Features', 'Features correlation'],
+        ...(hasWrong ? [['Wrong predictions']] : [])]);
       if (hasWrong)
         expect(gridWith(view.resultsPane.root, 'Predicted Species').root.classList.contains('d4-grid'), true);
 
@@ -1656,6 +1768,7 @@ category('UI: Results', () => {
       setHyperparameter(view, 'maxDepth', 1);
       await awaitTrained(view);
       await awaitCheck(() => rowTitles(view).flat().includes('Wrong predictions'), 'No Wrong predictions', WAIT_MS);
+      expectRows(rowTitles(view).at(-1)!, ['Wrong predictions']);
       const wrong = gridWith(view.resultsPane.root, 'Predicted Species');
       expect(wrong.props.showRowHeader, true, 'Wrong predictions shows no row numbers');
       const title = panelOf(view, 'Wrong predictions').firstElementChild?.getBoundingClientRect();
@@ -1715,11 +1828,11 @@ category('UI: Results', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('ROC Curve: a line over its own frame of 101 thresholds, the AUC of Performance; a cutoff moves only its ' +
-    'mark, a retrain refills the frame', expectRocCurve, {timeout: 120000});
+  test('ROC Curve and PR Curve: lines over their own frames of Crux\'s curves, the AUC and AP of Performance; a ' +
+    'cutoff moves only their marks, a retrain gives new frames', expectRocCurve, {timeout: 120000});
 
-  test('ROC Curve from the class probabilities of a two-class classifier, none for more classes; refilled by a retrain',
-    expectProbabilityRocCurve, {timeout: 180000});
+  test('ROC Curve and PR Curve from the class probabilities of a two-class classifier, Per-class for more classes; ' +
+    'new frames on a retrain', expectProbabilityRocCurve, {timeout: 180000});
 
   test('ROC Curve stays when Predict probability goes on and off; the mark follows it, the grid is kept',
     expectProbabilityToggle, {timeout: 180000});
@@ -1773,7 +1886,7 @@ category('UI: Results', () => {
         const text = view.resultsPane.root.textContent ?? '';
         expect(text.includes(`Evaluation: ${iris.name} (150 rows)`), true, text);
         const titles = rowTitles(view);
-        expectRows(titles[0], ['Predicted Species vs Actual', 'Confusions']);
+        expectRows(titles[0], ['Predicted Species vs Actual', 'Confusions', 'Per-class']);
         expect(titles[1]?.includes('Performance'), true, JSON.stringify(titles));
         expect(iris.columns.length, columnCount, 'A column was added');
         expect(await forgeDb.applications.query().where('model_id', '=', id).count(), 0);
@@ -3158,6 +3271,8 @@ category('UI: Runs', () => {
         [1, 'XGBoost', 'completed']);
       expect(typeof grid.dataFrame.get('Accuracy (validation)', 0), 'number');
       expect(grid.dataFrame.columns.names().includes('AUC-ROC (validation)'), true,
+        grid.dataFrame.columns.names().join(', '));
+      expect(grid.dataFrame.columns.names().includes('MCC (validation)'), true,
         grid.dataFrame.columns.names().join(', '));
       expect(grid.dataFrame.currentRowIdx, 0);
       expect(grid.props.showCurrentRowIndicator, true);

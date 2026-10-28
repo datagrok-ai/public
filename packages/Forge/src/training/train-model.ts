@@ -7,8 +7,9 @@ import {EngineRegistry} from '../engines/engine-registry';
 import {apply, EnginePrediction, isInteractive, LoopProgress, train, yieldToEventLoop} from '../engines/engine-calls';
 import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
-import {aucOf, ClassProbabilities, METRIC_IDS, MetricValues, metricsOf, probabilityOf, probabilityValues, Split,
-  taskOf} from '../metrics/metrics';
+import {classesOf, classLabelMetrics, ClassMetrics, ClassProbabilities, Curves, METRIC_IDS, MetricValues, metricsOf,
+  probabilityOf, Split, taskOf} from '../metrics/metrics';
+import {classMetricsOf, curvesOf, measure, Measured, SCORE_METRIC_IDS} from '../metrics/report';
 import {missingColumnsOf, MissingValuesSettings, missingValuesProblems, prepareMissingValues}
   from '../preparation/missing-values';
 import {PreparationSteps, PreparedFeatures, prepareFeatures, replayPostprocessing} from '../preparation/pipeline';
@@ -21,7 +22,13 @@ import {kFold} from './k-fold';
 export interface ColumnSchema { name: string; type: string; semType?: string }
 export interface TargetSchema extends ColumnSchema { categories?: string[] }
 export interface FeaturesSchema { columns: ColumnSchema[] }
-export interface MetricsRecord { train: MetricValues; validation: MetricValues; positiveClass?: string }
+export interface MetricsRecord {
+  train: MetricValues;
+  validation: MetricValues;
+  positiveClass?: string;
+  /** A classifier's per-class values, when EDA's report gave them. */
+  classes?: ClassMetrics[];
+}
 export type SplittingScheme = 'none' | 'kfold' | 'holdout';
 export interface Splitting { scheme: SplittingScheme; folds?: number; trainFraction?: number; isStratified?: boolean }
 
@@ -65,8 +72,6 @@ export interface ProbabilityScores {
   positiveClass: string;
   train: DG.Column;
   validation: DG.Column;
-  /** AUC-ROC of each split's scores, which no cutoff changes. */
-  auc: {train?: number; validation?: number};
 }
 
 export interface TrainingSetup {
@@ -90,6 +95,9 @@ export interface TrainingResult extends TrainingSetup {
   /** The final model's class probabilities of the training rows, when the method returns them (`proba_<class>`
    * columns after its prediction). */
   probabilities?: ClassProbabilities;
+  /** The ROC and PR curves of the final model's positive-class probability (or scores) on the training rows, for two
+   * classes with a positive class. */
+  curves?: Curves;
 }
 
 export interface TrainingProblems { target: string[]; features: string[]; missingValues: string[]; method: string[] }
@@ -149,7 +157,7 @@ export async function checkSelection(selection: TrainingSelection, engines: Engi
   const isListed = applicable.some((e) => e.name === engine.name);
   if (!isListed)
     problems.method.push(applicable.length === 0 ? NO_METHOD : cannotLearn(engine));
-  return {problems, engines: applicable, best: selectBestEngine(applicable, columns, target),
+  return {problems, engines: applicable, best: selectBestEngine(applicable, selection.features, selection.target),
     isInteractive: isListed && await retrainsLive(engine, columns, target), failed, prepared,
     insights: dataInsights(columns, selection.target)};
 }
@@ -310,22 +318,37 @@ export async function trainModel(request: TrainingRequest, progress?: LoopProgre
   const {options} = setup;
   if (options.postprocessingInfo.includes(BINARY_CLASSIFICATION) && options.positiveClass !== undefined) {
     const {positiveClass} = options;
-    const actual = request.target;
-    const scores: ProbabilityScores = {actual, positiveClass, train: trainPrediction, validation: outOfFold,
-      auc: {train: aucOf(actual, trainPrediction, positiveClass), validation: aucOf(actual, outOfFold, positiveClass)}};
-    return {...result, metrics: probabilityMetrics(scores, options), scores};
+    const scores: ProbabilityScores = {actual: request.target, positiveClass, train: trainPrediction,
+      validation: outOfFold};
+    const measured = (split: Split) => measure('classification', scores.actual,
+      replayPostprocessing(scores[split], options), positiveClass, {classes: [positiveClass], columns: [scores[split]]},
+      split === 'train');
+    const [onTrain, onValidation] = await Promise.all([measured('train'), measured('validation')]);
+    const {record, curves} = recordOf(onTrain, onValidation, positiveClass);
+    return {...result, metrics: record, scores, curves};
   }
-  const categories = setup.target.categories;
-  const positiveClass = categories !== undefined && categories.length === 2 ? categories[0] : undefined;
+  const classes = setup.target.categories === undefined ? [] : classesOf(request.target);
+  const positiveClass = classes.length === 2 ? classes[0] : undefined;
   const validationProbabilities = probabilities === undefined ? undefined :
     outOfFoldProbabilities(foldResults, probabilities, fold, position);
-  const metrics: MetricsRecord = {
-    train: metricsOf(setup.task, target, trainPrediction, positiveClass, probabilities),
-    validation: metricsOf(setup.task, target, outOfFold, positiveClass, validationProbabilities),
-  };
+  const [onTrain, onValidation] = await Promise.all([
+    measure(setup.task, target, trainPrediction, positiveClass, probabilities, true),
+    measure(setup.task, target, outOfFold, positiveClass, validationProbabilities)]);
+  const {record, curves} = recordOf(onTrain, onValidation, positiveClass);
+  return {...result, metrics: record, probabilities, curves};
+}
+
+/** The record of a training's two measurements, with the per-class values and the train split's curves of their
+ * reports. */
+function recordOf(train: Measured, validation: Measured, positiveClass: string | undefined):
+  {record: MetricsRecord; curves?: Curves} {
+  const record: MetricsRecord = {train: train.values, validation: validation.values};
   if (positiveClass !== undefined)
-    metrics.positiveClass = positiveClass;
-  return {...result, metrics, probabilities};
+    record.positiveClass = positiveClass;
+  const classes = classMetricsOf(train.report, validation.report);
+  if (classes !== undefined)
+    record.classes = classes;
+  return {record, curves: curvesOf(train.report)};
 }
 
 /** The out-of-fold probabilities of the classes of [final] (the final model's, whose column names they take),
@@ -347,26 +370,43 @@ export function outOfFoldProbabilities(results: EnginePrediction[], final: Class
   return {classes: final.classes, columns};
 }
 
-/** A Predict probability result cut again at [cutoff], without retraining: the metrics of the labels change, AUC-ROC
- * does not. Any other result is returned as it is. */
+/** A Predict probability result cut again at [cutoff], without retraining: the metrics of the labels change (overall
+ * and per class), AUC-ROC, average precision and the curves do not. Any other result is returned as it is. */
 export function recutResult(result: TrainingResult, cutoff: number): TrainingResult {
-  if (result.scores === undefined)
+  const {scores, metrics} = result;
+  if (scores === undefined)
     return result;
   const options = {...result.options, binaryClassificationThreshold: cutoff};
-  return {...result, options, metrics: probabilityMetrics(result.scores, options)};
+  const {actual, positiveClass} = scores;
+  const labels = {train: replayPostprocessing(scores.train, options),
+    validation: replayPostprocessing(scores.validation, options)};
+  const recut: MetricsRecord = {...metrics, positiveClass,
+    train: {...scoreValuesOf(metrics.train), ...metricsOf('classification', actual, labels.train, positiveClass)},
+    validation: {...scoreValuesOf(metrics.validation),
+      ...metricsOf('classification', actual, labels.validation, positiveClass)}};
+  if (metrics.classes !== undefined) {
+    const train = classLabelMetrics(actual, labels.train);
+    const validation = classLabelMetrics(actual, labels.validation);
+    recut.classes = metrics.classes.map((c) => ({...c,
+      train: {...scoreValuesOf(c.train), ...train.get(c.label)},
+      validation: {...scoreValuesOf(c.validation), ...validation.get(c.label)}}));
+  }
+  return {...result, options, metrics: recut};
+}
+
+/** The cutoff-independent values of [values]: AUC-ROC and average precision. */
+function scoreValuesOf(values: MetricValues): MetricValues {
+  const kept: MetricValues = {};
+  for (const id of SCORE_METRIC_IDS) {
+    if (values[id] !== undefined)
+      kept[id] = values[id];
+  }
+  return kept;
 }
 
 /** The final model's labels of the training rows: with Predict probability, its scores cut at the result's cutoff. */
 export function trainPredictionOf(result: TrainingResult): DG.Column {
   return result.scores === undefined ? result.prediction : replayPostprocessing(result.prediction, result.options);
-}
-
-/** The metrics of the labels the scores give at the cutoff of [options], and AUC-ROC of the scores themselves. */
-function probabilityMetrics(scores: ProbabilityScores, options: PreparationOptions): MetricsRecord {
-  const {actual, positiveClass} = scores;
-  const valuesOf = (split: Split): MetricValues =>
-    probabilityValues(actual, replayPostprocessing(scores[split], options), positiveClass, scores.auc[split]);
-  return {train: valuesOf('train'), validation: valuesOf('validation'), positiveClass};
 }
 
 /** A stored `metrics` value: the known metric ids with numbers; null without a train and a validation object. */
@@ -380,7 +420,20 @@ export function metricsRecordOf(value: unknown): MetricsRecord | null {
   const record: MetricsRecord = {train, validation};
   if (typeof value.positiveClass === 'string')
     record.positiveClass = value.positiveClass;
+  if (Array.isArray(value.classes)) {
+    const classes = value.classes.map(classMetricsRecordOf).filter((c): c is ClassMetrics => c !== null);
+    if (classes.length > 0)
+      record.classes = classes;
+  }
   return record;
+}
+
+function classMetricsRecordOf(value: unknown): ClassMetrics | null {
+  if (!isRecord(value) || typeof value.label !== 'string' || typeof value.rows !== 'number')
+    return null;
+  const train = metricValuesOf(value.train);
+  const validation = metricValuesOf(value.validation);
+  return train === null || validation === null ? null : {label: value.label, rows: value.rows, train, validation};
 }
 
 function metricValuesOf(value: unknown): MetricValues | null {

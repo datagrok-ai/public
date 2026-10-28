@@ -99,7 +99,7 @@ Returns one object with what the model's **Details**, **Performance** and **Acti
 | `featureTypes` | `{name: type}` |
 | `hyperparameters` | the method's settings |
 | `preparation` | the recorded preparation |
-| `metrics` | `train`, `validation` and, for two classes, `positiveClass`; null when none were saved |
+| `metrics` | `train`, `validation`, for two classes `positiveClass` and, for a classifier, `classes` (per class: `label`, `rows`, `train` and `validation` values of `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision`); null when none were saved |
 | `findings` | `{text, detail}` for a metric below its threshold or a validation value far from the training one |
 | `seed`, `splitting` | how the data was split |
 | `storage` | `mode`, with a reference its `source`, with a copy its `tableId` |
@@ -114,7 +114,10 @@ Returns one object with what the model's **Details**, **Performance** and **Acti
 The metric keys inside `train`, `validation` and `evaluation`: `mse`, `rmse`, `mae`, `r2` (regression), `accuracy`,
 `f1` (classification), `sensitivity`, `specificity`, `precision`, `npv` (two classes), `auc` (classifiers whose
 method returns probabilities, and Predict probability; with more than two classes, the average over the classes of
-the one-vs-rest AUCs).
+the one-vs-rest AUCs), `balancedAccuracy` (the average over the classes of the share of each class predicted
+correctly), `mcc` (Matthews correlation, -1 to 1), `averagePrecision` (the area under the precision-recall curve; as
+`auc`, only with probabilities). `auc` (when the report exists), `averagePrecision` and `classes` come from Crux
+through the EDA package's `classificationReport`.
 
 Errors (every function with `model`): `No Forge model 'X' is available to you.`,
 `Several models are named 'X'. Use the model id.`
@@ -159,8 +162,8 @@ Trains as the Predictive model view does, with its defaults and 5-fold cross-val
   `Training was cancelled.`
 
 Returns `modelId` (null when not saved), `runId`, `name`, `method`, `task`, `target`, `features`, `rowCount` (the
-rows trained on), `skippedRows`, `seed` and `metrics` (`train`, `validation` and, for two classes, `positiveClass`).
-Nothing is added to the table.
+rows trained on), `skippedRows`, `seed` and `metrics` (`train`, `validation`, for two classes `positiveClass` and, for
+a classifier, `classes`). Nothing is added to the table.
 
 Errors, for example:
 
@@ -218,7 +221,8 @@ Measures a saved model as **Run Evaluation** does:
 Returns `id`, `name`, `table` (the evaluated table's name), `target`, `rowCount` (the rows predicted), `skippedRows`
 (the rows with a missing feature value, handled as `applyModel` does; 0 for a model trained with the gaps kept),
 `positiveClass` (for two
-classes), `metrics` (`train` and `validation` as saved, `evaluation` on this data) and `insights` (each a `text`, with the numbers behind it in `detail` or `items`).
+classes), `metrics` (`train` and `validation` as saved, `evaluation` on this data), `classes` (a classifier: the
+evaluation's per-class values, each `label`, `rows`, `values`) and `insights` (each a `text`, with the numbers behind it in `detail` or `items`).
 Nothing is added to the table and the evaluation is not recorded as an application.
 
 Errors, besides the ones of `applyModel`'s mapping:

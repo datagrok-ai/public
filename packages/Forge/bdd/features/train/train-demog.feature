@@ -11,11 +11,12 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
   probability models are applied there, the ids model's dialog is read for its rows and cancelled. The ROC curve is claimed by the
   area under the points it draws against the AUC in its title, so a curve left from an earlier model fails.
   A cutoff re-cuts the shown result without a training: claimed as the same run shown, the same run count, and the
-  label metrics of the Train column moving against the ones noted before (Sensitivity down, Specificity up, AUC-ROC
-  the same). With Predict probability the Performance panel is narrow next to ROC Curve, so its grid is scrolled to
-  the Train column before its cells are read. The 50000-row table's default target is its last column, the boolean
-  control; the scenario sets Target to sex first. A disabled Train shows its reason through an overlay that answers a
-  moving pointer, not one that lands in a single move: its hovers slide the pointer onto it.
+  label metrics of the Train column moving against the ones noted before (Recall (Sensitivity) down, Specificity up, AUC-ROC
+  the same). With Predict probability the Performance panel is in the second row, next to Confusions, and its grid
+  shows only the Metric column until it is scrolled, so it is scrolled to the Train column before its cells are read.
+  The 50000-row table's default target is its last column, the boolean control; the scenario sets Target to sex
+  first. A disabled Train shows its reason through an overlay that answers a moving pointer, not one that lands in a
+  single move: its hovers slide the pointer onto it.
 
   Not claimed here: 3.15 step 1's Save of "Demog gaps" (claimed
   inside 5.8 without the Save: the same gestures; apply-demog's Background trains the saved model); the exact values
@@ -26,9 +27,9 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
   formula line is no hit area), the curve that "does not jump or redraw", the ROC panel "in place" and the viewers
   "not drawn from scratch" (pixel claims; the sizes of the panels of every row that keeps its panels across the cutoff
   are claimed: a row is laid out again when Insights & Tips joins it at 0.9, as the manual allows), Confusions and Wrong
-  predictions changing at 0.9 (claimable as repaints, left out), the Insights line (it depends on the model), the FPR
-  and TPR axis captions, the colours of Class balance and that it counts the rows used only; the grid highlight of a
-  hovered point (the table's mouse-over row is read through the API); 5.4's loader next to Performance, Train at the
+  predictions changing at 0.9 (claimable as repaints, left out), the Insights line (it depends on the model), the
+  `FPR (1 − Specificity)` and `Recall (Sensitivity)` axis captions, the colours of Class balance and that it counts
+  the rows used only; the grid highlight of a hovered point (the table's mouse-over row is read through the API); 5.4's loader next to Performance, Train at the
   right edge of the inputs (visual) and "the training takes a couple of seconds" (the cross is clicked as soon as the
   entry shows).
 
@@ -260,13 +261,13 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     And "Predict probability" input should not be checked
     And Method input should have value "XGBoost"
     And Method input should offer "CatBoost, Decision Tree, Extra Trees, Hist Gradient Boosting, k-Nearest Neighbors, LDA, Naive Bayes, Neural Network, Random Forest, RealMLP, Softmax, SVM, TabM, XGBoost"
-    And the "rows" reading of grid viewer in "Performance" results panel should be 7
+    And the "rows" reading of grid viewer in "Performance" results panel should be 10
     And the "text of cell 1 of Metric" reading of grid viewer in "Performance" results panel should be "Accuracy"
     And the "text of cell 2 of Metric" reading of grid viewer in "Performance" results panel should be "F1"
-    And the "text of cell 3 of Metric" reading of grid viewer in "Performance" results panel should be "Sensitivity"
+    And the "text of cell 3 of Metric" reading of grid viewer in "Performance" results panel should be "Recall (Sensitivity)"
     And the "text of cell 4 of Metric" reading of grid viewer in "Performance" results panel should be "Specificity"
     And the "text of cell 5 of Metric" reading of grid viewer in "Performance" results panel should be "Precision"
-    And the "text of cell 6 of Metric" reading of grid viewer in "Performance" results panel should be "Negative Predicted Value"
+    And the "text of cell 6 of Metric" reading of grid viewer in "Performance" results panel should be "Negative Predictive Value"
     And the "text of cell 7 of Metric" reading of grid viewer in "Performance" results panel should be "AUC-ROC"
     And "Performance" results panel should contain text "Positive class: F"
     When user hovers over label of "Predict probability" input
@@ -277,7 +278,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     And a new training's result should be shown
     And Method input should have value "Linear Regression"
     And Method input should offer "CatBoost, Decision Tree, Extra Trees, Hist Gradient Boosting, k-Nearest Neighbors, Linear Regression, Neural Network, PLS Regression, Random Forest, RealMLP, SVM, TabM, XGBoost"
-    And the "rows" reading of grid viewer in "Performance" results panel should be 7
+    And the "rows" reading of grid viewer in "Performance" results panel should be 10
     And the "text of cell 7 of Metric" reading of grid viewer in "Performance" results panel should be "AUC-ROC"
     When user hovers over label of "Positive class cutoff" input
     Then tooltip should contain text "Probability from which a row is predicted as F."
@@ -359,7 +360,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     And ROC Curve panel should be visible
     And the AUC in the title of ROC Curve panel should equal the "text of cell 7 of Train" reading of grid viewer in "Performance" results panel
     And the area under the curve of scatter plot viewer in ROC Curve panel should equal the AUC in the title of ROC Curve panel within 0.02
-    And the current row of scatter plot viewer in ROC Curve panel should be 51
+    And the current row of scatter plot viewer in ROC Curve panel should be its last point whose "Threshold" is at least 0.5
     And "Confusions" results panel should be visible
     And "Class balance" results panel should be visible
     And "Features" results panel should be visible
@@ -369,7 +370,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     Then tooltip should contain text "Threshold"
     When user remembers the sizes of the results panels
     And user enters "0.9" into "Positive class cutoff" input
-    Then the current row of scatter plot viewer in ROC Curve panel should be 91
+    Then the current row of scatter plot viewer in ROC Curve panel should be its last point whose "Threshold" is at least 0.9
     And the same training's result should be shown
     And the AUC in the title of ROC Curve panel should equal the "text of cell 7 of Train" reading of grid viewer in "Performance" results panel
     And the results panels should keep their remembered sizes
@@ -380,9 +381,9 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     When user scrolls grid viewer in "Performance" results panel to the "Train" column
     Then the AUC in the title of ROC Curve panel should equal the "text of cell 7 of Train" reading of grid viewer in "Performance" results panel
     And the area under the curve of scatter plot viewer in ROC Curve panel should equal the AUC in the title of ROC Curve panel within 0.02
-    And the current row of scatter plot viewer in ROC Curve panel should be 91
+    And the current row of scatter plot viewer in ROC Curve panel should be its last point whose "Threshold" is at least 0.9
     When user enters "0.5" into "Positive class cutoff" input
-    Then the current row of scatter plot viewer in ROC Curve panel should be 51
+    Then the current row of scatter plot viewer in ROC Curve panel should be its last point whose "Threshold" is at least 0.5
     And the "rows shown" reading of scatter plot viewer in "Predicted SEX vs Actual" results panel should be 5097
     And the table "forge-test-demog-{time}" should have no mouse-over row
     When user hovers over the point of row 1000 of scatter plot viewer in "Predicted SEX vs Actual" results panel

@@ -129,7 +129,7 @@ Feature: The model catalog: a model's panes, its commands, comparing, sharing, e
     When user expands "Performance" pane in context panel
     Then the "text of cell 1 of Metric" reading of grid viewer in "Performance" pane in context panel should be "Accuracy"
     And the "text of cell 2 of Metric" reading of grid viewer in "Performance" pane in context panel should be "F1"
-    And the "rows" reading of grid viewer in "Performance" pane in context panel should be 2
+    And the "rows" reading of grid viewer in "Performance" pane in context panel should be 6
     And the "text of cell 1 of Train" reading of grid viewer in "Performance" pane in context panel should be the "metrics.train.accuracy" of the Forge model "forge-test-cat-iris-{time}" on the server to three decimals
     And the "text of cell 1 of Validation" reading of grid viewer in "Performance" pane in context panel should be the "metrics.validation.accuracy" of the Forge model "forge-test-cat-iris-{time}" on the server to three decimals
     And the "text of cell 2 of Train" reading of grid viewer in "Performance" pane in context panel should be the "metrics.train.f1" of the Forge model "forge-test-cat-iris-{time}" on the server to three decimals

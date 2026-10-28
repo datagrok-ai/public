@@ -156,6 +156,7 @@ function binaryClasses(prediction: DG.Column, options: PreparationOptions): DG.C
     if (!prediction.isNone(i))
       classes.setString(i, prediction.getNumber(i) >= threshold ? positiveClass : negativeClass, false);
   }
+  classes.compact();
   return classes;
 }
 

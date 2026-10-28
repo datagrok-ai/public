@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "forge",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "tables": {
     "model": {
       "securityMode": "row",
@@ -24,7 +24,7 @@
         "feature_count": {"type": "int", "min": 0, "friendlyName": "Feature count"},
         "options": {"type": "json", "friendlyName": "Preparation", "description": "Preparation replay; keys compatible with the old models: preprocessingInfo, postprocessingInfo, positiveClass, negativeClass, binaryClassificationThreshold, targetType, allowNulls. missingValues: {mode, neighbors?, distance?, skippedRows}; the preprocessingInfo ids ignore-missing and impute-missing record the missing-value handling and are not replayed. skippedColumns: [names] records the columns Skip unique categories left out (replayed by name). oneHotCategories: {<column>: [categories]} records the training categories of one-hot (replayed); binaryClassificationThreshold, positiveClass, negativeClass, targetType: Predict probability"},
         "hyperparameters": {"type": "json", "friendlyName": "Hyperparameters", "description": "{<train function input>: value}"},
-        "metrics": {"type": "json", "friendlyName": "Metrics", "description": "{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?}; ids: mse, rmse, mae, r2, accuracy, f1, sensitivity, specificity, precision, npv, auc (classifiers whose method returns class probabilities, and Predict probability)"},
+        "metrics": {"type": "json", "friendlyName": "Metrics", "description": "{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?, classes?: [{label, rows, train: {<class metric id>: number}, validation: {...}}]}; ids: mse, rmse, mae, r2, accuracy, f1, sensitivity, specificity, precision, npv, auc, balancedAccuracy, mcc, averagePrecision (auc and averagePrecision for classifiers whose method returns class probabilities, and Predict probability; balancedAccuracy and mcc computed by Forge from the labels; auc (when the report exists), averagePrecision and classes from Crux through Eda:classificationReport); class metric ids: precision, sensitivity, f1, auc, averagePrecision"},
         "seed": {"type": "int", "friendlyName": "Seed"},
         "splitting": {"type": "json", "friendlyName": "Data split", "description": "{scheme: none|kfold|holdout, folds?, trainFraction?, isStratified?}"},
         "storage_mode": {"type": "string", "required": true, "choices": ["none", "reference", "copy"], "default": "none", "friendlyName": "Data storage", "description": "What the model keeps of its training data: none (a summary), reference (a link to the source), copy (an uploaded table)"},
@@ -64,7 +64,7 @@
         "hyperparameters": {"type": "json", "friendlyName": "Hyperparameters", "description": "{<train function input>: value}"},
         "seed": {"type": "int", "friendlyName": "Seed"},
         "splitting": {"type": "json", "friendlyName": "Data split", "description": "{scheme: none|kfold|holdout, folds?, trainFraction?, isStratified?}"},
-        "metrics": {"type": "json", "friendlyName": "Metrics", "description": "{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?}; ids: mse, rmse, mae, r2, accuracy, f1, sensitivity, specificity, precision, npv, auc (classifiers whose method returns class probabilities, and Predict probability)"},
+        "metrics": {"type": "json", "friendlyName": "Metrics", "description": "{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?, classes?: [{label, rows, train: {<class metric id>: number}, validation: {...}}]}; ids: mse, rmse, mae, r2, accuracy, f1, sensitivity, specificity, precision, npv, auc, balancedAccuracy, mcc, averagePrecision (auc and averagePrecision for classifiers whose method returns class probabilities, and Predict probability; balancedAccuracy and mcc computed by Forge from the labels; auc (when the report exists), averagePrecision and classes from Crux through Eda:classificationReport); class metric ids: precision, sensitivity, f1, auc, averagePrecision"},
         "dataset_name": {"type": "string", "friendlyName": "Table"},
         "row_count": {"type": "int", "min": 0, "friendlyName": "Training rows"},
         "dataset_fingerprint": {"type": "json", "friendlyName": "Data summary", "description": "{rowCount, columnCount, hash, columns: [{name, type, missingCount, min?, max?, mean?, categories?}]}"},

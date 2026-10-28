@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {Bool, Field, Float64, List, Table, Utf8, Vector, makeData, makeVector, tableToIPC,
   vectorFromArray} from 'apache-arrow';
 
-function nullSentinel(col: DG.Column): number {
+export function nullSentinel(col: DG.Column): number {
   if (col.type === DG.COLUMN_TYPE.INT)
     return DG.INT_NULL;
   if (col.type === DG.COLUMN_TYPE.FLOAT)
@@ -33,13 +33,8 @@ function targetVector(target: DG.Column): Vector {
   case DG.COLUMN_TYPE.INT:
   case DG.COLUMN_TYPE.FLOAT:
     return makeVector(featureMatrix([target]));
-  case DG.COLUMN_TYPE.STRING: {
-    const categories = target.categories;
-    const raw = target.getRawData();
-    const none = categories.indexOf('');
-    return vectorFromArray(Array.from({length: target.length}, (_, i) => raw[i] === none ? null : categories[raw[i]]),
-      new Utf8());
-  }
+  case DG.COLUMN_TYPE.STRING:
+    return utf8Vector(columnTexts(target));
   case DG.COLUMN_TYPE.BOOL:
     return vectorFromArray(target.toList(), new Bool());
   default:
@@ -61,7 +56,24 @@ export function matrixIpc(data: Float64Array, rows: number, cols: number, target
   const columns: Record<string, Vector> = {x};
   if (target !== undefined)
     columns.y = targetVector(target);
+  return vectorsIpc(columns);
+}
+
+/** Arrow IPC stream of named vectors */
+export function vectorsIpc(columns: Record<string, Vector>): Uint8Array {
   return tableToIPC(new Table(columns), 'stream');
+}
+
+export function utf8Vector(values: (string | null)[]): Vector {
+  return vectorFromArray(values, new Utf8());
+}
+
+/** The values of a string column; the empty category is null */
+export function columnTexts(col: DG.Column): (string | null)[] {
+  const categories = col.categories;
+  const raw = col.getRawData();
+  const none = categories.indexOf('');
+  return Array.from({length: col.length}, (_, i) => raw[i] === none ? null : categories[raw[i]]);
 }
 
 /** Arrow IPC stream with the features as `x: List<Float64>` and the target as `y` */
@@ -128,5 +140,21 @@ export function stringValues(table: Table, arrowName: string): (string | null)[]
   const out = new Array<string | null>(table.numRows);
   for (let i = 0; i < out.length; ++i)
     out[i] = vector.isValid(i) ? vector.get(i) : null;
+  return out;
+}
+
+/** The first value of a numeric column; undefined when null or not finite */
+export function scalar(table: Table, arrowName: string): number | undefined {
+  const v = table.getChild(arrowName)!.get(0);
+  const n = v === null ? NaN : Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/** The values of a numeric column; a null stays null, infinities stay */
+export function numbers(table: Table, arrowName: string): (number | null)[] {
+  const vector = table.getChild(arrowName)!;
+  const out = new Array<number | null>(table.numRows);
+  for (let i = 0; i < out.length; ++i)
+    out[i] = vector.isValid(i) ? Number(vector.get(i)) : null;
   return out;
 }

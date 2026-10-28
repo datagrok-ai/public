@@ -7,12 +7,10 @@ import {applicableTables} from '../catalog/applicable-tables';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {ModelRow} from '../generated/db';
-import {rocProbabilityOf} from '../metrics/metrics';
 import {evaluateModel, storedTrainingTable} from '../training/evaluation';
 import {ButtonGate} from './button-gate';
 import {storedSummary} from './metrics-table';
 import {reportError} from './report-error';
-import {classesOf} from './results-layout';
 import {ResultsPane} from './results-pane';
 
 const NO_TABLE = 'No open table has the columns the model needs. Open its training data or a similar table.';
@@ -120,11 +118,11 @@ export class EvaluationView extends DG.ViewBase {
         return view;
       const {values, rowCount, skippedRows, positiveClass} = result;
       await view.resultsPane.show({engine: loaded.engine, table, columns: result.columns, target: result.target,
-        prediction: result.prediction, score: result.score,
-        rocProbability: rocProbabilityOf(result.probabilities, positiveClass ?? classesOf(result.target)[0]),
+        prediction: result.prediction, score: result.score, curves: result.curves,
         keptRows: result.keptRows, positiveClass,
         cutoff: loaded.options.binaryClassificationThreshold, blob: result.blob,
-        summary: {...stored, evaluation: {values, tableName: table.name, rowCount, skippedRows}}});
+        summary: {...stored, evaluation: {values, tableName: table.name, rowCount, skippedRows,
+          ...(result.classes === undefined ? {} : {classes: result.classes})}}});
     } catch (e) {
       if (progress.canceled)
         grok.shell.warning('Evaluation was cancelled.');

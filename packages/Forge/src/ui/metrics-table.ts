@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {textColumn} from '../columns';
 import {ModelRow} from '../generated/db';
-import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricFinding, metricFindings, MetricId, MetricValues, Split}
-  from '../metrics/metrics';
+import {ClassValues, METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricFinding, metricFindings, MetricId,
+  MetricValues, Split} from '../metrics/metrics';
 import {preparationOptionsOf} from '../preparation/preparation-options';
 import {featuresHadGaps} from '../storage/dataset-fingerprint';
 import {MetricsRecord, metricsRecordOf} from '../training/train-model';
@@ -25,6 +25,8 @@ export interface MetricsEvaluation {
   tableName: string;
   rowCount: number;
   skippedRows: number;
+  /** The evaluation's per-class values. */
+  classes?: ClassValues[];
 }
 
 export interface MetricsSummary {

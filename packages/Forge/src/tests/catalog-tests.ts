@@ -133,6 +133,8 @@ category('Catalog', () => {
     expectFloat(df.get('AUC-ROC (validation)', 1), result.metrics.validation.auc ?? NaN, 1e-6);
     expectFloat(df.get('AUC-ROC (validation)', 2), classifier.metrics.validation.auc ?? NaN, 1e-6);
     expect(df.getCol('AUC-ROC (train)').isNone(0), true, 'The regressor has an AUC-ROC');
+    expect(names.includes('MCC (validation)') && names.includes('Balanced accuracy (train)'), true, names.join(', '));
+    expect(df.getCol('MCC (train)').isNone(0), true, 'The regressor has an MCC');
   }, {timeout: TIMEOUT});
 
   test('the comparison handler claims a comparison and shows it as forms', async () => {
@@ -467,6 +469,7 @@ category('Catalog', () => {
       expectArray(MEASUREMENTS.map((name) => details.featureTypes[name]), MEASUREMENTS.map(() => DG.COLUMN_TYPE.FLOAT));
       expectMetrics(details.metrics?.train ?? {}, stored.train, 1e-9);
       expectMetrics(details.metrics?.validation ?? {}, stored.validation, 1e-9);
+      expect(details.metrics?.classes?.length, 3);
       expectArray(details.findings.map((f) => f.text), metricFindings(stored).map((f) => f.text));
       expect(details.storage.mode, 'none');
       expect(details.storage.source === undefined && details.storage.tableId === undefined, true,

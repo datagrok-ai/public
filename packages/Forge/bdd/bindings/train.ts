@@ -313,11 +313,21 @@ export const curveAreaIsAuc = Then('the area under the curve of {widget} should 
   'against the number in "(AUC = …)" of the panel\'s title, polled until within the tolerance'});
 
 /* LIB-PROMOTE: a viewer's current row is no reading of the scatter plot's status (a grid has "current row"). */
-export const currentRowOf = Then('the current row of {widget} should be {int}', async (page: Page, target: ElementRef,
-  row: number) => {
-  await expect.poll(() => viewers.onViewer(page, target, (el) => DG.Widget.find(el).dataFrame.currentRowIdx + 1),
-    {message: `the current row of ${target.phrase} (1-based)`}).toBe(row);
-}, {description: 'the 1-based current row of the frame the viewer shows'});
+export const currentRowAtLeast = Then('the current row of {widget} should be its last point whose {string} is at ' +
+  'least {float}', async (page: Page, target: ElementRef, column: string, min: number) => {
+  await expect.poll(() => viewers.onViewer(page, target, (el, [name, least]) => {
+    const df = DG.Widget.find(el).dataFrame;
+    const values = df.col(name).toList();
+    let row = -1;
+    for (let i = 0; i < values.length; i++) {
+      if (values[i] >= least)
+        row = i;
+    }
+    return df.currentRowIdx === row ? 'that point' : `row ${df.currentRowIdx + 1} against row ${row + 1}`;
+  }, [column, min]), {message: `the current row of ${target.phrase} against its last point whose ${column} is at ` +
+    `least ${min} (1-based)`}).toBe('that point');
+}, {description: 'the current row of the frame the viewer shows against the last row whose column value is at least ' +
+  'the number (a ROC curve\'s cutoff point: its thresholds decrease)'});
 
 /** Records every frame the platform's semantic type detection reports from now on, once per document: a table opened
  * after it is waited for by awaitTableReady, whenever its detection lands. */

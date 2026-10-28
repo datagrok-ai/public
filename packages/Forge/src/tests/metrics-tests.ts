@@ -2,8 +2,11 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectExceptionAsync, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
 import {ForgeError} from '../forge-error';
-import {areValuesSimilar, aucOf, aucOfProbabilities, ClassProbabilities, classificationMetrics, metricFindings,
-  MetricId, MetricValues, probabilityOf, regressionMetrics, ROC_THRESHOLDS, rocCurveOf} from '../metrics/metrics';
+import {areValuesSimilar, aucOf, aucOfProbabilities, CLASS_METRIC_IDS, ClassProbabilities, classificationMetrics,
+  METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, metricFindings, MetricId, MetricValues, probabilityOf,
+  regressionMetrics} from '../metrics/metrics';
+import {ClassificationReport, classificationReport, curvesOf} from '../metrics/report';
+import {metricsRecordOf} from '../training/train-model';
 import {residualsOf, STATISTIC_IDS, statisticsOf} from '../metrics/statistics';
 
 const numbers = (values: (number | null)[]) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'n', values);
@@ -64,6 +67,21 @@ category('Metrics', () => {
       expectNoMetric(metrics, id);
   });
 
+  test('balanced accuracy and MCC match the hand-computed values and the Crux report', async () => {
+    const metrics = classificationMetrics(labels(['a', 'a', 'b', 'b', 'c']), labels(['a', 'b', 'b', 'b', 'c']), 'a');
+    expectMetric(metrics, 'balancedAccuracy', 2.5 / 3);
+    expectMetric(metrics, 'mcc', 11 / Math.sqrt(16 * 14));
+    const cases: [string[], string[]][] = [[['a', 'a', 'b', 'b', 'a', 'b'], ['a', 'b', 'b', 'a', 'a', 'b']],
+      [['a', 'a', 'b', 'b', 'c', 'c', 'a'], ['a', 'b', 'b', 'c', 'c', 'a', 'a']],
+      [['a', 'a', 'b', 'b'], ['a', 'c', 'b', 'b']], [['a', 'a', 'b'], ['a', 'a', 'a']]];
+    for (const [actual, predicted] of cases) {
+      const ts = classificationMetrics(labels(actual), labels(predicted), 'a');
+      const report = (await classificationReport(labels(actual), labels(predicted)))!;
+      expectFloat(ts.balancedAccuracy ?? NaN, report.balancedAccuracy, 1e-9, `balanced accuracy ${predicted}`);
+      expectFloat(ts.mcc ?? NaN, report.mcc, 1e-9, `mcc ${predicted}`);
+    }
+  });
+
   test('bool and string labels compare as text', async () => {
     const actual = DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'b', [true, false, true]);
     const metrics = classificationMetrics(actual, labels(['true', 'true', 'true']), 'true');
@@ -112,24 +130,53 @@ category('Metrics', () => {
     expectArray(belowOnValidation.map((f) => `${f.kind}: ${f.splits.join()}`), ['threshold: validation']);
   });
 
-  test('rocCurveOf: perfect separation, a hand-made curve, the rows without a score skipped', async () => {
-    const perfect = rocCurveOf(labels(['a', 'a', 'b', 'b']), numbers([0.9, 0.8, 0.2, 0.1]), 'a');
-    expect(perfect.fpr.length, ROC_THRESHOLDS.length);
-    const at = (threshold: number) => Math.round(threshold * 100);
-    expectArray([perfect.fpr[at(0.5)], perfect.tpr[at(0.5)]], [0, 1]);
-    expectArray([perfect.fpr[0], perfect.tpr[0]], [1, 1]);
-    expectArray([perfect.fpr[100], perfect.tpr[100]], [0, 0]);
+  test('METRIC_IDS ends with the Crux ids and every id has a label and a description', async () => {
+    expectArray(METRIC_IDS.slice(-3), ['balancedAccuracy', 'mcc', 'averagePrecision']);
+    expectArray(CLASS_METRIC_IDS, ['precision', 'sensitivity', 'f1', 'auc', 'averagePrecision']);
+    for (const id of METRIC_IDS)
+      expect(METRIC_LABELS[id].length > 0 && METRIC_DESCRIPTIONS[id].length > 0, true, `${id} has no text`);
+  });
 
-    // Positives a at 0.9 and 0.4, negatives b at 0.6 and 0.1; a score equal to the threshold counts as positive.
-    const curve = rocCurveOf(labels(['a', 'b', 'a', 'b', 'a']), numbers([0.9, 0.6, 0.4, 0.1, null]), 'a');
-    const point = (threshold: number) => [curve.fpr[at(threshold)], curve.tpr[at(threshold)]];
-    expectArray(point(0.05), [1, 1]);
-    expectArray(point(0.1), [1, 1]);
-    expectArray(point(0.3), [0.5, 1]);
-    expectArray(point(0.4), [0.5, 1]);
-    expectArray(point(0.5), [0.5, 0.5]);
-    expectArray(point(0.7), [0, 0.5]);
-    expectArray(point(0.95), [0, 0]);
+  test('metricsRecordOf keeps the classes and drops a malformed one', async () => {
+    const record = metricsRecordOf({train: {accuracy: 1}, validation: {accuracy: 0.5},
+      classes: [{label: 'a', rows: 2, train: {precision: 1}, validation: {precision: 0.5}}, {label: 3}]});
+    expect(record?.classes?.length, 1);
+    const [a] = record!.classes!;
+    expect(a.label, 'a');
+    expect(a.rows, 2);
+    expect(a.train.precision, 1);
+    expect(a.validation.precision, 0.5);
+    expect(metricsRecordOf({train: {}, validation: {}})?.classes === undefined, true, 'classes without any');
+  });
+
+  test('curvesOf turns the PR curve\'s null threshold into Infinity and gives none without curves', async () => {
+    const report: ClassificationReport = {n: 4, labels: ['a', 'b'], accuracy: 0.75, balancedAccuracy: 0.75, mcc: 0.5,
+      f1: 0.5, classes: [], confusion: [[1, 1], [0, 2]],
+      roc: {fpr: [0, 0, 1], tpr: [0, 1, 1], threshold: [Infinity, 0.9, 0.1]},
+      pr: {precision: [0.5, 1, 1], recall: [1, 0.5, 0], threshold: [0.1, 0.9, null]}};
+    const curves = curvesOf(report)!;
+    expect(curves.roc.threshold[0], Infinity);
+    expectArray(Array.from(curves.roc.tpr), [0, 1, 1]);
+    expect(curves.pr.threshold[2], Infinity);
+    expectFloat(curves.pr.threshold[1], 0.9, 1e-6);
+    expect(curvesOf({...report, roc: undefined, pr: undefined}) === undefined, true, 'curves without any');
+    expect(curvesOf(undefined) === undefined, true, 'curves without a report');
+  });
+
+  test('classificationReport gives no report when EDA\'s function fails', async () => {
+    const actual = labels(['a', 'b', 'a', 'b']);
+    const predicted = labels(['a', 'b', 'b', 'b']);
+    expect((await classificationReport(actual, predicted, 'a'))?.accuracy, 0.75);
+    const broken = {classes: ['a', 'b'], columns: [numbers([0.9, 0.1, 0.4, 0.2])]};
+    expect(await classificationReport(actual, predicted, 'a', broken) === undefined, true,
+      'A failed call gave a report');
+  });
+
+  test('metricFindings: a validation MCC far from the train one is a mismatch', async () => {
+    const findings = metricFindings({train: {mcc: 0.9}, validation: {mcc: 0.2}});
+    expect(findings.length, 1, JSON.stringify(findings));
+    expect(findings[0].kind, 'mismatch');
+    expect(findings[0].text, 'The validation MCC is far from the training one: the model may be overfitting.');
   });
 
   test('aucOfProbabilities: the positive class for two classes, the macro one-vs-rest average for more', async () => {

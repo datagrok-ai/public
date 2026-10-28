@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {apiMapping, APPLY_COLUMNS, loadedModelOf} from '../apply/apply-model';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
-import {MetricValues} from '../metrics/metrics';
+import {ClassValues, MetricValues} from '../metrics/metrics';
 import {findModelRow} from '../storage/model-store';
 import {evaluateModel, EvaluationResult, storedTrainingTable} from './evaluation';
 import {evaluationInsights, Insight} from './insights';
@@ -35,6 +35,8 @@ export interface EvaluateModelResult {
   positiveClass?: string;
   /** The stored train and validation values (empty without them) and the evaluation's. */
   metrics: {train: MetricValues; validation: MetricValues; evaluation: MetricValues};
+  /** The evaluation's per-class values (a classifier with EDA's report). */
+  classes?: ClassValues[];
   insights: InsightText[];
 }
 
@@ -71,6 +73,7 @@ export async function runEvaluateModel(input: EvaluateModelInput): Promise<Evalu
   return {id: row.id, name: row.name, table: table.name, target: target.name, rowCount: result.rowCount,
     skippedRows: result.skippedRows, ...(positiveClass === undefined ? {} : {positiveClass}),
     metrics: {train, validation, evaluation: result.values},
+    ...(result.classes === undefined ? {} : {classes: result.classes}),
     insights: evaluationInsights(result, {train, validation}).map(insightText)};
 }
 

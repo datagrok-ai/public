@@ -12,7 +12,8 @@ import {Engine} from '../engines/engine';
 import {apply, LoopProgress} from '../engines/engine-calls';
 import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb, ModelInsert} from '../generated/db';
-import {metricsOf, regressionMetrics} from '../metrics/metrics';
+import {regressionMetrics} from '../metrics/metrics';
+import {measure} from '../metrics/report';
 import {MissingValuesSettings} from '../preparation/missing-values';
 import {replayPostprocessing} from '../preparation/pipeline';
 import {isRecord, ONE_HOT, preparationOptionsOf} from '../preparation/preparation-options';
@@ -232,8 +233,8 @@ category('Apply', () => {
       expect(column.type, DG.COLUMN_TYPE.STRING);
       expect(column.getTag(PREDICTION_TAG), id);
       expect(skippedRows, 0);
-      expectMetrics(metricsOf('classification', iris.getCol('Species'), column, result.metrics.positiveClass),
-        {...result.metrics.train, auc: undefined}, 1e-9);
+      expectMetrics((await measure('classification', iris.getCol('Species'), column, result.metrics.positiveClass,
+        result.probabilities)).values, result.metrics.train, 1e-9);
       expectArray(column.toList(), await predictionsOf(model.engine, columnsOf(iris, MEASUREMENTS), result.blob));
       expectArray(iris.columns.names(), [...names, 'Species (predicted)']);
       expect(iris.getCol('col 1').type, DG.COLUMN_TYPE.INT);
@@ -557,6 +558,9 @@ category('Apply', () => {
       positiveClass: result.metrics.positiveClass});
     expectMetrics(evaluation.values, result.metrics.train, 1e-6);
     expect(typeof evaluation.values.auc, 'number');
+    expect(typeof evaluation.values.mcc, 'number');
+    expect(evaluation.classes?.length, 3);
+    expect(evaluation.curves === undefined, true, 'Three classes have curves');
     expect(evaluation.probabilities !== undefined, true, 'No class probabilities');
     expect(evaluation.rowCount, 150);
     expect(evaluation.target === target && evaluation.keptRows === null, true, 'The target was copied');
@@ -630,12 +634,16 @@ category('Apply', () => {
         mapping: exactMapping(model.features, iris), positiveClass: result.metrics.positiveClass});
       expect(evaluation.score !== undefined, true, 'No score');
       expect(evaluation.values.auc !== undefined, true, 'No AUC-ROC');
+      expect(evaluation.curves !== undefined, true, 'No curves');
+      expect(typeof evaluation.values.averagePrecision, 'number');
       expectMetrics(evaluation.values, result.metrics.train, 1e-6);
       expect(evaluation.prediction.toList().every((v) => v === 'versicolor' || v === 'virginica'), true,
         evaluation.prediction.categories.join());
       const api = await runEvaluateModel({model: id, table: iris, showProgress: false});
       expect(api.positiveClass, result.metrics.positiveClass);
       expectFloat(api.metrics.evaluation.auc ?? NaN, evaluation.values.auc ?? NaN, 1e-9, 'auc');
+      expect(api.classes?.length, 2);
+      expectFloat(api.metrics.evaluation.mcc ?? NaN, evaluation.values.mcc ?? NaN, 1e-9, 'mcc');
       expect(await applicationCount(id), 0);
     } finally {
       await deleteModel(id);
@@ -656,6 +664,7 @@ category('Apply', () => {
       expectFloat(evaluation.metrics.evaluation.accuracy ?? NaN, result.metrics.train.accuracy ?? NaN, 1e-6,
         'accuracy');
       expectFloat(evaluation.metrics.evaluation.auc ?? NaN, result.metrics.train.auc ?? NaN, 1e-6, 'auc');
+      expect(typeof evaluation.metrics.evaluation.balancedAccuracy, 'number');
       expectMetrics(evaluation.metrics.train, stored.train, 1e-12);
       expectMetrics(evaluation.metrics.validation, stored.validation, 1e-12);
       expect(Array.isArray(evaluation.insights) && evaluation.insights.every((i) => typeof i.text === 'string' &&

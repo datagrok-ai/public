@@ -49,7 +49,7 @@ export function resultInsights(input: {values: MetricValues; target: DG.Column; 
   if (sensitivity === undefined || specificity === undefined || sensitivity + specificity === 0 ||
     negative === undefined)
     return insights;
-  const detail = `Sensitivity ${sensitivity.toFixed(3)}, specificity ${specificity.toFixed(3)}.`;
+  const detail = `Recall (Sensitivity) ${sensitivity.toFixed(3)}, Specificity ${specificity.toFixed(3)}.`;
   if (sensitivity / specificity < LOW_RATIO)
     insights.push({text: `The model finds ${negative} much better than ${positive}.`, detail, panel: 'confusions'});
   else if (specificity / sensitivity < LOW_RATIO)

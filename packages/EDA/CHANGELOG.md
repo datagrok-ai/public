@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20932: Added the classificationReport function: Crux (scikit-learn) classification metrics, confusion matrix, per-class values and ROC / precision-recall curves of an actual and a predicted column, used by Forge
 * GROK-20932: Added class probabilities to the apply functions of every classifier but SVM: one proba_<class> column per class after the prediction
 * GROK-21061: Pareto front: Fixed result columns staying in the table after the viewer is closed
 * GROK-21017: Skip adding MVA viewers when the source table view was closed during the analysis

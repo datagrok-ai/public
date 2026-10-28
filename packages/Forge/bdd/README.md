@@ -241,9 +241,10 @@ Steps that another package could use carry a `LIB-PROMOTE:` comment.
 - The OK of "Select columns..." sets Features at a microtask after the click, and the view's check (`aria-busy`)
   starts in it, before the next step can read the page: a run count read after it waits for that check. The features
   still read the Features text back after a toggle that trains nothing.
-- The ROC Curve's scatter plot reports `rows shown` and its markers but no `current row`: the claim reads the current
-  row of the frame it shows. With Predict probability the Performance panel is narrow next to ROC Curve and its grid
-  reports only the Metric column until it is scrolled to Train.
+- The ROC Curve's scatter plot reports `rows shown` and its markers (a `circle` at the cutoff, `dot` elsewhere) but no
+  `current row`: the claim reads the current row of the frame it shows. With Predict probability the Performance
+  panel is in the second row, next to Confusions, and its grid reports only the Metric column until it is scrolled to
+  Train.
 - The context panel's panes are claimed in the DOM order of their headers (no order signal); a table is made the
   current object through the API (a corner click does not, and a cell click makes the cell current). For two seconds
   after a pane is expanded the platform drops any current-object change that is not forced (`propertyEdited`); a click

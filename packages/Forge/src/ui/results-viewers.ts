@@ -4,12 +4,12 @@ import * as rxjs from 'rxjs';
 import {copyInto, scatteredColumn} from '../apply/apply-model';
 import {textColumn} from '../columns';
 import {Engine} from '../engines/engine';
-import {ROC_THRESHOLDS, rocCurveOf} from '../metrics/metrics';
+import {classesOf, Curves, METRIC_LABELS} from '../metrics/metrics';
 import {residualsOf, STATISTIC_DESCRIPTIONS, statisticsOf} from '../metrics/statistics';
 import {releaseFrame, sharedFrame} from '../preparation/shared-frame';
 import {numberColumn, readOnlyGrid} from './data-grid';
 import {MetricsSummary} from './metrics-table';
-import {classesOf, PanelKey, ResultKind} from './results-layout';
+import {PanelKey, ResultKind} from './results-layout';
 import '../../css/forge.css';
 
 const NUMERICAL = DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME;
@@ -25,8 +25,14 @@ export const PANEL_TEXTS: {[key in PanelText]: [title: string, tooltip: string]}
   regressionVsActual: ['Predicted <name> vs Actual', 'The predicted value of each row against the actual one.'],
   classifierVsActual: ['Predicted <name> vs Actual',
     'The rows by two features, colored by the actual class; a cross marks a wrong prediction.'],
-  rocCurve: ['ROC Curve', 'How well the predicted probabilities separate the two classes at every cutoff; with ' +
-    'Predict probability the marked point is the current Positive class cutoff. The AUC is the one of Performance.'],
+  rocCurve: ['ROC Curve', 'Recall (sensitivity) against the false positive rate (1 − specificity) at every cutoff of ' +
+    'the positive class\'s probability (or score); with Predict probability the circle is the current Positive ' +
+    'class cutoff. The AUC is the one of Performance.'],
+  prCurve: ['PR Curve', 'Precision against recall at every cutoff of the positive class\'s probability (or score); ' +
+    'the dashed line is the positive class\'s share of the rows (a model that guesses); with Predict probability ' +
+    'the circle is the current Positive class cutoff. The AP (average precision) is the one of Performance.'],
+  perClass: ['Per-class', 'Each class against the rest: precision, recall (sensitivity), F1 and, with class ' +
+    'probabilities, AUC-ROC, one line per class in the class\'s color.'],
   metrics: ['Performance', 'How well the model predicts, on the training rows and in validation.'],
   confusions: ['Confusions', 'How often each actual class is predicted as each class.'],
   wrongPredictions: ['Wrong predictions', 'The rows whose predicted class differs from the actual one.'],
@@ -60,9 +66,8 @@ export interface ResultsData {
   prediction: DG.Column;
   /** Predict probability: the method's scores, Forge's own column. */
   score?: DG.Column;
-  /** A two-class classifier's probability of the positive class for the kept rows, Forge's own column: the ROC curve
-   * without Predict probability (`rocProbabilityOf`). */
-  rocProbability?: DG.Column;
+  /** The positive class's ROC and PR curves (two classes with a probability or score), from EDA's report. */
+  curves?: Curves;
   /** The table's rows the data holds; null for all of them. */
   keptRows: DG.BitSet | null;
   positiveClass?: string;
@@ -99,14 +104,16 @@ export interface Shown {
   /** The residuals of a regression, whether a label is right for a classifier. */
   marks: DG.Column;
   score?: DG.Column;
-  rocProbability?: DG.Column;
+  curves?: Curves;
   /** Forge's own frames of **Distributions ...** and **Statistics** (regression). */
   distributions?: DG.DataFrame;
   statistics?: DG.DataFrame;
-  /** **ROC Curve** (two classes, {@link rocScore}): Forge's own frame of the curve's points and the panel's title
-   * text. */
-  roc?: {frame: DG.DataFrame; title: HTMLElement};
+  /** **ROC Curve** and **PR Curve** (two classes; none otherwise), in {@link CURVES} order. */
+  curvePanels: CurvePanel[];
   wrong?: Mismatches;
+  /** **Per-class** (three or more classes): Forge's own frame of one row per class, the shown split's values per
+   * axis. */
+  perClass?: PerClassPanel;
   subs: rxjs.Subscription[];
   /** A hovered row is being passed on: the events that causes are not passed back. */
   isLinking: boolean;
@@ -116,10 +123,16 @@ export interface Shown {
   viewers: Map<PanelKey, DG.Viewer>;
 }
 
+/** A curve's panel: Forge's own frame of the curve's points, the viewer, the panel's title text and the frame's row
+ * marked as the cutoff (-1: none). */
+interface CurvePanel { curve: Curve; frame: DG.DataFrame; viewer: DG.Viewer; title: HTMLElement; marked: number }
+
+interface PerClassPanel { frame: DG.DataFrame; labels: string[]; axes: PerClassAxis[] }
+
 /** The viewers of [data]: one frame of the columns the method saw, the target, the prediction and Forge's own
  * columns, and the panels over it. A viewer that fails to build gives the frame and the links back. */
 export function buildShown(data: ResultsData, kind: ResultKind): Shown {
-  const {table, columns, target, prediction, score, rocProbability, keptRows} = data;
+  const {table, columns, target, prediction, score, curves, keptRows} = data;
   const kept = keptRows?.getSelectedIndexes() ?? null;
   let toFrame: Int32Array | null = null;
   if (kept !== null) {
@@ -128,14 +141,14 @@ export function buildShown(data: ResultsData, kind: ResultKind): Shown {
       toFrame[kept[i]] = i;
   }
   const shown: Shown = {table, kind, classes: classesOf(target), columns, target, keptRows, kept, toFrame,
-    prediction, score, rocProbability, subs: [], isLinking: false, panels: new Map(), viewers: new Map(),
+    prediction, score, curves, curvePanels: [], subs: [], isLinking: false, panels: new Map(), viewers: new Map(),
     ...previewFrame(data)};
   linkRows(shown, shown.frame, kept, toFrame, shown.subs);
   try {
     if (kind === 'regression')
       regressionPanels(shown);
     else
-      classifierPanels(shown, data.positiveClass);
+      classifierPanels(shown, data);
     featurePanels(shown);
   } catch (e) {
     releaseShown(shown);
@@ -262,7 +275,7 @@ function isSameData(shown: Shown, data: ResultsData, kind: ResultKind): boolean 
   const now = [...data.columns, data.target];
   return shown.table === data.table && shown.kind === kind &&
     (shown.score === undefined) === (data.score === undefined) && isSameRows(shown.keptRows, data.keptRows) &&
-    (shown.rocProbability === undefined) === (data.rocProbability === undefined) &&
+    (shown.curves === undefined) === (data.curves === undefined) &&
     before.length === now.length && now.every((c, i) => isSameColumn(before[i], c));
 }
 
@@ -294,24 +307,27 @@ function isSamePrefix(a: ArrayLike<number | string>, b: ArrayLike<number | strin
   return true;
 }
 
-/** The model's columns of [shown] take the values of [data]: the prediction, the scores and the ROC probability
- * (unless the same, as after a cutoff change), the marks, the regression frames. False, with nothing changed, when a
- * new column cannot be written into the old one. */
-function refill(shown: Shown, {prediction, score, rocProbability, positiveClass}: ResultsData): boolean {
-  const pairs: [DG.Column, DG.Column][] = [];
-  if (shown.score !== undefined && score !== undefined)
-    pairs.push([shown.score, score]);
-  if (shown.rocProbability !== undefined && rocProbability !== undefined)
-    pairs.push([shown.rocProbability, rocProbability]);
-  if (!canCopy(shown.prediction, prediction) || pairs.some(([to, from]) => !canCopy(to, from)))
+/** The model's columns of [shown] take the values of [data]: the prediction, the scores (unless the same, as after a
+ * cutoff change), the curves (unless the same object, as after a cutoff change), the marks, the per-class values, the
+ * regression frames. False, with nothing changed, when a new column cannot be written into the old one, **Per-class**
+ * comes or goes, or its classes or axes differ. */
+function refill(shown: Shown, {prediction, score, curves, cutoff, summary}: ResultsData): boolean {
+  const shownScore = shown.score;
+  const hasScores = shownScore !== undefined && score !== undefined;
+  if (!canCopy(shown.prediction, prediction) || (hasScores && !canCopy(shownScore, score)))
+    return false;
+  const values = shown.kind === 'multiclass' ? perClassValues(summary) : undefined;
+  const perClass = values !== undefined && values.labels.length > 0 && values.axes.length > 0 ? values : undefined;
+  if ((perClass === undefined) !== (shown.perClass === undefined))
+    return false;
+  if (perClass !== undefined && (perClass.labels.join('\n') !== shown.perClass!.labels.join('\n') ||
+    perClass.axes.join() !== shown.perClass!.axes.join()))
     return false;
   copyValues(shown.prediction, prediction);
-  const changed = pairs.filter(([to, from]) => !isSameColumn(to, from));
-  for (const [to, from] of changed)
-    copyValues(to, from);
-  const rocColumn = rocScore(shown);
-  if (changed.length > 0 && shown.roc !== undefined && rocColumn !== undefined)
-    fillRoc(shown.roc.frame, rocColumn, shown, positiveClass);
+  if (hasScores && !isSameColumn(shownScore, score))
+    copyValues(shownScore, score);
+  if (curves !== undefined && curves !== shown.curves)
+    replaceCurves(shown, curves, cutoff);
   const {target, marks, distributions, statistics} = shown;
   if (shown.kind === 'regression') {
     copyValues(marks, residualsOf(target, shown.prediction));
@@ -321,6 +337,10 @@ function refill(shown: Shown, {prediction, score, rocProbability, positiveClass}
   } else {
     marks.init((i) => !isWrong(target, shown.prediction, i));
     marks.fireValuesChanged();
+  }
+  if (perClass !== undefined) {
+    for (const id of perClass.axes)
+      shown.perClass!.frame.getCol(PER_CLASS_NAMES[id]).init((i) => perClass.values.get(id)![i]).fireValuesChanged();
   }
   if (distributions !== undefined) {
     copyValues(distributions.getCol('targets'),
@@ -366,12 +386,13 @@ function addViewer(shown: Shown, key: PanelKey & PanelText, viewer: DG.Viewer, n
   shown.viewers.set(key, viewer);
 }
 
-/** **ROC Curve** (two classes; {@link rocPanel}), **Predicted <target> vs Actual** (two numerical columns),
- * **Confusions** (fewer than ten classes), **Class balance** (the target's classes over the kept rows, each its own
- * color). **Wrong predictions** follows the prediction ({@link updateWrongPredictions}). */
-function classifierPanels(shown: Shown, positiveClass: string | undefined): void {
+/** **ROC Curve** and **PR Curve** (two classes; {@link curvePanels}), **Predicted <target> vs Actual** (two numerical
+ * columns), **Confusions** (fewer than ten classes), **Class balance** (the target's classes over the kept rows, each
+ * its own color), **Per-class** (three or more classes; {@link perClassPanel}). **Wrong predictions** follows the
+ * prediction ({@link updateWrongPredictions}). */
+function classifierPanels(shown: Shown, {summary, cutoff}: ResultsData): void {
   const {frame, panels, columns, target, prediction, marks} = shown;
-  rocPanel(shown, positiveClass);
+  curvePanels(shown, cutoff);
   const numerical = columns.filter((c) => c.matches(NUMERICAL));
   if (numerical.length >= 2) {
     panels.set('predictedVsActual', resultsPanel('classifierVsActual', DG.Viewer.scatterPlot(frame,
@@ -385,61 +406,205 @@ function classifierPanels(shown: Shown, positiveClass: string | undefined): void
   addViewer(shown, 'classBalance', DG.Viewer.barChart(frame, {splitColumnName: target.name,
     stackColumnName: target.name, valueColumnName: target.name, valueAggrType: DG.AGG.TOTAL_COUNT,
     showStackSelector: false, showCategorySelector: false, showValueSelector: false}));
+  if (shown.kind === 'multiclass')
+    perClassPanel(shown, summary);
 }
 
-const FPR = 'False Positive Rate';
-const TPR = 'True Positive Rate';
+const FPR = 'FPR (1 − Specificity)';
+const RECALL = METRIC_LABELS.sensitivity;
+const PRECISION = METRIC_LABELS.precision;
+const THRESHOLD = 'Threshold';
+const MARK = 'Mark';
+const POINT = 'point';
+const CUTOFF = 'cutoff';
+const MARK_SIZE = 8;
+const BASELINE = 'Non-informative baseline';
 
-/** The column the ROC curve is drawn from: the scores (Predict probability), else the ROC probability of a two-class
- * result; undefined otherwise. */
-function rocScore(shown: Shown): DG.Column | undefined {
-  return shown.score ?? (shown.kind === 'binary' ? shown.rocProbability : undefined);
+/** A curve of **ROC Curve** / **PR Curve**: its panel, axes, points and dashed non-informative baseline, which way
+ * its thresholds run and the **Performance** value its title shows. */
+interface Curve {
+  key: 'rocCurve' | 'prCurve';
+  x: string;
+  y: string;
+  /** The thresholds, x and y of the points. */
+  points: (curves: Curves) => [Float32Array, Float32Array, Float32Array];
+  baseline: (y: Float32Array) => string;
+  /** The thresholds decrease: the cutoff's row is searched from the end. */
+  fromEnd: boolean;
+  value: 'auc' | 'averagePrecision';
+  valueName: string;
 }
 
-/** **ROC Curve** of [shown]'s {@link rocScore}: a scatter plot over Forge's own frame of the curve's points
- * (`Threshold`, {@link FPR}, {@link TPR}, one row per threshold of {@link ROC_THRESHOLDS}) drawn as a line, with the
- * dashed non-informative baseline.
- * Nothing but the scores or the ROC probability changes it: a retrain refills the frame ({@link fillRoc}), a cutoff
- * moves its current row ({@link markRoc}). */
-function rocPanel(shown: Shown, positiveClass: string | undefined): void {
-  const score = rocScore(shown);
-  if (score === undefined)
+const CURVES: Curve[] = [
+  {key: 'rocCurve', x: FPR, y: RECALL, points: ({roc}) => [roc.threshold, roc.fpr, roc.tpr],
+    baseline: () => `\${${RECALL}} = \${${FPR}}`, fromEnd: true, value: 'auc', valueName: 'AUC'},
+  // The first point is the lowest threshold, where every row is predicted positive: its precision is the positive
+  // class's share.
+  {key: 'prCurve', x: RECALL, y: PRECISION, points: ({pr}) => [pr.threshold, pr.recall, pr.precision],
+    baseline: (precision) => `\${${PRECISION}} = ${precision[0].toFixed(4)}`, fromEnd: false,
+    value: 'averagePrecision', valueName: 'AP'},
+];
+
+/** The axes and the markers column of [curve]'s scatter plot, set again with a new frame. */
+function curveAxes(curve: Curve): {[name: string]: string} {
+  return {xColumnName: curve.x, yColumnName: curve.y, linesOrderColumnName: THRESHOLD, markersColumnName: MARK};
+}
+
+/** [curve]'s frame of [curves]: `Threshold`, x, y and `Mark` - a one-pixel dot per point, a circle at the row
+ * [cutoff] labels ([marked], -1 for none; {@link markCurves} moves it) - with the dashed non-informative baseline. */
+function curveFrame(curve: Curve, curves: Curves, cutoff: number | undefined):
+  {frame: DG.DataFrame; marked: number} {
+  const [threshold, x, y] = curve.points(curves);
+  const marked = thresholdRow(threshold, cutoff, curve.fromEnd);
+  const mark = textColumn(MARK, Array.from({length: x.length}, (_, i) => i === marked ? CUTOFF : POINT));
+  mark.meta.markers.setAll({[POINT]: DG.MARKER_TYPE.DOT, [CUTOFF]: DG.MARKER_TYPE.CIRCLE});
+  const frame = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(THRESHOLD, threshold),
+    DG.Column.fromFloat32Array(curve.x, x), DG.Column.fromFloat32Array(curve.y, y), mark]);
+  frame.meta.formulaLines.addLine({title: BASELINE, formula: curve.baseline(y), width: 1, style: 'dashed', min: 0,
+    max: 1});
+  return {frame, marked};
+}
+
+function curvePanel(shown: Shown, curve: Curve, curves: Curves, cutoff: number | undefined): CurvePanel {
+  const {frame, marked} = curveFrame(curve, curves, cutoff);
+  const viewer = DG.Viewer.scatterPlot(frame, {...curveAxes(curve), linesWidth: 3, markerDefaultSize: MARK_SIZE,
+    showCurrentPoint: true, legendVisibility: 'Never', showXAxis: true, showYAxis: true, autoLayout: false,
+    showXSelector: true, showYSelector: true, showSizeSelector: false, showColorSelector: false});
+  const title = ui.span([PANEL_TEXTS[curve.key][0]]);
+  shown.panels.set(curve.key, ui.divV([resultsTitle(curve.key, '', title), viewer.root], 'forge-results-panel'));
+  shown.viewers.set(curve.key, viewer);
+  return {curve, frame, viewer, title, marked};
+}
+
+/** **ROC Curve** and **PR Curve** of [shown]'s curves (two classes): scatter plots over Forge's own frames of the
+ * curves' points (one per distinct probability, as Crux computes them), drawn as lines in threshold order, [cutoff]
+ * circled. A retrain replaces the frames ({@link replaceCurves}), a cutoff moves their marks ({@link markCurves}). */
+function curvePanels(shown: Shown, cutoff: number | undefined): void {
+  const {curves} = shown;
+  if (curves === undefined || shown.kind !== 'binary')
     return;
-  const frame = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Threshold', [...ROC_THRESHOLDS]),
-    DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, FPR, ROC_THRESHOLDS.length),
-    DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, TPR, ROC_THRESHOLDS.length)]);
-  fillRoc(frame, score, shown, positiveClass);
-  frame.meta.formulaLines.addLine({title: 'Non-informative baseline', formula: `\${${TPR}} = \${${FPR}}`, width: 1,
-    style: 'dashed', min: 0, max: 1});
-  const viewer = DG.Viewer.scatterPlot(frame, {xColumnName: FPR, yColumnName: TPR, linesOrderColumnName: FPR,
-    linesWidth: 5, markerType: 'dot', showCurrentPoint: true, showXAxis: true, showYAxis: true,
-    autoLayout: false, showXSelector: true, showYSelector: true, showSizeSelector: false, showColorSelector: false});
-  const title = ui.span([PANEL_TEXTS.rocCurve[0]]);
-  shown.panels.set('rocCurve', ui.divV([resultsTitle('rocCurve', '', title), viewer.root], 'forge-results-panel'));
-  shown.viewers.set('rocCurve', viewer);
-  shown.roc = {frame, title};
+  shown.curvePanels = CURVES.map((curve) => curvePanel(shown, curve, curves, cutoff));
 }
 
-/** The {@link FPR} and {@link TPR} of [frame] from [score] against [shown]'s target, in place. */
-function fillRoc(frame: DG.DataFrame, score: DG.Column, {target, classes}: Shown,
-  positiveClass: string | undefined): void {
-  const {fpr, tpr} = rocCurveOf(target, score, positiveClass ?? classes[0]);
-  frame.getCol(FPR).init((i) => fpr[i]).fireValuesChanged();
-  frame.getCol(TPR).init((i) => tpr[i]).fireValuesChanged();
+/** The curve viewers of [shown] take new frames of [curves], [cutoff] circled. */
+function replaceCurves(shown: Shown, curves: Curves, cutoff: number | undefined): void {
+  for (const panel of shown.curvePanels) {
+    const {frame, marked} = curveFrame(panel.curve, curves, cutoff);
+    panel.viewer.dataFrame = frame;
+    panel.frame = frame;
+    panel.marked = marked;
+    panel.viewer.setOptions(curveAxes(panel.curve));
+  }
+  shown.curves = curves;
 }
 
-/** **ROC Curve**'s title with the AUC-ROC of the shown scores (the value of **Performance**, the trapezoid over every
- * score), and the cutoff's point as the curve's current row; each set only when it changes. */
-export function markRoc({roc}: Shown, {summary, cutoff}: ResultsData): void {
-  if (roc === undefined)
+/** The index of the threshold of [thresholds] that [cutoff] labels, from the start ([fromEnd] false) or the end; -1
+ * for none. */
+function thresholdRow(thresholds: ArrayLike<number>, cutoff: number | undefined, fromEnd: boolean): number {
+  if (cutoff === undefined)
+    return -1;
+  const n = thresholds.length;
+  for (let k = 0; k < n; k++) {
+    const i = fromEnd ? n - 1 - k : k;
+    if (thresholds[i] >= cutoff)
+      return i;
+  }
+  return -1;
+}
+
+/** **ROC Curve**'s and **PR Curve**'s titles with the AUC-ROC and the average precision of the shown scores (the
+ * values of **Performance**), and the cutoff's point as each curve's current row and its `circle` marker (the other
+ * points are dots; a row is positive when its score is at least the cutoff: the ROC's thresholds decrease, the PR's
+ * increase); each set only when it changes. */
+export function markCurves({curves, curvePanels}: Shown, {summary, cutoff}: ResultsData): void {
+  if (curves === undefined)
     return;
-  const auc = summary.evaluation?.values.auc ?? summary.metrics.train.auc;
-  const text = `${PANEL_TEXTS.rocCurve[0]}${auc === undefined ? '' : ` (AUC = ${auc.toFixed(3)})`}`;
-  if (roc.title.textContent !== text)
-    roc.title.textContent = text;
-  const row = cutoff === undefined ? -1 : Math.round(cutoff * (ROC_THRESHOLDS.length - 1));
-  if (roc.frame.currentRowIdx !== row)
-    roc.frame.currentRowIdx = row;
+  for (const panel of curvePanels) {
+    const {curve, frame, title} = panel;
+    const value = summary.evaluation?.values[curve.value] ?? summary.metrics.train[curve.value];
+    const text = `${PANEL_TEXTS[curve.key][0]}${titleValue(curve.valueName, value)}`;
+    if (title.textContent !== text)
+      title.textContent = text;
+    const row = thresholdRow(curve.points(curves)[0], cutoff, curve.fromEnd);
+    if (panel.marked !== row) {
+      const mark = frame.getCol(MARK);
+      if (panel.marked >= 0)
+        mark.set(panel.marked, POINT, false);
+      if (row >= 0)
+        mark.set(row, CUTOFF, false);
+      mark.fireValuesChanged();
+      panel.marked = row;
+    }
+    if (frame.currentRowIdx !== row)
+      frame.currentRowIdx = row;
+  }
+}
+
+function titleValue(name: string, value: number | undefined): string {
+  return value === undefined ? '' : ` (${name} = ${value.toFixed(3)})`;
+}
+
+const CLASS = 'Class';
+const PER_CLASS_AXES = ['precision', 'sensitivity', 'f1', 'auc'] as const;
+type PerClassAxis = typeof PER_CLASS_AXES[number];
+const PER_CLASS_NAMES: Record<PerClassAxis, string> = {precision: 'Precision', sensitivity: 'Recall', f1: 'F1',
+  auc: 'AUC-ROC'};
+/** The most characters of the class names (plus {@link LEGEND_ITEM_CHARS} per class for its color mark) a legend on
+ * top of **Per-class** holds in one line of a third of the pane; a longer one is not shown. */
+const MAX_TOP_LEGEND_CHARS = 40;
+const LEGEND_ITEM_CHARS = 3;
+
+interface PerClassValues { labels: string[]; axes: PerClassAxis[]; values: Map<PerClassAxis, (number | null)[]> }
+
+/** The classes of [summary] (the evaluation's first) and the {@link PER_CLASS_AXES} values of the shown split - the
+ * evaluation's when there is one, else the validation's; an axis whose values are all missing is left out. */
+function perClassValues(summary: MetricsSummary): PerClassValues {
+  const stored = summary.metrics.classes;
+  const evaluated = summary.evaluation?.classes;
+  const labels = [...new Set([...evaluated ?? [], ...stored ?? []].map((c) => c.label))];
+  const shownOf = (label: string) => evaluated !== undefined ?
+    evaluated.find((c) => c.label === label)?.values : stored?.find((c) => c.label === label)?.validation;
+  const values: PerClassValues['values'] = new Map();
+  for (const id of PER_CLASS_AXES) {
+    const axis = labels.map((label) => shownOf(label)?.[id] ?? null);
+    if (axis.some((v) => v !== null))
+      values.set(id, axis);
+  }
+  return {labels, axes: [...values.keys()], values};
+}
+
+/** The color of each of [labels] in [target]'s rows (its user color coding kept); a label the rows lack gets the
+ * categorical palette's color of its index. */
+function classColors(target: DG.Column, labels: string[]): {[label: string]: number} {
+  const firstRow = new Map<string, number>();
+  for (let i = 0; i < target.length; i++) {
+    const text = target.isNone(i) ? undefined : String(target.get(i));
+    if (text !== undefined && !firstRow.has(text))
+      firstRow.set(text, i);
+  }
+  return Object.fromEntries(labels.map((label, k) => {
+    const row = firstRow.get(label);
+    return [label, row === undefined ? DG.Color.getCategoricalColor(k) : DG.Color.getRowColor(target, row)];
+  }));
+}
+
+/** **Per-class**: a parallel coordinates plot of one line per class of [summary] over the {@link PER_CLASS_AXES}
+ * values of the shown split - the evaluation's when there is one, else the validation's - in the class's own color
+ * (the target's), the legend listing the classes on top when it is short ({@link MAX_TOP_LEGEND_CHARS}), else none;
+ * no in-chart filters, no color selector. */
+function perClassPanel(shown: Shown, summary: MetricsSummary): void {
+  const {labels, axes, values} = perClassValues(summary);
+  if (labels.length === 0 || axes.length === 0)
+    return;
+  const classes = textColumn(CLASS, labels);
+  classes.meta.colors.setCategorical(classColors(shown.target, labels));
+  const names = axes.map((id) => PER_CLASS_NAMES[id]);
+  const frame = DG.DataFrame.fromColumns([classes, ...axes.map((id, k) => numberColumn(names[k], values.get(id)!))]);
+  const legendChars = labels.reduce((sum, label) => sum + label.length + LEGEND_ITEM_CHARS, 0);
+  addViewer(shown, 'perClass', DG.Viewer.pcPlot(frame, {columnNames: names, colorColumnName: CLASS,
+    showCurrentLine: false, showFilters: false, showColorSelector: false, legendPosition: 'Top',
+    legendVisibility: legendChars <= MAX_TOP_LEGEND_CHARS ? 'Always' : 'Never'}));
+  shown.perClass = {frame, labels, axes};
 }
 
 /** **Predicted <target> vs Actual**, **Residuals**, **Distributions of predicted and actual <target>**,

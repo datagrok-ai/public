@@ -210,6 +210,18 @@ export function knnImpute(table: DG.DataFrame, columns: string[], features: stri
   return PackageFunctions.knnImpute(table, columns, features, neighbors, distance);
 }
 
+//description: Classification quality of predicted vs actual classes from Crux (scikit-learn metrics): accuracy, balanced accuracy, MCC, precision, recall, F1, the confusion matrix, per-class values and, with class probabilities, AUC-ROC, average precision and the ROC and precision-recall curves of the positive class. Used by Forge
+//input: column actual { description: The actual classes }
+//input: column predicted { description: The predicted classes }
+//input: string positiveClass { optional: true; description: The positive class of two classes - its precision, recall, F1, AUC-ROC, average precision and curves. Empty for none }
+//input: list<string> classes { optional: true; description: The classes the probability columns stand for, in column order }
+//input: dataframe probabilities { optional: true; description: One column per entry of classes - the probability of the class per row }
+//input: bool curves = false { description: Also the ROC and precision-recall curves of the positive class }
+//output: object report { description: n, labels, accuracy, balancedAccuracy, mcc, optional cohenKappa, precision, recall, auc and averagePrecision, f1, confusion, classes (per class: label, rows, optional precision and recall, f1, optional auc and averagePrecision), optional roc (fpr, tpr, threshold) and pr (precision, recall, threshold) }
+export async function classificationReport(actual: DG.Column, predicted: DG.Column, positiveClass: string, classes: string[], probabilities: DG.DataFrame, curves: boolean) : Promise<any> {
+  return await PackageFunctions.classificationReport(actual, predicted, positiveClass, classes, probabilities, curves);
+}
+
 //input: dataframe df 
 //input: column predictColumn 
 //input: int iterations = 1000 { caption: Iterations; min: 1; step: 50; max: 10000; description: Largest number of solver iterations (elastic net). }

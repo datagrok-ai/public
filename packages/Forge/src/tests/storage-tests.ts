@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectExceptionAsync, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
+import schema from '../../databases/forge/schema.json';
 import {applyAndRecord, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-model';
 import {exactMapping} from '../apply/column-matching';
 import {defaultHyperparameters} from '../engines/engine';
@@ -362,11 +363,11 @@ async function trainingCopiesOf(modelName: string): Promise<DG.TableInfo[]> {
 
 const modelCount = (id: string) => forgeDb.models.query().where('id', '=', id).count();
 
-// Saving through Forge:trainModel and saveTrainedModel, Forge:deleteModel, schema 0.1.14.
+// Saving through Forge:trainModel and saveTrainedModel, Forge:deleteModel, the schema.
 category('Storage', () => {
-  test('the schema is 0.1.14 and a training run records its source', async () => {
+  test('the schema is the package\'s and a training run records its source', async () => {
     const manifest = await grok.dapi.domains.schema('forge').manifest();
-    expect(manifest.version, '0.1.14');
+    expect(manifest.version, schema.version);
     const source = (await grok.dapi.domains.registry.rowProperties('forge.training_run'))
       .find((p) => p.name === 'source');
     expect(source?.description, 'Where the training was started: the Train view or Forge:trainModel');

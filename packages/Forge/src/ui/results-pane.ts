@@ -5,7 +5,7 @@ import {evaluationInsights, Insight} from '../training/insights';
 import {MetricsTable} from './metrics-table';
 import {reportError} from './report-error';
 import {PanelKey, resultKindOf, ResultsRow, resultsLayout} from './results-layout';
-import {buildShown, markRoc, Mismatches, PANEL_TEXTS, refillShown, releaseLinkedFrame, releaseShown, ResultsData,
+import {buildShown, markCurves, Mismatches, PANEL_TEXTS, refillShown, releaseLinkedFrame, releaseShown, ResultsData,
   resultsPanel, resultsTitle, Shown, updateWrongPredictions} from './results-viewers';
 import {bulletList} from './rich-tooltip';
 import '../../css/forge.css';
@@ -120,7 +120,7 @@ export class ResultsPane {
     const shown = isRefilled ? old : buildShown(data, kind);
     let dropped: Mismatches | undefined;
     try {
-      markRoc(shown, data);
+      markCurves(shown, data);
       dropped = updateWrongPredictions(shown);
     } catch (e) {
       if (!isRefilled)

@@ -3,7 +3,7 @@ import {category, expect, expectArray, expectExceptionAsync, test} from '@datagr
 import {defaultValuesOf} from '../engines/engine';
 import {imputeFunction, imputeSettingsOf, prepareMissingValues} from '../preparation/missing-values';
 import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
-import {preparationOptionsOf} from '../preparation/preparation-options';
+import {PreparationOptions, preparationOptionsOf} from '../preparation/preparation-options';
 import {columnNamed, expectReleased, failsWith, framesSharing, IMPUTE, names, NO_OPTIONS, valuesOf}
   from './test-data';
 
@@ -46,9 +46,16 @@ category('Preparation', () => {
 
   test('binary-classification maps scores to the two classes', async () => {
     const scores = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [0.2, 0.5, 0.9]);
-    const classes = replayPostprocessing(scores, {...NO_OPTIONS, postprocessingInfo: ['binary-classification'],
-      positiveClass: 'yes', negativeClass: 'no', binaryClassificationThreshold: 0.5, targetType: 'string'});
+    const options: PreparationOptions = {...NO_OPTIONS, postprocessingInfo: ['binary-classification'],
+      positiveClass: 'yes', negativeClass: 'no', binaryClassificationThreshold: 0.5, targetType: 'string'};
+    const classes = replayPostprocessing(scores, options);
     expectArray(classes.toList(), ['no', 'yes', 'yes']);
+    expectArray(classes.categories, ['no', 'yes']);
+    const gap = replayPostprocessing(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [0.2, null, 0.9]), options);
+    expect(gap.isNone(1), true, 'A missing score got a class');
+    expect(gap.get(0), 'no');
+    expect(gap.get(2), 'yes');
+    expectArray([...gap.categories].sort(), ['', 'no', 'yes']);
   });
 
   test('empty step lists leave the data untouched', async () => {

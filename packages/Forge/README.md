@@ -68,10 +68,14 @@ Hover a column header or a metric name to see what it means; hover a value to se
 | Task | Metrics |
 |---|---|
 | Regression | **MSE**, **RMSE** (mean squared error and its root; lower is better), **MAE** (mean absolute error; lower is better), **R2** (the share of the target's variation the model explains; 1 is perfect) |
-| Classification | **Accuracy** (the share of correct predictions), **F1** (balances precision and sensitivity; for more than two classes, the average over the classes) |
-| Two classes | also **Sensitivity**, **Specificity**, **Precision**, **Negative Predicted Value**, computed for the positive class named under the table (the first class in alphabetical order) |
-| Classifier with class probabilities | **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect), for every classifier whose method returns class probabilities (all EDA classifiers but SVM): for two classes, of the positive class's probability; with more than two classes, the average over the classes of the one-vs-rest AUCs |
-| Predict probability | the classification metrics of the labels the cutoff gives, and **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect) |
+| Classification | **Accuracy** (the share of correct predictions), **F1** (balances precision and recall; for more than two classes, the average over the classes), **Balanced accuracy** (the average over the classes of the share of each class predicted correctly), **MCC** (Matthews correlation, -1 to 1) |
+| Two classes | also **Recall (Sensitivity)**, **Specificity**, **Precision**, **Negative Predictive Value**, computed for the positive class named under the table (the first class in alphabetical order) |
+| Classifier with class probabilities | **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect), for every classifier whose method returns class probabilities (all EDA classifiers but SVM): for two classes, of the positive class's probability; with more than two classes, the average over the classes of the one-vs-rest AUCs; **Average precision** (the area under the precision-recall curve of the positive class's probability; the average over the classes for more than two) |
+| Predict probability | the classification metrics of the labels the cutoff gives, and **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect) and **Average precision** of the scores |
+
+Average precision, the per-class values and the curves come from Crux (scikit-learn's metrics) through the EDA
+package's `classificationReport` function; without it, or when it fails, Forge shows the other metrics only.
+They add a few Crux calls to every training of a classifier (about 0.3 s at 100,000 rows).
 
 Training runs in the browser's main thread: on large tables the page pauses for a few seconds.
 
@@ -79,21 +83,21 @@ Training runs in the browser's main thread: on large tables the page pauses for 
 
 The results area holds rows of panels, each under a grey title line (hover it for what the panel shows), every plot and
 grid filling its panel under the title; a list or a grid longer than its panel scrolls inside it. The rows
-start with set heights and the panels with set shares of the row's width: the plots wider than **Performance** in the
-first row of a two-class model, **Insights & Tips** narrower and **Wrong predictions** wider in the second row, equal
-widths elsewhere. Drag the divider between two panels or two rows to resize them, and scroll the area for the rows
-below; the sizes are kept when you switch to another view and back. A panel that does not apply is absent (its
-neighbours share the row) and an empty row disappears:
+start with set heights and the panels with set shares of the row's width: **Insights & Tips** narrower in the second
+row, equal widths elsewhere. Drag the divider between two panels or two rows to resize them, and scroll the area for
+the rows below; the sizes are kept when you switch to another view and back. A panel that does not apply is absent
+(its neighbours share the row) and an empty row disappears:
 
-| Task | Row 1 (350 px) | Row 2 (300 px) | Row 3 (450 px) |
+| Task | Row 1 (350 px) | Row 2 (350 px) | Row 3 (450 px) |
 |---|---|---|---|
 | Regression | **Predicted <target> vs Actual**, **Residuals**, **Distributions of predicted and actual <target>** | **Insights & Tips**, **Performance**, **Statistics** | **Features**, **Features correlation** |
-| Two classes | **Predicted <target> vs Actual**, **ROC Curve**, **Performance** | **Insights & Tips**, **Confusions**, **Wrong predictions** | **Features**, **Features correlation**, **Class balance** |
-| More classes | **Predicted <target> vs Actual**, **Confusions** | **Insights & Tips**, **Performance**, **Wrong predictions** | **Features**, **Features correlation**, **Class balance** |
+| Two classes | **Predicted <target> vs Actual**, **ROC Curve**, **PR Curve** (equal widths) | **Insights & Tips**, **Confusions**, **Performance** | **Features**, **Features correlation**, **Class balance** |
+| More classes | **Predicted <target> vs Actual**, **Confusions**, **Per-class** | **Insights & Tips**, **Performance**, **Class balance** | **Features**, **Features correlation** |
 
-When the second row is left with fewer than three panels (no **Wrong predictions**, or no **Insights & Tips**),
-**Class balance** moves to its right end. Then come the method's own views where the method has them (**PLS
-Regression**), at most three in a row of 350 px. Before the first result, and while **Train** runs, the area shows
+When the second row of a two-class model is left with two panels (no **Insights & Tips**), **Class balance** moves
+to its right end. Then come the method's own views where the method has them (**PLS Regression**), at most three in
+a row of 350 px, then, when the model gets a training row wrong, **Wrong predictions** as the last row (300 px), right
+above **Runs**. Before the first result, and while **Train** runs, the area shows
 only the **Performance** panel (its title and a hint) with **Insights & Tips** under it.
 
 **Insights & Tips** lists what is worth a look in the data and in the trained model (the panel is absent when there is
@@ -126,12 +130,18 @@ The viewers:
   histogram in two colors, `TARGET` and `PREDICTION`), **Statistics** (a grid of the eleven summary statistics, `min`
   ... `q3`, of the actual and of the predicted values; hover a statistic for its meaning)
 * a classifier: **ROC Curve** (for a two-class classifier whose method returns class probabilities, and with
-  **Predict probability**: the rate of true positives against the rate of false positives at the cutoffs 0, 0.01,
-  ..., 1 of the positive class's probability or of the scores, drawn as a line with a dot per cutoff, the dashed
-  `Non-informative baseline` and, with **Predict probability** only, the current **Positive class cutoff** marked;
-  the title shows **AUC-ROC** as **Performance** does,
-  `ROC Curve (AUC = 0.912)`, the area under all the scores or probabilities, which can differ slightly from the area under the 101
-  points drawn), **Predicted <target> vs Actual** (the first two
+  **Predict probability**: recall against the false positive rate at every distinct probability (or score) of the
+  positive class, drawn as a thin line (axes `FPR (1 − Specificity)` and `Recall (Sensitivity)`), the dashed
+  `Non-informative baseline` and, with **Predict probability** only, the current **Positive class cutoff** circled;
+  the title shows **AUC-ROC** as **Performance** does, `ROC Curve (AUC = 0.912)`: the area under the drawn
+  curve), **PR Curve** (the same two-class cases: precision against recall at every cutoff, axes
+  `Recall (Sensitivity)` and `Precision`; its dashed `Non-informative baseline` is the positive class's share
+  of the rows, the precision of a model that guesses; titled `PR Curve (AP = 0.812)` with **Average precision**, the
+  cutoff circled with **Predict probability**), **Per-class** (three or more classes: a parallel coordinates plot
+  with one line per class in the class's color - the same colors as **Features** and **Class balance** - across
+  **Precision**, **Recall**, **F1** and **AUC-ROC**, the validation values, the evaluation's in Run Evaluation; the
+  legend of the classes is on top when it is short, not shown otherwise; no in-chart filters or color selector),
+  **Predicted <target> vs Actual** (the first two
   numerical features colored by the target, when there are two; a right prediction is a circle, a wrong one a cross),
   **Confusions** (a confusion matrix, for fewer than 10 classes), **Wrong predictions** (when the model gets a training
   row wrong: a grid of those rows with their row numbers, every column of the table and, last, **Predicted
@@ -145,11 +155,12 @@ a row of the grid and the point lights up (rows skipped for missing values shift
 **Target**, **Features** and the rows used stay the same (a hyperparameter or **Method** change, a change of **Positive
 class cutoff**), a new result keeps the viewers, their zoom and the sizes you dragged, and only the predictions in them
 change; a panel that appears or goes (**Wrong predictions**, **Insights & Tips**, the method's own views) lays out again
-only the rows it changes (also row 3 when **Class balance** moves), at their starting sizes. Any other change builds the viewers again. A change of **Positive class cutoff**
-re-cuts the scores of the last training, without retraining: **ROC Curve** stays as it is and only its mark moves,
-the panels of the labels change; a retrain redraws the curve in the same plot.
+only the rows it changes (also row 3 when **Class balance** moves), at their starting sizes. Any other change builds
+the viewers again. A change of **Positive class cutoff** re-cuts the scores of the last training, without retraining:
+**ROC Curve** and **PR Curve** stay as they are and only their circles move, the panels of the labels change; a
+retrain redraws both curves in the same plots.
 
-Under the rows, the panel **Runs** (hover its title: `The trainings of this view, newest first; click one to set its
+Under the rows (and **Wrong predictions**), the panel **Runs** (hover its title: `The trainings of this view, newest first; click one to set its
 inputs again.`) lists every training of this view that was not stopped by a change (completed, failed or
 cancelled), newest first, the newest one current: **#** (its number in this view), **Method**,
 **Target**, **Features** (how many; hover for the names), **Preparation** (`impute (4 neighbors, Euclidean)`,
@@ -195,12 +206,13 @@ that disappears goes back to its default. Hover an input to see what it does.
   Checked, the model is trained as a regression on the two classes (1 for the positive class, the first one in
   alphabetical order, 0 for the other) and predicts the probability of the positive class; **Method** then lists the
   methods for a regression. The score is the regression model's prediction on the 0/1 target, not a calibrated
-  probability, and it can fall outside 0..1; **AUC-ROC** uses the scores, the other metrics the labels after the
-  cutoff. **Positive class cutoff** appears under it, a number from 0 to 1 (0.5 by default) with a slider: type a value
-  or move the slider, and a row whose score reaches the cutoff is predicted as the positive class. A value that is not
-  a number from 0 to 1 marks the input red, **Performance** says `Fix the settings.` and **Save** is unavailable. Changing
-  the cutoff does not retrain: the metrics are computed again from the scores of the last training, **AUC-ROC** and
-  **ROC Curve** stay (only its mark moves), and **Save** saves the model with the current cutoff. Applied to a table, the model adds the class labels, not the
+  probability, and it can fall outside 0..1; **AUC-ROC** and **Average precision** use the scores, the other metrics
+  the labels after the cutoff. **Positive class cutoff** appears under it, a number from 0 to 1 (0.5 by default)
+  with a slider: type a value or move the slider, and a row whose score reaches the cutoff is predicted as the
+  positive class. A value that is not a number from 0 to 1 marks the input red, **Performance** says `Fix the
+  settings.` and **Save** is unavailable. Changing the cutoff does not retrain: the metrics are computed again from the scores of the last training,
+  **AUC-ROC**, **Average precision**, **ROC Curve** and **PR Curve** stay (only their circles move), and
+  **Save** saves the model with the current cutoff. Applied to a table, the model adds the class labels, not the
   scores. Most methods' own class probabilities already give AUC-ROC and the ROC curve; check this to pick the
   positive class cutoff
 
@@ -345,7 +357,9 @@ await grok.functions.call('Forge:getModel', {model: 'Iris species'});
 `Forge:getModel` returns one object with what the model's **Details**, **Performance** and **Activity** show: `id`,
 `version`, `name`, `description`, `tags` (a list), `method`, `package`, `task`, `target`, `targetType`, `classes` (a
 classifier's classes), `features` (in training order), `featureTypes`, `hyperparameters`, `preparation` (the recorded
-preparation), `metrics` (`train`, `validation` and, for two classes, `positiveClass`; null when none were saved),
+preparation), `metrics` (`train`, `validation`, for two classes `positiveClass` and, for a classifier, `classes`:
+each class's `label`, `rows` and `train` / `validation` values of `precision`, `sensitivity`, `f1`, `auc`,
+`averagePrecision`; null when none were saved),
 `findings` (`{text, detail}` for a metric below its threshold or a validation value far from the training one, as
 the metrics grid marks them), `seed`, `splitting`, `storage` (`mode`, with a reference its `source`, with a copy its
 `tableId`), `dataset` (`name`, `rows` and `summary`, the data summary kept instead of the data), `hasModelFile`,
@@ -400,7 +414,8 @@ await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Pet
   training, which fails the call with `Training was cancelled.`
 
 The result: `modelId` (null when not saved), `runId`, `name`, `method`, `task`, `target`, `features`, `rowCount` (the
-rows trained on), `skippedRows`, `seed` and `metrics` (`train`, `validation` and, for two classes, `positiveClass`).
+rows trained on), `skippedRows`, `seed` and `metrics` (`train`, `validation`, for two classes `positiveClass` and, for
+a classifier, `classes`, the per-class values as `getModel` gives them).
 Nothing is added to the table. Every training that runs is recorded as a training run with the source `api`, saved or
 not, cancelled and failed ones too; a call refused for its inputs, or whose data preparation fails, records nothing. The errors a call gets, for example:
 
@@ -455,7 +470,8 @@ await grok.functions.call('Forge:evaluateModel', {model: 'Iris species', table: 
 The result: `id`, `name`, `table` (the evaluated table's name), `target`, `rowCount` (the rows predicted),
 `skippedRows` (the rows with a missing feature value, handled as `applyModel` does; 0 for a model trained with the
 gaps kept), `positiveClass`
-(for two classes), `metrics` (`train` and `validation` as saved, `evaluation` on this data) and `insights` (the **Insights & Tips** of the evaluation and of the
+(for two classes), `metrics` (`train` and `validation` as saved, `evaluation` on this data), `classes` (a classifier:
+the evaluation's per-class values, each class's `label`, `rows` and `values`) and `insights` (the **Insights & Tips** of the evaluation and of the
 saved metrics: each a `text`, with the numbers behind it in `detail` or `items`). Nothing is added to the table and the
 evaluation is not recorded as an application. `model` is an id or a unique name, as for `applyModel`. The errors,
 besides the ones of `applyModel`'s mapping:
@@ -544,7 +560,8 @@ model's commands, then come the panes:
   values), and without a fitting open table a warning says to open one. While it runs, the task bar shows
   `Evaluating <model>` with a cancel. The view **Evaluation: <model>** then shows the results in rows as after
   training: the insights, the **Performance** panel with an **Evaluation** column next to **Train** and **Validation** and
-  the bullet `Evaluation: <table> (<rows> rows)`, and the plots. Nothing is added to the table, a referenced or copied table does not
+  the bullet `Evaluation: <table> (<rows> rows)`, and the plots (**Per-class** shows the evaluation's values; a model
+  saved before the per-class values has rows such as **MCC** with only an Evaluation value). Nothing is added to the table, a referenced or copied table does not
   join your workspace, and an evaluation is not recorded as an application
 * **Activity**: a grid of the model's applications, newest first (up to 100): **When**, **Who**, **Table**, **Rows**,
   **Prediction column**, **Status**, **Source** (`ui` or `api`) and **Duration (ms)**; hover a header, a status or a

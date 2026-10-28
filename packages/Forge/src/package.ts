@@ -88,7 +88,7 @@ export async function applyModel(model: string, table: DG.DataFrame, columnNames
 //input: string tags {optional: true; description: Comma-separated tags of the saved model}
 //input: string storage = 'none' {optional: true; choices: ["none", "reference", "copy"]; description: What the saved model keeps of its training data. none keeps a summary, reference a link to the table's source (the table must have one), copy uploads the feature and target columns to the server}
 //input: bool showProgress = true {optional: true; description: Shows a cancellable progress in the task bar}
-//output: object result {description: modelId (null when not saved), runId, name, method, task, target, features, rowCount, skippedRows, seed and metrics with train, validation and positiveClass}
+//output: object result {description: modelId (null when not saved), runId, name, method, task, target, features, rowCount, skippedRows, seed and metrics with train, validation, positiveClass and, for a classifier, classes (per-class values)}
 export async function trainModel(table: DG.DataFrame, target: string, features: string[] | null, method: string | null,
   hyperparameters: {[name: string]: unknown} | null, options: {[name: string]: unknown} | null, name: string | null,
   description: string | null, tags: string | null, storage: string | null,
@@ -132,7 +132,7 @@ export async function listModels(name: string | null, target: string | null, tas
 //name: getModel
 //description: Everything Forge keeps about a saved model, as one object. Use it to explain a model, to check what a table needs before applying it, and to compare models
 //input: string model {description: Model id, or a name that only one model you can see has}
-//output: object result {description: id, version, name, description, tags, method, package, task, target, targetType, classes, features, featureTypes, hyperparameters, preparation, metrics (train, validation, positiveClass), findings, seed, splitting, storage (mode, source, tableId), dataset (name, rows, summary), hasModelFile, keepsTrainingRows, author, created, updated, lastRun (when, status) or null, applications and applicableTo (the open tables that fit, a column of a close name counts)}
+//output: object result {description: id, version, name, description, tags, method, package, task, target, targetType, classes, features, featureTypes, hyperparameters, preparation, metrics (train, validation, positiveClass, classes), findings, seed, splitting, storage (mode, source, tableId), dataset (name, rows, summary), hasModelFile, keepsTrainingRows, author, created, updated, lastRun (when, status) or null, applications and applicableTo (the open tables that fit, a column of a close name counts)}
 export async function getModel(model: string): Promise<ModelDetails> {
   return runGetModel(model, grok.shell.tables);
 }
@@ -156,7 +156,7 @@ export async function updateModel(model: string, name: string | null, descriptio
 //input: string target {optional: true; description: The column with the actual values. By default the column named as the model's target}
 //input: map columnNamesMap {optional: true; description: Model feature name -> table column name, for columns named differently}
 //input: bool showProgress = true {optional: true; description: Shows a cancellable progress Evaluating <model> in the task bar}
-//output: object result {description: id, name, table, target, rowCount, skippedRows, positiveClass, metrics with train, validation and evaluation, and insights}
+//output: object result {description: id, name, table, target, rowCount, skippedRows, positiveClass, metrics with train, validation and evaluation, classes (the evaluation's per-class values) and insights}
 export async function evaluateModel(model: string, table: DG.DataFrame | null, target: string | null,
   columnNamesMap: {[feature: string]: string} | null, showProgress: boolean | null): Promise<EvaluateModelResult> {
   return runEvaluateModel({model, table, target, columnNamesMap, showProgress});

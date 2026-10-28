@@ -2,10 +2,28 @@ import * as DG from 'datagrok-api/dg';
 import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
 
-export const METRIC_IDS =
-  ['mse', 'rmse', 'mae', 'r2', 'accuracy', 'f1', 'sensitivity', 'specificity', 'precision', 'npv', 'auc'] as const;
+export const METRIC_IDS = ['mse', 'rmse', 'mae', 'r2', 'accuracy', 'f1', 'sensitivity', 'specificity', 'precision',
+  'npv', 'auc', 'balancedAccuracy', 'mcc', 'averagePrecision'] as const;
 export type MetricId = typeof METRIC_IDS[number];
 export type MetricValues = Partial<Record<MetricId, number>>;
+
+/** The per-class ids of a classifier's `metrics.classes`: precision, sensitivity (recall), F1, AUC-ROC and average
+ * precision of the class against the rest. */
+export const CLASS_METRIC_IDS =
+  ['precision', 'sensitivity', 'f1', 'auc', 'averagePrecision'] as const satisfies readonly MetricId[];
+
+/** One class of a training: its rows among the measured ones and its values per split. */
+export interface ClassMetrics { label: string; rows: number; train: MetricValues; validation: MetricValues }
+
+/** One class of one measurement (an evaluation). */
+export interface ClassValues { label: string; rows: number; values: MetricValues }
+
+/** The ROC and precision-recall curves of the positive class, as Crux computes them: one point per distinct
+ * probability; `roc.threshold[0]` is Infinity and the PR's last point (precision 1, recall 0) carries Infinity too. */
+export interface Curves {
+  roc: {fpr: Float32Array; tpr: Float32Array; threshold: Float32Array};
+  pr: {precision: Float32Array; recall: Float32Array; threshold: Float32Array};
+}
 
 /** A classifier's class probabilities: one column per class, as the method's `proba_<class>` columns. */
 export interface ClassProbabilities {
@@ -18,14 +36,6 @@ export function probabilityOf(probabilities: ClassProbabilities, cls: string): D
   return k < 0 ? undefined : probabilities.columns[k];
 }
 
-/** The column a two-class result's ROC curve is drawn from: [positiveClass]'s probability when [probabilities] has
- * exactly two columns; undefined otherwise. */
-export function rocProbabilityOf(probabilities: ClassProbabilities | undefined,
-  positiveClass: string): DG.Column | undefined {
-  return probabilities === undefined || probabilities.classes.length !== 2 ? undefined :
-    probabilityOf(probabilities, positiveClass);
-}
-
 export const METRIC_LABELS: Record<MetricId, string> = {
   mse: 'MSE',
   rmse: 'RMSE',
@@ -33,11 +43,14 @@ export const METRIC_LABELS: Record<MetricId, string> = {
   r2: 'R2',
   accuracy: 'Accuracy',
   f1: 'F1',
-  sensitivity: 'Sensitivity',
+  sensitivity: 'Recall (Sensitivity)',
   specificity: 'Specificity',
   precision: 'Precision',
-  npv: 'Negative Predicted Value',
+  npv: 'Negative Predictive Value',
   auc: 'AUC-ROC',
+  balancedAccuracy: 'Balanced accuracy',
+  mcc: 'MCC',
+  averagePrecision: 'Average precision',
 };
 
 export const METRIC_DESCRIPTIONS: Record<MetricId, string> = {
@@ -51,18 +64,24 @@ export const METRIC_DESCRIPTIONS: Record<MetricId, string> = {
     'is explained by an independent variable. Values close to 1 indicate a good fit.',
   accuracy: 'Accuracy of the model. It measures the proportion of true results (both true positives and true ' +
     'negatives) among the total number of cases examined. Higher values indicate better overall performance.',
-  f1: 'F1 score of the model. It is the harmonic mean of precision and sensitivity; for more than two classes, ' +
+  f1: 'F1 score of the model. It is the harmonic mean of precision and recall; for more than two classes, ' +
     'the average of the per-class F1 scores. Higher values indicate better overall performance.',
-  sensitivity: 'Sensitivity (or recall) of the model. It measures the proportion of actual positives that are ' +
+  sensitivity: 'Recall (sensitivity) of the model. It measures the proportion of actual positives that are ' +
     'correctly identified. Higher values indicate fewer false negatives.',
   specificity: 'Specificity of the model. It measures the proportion of actual negatives that are correctly ' +
     'identified. Higher values indicate fewer false positives.',
   precision: 'Precision of the model. It measures the proportion of true positives among the total number of ' +
     'positive predictions. Higher values indicate fewer false positives.',
-  npv: 'Negative Predicted Value of the model. It measures the proportion of true negatives among the total number ' +
+  npv: 'Negative Predictive Value of the model. It measures the proportion of true negatives among the total number ' +
     'of negative predictions. Higher values indicate fewer false negatives.',
   auc: 'How well the model separates the classes: 1 is perfect, 0.5 is random guessing. With more than two classes, ' +
     'the average over the classes.',
+  balancedAccuracy: 'The average over the classes of the share of each class\'s rows predicted correctly: 1 is ' +
+    'perfect. Unlike Accuracy, a large class does not inflate it.',
+  mcc: 'Matthews correlation coefficient: how well the predicted classes agree with the actual ones over all ' +
+    'classes. 1 is perfect, 0 is random guessing, -1 is total disagreement.',
+  averagePrecision: 'The area under the precision-recall curve of the class probabilities: 1 is perfect, the ' +
+    'positive class\'s share of the rows is random guessing. With more than two classes, the average over the classes.',
 };
 
 /** A training's two measurements: the final model on its training rows, and the out-of-fold predictions. */
@@ -107,10 +126,9 @@ export function regressionMetrics(actual: DG.Column, predicted: DG.Column): Metr
   return {mse, rmse: Math.sqrt(mse), mae: absSum / n, r2};
 }
 
-export function classificationMetrics(actual: DG.Column, predicted: DG.Column,
-  positiveClass: string): MetricValues {
+/** The rows where both have a value, and each label's counts over them (compared as text). */
+function labelCounts(actual: DG.Column, predicted: DG.Column): {n: number; counts: Map<string, ClassCounts>} {
   const rows = pairedRows(actual, predicted);
-  const n = rows.length;
   const counts = new Map<string, ClassCounts>();
   const countsOf = (label: string): ClassCounts => {
     let c = counts.get(label);
@@ -130,14 +148,37 @@ export function classificationMetrics(actual: DG.Column, predicted: DG.Column,
       countsOf(p).fp++;
     }
   }
+  return {n: rows.length, counts};
+}
 
+/** Accuracy, balanced accuracy (the mean recall over the actual classes), MCC (multiclass, as scikit-learn), F1 and,
+ * for at most two classes, the shares of [positiveClass]. */
+export function classificationMetrics(actual: DG.Column, predicted: DG.Column,
+  positiveClass: string): MetricValues {
+  const {n, counts} = labelCounts(actual, predicted);
   let correct = 0;
   let f1Sum = 0;
+  let recallSum = 0;
+  let actualClasses = 0;
+  let trueTimesPredicted = 0;
+  let trueSquares = 0;
+  let predictedSquares = 0;
   for (const c of counts.values()) {
     correct += c.tp;
     f1Sum += f1Of(c);
+    const [t, p] = [c.tp + c.fn, c.tp + c.fp];
+    if (t > 0) {
+      recallSum += c.tp / t;
+      actualClasses++;
+    }
+    trueTimesPredicted += t * p;
+    trueSquares += t * t;
+    predictedSquares += p * p;
   }
-  const metrics: MetricValues = {accuracy: correct / n};
+  const covariance = correct * n - trueTimesPredicted;
+  const spread = (n * n - trueSquares) * (n * n - predictedSquares);
+  const metrics: MetricValues = {accuracy: correct / n, balancedAccuracy: recallSum / actualClasses,
+    mcc: spread === 0 ? 0 : covariance / Math.sqrt(spread)};
   if (counts.size > 2) {
     metrics.f1 = f1Sum / counts.size;
     return metrics;
@@ -160,6 +201,27 @@ export function classificationMetrics(actual: DG.Column, predicted: DG.Column,
   return metrics;
 }
 
+/** Each label's precision, sensitivity (recall) and F1 against the rest, as EDA's report gives them per class (a
+ * share without rows left out). */
+export function classLabelMetrics(actual: DG.Column, predicted: DG.Column): Map<string, MetricValues> {
+  const values = new Map<string, MetricValues>();
+  for (const [label, c] of labelCounts(actual, predicted).counts) {
+    const v: MetricValues = {};
+    if (c.tp + c.fp > 0)
+      v.precision = c.tp / (c.tp + c.fp);
+    if (c.tp + c.fn > 0)
+      v.sensitivity = c.tp / (c.tp + c.fn);
+    v.f1 = f1Of(c);
+    values.set(label, v);
+  }
+  return values;
+}
+
+/** The classes of [target], its empty category aside. */
+export function classesOf(target: DG.Column): string[] {
+  return target.categories.filter((c) => c !== '');
+}
+
 /** The metrics of [predicted]; with a classifier's [probabilities], also `auc` ({@link aucOfProbabilities}). */
 export function metricsOf(task: ModelTask, actual: DG.Column, predicted: DG.Column, positiveClass?: string,
   probabilities?: ClassProbabilities): MetricValues {
@@ -173,14 +235,6 @@ export function metricsOf(task: ModelTask, actual: DG.Column, predicted: DG.Colu
 /** A numerical target makes a regression, any other a classification. */
 export function taskOf(target: DG.Column): ModelTask {
   return target.matches(DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME) ? 'regression' : 'classification';
-}
-
-/** The metrics of the [labels] a Predict probability model cut its scores into, with the scores' [auc] when there is
- * one. */
-export function probabilityValues(actual: DG.Column, labels: DG.Column, positiveClass: string,
-  auc: number | undefined): MetricValues {
-  const values = classificationMetrics(actual, labels, positiveClass);
-  return auc === undefined ? values : {...values, auc};
 }
 
 /** The area under the ROC curve of [score] for [positiveClass] of [actual]: the trapezoid over the rows sorted by
@@ -224,45 +278,6 @@ export function aucOfProbabilities(actual: DG.Column, probabilities: ClassProbab
   const aucs = probabilities.classes.map((cls, k) => aucOf(actual, probabilities.columns[k], cls))
     .filter((auc): auc is number => auc !== undefined);
   return aucs.length === 0 ? undefined : aucs.reduce((sum, auc) => sum + auc, 0) / aucs.length;
-}
-
-/** The cutoffs the ROC curve is drawn at: 0, 0.01, ..., 1. */
-export const ROC_THRESHOLDS: readonly number[] = Array.from({length: 101}, (_, i) => i / 100);
-
-/** The points of a ROC curve, one per threshold of {@link ROC_THRESHOLDS}. */
-interface RocCurve {
-  /** The share of the negative rows scored at or above the threshold. */
-  fpr: Float32Array;
-  /** The share of the positive rows scored at or above the threshold. */
-  tpr: Float32Array;
-}
-
-/** The ROC curve of [score] for [positiveClass] of [actual]: at each of {@link ROC_THRESHOLDS}, a row is predicted
- * positive when its score is at least the threshold (as the cutoff cuts the scores); a rate whose class has no row is
- * 0. */
-export function rocCurveOf(actual: DG.Column, score: DG.Column, positiveClass: string): RocCurve {
-  const paired = pairedRows(actual, score);
-  const values = Float64Array.from(paired, (i) => score.getNumber(i));
-  const isPositive = paired.map((i) => String(actual.get(i)) === positiveClass);
-  const positives = isPositive.filter((p) => p).length;
-  const negatives = paired.length - positives;
-  const fpr = new Float32Array(ROC_THRESHOLDS.length);
-  const tpr = new Float32Array(ROC_THRESHOLDS.length);
-  for (const [t, threshold] of ROC_THRESHOLDS.entries()) {
-    let tp = 0;
-    let fp = 0;
-    for (let k = 0; k < values.length; k++) {
-      if (values[k] >= threshold) {
-        if (isPositive[k])
-          tp++;
-        else
-          fp++;
-      }
-    }
-    tpr[t] = positives > 0 ? tp / positives : 0;
-    fpr[t] = negatives > 0 ? fp / negatives : 0;
-  }
-  return {fpr, tpr};
 }
 
 /** The built-in tool's closeness of two values: within 0.1 when both are small (their mean magnitude below 1),

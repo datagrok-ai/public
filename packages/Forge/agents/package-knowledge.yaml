@@ -16,6 +16,10 @@ keywords:
   - accuracy
   - F1
   - AUC-ROC
+  - balanced accuracy
+  - MCC
+  - average precision
+  - PR curve
   - R2
   - RMSE
   - MAE

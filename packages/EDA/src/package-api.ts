@@ -173,6 +173,19 @@ export namespace funcs {
   }
 
   /**
+   * Classification quality of predicted vs actual classes from Crux (scikit-learn metrics): accuracy, balanced accuracy, MCC, precision, recall, F1, the confusion matrix, per-class values and, with class probabilities, AUC-ROC, average precision and the ROC and precision-recall curves of the positive class. Used by Forge
+   * @param {DG.Column} actual - The actual classes
+   * @param {DG.Column} predicted - The predicted classes
+   * @param {string} positiveClass - The positive class of two classes - its precision, recall, F1, AUC-ROC, average precision and curves. Empty for none
+   * @param {any} classes - The classes the probability columns stand for, in column order
+   * @param {DG.DataFrame} probabilities - One column per entry of classes - the probability of the class per row
+   * @param {boolean} curves - Also the ROC and precision-recall curves of the positive class
+   */
+  export async function classificationReport(actual: DG.Column , predicted: DG.Column , positiveClass: string | undefined, classes: any | undefined, probabilities: DG.DataFrame | undefined, curves: boolean ): Promise<any> {
+    return await grok.functions.call('EDA:ClassificationReport', { actual, predicted, positiveClass, classes, probabilities, curves });
+  }
+
+  /**
    * @param {number} iterations - Largest number of solver iterations (elastic net).
    * @param {number} alpha - L1 (Lasso) regularization term. 0 means plain ordinary least squares.
    * @param {number} lambda - L2 (Ridge) regularization term. 0 means plain ordinary least squares.

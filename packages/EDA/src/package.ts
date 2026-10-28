@@ -43,6 +43,7 @@ import {isSoftmaxApplicable, isSoftmaxInteractive, isSvmApplicable, isSvmInterac
   trainMlp, isRealMlpApplicable, isRealMlpInteractive, trainRealMlp, isTabmApplicable, isTabmInteractive,
   trainTabm} from './crux/methods';
 import {cruxPredict, modelFeatures, readCruxManifest} from './crux/crux-model';
+import {ClassificationReport, classificationReport} from './crux/crux-metrics';
 
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
@@ -465,6 +466,26 @@ export class PackageFunctions {
       throw new Error(`knnImpute: unknown distance "${distance}"; use ${distances.join(' or ')}`);
     imputeColumns(table, columns?.length ? columns : features, features, neighbors, distance as DISTANCE_TYPE);
     return table;
+  }
+
+
+  @grok.decorators.func({
+    'name': 'classificationReport',
+    'description': 'Classification quality of predicted vs actual classes from Crux (scikit-learn metrics): accuracy, balanced accuracy, MCC, precision, recall, F1, the confusion matrix, per-class values and, with class probabilities, AUC-ROC, average precision and the ROC and precision-recall curves of the positive class. Used by Forge',
+    'outputs': [{'type': 'object', 'name': 'report', 'options': {'description': 'n, labels, accuracy, balancedAccuracy, mcc, optional cohenKappa, precision, recall, auc and averagePrecision, f1, confusion, classes (per class: label, rows, optional precision and recall, f1, optional auc and averagePrecision), optional roc (fpr, tpr, threshold) and pr (precision, recall, threshold)'}}],
+  })
+  static async classificationReport(
+    @grok.decorators.param({'type': 'column', 'options': {'description': 'The actual classes'}}) actual: DG.Column,
+    @grok.decorators.param({'type': 'column', 'options': {'description': 'The predicted classes'}}) predicted: DG.Column,
+    @grok.decorators.param({'type': 'string', 'options': {'optional': true, 'description': 'The positive class of two classes - its precision, recall, F1, AUC-ROC, average precision and curves. Empty for none'}}) positiveClass: string,
+    @grok.decorators.param({'type': 'list<string>', 'options': {'optional': true, 'description': 'The classes the probability columns stand for, in column order'}}) classes: string[],
+    @grok.decorators.param({'type': 'dataframe', 'options': {'optional': true, 'description': 'One column per entry of classes - the probability of the class per row'}}) probabilities: DG.DataFrame,
+    @grok.decorators.param({'type': 'bool', 'options': {'initialValue': 'false', 'description': 'Also the ROC and precision-recall curves of the positive class'}}) curves: boolean): Promise<ClassificationReport> {
+    const columns = probabilities?.columns.toList() ?? [];
+    const given = classes?.length ? {classes, columns} : undefined;
+    if (given !== undefined && given.columns.length !== given.classes.length)
+      throw new Error('classificationReport: classes and probabilities differ in length');
+    return classificationReport(actual, predicted, positiveClass || undefined, given, curves === true);
   }
 
 

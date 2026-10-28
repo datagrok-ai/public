@@ -5,7 +5,8 @@ import {ApplyRequest, checkApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, missin
 import {ColumnMapping} from '../apply/column-matching';
 import {LoopProgress} from '../engines/engine-calls';
 import {ModelRow} from '../generated/db';
-import {aucOf, ClassProbabilities, MetricValues, metricsOf, probabilityValues, taskOf} from '../metrics/metrics';
+import {ClassProbabilities, ClassValues, Curves, MetricValues, taskOf} from '../metrics/metrics';
+import {classValuesOf, curvesOf, measure} from '../metrics/report';
 import {BINARY_CLASSIFICATION} from '../preparation/preparation-options';
 import {columnRowCopy} from '../preparation/row-copy';
 import {openDatasetRef, storedDatasetRef} from '../storage/dataset-ref';
@@ -38,6 +39,10 @@ export interface EvaluationResult {
   positiveClass?: string;
   /** The method's class probabilities of the kept rows, when it returns them. */
   probabilities?: ClassProbabilities;
+  /** The curves of the positive class (two classes with a probability or score). */
+  curves?: Curves;
+  /** The per-class values of the evaluation. */
+  classes?: ClassValues[];
 }
 
 /** Applies the model to the table's rows (missing values handled as at training, `missingValuesOf`) and measures the
@@ -54,12 +59,13 @@ export async function evaluateModel(request: EvaluationRequest, progress?: LoopP
   const positiveClass = request.positiveClass ?? options.positiveClass;
   const result = {columns: rows.columns, target, prediction: rows.labels, keptRows: rows.keptRows,
     skippedRows: rows.skippedRows, rowCount: target.length, blob: rows.blob, positiveClass};
-  if (options.postprocessingInfo.includes(BINARY_CLASSIFICATION) && positiveClass !== undefined) {
-    const values = probabilityValues(target, rows.labels, positiveClass, aucOf(target, rows.raw, positiveClass));
-    return {...result, values, score: rows.raw};
-  }
-  return {...result, values: metricsOf(taskOf(target), target, rows.labels, positiveClass, rows.probabilities),
-    probabilities: rows.probabilities};
+  const isProbability = options.postprocessingInfo.includes(BINARY_CLASSIFICATION) && positiveClass !== undefined;
+  const probabilities = isProbability ? {classes: [positiveClass], columns: [rows.raw]} : rows.probabilities;
+  const {values, report} = await measure(isProbability ? 'classification' : taskOf(target), target, rows.labels,
+    positiveClass, probabilities, true);
+  const curves = curvesOf(report);
+  return {...result, values, ...(isProbability ? {score: rows.raw} : {probabilities: rows.probabilities}),
+    ...(report === undefined ? {} : {classes: classValuesOf(report)}), ...(curves === undefined ? {} : {curves})};
 }
 
 /** The data the model keeps a reference to, else its uploaded copy, opened without joining the workspace; null when

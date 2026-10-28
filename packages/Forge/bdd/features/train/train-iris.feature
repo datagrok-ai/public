@@ -84,7 +84,7 @@ Feature: Training a classifier on iris in the Train view
     Then Target input should be visible
     And the "text of cell 1 of Metric" reading of grid viewer in "Performance" results panel should be "Accuracy"
     And the "text of cell 2 of Metric" reading of grid viewer in "Performance" results panel should be "F1"
-    And the "rows" reading of grid viewer in "Performance" results panel should be 2
+    And the "rows" reading of grid viewer in "Performance" results panel should be 6
     And the "text of cell 1 of Train" reading of grid viewer in "Performance" results panel should be between 0.95 and 1
     And the "text of cell 1 of Validation" reading of grid viewer in "Performance" results panel should be between 0.85 and 1
     And "Performance" results panel should contain text "Validation: 5-fold cross-validation on 150 rows"
