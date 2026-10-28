@@ -60,11 +60,11 @@ Datagrok can't open `.jmp` files today. Users have to open each one in JMP and e
 
 ## 3. Package Layout
 
-A new standalone package, `public/packages/Jmp` (`@datagrok/jmp`), mirrors `public/packages/Minitab`:
+A new standalone package, `public/packages/Jmp` (`@datagrok/jmp-reader`), mirrors `public/packages/Minitab`:
 
 ```
 packages/Jmp/
-├── package.json            # @datagrok/jmp, category "Data Access"; runtime deps: datagrok-api, u2
+├── package.json            # @datagrok/jmp-reader, category "Data Access"; runtime deps: datagrok-api, u2
 ├── README.md               # user-facing: what opens how, limitations, how to test
 ├── CREDITS.md              # JMPReader.jl (MIT) attribution + test fixture provenance
 ├── docs/JMP_PLUGIN.md      # this file
@@ -308,7 +308,7 @@ A file that isn't a readable JMP table (not a JMP file, an older format, truncat
 
 ### 6.4 Programmatic
 
-`Jmp:importJmp(bytes)` is the file handler, callable from scripts and from the Portal ingestion job (Phase 4) without the UI. It throws a `JmpFormatError` for an unreadable file. It returns the table only: it has no view to add analyses to, but the scripts are kept in the `jmp.scripts` tag.
+`JmpReader:importJmp(bytes)` is the file handler, callable from scripts and from the Portal ingestion job (Phase 4) without the UI. It throws a `JmpFormatError` for an unreadable file. It returns the table only: it has no view to add analyses to, but the scripts are kept in the `jmp.scripts` tag.
 
 ---
 
@@ -381,7 +381,7 @@ The model is the way Crux validates against RDKit: **JMPReader.jl is the referen
 4. `jmp-reader-tests.ts` holds four categories, all marked `{node: true}` so `grok test` runs them in its headless Node pass: **header** (every fixture, plus non-JMP bytes, the old format, a truncated header), **reference** (every fixture against its golden file), **tables** (`runtests.jl` ported as named assertions) and **robustness** (the crafted files, plus a seeded fuzz of 420 mutations).
 5. `jmp-reader-tests.ts` also checks the format details: fixed decimals (on `example1` with one descriptor changed, following JMPReader.jl's note), currency codes, and the hidden-column index.
 6. `jmp-script-tests.ts`, also Node: **JSL** (calls, column references in their three forms, names with spaces, statements and sends, raw strings, syntax errors, a nesting limit, a fuzz of 2,000 truncated or mutated scripts), **saved scripts** (the `Source` script JMP wrote, files without scripts, the synthetic Graph Builder, the `New Script` form) and **analyses** (each platform in §11 Phase 3 in the form JMP saves it, with the Big Class columns; what is noted; what isn't converted and why).
-7. `jmp-dataframe-tests.ts` runs in the browser: column types and nulls, integer sentinels, tags, geographic semTypes, row states as marker and colour columns with their codings, a saved analysis added to a table view as a bar chart, a Graph Builder trellis with its inner scatter plot, currency units and a hidden column hidden in the grid, the handler called as `Jmp:importJmp`, and the preview built through `Jmp:previewJmp` (disposed with no live u2 scopes left; listing a saved analysis that isn't converted). It reaches the preview through the platform, so the test bundle carries no u2 (the Node runtime has none).
+7. `jmp-dataframe-tests.ts` runs in the browser: column types and nulls, integer sentinels, tags, geographic semTypes, row states as marker and colour columns with their codings, a saved analysis added to a table view as a bar chart, a Graph Builder trellis with its inner scatter plot, currency units and a hidden column hidden in the grid, the handler called as `JmpReader:importJmp`, and the preview built through `JmpReader:previewJmp` (disposed with no live u2 scopes left; listing a saved analysis that isn't converted). It reaches the preview through the platform, so the test bundle carries no u2 (the Node runtime has none).
 
 8. **JMP: performance** (browser) times the 100 MB file of §8. It runs only with `grok test --benchmark`.
 
@@ -409,7 +409,7 @@ What a user does and sees is in `bdd/features/`, compiled by `libraries/bdd` int
 | `problem-files.feature` | a dropped file with an unreadable column opens without it and warns; a file that isn't JMP shows why and opens no table |
 | `analyses.feature` | a dropped file with a saved Graph Builder opens with a bar chart split by its column and titled after the script; one with a Fit Model opens and names it in a warning; the preview lists both, with what each opens as or why not, shows the script behind the Script link, and Open adds the viewer; a row-state file opens with marker and colour columns |
 
-The preview uses the package's own published files (`App Data/Jmp/...`), so nothing is written to the server. `bdd.config.json` sets the layout and console-error audits to fail and the leak audit to report. Run from the package folder:
+The preview uses the package's own published files (`App Data/JmpReader/...`), so nothing is written to the server. `bdd.config.json` sets the layout and console-error audits to fail and the leak audit to report. Run from the package folder:
 
 ```bash
 node ../../libraries/bdd/bin/grok-bdd.js compile
@@ -426,7 +426,7 @@ Result on the local stand (2026-10-23): 12 passed, 0 audit findings, run with `-
 - There are **no runtime dependencies** (`DecompressionStream` and `TextDecoder` are built into the browser). If `pako` is added as a fallback, it is MIT and gets its own entry.
 - `tools/jmp2json.jl` is a dev-only tool. Julia and JMPReader.jl are not bundled.
 - **No JMP at Datagrok** (decided 2026-10-27). No one at Datagrok installs or uses JMP for this package, and we don't ask customers to make files in JMP or compare our output with JMP's for us. The [JMP Software License Agreement](https://jmp.com/en/store/jmp-software-license-agreement) binds its customers and users not to "reverse engineer, reverse assemble or decompile the Software" (§4) or use it to "create or assist a third party in creating an offering that competes with JMP" (§1.4.3(b)). What we know of the format comes only from JMPReader.jl, jmp-convert and `.jmp` files people already have: public files, and customer files read where they are, with permission.
-- **Name.** JMP® is a trademark of JMP Statistical Discovery LLC, a SAS subsidiary. The plugin uses it only to say which files it reads: it shows as "JMP Reader", not "JMP", uses no JMP logo or styling, and its README carries the trademark notice and says it isn't affiliated with or endorsed by JMP or SAS. The `Jmp` folder and `@datagrok/jmp` package name are identifiers.
+- **Name.** JMP® is a trademark of JMP Statistical Discovery LLC, a SAS subsidiary. The plugin uses it only to say which files it reads: it shows as "JMP Reader", not "JMP", uses no JMP logo or styling, and its README carries the trademark notice and says it isn't affiliated with or endorsed by JMP or SAS. The package is `@datagrok/jmp-reader` (`JmpReader` on the server, so the generated `JMPReader:` calls resolve); the folder stays `packages/Jmp`.
 - *Legal check (see §12):* confirm that reading `.jmp` files this way is outside that agreement before merging to master or publishing.
 
 ---

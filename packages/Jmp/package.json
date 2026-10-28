@@ -1,5 +1,5 @@
 {
-  "name": "@datagrok/jmp",
+  "name": "@datagrok/jmp-reader",
   "friendlyName": "JMP Reader",
   "version": "0.1.0",
   "description": "Support for JMP data table files",

@@ -1,6 +1,6 @@
 # JMP Reader — Third-Party Libraries
 
-The `@datagrok/jmp` package is distributed under the MIT license that
+The `@datagrok/jmp-reader` package is distributed under the MIT license that
 covers the rest of the `public/` repository (see [`../../LICENSE.md`](../../LICENSE.md)).
 Its preview is built with `@datagrok-libraries/u2`, part of the same repository.
 It incorporates the open-source components listed below; this file reproduces

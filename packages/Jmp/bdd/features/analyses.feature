@@ -12,7 +12,7 @@ Feature: Saved JMP analyses open as Datagrok viewers, and row states come across
   compact_UInt8.jmp (130 rows, one text column "A") with its saved "Source" script replaced by a
   Graph Builder bar chart of A, or by a Fit Model, which has no Datagrok counterpart
   (tools/make-script-fixtures.ts). fixtures/rowstate.jmp is JMPReader.jl's own: three row-state
-  columns of 3 rows. The same files are published with the package under App Data/Jmp. How each
+  columns of 3 rows. The same files are published with the package under App Data/JmpReader. How each
   JMP platform maps to a viewer is the package's own test (src/tests, "JMP: analyses").
 
   Background:
@@ -44,9 +44,9 @@ Feature: Saved JMP analyses open as Datagrok viewers, and row states come across
     And the browse panel is open
     And Files tree node inside browse tree is expanded
     And Files---App-Data tree node inside browse tree is expanded
-    And Files---App-Data---Jmp tree node inside browse tree is expanded
-    And Files---App-Data---Jmp---tests tree node inside browse tree is expanded
-    When user double-clicks on Files---App-Data---Jmp---tests---saved-bar-chart.jmp tree node inside browse tree
+    And Files---App-Data---JmpReader tree node inside browse tree is expanded
+    And Files---App-Data---JmpReader---tests tree node inside browse tree is expanded
+    When user double-clicks on Files---App-Data---JmpReader---tests---saved-bar-chart.jmp tree node inside browse tree
     Then the "saved-bar-chart.jmp" view should be current
     And "Saved analyses" section should be visible
     And "Saved analyses" section should contain text "1 of 1 open as viewers"
@@ -61,9 +61,9 @@ Feature: Saved JMP analyses open as Datagrok viewers, and row states come across
     Given the browse panel is open
     And Files tree node inside browse tree is expanded
     And Files---App-Data tree node inside browse tree is expanded
-    And Files---App-Data---Jmp tree node inside browse tree is expanded
-    And Files---App-Data---Jmp---tests tree node inside browse tree is expanded
-    When user double-clicks on Files---App-Data---Jmp---tests---saved-fit-model.jmp tree node inside browse tree
+    And Files---App-Data---JmpReader tree node inside browse tree is expanded
+    And Files---App-Data---JmpReader---tests tree node inside browse tree is expanded
+    When user double-clicks on Files---App-Data---JmpReader---tests---saved-fit-model.jmp tree node inside browse tree
     Then the "saved-fit-model.jmp" view should be current
     And "Saved analyses" section should contain text "0 of 1 open as viewers"
     And "Saved analyses" section should contain text "Not converted: JMP's Fit Model isn't converted"

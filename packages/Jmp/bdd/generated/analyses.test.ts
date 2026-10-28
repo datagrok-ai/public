@@ -54,9 +54,9 @@ test.describe("Saved JMP analyses open as Datagrok viewers, and row states come 
     await session.step(44, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(45, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
     await session.step(46, "And Files---App-Data tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data tree node inside browse tree")));
-    await session.step(47, "And Files---App-Data---Jmp tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---Jmp tree node inside browse tree")));
-    await session.step(48, "And Files---App-Data---Jmp---tests tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---Jmp---tests tree node inside browse tree")));
-    await session.step(49, "When user double-clicks on Files---App-Data---Jmp---tests---saved-bar-chart.jmp tree node inside browse tree", () => doubleClickOn(page, el("Files---App-Data---Jmp---tests---saved-bar-chart.jmp tree node inside browse tree")));
+    await session.step(47, "And Files---App-Data---JmpReader tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---JmpReader tree node inside browse tree")));
+    await session.step(48, "And Files---App-Data---JmpReader---tests tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---JmpReader---tests tree node inside browse tree")));
+    await session.step(49, "When user double-clicks on Files---App-Data---JmpReader---tests---saved-bar-chart.jmp tree node inside browse tree", () => doubleClickOn(page, el("Files---App-Data---JmpReader---tests---saved-bar-chart.jmp tree node inside browse tree")));
     await session.step(50, "Then the \"saved-bar-chart.jmp\" view should be current", () => viewIsCurrent(page, "saved-bar-chart.jmp"));
     await session.step(51, "And \"Saved analyses\" section should be visible", () => shouldBe(page, el("\"Saved analyses\" section"), "visible"));
     await session.step(52, "And \"Saved analyses\" section should contain text \"1 of 1 open as viewers\"", () => shouldContainText(page, el("\"Saved analyses\" section"), "1 of 1 open as viewers"));
@@ -73,9 +73,9 @@ test.describe("Saved JMP analyses open as Datagrok viewers, and row states come 
     await session.step(61, "Given the browse panel is open", () => browsePanelOpen(page));
     await session.step(62, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
     await session.step(63, "And Files---App-Data tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data tree node inside browse tree")));
-    await session.step(64, "And Files---App-Data---Jmp tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---Jmp tree node inside browse tree")));
-    await session.step(65, "And Files---App-Data---Jmp---tests tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---Jmp---tests tree node inside browse tree")));
-    await session.step(66, "When user double-clicks on Files---App-Data---Jmp---tests---saved-fit-model.jmp tree node inside browse tree", () => doubleClickOn(page, el("Files---App-Data---Jmp---tests---saved-fit-model.jmp tree node inside browse tree")));
+    await session.step(64, "And Files---App-Data---JmpReader tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---JmpReader tree node inside browse tree")));
+    await session.step(65, "And Files---App-Data---JmpReader---tests tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---JmpReader---tests tree node inside browse tree")));
+    await session.step(66, "When user double-clicks on Files---App-Data---JmpReader---tests---saved-fit-model.jmp tree node inside browse tree", () => doubleClickOn(page, el("Files---App-Data---JmpReader---tests---saved-fit-model.jmp tree node inside browse tree")));
     await session.step(67, "Then the \"saved-fit-model.jmp\" view should be current", () => viewIsCurrent(page, "saved-fit-model.jmp"));
     await session.step(68, "And \"Saved analyses\" section should contain text \"0 of 1 open as viewers\"", () => shouldContainText(page, el("\"Saved analyses\" section"), "0 of 1 open as viewers"));
     await session.step(69, "And \"Saved analyses\" section should contain text \"Not converted: JMP's Fit Model isn't converted\"", () => shouldContainText(page, el("\"Saved analyses\" section"), "Not converted: JMP's Fit Model isn't converted"));

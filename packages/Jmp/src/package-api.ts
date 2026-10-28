@@ -12,10 +12,10 @@ export namespace funcs {
    * Opens JMP data table
    */
   export async function importJmp(bytes: any ): Promise<any> {
-    return await grok.functions.call('JMP:ImportJmp', { bytes });
+    return await grok.functions.call('JMPReader:ImportJmp', { bytes });
   }
 
   export async function previewJmp(file: DG.FileInfo ): Promise<DG.View> {
-    return await grok.functions.call('JMP:PreviewJmp', { file });
+    return await grok.functions.call('JMPReader:PreviewJmp', { file });
   }
 }

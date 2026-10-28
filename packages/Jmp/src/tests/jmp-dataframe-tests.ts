@@ -174,7 +174,7 @@ category('JMP: dataframe', () => {
   });
 
   test('file handler', async () => {
-    const result: DG.DataFrame[] = await grok.functions.call('Jmp:importJmp', {bytes: await fixtureBytes('example1')});
+    const result: DG.DataFrame[] = await grok.functions.call('JmpReader:importJmp', {bytes: await fixtureBytes('example1')});
     expect(result.length, 1);
     expect(result[0].rowCount, 4);
     expect(result[0].columns.length, 12);
@@ -185,7 +185,7 @@ category('JMP: dataframe', () => {
     const u2 = (DG as any).U2;
     const before: number = u2.Scope.liveCount;
     const file = (await _package.files.list('tests')).find((f) => f.name === 'unsupported-column.jmp')!;
-    const view: DG.ViewBase = await grok.functions.call('Jmp:previewJmp', {file});
+    const view: DG.ViewBase = await grok.functions.call('JmpReader:previewJmp', {file});
     expect(view.name, 'unsupported-column.jmp');
     expect(view.root.querySelector('[data-u2-name="summary"]') !== null, true);
     expectArray(Array.from(view.root.querySelectorAll('[data-u2-item]')).map((e) => (e as HTMLElement).dataset.u2Item),
@@ -198,7 +198,7 @@ category('JMP: dataframe', () => {
 
   test('preview lists saved analyses', async () => {
     const file = (await _package.files.list('tests')).find((f) => f.name === 'saved-fit-model.jmp')!;
-    const view: DG.ViewBase = await grok.functions.call('Jmp:previewJmp', {file});
+    const view: DG.ViewBase = await grok.functions.call('JmpReader:previewJmp', {file});
     try {
       const item = view.root.querySelector('[data-u2-item="Fit A"]') as HTMLElement | null;
       expect(item !== null, true);
