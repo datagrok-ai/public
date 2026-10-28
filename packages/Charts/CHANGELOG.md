@@ -2,6 +2,11 @@
 
 ## v.next
 
+* [public#4423](https://github.com/datagrok-ai/public/issues/4423): Tree viewer: Doesn't handle removal of the Size and Color columns
+* [public#4421](https://github.com/datagrok-ai/public/issues/4421): Chord: Doesn't handle removal of the From column correctly
+* [public#4420](https://github.com/datagrok-ai/public/issues/4420): Sankey: Doesn't handle removal of the Source column
+* Sunburst, Radar, Timelines, Surface plot, Globe, Word cloud: Fixed handling of removed columns: an optional column is cleared, a required one is replaced, and a column whose type changes stays selected
+* Group analysis: Fixed handling of a removed Group by column
 * [public#4425](https://github.com/datagrok-ai/public/issues/4425): Sunburst, Tree: the filter of a click stays after the viewer is closed or On Click is switched to Select
 * [public#4424](https://github.com/datagrok-ai/public/issues/4424): Word Cloud: Incorrect handling of invalid Rotation Step input
 * [public#4393](https://github.com/datagrok-ai/public/issues/4393): Tree: Fixed Shift+click on a branch not filtering, with an error, when On Click is Filter

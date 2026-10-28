@@ -8,7 +8,7 @@ import {TreeUtils, TreeDataType} from '../../utils/tree-utils';
 import * as echarts from 'echarts';
 import {fromEvent, Observable} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
+import {ERROR_CLASS, MessageHandler, subscribeToColumnRemoval} from '../../utils/utils';
 import {laidOutSegmentCount, sunburstStatus} from './sunburst-status';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
@@ -212,26 +212,24 @@ export class SunburstViewer extends EChartViewer {
     }));
     this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
-    this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
-      const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
-      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) =>
-        !columnNamesToRemove.includes(columnName));
-      this.render();
-    }));
+    this.subs.push(subscribeToColumnRemoval(this, {hierarchyColumnNames: () => this.defaultHierarchy()}));
     this.addViewerFilterSub();
     this.subs.push(DG.debounce(grok.events.onResetFilterRequest, 10).subscribe(() => this.clearViewerFilter()));
   }
 
-  onTableAttached(propertyChanged?: boolean): void {
-    let categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
-      col1.categories.length - col2.categories.length);
-    categoricalColumns = categoricalColumns.filter((col: DG.Column) => col.stats.missingValueCount != col.length &&
-      !col.name.startsWith('~'));
+  defaultHierarchy(): string[] {
+    return [...this.dataFrame.columns.categorical]
+      .sort((col1, col2) => col1.categories.length - col2.categories.length)
+      .filter((col: DG.Column) => col.stats.missingValueCount != col.length && !col.name.startsWith('~'))
+      .slice(0, this.hierarchyLevel).map((col) => col.name);
+  }
 
-    if (categoricalColumns.length < 1)
+  onTableAttached(propertyChanged?: boolean): void {
+    const hierarchy = this.defaultHierarchy();
+    if (hierarchy.length < 1)
       return;
 
-    this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
+    this.hierarchyColumnNames = hierarchy;
 
     this.addSubs();
     this.render();

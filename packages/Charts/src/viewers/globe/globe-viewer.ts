@@ -10,7 +10,7 @@ import {scaleLinear, scaleSqrt, scaleSequential, interpolateYlOrRd, ScaleLinear}
 import {Observable} from 'rxjs';
 
 import {_package} from '../../package';
-import {ERROR_CLASS, MessageHandler, RenderSignals} from '../../utils/utils';
+import {ERROR_CLASS, MessageHandler, RenderSignals, subscribeToColumnRemoval} from '../../utils/utils';
 
 
 @grok.decorators.viewer({
@@ -158,15 +158,19 @@ export class GlobeViewer extends DG.JsViewer {
     }
     this.magnitudeColumnName = magnitudeColName || '';
     if (!magnitudeColName) {
-      const numColumns = this.dataFrame.columns.toList().filter((col) => ['double', 'int'].includes(col.type));
-      if (numColumns.length !== 0)
-        this.magnitudeColumnName = numColumns[0].name;
+      this.magnitudeColumnName = this.numColumnNames()[0] ?? '';
       grok.shell.info(`Cannot find magnitude column, use ${this.magnitudeColumnName} column instead`);
     }
     // By default, beam color and size depend on the same column
     this.colorByColumnName = this.magnitudeColumnName;
     this.subs.push(this.signals.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(this.signals.debounce(this.dataFrame.filter.onChanged, 100).subscribe((_) => this.render()));
+    this.subs.push(subscribeToColumnRemoval(this, {
+      latitudeColumnName: null,
+      longitudeColumnName: null,
+      magnitudeColumnName: () => this.numColumnNames()[0],
+      colorByColumnName: () => this.numColumnNames()[0],
+    }));
     this.subs.push(this.signals.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
       const width = this.root.parentElement!.clientWidth;
       const height = this.root.parentElement!.clientHeight;
@@ -237,9 +241,12 @@ export class GlobeViewer extends DG.JsViewer {
     }
   }
 
+  numColumnNames(): string[] {
+    return this.dataFrame.columns.toList().filter((col) => ['double', 'int'].includes(col.type)).map((col) => col.name);
+  }
+
   _testColumns() {
-    const numColumns = this.dataFrame.columns.toList().filter((col) => ['double', 'int'].includes(col.type));
-    return numColumns.length >= 1;
+    return this.numColumnNames().length >= 1;
   }
 
   render() {

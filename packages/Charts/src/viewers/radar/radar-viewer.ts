@@ -7,7 +7,7 @@ import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, 
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {EChartViewer} from '../echart/echart-viewer';
 import {LegendHelper, VISIBILITY_MODE, VisibilityMode} from '../../utils/legend-utils';
-import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
+import {ERROR_CLASS, MessageHandler, subscribeToColumnRemoval} from '../../utils/utils';
 import {radarStatus} from './radar-status';
 import {Observable} from 'rxjs';
 import _ from 'lodash';
@@ -217,9 +217,13 @@ export class RadarViewer extends EChartViewer {
     const numericalColumns = Array.from(this.dataFrame.columns.numericalNoDateTime);
     for (const c of numericalColumns)
       this.initMinMax(c);
-    this.valuesColumnNames = numericalColumns.map((c: DG.Column) => c.name).slice(0, MAXIMUM_COLUMN_NUMBER);
+    this.valuesColumnNames = this.defaultValues();
     this.resubscribe(() => this.addSubs());
     this.render();
+  }
+
+  defaultValues(): string[] {
+    return [...this.dataFrame.columns.numericalNoDateTime].map((c) => c.name).slice(0, MAXIMUM_COLUMN_NUMBER);
   }
 
   addSubs() {
@@ -230,10 +234,9 @@ export class RadarViewer extends EChartViewer {
     }));
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
-    this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
-      const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
-      this.valuesColumnNames = this.valuesColumnNames.filter((columnName) => !columnNamesToRemove.includes(columnName));
-      this.render();
+    this.subs.push(subscribeToColumnRemoval(this, {
+      valuesColumnNames: () => this.defaultValues(),
+      colorColumnName: null,
     }));
     this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((ev) => {
