@@ -221,9 +221,11 @@ function setColumnTags(col: DG.Column, c: JmpColumn): void {
     else if (isCall(node, 'Formula'))
       col.setTag('jmp.formula', p.text.slice(p.text.indexOf('(') + 1, p.text.lastIndexOf(')')).trim());
     else if (isCall(node, 'Spec Limits')) {
-      const limits = specLimits(node);
-      if (Object.keys(limits).length > 0)
+      const {limits, show} = specLimits(node);
+      if (Object.keys(limits).length > 0) {
         col.setTag('jmp.specLimits', JSON.stringify(limits));
+        addSpecLimitLines(col, limits, show);
+      }
     } else if (col.type === DG.TYPE.STRING) {
       const order = categoryOrder(node);
       if (order)
@@ -248,16 +250,36 @@ function categoryOrder(node: Extract<JslNode, {type: 'call'}>): (string | number
   return values.every((v) => v !== undefined) ? values as (string | number)[] : undefined;
 }
 
-/** `Spec Limits({LSL(1), USL(5), Target(3), Show Limits(0)})` as {lsl, usl, target}, missing ones left out. */
-function specLimits(node: Extract<JslNode, {type: 'call'}>): {lsl?: number, usl?: number, target?: number} {
+type SpecLimits = {lsl?: number, usl?: number, target?: number};
+
+/** `Spec Limits({LSL(1), USL(5), Target(3), Show Limits(0)})` as {lsl, usl, target}, missing ones left out,
+ * and whether JMP draws them on its graphs. */
+function specLimits(node: Extract<JslNode, {type: 'call'}>): {limits: SpecLimits, show: boolean} {
   const items = node.args[0]?.type === 'list' ? node.args[0].items : node.args;
-  const out: {lsl?: number, usl?: number, target?: number} = {};
+  const arg = (name: string) => items.find((a): a is Extract<JslNode, {type: 'call'}> => isCall(a, name))?.args[0];
+  // A negative limit is a minus applied to a number, not a number literal.
+  const num = (v?: JslNode): number | undefined => v?.type === 'number' ? v.value :
+    v?.type === 'unary' && v.op === '-' && v.operand.type === 'number' ? -v.operand.value : undefined;
+  const limits: SpecLimits = {};
   for (const [key, name] of [['lsl', 'LSL'], ['usl', 'USL'], ['target', 'Target']] as const) {
-    const arg = items.find((a): a is Extract<JslNode, {type: 'call'}> => isCall(a, name))?.args[0];
-    if (arg?.type === 'number' && !Number.isNaN(arg.value))
-      out[key] = arg.value;
+    const v = num(arg(name));
+    if (v !== undefined && !Number.isNaN(v))
+      limits[key] = v;
   }
-  return out;
+  const show = arg('Show Limits');
+  return {limits, show: show?.type === 'number' && show.value === 1};
+}
+
+/** Spec limits as table formula lines, so every chart with the column on its value axis draws them; hidden,
+ * but still listed, when JMP doesn't show them. */
+function addSpecLimitLines(col: DG.Column, limits: SpecLimits, show: boolean): void {
+  const lines = [['lsl', 'LSL', '#d62728'], ['usl', 'USL', '#d62728'], ['target', 'Target', '#2ca02c']] as const;
+  for (const [key, title, color] of lines) {
+    if (limits[key] !== undefined) {
+      col.dataFrame.meta.formulaLines.addLine({title: `${col.name} ${title}`,
+        formula: `\${${col.name}} = ${limits[key]}`, color, width: 1, style: 'dashed', visible: show});
+    }
+  }
 }
 
 /** Adds the viewers converted from saved analyses to a table view. Returns the number added; a viewer the

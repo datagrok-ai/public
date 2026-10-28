@@ -274,7 +274,7 @@ The vendored `example1.jmp` carries `Formula(:ints * 2)` and `Units("kPa")`. The
 | `jmp.charset` | `charset` |
 | `jmp.scripts` | the saved table scripts, as JSON `[{name, text}]`, present only when there are any (§4.5) |
 
-**Column properties** (§4.6): `Notes` → `description`; `Units` → `units`; `Formula` → `jmp.formula`, the JSL expression (the column keeps JMP's cached values); `Value Order` with a custom order, or `"Value Ordering"` → the column's category order (through its labels); `Spec Limits` → `jmp.specLimits`, `{"lsl", "usl", "target"}`. Every property, mapped or not, is kept as JSL text in `jmp.properties`, `[{"name", "text"}]`.
+**Column properties** (§4.6): `Notes` → `description`; `Units` → `units`; `Formula` → `jmp.formula`, the JSL expression (the column keeps JMP's cached values); `Value Order` with a custom order, or `"Value Ordering"` → the column's category order (through its labels); `Spec Limits` → `jmp.specLimits`, `{"lsl", "usl", "target"}`, and a table formula line for each (`${col} = value`), visible when JMP's `Show Limits` is 1. Every property, mapped or not, is kept as JSL text in `jmp.properties`, `[{"name", "text"}]`.
 
 **Column-level tags**: `jmp.format` (raw `dt1..dt6` as hex, for debugging and future decoding), `jmp.displayWidth`, and `jmp.hidden` = `true` on a column JMP hides (§4.4). A hidden column stays in the table, as in JMP, and is hidden in the grid of a table view the package opens.
 
@@ -455,7 +455,7 @@ Result on the local stand (2026-10-23): 12 passed, 0 audit findings, run with `-
 
 - Row-state flags → Datagrok **selection** (selected), **filter** (excluded and hidden, as a saved filter state), and **colour coding** (row colours/markers, where a viewer supports them). Needs files with flags set, and the place JMP keeps the table's own row states (§4.3).
 - [x] Value labels → a string column of the labels, values kept in a tag (§4.6, §5)
-- [x] Column properties: units → `units`, notes → `description`, value order → category order, spec limits → `jmp.specLimits`, all kept as JSL text (§4.6)
+- [x] Column properties: units → `units`, notes → `description`, value order → category order, spec limits → `jmp.specLimits` and formula lines, all kept as JSL text (§4.6)
 - [x] Formula text → a `jmp.formula` tag
 - [ ] Formulas as Datagrok calculated columns, where a translation exists (Datagrok formula syntax: no ternary, use `If()`)
 - [ ] Value colours → categorical colour coding, once JMP's colour numbers are known (§4.4)

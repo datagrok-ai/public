@@ -17,7 +17,7 @@ Opening a `.jmp` file should give you the table as JMP shows it:
 - **Column properties**: notes, units, formulas, value order, value labels
 - **Table metadata**: JMP version, save time, hidden columns
 
-A column we can't read should come back empty with a warning, never cost the rest of the table.
+A column we can't read should come back empty with a warning, never crash the rest of the table.
 A file we can't read should say why.
 
 ## Saved analyses

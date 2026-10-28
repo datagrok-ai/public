@@ -41,8 +41,9 @@ A file that isn't a readable JMP table says why instead of opening.
 
 Column properties come across where Datagrok has a counterpart: **Notes** become the column's
 description, **Units** its units, and a custom **Value Order** its category order. A **Formula** is
-kept as the `jmp.formula` tag (the computed values are imported) and **Spec Limits** as
-`jmp.specLimits`. Every property is also kept as JSL text in `jmp.properties`.
+kept as the `jmp.formula` tag (the computed values are imported). **Spec Limits** are kept as
+`jmp.specLimits` and drawn as LSL, USL and Target lines on every chart that plots the column (hidden
+when JMP doesn't show them). Every property is also kept as JSL text in `jmp.properties`.
 
 The JMP version, build and save time are kept as table tags (`jmp.version`, `jmp.buildString`,
 `jmp.saveTime`). Columns hidden in JMP are tagged `jmp.hidden` and hidden in the grid.

@@ -460,4 +460,19 @@ category('JMP: public files', () => {
     expectArray(analyses.map((a) => a.platform!), ['Fit Definitive Screening', 'DOE', 'DOE']);
     expect(analyses.every((a) => a.viewers.length === 0 && /isn't converted/.test(a.reason!)), true);
   });
+
+  test('JMP 18: spec limits on predicted quality attributes', async () => {
+    const t = await read('mdpi-bioengineering-11-01089-wp1');
+    expect(t.info.jmpVersion, '18.1.0');
+    expect(t.info.nrows, 21);
+    const spec = (name: string) => t.columns.find((c) => c.info.name === name)!.properties!.properties
+      .find((p) => p.name === 'Spec Limits')!.text;
+    expect(spec('Pred Formula CQA2 - WP1'), 'Spec Limits({USL(-0.51833593600000005), Show Limits(1)})');
+    expect(spec('Pred Formula CQA3 - WP1'),
+      'Spec Limits({LSL(-2.3376879380000002), USL(1.8659177870000001), Show Limits(1)})');
+    const design = await read('mdpi-bioengineering-11-01089-wp1-3');
+    const cols = design.columns.map((c) => ({name: c.info.name, numeric: c.kind !== 'string'}));
+    const evaluate = convertScript(design.scripts.find((s) => s.name === 'Evaluate Design')!, cols);
+    expect(evaluate.platform, 'DOE');
+  });
 }, {node: true});

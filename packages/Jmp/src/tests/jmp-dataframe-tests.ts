@@ -150,6 +150,18 @@ category('JMP: dataframe', () => {
     expect(JSON.parse(df.col('charconstwidth')!.getTag('jmp.properties')!).length, 2);
   });
 
+  test('spec limits draw as formula lines', async () => {
+    const t = await readJmp(await _package.files.readAsBytes('public/mdpi-bioengineering-11-01089-wp1.jmp'));
+    const df = jmpTableToDataFrame(t);
+    expect(df.col('Pred Formula CQA3 - WP1')!.getTag('jmp.specLimits'),
+      '{"lsl":-2.337687938,"usl":1.865917787}');
+    const lines = df.meta.formulaLines.items;
+    expectArray(lines.map((l) => l.title!), ['Pred Formula CQA1 - WP1 LSL', 'Pred Formula CQA2 - WP1 USL',
+      'Pred Formula CQA3 - WP1 LSL', 'Pred Formula CQA3 - WP1 USL']);
+    expect(lines[1].formula, '${Pred Formula CQA2 - WP1} = -0.518335936');
+    expect(lines.every((l) => l.visible), true);
+  });
+
   test('value labels show as the labels', async () => {
     const t = await fixture('example1');
     const ints = t.columns.find((c) => c.info.name === 'ints')!;

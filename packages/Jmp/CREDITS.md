@@ -110,4 +110,6 @@ from its name.
 | `dataverse-hqaihu-figure4.jmp` | `Figure4Replication.jmp` | CC0 1.0 | Altman, McDonald (2015), *Replication Data for: Redistricting and Polarization*. Harvard Dataverse, https://doi.org/10.7910/DVN/HQAIHU |
 | `dataverse-jvinzu-rat.jmp` | `Rat.jmp` | CC0 1.0 | Bender (2025), *Closed-Loop Electrical Block of Vagus Nerve Scales from Rodent to Porcine Cardiac Models*. Harvard Dataverse, https://doi.org/10.7910/DVN/JVINZU |
 | `zenodo-6149318-ivt-rna-dsd.jmp` | `Exp6- RNA IVT DSD.jmp` | CC BY 4.0 | Samnuan, Blakney, McKay, Shattock (2022), *Design-of-Experiments In Vitro Transcription Yield Optimization of Self-Amplifying RNA*. Zenodo, https://doi.org/10.5281/zenodo.6149318 |
+| `mdpi-bioengineering-11-01089-wp1.jmp` | `Model_WP1.jmp` | CC BY 4.0 | Kunzelmann, Wittmann, Presser et al. (2024), *Lifecycle DoE: The Companion for a Holistic Development Process*. Bioengineering 11(11):1089, supplementary file S1, https://doi.org/10.3390/bioengineering11111089 |
+| `mdpi-bioengineering-11-01089-wp1-3.jmp` | `Model_WP1_3.jmp` | CC BY 4.0 | same article |
 | `figshare-15044331-das28.jmp` | `DAS280M v BL IGS.jmp` | CC BY 4.0 | Thirkettle (2021), *On A Knife Edge: the role of interferon pathways in the adaptive immune response and potential progression to RA pathogenesis*. Newcastle University, figshare, https://doi.org/10.25405/data.ncl.15044331.v1 |
