@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#411](https://github.com/datagrok-ai/core/issues/411): Extract Rows, Delete Columns, Tag Columns, Aggregate and Unpivot: Accept their columns as a column list, which is what the platform passes for `column_list`
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Function editor: the dialog is taken when it is shown instead of polled every 100 ms
 * Added: The Flow view reports what its canvas did to the platform (its widget status): the "parameter edits" reading counts the node parameter edits reported since it opened, so a test tells a user's edit in a node's own editor (a sketch in the Sketcher Input node) from the node's own loads
 * Added: Functions that output a view support the in-node preview (⊞ toggle), like viewer, widget and graphics outputs
