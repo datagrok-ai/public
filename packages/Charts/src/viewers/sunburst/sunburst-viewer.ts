@@ -211,6 +211,7 @@ export class SunburstViewer extends EChartViewer {
         this.render();
     }));
     this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
+    this.subs.push(this.signals.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this.subs.push(subscribeToColumnRemoval(this, {hierarchyColumnNames: () => this.defaultHierarchy()}));
     this.addViewerFilterSub();

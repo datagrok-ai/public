@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4422](https://github.com/datagrok-ai/public/issues/4422): Charts: Sunburst does not show rows selected in the grid
 * [public#4423](https://github.com/datagrok-ai/public/issues/4423): Tree viewer: Doesn't handle removal of the Size and Color columns
 * [public#4421](https://github.com/datagrok-ai/public/issues/4421): Chord: Doesn't handle removal of the From column correctly
 * [public#4420](https://github.com/datagrok-ai/public/issues/4420): Sankey: Doesn't handle removal of the Source column
