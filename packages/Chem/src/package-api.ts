@@ -1015,8 +1015,8 @@ export namespace funcs {
   /**
   Computes a multi-parameter optimization (MPO) desirability score from the selected property columns.
   */
-  export async function mpoCalculate(df: DG.DataFrame , columns: string[] , profileName: string , aggregation: string , createDesirabilityColumns: boolean ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:MpoCalculate', { df, columns, profileName, aggregation, createDesirabilityColumns });
+  export async function mpoCalculate(df: DG.DataFrame , columns: string[] , profileName: string , aggregation: string , createDesirabilityColumns: boolean , createCoverageColumn: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:MpoCalculate', { df, columns, profileName, aggregation, createDesirabilityColumns, createCoverageColumn });
   }
 
   /**

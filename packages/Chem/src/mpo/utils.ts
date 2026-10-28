@@ -13,6 +13,7 @@ import {
   PropertyDesirability,
   WeightedAggregation,
   createDefaultNumerical,
+  getMpoCoverageColumnName,
   getMpoScoreColumnName,
   isMpoNumericColumn,
   migrateProfile,
@@ -96,6 +97,7 @@ export async function computeMpo(
   silent: boolean = false,
   processed: boolean = false,
   createDesirabilityColumns: boolean = false,
+  createCoverageColumn: boolean = false,
   preview: boolean = false,
   calculator?: MpoCalculator,
   profileName: string = getMpoScoreColumnName(profile.name),
@@ -107,9 +109,12 @@ export async function computeMpo(
   }
 
   if (!processed) {
-    const existingCol = df.col(profileName);
-    if (existingCol)
-      df.columns.remove(existingCol, false);
+    const names = createCoverageColumn ? [profileName, getMpoCoverageColumnName(profileName)] : [profileName];
+    for (const name of names) {
+      const existingCol = df.col(name);
+      if (existingCol)
+        df.columns.remove(existingCol, false);
+    }
   }
 
   const resolvedAggregation = aggregation ?? profile.aggregation ?? DEFAULT_AGGREGATION;
@@ -121,7 +126,8 @@ export async function computeMpo(
     if (columns.length > 0) {
       const isDifferent = df.rowCount !== columns[0].length;
       const result = (calculator ?? new MpoCalculator())
-        .compute(df, columns, profileName, resolvedAggregation, isDifferent, createDesirabilityColumns);
+        .compute(df, columns, profileName, resolvedAggregation, isDifferent, createDesirabilityColumns,
+          createCoverageColumn);
       for (const c of collectMpoResultColumns(df, result, isDifferent)) {
         const existing = df.col(c.name);
         if (existing)
@@ -143,7 +149,7 @@ export async function computeMpo(
   const result = call.getOutputParamValue() as DG.Column[];
 
   await DG.Func.find({package: 'Chem', name: 'mpoCalculate'})[0].prepare({
-    df, columns: result, profileName, aggregation: resolvedAggregation, createDesirabilityColumns,
+    df, columns: result, profileName, aggregation: resolvedAggregation, createDesirabilityColumns, createCoverageColumn,
   }).call(undefined, undefined, {processed});
 
   return df.col(profileName) ? [profileName] : [];
@@ -181,6 +187,8 @@ export function collectMpoResultColumns(df: DG.DataFrame, result: MpoResult, isD
     columns.push(result.scoreColumn);
   if (result.desirabilityColumns)
     columns.push(...result.desirabilityColumns);
+  if (result.coverageColumn)
+    columns.push(result.coverageColumn);
   return columns;
 }
 

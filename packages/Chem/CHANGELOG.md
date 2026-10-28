@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.17.17 (2026-10-28)
+
+* [#4403](https://github.com/datagrok-ai/public/issues/4403): MPO: Add a "Coverage Score" option to count the number of profile parameters measured for each compound
+
 ## 1.17.16 (2026-10-20)
 
 * [#4291](https://github.com/datagrok-ai/public/issues/4291): MPO: Add support for qnum values
