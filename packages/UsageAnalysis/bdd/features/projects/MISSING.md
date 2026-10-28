@@ -85,13 +85,14 @@ written with no library, binding or code change.
 
 **Decided and written**
 
-The answers of 2026-10-27 are scenarios now: every table left out keeps OK disabled (core#1161, a known failure,
+The answers of 2026-10-27 are scenarios now: every table left out keeps OK disabled (core#1161, fixed,
 `save-project-dialog-edge-cases`); a deleted data-synced file gives the Data loading error, and a column a
 calculated column reads removed from the query gives the "Some calculated columns may not work" warning
 (`data-sync-edge-cases`); a View and use recipient's card menu shows Rename... and Delete Project disabled
 (core#1162, a known failure, `project-gallery-edge-cases`); a value of the wrong type in a dashboard address is
-refused with a balloon naming the parameter, an emptied alias falls back to the parameter's name, and one alias for
-two parameters is refused on save (the last two known failures with no ticket yet, `url-parameters-edge-cases`).
+refused with a balloon naming the parameter (`url-parameters-edge-cases`). An emptied alias falls back to the
+parameter's name, and one alias given to two parameters unchecks the first and goes to the second: both right as they
+are (2026-10-28).
 
 ### Won't do
 

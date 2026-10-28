@@ -179,10 +179,8 @@ Feature: Save project dialog edge cases: CANCEL, names without a letter, a local
     And user signs in as themselves again
     Then the running account should be signed in
 
-  @edge-cases @known-failure:195 @realizes:core#1161
+  @edge-cases @realizes:core#1161
   Scenario: With every table left out, OK stays disabled until a table is brought back
-    core#1161: OK stays enabled with every table left out, and saves a project with no table.
-    Remove the tag when OK is disabled while no table is included.
     Given Files tree node inside browse tree is expanded
     And Files---Demo tree node inside browse tree is expanded
     When user double-clicks Files---Demo---cars.csv tree node inside browse tree

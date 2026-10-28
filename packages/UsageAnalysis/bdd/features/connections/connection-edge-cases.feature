@@ -86,10 +86,10 @@ Feature: Connection edge cases: names the dialogs refuse, CANCEL, and a delete t
     And Databases---Postgres---BDDConnCascade{time} tree node inside browse tree should be absent
     And no errors should have been logged
 
-  @known-failure:102 @ticket-pending
+  @known-failure:102 @realizes:core#1176
   Scenario: A clone keeps the credentials, and so does a rename in its Edit dialog
     Today a clone of NorthwindTest says "Unavailable" under its node: the copy does not carry the
-    credentials. No ticket yet. Remove the tag when the clone lists its schemas.
+    credentials (core#1176). Remove the tag when the clone lists its schemas.
     Given no connection named "BDDConnClone{time}, BDDConnCloneRen{time}" is on the server
     And Databases---Postgres tree node inside browse tree is expanded
     When user picks "Clone..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree

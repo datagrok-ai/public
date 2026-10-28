@@ -10,8 +10,8 @@ Feature: Query editor and Rename edge cases: an unsaved parameterized query, a n
   The queries are the feature's own, on the platform's database (System:Datagrok, its entity_types
   table, where the entity type "Project" is one row on every stand), named with the run's time and
   deleted when the feature ends; the unsaved one is never saved. A post-process script that throws
-  is to leave the query's result shown as the SQL returned it, with an error balloon carrying the
-  error; today the result is not opened (a known failure, no ticket yet).
+  shows an error balloon carrying the error and opens no table: post-processing is a step of the
+  data transformation, so the SQL's raw result is not the query's result.
   A renamed query under a project is claimed in the projects regressions, and two queries with one
   name (core#546) in projects-regressions-duplicate-name.feature.
 
@@ -63,10 +63,7 @@ Feature: Query editor and Rename edge cases: an unsaved parameterized query, a n
     And 0 queries named "BDDQRenamedEdge{time}" should be on the server
     And no errors should have been logged
 
-  @known-failure:84 @ticket-pending
-  Scenario: A post-process that throws leaves the result shown and says what failed
-    Today the error balloon is shown, but the query's result is not opened at all. No ticket yet.
-    Remove the tag when the result opens.
+  Scenario: A post-process that throws says what failed and opens no table
     When user picks "New Query..." from the context menu of Databases---Postgres---Datagrok tree node inside browse tree
     Then the current view should be a DataQueryView view
     When user enters "BDDQPostFail{time}" into Name input
@@ -81,4 +78,4 @@ Feature: Query editor and Rename edge cases: an unsaved parameterized query, a n
     When user refreshes the browse tree
     And user picks "Run" from the context menu of Databases---Postgres---Datagrok---BDDQPostFail{time} tree node inside browse tree
     Then an error balloon containing "BDD post-process failure" should have been shown
-    And the table should have 1 rows
+    And no table view is open

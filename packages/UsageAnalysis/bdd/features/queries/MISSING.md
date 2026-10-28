@@ -13,8 +13,9 @@ localhost (core a6c9fcf85b), 2026-10-26.
 
 ### Decided and written
 
-A post-process script that throws leaves the query's result shown, with an error balloon carrying the error
-(decided 2026-10-27): `query-editor-edge-cases`. Today the result is not opened: a known failure with no ticket yet.
+A post-process script that throws shows an error balloon carrying the error and opens no table (decided
+2026-10-28: post-processing is a step of the data transformation, so the SQL's raw result is not shown):
+`query-editor-edge-cases`.
 An empty value is valid by default, for a string as for an integer (core#229): `query-parameters-edge-cases`
 claims both, the string half a known failure.
 

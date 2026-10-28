@@ -9,7 +9,7 @@ Each item names the case, why it is not a scenario yet, and what would make it o
 
 A clone of a connection carries its credentials, and a rename in the Edit dialog keeps them (decided 2026-10-27):
 `connection-edge-cases` clones the stand's NorthwindTest and lists its schemas before and after the rename. Today
-the clone says "Unavailable": a known failure with no ticket yet.
+the clone says "Unavailable": core#1176, a known failure.
 
 ### API or server tests to write
 

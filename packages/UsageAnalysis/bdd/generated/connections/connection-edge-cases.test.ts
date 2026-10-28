@@ -4,6 +4,7 @@
 /* ---
 generated: features/connections/connection-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+sub_features_covered: [core#1176]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -108,7 +109,7 @@ test.describe("Connection edge cases: names the dialogs refuse, CANCEL, and a de
     await session.step(86, "And Databases---Postgres---BDDConnCascade{time} tree node inside browse tree should be absent", () => shouldBe(page, el(session.text("Databases---Postgres---BDDConnCascade{time} tree node inside browse tree")), "absent"));
     await session.step(87, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A clone keeps the credentials, and so does a rename in its Edit dialog", {tag: ["@connections", "@edge-cases", "@known-failure:102", "@ticket-pending"]}, async ({browser}) => {
+  test("A clone keeps the credentials, and so does a rename in its Edit dialog", {tag: ["@connections", "@edge-cases", "@known-failure:102", "@realizes:core#1176"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(20, "Given user is logged in", () => loggedIn(page));
     await session.step(21, "And the browse panel is open", () => browsePanelOpen(page));

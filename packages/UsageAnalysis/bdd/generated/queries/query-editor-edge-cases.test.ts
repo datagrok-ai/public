@@ -22,8 +22,8 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {appendToEditor, clickOn, enterInto, isExpanded, replaceCode, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {browsePanelOpen, closeAllViews, currentViewType, dialogCloses, noQueryOnServer, queriesOnServer, queryOnServer, refreshBrowse, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {noTableViewOpen} from '@datagrok-libraries/bdd/bindings/platform/workspace';
 import {errorBalloonText, noErrors, pickFromContextMenu, readingIs} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
@@ -81,7 +81,7 @@ test.describe("Query editor and Rename edge cases: an unsaved parameterized quer
     await session.step(63, "And 0 queries named \"BDDQRenamedEdge{time}\" should be on the server", () => queriesOnServer(page, 0, session.text("BDDQRenamedEdge{time}")));
     await session.step(64, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A post-process that throws leaves the result shown and says what failed", {tag: ["@edge-cases", "@realizes:views.queries", "@known-failure:84", "@ticket-pending"]}, async ({browser}) => {
+  test("A post-process that throws says what failed and opens no table", {tag: ["@edge-cases", "@realizes:views.queries"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(19, "Given user is logged in", () => loggedIn(page));
     await session.step(20, "And the browse panel is open", () => browsePanelOpen(page));
@@ -89,22 +89,20 @@ test.describe("Query editor and Rename edge cases: an unsaved parameterized quer
     await session.step(22, "And no query named \"BDDQPostFail{time}\" is on the server", () => noQueryOnServer(page, session.text("BDDQPostFail{time}")));
     await session.step(23, "And Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
     await session.step(24, "And Databases---Postgres tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres tree node inside browse tree")));
-    await knownFailure(async () => {
-      await session.step(70, "When user picks \"New Query...\" from the context menu of Databases---Postgres---Datagrok tree node inside browse tree", () => pickFromContextMenu(page, "New Query...", el("Databases---Postgres---Datagrok tree node inside browse tree")));
-      await session.step(71, "Then the current view should be a DataQueryView view", () => currentViewType(page, "DataQueryView"));
-      await session.step(72, "When user enters \"BDDQPostFail{time}\" into Name input", () => enterInto(page, session.text("BDDQPostFail{time}"), el("Name input")));
-      await session.step(73, "And user replaces the code of code editor with \"select name from entity_types where name = 'Project'\"", () => replaceCode(page, el("code editor"), "select name from entity_types where name = 'Project'"));
-      await session.step(74, "And user clicks on Post-Process tab", () => clickOn(page, el("Post-Process tab")));
-      await session.step(75, "And user appends \"throw new Error('BDD post-process failure');\" to code editor", () => appendToEditor(page, "throw new Error('BDD post-process failure');", el("code editor")));
-      await session.step(76, "And user clicks on Save button", () => clickOn(page, el("Save button")));
-      await session.step(77, "Then 1 query named \"BDDQPostFail{time}\" should be on the server", () => queriesOnServer(page, 1, session.text("BDDQPostFail{time}")));
-      await session.step(78, "When user closes all views", () => closeAllViews(page));
-      await session.step(79, "Given the browse panel is open", () => browsePanelOpen(page));
-      await session.step(80, "And Databases---Postgres---Datagrok tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---Datagrok tree node inside browse tree")));
-      await session.step(81, "When user refreshes the browse tree", () => refreshBrowse(page));
-      await session.step(82, "And user picks \"Run\" from the context menu of Databases---Postgres---Datagrok---BDDQPostFail{time} tree node inside browse tree", () => pickFromContextMenu(page, "Run", el(session.text("Databases---Postgres---Datagrok---BDDQPostFail{time} tree node inside browse tree"))));
-      await session.step(83, "Then an error balloon containing \"BDD post-process failure\" should have been shown", () => errorBalloonText(page, "BDD post-process failure"));
-      await session.step(84, "And the table should have 1 rows", () => rowCount(page, 1));
-    }, 84);
+    await session.step(67, "When user picks \"New Query...\" from the context menu of Databases---Postgres---Datagrok tree node inside browse tree", () => pickFromContextMenu(page, "New Query...", el("Databases---Postgres---Datagrok tree node inside browse tree")));
+    await session.step(68, "Then the current view should be a DataQueryView view", () => currentViewType(page, "DataQueryView"));
+    await session.step(69, "When user enters \"BDDQPostFail{time}\" into Name input", () => enterInto(page, session.text("BDDQPostFail{time}"), el("Name input")));
+    await session.step(70, "And user replaces the code of code editor with \"select name from entity_types where name = 'Project'\"", () => replaceCode(page, el("code editor"), "select name from entity_types where name = 'Project'"));
+    await session.step(71, "And user clicks on Post-Process tab", () => clickOn(page, el("Post-Process tab")));
+    await session.step(72, "And user appends \"throw new Error('BDD post-process failure');\" to code editor", () => appendToEditor(page, "throw new Error('BDD post-process failure');", el("code editor")));
+    await session.step(73, "And user clicks on Save button", () => clickOn(page, el("Save button")));
+    await session.step(74, "Then 1 query named \"BDDQPostFail{time}\" should be on the server", () => queriesOnServer(page, 1, session.text("BDDQPostFail{time}")));
+    await session.step(75, "When user closes all views", () => closeAllViews(page));
+    await session.step(76, "Given the browse panel is open", () => browsePanelOpen(page));
+    await session.step(77, "And Databases---Postgres---Datagrok tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---Datagrok tree node inside browse tree")));
+    await session.step(78, "When user refreshes the browse tree", () => refreshBrowse(page));
+    await session.step(79, "And user picks \"Run\" from the context menu of Databases---Postgres---Datagrok---BDDQPostFail{time} tree node inside browse tree", () => pickFromContextMenu(page, "Run", el(session.text("Databases---Postgres---Datagrok---BDDQPostFail{time} tree node inside browse tree"))));
+    await session.step(80, "Then an error balloon containing \"BDD post-process failure\" should have been shown", () => errorBalloonText(page, "BDD post-process failure"));
+    await session.step(81, "And no table view is open", () => noTableViewOpen(page));
   });
 });
