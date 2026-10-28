@@ -76,6 +76,7 @@ packages/Jmp/
 │   ├── jmp2json.jl         # golden-output generator (Julia + JMPReader.jl), dev-only
 │   ├── jmp-corpus.ts       # `npm run corpus -- <dir>`: read a folder of .jmp files, report (§9.4)
 │   ├── jmp-large.ts        # `npm run large -- --mb 100`: write a large synthetic file and time reading it (§8)
+│   ├── jmp-survey.ts       # bundled to one jmp-survey.mjs: survey saved analyses where the files are, shareable summary (§9.4)
 │   └── make-script-fixtures.ts # writes the synthetic saved-analysis fixtures (§9.2)
 ├── bdd/                    # Gherkin features → Playwright specs (libraries/bdd), §9.5
 │   ├── features/           # open, preview, problem-files, analyses
@@ -387,6 +388,8 @@ Result on the local stand (2026-10-23): Node pass 94 passed; browser pass 15 pas
 ### 9.4 Corpus run (local, not CI)
 
 `npm run corpus -- <folder> [--golden <folder>]` (`tools/jmp-corpus.ts`, through `tsx`) reads every `.jmp` file under the folder with the package's parser and reports files read, files with undecoded columns, and failures grouped by reason; the saved scripts found, by JMP platform, with how many convert to viewers and why the rest don't; and row-state columns whose undecoded bytes are set, with the values seen (§4.3). With `--golden`, it also compares each file with JMPReader.jl's output for it (run `tools/jmp2json.jl` over the same folder first). Run it against a JMP install's `Samples/Data` folder and any customer corpus we're given access to. It also counts column properties by name, with any it can't read, and columns with value labels (§4.6). It hasn't been run on either yet: no JMP install or customer files were at hand.
+
+For files that can't leave their owner, `tools/jmp-survey.ts` is bundled into a single `jmp-survey.mjs` (command at the top of the file; no dependencies, Node 18 or later) and run where the files are: `node jmp-survey.mjs <folder> --summary-only`. It reports files read by JMP version; saved analyses by platform, with how many become viewers and why the rest don't; what each platform's conversion leaves out; and the JSL keywords each platform's scripts use, as a tree with counts. `--summary-only` prints no file paths, script names, column names or values, so the output can be sent back. A first run at a customer (2026-10-27) covered 4 files saved by JMP 15, with one Graph Builder.
 
 A **public corpus** stands in until then: 14 `.jmp` files from GitHub repositories, mostly course and lab data saved by JMP 14–17 (`gm105/JMP`, `whippo/Whippo-NCE-2024`, `heyselbi/Marketing-Analytics-auditing`, `pineapplefart/S5_Hackathon_Supplementary`, `ArvindRajen/Salary_Prediction`, `BreakOnExecute/JMPReader`). They have no licence, so they stay outside the repo. Run on 2026-10-23: 13 of 14 read with every column decoded; the 14th is the older `(3,4,3)` format, refused as expected. 45 saved scripts were found and all read (Graph Builder, Distribution, Oneway, Bivariate, Contingency and Tabulate convert; Fit Model, DOE, Multivariate, Partition, Neural and screening don't). 87 column properties in 12 kinds and 2 value-labelled columns, all read. **Acceptance for Phase 1:** ≥ 99% of JMP 17/18 sample files open, with zero files throwing on supported versions. This matches JMPReader.jl's own coverage.
 
