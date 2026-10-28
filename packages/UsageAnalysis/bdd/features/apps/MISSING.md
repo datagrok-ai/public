@@ -5,8 +5,8 @@ Written for `app-address-edge-cases.feature`, with no library, binding or code c
 ## Decided and written
 
 The answers of 2026-10-27 are scenarios of `app-address-edge-cases`: after "Application not found" the Apps view is
-current; a path naming no demo inside the Demo app opens the app's start page (a known failure with no ticket yet:
-an empty view opens).
+current. A path naming no demo inside the Demo app is left out (2026-10-28): the Demo app opens after a while on
+dev, while a local stand kept an empty view for two minutes.
 
 ## Won't do
 

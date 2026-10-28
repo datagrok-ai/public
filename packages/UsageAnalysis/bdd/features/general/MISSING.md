@@ -47,8 +47,9 @@ the Table Manager with no table open (an empty list, no error).
 ### Decided and written
 
 The answers of 2026-10-27 are scenarios of `profile-export-edge-cases`: an emptied first name keeps OK disabled, a
-200-character first name is saved whole (both known failures with no ticket yet), and an empty molecule cell goes
-out of a CSV export as an empty field.
+first name longer than the 64 characters the profile stores (`users.first_name` VARCHAR(64)) is refused with a
+message (both known failures, core#1180; decided 2026-10-28, a 200-character name is not to be allowed), and an empty
+molecule cell goes out of a CSV export as an empty field.
 
 ## Won't do (the lead's triage, 2026-10-11)
 

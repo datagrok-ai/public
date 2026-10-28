@@ -8,9 +8,8 @@ change.
 **Decided and written**
 
 The answers of 2026-10-27 are scenarios of `layout-edge-cases`: a layout of a grid alone is suggested only for a
-table that has the grid's columns (`TableView.getViewerColumns`; a known failure with no ticket yet, the lookup
-reads `dataFrame[name]` instead of `dataFrame[colName]`, so the layout has no columns and is suggested for every
-table); a layout renamed to an empty name keeps its name. View > Layout > Open Gallery opens the same Layout
+table that has the grid's columns (`TableView.getViewerColumns`; fixed in core#1179 on 2026-10-28, a known failure until the
+stand has it: the lookup read `dataFrame[name]` instead of `dataFrame[colName]`); a layout renamed to an empty name keeps its name. View > Layout > Open Gallery opens the same Layout
 suggestions panel, under the same rule, so a layout missing a column of the table is offered nowhere.
 
 **API tests to write**

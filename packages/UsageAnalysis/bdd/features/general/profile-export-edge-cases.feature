@@ -1,8 +1,9 @@
 @serial @edge-cases
 Feature: Profile and export edge cases: an empty and a long name, an empty molecule in a CSV
   Guards for the profile's Enter new name dialog and for Save > As CSV (options)... with Molecules as
-  SMILES. An emptied first name keeps OK disabled; a 200-character first name is saved whole (both
-  known failures, no ticket yet). An empty molecule cell goes out as an empty field, with no
+  SMILES. An emptied first name keeps OK disabled, and a first name longer than the 64 characters the
+  profile stores is refused with a message, not saved, and logs no error (both known failures,
+  core#1180). An empty molecule cell goes out as an empty field, with no
   placeholder text.
 
   The account is the bddprofile fixture user (made once per stand: a user cannot be deleted), signed in
@@ -13,10 +14,9 @@ Feature: Profile and export edge cases: an empty and a long name, an empty molec
   Background:
     Given user is logged in
 
-  @known-failure:27 @ticket-pending
+  @known-failure:27 @realizes:core#1180
   Scenario: An emptied first name keeps OK disabled
-    Today OK stays enabled with the first name emptied. No ticket yet. Remove the tag when OK is
-    disabled.
+    core#1180: OK stays enabled with the first name emptied. Remove the tag when OK is disabled.
     Given a user "bddprofile" is on the server
     When user signs in as "bddprofile"
     And user opens the address "/u"
@@ -31,10 +31,11 @@ Feature: Profile and export edge cases: an empty and a long name, an empty molec
     When user signs in as themselves again
     Then the running account should be signed in
 
-  @known-failure:46 @ticket-pending
-  Scenario: A 200-character first name is saved whole
-    Today the page shows the long name, but the dialog stays open after OK. No ticket yet. Remove
-    the tag when the dialog closes and the name is saved.
+  @known-failure:47 @realizes:core#1180
+  Scenario: A first name longer than 64 characters is refused, not saved
+    core#1180: the profile stores 64 characters of a first name (`users.first_name` is VARCHAR(64)).
+    Today the page shows the long name, the name is not saved, and the dialog stays open with no
+    message. Remove the tag when the dialog says the name is longer than 64 characters.
     Given a user "bddprofile" is on the server
     When user signs in as "bddprofile"
     And user opens the address "/u"
@@ -43,9 +44,9 @@ Feature: Profile and export edge cases: an empty and a long name, an empty molec
     Then "Enter new name" dialog should be visible
     When user enters "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL" into "First name" input in "Enter new name" dialog
     And user clicks on OK button in "Enter new name" dialog
-    Then the "Enter new name" dialog should close
-    And the user "bddprofile" should have the name "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL" on the server
-    And no error or warning balloon should have been shown
+    Then "Enter new name" dialog should contain text "64"
+    And no errors should have been logged
+    And the user "bddprofile" should have the name "bddprofile" on the server
     When user signs in as themselves again
     Then the running account should be signed in
 

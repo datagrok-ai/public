@@ -4,7 +4,7 @@
 /* ---
 generated: features/layouts/layout-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [views.layouts]
+sub_features_covered: [views.layouts, core#1179]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -68,7 +68,7 @@ test.describe("Layout edge cases: the Layouts pane suggests a layout only for a 
     await session.step(63, "And \"bdd-edge-cars-{time}\" layout card should be absent", () => shouldBe(page, el(session.text("\"bdd-edge-cars-{time}\" layout card")), "absent"));
     await session.step(64, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A layout of a grid alone is suggested only for a table that has the grid's columns", {tag: ["@realizes:views.layouts", "@edge-cases", "@known-failure:85", "@ticket-pending"]}, async ({browser}) => {
+  test("A layout of a grid alone is suggested only for a table that has the grid's columns", {tag: ["@realizes:views.layouts", "@edge-cases", "@known-failure:85", "@realizes:core#1179"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(21, "Given user is logged in", () => loggedIn(page));
     await session.step(22, "And the layouts named \"bdd-edge-layout-{time}\" are deleted when the feature ends", () => layoutsDeleted(page, session.text("bdd-edge-layout-{time}")));

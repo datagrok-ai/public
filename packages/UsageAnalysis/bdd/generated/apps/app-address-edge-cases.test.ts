@@ -23,27 +23,18 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {openAddress} from '@datagrok-libraries/bdd/bindings/platform/browse';
 import {openDataset, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {errorBalloonText, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {ds, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {errorBalloonText} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {ds, feature} from '@datagrok-libraries/bdd/runtime';
 
-test.describe("App address edge cases: an address naming no app, a path naming nothing inside an app", () => {
+test.describe("App address edge cases: an address naming no app", () => {
   const session = feature(test, "features/apps/app-address-edge-cases.feature", import.meta.url);
   test("An address naming no app says \"Application not found\" and opens the Apps view", {tag: ["@apps", "@edge-cases", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(10, "Given user is logged in", () => loggedIn(page));
-    await session.step(13, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(14, "Then the \"demog-1000\" view should be current", () => viewIsCurrent(page, "demog-1000"));
-    await session.step(15, "When user opens the address \"/apps/BddNoSuchApp{time}\"", () => openAddress(page, session.text("/apps/BddNoSuchApp{time}")));
-    await session.step(16, "Then an error balloon containing \"Application not found\" should have been shown", () => errorBalloonText(page, "Application not found"));
-    await session.step(17, "And the \"Apps\" view should be current", () => viewIsCurrent(page, "Apps"));
-  });
-  test("A path naming no demo inside the Demo app opens the app's start page", {tag: ["@apps", "@edge-cases", "@realizes:views.browse", "@known-failure:24", "@ticket-pending"]}, async ({browser}) => {
-    const page = await session.page(browser);
-    await session.step(10, "Given user is logged in", () => loggedIn(page));
-    await knownFailure(async () => {
-      await session.step(23, "When user opens the address \"/apps/Tutorials/Demo/BddNoSuchDemo{time}\"", () => openAddress(page, session.text("/apps/Tutorials/Demo/BddNoSuchDemo{time}")));
-      await session.step(24, "Then the \"Demo app\" view should be current", () => viewIsCurrent(page, "Demo app"));
-      await session.step(25, "And no errors should have been logged", () => noErrors(page));
-    }, 24);
+    await session.step(8, "Given user is logged in", () => loggedIn(page));
+    await session.step(11, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(12, "Then the \"demog-1000\" view should be current", () => viewIsCurrent(page, "demog-1000"));
+    await session.step(13, "When user opens the address \"/apps/BddNoSuchApp{time}\"", () => openAddress(page, session.text("/apps/BddNoSuchApp{time}")));
+    await session.step(14, "Then an error balloon containing \"Application not found\" should have been shown", () => errorBalloonText(page, "Application not found"));
+    await session.step(15, "And the \"Apps\" view should be current", () => viewIsCurrent(page, "Apps"));
   });
 });
