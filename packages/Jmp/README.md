@@ -1,7 +1,10 @@
-# JMP
+# JMP Reader
 
-**JMP** opens [JMP](https://www.jmp.com/) data tables (`.jmp`) in Datagrok. The file is
+**JMP Reader** opens [JMP](https://www.jmp.com/)® data tables (`.jmp`) in Datagrok. The file is
 parsed in the browser, so you don't need a JMP installation or any server component.
+
+JMP® is a registered trademark of JMP Statistical Discovery LLC, a subsidiary of SAS Institute Inc.
+This plugin is not affiliated with, sponsored by or endorsed by either company.
 
 ## Supported File Types
 

@@ -1,11 +1,11 @@
-// Column properties in a .jmp file: notes, units, formulas, value labels and the rest. Not in JMPReader.jl.
+// The column properties a .jmp file keeps (notes, units, formulas, value labels and the rest). Not in JMPReader.jl.
 // The container is jmp-convert's (github.com/davidmathers/jmp-convert, MIT); what the entries hold was read
 // from public files (JMP_PLUGIN.md §4.6). Provisional until confirmed on more files.
 //
 // After a column's six descriptor bytes, 5 bytes for a numeric column (dt1 0x01, 0x0A) or 4 for any other,
-// then: u16 count, u64 total length, and count × (u16 id, u64 length, payload).
-//   0x07: JSL properties, each a u32 length and JSL text such as `Notes("...")`, ended by 0xFFFFFFFF
-//   0x0E: value labels, u32 n, u32 length, n keys (f64 for a numeric column, NUL-ended text otherwise),
+// then u16 count, u64 total length, and count × (u16 id, u64 length, payload).
+//   0x07 = JSL properties, each a u32 length and JSL text such as `Notes("...")`, ended by 0xFFFFFFFF
+//   0x0E = value labels, u32 n, u32 length, n keys (f64 for a numeric column, NUL-ended text otherwise),
 //         u32 n, u32 length, n NUL-ended labels
 
 import {ByteReader} from './jmp-reader';

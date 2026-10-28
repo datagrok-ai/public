@@ -426,6 +426,7 @@ Result on the local stand (2026-10-23): 12 passed, 0 audit findings, run with `-
 - There are **no runtime dependencies** (`DecompressionStream` and `TextDecoder` are built into the browser). If `pako` is added as a fallback, it is MIT and gets its own entry.
 - `tools/jmp2json.jl` is a dev-only tool. Julia and JMPReader.jl are not bundled.
 - **No JMP at Datagrok** (decided 2026-10-27). No one at Datagrok installs or uses JMP for this package, and we don't ask customers to make files in JMP or compare our output with JMP's for us. The [JMP Software License Agreement](https://jmp.com/en/store/jmp-software-license-agreement) binds its customers and users not to "reverse engineer, reverse assemble or decompile the Software" (§4) or use it to "create or assist a third party in creating an offering that competes with JMP" (§1.4.3(b)). What we know of the format comes only from JMPReader.jl, jmp-convert and `.jmp` files people already have: public files, and customer files read where they are, with permission.
+- **Name.** JMP® is a trademark of JMP Statistical Discovery LLC, a SAS subsidiary. The plugin uses it only to say which files it reads: it shows as "JMP Reader", not "JMP", uses no JMP logo or styling, and its README carries the trademark notice and says it isn't affiliated with or endorsed by JMP or SAS. The `Jmp` folder and `@datagrok/jmp` package name are identifiers.
 - *Legal check (see §12):* confirm that reading `.jmp` files this way is outside that agreement before merging to master or publishing.
 
 ---
