@@ -445,4 +445,19 @@ category('JMP: public files', () => {
     expect(date.kind, 'date');
     expect(date.descriptor[3], 0x90);
   });
+
+  test('JMP 15: a designed experiment, with its DOE scripts', async () => {
+    const t = await read('zenodo-6149318-ivt-rna-dsd');
+    expect(t.info.jmpVersion, '15.2.1');
+    expect(t.info.nrows, 18);
+    const props = (name: string) => t.columns.find((c) => c.info.name === name)!.properties!.properties;
+    expectArray(props('DMSO').map((p) => p.text), ['Coding({0, 10})', 'Design Role(DesignRole(Continuous))',
+      'Factor Changes(Easy)']);
+    expect(props('Block')[0].text, 'RunsPerBlock(9)');
+    expect(props('RNA Yield (ng/uL)')[0].text, 'Response Limits({Goal(Maximize), Importance(.), Show Limits(0)})');
+    const cols = t.columns.map((c) => ({name: c.info.name, numeric: c.kind !== 'string'}));
+    const analyses = t.scripts.filter((s) => s.name !== 'Source').map((s) => convertScript(s, cols));
+    expectArray(analyses.map((a) => a.platform!), ['Fit Definitive Screening', 'DOE', 'DOE']);
+    expect(analyses.every((a) => a.viewers.length === 0 && /isn't converted/.test(a.reason!)), true);
+  });
 }, {node: true});
