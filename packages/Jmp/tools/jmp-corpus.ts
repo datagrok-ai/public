@@ -1,6 +1,5 @@
 // Reads every .jmp file under a folder with the package's parser and reports what came across
-// (JMP_PLUGIN.md §9.4). For corpora that can't be committed: a JMP install's Samples/Data, or customer
-// files read on the machine they were shared to.
+// (JMP_PLUGIN.md §9.4). For corpora that can't be committed: customer files read on the machine they were shared to.
 //
 //   npm run corpus -- <folder> [--golden <folder>]
 //

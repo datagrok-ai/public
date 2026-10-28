@@ -9,7 +9,7 @@ import {readColumnProperties} from './jmp-properties';
 import {
   CURRENCY_FORMATS, DATE_FORMATS, DATETIME_FORMATS, DURATION_FORMATS, GZIP_SECTION_START,
   JMP_EPOCH_OFFSET_S, JMP_INT_MISSING, JmpColumn, JmpColumnInfo, JmpColumnKind, JmpData, JmpFormatError, JmpHeader,
-  JmpInfo, JmpTable, LATITUDE_FORMATS, LONGITUDE_FORMATS, MAGIC_JMP, OLD_VERSION, ROWSTATE_COLORS,
+  JmpInfo, JmpTable, LATITUDE_FORMATS, LONGITUDE_FORMATS, MAGIC_JMP, MAGIC_JMP_BIG_ENDIAN, OLD_VERSION, ROWSTATE_COLORS,
   SUPPORTED_VERSION,
 } from './jmp-types';
 
@@ -26,19 +26,22 @@ const CURRENCY_SEARCH_BYTES = 256;
 
 const utf8 = new TextDecoder('utf-8');
 
+const OLD_FORMAT = 'This JMP file uses an older format that isn\'t supported yet. Re-save it in a current JMP version.';
+
 /** Reads and validates the magic bytes and version triple. */
 export function readHeader(r: ByteReader): JmpHeader {
   r.seek(0);
   if (r.length === 0)
     throw new JmpFormatError('The file is empty');
-  if (r.length < MAGIC_JMP.length + 12 || MAGIC_JMP.some((b, i) => r.bytes[i] !== b))
+  const starts = (magic: number[]) => r.length >= magic.length + 12 && magic.every((b, i) => r.bytes[i] === b);
+  if (starts(MAGIC_JMP_BIG_ENDIAN))
+    throw new JmpFormatError(OLD_FORMAT);
+  if (!starts(MAGIC_JMP))
     throw new JmpFormatError('Not a JMP data table');
   r.skip(MAGIC_JMP.length);
   const version: [number, number, number] = [r.u32(), r.u32(), r.u32()];
-  if (sameVersion(version, OLD_VERSION)) {
-    throw new JmpFormatError('This JMP file uses an older format that isn\'t supported yet. ' +
-      'Re-save it in a current JMP version.');
-  }
+  if (sameVersion(version, OLD_VERSION))
+    throw new JmpFormatError(OLD_FORMAT);
   if (!sameVersion(version, SUPPORTED_VERSION))
     throw new JmpFormatError(`Unrecognized JMP file version (${version.map((v) => '0x' + v.toString(16)).join(', ')})`);
   return {version};

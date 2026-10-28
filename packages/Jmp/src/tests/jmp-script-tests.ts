@@ -80,6 +80,26 @@ category('JMP: JSL', () => {
     expect(bare.args[1].type, 'binary');
   });
 
+  test('statements in arguments, matrices, loops, any script', async () => {
+    const glued = parseJsl('Trend(dt = Current Data Table(); L = dt << Get Column Names(continuous); )') as
+      Extract<JslNode, {type: 'call'}>;
+    expect(glued.args.length, 1);
+    expect(statements(glued.args[0]).length, 2);
+    const m = parseJsl('Formula([-0.5 1e-3 2; 3 .])') as Extract<JslNode, {type: 'call'}>;
+    const rows = m.args[0].type === 'list' ? m.args[0].items : [];
+    expect(rows.length, 2);
+    expect(rows[0].type === 'list' && rows[0].items.map((n) => n.type === 'number' ? n.value : '').join(' '),
+      '-0.5 0.001 2');
+    expect(parseJsl('[1 2 3]').type === 'list', true);
+    const loop = parseJsl('For(k = 1, k <= 3, k++, Oneway(Y(:y)))') as Extract<JslNode, {type: 'call'}>;
+    expect(loop.args[2].type === 'unary' && loop.args[2].op, '++');
+    expect(isCall(parseJsl('Contingency(Total %(1), Col %(1))'), 'Contingency'), true);
+    expect((parseJsl('Open("x.xls", Arbeitsblätter("Daten"))') as Extract<JslNode, {type: 'call'}>).args[1].type,
+      'call');
+    const jp = parseJsl('Y(:（説明）年齢)') as Extract<JslNode, {type: 'call'}>;
+    expect(jp.args[0].type === 'column' && jp.args[0].name, '（説明）年齢');
+  });
+
   test('syntax errors', async () => {
     for (const bad of ['f(', 'f(a b', '"open', 'f(:)', 'f(1))', '@']) {
       let error: unknown;
@@ -320,7 +340,50 @@ category('JMP: analyses', () => {
     expect(/Fit Model isn't converted/.test(convert('Fit Model(Y(:weight), Effects(:height), Run)').reason!), true);
     expect(/Column "nope"/.test(convert('Bivariate(Y(:weight), X(:nope))').reason!), true);
     expect(/Doesn't launch an analysis/.test(convert('Names Default To Here(1)').reason!), true);
+    const program = convert('Names Default To Here(1); cols = Current Data Table() << Get Column Names(Numeric); ' +
+      'For(i = 1, i <= N Items(cols), i++, Distribution(Y(cols[i])))');
+    expect(program.platform === undefined, true);
+    expect(program.reason, 'A JSL program rather than a saved analysis');
     const unread = convertScript({name: 'broken', text: 'f(', error: 'Expected ")"'}, BIG_CLASS);
     expect(/couldn't be read/.test(unread.reason!), true);
+  });
+}, {node: true});
+
+// Files researchers published under CC0 (CREDITS.md §5): what JMP 11–13 saved, in English and Japanese.
+category('JMP: public files', () => {
+  const read = async (name: string) => readJmp(await _package.files.readAsBytes(`zenodo/${name}.jmp`));
+
+  test('JMP 13, in Japanese: Oneway analyses', async () => {
+    const t = await read('dryad-t76hdr7xq-hadmsc');
+    expect(t.info.jmpVersion, '13.2.1');
+    const cols = t.columns.map((c) => ({name: c.info.name, numeric: c.kind !== 'string'}));
+    const analyses = t.scripts.filter((s) => s.name !== 'Source').map((s) => convertScript(s, cols));
+    expect(analyses.length, 3);
+    expect(analyses[0].name, 'No.によるsynteninの二変量の関係');
+    for (const a of analyses) {
+      expect(a.platform, 'Oneway');
+      expect(a.viewers[0]?.type, 'Box plot');
+    }
+    expect(analyses[2].viewers[0].options.valueColumnName, 'Tsg101');
+    const tac = await read('dryad-t76hdr7xq-tac2wks');
+    expect(tac.columns.map((c) => c.info.name).includes('LVPWｄ'), true);
+    expect(tac.scripts.filter((s) => s.name !== 'Source' && !s.error).length, 4);
+  });
+
+  test('JMP 11 and 12: formulas and notes', async () => {
+    const keiser = await read('dryad-60nn7-keiser-2016');
+    expect(keiser.info.jmpVersion, '12.1.0');
+    expect(keiser.info.nrows, 76);
+    const diff = keiser.columns.find((c) => c.info.name === 'Difference in boldness between pair')!;
+    expect(diff.properties!.properties[0].text,
+      'Formula(:Exposed spider boldness value - :Susceptible spider boldness value)');
+    const condition = keiser.columns.find((c) => c.info.name === 'Susceptible spider body condition')!;
+    expect(condition.properties!.properties[0].text, 'Notes("Bivariate Save Residuals Linear Fit")');
+    const acoustic = await read('dryad-6b340-acoustic');
+    expect(acoustic.info.jmpVersion, '11.0.0');
+    expect(acoustic.info.nrows, 161);
+    const groups = acoustic.columns.find((c) => c.info.name === 'MaxFreq Groups')!;
+    expect(groups.properties!.properties[0].node !== undefined, true);
+    expect(groups.properties!.properties[0].text, 'Formula(If(:MaxFreq_mean > 1900, 1, 2))');
   });
 }, {node: true});

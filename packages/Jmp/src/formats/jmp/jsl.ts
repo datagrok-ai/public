@@ -33,7 +33,7 @@ type Token =
   | {kind: 'punct', text: string, pos: number}
   | {kind: 'end', text: '', pos: number};
 
-const PUNCT = ['<<', '>>', '==', '!=', '<=', '>=', '||', '&&', '::', '+=', '-=', '*=', '/=',
+const PUNCT = ['++', '--', '<<', '>>', '==', '!=', '<=', '>=', '||', '&&', '::', '+=', '-=', '*=', '/=',
   '(', ')', '{', '}', '[', ']', ',', ';', ':', '=', '<', '>', '+', '-', '*', '/', '!', '|', '&', '^', '?'];
 
 const ESCAPES: Record<string, string> = {'"': '"', 'n': '\n', 'r': '\r', 't': '\t', '\\': '\\', '0': '\0', 'N': '\n'};
@@ -111,13 +111,15 @@ function tokenize(src: string): Token[] {
       }
       continue;
     }
-    if (/[A-Za-z_]/.test(c)) {
-      // a name may contain spaces between words: `Fit Y by X`. After `:`, JMP 15 writes a column name such as
-      // `:HC Met255 %Oxidation` bare, so a column name may also hold characters that aren't operators.
-      const prev = tokens[tokens.length - 1];
-      const m = (prev?.kind === 'punct' && (prev.text === ':' || prev.text === '::') ?
-        /^[A-Za-z_][\w%.#$@']*(?:[ \t]+[\w%.#$@']+)*/ :
-        /^[A-Za-z_][\w]*(?:[ \t]+[A-Za-z_\d][\w]*)*/).exec(src.slice(i))!;
+    const prev = tokens[tokens.length - 1];
+    const afterColon = prev?.kind === 'punct' && (prev.text === ':' || prev.text === '::');
+    if (/[\p{L}_]/u.test(c) || (afterColon && c >= '\u0080')) {
+      // a name may contain spaces between words, `Fit Y by X` or `Col %`, and letters of any script: `Arbeitsblätter`.
+      // After `:`, JMP 15 writes a column name such as `:HC Met255 %Oxidation` or `:（説明）` bare, so a column
+      // name may also hold characters that aren't operators.
+      const m = (afterColon ?
+        /^[\w%.#$@'\u0080-\uffff]+(?:[ \t]+[\w%.#$@'\u0080-\uffff]+)*/u :
+        /^[\p{L}_][\p{L}\p{M}\p{N}_]*(?:[ \t]+(?:[\p{L}\p{N}_][\p{L}\p{M}\p{N}_]*|%))*/u).exec(src.slice(i))!;
       tokens.push({kind: 'name', text: m[0], pos});
       i += m[0].length;
       continue;
@@ -172,7 +174,7 @@ export function parseJsl(src: string): JslNode {
         k++;
         continue;
       }
-      out.push(binary(1));
+      out.push(binary(0));
       if (!isPunct(close))
         expectPunct(',');
     }
@@ -213,6 +215,9 @@ export function parseJsl(src: string): JslNode {
       if (isPunct('[')) {
         k++;
         node = {type: 'index', target: node, args: args(']')};
+      } else if (isPunct('++') || isPunct('--')) {
+        // `k++` in a For loop
+        node = {type: 'unary', op: tokens[k++].text, operand: node};
       } else if (isPunct('(') && isCall(node, 'Name') && node.args.length === 1 && node.args[0].type === 'string') {
         // `Name("1a fit")(...)` calls the name `1a fit`, as JMP writes a script named so
         k++;
@@ -260,7 +265,7 @@ export function parseJsl(src: string): JslNode {
       }
       if (t.text === '[') {
         k++;
-        return {type: 'list', items: args(']')};
+        return matrix() ?? {type: 'list', items: args(']')};
       }
       if (t.text === ':' || t.text === '::') {
         k++;
@@ -270,6 +275,35 @@ export function parseJsl(src: string): JslNode {
     default:
       throw new JslSyntaxError('Unexpected end of script', t.pos);
     }
+  }
+
+  /** A matrix literal, `[1 2 3]` or `[1 2, 3 4]` or `[1 2; 3 4]`, as a list of numbers, or a list of rows when
+   * it has several. Undefined, having read nothing, for brackets that hold anything but numbers. */
+  function matrix(): JslNode | undefined {
+    const start = k;
+    const rows: JslNode[][] = [[]];
+    while (!isPunct(']')) {
+      const t = peek();
+      if (t.kind === 'number') {
+        k++;
+        rows[rows.length - 1].push({type: 'number', value: t.text === '.' ? NaN : Number(t.text)});
+      } else if ((isPunct('-') || isPunct('+')) && tokens[k + 1].kind === 'number') {
+        const sign = tokens[k].text === '-' ? -1 : 1;
+        k += 2;
+        const n = tokens[k - 1].text;
+        rows[rows.length - 1].push({type: 'number', value: n === '.' ? NaN : sign * Number(n)});
+      } else if (isPunct(',') || isPunct(';')) {
+        k++;
+        rows.push([]);
+      } else {
+        k = start;
+        return undefined;
+      }
+    }
+    k++;
+    const filled = rows.filter((r) => r.length > 0);
+    return filled.length === 1 ? {type: 'list', items: filled[0]} :
+      {type: 'list', items: filled.map((r) => ({type: 'list', items: r}) as JslNode)};
   }
 
   /** After `:`: a column reference such as `:Age`, `:"Age at start"n` or `:Name("Age at start")`. */

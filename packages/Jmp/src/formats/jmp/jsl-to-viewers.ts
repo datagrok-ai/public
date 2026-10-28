@@ -85,7 +85,8 @@ export function convertScript(script: JmpScript, columns: JmpColumnRef[]): JmpSc
   }
   const launches = platformCalls(script.body);
   if (launches.length === 0) {
-    result.reason = 'Doesn\'t launch an analysis';
+    result.reason = isProgram(script.body) ? 'A JSL program rather than a saved analysis' :
+      'Doesn\'t launch an analysis';
     return result;
   }
   const cols = new Columns(columns);
@@ -120,14 +121,11 @@ export function convertScript(script: JmpScript, columns: JmpColumnRef[]): JmpSc
 
 /** The platform launches in a script: `Bivariate(...)`, `dt << Bivariate(...)`, one per statement. */
 function platformCalls(body: JslNode): Call[] {
+  if (isProgram(body))
+    return [];
   const out: Call[] = [];
   for (const s of statements(body)) {
-    let node: JslNode = s;
-    // `dt << Platform(...)` and `obj = dt << Platform(...)`
-    if (node.type === 'binary' && node.op === '=')
-      node = node.right;
-    while (node.type === 'binary' && node.op === '<<')
-      node = node.right;
+    const node = topCall(s) ?? s;
     if (node.type === 'call' && !NOT_PLATFORMS.has(jslKey(node.name)))
       out.push(node);
     else if (node.type === 'list')
@@ -136,9 +134,29 @@ function platformCalls(body: JslNode): Call[] {
   return out;
 }
 
+function isProgram(body: JslNode): boolean {
+  return statements(body).some((s) => s.type === 'list' ? s.items.some(isProgram) :
+    PROGRAM.has(jslKey(topCall(s)?.name ?? '')));
+}
+
+/** The call a statement makes: `Platform(...)`, `dt << Platform(...)` or `obj = dt << Platform(...)`. */
+function topCall(s: JslNode): Call | undefined {
+  let node = s;
+  if (node.type === 'binary' && node.op === '=')
+    node = node.right;
+  while (node.type === 'binary' && node.op === '<<')
+    node = node.right;
+  return node.type === 'call' ? node : undefined;
+}
+
 /** Calls that set things up rather than launch an analysis. */
 const NOT_PLATFORMS = new Set(['namesdefaulttohere', 'currentdatatable', 'datatable', 'open', 'clearglobals',
-  'deletesymbols', 'print', 'show', 'write', 'wait', 'include']);
+  'deletesymbols', 'print', 'show', 'write', 'wait', 'include', 'subset', 'roweditor']);
+
+/** Calls of a hand-written JSL program, which a table can keep as a script: loops, dialogs, windows built
+ * from parts. Such a script isn't a saved analysis, whatever platforms it launches along the way. */
+const PROGRAM = new Set(['for', 'while', 'if', 'foreachrow', 'getcolumnnames', 'newwindow', 'columndialog',
+  'dialog', 'function', 'try', 'eval', 'expr']);
 
 /** Options that change what a viewer shows and that we don't carry over. */
 function noteIgnored(call: Call, notes: string[]): void {

@@ -57,6 +57,11 @@ category('JMP: header', () => {
     await expectExceptionAsync(async () => {
       readHeader(new ByteReader(bytes));
     }, (e) => e instanceof JmpFormatError && /older format/.test(e.message));
+    // classic Mac JMP wrote it big-endian
+    bytes.set([0x00, 0x00, 0xff, 0xff, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 3]);
+    await expectExceptionAsync(async () => {
+      readHeader(new ByteReader(bytes));
+    }, (e) => e instanceof JmpFormatError && /older format/.test(e.message));
   });
 
   test('rejects truncated header', async () => {

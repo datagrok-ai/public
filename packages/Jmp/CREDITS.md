@@ -90,3 +90,18 @@ The `datagrok-tools` CLI used during build/test transitively pulls in
 (LGPL-2.1) and `@ffmpeg-installer/win32-x64` (GPLv3). These binaries are **not**
 redistributed as part of the published JMP plugin and impose no obligation on
 users of the plugin.
+
+---
+
+## 5. Test data (`files/zenodo/`, not bundled)
+
+Data files that researchers published on Dryad under **CC0 1.0** (public domain),
+taken from their Zenodo copies and renamed. CC0 asks for no attribution; they are
+credited here anyway. Used only by the package tests.
+
+| File | Original name | Dataset |
+|---|---|---|
+| `dryad-t76hdr7xq-hadmsc.jmp` | `hAdMSC_siTcad+APN.jmp` | Nakamura, Kita, Tanaka et al. (2020), *Adiponectin stimulates exosome release to enhance mesenchymal stem cell driven therapy of heart failure in mice*. https://doi.org/10.5061/dryad.t76hdr7xq |
+| `dryad-t76hdr7xq-tac2wks.jmp` | `TAC2wks_hMSC(siTcad).jmp` | same dataset |
+| `dryad-60nn7-keiser-2016.jmp` | `Keiser et al 2016 - Data File for Proceedings B.jmp` | Keiser, Pinter-Wollman, Augustine et al. (2016), *Data from: Individual differences in boldness influence patterns of social interactions and the transmission of cuticular bacteria among group-mates*. https://doi.org/10.5061/dryad.60nn7 |
+| `dryad-6b340-acoustic.jmp` | `Acoustic_Dryad.jmp` | Warwick, Travis, Lemmon (2015), *Data from: Geographic variation in the Pine Barrens Treefrog (Hyla andersonii): concordance of genetic, morphometric, and acoustic signal data*. https://doi.org/10.5061/dryad.6b340 |

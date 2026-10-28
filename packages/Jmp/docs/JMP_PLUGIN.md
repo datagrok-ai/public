@@ -2,7 +2,7 @@
 
 > **Purpose:** This spec defines the Datagrok JMP plugin: a browser-side reader for SAS JMP data tables (`.jmp`). It is written for the developer (human or AI agent) building the package. It covers scope, architecture, the file format as far as it is known, type mapping, testing, and the phased roadmap. The [Minitab plugin](../../Minitab/docs/MINITAB_PLUGIN.md) is the structural template.
 
-**Status:** Phase 1 built, 2026-10-21; Phase 2 in progress, 2026-10-23 (v0.1.0, not yet released). The parser matches JMPReader.jl on all 19 reference files; 109 package tests and 12 BDD scenarios pass on a local stand. §11 lists what is left.
+**Status:** Phase 1 built, 2026-10-21; Phase 2 in progress, 2026-10-23 (v0.1.0, not yet released). The parser matches JMPReader.jl on all 19 reference files; 112 package tests and 12 BDD scenarios pass on a local stand. §11 lists what is left.
 
 ---
 
@@ -71,7 +71,8 @@ packages/Jmp/
 ├── files/
 │   ├── jmpreader/          # JMPReader.jl's 19 test files (MIT), unchanged
 │   ├── golden/             # what JMPReader.jl reads from each (tools/jmp2json.jl), committed
-│   └── tests/              # made here: unsupported-column, truncated, not-a-jmp, saved-bar-chart, saved-fit-model; jmp15-graph-builder (saved by JMP 15, anonymized)
+│   ├── tests/              # made here: unsupported-column, truncated, not-a-jmp, saved-bar-chart, saved-fit-model; jmp15-graph-builder (saved by JMP 15, anonymized)
+│   └── zenodo/             # four CC0 research files saved by JMP 11–13 (§9.2, CREDITS.md §5)
 ├── tools/
 │   ├── jmp2json.jl         # golden-output generator (Julia + JMPReader.jl), dev-only
 │   ├── jmp-corpus.ts       # `npm run corpus -- <dir>`: read a folder of .jmp files, report (§9.4)
@@ -125,7 +126,7 @@ What follows is the format as JMPReader.jl understands it. Everything is little-
 | Offset | Bytes | Meaning |
 |---|---|---|
 | 0 | 4 | Magic `FF FF 00 00` |
-| 4 | 12 | Version triple, three `UInt32` values. **Supported:** `(7, 4, 0x00010001)`. **Rejected:** `(3, 4, 3)`, an older format. Anything else → "Unknown JMP file format". |
+| 4 | 12 | Version triple, three `UInt32` values. **Supported:** `(7, 4, 0x00010001)`. **Rejected:** `(3, 4, 3)`, an older format, and files starting `00 00 FF FF`: the same old format big-endian, as classic Mac JMP wrote it (seen in 2007–08 research files, with 31-character space-padded column names in `windows-1252`). Anything else → "Unknown JMP file format". |
 
 ### 4.2 Table metadata
 
@@ -223,7 +224,7 @@ Not in JMPReader.jl. Inferred from the `Source` script JMP saved in the `compact
 
 The text is plain UTF-8 JSL, written as `Name(body)`: the script's name called on the script. The nested lengths look like a property block holding a script list, but one example can't confirm that. The reader (`jmp-scripts.ts`) doesn't rely on them. It scans the bytes between the build string and the first column for `0x03`, a `u32` length, and text of that length that reads as a JSL call, and takes `New Script("name", body)` as well as `Name(body)`. A script that has that shape but doesn't parse is kept with its error, so it can be listed. Any surprise in this scan is caught; it can't cost the table's data.
 
-Confirmed on the public corpus (§9.4): up to 9 scripts in one table, all found. A name JSL can't write bare is saved as `Name("1a_logistic-regr")(body)`. Still to confirm: long scripts (compressed?) and scripts JMP marks as run-on-open.
+Confirmed on the public corpus (§9.4): up to 9 scripts in one table, all found. A name JSL can't write bare is saved as `Name("1a_logistic-regr")(body)`; JMP 15 writes some such names bare, `HC Met255 %Oxidation vs. Week_5C(…)`. Tables also keep hand-written JSL programs as scripts (loops, dialogs, `New Window`); these are listed as programs, not analyses. Still to confirm: long scripts (compressed?) and scripts JMP marks as run-on-open.
 
 ### 4.6 Column properties and value labels (provisional)
 
@@ -319,7 +320,7 @@ The parser relies on heuristics, so failures must be **loud, local, and recovera
 |---|---|
 | Empty file | Throw "The file is empty" |
 | Bad magic | Throw "Not a JMP data table" |
-| Old format `(3,4,3)` | Throw "This JMP file uses an older format that isn't supported yet. Re-save it in a current JMP version." |
+| Old format `(3,4,3)`, little- or big-endian | Throw "This JMP file uses an older format that isn't supported yet. Re-save it in a current JMP version." |
 | Unknown version triple | Throw "Unrecognised JMP file version (x.y.z)". Include the triple so we can collect samples. |
 | Metadata seek fails / `ncols` mismatch | Throw with the offsets tried. Never return a partially-wrong table. |
 | Unknown column descriptor | **Column-local**: the column is left out, listed in the preview, named in a warning. The rest of the table still loads. |
@@ -366,8 +367,9 @@ The model is the way Crux validates against RDKit: **JMPReader.jl is the referen
 | Files made here from the vendored ones (`files/tests/`: a column with a layout byte no JMP writes, a truncated file, CSV under a `.jmp` name) | Ours | **Yes** |
 | Synthetic saved analyses (`files/tests/saved-bar-chart.jmp`, `saved-fit-model.jmp`): `compact_UInt8.jmp` with its `Source` script replaced by one of the same length, so nothing in the file moves (`tools/make-script-fixtures.ts`). They test what the package does with an analysis, not where JMP keeps one (§4.5). | Ours | **Yes**, until files saved by JMP with analyses replace them |
 | A table saved by JMP 15 with a Graph Builder (`files/tests/jmp15-graph-builder.jmp`, 12 rows). Shared by a user and anonymized in place: the `Source` path replaced by one of the same length, the measured values moved by up to ±0.15. JMP 15 writes the script and column names bare (`HC Met255 %Oxidation vs. Week_5C(…)`, `:HC Met255 %Oxidation`). | Shared, anonymized | **Yes**, with the owner's permission |
-| Files we create ourselves in JMP (edge cases: empty table, 0 rows, 1 col, all-missing, very wide, Unicode names, every display format) | Ours | **Yes**, once someone with JMP makes them |
-| JMP's own Samples/Data library (~600 files per version) | SAS copyright | **No.** Run locally only (§9.4). |
+| Research data published under CC0 on Dryad, taken from Zenodo (`files/zenodo/`, 4 files, 1.7–40 KB): JMP 13 in Japanese with Oneway analyses, JMP 12 and 11 with formulas and notes. Chosen from the corpus run (§9.4) for what the other fixtures lack. | CC0, credited in `CREDITS.md` §5 | **Yes** |
+| Files made in JMP for us (edge cases: empty table, 0 rows, 1 col, all-missing, very wide, Unicode names, every display format) | — | **No.** We don't use JMP or ask customers to make files in it for us (§10). Edge cases come from files people already have, or from editing vendored files as `files/tests/` does. |
+| JMP's own Samples/Data library (~600 files per version) | SAS copyright | **No.** Not used: it comes with a JMP install (§10). |
 | Customer files | Customer confidential | **No.** Run locally only, with permission. |
 | Files published openly by JMP users (papers, GitHub, Kaggle) | Varies | Only with a clear licence |
 
@@ -383,15 +385,17 @@ The model is the way Crux validates against RDKit: **JMPReader.jl is the referen
 
 8. **JMP: performance** (browser) times the 100 MB file of §8. It runs only with `grok test --benchmark`.
 
-Result on the local stand (2026-10-23): Node pass 94 passed; browser pass 15 passed, the benchmark skipped (and passed when run with `--benchmark`).
+Result on the local stand (2026-10-27): Node pass 97 passed; browser pass 15 passed, the benchmark skipped (and passed when run with `--benchmark`).
 
 ### 9.4 Corpus run (local, not CI)
 
-`npm run corpus -- <folder> [--golden <folder>]` (`tools/jmp-corpus.ts`, through `tsx`) reads every `.jmp` file under the folder with the package's parser and reports files read, files with undecoded columns, and failures grouped by reason; the saved scripts found, by JMP platform, with how many convert to viewers and why the rest don't; and row-state columns whose undecoded bytes are set, with the values seen (§4.3). With `--golden`, it also compares each file with JMPReader.jl's output for it (run `tools/jmp2json.jl` over the same folder first). Run it against a JMP install's `Samples/Data` folder and any customer corpus we're given access to. It also counts column properties by name, with any it can't read, and columns with value labels (§4.6). It hasn't been run on either yet: no JMP install or customer files were at hand.
+`npm run corpus -- <folder> [--golden <folder>]` (`tools/jmp-corpus.ts`, through `tsx`) reads every `.jmp` file under the folder with the package's parser and reports files read, files with undecoded columns, and failures grouped by reason; the saved scripts found, by JMP platform, with how many convert to viewers and why the rest don't; and row-state columns whose undecoded bytes are set, with the values seen (§4.3). With `--golden`, it also compares each file with JMPReader.jl's output for it (run `tools/jmp2json.jl` over the same folder first). Run it on any customer corpus we're given access to; where files can't leave the customer, use `jmp-survey.mjs` below. It also counts column properties by name, with any it can't read, and columns with value labels (§4.6). It hasn't been run on a customer corpus yet.
 
 For files that can't leave their owner, `tools/jmp-survey.ts` is bundled into a single `jmp-survey.mjs` (command at the top of the file; no dependencies, Node 18 or later) and run where the files are: `node jmp-survey.mjs <folder> --summary-only`. It reports files read by JMP version; saved analyses by platform, with how many become viewers and why the rest don't; what each platform's conversion leaves out; and the JSL keywords each platform's scripts use, as a tree with counts. `--summary-only` prints no file paths, script names, column names or values, so the output can be sent back. A first run at a customer (2026-10-27) covered 4 files saved by JMP 15, with one Graph Builder.
 
-A **public corpus** stands in until then: 14 `.jmp` files from GitHub repositories, mostly course and lab data saved by JMP 14–17 (`gm105/JMP`, `whippo/Whippo-NCE-2024`, `heyselbi/Marketing-Analytics-auditing`, `pineapplefart/S5_Hackathon_Supplementary`, `ArvindRajen/Salary_Prediction`, `BreakOnExecute/JMPReader`). They have no licence, so they stay outside the repo. Run on 2026-10-23: 13 of 14 read with every column decoded; the 14th is the older `(3,4,3)` format, refused as expected. 45 saved scripts were found and all read (Graph Builder, Distribution, Oneway, Bivariate, Contingency and Tabulate convert; Fit Model, DOE, Multivariate, Partition, Neural and screening don't). 87 column properties in 12 kinds and 2 value-labelled columns, all read. **Acceptance for Phase 1:** ≥ 99% of JMP 17/18 sample files open, with zero files throwing on supported versions. This matches JMPReader.jl's own coverage.
+A **public corpus** stands in until then: 14 `.jmp` files from GitHub repositories, mostly course and lab data saved by JMP 14–17 (`gm105/JMP`, `whippo/Whippo-NCE-2024`, `heyselbi/Marketing-Analytics-auditing`, `pineapplefart/S5_Hackathon_Supplementary`, `ArvindRajen/Salary_Prediction`, `BreakOnExecute/JMPReader`). They have no licence, so they stay outside the repo. Run on 2026-10-23: 13 of 14 read with every column decoded; the 14th is the older `(3,4,3)` format, refused as expected. 45 saved scripts were found and all read (Graph Builder, Distribution, Oneway, Bivariate, Contingency and Tabulate convert; Fit Model, DOE, Multivariate, Partition, Neural and screening don't). 87 column properties in 12 kinds and 2 value-labelled columns, all read. A larger **open corpus** came from Zenodo (2026-10-27): every `.jmp` file in its 32 records that have one, 224 files (505 MB) of published research data, all openly licensed (157 CC-BY 4.0, 57 CC0, 9 MIT, 1 GPL-3), saved by JMP 11–19, mostly 16. It stays outside the repo apart from the four CC0 fixtures in §9.2. 206 of 223 read with every column decoded; the other 17 are the old big-endian format (§4.1), from three records of 2007–08 data, refused with the old-format message. Of 333 saved scripts, 331 read once the parser took `;` statements inside arguments, matrix literals and `i++` (2 use names JSL can't parse bare). 160 are hand-written programs. Of the analyses, Tabulate, Oneway, Graph Builder, Distribution and Contingency convert (49); Fit Model (36), Fit Group (22), Fit Curve (14) and DOE (10) don't yet. In Graph Builder, Smoother is the most used element (8 of 10 scripts) and isn't shown yet. 3,406 column properties in 14 kinds (2,401 formulas) and 55 value-labelled columns, all read.
+
+**Acceptance for Phase 1:** ≥ 99% of the files in customer corpora open (counted by `jmp-survey.mjs` where the files are), with zero files throwing on supported versions.
 
 
 ### 9.5 Behaviour (BDD)
@@ -421,7 +425,8 @@ Result on the local stand (2026-10-23): 12 passed, 0 audit findings, run with `-
 - The vendored test fixtures carry the same MIT notice.
 - There are **no runtime dependencies** (`DecompressionStream` and `TextDecoder` are built into the browser). If `pako` is added as a fallback, it is MIT and gets its own entry.
 - `tools/jmp2json.jl` is a dev-only tool. Julia and JMPReader.jl are not bundled.
-- *Legal check (see §12):* we port an existing independent reader and don't disassemble JMP ourselves. Confirm this position before publishing to the public repo.
+- **No JMP at Datagrok** (decided 2026-10-27). No one at Datagrok installs or uses JMP for this package, and we don't ask customers to make files in JMP or compare our output with JMP's for us. The [JMP Software License Agreement](https://jmp.com/en/store/jmp-software-license-agreement) binds its customers and users not to "reverse engineer, reverse assemble or decompile the Software" (§4) or use it to "create or assist a third party in creating an offering that competes with JMP" (§1.4.3(b)). What we know of the format comes only from JMPReader.jl, jmp-convert and `.jmp` files people already have: public files, and customer files read where they are, with permission.
+- *Legal check (see §12):* confirm that reading `.jmp` files this way is outside that agreement before merging to master or publishing.
 
 ---
 
@@ -435,7 +440,7 @@ Result on the local stand (2026-10-23): 12 passed, 0 audit findings, run with `-
 - [x] DataFrame conversion with tags (§5)
 - [x] `fileHandler` + `fileViewer`, u2 preview and error views (§6)
 - [x] Vendored fixtures, golden JSON, unit + golden tests, fuzz test, BDD features (§9)
-- [ ] Corpus run against JMP 17/18 Samples/Data (local; needs a JMP install)
+- [ ] Corpus run on customer files, with `jmp-survey.mjs` where they are (first run, 2026-10-27: 4 files, all read)
 - [x] A 100 MB file against the §8 target: 3.0–6.1 s in the browser, on a synthetic file (a real one would still be worth timing)
 - [x] Help page: `.jmp` row in `help/access/files/supported-formats.md` (help submodule; not committed yet)
 - [x] Format details: the currency code (confirmed), fixed-decimal formats and `jmp.hidden` (both provisional, §4.3–4.4)
@@ -477,7 +482,7 @@ Every launch also notes a `By()`, `Where()`, `Weight` or `Freq` it doesn't apply
 
 The preview shows each script's text behind a **Script** link.
 
-**Next:** confirm §4.5 on JMP's Samples/Data (Big Class and others carry saved analyses); a control chart once a Datagrok control-chart viewer exists.
+**Next:** confirm §4.5 on customer files, through `jmp-survey.mjs`; a control chart once a Datagrok control-chart viewer exists.
 
 ### Phase 4 — Portal ingestion
 
@@ -496,7 +501,7 @@ The bigger payoff: **backfill historical JMP files into shared, searchable Datag
 1. **Package boundary.** Keep `Jmp` standalone, or fold it into a combined "statistics formats" package with Minitab? *Recommendation:* standalone for v1, then reconsider once both exist.
 2. **Format version coverage.** Which JMP versions write `(7,4,0x00010001)`, and how common are `(3,4,3)` files in real customer archives? We need a customer corpus to answer this.
 3. **Test corpus.** Which customers will share representative (non-confidential or anonymised) `.jmp` files? Who makes the request?
-4. **Legal.** Confirm that porting an MIT-licensed independent reader is acceptable, given JMP's EULA restrictions on reverse engineering, before the code lands in the public repo.
+4. **Legal.** Confirm that porting an MIT-licensed independent reader, and reading the rest of the format from `.jmp` files without JMP, is outside the JMP Software License Agreement (§10), before merging to master or publishing. The code is already on a public branch. Datagrok doesn't install JMP (§10).
 5. **Server-side runtime for Phase 4.** Run the TS parser in Node inside a Datagrok server function, or rely on browser workers plus chunked upload?
 6. **Other JMP file types.** Is there demand for `.jmpprj` (projects that bundle tables + reports) or `.jrn` journals? A JMP project probably holds the decision record that Phase 4 is after.
 7. **Write support.** Confirm the non-goal. Is there any customer flow that needs Datagrok → `.jmp`, rather than CSV/Excel?

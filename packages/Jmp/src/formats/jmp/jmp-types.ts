@@ -7,6 +7,9 @@ import type {JmpColumnProperties} from './jmp-properties';
 /** First 4 bytes of a .jmp file. */
 export const MAGIC_JMP = [0xff, 0xff, 0x00, 0x00];
 
+/** First 4 bytes of a big-endian .jmp file, as classic Mac JMP wrote it (the old format, byte-swapped). */
+export const MAGIC_JMP_BIG_ENDIAN = [0x00, 0x00, 0xff, 0xff];
+
 /** Version triple of the format JMPReader.jl supports. */
 export const SUPPORTED_VERSION: [number, number, number] = [0x07, 0x04, 0x00010001];
 
