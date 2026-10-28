@@ -4,7 +4,7 @@
 // the zone the utcDates titles name, set here so those cases bite wherever the suite is run
 process.env.TZ = 'America/New_York';
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope, Dates} from '../src/index.js';
@@ -46,7 +46,7 @@ function grid() {
 }
 
 function days() {
-  return popup().querySelectorAll('.u2-date-day');
+  return [...popup().querySelectorAll('.u2-date-day')];
 }
 
 function day(iso) {
@@ -72,33 +72,33 @@ async function open(input) {
 
 smoke('parse and format round-trip, single-digit month and day, empty is null', async () => {
   const input = mount(new DateInput({label: 'Date'}));
-  assert.equal(input.value.value, null);
+  assert.equal(input.value, null);
   assert.equal(editor(input).value, '');
 
   type(input, '2026-08-15');
-  assert.equal(input.value.value.getFullYear(), 2026);
-  assert.equal(input.value.value.getMonth(), 7);
-  assert.equal(input.value.value.getDate(), 15);
-  assert.equal(input.value.value.getHours(), 0, 'DateInput commits midnight local');
+  assert.equal(input.value.getFullYear(), 2026);
+  assert.equal(input.value.getMonth(), 7);
+  assert.equal(input.value.getDate(), 15);
+  assert.equal(input.value.getHours(), 0, 'DateInput commits midnight local');
   assert.equal(input.validity.value, null);
 
   type(input, '2026-8-5');
   fire(editor(input), 'blur');
   assert.equal(editor(input).value, '2026-08-05', 'commit reformats to the canonical pattern');
-  assert.equal(input.value.value.getDate(), 5);
+  assert.equal(input.value.getDate(), 5);
 
   type(input, '');
-  assert.equal(input.value.value, null);
+  assert.equal(input.value, null);
   assert.equal(input.validity.value, null);
 
   const dt = mount(new DateTimeInput({label: 'When'}));
   type(dt, '2026-08-15 7:5');
   fire(editor(dt), 'blur');
   assert.equal(editor(dt).value, '2026-08-15 07:05');
-  assert.equal(dt.value.value.getHours(), 7);
-  assert.equal(dt.value.value.getMinutes(), 5);
-  assert.equal(dt.value.value.getSeconds(), 0);
-  assert.equal(dt.value.value.getMilliseconds(), 0);
+  assert.equal(dt.value.getHours(), 7);
+  assert.equal(dt.value.getMinutes(), 5);
+  assert.equal(dt.value.getSeconds(), 0);
+  assert.equal(dt.value.getMilliseconds(), 0);
   input.dispose();
   dt.dispose();
 });
@@ -108,40 +108,40 @@ smoke('relative: a typed span resolves against now, shows as typed and survives 
   assert.equal(editor(input).placeholder, 'yyyy-MM-dd HH:mm or -1w');
   type(input, '-1w');
   fire(editor(input), 'blur');
-  const value = input.value.value;
+  const value = input.value;
   assert.equal(spanOf(value), '-1w');
   assert.ok(Math.abs(value.getTime() - (Date.now() - 7 * 86400e3)) < 5000, 'now minus seven days');
   assert.equal(editor(input).value, '-1w', 'the box keeps the span text');
   assert.equal(input.validity.value, null);
 
   type(input, 'now');
-  assert.equal(spanOf(input.value.value), 'now');
+  assert.equal(spanOf(input.value), 'now');
   type(input, '2026-08-15 10:00');
-  assert.equal(spanOf(input.value.value), undefined, 'a typed date is a plain date');
-  input.value.value = markSpan(new Date(), '2d');
+  assert.equal(spanOf(input.value), undefined, 'a typed date is a plain date');
+  input.value = markSpan(new Date(), '2d');
   assert.equal(editor(input).value, '2d', 'a marked date set from outside shows as its span');
 
   const plain = mount(new DateInput({label: 'Date'}));
   type(plain, '-1w');
   assert.equal(plain.validity.value, 'Not a date', 'without `relative` a span is rejected');
-  assert.equal(plain.value.value, null);
+  assert.equal(plain.value, null);
   input.dispose();
   plain.dispose();
 });
 
 smoke('unparseable text stays on screen, marks invalid and never writes the value', async () => {
   const input = mount(new DateInput({label: 'Date', value: new Date(2026, 7, 15)}));
-  const good = input.value.value;
+  const good = input.value;
 
   type(input, '2026-13-40');
   assert.equal(input.validity.value, 'Not a date');
-  assert.equal(input.value.value, good, 'the value signal keeps the last good date');
+  assert.equal(input.value, good, 'the value signal keeps the last good date');
   assert.equal(editor(input).classList.contains('u2-invalid'), false);
   assert.equal(input.root.querySelector('.u2-input-error').textContent, 'Not a date');
 
   type(input, '2026-02-30');
   assert.equal(input.validity.value, 'Not a date', 'February 30 does not roll over into March');
-  assert.equal(input.value.value, good);
+  assert.equal(input.value, good);
 
   fire(editor(input), 'blur');
   assert.equal(editor(input).value, '2026-02-30', 'a bad commit keeps the raw text');
@@ -149,12 +149,12 @@ smoke('unparseable text stays on screen, marks invalid and never writes the valu
 
   type(input, '2026-08-16');
   assert.equal(input.validity.value, null);
-  assert.equal(input.value.value.getDate(), 16);
+  assert.equal(input.value.getDate(), 16);
 
   const dt = mount(new DateTimeInput({label: 'When'}));
   type(dt, '2026-08-15 25:00');
   assert.equal(dt.validity.value, 'Not a date-time');
-  assert.equal(dt.value.value, null);
+  assert.equal(dt.value, null);
   input.dispose();
   dt.dispose();
 });
@@ -167,17 +167,17 @@ smoke('commit clamps to min/max; programmatic writes are echo-suppressed', async
   type(input, '2026-08-01');
   fire(editor(input), 'blur');
   assert.equal(editor(input).value, '2026-08-10', 'below min clamps up on commit');
-  assert.equal(input.value.value.getTime(), min.getTime());
+  assert.equal(input.value.getTime(), min.getTime());
 
   type(input, '2026-08-25');
-  assert.equal(input.value.value.getDate(), 25, 'mid-typing writes are not clamped');
+  assert.equal(input.value.getDate(), 25, 'mid-typing writes are not clamped');
   fire(editor(input), 'keydown', {key: 'Enter'});
   assert.equal(editor(input).value, '2026-08-20');
-  assert.equal(input.value.value.getTime(), max.getTime());
+  assert.equal(input.value.getTime(), max.getTime());
 
-  input.value.value = new Date(2026, 7, 14);
+  input.value = new Date(2026, 7, 14);
   assert.equal(editor(input).value, '2026-08-14', 'a programmatic write echoes into the text');
-  input.value.value = null;
+  input.value = null;
   assert.equal(editor(input).value, '');
   input.dispose();
 });
@@ -237,7 +237,7 @@ smoke('the grid marks today, the selection, adjacent months and out-of-range day
   await open(input);
 
   assert.equal(popup().querySelector('.u2-date-title').textContent, 'August 2026');
-  assert.deepEqual(popup().querySelectorAll('.u2-date-weekday').map((d) => d.textContent),
+  assert.deepEqual([...popup().querySelectorAll('.u2-date-weekday')].map((d) => d.textContent),
     ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']);
   assert.equal(days()[0].dataset.date, '2026-07-27', 'the week starts on Monday');
 
@@ -254,11 +254,11 @@ smoke('the grid marks today, the selection, adjacent months and out-of-range day
     'today is marked exactly when the six-week grid (adjacent days included) shows it');
 
   fire(day('2026-08-09'), 'click');
-  assert.equal(input.value.value.getDate(), 15, 'a disabled day is not selectable');
+  assert.equal(input.value.getDate(), 15, 'a disabled day is not selectable');
   assert.equal(input.isOpen.value, true);
 
   fire(day('2026-08-18'), 'click');
-  assert.equal(input.value.value.getDate(), 18, 'a click selects');
+  assert.equal(input.value.getDate(), 18, 'a click selects');
   assert.equal(input.isOpen.value, false, '…and closes');
   assert.equal(editor(input).value, '2026-08-18');
 
@@ -267,7 +267,7 @@ smoke('the grid marks today, the selection, adjacent months and out-of-range day
     'the visible month follows the value on reopen');
   input.dispose();
 
-  const now = mount(new DateInput({label: 'Date', value: new Date()}));
+  const now = mount(testOwner().build(() => new DateInput({label: 'Date', value: new Date()})));
   await open(now);
   assert.deepEqual(current(), [today], 'the month of today marks exactly one cell');
   assert.equal(day(today).classList.contains('u2-date-today'), true);
@@ -302,13 +302,13 @@ smoke('grid keyboard: arrows, Home/End, PageUp/PageDown, Shift+Page, Enter selec
   assert.equal(popup().querySelector('.u2-date-title').textContent, 'September 2026');
   fire(grid(), 'keydown', {key: 'PageUp', shiftKey: true});
   assert.equal(popup().querySelector('.u2-date-title').textContent, 'September 2025');
-  assert.equal(input.value.value.getFullYear(), 2026, 'navigation never writes the value');
+  assert.equal(input.value.getFullYear(), 2026, 'navigation never writes the value');
 
   fire(grid(), 'keydown', {key: 'PageDown', shiftKey: true});
   fire(grid(), 'keydown', {key: 'Enter'});
   assert.equal(input.isOpen.value, false);
   assert.equal(editor(input).value, '2026-09-16');
-  assert.equal(input.value.value.getMonth(), 8);
+  assert.equal(input.value.getMonth(), 8);
   input.dispose();
 });
 
@@ -322,14 +322,14 @@ smoke('header: prev/next month move the calendar, Today picks today', async () =
   fire(next, 'click');
   fire(next, 'click');
   assert.equal(popup().querySelector('.u2-date-title').textContent, 'September 2026');
-  assert.equal(input.value.value.getMonth(), 7, 'paging never writes the value');
+  assert.equal(input.value.getMonth(), 7, 'paging never writes the value');
 
   fire(popup().querySelector('.u2-date-header .u2-btn:not(.u2-icon-btn)'), 'click');
   const today = new Date();
   assert.equal(input.isOpen.value, false);
-  assert.equal(input.value.value.getDate(), today.getDate());
-  assert.equal(input.value.value.getMonth(), today.getMonth());
-  assert.equal(input.value.value.getHours(), 0);
+  assert.equal(input.value.getDate(), today.getDate());
+  assert.equal(input.value.getMonth(), today.getMonth());
+  assert.equal(input.value.getHours(), 0);
   input.dispose();
 });
 
@@ -344,7 +344,7 @@ smoke('DateTimeInput: segments step and wrap, and a day change keeps the time', 
 
   fire(hours, 'keydown', {key: 'ArrowUp'});
   assert.equal(hours.value, '10');
-  assert.equal(input.value.value.getHours(), 10, 'stepping commits into the value');
+  assert.equal(input.value.getHours(), 10, 'stepping commits into the value');
   hours.value = '23';
   fire(hours, 'input');
   fire(hours, 'keydown', {key: 'ArrowUp'});
@@ -357,7 +357,7 @@ smoke('DateTimeInput: segments step and wrap, and a day change keeps the time', 
 
   fire(day('2026-08-18'), 'click');
   assert.equal(editor(input).value, '2026-08-18 00:59', 'picking a day keeps the time of day');
-  assert.equal(input.value.value.getMinutes(), 59);
+  assert.equal(input.value.getMinutes(), 59);
   assert.equal(input.isOpen.value, false);
 
   await open(input);
@@ -395,9 +395,9 @@ smoke('the week starts on the browser locale\'s first day: Sunday in en-US, Mond
     ['de-DE', ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'], '2026-07-27'],
   ]) {
     await inLocale(language, async () => {
-      const input = mount(new DateInput({label: 'Date', value: new Date(2026, 7, 15)}));
+      const input = mount(testOwner().build(() => new DateInput({label: 'Date', value: new Date(2026, 7, 15)})));
       await open(input);
-      assert.deepEqual(popup().querySelectorAll('.u2-date-weekday').map((d) => d.textContent), headers, language);
+      assert.deepEqual([...popup().querySelectorAll('.u2-date-weekday')].map((d) => d.textContent), headers, language);
       assert.equal(days()[0].dataset.date, first, `${language}: the first cell is the first header's day`);
       assert.equal(new Date(days()[0].dataset.date).getUTCDay(), headers[0] === 'Su' ? 0 : 1);
       input.dispose();
@@ -437,7 +437,7 @@ smoke('a pick in the calendar popup is the user\'s edit: a validator\'s message 
 smoke('firstDayOfWeek: 0 starts the week on Sunday', async () => {
   const input = mount(new DateInput({label: 'Date', value: new Date(2026, 7, 15), firstDayOfWeek: 0}));
   await open(input);
-  assert.deepEqual(popup().querySelectorAll('.u2-date-weekday').map((d) => d.textContent),
+  assert.deepEqual([...popup().querySelectorAll('.u2-date-weekday')].map((d) => d.textContent),
     ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']);
   assert.equal(days()[0].dataset.date, '2026-07-26');
 
@@ -449,7 +449,7 @@ smoke('firstDayOfWeek: 0 starts the week on Sunday', async () => {
 smoke('two inputs on one signal stay in step; dispose closes the popup and kills the listeners',
   async () => {
     const shared = mount(new DateInput({label: 'From', value: new Date(2026, 7, 15)}));
-    const other = mount(new DateInput({label: 'Also from', bind: shared.value}));
+    const other = mount(new DateInput({label: 'Also from', bind: shared.signal}));
     assert.equal(editor(other).value, '2026-08-15');
     type(shared, '2026-08-20');
     assert.equal(editor(other).value, '2026-08-20');
@@ -483,22 +483,22 @@ smoke('utcDates: the field shows, parses and commits the UTC calendar day (TZ=Am
 
     type(input, '2026-10-03');
     fire(editor(input), 'blur');
-    assert.equal(input.value.value.toISOString(), '2026-10-03T00:00:00.000Z', 'typing commits UTC midnight');
+    assert.equal(input.value.toISOString(), '2026-10-03T00:00:00.000Z', 'typing commits UTC midnight');
     assert.equal(editor(input).value, '2026-10-03');
 
     await open(input);
     assert.equal(popup().querySelector('.u2-date-title').textContent, 'October 2026');
     assert.equal(day('2026-10-03').getAttribute('aria-selected'), 'true', 'the marked day is the UTC one');
     fire(day('2026-10-05'), 'click');
-    assert.equal(input.value.value.toISOString(), '2026-10-05T00:00:00.000Z', 'a picked day commits UTC midnight');
+    assert.equal(input.value.toISOString(), '2026-10-05T00:00:00.000Z', 'a picked day commits UTC midnight');
     assert.equal(editor(input).value, '2026-10-05');
     input.dispose();
 
-    const dt = mount(new DateTimeInput({label: 'When', utcDates: true,
-      value: new Date('2026-10-02T13:45:00Z')}));
+    const dt = mount(testOwner().build(() => new DateTimeInput({label: 'When', utcDates: true,
+      value: new Date('2026-10-02T13:45:00Z')})));
     assert.equal(editor(dt).value, '2026-10-02 13:45', 'the time of day is the UTC one too');
     type(dt, '2026-10-02 07:05');
     fire(editor(dt), 'blur');
-    assert.equal(dt.value.value.toISOString(), '2026-10-02T07:05:00.000Z');
+    assert.equal(dt.value.toISOString(), '2026-10-02T07:05:00.000Z');
     dt.dispose();
   });

@@ -210,7 +210,7 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
   private static _view(): MonomerCollectionsView | null {
     const view = Array.from(grok.shell.views).find((v) => v.name === 'Monomer Collections');
     const root = view?.root.querySelector<HTMLElement>('.monomer-collections-view');
-    return root ? (Control.forElement(root) as MonomerCollectionsView | undefined) ?? null : null;
+    return root ? (Control.forElement(root) as (Control & MonomerCollectionsView) | undefined) ?? null : null;
   }
 
   /** Gets the current monomer lib (synchronous, returns null if not loaded). */

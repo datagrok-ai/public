@@ -12,6 +12,7 @@
  */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {Platform} from '@datagrok-libraries/u2/dg';
 import {HitAppBase} from '../hit-app-base';
 import {HitDesignApp} from '../hit-design-app';
 import {_package} from '../../package';
@@ -19,7 +20,6 @@ import {AppName, HitDesignCampaign, HitDesignTemplate, HitTriageCampaign, HitTri
 import {TileCategoriesColName, ViDColName} from '../consts';
 import {checkEditPermissions, loadTemplate} from '../utils';
 import {registerMol} from '../utils/molreg';
-import {createNewHitDesignDataFrame} from '../accordeons/new-hit-design-campaign-accordeon';
 
 type AnyCampaign = HitTriageCampaign | HitDesignCampaign;
 type AnyTemplate = HitTriageTemplate | HitDesignTemplate;
@@ -94,7 +94,7 @@ function campaignTableView(view: any): DG.TableView {
   if (v instanceof DG.TableView)
     return v;
   const app = appOf(view) as any;
-  const tv = app._designView ?? app._pickView;
+  const tv = app.designView ?? app._pickView;
   if (tv instanceof DG.TableView)
     return tv;
   throw new Error('No campaign table view is open');
@@ -145,7 +145,7 @@ function serializeResult(value: any): any {
   if (value == null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
     return value;
   if (value instanceof DG.DataFrame)
-    return {type: 'dataframe', name: value.name, rowCount: value.rowCount, columns: value.columns.names()};
+    return {type: 'dataframe', name: value.name, rowCount: value.rowCount, columns: Platform.listedColumns(value).map((c) => c.name)};
   if (value instanceof DG.Column)
     return {type: 'column', name: value.name, length: value.length};
   if (value instanceof DG.ViewBase)
@@ -254,14 +254,7 @@ export function hitInfoViewFunctions(): DG.Func[] {
           .map((f) => f.name);
         if (missing.length)
           return {success: false, error: `Missing required campaign fields: ${missing.join(', ')} — pass them in campaignFields`};
-        app.clearCampaign();
-        app.dataFrame = createNewHitDesignDataFrame(template, app.appName === 'PeptiHit');
-        await app.setTemplate(template as any);
-        app.campaignProps = {...(campaignFields ?? {})};
-        const friendly = campaignName?.trim() ? campaignName.trim() : undefined;
-        await app.saveCampaign(false, true, {friendlyName: friendly});
-        if (template.layoutViewState && app.campaign)
-          app.campaign.layout = template.layoutViewState;
+        await app.startNewCampaign(template, {...(campaignFields ?? {})}, campaignName?.trim() || undefined);
         return {success: true, campaign: app.campaignId, note: 'The campaign is created and its design view is open'};
       }),
 
@@ -299,7 +292,7 @@ function campaignSharedFunctions(): DG.Func[] {
           ...(stages.length ? {stages} : {}),
           rows: df?.rowCount ?? 0,
           filteredRows: df?.filter.trueCount ?? 0,
-          columns: df ? df.columns.toList().filter((c) => !c.name.startsWith('~'))
+          columns: df ? Platform.listedColumns(df)
             .map((c) => ({name: c.name, type: c.type, ...(c.semType ? {semType: c.semType} : {})})) : [],
           canEdit: app.canEdit,
           submitFunction: app.submitParams ? `${app.submitParams.package}:${app.submitParams.fName}` : null,

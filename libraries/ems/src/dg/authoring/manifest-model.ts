@@ -1,21 +1,3 @@
-/* The manifest editor's model: the draft envelope the server answers (`POST /domains/schemas/draft`
-   → `{manifest, inventory, diagnostics}`) plus the user's edits, projected back into the manifest
-   to submit by `toJSON()`. Every table and column is identified by its REMOTE name — the logical
-   name is what the user edits — and every declaration key the editor does not expose is carried
-   through untouched (Astra 4: deep preservation). A declared type — `ref` included — is the
-   authority; the inventory only explains, and is consulted when the USER changes inclusion:
-   excluding a ref's target demotes the ref to the plain type the inventory knows (no such type:
-   the column drops out with a reason), including a target promotes back the refs the inventory
-   stamped `ref`. Remote names are vocabulary of the external storage alone. The rules the server
-   checks are mirrored in `ManifestRules`; the dry run remains the authority.
-
-   Edit mode (a `baseline`): the REGISTERED manifest is the immutable comparison baseline and the
-   working copy starts equal to it; a fresh draft over the same schema supplies only candidates —
-   tables and columns the baseline does not carry, unchecked — and the catalog facts that mark
-   drift on registered items (missing remotely, a changed type or key, "unknown" when the catalog
-   could not be read). Registered names are locked by baseline membership, declared refs stay
-   authoritative (a new warehouse foreign key is a suggestion), and every edit is a field on one
-   flat surface, which is what the change list, the apply patch and the three-way rebase read. */
 import {computed, signal, Signal, ReadonlySignal} from '@datagrok-libraries/u2';
 import {ManifestRules} from './manifest-rules.js';
 
@@ -344,10 +326,14 @@ class Fields {
   }
 }
 
+/** The draft the server answers plus the user's edits, projected back by `toJSON()`. Tables and columns are keyed
+ * by their remote name, and every declaration key the editor does not expose is carried through untouched. A
+ * declared type, `ref` included, is the authority; the inventory is read only when the user changes inclusion.
+ * In edit mode the registered manifest is the immutable baseline; a fresh draft supplies candidates and drift. */
 export class ManifestModel {
   /** The manifest's `name` — what the schema is registered as. */
   readonly name: Signal<string>;
-  /** Schema metadata the create envelope carries beside the manifest (Astra 9); in edit mode the
+  /** Schema metadata the create envelope carries beside the manifest; in edit mode the
    * DomainSchema entity's, changed through the apply. */
   readonly friendlyName: Signal<string>;
   readonly description: Signal<string>;
@@ -364,7 +350,7 @@ export class ManifestModel {
   private readonly _rev = signal(0);
   private readonly _extend: boolean;
   private _baseline: ManifestJson | null;
-  /** The manifest whose storage and unexposed keys `toJSON` carries: the draft's, or the baseline. */
+  // whose storage and unexposed keys `toJSON` carries: the draft's, or the baseline
   private _source!: ManifestJson;
   private readonly _tables = new Map<string, TableState>();
   private readonly _order: string[] = [];
@@ -376,9 +362,9 @@ export class ManifestModel {
   private readonly _columnViews = new Map<string, ReadonlySignal<ColumnView[]>>();
   private _writable = false;
   private _catalog: 'known' | 'unknown' = 'known';
-  /** The surface as loaded — the baseline every change and rebase is read against. */
+  // the surface as loaded: what every change and rebase is read against
   private _loaded = new Map<string, unknown>();
-  /** `name` was set by hand and no longer follows the friendly name. */
+  // `name` was set by hand and no longer follows the friendly name
   private _detached = false;
   private readonly _taken: Set<string>;
 
@@ -923,7 +909,6 @@ export class ManifestModel {
     }
   }
 
-  /** The Review wording of one field change, by the current logical names. */
   private _describe(d: FieldDiff): ManifestChange {
     const f = ManifestModel._field(d.key);
     const onOff = (on: unknown): string => on === true ? 'on' : 'off';
@@ -964,9 +949,7 @@ export class ManifestModel {
     return {id, text, table, column, removes: f.name === 'included' && d.to === false && cs?.registered === true};
   }
 
-  /** Every editable field as one flat map — what the change list, the dirty check and the rebase
-   * compare. Remote names key the tables and columns; values are JSON scalars. The name column
-   * and the searchable one are the table's choices, one each, not flags of their columns. */
+  // every editable field as one flat map: what the change list, the dirty check and the rebase compare
   private _surface(): Map<string, unknown> {
     const s = new Map<string, unknown>();
     s.set('schema.friendlyName', this.friendlyName.peek());
@@ -1094,8 +1077,6 @@ export class ManifestModel {
     this._loaded = this._surface();
   }
 
-  /** The draft's tables and columns the baseline does not carry, as unchecked candidates under
-   * names free of the registered ones. */
   private _addCandidates(draft: ManifestJson): void {
     for (const [logical, decl] of Object.entries(draft.tables)) {
       const remote = decl.table ?? logical;
@@ -1125,7 +1106,6 @@ export class ManifestModel {
     return candidate;
   }
 
-  /** The remote table a declared ref points at, by the naming of the manifest it came from. */
   private static _refTarget(source: ManifestJson, c: ManifestColumnJson): string | undefined {
     if (c.type !== 'ref' || c.ref === undefined)
       return undefined;
@@ -1151,7 +1131,6 @@ export class ManifestModel {
     this._order.push(remote);
   }
 
-  /** What the catalog says about every registered table: nothing when it could not be read. */
   private _markTableDrift(): void {
     for (const state of this._tables.values()) {
       if (!state.registered)
@@ -1177,8 +1156,7 @@ export class ManifestModel {
     }
   }
 
-  /** What the catalog says about a registered column, read live: float over int is compatible
-   * under a read-only binding alone, so the verdict follows the Writable switch. */
+  // read live: float over int is compatible under a read-only binding alone, so the verdict follows Writable
   private _columnDrift(state: TableState, column: ColumnState): DriftView | undefined {
     if (!column.registered)
       return undefined;
@@ -1235,8 +1213,6 @@ export class ManifestModel {
     this._rev.value = this._rev.peek() + 1;
   }
 
-  /** The refs onto [target] follow its inclusion: out, they become the plain type the inventory
-   * knows or drop out with a reason; in, they are refs again. */
   private _follow(target: TableState, on: boolean): void {
     for (const state of this._tables.values()) {
       for (const column of state.columns.values()) {
@@ -1263,15 +1239,11 @@ export class ManifestModel {
     }
   }
 
-  /** The type a ref carries as a plain value: what the inventory mapped the column to, else the
-   * type of the key column it points at; null where neither says. */
   private _plainType(state: TableState, column: ColumnState, target: TableState): string | null {
     const mapped = this._plainTypes.get(ManifestModel._key(state.remote, column.remote));
     return mapped ?? this._keyType(state, column, target) ?? null;
   }
 
-  /** The declared type of the key column a ref points at — the relation's, or the target's
-   * one-column key; undefined where neither says or the key is itself a ref. */
   private _keyType(state: TableState, column: ColumnState, target: TableState): string | undefined {
     const relation = this._relations.find((r) => r.table === state.remote && r.column === column.remote &&
       r.targetTable === target.remote);
@@ -1411,8 +1383,7 @@ export class ManifestModel {
     return json;
   }
 
-  /** The declaration with the current type: a ref names its target's CURRENT logical name (the
-   * declared one where the target is not in the manifest). */
+  // a ref names its target's current logical name, the declared one where the target is not in the manifest
   private _columnJSON(column: ColumnState, external: boolean): ManifestColumnJson {
     const {type: _type, ref, column: _column, ...rest} = column.decl;
     const target = column.target === undefined ? undefined : this._tables.get(column.target);
@@ -1423,8 +1394,6 @@ export class ManifestModel {
     return json;
   }
 
-  /** The logical name a declaration key naming a column carries out: the current one, the name
-   * itself where no column is declared under it, null once the column is excluded. */
   private static _current(state: TableState, remote: string): string | null {
     const column = state.columns.get(remote);
     return column === undefined ? remote : column.included ? column.logical : null;
@@ -1840,7 +1809,6 @@ export class AccessModel {
     return out;
   }
 
-  /** The Review line of a table op, its id by the LOGICAL table name. */
   private _tableChange(kind: 'grant' | 'revoke', table: string, group: AccessPrincipal, permission: string): ManifestChange {
     const t = this._name(table);
     return {id: `access:${kind}:${t}:${group.id}:${permission}`, table: t, removes: false,
@@ -1928,11 +1896,8 @@ export class AccessModel {
       this.removeGroup(scope, group);
   }
 
-  /** `grant[<table>][<group>].<capability>`, `visibility[<table>\0<column>].restricted` and
-   * `visibility[<table>\0<column>][<group>].view` — the fields the rebase compares, one reader
-   * per field so two editors' additions combine. The current rows, plus every loaded row that is
-   * gone at its default (false); {@link _loadedSurface} is the mirror image, so the two share one
-   * key set and a removed row is a change like any other. */
+  // one field per capability so two editors' additions combine; a loaded row that is gone is at its default
+  // (false), and `_loadedSurface` mirrors it, so the two share one key set and a removed row is a change
   private _surface(): Map<string, unknown> {
     const loaded = this._loaded ?? {grants: [], visibility: []};
     return AccessModel._fill(AccessModel._rows(this.grants.peek(), this.visibility.peek()),

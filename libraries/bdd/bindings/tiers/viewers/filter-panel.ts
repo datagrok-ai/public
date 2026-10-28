@@ -1,9 +1,3 @@
-/* The `viewers` tier, the filter panel's entry points that have no element to click: the header's
-   column picker clears its own label, so the base `select` cannot wait for one, and the panel's own
-   context menu has to be opened on blank space, since a right-click in the middle of a card belongs
-   to that card's grid (or from the docked title bar's menu icon once the cards fill the panel).
-   Everything the panel reports — cards, criteria, the header counter — is the `filter panel` element
-   and the `filter card` kind. */
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Given, Then, When} from '../../../src/registry.js';
@@ -161,6 +155,7 @@ export const setCutoff = When('user sets the similarity cutoff of the {string} f
   await v.settleAll(page);
 }, {tier: 'ui', description: 'the number box beside the cutoff slider, shown for the Similar search type'});
 
+// the header's column picker clears its own label, so the base `select` cannot wait for one
 export const addCardFor = When('user adds a card for {string} to the filter panel', async (page: Page, column: string) => {
   await g.hover(page, el('filter panel'));
   const selector = panel(page).locator('[name="div-column-combobox-add-filter"]').first();
@@ -180,6 +175,7 @@ export const addCardFor = When('user adds a card for {string} to the filter pane
   await v.settleAll(page);
 }, {tier: 'ui', description: 'the plus selector in the panel header: opens its column grid, types the name and commits — the card appears at the top of the panel'});
 
+// opened on blank space: a right-click in the middle of a card belongs to that card's grid
 export const pickPanelMenu = When('user picks {string} from the filter panel menu', async (page: Page, path: string) => {
   const areas = await v.hitAreas(page, el('filter panel'));
   const view = areas['view'];

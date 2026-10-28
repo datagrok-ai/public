@@ -5,13 +5,18 @@ import {iconButton, ownScope} from './buttons.js';
 import {Menu} from '../navigation/menu.js';
 import {Access} from '../../core/access.js';
 import type {Capability} from '../../core/access.js';
+import type {Reason} from '../../core/reason.js';
 
 export interface Action {
-  name: string;
+  /** The caption: the menu item's text and the row icon's tooltip. */
+  text: string;
+  /** The automation id: the row icon's `data-u2-item` (the text by default). */
+  name?: string;
   /** Platform icon name (see `icon()`); an action without one appears only in menus. */
   icon?: string;
-  /** An action that does not apply to the current object stays visible and greyed out. */
-  enabled?: boolean;
+  /** Why the action does not apply to the current object: it stays visible, greyed out, the reason as its
+   * tooltip. `null` or absent while it applies; a signal is followed by the row's icon, read on open by a menu. */
+  disabled?: Reason;
   /** The capability the action needs (`'delete'`, a custom permission name): denied by the
    * access in force, the action is not rendered at all — permission ⇒ hidden, state ⇒ disabled. */
   requires?: Capability;
@@ -25,7 +30,9 @@ export interface Action {
   destructive?: boolean;
   /** Starts a new section of a menu: a separator above it. */
   separator?: boolean;
-  run: () => void;
+  /** Returns a promise or nothing — no value is read from it (a `DG.Row` handed back is a type error); a rejection,
+   * like a throw, is reported to the action's owner. */
+  run: () => void | Promise<void>;
 }
 
 export interface ActionsOptions {
@@ -60,8 +67,8 @@ function addItems(menu: Menu, actions: Action[]): void {
     const previous = actions[i - 1];
     if (previous !== undefined && (action.separator || action.destructive && !previous.destructive))
       menu.separator();
-    menu.item(action.name, action.run,
-      {enabled: action.enabled, shortcut: action.shortcut, detail: action.detail, check: action.check});
+    menu.item(action.text, action.run,
+      {disabled: action.disabled, shortcut: action.shortcut, detail: action.detail, check: action.check});
   }
 }
 
@@ -78,12 +85,11 @@ export function rowActions(actions: Action[], options?: ActionsOptions): HTMLEle
     for (const action of allowedActions(actions, options)) {
       if (!action.icon)
         continue;
-      const button = iconButton(action.icon, () => action.run(), {tooltip: action.name});
-      button.dataset.u2Item = action.name;
+      const button = iconButton(action.icon, () => action.run(),
+        {tooltip: action.text, ...action.disabled !== undefined ? {disabled: action.disabled} : {}});
+      button.dataset.u2Item = action.name ?? action.text;
       if (action.destructive)
         button.classList.add('u2-row-action-destructive');
-      if (action.enabled === false)
-        button.disabled = true;
       el.append(button);
     }
     return el;
@@ -93,7 +99,7 @@ export function rowActions(actions: Action[], options?: ActionsOptions): HTMLEle
 /** A submenu under the flat list: what a wider target than the clicked object offers — the rows of
  * a multi-selection, run as one. */
 export interface ActionGroup {
-  label: string;
+  text: string;
   actions: Action[];
 }
 
@@ -114,7 +120,7 @@ export function actionsMenu(actions: Action[], options?: ActionsMenuOptions): Me
     if (anything)
       menu.separator();
     anything = true;
-    menu.group(group.label);
+    menu.group(group.text);
     addItems(menu, allowed);
     menu.endGroup();
   }

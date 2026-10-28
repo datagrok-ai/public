@@ -1,8 +1,3 @@
-/* `domains.history` — a row's audit trail, newest first: who did what when, and for an update
-   one line per changed column, `<caption>  <before> → <after>`. Reads `table.audit(id)` through
-   the seam a page at a time, so the memory backend's history shows the same way; "Show older"
-   under the list loads the next page, and the pane is refreshed when the row's session saves. A
-   draft has no history yet, and says so. */
 import {emsBackends, nounOf} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Component, Control, signal, AsyncSource, div, divH, divV, span, timestamp, text, badge, button, AsyncView,
@@ -33,17 +28,18 @@ const PAGE_SIZE = 50;
 const SHOWN_CHANGES = 5;
 const NO_VALUE = '(empty)';
 
+/** A row's audit trail, newest first, one line per changed column for an update; read through the seam a page at
+ * a time, so the memory backend's history shows the same way. */
 export class DomainHistory extends Control {
   readonly row: ReadonlySignal<RowView | null>;
   readonly view: AsyncView<AuditEntryLike>;
 
   private readonly _hint: HTMLElement;
-  /** Whether the table keeps no history at all — its handle declares it, so the pane says so
-   * instead of showing an empty list nothing will ever fill. */
+  // the pane says so instead of showing an empty list nothing will ever fill
   private readonly _noHistory = signal(false);
   private readonly _summary = signal('');
   private _failure = '';
-  /** id → the name behind it, resolved once per pane: the actors and the ref cells alike. */
+  // resolved once per pane: the actors and the ref cells alike
   private readonly _names = new Map<string, Promise<string>>();
 
   constructor(readonly source: DomainSource, row?: DomainHistoryTarget,
@@ -56,7 +52,7 @@ export class DomainHistory extends Control {
     this._hint.dataset.u2Part = 'hint';
     const entries = new AsyncSource<AuditEntryLike>((id) => this._load(id), {debounceMs: 0});
     this.own(() => entries.dispose());
-    this.view = this.runInScope(() => new AsyncView<AuditEntryLike>(entries, (items) => this._lines(items),
+    this.view = this.build(() => new AsyncView<AuditEntryLike>(entries, (items) => this._lines(items),
       {empty: 'No history yet'}));
     this.effect(() => {
       const failed = entries.state.value.kind === 'error';
@@ -64,7 +60,7 @@ export class DomainHistory extends Control {
       if (failed)
         this._summary.value = 'unavailable';
     });
-    const accordion = this.runInScope(() => new Accordion());
+    const accordion = this.build(() => new Accordion());
     accordion.addPane('History', div([this._hint, this.view.root]),
       {hint: this._summary, expanded: false, persistKey: 'u2-domain-history'});
     this.root.append(accordion.root);
@@ -111,7 +107,7 @@ export class DomainHistory extends Control {
       .map((prop) => ({prop, before: before[prop.name!], after: after[prop.name!]}));
   }
 
-  /** A value at midnight UTC is a date, never shifted a day by the local zone. */
+  // a value at midnight UTC is a date, never shifted a day by the local zone
   private static _display(raw: unknown, prop?: IProperty): string {
     if (isEmpty(raw))
       return NO_VALUE;
@@ -154,7 +150,7 @@ export class DomainHistory extends Control {
         if (scope.isDisposed)
           return;
         const older = page.slice().reverse();
-        Scope.runWith(scope, () => list.append(...older.map((entry) => this._line(entry))));
+        scope.build(() => list.append(...older.map((entry) => this._line(entry))));
         oldest = older.at(-1) ?? oldest;
         more.hidden = page.length < PAGE_SIZE;
       } catch (e) {
@@ -221,10 +217,7 @@ export class DomainHistory extends Control {
     return box;
   }
 
-  /** A cell as the line shows it: a reference is the name it points at, an id standing in until
-   * the platform answers. This one keeps its own lookup where the rest of the domain path reads
-   * `~caption_<column>` off the frame: an audit line's `before`/`after` values are ids out of a
-   * jsonb snapshot, not frame cells, and no caption column will ever carry them. */
+  // its own lookup, not `~caption_<column>`: an audit line's values are ids out of a jsonb snapshot, not frame cells
   private _value(prop: IProperty, raw: unknown): HTMLElement {
     const el = span(DomainHistory._display(raw, prop), 'u2-domain-history-value');
     if (isEmpty(raw)) {

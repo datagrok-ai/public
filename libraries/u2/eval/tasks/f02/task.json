@@ -1,0 +1,16 @@
+{
+  "name": "compute-settings",
+  "entry": "compute-settings.ts",
+  "title": "A compute settings pane that loads, lists functions with their parameters, and saves",
+  "source": "HitTriage's compute editor: B-3/N-2 (a table picker over grok.shell.tableNames with a nameless table open broke every pane), the unchecked function's pane made inert with no reason, a reasonless SAVE, its CSS reaching into u2 (hit-triage.css 128-210), and the rows built after an await into a pane already closed",
+  "hazards": ["t05", "t06", "t07", "t11"],
+  "bad": {
+    "bad-disposed-owner": ["dispose-while-loading"],
+    "bad-boolean-disable": ["save-says-why"],
+    "bad-inert-pane": ["unchecked-says-why"],
+    "bad-u2-css": ["package-css-clean"],
+    "bad-shell-names": ["dispose-releases", "loads", "locked-unchecked", "nameless-table-open", "package-css-clean", "params",
+      "save-at-right", "save-says-why", "saves", "unchecked-says-why", "width-cap"]
+  },
+  "notes": "Graded strict (the engine throws on a misuse): the `item-null` of the nameless table throws while the table picker is built, so bad-shell-names fails every check that needs the built pane again; in production (report) it is skipped"
+}

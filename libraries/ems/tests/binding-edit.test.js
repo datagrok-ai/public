@@ -1,13 +1,4 @@
-/* The "Edit binding" dialog over stubbed dapi calls: the registry is read before the dialog shows
-   (a refused manifest is a refusal by name, the dialog never opens), the other reads settle into
-   what the model shows as unknown, the Design step opens over the registered manifest with a no-op
-   gated, Review lists the changes in order and VALIDATE annotates them from the dry run bound to
-   the exact apply body — what a removal takes with it, what is already so — a destructive plan
-   wants the confirmation and SAVE sends it, a version conflict reloads the binding and replays the
-   edits with the conflicts and drops reported for a look at Design, a save whose answer was lost
-   is confirmed through the registry, and Saved reports the effects as resolved under the lock. */
-
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {register} from 'node:module';
@@ -115,7 +106,7 @@ const applies = (calls, dryRun) => calls.filter((c) => c[0] === 'apply' && (c[3]
 
 /** The dialog opened and built over the reads. */
 async function opened() {
-  const dialog = new domains.authoring.BindingEditDialog(NAME);
+  const dialog = testOwner().build(() => new domains.authoring.BindingEditDialog(NAME));
   const done = dialog.open();
   await flush();
   await flush();

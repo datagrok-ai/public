@@ -1,0 +1,73 @@
+/* Choice chip (src/components/inputs/choice-chip.ts): "label value ▾" in a small pill that opens the u2 menu of
+   its choices; the error color while its choice cannot stand. Tokens only; css/tokens.css must be loaded alongside. */
+.u2-choice-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-sizing: border-box;
+  min-width: 64px;
+  height: var(--dg-button-height);
+  padding: 0 8px 0 10px;
+  font: inherit;
+  color: var(--dg-grey-6);
+  background: var(--dg-grey-1);
+  border: var(--dg-border-width) solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.u2-choice-chip:hover {
+  background: var(--dg-grey-2);
+}
+
+.u2-choice-chip:focus-visible {
+  outline: var(--dg-border-width) solid var(--dg-blue-1);
+}
+
+.u2-choice-chip[aria-expanded='true'],
+.u2-choice-chip-active {
+  background: var(--dg-bg);
+  border-color: var(--dg-blue-1);
+}
+
+.u2-choice-chip-label {
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-grey-4);
+}
+
+.u2-choice-chip-value {
+  font-weight: var(--dg-font-weight-medium);
+}
+
+/* the caret says the chip opens a menu, and turns while it is open */
+.u2-choice-chip > .u2-choice-chip-caret {
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--dg-grey-4);
+  transition: transform 100ms ease;
+}
+
+.u2-choice-chip[aria-expanded='true'] > .u2-choice-chip-caret {
+  transform: rotate(180deg);
+}
+
+.u2-choice-chip-invalid,
+.u2-choice-chip-invalid:hover {
+  background: var(--dg-red-1);
+}
+
+.u2-choice-chip-invalid[aria-expanded='true'],
+.u2-choice-chip-invalid.u2-choice-chip-active {
+  border-color: var(--dg-red-3);
+}
+
+.u2-choice-chip-invalid > .u2-choice-chip-value {
+  color: var(--dg-red-3);
+}
+
+.u2-choice-chip[aria-disabled='true'],
+.u2-choice-chip[aria-disabled='true']:hover {
+  color: var(--dg-text-color-disabled);
+  background: var(--dg-grey-1);
+  cursor: default;
+}

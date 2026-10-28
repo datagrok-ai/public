@@ -35,7 +35,7 @@ export class DynamicInput<T = unknown> extends Input<T | null, DynamicInputOptio
     if (size?.height !== undefined)
       editor.style.height = `${size.height}px`;
 
-    this.effect(() => this._show(this.options.render(this.value.value)));
+    this.effect(() => this._show(this.options.render(this.value)));
     this.own(() => this._show(null));
     return editor;
   }

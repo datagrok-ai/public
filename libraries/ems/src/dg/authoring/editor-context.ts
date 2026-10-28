@@ -1,11 +1,3 @@
-/* The two-part seam the editor's field offer follows (Astra 3): the manifest STORAGE decides the
-   vocabulary — what the parser accepts for a table and a column — and the editor CONTEXT decides
-   what may be changed here: create, edit, view, extend. Nothing in the editor branches on who
-   made the schema. Only the arms this feature ships are built; the others refuse by name so a
-   later feature fills them in rather than inheriting a wrong offer silently. What edit mode locks
-   per item — the logical names and remote mappings of registered tables and columns — the model
-   decides by baseline membership; the offer holds only the schema-wide locks. */
-
 export type EditorMode = 'create' | 'edit' | 'view' | 'extend';
 export type EditorStorage = 'external' | 'domain';
 
@@ -40,6 +32,9 @@ export interface FieldOffer {
   choices: boolean;
 }
 
+/** The manifest storage decides the vocabulary, the editor context what may be changed here; the per-item edit
+ * locks are the model's. An arm not built yet refuses by name, so a later feature fills it in rather than
+ * inheriting a wrong offer silently. */
 export function fieldOffer(context: EditorContext): FieldOffer {
   let vocabulary: Omit<FieldOffer, 'editable' | 'identifier' | 'description'>;
   switch (context.storage) {

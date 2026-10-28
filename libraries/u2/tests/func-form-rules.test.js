@@ -6,7 +6,7 @@
    revalidate storms, the hide→show verdict round-trip and the W2 debounce interplay.
    The stub is installed per test and deleted in teardown; doubles stay getter-backed. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -159,10 +159,10 @@ rules('initial visibility comes from the call\'s values', () => {
 
 rules('a sibling edit flips visibility both ways, [hidden] on the roots', () => {
   const f = mount(funcForm(vehicle()));
-  f.getInput('type').value.value = 'Electric';
+  f.getInput('type').value = 'Electric';
   assert.equal(hiddenOf(f, 'cylinders'), true);
   assert.equal(hiddenOf(f, 'batteryCapacity'), false);
-  f.getInput('type').value.value = 'ICE';
+  f.getInput('type').value = 'ICE';
   assert.equal(hiddenOf(f, 'cylinders'), false);
   assert.equal(hiddenOf(f, 'batteryCapacity'), true);
   f.dispose();
@@ -170,46 +170,43 @@ rules('a sibling edit flips visibility both ways, [hidden] on the roots', () => 
 
 rules('enabled: follows its expression both ways without touching visibility', () => {
   const f = mount(funcForm(vehicle()));
-  assert.equal(f.getInput('tankExtension').enabled, false, '0 > 50 is false at open');
+  assert.equal(f.getInput('tankExtension').disabled === null, false, '0 > 50 is false at open');
   assert.equal(hiddenOf(f, 'tankExtension'), false, 'visible under the ICE default');
   typeInto(f, 'tankVolume', '60');
-  assert.equal(f.getInput('tankExtension').enabled, true);
+  assert.equal(f.getInput('tankExtension').disabled === null, true);
   typeInto(f, 'tankVolume', '40');
-  assert.equal(f.getInput('tankExtension').enabled, false);
+  assert.equal(f.getInput('tankExtension').disabled === null, false);
   f.dispose();
 });
 
-rules('disabled-by-expression says why on the root title — checkbox and label hovers included — and clears it on re-enable (#23)', () => {
+rules('disabled-by-expression says why — the reason over the whole input — and clears it on re-enable (#23)', () => {
   const f = mount(funcForm(vehicle()));
   const input = f.getInput('tankExtension');
-  assert.equal(input.root.title, 'Enabled when: tankVolume > 50', 'disabled at open (0 > 50)');
-  assert.ok(input.root.querySelector('.u2-input-label'), 'the label hovers inside the titled root');
-  assert.ok(input.root.querySelector('input[type="checkbox"]'), 'so does the disabled checkbox');
-  assert.equal(input.box.title, '', 'never on the box — the label sits outside it');
+  assert.equal(input.disabled, 'Enabled when: tankVolume > 50', 'disabled at open (0 > 50)');
+  assert.equal(input.root.getAttribute('aria-description'), 'Enabled when: tankVolume > 50',
+    'on the root, where the label and the disabled checkbox are hovered');
+  assert.equal(input.box.getAttribute('aria-description'), null, 'never on the box — the label sits outside it');
   typeInto(f, 'tankVolume', '60');
-  assert.equal(input.root.title, '', 'released on re-enable');
+  assert.equal(input.disabled, null, 'released on re-enable');
+  assert.equal(input.root.getAttribute('aria-description'), null);
   typeInto(f, 'tankVolume', '40');
-  assert.equal(input.root.title, 'Enabled when: tankVolume > 50', 'and back on re-disable');
+  assert.equal(input.disabled, 'Enabled when: tankVolume > 50', 'and back on re-disable');
   f.dispose();
 });
 
-rules('the expression title displaces a pre-existing root title and never clobbers a foreign one', () => {
+rules('the expression\'s reason leaves the root title alone', () => {
   const call = callOf(
     fp('tankVolume', 'double'),
     fp('tankExtension', 'bool', {options: {enabled: 'tankVolume > 50'}}));
   call.setParamValue('tankVolume', 60);
   const f = mount(funcForm(call));
-  const root = f.getInput('tankExtension').root;
-  root.title = 'mine';
+  const input = f.getInput('tankExtension');
+  input.root.title = 'mine';
   typeInto(f, 'tankVolume', '40');
-  assert.equal(root.title, 'Enabled when: tankVolume > 50');
+  assert.equal(input.disabled, 'Enabled when: tankVolume > 50');
+  assert.equal(input.root.title, 'mine');
   typeInto(f, 'tankVolume', '70');
-  assert.equal(root.title, 'mine', 'the displaced title is restored');
-
-  typeInto(f, 'tankVolume', '40');
-  root.title = 'other';
-  typeInto(f, 'tankVolume', '70');
-  assert.equal(root.title, 'other', 'a title someone else wrote while disabled stays theirs');
+  assert.equal(input.root.title, 'mine');
   f.dispose();
 });
 
@@ -218,7 +215,7 @@ rules('a script failure keeps the previous state and warns once (ib:328-331 pari
   assert.equal(hiddenOf(f, 'cylinders'), false);
   dart.scriptSyncError = true;
   const warns = countWarns(() => {
-    f.getInput('type').value.value = 'Electric';
+    f.getInput('type').value = 'Electric';
     typeInto(f, 'tankVolume', '10');
   });
   assert.equal(hiddenOf(f, 'cylinders'), false, 'previous visibility kept over two failures');
@@ -238,15 +235,15 @@ rules('enabled composes with orphan: the expression term survives an orphan→re
     return call;
   };
   const f = mount(funcForm(make('ICE')));
-  assert.equal(f.getInput('gears').enabled, true);
+  assert.equal(f.getInput('gears').disabled === null, true);
 
   f.source = callOf(fp('type', 'string', {choices: ['ICE', 'Electric']}));
-  assert.equal(f.getInput('gears').enabled, false, 'orphaned disables regardless of the expression');
+  assert.equal(f.getInput('gears').disabled === null, false, 'orphaned disables regardless of the expression');
 
   f.source = make('Electric');
-  assert.equal(f.getInput('gears').enabled, false, 'rebound, but the expression says disabled');
-  f.getInput('type').value.value = 'ICE';
-  assert.equal(f.getInput('gears').enabled, true, 'the cycle ends per expression');
+  assert.equal(f.getInput('gears').disabled === null, false, 'rebound, but the expression says disabled');
+  f.getInput('type').value = 'ICE';
+  assert.equal(f.getInput('gears').disabled === null, true, 'the cycle ends per expression');
   f.dispose();
 });
 
@@ -258,11 +255,11 @@ rules('enabled composes with busy: a loading choices source disables regardless 
   call.setParamValue('type', 'ICE');
   call.dart.evalDelayMs = 40;
   const f = mount(funcForm(call));
-  assert.equal(f.getInput('city').enabled, false, 'busy while the initial load is in flight');
+  assert.equal(f.getInput('city').disabled === null, false, 'busy while the initial load is in flight');
   await f.settled;
-  assert.equal(f.getInput('city').enabled, true, 'landed: the expression owns it again');
-  f.getInput('type').value.value = 'Electric';
-  assert.equal(f.getInput('city').enabled, false, 'and says disabled');
+  assert.equal(f.getInput('city').disabled === null, true, 'landed: the expression owns it again');
+  f.getInput('type').value = 'Electric';
+  assert.equal(f.getInput('city').disabled === null, false, 'and says disabled');
   f.dispose();
 });
 
@@ -307,7 +304,7 @@ rules('two live forms over ONE call warn once EACH; one form\'s re-arm never res
   assert.equal(atBuild, 2, 'per form, not one shared warn — the bench A/B pair scenario');
   const atRebind = countWarns(() => b.source = call);
   assert.equal(atRebind, 1, 'only the re-armed form warns again');
-  const after = countWarns(() => a.getInput('type').value.value = 'x');
+  const after = countWarns(() => a.getInput('type').value = 'x');
   assert.equal(after, 0, 'a stays warn-once for its key: b\'s clear did not reset it (b already warned)');
   a.dispose();
   b.dispose();
@@ -324,9 +321,9 @@ rules('disabled-by-expression is inactive too: required suppressed while the fie
   assert.equal(validityOf(f, 'gears'), 'Value can\'t be empty');
   assert.deepEqual(f.missingRequired.value, ['Gears']);
 
-  f.getInput('type').value.value = 'Electric';
+  f.getInput('type').value = 'Electric';
   assert.equal(hiddenOf(f, 'gears'), false, 'disabled, not hidden');
-  assert.equal(f.getInput('gears').enabled, false);
+  assert.equal(f.getInput('gears').disabled === null, false);
   assert.equal(validityOf(f, 'gears'), null, 'a field the user cannot edit never blocks (#20)');
   assert.deepEqual(f.missingRequired.value, []);
   f.dispose();
@@ -343,13 +340,13 @@ rules('required is suppressed while hidden, and the value SURVIVES in the call',
   assert.equal(validityOf(f, 'cylinders'), null);
   assert.equal(call.inputs.cylinders, 6);
 
-  f.getInput('type').value.value = 'Electric';
+  f.getInput('type').value = 'Electric';
   assert.equal(hiddenOf(f, 'cylinders'), true);
   assert.equal(validityOf(f, 'cylinders'), null, 'hidden stays exempt');
   assert.equal(call.inputs.cylinders, 6, 'hiding never clears the call (Dart parity)');
 
   typeInto(f, 'cylinders', '');
-  f.getInput('type').value.value = 'ICE';
+  f.getInput('type').value = 'ICE';
   assert.equal(validityOf(f, 'cylinders'), 'Value can\'t be empty',
     'the verdict returns the moment the field shows again');
   f.dispose();
@@ -364,9 +361,9 @@ rules('an expression-invalid verdict clears when hidden and returns when shown, 
   typeInto(f, 'minAge', '15');
   assert.equal(validityOf(f, 'minAge'), 'minAge > 18', 'false answers the expression text (parity)');
 
-  f.getInput('type').value.value = 'Electric';
+  f.getInput('type').value = 'Electric';
   assert.equal(validityOf(f, 'minAge'), null, 'validity null + gate open while hidden');
-  f.getInput('type').value.value = 'ICE';
+  f.getInput('type').value = 'ICE';
   assert.equal(validityOf(f, 'minAge'), 'minAge > 18', 'the SAME verdict returns on the flip');
   f.dispose();
 });
@@ -450,9 +447,9 @@ rules('missingRequired is visibility-aware: a hidden required field blocks nothi
   const f = mount(funcForm(call));
   assert.deepEqual(f.missingRequired.value, ['Cylinders'],
     'type holds a value in the call and does not read as missing');
-  f.getInput('type').value.value = 'Electric';
+  f.getInput('type').value = 'Electric';
   assert.deepEqual(f.missingRequired.value, [], 'hidden dropped from the gate');
-  f.getInput('type').value.value = 'ICE';
+  f.getInput('type').value = 'ICE';
   assert.deepEqual(f.missingRequired.value, ['Cylinders'], 'and back the moment it shows');
   f.dispose();
 });
@@ -482,9 +479,9 @@ rules('invalidFields lists invalid rendered fields by label; a hidden invalid fi
   typeInto(f, 'minAge', '15');
   assert.deepEqual(f.invalidFields.value, ['Min Age'], 'labels, not param names');
 
-  f.getInput('type').value.value = 'Electric';
+  f.getInput('type').value = 'Electric';
   assert.deepEqual(f.invalidFields.value, [], 'hidden dropped from the list');
-  f.getInput('type').value.value = 'ICE';
+  f.getInput('type').value = 'ICE';
   assert.deepEqual(f.invalidFields.value, ['Min Age'], 'and back the moment it shows');
   typeInto(f, 'minAge', '25');
   assert.deepEqual(f.invalidFields.value, []);
@@ -502,14 +499,14 @@ rules('a parse-invalid field hidden by its expression unblocks the gate lists, n
   assert.deepEqual(f.invalidFields.value, ['Min Age'], 'the gate names the unparseable field');
   assert.deepEqual(f.missingRequired.value, []);
 
-  f.getInput('type').value.value = 'Electric';
+  f.getInput('type').value = 'Electric';
   assert.deepEqual(f.invalidFields.value, [], 'hidden: both gate lists empty — Run unblocks');
   assert.deepEqual(f.missingRequired.value, []);
   assert.equal(validityOf(f, 'minAge'), 'Not a number',
     'the constructor parse verdict is not active-gated');
   assert.equal(f.isValid, false, 'isValid stays visibility-blind by contract');
 
-  f.getInput('type').value.value = 'ICE';
+  f.getInput('type').value = 'ICE';
   assert.deepEqual(f.invalidFields.value, ['Min Age'], 'and blocks again the moment it shows');
   f.dispose();
 });
@@ -690,9 +687,9 @@ rules('an active flip clears the named verdict when hidden and re-runs when show
   typeInto(f, 'code', 'abc');
   await until(() => validityOf(f, 'code') === 'Code must start with X', 'the verdict');
 
-  f.getInput('type').value.value = 'Electric';
+  f.getInput('type').value = 'Electric';
   assert.equal(validityOf(f, 'code'), null, 'hidden: exempt immediately, no landing awaited');
-  f.getInput('type').value.value = 'ICE';
+  f.getInput('type').value = 'ICE';
   await until(() => validityOf(f, 'code') === 'Code must start with X', 'the verdict to return');
   f.dispose();
 });
@@ -715,7 +712,7 @@ bare('a W1-shape call — none of the new members, no scriptSync — builds and 
   assert.equal(validityOf(f, 'gears'), null);
   assert.ok(warns >= 1, 'warned, not thrown');
   const again = countWarns(() => {
-    f.getInput('gears').value.value = 3;
+    f.getInput('gears').value = 3;
   });
   assert.equal(again, 0, 'warn-once per key: a later edit is silent');
   f.dispose();
@@ -816,7 +813,7 @@ rules('auto-hide: a header follows its fields, groups propagate up, and everythi
   assert.equal(headerOf(f, 'Engine').hidden, false);
   assert.equal(headerOf(f, 'Power').hidden, false);
 
-  f.getInput('type').value.value = 'Electric';
+  f.getInput('type').value = 'Electric';
   assert.equal(hiddenOf(f, 'cylinders'), true);
   assert.equal(headerOf(f, 'Engine').hidden, true, 'the leaf header follows its only field');
   assert.equal(headerOf(f, 'Battery').hidden, true);
@@ -824,7 +821,7 @@ rules('auto-hide: a header follows its fields, groups propagate up, and everythi
   assert.equal(headerOf(f, 'Details').hidden, false, 'the visible branch stays');
   assert.equal(headerOf(f, 'Contact').hidden, false);
 
-  f.getInput('type').value.value = 'ICE';
+  f.getInput('type').value = 'ICE';
   assert.equal(headerOf(f, 'Engine').hidden, false, 're-shown');
   assert.equal(headerOf(f, 'Power').hidden, false);
   f.dispose();
@@ -837,7 +834,7 @@ rules('flat-mode headers auto-hide too when a category\'s only field hides', () 
   call.setParamValue('type', 'ICE');
   const f = mount(funcForm(call));
   assert.equal(headerOf(f, 'Engine').hidden, false);
-  f.getInput('type').value.value = 'Electric';
+  f.getInput('type').value = 'Electric';
   assert.equal(headerOf(f, 'Engine').hidden, true);
   assert.equal(headerOf(f, 'Main').hidden, false);
   f.dispose();
@@ -897,7 +894,7 @@ rules('echo audit: one keystroke → exactly N scriptSync evals, ZERO setParamVa
   // vehicle rules: cylinders:visible, tankExtension:visible+enabled, batteryCapacity:visible
   const base = evals;
   sets.length = 0;
-  f.getInput('type').value.value = 'Electric';
+  f.getInput('type').value = 'Electric';
   assert.equal(evals - base, 4, 'one eval per expression, once');
   assert.deepEqual(sets, [['type', 'Electric']], 'the edit itself and nothing else');
   f.dispose();
@@ -929,13 +926,13 @@ rules('W2 debounce interplay: a choices landing after a hide never resurrects th
   call.dart.evalDelayMs = 40;
   const f = mount(funcForm(call));
   // hide BEFORE the choices land; the landing prunes 'Paris' through the field effect
-  f.getInput('type').value.value = 'Electric';
+  f.getInput('type').value = 'Electric';
   assert.equal(hiddenOf(f, 'city'), true);
   await f.settled;
   await until(() => call.inputs.city === null, 'the prune to reach the call');
   assert.equal(validityOf(f, 'city'), null, 'the active guard held through the late landing');
 
-  f.getInput('type').value.value = 'ICE';
+  f.getInput('type').value = 'ICE';
   assert.equal(validityOf(f, 'city'), 'Value can\'t be empty', 'the verdict is back once shown');
   f.dispose();
 });

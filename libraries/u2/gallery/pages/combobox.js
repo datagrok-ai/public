@@ -85,8 +85,8 @@ function fakeProvider(query, abort) {
 function readout(combo) {
   const value = el('b');
   const state = el('code');
-  bindText(combo.scope, value, computed(() => combo.value.value || '(empty)'));
-  bindText(combo.scope, state, computed(() => `${combo.machineState.value}${combo.isOpen.value ? ', open' : ''}`));
+  bindText(value, computed(() => combo.value || '(empty)'), {owner: combo.scope});
+  bindText(state, computed(() => `${combo.machineState.value}${combo.isOpen.value ? ', open' : ''}`), {owner: combo.scope});
   const row = el('p', 'u2-gallery-status');
   row.append('value = ', value, '  ·  machine = ', state);
   return row;

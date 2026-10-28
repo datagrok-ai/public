@@ -1,7 +1,3 @@
-/* What a viewer's pixels say: repainted, ink, colors, the selection highlight, the value range
-   and the color scale — every "than before" against the snapshot the last change took. A throw
-   inside an `expect.poll` callback ends the poll, so a read the viewer may be between layouts of
-   returns `false` and keeps the reason for the failure that follows. */
 import {Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';

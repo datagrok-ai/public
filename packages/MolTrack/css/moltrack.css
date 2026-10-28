@@ -11,12 +11,12 @@
 }
 
 /* an empty name keeps its line, so every card's lines sit at the same height */
-.moltrack-card-text > .u2-domain-card-description {
+.moltrack-card-text > .moltrack-card-line {
   min-height: 1lh;
 }
 
 /* assay results line up: the batch, the run, then the values */
-.moltrack-result > .u2-domain-list-name {
+.moltrack-result > .moltrack-batch {
   flex: 0 0 96px;
 }
 

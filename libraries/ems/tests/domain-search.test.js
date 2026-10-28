@@ -1,9 +1,5 @@
-/* `domains.search` (WO 2-7) over the memory backend: the box writes the source's `search` after a
-   pause, on Enter at once, Escape clears, and a search set in code shows in the box. `DG` and
-   `grok` come from tests/dg-stub.mjs. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
@@ -41,7 +37,7 @@ const buttonNamed = (text) => [...document.body.querySelectorAll('.u2-dialog but
 async function issues() {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
+  const src = testOwner().build(() => table.source({pageSize: 10}));
   await flush();
   return src;
 }
@@ -53,7 +49,7 @@ function type(input, value) {
 
 scoped('typing searches after the pause; Enter at once; Escape clears; the total follows', async () => {
   const src = await issues();
-  const search = domains.search(src, {debounceMs: 20});
+  const search = testOwner().build(() => domains.search(src, {debounceMs: 20}));
   const input = search.root.querySelector('input');
   assert.equal(search.root.dataset.u2, 'domain-search');
   assert.equal(input.placeholder, 'Search title, description…', 'names what it searches');
@@ -81,7 +77,7 @@ scoped('typing searches after the pause; Enter at once; Escape clears; the total
 
 scoped('two-way: a search set in code shows in the box and cancels a pending keystroke', async () => {
   const src = await issues();
-  const search = domains.search(src, {debounceMs: 20});
+  const search = testOwner().build(() => domains.search(src, {debounceMs: 20}));
   const input = search.root.querySelector('input');
   type(input, 'pending');
   src.search.value = 'nap';
@@ -103,7 +99,7 @@ scoped('spec: u2-domain-search is registered with usage', () => {
 
 scoped('a search while the session is dirty asks: cancel puts the text back, discard searches', async () => {
   const src = await issues();
-  const search = domains.search(src, {debounceMs: 20});
+  const search = testOwner().build(() => domains.search(src, {debounceMs: 20}));
   const input = search.root.querySelector('input');
   src.rows.byKey('i1').title = 'Edited';
   assert.equal(src.isDirty.value, true);
@@ -131,7 +127,7 @@ scoped('a search while the session is dirty asks: cancel puts the text back, dis
 
 scoped('the box carries the class its sheet selects, and a search during a write-back is refused', async () => {
   const src = await issues();
-  const search = domains.search(src, {debounceMs: 20});
+  const search = testOwner().build(() => domains.search(src, {debounceMs: 20}));
   assert.equal(search.root.classList.contains('u2-domain-search'), true);
   const input = search.root.querySelector('input');
   let release;

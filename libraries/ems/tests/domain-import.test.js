@@ -1,14 +1,10 @@
-/* `domains.import` (WO 3-9) on the memory backend: the wizard's four steps, the mapping
-   auto-matched by name against the columns the caller may write, every blocking problem the Dart
-   wizard defines, a skipped column absent from what is posted, the preview's own verdicts, upsert
-   merging by the business key, and the report reaching the caller. The memory backend has no bulk
-   endpoint, so the posting path here is the transaction fallback — the same rows either way. */
-
+// the memory backend has no bulk endpoint: the posting path here is the transaction fallback, the same rows either way
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
 import {SCHEMA, backend} from './domain-fixtures.mjs';
 
@@ -72,9 +68,9 @@ function noDryRun(memory) {
 async function opened(memory, source) {
   emsBackends.domain = memory;
   const handle = await domains.table('grit.issue');
-  const running = domains.import(handle);
+  const running = testOwner().build(() => domains.import(handle));
   await flush();
-  named('source').value.value = source;
+  named('source').value = source;
   await flush();
   // the mapping table has no layout in the shim: give it a viewport so its rows render
   return {running, handle};
@@ -83,7 +79,7 @@ async function opened(memory, source) {
 async function toMapping() {
   fire(buttonNamed('NEXT'), 'click');
   await flush();
-  mapping().clientHeight = 400;
+  layout(mapping(), {clientHeight: 400});
   fire(mapping(), 'scroll');
   await flush();
 }
@@ -99,9 +95,9 @@ scoped('the mapping is auto-matched by name and caption; a system column is neve
   const memory = backend();
   const {running} = await opened(memory, frame(['title', 'Priority', 'nonesuch'], [{title: 'A', Priority: 'low'}]));
   await toMapping();
-  assert.equal(named('title').value.value, 'title');
-  assert.equal(named('Priority').value.value, 'priority', 'matched on the caption, case-insensitively');
-  assert.equal(named('nonesuch').value.value, '(skip)');
+  assert.equal(named('title').value, 'title');
+  assert.equal(named('Priority').value, 'priority', 'matched on the caption, case-insensitively');
+  assert.equal(named('nonesuch').value, '(skip)');
   const labels = named('title').items.map((x) => typeof x === 'string' ? x : x.label);
   assert.equal(labels.some((l) => l === 'Id' || l === 'Version'), false, 'the system columns are not offered');
   assert.equal(labels.includes('Title *'), true, 'a target the table will not take empty carries the asterisk');
@@ -118,7 +114,7 @@ scoped('an immutable key column is a target, and auto-matched by name: an import
     fields: {project_id: 'editable', number: 'immutable', title: 'editable', description: 'editable'}}});
   const {running} = await opened(memory, frame(['number', 'title'], [{number: '7', title: 'Keyed'}]));
   await toMapping();
-  assert.equal(named('number').value.value, 'number', 'the key typed once on insert is matched by name');
+  assert.equal(named('number').value, 'number', 'the key typed once on insert is matched by name');
   const labels = named('title').items.map((x) => typeof x === 'string' ? x : x.label);
   assert.equal(labels.includes('Number'), true, 'the key is offered as a target');
   fire(buttonNamed('CANCEL'), 'click');
@@ -129,11 +125,11 @@ scoped('a frame handed in as an option is mapped while the wizard is still being
   const memory = backend();
   emsBackends.domain = memory;
   const handle = await domains.table('grit.issue');
-  const running = domains.import(handle,
-    {source: frame(['project_id', 'title'], [{project_id: 'p1', title: 'Handed in'}])});
+  const running = testOwner().build(() => domains.import(handle,
+    {source: frame(['project_id', 'title'], [{project_id: 'p1', title: 'Handed in'}])}));
   await flush();
   await toMapping();
-  assert.equal(named('title').value.value, 'title', 'the mapping is there without a pick');
+  assert.equal(named('title').value, 'title', 'the mapping is there without a pick');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
 });
@@ -148,27 +144,27 @@ scoped('every blocking problem the wizard gates on', async () => {
     await flush();
     return reason();
   };
-  named('name2').value.value = 'title';
+  named('name2').value = 'title';
   await flush();
   assert.match(await proceed(), /Columns "title" and "name2" are both mapped to "Title"/,
     'the target by its caption, both columns by name');
 
   for (const column of ['project_id', 'title', 'name2'])
-    named(column).value.value = '(skip)';
+    named(column).value = '(skip)';
   await flush();
   assert.match(await proceed(), /Map at least one column/);
 
-  named('title').value.value = 'description';
+  named('title').value = 'description';
   await flush();
   assert.match(await proceed(), /Required column "Project id" is not mapped/,
     'insert mode names every required column left unmapped');
 
-  named('project_id').value.value = 'project_id';
+  named('project_id').value = 'project_id';
   await flush();
   assert.match(await proceed(), /Required column "Title" is not mapped/);
 
-  named('title').value.value = 'title';
-  named('mode').value.value = 'upsert';
+  named('title').value = 'title';
+  named('mode').value = 'upsert';
   await flush();
   assert.match(await proceed(), /Add or update matches rows by Number — map a column to "Number"/);
   fire(buttonNamed('CANCEL'), 'click');
@@ -212,9 +208,9 @@ scoped('the dry run is posted once per entry into the step, not per keystroke', 
 
   fire(buttonNamed('BACK'), 'click');
   await flush();
-  named('note').value.value = 'description';
+  named('note').value = 'description';
   await flush();
-  named('note').value.value = '(skip)';
+  named('note').value = '(skip)';
   await flush();
   assert.equal(posts.length, 1, 'typing on another step posts nothing');
 
@@ -222,7 +218,7 @@ scoped('the dry run is posted once per entry into the step, not per keystroke', 
   assert.equal(posts.length, 1, 'the same mapping is the same dry run');
   fire(buttonNamed('BACK'), 'click');
   await flush();
-  named('note').value.value = 'description';
+  named('note').value = 'description';
   await flush();
   await toPreview();
   assert.equal(posts.length, 2, 'a mapping the run did not cover is posted again');
@@ -260,7 +256,7 @@ scoped('a storage with no dry run previews the mapped rows without verdicts, and
   const preview = document.body.querySelector('.u2-domain-import-preview');
   assert.match(preview.textContent, /Rows are checked when imported\./);
   const rows = preview.querySelector('.u2-domain-import-rows');
-  rows.clientHeight = 200;
+  layout(rows, {clientHeight: 200});
   fire(rows, 'scroll');
   await flush();
   assert.deepEqual([...rows.querySelectorAll('.u2-data-table-head')].map((c) => c.textContent),
@@ -282,7 +278,7 @@ scoped('only the mapped columns are posted, under their target names', async () 
   const {running} = await opened(memory,
     frame(['project_id', 'title', 'note'], [{project_id: 'p1', title: 'Imported', note: 'skipped'}]));
   await toMapping();
-  assert.equal(named('note').value.value, '(skip)');
+  assert.equal(named('note').value, '(skip)');
   fire(buttonNamed('NEXT'), 'click');
   await flush();
   fire(importButton(), 'click');
@@ -302,7 +298,7 @@ scoped('upsert merges by the business key instead of inserting again', async () 
   const {running} = await opened(memory,
     frame(['project_id', 'number', 'title'], [{project_id: 'p1', number: 2, title: 'Renamed'}]));
   await toMapping();
-  named('mode').value.value = 'upsert';
+  named('mode').value = 'upsert';
   await flush();
   fire(buttonNamed('NEXT'), 'click');
   await flush();
@@ -347,11 +343,11 @@ scoped('a table-level insert denial still opens the wizard; no visible column re
   emsBackends.domain = backend({access: {can: {view: true, insert: false, edit: false, delete: false, share: false},
     fields: {project_id: 'editable', title: 'editable'}}});
   const open = await domains.table('grit.issue');
-  const running = domains.import(open,
-    {source: frame(['project_id', 'title'], [{project_id: 'p1', title: 'A'}])});
+  const running = testOwner().build(() => domains.import(open,
+    {source: frame(['project_id', 'title'], [{project_id: 'p1', title: 'A'}])}));
   await flush();
   await toMapping();
-  assert.equal(named('title').value.value, 'title', 'the writable columns are offered');
+  assert.equal(named('title').value, 'title', 'the writable columns are offered');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
 
@@ -371,7 +367,7 @@ scoped('the preview draws the rows as they would land, each under its verdict, r
   await toMapping();
   await toPreview();
   const rows = document.body.querySelector('.u2-domain-import-rows');
-  rows.clientHeight = 200;
+  layout(rows, {clientHeight: 200});
   fire(rows, 'scroll');
   await flush();
   assert.deepEqual([...rows.querySelectorAll('.u2-data-table-head')].map((c) => c.textContent),
@@ -412,10 +408,10 @@ scoped('a source column is matched the way a person reads it, not byte for byte'
   const {running} = await opened(memory, frame(['Project ID', 'Chemical title', 'Weight (kg)', 'Batch'],
     [{'Project ID': 'p1', 'Chemical title': 'A', 'Weight (kg)': '2', 'Batch': 'x'}]));
   await toMapping();
-  assert.equal(named('Project ID').value.value, 'project_id');
-  assert.equal(named('Chemical title').value.value, 'title');
-  assert.equal(named('Weight (kg)').value.value, 'weight');
-  assert.equal(named('Batch').value.value, '(skip)');
+  assert.equal(named('Project ID').value, 'project_id');
+  assert.equal(named('Chemical title').value, 'title');
+  assert.equal(named('Weight (kg)').value, 'weight');
+  assert.equal(named('Batch').value, '(skip)');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
 });
@@ -435,11 +431,11 @@ scoped('an aborted all-or-nothing run is not a dead end: BACK, the flag off, and
   fire(back, 'click');
   await flush();
   assert.notEqual(named('allOrNothing'), null, 'the source step is back');
-  named('allOrNothing').value.value = false;
+  named('allOrNothing').value = false;
   await flush();
   fire(buttonNamed('NEXT'), 'click');
   await flush();
-  assert.equal(named('title').value.value, 'title', 'and the mapping it was left with stands');
+  assert.equal(named('title').value, 'title', 'and the mapping it was left with stands');
   fire(buttonNamed('NEXT'), 'click');
   await flush();
   fire(importButton(), 'click');
@@ -510,7 +506,7 @@ scoped('an upsert on a storage that cannot tell insert from update reports merge
     frame(['project_id', 'number', 'title'], [{project_id: 'p1', number: 1, title: 'One'},
       {project_id: 'p1', number: 2, title: 'Two'}]));
   await toMapping();
-  named('mode').value.value = 'upsert';
+  named('mode').value = 'upsert';
   await flush();
   await toPreview();
   fire(importButton(), 'click');
@@ -552,17 +548,17 @@ scoped('an importer maps, derives and keeps rows out, and makes the preview its 
       i === 1 ? {existing: 'p1', label: 'Exists', note: 'Already there'} : i === 2 ? {sameAs: 0, note: 'Same as row 1'} :
         i === 3 ? {error: 'Cannot read it'} : {values: {description: `About ${r.name}`}}),
     columns: (defaults) => [...defaults, {name: 'loud', header: 'Loud', render: (row) => String(row.values.name).toUpperCase()}]};
-  const running = domains.import(projects, {source: frame(['code', 'name'],
-    [{code: 'NEW', name: 'New'}, {code: 'GRIT', name: 'Grit'}, {code: 'NEW', name: 'New'}, {code: 'BAD', name: 'Bad'}])});
+  const running = testOwner().build(() => domains.import(projects, {source: frame(['code', 'name'],
+    [{code: 'NEW', name: 'New'}, {code: 'GRIT', name: 'Grit'}, {code: 'NEW', name: 'New'}, {code: 'BAD', name: 'Bad'}])}));
   await flush();
-  named('allOrNothing').value.value = false;
-  named('writeBack').value.value = false;
+  named('allOrNothing').value = false;
+  named('writeBack').value = false;
   await toMapping();
   assert.equal(named('name').items.some((x) => x?.label === 'Description'), false, 'what the importer derives is not offered');
-  assert.equal(named('code').value.value, 'key', 'the importer\'s match comes first');
+  assert.equal(named('code').value, 'key', 'the importer\'s match comes first');
   await toPreview();
   const rows = document.body.querySelector('.u2-domain-import-rows');
-  rows.clientHeight = 400;
+  layout(rows, {clientHeight: 400});
   fire(rows, 'scroll');
   await flush();
   const preview = document.body.querySelector('.u2-domain-import-preview').textContent;

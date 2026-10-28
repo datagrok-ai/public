@@ -45,7 +45,7 @@ export class BigIntInput extends Input<bigint | null, BigIntInputOptions> {
     // handler, when its batch ends — so the text being typed is never rewritten
     let echo = false;
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (echo)
         echo = false;
       else
@@ -56,9 +56,9 @@ export class BigIntInput extends Input<bigint | null, BigIntInputOptions> {
       this._bad.value = parsed === undefined;
       if (parsed === undefined || this.options.commitOn === 'change')
         return;
-      const before = this.value.peek();
-      this.value.value = parsed;
-      echo = !Object.is(this.value.peek(), before);
+      const before = this.peek();
+      this.value = parsed;
+      echo = !Object.is(this.peek(), before);
     });
     this.scope.listen(input, 'blur', () => this._commit());
     this.scope.listen(input, 'keydown', (e) => {
@@ -71,13 +71,17 @@ export class BigIntInput extends Input<bigint | null, BigIntInputOptions> {
     return input;
   }
 
+  get unreadable(): boolean {
+    return this._bad.value;
+  }
+
   /** Writes the text on blur or Enter (`commitOn: 'change'` waits for it) and redraws the value,
    * so `+007` settles as `7`. */
   private _commit(): void {
     const parsed = BigIntInput.parse(this._input.value);
     if (parsed === undefined)
       return;
-    this.value.value = parsed;
-    this._input.value = text(this.value.peek());
+    this.value = parsed;
+    this._input.value = text(this.peek());
   }
 }

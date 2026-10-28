@@ -1,9 +1,3 @@
-/* `domains.search` — the ribbon search box over a source: the search variant of `TextInput`
-   (magnifier, ✕), writing `source.search` after a quiet spell, on Enter at once, cleared by
-   Escape; two-way, so a search set in code shows in the box. The server runs it over the
-   table's `searchable` columns, AND-ed with the query. A search the USER makes goes through the
-   gate (STATE-CONTRACT H6), as the filters do — it answers at once while there is nothing to lose
-   and refuses while a batch is being written back; cancel puts the previous text back. */
 import {computed, TextInput} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {nounOf} from '../core/domain-backend.js';
@@ -19,6 +13,8 @@ export interface DomainSearchOptions {
 /** The longest column list the placeholder spells out. */
 const PLACEHOLDER_CHARS = 20;
 
+/** The ribbon search box, two-way with `source.search`. A search the user makes goes through the unsaved gate,
+ * as the filters do, and a cancel puts the previous text back. */
 export class DomainSearch extends TextInput {
   private _timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -43,27 +39,27 @@ export class DomainSearch extends TextInput {
     const wait = options.debounceMs ?? 300;
     const write = () => {
       this._cancel();
-      const text = this.value.peek();
+      const text = this.peek();
       if (source.search.peek() === text)
         return;
       void confirmDiscard(source.session, {action: 'change the search'}).then((ok) => {
         if (ok)
           source.search.value = text;
         else
-          this.value.value = source.search.peek();
+          this.value = source.search.peek();
       });
     };
     this.effect(() => {
-      const text = this.value.value;
+      const text = this.value;
       this._cancel();
       if (text !== source.search.peek())
         this._timer = setTimeout(write, wait);
     });
     this.effect(() => {
       const text = source.search.value;
-      if (this.value.peek() !== text) {
+      if (this.peek() !== text) {
         this._cancel();
-        this.value.value = text;
+        this.value = text;
       }
     });
     const input = this.root.querySelector('input')!;
@@ -71,7 +67,7 @@ export class DomainSearch extends TextInput {
       if (e.key === 'Enter')
         write();
       else if (e.key === 'Escape') {
-        this.value.value = '';
+        this.value = '';
         write();
       } else
         return;

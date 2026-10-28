@@ -3,7 +3,7 @@
    the OK caption and `onClose`; the one overlay stack routing Escape (P9) with one listener set
    (P24); the dialog band shared with the platform's dialogs and raise on press (P76). */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {debug} from 'datagrok-api/u2core';
@@ -76,7 +76,7 @@ smoke('keepAlive: a closed dialog shows again with its content alive; dispose fr
   press(dialog, 'OK');
   assert.equal(dialog.isOpen.value, false);
   assert.equal(dialog.scope.isDisposed, false, 'kept');
-  name.value.value = 'v2';
+  name.value = 'v2';
   dialog.show();
   assert.equal(dialog.isOpen.value, true);
   assert.equal(name.root.querySelector('input').value, 'v2', 'its bindings still run');
@@ -104,7 +104,7 @@ smoke('a dialog shown from a row button outlives the row and is freed by close; 
   const row = new Scope();
   let dialog;
   let name;
-  const edit = Scope.runWith(row, () => button('Edit…', () => {
+  const edit = row.build(() => button('Edit…', () => {
     name = new TextInput({label: 'Name'});
     dialog = Dialog.create('Edit row').add(name).onOK(() => {}).show({modal: true});
   }));
@@ -117,7 +117,7 @@ smoke('a dialog shown from a row button outlives the row and is freed by close; 
   assert.deepEqual([dialog.scope.isDisposed, name.scope.isDisposed], [true, true], 'closing frees both');
 
   const page = new Scope();
-  const unshown = Scope.runWith(page, () => Dialog.create('Never shown'));
+  const unshown = page.build(() => Dialog.create('Never shown'));
   page.dispose();
   assert.equal(unshown.scope.isDisposed, true);
 });
@@ -126,7 +126,7 @@ smoke('plain elements passed as add(() => …) from a row keep their handlers an
   const row = new Scope();
   const count = signal(3);
   let dialog;
-  const edit = Scope.runWith(row, () => button('Edit…', () => {
+  const edit = row.build(() => button('Edit…', () => {
     dialog = Dialog.create('Edit row')
       .add(() => divH([button('Reset', () => count.value = 0), span(count, 'count')]))
       .onOK(() => {}).show();
@@ -147,7 +147,7 @@ smoke('plain elements passed as add(() => …) from a row keep their handlers an
 smoke('what the dialog adopted keeps its callbacks once the scope that built it is gone', () => {
   const builder = new Scope();
   const seen = [];
-  const {name, grid, dialog} = Scope.runWith(builder, () => {
+  const {name, grid, dialog} = builder.build(() => {
     const name = new TextInput({label: 'Name', onChanged: (v) => seen.push(`changed ${v}`),
       onEnter: () => seen.push('enter')});
     const grid = new PropertyGrid({onChanged: (c) => seen.push(`${c.name}=${c.value}`)});
@@ -155,7 +155,7 @@ smoke('what the dialog adopted keeps its callbacks once the scope that built it 
     return {name, grid, dialog: Dialog.create('Edit').add(name).add(grid).onOK(() => {}).show()};
   });
   builder.dispose();
-  name.value.value = 'Ada';
+  name.value = 'Ada';
   fire(name.root.querySelector('input'), 'keydown', {key: 'Enter'});
   const field = grid.root.querySelector('.u2-propgrid-row input');
   field.value = '5';
@@ -167,7 +167,7 @@ smoke('what the dialog adopted keeps its callbacks once the scope that built it 
 
 smoke('a keepAlive dialog stays with the scope that built it, and closes with it', () => {
   const page = new Scope();
-  const dialog = Scope.runWith(page, () => Dialog.create('Owned', {keepAlive: true}).show({modal: true}));
+  const dialog = page.build(() => Dialog.create('Owned', {keepAlive: true}).show({modal: true}));
   assert.equal(dialog.root.isConnected, true);
   page.dispose();
   assert.deepEqual([dialog.isOpen.value, dialog.scope.isDisposed], [false, true]);
@@ -177,7 +177,7 @@ smoke('a keepAlive dialog stays with the scope that built it, and closes with it
 smoke('what an OK handler builds belongs to whoever registered it, not to the dialog it closes', () => {
   const page = new Scope();
   let made;
-  const dialog = Scope.runWith(page, () => Dialog.create('Make').onOK(() => made = new TextInput({label: 'Made'})));
+  const dialog = page.build(() => Dialog.create('Make').onOK(() => made = new TextInput({label: 'Made'})));
   dialog.show();
   press(dialog, 'OK');
   assert.equal(dialog.isOpen.value, false);
@@ -188,7 +188,7 @@ smoke('what an OK handler builds belongs to whoever registered it, not to the di
   const registrant = new Scope();
   let ran = 0;
   const late = Dialog.create('Late');
-  Scope.runWith(registrant, () => late.onOK(() => ran++));
+  registrant.build(() => late.onOK(() => ran++));
   registrant.dispose();
   late.show();
   press(late, 'OK');
@@ -482,7 +482,7 @@ smoke('the state block: label, open, busy, error and the validity of a form insi
   dialog.show();
   assert.equal(dialog.getState().open, true);
   assert.equal(dialog.getState().valid, false, 'the empty required field');
-  name.value.value = 'Ada';
+  name.value = 'Ada';
   assert.equal(dialog.getState().valid, true);
   dialog.dispose();
 });
@@ -491,13 +491,13 @@ smoke('one keydown and one pointerdown listener serve every popup and dialog, go
   debug.enable({orphanSeconds: 0});
   try {
     const scope = new Scope();
-    const a = Scope.runWith(scope, () => Dialog.create('A').show());
-    const b = Scope.runWith(scope, () => Dialog.create('B').show({modal: true}));
+    const a = scope.build(() => Dialog.create('A').show());
+    const b = scope.build(() => Dialog.create('B').show({modal: true}));
     const closes = [];
     for (let i = 0; i < 3; i++) {
       const anchor = document.createElement('button');
       b.add(anchor);
-      closes.push(Overlay.show(anchor, document.createElement('div'), scope));
+      closes.push(Overlay.show(anchor, document.createElement('div'), {owner: scope}));
     }
     const global = (type) => debug.listeners().filter((l) => l.type === type);
     assert.equal(global('keydown').length, 1);
@@ -575,7 +575,7 @@ smoke('okDisabled: OK is off while the reason speaks, and says why in its toolti
   };
   assert.equal(ok.disabled, true);
   assert.equal(await tip(), 'Name: Value can\'t be empty', 'the form\'s fields first, top to bottom');
-  name.value.value = 'Peptides';
+  name.value = 'Peptides';
   assert.equal(ok.disabled, true);
   assert.equal(await tip(), 'Select at least one monomer');
   picked.value = 2;

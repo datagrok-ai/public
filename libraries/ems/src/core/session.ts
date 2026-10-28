@@ -1,8 +1,3 @@
-/* The unit of work a Save button drives (GOAL "Unit of work"): what is pending across the sources
-   it covers, one `save` for all of it — every writer's batch as ONE transaction through
-   `DomainBackend.saveAll` — one `discard`, and the events a paired form follows. A source alone
-   is a session of one; the sources built for one spec instance or one app share the ambient
-   session (`SharedSession.runWith`), and a hand-built page passes `{session}` explicitly. */
 import {emsBackends, capital, nounOf} from './domain-backend.js';
 import {signal, computed, ReadonlySignal, Emitter, plural, notify, Dialog, Rows, div} from '@datagrok-libraries/u2';
 import type {ObservableLike, SpecInstance, RowView} from '@datagrok-libraries/u2';
@@ -29,6 +24,9 @@ export interface DomainSession {
 
 const specSessions = new WeakMap<SpecInstance, SharedSession>();
 
+/** The unit of work a Save button drives: every writer's batch as ONE transaction through `DomainBackend.saveAll`.
+ * A source alone is a session of one; the sources of one spec instance or one app share the ambient session
+ * (`SharedSession.runWith`), and a hand-built page passes `{session}` explicitly. */
 export class SharedSession implements DomainSession {
   /** The session every source built while {@link runWith} runs joins — set per spec instance
    * and per app; a source built outside any gets a session of its own. */
@@ -165,16 +163,13 @@ export class SharedSession implements DomainSession {
     this.onDiscarded.fire();
   }
 
-  /** Closes (or re-opens) the writer each source holds now — after a re-base that is the frame
-   * the batch landed in, which is open for editing again. */
+  // the writer each source holds now: after a re-base, the frame the batch landed in
   private static _hold(batch: readonly DomainSource[], saving: boolean): void {
     for (const source of batch)
       source.edit.peek()?.setSaving(saving);
   }
 
-  /** A backend that refused without throwing (the platform editor reports the server's error
-   * itself and answers false): the summary still has to say the changes are stuck, and the
-   * column errors the editor mapped onto the cells name why. */
+  // the platform editor reports the server's error itself and answers false: the summary still says they are stuck
   private static _refused(batch: readonly DomainSource[]): void {
     // a refusal naming a column reaches that cell and is the source's validity; one about a whole
     // row (a delete a child's reference vetoes) reaches nothing, and the writer kept the sentence
@@ -184,7 +179,6 @@ export class SharedSession implements DomainSession {
       source.refuse(problem);
   }
 
-  /** What one table's landed batch says: the table's own words, and what was done to it. */
   private static _landed(source: DomainSource, changes: number, verb: string): string {
     const info = source.schema.info;
     const one = changes === 1;
@@ -195,10 +189,8 @@ export class SharedSession implements DomainSession {
     return `${subject} ${verb}`;
   }
 
-  /** The save set: the dirty sources, plus every source holding a draft one of them refers to — a
-   * pristine parent created with defaults only is not dirty, yet its child's `$~new:` needs it.
-   * Over the pending rows, not the visible ones: what the writer sends is the frame, and a parent
-   * the frame's filter hides is still the row the child points at. */
+  // a pristine parent draft is not dirty, yet its child's `$~new:` needs it; over the pending rows, not the
+  // visible ones: a parent the frame's filter hides is still the row the child points at
   private _withReferenced(dirty: readonly DomainSource[]): DomainSource[] {
     const batch = [...dirty];
     const referenced = new Set<string>();
@@ -219,10 +211,7 @@ export class SharedSession implements DomainSession {
     return batch;
   }
 
-  /** The same persisted row pending in two sources of the batch: they would send two ops for it,
-   * the second losing to the first's version check, and the whole transaction would roll back.
-   * Refused before anything is sent, naming the row on both sources — never merged, however
-   * disjoint the columns are. */
+  // two ops for one row: the second loses to the first's version check and the whole transaction rolls back
   private static _overlapping(batch: readonly DomainSource[]): boolean {
     const seen = new Map<string, {source: DomainSource, row: RowView}>();
     for (const source of batch) {
@@ -272,7 +261,6 @@ export class SharedSession implements DomainSession {
         `Your ${fields.length === 1 ? 'change' : 'changes'} to ${list} ${lost}`};
   }
 
-  /** How a refusal names a row without a renderer: the table's singular name and the row's name. */
   private static _nameOf(source: DomainSource, row: RowView): string {
     const what = (source.schema.info.singularName || source.table).replace(/_/g, ' ');
     return `${capital(what)} "${SharedSession._rowName(source, row)}"`;

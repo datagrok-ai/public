@@ -4,31 +4,17 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {flush, resetDom} from './dom-shim.js';
-import {Scope} from '../src/core/scope.js';
+import './dom-shim.js';
 import {SpecContext, parseSpec, renderSpec} from '../src/spec/spec.js';
 import {registerAll} from '../src/spec/registrations.js';
 import {SAMPLES} from '../src/dg/designer/samples.js';
 import {brokenCount} from '../src/dg/designer/node-ref.js';
 import {GALLERY_KEY, listGallery, loadGallery, saveToGallery} from '../src/dg/designer/gallery.js';
+import {u2test} from '../src/testing/index.js';
 
 registerAll();
 
-/** Every test runs against a clean document and must leave the live-scope count where it was. */
-function scoped(name, body) {
-  test(name, async () => {
-    const live = Scope.liveCount;
-    try {
-      await body();
-    } finally {
-      resetDom();
-      await flush();
-    }
-    assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
-  });
-}
-
-scoped('every sample parses and renders zero-broken against a bare SpecContext', () => {
+test('every sample parses and renders zero-broken against a bare SpecContext', u2test(() => {
   assert.deepEqual(SAMPLES.map((s) => s.name),
     ['Blank', 'Data entry', 'Master–detail', 'Settings', 'Dashboard']);
   for (const sample of SAMPLES) {
@@ -38,9 +24,9 @@ scoped('every sample parses and renders zero-broken against a bare SpecContext',
     assert.ok(instance.nodes().size >= 1, `${sample.name} rendered something`);
     instance.dispose();
   }
-});
+}));
 
-scoped('no sample carries a bind or an event — the bare-context contract holds structurally', () => {
+test('no sample carries a bind or an event — the bare-context contract holds structurally', u2test(() => {
   const walk = (node, visit) => {
     visit(node);
     for (const child of node.children ?? [])
@@ -52,15 +38,15 @@ scoped('no sample carries a bind or an event — the bare-context contract holds
       assert.equal(node.on, undefined, `${sample.name}: ${node.tag} wires no command`);
     });
   }
-});
+}));
 
 function stubStorage() {
   const map = new Map();
-  globalThis.localStorage = {
+  Object.defineProperty(globalThis, 'localStorage', {configurable: true, value: {
     getItem: (k) => map.has(k) ? map.get(k) : null,
     setItem: (k, v) => map.set(k, String(v)),
     removeItem: (k) => map.delete(k),
-  };
+  }});
   return map;
 }
 
@@ -100,14 +86,14 @@ test('gallery wrapper: corrupt JSON, a non-record payload and missing storage al
 });
 
 test('gallery wrapper: a storage whose getItem throws answers empty instead of throwing', () => {
-  globalThis.localStorage = {
+  Object.defineProperty(globalThis, 'localStorage', {configurable: true, value: {
     getItem: () => {
       throw new Error('SecurityError');
     },
     setItem: () => {
       throw new Error('SecurityError');
     },
-  };
+  }});
   try {
     assert.deepEqual(loadGallery(), {}, 'a SecurityError never escapes to the caller');
     assert.deepEqual(listGallery(), []);

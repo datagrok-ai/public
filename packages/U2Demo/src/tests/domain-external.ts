@@ -7,7 +7,7 @@
    the category skips itself when it is not registered. */
 import * as grok from 'datagrok-api/grok';
 import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
-import {Filters, Rows} from '@datagrok-libraries/u2';
+import {Filters, Rows, Scope} from '@datagrok-libraries/u2';
 import type {FilterSchema, FilterValue} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
@@ -21,6 +21,8 @@ category('U2: domain external', () => {
   let skip: string | null = null;
   let orders: DomainTable;
   let app: DomainApp;
+  /** What the tests build after an await is the category's. */
+  const owner = Scope.root('u2 domain external tests');
 
   async function settled(src: DomainSource): Promise<void> {
     await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
@@ -50,7 +52,7 @@ category('U2: domain external', () => {
       return;
     }
     orders = await domains.table(ORDERS);
-    app = domains.app({table: orders, base: BASE});
+    app = owner.build(() => domains.app({table: orders, base: BASE}));
     document.body.append(app.root);
     await ready(app.listSource);
   });
@@ -58,6 +60,7 @@ category('U2: domain external', () => {
   after(async () => {
     app?.dispose();
     app?.root.remove();
+    owner.dispose();
   });
 
   test('the handle declares the read-only external shape', async () => {
@@ -99,10 +102,10 @@ category('U2: domain external', () => {
       return item instanceof HTMLElement ? item : item.root;
     };
     expect(el(0).hidden, true, 'no New');
-    expect(app.menuActions().map((a) => a.name).join(), '', 'no Import, no Bulk edit, no Trash');
+    expect(app.menuActions().map((a) => a.text).join(), '', 'no Import, no Bulk edit, no Trash');
     expect(el(3).hidden, true, 'and no ⋯ button');
     const row = app.listSource.rows.items.value[0];
-    expect(app.list.actionsFor(row).some((a) => a.name === 'Delete'), false, 'no Delete on a row');
+    expect(app.list.actionsFor(row).some((a) => a.text === 'Delete'), false, 'no Delete on a row');
   });
 
   test('open 10248: the entity page by id, the address ends with /10248, the child tab lists its lines', async () => {
@@ -137,7 +140,7 @@ category('U2: domain external', () => {
     const values = await grok.dapi.domains.table(LINES).get('10248,11');
     const link = lines.handler.deepLink(lines.handler.rowFrom(values));
     expect(link, `/domains/${SCHEMA}/order_detail/${segment}`, 'the link spells the id, not a dash-joined key');
-    const a = domains.app({table: lines, base: `/domains/${SCHEMA}/order_detail`, children: false});
+    const a = owner.build(() => domains.app({table: lines, base: `/domains/${SCHEMA}/order_detail`, children: false}));
     document.body.append(a.root);
     try {
       await ready(a.listSource);
@@ -169,7 +172,7 @@ category('U2: domain external', () => {
     expect(values.id, id, 'the id as the server encodes it');
     const link = keyed.handler.deepLink(keyed.handler.rowFrom(values));
     expect(link, `/domains/extwlive/dtkeyed/${encodeURIComponent(id)}`);
-    const a = domains.app({table: keyed, base: '/domains/extwlive/dtkeyed', children: false});
+    const a = owner.build(() => domains.app({table: keyed, base: '/domains/extwlive/dtkeyed', children: false}));
     document.body.append(a.root);
     try {
       await ready(a.listSource);
@@ -195,7 +198,7 @@ category('U2: domain external', () => {
     const originals = Object.fromEntries(spied.map((name) => [name, proto[name]]));
     for (const name of spied)
       proto[name] = function(...args: unknown[]) { calls.push(name); return originals[name].apply(this, args); };
-    const src = orders.source({pageSize: 5, live: true, liveMs: 100});
+    const src = owner.build(() => orders.source({pageSize: 5, live: true, liveMs: 100}));
     const poll = src as unknown as {_probe(): Promise<void>};
     const probe = poll._probe;
     let polls = 0;

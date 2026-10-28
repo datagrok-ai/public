@@ -29,7 +29,7 @@ export class PackageFunctions {
   })
   static async molTrackApp(
     @grok.decorators.param({options: {metaUrl: true, optional: true, description: 'View to open: Compounds, Batches, Assays, AssayRuns, AssayResults or Additions'}}) path: string,
-  ): Promise<DG.ViewBase> {
+  ): Promise<DG.ViewBase | null> {
     return await MolTrackEms.open(path);
   }
 

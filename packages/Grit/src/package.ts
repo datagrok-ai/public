@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {badge, div, divV, span} from '@datagrok-libraries/u2';
 import type {BadgeVariant, RowView} from '@datagrok-libraries/u2';
-import {DomainApp, domains} from '@datagrok-libraries/ems/src/dg';
-import type {DomainRibbon} from '@datagrok-libraries/ems/src/dg';
+import {domains} from '@datagrok-libraries/ems/src/dg';
+import type {DomainViewOptions} from '@datagrok-libraries/ems/src/dg';
 import {GritIssueHandler, lookupName, warmLookups} from './grit-issue-handler';
 import {gritDb, IssueRow} from './generated/db';
 import {getGritDb} from './generated/db-ui';
@@ -81,15 +81,11 @@ function priorityBadge(r: RowView<IssueRow>): HTMLElement[] {
 }
 
 /** The Issues app: the platform ribbon plus the Mine / Open presets, and a key for each action. */
-export class IssuesApp extends DomainApp {
-  shortcuts = {'m': 'Assign to me', 'c': 'Close'};
-  private _full: DomainRibbon | undefined;
-
-  ribbon(): DomainRibbon {
-    return this._full ??= {...super.ribbon(),
-      presets: [this.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]};
-  }
-}
+export const issuesOptions: DomainViewOptions = {mode: 'cards', itemHeight: 48, children: {tables: ['comment']},
+  shortcuts: {'m': 'Assign to me', 'c': 'Close'},
+  ribbon: (base, app) => ({...base,
+    presets: [app.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]}),
+};
 
 /** A view per Grit table — the issues where they were, at `/apps/Grit/Issues`. Grit's one app answers everything
  * under `/apps/Grit`. */
@@ -97,8 +93,7 @@ const views = domains.views({
   path: '/apps/Grit',
   handle: async (address) => Object.values((await getGritDb()).tables).find((t) => t.address === address)!,
   views: [
-    {table: 'grit.issue', name: 'Issues', options: {app: IssuesApp, mode: 'cards', itemHeight: 48,
-      children: {tables: ['comment']}}},
+    {table: 'grit.issue', name: 'Issues', options: issuesOptions},
     {table: 'grit.project', name: 'Projects'},
     {table: 'grit.label', name: 'Labels'},
     {table: 'grit.status', name: 'Statuses'},
@@ -113,7 +108,7 @@ const views = domains.views({
 //meta.icon: images/bug.svg
 //input: string path {meta.url: true; optional: true}
 //output: view result
-export async function issuesApp(path?: string): Promise<DG.ViewBase> {
+export async function issuesApp(path?: string): Promise<DG.ViewBase | null> {
   return views.open(path ?? '');
 }
 

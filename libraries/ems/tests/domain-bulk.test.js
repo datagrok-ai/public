@@ -1,10 +1,9 @@
-/* `domains.bulkEdit` on the memory backend. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {SCHEMA, backend} from './domain-fixtures.mjs';
@@ -46,7 +45,7 @@ const issues = (memory) => memory.tableSync('grit.issue').rows;
 const picker = () => control('fields');
 const offered = () => picker().getItems({all: true}).list.map((i) => i.key);
 function choose(...names) {
-  picker().value.value = names;
+  picker().value = names;
 }
 
 /** "Apply to": a choice where there are two targets, plain text where there is one. */
@@ -70,7 +69,7 @@ async function opened(source) {
 async function table(memory, options = {}) {
   emsBackends.domain = memory;
   const handle = await domains.table('grit.issue');
-  const source = handle.source(options);
+  const source = testOwner().build(() => handle.source(options));
   await flush();
   return {handle, source};
 }
@@ -97,7 +96,7 @@ scoped('the checked columns are written to the selection; an unchecked one is le
   assert.deepEqual(source.selection.value.map((r) => r.id), ['i1', 'i3']);
 
   const {running} = await opened(source);
-  assert.equal(target().value.value, '2 selected issues', 'a selection is the default target');
+  assert.equal(target().value, '2 selected issues', 'a selection is the default target');
   assert.deepEqual(targets(), ['2 selected issues', 'All 3 issues matching the filter'],
     'no empty option in front of the targets');
   assert.equal(offered().includes('id'), false, 'a system column is not offered');
@@ -109,11 +108,11 @@ scoped('the checked columns are written to the selection; an unchecked one is le
   choose('done');
   await flush();
   assert.equal(shown('done'), true, 'choosing the column shows its editor');
-  assert.equal(field('done').enabled, true);
+  assert.equal(field('done').disabled, null);
   assert.equal(okDisabled(), false);
   assert.equal(reason().textContent, '');
-  field('done').value.value = true;
-  field('title').value.value = 'NOT WRITTEN';
+  field('done').value = true;
+  field('title').value = 'NOT WRITTEN';
   fire(ok(), 'click');
   assert.equal(await running, 1, 'Aspirin is already done: only the row the values change is written');
   assert.match(balloon('info'), /Updated 1 issue\./, 'the table\'s words, never "rows"');
@@ -147,7 +146,7 @@ scoped('a selection past the cap disables OK and says how many are selected', as
   const {running} = await opened(source);
   choose('done');
   await flush();
-  field('done').value.value = true;
+  field('done').value = true;
   assert.equal(okDisabled(), true);
   assert.match(reason().textContent, /at most 1000 issues at a time; 1001 are selected/);
   assert.equal(issues(memory).filter((r) => r.done === true).length, 0, 'nothing was written');
@@ -163,7 +162,7 @@ scoped('"all matching" writes the list\'s filter, capped, and reports that more 
   assert.equal(targetText(), 'Apply toAll 1,001 issues matching the filter', 'nothing selected: the filter is the only target');
   choose('done');
   await flush();
-  field('done').value.value = true;
+  field('done').value = true;
   fire(ok(), 'click');
   assert.equal(await running, 1000);
   assert.match(balloon('info'), /Updated 1000 issues — more match/);
@@ -227,10 +226,10 @@ scoped('the list\'s own selection is the collection\'s, and only a user makes on
   const memory = backend();
   emsBackends.domain = memory;
   const handle = await domains.table('grit.issue');
-  const source = handle.source({});
-  const list = domains.list(source);
+  const source = testOwner().build(() => handle.source({}));
+  const list = testOwner().build(() => domains.list(source));
   document.body.append(list.root);
-  list.root.clientHeight = 400;
+  layout(list.root, {clientHeight: 400});
   await flush();
   assert.deepEqual(source.selection.value, [], 'a cold list selects nothing: the load put the lead there');
   assert.notEqual(source.currentRow.value, null, 'though it has a current row');
@@ -247,7 +246,7 @@ scoped('the list\'s own selection is the collection\'s, and only a user makes on
   assert.equal(targetText(), 'Apply to2 selected issues');
   choose('done');
   await flush();
-  field('done').value.value = true;
+  field('done').value = true;
   fire(ok(), 'click');
   assert.equal(await running, 1, 'Aspirin is already done');
   assert.deepEqual(issues(memory).map((r) => r.done), [true, false, true]);

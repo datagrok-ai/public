@@ -2,7 +2,17 @@
 
 ## v.next
 
+* u2 v1: Moved onto u2's v1 API (plain `value`/`peek()`, `build`, owners as options, captions as `text`, `disabled` reasons, entry-point imports). Save and Discard say why they are off ("No changes to save", "Nothing to discard", "Wait for the batch being saved to finish"), as do the authoring dialogs' and the manifest editor's controls that are off, and New says "Loading…" until its table is loaded; `DomainAction` takes `disabled` (the reason) instead of `enabled`, and the `u2-domain-pick` tag's `enabled` prop is `disabled`
+* Forms: Fixed text a number, date or color field cannot read ("abc") not counting as an unsaved change: Discard drops it and the gates ask before leaving
 * Properties: Added an editor for users' own columns on a plugin's extensible tables, opened from Edit properties… on the list's ribbon (`domains.editProperties`); the plugin's columns stay read-only, and a save that deletes values asks first
+* Forms: Fixed a field left invalid going stale in the app: the breadcrumb and the entity page's status name the record as its fields read (an emptied title is "New issue" again, not the last valid one; a saved record's emptied name leaves the name it has, never a blank crumb), and a field over a cell already changed is no second unsaved change ("2 unsaved changes" for one edited title). `holdUnwritten` takes what the fields hold for their row (`UnwrittenEdits`); added `DomainSource.current(row)`
+* Import: Fixed writing the key back failing ("Column named 'Sku' already exists") when the source table has a column of that name in another case (`sku`): column names ignore case, so the key goes into a column of its own beside it, and the source's column keeps its values
+* Import: Fixed the key written back, and the report's key column, holding each row's caption ("Row 1", its name) instead of its key: a one-column key is its own value, as the column's format spells it (`DG-000060`)
+* Import: Fixed closing the dialog while the report reads the keys back building its rows table under the closed dialog (a u2 usage error); the key is still written back
+* Apps: Fixed browser Back or Forward inside an app's view (`domains.views`) opening a second view of the table: the app function the platform asks again answers no view, and the open one takes the address; with unsaved changes the gate asks once
+* Forms, Import: A required field is starred through the input's own `required`, so it is `aria-required` too (the asterisk was a class set by hand)
+* Apps: Fixed "Wait for the batch being saved to finish." showing when a record made with New is saved, then deleted from its own page and saved again: the saved delete no longer reads as a discarded draft, and the app goes back to the list once
+* Apps: An app's own parts are `DomainApp` options instead of a subclass — `ribbon(base, app)` and `menu(base, app)` extend the ribbon and the Actions menu the app builds, `setup(app, self)` wires the rest under the app's owner, beside `shortcuts`; removed the `app` class option of `DomainTable.app()`
 * Added `domains.configure(address, fn, {id})`: an app's rules apply to every handle over the table
 * Bulk edit: Redesigned the dialog as one form with a field picker
 * Bulk edit: Refusals and the table's validators show in the dialog

@@ -7,7 +7,8 @@ import { RevvityApiResponse, RevvityData, search } from './revvity-api';
 
 import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_TO_EXCLUDE_FROM_CORPORATE_ID_WIDGET, FIELDS_TO_EXCLUDE_FROM_WIDGET, FIRST_COL_NAMES, LAST_COL_NAMES, MOLECULAR_FORMULA_FIELD_NAME, PARAMS_KEY, QUERY_KEY, STORAGE_NAME, SUBMITTER_FIELD_NAME, TAGS_TO_EXCLUDE, USER_FIELDS } from './constants';
 import { getRevvityLibraries } from './libraries';
-import { u2 } from '@datagrok-libraries/utils/src/u2';
+import { AppHeader } from '@datagrok-libraries/u2';
+import { ViewHost } from '@datagrok-libraries/u2/dg';
 import { _package } from './package';
 import { currentQueryBuilderConfig, getPropertiesForLibAndEntityType, runSearchQuery } from './search-utils';
 import { funcs } from './package-api';
@@ -430,18 +431,20 @@ export async function getEntityPropByCorporateEntityId(propName: string, name: s
   return prop;
 }
 
-export function getAppHeader(): HTMLElement {
-  const appHeader = u2.appHeader({
-      iconPath: _package.webRoot + '/img/revvity.png',
-      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/RevvitySignalsLink/README.md',
-      description: '- Connect to your Revvity account\n' +
-        '- Run, save, and share searches\n' +
-        '- Visualize & analyze assay data: assets, batches, and more',
-      appTitle: 'RevvityLink',
-      appSubTitle: 'Access and analyze your assay data',
-      bottomLine: true
-    });
-  return appHeader;
+export function getAppHeader(view: DG.ViewBase): HTMLElement {
+  const appHeader = ViewHost.of(view).build(() => new AppHeader({
+    icon: _package.webRoot + '/img/revvity.png',
+    learnMore: 'https://github.com/datagrok-ai/public/blob/master/packages/RevvitySignalsLink/README.md',
+    items: [
+      'Connect to your Revvity account',
+      'Run, save, and share searches',
+      'Visualize & analyze assay data: assets, batches, and more',
+    ],
+    title: 'RevvityLink',
+    subtitle: 'Access and analyze your assay data',
+    bottomLine: true,
+  }));
+  return appHeader.root;
 }
 
 let latestLabel: string | undefined = undefined; //workaround since widget is re-created once search is performed and dataframe in the tv is changed

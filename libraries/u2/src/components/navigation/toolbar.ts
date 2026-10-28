@@ -1,4 +1,4 @@
-/* IDE toolbar: one compact row that collapses whole items into a » menu when it runs out of
+/* IDE toolbar: one compact row that collapses whole items into a "…" menu (More actions) when it runs out of
    width. WAI-ARIA toolbar pattern — a single tab stop with roving ←/→ focus. */
 import {Signal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
@@ -31,6 +31,10 @@ const FOCUSABLE = 'input, button, select, textarea, a[href], [tabindex]';
 const CARET = 'input:not([type=button]):not([type=checkbox]):not([type=radio]), textarea';
 
 export class Toolbar extends Control {
+  /** What every u2 row that folds its items shows for them (a toolbar, a ribbon group): the glyph and its name. */
+  static readonly OVERFLOW_ICON = 'ellipsis-h';
+  static readonly OVERFLOW_LABEL = 'More actions';
+
   private readonly _items: Item[] = [];
   private readonly _chevron = document.createElement('button');
   private _menu: Menu | undefined;
@@ -49,9 +53,9 @@ export class Toolbar extends Control {
 
     this._chevron.type = 'button';
     this._chevron.className = `u2-toolbar-btn u2-toolbar-overflow ${HIDDEN}`;
-    this._chevron.textContent = '»';
+    this._chevron.append(iconElement(Toolbar.OVERFLOW_ICON, {cls: 'u2-toolbar-icon'}));
     this._chevron.tabIndex = -1;
-    this._chevron.setAttribute('aria-label', 'More');
+    this._chevron.setAttribute('aria-label', Toolbar.OVERFLOW_LABEL);
     this._chevron.setAttribute('aria-haspopup', 'menu');
     this._chevron.setAttribute('aria-expanded', 'false');
     this.root.append(this._chevron);
@@ -114,7 +118,7 @@ export class Toolbar extends Control {
   }
 
   /** The buttons, toggles and menus, keyed by label; a toggle is selected while pressed, an item
-   * folded into the » menu is not rendered. */
+   * folded into the … (More actions) menu is not rendered. */
   getItems(): IItemsState {
     const list = this._items.filter((item) => item.kind !== 'separator' && item.kind !== 'slot').map((item, index) => ({
       key: item.label, label: item.label, index, disabled: (item.el as HTMLButtonElement).disabled,
@@ -136,7 +140,7 @@ export class Toolbar extends Control {
     text.textContent = label;
     el.append(text);
     if (options && options.tooltip)
-      Tooltip.bind(el, options.tooltip, this.scope);
+      Tooltip.bind(el, options.tooltip, {owner: this.scope});
     return el;
   }
 

@@ -1,11 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import {before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
+import {Scope} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {DomainApp} from '@datagrok-libraries/ems/src/dg';
 import type {DomainTable} from '@datagrok-libraries/ems/src/dg';
 import {gritDb, IssueRow} from '../generated/db';
 import {getGritDb, GritDb} from '../generated/db-ui';
-import {IssuesApp} from '../package';
+import {issuesOptions} from '../package';
 
 // The code tier over the generated typed handles: the Issues app opens over `getGritDb()`, the
 // table handle is a `DomainTable<IssueRow>`, the actions show under their `when`, the validator
@@ -36,19 +37,17 @@ category('Grit: issues app', () => {
     expect(issues.access.field('number'), 'readonly', 'autoNumber is engine-assigned');
   });
 
-  test('app: opens over the handle as an IssuesApp — list page, presets, shortcuts, the entity page', async () => {
-    const view = issues.app({name: 'Issues (test)', path: '/apps/Grit/IssuesTest', app: IssuesApp,
-      children: {tables: ['comment']}});
+  test('app: opens over the handle with issuesOptions — list page, presets, shortcuts, the entity page', async () => {
+    const view = issues.app({...issuesOptions, name: 'Issues (test)', path: '/apps/Grit/IssuesTest'});
     grok.shell.addView(view);
     try {
       const app = DomainApp.of(view)!;
-      expect(app instanceof IssuesApp, true);
       expect(app.page.value, 'list');
       expect(app.shortcuts['m'], 'Assign to me');
       expect(app.shortcuts['c'], 'Close');
       const ribbon = app.ribbon();
       expect(ribbon.main.length, 5, 'New, Save, Discard, the ⋯ menu, Refresh');
-      expect(ribbon.tools.length, 2, 'the search box and Sort by');
+      expect(ribbon.tools.length, 3, 'the search box, Sort by and Edit properties…');
       expect(ribbon.presets.length, 1, 'the Mine / Open switch');
       const presets = ribbon.presets[0];
       expect(('root' in presets ? presets.root : presets).dataset.u2, 'domain-presets');
@@ -65,24 +64,25 @@ category('Grit: issues app', () => {
   });
 
   test('actions: Assign to me only for a row that is not mine; Close only for an open issue', async () => {
-    const draft = issues.draft({title: 'u2 action probe'});
+    const owner = Scope.root('Grit test: actions');
+    const draft = owner.build(() => issues.draft({title: 'u2 action probe'}));
     try {
       await ready(draft);
       const row = draft.currentRow.value!;
-      const names = () => issues.actions.for(row).map((a) => a.name);
+      const names = () => issues.actions.for(row).map((a) => a.text);
       expect(names().includes('Assign to me'), true);
-      issues.actions.for(row).find((a) => a.name === 'Assign to me')!.run();
+      issues.actions.for(row).find((a) => a.text === 'Assign to me')!.run();
       expect(row.assignee, grok.shell.user.id);
       expect(names().includes('Assign to me'), false, 'hidden once the row is mine');
       const closed = await gritDb.statuses.getByKey({name: 'closed'});
       if (closed === null)
         return;
       expect(names().includes('Close'), true);
-      issues.actions.for(row).find((a) => a.name === 'Close')!.run();
+      issues.actions.for(row).find((a) => a.text === 'Close')!.run();
       expect(row.status_id, closed.id);
       expect(names().includes('Close'), false, 'hidden once closed');
     } finally {
-      draft.dispose();
+      owner.dispose();
     }
   });
 
@@ -90,7 +90,8 @@ category('Grit: issues app', () => {
     const closed = await gritDb.statuses.getByKey({name: 'closed'});
     if (closed === null)
       return;
-    const draft = issues.draft({title: 'u2 validator probe'});
+    const owner = Scope.root('Grit test: validator');
+    const draft = owner.build(() => issues.draft({title: 'u2 validator probe'}));
     try {
       await ready(draft);
       const row = draft.currentRow.value!;
@@ -98,7 +99,7 @@ category('Grit: issues app', () => {
       row.assignee = grok.shell.user.id;
       expect(issues.validators.check('status_id', closed.id, row), null);
     } finally {
-      draft.dispose();
+      owner.dispose();
     }
   });
 });

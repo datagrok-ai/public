@@ -91,7 +91,7 @@ function build<V extends DG.Viewer, S>(make: (df: DG.DataFrame, look: Partial<S>
       REPOINTING.delete(viewer);
     }
   });
-  viewer.runInScope(() => {
+  viewer.build(() => {
     for (const [name, source] of bound)
       linkWhenDeclared(viewer, name, source);
   });
@@ -108,7 +108,7 @@ const LATE_PROPERTY_MS = 25;
  * after the wait, so `link` says why, as for any unknown name. */
 function linkWhenDeclared(viewer: DG.Viewer & Control, name: string, source: Signal<unknown>): void {
   const declared = () => viewer.getProperties().some((p) => p.name === name);
-  const link = () => viewer.runInScope(() => viewer.link(name, source, isWritableSignal(source)));
+  const link = () => viewer.build(() => viewer.link(name, source, isWritableSignal(source)));
   if (declared()) {
     link();
     return;

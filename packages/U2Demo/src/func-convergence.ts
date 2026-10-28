@@ -1,10 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {signal, computed, Scope, Form, button, div, divV, divH, span, h3} from '@datagrok-libraries/u2';
-import {funcForm, FuncCallForm, ObjectForm, IProperty} from '@datagrok-libraries/u2/src/dg/index.js';
-import {kindOf} from '@datagrok-libraries/u2/src/dg/forms/object-form.js';
-import type {Kind} from '@datagrok-libraries/u2/src/dg/forms/object-form.js';
-import {AbGrid, readout} from './pages/common';
+import {funcForm, FuncCallForm, ObjectForm, IProperty, kindOf} from '@datagrok-libraries/u2/dg';
+import {abGrid, readout} from './pages/common';
 
 const RUN = 'Local mode: `grok-core local stage U2Demo`, `grok-core local watch U2Demo`, ' +
   'open http://localhost:63343/login.html?mode=local. Dev stand: `npm run debug-u2demo`, ' +
@@ -516,7 +514,7 @@ export function funcConvergencePage(): HTMLElement {
 
   /** One A/B section: both editors over one shared call, re-parented into a grid row per param
    * with its notes, and a per-section honest counter pair. */
-  async function buildAb(abCall: DG.FuncCall, abGrid: HTMLElement,
+  async function buildAb(abCall: DG.FuncCall, abHost: HTMLElement,
     toDartCount: {value: number}, toU2Count: {value: number}, tickCount: {value: number},
     rowNotes: Map<string, string[]>, catNotes?: Map<string, string>):
     Promise<{dart: DG.InputForm, form: FuncCallForm}> {
@@ -543,7 +541,7 @@ export function funcConvergencePage(): HTMLElement {
       else {
         // a dynamic-choices param has no typed prop.choices, so kindOf would answer 'string',
         // whose coerce turns null into '' — mirror the form's own routing instead
-        const kind: Kind = type === 'string' && prop.options?.['choices'] != null ?
+        const kind: ReturnType<typeof kindOf> = type === 'string' && prop.options?.['choices'] != null ?
           'choice' : kindOf(prop, true);
         reads.set(p.name, (v) => ObjectForm.coerce(kind, v));
       }
@@ -553,13 +551,13 @@ export function funcConvergencePage(): HTMLElement {
         if (input == null)
           return;
         const value = reads.get(p.name)!(p.value);
-        if (!ObjectForm.same(value, input.value.peek()))
+        if (!ObjectForm.same(value, input.peek()))
           toU2Count.value++;
       });
       scope.own(() => sub.unsubscribe());
     }
 
-    form = Scope.runWith(scope, () => funcForm(abCall, {
+    form = scope.build(() => funcForm(abCall, {
       twoWayBinding: true,
       onInputChanged: () => toDartCount.value++,
     }));
@@ -582,7 +580,7 @@ export function funcConvergencePage(): HTMLElement {
       if (prop?.name != null)
         dartByName.set(prop.name, input);
     }
-    const ab = Scope.runWith(scope, () => new AbGrid(abGrid, 'DG.InputForm.forFuncCall', 'funcForm'));
+    const ab = scope.build(() => abGrid(abHost, 'DG.InputForm.forFuncCall', 'funcForm'));
     for (const category of categories) {
       // the default group gets no invented header — only real categories announce themselves
       if (category.name !== 'Misc') {
@@ -621,7 +619,7 @@ export function funcConvergencePage(): HTMLElement {
     // moved out of their form, the u2 choices take the width it would have measured for them,
     // again when a provider's items arrive
     const roots = form.inputs.map((input) => input.root);
-    const fit = () => Form.fitChoices(abGrid, roots);
+    const fit = () => Form.fitChoices(abHost, roots);
     fit();
     const refit = new MutationObserver(fit);
     for (const root of roots)
@@ -645,7 +643,7 @@ export function funcConvergencePage(): HTMLElement {
       (form.unsupported.length === 0 ? '(none)' : form.unsupported.join(', '));
 
     const dartGate = await DG.InputForm.forFuncCall(gateCall, {twoWayBinding: true});
-    const gateForm = Scope.runWith(scope, () => funcForm(gateCall, {
+    const gateForm = scope.build(() => funcForm(gateCall, {
       twoWayBinding: true,
       onInputChanged: () => refreshGate(),
     }));
@@ -662,7 +660,7 @@ export function funcConvergencePage(): HTMLElement {
     refreshGate();
 
     const gateName = gateParam.name;
-    const gateAb = Scope.runWith(scope, () => new AbGrid(gateGrid, 'DG.InputForm.forFuncCall', 'funcForm'));
+    const gateAb = scope.build(() => abGrid(gateGrid, 'DG.InputForm.forFuncCall', 'funcForm'));
     const gateCells = [span(gateName, 'u2demo-code'), dartGate.inputs[0].root,
       gateForm.getInput(gateName)!.root];
     for (const cell of gateCells)
@@ -695,7 +693,7 @@ export function funcConvergencePage(): HTMLElement {
         ['code', [W4_NAMED]],
         ['notes', [W4_NOTES]],
       ]));
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       const blocked = computed(() =>
         w4Form.missingRequired.value.length > 0 || w4Form.invalidFields.value.length > 0);
       Scope.ambient!.effect(() => {
@@ -707,9 +705,9 @@ export function funcConvergencePage(): HTMLElement {
 
     // the slow row rides its OWN call: the async-validator fixture crashes the whole Dart
     // form build (ib:296-298), and per-row isolation keeps the crash in the left cell (#21)
-    const slowForm = Scope.runWith(scope, () => funcForm(w4SlowCall, {twoWayBinding: true}));
+    const slowForm = scope.build(() => funcForm(w4SlowCall, {twoWayBinding: true}));
     const slowDartCell = div([]);
-    const slowAb = Scope.runWith(scope, () => new AbGrid(w4SlowGrid, 'DG.InputForm.forFuncCall', 'funcForm'));
+    const slowAb = scope.build(() => abGrid(w4SlowGrid, 'DG.InputForm.forFuncCall', 'funcForm'));
     const slowCells = [span('slow', 'u2demo-code'), slowDartCell,
       slowForm.getInput('slow')!.root];
     for (const cell of slowCells)
@@ -727,7 +725,7 @@ export function funcConvergencePage(): HTMLElement {
     const w4WholeDart = divV([h3('Dart — whole form')], 'u2demo-funcs-col');
     const w4WholeU2 = divV([h3('u2 — whole form')], 'u2demo-funcs-col');
     w4Whole.append(w4WholeDart, w4WholeU2);
-    w4WholeU2.append(Scope.runWith(scope, () => funcForm(w4Call, {twoWayBinding: true})).root);
+    w4WholeU2.append(scope.build(() => funcForm(w4Call, {twoWayBinding: true})).root);
     try {
       const w4WholeDartForm = await DG.InputForm.forFuncCall(w4Call, {twoWayBinding: true});
       w4WholeDart.append(w4WholeDartForm.root);
@@ -736,7 +734,7 @@ export function funcConvergencePage(): HTMLElement {
       w4WholeDart.append(span(String(e?.message ?? e), 'u2demo-error'));
     }
 
-    plain.append(Scope.runWith(scope, () => funcForm(demoFunc!.prepare())).root);
+    plain.append(scope.build(() => funcForm(demoFunc!.prepare())).root);
     // the Dart form writes computed defaults (and the table auto-fill and column auto-picks)
     // during forFuncCall, before the tick subscriptions exist — re-read the calls once so the
     // `inputs` lines start honest

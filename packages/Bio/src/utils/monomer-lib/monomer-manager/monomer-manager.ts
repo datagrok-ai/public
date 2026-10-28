@@ -11,11 +11,11 @@ import {DEFAULT_FILES_LIB_PROVIDER_NAME, findProviderWithLibraryName, IMonomerLi
 import {DUMMY_MONOMER, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {mostSimilarNaturalAnalog} from '@datagrok-libraries/bio/src/utils/macromolecule/monomers';
 import {ChoiceInput, Dialog, Form, TextInput, span} from '@datagrok-libraries/u2';
-import {host} from '@datagrok-libraries/u2/src/dg/index.js';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 
 import {MonomerLibManager} from '../lib-manager';
 import {attachMonomerManagerAi} from '../ai-functions';
-import {MonomerEditor} from './monomer-editor';
+import {MonomerEditor, canonicalize, monomerEditor, monomerTypeOf, polymerTypeOf} from './monomer-editor';
 import {CapGroups} from './cap-groups';
 
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
@@ -207,8 +207,6 @@ export class MonomerManager implements IMonomerManager {
   private _newMonomer: Monomer = DUMMY_MONOMER;
   /** The editor docked in the open view; made with the view and disposed when it closes. */
   private _editor: MonomerEditor | null = null;
-  /** Whether the editor has been docked yet — until then it is not in the page and not closed either. */
-  private _editorDocked = false;
   private monomerLib: IMonomerLib;
   private tv: DG.TableView | null = null;
   /** The library the grid shows. */
@@ -298,7 +296,7 @@ export class MonomerManager implements IMonomerManager {
       placeholder: 'Enter collection description', tooltipText: 'Description of the monomer collection'});
     const saveAs = async (name: string, symbols: string[], action: string) => {
       try {
-        await this.monomerLibManamger.addOrUpdateMonomerCollection(name, symbols, descriptionInput.value.peek() || undefined);
+        await this.monomerLibManamger.addOrUpdateMonomerCollection(name, symbols, descriptionInput.peek() || undefined);
         grok.shell.info(`Collection ${name} saved successfully`);
       } catch (e) {
         grok.shell.error(`Error ${action} monomer collection`);
@@ -308,7 +306,7 @@ export class MonomerManager implements IMonomerManager {
     Dialog.create('Create New Monomer Collection', {name: 'newCollectionDialog'})
       .add(new Form().addAll([nameInput, descriptionInput]))
       .onOK(async () => {
-        const name = nameInput.value.peek().trim();
+        const name = nameInput.peek().trim();
         if (!existingCollections.includes(name.toLowerCase()) && !existingCollections.includes(`${name.toLowerCase()}.json`))
           return await saveAs(name, monomerSymbols, 'creating');
         Dialog.create('Collection already exists', {name: 'collectionExistsDialog'})
@@ -337,15 +335,15 @@ export class MonomerManager implements IMonomerManager {
     const bare = (name: string) => name.trim().replace(/\.json$/i, '').toLowerCase();
     // a file library is listed and picked with its .json; a database one under its name as it is
     const fileName = () => {
-      const name = libNameInput.value.peek().trim();
-      return providerInput.value.peek() !== DEFAULT_FILES_LIB_PROVIDER_NAME || name.toLowerCase().endsWith('.json') ?
+      const name = libNameInput.peek().trim();
+      return providerInput.peek() !== DEFAULT_FILES_LIB_PROVIDER_NAME || name.toLowerCase().endsWith('.json') ?
         name : `${name}.json`;
     };
     libNameInput.addValidator((value) => monomerLibs.some((lib) => bare(lib) === bare(value)) ?
       'A library with this name already exists' : null);
     Dialog.create('Create New Library', {name: 'newLibraryDialog'})
       .add(new Form().addAll([libNameInput, providerInput]))
-      .onOK(() => this.createNewMonomerLib(providerInput.value.peek()!, fileName(), monomers ?? []), {text: 'Create'})
+      .onOK(() => this.createNewMonomerLib(providerInput.peek()!, fileName(), monomers ?? []), {text: 'Create'})
       .show();
   }
 
@@ -375,9 +373,6 @@ export class MonomerManager implements IMonomerManager {
   }
 
   private get editor(): MonomerEditor {
-    // a panel closed through the API (dockManager.close) is gone without the platform's kill: dispose it
-    if (this._editor && this._editorDocked && !this._editor.root.isConnected)
-      this._editor.dispose();
     if (this._editor)
       return this._editor;
     const tv = this.tv;
@@ -399,10 +394,10 @@ export class MonomerManager implements IMonomerManager {
         set[key] = text(key);
       else if (key === 'id')
         set.id = fields.id == null ? null : Number(fields.id);
-      else if (key === 'polymerType' && MonomerEditor.polymerTypeOf(text(key)))
-        set.polymerType = MonomerEditor.polymerTypeOf(text(key));
-      else if (key === 'monomerType' && MonomerEditor.monomerTypeOf(text(key)))
-        set.monomerType = MonomerEditor.monomerTypeOf(text(key));
+      else if (key === 'polymerType' && polymerTypeOf(text(key)))
+        set.polymerType = polymerTypeOf(text(key));
+      else if (key === 'monomerType' && monomerTypeOf(text(key)))
+        set.monomerType = monomerTypeOf(text(key));
       else if (/^R\d+$/.test(key))
         caps.push(key);
       else
@@ -625,7 +620,7 @@ export class MonomerManager implements IMonomerManager {
           rgroups = [];
         }
         try {
-          cappedCol.set(i, CapGroups.capped(smiles, rgroups, MonomerEditor.canonicalize), false);
+          cappedCol.set(i, CapGroups.capped(smiles, rgroups, canonicalize), false);
         } catch (e) {
           console.error(`Error capping monomer at row ${i}`, e);
         }
@@ -662,7 +657,8 @@ export class MonomerManager implements IMonomerManager {
    * closed and the editor is asked for. */
   private _dockEditor(): MonomerEditor {
     const tv = this.tv!;
-    const editor = new MonomerEditor({
+    const host = ViewHost.of(tv);
+    const editor = host.build(() => monomerEditor({
       libManager: this.monomerLibManamger,
       activeLib: () => this.activeMonomerLib,
       monomersDf: () => this.tv?.dataFrame,
@@ -680,9 +676,8 @@ export class MonomerManager implements IMonomerManager {
         }
       },
       createLibrary: () => this.createNewLibDialog(),
-    }, this._libraries, this._libName ?? this._libraries[0]);
+    }, this._libraries, this._libName ?? this._libraries[0]));
     this._editor = editor;
-    this._editorDocked = false;
     editor.own(() => {
       if (this._editor === editor)
         this._editor = null;
@@ -690,8 +685,7 @@ export class MonomerManager implements IMonomerManager {
     ui.tools.waitForElementInDom(tv.root).then(() => {
       // the editor needs room for the sketcher and Save: 40% of the view, never under 420 px
       const ratio = Math.min(0.7, Math.max(0.4, MonomerManager.EDITOR_MIN_WIDTH / Math.max(1, tv.root.clientWidth)));
-      tv.dockManager.dock(host(editor), DG.DOCK_TYPE.LEFT, null, undefined, ratio);
-      this._editorDocked = true;
+      host.dock(editor, DG.DOCK_TYPE.LEFT, {ratio});
     });
     return editor;
   }
@@ -1106,7 +1100,7 @@ export async function monomerFromDfRow(dfRow: DG.Row): Promise<Monomer> {
 
   try {
     if (!naturalAnalog && polymerType) {
-      const mostSimilar = await mostSimilarNaturalAnalog(CapGroups.capped(smiles, rGroups, MonomerEditor.canonicalize),
+      const mostSimilar = await mostSimilarNaturalAnalog(CapGroups.capped(smiles, rGroups, canonicalize),
         polymerType);
       if (mostSimilar)
         naturalAnalog = mostSimilar;

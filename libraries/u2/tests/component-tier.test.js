@@ -4,7 +4,7 @@
    property. The designer sites the tier reaches — the panel's live values and the async designer
    actions — are exercised here too, over `tests/dg-stub.mjs`. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from './dom-shim.js';
@@ -112,9 +112,9 @@ tier('propertyTarget: a meta-stamped component is its own target, and its proper
   assert.equal(input.propertyTier, false, 'the tier is off for a plain component');
   assert.equal(input.propertyTarget, input);
   const [value] = input.getProperties();
-  assert.equal(value.get(input.propertyTarget), input.value.value);
+  assert.equal(value.get(input.propertyTarget), input.value);
   value.set(input.propertyTarget, 'y');
-  assert.equal(input.value.value, 'y');
+  assert.equal(input.value, 'y');
   assert.equal(input.getProperties().find((p) => p.name === 'nope'), undefined);
   assert.deepEqual(input.bindProps().map((p) => p.name), ['value'], 'bindProps unchanged with the tier off');
   input.dispose();
@@ -242,12 +242,12 @@ tier('designer actions: an async produce applies on a patch, nothing on null, an
   const reg = new Registry();
   const seen = [];
   reg.register({...GAUGE, create: () => new Gauge({level: 1, unit: 'mg'}), designerActions: [
-    {name: 'Set level', produce: async (node, built) => {
+    {text: 'Set level', produce: async (node, built) => {
       seen.push(built);
       return {op: 'set-prop', name: 'level', value: 5};
     }},
-    {name: 'Cancelled', produce: () => Promise.resolve(null)},
-    {name: 'Styled', icon: 'paint-brush', produce: () => null},
+    {text: 'Cancelled', produce: () => Promise.resolve(null)},
+    {text: 'Styled', icon: 'paint-brush', produce: () => null},
   ]});
   const node = {tag: 'u2-gauge', name: 'g'};
   const instance = renderSpec({$schema: 'dg-ui/1', root: node}, new SpecContext(), reg);
@@ -269,7 +269,7 @@ tier('designer actions: an async produce applies on a patch, nothing on null, an
   await flush();
   assert.deepEqual(applied, [{op: 'set-prop', node, name: 'level', value: 5}]);
   assert.equal(seen[0], instance.nodes().get(node), 'produce receives what the node built');
-  const icons = Object.fromEntries(actions.actions().map((a) => [a.name, a.icon]));
+  const icons = Object.fromEntries(actions.actions().map((a) => [a.text, a.icon]));
   assert.equal(icons.Styled, 'paint-brush', 'a registry verb carries its own icon');
   assert.equal(icons['Set level'], undefined, 'and none is made up for one that does not');
   instance.dispose();
@@ -280,7 +280,7 @@ tier('Component.init on a foreign object: own state under _u2, nothing else touc
   foreign._properties = 'platform';
   foreign._functions = 'platform';
   const owner = new Scope();
-  Scope.runWith(owner, () => Component.init(foreign));
+  owner.build(() => Component.init(foreign));
   assert.equal(foreign._properties, 'platform');
   assert.equal(foreign._functions, 'platform');
   assert.equal(foreign.scope instanceof Scope, true);

@@ -1,4 +1,4 @@
-import {signal, computed, Signal, ReadonlySignal, untracked} from './signals.js';
+import {signal, computed, Signal, ReadonlySignal, untracked, isWritableSignal} from './signals.js';
 import {Scope} from './scope.js';
 import {bindTypeOf, ITEMS_CAP} from './widget-like.js';
 import type {BindProp, BindSource, ObservableLike, IItemState, IItemsState} from './widget-like.js';
@@ -6,10 +6,13 @@ import {Control} from './component.js';
 import {div, label, span} from './elements.js';
 import {Tooltip} from './tooltip.js';
 import {EMPTY, isEmpty} from './text.js';
+import {Reason} from './reason.js';
 import type {IWidgetStatus} from './widget-like.js';
 
 /** An input chrome option: a literal applied once, or a signal followed live (UB-10). */
 export type LiveOption<T> = T | ReadonlySignal<T>;
+
+const EDIT_OPTION = 'u2-input-edit-option';
 
 /** The literal a chrome option carries — undefined where it is a signal or absent. */
 export function labelText(x?: LiveOption<string>): string | undefined {
@@ -26,8 +29,9 @@ export interface InputOptions<T> {
   /** Compact editor-only variant: no label, one inline-control-height row. */
   inline?: boolean;
   nullable?: boolean;
-  /** `false` grays the input out and blocks edits; live through the {@link Input.enabled} accessor. */
-  enabled?: LiveOption<boolean>;
+  /** WHY the input is off — greyed out, edits blocked, the reason as its tooltip and accessible description;
+   * `null` or `''` while it is on. A signal is followed live; {@link Input.disabled} reads and writes it. */
+  disabled?: Reason;
   /** Units or any short suffix shown after the editor (Dart `InputBase.addPostfix`). */
   postfix?: LiveOption<string>;
   /** Runs after each change of the value, owned by whoever built the input (the ambient scope at
@@ -53,13 +57,17 @@ export interface InputOptions<T> {
   visible?: LiveOption<boolean>;
   /** Shows the value and lets it be selected and copied, but blocks edits; live. */
   readOnly?: LiveOption<boolean>;
-  /** An empty value ({@link Input.isEmptyValue}) is invalid; live. `nullable: false` implies it. The
-   * verdict shows once the input was edited or left, or its form validated ({@link Input.touch}). */
+  /** An empty value ({@link Input.isEmptyValue}) is invalid, and the caption carries the asterisk; live. The
+   * verdict shows once the input was edited or left, or its form validated ({@link Input.touch}). `nullable:
+   * false` refuses an empty value too, without the asterisk: a choice that always holds a value is not a field
+   * to fill in. */
   required?: LiveOption<boolean>;
-  /** Enter in the editor: handled here, never seen by the form or dialog around the input. */
-  onEnter?: (e: KeyboardEvent, input: Input<T>) => void;
-  /** Escape in the editor: handled here, never seen by the dialog around the input. */
-  onEscape?: (e: KeyboardEvent, input: Input<T>) => void;
+  /** Enter in the editor: handled here, never seen by the form or dialog around the input — unless the handler
+   * answers `false`, which leaves the key to them. A promise is waited for by nobody: its failure is reported. */
+  onEnter?: (e: KeyboardEvent, input: Input<T>) => boolean | void | Promise<void>;
+  /** Escape in the editor: handled here, never seen by the dialog around the input — unless the handler answers
+   * `false`, which leaves the key to it (the dialog cancels). */
+  onEscape?: (e: KeyboardEvent, input: Input<T>) => boolean | void | Promise<void>;
   /** The editor fills the row, as the text editors do in a wide form. */
   fill?: boolean;
   /** The editor's own width — px, or any CSS length — in every layout and in any form, over the widths
@@ -82,7 +90,8 @@ export type Validator<T> = (value: T) => string | null;
  * label included, as `d4.css:130-134` does — with `.u2-input-box:hover` covering the bridged case,
  * where only the box is mounted and the label belongs to the platform. */
 export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> extends Control {
-  readonly value: Signal<T>;
+  /** The value's signal, for wiring: `bind`, `span(input.signal)`, a `computed` that hands it on. */
+  readonly signal: Signal<T>;
   /** The verdict on the value: a validator's message, or "Value can't be empty" for an empty
    * required one — from the start, touched or not. What Save and the form's validity go by. */
   readonly validity: ReadonlySignal<string | null>;
@@ -96,6 +105,8 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   protected readonly options: O;
   private static _systemWrites = 0;
   private readonly _validators: Validator<T>[] = [];
+  /** Bumped by {@link addValidator}: the validation effect re-runs and follows what the new validator reads. */
+  private readonly _validatorCount = signal(0);
   private readonly _validity = signal<string | null>(null);
   private readonly _error = span('', 'u2-input-error');
   private readonly _editor: HTMLElement;
@@ -106,9 +117,10 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   private readonly _tooltipOn = new Set<HTMLElement>();
   private _postfixEl: HTMLElement | undefined;
   private _liveBinds: Map<string, Signal<unknown>> | undefined;
-  private readonly _enabled = signal(true);
+  private readonly _offReason = signal<string | null>(null);
   private readonly _shown = signal(true);
-  private readonly _required = signal(false);
+  /** Unset (undefined) until `required` is given: then `nullable: false` alone refuses an empty value. */
+  private readonly _required = signal<boolean | undefined>(undefined);
   private readonly _touched = signal(false);
   private _readOnly = false;
   private _guarded = false;
@@ -126,7 +138,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   constructor(options: O, defaultValue: T) {
     super();
     this.options = options;
-    this.value = options.bind ?? signal(options.value ?? defaultValue);
+    this.signal = options.bind ?? signal(options.value ?? defaultValue);
     this.validity = this._validity;
     this.touched = this._touched;
     this.error = computed(() => this._touched.value ? this._validity.value : null);
@@ -147,7 +159,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     this._optionsRail = div([], 'u2-input-options');
     this._optionsRail.dataset.u2Part = 'options';
     this._error.dataset.u2Part = 'error';
-    this._editor = this.runInScope(() => this.createEditor());
+    this._editor = this.build(() => this.createEditor());
     this._editor.classList.add('u2-input-editor');
     this._editor.dataset.u2Part = 'editor';
     if (options.width !== undefined) {
@@ -173,42 +185,44 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
       if (!this._postfixEl) {
         if (!x)
           return; // an empty postfix never materializes the span or its rail
-        this.addOptions(this._postfixEl = span('', 'u2-input-postfix'));
+        this.addRail(this._postfixEl = span('', 'u2-input-postfix'));
       }
       this._postfixEl.textContent = x;
     });
-    // `enabled: true` runs no sweep — internals a subclass disabled in createEditor must survive
-    this.liveOption('enabled', options.enabled, (x) => {
-      if (x === false)
-        this.enabled = false;
-      else if (!this._enabled.peek())
-        this.enabled = true;
+    // on from the start runs no sweep — internals a subclass disabled in createEditor must survive
+    this.liveOption('disabled', options.disabled, (x) => {
+      const reason = Reason.now(x);
+      if (reason !== null || this._offReason.peek() !== null)
+        this.disabled = reason;
     });
     this.liveOption('visible', options.visible, (x) => this.visible = x);
     this.liveOption('readOnly', options.readOnly, (x) => this.readOnly = x);
-    this.liveOption('required', options.required ?? (options.nullable === false ? true : undefined),
-      (x) => this.required = x);
+    this.liveOption('required', options.required, (x) => this.required = x);
+    if (options.nullable === false)
+      this._wireTouch();
 
-    this.effect(() => this._validate(this.value.value));
+    this.effect(() => {
+      this._validatorCount.value;
+      this._validate(this.value);
+    });
     this.effect(() => this._showValidity(this.error.value));
     if (options.onChanged)
-      this._onChanged = Input.bindOwned(this.scope, options.onChanged) as (value: T, input: Input<T>) => void;
+      this._onChanged = Input.bindOwned(options.onChanged, {owner: this.scope}) as (value: T, input: Input<T>) => void;
     if (options.onInput)
-      this._onUserInput = Input.bindOwned(this.scope, options.onInput) as (value: T, input: Input<T>) => void;
+      this._onUserInput = Input.bindOwned(options.onInput, {owner: this.scope}) as (value: T, input: Input<T>) => void;
     if (options.onChanged || options.onInput)
       this._watchChanges();
     const {onEnter, onEscape} = options;
     if (onEnter || onEscape) {
-      const keys: Record<string, ((e: KeyboardEvent, input: Input<T>) => void) | undefined> = {
-        Enter: onEnter && Input.bindOwned(this.scope, onEnter),
-        Escape: onEscape && Input.bindOwned(this.scope, onEscape)};
+      const keys: Record<string, ((e: KeyboardEvent, input: Input<T>) => boolean | void | Promise<void>) | undefined> = {
+        Enter: onEnter && Input.bindOwned(onEnter, {owner: this.scope}),
+        Escape: onEscape && Input.bindOwned(onEscape, {owner: this.scope})};
       this.scope.listen(target, 'keydown', (e) => {
         const handler = keys[(e as KeyboardEvent).key];
-        if (handler === undefined || (e as KeyboardEvent).isComposing)
+        if (handler === undefined || (e as KeyboardEvent).isComposing || handler(e as KeyboardEvent, this) === false)
           return;
         e.preventDefault();
         e.stopPropagation();
-        handler(e as KeyboardEvent, this);
       });
     }
   }
@@ -224,11 +238,13 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     return (proto === Object.prototype || proto === null) && Object.keys(value as object).length === 0;
   }
 
-  /** `fn` run as {@link Scope.bind} runs it, in the scope building the caller — or in `own` where none
+  /** `fn` run as {@link Scope.bind} runs it, in the scope building the caller — or in `owner`'s where none
    * is, or once that one is gone: a dialog adopts its content and keeps it on screen past its builder,
    * and the callbacks must not go quiet. */
-  static bindOwned<A extends unknown[], R>(own: Scope, fn: (...args: A) => R): (...args: A) => R | undefined {
+  static bindOwned<A extends unknown[], R>(fn: (...args: A) => R,
+    options: {owner: Scope}): (...args: A) => R | undefined {
     const owner = Scope.ambient;
+    const own = options.owner;
     const fallback = own.bind(fn);
     if (owner === undefined || owner === own)
       return fallback;
@@ -250,7 +266,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     this._watching = true;
     let initial = true;
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       const followed = this._followed;
       const system = this._system;
       this._followed = undefined;
@@ -306,10 +322,10 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   follow(read: () => T): this {
     return this.effect(() => {
       const value = read();
-      if (Object.is(value, this.value.peek()))
+      if (Object.is(value, this.peek()))
         return;
       this._followed = {value};
-      Input.system(() => this.value.value = value);
+      Input.system(() => this.value = value);
     });
   }
 
@@ -333,12 +349,32 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
    * batch flushes after {@link system}'s counter has dropped). */
   protected systemWrite(value: T): void {
     this._system = {value};
-    Input.system(() => this.value.value = value);
+    Input.system(() => this.value = value);
   }
 
   /** True while a {@link system} write is running. */
   static get isSystemWrite(): boolean {
     return Input._systemWrites > 0;
+  }
+
+  /** The value: read inside an `effect` or a `computed`, it is followed; set it to change it. */
+  get value(): T {
+    return this.signal.value;
+  }
+
+  set value(x: T) {
+    this.signal.value = x;
+  }
+
+  /** The value, not followed by the effect or computed reading it. */
+  peek(): T {
+    return this.signal.peek();
+  }
+
+  /** The editor holds text the value cannot carry (`abc` in a number field): the value keeps its last one and the
+   * validity says why. Not empty, and an unsaved edit to a form comparing values; followed like {@link value}. */
+  get unreadable(): boolean {
+    return false;
   }
 
   get nullable(): boolean {
@@ -387,9 +423,9 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   getState(): ReturnType<Control['getState']> {
     const error = this._validity.peek();
     const placeholder = this._placeholder();
-    return {...super.getState(), value: Control.jsonValue(this.value.peek()) ?? null, text: this.displayText(),
+    return {...super.getState(), value: Control.jsonValue(this.peek()) ?? null, text: this.displayText(),
       valid: error === null, error: this._error.textContent || null, readOnly: this._readOnly,
-      required: this._required.peek(), ...placeholder ? {placeholder} : {}};
+      required: this._required.peek() === true, ...placeholder ? {placeholder} : {}};
   }
 
   get visible(): boolean {
@@ -402,10 +438,10 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   }
 
   /** Whether a form counts this input's verdict: visible — no `hidden` on the root or above it —
-   * and enabled. Reads signals, so a computed over it follows {@link visible} and {@link enabled};
+   * and on. Reads signals, so a computed over it follows {@link visible} and {@link disabled};
    * an ancestor hidden by other means is seen on the next read. */
   get validates(): boolean {
-    return this._shown.value && this._enabled.value && this.root.closest('[hidden]') === null;
+    return this._shown.value && this._offReason.value === null && this.root.closest('[hidden]') === null;
   }
 
   get readOnly(): boolean {
@@ -422,6 +458,8 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
       this.focusTarget.setAttribute('aria-readonly', 'true');
     else
       this.focusTarget.removeAttribute('aria-readonly');
+    for (const option of this._optionsRail.querySelectorAll(`:scope > .${EDIT_OPTION}`))
+      Input._offWhileReadOnly(option, x);
     for (const el of this.root.querySelectorAll<HTMLInputElement>('input, textarea')) {
       if (Input._typed(el))
         el.readOnly = x;
@@ -435,13 +473,15 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   }
 
   get required(): boolean {
-    return this._required.peek();
+    return this._required.peek() === true;
   }
 
-  /** `aria-required` on the {@link focusTarget}, and an empty value fails the input — shown once it
-   * is {@link touch}ed. */
+  /** `aria-required` on the {@link focusTarget}, the asterisk on the caption (`u2-input-required`), and
+   * an empty value fails the input — shown once it is {@link touch}ed. Set, it rules over `nullable: false`:
+   * `false` lets an empty value through (a form that judges emptiness itself). */
   set required(x: boolean) {
     this._required.value = x;
+    this.root.classList.toggle('u2-input-required', x);
     if (x)
       this.focusTarget.setAttribute('aria-required', 'true');
     else
@@ -463,7 +503,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     // a pick in a popup the input opened (a combobox list, a type-ahead) fires nothing at the root
     let initial = true;
     this.effect(() => {
-      this.value.value;
+      this.value;
       if (initial)
         initial = false;
       else if (this._byUser())
@@ -501,9 +541,9 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   reset(value: T): void {
     this._touched.value = false;
     this._engaged = false;
-    if (!Object.is(value, this.value.peek())) {
+    if (!Object.is(value, this.peek())) {
       this._followed = {value};
-      Input.system(() => this.value.value = value);
+      Input.system(() => this.value = value);
     }
     this.resetEditor();
   }
@@ -518,15 +558,29 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     this._touched.value = true;
   }
 
-  /** Focuses the editor — the {@link focusTarget}, or the first focusable control inside it. */
-  focus(): void {
+  /** Focuses the editor — the {@link focusTarget}, or the first focusable control inside it; `select` selects the
+   * text a text editor holds, so typing replaces it (a rename). */
+  focus(options?: {select?: boolean}): void {
     const target = this.focusTarget;
     const focusable = target.matches(Input._FOCUSABLE) ? target :
       target.querySelector<HTMLElement>(Input._FOCUSABLE) ?? target;
     focusable.focus();
+    if (options?.select && Input._typed(focusable))
+      (focusable as HTMLInputElement).select();
   }
 
   private static readonly _FOCUSABLE = 'input, textarea, select, button, [tabindex]';
+
+  /** Why an option that edits is off while the input is read-only. */
+  static readonly READ_ONLY = 'Read-only';
+
+  // a keyboard user is not handed a button that does nothing; one off for a reason of its own keeps it
+  private static _offWhileReadOnly(option: Element, readOnly: boolean): void {
+    for (const el of [option, ...option.querySelectorAll('button')] as HTMLElement[]) {
+      if (Reason.of(el) === (readOnly ? null : Input.READ_ONLY))
+        Reason.apply(el, readOnly ? Input.READ_ONLY : null);
+    }
+  }
 
   /** Input types without free text: native `readOnly` does not apply to them. */
   private static readonly _UNTYPED = ['checkbox', 'radio', 'range', 'button', 'submit', 'reset', 'color', 'file',
@@ -541,7 +595,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   /** Read-only: a free-text field keeps the caret, selection, Tab, Escape and Enter; every other
    * gesture — a click on a box, a stepping key or the wheel on a number, a toggle key — ends here. */
   private _guard(e: Event): void {
-    if (!this._readOnly)
+    if (!this._readOnly || this._freeOption(e.target))
       return;
     const typed = Input._typed(e.target);
     const key = (e as KeyboardEvent).key;
@@ -554,6 +608,13 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     if (e.type !== 'wheel')
       e.preventDefault();
     e.stopImmediatePropagation();
+  }
+
+  /** On a control of this input's options rail that does not edit the value ({@link addOptions}). */
+  private _freeOption(target: EventTarget | null): boolean {
+    const option = (target as Element | null)?.closest?.('.u2-input-options > *');
+    return option != null && option.parentElement!.parentElement === this._inputBox &&
+      !option.classList.contains(EDIT_OPTION);
   }
 
   /** The value as the user reads it: the chosen option's caption, the text in the editor, a checkbox's
@@ -611,45 +672,59 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   }
 
   private _bindTooltip(): void {
-    const el = this._labelEl ?? this.root;
-    if (!this._tooltip || this._tooltipOn.has(el))
+    if (this._tooltip)
+      this._tip(this._labelEl ?? this.root);
+  }
+
+  private _tip(el: HTMLElement): void {
+    if (this._tooltipOn.has(el))
       return;
     this._tooltipOn.add(el);
-    // a root bound before its caption existed yields to the caption's own binding
-    Tooltip.bind(el, () => el === this.root && this._labelEl ? '' : this._tooltip, this.scope);
+    // while off, the reason over the whole input; else a root bound before its caption existed yields to the caption
+    Tooltip.bind(el, () => this._offReason.peek() ?? (el === this.root && this._labelEl ? '' : this._tooltip),
+      {owner: this.scope});
   }
 
-  get enabled(): boolean {
-    return this._enabled.peek();
+  /** Why the input is off — `null` while it is on. */
+  get disabled(): string | null {
+    return this._offReason.peek();
   }
 
-  set enabled(x: boolean) {
-    this._enabled.value = x;
-    this.root.classList.toggle('u2-input-disabled', !x);
-    if (x)
-      this.root.removeAttribute('aria-disabled');
-    else
-      this.root.setAttribute('aria-disabled', 'true');
+  /** Off with `reason` — greyed out, edits blocked, the reason as its tooltip and in `aria-description` — or on
+   * with `null` (or `''`). */
+  set disabled(reason: string | null) {
+    const off = reason === '' ? null : reason;
+    this._offReason.value = off;
+    this.root.classList.toggle('u2-input-disabled', off !== null);
+    Reason.apply(this.root, off);
+    if (off !== null)
+      this._tip(this.root);
     // the native attribute, a u2 button's too: inside a disabled input nothing is a tab stop
     const controls = this.root.querySelectorAll('input, textarea, button, select');
     for (let i = 0; i < controls.length; i++) {
-      if (x)
+      if (off === null)
         controls[i].removeAttribute('disabled');
       else
         controls[i].setAttribute('disabled', '');
     }
   }
 
+  /** The validators run inside the input's validation effect: one that reads another input or any other signal
+   * (`to.value`) re-judges this input when that changes, from the moment it is added. They run after the required
+   * check — an empty value `required` refuses never reaches them. */
   addValidator(v: Validator<T>): void {
     this._validators.push(v);
     this._wireTouch();
-    this._validate(this.value.peek());
+    untracked(() => {
+      this._validate(this.peek());
+      this._validatorCount.value++;
+    });
   }
 
-  /** Re-runs the validators against the current value — for a validator whose verdict depends
-   * on state beyond the value itself, after that state moved under an unchanged value. */
+  /** Re-runs the validators against the current value — for a validator whose verdict depends on state that is
+   * not a signal (a plain field, a cache), after that state moved under an unchanged value. */
   revalidate(): void {
-    this._validate(this.value.peek());
+    untracked(() => this._validate(this.peek()));
   }
 
   /** The editor together with its options rail — what the platform bridge hands to a Dart form,
@@ -677,12 +752,22 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     });
   }
 
+  /** '' and `value` answer {@link signal}: the engine looks for a signal member named `value`. */
   bindStep(name: string): Signal<unknown> | BindSource | null {
+    if (name === '' || name === 'value')
+      return this.signal as Signal<unknown>;
     return this._liveBinds?.get(name) ?? super.bindStep(name);
   }
 
   bindProps(): BindProp[] {
     const props = super.bindProps();
+    const meta = this.componentMeta?.props ?? [];
+    const at = meta.findIndex((p) => p.name === 'value');
+    if (at >= 0 && !props.some((p) => p.name === 'value')) {
+      const later = new Set(meta.slice(at + 1).map((p) => p.name));
+      const i = props.findIndex((p) => later.has(p.name));
+      props.splice(i < 0 ? props.length : i, 0, {...meta[at], writable: isWritableSignal(this.signal), default: true});
+    }
     for (const [name, sig] of this._liveBinds ?? []) {
       if (!props.some((p) => p.name === name))
         props.push({name, type: bindTypeOf(sig.peek()), writable: false}); // one-way (UB-10)
@@ -704,41 +789,63 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   }
 
   /** What `required` refuses: {@link isEmpty}, unless the value has its own nothing — a filter
-   * without conditions. */
+   * without conditions. An editor holding text it cannot read is not empty: its own check speaks. */
   protected isEmptyValue(value: T): boolean {
-    return Input.isEmpty(value);
+    return !this.unreadable && Input.isEmpty(value);
   }
 
-  /** Puts an icon, a swatch or any other side control on the options rail, as Dart's
-   * `InputBase.addOptions` does. The rail materializes with its first child, so an input with
-   * nothing to put there keeps the platform's bare `[label][editor]` row. */
-  addOptions(el: HTMLElement): void {
+  protected get emptyMessage(): string {
+    return EMPTY;
+  }
+
+  /** Puts a side control — an icon button or a link — on the options rail, as Dart's `InputBase.addOptions`
+   * does. The rail materializes with its first child, so an input with nothing to put there keeps the platform's
+   * bare `[label][editor]` row. An option works while the input is read-only (a download, a pencil that turns
+   * editing on) unless `edits`: it changes the value, as a stepper or a picker does, and read-only stops it. The
+   * rail is one row of icons: an element shown as the value — a drawing, a preview — is a `DynamicInput`. */
+  addOptions(option: HTMLButtonElement | HTMLAnchorElement, options?: {edits?: boolean}): void {
+    this.addRail(option, options);
+  }
+
+  // what an input puts on its rail itself: its postfix, a swatch, a stepper
+  protected addRail(el: HTMLElement, options?: {edits?: boolean}): void {
+    if (options?.edits) {
+      el.classList.add(EDIT_OPTION);
+      if (this._readOnly)
+        Input._offWhileReadOnly(el, true);
+    }
     this._optionsRail.append(el);
     if (this._optionsRail.parentElement === null)
       this._inputBox.append(this._optionsRail);
   }
 
   /** Re-applies the disabled state to controls a subclass rebuilt after construction — a fresh
-   * `<input>` is enabled until told otherwise. */
-  protected refreshEnabled(): void {
-    if (!this._enabled.peek())
-      this.enabled = false;
+   * `<input>` is on until told otherwise. */
+  protected refreshDisabled(): void {
+    const reason = this._offReason.peek();
+    if (reason !== null)
+      this.disabled = reason;
     if (this._readOnly)
       this.readOnly = true;
   }
 
-  /** The added validators first; the required check speaks only when they have nothing to say. */
+  /** The required check first: an empty value it refuses says so, and the added validators never see it — a format
+   * check need not pass on nothing. */
   private _validate(value: T): void {
+    const empty = this.isEmptyValue(value);
+    // a quiet host keeps an empty editor's underline: there has to be something to type into
+    this.root.classList.toggle('u2-input-empty', empty);
+    if (empty && (this._required.value ?? this.options.nullable === false)) {
+      this._validity.value = this.emptyMessage;
+      return;
+    }
     let message: string | null = null;
     for (const validator of this._validators) {
       message = validator(value);
       if (message)
         break;
     }
-    const empty = this.isEmptyValue(value);
-    // a quiet host keeps an empty editor's underline: there has to be something to type into
-    this.root.classList.toggle('u2-input-empty', empty);
-    this._validity.value = !message && this._required.value && empty ? EMPTY : message || null;
+    this._validity.value = message || null;
   }
 
   private _showValidity(message: string | null): void {

@@ -122,10 +122,13 @@ export function dfBindings(df: ReadonlySignal<DataFrameLike | undefined>, scope:
         rowIdx.value = d.currentRowIdx;
         refreshColumns();
       })));
-      subs.push(d.onValuesChanged.subscribe(() => batch(() => {
+      // a row added or removed fires its own event, never onValuesChanged
+      const changed = () => batch(() => {
         bump(dataVersion);
         refreshColumns();
-      })));
+      });
+      subs.push(d.onValuesChanged.subscribe(changed), d.onRowsAdded.subscribe(changed),
+        d.onRowsRemoved.subscribe(changed));
       subs.push(d.onSelectionChanged.subscribe(() => selection.set(d.selection)));
       subs.push(d.onFilterChanged.subscribe(() => filter.set(d.filter)));
       subs.push(d.onColumnsChanged.subscribe(() => bump(columnsVersion)));

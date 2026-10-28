@@ -1,3 +1,3 @@
-.stockroom-locations > .u2-splitter-panel > .u2-section {
+.stockroom-locations .stockroom-pane {
   padding: 0 var(--dg-space-m);
 }

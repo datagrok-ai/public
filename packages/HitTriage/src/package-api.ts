@@ -30,6 +30,27 @@ export namespace queries {
   }
 
   /**
+   * Get the last save time of every campaign of an app.
+   */
+  export async function getLastModifiedAll(appName: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('HitTriage:GetLastModifiedAll', { appName });
+  }
+
+  /**
+   * Drop the caller's lock without logging a save: the campaign was not written under it. A lock another session holds stays.
+   */
+  export async function dropCampaignLock(appName: string , campaignId: string , lockedBy: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('HitTriage:DropCampaignLock', { appName, campaignId, lockedBy });
+  }
+
+  /**
+   * Remove what the database keeps of a deleted campaign: its last save, its lock and its V-iD links.
+   */
+  export async function deleteCampaignRecords(appName: string , campaignId: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('HitTriage:DeleteCampaignRecords', { appName, campaignId });
+  }
+
+  /**
    * Add a molecule to the dictionary. Returns VID for new or existing molecule.
    */
   export async function addMolecule(canonicalSmiles: string , appName: string , campaignId: string , createdBy: string ): Promise<DG.DataFrame> {

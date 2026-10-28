@@ -1,7 +1,3 @@
-/* The `molecules` tier: what a molecule is, read through Chem's RDKit in the page (Chem:getRdKitModule), so a claim
-   holds for the molecule in any notation: a reading of a widget that holds one (a sketcher's "smiles"), a cell of a
-   column. And a table written in a feature made a table of molecules, as when a file opens. A feature using these needs
-   Chem on the stand; a package other than Chem gates on it (`the "Chem" package is installed`). */
 import {Page} from '@playwright/test';
 import {expect} from '../../../src/runtime/patience.js';
 import {Given, Then} from '../../../src/registry.js';

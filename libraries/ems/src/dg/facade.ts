@@ -1,22 +1,14 @@
-/* `domains.table(address)` — one await, then a table handle everything else hangs off (GOAL
-   "What it looks like"): sources over the table, and the per-table registries an app fills once —
-   actions (ribbon, row hover, context menu), the renderer (lists, pickers, chips) and validators
-   (forms). Registers nothing with the platform: rendering reuses the handler `ObjectHandler.forEntity`
-   already resolves for the table's rows. `domains.*` is also where every domain control is made
-   (`domains.form(src)`, `domains.list(src)`, …): one object, each member constructing at call
-   time, so the modules behind it may import this one back. `TRow` (an app's own row type) types
-   the rows every registry and source hands out; the default reads any column as unknown. */
 import {emsBackends, capital, nounOf} from '../core/domain-backend.js';
 import * as DG from 'datagrok-api/dg';
 import {Access, Rows, allowedActions, divV, span, timestamp, text, notify, plural, untracked}
   from '@datagrok-libraries/u2';
 import type {Capability, IProperty, ObjectRenderer, Action, ColumnOf, DomainRowLike, RowValues, RowView,
-  ReadonlySignal, NotifyHandle} from '@datagrok-libraries/u2';
+  ReadonlySignal, NotifyHandle, Reason} from '@datagrok-libraries/u2';
 import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
 import {DomainSource} from '../core/domain-source.js';
 import type {DomainSourceOptions} from '../core/domain-source.js';
 import {SharedSession, confirmDiscard} from '../core/session.js';
-import {handlerRenderer, appView, mountView} from '@datagrok-libraries/u2/src/dg/index.js';
+import {handlerRenderer, ViewHost, mountView} from '@datagrok-libraries/u2/dg';
 import {DomainApp} from './app.js';
 import {authoring} from './authoring/index.js';
 import {SYSTEM_COLUMNS, DgDomainBackend} from './backend.js';
@@ -56,12 +48,12 @@ export type {EditBindingResult} from './authoring/binding-edit-dialog.js';
 const REF_ADDRESS = /^\w+\.\w+$/;
 
 /** An action over one row: `requires` names the capability it needs (permission ⇒ hidden),
- * `when` narrows it per row (state ⇒ absent), `run` takes the row. */
+ * `when` narrows it per row (state ⇒ absent), `disabled` says why it is off, `run` takes the row. */
 export interface DomainAction<TRow extends DomainRowLike = DomainRowLike> {
   name: string;
   icon?: string;
   requires?: Capability;
-  enabled?: boolean;
+  disabled?: Reason;
   when?(row: RowView<TRow>): boolean;
   run(row: RowView<TRow>): void;
 }
@@ -73,13 +65,12 @@ export type RowValidator<TRow extends DomainRowLike = DomainRowLike> =
 export type DomainConfigure<TRow extends DomainRowLike = DomainRowLike> =
   (table: DomainTable<TRow>) => void | Promise<void>;
 
-/** What `DomainTable.app()` takes: the app's options without the table, plus the view's name
- * (the plural name by default), its base path (`/domains/<schema>/<table>` by default) and the
- * app class — a `DomainApp` subclass with its own ribbon, presets and shortcuts. */
+/** What `DomainTable.app()` takes: the app's options without the table — its own ribbon, menu,
+ * shortcuts and setup among them — plus the view's name (the plural name by default) and its base
+ * path (`/domains/<schema>/<table>` by default). */
 export interface DomainAppViewOptions extends Omit<DomainAppOptions, 'table' | 'base'> {
   name?: string;
   path?: string;
-  app?: new (options: DomainAppOptions) => DomainApp;
 }
 
 export class ActionRegistry<TRow extends DomainRowLike = DomainRowLike> {
@@ -102,7 +93,7 @@ export class ActionRegistry<TRow extends DomainRowLike = DomainRowLike> {
 
   static bind<T extends DomainRowLike>(actions: readonly DomainAction<T>[], row: RowView<T>): Action[] {
     return actions.filter((a) => a.when === undefined || a.when(row)).map((a): Action =>
-      ({name: a.name, icon: a.icon, requires: a.requires, enabled: a.enabled, run: () => a.run(row)}));
+      ({text: a.name, icon: a.icon, requires: a.requires, disabled: a.disabled, run: () => a.run(row)}));
   }
 }
 
@@ -137,6 +128,9 @@ export class ValidatorRegistry<TRow extends DomainRowLike = DomainRowLike> {
   }
 }
 
+/** The handle `domains.table(address)` answers: sources over the table, and the per-table registries an app
+ * fills once (actions, the renderer, validators). Registers nothing with the platform: rendering reuses the
+ * handler `ObjectHandler.forEntity` already resolves. `TRow` types the rows every registry and source hands out. */
 export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   /** Everything an app declares about the table's actions, once. */
   readonly actions = new ActionRegistry<TRow>();
@@ -261,7 +255,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   /** What a read-only row offers — a tree node, a data table row: Open, the table's actions and the caller's. */
   rowActions(row: RowView<TRow>, extra: readonly DomainAction<TRow>[] = [], openShortcut?: string): Action[] {
     const open: Action[] = Rows.isDraft(row) ? [] :
-      [{name: 'Open', icon: 'external-link', shortcut: openShortcut, run: () => this.open(row)}];
+      [{text: 'Open', icon: 'external-link', shortcut: openShortcut, run: () => this.open(row)}];
     return allowedActions([...open, ...this.actions.for(row), ...ActionRegistry.bind(extra, row)],
       {access: this.access, row});
   }
@@ -277,16 +271,18 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     });
   }
 
-  /** The table as a platform view (GOAL "What it looks like": `grok.shell.addView(issues.app())`):
+  /** The table as a platform view (`grok.shell.addView(issues.app())`):
    * list ⇄ entity page under one session, the ribbon, the status bar, the URL — and every gate in
    * front of dropping unsaved changes: in-app navigation, the view's ✕, the browser's unload. */
   app(options: DomainAppViewOptions = {}): DG.ViewBase {
-    const {name, path, app: App = DomainApp, ...rest} = options;
+    const {name, path, ...rest} = options;
     const base = path ?? `/domains/${this.address.replace('.', '/')}`;
     const session = new SharedSession();
-    const app = SharedSession.runWith(session, () => new App({...rest, table: this, base}));
-    const view = appView({name: name ?? DomainApp.titleOf(this.info), content: app,
-      ribbon: app.ribbonGroups(), status: DomainApp.statusPanels(app), path: app.path});
+    let app!: DomainApp;
+    const view = ViewHost.create({name: name ?? DomainApp.titleOf(this.info), content: () => {
+      app = SharedSession.runWith(session, () => new DomainApp({...rest, table: this, base}));
+      return {root: app, ribbon: app.ribbonGroups(), status: DomainApp.statusPanels(app), path: app.path};
+    }}).view;
     mountView({view, base, pinned: path !== undefined, session,
       confirmLeave: () => confirmDiscard(session, {action: 'close the view'}),
       params: ['entity', 'q', 'search', 'sort', 'trash'],
@@ -417,7 +413,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return source;
   }
 
-  /** The captions of the current row's fields in error, for a refusal about that row. */
   private _fieldsToFix(source: DomainSource<TRow>, error: unknown): string[] {
     const row = source.currentRow.peek();
     const about = source.problemRow.peek();
@@ -429,8 +424,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       .map((p) => DomainTable.captionOf(p));
   }
 
-  /** The validators over every row the batch will send — a form wires them into its inputs, but a
-   * row action or a plain `row.column = …` never goes near a form, and the rule still holds. */
+  // a row action or a plain `row.column = …` never goes near a form, and the rule still holds
   private _validate(source: DomainSource<TRow>): string | null {
     const found = firstProblem(this, source.pending().filter((row) =>
       row[Rows.STATE] !== 'deleted' && row[Rows.STATE] !== 'restored'), source);
@@ -488,6 +482,8 @@ function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowV
   return at < 0 ? caption : `${capital(nounOf(table.info, true))} ${at + 1}`;
 }
 
+/** `domains.table(address)` and every domain control (`domains.form(src)`, `domains.list(src)`, …), each made at
+ * call time, so the modules behind it may import this one back. */
 export const domains = {
   /** The table's shape and the caller's access in one round of requests, with everything
    * {@link configure}d for the address applied; a handle per call, so the access is re-acquired by

@@ -1,9 +1,3 @@
-/* `EditorEditState` (WO-8) over a fake js-api editor and the DataFrame double: keys map onto row
-   indices (the id cell — a draft's `~new:` id the editor stamps included), every write reaches
-   the editor, the signals follow the editor's observables, validity is the first blocking error
-   on a live row, and dispose detaches. The real editor runs only in the platform — the U2Demo
-   `U2: domain source` category covers that. */
-
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';

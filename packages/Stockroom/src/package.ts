@@ -1,10 +1,10 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {button, computed, Control, Section, Splitter, SuggestInput} from '@datagrok-libraries/u2';
+import {button, computed, Control, Scope, Section, Splitter, SuggestInput} from '@datagrok-libraries/u2';
 import type {RowView, Text} from '@datagrok-libraries/u2';
 import {SharedSession} from '@datagrok-libraries/ems';
-import {appView, Editors} from '@datagrok-libraries/u2/src/dg/index.js';
+import {ViewHost, Editors} from '@datagrok-libraries/u2/dg';
 import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
 import type {DomainTable} from '@datagrok-libraries/ems/src/dg';
 import {stockroomDb} from './generated/db';
@@ -47,7 +47,7 @@ const views = domains.views({
 //meta.icon: images/flask.svg
 //input: string path {meta.url: true; optional: true}
 //output: view result
-export async function stockroomApp(path?: string): Promise<DG.ViewBase> {
+export async function stockroomApp(path?: string): Promise<DG.ViewBase | null> {
   return views.open(path ?? '');
 }
 
@@ -86,44 +86,47 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
   const session = new SharedSession();
   // live: a bare source is not polled by default (R-b flips the app's option, not this one), so a
   // container another session moves in shows up here only because this asks for it
-  const source = SharedSession.runWith(session, () =>
-    containers.source({session, live: true, pageSize: 100, sort: 'label'}));
+  const sourceOwner = Scope.root('stockroom locations source');
+  const source = sourceOwner.build(() => SharedSession.runWith(session, () =>
+    containers.source({session, live: true, pageSize: 100, sort: 'label'})));
   const addAt = (node: RowView) => newContainerAt(containers, node.id,
     {site: typeof node.site === 'string' ? node.site : undefined, caption: locations.renderer.caption(node)});
-  // the "all" row is the way back to every container once a node has been picked
-  const tree = domains.tree(locations, {allNode: 'All locations',
-    actions: [{name: 'New container', icon: 'plus', run: addAt}]});
-  const table = domains.dataTable(source,
-    {columns: ['label', 'substance_id', 'location_id', 'lot', 'quantity', 'unit', 'expires'],
-      onActivate: (row) => containers.open(row)});
-  // one node, one subtree: `under` matches the node and everything below it, through the ref
-  // column into the tree — nothing selected is the whole table
-  tree.effect(() => {
-    const node = tree.selected.value;
-    source.query.value = node === null ? '' : `location_id under "${node.id}"`;
-  });
-  // the two panes say what they are, and the containers' header says what the tree did to the collection
-  const where = computed(() => {
-    const node = tree.selected.value;
-    return node === null ? source.summary.value :
-      `${source.summary.value} in ${locations.renderer.caption(node)}, including sublocations`;
-  });
-  const add = Control.build(() => button('New container', () => {
-    const node = tree.selected.value;
-    if (node !== null)
-      addAt(node);
-  }, {disabled: computed(() => tree.selected.value === null ? 'Select a location first' : null)}));
-  add.root.dataset.u2 = 'new-container-button';
-  const section = (title: string, content: Control, hint?: Text): Section =>
-    new Section({title, collapsible: false, hint}).add(content);
-  const panes = new Splitter([section('Locations', tree), section('Containers', table, where)],
-    {direction: 'horizontal', sizes: [0.22, 0.78]});
-  panes.root.classList.add('stockroom-locations');
-  return appView({
-    name: 'Locations',
-    content: panes,
-    own: [source],
-    ribbon: [[add]],
-    path: '/apps/Stockroom/Locations',
-  });
+  const host = ViewHost.create({name: 'Locations', content: () => {
+    // the "all" row is the way back to every container once a node has been picked
+    const tree = domains.tree(locations, {allNode: 'All locations',
+      actions: [{name: 'New container', icon: 'plus', run: addAt}]});
+    const table = domains.dataTable(source,
+      {columns: ['label', 'substance_id', 'location_id', 'lot', 'quantity', 'unit', 'expires'],
+        onActivate: (row) => containers.open(row)});
+    // one node, one subtree: `under` matches the node and everything below it, through the ref
+    // column into the tree — nothing selected is the whole table
+    tree.effect(() => {
+      const node = tree.selected.value;
+      source.query.value = node === null ? '' : `location_id under "${node.id}"`;
+    });
+    // the two panes say what they are, and the containers' header says what the tree did to the collection
+    const where = computed(() => {
+      const node = tree.selected.value;
+      return node === null ? source.summary.value :
+        `${source.summary.value} in ${locations.renderer.caption(node)}, including sublocations`;
+    });
+    const add = Control.build(() => button('New container', () => {
+      const node = tree.selected.value;
+      if (node !== null)
+        addAt(node);
+    }, {disabled: computed(() => tree.selected.value === null ? 'Select a location first' : null)}));
+    add.root.dataset.u2 = 'new-container-button';
+    const section = (title: string, content: Control, hint?: Text): Section => {
+      const pane = new Section({title, collapsible: false, hint}).add(content);
+      pane.root.classList.add('stockroom-pane');
+      return pane;
+    };
+    const panes = new Splitter([section('Locations', tree), section('Containers', table, where)],
+      {direction: 'horizontal', sizes: [0.22, 0.78]});
+    panes.root.classList.add('stockroom-locations');
+    return {root: panes, ribbon: [[add]], path: '/apps/Stockroom/Locations'};
+  }});
+  // after the chrome: the source outlives the controls reading it
+  host.own(() => sourceOwner.dispose());
+  return host.view;
 }

@@ -1,9 +1,5 @@
-/* `domains.pick` (WO-11) over the memory backend: candidates by the target's name column, a pick
-   writes the id, a written id resolves to its name, an extra filter narrows, the name column falls
-   back to the business key and then the id — and `PickInput`'s face keeps value and box in step. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
@@ -54,7 +50,7 @@ scoped('candidates come from the target\'s name column; a pick writes the id, on
   const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0});
   const input = mount(pick);
   assert.equal(pick.root.dataset.u2, 'domain-pick');
-  assert.equal(pick.value.value, null);
+  assert.equal(pick.value, null);
   input.focus();
   type(input, 'Gri');
   await flush();
@@ -62,23 +58,23 @@ scoped('candidates come from the target\'s name column; a pick writes the id, on
   assert.deepEqual(options(), ['Grit'], 'contains, so "Gr" would list Datagrok too');
   fire(input, 'keydown', {key: 'Enter'});
   await flush();
-  assert.equal(pick.value.value, 'p1');
+  assert.equal(pick.value, 'p1');
   assert.equal(input.value, 'Grit');
   type(input, 'Gri');
   await flush();
-  assert.equal(pick.value.value, 'p1', 'typed text is not a pick: the last pick holds');
+  assert.equal(pick.value, 'p1', 'typed text is not a pick: the last pick holds');
   fire(input, 'blur');
   await flush();
   assert.equal(input.value, 'Grit', 'and its name comes back on blur');
   type(input, '');
   await flush();
-  assert.equal(pick.value.value, 'p1', 'clearing the text is not a clear: the box only looks empty while focused');
+  assert.equal(pick.value, 'p1', 'clearing the text is not a clear: the box only looks empty while focused');
   fire(input, 'blur');
   await flush();
   assert.equal(input.value, 'Grit', 'and the held name comes back on blur, with nothing to say');
   fire(pick.root.querySelector('.u2-input-clear'), 'click');
   await flush();
-  assert.equal(pick.value.value, null, '✕ clears');
+  assert.equal(pick.value, null, '✕ clears');
   pick.dispose();
 });
 
@@ -88,11 +84,11 @@ scoped('a written id resolves to its name; an unknown id shows itself', async ()
   const input = mount(pick);
   await flush();
   assert.equal(input.value, 'Datagrok');
-  assert.equal(pick.value.value, 'p2', 'resolving did not clear the value');
-  pick.value.value = 'nope';
+  assert.equal(pick.value, 'p2', 'resolving did not clear the value');
+  pick.value = 'nope';
   await flush();
   assert.equal(input.value, 'nope');
-  pick.value.value = null;
+  pick.value = null;
   await flush();
   assert.equal(input.value, '');
   pick.dispose();
@@ -125,7 +121,7 @@ scoped('an extra filter narrows the candidates; an empty query lists them all', 
   assert.deepEqual(options(), ['Datagrok']);
   pick.dispose();
 
-  const all = new DomainPick('grit.project', {debounceMs: 0});
+  const all = testOwner().build(() => new DomainPick('grit.project', {debounceMs: 0}));
   const box = mount(all);
   box.focus();
   fire(box, 'keydown', {key: 'ArrowDown'});
@@ -194,7 +190,7 @@ scoped('ergonomics: the candidates open on focus sorted by name with nothing hig
     assert.equal(clear.hidden, false);
     fire(clear, 'click');
     await flush();
-    assert.equal(pick.value.value, null);
+    assert.equal(pick.value, null);
     assert.equal(input.value, '');
     assert.equal(clear.hidden, true);
     pick.dispose();
@@ -211,7 +207,7 @@ scoped('stray text never survives a blur: cleared, or the held pick\'s name put 
   fire(input, 'blur');
   await flush();
   assert.equal(input.value, '', 'text that looks chosen is worse than none');
-  assert.equal(pick.value.value, null);
+  assert.equal(pick.value, null);
   assert.equal(pick.validity.value, null);
   input.focus();
   type(input, 'Grit');
@@ -219,13 +215,13 @@ scoped('stray text never survives a blur: cleared, or the held pick\'s name put 
   await flush();
   fire(input, 'keydown', {key: 'Enter'});
   await flush();
-  assert.equal(pick.value.value, 'p1');
+  assert.equal(pick.value, 'p1');
   fire(input, 'blur');
   await flush();
   assert.equal(input.value, 'Grit', 'a pick stays');
   pick.dispose();
 
-  const held = new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p2'});
+  const held = testOwner().build(() => new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p2'}));
   const box = mount(held);
   await flush();
   assert.equal(box.value, 'Datagrok');
@@ -234,7 +230,7 @@ scoped('stray text never survives a blur: cleared, or the held pick\'s name put 
   await flush();
   fire(box, 'blur');
   await flush();
-  assert.equal(held.value.value, 'p2', 'typing over a held value does not drop it');
+  assert.equal(held.value, 'p2', 'typing over a held value does not drop it');
   assert.equal(box.value, 'Datagrok', 'the text is put back on blur');
   assert.equal(held.validity.value, null);
   held.dispose();
@@ -249,7 +245,7 @@ scoped('opened on focus, Enter alone commits the highlighted first candidate', a
   await flush();
   fire(input, 'keydown', {key: 'Enter'});
   await flush();
-  assert.equal(pick.value.value, 'p2', 'Datagrok, the first by name');
+  assert.equal(pick.value, 'p2', 'Datagrok, the first by name');
   assert.equal(input.value, 'Datagrok');
   pick.dispose();
 });
@@ -267,7 +263,7 @@ scoped('a blur that puts the held pick back says what was typed and what was kep
   await flush();
   fire(input, 'blur');
   await flush();
-  assert.equal(pick.value.value, 'p2');
+  assert.equal(pick.value, 'p2');
   assert.equal(input.value, 'Datagrok');
   assert.equal(hint.hidden, false);
   assert.equal(hint.textContent, 'No match for "zzz" — kept Datagrok');
@@ -287,10 +283,10 @@ scoped('a fast Enter: the pick is made when the candidates land — the name typ
   type(input, 'gr');
   fire(input, 'keydown', {key: 'Enter'});
   assert.equal(pick.typeAhead.isPickPending, true, 'nothing to pick from yet');
-  assert.equal(pick.value.value, null);
+  assert.equal(pick.value, null);
   await flush();
   await flush();
-  assert.equal(pick.value.value, 'p2', 'the first candidate: Datagrok, by name');
+  assert.equal(pick.value, 'p2', 'the first candidate: Datagrok, by name');
   assert.equal(input.value, 'Datagrok');
   assert.equal(pick.typeAhead.isPickPending, false);
 
@@ -299,7 +295,7 @@ scoped('a fast Enter: the pick is made when the candidates land — the name typ
   fire(input, 'blur');
   await flush();
   await flush();
-  assert.equal(pick.value.value, 'p1', 'the exact name wins over the first candidate, and a blur meanwhile does not clear it');
+  assert.equal(pick.value, 'p1', 'the exact name wins over the first candidate, and a blur meanwhile does not clear it');
   assert.equal(input.value, 'Grit');
   pick.dispose();
 });

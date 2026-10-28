@@ -1,10 +1,5 @@
-/* `domains.grid` (2-4b) over the platform doubles: the source's frame is the grid's, the js-api
-   editor is attached with the source's edit state — decorated first — re-attached over the next
-   frame and released when the source lets go, and the `u2-domain-grid` tag. The real grid runs
-   only in the platform — U2Demo `U2: domain session` covers that. `DG` comes from tests/dg-stub.mjs. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
@@ -100,8 +95,8 @@ function editorBackend(memory, columns = COLUMNS) {
 scoped('over a memory source: the frame is the grid\'s; the memory writer is not a platform editor', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
-  const grid = domains.grid(src);
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  const grid = testOwner().build(() => domains.grid(src));
   await flush();
   assert.equal(grid.root.dataset.u2, 'domain-grid');
   assert.equal(grid.root.classList.contains('u2-domain-grid'), true);
@@ -118,7 +113,7 @@ scoped('the js-api editor is attached with the source\'s edit state, decorated f
   const inner = editorBackend(backend());
   emsBackends.domain = inner;
   const src = new DomainSource({table: 'grit.issue', pageSize: 10}, env);
-  const grid = domains.grid(src);
+  const grid = testOwner().build(() => domains.grid(src));
   assert.equal(grid.grid.editor, null, 'nothing before the first frame');
   src.start();
   await flush();
@@ -143,7 +138,7 @@ scoped('the js-api editor is attached with the source\'s edit state, decorated f
 scoped('spec: u2-domain-grid over a bound source', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
-  const src = table.source();
+  const src = testOwner().build(() => table.source());
   const reg = new Registry();
   registerAll(reg);
   registerDomainComponents(reg);
@@ -151,8 +146,8 @@ scoped('spec: u2-domain-grid over a bound source', async () => {
   assert.equal(meta.category, 'Display');
   assert.deepEqual(meta.props.map((p) => p.name), ['source']);
   assert.match(meta.usage, /Save and Discard are the session's/);
-  const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-domain-grid', name: 'grid',
-    bind: {source: '$.issues'}}}, new SpecContext({data: {issues: signal(src)}}), reg);
+  const instance = testOwner().build(() => renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-domain-grid',
+    name: 'grid', bind: {source: '$.issues'}}}, new SpecContext({data: {issues: signal(src)}}), reg));
   await flush();
   const grid = instance.node('grid');
   assert.equal(grid instanceof DomainGrid, true);
@@ -166,8 +161,8 @@ scoped('on attach: the schema\'s captions as friendly names, the system columns 
   const inner = editorBackend(backend());
   emsBackends.domain = inner;
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
-  const grid = domains.grid(src);
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  const grid = testOwner().build(() => domains.grid(src));
   await flush();
   const columns = grid.grid.columns;
   assert.deepEqual([columns.byName('id').visible, columns.byName('created_on').visible], [false, false],
@@ -186,8 +181,8 @@ scoped('hiddenColumns: what the caller hides goes with the system columns; a val
   const inner = editorBackend(backend());
   emsBackends.domain = inner;
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
-  const grid = domains.grid(src, {hiddenColumns: ['priority']});
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  const grid = testOwner().build(() => domains.grid(src, {hiddenColumns: ['priority']}));
   await flush();
   assert.equal(grid.grid.columns.byName('priority').visible, false, 'a child grid hides its FK this way');
   assert.equal(grid.grid.columns.byName('title').visible, true);
@@ -203,8 +198,8 @@ scoped('ref cells draw the target row\'s caption; an id the platform cannot name
   emsBackends.domain = editorBackend(backend());
   DG.DomainObjectHandler.names['grit.project|p1'] = 'Grit';
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
-  const grid = domains.grid(src);
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  const grid = testOwner().build(() => domains.grid(src));
   await flush();
   const refs = grid.grid.columns.byName('project_id');
   assert.deepEqual([refs.cellText(0), refs.cellText(1)], ['Grit', 'Grit'], 'the target row\'s name, not its id');
@@ -219,7 +214,7 @@ scoped('the frame is decorated once the GRID holds it, and again over every fram
   emsBackends.domain = inner;
   DG.DomainObjectHandler.names['grit.project|p1'] = 'Grit';
   const src = new DomainSource({table: 'grit.issue', pageSize: 10}, env);
-  const grid = domains.grid(src);
+  const grid = testOwner().build(() => domains.grid(src));
   src.start();
   await flush();
   const held = () => DG.DomainObjectHandler.decorated.every((d) => d.held);
@@ -242,8 +237,8 @@ scoped('a join table\'s two ref columns both draw captions', async () => {
   Object.assign(DG.DomainObjectHandler.names,
     {'grit.project|p1': 'Grit', 'grit.issue|i1': 'Aspirin', 'grit.issue|i2': 'Ibuprofen'});
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
-  const grid = domains.grid(src);
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  const grid = testOwner().build(() => domains.grid(src));
   await flush();
   const columns = grid.grid.columns;
   assert.deepEqual([columns.byName('project_id').cellText(0), columns.byName('issue_id').cellText(0)],
@@ -258,8 +253,8 @@ scoped('a refusal the grid raised over a read-only cell reaches the status bar, 
   const inner = editorBackend(backend());
   emsBackends.domain = inner;
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
-  const grid = domains.grid(src);
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  const grid = testOwner().build(() => domains.grid(src));
   await flush();
   const [editor] = inner.editors;
   assert.equal(editor.onRefused.count, 1, 'the grid host follows the editor it attached');

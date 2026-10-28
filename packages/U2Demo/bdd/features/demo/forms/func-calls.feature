@@ -3,15 +3,21 @@ Feature: FuncCalls
   One FuncCall edited by the platform's DG.InputForm.forFuncCall in the Platform section and by u2's
   funcForm in the u2 section. An edit on either side writes the call, the other side follows and the
   sync line counts it once; the required parameter of the second function gates isValid on both
-  forms alike.
+  forms alike. The page's `seed` default names a variable that does not exist on purpose, so every
+  open raises its error balloon.
 
   Background:
     Given user opens the "FuncCalls" demo page
+    Then an error balloon containing "nosuchvar" should have been shown
 
   Scenario: The two sides never lie on one another, side by side or stacked
     Then Stage input in "u2" section should not overlap Stage input in "Platform" section
     And editor of Stage input in "u2" section should be as wide as editor of Stage input in "Platform" section
     And demo page should have no layout problems
+
+  Scenario: A unit stays on the field's line when the field has a slider, as the platform's does
+    Then options of "Dose Level" input in "u2" section should be vertically centered with editor of "Dose Level" input in "u2" section
+    And options of "Dose Level" input in "u2" section should be as tall as editor of "Dose Level" input in "u2" section
 
   Scenario: A stage picked on either side writes the call and shows on the other
     When user selects "Phase II" in Stage input in "u2" section

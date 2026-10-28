@@ -2,6 +2,16 @@
 
 ## v.next
 
+* Audits: The layout, errors, balloons and operability audits fail a scenario by default (`report` and `off` stay a project's or `BDD_AUDIT`'s choice; leaks stay `off`); the library accepts the platform's grid ribbon icons "Remove selected rows/columns", off with no reason
+* Runtime: Every page runs u2 strict: `__U2_STRICT__` is set before the platform loads, so a u2 misuse (a control built with no owner, a field that takes a control's own member) throws a `U2UsageError` naming the fix; `U2_STRICT=report` logs each one instead
+* Audits: Added the `operability` audit — the engine's `DG.U2.operability` with hit-testing over the view's u2 controls and every u2 dialog, popup and menu, at the scenario's end and after the step that opened each overlay, so a dialog opened and closed again is checked (a control covered, taking no pointer, inert or off without a reason, an icon button named unlike its tooltip, an oversized rail option); `report` by default
+* Audits: Added the `balloons` audit — the error and warning balloons a scenario showed and no balloon step claimed ("Error adding filter" was a warning nobody read); `report` by default, its own allowlist by message
+* Vocabulary: Added `every control in {element} should be operable` and `{element} should be disabled because {string}` (the u2 status's `disabledReason`; outside u2 `aria-description`, else `title`)
+* Vocabulary: `tool/gen-u2-kinds.mjs` carries a kind's `interactive`, `styling` and `whenToUse` from the manifests into `u2-kinds.g.ts`
+* Vocabulary: The shell's crumbs are breadcrumbs ("Hit Design" breadcrumb, a view's own name too), and a view's parent crumb is also a link; a crumb that holds a link (an app's table view) is that link, not a second match
+* Menus: The open-menu steps (`user picks "X" from the open menu`, `the open menu should show "X" as checked`, `… should list …`) read u2 menus (`.u2-menu`) as well as Dart ones, and closing the context menu sends Escape to an open u2 menu panel
+* Kinds: The `icon` kind matches u2 icon buttons (`button.u2-icon-btn`), so "Delete template icon" reaches a u2 `iconButton` by its tooltip
+* Viewers: Fixed `{element} should offer the columns …` / `… should not offer the column …` failing on a column picker over 20 columns, which focuses its search box instead of the selector: the step dismisses the picker once it hears Escape, wherever it put the focus
 * Second account: Fixed a scenario that stopped while signed in as another account running every scenario after it as that account: a journey scenario that stopped, and a test that failed or is a known failure, sign the running account back in before the next one starts (`atScenarioStop`)
 * Locator: Fixed a gesture on a gallery card or link landing before the gallery had redrawn its search or refresh: a phrase naming a gallery or a card waits for the gallery grid's `aria-busy` to clear
 * Vocabulary: Added `user double-clicks on {element} and the project opens` (`grok.events.onProjectOpened` on a 120 s budget, kept in a `@known-failure` scenario; an error balloon or the Data loading error dialog ends it as a failure) and `user double-clicks on {element} and the query it runs completes`
@@ -24,7 +34,6 @@
 * Vocabulary: Added the u2 `status-line` kind ("status line")
 * Vocabulary: `the top menu should list {string} as disabled` / `as enabled` — the platform greys out a command whose function needs a column the table lacks (#4226)
 * Kinds: A plain ARIA list (`role="list"`) is a list and its `role="listitem"` rows are items, so "first item in annotations list" reaches them
-
 * Geometry: Added width claims — `{element} should be as wide as {element}`, `… should be {int} px wide`, `… should be at least {int} px wide` and `… should be at most {int} px wide` — so an editor too short next to its Dart twin fails a feature
 * Geometry: Added `{element} should be inside the window` (a dialog or popup no ancestor clips) and `the window is {int} by {int} px`, which resizes the window until the test ends
 * Layout audit: Inputs inside another input's editor (a columns map's key rows) no longer count as rows of the form in the label-column rule

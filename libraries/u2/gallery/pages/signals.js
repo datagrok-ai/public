@@ -33,8 +33,8 @@ export async function render(main) {
   const counter = new Control();
   const countText = el('b');
   const doubledText = el('b');
-  bindText(counter.scope, countText, count);
-  bindText(counter.scope, doubledText, doubled);
+  bindText(countText, count, {owner: counter.scope});
+  bindText(doubledText, doubled, {owner: counter.scope});
   const row1 = el('div');
   row1.append(button('+1', () => { count.value++; refresh(); }), ' count = ', countText,
     ', computed ×2 = ', doubledText);
@@ -46,10 +46,10 @@ export async function render(main) {
   const form = new Control();
   const a = el('input');
   const b = el('input');
-  bindValue(form.scope, a, name);
-  bindValue(form.scope, b, name);
+  bindValue(a, name, {owner: form.scope});
+  bindValue(b, name, {owner: form.scope});
   const mirror = el('span');
-  bindText(form.scope, mirror, computed(() => `Hello, ${name.value}!`));
+  bindText(mirror, computed(() => `Hello, ${name.value}!`), {owner: form.scope});
   const row2 = el('div');
   row2.append(a, ' ⇄ ', b, '  →  ', mirror);
   form.root.append(row2);

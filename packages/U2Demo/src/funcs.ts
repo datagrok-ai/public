@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {signal, computed, Scope, div, divV, divH, span, h3, button} from '@datagrok-libraries/u2';
-import {funcForm, FuncCallForm, functionsBrowser} from '@datagrok-libraries/u2/src/dg/index.js';
+import {funcForm, FuncCallForm, functionsBrowser} from '@datagrok-libraries/u2/dg';
 import {ensureFuncs, ensureTable, fmt, gateTitle, prose} from './func-convergence';
 import {readout} from './pages/common';
 
@@ -115,7 +115,7 @@ export function funcsPage(): HTMLElement {
       // captions, `editor:` hints) — one side failing still leaves the other side working
       let form: FuncCallForm | undefined;
       try {
-        form = Scope.runWith(shown, () => funcForm(call));
+        form = shown.build(() => funcForm(call));
         u2Column.append(form.root);
         if (form.unsupported.length > 0)
           u2Column.append(prose('Parameters not supported by this form yet: ' +
@@ -125,7 +125,7 @@ export function funcsPage(): HTMLElement {
         u2Column.append(span(String(e?.message ?? e), 'u2demo-error'));
       }
 
-      Scope.runWith(shown, () => {
+      shown.build(() => {
         const result = signal('');
         const failed = signal(false);
         const run = button('Run', async () => {
@@ -185,8 +185,9 @@ export function funcsPage(): HTMLElement {
 
   // the native u2 browser over the same registry the Dart FunctionsWidget read; the pane keeps
   // its old surface — names only, no signatures or play icons, panes behind the filter icon
-  const fb = Scope.runWith(scope, () => functionsBrowser(
+  const fb = scope.build(() => functionsBrowser(
     {showSignature: false, showRunButton: false, showTags: false}));
+  fb.root.classList.add('u2demo-funcs-browser');
   list.append(fb.root);
   fb.effect(() => {
     const item = fb.selected.value;

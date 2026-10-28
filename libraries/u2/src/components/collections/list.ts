@@ -14,6 +14,7 @@
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {batch, signal, untracked, Signal, ReadonlySignal} from '../../core/signals.js';
+import {Tooltip} from '../../core/tooltip.js';
 import {Action, ActionGroup, actionsMenu} from '../actions/actions.js';
 import {ITEMS_CAP} from '../../core/widget-like.js';
 import type {IItemState, IItemsState} from '../../core/widget-like.js';
@@ -162,7 +163,7 @@ export abstract class VirtualRows<T> extends Control {
     scope.listen(this.content, 'mouseover', (e) => {
       for (let el = e.target as HTMLElement | null; el !== null && el !== this.content; el = el.parentElement) {
         if (el.scrollWidth > el.clientWidth) {
-          el.title ||= el.textContent ?? '';
+          Tooltip.titleIfCut(el);
           return;
         }
       }

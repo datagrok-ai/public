@@ -3,10 +3,11 @@
    value copy with dataframe materialization. `DG`/`grok` come from tests/dg-stub.mjs; the dapi
    `functions`/`tables` sources are per-test fakes assigned onto the stub's `dapi`. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {signal} from '../src/core/signals.js';
 import {Registry} from '../src/spec/registry.js';
@@ -76,7 +77,7 @@ function ui(name, body) {
 }
 
 function rows(root = document.body) {
-  return root.querySelectorAll('.u2-list-row[data-u2-funccall]');
+  return [...root.querySelectorAll('.u2-list-row[data-u2-funccall]')];
 }
 
 ui('an empty functionName asks for a function and requests nothing; a name pages the dapi chain', async () => {
@@ -96,7 +97,7 @@ ui('an empty functionName asks for a function and requests nothing; a name pages
   assert.deepEqual([requests[0].order, requests[0].desc], ['started', true]);
   assert.equal(requests[0].pageNumber, 0);
   const list = browser.root.querySelector('.u2-list');
-  list.clientHeight = 220;
+  layout(list, {clientHeight: 220});
   fire(list, 'scroll');
   assert.deepEqual([...rows()].map((r) => r.getAttribute('data-u2-funccall')), ['a', 'b']);
   assert.equal(browser.call('b').id, 'b');
@@ -119,7 +120,7 @@ ui('selection lands in the signal and the shell; a name change resets and clears
   document.body.append(browser.root);
   await flush();
   const list = browser.root.querySelector('.u2-list');
-  list.clientHeight = 220;
+  layout(list, {clientHeight: 220});
   fire(list, 'scroll');
   fire(rows()[1], 'click');
   assert.equal(browser.selected.value.id, 'b');
@@ -142,7 +143,7 @@ ui('setCurrentObject: false keeps the shell out of it; activate fires on Enter a
   document.body.append(browser.root);
   await flush();
   const list = browser.root.querySelector('.u2-list');
-  list.clientHeight = 220;
+  layout(list, {clientHeight: 220});
   fire(list, 'scroll');
   fire(rows()[0], 'click');
   assert.equal(grok.shell.dart.writes.length, 0);
@@ -161,7 +162,7 @@ ui('bindProps carry a writable functionName and a read-only selected id step', a
   assert.equal(props.functionName.writable, true);
   assert.equal(props.selected.writable, false);
   const list = browser.root.querySelector('.u2-list');
-  list.clientHeight = 220;
+  layout(list, {clientHeight: 220});
   fire(list, 'scroll');
   fire(rows()[0], 'click');
   assert.equal(browser.bindStep('selected').value, 'a');
@@ -184,10 +185,10 @@ ui('FuncCallInput: a row click commits the id and closes; dismissals never write
   const popup = document.body.querySelector('.u2-func-call-input-popup');
   assert.notEqual(popup.querySelector('[data-u2="func-call-history-browser"]'), null);
   const list = popup.querySelector('.u2-list');
-  list.clientHeight = 220;
+  layout(list, {clientHeight: 220});
   fire(list, 'scroll');
   fire(rows(popup)[1], 'click');
-  assert.equal(input.value.value, 'b');
+  assert.equal(input.value, 'b');
   assert.deepEqual(changes, ['b']);
   assert.equal(document.body.querySelector('.u2-func-call-input-popup'), null);
   assert.equal(input.root.querySelector('.u2-func-call-input-name').textContent,
@@ -197,8 +198,8 @@ ui('FuncCallInput: a row click commits the id and closes; dismissals never write
   await flush();
   fire(document, 'keydown', {key: 'Escape'});
   assert.equal(document.body.querySelector('.u2-func-call-input-popup'), null);
-  assert.equal(input.value.value, 'b', 'Escape closed without a write');
-  input.enabled = false;
+  assert.equal(input.value, 'b', 'Escape closed without a write');
+  input.disabled = 'Not editable in this test';
   fire(control, 'click');
   assert.equal(document.body.querySelector('.u2-func-call-input-popup'), null, 'disabled never opens');
   input.dispose();
@@ -214,7 +215,7 @@ ui('FuncCallInput resolves a preset id in the background and clears on Backspace
   await flush();
   assert.equal(input.root.querySelector('.u2-func-call-input-name').textContent, 'Sin');
   fire(input.root.querySelector('.u2-func-call-input'), 'keydown', {key: 'Backspace'});
-  assert.equal(input.value.value, '');
+  assert.equal(input.value, '');
   input.dispose();
 });
 
@@ -260,15 +261,15 @@ ui('the FuncForm history icon lives in the buttons row, toggles with showHistory
   const popup = document.body.querySelector('.u2-func-form-history-popup');
   assert.notEqual(popup, null);
   const list = popup.querySelector('.u2-list');
-  list.clientHeight = 220;
+  layout(list, {clientHeight: 220});
   fire(list, 'scroll');
   fire(rows(popup)[0], 'click');
   await flush();
   assert.equal(document.body.querySelector('.u2-func-form-history-popup'), null, 'the pick closed the popup');
   assert.equal(form.source.inputs['x'], 5, 'the picked run\'s value landed in the call');
-  assert.equal(form.getInput('x').value.value, 5, 'and the input followed');
+  assert.equal(form.getInput('x').value, 5, 'and the input followed');
 
-  const plain = new FuncCallForm(new FuncCall(sin()), {});
+  const plain = testOwner().build(() => new FuncCallForm(new FuncCall(sin()), {}));
   assert.equal(plain.root.querySelector('[data-u2="ff-history-icon"]'), null, 'no option, no icon');
   plain.dispose();
   form.dispose();
@@ -288,7 +289,7 @@ ui('the Run button is gated on required fields, runs the call and saves it throu
   assert.equal(run.disabled, true);
   assert.equal(run.title.startsWith('Missing: '), true, `title="${run.title}"`);
 
-  form.getInput('x').value.value = 0.5;
+  form.getInput('x').value = 0.5;
   await flush();
   assert.equal(run.disabled, false);
   assert.equal(run.title, '');
@@ -301,7 +302,7 @@ ui('the Run button is gated on required fields, runs the call and saves it throu
 
   show.value = false;
   assert.equal(run.hidden, true);
-  const plain = new FuncCallForm(new FuncCall(sin()), {});
+  const plain = testOwner().build(() => new FuncCallForm(new FuncCall(sin()), {}));
   assert.equal(plain.root.querySelector('[data-u2="ff-run"]'), null, 'no option, no button');
   plain.dispose();
   form.dispose();
@@ -324,12 +325,12 @@ ui('registerPlatformComponents carries the three new metas; a bound callId popul
     cid.value = 'a';
     await flush();
     await flush();
-    assert.equal(form.getInput('x').value.value, 9, 'the bound callId copied the run\'s values in');
+    assert.equal(form.getInput('x').value, 9, 'the bound callId copied the run\'s values in');
 
-    const input = reg.get('u2-func-call-input').create({label: 'Run', functionName: 'Sin'});
+    const input = testOwner().build(() => reg.get('u2-func-call-input').create({label: 'Run', functionName: 'Sin'}));
     document.body.append(input.root);
     assert.equal(input.root.dataset.u2, 'func-call-input');
-    const browser = reg.get('u2-func-call-history-browser').create({functionName: 'Sin'});
+    const browser = testOwner().build(() => reg.get('u2-func-call-history-browser').create({functionName: 'Sin'}));
     document.body.append(browser.root);
     assert.equal(browser.root.dataset.u2, 'func-call-history-browser');
     browser.dispose();

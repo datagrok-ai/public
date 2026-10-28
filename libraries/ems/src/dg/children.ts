@@ -1,8 +1,3 @@
-/* `domains.children` — the tables that refer to a source's rows, one tab each, over the current
-   row: the child collection queried by the FK, New pre-filled with it, every child source in the
-   parent's session — so a draft parent and its child drafts save as one transaction (the child's
-   FK is the parent's draft id; the server orders the inserts). Once the parent is saved, the
-   current row re-points to its real id and the tab re-queries by it. */
 import {Control, Scope, signal, computed, untracked, ReadonlySignal, Signal, div, divH, span, TabStrip, loader,
   Rows} from '@datagrok-libraries/u2';
 import type {RowView} from '@datagrok-libraries/u2';
@@ -37,6 +32,8 @@ interface TabState {
   blank: Signal<boolean>;
 }
 
+/** The tables that refer to a source's rows, one tab each over the current row. Every child source joins the
+ * parent's session, so a draft parent and its child drafts save as one transaction. */
 export class DomainChildren extends Control {
   readonly tabs: TabStrip;
   readonly mode: DomainChildrenMode;
@@ -58,7 +55,7 @@ export class DomainChildren extends Control {
     this.root.dataset.u2 = 'domain-children';
     this._status = div([], 'u2-domain-children-status');
     this._status.dataset.u2Part = 'status';
-    this.tabs = this.runInScope(() => new TabStrip());
+    this.tabs = this.build(() => new TabStrip());
     this.tabs.root.classList.add('u2-domain-children-tabs', 'u2-tabs-flush');
     this.root.append(this._status, this.tabs.root);
     // the child tables are known with the parent's table: build the tabs once it is loaded
@@ -68,7 +65,7 @@ export class DomainChildren extends Control {
         return;
       built = true;
       // built once and kept: owned by this control, not by the effect run that triggered it
-      void this.runInScope(() => this._build(options.tables));
+      void this.build(() => this._build(options.tables));
     });
   }
 
@@ -104,7 +101,7 @@ export class DomainChildren extends Control {
       pane.dataset.u2Part = 'pane';
       if (handle.status === 'rejected') {
         pane.append(span(DomainErrors.message(handle.reason), 'u2-domain-children-error'));
-        this.tabs.addTab({id, label, content: () => pane});
+        this.tabs.addTab({id, title: label, content: () => pane});
         continue;
       }
       const entry: ChildEntry = {id, table: handle.value, fk: c.fkColumn, label};
@@ -112,7 +109,7 @@ export class DomainChildren extends Control {
       const state: TabState = {count: signal(null), current: signal(undefined), blank: signal(false)};
       this._tabStates.set(id, state);
       const validity = computed(() => DomainChildren._problem(state.current.value));
-      this.tabs.addTab({id, label, validity, content: () => {
+      this.tabs.addTab({id, title: label, validity, content: () => {
         this._watch(entry, pane);
         return pane;
       }});
@@ -120,7 +117,7 @@ export class DomainChildren extends Control {
         const count = state.count.value;
         const dirty = state.current.value?.isDirty.value ?? false;
         untracked(() => {
-          this.tabs.setTabLabel(id, count === null ? label : `${label} (${count})`);
+          this.tabs.setTabTitle(id, count === null ? label : `${label} (${count})`);
           this.tabs.setDirty(id, dirty);
         });
       });
@@ -144,7 +141,7 @@ export class DomainChildren extends Control {
     });
   }
 
-  /** The refusal the tab's child source carries; a failed load is the pane's to show. */
+  // a failed load is the pane's to show
   private static _problem(source: DomainSource | undefined): string | null {
     const error = source?.error.value;
     const code = DomainErrors.codeOf(error);
@@ -152,8 +149,6 @@ export class DomainChildren extends Control {
       (code !== 'validation' && code !== DomainSource.REFUSED) ? null : DomainErrors.message(error, source);
   }
 
-  /** Counts every tab's rows for its label; with `pick`, opens the first tab with rows unless the
-   * user has picked one meanwhile. */
   private async _count(entries: readonly ChildEntry[], row: RowView | null, pick: boolean): Promise<void> {
     for (const e of entries)
       this._tabStates.get(e.id)!.count.value = null;
@@ -173,8 +168,6 @@ export class DomainChildren extends Control {
       this.tabs.activeTab.value = entries[at].id;
   }
 
-  /** A shown tab follows the parent's current row: a new row is a new child source, the old one
-   * disposed with everything built over it. */
   private _watch(entry: ChildEntry, pane: HTMLElement): void {
     let scope: Scope | undefined;
     let last: string | undefined;
@@ -198,7 +191,7 @@ export class DomainChildren extends Control {
       }
       // everything built here — the source, the controls — is adopted by the pane's scope
       const pending = scope = new Scope();
-      Scope.runWith(pending, () => untracked(() => {
+      pending.build(() => untracked(() => {
         const draft = Rows.isDraft(row);
         const child = entry.table.source({query: draft ? '' : `${entry.fk} = "${row.id}"`,
           defaults: {[entry.fk]: row.id}, session: this.parent.session, empty: draft});

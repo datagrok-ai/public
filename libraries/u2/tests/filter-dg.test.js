@@ -3,7 +3,7 @@
    mask. `DG`/`grok` come from tests/dg-stub.mjs; the `grok.meta` reflection the stub does not
    carry is layered over its `grok` by a local hook, so `forEntityType` runs headless too. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -184,7 +184,8 @@ smoke('forEntityType: a type without a catalog is an error, not an empty schema'
 /** The value editor the builder mounts for the one condition of `schema`'s first property. */
 function rowEditor(schema, value) {
   const prop = schema.properties[0];
-  const fb = new FilterBuilder({schema, value: Filters.group('and', [Filters.cond(prop.name, '=', value)])});
+  const fb = testOwner().build(() =>
+    new FilterBuilder({schema, value: Filters.group('and', [Filters.cond(prop.name, '=', value)])}));
   document.body.append(fb.root);
   return {fb, editor: fb.root.querySelector('[data-u2-part="value"]')};
 }
@@ -232,7 +233,7 @@ smoke('editors: inputType/editor hints resolve after the rules; plain kinds retu
     {name: 'name', type: TYPE.STRING}, {name: 'age', type: TYPE.INT}]);
   const notes = Editors.resolve(propOf(schema, 'notes'), {});
   assert.ok(notes instanceof TextArea);
-  assert.equal(notes.enabled, true, 'a filter value is always writable');
+  assert.equal(notes.disabled === null, true, 'a filter value is always writable');
   notes.dispose();
   assert.equal(Editors.resolve(propOf(schema, 'name'), {}), null);
   assert.equal(Editors.resolve(propOf(schema, 'age'), {}), null);
@@ -252,7 +253,7 @@ smoke('editors: a ref is a type-ahead over schema.values, whose value is the Fil
     const box = input.root.querySelector('[data-u2="typeahead"] input');
     assert.ok(box);
 
-    input.value.value = {type: 'Group', id: 'g2', name: 'Testers'};
+    input.value = {type: 'Group', id: 'g2', name: 'Testers'};
     await flush();
     assert.equal(box.value, 'Testers', 'a written value shows its name');
 
@@ -263,7 +264,7 @@ smoke('editors: a ref is a type-ahead over schema.values, whose value is the Fil
     await flush();
     fire(box, 'keydown', {key: 'Enter'});
     await flush();
-    assert.deepEqual(input.value.value, {type: 'Group', id: 'g1', name: 'Developers'});
+    assert.deepEqual(input.value, {type: 'Group', id: 'g1', name: 'Developers'});
   } finally {
     input.dispose();
   }

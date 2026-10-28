@@ -4,6 +4,7 @@
 
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Substructure Search (top menu) opens the sketcher as soon as the filter's sketch link is there instead of after 500 ms; the scaffold tree's load resolves once its nodes are updated; Crux analyses take the next idle worker when it frees instead of polling every 50 ms; demos: no waits before applying a layout, and the activity cliffs demo awaits its scatter plot check
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Reactions: Removed a 100 ms wait after detecting semantic types, and a table chosen meanwhile no longer gets the previous table's molecule column; R-groups: Removed a 50 ms wait when replacing the latest analysis; MMP: The pair of a clicked row shows on the context panel at once instead of half a second later
+* MPO profiles: The app header is u2's `AppHeader` (moved out of `@datagrok-libraries/utils`): the same icon and bullets
 * Activity Cliffs: The Activities input defaults to a column named like an activity or potency, else the first float column, instead of the first numeric one (the ID on sar_small)
 * Map Identifiers: To Source defaults to chembl instead of the first source in alphabetical order (actor)
 * R-Groups Analysis: Fixed "Invalid regular expression" for a column prefix holding a regular expression character, such as `R(`

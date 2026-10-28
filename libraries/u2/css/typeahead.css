@@ -98,6 +98,11 @@
   height: 100%;
 }
 
+.u2-avatar-group {
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color-light);
+}
+
 .u2-avatar-1 { background: var(--dg-steel-4); }
 .u2-avatar-2 { background: var(--dg-blue-1); }
 .u2-avatar-3 { background: var(--dg-green-2); }

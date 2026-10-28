@@ -6,6 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Control, Tooltip} from '@datagrok-libraries/u2';
+import type {Input} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
 
@@ -32,11 +33,10 @@ category('U2: domain bulk', () => {
     await ready(app.listSource);
   }
 
-  type Field = {value: {value: unknown}, root: HTMLElement};
   /** A control in the dialog by name: the field picker (`fields`), "Apply to" (`target`), a column's editor. */
-  const control = (name: string): Field | undefined => {
+  const control = (name: string): Input<unknown> | undefined => {
     const el = document.querySelector<HTMLElement>(`.u2-dialog [data-u2-name="${name}"]`);
-    return el === null ? undefined : Control.forElement(el) as unknown as Field;
+    return el === null ? undefined : Control.forElement(el) as Input<unknown>;
   };
   const shown = (name: string) =>
     document.querySelector(`.u2-dialog [data-u2-name="${name}"]`)?.closest('[hidden]') === null;
@@ -71,10 +71,10 @@ category('U2: domain bulk', () => {
 
   /** Picks the fields to change, then fills each of them. */
   async function write(values: Record<string, unknown>): Promise<void> {
-    control('fields')!.value.value = Object.keys(values);
+    control('fields')!.value = Object.keys(values);
     await waitUntil(() => Object.keys(values).every(shown), 'the chosen fields show');
     for (const [name, value] of Object.entries(values))
-      control(name)!.value.value = value;
+      control(name)!.value = value;
     await waitUntil(() => !ok().disabled, 'the button is on');
   }
 
@@ -114,7 +114,7 @@ category('U2: domain bulk', () => {
   });
 
   test('the ⋯ menu offers Import…, Bulk edit… and Show deleted', async () => {
-    expect(app.menuActions().map((a) => a.name).join(), 'Import…,Bulk edit…,Show deleted');
+    expect(app.menuActions().map((a) => a.text).join(), 'Import…,Bulk edit…,Show deleted');
   });
 
   test('the field picker decides what is written; the button says why it is off, never a balloon', async () => {
@@ -125,7 +125,7 @@ category('U2: domain bulk', () => {
     expect(await okReason(), 'Choose the fields to change');
     expect((control('target')?.root.textContent ?? '').includes('All 3'), true,
       'no target the server would refuse: nothing is selected, so the filter is the one target');
-    control('fields')!.value.value = ['quantity'];
+    control('fields')!.value = ['quantity'];
     await waitUntil(() => shown('quantity'), 'the chosen field shows');
     expect(shown('quantity'), true, 'a chosen field shows its editor');
     expect(control('quantity')!.root.querySelector('.u2-input-error')?.textContent ?? '', '',

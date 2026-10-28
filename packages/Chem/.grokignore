@@ -1,4 +1,3 @@
 # Not needed on the server: the BDD suite and local benchmark scripts (fewer files to upload)
 bdd/
 misc/
-files/

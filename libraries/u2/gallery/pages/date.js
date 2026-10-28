@@ -122,7 +122,7 @@ export async function render(main) {
     return [
       input,
       readout('validity', computed(() => input.validity.value ?? 'valid')),
-      readout('value', computed(() => iso(input.value.value))),
+      readout('value', computed(() => iso(input.value))),
     ];
   });
 

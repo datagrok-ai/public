@@ -173,7 +173,7 @@ export class TypeAhead<T> extends Control {
       this._commit(exact >= 0 ? exact : 0, document.activeElement === input);
     });
 
-    bindValue(this.scope, input, this._text);
+    bindValue(input, this._text, {owner: this.scope});
     this.scope.listen(input, 'input', () => this._onInput());
     this.scope.listen(input, 'focus', () => this._send({type: 'focus'}));
     this.scope.listen(input, 'blur', () => this._send({type: 'blur'}));

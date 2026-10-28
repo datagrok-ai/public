@@ -356,6 +356,12 @@
   border: var(--dg-border-width) solid var(--dg-border);
 }
 
+/* and so are its pickers: a 120px basis over a chip sized to their content squeezed the operator ("greater tha…") */
+.u2-fb-horizontal .u2-fb-cond > .u2-fb-prop,
+.u2-fb-horizontal .u2-fb-cond > .u2-fb-op {
+  flex-basis: auto;
+}
+
 /* a chip is content-sized: the problem sits after the remove, trimmed before the chip overflows */
 .u2-fb-horizontal .u2-fb-problem {
   flex: 0 1 auto;

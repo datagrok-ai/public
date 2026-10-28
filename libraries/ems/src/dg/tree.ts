@@ -1,10 +1,3 @@
-/* `domains.tree` — a `VirtualTree` over a table the schema declares a hierarchy (`hierarchy:
-   true`, one self-referencing ref column): the roots are the rows whose parent column is empty,
-   a branch loads its children when it is opened, and both go through `DomainTableLike.query` as
-   plain rows — no frame, no writer and no editor per node, which is what makes a tree over a
-   large table affordable. `expandTo` walks the row's ancestors (the platform's `GET …/{id}/path`,
-   which EXCLUDES the row itself), opens every one of them and then selects the row. What the
-   tree is FOR is driving a collection: `selected` feeds a source's query as `<fk> under "<id>"`. */
 import {Control, computed, signal, ReadonlySignal, div, span, VirtualTree, loader} from '@datagrok-libraries/u2';
 import type {TreeNode, Action, DomainRowLike, RowView} from '@datagrok-libraries/u2';
 import {DomainBackendError} from '../core/domain-backend.js';
@@ -32,6 +25,9 @@ const PAGE_SIZE = 500;
 /** The id of the synthetic {@link DomainTreeOptions.allNode} row — no row of the table carries it. */
 const ALL = '~all';
 
+/** A `VirtualTree` over a hierarchy table, a branch loaded when it is opened. Nodes are plain rows: no frame, no
+ * writer and no editor per node, which is what makes a tree over a large table affordable. `selected` feeds a
+ * source's query as `<fk> under "<id>"`. */
 export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Control {
   readonly tree: VirtualTree<RowView<TRow>>;
   /** The row the tree has selected, null while it has none. */
@@ -63,7 +59,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     this._status.dataset.u2Part = 'status';
 
     const render = _options.render;
-    this.tree = this.runInScope(() => new VirtualTree<RowView<TRow>>({
+    this.tree = this.build(() => new VirtualTree<RowView<TRow>>({
       contextActions: (node) => node.data === undefined ? [] : this.actionsFor(node.data),
       render: (node) => node.id === ALL ? span(node.label, 'u2-domain-tree-all') :
         render === undefined ? span(node.label) : render(node.data!),
@@ -174,8 +170,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       void this.tree.expandPath([ALL]);
   }
 
-  /** One level, a page at a time: the rows whose parent column is `id` — null for the roots, which
-   * is what the `is empty` operator compiles to. */
+  // `id` null is the roots: what the `is empty` operator compiles to
   private async _children(id: string | null): Promise<TreeNode<RowView<TRow>>[]> {
     const table = this._table!;
     const limit = this._options.pageSize ?? PAGE_SIZE;

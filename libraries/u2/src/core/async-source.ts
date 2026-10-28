@@ -1,4 +1,6 @@
 import {signal, Signal, ReadonlySignal} from './signals.js';
+import {Ownership} from './owner.js';
+import type {Owner} from './owner.js';
 
 export type AsyncState<T> =
   {kind: 'idle'} |
@@ -11,22 +13,25 @@ export type AsyncFetch<T> = (query: string, abort: AbortSignal) => Promise<T[]>;
 
 /** The async-data contract every u2 async control renders against: debounce, per-keystroke
  * cancellation, and the standardized idle/loading/ready/empty/error-with-retry states —
- * written once so no control hand-rolls spinners or races. */
+ * written once so no control hand-rolls spinners or races. Disposed with its `owner` — whoever was building it by
+ * default — as `AsyncValue` and `AsyncPager` are; after an `await` nobody is: pass the owner. */
 export class AsyncSource<T> {
   readonly state: ReadonlySignal<AsyncState<T>>;
   private readonly _state: Signal<AsyncState<T>>;
   private readonly _fetch: AsyncFetch<T>;
   private readonly _debounceMs: number;
+  private readonly _release: (() => void) | undefined;
   private _query = '';
   private _timer: ReturnType<typeof setTimeout> | undefined;
   private _abort: AbortController | undefined;
   private _disposed = false;
 
-  constructor(fetch: AsyncFetch<T>, options?: {debounceMs?: number}) {
+  constructor(fetch: AsyncFetch<T>, options?: {debounceMs?: number, owner?: Owner}) {
     this._fetch = fetch;
     this._debounceMs = options?.debounceMs ?? 150;
     this._state = signal<AsyncState<T>>({kind: 'idle'});
     this.state = this._state;
+    this._release = Ownership.adopt(options?.owner, () => this.dispose());
   }
 
   query(q: string): void {
@@ -45,6 +50,7 @@ export class AsyncSource<T> {
   dispose(): void {
     this._disposed = true;
     this._cancel();
+    this._release?.();
   }
 
   private _cancel(): void {

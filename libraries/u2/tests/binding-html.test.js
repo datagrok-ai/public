@@ -2,7 +2,7 @@
    appearance group — binds through an engine-owned effect writing the DOM in place. The element
    the node built is the element it keeps: identity is asserted on every follow. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
@@ -190,7 +190,7 @@ spec('a forward-ref bind under an adopting root wires in place — no re-render 
   const el = instance.node('title');
   assert.equal(el.textContent, 'world', 'the value resolved');
 
-  instance.node('who').value.value = 'typed';
+  instance.node('who').value = 'typed';
   await flush();
   assert.equal(el.textContent, 'typed', 'and follows the live source afterwards');
   assert.equal(instance.node('title'), el, 'the element the node built is the element it keeps');

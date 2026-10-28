@@ -2,7 +2,7 @@
    selectable variants. Same contract as the other UI suites — every test leaves the live-scope
    count where it found it. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';

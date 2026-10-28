@@ -1,5 +1,3 @@
-/* `domains.pick`: u2's `PickInput` over a domain table, searching it as the table's own search does
-   through the domain seam, so it works over the memory backend as it does over the server. */
 import {emsBackends, nounOf} from '../core/domain-backend.js';
 import {InputOptions, text, div, span, TypeAhead, Filters, Rows, PickInput} from '@datagrok-libraries/u2';
 import type {ObjectRenderer, DomainCondition, DomainConditionNode, DomainConditionTree,
@@ -40,10 +38,11 @@ export interface DomainPickOptions extends InputOptions<string | null> {
   debounceMs?: number;
 }
 
+/** u2's `PickInput` over a domain table, searching it as the table's own search does through the domain seam, so
+ * it works over the memory backend as it does over the server. */
 export class DomainPick extends PickInput<PickItem> {
   static host: PickHost | undefined;
   private static readonly _short = new WeakMap<DomainTable, Promise<boolean>>();
-  /** The target's plural name once a search has seen its table — the empty row's wording. */
   private static readonly _plural = new Map<string, string>();
 
   constructor(readonly table: string, options: DomainPickOptions = {}) {
@@ -99,7 +98,6 @@ export class DomainPick extends PickInput<PickItem> {
     }, () => undefined);
   }
 
-  /** Whether the whole table fits one popup of ten; counted once per table and backend. */
   private static async isShort(table: string): Promise<boolean> {
     if (DomainPick.host === undefined)
       return false;
@@ -116,7 +114,6 @@ export class DomainPick extends PickInput<PickItem> {
     return (await DomainPick.page(table, query, options)).items;
   }
 
-  /** One popup's worth, by the table's own search in the server's order, and whether more match. */
   private static async page(table: string, query: string,
     options: {filter?: DomainPickOptions['filter'], limit?: number} = {}): Promise<{items: PickItem[], more: boolean}> {
     const t = await DomainPick.table(table);
@@ -220,7 +217,6 @@ export class DomainPick extends PickInput<PickItem> {
     return detail === undefined ? {id: String(row.id), name} : {id: String(row.id), name, detail};
   }
 
-  /** The search over the searchable columns (else the name column) OR-ed with `key`, AND-ed with `extra`. */
   private static orKey(info: DomainTableInfoLike, q: string, key: DomainConditionNode,
     extra: DomainConditionNode[] | undefined): DomainConditionTree {
     const columns = info.searchableColumns.length > 0 ? info.searchableColumns : [DomainPick.nameColumn(info)];
@@ -230,8 +226,7 @@ export class DomainPick extends PickInput<PickItem> {
     return extra === undefined ? match : [match, 'and', ...extra];
   }
 
-  /** The query as the name column's number in its display format (`DG-000482`): the whole ID is that
-   * number, a part after the prefix a range of numbers, bare digits a substring of the number. */
+  // `DG-000482` is that number, a part after the prefix a range of numbers, bare digits a substring of the number
   private static keyCondition(t: DomainTableLike, query: string): DomainConditionNode | undefined {
     const column = DomainPick.nameColumn(t.info);
     const prop = t.properties.find((p) => p.name === column);

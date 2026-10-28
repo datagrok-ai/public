@@ -157,7 +157,7 @@ export class SpecInstance extends Control {
     this.root.classList.add('u2-spec');
     // two phases (Q1): the tray is built first, so a visual bind resolves against it, and started
     // last, so a source param can bind to an input declared anywhere in the form
-    this.runInScope(() => {
+    this.build(() => {
       for (const node of spec.components ?? [])
         this._mountComponent(node);
       this.root.append(SpecInstance._element(this._render(spec.root)));
@@ -347,12 +347,12 @@ export class SpecInstance extends Control {
       try {
         const {signal: source, writable} = this.resolveBinding(d.path);
         if (d.kind === 'apply') {
-          Scope.runWith(mount.scope, () => d.apply!(source));
+          mount.scope.build(() => d.apply!(source));
           continue;
         }
         if (d.twoWay && !writable)
           this._warn(`bind "${d.path}" is read-only — edits will not flow back`);
-        Scope.runWith(mount.scope, () =>
+        mount.scope.build(() =>
           SpecInstance._link(d.built as Control, d.name, d.proxy!, source, d.twoWay && writable));
       } catch (e) {
         this._warn(`${d.node.tag}: ${e instanceof Error ? e.message : String(e)}`);
@@ -409,7 +409,7 @@ export class SpecInstance extends Control {
     this._unmount(node);
     const scope = parent ? this._mounts.get(parent)!.scope : this.scope;
     const meta = parent ? this._registry.get(parent.tag) : undefined;
-    const built = Scope.runWith(scope, () => this._render(node, meta));
+    const built = scope.build(() => this._render(node, meta));
     for (const [at, carry, prev] of carried) {
       const next = this._nodes.get(at);
       if (next !== undefined)
@@ -518,7 +518,7 @@ export class SpecInstance extends Control {
     // while the context panel builds its form would hand a live data source to the panel's scope,
     // and the next `disposePanel()` would take it down
     const scope = this._mount(node, this.scope);
-    Scope.runWith(scope, () => this._ambient(() => {
+    scope.build(() => this._ambient(() => {
       const built = this._buildComponent(node);
       this._nodes.set(node, built);
       if (node.name === undefined)
@@ -610,7 +610,7 @@ export class SpecInstance extends Control {
 
   private _render(node: SpecNode, parent?: ComponentMeta): Control | HTMLElement {
     const scope = this._mount(node);
-    return Scope.runWith(scope, () => {
+    return scope.build(() => {
       const built = this._build(node, parent);
       const el = SpecInstance._element(built);
       this._nodes.set(node, built);
@@ -1224,8 +1224,23 @@ export function parseSpec(json: string | object): Spec {
         throw new Error('u2 spec: every entry of "components" must be a node with a "tag"');
     }
   }
+  const renamed = (node: SpecNode): void => {
+    for (const [from, to] of Object.entries(RENAMED_PROPS)) {
+      if (node.props?.[from] !== undefined || node.bind?.[from] !== undefined)
+        throw new Error(`u2 spec: ${node.tag}${node.name ? ` "${node.name}"` : ''}: prop "${from}" is now ${to}`);
+    }
+    for (const child of childNodes(node))
+      renamed(child);
+  };
+  for (const node of [spec.root, ...spec.components ?? []])
+    renamed(node);
   return spec as Spec;
 }
+
+/** Props a spec may no longer use, with what took their place: a parse error names it. */
+const RENAMED_PROPS: Record<string, string> = {
+  enabled: '"disabled": the reason the user reads while the input is off, empty while it is on',
+};
 
 export function renderSpec(spec: string | object, ctx?: SpecContext, reg?: Registry,
   options?: SpecInstanceOptions): SpecInstance {

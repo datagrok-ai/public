@@ -1,12 +1,3 @@
-/* `domains.authoring.createBinding` — the "Create domain schema" dialog over an external database:
-   **Connection** (the connection and its remote schema; the author's rights on it, the DML trio
-   included; the draft is read as soon as both are picked, and what the server refuses is said
-   right there), **Design** (the `ManifestEditor` over the draft) and **Review** (the manifest as
-   it will be sent beside the findings; VALIDATE is the dry run, bound to the exact payload it
-   checked; CREATE the real one, then the column restrictions, then the table grants). With access
-   rows the dialog ends on **Created** — what was applied, what failed and why, RETRY ACCESS over
-   the failed steps alone, OPEN — since a created schema is never reported as anything else. The
-   server owns every rule — the dialog names its refusals. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Permission} from 'datagrok-api/dg';
@@ -15,7 +6,7 @@ import {computed, signal, Control, div, divV, link, span, plural, Wizard, Sectio
 import type {WizardOptions} from '@datagrok-libraries/u2';
 import {DomainErrors} from '../errors.js';
 import {route} from '../routes.js';
-import {groupInput} from '@datagrok-libraries/u2/src/dg/inputs/group-input.js';
+import {groupInput} from '@datagrok-libraries/u2/dg';
 import {ManifestEditor} from './manifest-editor.js';
 import type {ManifestPlan} from './manifest-editor.js';
 import {ManifestModel} from './manifest-model.js';
@@ -98,14 +89,13 @@ export abstract class BindingWizard<TResult> extends Control {
   wizard!: Wizard;
 
   protected readonly _editor = signal<ManifestEditor | undefined>(undefined);
-  /** The exact payload the dry run passed; anything else is not validated. */
+  // the exact payload the dry run passed; anything else is not validated
   protected readonly _validated = signal<string | null>(null);
   protected readonly _current = computed(() => {
     const editor = this._editor.value;
     return editor === undefined ? null : this._payloadOf(editor);
   });
   protected readonly _issues = divV([], 'u2-binding-issues');
-  /** The payload the editor's diagnostics were found in. */
   protected _diagnosed: string | null = null;
   protected _validateGen = 0;
   private _resolve: ((result: TResult | null) => void) | undefined;
@@ -137,12 +127,11 @@ export abstract class BindingWizard<TResult> extends Control {
     return [{code: DomainErrors.codeOf(e) || 'error', message: DomainErrors.message(e)}];
   }
 
-  /** The payload a validation is bound to, as one string with sorted keys, read so that the
-   * signals it depends on are tracked. */
+  // one string with sorted keys, read so that the signals it depends on are tracked
   protected abstract _payloadOf(editor: ManifestEditor): string;
 
   protected _mount(options: WizardOptions): void {
-    this.wizard = this.runInScope(() => new Wizard(options));
+    this.wizard = this.build(() => new Wizard(options));
     this.wizard.root.classList.add('u2-binding-dialog');
     this.root.append(this.wizard.root);
   }
@@ -185,15 +174,12 @@ export abstract class BindingWizard<TResult> extends Control {
     }
   }
 
-  /** The `DomainSchema` entity of a binding (caption, description, author). The smart filter's
-   * `name` is the caption and its free text searches the caption too, so the binding is found by
-   * its physical schema, `ext_<name>`, which is exact. */
+  // the smart filter's `name` and free text both search the caption: the physical schema is the exact key
   protected static _entity(name: string): Promise<DG.DomainSchema | null> {
     return grok.dapi.domains.schemas.filter(`pgSchema = "ext_${name}"`).list()
       .then((list) => list.find((s) => s.name === name) ?? null);
   }
 
-  /** The app over the table, once the dialog settled; a route no app answers is said. */
   protected static async _openApp(name: string, table: string): Promise<void> {
     try {
       const view = await route(`/domains/${name}/${table}`);
@@ -206,20 +192,17 @@ export abstract class BindingWizard<TResult> extends Control {
     }
   }
 
-  /** JSON with sorted keys: the same value always reads the same. */
   protected static _canonical(value: unknown): string {
     return JSON.stringify(value, (_, v) => v === null || typeof v !== 'object' || Array.isArray(v) ? v :
       Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]])));
   }
 
-  /** A refusal the server answered — not a lost connection, a timeout or a 5xx. */
   protected static _answered(e: unknown): boolean {
     const status = (e as {status?: unknown} | null)?.status;
     return DomainErrors.codeOf(e) !== '' && !(typeof status === 'number' && status >= 500);
   }
 
-  /** A warehouse read that outlasts {@link readTimeout} fails by name — a connector that never
-   * answers (a catalog it cannot open) must not hold the dialog. */
+  // a connector that never answers (a catalog it cannot open) must not hold the dialog
   protected static _within<T>(read: Promise<T>, what: string): Promise<T> {
     let timer: ReturnType<typeof setTimeout>;
     const late = new Promise<never>((_, reject) => timer = setTimeout(() =>
@@ -228,9 +211,6 @@ export abstract class BindingWizard<TResult> extends Control {
     return Promise.race([read, late]).finally(() => clearTimeout(timer));
   }
 
-  /** A failure for the status line: a domain call nothing answered (status 0, no code — the
-   * transport's own words) says so around them, the bare transport failure of the platform's
-   * client says so alone; anything else is the refusal as worded. */
   protected static _failure(e: unknown): string {
     const message = DomainErrors.message(e);
     if (/^XMLHttpRequest error\.?$/.test(message))
@@ -241,6 +221,9 @@ export abstract class BindingWizard<TResult> extends Control {
 }
 
 
+/** The "Create domain schema" dialog: Connection, Design (the `ManifestEditor` over the draft), Review (VALIDATE
+ * is the dry run over the exact payload; CREATE, then the column restrictions, then the table grants) and, with
+ * access rows, Created. The server owns every rule; the dialog names its refusals. */
 export class BindingDialog extends BindingWizard<BindingResult> {
   readonly connection: ChoiceInput;
   readonly schema: ChoiceInput;
@@ -248,12 +231,10 @@ export class BindingDialog extends BindingWizard<BindingResult> {
   private readonly _options: CreateBindingOptions;
   private _connections: DG.DataConnection[] = [];
   private readonly _draft = signal<DraftEnvelope | null>(null);
-  /** What stands between the connection step and Design: the read in progress, or its refusal. */
   private readonly _reading = signal<string | null>(null);
-  /** Why the editor could not be built over the draft. */
   private readonly _designProblem = signal<string | null>(null);
   private readonly _failed = signal(0);
-  /** The create's outcome could not be established: the Created step says what is registered. */
+  // the create's outcome could not be established
   private readonly _unknown = signal(false);
   private readonly _openable = signal(true);
   private readonly _facts = span('Only database connections are offered', 'u2-binding-facts');
@@ -263,11 +244,9 @@ export class BindingDialog extends BindingWizard<BindingResult> {
   private readonly _planned: Section;
   private readonly _createdHost = divV([], 'u2-binding-created');
   private _built: DraftEnvelope | null = null;
-  /** The connection and the remote schema the built draft was read over. */
   private _builtKey: string | null = null;
-  /** The name of a create that got no answer: a later "name taken" may be that create's own. */
+  // a create that got no answer: a later "name taken" may be that create's own
   private _writeHint: string | undefined;
-  /** A failed draft read is on the status line, to be cleared by the next read. */
   private _readProblem = false;
   private _describeGen = 0;
   private _readGen = 0;
@@ -282,15 +261,15 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     super();
     this._options = options;
     this.root.dataset.u2 = 'binding-dialog';
-    this.connection = this.runInScope(() => new ChoiceInput({label: 'Connection', name: 'connection', items: [],
+    this.connection = this.build(() => new ChoiceInput({label: 'Connection', name: 'connection', items: [],
       nullable: false, emptyText: 'Loading connections…'}));
-    this.schema = this.runInScope(() => new ChoiceInput({label: 'Schema', name: 'schema', items: [],
+    this.schema = this.build(() => new ChoiceInput({label: 'Schema', name: 'schema', items: [],
       nullable: false, emptyText: 'Pick a connection first'}));
     this._json.className = 'u2-binding-json';
-    this._planned = this.runInScope(() => new Section({title: 'Planned access', collapsible: false}));
+    this._planned = this.build(() => new Section({title: 'Planned access', collapsible: false}));
     this._planned.root.classList.add('u2-binding-planned');
     // the connection step is built up front: it starts the reads, whichever step opens first
-    const connection = this.runInScope(() => this._connectionStep());
+    const connection = this.build(() => this._connectionStep());
     this._mount({
       start: options.connection !== undefined && options.schema !== undefined ? 'design' : undefined,
       steps: [
@@ -302,7 +281,8 @@ export class BindingDialog extends BindingWizard<BindingResult> {
           onActivate: () => this._review(), actions: [{text: 'VALIDATE', run: () => this._validate()}],
           canProceed: () => this._reviewGate(), commit: () => this._create()},
         {id: 'created', title: 'Created', content: () => this._createdHost, done: true, actions: [
-          {text: 'RETRY ACCESS', run: () => this._retry(), enabled: computed(() => this._failed.value > 0),
+          {text: 'RETRY ACCESS', run: () => this._retry(),
+            disabled: computed(() => this._failed.value > 0 ? null : 'No access step is left to retry'),
             visible: computed(() => !this._unknown.value)},
           {text: 'OPEN', run: () => this._openAndClose(), visible: this._openable},
         ]},
@@ -323,7 +303,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
   }
 
   private _picked(): DG.DataConnection | undefined {
-    const id = this.connection.value.value;
+    const id = this.connection.value;
     return this._connections.find((c) => c.id === id);
   }
 
@@ -347,7 +327,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     });
     form.effect(() => {
       const conn = this._picked();
-      const schema = this.schema.value.value;
+      const schema = this.schema.value;
       const gen = ++this._readGen;
       this._draft.value = null;
       this._reading.value = null;
@@ -366,11 +346,11 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     this._connections = preset !== undefined && !list.some((c) => c.id === preset.id) ? [preset, ...list] : list;
     this.connection.setItems(this._connections.map((c) =>
       ({value: c.id, label: `${c.friendlyName} (${c.dataSource})`})));
-    if (preset !== undefined && this.connection.value.peek() === null)
-      this.connection.value.value = preset.id;
+    if (preset !== undefined && this.connection.peek() === null)
+      this.connection.value = preset.id;
   }
 
-  /** Every connection, page by page: the list is not capped. */
+  // page by page: the list is not capped
   private async _load(preset: DG.DataConnection | undefined): Promise<void> {
     try {
       const list: DG.DataConnection[] = [];
@@ -390,7 +370,6 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     }
   }
 
-  /** The catalog preset belongs to the preset connection; another one picked is read whole. */
   private _catalogOf(conn: DG.DataConnection): string | undefined {
     return conn.id === this._options.connection?.id ? this._options.catalog : undefined;
   }
@@ -410,7 +389,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       const items = preset !== undefined && !schemas.includes(preset) ? [preset, ...schemas] : schemas;
       this.schema.setItems(items.map((s) => ({value: s, label: s})));
       if (preset !== undefined)
-        this.schema.value.value = preset;
+        this.schema.value = preset;
       stage = 'Your rights on the connection';
       const rights = ['GetSchema', 'Query', ...DML];
       const granted = await Promise.all(rights.map((r) => grok.dapi.permissions.check(conn, `DataConnection.${r}`)));
@@ -434,9 +413,9 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       this._facts.classList.add('u2-binding-problem');
       // a preset schema is still worth a draft: the read names its own failure, the picker stays
       const preset = this._options.schema;
-      if (stage === 'The schemas' && preset !== undefined && this.schema.value.peek() === null) {
+      if (stage === 'The schemas' && preset !== undefined && this.schema.peek() === null) {
         this.schema.setItems([{value: preset, label: preset}]);
-        this.schema.value.value = preset;
+        this.schema.value = preset;
       }
     }
   }
@@ -472,8 +451,6 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     }
   }
 
-  /** The editor over the current draft, built on the first visit and again when the draft behind
-   * it changed (another connection or schema; the same one picked again keeps it). */
   private async _design(): Promise<void> {
     const draft = this._draft.peek();
     if (draft === null || draft === this._built)
@@ -484,9 +461,9 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       if (this.scope.isDisposed || this._draft.peek() !== draft)
         return;
       const conn = this._picked()!;
-      const schema = this.schema.value.peek()!;
+      const schema = this.schema.peek()!;
       const wanted = this._options.groups;
-      const editor = this.runInScope(() => new ManifestEditor(draft, {
+      const editor = this.build(() => new ManifestEditor(draft, {
         context: {mode: 'create', storage: 'external'}, writableDisabled: this._writeHint,
         principalPicker: (onPick) => groupInput({
           accept: wanted === undefined ? undefined : (g) => wanted.includes(g.friendlyName),
@@ -530,10 +507,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     }
   }
 
-  /** The registry is not listed — it may hold thousands of schemas: the proposed identifier is
-   * probed by name and stepped past every registered one. Answers why the probe stopped short,
-   * null when it settled: an unanswered probe leaves the name as proposed (a taken one is
-   * refused at CREATE all the same). */
+  // probed by name, as the registry may hold thousands of schemas; a name left unchecked is refused at CREATE if taken
   private async _clearName(model: ManifestModel, label: string): Promise<string | null> {
     for (;;) {
       const name = model.proposeName(label);
@@ -567,8 +541,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     return div([this._json, divV([this._planned.root, this._issues], 'u2-binding-review-side')], 'u2-binding-review');
   }
 
-  /** The create envelope: the name, the friendly name and the manifest — the access rows are
-   * applied afterwards and are no part of it. */
+  // the access rows are applied after the create and are no part of its payload
   protected _payloadOf(editor: ManifestEditor): string {
     const model = editor.model;
     model.revision.value;
@@ -580,14 +553,12 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     return `${conn.id}\u0000${schema}`;
   }
 
-  /** The validation holds for the editor over the draft picked now, nothing older. */
   private _reviewGate(): string | null {
     const draft = this._draft.value;
     return draft !== null && draft === this._built && this._isValidated() ? null : 'Validate before creating';
   }
 
-  /** Rebuilt on every activation — the step's content is built once, and Design may have changed
-   * since. */
+  // on every activation: the step's content is built once, and Design may have changed since
   private _review(): void {
     const editor = this.editor!;
     this._json.textContent = JSON.stringify(editor.model.toJSON(), null, 2);
@@ -596,8 +567,6 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     this._renderIssues();
   }
 
-  /** What CREATE applies after the create, in the order it applies it, by the labels the Created
-   * step reports — the dry run checks the manifest alone. */
   private _renderPlanned(): void {
     const ops = BindingDialog._accessOps(this.editor!.plan());
     this._planned.body.replaceChildren(
@@ -607,8 +576,6 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       ...ops.map((op) => span(op.label, 'u2-binding-planned-op')));
   }
 
-  /** The dry run over the payload as it stands; an answer to a payload since changed, or to an
-   * older run, is dropped. A failure the server did not answer is no finding. */
   private async _validate(): Promise<void> {
     const editor = this.editor!;
     const plan = editor.plan();
@@ -636,9 +603,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     this._renderIssues();
   }
 
-  /** The create, then the access rows; the schema exists once the create answered, and the
-   * dialog reports it as created whatever the access rows say: without any, today's short way
-   * (a toast, the app, the promise); with some, the Created step. */
+  // once the create answered the schema exists: it is reported created whatever the access rows say
   private async _create(): Promise<boolean> {
     const plan = this.editor!.plan();
     this._say('Creating…');
@@ -676,9 +641,8 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     return false;
   }
 
-  /** A refusal lands on the findings. A create left unanswered ends the dialog with the outcome
-   * unknown, whatever the registry then says: nothing proves a registered schema this create's own,
-   * and a missing one may still be on its way, so no access is applied and nothing is sent again. */
+  // an unanswered create's outcome stays unknown whatever the registry says: nothing proves a registered schema
+  // this create's own, and a missing one may still be on its way, so no access is applied and nothing resent
   private async _lost(plan: ManifestPlan, e: unknown): Promise<boolean> {
     if (!BindingDialog._answered(e)) {
       this._say('No answer to the create — reading the registry…');
@@ -702,7 +666,6 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     return false;
   }
 
-  /** No access is sent; the Created step says what the registry holds under the name, if anything. */
   private _outcomeUnknown(plan: ManifestPlan, e: unknown, registered: DG.DomainRegisteredManifest | null,
     unread: string | null): void {
     const tables = Object.keys(registered?.tables ?? {});
@@ -732,7 +695,6 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     this._say('Outcome unknown — no access was applied', true);
   }
 
-  /** The groups of the access rows the platform no longer knows, by label, found in one look-up. */
   private static async _missingGroups(plan: ManifestPlan): Promise<string[]> {
     const labels = new Map<string, string>();
     for (const g of plan.grants)
@@ -763,9 +725,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     this._renderCreated();
   }
 
-  /** Restrictions first — a column meant for some is never readable by all in between — then the
-   * grants, none on a table whose restriction failed. What failed stays for a retry, unless its
-   * group is gone: no retry brings that back. */
+  // restrictions first: a column meant for some is never readable by all in between
   private async _applyAccess(ops: AccessOp[]): Promise<void> {
     const access = this._result!.access;
     const failed: AccessFailure[] = [];
@@ -802,9 +762,8 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     this._failed.value = open.length;
   }
 
-  /** One step per column, group and permission, so a retry repeats no share that went through; a
-   * visibility group gets View, and Edit too where the table is editable, or it could not write it.
-   * The labels are what Review previews and Created reports. */
+  // one step per column, group and permission, so a retry repeats no share that went through; a visibility
+  // group gets Edit too where the table is editable, or it could not write it
   private static _accessOps(plan: ManifestPlan): AccessOp[] {
     const table = (t: string): DG.DomainTableClient => grok.dapi.domains.table(`${plan.name}.${t}`);
     const ops: AccessOp[] = [];

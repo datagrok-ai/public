@@ -25,6 +25,20 @@
   background: var(--dg-backdrop);
 }
 
+/* `show({visible})`: a dialog pinned to a view, while another view is current */
+.u2-dialog[hidden],
+.u2-dialog-backdrop[hidden] {
+  display: none;
+}
+
+/* `show({resizable: true})`: the corner grip resizes it */
+.u2-dialog-resizable {
+  min-width: 240px;
+  min-height: 160px;
+  overflow: hidden;
+  resize: both;
+}
+
 /* the platform's header (d4.css .d4-dialog-header): 34px, an 18px regular title */
 .u2-dialog-title {
   display: flex;
@@ -91,6 +105,11 @@
   overflow: auto;
 }
 
+/* a fixed (`show({height})`) or user-set height: the body fills it, the footer stays at the bottom */
+.u2-dialog-sized > .u2-dialog-content {
+  max-height: none;
+}
+
 /* inputs placed straight in the body read like the platform dialog's form (ui.css
    .d4-dialog-contents.ui-form): grey right-aligned captions in one column as wide as the longest,
    set on show (dialog.ts `_alignLabels`), cut with an ellipsis past 200px. A Form in the body
@@ -151,8 +170,19 @@
   text-align: center;
 }
 
-.u2-dialog-reason:not(.u2-status-line-problem) {
+.u2-dialog-reason:not(.u2-status-line-problem):not(.u2-dialog-status) {
   display: none;
+}
+
+/* status(): the line opens the footer, after its start buttons, and says what the action does */
+.u2-dialog-reason.u2-dialog-status {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+/* addButton({start}): the dialog's tools at the left, the outcomes at the right */
+.u2-dialog-start + :not(.u2-dialog-start):not(.u2-dialog-reason) {
+  margin-left: auto;
 }
 
 /* the spinner a busy OK shows beside its caption, in the caption's colour */
@@ -174,4 +204,27 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* confirm(): the question beside a 22px icon, a quieter line under it */
+.u2-confirm {
+  display: flex;
+  gap: 14px;
+  max-width: 440px;
+}
+
+.u2-confirm-icon {
+  flex-shrink: 0;
+  font-size: 22px;
+  color: var(--dg-error);
+}
+
+.u2-confirm-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.u2-confirm-detail {
+  color: var(--dg-text-color-light);
 }

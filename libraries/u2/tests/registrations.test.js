@@ -1,9 +1,10 @@
 /* The real registrations: every v1 component registers with metadata that survives JSON, and every
    registered example renders through the spec renderer without a placeholder and disposes clean. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
 import {Registry} from '../src/spec/registry.js';
@@ -67,6 +68,15 @@ spec('registerAll: fills a fresh registry and is idempotent', () => {
   assert.equal(components(reg).length, tags.length, 'a second call registers nothing new');
 });
 
+spec('an unknown u2 tag says to call registerAll() until it has run, whatever else is registered', () => {
+  const reg = new Registry();
+  reg.register({tag: 'u2-text-input', description: 'A text input', props: [], create: () => new TextInput()});
+  assert.match(reg.missingTagHint('u2-nope'), /call registerAll\(\) first/);
+  const all = registry();
+  assert.equal(all.builtins, true);
+  assert.equal(all.missingTagHint('u2-nope'), null);
+});
+
 spec('manifest: survives JSON and describes every component', () => {
   const manifest = registry().manifest();
   const restored = JSON.parse(JSON.stringify(manifest));
@@ -96,7 +106,7 @@ spec('every registered example renders without a placeholder and disposes clean'
         {$schema: 'dg-ui/1', root: {tag: 'div'}, components: [meta.example]} :
         {$schema: 'dg-ui/1', root: meta.example};
       const instance = renderSpec(spec, new SpecContext(), reg);
-      const errors = instance.root.querySelectorAll('.u2-spec-error');
+      const errors = [...instance.root.querySelectorAll('.u2-spec-error')];
       assert.equal(errors.length, 0, `${meta.tag}: ${errors.map((e) => e.textContent).join('; ')}`);
       instances.push(instance);
     }
@@ -206,7 +216,7 @@ spec('u2-splitter: spec children become the panels, and the sash still resizes',
   assert.equal(panels[1].querySelector('textarea') !== null, true);
   assert.equal(sash.getAttribute('aria-valuenow'), '30', 'the sizes prop reached the constructor');
 
-  instance.root.querySelector('.u2-splitter').clientWidth = 600;
+  layout(instance.root.querySelector('.u2-splitter'), {clientWidth: 600});
   fire(sash, 'keydown', {key: 'ArrowRight'});
   assert.equal(sash.getAttribute('aria-valuenow'), '32');
   instance.dispose();
@@ -227,8 +237,8 @@ spec('u2-form: input children join the form and share its label column', async (
   assert.equal(rows.length, 2, 'both inputs went through Form.add');
 
   const labels = instance.root.querySelectorAll('.u2-input-label');
-  labels[0].offsetWidth = 40;
-  labels[1].offsetWidth = 64;
+  layout(labels[0], {offsetWidth: 40});
+  layout(labels[1], {offsetWidth: 64});
   await flush();
   const form = instance.root.querySelector('.u2-form');
   assert.equal(form.style.getPropertyValue('--u2-form-label-width'), '64px', 'the labels are aligned');
@@ -252,7 +262,7 @@ spec('u2-form: adopt takes inputs into the form and aggregates their validity', 
   });
   assert.deepEqual([...form.inputs], [name]);
   assert.equal(form.validity.value, 'Name is required', 'an invalid child invalidates the form');
-  name.value.value = 'Aspirin';
+  name.value = 'Aspirin';
   assert.equal(form.validity.value, null);
   assert.deepEqual([...form.root.querySelector('.u2-form-rows').children], [name.root, stray],
     'a non-input is a row in adopt order');
@@ -276,7 +286,7 @@ spec('u2-accordion: child nodes title the panes, and the headers still toggle', 
   document.body.append(instance.root);
 
   assert.deepEqual(warnings, [], 'a child title is declared metadata, not an unknown prop');
-  const titles = instance.root.querySelectorAll('.u2-accordion-title').map((el) => el.textContent);
+  const titles = [...instance.root.querySelectorAll('.u2-accordion-title')].map((el) => el.textContent);
   assert.deepEqual(titles, ['General', 'Pane 2']);
 
   const contents = instance.root.querySelectorAll('.u2-accordion-content');
@@ -298,7 +308,7 @@ spec('u2-tabs: child nodes label the tabs, and activation switches panels', () =
   }, new SpecContext(), reg);
   document.body.append(instance.root);
 
-  const labels = instance.root.querySelectorAll('.u2-tabs-label').map((el) => el.textContent);
+  const labels = [...instance.root.querySelectorAll('.u2-tabs-label')].map((el) => el.textContent);
   assert.deepEqual(labels, ['Data', 'Tab 2']);
   const panels = instance.root.querySelectorAll('.u2-tabs-panel');
   assert.equal(panels[0].style.display, '');
@@ -332,7 +342,7 @@ spec('u2-button with an icon, u2-icon and u2-icon-input render; the icon props a
   assert.equal(['grok-icon', 'u2-icon', 'fab', 'fa-github', 'u2-icon-large'].every((c) => glyph.classList.contains(c)), true);
   const pick = instance.node('pick');
   assert.equal(pick.root.dataset.u2, 'icon-input');
-  assert.equal(pick.value.value, 'star');
+  assert.equal(pick.value, 'star');
   assert.deepEqual(instance.dump().root.children[3], {tag: 'u2-icon-input', name: 'pick', props: {label: 'Icon', value: 'star'}});
   instance.dispose();
 
@@ -369,10 +379,10 @@ spec('u2-tabs and u2-accordion: the child icon prop renders, the tabs props pick
   const tabs = instance.root.querySelector('.u2-tabs');
   assert.equal(tabs.classList.contains('u2-tabs-vertical'), true);
   assert.equal(tabs.classList.contains('u2-tabs-document'), true);
-  const tabIcons = tabs.querySelectorAll('.u2-tabs-tab').map((t) => t.querySelector('.u2-tabs-icon .fa-table'));
+  const tabIcons = [...tabs.querySelectorAll('.u2-tabs-tab')].map((t) => t.querySelector('.u2-tabs-icon .fa-table'));
   assert.equal(tabIcons[0] !== null, true, 'the first tab carries its icon');
   assert.equal(tabIcons[1], null);
-  const paneIcons = instance.root.querySelectorAll('.u2-accordion-header')
+  const paneIcons = [...instance.root.querySelectorAll('.u2-accordion-header')]
     .map((h) => h.querySelector('.u2-accordion-icon .fa-cog'));
   assert.equal(paneIcons[0] !== null, true, 'the first pane carries its icon');
   assert.equal(paneIcons[1], null);

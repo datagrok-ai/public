@@ -39,7 +39,7 @@ export class IconInput extends Input<string, IconInputOptions> {
     for (const [k, v] of [['role', 'button'], ['aria-haspopup', 'listbox'], ['aria-expanded', 'false']])
       control.setAttribute(k, v);
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       preview.replaceChildren(...(value ? [icon(value)] : []));
       name.textContent = value || '—';
     });
@@ -48,7 +48,7 @@ export class IconInput extends Input<string, IconInputOptions> {
       const key = (e as KeyboardEvent).key;
       const clear = (key === 'Backspace' || key === 'Delete') && this.nullable;
       if (clear)
-        this.value.value = '';
+        this.value = '';
       else if (key === 'Enter' || key === ' ')
         this._toggle();
       else
@@ -60,19 +60,22 @@ export class IconInput extends Input<string, IconInputOptions> {
   }
 
   private _toggle(): void {
-    if (!this.enabled) // the editor is a div, so the base's disabled sweep never reaches it
+    if (this.disabled !== null) // the editor is a div, so the base's disabled sweep never reaches it
       return;
     if (this._popup)
       return this._close();
     const scope = this._popup = new Scope();
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       const names = this.options.names ?? ALL;
       const search = new TextInput({placeholder: 'Search…', search: true, inline: true});
       const grid = new VirtualGrid<string>({cellWidth: 28, cellHeight: 28,
         render: (n, _i, cell) => { cell.title = n; return icon(n); },
-        onActivate: (n) => { this.value.value = n; this._close(); }});
+        onActivate: (n) => {
+          this.value = n;
+          this._close();
+        }});
       scope.effect(() => {
-        const q = search.value.value.trim().toLowerCase().replace(/\s+/g, '-');
+        const q = search.value.trim().toLowerCase().replace(/\s+/g, '-');
         grid.setItems(q ? names.filter((n) => n.includes(q)) : names);
       });
       const popup = divV([search, grid], 'u2-icon-input-popup');
@@ -81,7 +84,7 @@ export class IconInput extends Input<string, IconInputOptions> {
           grid.onKeyDown(e as KeyboardEvent);
       });
       scope.listen(popup, OVERLAY_CLOSE_EVENT, () => this._close());
-      Overlay.show(this._control, popup, scope);
+      Overlay.show(this._control, popup, {owner: scope});
       this._control.setAttribute('aria-expanded', 'true');
       search.root.querySelector<HTMLElement>('input')?.focus();
     });

@@ -125,7 +125,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     const o = this.options;
     // the text is still exactly what the tree in force reads as: nothing to parse, and a displayed
     // form that is not the formatter's (a preset's `$me`) is not turned into a query of its own
-    if (this._raw.peek() === null && this._text.peek() === this._display(this.value.peek())) {
+    if (this._raw.peek() === null && this._text.peek() === this._display(this.peek())) {
       // the text IS the tree in force again (the box was cleared back to it): whatever the last
       // refused commit reported is no longer about what is in the box, and holding on to it left
       // the box red and the collection marked stale over rows that were right all along
@@ -143,11 +143,11 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     }
     this._dirty = false;
     this._raw.value = null;
-    const current = this.value.peek();
+    const current = this.peek();
     if (Filters.equals(root, current))
       this._text.value = this._display(current);
     else
-      this.value.value = root;
+      this.value = root;
     return true;
   }
 
@@ -185,7 +185,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
 
   getWidgetStatus(): FilterQueryInputStatus {
     const status = super.getWidgetStatus() as FilterQueryInputStatus;
-    status.tree = this.value.peek();
+    status.tree = this.peek();
     status.query = this._text.peek();
     status.problems = this._problems.peek();
     status.mode = 'text';
@@ -240,7 +240,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     });
     this.own(() => this._abort?.abort());
 
-    bindValue(this.scope, input, this._text);
+    bindValue(input, this._text, {owner: this.scope});
     this.scope.listen(input, 'input', () => {
       this._dirty = true;
       this._suggest();
@@ -265,7 +265,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     });
     this.scope.listen(input, 'select', refreshIfOpen);
     this.scope.listen(input, 'focus', () => {
-      if (this._text.peek() === this._display(this.value.peek()))
+      if (this._text.peek() === this._display(this.peek()))
         this._dirty = false;
     });
     this.scope.listen(input, 'blur', () => {
@@ -297,7 +297,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
   /** The bound tree re-formats the text — except under the user's feet, or over text {@link
    * showText} put there that no commit has taken yet. */
   private _syncText(): void {
-    const root = this.value.value;
+    const root = this.value;
     if (this._raw.peek() !== null || (this._dirty && document.activeElement === this._input))
       return;
     this._dirty = false;
@@ -456,6 +456,8 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     // that only filled a slot leaves the caret where the value ended
     const applied = this._applyPick();
     const at = applied ? this._text.peek().length : caret;
+    // the box follows the text only when the handler's batch ends: a caret placed in the old text is clamped to it
+    this._input.value = this._text.peek();
     this._input.setSelectionRange?.(at, at);
     if (applied)
       this._list.dismiss();

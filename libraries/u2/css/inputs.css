@@ -132,10 +132,10 @@ textarea.u2-input-editor,
 }
 
 /* read-only: the value stays readable and selectable; input-base.ts stops the gestures that would
-   change it, and the side controls take no pointer */
-.u2-input-readonly .u2-input-options,
-.u2-input-readonly .u2-input-clear,
-.u2-input-readonly input[type='range'] {
+   change it, and the side controls that edit take no pointer. A range keeps it: its value shows only
+   in the hover tooltip */
+.u2-input-readonly .u2-input-options > .u2-input-edit-option,
+.u2-input-readonly .u2-input-clear {
   pointer-events: none;
 }
 
@@ -208,6 +208,14 @@ textarea.u2-input-editor {
 /* as wide as the platform input in it, so the verdict wraps under it instead of clipping beside it */
 .u2-input-root[data-u2='dart-input'] > .u2-input-box {
   flex: 0 1 auto;
+}
+
+/* `fill: true` stretches a bridged input across its row, as it does a u2 one: the platform root inside grows, and
+   its editor with it (ui.css gives the editor flex: 1 already) */
+.u2-input-root.u2-input-fill[data-u2='dart-input'] > .u2-input-box,
+.u2-input-root.u2-input-fill[data-u2='dart-input'] > .u2-input-box > .ui-input-root {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* a bridged input's own caption carries the required asterisk, hanging as u2's own does */

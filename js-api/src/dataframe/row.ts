@@ -32,7 +32,9 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
  *
  * The Row constructor returns a Proxy that intercepts property access. When you access
  * `row.columnName`, the Proxy checks if it's a built-in property (`table`, `idx`, `cells`,
- * `get`, `toDart`, `toMap`). If not, it delegates to `table.get(columnName, idx)`.
+ * `get`, `toDart`, `toMap`). If not, it delegates to `table.get(columnName, idx)`. `then` and symbol keys are not
+ * columns: they answer `undefined`, so a row can be awaited or resolved; read a column named `then` with
+ * `row.get('then')`.
  *
  * This provides a convenient syntax but has implications:
  * - `instanceof Row` checks may not work as expected (the Proxy is returned, not `this`)
@@ -89,6 +91,9 @@ export class Row {
       get(target: any, name) {
         // Pass through known Row properties
         if (name == 'cells' || name == 'get' || name == 'toDart' || name == 'toMap' || target.hasOwnProperty(name))
+          return target[<any>name];
+        // a row is no promise (`await row`, `Promise.resolve(row)` read `then`), and a symbol is no column name
+        if (name == 'then' || typeof name === 'symbol')
           return target[<any>name];
         // Otherwise, treat as column name access
         return target.table.get(name, target.idx);

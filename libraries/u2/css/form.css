@@ -6,7 +6,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  max-width: 700px;
+  max-width: var(--u2-form-max-width, 700px);
   font-family: var(--dg-font-family);
   font-size: var(--dg-font-size);
   line-height: var(--dg-line-height);
@@ -45,6 +45,11 @@
 .u2-form-captions-left .u2-input-label,
 .u2-form-captions-left .ui-input-label {
   text-align: left;
+}
+
+/* the space between two sections of a form: --u2-form-section-gap, set on an element around it */
+.u2-form-rows > .u2-section + .u2-section {
+  margin-top: var(--u2-form-section-gap, 0);
 }
 
 /* a non-input row (Form.addElement) carries the pitch the input roots get from their padding */
@@ -146,9 +151,10 @@
   margin-top: 0;
 }
 
-/* wide — the platform's ui-form-wide (ui.css:635-688): captions stay left, editors fill the row */
+/* wide — the platform's ui-form-wide (ui.css:635-688): captions stay left, editors fill the row, up to the form's
+   or its page's max width when one is set */
 .u2-form-wide {
-  max-width: none;
+  max-width: var(--u2-form-max-width, none);
 }
 
 .u2-form-wide .u2-input-box {
@@ -352,6 +358,8 @@
 .u2-form-buttons {
   display: flex;
   justify-content: flex-end;
+  /* a statusLine beside the buttons ("Saved") sits on their middle */
+  align-items: center;
   gap: var(--dg-space-m);
   margin-top: var(--dg-space-l);
 }

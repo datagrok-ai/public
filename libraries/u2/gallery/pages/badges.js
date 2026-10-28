@@ -121,11 +121,11 @@ export async function render(main) {
     bar.root.style.width = '360px';
     let timer = 0;
     const simulate = () => {
-      bar.value.value = 0;
+      bar.value = 0;
       clearTimeout(timer);
       const step = () => {
-        bar.value.value += 0.05;
-        if (bar.value.value < 1)
+        bar.value += 0.05;
+        if (bar.value < 1)
           timer = setTimeout(step, 120);
       };
       timer = setTimeout(step, 120);
@@ -134,14 +134,14 @@ export async function render(main) {
     return [
       bar,
       row([
-        button('+10%', () => bar.value.value += 0.1),
+        button('+10%', () => bar.value += 0.1),
         button('Simulate work', simulate),
         button('Reset', () => {
           clearTimeout(timer);
-          bar.value.value = 0;
+          bar.value = 0;
         }),
       ]),
-      readout('value', computed(() => bar.value.value.toFixed(2))),
+      readout('value', computed(() => bar.value.toFixed(2))),
     ];
   });
 
@@ -156,7 +156,7 @@ export async function render(main) {
           bar.indeterminate = !bar.indeterminate;
           state.value = bar.indeterminate ? 'indeterminate' : 'determinate';
           if (!bar.indeterminate)
-            bar.value.value = 0.35;
+            bar.value = 0.35;
         }),
       ]),
       readout('mode', computed(() => `${state.value} (aria-valuenow is dropped while indeterminate)`)),
@@ -170,7 +170,7 @@ export async function render(main) {
       description: computed(() => `Uploading ${done.value} of 24 files`),
     });
     bar.root.style.width = '360px';
-    bar.effect(() => bar.value.value = done.value / 24);
+    bar.effect(() => bar.value = done.value / 24);
     const move = (delta) => () => done.value = Math.max(0, Math.min(24, done.value + delta));
     return [
       bar,

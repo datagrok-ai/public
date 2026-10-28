@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Manage Monomers: The R-group chips are u2's `ChoiceChip` (same look, menu, keyboard and reasons); the hand-built chip, its menu wiring and its 11 CSS rules are gone
+* Monomer Collections: The New, Edit, Duplicate and Merge dialogs build their inputs under the dialog, so they go with it and no longer fail with a u2 `owner-missing` error where u2 is strict (dev, tests)
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Manage Monomers sets its column widths once semantic types are detected and scrolls to a saved monomer right after, instead of after 200 and 500 ms; the MSA header refreshes on filter at once; demos: no waits before applying a layout, and the siRNA demo detects types before its layout
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Substructure filters: Fixed a second change event emitted a task after each edit; Monomer libraries: Fixed a 60 s timer left running after every awaited load; Duplicate monomers: refreshes right after the preference is saved; MSA header: Drawn right after the grid is added instead of a second later (it is set up again when columns or semantic types change, so nothing waits on the second)
 * Activity Cliffs: The Activities input defaults to a column named like an activity or potency, else the first float column, instead of the first numeric one (Length on the FASTA sample)

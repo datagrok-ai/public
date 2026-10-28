@@ -59,9 +59,9 @@ category('U2: domain trash', () => {
 
   test('a deleted row leaves the list; the ⋯ menu offers Show deleted', async () => {
     expect(names(), 'Alpha,Beta');
-    expect(app.menuActions().map((a) => a.name).join(), 'Import…,Bulk edit…,Show deleted');
+    expect(app.menuActions().map((a) => a.text).join(), 'Import…,Bulk edit…,Show deleted');
     const row = app.listSource.rows.byKey(goneId)!;
-    const del = app.list.actionsFor(row).find((a) => a.name === 'Delete')!;
+    const del = app.list.actionsFor(row).find((a) => a.text === 'Delete')!;
     expect(del !== undefined, true, 'Delete is the row action on a live row');
     del.run();
     expect(app.session.isDirty.value, true);
@@ -81,7 +81,7 @@ category('U2: domain trash', () => {
     expect(Rows.isDeleted(row), true, 'the row carries ~is_deleted');
     expect(app.listSource.access.value.can('edit'), false, 'the trash is read-only');
     expect(app.listSource.access.value.row(row).can('edit'), false, 'and no row can lift that');
-    expect(app.list.actionsFor(row).map((a) => a.name).join(), 'Restore');
+    expect(app.list.actionsFor(row).map((a) => a.text).join(), 'Restore');
     expect(app.list.root.querySelector(`[data-u2-row="${goneId}"]`)!
       .classList.contains('u2-domain-list-deleted'), true);
     expect(app.menuActions().length, 0);
@@ -89,7 +89,7 @@ category('U2: domain trash', () => {
 
   const restore = (): void => {
     const row = app.listSource.rows.byKey(goneId)!;
-    app.list.actionsFor(row).find((a) => a.name === 'Restore')!.run();
+    app.list.actionsFor(row).find((a) => a.text === 'Restore')!.run();
   };
 
   test('Restore stages into the session, and Discard takes it back', async () => {
@@ -98,7 +98,7 @@ category('U2: domain trash', () => {
     expect(app.session.changeCount.value, 1);
     expect(app.listSource.summary.value, '1 restore pending');
     const row = app.listSource.rows.byKey(goneId)!;
-    expect(app.list.actionsFor(row).map((a) => a.name).join(), 'Undo restore');
+    expect(app.list.actionsFor(row).map((a) => a.text).join(), 'Undo restore');
     expect(app.list.root.querySelector(`[data-u2-row="${goneId}"]`)!
       .classList.contains('u2-domain-list-restored'), true);
     expect((await items().get(goneId, {deleted: 'only'}))['~is_deleted'], true, 'nothing was written');

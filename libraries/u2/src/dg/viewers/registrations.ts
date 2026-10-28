@@ -124,13 +124,13 @@ function ask(title: string, owner: Scope | undefined, make: () => ChoiceInput): 
     owner?.own(cancel);
     scope.own(() => owner?.disown(cancel));
     try {
-      Scope.runWith(scope, () => {
+      scope.build(() => {
         const input = make();
         new Dialog(title)
           .add(input)
-          .onOK(() => finish(input.value.peek()))
+          .onOK(() => finish(input.peek()))
           .onCancel(cancel)
-          .okEnabled(computed(() => input.value.value !== null))
+          .okDisabled(computed(() => input.value !== null ? null : `Pick ${input.label || 'one'} first`))
           .show({modal: true, width: 360});
       });
     } catch (e) {
@@ -141,12 +141,12 @@ function ask(title: string, owner: Scope | undefined, make: () => ChoiceInput): 
 }
 
 export const ADD_FILTER: DesignerAction = {
-  name: 'Add filter for column…',
+  text: 'Add filter for column…',
   icon: 'filter',
   produce: async (node, built) => {
     const viewer = built instanceof DG.Viewer ? built : null;
     if (viewer?.dataFrame == null || viewer.dataFrame.columns.names().length === 0) {
-      grok.shell.warning(`${ADD_FILTER.name}: no table to pick a column from — bind \`table\` to a source first`);
+      grok.shell.warning(`${ADD_FILTER.text}: no table to pick a column from — bind \`table\` to a source first`);
       return null;
     }
     const df = viewer.dataFrame;
@@ -164,12 +164,12 @@ export const ADD_FILTER: DesignerAction = {
  * dialog leaves the list — the key itself when it was the last; the panes the platform built from
  * `columnNames` are not the document's to remove. */
 export const REMOVE_FILTER: DesignerAction = {
-  name: 'Remove filter…',
+  text: 'Remove filter…',
   icon: 'filter',
   produce: async (node, built) => {
     const filters = node.props?.filters as DG.FilterState[] | undefined ?? [];
     if (filters.length === 0) {
-      grok.shell.warning(`${REMOVE_FILTER.name}: the form names no filters — "${ADD_FILTER.name}" adds one`);
+      grok.shell.warning(`${REMOVE_FILTER.text}: the form names no filters — "${ADD_FILTER.text}" adds one`);
       return null;
     }
     const picked = await ask('Remove filter', Component.is(built) ? built.scope : undefined,

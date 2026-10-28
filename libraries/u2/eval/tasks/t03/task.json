@@ -1,0 +1,10 @@
+{
+  "name": "files-path",
+  "entry": "merge-dialog.ts",
+  "title": "A file input that also takes a Datagrok Files path",
+  "source": "B-2: the Merge dialog lost \"pick from Files\"; the u2 twin of the platform input missed an affordance",
+  "bad": {
+    "bad-local-picker": ["files-browser"],
+    "bad-files-input": ["files-browser", "typed-share-path"]
+  }
+}

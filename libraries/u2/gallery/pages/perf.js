@@ -62,7 +62,7 @@ function buildWindow() {
     for (let i = 0; i < 68; i++)
       rows.push(u2Button(`Action ${i}`, () => {}));
     const tabs = new TabStrip({tabs: ['Data', 'Model', 'Results', 'Log'].map((label) => ({
-      id: label, label, content: () => span(`${label} panel`),
+      id: label, title: label, content: () => span(`${label} panel`),
     }))});
     const list = new VirtualList({render: (item) => span(`Row ${item}`)});
     list.root.style.height = '120px';

@@ -1,7 +1,3 @@
-/* How long an assertion is given to come true. Every check in the library goes through this
-   `expect`, so the budget can be narrowed for a stretch of a run: a `@known-failure` scenario
-   states a defect the product still has, and letting each of its assertions spend the suite's
-   15 s expect budget proving what the tag already says costs a minute of a run doing nothing. */
 import {expect as playwright} from '@playwright/test';
 
 /** What an assertion inside a `@known-failure` scenario waits: long enough for a fixed bug to pass

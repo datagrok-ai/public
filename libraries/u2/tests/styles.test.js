@@ -2,7 +2,7 @@
    newest revision's text wins, an equal or older copy changes nothing, and a host that links the
    sheets itself opts out. The generated sheet is css/all.css inlined, and its lock is current. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';

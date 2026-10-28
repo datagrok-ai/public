@@ -1,10 +1,3 @@
-/* ManifestModel over the Northwind draft fixture: the untouched draft round-trips, including
-   and excluding a table flips the dependent relation between ref and plain, renames are checked
-   with the server's rules and refused names keep the old one, one name column per table, an
-   excluded column is dropped, key columns cannot go, writable and the read-only opt-out, the
-   inventory's unbindable tables and unsupported columns are shown and never submitted; the
-   access model round-trips; the field offer's arms. */
-
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';

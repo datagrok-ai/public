@@ -1,7 +1,3 @@
-/* The u2 vocabulary (R11): the `kinds` of the u2 and EMS manifests (CONTRACT §4), as
-   bindings/common/u2-kinds.g.ts holds them (tool/gen-u2-kinds.mjs), turned into one kind per noun and
-   merged with what only bdd knows — the Dart client's selectors and `name=` conventions, legacy
-   aliases and part names. */
 import {kind, type ElementGestures, type KindDef, type MatchStrategy} from './registry.js';
 
 export type U2Family = 'input' | 'action' | 'container' | 'collection' | 'navigation' | 'display' | 'overlay' | 'composite';

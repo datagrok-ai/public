@@ -1,5 +1,10 @@
 # statistics changelog
 
+## v.next
+
+* Compute functions: `calculateColumns` runs the functions on a copy of the table's listed columns (none hidden behind `~`), the molecule column holding the canonical SMILES under its own name: the columns they name after it read "Acceptor (Molecule)", as `calculateCellValues` names them, not "(~Molecule.canonicalSmiles)"; what they add or change fills the table's columns of the same name instead of adding "(2)" copies (a number column takes integer results in place, so what is bound to it, a filter, stays), the table keeps no `~<column>.canonicalSmiles` column, and it fires its values changed when done, so a grid and its filters show the results
+* Compute functions: Fixed `calculateColumns` dropping the filter and the viewer bindings of a column whose results come in another type (fractions for an integer MW column), and moving it to the end: the column is replaced where it is, and the viewers and filters on the table's views that named it get their settings back
+
 ## 1.12.16 (2026-10-20)
 
 * [#4291](https://github.com/datagrok-ai/public/issues/4291): Chem: MPO: Add support for qnum values

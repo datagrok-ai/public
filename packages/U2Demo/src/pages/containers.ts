@@ -46,7 +46,7 @@ export function containersPage(): HTMLElement {
     readout('path', computed(() => crumbs.items.value.join(' > '))),
     h3('Toolbar (panel-local)'),
     panel([bar, span('Inline toolbars belong to a panel inside the view; the view\'s own commands ' +
-      'live in the ribbon. Narrow the window — items collapse into the » menu.', 'u2demo-hint')]),
+      'live in the ribbon. Narrow the window — items collapse into the … (More actions) menu.', 'u2demo-hint')]),
     readout('toolbar', computed(() => `${action.value || '(nothing yet)'} · compact ${compact.value}`)),
   ], 'u2demo-page');
 }
@@ -83,7 +83,7 @@ export function popupsPage(status: Signal<string>): HTMLElement {
     .item('Name', () => log('Sorted by name'))
     .item('Size', () => log('Sorted by size'))
     .endGroup()
-    .item('Delete', () => log('Deleted'), {enabled: false})
+    .item('Delete', () => log('Deleted'), {disabled: 'Only its owner can delete it'})
     .show({anchor: menuButton}));
 
   const zone = panel([span('Right-click anywhere in this panel for a context menu.')]);
@@ -93,11 +93,11 @@ export function popupsPage(status: Signal<string>): HTMLElement {
     .item('Paste', () => log('Pasted'))
     .separator()
     .item('Select all', () => log('Selected all'));
-  context.bindContext(zone, scope);
+  context.bindContext(zone, {owner: scope});
 
   const hoverMe = span('Hover me for a tooltip.', 'u2demo-card');
   Tooltip.bind(hoverMe, () => `One shared tooltip element, evaluated at show time: ${new Date().toLocaleTimeString()}`,
-    scope);
+    {owner: scope});
 
   const dlgName = new TextInput({label: 'Name', value: 'u2'});
   dlgName.addValidator((v) => v.trim() ? null : 'Required');
@@ -113,7 +113,7 @@ export function popupsPage(status: Signal<string>): HTMLElement {
     .add(button('Add rows', () => dlgRows.append(...Array.from({length: 10},
       (_, i) => span(`Row ${dlgRows.childElementCount + i + 1}`)))))
     .add(dlgRows)
-    .onOK(() => log(`Dialog OK, name = ${dlgName.value.value}`))
+    .onOK(() => log(`Dialog OK, name = ${dlgName.value}`))
     .onCancel(() => log('Dialog cancelled'))
     .onHelp(() => log('Dialog help'));
 

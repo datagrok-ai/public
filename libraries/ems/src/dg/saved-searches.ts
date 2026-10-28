@@ -106,7 +106,7 @@ export class SavedSearches {
   }
 
   static saveButton(source: DomainSource): HTMLButtonElement {
-    const disabled = computed(() => label(SavedSearches.of(source)) === '' ? 'Nothing to save' : false);
+    const disabled = computed(() => label(SavedSearches.of(source)) === '' ? 'Nothing to save' : null);
     const el: HTMLButtonElement = iconButton('save', () => {
       const name = SavedSearches.current(source).peek();
       if (name === null)
@@ -122,8 +122,8 @@ export class SavedSearches {
   private static _saveDialog(source: DomainSource): void {
     const name = new TextInput({label: 'Name', value: label(SavedSearches.of(source)).slice(0, 40)});
     Dialog.create('Save search').add(name)
-      .okDisabled(computed(() => name.value.value.trim() === '' ? 'Enter a name' : null))
-      .onOK(() => SavedSearches._saveAs(source, name.value.peek().trim()), {text: 'SAVE', primary: true})
+      .okDisabled(computed(() => name.value.trim() === '' ? 'Enter a name' : null))
+      .onOK(() => SavedSearches._saveAs(source, name.peek().trim()), {text: 'SAVE', primary: true})
       .show();
   }
 
