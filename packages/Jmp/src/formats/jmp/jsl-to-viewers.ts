@@ -306,10 +306,16 @@ function graphBuilderViewer(call: Call, role: (r: string) => JmpColumnRef[], not
       throw new Unconvertible('A Graph Builder scatter needs X and Y variables');
     if (kinds.includes('smoother'))
       notes.push('Smoother not shown');
+    // JMP fits a line per Overlay group; Datagrok can only split the regression by the color column
+    const fit = kinds.includes('lineoffit');
+    const overlay = role('Overlay')[0];
+    const perGroup = fit && overlay !== undefined && overlay === color && !overlay.numeric;
+    if (fit && overlay && !perGroup)
+      notes.push(`Line of Fit by ${overlay.name} shown as one line`);
     return {type: SCATTER, options: {
       xColumnName: x.name, yColumnName: y.name,
       ...(color ? {colorColumnName: color.name} : {}), ...(size ? {sizeColumnName: size.name} : {}),
-      ...(kinds.includes('lineoffit') ? {showRegressionLine: true} : {}),
+      ...(fit ? {showRegressionLine: true} : {}), ...(perGroup ? {regressionPerCategory: true} : {}),
     }};
   }
   case 'line': {

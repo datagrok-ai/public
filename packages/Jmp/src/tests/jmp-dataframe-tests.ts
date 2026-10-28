@@ -88,6 +88,20 @@ category('JMP: dataframe', () => {
     }
   });
 
+  test('a fit per Overlay group, from a JMP 15 file', async () => {
+    const t = await readJmp(await _package.files.readAsBytes('tests/jmp15-graph-builder.jmp'));
+    const tv = grok.shell.addTableView(jmpTableToDataFrame(t, 'jmp15-graph-builder'));
+    try {
+      expect(addSavedAnalyses(tv, savedAnalyses(t)), 1);
+      const sp = Array.from(tv.viewers).find((v) => v.type === DG.VIEWER.SCATTER_PLOT)!;
+      expect(sp.props.colorColumnName, 'Condition');
+      expect(sp.props.showRegressionLine, true);
+      expect(sp.props.regressionPerCategory, true);
+    } finally {
+      tv.close();
+    }
+  });
+
   test('a trellis of a converted Graph Builder', async () => {
     const df = grok.data.demo.demog(100);
     const tv = grok.shell.addTableView(df);

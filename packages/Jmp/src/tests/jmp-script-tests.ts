@@ -151,6 +151,7 @@ category('JMP: saved scripts', () => {
     expect(c.viewers[0].options.yColumnName, 'HC Met255 %Oxidation');
     expect(c.viewers[0].options.colorColumnName, 'Condition');
     expect(c.viewers[0].options.showRegressionLine, true);
+    expect(c.viewers[0].options.regressionPerCategory, true);
   });
 
   test('files without scripts', async () => {
@@ -244,6 +245,13 @@ category('JMP: analyses', () => {
     expect(v.type, 'Scatter plot');
     expect(v.options.colorColumnName, 'sex');
     expect(v.options.showRegressionLine, true);
+    expect(v.options.regressionPerCategory, true);
+    v = gb('X(:height), Y(:weight)', 'Points(X, Y), Line Of Fit(X, Y)');
+    expect(v.options.regressionPerCategory === undefined, true);
+    const byAge = convert('Graph Builder(Variables(X(:height), Y(:weight), Overlay(:age)), ' +
+      'Elements(Points(X, Y), Line Of Fit(X, Y)))');
+    expect(byAge.viewers[0].options.regressionPerCategory === undefined, true);
+    expectArray(byAge.notes, ['Line of Fit by age shown as one line']);
     v = gb('X(:age), Y(:height)', 'Line(X, Y, Legend(3))');
     expect(v.type, 'Line chart');
     expectArray(v.options.yColumnNames as string[], ['height']);

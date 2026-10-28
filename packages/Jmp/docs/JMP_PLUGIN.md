@@ -2,7 +2,7 @@
 
 > **Purpose:** This spec defines the Datagrok JMP plugin: a browser-side reader for SAS JMP data tables (`.jmp`). It is written for the developer (human or AI agent) building the package. It covers scope, architecture, the file format as far as it is known, type mapping, testing, and the phased roadmap. The [Minitab plugin](../../Minitab/docs/MINITAB_PLUGIN.md) is the structural template.
 
-**Status:** Phase 1 built, 2026-10-21; Phase 2 in progress, 2026-10-23 (v0.1.0, not yet released). The parser matches JMPReader.jl on all 19 reference files; 108 package tests and 12 BDD scenarios pass on a local stand. §11 lists what is left.
+**Status:** Phase 1 built, 2026-10-21; Phase 2 in progress, 2026-10-23 (v0.1.0, not yet released). The parser matches JMPReader.jl on all 19 reference files; 109 package tests and 12 BDD scenarios pass on a local stand. §11 lists what is left.
 
 ---
 
@@ -382,7 +382,7 @@ The model is the way Crux validates against RDKit: **JMPReader.jl is the referen
 
 8. **JMP: performance** (browser) times the 100 MB file of §8. It runs only with `grok test --benchmark`.
 
-Result on the local stand (2026-10-23): Node pass 94 passed; browser pass 14 passed, the benchmark skipped (and passed when run with `--benchmark`).
+Result on the local stand (2026-10-23): Node pass 94 passed; browser pass 15 passed, the benchmark skipped (and passed when run with `--benchmark`).
 
 ### 9.4 Corpus run (local, not CI)
 
@@ -466,7 +466,7 @@ JMP tables carry **table scripts** (JSL) that re-launch analyses. We read a narr
 | Oneway | Box plot by group | means, comparisons, tests |
 | Contingency | Bar chart, X split and Y stacked, counts | mosaic, tests |
 | Fit Y by X | By column types, as JMP does: bivariate, oneway or contingency, per Y/X pair | logistic (categorical Y by continuous X): not converted |
-| Graph Builder: Points, Line of Fit, Smoother, Line, Bar, Box Plot, Histogram, Pie | Scatter (colour by Color/Overlay, size by Size, Line of Fit as regression line), line chart, bar chart (Summary Statistic as the aggregation), box plot, histogram, pie chart. With Group X, Group Y or Wrap: a trellis plot of that viewer (Group X and Wrap across, Group Y down; Wrap tiled) | Page; a second X or Y; further panels and elements; the smoother |
+| Graph Builder: Points, Line of Fit, Smoother, Line, Bar, Box Plot, Histogram, Pie | Scatter (colour by Color/Overlay, size by Size, Line of Fit as regression line, one per category when the Overlay is categorical and also the colour), line chart, bar chart (Summary Statistic as the aggregation), box plot, histogram, pie chart. With Group X, Group Y or Wrap: a trellis plot of that viewer (Group X and Wrap across, Group Y down; Wrap tiled) | Page; a second X or Y; further panels and elements; the smoother; a fit per group of a numeric Overlay, or of an Overlay that is not the colour |
 | Tabulate | Pivot table: row-table grouping → rows, column-table grouping → pivot, analysis columns × statistics → aggregates | statistics without a Datagrok aggregate (shown as mean) |
 | Control Chart Builder, Fit Model, DOE platforms, other Graph Builder elements | Not converted: listed with the reason | |
 
