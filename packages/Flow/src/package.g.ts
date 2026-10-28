@@ -189,7 +189,7 @@ export function deleteRows(table: DG.DataFrame, condition: string) : any {
 //input: column_list columns { nullable: true; description: Columns to keep. Leave empty to keep all of them }
 //output: dataframe result
 //meta.includeInFlow: true
-export function extractRows(table: DG.DataFrame, condition: string, columns?: DG.Column[]) : any {
+export function extractRows(table: DG.DataFrame, condition: string, columns?: DG.ColumnList) : any {
   return PackageFunctions.extractRows(table, condition, columns);
 }
 
@@ -238,7 +238,7 @@ export function selectRandomRows(table: DG.DataFrame, count: number, seed: numbe
 //input: column_list columns { nullable: false; description: Columns to remove }
 //output: dataframe result
 //meta.includeInFlow: true
-export function deleteColumns(table: DG.DataFrame, columns: DG.Column[]) : any {
+export function deleteColumns(table: DG.DataFrame, columns: DG.ColumnList) : any {
   return PackageFunctions.deleteColumns(table, columns);
 }
 
@@ -249,7 +249,7 @@ export function deleteColumns(table: DG.DataFrame, columns: DG.Column[]) : any {
 //input: string value { nullable: true; description: Tag value }
 //output: dataframe result
 //meta.includeInFlow: true
-export function tagColumns(table: DG.DataFrame, columns: DG.Column[], tag: string, value: string) : any {
+export function tagColumns(table: DG.DataFrame, columns: DG.ColumnList, tag: string, value: string) : any {
   return PackageFunctions.tagColumns(table, columns, tag, value);
 }
 
@@ -271,7 +271,7 @@ export function expressionToColumn(table: DG.DataFrame, expression: string, name
 //input: column_list pivotColumns { nullable: true; description: Columns whose values become result columns }
 //output: dataframe result
 //meta.includeInFlow: true
-export function aggregate(table: DG.DataFrame, groupByColumns: DG.Column[], aggregations: string, pivotColumns?: DG.Column[]) : any {
+export function aggregate(table: DG.DataFrame, groupByColumns: DG.ColumnList, aggregations: string, pivotColumns?: DG.ColumnList) : any {
   return PackageFunctions.aggregate(table, groupByColumns, aggregations, pivotColumns);
 }
 
@@ -283,7 +283,7 @@ export function aggregate(table: DG.DataFrame, groupByColumns: DG.Column[], aggr
 //input: string valueColumnName = 'Value' { description: Name of the column holding the values }
 //output: dataframe result
 //meta.includeInFlow: true
-export function unpivot(table: DG.DataFrame, copyColumns: DG.Column[], mergeColumns: DG.Column[], categoryColumnName: string, valueColumnName: string) : any {
+export function unpivot(table: DG.DataFrame, copyColumns: DG.ColumnList, mergeColumns: DG.ColumnList, categoryColumnName: string, valueColumnName: string) : any {
   return PackageFunctions.unpivot(table, copyColumns, mergeColumns, categoryColumnName, valueColumnName);
 }
 

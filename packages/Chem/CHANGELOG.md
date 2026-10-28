@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#411](https://github.com/datagrok-ai/core/issues/411): MMP and SAR Matrix: Accept the activities and R-group columns as a column list, which is what the platform passes for `column_list`
 * Gasteiger Partial Charges: Fixed the panel showing no picture in RDKit mode: the script's graphics came as the element the platform shows them in and were read as the PNG's base64
 * Chemical Engine: Fixed Crux mode dropping a column's empty cells: To InChI and To InChI Keys failed on a column with empty molecules ("Row counts don't match"), and RDKit's InChIs of the malformed molecules landed on other rows. Every column job on the Crux workers now keeps a row for every cell, an empty one empty, with no RDKit fallback for it
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Substructure Search (top menu) opens the sketcher as soon as the filter's sketch link is there instead of after 500 ms; the scaffold tree's load resolves once its nodes are updated; Crux analyses take the next idle worker when it frees instead of polling every 50 ms; demos: no waits before applying a layout, and the activity cliffs demo awaits its scatter plot check
