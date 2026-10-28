@@ -123,9 +123,26 @@ export function withinCruxReader(m: unknown): string | null {
   return s !== null && cruxReadsCxExtension(s) ? s : null;
 }
 
+/** `arg` with no holes: a hole (`toList()`'s empty cell) as null, the empty cell it is. */
+function withoutHoles(arg: unknown): unknown {
+  if (!Array.isArray(arg))
+    return arg;
+  for (let i = 0; i < arg.length; i++) {
+    if (!(i in arg))
+      return Array.from(arg, (v) => v === undefined ? null : v);
+  }
+  return arg;
+}
+
 class CruxWorkerClient extends WorkerMessageBusClient {
   constructor() {
     super(new Worker(new URL('./crux.worker', import.meta.url)));
+  }
+
+  /** Every call, its array arguments without holes: `DG.Column.toList()` leaves an empty cell a hole, which the
+   * worker's `map` keeps and the joins of the chunks' results (`flat`, `flatMap`) drop, moving every row after it. */
+  override call(op: string, args: any[] = [], gated = true): Promise<any> {
+    return super.call(op, args.map(withoutHoles), gated);
   }
 
   moduleInit(module: WebAssembly.Module): Promise<unknown> {

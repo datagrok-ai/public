@@ -91,6 +91,17 @@ const close = (a: number | null, b: number | null) => a === null || b === null ?
 /** A column's values, null where empty (`toList()` leaves holes there). */
 const cells = (col: DG.Column): any[] => Array.from({length: col.length}, (_, i) => col.isNone(i) ? null : col.get(i));
 
+/** The width of a panel picture's image (its background), 0 where it does not load. */
+function pictureWidth(picture: HTMLElement): Promise<number> {
+  const url = /url\(["']?(.*?)["']?\)/.exec(picture.style.backgroundImage)?.[1] ?? '';
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img.naturalWidth);
+    img.onerror = () => resolve(0);
+    img.src = url;
+  });
+}
+
 category('chemical engine: python scripts', () => {
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -206,11 +217,13 @@ category('chemical engine: python scripts', () => {
       expect(map.svg.includes('width=\'400px\''), true, 'the script\'s 400 x 400');
       const picture = await expectNoFallback(['Gasteiger Partial Charges'], () => gasteigerPicture('CC(=O)O', 10));
       expect(picture.style.backgroundImage.includes('image/png'), true, 'Crux\'s picture, as a PNG');
+      expect(await pictureWidth(picture), 400, 'Crux\'s picture loads');
       expect(JSON.parse(crux.chemGasteigerMap('not a molecule', 10)), null, 'no picture, as the script draws none');
     });
     // RDKit mode (and Crux's fallback): the script `Chemistry | Gasteiger Partial Charges` draws it, a PNG
+    // (reported: the platform hands the script's graphics over as an element, which was read as the PNG's base64)
     const png = await inEngine(ChemicalEngine.RDKit, () => gasteigerPicture('CC(=O)O', 10));
-    expect(png.style.backgroundImage.includes('image/png'), true, 'the script\'s picture');
+    expect(await pictureWidth(png), 400, `the script's picture loads (${png.style.backgroundImage.slice(0, 60)})`);
   }, {timeout: 120000});
 
   test('inchiToMol: the converter gives the script\'s molecule, both engines', async () => {

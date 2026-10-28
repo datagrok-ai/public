@@ -238,12 +238,21 @@ export function pressDialogButton(filter: SubstructureFilter, name: 'OK' | 'CANC
   button!.click();
 }
 
-/** No change on its way in the sketcher (the filter takes one in its change event, at once), and no search under way. */
+/** No change on its way in the sketcher, the filter holding what the sketcher holds, and no search under way. The filter
+ * takes a change in the sketcher's change event, which comes a moment after the change (after OK, once the dialog has
+ * closed): until then no search has started and every row still passes, so "no search under way" alone is no end. */
 export async function settle(filter: SubstructureFilter): Promise<void> {
   const pending = (): boolean => filter.sketcher.sketcher?.isRenderPending === true;
-  await waitUntil(() => !pending() && !filter.calculating && filter.currentSearches.size === 0,
+  // with "Filter as you draw" off, the dialog's drawing waits for OK
+  const deferred = (): boolean => filter.sketcher.sketcherDialogOpened && (filter.sketcher as any).filterOnChange === false;
+  const taken = (): boolean => {
+    const drawn = filter.getSketcherMolecule();
+    return drawn === filter.currentMolecule || filter.isEmptyMolecule(drawn) && filter.isEmptyMolecule(filter.currentMolecule) ||
+      filter.isUnchanged(drawn, filter.currentMolecule);
+  };
+  await waitUntil(() => !pending() && (deferred() || taken()) && !filter.calculating && filter.currentSearches.size === 0,
     () => `the search did not end (searches ${filter.currentSearches.size}, calculating ${filter.calculating}, ` +
-      `sketcher pending ${pending()})`, 20000);
+      `sketcher pending ${pending()}, the filter holds the drawing ${deferred() || taken()})`, 20000);
 }
 
 // ---------------------------------------------------------------- Crux, by its own controls
