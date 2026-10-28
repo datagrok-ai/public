@@ -2684,7 +2684,7 @@ export class PackageFunctions {
       moleculesColumnName: molecules.name, activities: activityColsNames, diffTypes: diffTypes,
       scalings: scalings, fragmentCutoff,
     });
-    viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
+    viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/help/refs/heads/master/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
   }
 
   @grok.decorators.func({

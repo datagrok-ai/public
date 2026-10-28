@@ -706,7 +706,7 @@ export async function _demoMMPA(): Promise<void> {
       await awaitCheck(() => {
         for (const v of tv.viewers) {
           if (v.type === 'Matched Molecular Pairs Analysis') {
-            v.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
+            v.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/help/refs/heads/master/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
             return true;
           }
         }
