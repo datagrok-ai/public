@@ -74,7 +74,7 @@ export class FiltersTutorial extends Tutorial {
     const keysToSwitch = 'A convenient way to quickly browse data by categories is to click ' +
       'on any of them, and then use the up and down cursor keys to move between the categories ' +
       'in the filter. Pay attention to the row counts, it seems that rheumatoid arthritis (RA) ' +
-      'occurs quite often.';
+      'occurs quite often. Keep <b>RA</b> selected for the next step.';
     await this.action('Filter the dataset by the most common disease',
     this.t!.onFilterChanged.pipe(filter(() => {
       const filters = this.t!.rows.filters;
@@ -82,9 +82,10 @@ export class FiltersTutorial extends Tutorial {
     })), null, keysToSwitch, () => grok.shell.tv.getFiltersGroup()
       .updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'DIS_POP', selected: ['RA']}));
 
-    const indicatorInfo = 'To filter by multiple categories, either check each label manually ' +
-      'or right-click the indicator beside the column name and choose <b>Invert all</b>.';
-    await this.action('Invert the category set for the "DIS_POP" filter',
+    const indicatorInfo = 'To filter by multiple categories, you can check each label manually, but often it is ' +
+      'faster to select the ones you want to exclude and invert the selection. Let\'s look at all patients ' +
+      'except those with <b>RA</b>: right-click the indicator beside the column name and choose <b>Invert all</b>.';
+    await this.action('Invert the "RA" selection in the "DIS_POP" filter',
       this.t!.onFilterChanged.pipe(filter(() => {
         const filters = this.t!.rows.filters;
         return filters.length === 1 &&
@@ -120,10 +121,12 @@ export class FiltersTutorial extends Tutorial {
       });
 
     const resetIcon = () => $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0] ?? null;
-    await this.action('Reset the filter',
-      this.t!.onFilterChanged.pipe(filter((_) => this.t!.filter.trueCount === this.t!.rowCount)), resetIcon,
-      'Click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.',
-      () => resetIcon()!.click());
+    const resetFilter = () => this.action('Reset the filter', this.t!.onFilterChanged.pipe(filter((_) =>
+      this.t!.filter.trueCount === this.t!.rowCount && !filters.root.classList.contains('d4-filters-disabled'))),
+    resetIcon,
+    'Click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.',
+    () => resetIcon()!.click());
+    await resetFilter();
 
     this.title('Numerical filters');
 
@@ -149,11 +152,12 @@ export class FiltersTutorial extends Tutorial {
       'the values that pass filter. For more accurate results, click on the indicator next to the filter ' +
       'name in the header to open the menu, then enable <b>Min / max</b> option and use input fields ' +
       'to specify the exact values for the filter.';
-    await this.action('Find records for people aged 40 to 60',
-      this.t!.onFilterChanged.pipe(filter(() => wu(this.t!.rows.filters).some((s) => s === 'AGE: [40,60]'))),
-      () => this.findIndicator(this.findFilterHeaderByColName('AGE')),
-      rangeInputInfo, () => grok.shell.tv.getFiltersGroup()
-        .updateOrAdd({type: DG.FILTER_TYPE.HISTOGRAM, column: 'AGE', min: 40, max: 60}));
+    const ageFiltered = () =>
+      this.t!.onFilterChanged.pipe(filter(() => wu(this.t!.rows.filters).some((s) => s === 'AGE: [40,60]')));
+    const filterAge = () => grok.shell.tv.getFiltersGroup()
+      .updateOrAdd({type: DG.FILTER_TYPE.HISTOGRAM, column: 'AGE', min: 40, max: 60});
+    await this.action('Find records for people aged 40 to 60', ageFiltered(),
+      () => this.findIndicator(this.findFilterHeaderByColName('AGE')), rangeInputInfo, filterAge);
 
     this.title('Saving filter state');
 
@@ -168,21 +172,18 @@ export class FiltersTutorial extends Tutorial {
           .getButton('OK').click();
     }));
 
-    await this.contextMenuAction('Save the filter configuration as "AGE: [40,60]"', 'Save...', null,
+    await this.contextMenuAction('Save the filter configuration', 'Save...', null,
       'Choose <b>Save or Apply | Save...</b> in the context menu ' +
-      'and keep the default name <b>AGE: [40,60]</b>.', async () => {
+      'and save it under any name.', async () => {
         await Tutorial.runContextMenu(filters.root, 'Save...');
         (await Tutorial.waitFor(() => DG.Dialog.getOpenDialogs().find((d) => d.title?.startsWith('Save filter'))))!
           .getButton('OK').click();
       });
 
-    await this.action('Reset the filter',
-      this.t!.onFilterChanged.pipe(filter((_) => this.t!.filter.trueCount === this.t!.rowCount)), resetIcon,
-      'Press <b>Esc</b> or click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.',
-      () => resetIcon()!.click());
+    await resetFilter();
 
-    await this.contextMenuAction('Restore the filter state', 'AGE: [40,60]', null,
+    await this.action('Restore the filter state', ageFiltered(), null,
       'Find the saved filter state in <b>Save or Apply</b> and click on its name. You should ' +
-      'see that the dataset is filtered to patients between the ages of 40 and 60 again.', filters.root);
+      'see that the dataset is filtered to patients between the ages of 40 and 60 again.', filterAge);
   }
 }
