@@ -96,9 +96,6 @@ export class TreeViewer extends EChartViewer {
   private selectedPaths: string[] | null = null;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
   private moleculeRenderErrorLogged: boolean = false;
-  viewerFilter: DG.BitSet | null = null;
-  capturedFilterState: DG.BitSet | null = null;
-  initialDfFilter: DG.BitSet | null = null;
   // the branches animate into place for `animationDurationUpdate` (500 ms), past the default cap
   protected signals = new utils.RenderSignals(() => this.frameOwed(), 120);
 
@@ -176,14 +173,16 @@ export class TreeViewer extends EChartViewer {
     this.onPropertyChanged(null);
   }
 
-  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any): DG.BitSet {
-    bitset.handleClick((index: number) => {
-      return path.every((segment, j) => {
-        const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
-        return (columnValue !== null && columnValue.toString() === segment) || (columnValue == null && segment === ' ');
-      });
-    }, event);
-    return bitset;
+  matchesPath(index: number, path: string[]): boolean {
+    return path.every((segment, j) => {
+      const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
+      return (columnValue !== null && columnValue.toString() === segment) || (columnValue == null && segment === ' ');
+    });
+  }
+
+  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any): void {
+    bitset.handleClick((index: number) =>
+      (this.filter.get(index) || this.rowSource === 'Selected') && this.matchesPath(index, path), event);
   }
 
   initChartEventListeners(): void {
@@ -201,20 +200,9 @@ export class TreeViewer extends EChartViewer {
           selectedSectors.push(pathString);
       }
 
-      if (this.onClick === 'Filter') {
-        const filterClone = this.initialDfFilter!.clone();
-        const bitset = isMultiSelect ? this.viewerFilter ?? DG.BitSet.create(this.dataFrame.rowCount) : filterClone;
-        const viewerFilter = this.applySelectionFilter(bitset, path, event.event);
-        if (this.viewerFilter === null)
-          this.viewerFilter = viewerFilter.clone();
-        else
-          this.viewerFilter = viewerFilter;
-
-        if (this.viewerFilter.trueCount === 0)
-          this.viewerFilter.setAll(true);
-
-        this.dataFrame.filter.copyFrom(this.viewerFilter);
-      } else if (this.onClick === 'Select')
+      if (this.onClick === 'Filter')
+        this.filterByClick((index) => this.matchesPath(index, path), event.event);
+      else if (this.onClick === 'Select')
         this.applySelectionFilter(this.dataFrame.selection, path, event.event);
     };
 
@@ -491,6 +479,8 @@ export class TreeViewer extends EChartViewer {
       break;
 
     case 'onClick':
+      this.clearViewerFilter();
+      // falls through
     case 'rowSource':
       this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
       break;
@@ -643,8 +633,7 @@ export class TreeViewer extends EChartViewer {
     this.subs.push(this.signals.debounce(grok.events.onResetFilterRequest, 10).subscribe(() => {
       if (this.filteredPaths)
         this.cleanTree(this.filteredPaths);
-      this.viewerFilter = null;
-      this.capturedFilterState = null;
+      this.clearViewerFilter();
       this.signals.settle();
     }));
     this.subs.push(this.dataFrame.selection.onChanged.subscribe(() => {
@@ -653,10 +642,7 @@ export class TreeViewer extends EChartViewer {
     this.subs.push(this.dataFrame.onFilterChanged.subscribe(() => {
       this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter, false, true);
     }));
-    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((args) => {
-      if (this.viewerFilter)
-        this.dataFrame.filter.and(this.viewerFilter);
-    }));
+    this.addViewerFilterSub();
   }
 
   applySelectionFilterChange(paths: string[] | null, bitset: DG.BitSet, changedProp: boolean = false, isFilter: boolean = false): void {
@@ -738,7 +724,6 @@ export class TreeViewer extends EChartViewer {
     this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
     this.sizeColumnName = '';
     this.colorColumnName = '';
-    this.initialDfFilter = this.dataFrame.filter.clone();
 
     super.onTableAttached();
     this.addSubs();
