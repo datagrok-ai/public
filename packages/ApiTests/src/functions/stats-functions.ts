@@ -35,7 +35,7 @@ category('Functions: Statistical', () => {
     'Med([-100, null, 100])': 0,
     'Med([null, 0.3, 0.7])': 0.5,
     'Med([null, 1, 0.7, 0.3])': 0.7,
-    'Med([null, null])': 0,
+    'Med([null, null])': null,
   }));
 
   test('Min', () => check({
@@ -68,7 +68,7 @@ category('Functions: Statistical', () => {
     'Q1([5, -5, 1, -1, 3, -3, 0])': -3,
     'Q1([1, 2, 3])': 1,
     'Q1([1, null, 2, 3])': 1,
-    'Q1([null, null])': 0,
+    'Q1([null, null])': null,
   }));
 
   test('Q2', () => check({
@@ -78,7 +78,7 @@ category('Functions: Statistical', () => {
     'Q2([-100, null, 100])': 0,
     'Q2([null, 0.3, 0.7])': 0.5,
     'Q2([null, 1, 0.7, 0.3])': 0.7,
-    'Q2([null, null])': 0,
+    'Q2([null, null])': null,
   }));
 
   test('Q3', () => check({
@@ -86,7 +86,7 @@ category('Functions: Statistical', () => {
     'Q3([5, -5, 1, -1, 3, -3, 0])': 3,
     'Q3([1, 2, 3])': 3,
     'Q3([1, null, 2, 3])': 3,
-    'Q3([null, null])': 0,
+    'Q3([null, null])': null,
   }));
 
   test('Skew', () => check({
