@@ -366,6 +366,24 @@ category('Add new column', () => {
     }
   });
 
+  test('a preview column with a short name fits its formatted values', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'height', [160.48399, 163.646])]);
+    const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0].prepare({table: t, name: 'rt'}));
+    try {
+      await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+      await dlg.updatePreview('${height} / 3', false);
+      const text = dlg.gridPreview!.dataFrame.col('rt')!.getString(0);
+      const ctx = document.createElement('canvas').getContext('2d')!;
+      ctx.font = dlg.gridPreview!.props.defaultCellFont;
+      expect(text, '53.49466');
+      expect(dlg.gridPreview!.col('rt')!.width >= ctx.measureText(text).width, true,
+        `'${text}' is wider than the ${dlg.gridPreview!.col('rt')!.width}px column`);
+    }
+    finally {
+      dlg.close();
+    }
+  });
+
   test('a numeric formula is added as a string or as plain text', async () => {
     const t = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n', [1, 2])]);
     const expression = '${n} + 1';

@@ -1802,6 +1802,11 @@ export class AddNewColumnDialog {
       DG.BitSet.create(table.rowCount, (idx) => idx < shownRows), columnIds);
     if (errorColName && errorColIds.length)
       previewDf.col(errorColIds[0])!.name = errorColName;
+    // before the grid takes the table, so it sizes the columns for the formatted values
+    for (const col of previewDf.columns.toList()) {
+      if (FLOATING_POINT_TYPES.includes(col.type))
+        col.tags[DG.TAGS.FORMAT] = '#.00000';
+    }
     this.gridPreview!.dataFrame = previewDf;
     for (const colName of errorColName && errorColIds.length ? potentialColIds.concat(errorColName) : potentialColIds)
       this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
@@ -1810,12 +1815,6 @@ export class AddNewColumnDialog {
 
     for (const colName of potentialColIds.concat(errorColIds))
       table.columns.remove(colName);
-
-    //setting format to preview columns
-    for (const colName of this.gridPreview!.dataFrame.columns.names()) {
-      if (FLOATING_POINT_TYPES.includes(this.gridPreview!.dataFrame.col(colName)!.type))
-        this.gridPreview!.dataFrame.col(colName)!.tags[DG.TAGS.FORMAT] = '#.00000';
-    }
 
     this.setAutoType(); // Adding (or removing) the column auto-type caption to "Auto" item in the ChoiceBox.
 
