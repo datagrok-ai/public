@@ -291,11 +291,13 @@ export class RadarViewer extends EChartViewer {
   updateLegend(): void {
     const legendColumn = this.colorSourceColumn;
     if (!legendColumn) {
-      this.legendHelper.hide();
+      this.legendHelper.hide(this.chart.getDom());
+      this.chart.resize();
       return;
     }
     this.legendHelper.update(legendColumn);
-    this.legendHelper.switchVisibility(this.legendVisibility, legendColumn);
+    this.legendHelper.switchVisibility(this.legendVisibility, legendColumn, this.chart.getDom());
+    this.chart.resize();
   }
 
   refreshLegendOnColorCodingChange(): void {
@@ -365,7 +367,7 @@ export class RadarViewer extends EChartViewer {
   }
 
   calculateRadarLabelWidths(n: number, padding: number = 25) {
-    const {clientWidth: canvasWidth, clientHeight: canvasHeight} = this.root;
+    const {clientWidth: canvasWidth, clientHeight: canvasHeight} = this.chart.getDom();
     const radiusPercent = parseInt(this.option.radar.radius) / 100;
     const centerX = canvasWidth / 2;
     const radius = radiusPercent * Math.min(canvasWidth, canvasHeight) / 2;
