@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4378](https://github.com/datagrok-ai/public/issues/4378): Summary columns: Fixed a source column brought back by Ctrl+Z not returning to its summary column (a Tags column stayed blank)
 * [public#4431](https://github.com/datagrok-ai/public/issues/4431): PowerGrid: Pie Chart summary column throws an error on hover when all its source columns are removed
 * [public#4411](https://github.com/datagrok-ai/public/issues/4411): PowerGrid: Radar summary column throws errors when all its source columns are removed
 * Tests: Added BDD claims for Ctrl+Z bringing a removed source column back to its place (GROK-19942) and a known-failure scenario for the Tags column left blank after that Ctrl+Z ([#4378](https://github.com/datagrok-ai/public/issues/4378))

@@ -16,7 +16,7 @@ import {clickOn, hoverOver, pressKey, shouldBe, shouldContainText, typeInto} fro
 import {columnCount, hasColumn, hasNoColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {autostartsCompleted, closeAllViews, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, areaColors, clickArea, clickAreaHolding, closeContextMenu, hasArea, hasNoArea, loadLayout, noErrors, pickFromAreaContextMenu, readingReads, repainted, rightClickArea, saveLayoutToServer, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Grid summary columns", () => {
   const session = feature(test, "features/grid/summary-columns.feature", import.meta.url);
@@ -249,23 +249,21 @@ test.describe("Grid summary columns", () => {
     await session.step(169, "And the \"cell type of Confidence Interval\" reading of grid should be \"confidenceinterval\"", () => readingReads(page, "cell type of Confidence Interval", el("grid"), "confidenceinterval"));
     await session.step(170, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Ctrl+Z of a removed source column draws its tags again", {tag: ["@viewers", "@realizes:viewers.grid", "@known-failure:182", "@realizes:public#4378"]}, async ({browser}) => {
+  test("Ctrl+Z of a removed source column draws its tags again", {tag: ["@viewers", "@realizes:viewers.grid", "@realizes:public#4378"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(53, "Given user is logged in", () => loggedIn(page));
     await session.step(54, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(55, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(56, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
     await session.step(57, "And the \"column order\" reading of grid should be \"USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY\"", () => readingReads(page, "column order", el("grid"), "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"));
-    await knownFailure(async () => {
-      await session.step(174, "When user picks \"Add > Summary Columns > Tags\" from the context menu of the \"cell 2 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Add > Summary Columns > Tags", "cell 2 of USUBJID", el("grid")));
-      await session.step(175, "Then the \"cell 3 of Tags\" area of grid should be painted in at least 1 colors", () => areaColors(page, "cell 3 of Tags", el("grid"), 1));
-      await session.step(176, "When user picks \"Remove\" from the context menu of the \"header CONTROL\" area of grid", () => pickFromAreaContextMenu(page, "Remove", "header CONTROL", el("grid")));
-      await session.step(177, "Then the table should not have a column \"CONTROL\"", () => hasNoColumn(page, "CONTROL"));
-      await session.step(178, "When user clicks on the \"cell 2 of AGE\" area of grid", () => clickArea(page, "cell 2 of AGE", el("grid")));
-      await session.step(179, "And user presses Control+Z", () => pressKey(page, "Control+Z"));
-      await session.step(180, "Then the table should have a column \"CONTROL\"", () => hasColumn(page, "CONTROL"));
-      await session.step(181, "And grid should have repainted", () => repainted(page, el("grid")));
-      await session.step(182, "And the \"cell 3 of Tags\" area of grid should be painted in at least 1 colors", () => areaColors(page, "cell 3 of Tags", el("grid"), 1));
-    }, 182);
+    await session.step(174, "When user picks \"Add > Summary Columns > Tags\" from the context menu of the \"cell 2 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Add > Summary Columns > Tags", "cell 2 of USUBJID", el("grid")));
+    await session.step(175, "Then the \"cell 3 of Tags\" area of grid should be painted in at least 1 colors", () => areaColors(page, "cell 3 of Tags", el("grid"), 1));
+    await session.step(176, "When user picks \"Remove\" from the context menu of the \"header CONTROL\" area of grid", () => pickFromAreaContextMenu(page, "Remove", "header CONTROL", el("grid")));
+    await session.step(177, "Then the table should not have a column \"CONTROL\"", () => hasNoColumn(page, "CONTROL"));
+    await session.step(178, "When user clicks on the \"cell 2 of AGE\" area of grid", () => clickArea(page, "cell 2 of AGE", el("grid")));
+    await session.step(179, "And user presses Control+Z", () => pressKey(page, "Control+Z"));
+    await session.step(180, "Then the table should have a column \"CONTROL\"", () => hasColumn(page, "CONTROL"));
+    await session.step(181, "And grid should have repainted", () => repainted(page, el("grid")));
+    await session.step(182, "And the \"cell 3 of Tags\" area of grid should be painted in at least 1 colors", () => areaColors(page, "cell 3 of Tags", el("grid"), 1));
   });
 });
