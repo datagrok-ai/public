@@ -28,7 +28,10 @@ export interface EditBindingResult {
 export async function editBinding(schema: string): Promise<EditBindingResult | null> {
   if (grok.shell.settings.enableDomainDatabases !== true)
     throw new Error('Domain databases are a Beta feature — enable them in Settings > Beta');
-  return new BindingEditDialog(schema).open();
+  const owner = Scope.root('binding edit dialog');
+  const dialog = owner.build(() => new BindingEditDialog(schema));
+  dialog.own(() => owner.dispose());
+  return dialog.open();
 }
 
 /** Everything an edit reads about the binding — at open, and again after a conflict. */

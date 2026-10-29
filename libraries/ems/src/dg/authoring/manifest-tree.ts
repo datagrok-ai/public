@@ -138,7 +138,8 @@ export class ManifestTree extends Control {
     };
     return this.model.extending ? {...node, label: c.logical} : {...node,
       checked: c.supported && t.included && (c.isKey || c.included),
-      locked: c.isKey || !c.supported || !t.included || !this._editable,
+      locked: c.isKey && this._editable ? 'The primary key is always bound: the row id encodes it' :
+        c.isKey || !c.supported || !t.included || !this._editable,
       disabled: c.supported ? null : c.reason ?? 'Its warehouse type cannot be bound'};
   }
 

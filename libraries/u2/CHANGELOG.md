@@ -2,6 +2,7 @@
 
 ## v.next
 
+* VirtualTree: `locked` takes the reason a checkbox cannot be toggled, read out on the box
 * Forms: A read-only structure field shows the drawn molecule instead of its SMILES; added `Editors.registerDisplay`/`display`, which cards and tables use for the same picture
 * Inputs: Fixed `disabled: false` (and `input.disabled = false`) from plain JS turning the input off with no reason and taking it out of its form's verdict; `false` now means on
 * Inputs: Added the `reason-boolean` usage report for `disabled: true`; where it is only reported, the reason reads "Unavailable" instead of "true"

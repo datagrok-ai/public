@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Authoring: Fixed a schema created over one deleted earlier in the session under the same name showing the old one's tables (captions, plural names): the create drops that name's cached table handles
+* Authoring: Fixed Create domain schema and Edit binding building their dialog with no owner (a u2 usage error; under strict usage checks the dialog did not open): each opens under a root of its own
+* Authoring: The key column's locked checkbox in the design tree says why it is always bound
 * Create Domain Schema: Recognizes what text columns hold from a sample of their values (a SMILES column is drafted as a Molecule), so bound tables draw structures with nothing declared
 * Lists: A table opened at `/domains/<schema>/<table>` shows its rows as cards with the structure (any column a display rule draws) beside the name and two text lines, or as a table of columns where no column has a picture, with the condition builder beside them
 * Tables: A column a display rule draws (a structure) is drawn in its cells, the rows tall enough for it; added the `view` app option to open the list page as a table

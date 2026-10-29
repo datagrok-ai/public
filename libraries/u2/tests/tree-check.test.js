@@ -84,3 +84,16 @@ ui('Space toggles the selected row; a row without a box ignores it', () => {
   assert.deepEqual(checks, [['a2', true]]);
   tree.dispose();
 });
+
+ui('a locked checked box says why when its lock is a reason', () => {
+  const tree = new VirtualTree({onCheck: () => {}});
+  document.body.append(tree.root);
+  layout(tree.root.querySelector('.u2-list'), {clientHeight: 220});
+  tree.setRoots([
+    {id: 'k', label: 'order_id', checked: true, locked: 'The primary key is always bound'},
+    {id: 'n', label: 'name', checked: true, locked: true},
+  ]);
+  assert.equal(box(tree, 0).getAttribute('aria-description'), 'The primary key is always bound');
+  assert.equal(box(tree, 1).getAttribute('aria-disabled'), 'true');
+  tree.dispose();
+});

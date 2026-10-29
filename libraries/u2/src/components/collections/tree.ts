@@ -23,8 +23,8 @@ export interface TreeNode<T = unknown> {
   children?: TreeNode<T>[] | (() => Promise<TreeNode<T>[]>);
   /** A checkbox before the label with this state; absent, the row carries none. */
   checked?: boolean;
-  /** The checkbox cannot be toggled — a state the node's owner decides (a key column). */
-  locked?: boolean;
+  /** The checkbox cannot be toggled — a state the node's owner decides (a key column); a string says why. */
+  locked?: boolean | string;
   /** Why the row is greyed out (`u2-tree-row-disabled`, `aria-disabled`, the reason as its tooltip and
    * `aria-description`): still selectable, so the reason and the row's detail can be read. */
   disabled?: string | null;
@@ -60,7 +60,7 @@ interface FlatRow<T> {
   label: string;
   tooltip?: string;
   checked?: boolean;
-  locked?: boolean;
+  locked?: boolean | string;
   disabled?: string | null;
 }
 
@@ -464,7 +464,7 @@ export class VirtualTree<T = unknown> extends Control {
   }
 
   private _toggleCheck(node: TreeNode<T>): void {
-    if (this._check !== undefined && node.checked !== undefined && node.locked !== true)
+    if (this._check !== undefined && node.checked !== undefined && !node.locked)
       this._check(node, !node.checked);
   }
 
@@ -580,9 +580,14 @@ export class VirtualTree<T = unknown> extends Control {
     box.className = 'u2-tree-check';
     box.checked = row.checked === true;
     // a natively disabled box paints grey even when checked: a locked checked one only refuses the click
-    box.disabled = this._check === undefined || row.locked === true && row.checked !== true;
-    if (row.locked === true && row.checked === true)
-      box.setAttribute('aria-disabled', 'true');
+    const locked = !!row.locked;
+    box.disabled = this._check === undefined || locked && row.checked !== true;
+    if (locked && row.checked === true) {
+      if (typeof row.locked === 'string')
+        Reason.apply(box, row.locked);
+      else
+        box.setAttribute('aria-disabled', 'true');
+    }
     box.tabIndex = -1;
     box.setAttribute('aria-label', this._checkLabel?.(row.node) ?? row.label);
     return box;

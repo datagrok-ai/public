@@ -2,10 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Permission, TableQueryBuilder} from 'datagrok-api/dg';
 import {computed, signal, Control, div, divV, link, span, plural, Wizard, Section, ChoiceInput, Form, badge,
-  notify} from '@datagrok-libraries/u2';
+  notify, Scope} from '@datagrok-libraries/u2';
 import type {WizardOptions} from '@datagrok-libraries/u2';
 import {DomainErrors} from '../errors.js';
 import {route} from '../routes.js';
+import {DomainTable} from '../facade.js';
 import {groupInput} from '@datagrok-libraries/u2/dg';
 import {ManifestEditor} from './manifest-editor.js';
 import type {ManifestPlan} from './manifest-editor.js';
@@ -49,7 +50,10 @@ export async function createBinding(options: CreateBindingOptions = {}): Promise
     throw new Error('Domain databases are a Beta feature — enable them in Settings > Beta');
   if (!await grok.dapi.permissions.checkGlobal(Permission.CREATE_DOMAIN_SCHEMA))
     throw new Error(`Requires the ${Permission.CREATE_DOMAIN_SCHEMA} privilege`);
-  return new BindingDialog(options).open();
+  const owner = Scope.root('binding dialog');
+  const dialog = owner.build(() => new BindingDialog(options));
+  dialog.own(() => owner.dispose());
+  return dialog.open();
 }
 
 /** The domain handle is a database to the platform, but not one to bind. */
@@ -661,6 +665,8 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     this._say('Applying access…');
     await this._applyAccess(ops);
     grok.dapi.domains.invalidateUiCaches();
+    // a schema of this name may have lived before in this session: its tables' handles are of that life
+    DomainTable.forget(plan.name);
     if (ops.length > 0) {
       this._renderCreated();
       return true;

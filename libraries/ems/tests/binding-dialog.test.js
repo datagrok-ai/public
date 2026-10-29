@@ -5,10 +5,11 @@ import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {Scope, notify} from '@datagrok-libraries/u2';
+import {Usage} from 'datagrok-api/u2core';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
-const {domains} = await import('../src/dg/facade.js');
+const {domains, DomainTable} = await import('../src/dg/facade.js');
 
 const DRAFT = JSON.parse(readFileSync(new URL('./fixtures/authoring/northwind-draft.json', import.meta.url), 'utf8'));
 const CONN = {id: 'c1', nqName: 'NorthwindBinding:PostgresNorthwind', friendlyName: 'PostgresNorthwind',
@@ -214,8 +215,16 @@ scoped('connection › design › review › created: draft, dry run, create, re
   assert.equal(status().textContent, 'Validated');
   assert.equal(buttonNamed('CREATE').disabled, false);
 
-  buttonNamed('CREATE').click();
-  await flush();
+  const forgotten = [];
+  const forget = DomainTable.forget;
+  DomainTable.forget = (schema) => forgotten.push(schema);
+  try {
+    buttonNamed('CREATE').click();
+    await flush();
+  } finally {
+    DomainTable.forget = forget;
+  }
+  assert.deepEqual(forgotten, ['northwind_sales'], 'the handles of an earlier schema of that name are dropped');
   const create = calls.find((c) => c[0] === 'create' && c[2].dryRun === undefined);
   assert.equal(create[1], 'northwind_sales');
   assert.deepEqual(Object.keys(create[2].manifest.tables), ['orders']);
@@ -413,6 +422,24 @@ scoped('createBinding refuses by name without the CreateDomainSchema privilege, 
     /Requires the CreateDomainSchema privilege/);
   assert.equal(document.querySelector('.u2-dialog'), null);
   assert.deepEqual(calls, [['global', 'CreateDomainSchema']], 'no draft, no connections');
+});
+
+scoped('createBinding opens the dialog under a root of its own, so nothing it builds is unowned', async () => {
+  stub([], () => ({status: 'ok', issues: []}));
+  const mode = Usage.mode;
+  Usage.mode = 'report';
+  Usage.clear();
+  try {
+    const done = domains.authoring.createBinding({connection: CONN, schema: 'public'});
+    await flush();
+    await flush();
+    assert.deepEqual(Usage.reports().filter((r) => r.code === 'owner-missing').map((r) => r.site), []);
+    buttonNamed('CANCEL').click();
+    await flush();
+    assert.equal(await done, null);
+  } finally {
+    Usage.mode = mode;
+  }
 });
 
 scoped('the table preset matches the remote name whatever its case; an unmatched one is said on the status line', async () => {
