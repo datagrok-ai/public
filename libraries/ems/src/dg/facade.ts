@@ -1,6 +1,6 @@
 import {emsBackends, capital, nounOf} from '../core/domain-backend.js';
 import * as DG from 'datagrok-api/dg';
-import {Access, Rows, allowedActions, divV, span, timestamp, text, notify, plural, untracked}
+import {Access, Rows, allowedActions, div, divH, divV, span, timestamp, text, notify, plural, untracked}
   from '@datagrok-libraries/u2';
 import type {Capability, IProperty, ObjectRenderer, Action, ColumnOf, DomainRowLike, RowValues, RowView,
   ReadonlySignal, NotifyHandle, Reason} from '@datagrok-libraries/u2';
@@ -8,7 +8,7 @@ import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.
 import {DomainSource} from '../core/domain-source.js';
 import type {DomainSourceOptions} from '../core/domain-source.js';
 import {SharedSession, confirmDiscard} from '../core/session.js';
-import {handlerRenderer, ViewHost, mountView} from '@datagrok-libraries/u2/dg';
+import {handlerRenderer, ViewHost, mountView, Editors} from '@datagrok-libraries/u2/dg';
 import {DomainApp} from './app.js';
 import {authoring} from './authoring/index.js';
 import {SYSTEM_COLUMNS, DgDomainBackend} from './backend.js';
@@ -293,6 +293,13 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return view;
   }
 
+  static readonly CARD_PICTURE = {width: 120, height: 80};
+
+  /** The column a card and a table row show as a picture: the first one a display rule draws (a structure). */
+  static pictureOf(properties: IProperty[]): IProperty | undefined {
+    return properties.find((p) => !SYSTEM_COLUMNS.some(([name]) => name === p.name) && Editors.displays(p));
+  }
+
   /** The handler-backed renderer: the name column as the caption where the table declares one,
    * the handler's own rendering otherwise, and the schema-driven rendering where no handler
    * claims the rows. */
@@ -360,28 +367,37 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       const {text: caption, draft} = label(row);
       return span(caption, draft ? 'u2-domain-list-name u2-domain-draft' : 'u2-domain-list-name');
     };
-    const description = (row: RowView): string => {
+    const descriptions = (row: RowView, count: number): string[] => {
       const {properties, info} = schema();
       const prose = properties.filter((p) => p.name !== info.nameColumn &&
         !SYSTEM_COLUMNS.some(([name]) => name === p.name) && !DomainTable.isReference(p) &&
-        (p.propertyType ?? p.type) === 'string' && text(row[p.name!]) !== '');
-      const first = prose.find((p) => p.name === 'description') ?? prose[0];
-      return first === undefined ? '' : text(row[first.name!]);
+        (p.propertyType ?? p.type) === 'string' && !Editors.displays(p) && text(row[p.name!]) !== '');
+      const first = prose.find((p) => p.name === 'description');
+      return [...first === undefined ? [] : [first], ...prose.filter((p) => p !== first)].slice(0, count)
+        .map((p) => text(row[p.name!]));
     };
     return {
       caption: (row) => label(row).text,
       listItem: titleOf,
       card: (row) => {
         const created = row.created_on;
-        const line = description(row);
+        const picture = DomainTable.pictureOf(schema().properties);
         const title = titleOf(row);
         title.classList.add('u2-domain-card-title');
-        return divV([
+        const body = divV([
           title,
-          ...(line === '' ? [] : [span(line, 'u2-domain-card-description')]),
+          ...descriptions(row, picture === undefined ? 1 : 2).map((line) => span(line, 'u2-domain-card-description')),
           ...(created === null || created === undefined ? [] :
             [timestamp(created as Date | number | string, 'u2-domain-card-time')]),
         ], 'u2-domain-card');
+        if (picture === undefined)
+          return body;
+        const value = row[picture.name!];
+        const art = value === null || value === undefined || value === '' ? null :
+          Editors.display(picture, value, DomainTable.CARD_PICTURE);
+        body.classList.add('u2-domain-card-text');
+        return divH([div([...art === null ? [] : [art]], 'u2-domain-card-picture'), body],
+          'u2-domain-card u2-domain-card-pictured');
       },
     };
   }

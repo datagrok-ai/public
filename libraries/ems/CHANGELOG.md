@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Lists: A table opened at `/domains/<schema>/<table>` shows its rows as cards with the structure (any column a display rule draws) beside the name and two text lines, or as a table of columns where no column has a picture, with the condition builder beside them
+* Tables: A column a display rule draws (a structure) is drawn in its cells, the rows tall enough for it; added the `view` app option to open the list page as a table
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input
 * u2 v1: Moved onto u2's v1 API (plain `value`/`peek()`, `build`, owners as options, captions as `text`, `disabled` reasons, entry-point imports). Save and Discard say why they are off ("No changes to save", "Nothing to discard", "Wait for the batch being saved to finish"), as do the authoring dialogs' and the manifest editor's controls that are off, and New says "Loading…" until its table is loaded; `DomainAction` takes `disabled` (the reason) instead of `enabled`, and the `u2-domain-pick` tag's `enabled` prop is `disabled`

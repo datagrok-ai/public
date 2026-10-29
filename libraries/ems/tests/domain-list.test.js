@@ -110,6 +110,25 @@ scoped('cards: the schema card carries the name, up to three text fields and the
   src.dispose();
 });
 
+scoped('cards: a column a display rule draws is the card\'s picture, beside the title and two lines', async () => {
+  const {Editors} = await import('@datagrok-libraries/u2/dg');
+  const unregister = Editors.registerDisplay({match: (p) => p.name === 'priority',
+    render: (v, size) => Object.assign(document.createElement('i'), {textContent: `${v} ${size.width}`})});
+  try {
+    const {src} = await issues();
+    const list = testOwner().build(() => domains.list(src, {mode: 'cards'}));
+    const card = mount(list)[2].querySelector('.u2-domain-card-pictured');
+    assert.equal(card.querySelector('.u2-domain-card-picture i').textContent, 'high 120');
+    assert.equal(card.querySelector('.u2-domain-card-title').textContent, 'Naproxen');
+    assert.equal([...card.querySelectorAll('.u2-domain-card-description')].some((d) => d.textContent === 'high'),
+      false, 'the pictured column is not a text line');
+    list.dispose();
+    src.dispose();
+  } finally {
+    unregister();
+  }
+});
+
 scoped('actions: Open on saved rows through the handler, Delete under the row\'s own access, the table\'s own', async () => {
   const rows = ROWS.issue.map((r) => ({...r}));
   rows[1]['~can_delete'] = false;

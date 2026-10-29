@@ -159,6 +159,21 @@
   font-weight: 600;
 }
 
+.u2-domain-card-pictured {
+  align-items: flex-start;
+  gap: var(--dg-space-m);
+  padding-top: var(--dg-space-s);
+}
+
+.u2-domain-card-picture {
+  flex: 0 0 120px;
+  height: 80px;
+}
+
+.u2-domain-card-text {
+  min-width: 0;
+}
+
 .u2-domain-card-description {
   color: var(--dg-text-color-light);
   overflow: hidden;

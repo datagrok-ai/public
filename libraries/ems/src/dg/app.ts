@@ -80,6 +80,8 @@ export interface DomainAppOptions {
   liveMs?: number;
   mode?: DomainListMode;
   itemHeight?: number;
+  /** The list page's rows as the list (default) or as a table, until the ribbon's switch moves them. */
+  view?: 'list' | 'table';
   /** What every draft the app creates starts with — the preset a view that opened the app carries
    * (a location's id on a containers app). Threaded into the entity page's draft source. */
   defaults?: Record<string, unknown>;
@@ -167,7 +169,7 @@ export class DomainApp extends Control {
   /** The view is too narrow for the whole ribbon: the presets fold into the Actions menu. */
   readonly compact = signal(false);
   /** The list page's rows as the list or as a table — the ribbon's switch. */
-  readonly view = signal<'list' | 'table'>('list');
+  readonly view: Signal<'list' | 'table'>;
   /** The table view's columns: the Output and Aggregations under the filters. */
   readonly output: ReturnType<typeof domainOutput>;
 
@@ -196,6 +198,7 @@ export class DomainApp extends Control {
     const table = _options.table;
     this.table = table;
     this._base = signal(_options.base);
+    this.view = signal(_options.view ?? 'list');
     this.session = SharedSession.ambient ?? new SharedSession();
     this.page = this._page;
     this.entity = this._entity;

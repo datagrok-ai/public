@@ -4,7 +4,7 @@ import type {ReadonlySignal, IProperty, ObjectRenderer, CellStateLike, DataTable
   RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {viewers} from '@datagrok-libraries/u2/dg';
-import {collectionSelection} from '@datagrok-libraries/u2/dg';
+import {collectionSelection, Editors} from '@datagrok-libraries/u2/dg';
 import type {Bindable} from '@datagrok-libraries/u2/dg';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {EditorEditState} from './editor-state.js';
@@ -264,6 +264,7 @@ export interface DomainDataTableOptions {
  * cells (pending amber, refused red). Read-only by design (the Dart grid stays THE editor) —
  * what it is for is a wide collection beside a tree or a form, where a canvas viewer is more than the page needs. */
 export class DomainDataTable extends Control {
+  static readonly PICTURE_ROW_HEIGHT = 60;
   /** The table, once the source's schema is known — it is what the columns are derived from. */
   readonly table: ReadonlySignal<DataTable<RowView> | null>;
 
@@ -318,7 +319,9 @@ export class DomainDataTable extends Control {
       ...(DomainDataTable.isNumeric(byName.get(name)) ? {align: 'right' as const} : {}),
       render: (row) => this._options.cells?.[name]?.(row) ?? this._cell(row, name, byName.get(name)),
     })).concat(this._options.extraColumns ?? []);
-    const table = this.build(() => new DataTable<RowView>({columns, rowHeight: this._options.rowHeight,
+    const pictured = this.columns().some((name) => byName.has(name) && Editors.displays(byName.get(name)!));
+    const rowHeight = this._options.rowHeight ?? (pictured ? DomainDataTable.PICTURE_ROW_HEIGHT : undefined);
+    const table = this.build(() => new DataTable<RowView>({columns, rowHeight,
       items: source.rows, sort: source.sort, cellState: this._cellState(), fitColumns: true,
       contextActions: (row) => DomainTable.of(source)?.rowActions(row, this._options.actions) ?? [],
       onActivate: this._options.onActivate ??
@@ -347,6 +350,8 @@ export class DomainDataTable extends Control {
   static width(prop: IProperty | undefined, isName: boolean): string {
     if (isName)
       return 'minmax(120px, 1.5fr)';
+    if (prop !== undefined && Editors.displays(prop))
+      return `${Math.round((DomainDataTable.PICTURE_ROW_HEIGHT - 4) * 1.5) + 8}px`;
     switch (prop?.propertyType ?? prop?.type) {
       case 'bool': case 'int': case 'bigint': case 'double': case 'float': case 'num':
         return 'minmax(48px, 0.5fr)';
@@ -380,6 +385,10 @@ export class DomainDataTable extends Control {
       return text(value);
     if (DomainTable.isReference(prop))
       return DomainDataTable.caption(prop, row, column, String(value), this._looked);
+    if (Editors.displays(prop)) {
+      const height = (this._options.rowHeight ?? DomainDataTable.PICTURE_ROW_HEIGHT) - 4;
+      return Editors.display(prop, value, {width: Math.round(height * 1.5), height})!;
+    }
     switch (prop.propertyType ?? prop.type) {
       case 'datetime':
         // a domain `datetime` carrying a date is stamped at midnight UTC, and reading it locally

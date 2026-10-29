@@ -1,5 +1,5 @@
 import type * as DG from 'datagrok-api/dg';
-import {domains} from './facade.js';
+import {domains, DomainTable} from './facade.js';
 import {DomainAddress} from './address.js';
 import {DomainApp} from './app.js';
 import {DomainErrors} from './errors.js';
@@ -31,7 +31,11 @@ export async function route(address: string): Promise<DG.ViewBase | null> {
     return null;
   // the platform's own address is the canonical one, and a list opened from it follows the server
   // like the app a package mounts does — two addresses onto one table must not behave differently
-  const view = handle.app({path: base, live: true});
+  // nothing configured this table: the conditions beside the rows, cards where a picture tells them apart,
+  // a table of columns where nothing does
+  const pictured = DomainTable.pictureOf(handle.properties) !== undefined;
+  const view = handle.app({path: base, live: true, filters: {mode: 'builder', placement: 'left'},
+    ...pictured ? {mode: 'cards' as const, itemHeight: 96} : {view: 'table' as const}});
   await DomainApp.of(view)!.open(rest);
   return view;
 }

@@ -79,6 +79,21 @@ scoped('columns and hiddenColumns narrow the selection', async () => {
   second.src.dispose();
 });
 
+scoped('a column a display rule draws is drawn in its cells, the rows tall enough for it', async () => {
+  const {Editors} = await import('@datagrok-libraries/u2/dg');
+  const unregister = Editors.registerDisplay({match: (p) => p.name === 'priority',
+    render: (v, size) => Object.assign(document.createElement('i'), {textContent: `${v} ${size.height}`})});
+  try {
+    const {src, dt} = await dataTable();
+    assert.equal(cell(dt, 2, 'priority').querySelector('i').textContent, 'high 56');
+    assert.equal(row(dt, 0).style.height, `${DomainDataTable.PICTURE_ROW_HEIGHT}px`);
+    dt.dispose();
+    src.dispose();
+  } finally {
+    unregister();
+  }
+});
+
 scoped('an edit through the source paints its cell, and a refusal paints and explains it', async () => {
   const {src, dt} = await dataTable();
   const changed = () => [...dt.root.querySelectorAll('.u2-cell-changed')].map((c) => c.textContent);
