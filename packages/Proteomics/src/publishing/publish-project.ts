@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck} from '@datagrok-libraries/test/src/test';
+import {awaitCheck} from '../utils/async';
 
 import {
   META_COLUMNS, PUBLISHED_TAGS, PublishOptions, PublishedMetadata,
