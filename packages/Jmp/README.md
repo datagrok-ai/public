@@ -66,6 +66,7 @@ viewers, titled after the script:
 | Graph Builder             | Scatter plot, line chart, bar chart, box plot, histogram or pie chart, one per panel, by its first element, with its title, axis ranges, log scales and reference lines; a trellis plot of it when the graph is grouped or paged |
 | Tabulate                  | Pivot table                                |
 | Fit Model, Fit Group (least squares) | Actual by Predicted scatter plot per response, from the prediction formula saved from that model |
+| Fit Group of other analyses | Each analysis it holds, as above |
 
 Anything else (other Fit Model personalities, the Profiler, control charts, DOE, ...) is named in a
 warning when the file opens, and listed in the file summary with the reason. What a converted viewer

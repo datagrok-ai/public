@@ -444,6 +444,20 @@ category('JMP: analyses', () => {
       'The prediction formulas saved for "weight" come from other models than this one, and the model isn\'t refit');
     expect(/Generalized Regression personality isn't converted/
       .test(fit('Fit Model(Y(:weight), Effects(:height), Personality("Generalized Regression"))').reason!), true);
+    expect(fit('Fit Model(Y(Log(:weight)), Effects(:height))').reason,
+      'The response Log("weight") is a transform, which isn\'t converted yet');
+  });
+
+  test('Fit Group: each analysis it holds, as if launched on its own', async () => {
+    const c = convert('Fit Group(Oneway(Y(:height), X(:sex), Means(1)), Bivariate(Y(:weight), X(:height), ' +
+      'Fit Line()), Contingency(Y(:sex), X(:age)), Matched Pairs(Y(:height, :weight)), <<{Arrange in Rows(1)})');
+    expect(c.platform, 'Fit Group');
+    expectArray(c.viewers.map((v) => `${v.type}: ${v.options.title}`),
+      ['Box plot: height by sex', 'Scatter plot: weight by height', 'Bar chart: sex by age']);
+    expect(c.viewers[1].options.showRegressionLine, true);
+    expectArray(c.notes, ['Means results not shown', 'JMP\'s Matched Pairs isn\'t converted to Datagrok viewers yet']);
+    expect(convert('Fit Group(Oneway(Y(:sex), X(:age)))').reason,
+      'Oneway needs a continuous Y column; "sex" is categorical');
   });
 
   test('not converted, with a reason', async () => {

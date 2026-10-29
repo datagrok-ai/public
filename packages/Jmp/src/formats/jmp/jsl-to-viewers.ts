@@ -205,7 +205,7 @@ function topCall(s: JslNode): Call | undefined {
 
 /** Calls that set things up rather than launch an analysis. */
 const NOT_PLATFORMS = new Set(['namesdefaulttohere', 'currentdatatable', 'datatable', 'open', 'clearglobals',
-  'deletesymbols', 'print', 'show', 'write', 'wait', 'include', 'subset', 'roweditor']);
+  'deletesymbols', 'print', 'show', 'write', 'wait', 'include', 'subset', 'roweditor', 'transformcolumn']);
 
 /** Calls of a hand-written JSL program, which a table can keep as a script: loops, dialogs, windows built
  * from parts. Such a script isn't a saved analysis, whatever platforms it launches along the way. */
@@ -309,12 +309,46 @@ function fitModel(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
   return fitModels([call], cols, notes);
 }
 
-/** Fit Group: the Fit Models it holds, each converted on its own. JMP separates them with `,` or `;`. */
+/** Fit Group: the analyses it holds, each converted as if launched on its own, except that its Fit Models
+ * are told about together. JMP separates them with `,` or `;`. */
 function fitGroup(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
-  const models = call.args.flatMap(statements).filter((a): a is Call => isCall(a, 'Fit Model'));
-  if (models.length === 0)
-    throw new Unconvertible('Fit Group holds no Fit Model');
-  return fitModels(models, cols, notes);
+  const members = call.args.flatMap(statements)
+    .filter((a): a is Call => a.type === 'call' && !NOT_PLATFORMS.has(jslKey(a.name)) &&
+      !isCall(a, 'Where') && !isCall(a, 'By'));
+  if (members.length === 0)
+    throw new Unconvertible('Fit Group holds no analysis');
+  const models = members.filter((m) => isCall(m, 'Fit Model'));
+  const viewers: JmpViewerSpec[] = [];
+  const reasons: string[] = [];
+  const convert = (f: (notes: string[]) => JmpViewerSpec[]): void => {
+    const own: string[] = [];
+    try {
+      viewers.push(...f(own));
+      notes.push(...own);
+    } catch (e) {
+      if (!(e instanceof Unconvertible))
+        throw e;
+      reasons.push(e.message);
+    }
+  };
+  if (models.length > 0)
+    convert((own) => fitModels(models, cols, own));
+  for (const m of members.filter((m) => !isCall(m, 'Fit Model'))) {
+    const converter = PLATFORMS[jslKey(m.name)];
+    if (!converter) {
+      reasons.push(`JMP's ${m.name} isn't converted to Datagrok viewers yet`);
+      continue;
+    }
+    convert((own) => {
+      const out = converter(m, cols, own);
+      noteIgnored(m, own);
+      return out;
+    });
+  }
+  if (viewers.length === 0)
+    throw new Unconvertible([...new Set(reasons)].join('; '));
+  notes.push(...new Set(reasons));
+  return viewers;
 }
 
 /** The Actual by Predicted plots of Fit Models; what didn't come across is told once for them all. */
@@ -330,7 +364,13 @@ function fitModels(models: Call[], cols: Columns, notes: string[]): JmpViewerSpe
       if (personality !== undefined && jslKey(personality) !== 'standardleastsquares')
         throw new Unconvertible(`Fit Model's ${personality} personality isn't converted yet`);
       const ys = columnNames(findArg(call, 'Y')).map((n) => cols.get(n));
-      if (ys.length === 0)
+      // A response such as Log(:y) is fit on its transform, which no saved column holds
+      const transforms = findArg(call, 'Y')?.args.filter((a): a is Call => a.type === 'call') ?? [];
+      for (const t of transforms) {
+        reasons.push(`The response ${t.name}(${quoted(referencedColumns(t))}) is a transform, ` +
+          'which isn\'t converted yet');
+      }
+      if (ys.length === 0 && transforms.length === 0)
         throw new Unconvertible('Fit Model names no Y column');
       const terms = modelTerms(call).join(',');
       for (const y of ys) {
