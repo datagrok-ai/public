@@ -2,7 +2,9 @@
 // and its column roles; everything else in the script is ignored or named in `notes`. No platform imports,
 // so the Node tests can run it.
 
-import {JslNode, columnNames, findAll, findArg, isCall, jslKey, statements} from './jsl';
+import {
+  JslNode, columnNames, findAll, findArg, isCall, jslKey, referencedColumns, statements,
+} from './jsl';
 import {JmpScript, isSourceScript} from './jmp-scripts';
 import type {JmpColumn} from './jmp-types';
 
@@ -28,16 +30,40 @@ export interface JmpScriptConversion {
 export interface JmpColumnRef {
   name: string;
   numeric: boolean;
-  /** For a saved prediction formula, the column it predicts (JMP's `Predicting` column property). */
+  /** For a saved prediction formula: the column it predicts (JMP's `Predicting` column property), when
+   * the property names one, and the model terms of its formula ({@link modelTerms}). */
   predicts?: string;
+  terms?: string[];
 }
 
 /** What the converter needs to know about the table's columns. */
 export function columnRefs(columns: JmpColumn[]): JmpColumnRef[] {
   return columns.map((c) => {
-    const predicting = c.properties?.properties.find((p) => p.name === 'Predicting')?.node;
-    return {name: c.info.name, numeric: c.kind !== 'string', predicts: columnNames(predicting)[0]};
+    const property = (name: string) => c.properties?.properties.find((p) => p.name === name)?.node;
+    const predicting = property('Predicting');
+    const formula = property('Formula')?.args[0];
+    return {name: c.info.name, numeric: c.kind !== 'string',
+      ...(predicting && {predicts: columnNames(predicting)[0], terms: formula ? formulaTerms(formula) : []})};
   });
+}
+
+/** A model term as a key: the columns it involves, sorted, so `:A * :B`, `(:B - 1.5) * :A` and `:A & RS`
+ * with `:B & RS` crossed all read "A*B". */
+function termKey(columns: string[]): string {
+  return [...new Set(columns.map(jslKey))].sort().join('*');
+}
+
+/** The terms of a saved prediction formula: the columns of each of its top-level summands, without the
+ * intercept. */
+function formulaTerms(formula: JslNode): string[] {
+  const summands = (n: JslNode): JslNode[] =>
+    n.type === 'binary' && (n.op === '+' || n.op === '-') ? [...summands(n.left), ...summands(n.right)] : [n];
+  return [...new Set(summands(formula).map((t) => termKey(referencedColumns(t))).filter((k) => k !== ''))].sort();
+}
+
+/** The terms of a Fit Model, from its Effects(), in the form of {@link formulaTerms}. */
+function modelTerms(call: Call): string[] {
+  return [...new Set((findArg(call, 'Effects')?.args ?? []).map((e) => termKey(referencedColumns(e))))].sort();
 }
 
 type Call = Extract<JslNode, {type: 'call'}>;
@@ -55,23 +81,28 @@ class Unconvertible extends Error {}
 
 class Columns {
   private readonly byKey = new Map<string, JmpColumnRef>();
-  private readonly predictions = new Map<string, JmpColumnRef>();
-  constructor(columns: JmpColumnRef[]) {
-    for (const c of columns) {
+  private readonly predictions: JmpColumnRef[];
+  /** @param transforms names of the columns the script makes itself, with Transform Column() */
+  constructor(columns: JmpColumnRef[], private readonly transforms: string[]) {
+    for (const c of columns)
       this.byKey.set(jslKey(c.name), c);
-      if (c.predicts !== undefined)
-        this.predictions.set(jslKey(c.predicts), c);
-    }
+    this.predictions = columns.filter((c) => c.terms !== undefined);
   }
 
-  /** The saved prediction formula column for `name`, if the fit saved one to the table. */
-  predictionOf(name: string): JmpColumnRef | undefined {
-    return this.predictions.get(jslKey(name));
+  /** The prediction formulas saved for `y`: those whose Predicting property names it, and, as JMP keeps the
+   * name a response had when it was fit, those named "Pred Formula <y>…" whose Predicting names no column
+   * of the table (the response was renamed since) or none at all. */
+  predictionsOf(y: string): JmpColumnRef[] {
+    const prefix = jslKey(`Pred Formula ${y}`);
+    return this.predictions.filter((c) => c.predicts !== undefined && this.byKey.has(jslKey(c.predicts)) ?
+      jslKey(c.predicts) === jslKey(y) : jslKey(c.name).startsWith(prefix));
   }
 
   /** The table's column for a name used in the script; JSL matches names ignoring case and spaces. */
   get(name: string): JmpColumnRef {
     const c = this.byKey.get(jslKey(name));
+    if (!c && this.transforms.some((t) => jslKey(t) === jslKey(name)))
+      throw new Unconvertible(`Column "${name}" is a transform the script computes, which isn't converted yet`);
     if (!c)
       throw new Unconvertible(`Column "${name}" isn't in the imported table`);
     return c;
@@ -109,7 +140,8 @@ export function convertScript(script: JmpScript, columns: JmpColumnRef[]): JmpSc
       'Doesn\'t launch an analysis';
     return result;
   }
-  const cols = new Columns(columns);
+  const cols = new Columns(columns,
+    findAll(script.body, 'Transform Column').map(stringArg).filter((n) => n !== undefined));
   const reasons: string[] = [];
   for (const call of launches) {
     result.platform ??= call.name;
@@ -272,53 +304,68 @@ function oneway(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
  * the table, with the Y = X line a perfect fit would follow. The model isn't refit, so a Y without a saved
  * prediction formula has no plot. */
 function fitModel(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
-  const personality = stringArg(findArg(call, 'Personality'));
-  if (personality !== undefined && jslKey(personality) !== 'standardleastsquares')
-    throw new Unconvertible(`Fit Model's ${personality} personality isn't converted yet`);
-  const ys = columnNames(findArg(call, 'Y')).map((n) => cols.get(n));
-  if (ys.length === 0)
-    throw new Unconvertible('Fit Model names no Y column');
-  const viewers: JmpViewerSpec[] = [];
-  const unsaved: string[] = [];
-  for (const y of ys) {
-    const predicted = cols.predictionOf(y.name);
-    if (!predicted) {
-      unsaved.push(y.name);
-      continue;
-    }
-    viewers.push({type: SCATTER, options: {
-      xColumnName: predicted.name, yColumnName: y.name, title: `${y.name} Actual by Predicted`,
-      formulaLines: JSON.stringify([{type: 'line', formula: 'Y = X', title: 'Actual = Predicted'}]),
-    }});
-  }
-  if (viewers.length === 0) {
-    throw new Unconvertible(`The fit of ${quoted(unsaved)} saved no prediction formula to the table, ` +
-      'and the model isn\'t refit');
-  }
-  if (unsaved.length > 0)
-    notes.push(`No Actual by Predicted plot for ${quoted(unsaved)}: no prediction formula saved`);
-  notes.push('The model\'s reports (fit summary, estimates, effect tests) and its other plots not shown');
-  if (findAll(call, 'Profiler').some((p) => p.args[0]?.type === 'number' && p.args[0].value === 1))
-    notes.push('Profiler not shown');
-  return viewers;
+  return fitModels([call], cols, notes);
 }
 
 /** Fit Group: the Fit Models it holds, each converted on its own. JMP separates them with `,` or `;`. */
 function fitGroup(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
+  const models = call.args.flatMap(statements).filter((a): a is Call => isCall(a, 'Fit Model'));
+  if (models.length === 0)
+    throw new Unconvertible('Fit Group holds no Fit Model');
+  return fitModels(models, cols, notes);
+}
+
+/** The Actual by Predicted plots of Fit Models; what didn't come across is told once for them all. */
+function fitModels(models: Call[], cols: Columns, notes: string[]): JmpViewerSpec[] {
   const viewers: JmpViewerSpec[] = [];
   const reasons: string[] = [];
-  for (const model of call.args.flatMap(statements).filter((a): a is Call => isCall(a, 'Fit Model'))) {
+  const unsaved: string[] = [];
+  const otherModel: string[] = [];
+  let profiler = false;
+  for (const call of models) {
     try {
-      viewers.push(...fitModel(model, cols, notes));
+      const personality = stringArg(findArg(call, 'Personality'));
+      if (personality !== undefined && jslKey(personality) !== 'standardleastsquares')
+        throw new Unconvertible(`Fit Model's ${personality} personality isn't converted yet`);
+      const ys = columnNames(findArg(call, 'Y')).map((n) => cols.get(n));
+      if (ys.length === 0)
+        throw new Unconvertible('Fit Model names no Y column');
+      const terms = modelTerms(call).join(',');
+      for (const y of ys) {
+        const saved = cols.predictionsOf(y.name);
+        // A table often keeps the predictions of several fits of one response; only the one with this
+        // model's terms is its Actual by Predicted.
+        const predicted = saved.find((c) => c.terms!.join(',') === terms);
+        if (!predicted) {
+          (saved.length > 0 ? otherModel : unsaved).push(y.name);
+          continue;
+        }
+        viewers.push({type: SCATTER, options: {
+          xColumnName: predicted.name, yColumnName: y.name, title: `${y.name} Actual by Predicted`,
+          formulaLines: JSON.stringify([{type: 'line', formula: 'Y = X', title: 'Actual = Predicted'}]),
+        }});
+      }
+      profiler ||= findAll(call, 'Profiler').some((p) => p.args[0]?.type === 'number' && p.args[0].value === 1);
     } catch (e) {
       if (!(e instanceof Unconvertible))
         throw e;
       reasons.push(e.message);
     }
   }
+  if (unsaved.length > 0) {
+    reasons.push(`The ${unsaved.length === 1 ? 'fit' : 'fits'} of ${quoted(unsaved)} saved no prediction formula ` +
+      'to the table, and the model isn\'t refit');
+  }
+  if (otherModel.length > 0) {
+    reasons.push(`The prediction formulas saved for ${quoted(otherModel)} come from other models than ` +
+      `${otherModel.length === 1 ? 'this one' : 'these'}, and the model isn't refit`);
+  }
   if (viewers.length === 0)
-    throw new Unconvertible([...new Set(reasons)].join('; ') || 'Fit Group holds no Fit Model');
-  notes.push(...reasons);
+    throw new Unconvertible([...new Set(reasons)].join('; '));
+  notes.push(...new Set(reasons));
+  notes.push('The model\'s reports (fit summary, estimates, effect tests) and its other plots not shown');
+  if (profiler)
+    notes.push('Profiler not shown');
   return viewers;
 }
 

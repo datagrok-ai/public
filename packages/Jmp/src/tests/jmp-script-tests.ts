@@ -359,7 +359,7 @@ category('JMP: analyses', () => {
   });
 
   test('Fit Model: Actual by Predicted, from the saved prediction formula', async () => {
-    const cols = [...BIG_CLASS, {name: 'Pred Formula weight', numeric: true, predicts: 'weight'}];
+    const cols = [...BIG_CLASS, {name: 'Pred Formula weight', numeric: true, predicts: 'weight', terms: ['height']}];
     const fit = (text: string) => convertScript({name: 'Fit', text, body: parseJsl(text)}, cols);
     const one = fit('Fit Model(Y(:weight), Effects(:height), Personality("Standard Least Squares"), ' +
       'Run(:weight << {Profiler(1)}))');
@@ -376,6 +376,8 @@ category('JMP: analyses', () => {
     expect(group.viewers.length, 1);
     expect(group.notes.filter((n) => /reports/.test(n)).length, 1);
     expect(/The fit of "height" saved no prediction formula/.test(group.notes.join()), true);
+    expect(fit('Fit Model(Y(:weight), Effects(:height, :age))').reason,
+      'The prediction formulas saved for "weight" come from other models than this one, and the model isn\'t refit');
     expect(/Generalized Regression personality isn't converted/
       .test(fit('Fit Model(Y(:weight), Effects(:height), Personality("Generalized Regression"))').reason!), true);
   });
@@ -505,5 +507,23 @@ category('JMP: public files', () => {
     expect(convert3('Fit Least Squares').viewers.length, 3);
     expect(convert3('Generalized Regression').reason,
       'Fit Model\'s Generalized Regression personality isn\'t converted yet');
+  });
+
+  test('JMP 19: each fit gets only the prediction saved from its own model', async () => {
+    const t = await read('btpr-42-e88508-phase-dependent-doe');
+    expect(t.info.jmpVersion, '19.0.0');
+    expect(t.info.nrows, 78);
+    const convert = (name: string) => convertScript(t.scripts.find((s) => s.name === name)!, columnRefs(t.columns));
+    // The saved formulas were fit without the outliers; APG and Oligo were named Acidic_PG1 and Man5 then.
+    const plots = (name: string) => convert(name).viewers
+      .map((v) => `${v.options.yColumnName} by ${v.options.xColumnName}`);
+    expectArray(plots('Fit Group: WITHOUT outliers'),
+      ['Viability by Pred Formula Viability_pd', 'Titer by Pred Formula Titer_pd', 'APG by Pred Formula APG_pd',
+        'BPG by Pred Formula BPG_pd', 'LMW by Pred Formula LMW_pd', 'HMW by Pred Formula HMW_pd',
+        'Oligo by Pred Formula Oligo_pd']);
+    expect(convert('Fit Group: WITH outliers').reason,
+      'Column "Log[Lactate]" is a transform the script computes, which isn\'t converted yet; ' +
+      'The prediction formulas saved for "Viability", "Titer", "LMW", "HMW", "APG", "BPG", "Oligo" come from ' +
+      'other models than these, and the model isn\'t refit');
   });
 }, {node: true});

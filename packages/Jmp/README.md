@@ -65,7 +65,7 @@ viewers, titled after the script:
 | Contingency               | Stacked bar chart of counts                |
 | Graph Builder             | Scatter plot, line chart, bar chart, box plot, histogram or pie chart, by its first element; a trellis plot of it when the graph has panels |
 | Tabulate                  | Pivot table                                |
-| Fit Model, Fit Group (least squares) | Actual by Predicted scatter plot per response, from the prediction formula the fit saved |
+| Fit Model, Fit Group (least squares) | Actual by Predicted scatter plot per response, from the prediction formula saved from that model |
 
 Anything else (other Fit Model personalities, the Profiler, control charts, DOE, ...) is named in a
 warning when the file opens, and listed in the file summary with the reason. What a converted viewer

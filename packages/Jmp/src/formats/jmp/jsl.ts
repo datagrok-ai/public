@@ -374,6 +374,19 @@ export function findAll(node: JslNode, name: string): Extract<JslNode, {type: 'c
   return out;
 }
 
+/** Names of the columns referenced (`:Name`) anywhere under `node`, each once. */
+export function referencedColumns(node: JslNode): string[] {
+  const out = new Set<string>();
+  const visit = (n: JslNode): void => {
+    if (n.type === 'column')
+      out.add(n.name);
+    for (const child of children(n))
+      visit(child);
+  };
+  visit(node);
+  return [...out];
+}
+
 function children(n: JslNode): JslNode[] {
   switch (n.type) {
   case 'call': return n.args;
