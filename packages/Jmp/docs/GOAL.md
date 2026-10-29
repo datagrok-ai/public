@@ -26,8 +26,9 @@ A JMP table often carries the analyses done on it, as saved scripts (Distributio
 Graph Builder, Tabulate, ...). We want them to open as the closest Datagrok viewers, next to the table.
 What doesn't come across (a fit, a test, a font) should be named, not silently dropped.
 
-The preview, shown when you click a file in the Browse tree, lists the columns and saved analyses before
-you open anything.
+Clicking a file in the Browse tree shows it as it will open: the table with its saved analyses, as a
+CSV file previews; double-clicking keeps it open. A summary of the file, one click away, lists what
+didn't come across and why.
 
 ## Bulk import
 

@@ -14,6 +14,7 @@ Feature: A JMP file the reader can't fully read says so
   Scenario: An unreadable column is left out with a warning, the rest opens
     Given no table view is open
     And the browse panel is open
+    And user collapses Files tree node inside browse tree
     When user drops the "fixtures/unsupported-column.jmp" file of the project onto browse tree
     Then the "unsupported-column" table view should open with 4 rows
     And the table should have 11 columns

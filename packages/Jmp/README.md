@@ -16,12 +16,13 @@ This plugin is not affiliated with, sponsored by or endorsed by either company.
 
 - **From disk:** drop a `.jmp` file onto Datagrok, or use File > Open > File... It opens as a
   table, named after the file, with its saved analyses as viewers (see below).
-- **From the Browse tree:** click or double-click a `.jmp` file to preview it: the JMP version
-  that saved it, its size, when it was saved, its saved analyses, and the data. **Open** in the
-  ribbon opens the table with its analyses.
+- **From the Browse tree:** click a `.jmp` file to preview it as its table with its saved
+  analyses, as a CSV file previews; double-click to keep it open. The **About this JMP file** icon
+  in the ribbon shows the JMP version that saved it, its size, when it was saved, the columns left
+  out and each saved analysis with what it opens as or why it doesn't.
 
-If some columns can't be read, the rest of the table still opens. The preview lists the columns
-that were left out under **Columns not imported**, and opening from disk names them in a warning.
+If some columns can't be read, the rest of the table still opens. A warning names the columns left
+out, and the summary lists them under **Columns not imported**.
 A file that isn't a readable JMP table says why instead of opening.
 
 ## What gets imported
@@ -64,10 +65,12 @@ viewers, titled after the script:
 | Contingency               | Stacked bar chart of counts                |
 | Graph Builder             | Scatter plot, line chart, bar chart, box plot, histogram or pie chart, by its first element; a trellis plot of it when the graph has panels |
 | Tabulate                  | Pivot table                                |
+| Fit Model, Fit Group (least squares) | Actual by Predicted scatter plot per response, from the prediction formula the fit saved |
 
-Anything else (Fit Model, control charts, DOE, ...) is listed in the preview with the reason, and
-named in a warning when the file opens. What a converted viewer leaves out, such as a `By()` split, is
-listed under the analysis in the preview, and **Script** there shows the script itself.
+Anything else (other Fit Model personalities, the Profiler, control charts, DOE, ...) is named in a
+warning when the file opens, and listed in the file summary with the reason. What a converted viewer
+leaves out, such as a `By()` split, is listed under the analysis in the summary, and **Script** there
+shows the script itself.
 
 Where JMP keeps scripts in the file was worked out from a few files, so a table whose scripts aren't
 found opens without them; its data is unaffected.

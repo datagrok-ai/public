@@ -1,22 +1,55 @@
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {filter, take} from 'rxjs/operators';
 
-import {badge, button, Control, div, divH, divV, icon, link, Section, show, signal, span} from '@datagrok-libraries/u2';
-import {appView, viewers} from '@datagrok-libraries/u2/src/dg/index.js';
+import {badge, Control, div, divH, divV, icon, link, Section, show, signal, span} from '@datagrok-libraries/u2';
+import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 
 import {JmpTable} from './jmp-types';
 import {addSavedAnalyses, dataColumns, hideJmpHiddenColumns, jmpTableToDataFrame, savedAnalyses, skippedColumns}
   from './jmp-to-dataframe';
 import {JmpScriptConversion} from './jsl-to-viewers';
 
-/** File-browser preview of a JMP table (JMP_PLUGIN.md §6.1): what the file is, the columns that
- * won't come across, the saved analyses and what they open as, the data, and Open in the ribbon. */
-export function createJmpPreview(table: JmpTable, fileName: string): DG.ViewBase {
-  const tableName = fileName.replace(/\.jmp$/i, '');
-  const df = jmpTableToDataFrame(table, tableName);
+const list = (names: string[]): string => `${names.slice(0, 5).join(', ')}${names.length > 5 ? ', …' : ''}`;
+
+/** Says which columns and saved analyses didn't come across, so nothing disappears silently. */
+export function warnSkipped(table: JmpTable): void {
+  const names = skippedColumns(table).map((s) => s.name);
+  if (names.length > 0)
+    grok.shell.warning(`JMP: ${names.length} column${names.length === 1 ? '' : 's'} not imported: ${list(names)}`);
+  const analyses = savedAnalyses(table).filter((a) => a.viewers.length === 0).map((a) => a.name);
+  if (analyses.length > 0) {
+    grok.shell.warning(`JMP: ${analyses.length} saved ${analyses.length === 1 ? 'analysis' : 'analyses'} ` +
+      `not converted: ${list(analyses)}`);
+  }
+}
+
+/** A JMP table as a table view: its data, the saved analyses that convert open as viewers, and a ribbon
+ * button for the file summary. Both Browse (click to preview, double-click to keep) and a file opened from
+ * disk show this, so what the user previews is what they open (JMP_PLUGIN.md §6.1). */
+export function createJmpTableView(table: JmpTable, fileName: string): DG.TableView {
+  const tv = DG.TableView.create(jmpTableToDataFrame(table, fileName.replace(/\.jmp$/i, '')), false);
+  // A table view has no grid, and takes no viewers, until the shell shows it, as a preview or a view. The
+  // context panel's small preview of the file builds a view it never shows, so it doesn't warn twice.
+  const shown = grok.events.onViewAdded.pipe(filter((v) => v.dart === tv.dart), take(1)).subscribe(() => {
+    warnSkipped(table);
+    hideJmpHiddenColumns(tv);
+    addSavedAnalyses(tv, savedAnalyses(table));
+    const about = ui.iconFA('info-circle', () => showJmpSummary(table, fileName), 'About this JMP file');
+    about.dataset.jmpName = 'summary button';
+    about.setAttribute('aria-label', 'About this JMP file');
+    tv.setRibbonPanels([...tv.getRibbonPanels(), [about]]);
+  });
+  tv.subs.push(shown);
+  return tv;
+}
+
+/** What the file is, the columns that didn't come across, and each saved analysis with what it opened as
+ * or why it didn't. */
+export function showJmpSummary(table: JmpTable, fileName: string): DG.Dialog {
   const skipped = skippedColumns(table);
   const analyses = savedAnalyses(table);
-
   const content = Control.build(() => {
     const summary = divH([
       badge(`JMP ${table.info.jmpVersion}`, {variant: 'accent'}),
@@ -41,36 +74,17 @@ export function createJmpPreview(table: JmpTable, fileName: string): DG.ViewBase
         row.dataset.u2Item = s.name;
         return row;
       })));
-      section.root.style.flex = 'none';
       parts.push(section);
     }
-
     if (analyses.length > 0)
       parts.push(analysesSection(analyses));
-
-    const grid = viewers.grid(df);
-    grid.name = 'data';
-    Object.assign(grid.root.style, {flex: '1 1 0', minHeight: '0', width: '100%'});
-    parts.push(grid);
-
     const root = divV(parts, 'jmp-preview');
-    Object.assign(root.style, {width: '100%', height: '100%'});
+    Object.assign(root.style, {maxWidth: '800px', maxHeight: '70vh', overflow: 'auto'});
     return root;
   });
-
-  const converted = analyses.filter((a) => a.viewers.length > 0).length;
-  const openTable = (): void => {
-    const tv = grok.shell.addTableView(df);
-    hideJmpHiddenColumns(tv);
-    addSavedAnalyses(tv, analyses);
-  };
-  const open = Control.build(() => button('Open', openTable,
-    {primary: true, tooltip: converted > 0 ?
-      `Open the table in the workspace, with ${converted} saved ${converted === 1 ? 'analysis' : 'analyses'}` :
-      'Open the table in the workspace'}));
-  open.name = 'open';
-
-  return appView({name: fileName, content, ribbon: [[open]]});
+  const dialog = ui.dialog(fileName).add(content.root);
+  dialog.onClose.subscribe(() => content.dispose());
+  return dialog.show();
 }
 
 /** Saved analyses: each one's name, what it opens as or why it doesn't, and its script on demand.

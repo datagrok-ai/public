@@ -96,18 +96,18 @@ packages/Jmp/
     │   ├── jsl.ts              # a reader for declarative JSL: tokens → tree, never evaluated
     │   ├── jsl-to-viewers.ts   # a saved analysis → Datagrok viewer specs (§11, Phase 3); no platform imports
     │   ├── jmp-to-dataframe.ts # JmpTable → DG.DataFrame (types, tags, semTypes, row states); adds analyses to a view
-    │   └── jmp-viewer.ts       # u2 views: the Browse preview and the can't-open state
+    │   └── jmp-viewer.ts       # the table view, its u2 summary dialog, and the can't-open state
     └── tests/
         ├── golden.ts               # compares a parsed table with JMPReader.jl's output (no platform imports)
         ├── large-jmp.ts            # makes a large .jmp from compressed.jmp for the §8 measurements
         ├── jmp-reader-tests.ts     # header, reference, tables (runtests.jl ported), robustness; Node pass
         ├── jmp-script-tests.ts     # JSL reader, saved scripts, analyses → viewers; Node pass
-        └── jmp-dataframe-tests.ts  # DataFrame conversion, row states, analyses on a view, the preview; browser pass
+        └── jmp-dataframe-tests.ts  # DataFrame conversion, row states, analyses on a view, the Browse table view and its summary; browser pass
 ```
 
 **Why a standalone package, and not Crux?** Crux is a chemistry engine (molecules, SMARTS, fingerprints). A `.jmp` file is a generic data table, so a reader in Crux would share no code with the rest of it. A combined "stats tool formats" package (Minitab + JMP) is a reasonable future refactor. It doesn't change the parser, so v1 ships as its own package.
 
-**Registration.** A `fileHandler` for `jmp` (bytes → `DataFrame[]`) and a `fileViewer` for `jmp` (a `FileInfo` → a view). The shell hands a file from disk (drop, File > Open) to a package's file viewer before its handler (`core/client/xamgle/lib/src/commands/file/file_commands.dart`, `_openFile`), so the viewer tells the two apart by the file's connection: none means the file came from disk, and it opens straight as a table; a file on a server gets the preview (§6).
+**Registration.** A `fileHandler` for `jmp` (bytes → `DataFrame[]`) and a `fileViewer` for `jmp` (a `FileInfo` → a view). The shell hands a file from disk (drop, File > Open) to a package's file viewer before its handler (`core/client/xamgle/lib/src/commands/file/file_commands.dart`, `_openFile`), and the Browse tree runs the viewer on a click and only pins its view on a double-click (`browse_panel.dart`, `pinPreview`): the viewer isn't told which. So the viewer returns the table view in every case (§6).
 
 Because parsing runs in the browser, no Docker container or server function is needed. Drag-and-drop, File > Open, and the file browser all work through the handler.
 
@@ -262,7 +262,7 @@ The vendored `example1.jmp` carries `Formula(:ints * 2)` and `Units("kPa")`. The
 | Character (any layout) | `string` | Decoded with `TextDecoder('utf-8')`. |
 | Row state | two `string` columns, `<name> marker` and `<name> color` | The marker column holds JMP's glyph, marker-coded with the nearest Datagrok marker (18 of 32 have one); the colour column holds `#RRGGBB`, colour-coded with itself. Both carry the tag `jmp.rowState` = the JMP column's name. The flags aren't decoded yet (§4.3). |
 | A column with value labels | `string` | Each value's label, or the value itself where it has none, as JMP shows it. The values and labels are kept in the `jmp.valueLabels` tag, `[[value, label], ...]`. |
-| A column the reader can't decode | Not a column | Left out, listed in the preview and named in a warning balloon (§6, §7). It would hold nothing. |
+| A column the reader can't decode | Not a column | Left out, listed in the file summary and named in a warning balloon (§6, §7). It would hold nothing. |
 
 **DataFrame-level tags** (prefix `jmp.`):
 
@@ -284,19 +284,17 @@ Column order follows the file. Duplicate names can't happen in JMP, but names ar
 
 ## 6. User-Facing Behaviour
 
-All UI is built in u2 (`libraries/u2`): `appView` hosts the content, the Open button sits in the ribbon, and the grid is u2's `viewers.grid`.
+The summary and the can't-open view are built in u2 (`libraries/u2`); the table is a platform table view.
 
-### 6.1 A file in the Browse tree: preview
+### 6.1 A file in the Browse tree: the table, and a summary
 
-Clicking or double-clicking a `.jmp` file in the Browse tree shows the preview:
+Clicking a `.jmp` file in the Browse tree previews it as its table, with each converted analysis as a viewer, as a CSV file previews; double-clicking keeps that view open. The platform runs the file viewer on the click and only pins its view on the double-click, without telling the viewer which, so a separate preview with an Open button would leave opening as a second step. A table view has no grid and takes no viewers until the shell shows it, so the hidden columns, the analyses, the warnings and the ribbon icon are added when it is first shown; the context panel's small grid of the file builds a view it never shows, and so doesn't warn twice.
+
+**About this JMP file** (an info icon in the ribbon) opens a dialog with:
 
 - a summary line: a `JMP <version>` badge, `<rows> rows × <columns> columns` (the columns that come across), and when the file was saved
 - a folded **Columns not imported** section, present only when there are any, with a hint (`1 of 12`) and one line per column: its name and why
 - an open **Saved analyses** section, present only when the table has saved analyses, with a hint (`1 of 2 open as viewers`) and one line per analysis: its name, the viewers it opens as or why it doesn't, what doesn't come across (a `By()` split, pages, a smoother), and a **Script** link that shows the script's text
-- the table in a grid
-- **Open** in the ribbon, which opens the table in the workspace with the converted analyses as viewers
-
-Double-click previews rather than imports, as for other formats with a package viewer (Curves' `.pzfx`).
 
 ### 6.2 A file from disk: straight to a table
 
@@ -304,7 +302,7 @@ A `.jmp` file dropped onto the window, or picked through File > Open > File... o
 
 ### 6.3 A file that can't be read
 
-A file that isn't a readable JMP table (not a JMP file, an older format, truncated, empty) opens a view that says so: "This file can't be opened as a JMP table", the reason, and a hint to re-save it in JMP. It opens no table. The same view appears in the Browse preview.
+A file that isn't a readable JMP table (not a JMP file, an older format, truncated, empty) opens a view that says so: "This file can't be opened as a JMP table", the reason, and a hint to re-save it in JMP. It opens no table. The same view appears when the file is clicked in the Browse tree.
 
 ### 6.4 Programmatic
 
@@ -323,7 +321,7 @@ The parser relies on heuristics, so failures must be **loud, local, and recovera
 | Old format `(3,4,3)`, little- or big-endian | Throw "This JMP file uses an older format that isn't supported yet. Re-save it in a current JMP version." |
 | Unknown version triple | Throw "Unrecognised JMP file version (x.y.z)". Include the triple so we can collect samples. |
 | Metadata seek fails / `ncols` mismatch | Throw with the offsets tried. Never return a partially-wrong table. |
-| Unknown column descriptor | **Column-local**: the column is left out, listed in the preview, named in a warning. The rest of the table still loads. |
+| Unknown column descriptor | **Column-local**: the column is left out, listed in the file summary, named in a warning. The rest of the table still loads. |
 | Decompression error | Column-local, same as above |
 | Truncated file (offsets past EOF) | Throw "File appears truncated" |
 
@@ -381,7 +379,7 @@ The model is the way Crux validates against RDKit: **JMPReader.jl is the referen
 4. `jmp-reader-tests.ts` holds four categories, all marked `{node: true}` so `grok test` runs them in its headless Node pass: **header** (every fixture, plus non-JMP bytes, the old format, a truncated header), **reference** (every fixture against its golden file), **tables** (`runtests.jl` ported as named assertions) and **robustness** (the crafted files, plus a seeded fuzz of 420 mutations).
 5. `jmp-reader-tests.ts` also checks the format details: fixed decimals (on `example1` with one descriptor changed, following JMPReader.jl's note), currency codes, and the hidden-column index.
 6. `jmp-script-tests.ts`, also Node: **JSL** (calls, column references in their three forms, names with spaces, statements and sends, raw strings, syntax errors, a nesting limit, a fuzz of 2,000 truncated or mutated scripts), **saved scripts** (the `Source` script JMP wrote, files without scripts, the synthetic Graph Builder, the `New Script` form) and **analyses** (each platform in §11 Phase 3 in the form JMP saves it, with the Big Class columns; what is noted; what isn't converted and why).
-7. `jmp-dataframe-tests.ts` runs in the browser: column types and nulls, integer sentinels, tags, geographic semTypes, row states as marker and colour columns with their codings, a saved analysis added to a table view as a bar chart, a Graph Builder trellis with its inner scatter plot, currency units and a hidden column hidden in the grid, the handler called as `JmpReader:importJmp`, and the preview built through `JmpReader:previewJmp` (disposed with no live u2 scopes left; listing a saved analysis that isn't converted). It reaches the preview through the platform, so the test bundle carries no u2 (the Node runtime has none).
+7. `jmp-dataframe-tests.ts` runs in the browser: column types and nulls, integer sentinels, tags, geographic semTypes, row states as marker and colour columns with their codings, a saved analysis added to a table view as a bar chart, a Graph Builder trellis with its inner scatter plot, currency units and a hidden column hidden in the grid, the handler called as `JmpReader:importJmp`, and the Browse view built through `JmpReader:previewJmp`: a table view with the Actual by Predicted plots of a lifecycle DoE once shown, and its summary dialog listing a skipped column and a saved analysis that isn't converted, disposed with no live u2 scopes left. It reaches the view through the platform, so the test bundle carries no u2 (the Node runtime has none).
 
 8. **JMP: performance** (browser) times the 100 MB file of §8. It runs only with `grok test --benchmark`.
 
@@ -407,11 +405,11 @@ What a user does and sees is in `bdd/features/`, compiled by `libraries/bdd` int
 | Feature | Scenarios |
 |---|---|
 | `open.feature` | a file from disk opens as a 4-row table when dropped, through the Open local file icon, and through File > Open > File... |
-| `preview.feature` | the Browse preview shows version and size, Open opens the table; the "Columns not imported" section lists the unreadable column, sits above the grid folded and open |
+| `preview.feature` | a double-click in the Browse tree opens the table; its summary shows version and size; a file with an unreadable column names it in a warning and lists it, folded, under "Columns not imported" |
 | `problem-files.feature` | a dropped file with an unreadable column opens without it and warns; a file that isn't JMP shows why and opens no table |
-| `analyses.feature` | a dropped file with a saved Graph Builder opens with a bar chart split by its column and titled after the script; one with a Fit Model opens and names it in a warning; the preview lists both, with what each opens as or why not, shows the script behind the Script link, and Open adds the viewer; a row-state file opens with marker and colour columns |
+| `analyses.feature` | a dropped file with a saved Graph Builder opens with a bar chart split by its column and titled after the script; one with a Fit Model opens and names it in a warning; double-clicked in the Browse tree, each opens with its viewers and the summary lists its analysis, with what it opens as or why not, and the script behind the Script link; a row-state file opens with marker and colour columns |
 
-The preview uses the package's own published files (`App Data/JmpReader/...`), so nothing is written to the server. `bdd.config.json` sets the layout and console-error audits to fail and the leak audit to report. Run from the package folder:
+The Browse scenarios use the package's own published files (`App Data/JmpReader/...`), so nothing is written to the server. A drop scenario that follows a Browse one collapses the Files tree first: with the tree expanded, the dragged file lands on a folder node rather than the window's drop layer. `bdd.config.json` sets the layout and console-error audits to fail and the leak audit to report. Run from the package folder:
 
 ```bash
 node ../../libraries/bdd/bin/grok-bdd.js compile
@@ -441,7 +439,7 @@ Result on the local stand (2026-10-23): 12 passed, 0 audit findings, run with `-
 - [x] `ByteReader` + metadata parser (§4.1–4.2)
 - [x] Column decoder: numeric, byte ints, dates/date-times/durations, currency, geo, the three character layouts, gzip, row states (§4.3)
 - [x] DataFrame conversion with tags (§5)
-- [x] `fileHandler` + `fileViewer`, u2 preview and error views (§6)
+- [x] `fileHandler` + `fileViewer`: the table view in Browse and from disk, a u2 summary dialog and error view (§6)
 - [x] Vendored fixtures, golden JSON, unit + golden tests, fuzz test, BDD features (§9)
 - [ ] Corpus run on customer files, with `jmp-survey.mjs` where they are (first run, 2026-10-27: 4 files, all read)
 - [x] A 100 MB file against the §8 target: 3.0–6.1 s in the browser, on a synthetic file (a real one would still be worth timing)
@@ -470,7 +468,7 @@ JMP tables carry **table scripts** (JSL) that re-launch analyses. We read a narr
 
 **Built (2026-10-22), against JSL text; the file side is provisional (§4.5):**
 
-| JMP platform | Datagrok | What doesn't come across (named in the preview) |
+| JMP platform | Datagrok | What doesn't come across (named in the file summary) |
 |---|---|---|
 | Distribution | Histogram per continuous column; bar chart of counts per Nominal/Ordinal or text column | summary statistics, quantiles, fitted distributions |
 | Bivariate | Scatter plot; Fit Line or Fit Polynomial(1) → regression line | other fits (spline, polynomial > 1, density ellipse) |
@@ -479,11 +477,12 @@ JMP tables carry **table scripts** (JSL) that re-launch analyses. We read a narr
 | Fit Y by X | By column types, as JMP does: bivariate, oneway or contingency, per Y/X pair | logistic (categorical Y by continuous X): not converted |
 | Graph Builder: Points, Line of Fit, Smoother, Line, Bar, Box Plot, Histogram, Pie | Scatter (colour by Color/Overlay, size by Size, Line of Fit as regression line, one per category when the Overlay is categorical and also the colour), line chart, bar chart (Summary Statistic as the aggregation), box plot, histogram, pie chart. With Group X, Group Y or Wrap: a trellis plot of that viewer (Group X and Wrap across, Group Y down; Wrap tiled) | Page; a second X or Y; further panels and elements; the smoother; a fit per group of a numeric Overlay, or of an Overlay that is not the colour |
 | Tabulate | Pivot table: row-table grouping → rows, column-table grouping → pivot, analysis columns × statistics → aggregates | statistics without a Datagrok aggregate (shown as mean) |
-| Control Chart Builder, Fit Model, DOE platforms, other Graph Builder elements | Not converted: listed with the reason | |
+| Fit Model (Standard Least Squares), Fit Group | Actual by Predicted scatter plot per Y: the saved prediction formula column (the one whose `Predicting` property names the Y) on X, the Y on Y, a `Y = X` line. The model isn't refit, so a Y with no saved prediction formula has no plot | reports (fit summary, estimates, effect tests), other plots, the Profiler |
+| Control Chart Builder, other Fit Model personalities, Profiler, DOE platforms, other Graph Builder elements | Not converted: listed with the reason | |
 
 Every launch also notes a `By()`, `Where()`, `Weight` or `Freq` it doesn't apply. Viewers are titled after the script. A column a script names that isn't in the imported table makes that launch not convert, with the column named. The `Source` script (the import that made the table) isn't an analysis and isn't listed.
 
-The preview shows each script's text behind a **Script** link.
+The file summary shows each script's text behind a **Script** link.
 
 **Next:** confirm §4.5 on customer files, through `jmp-survey.mjs`; a control chart once a Datagrok control-chart viewer exists.
 
@@ -508,8 +507,7 @@ The bigger payoff: **backfill historical JMP files into shared, searchable Datag
 5. **Server-side runtime for Phase 4.** Run the TS parser in Node inside a Datagrok server function, or rely on browser workers plus chunked upload?
 6. **Other JMP file types.** Is there demand for `.jmpprj` (projects that bundle tables + reports) or `.jrn` journals? A JMP project probably holds the decision record that Phase 4 is after.
 7. **Write support.** Confirm the non-goal. Is there any customer flow that needs Datagrok → `.jmp`, rather than CSV/Excel?
-8. **Preview on double-click.** A `.jmp` double-clicked in the Browse tree previews (Open is one more click), as other formats with a package viewer do, while a file from disk opens straight as a table. Keep, or import on double-click too? The shell decides by whether a viewer exists, so importing on double-click means dropping the preview.
-9. **Telling disk from server.** The viewer takes a file without a connection to be one from disk (§3). That matches the shell's code today; a platform flag saying "open, don't preview" would be sturdier.
+8. **Preview on double-click.** Decided 2026-10-28: the Browse preview is the table itself (§6.1), so a double-click keeps it open; the file summary moved behind a ribbon icon.
 10. **Analyses through the file handler.** `importJmp` returns tables only, so with the core fix (a viewer that declines falls through to the handler), a file from disk would open without its analyses. Either the handler adds them once its view opens, or the shell lets a handler return a view.
 
 ---

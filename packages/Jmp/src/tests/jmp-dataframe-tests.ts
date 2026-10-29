@@ -194,31 +194,53 @@ category('JMP: dataframe', () => {
   });
 
   // Through the platform, so the test bundle stays free of u2 (which the Node pass has no runtime for).
-  test('preview builds and disposes', async () => {
-    const u2 = (DG as any).U2;
-    const before: number = u2.Scope.liveCount;
-    const file = (await _package.files.list('tests')).find((f) => f.name === 'unsupported-column.jmp')!;
-    const view: DG.ViewBase = await grok.functions.call('JmpReader:previewJmp', {file});
-    expect(view.name, 'unsupported-column.jmp');
-    expect(view.root.querySelector('[data-u2-name="summary"]') !== null, true);
-    expectArray(Array.from(view.root.querySelectorAll('[data-u2-item]')).map((e) => (e as HTMLElement).dataset.u2Item),
-      ['formula']);
-    grok.shell.addView(view);
-    view.close();
-    await DG.delay(200);
-    expect(u2.Scope.liveCount <= before, true, `live scopes ${u2.Scope.liveCount}, before ${before}`);
-  });
+  const preview = async (folder: string, name: string): Promise<DG.TableView> => {
+    const file = (await _package.files.list(folder)).find((f) => f.name === name)!;
+    return grok.functions.call('JmpReader:previewJmp', {file});
+  };
+  const openSummary = (view: DG.ViewBase): DG.Dialog => {
+    const selector = '[data-jmp-name="summary button"]';
+    view.getRibbonPanels().flat().map((e) => e.matches(selector) ? e : e.querySelector(selector))
+      .find((e): e is HTMLElement => e !== null)!.click();
+    return DG.Dialog.getOpenDialogs().find((d) => d.root.querySelector('[data-u2-name="summary"]'))!;
+  };
 
-  test('preview lists saved analyses', async () => {
-    const file = (await _package.files.list('tests')).find((f) => f.name === 'saved-fit-model.jmp')!;
-    const view: DG.ViewBase = await grok.functions.call('JmpReader:previewJmp', {file});
+  test('preview is the table, with its saved analyses', async () => {
+    const view = await preview('public', 'mdpi-bioengineering-11-01089-wp1.jmp');
+    grok.shell.addPreview(view);
     try {
-      const item = view.root.querySelector('[data-u2-item="Fit A"]') as HTMLElement | null;
-      expect(item !== null, true);
-      expect(/Not converted: JMP's Fit Model/.test(item!.textContent ?? ''), true, item!.textContent ?? '');
+      expect(view.type, DG.VIEW_TYPE.TABLE_VIEW);
+      expect(view.dataFrame.rowCount, 21);
+      expectArray(Array.from(view.viewers).filter((v) => v.type === DG.VIEWER.SCATTER_PLOT)
+        .map((v) => v.props.title), ['CQA1 - WP1 Actual by Predicted', 'CQA2 - WP1 Actual by Predicted',
+        'CQA3 - WP1 Actual by Predicted']);
     } finally {
       view.close();
     }
+  });
+
+  test('summary lists skipped columns and saved analyses, and disposes', async () => {
+    const u2 = (DG as any).U2;
+    const before: number = u2.Scope.liveCount;
+    const view = await preview('tests', 'saved-fit-model.jmp');
+    grok.shell.addPreview(view);
+    try {
+      const dialog = openSummary(view);
+      const item = dialog.root.querySelector('[data-u2-item="Fit A"]') as HTMLElement | null;
+      expect(item !== null, true);
+      const text = item!.textContent ?? '';
+      expect(/Not converted: .*Nominal Logistic personality isn't converted/.test(text), true, text);
+      dialog.close();
+      const other = grok.shell.addPreview(await preview('tests', 'unsupported-column.jmp'));
+      const skipped = openSummary(other);
+      expect(skipped.root.querySelector('[data-u2-item="formula"]') !== null, true);
+      skipped.close();
+      other.close();
+    } finally {
+      view.close();
+    }
+    await DG.delay(200);
+    expect(u2.Scope.liveCount <= before, true, `live scopes ${u2.Scope.liveCount}, before ${before}`);
   });
 });
 
