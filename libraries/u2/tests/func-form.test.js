@@ -492,6 +492,7 @@ form('disposal releases every param subscription', () => {
    with `until`, fixed sleeps appear only where a NEGATIVE outcome needs a bounded grace period. */
 
 import {TextInput} from '../src/components/inputs/text-input.js';
+import {signal} from '../src/core/signals.js';
 
 /** The W1 `form` harness plus provider-registry hygiene for the W2 suites. */
 function w2(name, body) {
@@ -925,6 +926,212 @@ w2('a dep param with no field still triggers the re-eval', async () => {
   await until(() => runs === 2, 'the fieldless dep to re-trigger');
   await until(() => items(f, 'city').includes('c2'), 'the refreshed items');
   f.dispose();
+});
+
+// --- a dependency written before the first load lands (Chembl's AtcClassification: level1's default is computed) ---
+
+/** One level of a classification: the children of the level above, none under an empty parent. */
+function childrenOf(parent, ms = 0) {
+  return async (i) => {
+    const value = i[parent];
+    if (ms > 0)
+      await sleep(ms);
+    return value == null ? [] : [`${value}.1`, `${value}.2`];
+  };
+}
+
+w2('a computed default landing during a dependent\'s first load re-runs that load with the default', async () => {
+  const seen = [];
+  provider('roots', [], async () => ['A', 'B']);
+  provider('firstRoot', [], async () => 'A');
+  provider('level2s', [{name: 'level1', propertyType: 'string'}], async (i) => {
+    seen.push(i.level1 ?? null);
+    return childrenOf('level1', 20)(i);
+  });
+  const call = callOf(
+    fp('level1', 'string', {options: {choices: 'roots()', default: 'firstRoot()'}}),
+    fp('level2', 'string', {options: {choices: 'level2s()'}}));
+  const f = mount(funcForm(call));
+  await f.settled;
+  assert.equal(call.inputs.level1, 'A');
+  assert.deepEqual(seen, [null, 'A'], 'the load that read the empty level1 ran again');
+  assert.deepEqual(items(f, 'level2'), ['A.1', 'A.2'], 'level2 offers the default\'s children');
+  await sleep(250);
+  assert.equal(seen.length, 2, 'once current, nothing runs again');
+  f.dispose();
+});
+
+w2('a parent pruned by its own first load re-runs the dependent\'s first load', async () => {
+  provider('countries', [], async () => ['FR', 'DE']);
+  provider('cities', [{name: 'country', propertyType: 'string'}], childrenOf('country', 20));
+  const call = callOf(
+    fp('country', 'string', {options: {choices: 'countries()'}}),
+    fp('city', 'string', {options: {choices: 'cities()'}}));
+  call.setParamValue('country', 'XX');
+  const f = mount(funcForm(call));
+  await f.settled;
+  assert.equal(call.inputs.country, null, 'a value its choices lack is pruned');
+  assert.deepEqual(items(f, 'city'), [], 'city never offers the children of the pruned value');
+  f.dispose();
+});
+
+w2('a four-level cascade: changing level 2 reloads level 3, and its prune reloads level 4', async () => {
+  const runs = [];
+  provider('roots', [], async () => ['A', 'B']);
+  for (const [name, parent] of [['level2s', 'level1'], ['level3s', 'level2'], ['level4s', 'level3']])
+    provider(name, [{name: parent, propertyType: 'string'}], async (i) => {
+      runs.push(`${name}(${i[parent] ?? null})`);
+      return childrenOf(parent)(i);
+    });
+  const call = callOf(
+    fp('level1', 'string', {options: {choices: 'roots()'}}),
+    fp('level2', 'string', {options: {choices: 'level2s()'}}),
+    fp('level3', 'string', {options: {choices: 'level3s()'}}),
+    fp('level4', 'string', {options: {choices: 'level4s()'}}));
+  call.setParamValue('level1', 'A');
+  const f = mount(funcForm(call));
+  await f.settled;
+  const pick = async (name, value, next) => {
+    const select = selectOf(f, name);
+    select.value = value;
+    fire(select, 'change');
+    if (next !== undefined)
+      await until(() => items(f, next).includes(`${value}.1`), `${next} to offer ${value}'s children`);
+  };
+  await pick('level2', 'A.1', 'level3');
+  await pick('level3', 'A.1.1', 'level4');
+  await pick('level4', 'A.1.1.1');
+  assert.deepEqual([call.inputs.level2, call.inputs.level3, call.inputs.level4], ['A.1', 'A.1.1', 'A.1.1.1']);
+  runs.length = 0;
+
+  await pick('level2', 'A.2', 'level3');
+  assert.deepEqual(items(f, 'level3'), ['A.2.1', 'A.2.2']);
+  await until(() => call.inputs.level4 === null, 'level4\'s prune to reach the call');
+  assert.equal(call.inputs.level3, null, 'level3 lost a value level2 no longer has');
+  assert.deepEqual(items(f, 'level4'), [], 'level4 reloaded for an empty level3');
+  assert.equal(f.getInput('level4').value, null);
+  assert.deepEqual(runs, ['level3s(A.2)', 'level4s(null)'], 'level 3, then level 4, once each; levels 1 and 2 untouched');
+  f.dispose();
+});
+
+w2('a param that is no dependency changing during a first load runs nothing again', async () => {
+  let runs = 0;
+  provider('cities', [{name: 'country', propertyType: 'string'}], async (i) => {
+    runs++;
+    return childrenOf('country', 20)(i);
+  });
+  const call = callOf(fp('country', 'string'), fp('note', 'string'),
+    fp('city', 'string', {options: {choices: 'cities()'}}));
+  call.setParamValue('country', 'FR');
+  const f = mount(funcForm(call));
+  await until(() => runs === 1, 'the first load to take off');
+  call.setParamValue('note', 'x');
+  await f.settled;
+  await sleep(250);
+  assert.equal(runs, 1);
+  assert.deepEqual(items(f, 'city'), ['FR.1', 'FR.2']);
+  f.dispose();
+});
+
+w2('a failed first load names no dependencies: it tries again once any param changes', async () => {
+  provider('cities', [{name: 'country', propertyType: 'string'}], async (i) => {
+    if (i.country == null)
+      throw new Error('pick a country first');
+    return childrenOf('country')(i);
+  });
+  const call = callOf(fp('country', 'string'), fp('city', 'string', {options: {choices: 'cities()'}}));
+  const f = mount(funcForm(call));
+  await f.settled;
+  assert.ok(stateOf(f, 'city').classList.contains('u2-param-source-error'));
+  call.setParamValue('country', 'FR');
+  await until(() => items(f, 'city').includes('FR.1'), 'the load to try again');
+  assert.equal(stateOf(f, 'city').hidden, true, 'the error is gone');
+  f.dispose();
+});
+
+w2('a failed first load with a param written meanwhile runs again before it reports', async () => {
+  let runs = 0;
+  provider('cities', [{name: 'country', propertyType: 'string'}], async (i) => {
+    runs++;
+    await sleep(20);
+    if (i.country == null)
+      throw new Error('pick a country first');
+    return childrenOf('country')(i);
+  });
+  const call = callOf(fp('country', 'string'), fp('city', 'string', {options: {choices: 'cities()'}}));
+  const f = mount(funcForm(call));
+  await until(() => runs === 1, 'the first load to take off');
+  call.setParamValue('country', 'DE');
+  await f.settled;
+  assert.equal(runs, 2);
+  assert.deepEqual(items(f, 'city'), ['DE.1', 'DE.2']);
+  assert.equal(stateOf(f, 'city').hidden, true, 'no error was ever shown');
+  f.dispose();
+});
+
+w2('loadingFields names what loads — choices, a reload, a computed default — and the Run button waits for it', async () => {
+  provider('cities', [{name: 'country', propertyType: 'string'}], childrenOf('country', 40));
+  provider('slowNote', [], async () => {
+    await sleep(20);
+    return 'x';
+  });
+  const call = callOf(fp('country', 'string'), fp('city', 'string', {options: {choices: 'cities()'}}),
+    fp('note', 'string', {options: {default: 'slowNote()'}}));
+  call.setParamValue('country', 'FR');
+  const f = mount(funcForm(call, {showRun: true}));
+  const run = f.root.querySelector('[data-u2="ff-run"]');
+  assert.deepEqual(f.loadingFields.value, ['City', 'Note'], 'the first load and the default');
+  assert.equal(run.disabled, true);
+  assert.equal(run.title, 'Loading: City, Note');
+  await f.settled;
+  assert.deepEqual(f.loadingFields.value, []);
+  assert.equal(run.disabled, false);
+
+  call.setParamValue('country', 'DE');
+  await flush();
+  assert.deepEqual(f.loadingFields.value, ['City'], 'from the change on, the debounce included');
+  assert.equal(run.disabled, true);
+  await until(() => items(f, 'city').includes('DE.1'), 'the reload');
+  await flush();
+  assert.deepEqual(f.loadingFields.value, []);
+  assert.equal(run.disabled, false);
+  f.dispose();
+});
+
+w2('a form built inside an effect leaves that effect alone: no rebuild on its own signals, nor on a reload', async () => {
+  provider('cities', [{name: 'country', propertyType: 'string'}], childrenOf('country', 20));
+  provider('slowNote', [], async () => 'x');
+  const call = callOf(fp('country', 'string'), fp('city', 'string', {options: {choices: 'cities()'}}),
+    fp('note', 'string', {options: {default: 'slowNote()'}}));
+  call.setParamValue('country', 'FR');
+  // as U2Demo's Functions page builds one: from the functions browser's selection effect
+  const owner = Scope.root('func-form in an effect');
+  const picked = signal(1);
+  let builds = 0;
+  let f;
+  owner.effect(() => {
+    picked.value;
+    builds++;
+    f?.dispose();
+    f = owner.build(() => funcForm(call));
+  });
+  await f.settled;
+  assert.equal(builds, 1);
+  assert.deepEqual(items(f, 'city'), ['FR.1', 'FR.2']);
+  // a param written from an effect: the write must not make that effect follow the source it reaches
+  const country = signal('DE');
+  let writes = 0;
+  owner.effect(() => {
+    writes++;
+    call.setParamValue('country', country.value);
+  });
+  await until(() => items(f, 'city').includes('DE.1'), 'the reload');
+  call.setParamValue('country', 'US');
+  await until(() => items(f, 'city').includes('US.1'), 'the second reload');
+  assert.equal(writes, 1, 'the writer never ran again');
+  assert.equal(call.inputs.country, 'US', 'so it never wrote its old value back');
+  assert.equal(builds, 1, 'and the form was never rebuilt');
+  owner.dispose();
 });
 
 // --- abort / stale-drop ---

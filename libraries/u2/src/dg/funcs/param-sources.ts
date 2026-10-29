@@ -6,7 +6,7 @@ import {signal, computed, ReadonlySignal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
 import {AsyncValue, AsyncValueState} from '../../core/async-value.js';
 import {button, span} from '../../core/elements.js';
-import type {FuncCallLike, FuncCallParamLike} from './func-form.js';
+import type {FuncCallLike} from './func-form.js';
 
 /** What `evalParamChoices` answers (js-api functions.ts:377-392). */
 export interface ChoicesResult {
@@ -30,6 +30,8 @@ export class ParamState {
   /** True while a slot loads a field that has nothing yet — what disables the input alongside
    * the orphan flag. */
   readonly busy: ReadonlySignal<boolean>;
+  /** True while either slot loads, a refresh included: the value may still change, so a run waits. */
+  readonly loading: ReadonlySignal<boolean>;
   private readonly _slots = [signal<ParamStateSlot>({kind: 'idle'}),
     signal<ParamStateSlot>({kind: 'idle'})];
   private readonly _notice = signal<string | null>(null);
@@ -39,7 +41,7 @@ export class ParamState {
   constructor() {
     this.busy = computed(() =>
       this._slots.some((s) => s.value.kind === 'loading' && s.value.refresh !== true));
-    const loading = computed(() => this._slots.some((s) => s.value.kind === 'loading'));
+    const loading = this.loading = computed(() => this._slots.some((s) => s.value.kind === 'loading'));
     Scope.ambient!.effect(() => {
       if (!loading.value) {
         clearTimeout(this._timer);
@@ -100,10 +102,11 @@ export class ParamState {
 }
 
 /** One dynamic-choices source: `evalParamChoices` behind an {@link AsyncValue} whose `deps` read
- * a version signal every dependency subscription bumps, so a dep edit re-runs the eval through
- * the 200 ms debounce, while {@link start} runs the initial one immediately. Deps ride
- * `param.onChanged` — the param stream, never field signals or captions — so a dep with no field
- * (an unsupported or fieldless param) still triggers. Constructed under the form's scope;
+ * a version signal a dependency's change bumps, so a dep edit re-runs the eval through the
+ * 200 ms debounce, while {@link start} runs the initial one immediately. The dependencies are
+ * only known from a result (its `dependsOn`), so every other param is followed from the start,
+ * through `param.onChanged` — the param stream, never field signals or captions, so a dep with no
+ * field (an unsupported or fieldless param) still triggers. Constructed under the form's scope;
  * {@link dispose} on a `source` rebind. */
 export class ParamSource {
   private readonly _version = signal(0);
@@ -113,10 +116,12 @@ export class ParamSource {
   private readonly _apply: (r: ChoicesResult) => void;
   private readonly _state: ParamState;
   private readonly _disown: () => void;
+  // how many times each other param has changed: what tells a landing that a value it read is gone
+  private readonly _changes = new Map<string, number>();
+  private readonly _subs: (() => void)[] = [];
   private _av!: AsyncValue<ChoicesResult>;
-  private _depNames: string[] = [];
-  private _depSubs: (() => void)[] = [];
-  private _landed = false;
+  // the params the last landed result read; null until one lands
+  private _depNames: string[] | null = null;
 
   constructor(call: FuncCallLike, name: string, apply: (r: ChoicesResult) => void,
     state: ParamState) {
@@ -128,8 +133,14 @@ export class ParamSource {
     const cleanup = () => this._dispose();
     owner.own(cleanup);
     this._disown = () => owner.disown(cleanup);
+    for (const param of call.inputParams.values()) {
+      if (param.name === name)
+        continue;
+      const sub = param.onChanged.subscribe(() => this._changed(param.name));
+      this._subs.push(() => sub.unsubscribe());
+    }
     this._scope.build(() => {
-      this._av = new AsyncValue(() => this._call.evalParamChoices!(this._name),
+      this._av = new AsyncValue((abort) => this._eval(abort),
         {deps: () => { this._version.value; }, debounceMs: 200});
       this._scope.effect(() => this._onState(this._av.state.value));
     });
@@ -153,54 +164,54 @@ export class ParamSource {
   }
 
   private _dispose(): void {
-    this._unsubscribe();
+    for (const off of this._subs)
+      off();
+    this._subs.length = 0;
     this._scope.dispose();
+  }
+
+  // evaluates until the result is current: one that read a param changed meanwhile (a computed default or a parent's
+  // prune landing during the first load, another editor of the call) runs again; until a result names the
+  // dependencies, so does a failure with any param changed meanwhile
+  private async _eval(abort: AbortSignal): Promise<ChoicesResult> {
+    for (;;) {
+      const seen = new Map(this._changes);
+      const moved = (names: Iterable<string>) => [...names].some((n) => this._changes.get(n) !== seen.get(n));
+      try {
+        const result = await this._call.evalParamChoices!(this._name);
+        if (abort.aborted || !moved(result.dependsOn))
+          return result;
+      }
+      catch (e) {
+        if (abort.aborted || this._depNames !== null || !moved(this._changes.keys()))
+          throw e;
+      }
+    }
+  }
+
+  private _changed(name: string): void {
+    this._changes.set(name, (this._changes.get(name) ?? 0) + 1);
+    // with nothing landed the dependencies are unknown: a failed first load tries again on any change
+    if (this._depNames === null ? this._av.state.peek().kind === 'error' : this._depNames.includes(name))
+      this._version.value = this._version.peek() + 1;
   }
 
   private _onState(state: AsyncValueState<ChoicesResult>): void {
     // once anything has landed, a refresh keeps the input enabled — only the initial load,
     // over an empty select, disables (the Dart form never disables at all)
     if (state.kind === 'loading')
-      this._state.set(0, {kind: 'loading', refresh: this._landed});
+      this._state.set(0, {kind: 'loading', refresh: this._depNames !== null});
     else if (state.kind === 'ready') {
-      this._landed = true;
       this._state.set(0, {kind: 'idle'});
-      this._reconcile(state.value.dependsOn);
+      this._depNames = state.value.dependsOn;
       this._apply(state.value);
     }
     // on error the stale items stay usable and the previous dependency list stays armed
     // (the Dart `finally`, fpe:628-637); a failed INITIAL load leaves nothing usable, so
-    // `_landed` moves on ready only and later runs still count as initial
+    // later runs still count as initial
     else if (state.kind === 'error')
       this._state.set(0, {kind: 'error', message: 'Couldn\'t load choices: ' + state.message,
         retry: () => this.retry()});
-  }
-
-  /** Same dep names → do nothing: reconciliation must never bump {@link _version} or
-   * resubscribe, or it becomes the echo-storm engine. */
-  private _reconcile(names: string[]): void {
-    if (names.length === this._depNames.length && names.every((n, i) => n === this._depNames[i]))
-      return;
-    this._unsubscribe();
-    this._depNames = names.slice();
-    const byName = new Map<string, FuncCallParamLike>();
-    for (const param of this._call.inputParams.values())
-      byName.set(param.name, param);
-    for (const name of names) {
-      if (name === this._name)
-        continue;
-      const param = byName.get(name);
-      if (param === undefined)
-        continue;
-      const sub = param.onChanged.subscribe(() => this._version.value++);
-      this._depSubs.push(() => sub.unsubscribe());
-    }
-  }
-
-  private _unsubscribe(): void {
-    for (const off of this._depSubs)
-      off();
-    this._depSubs = [];
   }
 }
 

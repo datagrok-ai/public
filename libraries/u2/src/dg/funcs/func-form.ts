@@ -180,9 +180,13 @@ const HINTS = new Set(['textarea', 'password', 'switch', 'slider']);
  * directions). It edits the call and nothing else — running it stays with the caller. */
 export class FuncCallForm extends Form {
   /** Non-nullable params of the current call whose field is active and empty, by label — with
-   * {@link Form.validity} the two terms of the Run gate (visibility-aware: a hidden required
+   * {@link Form.validity} and {@link loadingFields} the terms of the Run gate (visibility-aware: a hidden required
    * field blocks nothing, and returns the moment its expression shows it again). */
   readonly missingRequired: ReadonlySignal<string[]>;
+  /** Labels of rendered fields whose choices or computed default are loading, a reload after a dependency's change
+   * included — visibility-aware like {@link missingRequired}. The value may still change (a reload drops a pick its
+   * new list lacks), so a run waits for it: the third term of the Run gate. */
+  readonly loadingFields: ReadonlySignal<string[]>;
   /** Labels of rendered fields whose current validity is an error — visibility-aware like
    * {@link missingRequired}; gate consumers name them in the blocked tooltip. */
   readonly invalidFields: ReadonlySignal<string[]>;
@@ -204,7 +208,8 @@ export class FuncCallForm extends Form {
   private _historyPopup: Scope | undefined;
   private _historyIcon: HTMLElement | undefined;
   private readonly _running = signal(false);
-  /** Bumped on `source` rebinds — orphan flips are not signals (FP-W4-7). */
+  /** Bumped on `source` rebinds and when a field gets its state element — neither orphan flips nor `field.state`
+   * are signals (FP-W4-7). */
   private readonly _genSig = signal(0);
   private readonly _problems = signal<{name: string, message: string}[]>([]);
 
@@ -237,6 +242,17 @@ export class FuncCallForm extends Form {
       }
       return invalid;
     });
+    this.loadingFields = computed(() => {
+      this._genSig.value;
+      const loading: string[] = [];
+      for (const field of this._fields) {
+        if (field.orphaned || !field.active.value || field.state === undefined)
+          continue;
+        if (field.state.loading.value)
+          loading.push(field.input.label || field.param.name);
+      }
+      return loading;
+    });
     this._bind();
     // before _arm: the auto-pick writes are sync and must land before the default evals read
     this._bindTables();
@@ -258,10 +274,12 @@ export class FuncCallForm extends Form {
     else
       run.hidden = show === false;
     this.effect(() => {
+      const loading = this.loadingFields.value;
       const missing = this.missingRequired.value;
       const invalid = this.invalidFields.value;
-      const why = missing.length > 0 ? `Missing: ${missing.join(', ')}` :
-        invalid.length > 0 ? `Invalid: ${invalid.join(', ')}` : '';
+      const why = loading.length > 0 ? `Loading: ${loading.join(', ')}` :
+        missing.length > 0 ? `Missing: ${missing.join(', ')}` :
+          invalid.length > 0 ? `Invalid: ${invalid.join(', ')}` : '';
       Reason.apply(run, why || (this._running.value ? 'Running…' : null));
       run.title = why;
     });
@@ -332,7 +350,7 @@ export class FuncCallForm extends Form {
   set source(call: FuncCallLike) {
     this._call = call;
     this._generation++;
-    this._genSig.value++;
+    this._genSig.value = this._genSig.peek() + 1;
     for (const off of this._paramSubs) {
       off();
       this.scope.disown(off);
@@ -831,6 +849,7 @@ export class FuncCallForm extends Form {
       const created = this.build(() => new ParamState());
       state = created;
       field.state = created;
+      this._genSig.value = this._genSig.peek() + 1;
       field.input.box.append(created.root);
       this.effect(() => {
         created.busy.value;
