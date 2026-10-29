@@ -855,6 +855,7 @@ export class FuncCallForm extends Form {
         created.busy.value;
         this._applyEnabled(field);
       });
+      this.effect(() => field.input.loading = created.loading.value);
     }
     return state;
   }

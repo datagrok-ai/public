@@ -14,8 +14,8 @@ export function chainedChoicesPage(): HTMLElement {
 }
 
 export function chainedChoices(): HTMLElement {
-  // a choice whose options load from the picks above it, and load again whenever one of them changes
-  function dependentChoice(label: string, above: ChoiceInput[], marks: string): ChoiceInput {
+  // options load from every pick above, and again whenever one of them changes
+  function dependentChoice(label: string, above: ChoiceInput[], marks: string) {
     const options = new AsyncValue(async () => {
       const picks = above.map((input) => input.peek());
       if (picks.includes(null))
@@ -23,10 +23,12 @@ export function chainedChoices(): HTMLElement {
       await new Promise((resolve) => setTimeout(resolve, 500));
       return [...marks].map((mark) => `${picks[picks.length - 1]} ${mark}`);
     }, {deps: () => above.forEach((input) => input.value), debounceMs: 0});
+
     const choice = new ChoiceInput({label, items: [], nullable: true,
+      loading: computed(() => options.state.value.kind === 'loading'),
       disabled: computed(() => {
         const empty = above.find((input) => input.value === null);
-        return empty ? `Pick ${empty.label} first` : options.state.value.kind === 'loading' ? 'Loading…' : null;
+        return empty ? `Pick ${empty.label} first` : null;
       })});
     choice.effect(() => {
       const state = options.state.value;
@@ -36,11 +38,12 @@ export function chainedChoices(): HTMLElement {
     return choice;
   }
 
-  const chain = [new ChoiceInput({label: 'Name', items: ['Ada', 'Ben', 'Cleo', 'Dan', 'Eve'], nullable: true})];
-  for (const [label, marks] of [['Letter', 'abcde'], ['Digit', '12345'], ['Sign', '+-*/='], ['Shape', '○△□◇☆']])
-    chain.push(dependentChoice(label, [...chain], marks));
-  return divV([
-    new Form().addAll(chain).root,
-    readout('picked', computed(() => chain.map((input) => input.value ?? '–').join(' → '))),
-  ]);
+  const names = ['Ada', 'Ben', 'Cleo', 'Dan', 'Eve'];
+  const chain = [new ChoiceInput({label: 'Name', items: names, nullable: true})];
+  const marks = {Letter: 'abcde', Digit: '12345', Sign: '+-*/=', Shape: '○△□◇☆'};
+  for (const [label, chars] of Object.entries(marks))
+    chain.push(dependentChoice(label, [...chain], chars));
+
+  const picked = computed(() => chain.map((input) => input.value ?? '–').join(' → '));
+  return divV([new Form().addAll(chain).root, readout('picked', picked)]);
 }

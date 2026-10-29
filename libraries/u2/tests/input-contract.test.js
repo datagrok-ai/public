@@ -65,6 +65,38 @@ smoke('readOnly: native readOnly and aria-readonly on a text editor; the class; 
   input.dispose();
 });
 
+smoke('loading: busy at once, the spinner past the grace, the input usable throughout; live; a short load never blinks', async () => {
+  const grace = Input.loadingGraceMs;
+  Input.loadingGraceMs = 30;
+  try {
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const loading = signal(true);
+    const input = mount(new ChoiceInput({label: 'City', items: ['Paris'], value: 'Paris', loading}));
+    const spinner = () => input.root.querySelector('.u2-input-loading');
+    assert.equal(input.root.getAttribute('aria-busy'), 'true');
+    assert.equal(state(input.root).busy, true);
+    assert.equal(spinner(), null, 'no spinner inside the grace');
+    await sleep(60);
+    assert.equal(spinner()?.hidden, false, 'the spinner past the grace');
+    assert.ok(spinner().querySelector('.u2-loader-spinner'));
+    assert.equal(state(input.root).enabled, true, 'a loading input stays usable');
+    assert.equal(input.peek(), 'Paris', 'and keeps its value');
+    loading.value = false;
+    assert.equal(input.root.hasAttribute('aria-busy'), false);
+    assert.equal(spinner().hidden, true);
+    loading.value = true;
+    loading.value = false;
+    await sleep(60);
+    assert.equal(spinner().hidden, true, 'a load that ended inside the grace showed nothing');
+    input.loading = true;
+    input.dispose();
+    await sleep(60);
+    assert.equal(spinner().hidden, true, 'disposing cancels the pending spinner');
+  } finally {
+    Input.loadingGraceMs = grace;
+  }
+});
+
 smoke('readOnly: a checkbox, a switch and a number stepper ignore the user', async () => {
   const box = mount(new BoolInput({label: 'Active', value: false, readOnly: true}));
   fire(box.root.querySelector('input'), 'click');

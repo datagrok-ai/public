@@ -275,6 +275,17 @@ textarea.u2-input-editor {
   min-width: 0;
 }
 
+/* Input.loading: the spinner (css/async.css) after the editor, once a load runs past the grace */
+.u2-input-loading {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-left: var(--dg-space-s);
+}
+
+.u2-input-loading[hidden] {
+  display: none;
+}
+
 /* a captioned editor gives way before it drops under its caption, as the platform's row never
    wraps: it grows from nothing up to its own width and shrinks to a 60px floor, so the row breaks
    only where caption and floor no longer fit. The filter skins stretch their box over the row */

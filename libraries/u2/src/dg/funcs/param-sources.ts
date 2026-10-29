@@ -1,6 +1,6 @@
 /* The per-param machinery behind FuncCallForm's dynamic routes (W2): an AsyncValue over
    `call.evalParamChoices` re-triggered through a version signal the dependency subscriptions
-   bump, plus the on-field state element the loading/error surface renders into. Internal to
+   bump, plus the on-field state element a failure or a notice renders into. Internal to
    `src/dg/funcs` — func-form.ts is the only importer; not exported through `src/dg/index.ts`. */
 import {signal, computed, ReadonlySignal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
@@ -20,12 +20,10 @@ export type ParamStateSlot = {kind: 'idle'} | {kind: 'loading', refresh?: boolea
   {kind: 'error', message: string, retry: () => void};
 
 /** The state element riding a field's input box (`span.u2-param-source`): slot 0 is the choices
- * source, slot 1 the computed-default eval; an error wins over a loading, loading over idle.
- * A `refresh` loading — landed content re-evaluating — never disables the input, and the spinner
- * waits out {@link graceMs} so a fast eval never blinks; an error shows immediately.
- * Owned by the ambient (form) scope. */
+ * source, slot 1 the computed-default eval. It shows a failure with Retry, else a notice; a load is the
+ * input's own `loading` (its spinner, which FuncCallForm follows from {@link loading}). A `refresh`
+ * loading — landed content re-evaluating — never disables the input. Owned by the ambient (form) scope. */
 export class ParamState {
-  static graceMs = 150;
   readonly root = span('', 'u2-param-source');
   /** True while a slot loads a field that has nothing yet — what disables the input alongside
    * the orphan flag. */
@@ -35,25 +33,12 @@ export class ParamState {
   private readonly _slots = [signal<ParamStateSlot>({kind: 'idle'}),
     signal<ParamStateSlot>({kind: 'idle'})];
   private readonly _notice = signal<string | null>(null);
-  private readonly _grace = signal(false);
-  private _timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
     this.busy = computed(() =>
       this._slots.some((s) => s.value.kind === 'loading' && s.value.refresh !== true));
-    const loading = this.loading = computed(() => this._slots.some((s) => s.value.kind === 'loading'));
-    Scope.ambient!.effect(() => {
-      if (!loading.value) {
-        clearTimeout(this._timer);
-        this._timer = undefined;
-        if (this._grace.peek())
-          this._grace.value = false;
-      }
-      else if (this._timer === undefined && !this._grace.peek())
-        this._timer = setTimeout(() => this._grace.value = true, ParamState.graceMs);
-    });
+    this.loading = computed(() => this._slots.some((s) => s.value.kind === 'loading'));
     Scope.ambient!.effect(() => this._render());
-    Scope.ambient!.own(() => clearTimeout(this._timer));
   }
 
   set(slot: number, state: ParamStateSlot): void {
@@ -62,40 +47,32 @@ export class ParamState {
     this._slots[slot].value = state;
   }
 
-  /** A transient informational message — shown while nothing louder (an error, a grace-past
-   * loading) occupies the element; null clears it. */
+  /** A transient informational message — shown while no failure occupies the element; null clears it. */
   notice(message: string | null): void {
     this._notice.value = message;
   }
 
   private _render(): void {
-    const states = this._slots.map((s) => s.value);
+    const failed = this._slots.map((s) => s.value).find((s) => s.kind === 'error');
     const notice = this._notice.value;
-    const shown = states.find((s) => s.kind === 'error') ??
-      (this._grace.value ? states.find((s) => s.kind === 'loading') : undefined);
     const root = this.root;
     root.textContent = '';
     root.className = 'u2-param-source';
-    root.hidden = shown === undefined && notice === null;
+    root.hidden = failed === undefined && notice === null;
     if (root.hidden)
       return;
-    if (shown === undefined) {
+    if (failed?.kind !== 'error') {
       root.classList.add('u2-param-source-notice');
       const message = span(notice!, 'u2-param-source-message');
       message.title = notice!;
       root.append(message);
       return;
     }
-    if (shown.kind === 'loading') {
-      root.classList.add('u2-param-source-loading');
-      root.append(span('', 'u2-loader-spinner'));
-      return;
-    }
     root.classList.add('u2-param-source-error');
-    const message = span(shown.message, 'u2-param-source-message');
-    message.title = shown.message;
+    const message = span(failed.message, 'u2-param-source-message');
+    message.title = failed.message;
     root.append(message);
-    const retry = button('Retry', shown.retry);
+    const retry = button('Retry', failed.retry);
     retry.classList.add('u2-param-source-retry');
     root.append(retry);
   }

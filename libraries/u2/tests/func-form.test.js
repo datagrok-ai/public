@@ -12,7 +12,6 @@ register('./dg-stub.mjs', import.meta.url);
 
 // dynamic so the dg-stub loader hook above is registered first; a missing build is a hard failure
 const {funcForm} = await import('../src/dg/funcs/func-form.js');
-const {ParamState} = await import('../src/dg/funcs/param-sources.js');
 
 /** Every test runs against a clean document and must leave the live-scope count where it was. */
 function form(name, body) {
@@ -493,6 +492,7 @@ form('disposal releases every param subscription', () => {
 
 import {TextInput} from '../src/components/inputs/text-input.js';
 import {signal} from '../src/core/signals.js';
+import {Input} from '../src/core/input-base.js';
 
 /** The W1 `form` harness plus provider-registry hygiene for the W2 suites. */
 function w2(name, body) {
@@ -1589,8 +1589,8 @@ w2('suggestions: the fetch receives the typed text, a pick writes through, rows 
 // --- the state element and enabled reconciliation (FP-W2-7) ---
 
 w2('the initial load disables the input and shows the grace-delayed spinner; ready re-enables, the orphan cycle ends enabled', async () => {
-  const grace = ParamState.graceMs;
-  ParamState.graceMs = 50;
+  const grace = Input.loadingGraceMs;
+  Input.loadingGraceMs = 50;
   try {
     provider('slow', [{name: 'city', propertyType: 'string'}], async () => {
       await sleep(300);
@@ -1601,14 +1601,16 @@ w2('the initial load disables the input and shows the grace-delayed spinner; rea
     const city = f.getInput('city');
     await flush();
     assert.equal(city.disabled === null, false, 'disabled while the initial load is in flight');
-    const state = stateOf(f, 'city');
-    assert.ok(state, 'the state element rides input.box');
-    assert.equal(state.querySelector('.u2-loader-spinner'), null, 'no spinner before the grace elapses');
-    await until(() => state.classList.contains('u2-param-source-loading'), 'the spinner after the grace');
-    assert.ok(state.querySelector('.u2-loader-spinner'));
+    assert.ok(stateOf(f, 'city'), 'the state element rides input.box');
+    const spinner = () => city.box.querySelector('.u2-input-loading');
+    assert.equal(city.root.getAttribute('aria-busy'), 'true', 'the input says it is loading');
+    assert.equal(spinner(), null, 'no spinner before the grace elapses');
+    await until(() => spinner()?.hidden === false, 'the input\'s spinner after the grace');
+    assert.ok(spinner().querySelector('.u2-loader-spinner'));
     await f.settled;
     assert.equal(city.disabled === null, true, 'ready re-enables');
-    assert.equal(city.box.querySelector('.u2-param-source-loading'), null);
+    assert.equal(spinner().hidden, true);
+    assert.equal(city.root.hasAttribute('aria-busy'), false);
     assert.equal(city.box.querySelector('.u2-param-source-error'), null);
 
     f.source = callOf(fp('other', 'string'));
@@ -1618,7 +1620,7 @@ w2('the initial load disables the input and shows the grace-delayed spinner; rea
     assert.equal(city.disabled === null, true, 'orphan → rebind → load ends enabled');
     f.dispose();
   } finally {
-    ParamState.graceMs = grace;
+    Input.loadingGraceMs = grace;
   }
 });
 
