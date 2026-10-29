@@ -47,8 +47,7 @@ class Provider(ABC):
         self.test_upstream = credentials.get('TEST_UPSTREAM')
         self.model = self._model(credentials)
         routes = self.routes(credentials)
-        mode = next(iter(routes)) if len(routes) == 1 else \
-            'anthropic_messages' if CLAUDE.search(self.model) else 'codex_responses'
+        mode = next(iter(routes)) if len(routes) == 1 else self.mode()
         self.format: ApiFormat = FORMATS[mode]
         self.route = routes[mode]
         key = credentials.get('apiKey')
@@ -58,6 +57,10 @@ class Provider(ABC):
             raise ProviderError('The apiKey container credential contains whitespace or control characters')
         self.check_key(key)
         self.key = key
+
+    def mode(self) -> ApiMode:
+        """The format of the model on a provider that serves several."""
+        return 'anthropic_messages' if CLAUDE.search(self.model) else 'codex_responses'
 
     @abstractmethod
     def routes(self, credentials: Credentials) -> dict[ApiMode, Route]:

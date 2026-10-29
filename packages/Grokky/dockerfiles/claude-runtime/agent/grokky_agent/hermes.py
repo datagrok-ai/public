@@ -105,22 +105,35 @@ def send_keys_by_type() -> None:
     anthropic_adapter._requires_bearer_auth = lambda base_url: False
 
 
-def refuse_aws_sdk() -> None:
-    """Bedrock is reached through its Anthropic and OpenAI routes with an API key, never through the AWS SDK. For a
-    Bedrock address Hermes would install boto3 while the agent starts (a download of half a minute, which fails
-    offline) only to probe the model's context window with SigV4 credentials the runtime does not have; refused, it
-    takes the window from its own table."""
-    import pm
-    import pm.extras
+def use_bedrock_key(key: str) -> None:
+    """Hermes reaches Bedrock's Converse API through boto3, which takes a Bedrock API key only from the process
+    environment, where the session's tools could read it from /proc. The clients are built here instead: unsigned,
+    with the key added as a Bearer header, so boto3 never walks its credential chain either."""
+    import agent.bedrock_adapter as bedrock_adapter
+    import boto3
+    import botocore
+    from botocore.config import Config
 
-    install = pm.extras.ensure_import
+    clients: dict[tuple[str, str], Any] = {}
 
-    def ensure_import(extra: str) -> None:
-        if extra == 'bedrock':
-            raise ImportError('the AWS SDK is not part of the Grokky runtime')
-        install(extra)
+    def add_key(request: Any, **_: Any) -> None:
+        request.headers['Authorization'] = f'Bearer {key}'
 
-    pm.extras.ensure_import = pm.ensure_import = ensure_import
+    def client(service: str, region: str) -> Any:
+        if (service, region) not in clients:
+            # boto3 stops reading after 60 s, under Kimi's long replies; Hermes retries and spots stale streams.
+            c = boto3.client(service, region_name=region, config=Config(
+                signature_version=botocore.UNSIGNED, read_timeout=600, retries={'max_attempts': 1}))
+            c.meta.events.register(f'before-send.{service}.*', add_key)
+            clients[service, region] = c
+        return clients[service, region]
+
+    bedrock_adapter._get_bedrock_runtime_client = lambda region: client('bedrock-runtime', region)
+    bedrock_adapter._get_bedrock_control_client = lambda region: client('bedrock', region)
+    bedrock_adapter.resolve_bedrock_bearer_token = lambda env=None: key
+    # Hermes learns a window by sending ~1.3M tokens to provoke a length error: over 30 s for some models (Kimi,
+    # Qwen), and a billed call for any that accepts it. Its table, or 128k, serves instead.
+    bedrock_adapter.probe_bedrock_context_length = lambda model_id, region: None
 
 
 def usage_cost(model: str, usage: Usage, billing: str, base_url: str) -> float | None:
@@ -154,6 +167,16 @@ def tool_registry() -> ToolRegistry:
     from tools.registry import registry
     tools: ToolRegistry = registry
     return tools
+
+
+def describe_skills(skills: list[tuple[str, str]]) -> None:
+    """Puts the index of Grokky's skills into the skill_view tool's own description: models that weigh tool
+    definitions over a long system prompt (Qwen) otherwise act without loading the skill the request matches."""
+    from tools.skills_tool import SKILL_VIEW_SCHEMA
+    SKILL_VIEW_SCHEMA['description'] = (
+        'Load the Datagrok skill whose description matches the request BEFORE acting: it gives the exact API calls '
+        'and conventions for the task. Skills:\n' + '\n'.join(f'- {name}: {desc}' for name, desc in skills))
+
 
 
 def tool_definitions(toolsets: list[str]) -> list[JsonObject]:
