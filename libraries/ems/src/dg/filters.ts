@@ -218,12 +218,12 @@ export class DomainFilters extends Control {
     this.source.query.value = this._echo;
   }
 
-  /** The filters in a pane on `list`'s left, the builder's mode switch on its title row. */
-  pane(list: HTMLElement): HTMLElement {
+  /** The filters in a pane on `list`'s left, the builder's mode switch on its title row, `below` under them. */
+  pane(list: HTMLElement, below: HTMLElement[] = []): HTMLElement {
     this._paned = true;
     return this.build(() => {
       const head = divH([span('Filters', 'u2-domain-app-filters-title'), this._tools], 'u2-domain-app-filters-head');
-      const pane = divV([head, this.root], 'u2-domain-app-filters-pane u2-fb-narrow');
+      const pane = divV([head, this.root, ...below], 'u2-domain-app-filters-pane u2-fb-narrow');
       this.effect(() => {
         const input = this._input.value;
         if (input instanceof FilterBuilder)

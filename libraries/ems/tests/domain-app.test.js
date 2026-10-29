@@ -238,7 +238,7 @@ scoped('New: the entity page over a pristine draft; once saved the page is the r
   assert.equal(ribbon.length, 2, 'the empty presets slot is not a group');
   // only the search box rides the ribbon: the shell's is one fixed 32px line with `overflow:
   // hidden`, and the query box is a row of the LIST PAGE instead
-  assert.deepEqual(ribbon[1].map((c) => c.root.dataset.u2), ['domain-search', 'sort-menu']);
+  assert.deepEqual(ribbon[1].map((c) => c.root.dataset.u2), ['domain-search', 'sort-menu', 'button-group']);
   assert.equal(ribbon[1][0].root.hidden, false);
   const listPage = a.root.querySelector('[data-u2-part="list-page"]');
   assert.equal([...listPage.children].find((el) => !el.hidden) === a.filters.root, true,

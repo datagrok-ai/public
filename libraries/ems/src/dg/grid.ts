@@ -252,6 +252,10 @@ export interface DomainDataTableOptions {
   onActivate?: (row: RowView, index: number) => void;
   /** Context menu actions on top of Open and the table's registry. */
   actions?: DomainAction[];
+  /** Columns after the table's own — values that are not the row's, such as aggregations of its children. */
+  extraColumns?: DataTableColumn<RowView>[];
+  /** Per column, how a cell is drawn where the app knows better than the type (a structure as a picture). */
+  cells?: Record<string, (row: RowView) => HTMLElement | string>;
 }
 
 /** `domains.dataTable` — the source's rows as the HTML {@link DataTable}: virtualized rows of
@@ -312,8 +316,8 @@ export class DomainDataTable extends Control {
       header: byName.get(name)?.friendlyName || name,
       width: DomainDataTable.width(byName.get(name), name === nameColumn),
       ...(DomainDataTable.isNumeric(byName.get(name)) ? {align: 'right' as const} : {}),
-      render: (row) => this._cell(row, name, byName.get(name)),
-    }));
+      render: (row) => this._options.cells?.[name]?.(row) ?? this._cell(row, name, byName.get(name)),
+    })).concat(this._options.extraColumns ?? []);
     const table = this.build(() => new DataTable<RowView>({columns, rowHeight: this._options.rowHeight,
       items: source.rows, sort: source.sort, cellState: this._cellState(), fitColumns: true,
       contextActions: (row) => DomainTable.of(source)?.rowActions(row, this._options.actions) ?? [],
@@ -383,6 +387,8 @@ export class DomainDataTable extends Control {
         return timestamp(value as string, undefined, {utcDates: true});
       case 'double': case 'float': case 'num':
         return DomainDataTable.number(value as number, prop.format);
+      case 'int': case 'bigint':
+        return prop.format ? DomainDataTable.number(value as number, prop.format) : text(value);
       default:
         return text(value);
     }
