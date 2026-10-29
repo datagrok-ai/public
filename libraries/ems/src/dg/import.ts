@@ -664,7 +664,10 @@ class ImportFlow {
   }
 
   private static _valueOrNull(column: DG.Column, i: number): unknown {
-    return column.isNone(i) ? null : column.get(i);
+    if (column.isNone(i))
+      return null;
+    const value = column.get(i);
+    return typeof value === 'bigint' ? value.toString() : value;
   }
 
   // an option the form does not offer is left to the server's default

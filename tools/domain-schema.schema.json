@@ -307,8 +307,8 @@
       "additionalProperties": false,
       "properties": {
         "type": {
-          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "file", "json", "user", "group"],
-          "description": "Property type; ref = FK to another table in this manifest; user/group = aliases of ref Core.users / ref Core.groups (semantic type User / Group); file = a file://<connection>/<path> string into platform file storage (semantic type File); json = a jsonb-backed opaque object (filters, sorts, facets and aggregates refuse it). An external storage admits string, int, float, bool, datetime and same-manifest ref only."
+          "enum": ["string", "int", "bigint", "float", "bool", "datetime", "string_list", "ref", "file", "json", "user", "group"],
+          "description": "Property type; ref = FK to another table in this manifest; user/group = aliases of ref Core.users / ref Core.groups (semantic type User / Group); file = a file://<connection>/<path> string into platform file storage (semantic type File); json = a jsonb-backed opaque object (filters, sorts, facets and aggregates refuse it). bigint = a 64-bit integer, external storage only, carried as its decimal digits. An external storage admits string, int, bigint, float, bool, datetime and same-manifest ref only."
         },
         "column": {
           "$ref": "#/definitions/remoteIdentifier",

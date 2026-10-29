@@ -107,12 +107,14 @@ function _isUnknown(x: any): boolean {
   return x != null && typeof x === 'object' && x['~unknownOriginal'] === true;
 }
 
-/** A value as it travels on the wire: dayjs/Date become ISO-8601, non-finite
- * numbers and DG's null sentinels become null. Comparisons and `~changes`
- * entries use this form, so a revert compares like the server would. */
+/** A value as it travels on the wire: dayjs/Date become ISO-8601, a bigint its
+ * digits, non-finite numbers and DG's null sentinels become null. Comparisons and
+ * `~changes` entries use this form, so a revert compares like the server would. */
 function toWire(v: any): any {
   if (v == null)
     return null;
+  if (typeof v === 'bigint')
+    return v.toString();
   if (typeof v === 'object' && typeof v.toISOString === 'function')
     return v.toISOString();
   if (typeof v === 'number' && !isFinite(v))
@@ -151,6 +153,8 @@ function valueTypeOf(v: any): string {
     return TYPE.BOOL;
   if (typeof v === 'number')
     return Number.isInteger(v) ? TYPE.INT : TYPE.FLOAT;
+  if (typeof v === 'bigint')
+    return TYPE.BIG_INT;
   if (Array.isArray(v))
     return TYPE.LIST;
   if (v != null && typeof v === 'object' && typeof v.toISOString === 'function')
@@ -565,6 +569,7 @@ export class DomainFrameEditor implements IFrameEditor {
     const type = valueTypeOf(value);
     if (isNumerical(p))
       return typeof value === 'number' ? validateNumeric(p, value)
+        : type === TYPE.BIG_INT && p.propertyType === TYPE.BIG_INT ? null
         : `Numerical value expected, passed: ${type}`;
     const expected = p.propertyType === TYPE.NUM ? TYPE.FLOAT : p.propertyType;
     if (type !== expected)
@@ -976,6 +981,7 @@ export class DomainFrameEditor implements IFrameEditor {
         continue;
       const t = p.propertyType;
       const admitted = t === TYPE.INT ? Number.isInteger(original)
+        : t === TYPE.BIG_INT ? typeof original === 'string'
         : t === TYPE.STRING ? typeof original === 'string' && !DomainFrameEditor.UUID_SHAPED.test(original)
         : t === TYPE.BOOL ? p.nullable === false && typeof original === 'boolean' : false;
       if (admitted)
