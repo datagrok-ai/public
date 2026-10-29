@@ -42,7 +42,9 @@ import {isSoftmaxApplicable, isSoftmaxInteractive, isSvmApplicable, isSvmInterac
   trainNaiveBayes, isLdaApplicable, isLdaInteractive, trainLda, isMlpApplicable, isMlpInteractive,
   trainMlp, isRealMlpApplicable, isRealMlpInteractive, trainRealMlp, isTabmApplicable, isTabmInteractive,
   trainTabm} from './crux/methods';
-import {cruxPredict, modelFeatures, readCruxManifest} from './crux/crux-model';
+import {cruxPredict, isCruxModel, modelFeatures, readCruxManifest} from './crux/crux-model';
+import {LEGACY_MODEL_ERROR, featureColumns} from './crux/model-common';
+import {readLegacyModel} from './legacy/legacy-models';
 import {ClassificationReport, classificationReport} from './crux/crux-metrics';
 
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
@@ -666,10 +668,20 @@ export class PackageFunctions {
     targetColumn: DG.Column,
     predictColumn: DG.Column,
     model: any): Promise<any> {
-    const manifest = readCruxManifest(model as Uint8Array);
-    const features = df.clone(null, modelFeatures(df, manifest).map((col) => col.name));
-    const components = manifest.params.n_components as number;
-    return (await plsRegressionViewers(features, targetColumn, components)).map((v) => v.root);
+    const bytes = model as Uint8Array;
+    const spec = (): {features: DG.Column[], components: number} => {
+      if (isCruxModel(bytes)) {
+        const manifest = readCruxManifest(bytes);
+        return {features: modelFeatures(df, manifest), components: manifest.params.n_components as number};
+      }
+      const legacy = readLegacyModel(bytes);
+      if (legacy.kind !== 'pls')
+        throw new Error(LEGACY_MODEL_ERROR);
+      return {features: featureColumns(df, legacy.features), components: legacy.components};
+    };
+    const {features, components} = spec();
+    const names = features.map((col) => col.name);
+    return (await plsRegressionViewers(df.clone(null, names), targetColumn, components)).map((v) => v.root);
   }
 
 

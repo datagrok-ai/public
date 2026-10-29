@@ -10,7 +10,7 @@
 * GROK-20932: Marked trainSVM with meta.mlhasrows: the model embeds training rows
 * GROK-20932: Added files/legacy-models: one pre-Crux model per ML method with the Legacy models test category
 * GROK-20932: Added the Crux bridge (src/crux): lazy Crux module worker, DataFrame <-> Arrow IPC, cruxFit / cruxPredict
-* GROK-20932: Replaced the PCA, PLS, Linear Regression, Softmax, PLS Regression, XGBoost and SVM kernels with Crux (scikit-learn 1.9.1 and XGBoost 3.4.1 ports); models trained by earlier EDA versions are no longer supported - retrain them
+* GROK-20932: Replaced the PCA, PLS, Linear Regression, Softmax, PLS Regression, XGBoost and SVM kernels with Crux (scikit-learn 1.9.1 and XGBoost 3.4.1 ports); models trained by earlier EDA versions are applied only as described below, the rest must be retrained
 * GROK-20932: Narrowed the ML methods' applicability: features must be INT or FLOAT, regression targets (Linear Regression, PLS Regression, XGBoost and SVM regression) must be INT or FLOAT; BIG_INT and other numerical types are rejected
 * GROK-20932: Removed the gradient-descent Rate hyperparameter of Linear Regression and Softmax; Softmax Penalty (must be > 0) now maps to logistic C, L1 / L2 follow scikit-learn's ridge / elastic net definitions
 * GROK-20932: Changed regression predictions to float columns for integer targets
@@ -20,6 +20,7 @@
 * GROK-20932: Marked XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost and Decision Tree with meta.mlnativenans: they take rows with missing feature values (Forge no longer skips or imputes them by default)
 * GROK-20932: Added two Forge methods on Crux's neural tabular models: RealMLP (pytabkit 1.7.3) and TabM (TabM 0.0.3 with rtdl_num_embeddings); both have a Seed hyperparameter; TabM takes rows with missing feature values (meta.mlnativenans)
 * GROK-20932: Rebuilt the Crux module with crux-fn/realmlp and crux-fn/tabm (same crux revision; saved models keep working)
+* GROK-20932: Restored applying pre-Crux models with the same predictions as before (prediction only): PLS Regression with stored feature names, Linear Regression from 1.8.0, Softmax, XGBoost and SVM from 1.9.0 (src/legacy; XGBoost through Crux's ml.xgboost_predict); older models still require retraining; added files/legacy-models/reference.json and five more fixtures (regression, binary and bool targets)
 
 ## 1.9.1 (WIP)
 

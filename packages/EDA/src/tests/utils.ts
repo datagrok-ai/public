@@ -356,14 +356,18 @@ export async function demogFrame(target: string, features: string[], nonNull: bo
   return {df: df.clone(null, features), target: df.col(target)!};
 }
 
-/** Every training must fail; the message lists the ones that did not */
-export async function expectRejected(cases: [string, () => Promise<Uint8Array>][]): Promise<void> {
+/** Every action must fail (with an error `check` accepts, when given); the message lists the ones that did not */
+export async function expectRejected(cases: [string, () => Promise<unknown>][], check?: (e: any) => boolean):
+  Promise<void> {
   const missed: string[] = [];
   for (const [label, action] of cases) {
     try {
       await action();
       missed.push(label);
-    } catch {}
+    } catch (e) {
+      if (check !== undefined && !check(e))
+        missed.push(`${label} (${e instanceof Error ? e.message : e})`);
+    }
   }
   expect(missed.length, 0, `not rejected: ${missed.join(', ')}`);
 }

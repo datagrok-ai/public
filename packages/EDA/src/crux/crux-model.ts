@@ -1,14 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 
-import * as sha256 from 'fast-sha256';
-import {Table, tableFromIPC} from 'apache-arrow';
-
-import {cruxMl, CruxResource} from './crux-loader';
+import {cruxMl} from './crux-loader';
 import {floatColumn, listColumns, stringValues, toArrowIpc} from './crux-bridge';
+import {LEGACY_MODEL_ERROR, PREDICTION, blobId, featureColumns, runCrux} from './model-common';
+import {legacyPredict} from '../legacy/legacy-models';
 
-export const LEGACY_MODEL_ERROR =
-  'This model was saved by an older EDA version and is no longer supported - retrain the model';
-const PREDICTION = 'Prediction';
+export {LEGACY_MODEL_ERROR, runCrux};
+
 const PROBA_PREFIX = 'proba_';
 
 const FORMAT = 'crux-model-v1';
@@ -48,11 +46,17 @@ function safetensorsHeader(bytes: Uint8Array): {header: any, data: Uint8Array} |
   }
 }
 
-/** The manifest of a crux-model-v1 blob; any other blob throws {@link LEGACY_MODEL_ERROR} */
-export function readCruxManifest(bytes: Uint8Array): CruxManifest {
+export function isCruxModel(bytes: Uint8Array): boolean {
   const md = safetensorsHeader(bytes)?.header?.__metadata__;
-  if (md?.format !== FORMAT || typeof md[MANIFEST_KEY] !== 'string')
+  return md?.format === FORMAT && typeof md[MANIFEST_KEY] === 'string';
+}
+
+/** The manifest of a crux-model-v1 blob; any other blob throws {@link LEGACY_MODEL_ERROR} (`cruxPredict` routes
+ * such blobs to `legacyPredict`) */
+export function readCruxManifest(bytes: Uint8Array): CruxManifest {
+  if (!isCruxModel(bytes))
     throw new Error(LEGACY_MODEL_ERROR);
+  const md = safetensorsHeader(bytes)!.header.__metadata__;
   const manifest = JSON.parse(md[MANIFEST_KEY]) as CruxManifest;
   if (md[FEATURES_KEY] !== undefined)
     manifest.eda = {features: JSON.parse(md[FEATURES_KEY])};
@@ -73,12 +77,6 @@ function withEdaMetadata(bytes: Uint8Array, features: string[]): Uint8Array {
   return out;
 }
 
-/** Runs a Crux function on an Arrow IPC stream (transferred) and decodes its output */
-export async function runCrux(name: string, ipc: Uint8Array, params: object, resource?: CruxResource):
-  Promise<Table> {
-  return tableFromIPC(await cruxMl.callFn(name, ipc, params, resource));
-}
-
 /** Trains a Crux model on all columns of `df`; returns a crux-model-v1 blob */
 export async function cruxFit(task: CruxTask, model: string, df: DG.DataFrame, predictColumn: DG.Column,
   params: CruxFitParams = {}): Promise<Uint8Array> {
@@ -96,14 +94,7 @@ export function modelFeatures(df: DG.DataFrame, manifest: CruxManifest): DG.Colu
   const names = manifest.eda?.features;
   if (names === undefined)
     throw new Error('Crux: the model has no feature names (not trained by EDA)');
-  const columns: DG.Column[] = [];
-  for (const name of names) {
-    const col = df.col(name);
-    if (col === null)
-      throw new Error(`Crux: feature column "${name}" is missing`);
-    columns.push(col);
-  }
-  return columns;
+  return featureColumns(df, names);
 }
 
 /** A classifier whose `ml.predict` fills `probas` (not `svc`), with column names that differ beyond case (a DataFrame
@@ -113,13 +104,14 @@ function hasProbabilities(manifest: CruxManifest): boolean {
   return manifest.model !== 'svc' && new Set(classes.map((c) => c.toLowerCase())).size === classes.length;
 }
 
-/** Applies a crux-model-v1 blob; features are matched by the names saved at training */
+/** Applies a crux-model-v1 blob or a pre-Crux EDA model; features are matched by the names saved at training */
 export async function cruxPredict(df: DG.DataFrame, bytes: Uint8Array): Promise<DG.DataFrame> {
+  if (!isCruxModel(bytes))
+    return legacyPredict(df, bytes);
   const manifest = readCruxManifest(bytes);
   const columns = modelFeatures(df, manifest);
 
-  const id = Array.from(sha256.hash(bytes), (b) => b.toString(16).padStart(2, '0')).join('');
-  const out = await runCrux('ml.predict', toArrowIpc(columns), {}, {name: 'model', id, bytes});
+  const out = await runCrux('ml.predict', toArrowIpc(columns), {}, {name: 'model', id: blobId(bytes), bytes});
 
   if (manifest.task === 'regression')
     return DG.DataFrame.fromColumns([floatColumn(out, 'value', PREDICTION)]);

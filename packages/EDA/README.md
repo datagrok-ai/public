@@ -36,6 +36,8 @@ EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok
   * [TabM](https://github.com/yandex-research/tabm) (parameter-efficient MLP ensemble)
 
   The machine learning methods, PCA and PLS run on Crux (scikit-learn, XGBoost and CatBoost ports and the RealMLP / TabM neural tabular models compiled to WebAssembly). Classifiers (all but SVM) return the class probabilities (`proba_<class>` columns) after the prediction; Forge shows AUC-ROC and the ROC curve from them. `Eda:classificationReport` gives Forge AUC-ROC, average precision, the per-class values and the ROC and precision-recall curves (Forge computes balanced accuracy and MCC itself).
+
+  Models saved before the move to Crux are still applied, with the same predictions as before (prediction only, no class probabilities): PLS regression models with stored feature names, Linear regression models from EDA 1.8.0 and Softmax, XGBoost and SVM models from EDA 1.9.0. Older models must be retrained.
 * Group comparison
   * Two-sample [t-test](https://en.wikipedia.org/wiki/Student%27s_t-test) (Welch and Student)
   * One-way analysis of variances ([ANOVA](https://en.wikipedia.org/wiki/One-way_analysis_of_variance))
