@@ -41,9 +41,9 @@ Written for `matrix-plot-edge-cases.feature`: the edge cases of this viewer that
 
 1. A layout naming a column the table no longer has gives a blank plot with no message (confirmed on the stand through the API: `loadLayout` after HEIGHT was removed, or `xColumnNames` with `NO_SUCH`). There is no manual path a feature can take: the Layouts pane of the toolbox does not offer a layout once its table lacks one of its columns (measured: saved from the pane on `mp-edge-<time>`, HEIGHT removed, the table opened again without HEIGHT — the card is not listed). The scenario needs either a UI path that applies such a layout (a layout file opened on the table, or the pane listing it) or stays a Dart regTest.
 
-**Questions for owners**
+**Decided**
 
-1. A layout naming a missing column: skip the missing column and draw the others, or show a message naming it? Today nothing is drawn and nothing is said.
+1. A layout naming a missing column: the missing column is skipped and the others are drawn (the layout rule of `viewer-rules-edge-cases.feature`). Today nothing is drawn and nothing is said, a defect with no ticket. No outline row yet: the matrix plot has no reading of the columns it lays out after a layout, and its X Column Names may keep the missing name while drawing nothing; the cell count (`cells drawn`) is the reading to claim once the expected count is measured.
 
 **API or Dart tests to write**
 

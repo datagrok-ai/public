@@ -62,3 +62,13 @@ Feature: Line chart edge cases — a log Y axis below zero, an empty row set, a 
     When user filters rows where "CAST Idea ID" is between 634783 and 634834
     Then 50 rows should pass the filter
     And the "spc average" reading of line chart viewer should be between 2.4 and 2.6
+
+  Scenario: X Min and X Max outside every X value are kept and the data stays in view
+    When user sets properties of line chart viewer:
+      | X Min | 700000 |
+      | X Max | 800000 |
+    Then "X Min" property of line chart viewer should be "700000"
+    And "X Max" property of line chart viewer should be "800000"
+    And the "markers drawn" reading of line chart viewer should be 100
+    And line chart viewer should report no error
+    And no errors should have been logged

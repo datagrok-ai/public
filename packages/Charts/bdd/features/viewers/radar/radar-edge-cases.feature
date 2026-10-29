@@ -43,3 +43,22 @@ Feature: Radar edge cases — Values columns removed from the table, an empty ro
     And radar viewer should have repainted
     And "The Radar viewer requires a minimum of 1 numerical column." text in radar viewer should be absent
     And no errors should have been logged
+
+  Scenario: A row with NaN or Infinity under Column normalization leaves the rest of the Radar drawn and logs no error
+    A value that is not a finite number gets no point on its axis, and the rest of the radar draws.
+    The table opens from CSV, where NaN reads as an empty cell and Infinity and -Infinity as
+    themselves. The Radar reports no reading of the points it draws, so the claim is the chart
+    painted, its axes and no error (MISSING.md, Steps requested).
+    Given user opens a table "non-finite" with:
+      | name  | a         | b | c |
+      | one   | 1         | 4 | 7 |
+      | two   | NaN       | 5 | 8 |
+      | three | Infinity  | 6 | 9 |
+      | four  | -Infinity | 5 | 7 |
+      | five  | 3         | 4 | 8 |
+    When user adds a radar viewer
+    Then "Normalization" property of radar viewer should be "Column"
+    And "Values" property of radar viewer should be "a, b, c"
+    And "The Radar viewer requires a minimum of 1 numerical column." text in radar viewer should be absent
+    And radar viewer should be painted
+    And no errors should have been logged

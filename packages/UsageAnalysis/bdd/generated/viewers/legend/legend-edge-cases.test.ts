@@ -22,10 +22,10 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {addCalculated, filterBetween, filterPasses, removeColumn, resetFilter} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {addCalculated, filterBetween, filterPasses, removeColumn, renameColumn, resetFilter} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, clickLegendItem, legendLists, noErrors, propertyShouldNotBe, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
+import {addViewerWith, clickLegendItem, legendLists, noErrors, propertyShouldBe, propertyShouldNotBe, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Legend edge cases: the color column removed under a legend selection, every row filtered out, a constant column", () => {
   const session = feature(test, "features/viewers/legend/legend-edge-cases.feature", import.meta.url);
@@ -73,5 +73,23 @@ test.describe("Legend edge cases: the color column removed under a legend select
     await session.step(46, "Then the legend of scatter plot viewer should list 1 item", () => legendLists(page, el("scatter plot viewer"), 1));
     await session.step(47, "And scatter plot viewer should show 872 rows", () => showsRows(page, el("scatter plot viewer"), 872));
     await session.step(48, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("Renaming the color column keeps the legend selection", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.legend", "@known-failure:59", "@ticket-pending"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(13, "Given user is logged in", () => loggedIn(page));
+    await session.step(14, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(15, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["X","WEIGHT"],["Y","HEIGHT"],["Color","RACE"],["Legend Position","Right"]]), [["X","WEIGHT"],["Y","HEIGHT"],["Color","RACE"],["Legend Position","Right"]]);
+    await session.step(20, "Then the legend of scatter plot viewer should list 4 items", () => legendLists(page, el("scatter plot viewer"), 4));
+    await session.step(21, "And scatter plot viewer should show 872 rows", () => showsRows(page, el("scatter plot viewer"), 872));
+    await knownFailure(async () => {
+      await session.step(54, "When user clicks on \"Black\" item in the legend of scatter plot viewer", () => clickLegendItem(page, "Black", el("scatter plot viewer")));
+      await session.step(55, "Then scatter plot viewer should show 25 rows", () => showsRows(page, el("scatter plot viewer"), 25));
+      await session.step(56, "When user renames \"RACE\" column to \"ETHNICITY\"", () => renameColumn(page, "RACE", "ETHNICITY"));
+      await session.step(57, "Then \"Color\" property of scatter plot viewer should be \"ETHNICITY\"", () => propertyShouldBe(page, "Color", el("scatter plot viewer"), "ETHNICITY"));
+      await session.step(58, "And the legend of scatter plot viewer should list 4 items", () => legendLists(page, el("scatter plot viewer"), 4));
+      await session.step(59, "And \"Black\" legend item in legend of scatter plot viewer should be selected", () => shouldBe(page, el("\"Black\" legend item in legend of scatter plot viewer"), "selected"));
+      await session.step(60, "And scatter plot viewer should show 25 rows", () => showsRows(page, el("scatter plot viewer"), 25));
+      await session.step(61, "And no errors should have been logged", () => noErrors(page));
+    }, 59);
   });
 });

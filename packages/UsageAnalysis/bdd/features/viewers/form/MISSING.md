@@ -17,17 +17,19 @@ Added with `form-edge-cases.feature` (edge-case round of 2026-10-26, localhost).
 
 ### Still open
 
-1. **Fixture.** The two `@ticket-pending` Load form from file scenarios use files the project already
-   keeps (`fixtures/cars-small.csv`, `fixtures/nx/spgi-legend-position-old.layout`). The reported case
-   is a file holding `{}`; a dedicated `fixtures/form-not-a-form.json` would say it more plainly (adding
-   a fixture was outside this round).
-2. **Questions for owners**:
-   - The message for a file that is not a form, and whether the form keeps its fields.
-   - Editable form: `abc` or `-` typed into the numeric AGE field writes an empty value into the cell
-     on every keystroke. Refuse, or clear the cell?
-   - Editable form: typing into the field of a removed column (the field stays on a designed form).
-   - Every row filtered out: empty fields, or the last row's values.
+1. **Decided and claimed in `form-edge-cases`**:
+   - A file that is not a form (a CSV file, a saved table layout) is refused with the error balloon
+     "<file> is not a valid form file" and the form keeps its fields (core#1138, fixed).
+   - Text typed into a numeric field of an editable form leaves the cell as it was: core#1192, a
+     known failure (today the cell is emptied on the first keystroke).
+   - A column removed from the table takes its field off the form. A default form does; a form built
+     from chosen columns (`columnNames`) keeps an empty field: a known failure with no ticket yet.
+     The scenario that claimed the empty field is gone from `form.feature`.
+2. **Fixture**: the reported case of core#1138 is a file holding `{}`; a dedicated
+   `fixtures/form-not-a-form.json` would say it more plainly.
 3. **Steps requested**: the arrows at the first and the last row flash the arrow (`ui.noMoreMatches`)
-   and report nothing; the scenario claims only that the row stays.
+   and report nothing; the scenario claims only that the row stays. Every row filtered out leaves
+   empty fields (the no-rows rule of `viewer-rules-edge-cases.feature`); claiming it needs a reading
+   of a field's value (`value of <field>`), which the form does not report.
 4. **Dart test to write**: metadata changed ten times, then one keystroke in edit mode, writes the cell
    once (the field listeners are added again on every metadata change).

@@ -76,17 +76,21 @@ feature; it lists what the feature could not claim and why.
 
 None.
 
-#### 2. Questions for owners
+#### 2. Decided (the rules of `viewer-rules-edge-cases.feature`)
 
-1. **Values outside a property's declared bounds typed in the context panel are taken.** Tiles Per
-   Row declares 1..10, yet 0 typed in the panel becomes its value (and crashes a one-column trellis,
-   pinned on core#1057); the word cloud's Rotation Step (min 1) takes 0 the same way. The number
-   input carries min/max validators (`number_input.dart` `addMinMaxValidators`); should the property
-   panel refuse or clamp an invalid value instead of writing it?
-2. **A layout naming an inner viewer type that is not installed** (core#1057 W2): fall back to the
+1. **Values outside a property's declared bounds typed in the context panel are not taken.** The
+   number input carries min/max validators (`number_input.dart` `addMinMaxValidators`), but
+   `InputBase.bind` writes every change into the property. Tiles Per Row 11 is a known failure with
+   no ticket yet in the out-of-bounds outline; 0 on a one-column trellis also crashes it (core#1057,
+   in `trellis-plot-edge-cases.feature`). No rows and a renamed split column are rows of the outlines
+   too.
+
+#### 3. Questions for owners
+
+1. **A layout naming an inner viewer type that is not installed** (core#1057 W2): fall back to the
    default inner type or show a message?
 
-#### 3. API or Dart tests to write
+#### 4. API or Dart tests to write
 
 1. Dart regTest: `viewerType` with another case (`PC plot`) from a layout or `setOptions`
    (core#1057 W2).

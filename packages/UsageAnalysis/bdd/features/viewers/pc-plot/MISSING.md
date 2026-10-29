@@ -51,8 +51,10 @@ Written for `pc-plot-edge-cases.feature`: the edge cases of this viewer that the
 **Questions for owners**
 
 1. A Log Columns axis over a column holding zero or negative values is drawn linear without a word (`pc_plot_core.dart`, `col.min > 0`). Silent fallback, or a warning?
-2. An axis slider range set before a transformation is applied stays in the table filter with no slider left to undo it (core#967, behaviour). What should the filter be once the transformation is on?
-3. An axis column removed from the table while the plot shows it: the axis goes and the others stay — confirm, and what a layout naming the missing column should do.
+
+**Decided**: a transformation turned on releases the filter of the axis sliders it replaces (core#967, behaviour): claimed in `pc-plot-edge-cases.feature`, green on localhost (core#967 is closed).
+
+**Decided** (`viewer-rules-edge-cases.feature`): an axis column removed takes its axis away and the others stay; a layout naming a missing column is applied without that axis (a row of the layout outline); a renamed axis column is followed (a row of the rename outline); every row filtered out is a row of the no-rows outline.
 
 **API or Dart tests to write**
 

@@ -56,9 +56,9 @@ Written for `network-diagram-edge-cases.feature`: the edge cases of this viewer 
 1. core#1041 crash 2 (Merge Nodes off plus a categorical Node 1 Color column, then a hover on a node) did not reproduce through `user hovers over the "node \"F\"" area`: with Merge Nodes off the label F belongs to two nodes and the hover lands on the one that does not throw. Needs the second group's node by its id (`node "<id>"`, the area the status already names for a duplicate label) documented in `network_diagram/CLAUDE.md`, then a hover on it, tagged `@known-failure … @realizes:core#1041`.
 2. core#1041 crash 3 (node columns removed, then a hover on a node) did not reproduce with a hover on the `view` area: the removed columns take the node areas with them. Needs a hover at the place a node was (`user remembers the place of the "node \"F\"" area` before the removal, then a hover there).
 
-**Questions for owners**
+**Decided**
 
-1. Node 1 with more than 10000 categories: the "Too many nodes to display, max 10000" message is the expected state; confirm it is the one a feature should claim.
+1. More than 10000 nodes show "Too many nodes to display, max 10000". Written in `network-diagram-edge-cases.feature` on demog (5850 rows) with USUBJID and a per-row PARTNER column, 11700 nodes: no node is drawn and the message is shown (the viewer reports no `error` reading for it, so the claim reads the text). Node 1 alone with more than 10000 categories is not written: no dataset of the library has a column with that many values.
 
 **API or Dart tests to write**
 

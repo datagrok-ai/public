@@ -21,10 +21,11 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
+import {clickOn} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterPasses, filterTo, selectWhereIs, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, errorBalloonText, noErrors, readingIs, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
+import {addViewerWith, errorBalloonText, hoverArea, noErrors, readingIs, setProperty, showsRows, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Row Source edge cases — a Filter formula that is not a condition, a row set nothing is left in", () => {
   const session = feature(test, "features/viewers/row-source/row-source-edge-cases.feature", import.meta.url);
@@ -79,5 +80,21 @@ test.describe("Row Source edge cases — a Filter formula that is not a conditio
     await session.step(41, "Then 553 rows should pass the filter", () => filterPasses(page, 553));
     await session.step(42, "And the \"rows shown\" reading of scatter plot viewer should be 0", () => readingIs(page, "rows shown", el("scatter plot viewer"), 0));
     await session.step(43, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("Under MouseOverGroup, closing the viewer whose group is hovered clears the group", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.scatter-plot", "@realizes:viewers.histogram", "@realizes:viewers.pie-chart", "@known-failure:60", "@ticket-pending"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(12, "Given user is logged in", () => loggedIn(page));
+    await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await knownFailure(async () => {
+      await session.step(49, "When user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["categoryColumnName","RACE"]]), [["categoryColumnName","RACE"]]);
+      await session.step(51, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["xColumnName","AGE"],["yColumnName","WEIGHT"],["rowSource","MouseOverGroup"]]), [["xColumnName","AGE"],["yColumnName","WEIGHT"],["rowSource","MouseOverGroup"]]);
+      await session.step(55, "Then scatter plot viewer should show 0 rows", () => showsRows(page, el("scatter plot viewer"), 0));
+      await session.step(56, "When user hovers over the \"slice Asian\" area of pie chart viewer", () => hoverArea(page, "slice Asian", el("pie chart viewer")));
+      await session.step(57, "Then scatter plot viewer should show 15 rows", () => showsRows(page, el("scatter plot viewer"), 15));
+      await session.step(58, "When user clicks on close icon of pie chart viewer", () => clickOn(page, el("close icon of pie chart viewer")));
+      await session.step(59, "Then the open tableview should have 0 pie chart viewers", () => viewerCount(page, 0, "pie chart"));
+      await session.step(60, "And scatter plot viewer should show 0 rows", () => showsRows(page, el("scatter plot viewer"), 0));
+      await session.step(61, "And no errors should have been logged", () => noErrors(page));
+    }, 60);
   });
 });

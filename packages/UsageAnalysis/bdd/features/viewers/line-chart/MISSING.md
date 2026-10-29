@@ -47,14 +47,17 @@ Written for `line-chart-edge-cases.feature`: the edge cases of this viewer that 
 1. Regression line and moving average after a table swap (core#1100, wrong behaviour 1): `regression lines` and `moving average lines` read what the status reports, which may survive the dead subscriptions. Needs a reading of what the last frame actually drew (the draw calls of the regression and moving-average passes), then: `When user sets "table" property … to "demog-1000"` and back, `Then the "regression lines drawn" reading of line chart viewer should be 1`, tagged `@known-failure … @realizes:core#1100`.
 2. Stacked Area under a filter (core#1100, wrong behaviour 6): the expected Y maximum is the stack of the rows shown. Needs a fixture with a known stacked maximum per filter state (a small `user opens a table … with:` table whose stacked maximum is computed by hand), then `the 'y axis max of "<col>"' reading … should be between …` tagged with core#1100.
 
+3. Min above Max is swapped (the rule of `viewer-rules-edge-cases.feature`): X Min / X Max and Y Min / Y Max (`resetView` takes `math.min` / `math.max` of the two), and the Lower and Upper Control Limits (`line_chart_spc_feature.dart` has no cross-check yet). No outline row: the `x axis min` / `x axis max` readings are the range slider's bounds (`rangeSlider.minValue`), not the drawn window, and there is no reading of the Y range or of the control limits drawn. Needs readings of the drawn X and Y windows and of the control-limit lines.
+4. A layout whose split column the table does not have: the split is dropped (the layout rule). X and Y are required, so `auto()` re-picking them is kept.
+
+**Decided**
+
+1. X Min / X Max outside every X value (700000..800000 on spgi-100) are kept and the data stays in view (all 100 markers drawn): written in `line-chart-edge-cases.feature`.
+
 **Questions for owners**
 
-1. Lower Control Limit above Upper Control Limit (e.g. 5 and 0): swap, refuse, or report? `line_chart_spc_feature.dart` has no cross-check.
-2. X Min above X Max (and Y Min above Y Max): the line chart swaps them silently, the histogram reports "X axis Max should be greater than Min". Which is the rule?
-3. X Min / X Max outside every X value (700000..800000 on spgi-100): the setting is kept and the view does not move. Intended?
-4. Line Width 0 or negative: the canvas ignores it and keeps the previous width. Should the property have a minimum?
-5. The chart bound to another table whose view is then closed: rebind to the view's table, or show an empty chart with a message?
-6. A layout whose X, Y and split columns the table does not have: `auto()` re-picks X and Y and drops the split silently. Re-pick or report the missing columns?
+1. Line Width 0 or negative: the canvas ignores it and keeps the previous width. Should the property have a minimum?
+2. The chart bound to another table whose view is then closed: rebind to the view's table, or show an empty chart with a message?
 
 **API or Dart tests to write**
 

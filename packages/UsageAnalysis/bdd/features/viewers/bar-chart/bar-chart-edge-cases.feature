@@ -81,14 +81,84 @@ Feature: Bar chart edge cases
     And no errors should have been logged
 
   @edge-cases
-  Scenario: Closing the bar chart gives back the rows its clicked bar filtered out
+  Scenario Outline: <caption> typed as <typed> in the context panel is not taken by the bar chart
     Given user opens demog-1000 dataset
     And user adds a bar chart viewer with:
-      | Split    | RACE   |
-      | On Click | Filter |
-    When user clicks on the "bar Asian" area of bar chart viewer
-    Then fewer than 1000 rows should pass the filter
-    When user clicks on close icon of bar chart viewer
-    Then the open tableview should have 0 bar chart viewers
-    And all rows should pass the filter
+      | Split | RACE |
+    When user clicks on settings icon of bar chart viewer
+    Then context panel should be visible
+    Given "Style" category in context panel is expanded
+    When user enters "<typed>" into "<caption>" property in context panel
+    Then "<caption>" property of bar chart viewer should be "<kept>"
+    And bar chart viewer should report no error
     And no errors should have been logged
+
+    @known-failure:92 @ticket-pending
+    Examples: The typed value is written into the property; the declarations set no lower bound
+      | caption              | typed | kept |
+      | Max Bar Height       | 0     | 50   |
+      | Max Bar Height       | -5    | 50   |
+      | Max Category Width   | 0     | 300  |
+      | Category Value Width | 0     | 50   |
+
+  @edge-cases
+  Scenario Outline: "abc" typed into the numeric <caption> property is not taken and the old value stays
+    Given user opens demog-1000 dataset
+    And user adds a bar chart viewer with:
+      | Split | RACE |
+    When user clicks on settings icon of bar chart viewer
+    Then context panel should be visible
+    Given "<category>" category in context panel is expanded
+    When user enters "abc" into "<caption>" property in context panel
+    Then "<caption>" property of bar chart viewer should be "<kept>"
+    And the "bars" reading of bar chart viewer should be 4
+    And no errors should have been logged
+
+    Examples:
+      | category | caption            | kept |
+      | Y Axis   | Min                |      |
+      | Style    | Max Bar Height     | 50   |
+      | Style    | Max Category Width | 300  |
+
+  @edge-cases
+  Scenario: Zoomed to two bars, then filtered to one category, the bar chart resets the zoom and shows the remaining bar
+    Given user opens demog-1000 dataset
+    And user adds a bar chart viewer with:
+      | Split | RACE |
+    Then the "bars" reading of bar chart viewer should be 4
+    When user zooms into the categories from the "bar Asian" area to the "bar Black" area of bar chart viewer
+    Then the "bars" reading of bar chart viewer should be 2
+    When user filters rows where "RACE" is "Other"
+    Then the "bars" reading of bar chart viewer should be 1
+    And bar chart viewer should have a "bar Other" area
+    When user resets the filter
+    Then the "bars" reading of bar chart viewer should be 4
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario Outline: Sorted by value in <order> order, the bar whose aggregate is empty comes last
+    Given user opens a table "empty-aggregate" with:
+      | Category | Value |
+      | A        | 1     |
+      | A        | 3     |
+      | B        | 5     |
+      | B        | 7     |
+      | C        |       |
+      | C        |       |
+    And user adds a bar chart viewer with:
+      | Split           | Category   |
+      | Value           | Value      |
+      | Value Aggr Type | avg        |
+      | Orientation     | horizontal |
+      | Bar Sort Type   | by value   |
+      | Bar Sort Order  | <order>    |
+    Then the bars of bar chart viewer should lie one under another
+    And the "bar C" area of bar chart viewer should lie below the "bar A" area
+    And the "bar C" area of bar chart viewer should lie below the "bar B" area
+    And no errors should have been logged
+
+    @known-failure:156 @ticket-pending
+    Examples: The category whose aggregate is empty gets no bar
+      | order |
+      | asc   |
+      | desc  |

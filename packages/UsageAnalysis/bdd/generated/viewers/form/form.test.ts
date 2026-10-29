@@ -22,8 +22,8 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, downloadThrough, downloadedContains, downloadedNotContains, focusOn, pressKeyIn, shouldBe, shouldNotBe, typeInto, uploadDownloaded} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {currentRowIs, hasColumn, hasNoColumn, makeRowCurrent, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {addCalculated, clearSelection, colorLinear, colorOff, filterTo, noneSelected, onlyOfSelected, removeColumn, renameColumn, resetFilter} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {currentRowIs, hasColumn, makeRowCurrent, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {clearSelection, colorLinear, colorOff, filterTo, noneSelected, onlyOfSelected, renameColumn, resetFilter} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, boundTable, clickArea, dragAreaBy, enterIntoArea, hasArea, hasNoArea, hoverArea, loadLayout, noErrors, pickFromAreaContextMenu, pickFromContextMenu, pointerAway, propertyShouldBe, readingDiffers, readingIs, readingReads, saveLayout, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {areaHangsBelow, toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
@@ -33,7 +33,7 @@ test.describe("Form viewer", () => {
   const session = feature(test, "features/viewers/form/form.feature", import.meta.url);
   test("Form viewer", {tag: ["@journey", "@viewers", "@realizes:viewers.form"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 20, page);
+    const run = journey(test, 19, page);
     await session.step(23, "Given user is logged in", () => loggedIn(page));
     await session.step(24, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(25, "And user adds a form viewer", () => addViewer(page, "form"));
@@ -295,31 +295,21 @@ test.describe("Form viewer", () => {
       await session.step(284, "Then the \"fields shown\" reading of form viewer should be 3", () => readingIs(page, "fields shown", el("form viewer"), 3));
       await session.step(285, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("A removed column empties its field but keeps it on the form", async () => {
-      await session.step(288, "When user removes \"WEIGHT\" column", () => removeColumn(page, "WEIGHT"));
-      await session.step(289, "Then the table should not have a column \"WEIGHT\"", () => hasNoColumn(page, "WEIGHT"));
-      await session.step(290, "And the \"fields shown\" reading of form viewer should be 3", () => readingIs(page, "fields shown", el("form viewer"), 3));
-      await session.step(291, "And the \"WEIGHT\" reading of form viewer should be \"\"", () => readingReads(page, "WEIGHT", el("form viewer"), ""));
-      await session.step(292, "And the \"AGE\" reading of form viewer should be \"26\"", () => readingReads(page, "AGE", el("form viewer"), "26"));
-      await session.step(293, "And no errors should have been logged", () => noErrors(page));
-      await session.step(294, "When user adds a calculated column \"WEIGHT\" with formula \"0\"", () => addCalculated(page, "WEIGHT", "0"));
-      await session.step(295, "Then the table should have a column \"WEIGHT\"", () => hasColumn(page, "WEIGHT"));
-    });
     await run.scenario("The arrows walk the filtered rows", async () => {
-      await session.step(298, "Given user sets \"columnNames\" property of form viewer to \"USUBJID, AGE, SEX\"", () => setProperty(page, "columnNames", el("form viewer"), "USUBJID, AGE, SEX"));
-      await session.step(299, "When user filters rows where \"SEX\" is \"M\"", () => filterTo(page, "SEX", "M"));
-      await session.step(300, "And user makes row 4 current", () => makeRowCurrent(page, 4));
-      await session.step(301, "Then the \"USUBJID\" reading of form viewer should be \"X0273T21000400002\"", () => readingReads(page, "USUBJID", el("form viewer"), "X0273T21000400002"));
-      await session.step(302, "When user clicks on the \"next row\" area of form viewer", () => clickArea(page, "next row", el("form viewer")));
-      await session.step(303, "Then the \"SEX\" reading of form viewer should be \"M\"", () => readingReads(page, "SEX", el("form viewer"), "M"));
-      await session.step(304, "And the \"USUBJID\" reading of form viewer should be \"X0273T21000500008\"", () => readingReads(page, "USUBJID", el("form viewer"), "X0273T21000500008"));
-      await session.step(305, "When user resets the filter", () => resetFilter(page));
-      await session.step(306, "And user makes row 1 current", () => makeRowCurrent(page, 1));
+      await session.step(288, "Given user sets \"columnNames\" property of form viewer to \"USUBJID, AGE, SEX\"", () => setProperty(page, "columnNames", el("form viewer"), "USUBJID, AGE, SEX"));
+      await session.step(289, "When user filters rows where \"SEX\" is \"M\"", () => filterTo(page, "SEX", "M"));
+      await session.step(290, "And user makes row 4 current", () => makeRowCurrent(page, 4));
+      await session.step(291, "Then the \"USUBJID\" reading of form viewer should be \"X0273T21000400002\"", () => readingReads(page, "USUBJID", el("form viewer"), "X0273T21000400002"));
+      await session.step(292, "When user clicks on the \"next row\" area of form viewer", () => clickArea(page, "next row", el("form viewer")));
+      await session.step(293, "Then the \"SEX\" reading of form viewer should be \"M\"", () => readingReads(page, "SEX", el("form viewer"), "M"));
+      await session.step(294, "And the \"USUBJID\" reading of form viewer should be \"X0273T21000500008\"", () => readingReads(page, "USUBJID", el("form viewer"), "X0273T21000500008"));
+      await session.step(295, "When user resets the filter", () => resetFilter(page));
+      await session.step(296, "And user makes row 1 current", () => makeRowCurrent(page, 1));
     });
     await run.scenario("The viewer closes from its title bar", async () => {
-      await session.step(309, "When user clicks on close icon of form viewer", () => clickOn(page, el("close icon of form viewer")));
-      await session.step(310, "Then form viewer should be absent", () => shouldBe(page, el("form viewer"), "absent"));
-      await session.step(311, "And no errors should have been logged", () => noErrors(page));
+      await session.step(299, "When user clicks on close icon of form viewer", () => clickOn(page, el("close icon of form viewer")));
+      await session.step(300, "Then form viewer should be absent", () => shouldBe(page, el("form viewer"), "absent"));
+      await session.step(301, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

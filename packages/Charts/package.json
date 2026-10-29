@@ -48,6 +48,7 @@
     "All users"
   ],
   "devDependencies": {
+    "@datagrok-libraries/bdd": "workspace:^",
     "@playwright/test": "^1.48.0",
     "@types/d3": "^7.4.0",
     "@types/d3-cloud": "^1.2.5",

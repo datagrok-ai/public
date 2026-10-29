@@ -5,6 +5,7 @@ Feature: Forms viewer edge cases
   (the viewer has no error state of its own, `libraries/utils/src/viewers/CLAUDE.md`). A pinned row
   that is deleted leaves the pinned pane: pinned rows are found again by their value whenever rows
   are removed, and a value no row holds any more is dropped (`forms-viewer.ts` `resolvePinnedRows`).
+  A pinned row the filter hides stays pinned, as in the grid.
 
   Background:
     Given user is logged in
@@ -36,4 +37,19 @@ Feature: Forms viewer edge cases
     And the "pinned records" reading of forms viewer should be 0
     And the "pinned pane shown" reading of forms viewer should be "false"
     And the "pinned values" reading of forms viewer should be ""
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: A pinned row the filter hides stays pinned
+    Given user selects rows where "SEVERITY" is "Critical"
+    And user sets "showMouseOverRow" property of forms viewer to "false"
+    When user picks "Pin Row" from the context menu of the "field USUBJID of card 3" area of forms viewer
+    Then the "pinned values" reading of forms viewer should be "X0273T29012500105"
+    When user clears the row selection
+    And user filters rows where "SEVERITY" is "Low"
+    Then fewer than 1000 rows should pass the filter
+    And the "pinned records" reading of forms viewer should be 1
+    And the "pinned values" reading of forms viewer should be "X0273T29012500105"
+    When user resets the filter
+    Then the "pinned records" reading of forms viewer should be 1
     And no errors should have been logged

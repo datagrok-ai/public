@@ -1,9 +1,9 @@
 @viewers @edge-cases @realizes:charts.viewer.timelines
-Feature: Timelines edge cases: a cleared color, long lane names, no rows
+Feature: Timelines edge cases: a cleared color, long lane names, no rows, End before Start
   Guards for the data shapes under the Timelines viewer, on small tables written here. Clearing
   Color after it was set takes the legend away without an error (public#617). Lanes whose names are
   200 characters long are still drawn (public#1973). A filter that removes every row leaves no
-  interval and no error.
+  interval and no error. An event whose End is earlier than its Start is skipped.
 
   Background:
     Given user is logged in
@@ -53,3 +53,19 @@ Feature: Timelines edge cases: a cleared color, long lane names, no rows
     And the "intervals" reading of timelines viewer should be 2
     And timelines viewer should be painted
     And no errors should have been logged
+
+  @known-failure:71 @ticket-pending
+  Scenario: An event whose End is earlier than its Start is skipped
+    The timelines viewer skips such an event, and its tooltip says how many were skipped (the tooltip
+    has no hit area yet, see MISSING.md). Today the event is drawn.
+    Given user opens a table "reversed" with:
+      | subject | start      | end        |
+      | s1      | 2020-01-01 | 2020-01-10 |
+      | s2      | 2020-01-20 | 2020-01-05 |
+    And user adds a timelines viewer with:
+      | splitByColumnName | subject |
+      | startColumnName   | start   |
+      | endColumnName     | end     |
+    Then timelines viewer should be painted
+    And no errors should have been logged
+    And the "intervals" reading of timelines viewer should be 1

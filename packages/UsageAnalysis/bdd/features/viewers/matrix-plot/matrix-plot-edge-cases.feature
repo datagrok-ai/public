@@ -1,10 +1,9 @@
 @viewers @edge-cases @realizes:viewers.matrix-plot
-Feature: Matrix plot edge cases — no X columns, an empty row set, a constant column, a renamed column
-  The matrix plot on data and settings its other features do not reach. With X Column Names
-  cleared the plot lays out no cell and its render ends (the `_refresh` guard for an empty column
-  list, `matrix_plot_core.dart`). A table filtered down to nothing reaches every cell, since the
-  plot copies the combined filter into each one (`_syncFilters`, `matrix_plot/CLAUDE.md`), and a
-  table whose rows are all deleted logs no error. A column holding one value in every row draws its
+Feature: Matrix plot edge cases — no X columns, every row deleted, a constant column, a renamed column
+  The matrix plot on data and settings its other features do not reach (a table filtered down to
+  nothing: `viewer-rules-edge-cases.feature`). With X Column Names cleared the plot lays out no
+  cell and its render ends (the `_refresh` guard for an empty column list, `matrix_plot_core.dart`).
+  A table whose rows are all deleted logs no error. A column holding one value in every row draws its
   cells without an error (the constant-column crashes of core#998 and core#1048 were in the
   histogram and density plot the cells host). A column renamed while the plot shows it is renamed
   in the plot's column list, as every viewer renames the columns its look names
@@ -26,16 +25,6 @@ Feature: Matrix plot edge cases — no X columns, an empty row set, a constant c
     And no errors should have been logged
     When user sets "xColumnNames" property of matrix plot viewer to "AGE, HEIGHT"
     Then the "cells drawn" reading of matrix plot viewer should be 8
-
-  Scenario: With every row filtered out every cell shows no row and nothing is logged
-    When user filters rows where "AGE" is between 200 and 300
-    Then 0 rows should pass the filter
-    And the "rows shown" reading of matrix plot viewer should be 0
-    And the "cell rows shown of AGE x AGE" reading of matrix plot viewer should be 0
-    And the "cell rows shown of HEIGHT x WEIGHT" reading of matrix plot viewer should be 0
-    And no errors should have been logged
-    When user resets the filter
-    Then the "cell rows shown of AGE x AGE" reading of matrix plot viewer should be 1000
 
   Scenario: Once every row of the table is deleted the plot logs no error
     When user selects all rows

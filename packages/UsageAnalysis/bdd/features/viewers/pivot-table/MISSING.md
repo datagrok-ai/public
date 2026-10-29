@@ -48,12 +48,20 @@ Written for `pivot-table-edge-cases.feature`: the edge cases of this viewer that
 
 ### Still open
 
+**Decided, steps requested**: a blank key clicked under Filtering Enabled is the `(empty)` category (the empty-category rule of `viewer-rules-edge-cases.feature`), so the `filter label` should say `(empty)`. The outline reads a viewer reading; the pivot's row needs a click on the blank key cell, which has no hit area yet (`key cell <row> of <column>`).
+
+**Decided, steps requested**: a pivot on a column with thousands of categories (demog USUBJID) says that part of the categories was dropped (the silent-cut rule). Today `auto()` stops at 100 and the + picker has no cap, with no sign of either. The note has no wording yet, and the pivot reports no reading of it.
+
 **Questions for owners**
 
-1. Row Source Filtered with nothing passing, then ADD: hide ADD, or publish an empty table?
-2. Group by a column with blanks and a click on the blank key cell under Filtering Enabled: what does the `filter label` say for the blank value?
-3. Pivot on a column with thousands of categories (demog SUBJ): `auto()` stops at 100, the + picker does not. A cap or a warning?
-4. `pivot_viewer/CLAUDE.md` says a removed Group by column leaves `missingColumnError` over the grid; on the stand the removal re-picks the column (`look.auto` from `onColumnsRemoved`) and no error shows. The feature claims the re-pick; the document should say which applies to a removal and which to a layout from another table.
+1. Row Source Filtered with nothing passing, then ADD: hide ADD, or publish an empty table? (Every row filtered out is a row of the no-rows outline in `viewer-rules-edge-cases.feature`; ADD is not part of it.)
+
+**Remark on the code docs**
+
+- `pivot_viewer/CLAUDE.md` says a removed Group by column leaves `missingColumnError` over the grid. On the
+  stand the removal re-picks a column (`look.auto` from `onColumnsRemoved`) and no error shows. The re-pick is
+  the expected behaviour (a viewer that picks another column after its column is removed is correct), and the
+  feature claims it; the document is left as it is.
 
 **API or Dart tests to write**
 

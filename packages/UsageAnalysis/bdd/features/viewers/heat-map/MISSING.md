@@ -90,10 +90,14 @@ Written for `heat-map-edge-cases.feature`: the edge cases of this viewer that th
 1. Alt-drag zoom on a sorted map (TestTrack `Heatmap/heatmap-ui.md`: "view zooms into that area"): the zoom passes table row indexes to the grid-row scroll (`grid_core.dart`), so on a map sorted by AGE the window may land elsewhere. Needs a reading of the first and last grid rows in the vertical window (`first row shown`, `last row shown`) to claim that the zoomed window starts at the sorted top rows.
 2. Sort > Custom on a categorical column with the empty value moved to the top, then Ascending / Descending (heatmap-ui.md, "Custom sorting on categorical column"): needs steps for the custom sort dialog's order list (drag an item to the top).
 
+3. Max Heatmap Columns −1 typed in the context panel is not taken (the out-of-bounds rule of `viewer-rules-edge-cases.feature`). The heat map is a grid: its row in that outline needs the grid's settings opened (`user clicks on settings icon of heat map viewer` is to be checked) and the property's declared minimum confirmed.
+
 **Questions for owners**
 
-1. Max Heatmap Columns −1: clamped to 0 columns with no error message (the message is set only for 0). Same as 0, or refused?
-2. A column hidden in the Columns dialog, then Max Heatmap Columns 3: the cap shows the first three numerical columns again, the hidden one included. Should the cap count visible columns only?
-3. An Alt-click without moving: no zoom, or a minimum window?
+1. A column hidden in the Columns dialog, then Max Heatmap Columns 3: the cap shows the first three numerical columns again, the hidden one included. Should the cap count visible columns only?
+
+**Decided**
+
+1. An Alt-click without moving zooms the map to one row and an Alt-drag to the rows it spans (no row is selected): claimed green in `heat-map-edge-cases.feature` on `y scroll span`.
 
 ### Won't do

@@ -71,16 +71,20 @@ lists what the feature could not claim and why.
 
 None.
 
-#### 2. Questions for owners
+#### 2. Decided (the rules of `viewer-rules-edge-cases.feature`)
 
-1. **After the Color or Size column is removed** (core#1135, pinned as known failures): drop the
-   encoding or pick another column?
-2. **A category whose sizes sum to a negative number** is clamped to 0 (`tree_map_core.dart:246`)
+1. **After the Color or Size column is removed** the encoding is dropped, with no other column
+   picked: claimed (core#1135, fixed). No rows, a renamed split column and a
+   layout naming a missing split column are rows of the outlines too.
+
+#### 3. Questions for owners
+
+1. **A category whose sizes sum to a negative number** is clamped to 0 (`tree_map_core.dart:246`)
    and its leaf disappears with its rows: hide, use the absolute value, or warn?
-3. **Outer margins larger than half the viewer, or negative** (no bounds,
+2. **Outer margins larger than half the viewer, or negative** (no bounds,
    `tree_map_look.dart:33-36`): clamp or reject?
 
-#### 3. API or Dart tests to write
+#### 4. API or Dart tests to write
 
 1. Dart regTest: a Size or Color column empty within one leaf (NaN score) leaves the other leaves
    laid out and colored.

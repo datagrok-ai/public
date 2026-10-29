@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/pc-plot/pc-plot-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.pc-plot]
+sub_features_covered: [viewers.pc-plot, core#967]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -22,9 +22,11 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {axesShouldBe} from '../../../bindings/pc-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {deleteSelected, filterBetween, filterPasses, resetFilter, rowCount, selectAllRows} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {hoverOver} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {deleteSelected, filterPassesAll, filterPassesFewer, rowCount, selectAllRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, applyNamedLayout, hoverArea, noErrors, painted, pointerAway, propertyShouldBe, readingIs, readingReads, saveNamedLayout, setProperties, setProperty, showsRows, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {dragRangeHandle} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("PC plot edge cases — a layout with line width 0, an unparsable font, one column, an empty source", () => {
@@ -80,22 +82,6 @@ test.describe("PC plot edge cases — a layout with line width 0, an unparsable 
     await session.step(50, "And the \"lines drawn\" reading of pc plot viewer should be 1000", () => readingIs(page, "lines drawn", el("pc plot viewer"), 1000));
     await session.step(51, "And no errors should have been logged", () => noErrors(page));
   });
-  test("With every row filtered out of the table the plot draws no line and logs no error", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pc-plot"]}, async ({browser}) => {
-    const page = await session.page(browser);
-    await session.step(13, "Given user is logged in", () => loggedIn(page));
-    await session.step(14, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(15, "And user adds a pc plot viewer with:", () => addViewerWith(page, "pc plot", [["Column Names","AGE, HEIGHT, WEIGHT"]]), [["Column Names","AGE, HEIGHT, WEIGHT"]]);
-    await session.step(17, "Then the axes of pc plot viewer should be \"AGE, HEIGHT, WEIGHT\"", () => axesShouldBe(page, el("pc plot viewer"), "AGE, HEIGHT, WEIGHT"));
-    await session.step(18, "And pc plot viewer should show 1000 rows", () => showsRows(page, el("pc plot viewer"), 1000));
-    await session.step(19, "And the \"error\" reading of pc plot viewer should be \"\"", () => readingReads(page, "error", el("pc plot viewer"), ""));
-    await session.step(54, "When user filters rows where \"AGE\" is between 200 and 300", () => filterBetween(page, "AGE", 200, 300));
-    await session.step(55, "Then 0 rows should pass the filter", () => filterPasses(page, 0));
-    await session.step(56, "And pc plot viewer should show 0 rows", () => showsRows(page, el("pc plot viewer"), 0));
-    await session.step(57, "And the \"lines drawn\" reading of pc plot viewer should be 0", () => readingIs(page, "lines drawn", el("pc plot viewer"), 0));
-    await session.step(58, "And no errors should have been logged", () => noErrors(page));
-    await session.step(59, "When user resets the filter", () => resetFilter(page));
-    await session.step(60, "Then the \"lines drawn\" reading of pc plot viewer should be 1000", () => readingIs(page, "lines drawn", el("pc plot viewer"), 1000));
-  });
   test("Once every row of the table is deleted the plot draws no line and logs no error", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pc-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
@@ -104,11 +90,27 @@ test.describe("PC plot edge cases — a layout with line width 0, an unparsable 
     await session.step(17, "Then the axes of pc plot viewer should be \"AGE, HEIGHT, WEIGHT\"", () => axesShouldBe(page, el("pc plot viewer"), "AGE, HEIGHT, WEIGHT"));
     await session.step(18, "And pc plot viewer should show 1000 rows", () => showsRows(page, el("pc plot viewer"), 1000));
     await session.step(19, "And the \"error\" reading of pc plot viewer should be \"\"", () => readingReads(page, "error", el("pc plot viewer"), ""));
-    await session.step(63, "When user selects all rows", () => selectAllRows(page));
-    await session.step(64, "And user deletes the selected rows", () => deleteSelected(page));
-    await session.step(65, "Then the table should have 0 rows", () => rowCount(page, 0));
-    await session.step(66, "And pc plot viewer should show 0 rows", () => showsRows(page, el("pc plot viewer"), 0));
-    await session.step(67, "And the \"lines drawn\" reading of pc plot viewer should be 0", () => readingIs(page, "lines drawn", el("pc plot viewer"), 0));
-    await session.step(68, "And no errors should have been logged", () => noErrors(page));
+    await session.step(54, "When user selects all rows", () => selectAllRows(page));
+    await session.step(55, "And user deletes the selected rows", () => deleteSelected(page));
+    await session.step(56, "Then the table should have 0 rows", () => rowCount(page, 0));
+    await session.step(57, "And pc plot viewer should show 0 rows", () => showsRows(page, el("pc plot viewer"), 0));
+    await session.step(58, "And the \"lines drawn\" reading of pc plot viewer should be 0", () => readingIs(page, "lines drawn", el("pc plot viewer"), 0));
+    await session.step(59, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("A transformation turned on releases the filter of the axis sliders it replaces (core#967)", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pc-plot", "@realizes:core#967"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(13, "Given user is logged in", () => loggedIn(page));
+    await session.step(14, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(15, "And user adds a pc plot viewer with:", () => addViewerWith(page, "pc plot", [["Column Names","AGE, HEIGHT, WEIGHT"]]), [["Column Names","AGE, HEIGHT, WEIGHT"]]);
+    await session.step(17, "Then the axes of pc plot viewer should be \"AGE, HEIGHT, WEIGHT\"", () => axesShouldBe(page, el("pc plot viewer"), "AGE, HEIGHT, WEIGHT"));
+    await session.step(18, "And pc plot viewer should show 1000 rows", () => showsRows(page, el("pc plot viewer"), 1000));
+    await session.step(19, "And the \"error\" reading of pc plot viewer should be \"\"", () => readingReads(page, "error", el("pc plot viewer"), ""));
+    await session.step(63, "When user hovers over pc plot viewer", () => hoverOver(page, el("pc plot viewer")));
+    await session.step(64, "And user drags the max handle of the \"AGE\" range slider of pc plot viewer by 120 pixels", () => dragRangeHandle(page, "max", "AGE", el("pc plot viewer"), 120));
+    await session.step(65, "Then fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
+    await session.step(66, "When user sets \"Transformation\" property of pc plot viewer to '[{\"#type\":\"GroupAggregation\",\"aggType\":\"key\",\"colName\":\"SEX\"},{\"#type\":\"GroupAggregation\",\"aggType\":\"avg\",\"colName\":\"AGE\"},{\"#type\":\"GroupAggregation\",\"aggType\":\"avg\",\"colName\":\"WEIGHT\"}]'", () => setProperty(page, "Transformation", el("pc plot viewer"), "[{\"#type\":\"GroupAggregation\",\"aggType\":\"key\",\"colName\":\"SEX\"},{\"#type\":\"GroupAggregation\",\"aggType\":\"avg\",\"colName\":\"AGE\"},{\"#type\":\"GroupAggregation\",\"aggType\":\"avg\",\"colName\":\"WEIGHT\"}]"));
+    await session.step(67, "Then the \"transformed\" reading of pc plot viewer should be \"true\"", () => readingReads(page, "transformed", el("pc plot viewer"), "true"));
+    await session.step(68, "And all rows should pass the filter", () => filterPassesAll(page));
+    await session.step(69, "And no errors should have been logged", () => noErrors(page));
   });
 });

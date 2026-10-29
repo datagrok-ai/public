@@ -58,15 +58,20 @@ feature; it lists what the feature could not claim and why.
 
 None.
 
-#### 2. Questions for owners
+#### 2. Decided (the rules of `viewer-rules-edge-cases.feature`)
 
-1. **Numeric statistics over no values.** With every row filtered out, or Row Source Selected and
-   nothing selected, `values` is 0 (claimed); what avg, min, max and stdev should read then (`''`,
-   as for a categorical column in `statistics.feature`, or 0) is not defined by help statistics.md.
-2. **An all-empty or constant numeric column**: avg and stdev of no values, stdev of one value.
-3. **A Histograms > <column> column after that column is removed or renamed** (`[SEX]` is built
-   once by name, `stats_viewer_core.dart:111-122`): drop it, rename it, or keep it stale?
-4. **A column added while Columns is an explicit list**: does it get a row? (With Columns empty it
+1. **Numeric statistics over no values are empty, not 0.** `statistics-edge-cases.feature` claims
+   `avg of AGE` empty with every row filtered out, and an all-empty numeric column with avg and
+   stdev empty: a known failure with no ticket yet (stdev reads 0.00). A constant column (min, max,
+   avg 5.00, stdev 0.00) is claimed green.
+2. **A Histograms > <column> column** is dropped when that column is removed: claimed green in
+   `statistics-edge-cases.feature`. That it follows a rename (`[SEX]` is built once by name,
+   `stats_viewer_core.dart:111-122`) is not written: `histogram columns` is a count, which a column
+   kept under the old name satisfies too; it needs the histogram columns' names as a reading.
+
+#### 3. Questions for owners
+
+1. **A column added while Columns is an explicit list**: does it get a row? (With Columns empty it
    does; claimed.)
 
 #### 3. API or Dart tests to write

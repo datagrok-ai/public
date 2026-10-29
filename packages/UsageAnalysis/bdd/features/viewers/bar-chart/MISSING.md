@@ -38,18 +38,17 @@ Added with `bar-chart-edge-cases.feature` (edge-case round of 2026-10-26, localh
 
 ### Still open
 
-1. **Decided, scenarios to write** (2026-10-28):
-   - Value axis Min above Max: the two are swapped, as in the box plot.
-   - Max Bar Height, Max Category Width and Category Value Width have a lower bound in the property
-     declaration; 0 or below is not taken.
-   - The Stack column removed while the chart is stacked: stacking is dropped, with no error.
-   - Zoomed to two bars, then the table filtered to one category: the zoom is reset and the remaining
-     bar is shown.
-   - `abc` typed into a numeric property (the value axis Min and every other numeric input) is not
-     taken; the old value stays.
-   - Bar Sort Type "by value" with a category whose aggregate is empty: that bar is last, in either
-     Bar Sort Order.
-2. **API or Dart tests to write**: a Stack Map that is not a date categorization (ApiTests, the editor
+1. **Decided** (2026-10-28):
+   - The Stack column removed while the chart is stacked: stacking is dropped, with no error, but
+     Stack keeps the removed column's name (a known failure with no ticket yet, a row of the removal
+     outline in `viewer-rules-edge-cases.feature`; closing the
+     chart after a Filter click, every row filtered out, and the Split column removed under a Filter
+     click are rows there too).
+2. **Steps requested**: value axis Min typed above Max: the two are swapped, as in the box plot
+   (decided 2026-10-28). The properties keep what was typed whether or not the chart swaps them, so
+   the claim needs the range the value axis is drawn over: a `value axis min` / `value axis max`
+   reading (the viewport's left and right) in the bar chart's status.
+3. **API or Dart tests to write**: a Stack Map that is not a date categorization (ApiTests, the editor
    cannot produce it); the category strip no wider than Max Category Width for a 200-character name
    (regTest); frame-time budgets for 25 stacks × 400 categories, 600 vertical categories and a
    selection change on 1M rows (core#974 measured them).

@@ -7,23 +7,14 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [charts.viewer.sankey, charts.viewer.chord, public#4420, public#4421]
 --- */
 import {test} from '@playwright/test';
-import '../../../bindings/biostructure.js';
-import '../../../bindings/connections.js';
-import '../../../bindings/file-formats.js';
-import '../../../bindings/flow.js';
-import '../../../bindings/grid.js';
-import '../../../bindings/queries.js';
-import '../../../bindings/tile-viewer.js';
-import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {shouldBe, shouldContainText, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {hasNoColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {filterBetween, filterPasses, removeColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {addCalculated, filterBetween, filterPasses, removeColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, noErrors, propertyShouldBe, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
@@ -89,5 +80,41 @@ test.describe("Sankey and Chord edge cases — Source equal to Target, too many 
       await session.step(61, "Then 494 rows should pass the filter", () => filterPasses(page, 494));
       await session.step(62, "And no errors should have been logged", () => noErrors(page));
     }, 62);
+  });
+  test("A Sankey whose Value column holds negative values refuses to draw and says so, as the pie does", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sankey", "@realizes:charts.viewer.chord", "@known-failure:73", "@ticket-pending"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(14, "Given user is logged in", () => loggedIn(page));
+    await session.step(15, "And the package autostarts have completed", () => autostartsCompleted(page));
+    await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await knownFailure(async () => {
+      await session.step(69, "When user adds a calculated column \"NEG\" with formula \"-${AGE}\"", () => addCalculated(page, "NEG", "-${AGE}"));
+      await session.step(70, "And user adds a sankey viewer", () => addViewer(page, "sankey"));
+      await session.step(71, "Then \"Value\" property of sankey viewer should be \"AGE\"", () => propertyShouldBe(page, "Value", el("sankey viewer"), "AGE"));
+      await session.step(72, "When user sets \"Value\" property of sankey viewer to \"NEG\"", () => setProperty(page, "Value", el("sankey viewer"), "NEG"));
+      await session.step(73, "Then sankey viewer should contain the text \"contains negative values\"", () => shouldContainText(page, el("sankey viewer"), "contains negative values"));
+      await session.step(74, "And no errors should have been logged", () => noErrors(page));
+      await session.step(75, "When user sets \"Value\" property of sankey viewer to \"AGE\"", () => setProperty(page, "Value", el("sankey viewer"), "AGE"));
+      await session.step(76, "Then \"Caucasian\" text in sankey viewer should be visible", () => shouldBe(page, el("\"Caucasian\" text in sankey viewer"), "visible"));
+      await session.step(77, "And sankey viewer should not contain the text \"contains negative values\"", () => shouldNotContainText(page, el("sankey viewer"), "contains negative values"));
+      await session.step(78, "And no errors should have been logged", () => noErrors(page));
+    }, 73);
+  });
+  test("A Sankey whose Value column holds only zeros refuses to draw and says so, as the pie does", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sankey", "@realizes:charts.viewer.chord", "@known-failure:88", "@ticket-pending"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(14, "Given user is logged in", () => loggedIn(page));
+    await session.step(15, "And the package autostarts have completed", () => autostartsCompleted(page));
+    await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await knownFailure(async () => {
+      await session.step(84, "When user adds a calculated column \"ZERO\" with formula \"0\"", () => addCalculated(page, "ZERO", "0"));
+      await session.step(85, "And user adds a sankey viewer", () => addViewer(page, "sankey"));
+      await session.step(86, "Then \"Value\" property of sankey viewer should be \"AGE\"", () => propertyShouldBe(page, "Value", el("sankey viewer"), "AGE"));
+      await session.step(87, "When user sets \"Value\" property of sankey viewer to \"ZERO\"", () => setProperty(page, "Value", el("sankey viewer"), "ZERO"));
+      await session.step(88, "Then sankey viewer should contain the text \"all values are 0\"", () => shouldContainText(page, el("sankey viewer"), "all values are 0"));
+      await session.step(89, "And no errors should have been logged", () => noErrors(page));
+      await session.step(90, "When user sets \"Value\" property of sankey viewer to \"AGE\"", () => setProperty(page, "Value", el("sankey viewer"), "AGE"));
+      await session.step(91, "Then \"Caucasian\" text in sankey viewer should be visible", () => shouldBe(page, el("\"Caucasian\" text in sankey viewer"), "visible"));
+      await session.step(92, "And sankey viewer should not contain the text \"all values are 0\"", () => shouldNotContainText(page, el("sankey viewer"), "all values are 0"));
+      await session.step(93, "And no errors should have been logged", () => noErrors(page));
+    }, 88);
   });
 });

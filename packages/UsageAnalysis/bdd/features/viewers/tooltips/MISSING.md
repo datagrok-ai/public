@@ -84,15 +84,25 @@ lists what the feature could not claim and why.
 
 None.
 
-#### 2. Questions for owners
+#### 2. Decided
 
-1. **A tooltip column renamed.** The table tag keeps column names (`tooltip.dart:574-577`) and
-   nothing renames them, so the column drops out of the tooltip: should the tooltip follow the
-   rename?
-2. **Ten columns ticked, seven shown.** An explicit selection is cut to `colAmount` = 7
-   (`tooltip.dart:590`) with no sign of it: intended, and should the dialog say so?
-3. **Edit Aggregated Tooltip with an empty row** (Add aggregation, no column, OK): what should be
-   stored?
+1. **A tooltip column renamed** is shown under its new name (the rename rule of
+   `viewer-rules-edge-cases.feature`). The table tag keeps column names (`tooltip.dart:574-577`) and
+   nothing renames them, so the column drops out: a known failure with no ticket yet in
+   `tooltips-edge-cases.feature`.
+2. **Ten columns ticked, seven shown**: the cut stays, and the tooltip says that part of the
+   columns was dropped (the silent-cut rule). Today an explicit selection is cut to `colAmount` = 7
+   (`tooltip.dart:590`) with no sign of it. Steps requested: the note has no wording yet, and no step
+   reads the lines of a tooltip; then: tick ten columns, hover a row, claim seven value lines and the
+   note.
+
+3. **Edit Aggregated Tooltip with an empty row** (Add aggregation, no column, OK): the empty row
+   is not saved. Written in `tooltips-edge-cases.feature` on a demog-1000 line chart (X = AGE), a
+   known failure with no ticket yet (`aggTooltipColumns` becomes `avg(AGE)`).
+
+#### 3. Questions for owners
+
+None.
 
 #### 3. API or Dart tests to write
 

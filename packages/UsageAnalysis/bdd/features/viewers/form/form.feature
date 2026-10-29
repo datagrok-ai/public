@@ -8,14 +8,14 @@ Feature: Form viewer
   and the hit areas it reports, never pixels. A default form orders its fields by a relevance
   score (a molecule first, then anything with a semantic type, constant columns last) and
   re-sorts a set it is given the same way, so the claims name fields and count them, never
-  their order. A column removed from the table stays on a designed form with an empty field.
+  their order.
   The md's manual design mode is a scenario of its own: with the toolbar's design toggle on, a field
   dragged down stays below the fields it passed once the toggle is off, and a form saved to a file
   after that brings the field back to its new place when the file is loaded over a rebuilt form.
   From the md's manual sections: Column selector — the toolbar's column list dialog builds the form
   from the columns checked in it, and opened again it starts from the fields shown; Column changes
   reaction — a column renamed in the grid's Column Properties dialog renames its field and the
-  label beside it (step 3, a deleted column, is the removed-column scenario: the field stays);
+  label beside it (step 3, a deleted column, is claimed in `form-edge-cases`);
   Table switching — the Table property moves a default form to spgi-100's columns and back, and a
   form built from columns chosen in that dialog shows spgi-100's columns too.
 
@@ -283,16 +283,6 @@ Feature: Form viewer
     When user sets "columnNames" property of form viewer to "AGE, HEIGHT, WEIGHT"
     Then the "fields shown" reading of form viewer should be 3
     And no errors should have been logged
-
-  Scenario: A removed column empties its field but keeps it on the form
-    When user removes "WEIGHT" column
-    Then the table should not have a column "WEIGHT"
-    And the "fields shown" reading of form viewer should be 3
-    And the "WEIGHT" reading of form viewer should be ""
-    And the "AGE" reading of form viewer should be "26"
-    And no errors should have been logged
-    When user adds a calculated column "WEIGHT" with formula "0"
-    Then the table should have a column "WEIGHT"
 
   Scenario: The arrows walk the filtered rows
     Given user sets "columnNames" property of form viewer to "USUBJID, AGE, SEX"

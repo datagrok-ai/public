@@ -131,3 +131,112 @@ Feature: Filter panel edge cases
     When user picks "Remove" from the context menu of the "header HEIGHT" area of grid
     Then 131 rows should pass the filter
     And no errors should have been logged
+
+  @edge-cases @realizes:core#1134
+  Scenario Outline: The categorical search for "<typed>" finds the category with that literal text
+    Given user opens a table "special-categories" with:
+      | Name | Value |
+      | a(b  | 1     |
+      | a.b  | 2     |
+      | axb  | 3     |
+      | a+b  | 4     |
+      | aab  | 5     |
+      | a[b  | 6     |
+    When user opens an empty filter panel
+    And user adds a card for "Name" to the filter panel
+    And user hovers over "Name" filter card
+    And user clicks on search icon of "Name" filter card
+    And user types "<typed>" into the search of the "Name" filter card
+    Then 1 row should pass the filter
+    And the filter should pass exactly the rows where "Name" is "<typed>"
+    And no errors should have been logged
+
+    Examples:
+      | typed |
+      | a(b   |
+      | a.b   |
+      | a+b   |
+      | a[b   |
+
+  @edge-cases @known-failure:168 @ticket-pending
+  Scenario: Removing the column of a hierarchical card's middle level drops that level
+    The card keeps its three levels: it is still "SEX / RACE / SEVERITY" after RACE is removed.
+    When user picks "Add Filter | Hierarchical" from the filter panel menu
+    And user configures the hierarchical filter with columns "SEX, RACE, SEVERITY"
+    Then "SEX / RACE / SEVERITY" filter card should be visible
+    When user removes "RACE" column
+    Then "SEX / SEVERITY" filter card should be visible
+    And the filter panel should have 1 filter
+    When user expands the "F" row of the hierarchical filter card
+    Then the hierarchical filter card should list the "F / None" row
+    And all rows should pass the filter
+    And no errors should have been logged
+
+  @edge-cases @known-failure:184 @ticket-pending
+  Scenario: A layout naming a removed level column brings the hierarchical card back without that level
+    The layout brings no card back: the panel is left with 0 filters.
+    When user picks "Add Filter | Hierarchical" from the filter panel menu
+    And user configures the hierarchical filter with columns "SEX, RACE, SEVERITY"
+    Then "SEX / RACE / SEVERITY" filter card should be visible
+    When user saves the layout of the current table view
+    And user removes "RACE" column
+    And user loads the saved layout
+    Then "SEX / SEVERITY" filter card should be visible
+    And the filter panel should have 1 filter
+    When user expands the "F" row of the hierarchical filter card
+    Then the hierarchical filter card should list the "F / None" row
+    And no errors should have been logged
+
+  @edge-cases @known-failure:206 @ticket-pending
+  Scenario: Saving a filter state under a name already taken asks before overwriting it
+    No dialog asks before the second save under the same name.
+    Given no saved filter state "bdd edge filter state" is kept, now or when the feature ends
+    When user adds a card for "RACE" to the filter panel
+    And user clicks on the "category Asian of RACE" area of filter panel
+    Then 15 rows should pass the filter
+    When user picks "Save or Apply | Save..." from the filter panel menu
+    And user types "bdd edge filter state" into Name input in "Save filter preset" dialog
+    And user clicks on OK button in "Save filter preset" dialog
+    Then "Save filter preset" dialog should be absent
+    When user clicks on the "category Black of RACE" area of filter panel
+    Then 27 rows should pass the filter
+    When user picks "Save or Apply | Save..." from the filter panel menu
+    And user types "bdd edge filter state" into Name input in "Save filter preset" dialog
+    And user clicks on OK button in "Save filter preset" dialog
+    Then "Are you sure?" dialog should be visible
+    When user clicks on CANCEL button in "Are you sure?" dialog
+    And user picks "Save or Apply | bdd edge filter state" from the filter panel menu
+    Then 15 rows should pass the filter
+    And the "selected categories of RACE" reading of filter panel should be "Asian"
+    And no errors should have been logged
+
+  @edge-cases @known-failure:222 @ticket-pending
+  Scenario: Combined Boolean is disabled in the Add Filter menu of a table with no boolean column
+    The menu item is enabled.
+    Given user opens a table "no-flags" with:
+      | Name | Value |
+      | a    | 1     |
+      | b    | 2     |
+    When user opens an empty filter panel
+    And user opens the viewer menu of filter panel
+    Then the open menu should list "Add Filter > Combined Boolean" as disabled
+    When user closes the context menu
+    Then no errors should have been logged
+
+  @edge-cases
+  Scenario: Closing the view of a table whose filter narrows a linked table releases the linked table's filter
+    Given user opens a table "races" with:
+      | RACE      |
+      | Asian     |
+      | Black     |
+      | Caucasian |
+      | Other     |
+    And the "races" table is linked to the "demog-1000" table by "RACE" to "RACE" as "filter to filter"
+    When user opens an empty filter panel
+    And user adds a card for "RACE" to the filter panel
+    And user clicks on the "category Asian of RACE" area of filter panel
+    Then 1 row should pass the filter
+    And 15 rows of table "demog-1000" should pass the filter
+    When user closes the current view
+    Then 1000 rows of table "demog-1000" should pass the filter
+    And no errors should have been logged

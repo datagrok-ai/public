@@ -60,3 +60,34 @@ Feature: Sankey and Chord edge cases — Source equal to Target, too many catego
     When user filters rows where "AGE" is between 30 and 50
     Then 494 rows should pass the filter
     And no errors should have been logged
+
+  @known-failure:73 @ticket-pending
+  Scenario: A Sankey whose Value column holds negative values refuses to draw and says so, as the pie does
+    The pie chart refuses a negative angle column with "sum(NEG) contains negative values"
+    (`pie_chart_core.dart`, `_aggregate`); the Sankey should refuse the same way. The claim reads
+    the words the two messages share.
+    When user adds a calculated column "NEG" with formula "-${AGE}"
+    And user adds a sankey viewer
+    Then "Value" property of sankey viewer should be "AGE"
+    When user sets "Value" property of sankey viewer to "NEG"
+    Then sankey viewer should contain the text "contains negative values"
+    And no errors should have been logged
+    When user sets "Value" property of sankey viewer to "AGE"
+    Then "Caucasian" text in sankey viewer should be visible
+    And sankey viewer should not contain the text "contains negative values"
+    And no errors should have been logged
+
+  @known-failure:88 @ticket-pending
+  Scenario: A Sankey whose Value column holds only zeros refuses to draw and says so, as the pie does
+    The pie chart refuses an angle column of zeros with "sum(ZERO): all values are 0"
+    (`pie_chart_core.dart`, `_aggregate`); the Sankey should refuse the same way.
+    When user adds a calculated column "ZERO" with formula "0"
+    And user adds a sankey viewer
+    Then "Value" property of sankey viewer should be "AGE"
+    When user sets "Value" property of sankey viewer to "ZERO"
+    Then sankey viewer should contain the text "all values are 0"
+    And no errors should have been logged
+    When user sets "Value" property of sankey viewer to "AGE"
+    Then "Caucasian" text in sankey viewer should be visible
+    And sankey viewer should not contain the text "all values are 0"
+    And no errors should have been logged

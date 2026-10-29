@@ -1,13 +1,11 @@
 @viewers @edge-cases @realizes:viewers.tile-viewer
-Feature: Tile viewer edge cases: no rows, one row, the lanes column removed or renamed
-  Guards for the data shapes and the changes under an open tile viewer, which the platform's generic
-  data-manipulation test does not reach. A filter that removes every row, and Row Source Selected
-  with nothing selected, leave no card and no error; the cards come back with the rows. A one-row
-  table shows its one card. The lanes column renamed is followed by the viewer's settings (the
-  viewer base renames column settings on the table's rename event), so the lanes stay as they were.
-  The lanes column removed while the lanes are shown logs no error and the viewer keeps every row;
-  which lanes it should show then is not defined: see MISSING.md. Data: demog-1000 with lanes on
-  RACE (Asian, Black, Caucasian, Other).
+Feature: Tile viewer edge cases: nothing selected under Row Source Selected, one row
+  Guards for the data shapes under an open tile viewer, which the platform's generic
+  data-manipulation test does not reach. Row Source Selected with nothing selected leaves no card
+  and no error, and the cards come with the selection. A one-row table shows its one card. No rows,
+  the lanes column removed or renamed, and an empty lane value are rows of
+  `viewer-rules-edge-cases.feature`. Data: demog-1000 with lanes on RACE (Asian, Black, Caucasian,
+  Other).
 
   Background:
     Given user is logged in
@@ -16,17 +14,6 @@ Feature: Tile viewer edge cases: no rows, one row, the lanes column removed or r
       | Lanes Column Name | RACE |
     Then tile viewer should show 1000 rows
     And the "lane names" reading of tile viewer should be "Asian, Black, Caucasian, Other"
-
-  Scenario: A filter that removes every row leaves no card and no error
-    When user filters rows where "AGE" is between 500 and 600
-    Then 0 rows should pass the filter
-    And tile viewer should show 0 rows
-    And the "tiles" reading of tile viewer should be 0
-    And tile viewer should not have a "tile of row 1" area
-    When user resets the filter
-    Then tile viewer should show 1000 rows
-    And tile viewer should have a "tile of row 1" area
-    And no errors should have been logged
 
   Scenario: Row Source Selected with nothing selected shows no card and no error
     Given user selects no rows
@@ -49,15 +36,34 @@ Feature: Tile viewer edge cases: no rows, one row, the lanes column removed or r
     And the "lane of row 1" reading of tile viewer should be "g1"
     And no errors should have been logged
 
-  Scenario: The lanes column renamed is followed and the lanes stay
-    When user renames "RACE" column to "ORIGIN"
-    Then "Lanes Column Name" property of tile viewer should be "ORIGIN"
-    And the "lane names" reading of tile viewer should be "Asian, Black, Caucasian, Other"
-    And the "lane of row 10" reading of tile viewer should be "Asian"
+  @known-failure:47 @ticket-pending
+  Scenario: Escape in the form designer after a field is deleted works as Cancel
+    Today Escape leaves the form designer open.
+    When user picks "Edit Form..." from the viewer menu of tile viewer
+    Then form designer should be visible
+    When user deletes the "AGE" value field in the form designer
+    Then the form designer should show value fields "CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, SEX, STARTED, USUBJID, WEIGHT"
+    When user presses Escape
+    Then form designer should be absent
+    And the "fields shown" reading of tile viewer should be 10
+    And the "fields" reading of tile viewer should contain "AGE"
+    And the "form designed" reading of tile viewer should be "false"
     And no errors should have been logged
 
-  Scenario: The lanes column removed while the lanes are shown logs no error
-    When user removes "RACE" column
-    Then the table should not have a column "RACE"
-    And tile viewer should show 1000 rows
+  @known-failure:66 @ticket-pending
+  Scenario: A card dropped into the (empty) lane gets an empty value
+    Today the lane of the empty value has no name (the empty-category row of
+    `viewer-rules-edge-cases.feature`), so there is no "(empty)" lane to drop the card into.
+    Given user opens a table "with-empty" with:
+      | site | arm |
+      | A    | x   |
+      | A    |     |
+      | B    | y   |
+    And user adds a tile viewer with:
+      | Lanes Column Name | arm |
+    Then the "lane of row 1" reading of tile viewer should be "x"
+    When user moves the pointer away from tile viewer
+    And user drags the card of row 1 of tile viewer into lane "(empty)"
+    Then the value of "arm" column in row 1 should be ""
+    And the "lane of row 1" reading of tile viewer should be "(empty)"
     And no errors should have been logged

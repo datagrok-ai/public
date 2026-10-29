@@ -41,3 +41,50 @@ file; what it holds is the layout API's test) and `molecule-categories.feature`.
     And the "blank cells" reading of trellis plot viewer should be 0
     And trellis plot viewer should report no error
   ```
+
+## Rules shared by every viewer (`viewer-rules-edge-cases.feature`)
+
+The rows of the Charts viewers (sunburst, tree, word cloud) are in the Charts copy of the rules,
+`packages/Charts/bdd/features/viewers/viewer-rules-edge-cases.feature`.
+
+One scenario outline per rule, one Examples row per viewer; a row that breaks its rule is a known
+failure in an Examples block of its own. Run on localhost 2026-10-29 (core master 575f6ae603): 57
+tests, the known failures failing at their pinned steps.
+
+### Steps requested
+
+- **Min above Max is swapped** (bar chart and box plot value axis, line chart X and Y and the
+  control limits, radar Min/Max map, word cloud text size and rotation; not the timelines, where an event
+  whose End is before its Start is skipped: `packages/Charts/bdd/features/viewers/timelines/`). No outline: no viewer reports the drawn range of its value axis. The
+  line chart's `x axis min` / `x axis max` are its range slider's bounds, and the box plot, the bar
+  chart, the radar and the word cloud report no axis range at all. Wanted: `value axis min` /
+  `value axis max` readings of the drawn window, then rows that set Min 60 and Max 20 on AGE and
+  claim the window between 20 and 60.
+- **Empty categories as `(empty)`** on the Sankey, the pivot table's key cells and the tree map: no
+  reading lists their node, key or leaf names.
+- **No current row highlights nothing** on the radar: no reading of the highlighted row.
+
+### Security, for the owner
+
+- **The markup viewer renders HTML from a layout or a project as trusted.** With Mode Html (or Auto
+  over content starting with `<`) and Markup off, `markup_viewer_core.dart` puts the content into the
+  DOM with `NodeTreeSanitizer.trusted`, so `<script>` and `<img onerror=...>` from someone else's
+  layout or project run in the viewer's session. The d4 rule is `NodeTreeSanitizer.trusted` only for
+  constants. No scenario: whether the content should be sanitized, and what may stay (styles,
+  links), is the owner's call.
+
+### Found on the run, no ticket yet
+
+- **A setting keeps the name of a column the table lacks.** A layout naming a removed column puts
+  that name back into the viewer's setting (scatter plot Color, PC plot columns, tree map split,
+  sunburst and tree hierarchies), and the bar chart's Stack keeps the name of a removed column. The
+  viewers draw without the column and report no error; the context panel shows the missing name.
+  Pinned as one `@ticket-pending` block in the layout outline and a row of the removal outline. The
+  forms viewer also throws a TypeError on every render: public#4452, its own block.
+- A viewer that picks another column after its column is removed (the box plot's category) is
+  correct: the removal outline claims only that the removed column leaves the setting.
+- **The tile viewer shows an empty value as a lane with no name** (lane names "x, y, "), not
+  `(empty)`.
+- **A viewer's click filter stays after its column is removed** (bar chart, tree, sunburst): the
+  removal does not refilter the table, and the rows come back on the next refilter (any filter
+  change). The root cause of core#1174; pinned on it.

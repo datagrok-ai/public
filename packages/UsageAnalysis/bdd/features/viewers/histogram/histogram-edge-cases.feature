@@ -35,3 +35,29 @@ Feature: Histogram edge cases
     Then 0 rows should pass the filter
     And histogram viewer should show 0 rows
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: On a date column a maximum below the minimum empties the filter and is reported, and a bound past the dates is clamped
+    When user sets "Value" property of histogram viewer to "STARTED"
+    And user enters "1/1/1991" into the "range min input" area of histogram viewer
+    Then 483 rows should pass the filter
+    And the "error" reading of histogram viewer should be ""
+    When user enters "1/1/1990" into the "range max input" area of histogram viewer
+    Then 0 rows should pass the filter
+    And the "error" reading of histogram viewer should be "max should be greater than min"
+    When user enters "1/1/1992" into the "range max input" area of histogram viewer
+    Then 483 rows should pass the filter
+    And the "error" reading of histogram viewer should be ""
+    And the range max input of histogram viewer should read "1/1/1992"
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: On a date column a range normalized to the filter logs no error when every row is filtered out
+    When user sets "Value" property of histogram viewer to "STARTED"
+    And user sets "Normalize To Filter" property of histogram viewer to "true"
+    And user enters "1/1/1991" into the "range min input" area of histogram viewer
+    Then 483 rows should pass the filter
+    When user adds a categorical filter on "SEX" keeping ""
+    Then 0 rows should pass the filter
+    And histogram viewer should show 0 rows
+    And no errors should have been logged

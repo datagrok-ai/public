@@ -64,11 +64,19 @@ Added with `box-plot-edge-cases.feature` (edge-case round of 2026-10-26, localho
      plot reports.
    - Alpha typed in the property panel as 0, 1, 1.5 or -0.1 (help: 0 < alpha < 1) needs a step that
      types into a property row (the property step goes through the API).
+   - A group of one row under Show Group Comparison gets the info mark whose tooltip says it has only
+     1 value and is left out of the comparison (`_leafNaReason`; decided 2026-10-28). The mark has no
+     area in the status: with groups A, B and a one-row C the status lists `category C` and
+     `C values` only, and a hover over `category C` shows the label's tooltip ("Group"). Wanted: a
+     `marker of <group>` area per drawn name-row marker (`_markerHits` / `_markerHitGroups` in
+     `box_plot_group_comparison.dart`), then the scenario hovers `marker of C` and claims the
+     tooltip contains "only 1 value".
 2. **Data**: the group comparison shown at 30 categories and hidden at 31 (help box-plot.md) needs a
    categorical column with exactly 30 and 31 categories; demog-1000 has none.
 3. **Decided, scenario to write** (2026-10-28): the Category column removed while in use drops the
-   grouping, with no error. A group of one row under Show Group Comparison gets the info mark whose
-   tooltip says it has only 1 value and is left out of the comparison (`_leafNaReason`).
+   grouping, with no error: a row of the removal outline in `viewer-rules-edge-cases.feature`, a
+   known failure with no ticket yet (`BoxPlotLook.auto`, run on every removal, picks another category
+   column). Every row filtered out is a row of the no-rows outline there.
    The control group (picked on the chart) filtered out: the control moves to the next group, and the
    picked group is the control again once the filter is released (checked by hand 2026-10-28); a step
    reading the chart's control selector is needed to claim it.

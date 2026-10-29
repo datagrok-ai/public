@@ -24,13 +24,11 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
 
   Right after the first save the Source link carries the alias "type" set in the Save dialog and
   Source offers the sliders icon (core#630, core#568: both used to need a reopen of the project).
-  Known failures: core#1127 — typeName unticked under the
-  sliders icon and the dashboard saved (the "Save dashboard to apply changes" hint gone), the
-  Source link still ends with ?type=Script; it loses the parameter only after the project is
-  reopened (the md checks the link right after unticking; before the save the link keeps
-  ?type=Script, as the hint says, so the claim is made after the save). core#569 — the Save
-  dialog's "Share link:" line does not follow the name typed into the dialog. Each is a scenario
-  of its own claiming what the md expects.
+  typeName unticked under the sliders icon and the dashboard saved (the "Save dashboard to apply
+  changes" hint gone), the Source link loses ?type=Script (core#1127: it used to need a reopen of
+  the project; the md checks the link right after unticking, but before the save the link keeps
+  ?type=Script, as the hint says, so the claim is made after the save). The Save dialog's "Share
+  link:" line follows the name typed into the dialog (core#569). Each is a scenario of its own.
 
   entity_types has no "Package" row on localhost (the md allows another value of its name column
   then), so "Script" stands for the md's "Package"; "Project" and "Script" are core entity types.
@@ -79,7 +77,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     And user clicks on "URL Parameters" button in "BDDUrlParamQuery{time}" project table in "Save project" dialog
     Then "URL alias" text input in "Save project" dialog should have value "typeName"
 
-  @known-failure:84 @realizes:core#569
+  @realizes:core#569
   Scenario: The Share link line follows the name typed into the dialog
     Then "Save project" dialog should contain text ".BDDUrlParamProj{time}?typeName="
 
@@ -231,7 +229,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     And sliders-h icon in Source pane in toolbox should be visible
     And "Save dashboard to apply changes" text in toolbox should be hidden
 
-  @known-failure:239 @realizes:core#1127
+  @realizes:core#1127
   Scenario: Saved with the parameter taken out, the Source link no longer carries it
     When user moves the pointer away from Source pane in toolbox
     And user hovers over copy icon in Source pane in toolbox

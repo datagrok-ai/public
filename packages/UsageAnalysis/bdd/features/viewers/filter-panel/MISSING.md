@@ -21,24 +21,15 @@ Added with `filter-panel-edge-cases.feature` (edge-case round of 2026-10-26, loc
    that column (with the column's own card present, its removal refilters the table and the rows come
    back): the table stays filtered. Three known failures in `filter-panel-edge-cases`.
 
-### Decided, scenarios to write (2026-10-28)
+### Decided (2026-10-28)
 
-4. **The categorical search with `(`, `.`, `+`, `[`** finds the literal text (core#1134, fixed, no error any more).
 5. **A range card's min typed above its max**: the present handling is right (the fields are flagged
    with a message); claimed once a step reads the flag (item 1).
-6. **Hierarchical card when a level column is removed**, and a layout naming a removed level column:
-   the level is dropped.
 7. **An expression rule naming a removed column**: covered by the rule "a filter goes with its
    column".
-8. **A saved filter state saved twice under one name** asks before it overwrites; a state that cannot
-   be applied to the table is not offered.
-9. **Combined Boolean on a table with no boolean column**: the menu item is disabled.
-
 10. **The text card's `!malt` and `^hop`**: right as it is. At Fuzzyness 0 the term is literal text
     (a plain "contains"); above 0 the card searches with Fuse.js extended search, where `!` is "does not
     contain" and `^` is "starts with" (`text_filter.dart`).
-11. **Linked tables, filter to filter: the source view closed** while its filter narrows the target:
-    the target's filter is released.
 
 ### API or Dart tests to write
 

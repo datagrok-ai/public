@@ -22,11 +22,11 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clickOn, shouldBe, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {removeColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {removeColumn, renameColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {dialogCloses, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, hoverArea, noErrors, pickFromContextMenu, pointerAway, setProperties, tooltipColumnsInOrder, tooltipNotColumns} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewer, addViewerWith, hoverArea, noErrors, pickFromContextMenu, pointerAway, propertyShouldBe, readingReads, setProperties, tooltipColumnsInOrder, tooltipNotColumns} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {checkedInColumnList, toggleInColumnList, uncheckedInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
-import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
+import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Tooltip edge cases: Edit Tooltip cancelled, every column unticked, a tooltip column removed", () => {
   const session = feature(test, "features/viewers/tooltips/tooltips-edge-cases.feature", import.meta.url);
@@ -119,5 +119,59 @@ test.describe("Tooltip edge cases: Edit Tooltip cancelled, every column unticked
     await session.step(69, "And user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
     await session.step(70, "Then the tooltip should show columns in the order \"AGE, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, WEIGHT"));
     await session.step(71, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("A tooltip column renamed is shown under its new name", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.tooltips", "@known-failure:79", "@ticket-pending"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(14, "Given user is logged in", () => loggedIn(page));
+    await session.step(15, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(16, "And user adds a box plot viewer", () => addViewer(page, "box plot"));
+    await session.step(17, "And user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["showLabels","Always"]]), [["showLabels","Always"]]);
+    await session.step(19, "When user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
+    await session.step(20, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
+    await session.step(21, "When user unchecks checkbox in \"Edit Tooltip\" dialog", () => uncheck(page, el("checkbox in \"Edit Tooltip\" dialog")));
+    await session.step(22, "And user toggles the \"AGE\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
+    await session.step(23, "And user toggles the \"SEX\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "SEX", el("\"Edit Tooltip\" dialog")));
+    await session.step(24, "And user toggles the \"WEIGHT\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
+    await session.step(25, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
+    await session.step(26, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
+    await session.step(27, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+    await session.step(28, "Then the tooltip should show columns in the order \"AGE, SEX, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, SEX, WEIGHT"));
+    await session.step(29, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+    await knownFailure(async () => {
+      await session.step(77, "When user renames \"WEIGHT\" column to \"MASS\"", () => renameColumn(page, "WEIGHT", "MASS"));
+      await session.step(78, "And user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+      await session.step(79, "Then the tooltip should show columns in the order \"AGE, SEX, MASS\"", () => tooltipColumnsInOrder(page, "AGE, SEX, MASS"));
+      await session.step(80, "And no errors should have been logged", () => noErrors(page));
+    }, 79);
+  });
+  test("An aggregation row left without a column is not saved by Edit Aggregated Tooltip", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.tooltips", "@known-failure:95", "@ticket-pending"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(14, "Given user is logged in", () => loggedIn(page));
+    await session.step(15, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(16, "And user adds a box plot viewer", () => addViewer(page, "box plot"));
+    await session.step(17, "And user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["showLabels","Always"]]), [["showLabels","Always"]]);
+    await session.step(19, "When user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
+    await session.step(20, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
+    await session.step(21, "When user unchecks checkbox in \"Edit Tooltip\" dialog", () => uncheck(page, el("checkbox in \"Edit Tooltip\" dialog")));
+    await session.step(22, "And user toggles the \"AGE\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
+    await session.step(23, "And user toggles the \"SEX\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "SEX", el("\"Edit Tooltip\" dialog")));
+    await session.step(24, "And user toggles the \"WEIGHT\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
+    await session.step(25, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
+    await session.step(26, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
+    await session.step(27, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+    await session.step(28, "Then the tooltip should show columns in the order \"AGE, SEX, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, SEX, WEIGHT"));
+    await session.step(29, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+    await knownFailure(async () => {
+      await session.step(85, "When user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","AGE"],["yColumnNames","WEIGHT"]]), [["xColumnName","AGE"],["yColumnNames","WEIGHT"]]);
+      await session.step(88, "Then the \"aggregated\" reading of line chart viewer should be \"true\"", () => readingReads(page, "aggregated", el("line chart viewer"), "true"));
+      await session.step(89, "And \"aggTooltipColumns\" property of line chart viewer should be \"\"", () => propertyShouldBe(page, "aggTooltipColumns", el("line chart viewer"), ""));
+      await session.step(90, "When user picks \"Tooltip > Edit...\" from the context menu of line chart viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("line chart viewer")));
+      await session.step(91, "Then \"Edit Aggregated Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Aggregated Tooltip\" dialog"), "visible"));
+      await session.step(92, "When user clicks on \"Add aggregation\" button in \"Edit Aggregated Tooltip\" dialog", () => clickOn(page, el("\"Add aggregation\" button in \"Edit Aggregated Tooltip\" dialog")));
+      await session.step(93, "And user clicks on OK button in \"Edit Aggregated Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Aggregated Tooltip\" dialog")));
+      await session.step(94, "Then the \"Edit Aggregated Tooltip\" dialog should close", () => dialogCloses(page, "Edit Aggregated Tooltip"));
+      await session.step(95, "And \"aggTooltipColumns\" property of line chart viewer should be \"\"", () => propertyShouldBe(page, "aggTooltipColumns", el("line chart viewer"), ""));
+      await session.step(96, "And no errors should have been logged", () => noErrors(page));
+    }, 95);
   });
 });

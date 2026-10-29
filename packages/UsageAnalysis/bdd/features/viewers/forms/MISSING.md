@@ -36,13 +36,15 @@ Added with `forms-edge-cases.feature` (edge-case round of 2026-10-26, localhost)
 
 ### Still open
 
-1. **Questions for owners (candidate defect, no ticket)**: observed on localhost: fields AGE, HEIGHT,
-   SEX; layout saved; HEIGHT removed (the field goes, `fields` = "AGE, SEX"); the saved layout loaded:
-   `fields` is "AGE, HEIGHT, SEX" again, naming a column the table does not have. A column that leaves
-   the table otherwise takes its field with it (`forms-fields.feature`). Is the field kept on purpose?
-   (A calculated column cannot show it: the layout recreates the column.)
-2. **Questions for owners**: a pinned row filtered out (stays pinned or hides); a row pinned by an
-   empty cell (stored as the text "null").
+1. **Decided, a known failure with no ticket yet**: a layout naming a column the table no longer has
+   is applied without that column (the layout rule of `viewer-rules-edge-cases.feature`). Observed on
+   localhost: fields AGE, HEIGHT, SEX; layout saved; HEIGHT removed (`fields` = "AGE, SEX"); the
+   saved layout loaded: `fields` is "AGE, HEIGHT, SEX" again, and every render logs
+   "TypeError: Cannot read properties of null (reading 'semType')" (`buildForm`; rechecked 2026-10-29,
+   the removal itself logs nothing): public#4452, a known failure there.
+2. **Decided**: a pinned row the filter hides stays pinned, as in the grid (claimed in
+   `forms-edge-cases`). A row pinned by an empty cell is stored as the text "null" and
+   matches the first empty row on reload, with the non-unique warning shown at the pin: not a defect.
 3. **Package tests to write (PowerGrid)**: the Data Manipulation set the Dart viewers get (remove all
    columns, all values empty, every row filtered out) for the Forms viewer, which is a JS viewer the
    Dart regTest does not run; `fixedRowNumbers` set before Show Current Row.

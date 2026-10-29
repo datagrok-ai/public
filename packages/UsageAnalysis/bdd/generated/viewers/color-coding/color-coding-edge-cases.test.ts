@@ -21,10 +21,11 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, enterInto, hoverOver, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clearField, clickOn, enterInto, hoverOver, selectIn, shouldBe, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {colorCodedAs, colorCodedCategorically, colorLinear, colorLinked, colorLinkedTo, columnsSelected, noColorCoding, removeColumn, renameColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {clickAreaHolding, closeContextMenu, noErrors, pickFromAreaContextMenu, readingsEqual, rightClickArea} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {openDataset, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {clickAreaHolding, closeContextMenu, noErrors, pickFromAreaContextMenu, readingAsRemembered, readingsDiffer, readingsEqual, rememberReading, rightClickArea} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {doesNotOfferColumn} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Color coding edge cases", () => {
@@ -81,25 +82,22 @@ test.describe("Color coding edge cases", () => {
     await session.step(54, "Then \"AGE2\" column should be color-coded linearly", () => colorCodedAs(page, "AGE2", "linearly"));
     await session.step(55, "And the \"color of cell 2 of RACE\" and \"color of cell 2 of AGE2\" readings of grid should be the same", () => readingsEqual(page, "color of cell 2 of RACE", "color of cell 2 of AGE2", el("grid")));
   });
-  test("Bin... refuses a number of bins below one and keeps the coloring", {tag: ["@viewers", "@realizes:viewers.grid", "@edge-cases", "@known-failure:66", "@realizes:core#1171"]}, async ({browser}) => {
+  test("Bin... refuses a number of bins below one and keeps the coloring", {tag: ["@viewers", "@realizes:viewers.grid", "@edge-cases", "@realizes:core#1171"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(14, "Then \"AGE\" column should have no color coding", () => noColorCoding(page, "AGE"));
     await session.step(15, "And \"RACE\" column should have no color coding", () => noColorCoding(page, "RACE"));
-    await knownFailure(async () => {
-      await session.step(59, "When user picks \"Color Coding > Conditional\" from the context menu of the \"header AGE\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Conditional", "header AGE", el("grid")));
-      await session.step(60, "And user picks \"Color Coding > Edit...\" from the context menu of the \"header AGE\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Edit...", "header AGE", el("grid")));
-      await session.step(61, "Then \"Color-coding: AGE\" dialog should be visible", () => shouldBe(page, el("\"Color-coding: AGE\" dialog"), "visible"));
-      await session.step(62, "When user clicks on \"Bin...\" link in \"Color-coding: AGE\" dialog", () => clickOn(page, el("\"Bin...\" link in \"Color-coding: AGE\" dialog")));
-      await session.step(63, "Then \"Edit\" dialog should be visible", () => shouldBe(page, el("\"Edit\" dialog"), "visible"));
-      await session.step(64, "When user enters \"0\" into \"Number of bins\" input in \"Edit\" dialog", () => enterInto(page, "0", el("\"Number of bins\" input in \"Edit\" dialog")));
-      await session.step(65, "And user clicks on OK button in \"Edit\" dialog", () => clickOn(page, el("OK button in \"Edit\" dialog")));
-      await session.step(66, "Then \"Edit\" dialog should be visible", () => shouldBe(page, el("\"Edit\" dialog"), "visible"));
-      await session.step(67, "When user clicks on CANCEL button in \"Edit\" dialog", () => clickOn(page, el("CANCEL button in \"Edit\" dialog")));
-      await session.step(68, "Then \"AGE\" column should be color-coded conditionally", () => colorCodedAs(page, "AGE", "conditionally"));
-      await session.step(69, "And no errors should have been logged", () => noErrors(page));
-    }, 66);
+    await session.step(59, "When user picks \"Color Coding > Conditional\" from the context menu of the \"header AGE\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Conditional", "header AGE", el("grid")));
+    await session.step(60, "And user picks \"Color Coding > Edit...\" from the context menu of the \"header AGE\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Edit...", "header AGE", el("grid")));
+    await session.step(61, "Then \"Color-coding: AGE\" dialog should be visible", () => shouldBe(page, el("\"Color-coding: AGE\" dialog"), "visible"));
+    await session.step(62, "When user clicks on \"Bin...\" link in \"Color-coding: AGE\" dialog", () => clickOn(page, el("\"Bin...\" link in \"Color-coding: AGE\" dialog")));
+    await session.step(63, "Then \"Edit\" dialog should be visible", () => shouldBe(page, el("\"Edit\" dialog"), "visible"));
+    await session.step(64, "When user enters \"0\" into \"Number of bins\" input in \"Edit\" dialog", () => enterInto(page, "0", el("\"Number of bins\" input in \"Edit\" dialog")));
+    await session.step(65, "Then OK button in \"Edit\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Edit\" dialog"), "disabled"));
+    await session.step(66, "When user clicks on CANCEL button in \"Edit\" dialog", () => clickOn(page, el("CANCEL button in \"Edit\" dialog")));
+    await session.step(67, "Then \"AGE\" column should be color-coded conditionally", () => colorCodedAs(page, "AGE", "conditionally"));
+    await session.step(68, "And no errors should have been logged", () => noErrors(page));
   });
   test("A linked coloring whose source column is removed paints nothing", {tag: ["@viewers", "@realizes:viewers.grid", "@edge-cases", "@realizes:core#1139"]}, async ({browser}) => {
     const page = await session.page(browser);
@@ -107,12 +105,107 @@ test.describe("Color coding edge cases", () => {
     await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(14, "Then \"AGE\" column should have no color coding", () => noColorCoding(page, "AGE"));
     await session.step(15, "And \"RACE\" column should have no color coding", () => noColorCoding(page, "RACE"));
-    await session.step(73, "When user colors \"AGE\" column linearly from \"#0000FF\" to \"#FF0000\"", () => colorLinear(page, "AGE", "#0000FF", "#FF0000"));
-    await session.step(74, "And user colors \"RACE\" column linked to \"AGE\" column", () => colorLinked(page, "RACE", "AGE"));
-    await session.step(75, "Then the \"color of cell 1 of RACE\" and \"color of cell 1 of AGE\" readings of grid should be the same", () => readingsEqual(page, "color of cell 1 of RACE", "color of cell 1 of AGE", el("grid")));
-    await session.step(76, "When user removes \"AGE\" column", () => removeColumn(page, "AGE"));
-    await session.step(77, "Then the \"color of cell 1 of RACE\" and \"color of cell 1 of SEX\" readings of grid should be the same", () => readingsEqual(page, "color of cell 1 of RACE", "color of cell 1 of SEX", el("grid")));
-    await session.step(78, "And the \"color of cell 2 of RACE\" and \"color of cell 2 of SEX\" readings of grid should be the same", () => readingsEqual(page, "color of cell 2 of RACE", "color of cell 2 of SEX", el("grid")));
-    await session.step(79, "And no errors should have been logged", () => noErrors(page));
+    await session.step(72, "When user colors \"AGE\" column linearly from \"#0000FF\" to \"#FF0000\"", () => colorLinear(page, "AGE", "#0000FF", "#FF0000"));
+    await session.step(73, "And user colors \"RACE\" column linked to \"AGE\" column", () => colorLinked(page, "RACE", "AGE"));
+    await session.step(74, "Then the \"color of cell 1 of RACE\" and \"color of cell 1 of AGE\" readings of grid should be the same", () => readingsEqual(page, "color of cell 1 of RACE", "color of cell 1 of AGE", el("grid")));
+    await session.step(75, "When user removes \"AGE\" column", () => removeColumn(page, "AGE"));
+    await session.step(76, "Then the \"color of cell 1 of RACE\" and \"color of cell 1 of SEX\" readings of grid should be the same", () => readingsEqual(page, "color of cell 1 of RACE", "color of cell 1 of SEX", el("grid")));
+    await session.step(77, "And the \"color of cell 2 of RACE\" and \"color of cell 2 of SEX\" readings of grid should be the same", () => readingsEqual(page, "color of cell 2 of RACE", "color of cell 2 of SEX", el("grid")));
+    await session.step(78, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("A linear Min typed above Max is swapped with it", {tag: ["@viewers", "@realizes:viewers.grid", "@edge-cases", "@known-failure:93", "@ticket-pending"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(12, "Given user is logged in", () => loggedIn(page));
+    await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(14, "Then \"AGE\" column should have no color coding", () => noColorCoding(page, "AGE"));
+    await session.step(15, "And \"RACE\" column should have no color coding", () => noColorCoding(page, "RACE"));
+    await knownFailure(async () => {
+      await session.step(83, "When user picks \"Color Coding > Linear\" from the context menu of the \"header AGE\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Linear", "header AGE", el("grid")));
+      await session.step(84, "And user picks \"Color Coding > Edit...\" from the context menu of the \"header AGE\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Edit...", "header AGE", el("grid")));
+      await session.step(85, "Then \"Color-coding: AGE\" dialog should be visible", () => shouldBe(page, el("\"Color-coding: AGE\" dialog"), "visible"));
+      await session.step(86, "When user enters \"50\" into Min input in \"Color-coding: AGE\" dialog", () => enterInto(page, "50", el("Min input in \"Color-coding: AGE\" dialog")));
+      await session.step(87, "And user enters \"60\" into Max input in \"Color-coding: AGE\" dialog", () => enterInto(page, "60", el("Max input in \"Color-coding: AGE\" dialog")));
+      await session.step(88, "And user remembers the \"color of cell 3 of AGE\" reading of grid", () => rememberReading(page, "color of cell 3 of AGE", el("grid")));
+      await session.step(89, "And user clears Min input in \"Color-coding: AGE\" dialog", () => clearField(page, el("Min input in \"Color-coding: AGE\" dialog")));
+      await session.step(90, "And user clears Max input in \"Color-coding: AGE\" dialog", () => clearField(page, el("Max input in \"Color-coding: AGE\" dialog")));
+      await session.step(91, "And user enters \"50\" into Max input in \"Color-coding: AGE\" dialog", () => enterInto(page, "50", el("Max input in \"Color-coding: AGE\" dialog")));
+      await session.step(92, "And user enters \"60\" into Min input in \"Color-coding: AGE\" dialog", () => enterInto(page, "60", el("Min input in \"Color-coding: AGE\" dialog")));
+      await session.step(93, "Then the \"color of cell 3 of AGE\" reading of grid should be as remembered", () => readingAsRemembered(page, "color of cell 3 of AGE", el("grid")));
+      await session.step(94, "And the \"color of cell 1 of AGE\" and \"color of cell 2 of AGE\" readings of grid should be the same", () => readingsEqual(page, "color of cell 1 of AGE", "color of cell 2 of AGE", el("grid")));
+      await session.step(95, "And Min input in \"Color-coding: AGE\" dialog should have value \"50\"", () => shouldHaveValue(page, el("Min input in \"Color-coding: AGE\" dialog"), "50"));
+      await session.step(96, "And Max input in \"Color-coding: AGE\" dialog should have value \"60\"", () => shouldHaveValue(page, el("Max input in \"Color-coding: AGE\" dialog"), "60"));
+      await session.step(97, "When user clicks on CLOSE button in \"Color-coding: AGE\" dialog", () => clickOn(page, el("CLOSE button in \"Color-coding: AGE\" dialog")));
+      await session.step(98, "Then \"Color-coding: AGE\" dialog should be hidden", () => shouldBe(page, el("\"Color-coding: AGE\" dialog"), "hidden"));
+      await session.step(99, "And no errors should have been logged", () => noErrors(page));
+    }, 93);
+  });
+  test("A Linear coloring of a column with one value paints every cell in one colour [type=Linear, coded=linearly]", {tag: ["@viewers", "@realizes:viewers.grid", "@edge-cases"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(12, "Given user is logged in", () => loggedIn(page));
+    await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(14, "Then \"AGE\" column should have no color coding", () => noColorCoding(page, "AGE"));
+    await session.step(15, "And \"RACE\" column should have no color coding", () => noColorCoding(page, "RACE"));
+    await session.step(103, "Given user opens a table \"constant\" with:", () => openTableOf(page, "constant", [["Name","Level"],["a","5"],["b","5"],["c","5"]]), [["Name","Level"],["a","5"],["b","5"],["c","5"]]);
+    await session.step(108, "When user picks \"Color Coding > Linear\" from the context menu of the \"header Level\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Linear", "header Level", el("grid")));
+    await session.step(109, "Then \"Level\" column should be color-coded linearly", () => colorCodedAs(page, "Level", "linearly"));
+    await session.step(110, "And the \"color of cell 1 of Level\" and \"color of cell 2 of Level\" readings of grid should be the same", () => readingsEqual(page, "color of cell 1 of Level", "color of cell 2 of Level", el("grid")));
+    await session.step(111, "And the \"color of cell 1 of Level\" and \"color of cell 3 of Level\" readings of grid should be the same", () => readingsEqual(page, "color of cell 1 of Level", "color of cell 3 of Level", el("grid")));
+    await session.step(112, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("A Conditional coloring of a column with one value paints every cell in one colour [type=Conditional, coded=conditionally]", {tag: ["@viewers", "@realizes:viewers.grid", "@edge-cases"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(12, "Given user is logged in", () => loggedIn(page));
+    await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(14, "Then \"AGE\" column should have no color coding", () => noColorCoding(page, "AGE"));
+    await session.step(15, "And \"RACE\" column should have no color coding", () => noColorCoding(page, "RACE"));
+    await session.step(103, "Given user opens a table \"constant\" with:", () => openTableOf(page, "constant", [["Name","Level"],["a","5"],["b","5"],["c","5"]]), [["Name","Level"],["a","5"],["b","5"],["c","5"]]);
+    await session.step(108, "When user picks \"Color Coding > Conditional\" from the context menu of the \"header Level\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Conditional", "header Level", el("grid")));
+    await session.step(109, "Then \"Level\" column should be color-coded conditionally", () => colorCodedAs(page, "Level", "conditionally"));
+    await session.step(110, "And the \"color of cell 1 of Level\" and \"color of cell 2 of Level\" readings of grid should be the same", () => readingsEqual(page, "color of cell 1 of Level", "color of cell 2 of Level", el("grid")));
+    await session.step(111, "And the \"color of cell 1 of Level\" and \"color of cell 3 of Level\" readings of grid should be the same", () => readingsEqual(page, "color of cell 1 of Level", "color of cell 3 of Level", el("grid")));
+    await session.step(112, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("A value on the edge two Bin... ranges share goes to the upper bin", {tag: ["@viewers", "@realizes:viewers.grid", "@edge-cases", "@known-failure:136", "@ticket-pending"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(12, "Given user is logged in", () => loggedIn(page));
+    await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(14, "Then \"AGE\" column should have no color coding", () => noColorCoding(page, "AGE"));
+    await session.step(15, "And \"RACE\" column should have no color coding", () => noColorCoding(page, "RACE"));
+    await knownFailure(async () => {
+      await session.step(122, "Given user opens a table \"bin-edge\" with:", () => openTableOf(page, "bin-edge", [["Name","Level"],["a","0"],["b","5"],["c","10"]]), [["Name","Level"],["a","0"],["b","5"],["c","10"]]);
+      await session.step(127, "When user picks \"Color Coding > Conditional\" from the context menu of the \"header Level\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Conditional", "header Level", el("grid")));
+      await session.step(128, "And user picks \"Color Coding > Edit...\" from the context menu of the \"header Level\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Edit...", "header Level", el("grid")));
+      await session.step(129, "Then \"Color-coding: Level\" dialog should be visible", () => shouldBe(page, el("\"Color-coding: Level\" dialog"), "visible"));
+      await session.step(130, "When user clicks on \"Bin...\" link in \"Color-coding: Level\" dialog", () => clickOn(page, el("\"Bin...\" link in \"Color-coding: Level\" dialog")));
+      await session.step(131, "Then \"Edit\" dialog should be visible", () => shouldBe(page, el("\"Edit\" dialog"), "visible"));
+      await session.step(132, "When user enters \"2\" into \"Number of bins\" input in \"Edit\" dialog", () => enterInto(page, "2", el("\"Number of bins\" input in \"Edit\" dialog")));
+      await session.step(133, "And user clicks on OK button in \"Edit\" dialog", () => clickOn(page, el("OK button in \"Edit\" dialog")));
+      await session.step(134, "Then \"Level\" column should be color-coded conditionally", () => colorCodedAs(page, "Level", "conditionally"));
+      await session.step(135, "And the \"color of cell 1 of Level\" and \"color of cell 3 of Level\" readings of grid should differ", () => readingsDiffer(page, "color of cell 1 of Level", "color of cell 3 of Level", el("grid")));
+      await session.step(136, "And the \"color of cell 2 of Level\" and \"color of cell 3 of Level\" readings of grid should be the same", () => readingsEqual(page, "color of cell 2 of Level", "color of cell 3 of Level", el("grid")));
+      await session.step(137, "When user clicks on CLOSE button in \"Color-coding: Level\" dialog", () => clickOn(page, el("CLOSE button in \"Color-coding: Level\" dialog")));
+      await session.step(138, "Then \"Color-coding: Level\" dialog should be hidden", () => shouldBe(page, el("\"Color-coding: Level\" dialog"), "hidden"));
+      await session.step(139, "And no errors should have been logged", () => noErrors(page));
+    }, 136);
+  });
+  test("A link that would close a cycle of linked colorings is not offered", {tag: ["@viewers", "@realizes:viewers.grid", "@edge-cases", "@known-failure:151", "@ticket-pending"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(12, "Given user is logged in", () => loggedIn(page));
+    await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(14, "Then \"AGE\" column should have no color coding", () => noColorCoding(page, "AGE"));
+    await session.step(15, "And \"RACE\" column should have no color coding", () => noColorCoding(page, "RACE"));
+    await knownFailure(async () => {
+      await session.step(144, "When user colors \"AGE\" column linearly from \"#0000FF\" to \"#FF0000\"", () => colorLinear(page, "AGE", "#0000FF", "#FF0000"));
+      await session.step(145, "And user colors \"HEIGHT\" column linked to \"AGE\" column", () => colorLinked(page, "HEIGHT", "AGE"));
+      await session.step(146, "And user colors \"WEIGHT\" column linked to \"HEIGHT\" column", () => colorLinked(page, "WEIGHT", "HEIGHT"));
+      await session.step(147, "And user picks \"Color Coding > Edit...\" from the context menu of the \"header AGE\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Edit...", "header AGE", el("grid")));
+      await session.step(148, "Then \"Color-coding: AGE\" dialog should be visible", () => shouldBe(page, el("\"Color-coding: AGE\" dialog"), "visible"));
+      await session.step(149, "When user selects \"Linked\" in Type input in \"Color-coding: AGE\" dialog", () => selectIn(page, "Linked", el("Type input in \"Color-coding: AGE\" dialog")));
+      await session.step(150, "Then Source column input in \"Color-coding: AGE\" dialog should not offer the column \"HEIGHT\"", () => doesNotOfferColumn(page, el("Source column input in \"Color-coding: AGE\" dialog"), "HEIGHT"));
+      await session.step(151, "And Source column input in \"Color-coding: AGE\" dialog should not offer the column \"WEIGHT\"", () => doesNotOfferColumn(page, el("Source column input in \"Color-coding: AGE\" dialog"), "WEIGHT"));
+      await session.step(152, "When user clicks on CLOSE button in \"Color-coding: AGE\" dialog", () => clickOn(page, el("CLOSE button in \"Color-coding: AGE\" dialog")));
+      await session.step(153, "Then \"Color-coding: AGE\" dialog should be hidden", () => shouldBe(page, el("\"Color-coding: AGE\" dialog"), "hidden"));
+      await session.step(154, "And no errors should have been logged", () => noErrors(page));
+    }, 151);
   });
 });

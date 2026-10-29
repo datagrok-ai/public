@@ -24,7 +24,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {hasNoColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {deleteSelected, filterBetween, filterPasses, noneSelected, removeColumn, rowCount, selectAllRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, dragSelectionOverArea, hoverArea, noErrors, painted, pointerAway, readingBetween, readingIs, reportsNoError, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, dragSelectionOverArea, hoverArea, noErrors, painted, pointerAway, propertyShouldBe, readingBetween, readingIs, reportsNoError, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Line chart edge cases — a log Y axis below zero, an empty row set, a removed column, SPC under a filter", () => {
@@ -104,5 +104,20 @@ test.describe("Line chart edge cases — a log Y axis below zero, an empty row s
       await session.step(63, "Then 50 rows should pass the filter", () => filterPasses(page, 50));
       await session.step(64, "And the \"spc average\" reading of line chart viewer should be between 2.4 and 2.6", () => readingBetween(page, "spc average", el("line chart viewer"), 2.4, 2.6));
     }, 64);
+  });
+  test("X Min and X Max outside every X value are kept and the data stays in view", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.line-chart"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(14, "Given user is logged in", () => loggedIn(page));
+    await session.step(15, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
+    await session.step(16, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]), [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]);
+    await session.step(19, "Then 100 rows should pass the filter", () => filterPasses(page, 100));
+    await session.step(20, "And the \"markers drawn\" reading of line chart viewer should be 100", () => readingIs(page, "markers drawn", el("line chart viewer"), 100));
+    await session.step(21, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
+    await session.step(67, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["X Min","700000"],["X Max","800000"]]), [["X Min","700000"],["X Max","800000"]]);
+    await session.step(70, "Then \"X Min\" property of line chart viewer should be \"700000\"", () => propertyShouldBe(page, "X Min", el("line chart viewer"), "700000"));
+    await session.step(71, "And \"X Max\" property of line chart viewer should be \"800000\"", () => propertyShouldBe(page, "X Max", el("line chart viewer"), "800000"));
+    await session.step(72, "And the \"markers drawn\" reading of line chart viewer should be 100", () => readingIs(page, "markers drawn", el("line chart viewer"), 100));
+    await session.step(73, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
+    await session.step(74, "And no errors should have been logged", () => noErrors(page));
   });
 });

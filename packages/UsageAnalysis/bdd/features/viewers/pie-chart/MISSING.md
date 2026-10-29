@@ -4,12 +4,13 @@ Written for `pie-chart-edge-cases.feature`: the edge cases of this viewer that t
 
 ## Still open
 
-**Questions for owners**
+**Decided** (`viewer-rules-edge-cases.feature`)
 
-1. The category column removed from the table while the pie shows it (and renamed): fall back to another categorical column, or an empty state with a message?
-2. A layout whose category or angle column the table lacks: the pivot reports the missing column; what should the pie do?
-3. A Segment Angle Column holding NaN or ±Infinity: refuse with a message like the negative and all-zero cases?
-4. Max Radius typed below 50 or above 500, or cleared; Start Angle −30 or 400: clamp, refuse, or auto?
+1. A renamed category column is followed (a row of the rename outline); every row filtered out is a row of the no-rows outline.
+2. Max Radius typed above 500 is not taken (a known failure in the out-of-bounds outline); Start Angle typed as −30 or 400 is the same, written in `pie-chart-edge-cases.feature`. Both are core#1200.
+3. The category column removed: no other column is picked, and the pie, which cannot draw without one, says so. No scenario: the pie has no such message, and `PieChartLook.auto`, run on every removal, picks another categorical column. Needs the message in the pie (`validateState`) before a row can claim it. A layout whose category column the table lacks is the same case.
+
+4. A Segment Angle Column holding NaN or ±Infinity is refused with a message, as the negative and all-zero cases are: written in `pie-chart-edge-cases.feature` (sum of WEIGHT with one value replaced; the wording is not decided, so the claim is a non-empty `error`), a known failure with no ticket yet (the pie draws its wedges with no message).
 
 **API or Dart tests to write**
 

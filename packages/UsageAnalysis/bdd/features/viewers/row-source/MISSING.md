@@ -4,10 +4,14 @@ Written for `row-source-edge-cases.feature`: the edge cases of this viewer that 
 
 ## Still open
 
+**Decided** (the rules of `viewer-rules-edge-cases.feature`)
+
+1. A viewer Filter `${AGE} > 44` follows a rename of AGE: a row of the rename outline, a known failure with no ticket yet (today the formula keeps the old name, is treated as empty and the viewer widens to every row, `validateColumnFormulaFields`).
+2. Under MouseOverGroup, closing the viewer whose group is hovered (a pie) clears the group (a filter left by a closed viewer goes with it): written in `row-source-edge-cases.feature` on the `rows shown` of a MouseOverGroup scatter plot, a known failure with no ticket yet (the scatter plot keeps drawing the closed pie's 15 Asian rows).
+
 **Questions for owners**
 
-1. A viewer Filter `${AGE} > 44` whose column is then renamed or removed: the formula is treated as empty and the viewer widens to every row without a word (`validateColumnFormulaFields`). Should the formula follow a rename (as formula lines do) and should a removal be reported?
-2. Under MouseOverGroup, the viewer whose group is hovered (a pie) closed: keep the group or clear it?
+1. A viewer Filter whose column is removed: should the removal be reported? (The rules say a removed column's setting is dropped without a message.)
 
 **API or Dart tests to write**
 

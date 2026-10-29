@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Added BDD edge-case features (`bdd/features/viewers/`, tag `@edge-cases`, moved from UsageAnalysis): the radar, Sankey/Chord, sunburst, timelines, tree and word cloud on empty, filtered and changed data, and `viewer-rules-edge-cases.feature`, the rules every viewer shares with the rows of these viewers; [public#4420](https://github.com/datagrok-ai/public/issues/4420), [public#4421](https://github.com/datagrok-ai/public/issues/4421), [public#4423](https://github.com/datagrok-ai/public/issues/4423), [public#4424](https://github.com/datagrok-ai/public/issues/4424), [public#4425](https://github.com/datagrok-ai/public/issues/4425), [core#1136](https://github.com/datagrok-ai/core/issues/1136) and [core#1174](https://github.com/datagrok-ai/core/issues/1174) as `@known-failure`s
 * [public#4393](https://github.com/datagrok-ai/public/issues/4393): Tree: Fixed Shift+click on a branch not filtering, with an error, when On Click is Filter
 * [core#881](https://github.com/datagrok-ai/core/issues/881): Word cloud: Fixed out-of-memory errors and missing words when a column's values are very long
 * GROK-21150: Surface plot: Fixed an error when the plot opened on a table with a datetime column on an axis

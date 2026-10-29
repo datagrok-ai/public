@@ -58,19 +58,26 @@ feature; it lists what the feature could not claim and why.
 
 None.
 
-#### 2. Questions for owners
+#### 2. Decided (the rules of `viewer-rules-edge-cases.feature`)
 
-1. **The lanes column removed while lanes are shown.** No error and every row stays (claimed);
-   should the viewer fall back to one lane, as clearing the lanes column does
-   (`tile-viewer-lanes.feature`)?
-2. **A lanes column with empty values**: is there an "(empty)" lane, and what does a card dropped
-   into it write?
-3. **A lanes column with more than 20 categories** set from a layout or the API (the picker offers
+1. **The lanes column removed** is dropped from the settings, as clearing it does, and no other
+   column is picked: a row of the removal outline (`TileViewerLook.auto` keeps only a lanes name the
+   table has). No rows and a renamed lanes column are rows there too.
+2. **A lanes column with empty values** has an `(empty)` lane: a row of the empty-category outline.
+   A card dropped into it gets an empty value: written in `tile-viewer-edge-cases.feature`, a known
+   failure with no ticket yet (the lane has no name today, so there is no `(empty)` lane to drop on).
+3. **Leaving the form designer by Escape** after deleting a field works as Cancel (as the grid's
+   form designer): written in `tile-viewer-edge-cases.feature`, a known failure with no ticket yet
+   (Escape leaves the designer open).
+
+#### 3. Questions for owners
+
+1. **A lanes column with more than 20 categories** set from a layout or the API (the picker offers
    only columns of at most 20, `tile_viewer_look.dart:21`): reject it as a numeric column is
    rejected, or accept?
-4. **Leaving the form designer by Escape or the window close** after deleting a field: discard,
-   apply or ask?
-5. **A drag between lanes when the lanes column is calculated**: block it, or write and recompute?
+2. **Leaving the form designer by the window close** after deleting a field: discard, apply or ask?
+   (Escape is decided: as Cancel.)
+3. **A drag between lanes when the lanes column is calculated**: block it, or write and recompute?
 
 #### 3. API or Dart tests to write
 

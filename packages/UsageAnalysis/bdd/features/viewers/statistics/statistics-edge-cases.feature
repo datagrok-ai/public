@@ -8,8 +8,8 @@ Feature: Statistics edge cases: no rows counted, one row, columns added, removed
   columns), so a calculated column added while it is open gets a row and a removed column loses its
   row. A renamed column is followed by the viewer's settings (the viewer base renames column
   settings on the table's rename event), so its row is shown under the new name with the same
-  numbers. What the numeric statistics (avg, min, stdev) should read over no values is not defined:
-  see MISSING.md. Data: demog-1000 (11 columns, AGE averages 45.68 over 1000 rows).
+  numbers. Over no values the numeric statistics (avg, min, stdev) are empty, not 0 (the rule of
+  `viewer-rules-edge-cases.feature`). Data: demog-1000 (11 columns, AGE averages 45.68 over 1000 rows).
 
   Background:
     Given user is logged in
@@ -26,6 +26,7 @@ Feature: Statistics edge cases: no rows counted, one row, columns added, removed
     And the "rows shown" reading of statistics viewer should be 0
     And the "values of AGE" reading of statistics viewer should be "0"
     And the "values of RACE" reading of statistics viewer should be "0"
+    And the "avg of AGE" reading of statistics viewer should be ""
     And statistics viewer should report no error
     When user resets the filter
     Then the "rows shown" reading of statistics viewer should be 1000
@@ -71,4 +72,37 @@ Feature: Statistics edge cases: no rows counted, one row, columns added, removed
     Then the "columns shown" reading of statistics viewer should be 11
     And the "avg of AGE_YEARS" reading of statistics viewer should be "45.68"
     And statistics viewer should not have a "row AGE" area
+    And no errors should have been logged
+
+  @known-failure:85 @ticket-pending
+  Scenario: A numeric column with no values has empty numeric statistics, not 0
+    Today avg is empty but stdev reads 0.00.
+    When user adds a calculated column "EMPTY" with formula "if(${AGE} > 1000, ${AGE}, null)"
+    Then "EMPTY" column should have type "int"
+    And the "values of EMPTY" reading of statistics viewer should be "0"
+    And the "nulls of EMPTY" reading of statistics viewer should be "1000"
+    And the "avg of EMPTY" reading of statistics viewer should be ""
+    And the "stdev of EMPTY" reading of statistics viewer should be ""
+    And the "min of EMPTY" reading of statistics viewer should be ""
+    And statistics viewer should report no error
+    And no errors should have been logged
+
+  Scenario: A constant column has its value as min, max and avg and a stdev of 0
+    When user adds a calculated column "CONST" with formula "5"
+    Then the "values of CONST" reading of statistics viewer should be "1000"
+    And the "min of CONST" reading of statistics viewer should be "5.00"
+    And the "max of CONST" reading of statistics viewer should be "5.00"
+    And the "avg of CONST" reading of statistics viewer should be "5.00"
+    And the "stdev of CONST" reading of statistics viewer should be "0.00"
+    And statistics viewer should report no error
+    And no errors should have been logged
+
+  Scenario: A Histograms column is dropped when its column is removed
+    When user picks "Histograms > SEX" from the context menu of the "row AGE" area of statistics viewer
+    Then the "histogram columns" reading of statistics viewer should be 1
+    When user removes "SEX" column
+    Then the table should not have a column "SEX"
+    And the "histogram columns" reading of statistics viewer should be 0
+    And the "avg of AGE" reading of statistics viewer should be "45.68"
+    And statistics viewer should report no error
     And no errors should have been logged

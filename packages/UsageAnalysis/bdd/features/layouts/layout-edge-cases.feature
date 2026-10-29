@@ -10,8 +10,8 @@ Feature: Layout edge cases: the Layouts pane suggests a layout only for a table 
   missing demog card a finished reading rather than a pane still loading.
 
   A layout of a grid alone takes the grid's columns as its columns of interest
-  (`TableView.getViewerColumns`), so it is suggested only for a table that has them (fixed in
-  core#1179; a known failure until the stand has it). A layout
+  (`TableView.getViewerColumns`), so it is suggested only for a table that has them
+  (core#1179). A layout
   renamed to an empty name in the context panel keeps its name.
 
   The tables are named with the run's time, so each layout is named after its table and is unique to
@@ -63,11 +63,10 @@ Feature: Layout edge cases: the Layouts pane suggests a layout only for a table 
     And "bdd-edge-cars-{time}" layout card should be absent
     And no errors should have been logged
 
-  @edge-cases @known-failure:85 @realizes:core#1179
+  @edge-cases @realizes:core#1179
   Scenario: A layout of a grid alone is suggested only for a table that has the grid's columns
-    Before core#1179 the grid-only layout is suggested for the cars table too: `getViewerColumns`
-    looked the grid's columns up by `name` instead of `colName`. Remove the tag once the stand has
-    core#1179 and the cars table is not offered it.
+    Before core#1179 the grid-only layout was suggested for the cars table too: `getViewerColumns`
+    looked the grid's columns up by `name` instead of `colName`.
     Given user opens demog dataset keeping the first 100 rows as "bdd-edge-grid-{time}"
     And Layouts accordion header in toolbox is expanded
     When user clicks on the "header AGE" area of grid

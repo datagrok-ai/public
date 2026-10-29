@@ -50,14 +50,10 @@ Added with `color-coding-edge-cases.feature` (edge-case round of 2026-10-26, loc
 1. **Decided** (2026-10-28):
    - A linked coloring whose source column is removed paints nothing: claimed in
      `color-coding-edge-cases` (core#1139, fixed). The column's menu still shows it as Linked.
-   - Bin... takes a number of bins in a range (for example 1 to 100): core#1171, a known failure for 0.
-     10000 bins hangs the tab, so no scenario runs it.
+   - Bin... takes a number of bins in a range (for example 1 to 100): core#1171, fixed (OK stays
+     disabled for 0), claimed in `color-coding-edge-cases`. 10000 bins hangs the tab, so no scenario
+     runs it.
    - A coloring picked up from an uncoloured column and applied to a coloured one: the present
      behaviour is right, the coloring is applied as if the source had it on.
-2. **Decided, scenarios to write**:
-   - Linear Min typed above Max: the two are swapped. A constant column, linear or conditional: one
-     colour, no error.
-   - A value on the edge two Bin... ranges share goes to the upper bin.
-   - A link cycle (A → B → C → A) is refused when it is made.
-3. **Steps requested**: the stop values typed in Edit scheme... (`abc`, stops out of order) have no
+2. **Steps requested**: the stop values typed in Edit scheme... (`abc`, stops out of order) have no
    invalid state to read; the conditional editor's "Invalid pattern" mark is the model.

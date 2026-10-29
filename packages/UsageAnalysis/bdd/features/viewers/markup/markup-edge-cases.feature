@@ -49,3 +49,68 @@ Feature: Markup edge cases — HTML in a cell value, a referenced column removed
     And the "current row" reading of markup viewer should be 0
     And markup viewer should report no error
     And no errors should have been logged
+
+  Scenario Outline: Edit content with new text typed and then <dismissal> leaves the content as it was
+    Given user opens demog-1000 dataset
+    When user adds a markup viewer with:
+      | content | Age: ${AGE} |
+    And user makes row 1 current
+    Then the "text" reading of markup viewer should be "Age: 26"
+    When user picks "Edit content..." from the context menu of markup viewer
+    Then Edit dialog should be visible
+    When user enters "Weight: ${WEIGHT}" into input in Edit dialog
+    And <dismiss>
+    Then Edit dialog should be absent
+    And "content" property of markup viewer should be "Age: ${AGE}"
+    And the "text" reading of markup viewer should be "Age: 26"
+    And no errors should have been logged
+
+    Examples:
+      | dismissal | dismiss                                       |
+      | CANCEL    | user clicks on "CANCEL" button in Edit dialog |
+      | Escape    | user presses Escape                           |
+
+  @known-failure:82 @ticket-pending
+  Scenario: With the current row filtered out the placeholder shows empty
+    Given user opens demog-1000 dataset
+    When user adds a markup viewer with:
+      | content | Age: [${AGE}] |
+    And user makes row 1 current
+    Then the "text" reading of markup viewer should be "Age: [26]"
+    When user filters rows where "SEX" is "M"
+    Then 447 rows should pass the filter
+    And the "text" reading of markup viewer should be "Age: []"
+    And markup viewer should report no error
+    And no errors should have been logged
+
+  @known-failure:100 @ticket-pending
+  Scenario: Once the current row is deleted the table has no current row and the placeholder shows empty
+    Given user opens a table "markup-no-current" with:
+      | NAME  | SCORE |
+      | first | 1     |
+      | last  | 2     |
+    When user adds a markup viewer with:
+      | content | Name: [${NAME}] |
+    And user makes the last row current
+    Then the "text" reading of markup viewer should be "Name: [last]"
+    When user selects rows where "NAME" is "last"
+    And user deletes the selected rows
+    Then the table should have 1 row
+    And the "current row" reading of markup viewer should be 0
+    And the "text" reading of markup viewer should be "Name: []"
+    And markup viewer should report no error
+    And no errors should have been logged
+
+  @known-failure:113 @ticket-pending
+  Scenario: A referenced column renamed is followed by the content
+    Given user opens demog-1000 dataset
+    When user adds a markup viewer with:
+      | content | Age: ${AGE} |
+    And user makes row 1 current
+    Then the "text" reading of markup viewer should be "Age: 26"
+    When user renames "AGE" column to "YEARS"
+    And user makes row 4 current
+    Then the "text" reading of markup viewer should be "Age: 45"
+    And "content" property of markup viewer should be "Age: ${YEARS}"
+    And markup viewer should report no error
+    And no errors should have been logged

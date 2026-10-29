@@ -55,9 +55,13 @@ Added with `histogram-edge-cases.feature` (edge-case round of 2026-10-26, localh
    the input validator ("Max should be greater than min", `histogram_core.dart`), while the viewer's
    `error` reading stays empty (measured on localhost; the viewer reports only max below min). No step
    reads the inputs' invalid state.
-2. **Questions for owners**: Bins typed as 201 or 1000 (declared max 200, drawn anyway); `abc` in a
-   range input; Value switched to WEIGHT while a range of AGE filters; a layout whose Value column the
-   table lacks; bin labels dropped above 100 bins; X Axis Height at 0, below 0 or above the viewer's
-   height.
-3. **Not written yet**: the same range checks for a date value column (`STARTED`), which uses date
-   inputs; the selectors hidden at 200 × 200 and shown at 201 × 201.
+2. **Decided**: Bins typed as 201 is not taken (the out-of-bounds rule): a known failure with no
+   ticket yet in `viewer-rules-edge-cases.feature`; every row filtered out is a row there too.
+3. **Questions for owners**: `abc` in a range input; Value switched to WEIGHT while a range of AGE
+   filters; a layout whose Value column the table lacks (the Value column is required, so the layout
+   rule, "skip the column", does not say what to draw); bin labels dropped above 100 bins; X Axis
+   Height at 0, below 0 or above the viewer's height.
+4. **Not written yet**: the selectors hidden at 200 × 200 and shown at 201 × 201. The range checks
+   for a date value column (`STARTED`, date inputs) are in `histogram-edge-cases.feature`: a maximum
+   below the minimum is reported, a bound past the dates is clamped, a range normalized to the
+   filter logs no error with every row filtered out (green, 2026-10-29).

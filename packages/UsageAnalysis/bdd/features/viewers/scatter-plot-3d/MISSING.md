@@ -97,11 +97,16 @@ feature; it lists what the feature could not claim and why.
    are removed). Needs a `markers drawn` reading from the instanced mesh (`JsScatterPlot3dCore`);
    then a one-row table → 1, and remove 50 of 200 rows → 150, both `@known-failure` on core#1027.
 
-#### 2. Questions for owners
+#### 2. Decided
 
-1. **Which column takes over** after the Size or Label column is removed (core#1027 calls the
-   freeze a defect; the fallback is not defined).
-2. **Null labels** read "undefined" (core#1027): should they be empty or "(no value)"?
+1. **No column takes over** after the Size, Color or Label column is removed: the encoding is
+   dropped (the removal rule of `viewer-rules-edge-cases.feature`). The two removal scenarios stay in
+   `scatter-plot-3d-edge-cases.feature` (core#1027), since they claim the X, Y and Z kept and the plot
+   still answering a property change, which the outline does not.
+
+#### 3. Questions for owners
+
+1. **Null labels** read "undefined" (core#1027): should they be empty or "(no value)"?
 
 #### 3. API or Dart tests to write
 

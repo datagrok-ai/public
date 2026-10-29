@@ -40,13 +40,15 @@ feature; it lists what the feature could not claim and why.
    `features/moving_average.dart:13`). At 20 categories the help promises per-category lines and
    the code draws one common line. Which one is right: "fewer than 20" in the help, or `<= 20` in
    the code?
-2. **What a layout naming a missing column should leave.** A layout colored by RACE applied after
-   RACE was removed applies with no error (claimed); whether Color should then fall back to another
-   column, stay empty, or say the column is missing is not defined.
-3. **Moving Average Window outside 2..100.** The property declares 2..100; 1 and 101 set from the
-   panel or a layout: clamp, reject, or take as given?
-4. **A removed Color or Size column.** The plot drops it (claimed: Color is no longer RACE);
-   whether it should pick another column instead is not defined.
+
+#### Decided (`viewer-rules-edge-cases.feature`)
+
+1. A layout naming a missing Color column leaves Color empty, and a removed Color or Size column is
+   dropped with no other column picked: rows of the layout and the removal outlines. No rows, and
+   renamed X and Color columns, are rows there too.
+2. Moving Average Window typed as 1 or 101 in the context panel is not taken (the out-of-bounds
+   rule): written in `scatter-plot-edge-cases.feature` with the moving average switched on first, a
+   known failure of core#1200 (the value is written).
 
 #### 3. API or Dart tests to write
 

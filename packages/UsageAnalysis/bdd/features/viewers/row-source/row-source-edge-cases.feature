@@ -41,3 +41,21 @@ Feature: Row Source edge cases — a Filter formula that is not a condition, a r
     Then 553 rows should pass the filter
     And the "rows shown" reading of scatter plot viewer should be 0
     And no errors should have been logged
+
+  @known-failure:60 @ticket-pending
+  Scenario: Under MouseOverGroup, closing the viewer whose group is hovered clears the group
+    Today the closed pie's hovered group stays on the table, and the scatter plot keeps drawing its
+    15 Asian rows.
+    When user adds a pie chart viewer with:
+      | categoryColumnName | RACE |
+    And user adds a scatter plot viewer with:
+      | xColumnName | AGE            |
+      | yColumnName | WEIGHT         |
+      | rowSource   | MouseOverGroup |
+    Then scatter plot viewer should show 0 rows
+    When user hovers over the "slice Asian" area of pie chart viewer
+    Then scatter plot viewer should show 15 rows
+    When user clicks on close icon of pie chart viewer
+    Then the open tableview should have 0 pie chart viewers
+    And scatter plot viewer should show 0 rows
+    And no errors should have been logged

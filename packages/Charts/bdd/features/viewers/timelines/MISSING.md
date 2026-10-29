@@ -16,21 +16,27 @@ feature; it lists what the feature could not claim and why.
    from the series data; then: End = a numeric column, hover the first interval → that warning
    balloon.
 
-### 2. Questions for owners
+### 2. Decided
 
-1. **End earlier than Start**: draw it reversed, skip it, or flag it?
-2. **Marker Size and Line Width 0 or negative** (plain ints with no bounds,
+1. **An event whose End is earlier than its Start** is skipped, and the tooltip says how many events
+   were skipped. Today the event is drawn: a known failure with no ticket yet in
+   `timelines-edge-cases.feature` (it claims the interval count). The tooltip half waits for the
+   interval hit area (Steps requested, 1).
+
+### 3. Questions for owners
+
+1. **Marker Size and Line Width 0 or negative** (plain ints with no bounds,
    `timelines-viewer.ts:81`, `:84`): declare bounds, or clamp?
-3. **An invalid Date Format** (free text, `:87`): what is shown?
-4. **The mixed date types warning**: is a warning on hover the intended answer to a Start and an
+2. **An invalid Date Format** (free text, `:87`): what is shown?
+3. **The mixed date types warning**: is a warning on hover the intended answer to a Start and an
    End of different types?
-5. **Events with a missing start or end date while Show Open Intervals is off.** Help
+4. **Events with a missing start or end date while Show Open Intervals is off.** Help
    (`timelines.md`) says "Include events with missing dates by enabling Show Open Intervals", yet
    with the option off such an event is still drawn, as a point at its known date; with the option
    on it becomes an interval to the edge of the data. Should an event with a missing date be left
    out while the option is off, or is the help to say that it is drawn as a point?
 
-### 3. API or Dart tests to write
+### 4. API or Dart tests to write
 
 None.
 
