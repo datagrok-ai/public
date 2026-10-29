@@ -45,15 +45,14 @@ written with the existing steps only: no library, binding or code change. Items 
 5. **OK's calculation.** A step that waits for the `Chem:mpoCalculate` call OK makes and fails if it threw.
    OK's errors are caught and shown as a balloon (`analysis/mpo.ts`, `runMpoCalculation`); the features claim
    the dialog closed and no error balloon, while the preview writes the same column.
-6. **API tests** (statistics `mapColumnDesirability` / `MpoCalculator`, Chem `mpoScoreByProfile`); none
-   exist yet:
-   - the three Score as options for `<x` and `>x` on rising, falling and peaked curves; a bound inside a flat
-     part (the same in every option), a bound wholly outside the curve, an inverted curve;
-   - a log10 curve with bounds: `0`, `<0`, `<-1`, `-2` give an empty score, `>0` and `>-1` are scored over
-     the whole curve; an exact `0` gives an empty score while `>0` with Limit value gives 0;
-   - the smallest exact positive value of a qnum column on the default flat curve;
-   - MPO Score by Profile on a qnum column uses the `qualifiers` the profile stores;
-   - missing values: Exclude row gives an empty score, Use default score, Skip property.
+6. **API tests** (statistics `mapColumnDesirability` / `MpoCalculator`, Chem `mpoScoreByProfile`). Chem
+   `mpo-tests.ts` (`MPO: qnum scoring`) has the three Score as options on a peaked curve, a bound wholly
+   outside the curve, an inverted curve, a log10 curve with `0`, `<0`, `-2` and `>0`, the smallest exact
+   value on a flat curve and the three missing-value strategies. Still missing:
+   - the Score as options on rising and falling curves; a bound inside a flat part (the same in every option);
+   - a log10 curve with `<-1` (empty score) and `>-1` (scored over the whole curve); `>0` with Limit value
+     gives 0;
+   - MPO Score by Profile on a qnum column uses the `qualifiers` the profile stores.
 7. **Question: a coverage column left from an earlier run.** OK with Coverage Score unchecked replaces the
    score column but keeps an `MPO <profile> coverage` column from an earlier checked run (`computeMpo` in
    `mpo/utils.ts` removes it only when the option is on), so after the data or the profile changed it shows
