@@ -13,8 +13,20 @@ export interface EditorRule {
   create(prop: IProperty, options: InputOptions<any>): Input<any>;
 }
 
+/** How a non-empty value of a matching property is shown instead of its text: a readonly field, a card, a cell. */
+export interface DisplayRule {
+  match(prop: IProperty): boolean;
+  render(value: unknown, size: DisplaySize, prop: IProperty): HTMLElement;
+}
+
+export interface DisplaySize {
+  width: number;
+  height: number;
+}
+
 export class Editors {
   private static _rules: EditorRule[] = [];
+  private static _displays: DisplayRule[] = [];
   /** The property's own `inputType`/`editor` hints — the fallback after the rules, set by the
    * schema-driven router so every consumer resolves in the same order. */
   static byHint: ((prop: IProperty, options: InputOptions<any>) => Input<any> | null) | null = null;
@@ -36,5 +48,25 @@ export class Editors {
         return rule.create(prop, options);
     }
     return Editors.byHint?.(prop, options) ?? null;
+  }
+
+  /** First matching rule wins, in registration order. Returns the unregister function. */
+  static registerDisplay(rule: DisplayRule): () => void {
+    Editors._displays.push(rule);
+    return () => {
+      const i = Editors._displays.indexOf(rule);
+      if (i >= 0)
+        Editors._displays.splice(i, 1);
+    };
+  }
+
+  static displays(prop: IProperty): boolean {
+    return Editors._displays.some((r) => r.match(prop));
+  }
+
+  /** The first matching display rule's rendering of [value], else null. */
+  static display(prop: IProperty, value: unknown, size: DisplaySize = {width: 250, height: 160}): HTMLElement | null {
+    const rule = Editors._displays.find((r) => r.match(prop));
+    return rule === undefined ? null : rule.render(value, size, prop);
   }
 }

@@ -6,6 +6,7 @@ import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {Scope, TextInput} from '../src/index.js';
+import {Access} from '../src/core/access.js';
 import {Editors} from '../src/dg/forms/editors.js';
 import {propertyForm} from '../src/dg/forms/object-form.js';
 
@@ -74,4 +75,20 @@ smoke('unregister restores the generated editor', async () => {
   const form = propertyForm([structureProp], {smiles: 'C'});
   assert.equal(form.input('smiles').root.dataset.test, undefined);
   form.dispose();
+});
+
+smoke('a readonly field shows a matching display rule\'s rendering, and text without one', async () => {
+  const unregister = Editors.registerDisplay({match: (p) => p.semType === 'Test',
+    render: (v, size) => Object.assign(document.createElement('b'), {textContent: `drawn ${v} ${size.width}`})});
+  try {
+    const access = Access.from({can: {view: true}, fields: {name: 'readonly', smiles: 'readonly'}});
+    const form = propertyForm([nameProp, structureProp], {name: 'Aspirin', smiles: 'CCO'}, {access});
+    const value = (n) => form.root.querySelector(`[data-u2-name="${n}"] [data-u2-part="readonly-value"]`);
+    assert.equal(value('smiles').firstChild.tagName, 'B');
+    assert.equal(value('smiles').textContent, 'drawn CCO 250');
+    assert.equal(value('name').textContent, 'Aspirin');
+    form.dispose();
+  } finally {
+    unregister();
+  }
 });

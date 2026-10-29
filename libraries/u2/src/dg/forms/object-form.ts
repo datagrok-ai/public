@@ -506,8 +506,13 @@ export class ObjectForm extends Form {
   }
 
   private _showText(field: Field): void {
-    const shown = ObjectForm._display(field.prop, this._read(field.prop, null));
-    field.text!.textContent = shown || (field.emptyText ?? '');
+    const value = this._read(field.prop, null);
+    if (field.text!.hasChildNodes() && ObjectForm.same(value, field.synced))
+      return;
+    field.synced = value;
+    const shown = ObjectForm._display(field.prop, value);
+    const rendered = shown === '' ? null : Editors.display(field.prop, value);
+    field.text!.replaceChildren(rendered ?? (shown || (field.emptyText ?? '')));
     field.text!.classList.toggle('u2-form-readonly-empty', shown === '' && field.emptyText !== undefined);
   }
 

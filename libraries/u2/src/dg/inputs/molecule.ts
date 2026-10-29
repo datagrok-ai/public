@@ -43,6 +43,11 @@ export function moleculeRenderer(options: MoleculeRendererOptions = {}): ObjectR
   };
 }
 
+Editors.registerDisplay({
+  match: (prop) => prop.semType === 'Molecule',
+  render: (value, size) => moleculeRenderer(size).markup!(String(value)),
+});
+
 Editors.register({
   match: (prop) => prop.semType === 'Molecule',
   create: (prop, options) => moleculeInput(options.inline ? '' : labelText(options.label) ?? prop.name!,
