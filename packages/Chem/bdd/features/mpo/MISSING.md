@@ -2,8 +2,9 @@
 
 Written during the MPO qnum round of 16 Oct 2026 (public#4291, the manual checks of that day and the Slack
 thread on MPO), updated on 20 Oct 2026. Covers `qnum-scoring.feature` and `score-dialog-cancel.feature`,
-written with the existing steps only: no library, binding or code change. Items 7-10 were added on 28 Oct
-2026 for `coverage-score.feature` (public#4403, checked on localhost with Chem and EDA from master).
+written with the existing steps only: no library, binding or code change. Items 7-8 were added on 28 Oct
+2026 for `coverage-score.feature` (public#4403, checked on localhost with Chem and EDA from master); two more
+questions of that round, answered on 29 Oct 2026, are under Won't do.
 
 ## Resolved
 
@@ -53,20 +54,14 @@ written with the existing steps only: no library, binding or code change. Items 
    - a log10 curve with `<-1` (empty score) and `>-1` (scored over the whole curve); `>0` with Limit value
      gives 0;
    - MPO Score by Profile on a qnum column uses the `qualifiers` the profile stores.
-7. **Question: a coverage column left from an earlier run.** OK with Coverage Score unchecked replaces the
-   score column but keeps an `MPO <profile> coverage` column from an earlier checked run (`computeMpo` in
-   `mpo/utils.ts` removes it only when the option is on), so after the data or the profile changed it shows
-   counts the score no longer matches. Should an unchecked run remove it? The feature claims neither.
-8. **Question: the coverage option in the MPO context panel.** The panel calls `computeMpo` with the option
-   off (`mpo/mpo-context-panel.ts`) and offers no checkbox. Is the option meant for the dialog only?
-9. **Question: the column's name.** The option is "Coverage Score" (the name asked for in public#4403), the
+7. **Question: the column's name.** The option is "Coverage Score" (the name asked for in public#4403), the
    column it adds is `MPO <profile> coverage`. Is the difference intended?
-10. **Package tests for the coverage count** (Chem `mpo-tests.ts` has one, `MPO: coverage`, over a plain, a
-    categorical and a qnum column):
-    - a value of 0 or below on a log10 curve is counted as measured although it gets no desirability;
-    - a second `MpoCalculator.compute` with the coverage on, after one without it, counts every column (the
-      cached desirability is not reused then);
-    - `Chem:mpoCalculate` with `createCoverageColumn` returns the coverage column in its result table.
+8. **Package tests for the coverage count** (Chem `mpo-tests.ts` has one, `MPO: coverage`, over a plain, a
+   categorical and a qnum column):
+   - a value of 0 or below on a log10 curve is counted as measured although it gets no desirability;
+   - a second `MpoCalculator.compute` with the coverage on, after one without it, counts every column (the
+     cached desirability is not reused then);
+   - `Chem:mpoCalculate` with `createCoverageColumn` returns the coverage column in its result table.
 
 ## Won't do
 
@@ -78,5 +73,11 @@ written with the existing steps only: no library, binding or code change. Items 
   reproduced on localhost in three ways (create, then pick the dataset; edit a saved qnum profile; open it from
   the Browse tree, then pick the dataset). `qnum-scoring.feature` claims the first and the third.
 - **The help page `mpo.md` saying nothing about qnum and Score as**: a help task.
+- **An unchecked run removing a coverage column left by an earlier checked one**: OK with Coverage Score
+  unchecked replaces the score column and keeps an `MPO <profile> coverage` column from an earlier run
+  (`computeMpo` in `mpo/utils.ts` removes it only when the option is on), as intended (answer on public#4403,
+  29 Oct 2026).
+- **Coverage Score in the MPO context panel**: the option belongs to the MPO Score dialog only; the panel
+  calls `computeMpo` with it off (`mpo/mpo-context-panel.ts`).
 - **The coverage column as the marker size of a scatter plot** (the use asked for in public#4403): a scatter
   plot's Size property over an int column, nothing MPO adds.
