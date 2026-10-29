@@ -331,9 +331,46 @@ category('JMP: analyses', () => {
       'Elements(Points(X, Y), Smoother(X, Y)))');
     only(c);
     expect(c.notes.some((n) => /Pages by "sex"/.test(n)), true);
-    expect(c.notes.some((n) => /Smoother/.test(n)), true);
+    expect(c.notes.some((n) => /Smoother shown as a moving average/.test(n)), true);
+    expect(c.viewers[0].options.showMovingAverageLine, true);
     expect(/Contour/.test(convert('Graph Builder(Variables(X(:height), Y(:weight)), Elements(Contour(X, Y)))').reason!),
       true);
+  });
+
+  test('Graph Builder: title, axis ranges, log scales and reference lines', async () => {
+    const c = convert('Graph Builder(Variables(X(:height), Y(:weight), Overlay(:sex)), ' +
+      'Elements(Points(X, Y), Smoother(X, Y)), SendToReport(' +
+      'Dispatch({}, "height", ScaleBox, {Format("Fixed Dec", 12, 0), Min(-50), Max(75), Inc(5), Minor Ticks(1)}), ' +
+      'Dispatch({}, "weight", ScaleBox, {Scale("Log"), Min(60), Max(200), Add Ref Line(100, "Solid", "Red", ' +
+      '"Limit", 1)}), Dispatch({}, "height", ScaleBox(2), {Min(0)}), ' +
+      'Dispatch({}, "graph title", TextEditBox, {Set Text("Weight by height")}), ' +
+      'Dispatch({}, "Y title", TextEditBox, {Set Text("kg")})))', 'Growth');
+    const o = only(c).options;
+    expect(o.title, 'Weight by height');
+    expect(o.xMin, -50);
+    expect(o.xMax, 75);
+    expect(o.zoomAndFilter, 'no action');
+    expect(o.xAxisType === undefined, true);
+    expect(o.yAxisType, 'logarithmic');
+    expect(o.yMin, 60);
+    expectArray(JSON.parse(o.formulaLines as string).map((l: {formula: string, title: string}) =>
+      `${l.title}: ${l.formula}`), ['Limit: ${weight} = 100']);
+    expect(o.movingAveragePerCategory, true);
+    const box = only(convert('Graph Builder(Variables(X(:sex), Y(:height)), Elements(Box Plot(X, Y)), ' +
+      'SendToReport(Dispatch({}, "height", ScaleBox, {Min(0), Add Ref Line(60, "Solid", "Red", "", 1)}), ' +
+      'Dispatch({}, "graph title", TextEditBox, {Set Text("")})))', 'Heights'));
+    expect(box.options.valueMin, 0);
+    expect(box.options.title, 'Heights');
+    const unapplied = convert('Graph Builder(Variables(X(:sex), Y(:height)), Elements(Box Plot(X, Y)), ' +
+      'SendToReport(Dispatch({}, "Height (in)", ScaleBox, {Min(0)})))');
+    expectArray(unapplied.notes, ['Axis settings of "Height (in)" not applied']);
+  });
+
+  test('Graph Builder: a line per Y', async () => {
+    const c = convert('Graph Builder(Variables(X(:age), Y(:height), Y(:weight, Position(1))), ' +
+      'Elements(Line(X, Y(1), Y(2))))');
+    expectArray(only(c).options.yColumnNames as string[], ['height', 'weight']);
+    expectArray(c.notes, []);
   });
 
   test('Tabulate', async () => {

@@ -374,6 +374,12 @@ export function findAll(node: JslNode, name: string): Extract<JslNode, {type: 'c
   return out;
 }
 
+/** A number literal's value; a negative number is a minus applied to a number, not a literal. */
+export function numberValue(node: JslNode | undefined): number | undefined {
+  return node?.type === 'number' ? node.value :
+    node?.type === 'unary' && node.op === '-' && node.operand.type === 'number' ? -node.operand.value : undefined;
+}
+
 /** Names of the columns referenced (`:Name`) anywhere under `node`, each once. */
 export function referencedColumns(node: JslNode): string[] {
   const out = new Set<string>();

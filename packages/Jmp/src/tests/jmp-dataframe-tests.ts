@@ -8,6 +8,7 @@ import {addSavedAnalyses, hideJmpHiddenColumns, jmpTableToDataFrame, savedAnalys
   from '../formats/jmp/jmp-to-dataframe';
 import {readJmp} from '../formats/jmp/jmp-parser';
 import {JslNode, parseJsl} from '../formats/jmp/jsl';
+import {convertScript} from '../formats/jmp/jsl-to-viewers';
 import {fixture, fixtureBytes, FIXTURES} from './jmp-reader-tests';
 import {makeLargeJmp, rowsForSize} from './large-jmp';
 
@@ -115,6 +116,29 @@ category('JMP: dataframe', () => {
       expectArray(trellis.props.xColumnNames, ['sex']);
       const look = JSON.stringify(trellis.getOptions(true));
       expect(look.includes('"xColumnName":"height"'), true, look.slice(0, 400));
+    } finally {
+      tv.close();
+    }
+  });
+
+  test('a Graph Builder axis frames the plot without filtering, and its smoother averages over X', async () => {
+    const df = grok.data.demo.demog(100);
+    const tv = grok.shell.addTableView(df);
+    try {
+      const text = 'Graph Builder(Variables(X(:height), Y(:weight)), Elements(Points(X, Y), Smoother(X, Y)), ' +
+        'SendToReport(Dispatch({}, "height", ScaleBox, {Min(-10), Max(170)})))';
+      const conversion = convertScript({name: 'Growth', text, body: parseJsl(text)},
+        df.columns.toList().map((c) => ({name: c.name, numeric: c.isNumerical})));
+      expect(addSavedAnalyses(tv, [conversion]), 1);
+      const sp = Array.from(tv.viewers).find((v) => v.type === DG.VIEWER.SCATTER_PLOT)!;
+      expect(sp.props.xMin, -10);
+      expect(sp.props.xMax, 170);
+      expect(sp.props.showMovingAverageLine, true);
+      expect(sp.props.movingAverageWindowUnit, 'Absolute');
+      const height = df.col('height')!;
+      expect(sp.props.movingAverageWindow, (height.max - height.min) / 10);
+      await new Promise((r) => setTimeout(r, 200));
+      expect(df.filter.trueCount, df.rowCount);
     } finally {
       tv.close();
     }

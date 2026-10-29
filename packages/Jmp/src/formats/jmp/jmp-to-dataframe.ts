@@ -5,7 +5,7 @@ import {
   JMP_EPOCH_OFFSET_S, JMP_INT_MISSING, JmpColumn, JmpData, JmpTable, hexColor, jmpValue, rowStateGlyph,
 } from './jmp-types';
 import {JmpValueLabels} from './jmp-properties';
-import {JslNode, isCall, jslKey} from './jsl';
+import {JslNode, isCall, jslKey, numberValue} from './jsl';
 import {JmpScriptConversion, columnRefs, convertScripts} from './jsl-to-viewers';
 import {isSourceScript} from './jmp-scripts';
 
@@ -256,12 +256,9 @@ type SpecLimits = {lsl?: number, usl?: number, target?: number};
 function specLimits(node: Extract<JslNode, {type: 'call'}>): {limits: SpecLimits, show: boolean} {
   const items = node.args[0]?.type === 'list' ? node.args[0].items : node.args;
   const arg = (name: string) => items.find((a): a is Extract<JslNode, {type: 'call'}> => isCall(a, name))?.args[0];
-  // A negative limit is a minus applied to a number, not a number literal.
-  const num = (v?: JslNode): number | undefined => v?.type === 'number' ? v.value :
-    v?.type === 'unary' && v.op === '-' && v.operand.type === 'number' ? -v.operand.value : undefined;
   const limits: SpecLimits = {};
   for (const [key, name] of [['lsl', 'LSL'], ['usl', 'USL'], ['target', 'Target']] as const) {
-    const v = num(arg(name));
+    const v = numberValue(arg(name));
     if (v !== undefined && !Number.isNaN(v))
       limits[key] = v;
   }
@@ -281,6 +278,16 @@ function addSpecLimitLines(col: DG.Column, limits: SpecLimits, show: boolean): v
   }
 }
 
+/** A moving average standing in for a JMP smoother averages over a tenth of a numeric X range, as a count of
+ * points jumps where many rows share an X, as in a run per bioreactor and day. */
+function smootherWindow(look: Record<string, unknown> | undefined, df: DG.DataFrame): void {
+  const x = look?.showMovingAverageLine ? df.col(look.xColumnName as string) : null;
+  if (!x?.isNumerical || x.type === DG.COLUMN_TYPE.DATE_TIME || !(x.max > x.min))
+    return;
+  look!.movingAverageWindowUnit = 'Absolute';
+  look!.movingAverageWindow = (x.max - x.min) / 10;
+}
+
 /** Adds the viewers converted from saved analyses to a table view. Returns the number added; a viewer the
  * platform refuses is skipped with a warning, not an error, since the table itself opened fine. */
 export function addSavedAnalyses(tv: DG.TableView, analyses: JmpScriptConversion[]): number {
@@ -288,6 +295,8 @@ export function addSavedAnalyses(tv: DG.TableView, analyses: JmpScriptConversion
   for (const a of analyses) {
     for (const v of a.viewers) {
       try {
+        for (const look of [v.options, v.options.innerViewerLook as Record<string, unknown> | undefined])
+          smootherWindow(look, tv.dataFrame);
         tv.addViewer(v.type, v.options);
         added++;
       } catch (e) {

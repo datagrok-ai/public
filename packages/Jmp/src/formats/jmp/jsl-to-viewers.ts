@@ -3,7 +3,7 @@
 // so the Node tests can run it.
 
 import {
-  JslNode, columnNames, findAll, findArg, isCall, jslKey, referencedColumns, statements,
+  JslNode, columnNames, findAll, findArg, isCall, jslKey, numberValue, referencedColumns, statements,
 } from './jsl';
 import {JmpScript, isSourceScript} from './jmp-scripts';
 import type {JmpColumn} from './jmp-types';
@@ -412,6 +412,10 @@ function graphBuilder(call: Call, cols: Columns, notes: string[]): JmpViewerSpec
   const role = (r: string): JmpColumnRef[] =>
     vars.args.filter((a) => isCall(a, r)).flatMap((a) => columnNames(a as Call)).map((n) => cols.get(n));
   const inner = graphBuilderViewer(call, role, notes);
+  const report = graphBuilderReport(call);
+  applyAxes(inner, report.axes, cols, notes);
+  if (report.title)
+    inner.options.title = report.title;
   const groupX = [...role('Group X'), ...role('Wrap')].map((c) => c.name);
   const groupY = role('Group Y').map((c) => c.name);
   if (role('Page').length > 0)
@@ -429,8 +433,6 @@ function graphBuilderViewer(call: Call, role: (r: string) => JmpColumnRef[], not
   const ys = role('Y');
   const color = role('Color')[0] ?? role('Overlay')[0];
   const size = role('Size')[0];
-  if (xs.length > 1 || ys.length > 1)
-    notes.push('Only the first X and Y variables are shown');
 
   const elements = findAll(call, 'Elements').flatMap((e) => e.args.filter((a): a is Call =>
     a.type === 'call' && !isCall(a, 'Position')));
@@ -441,6 +443,9 @@ function graphBuilderViewer(call: Call, role: (r: string) => JmpColumnRef[], not
   const x = xs[0];
   const y = ys[0];
   const others = elements.slice(1).filter((e) => !['lineoffit', 'points', 'smoother'].includes(jslKey(e.name)));
+  // JMP overlays every Y of a line chart on one axis, as Datagrok does
+  if (jslKey(elements[0]?.name ?? '') === 'line' ? xs.length > 1 : xs.length > 1 || ys.length > 1)
+    notes.push('Only the first X and Y variables are shown');
   for (const e of others)
     notes.push(`${e.name} not shown`);
 
@@ -450,25 +455,29 @@ function graphBuilderViewer(call: Call, role: (r: string) => JmpColumnRef[], not
   case 'lineoffit': {
     if (!x || !y)
       throw new Unconvertible('A Graph Builder scatter needs X and Y variables');
-    if (kinds.includes('smoother'))
-      notes.push('Smoother not shown');
-    // JMP fits a line per Overlay group; Datagrok can only split the regression by the color column
+    // JMP fits a line or a smoother per Overlay group; Datagrok can only split them by the color column
     const fit = kinds.includes('lineoffit');
+    const smoother = kinds.includes('smoother');
     const overlay = role('Overlay')[0];
-    const perGroup = fit && overlay !== undefined && overlay === color && !overlay.numeric;
+    const perGroup = overlay !== undefined && overlay === color && !overlay.numeric;
     if (fit && overlay && !perGroup)
       notes.push(`Line of Fit by "${overlay.name}" shown as one line`);
+    // Datagrok has no smoothing spline; its moving average is the closest curve through the points
+    if (smoother)
+      notes.push('Smoother shown as a moving average, not JMP\'s smoothing spline');
     return {type: SCATTER, options: {
       xColumnName: x.name, yColumnName: y.name,
       ...(color ? {colorColumnName: color.name} : {}), ...(size ? {sizeColumnName: size.name} : {}),
-      ...(fit ? {showRegressionLine: true} : {}), ...(perGroup ? {regressionPerCategory: true} : {}),
+      ...(fit ? {showRegressionLine: true} : {}), ...(fit && perGroup ? {regressionPerCategory: true} : {}),
+      ...(smoother ? {showMovingAverageLine: true} : {}),
+      ...(smoother && perGroup ? {movingAveragePerCategory: true} : {}),
     }};
   }
   case 'line': {
     if (!x || !y)
       throw new Unconvertible('A Graph Builder line needs X and Y variables');
     return {type: LINE, options: {
-      xColumnName: x.name, yColumnNames: [y.name],
+      xColumnName: x.name, yColumnNames: ys.map((c) => c.name),
       ...(color && !color.numeric ? {splitColumnName: color.name} : {}),
     }};
   }
@@ -508,6 +517,84 @@ function graphBuilderViewer(call: Call, role: (r: string) => JmpColumnRef[], not
   default:
     throw new Unconvertible(`Graph Builder's ${elements[0].name} element isn't converted yet`);
   }
+}
+
+/** An axis as Graph Builder's report sets it: `Dispatch({}, "<column>", ScaleBox, {Min(0), Max(60), ...})`. */
+interface JmpAxis {
+  column: string;
+  min?: number;
+  max?: number;
+  log: boolean;
+  refLines: {value: number, label: string}[];
+}
+
+/** The report settings of a Graph Builder that have a Datagrok counterpart: its title and its axes, by
+ * column name. Only the first panel's axes (`ScaleBox`, not `ScaleBox(2)`) are read, as only it is shown. */
+function graphBuilderReport(call: Call): {title?: string, axes: Map<string, JmpAxis>} {
+  let title: string | undefined;
+  const axes = new Map<string, JmpAxis>();
+  for (const d of findAll(call, 'Dispatch')) {
+    const [, target, box, settings] = d.args;
+    if (target?.type !== 'string' || box?.type !== 'name' || settings?.type !== 'list')
+      continue;
+    const items = settings.items.filter((i): i is Call => i.type === 'call');
+    const setting = (name: string) => items.find((i) => isCall(i, name));
+    const num = (c: Call | undefined) => numberValue(c?.args[0]);
+    if (jslKey(box.name) === 'texteditbox' && jslKey(target.value) === 'graphtitle')
+      title = stringArg(setting('Set Text')) || title;
+    else if (jslKey(box.name) === 'scalebox') {
+      axes.set(jslKey(target.value), {
+        column: target.value, min: num(setting('Min')), max: num(setting('Max')),
+        log: jslKey(stringArg(setting('Scale')) ?? '') === 'log',
+        refLines: items.filter((i) => isCall(i, 'Add Ref Line') && num(i) !== undefined)
+          .map((i) => ({value: num(i)!, label: i.args[3]?.type === 'string' ? i.args[3].value : ''})),
+      });
+    }
+  }
+  return {title, axes};
+}
+
+/** Viewer properties for an axis bound to a column, by viewer: [column property, min, max, axis type]. */
+const AXES: Record<string, [string, string, string, string][]> = {
+  [SCATTER]: [['xColumnName', 'xMin', 'xMax', 'xAxisType'], ['yColumnName', 'yMin', 'yMax', 'yAxisType']],
+  [HISTOGRAM]: [['valueColumnName', 'valueMin', 'valueMax', 'xAxisType']],
+  [BOX]: [['valueColumnName', 'valueMin', 'valueMax', 'axisType']],
+  [BAR]: [['valueColumnName', 'valueMin', 'valueMax', 'axisType']],
+};
+
+/** Sets a viewer's axis ranges, log scales and reference lines from Graph Builder's axes. */
+function applyAxes(viewer: JmpViewerSpec, axes: Map<string, JmpAxis>, cols: Columns, notes: string[]): void {
+  const o = viewer.options;
+  const lines: Record<string, unknown>[] = [];
+  const applied = new Set<string>();
+  for (const [prop, min, max, type] of AXES[viewer.type] ?? []) {
+    const column = o[prop] as string | undefined;
+    const axis = column !== undefined ? axes.get(jslKey(column)) : undefined;
+    if (!axis)
+      continue;
+    applied.add(jslKey(column!));
+    if (axis.min !== undefined)
+      o[min] = axis.min;
+    if (axis.max !== undefined)
+      o[max] = axis.max;
+    // A Datagrok scatter plot's range filters the table by default; JMP's axis only frames the plot
+    if (viewer.type === SCATTER && (axis.min !== undefined || axis.max !== undefined))
+      o.zoomAndFilter = 'no action';
+    if (axis.log)
+      o[type] = 'logarithmic';
+    for (const r of axis.refLines) {
+      lines.push({type: 'line', formula: `\${${cols.get(column!).name}} = ${r.value}`,
+        ...(r.label ? {title: r.label} : {})});
+    }
+  }
+  if (lines.length > 0 && viewer.type === SCATTER)
+    o.formulaLines = JSON.stringify(lines);
+  else if (lines.length > 0)
+    notes.push('Reference lines not shown');
+  const unapplied = [...axes].filter(([k, a]) => !applied.has(k) &&
+    (a.min !== undefined || a.max !== undefined || a.log || a.refLines.length > 0)).map(([, a]) => a.column);
+  if (unapplied.length > 0)
+    notes.push(`Axis settings of ${quoted(unapplied)} not applied`);
 }
 
 function stringArg(call: Call | undefined): string | undefined {
