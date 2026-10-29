@@ -7,13 +7,16 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from . import browser_tools, formats, guard, hermes, structured
+from . import browser_tools, formats, guard, hermes, structured, textcalls
 from .hermes import Usage
 from .protocol import BrowserResultCommand, ContinueCommand, Emit, JsonObject, McpServer, Metrics, TurnCommand
 from .providers import Provider
 
 MAX_STRUCTURED_ATTEMPTS = 5
 HEARTBEAT_SECONDS = 30
+# A model call that writes a long tool call without streaming it is busy, not hung, for this long; Hermes' own
+# stale-stream detector waits 180 s.
+MODEL_CALL_BUSY_SECONDS = 240
 # Node answers every browser call within its own timeout; this only frees a thread whose call Node dropped.
 BROWSER_GRACE_SECONDS = 30
 # Hermes stamps its activity clock with this for every stream event (`_count_chunk`, agent/chat_completion_helpers.py).
@@ -75,6 +78,7 @@ class Turn:
         self.cancelled = False
         self.segment_start = True
         self.in_flight: set[str] = set()
+        self.model_call_since: float | None = None
         self.approvals = guard.Approvals()
 
     def metrics(self) -> Metrics:
@@ -115,7 +119,8 @@ class Heartbeat:
             self._busy = False
             return
         activity = agent.get_activity_summary()
-        self._busy = self._busy or bool(turn.in_flight) or self.streamed(self._last_at, activity)
+        calling = turn.model_call_since is not None and now - turn.model_call_since < MODEL_CALL_BUSY_SECONDS
+        self._busy = self._busy or bool(turn.in_flight) or calling or self.streamed(self._last_at, activity)
         self._last_at = activity.get('last_activity_at')
         if self._busy and now - self._sent >= HEARTBEAT_SECONDS:
             self._emit({'type': 'activity'})
@@ -192,12 +197,14 @@ class Session:
         # Every attempt, retries included: the error of the one before no longer stands.
         if self.turn:
             self.turn.api_error = None
+            self.turn.model_call_since = time.time()
 
     def post_api_request(self, usage: Usage | None = None, api_duration: float | None = None,
                          finish_reason: str | None = None, **_: Any) -> None:
         t = self.turn
         if t is None:
             return
+        t.model_call_since = None
         t.api_calls += 1
         self._account(t, usage or {}, api_duration)
         # The reply's tools must not run when no call is left to answer them with.
@@ -209,6 +216,7 @@ class Session:
         t = self.turn
         if t is None:
             return
+        t.model_call_since = None
         if reason == SAFETY_FILTER:
             t.api_error = SAFETY_FILTER_MESSAGE
             return
@@ -385,7 +393,8 @@ class Session:
 
     def _prompt(self, agent: hermes.Agent, t: Turn, content: str | list[JsonObject]) -> None:
         problem = ''
-        for _ in range(MAX_STRUCTURED_ATTEMPTS):
+        attempts = 0
+        while attempts < MAX_STRUCTURED_ATTEMPTS:
             t.segment_start = True
             # One above what is left, so the request patch, not Hermes' own limit, ends the turn at the limit.
             agent.max_iterations = max(1, t.max_calls - t.api_calls) + 1
@@ -406,6 +415,10 @@ class Session:
                            'message': t.api_error or result.get('error') or 'The model request failed.'})
                 return
             text = result.get('final_response') or ''
+            # The call limit bounds these: every run makes at least one model call.
+            if call := textcalls.parse(text, sorted(agent.valid_tool_names)):
+                content = textcalls.result_message(call[0], hermes.run_tool(agent, self.key, *call))
+                continue
             if t.schema is None:
                 if text:
                     self.emit({'type': 'stopped', 'text': text, 'metrics': t.metrics()})
@@ -416,6 +429,7 @@ class Session:
             if error is None:
                 self.emit({'type': 'stopped', 'text': text, 'structuredOutput': value, 'metrics': t.metrics()})
                 return
+            attempts += 1
             problem = error
             content = RETRY_STRUCTURED.format(problem)
         self.emit({'type': 'error', 'message': 'The model did not return valid structured output after '

@@ -93,7 +93,9 @@ export const DOMAINS: Domain[] = [
       create_script: {
         desc: 'Create a new script.',
         params: {
-          script: str('Script source code', true),
+          script: str('Script source, starting with the header the platform reads: `#name: X`, `#language: python`, ' +
+            'one `#input: <type> <name>` per input and one `#output: <type> <name>` per output ' +
+            '(types: int, double, string, bool, dataframe, column); the body assigns each output variable', true),
           name: str('Script name'),
           language: str('python | r | julia | nodejs | grok | octave (default python)'),
         },

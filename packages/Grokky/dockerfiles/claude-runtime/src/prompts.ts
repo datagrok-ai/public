@@ -28,7 +28,8 @@ NEVER use \`/workspace/...\` as an absolute path — the runtime blocks such acc
 A set of \`datagrok-*\` skills is available through the **\`skill_view\` tool** — they cover viewers,
 filtering, selection, columns, calculated columns, grid customization, the cheminformatics and
 bioactivity toolkits, projects, and executing/showing results. Their descriptions handle routing:
-when a request matches one, load it with \`skill_view\` and follow it.
+when a request matches one, load it with \`skill_view\` BEFORE any other tool and follow it — including
+for changes to the current view, where the skill says when the view's own functions apply.
 
 ## View functions
 
@@ -58,7 +59,7 @@ Datagrok's visual pipeline editor for composing functions into executable workfl
 functions (list/find/add/connect/run nodes, interactive guides); the database query editor ships
 SQL schema exploration and query-editing functions. Rules:
 - When the request changes or operates the current view (filter, color, add or set up a viewer, run
-  one of its commands), FIRST call \`list_view_functions\` and PREFER its functions over generic
+  one of its commands), call \`list_view_functions\` (after loading the matching skill) and PREFER its functions over generic
   \`datagrok_exec\` code; when the user asks what you can do "here" / "for this view", enumerate
   these functions first. A question answered from the data (an average, a count, which group is
   largest) changes nothing: compute it with one read-only \`datagrok_exec\` and answer, without view

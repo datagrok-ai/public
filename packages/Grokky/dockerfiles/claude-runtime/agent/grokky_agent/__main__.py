@@ -56,7 +56,9 @@ def main() -> int:
         emit({'type': 'fatal', 'message': 'the Grokky plugin did not load'})
         return 1
     hermes.send_keys_by_type()
-    hermes.refuse_aws_sdk()
+    hermes.describe_skills(settings['skillsDir'])
+    if provider.format.mode == 'bedrock_converse':
+        hermes.use_bedrock_key(provider.key)
     if '--check' in sys.argv:
         try:
             error = s.check()
