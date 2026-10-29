@@ -6,6 +6,7 @@ import {from, fromEvent, interval, merge, Observable, Subject, Subscription, tim
 import {filter, first, map, switchMap} from 'rxjs/operators';
 import {Track} from './track';
 import {awardBadge} from './utils/badges-utils';
+import {Shortcuts} from './shortcuts';
 
 
 /** What a step can point a hint at: an element, or a function that resolves one every time the
@@ -463,6 +464,11 @@ export abstract class Tutorial extends DG.Widget {
       this.activity.append(h3);
   }
 
+  private renderShortcuts(): void {
+    for (const root of [this.root, this.bar])
+      Shortcuts.render(root, () => this.renderShortcuts());
+  }
+
   describe(text: string): void {
     const div = ui.div();
     div.innerHTML = text;
@@ -470,6 +476,7 @@ export abstract class Tutorial extends DG.Widget {
       this.currentSection.append(div);
     else
       this.activity.append(div);
+    this.renderShortcuts();
     div.scrollIntoView();
   }
 
@@ -561,6 +568,7 @@ export abstract class Tutorial extends DG.Widget {
       this.activity.append(entry);
       this.activity.append(descriptionDiv);
     }
+    this.renderShortcuts();
     if (this.appPane)
       $(descriptionDiv).hide();
     (this.appPane ? entry : descriptionDiv).scrollIntoView();
@@ -631,7 +639,7 @@ export abstract class Tutorial extends DG.Widget {
       $(chevron).toggleClass('tutorials-chevron-expanded');
       $(descriptionDiv).toggle();
     });
-    ui.tooltip.bind(entry, description);
+    ui.tooltip.bind(entry, () => descriptionDiv.innerHTML);
 
     this.progress.value++;
     this.progressSteps.innerHTML = '';

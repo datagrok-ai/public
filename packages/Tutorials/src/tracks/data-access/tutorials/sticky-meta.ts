@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {getPlatform, Platform} from '../../shortcuts';
 import {_package} from '../../../package';
 import {fromEvent, interval} from 'rxjs';
 import {filter} from 'rxjs/operators';
@@ -46,7 +45,6 @@ export class StickyMetaTutorial extends Tutorial {
   helpUrl: string = LINKS.STICKY_META;
   prerequisites: TutorialPrerequisites = {packages: ['Chem']};
   demoTable: string = '';
-  platform: Platform = getPlatform();
 
   get typeName() {return `molecule-tutorial-${grok.shell.user.login}`;}
   get schemaName() {return `schema for tutorial ${grok.shell.user.login}`;}

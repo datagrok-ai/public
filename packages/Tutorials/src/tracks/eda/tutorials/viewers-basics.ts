@@ -5,7 +5,6 @@ import {filter, map, mergeMap, takeUntil} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {from, fromEvent, merge, Observable, timer} from 'rxjs';
 import {elementClick, selectionMade} from './utils';
-import {getPlatform, Platform, platformKeyMap} from '../../shortcuts';
 
 export class ViewersTutorial extends Tutorial {
   get name() {return 'Viewers';}
@@ -19,7 +18,6 @@ export class ViewersTutorial extends Tutorial {
   }
 
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers';
-  platform: Platform = getPlatform();
 
   protected async _run() {
     this.showToolbox();
@@ -103,8 +101,8 @@ export class ViewersTutorial extends Tutorial {
       'you will see the corresponding records being highlighted on both scatter plot ' +
       'and grid. The same concept applies to the rest of the viewers, such as a pie chart ' +
       'or histogram. To select multiple data points, click on a segment while holding <b>Shift</b>. ' +
-      `To deselect, hold <b>${platformKeyMap['Ctrl'][this.platform]}+Shift</b> while clicking. ` +
-      `To invert, hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while clicking.`;
+      'To deselect, hold <kbd>Ctrl+Shift</kbd> while clicking. ' +
+      'To invert, hold <kbd>Ctrl</kbd> while clicking.';
     await this.action('Select one of the bins on the histogram', selectionMade(this.t!), null, selectionSync,
       () => this.t!.selection.init((i) => this.t!.get('AGE', i) >= 40 && this.t!.get('AGE', i) < 50));
 
