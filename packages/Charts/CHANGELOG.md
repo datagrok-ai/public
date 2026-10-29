@@ -1,6 +1,6 @@
 # Charts changelog
 
-## v.next
+## 1.8.2 (2026-10-29)
 
 * Word cloud: Fixed errors logged after the viewer is closed while a render waits for its size
 * Radar: Fixed the legend overlapping the chart
