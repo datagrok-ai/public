@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import type * as DG from 'datagrok-api/dg';
-import {signal, computed, Control, div, divV, span, plural, text, link, Wizard, DataTable, ChoiceInput,
-  BoolInput, badge, dot, statusLine, Form, notify} from '@datagrok-libraries/u2';
+import {signal, computed, Control, div, divH, divV, span, plural, text, link, Wizard, DataTable, ChoiceInput,
+  BoolInput, badge, dot, statusLine, Form, notify, Scope} from '@datagrok-libraries/u2';
 import type {IProperty, ChoiceItem, BadgeVariant, RowView} from '@datagrok-libraries/u2';
 import {capital, nounOf} from '../core/domain-backend.js';
 import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike} from '../core/domain-backend.js';
@@ -10,6 +10,8 @@ import {fromDartInput} from '@datagrok-libraries/u2/dg';
 import {DomainTable} from './facade.js';
 import {DomainDataTable} from './grid.js';
 import {DomainErrors} from './errors.js';
+import {ImportLinks} from './import-links.js';
+import type {ImportLink, LinkField, LinkMatch} from './import-links.js';
 
 export interface DomainImportOptions {
   /** The frame to import, when the caller already has one; the picker still offers the rest. */
@@ -149,7 +151,14 @@ export function openImport(table: DomainTable, options: DomainImportOptions = {}
     notify.warning(`There is no column of ${table.address} you may write.`);
     return Promise.resolve(null);
   }
-  return new Promise((resolve) => new ImportFlow(table, targets, options, resolve).open());
+  // the wizard opens after the linked tables load: past that await it is a tree of its own
+  return ImportLinks.of(targets).then((links) => new Promise((resolve) => {
+    const owner = Scope.root('import wizard');
+    owner.build(() => new ImportFlow(table, targets, links, options, (report) => {
+      owner.dispose();
+      resolve(report);
+    }).open());
+  }));
 }
 
 class ImportFlow {
@@ -177,9 +186,11 @@ class ImportFlow {
   private readonly _previewBlock = signal<string | null>(null);
   private readonly _importText = signal('Import');
   private readonly _aborted = signal(false);
+  private _linked: {frame: DG.DataFrame, key: string, matches: Promise<Map<string, LinkMatch[]>>} | undefined;
+  private readonly _linkStatus = signal<{text: string, ok: boolean}[]>([]);
 
   constructor(private readonly _table: DomainTable, private readonly _targets: IProperty[],
-    private readonly _options: DomainImportOptions,
+    private readonly _links: Map<string, ImportLink>, private readonly _options: DomainImportOptions,
     private readonly _resolve: (report: DomainBatchReportLike | null) => void) {}
 
   open(): void {
@@ -283,8 +294,70 @@ class ImportFlow {
       items: this._rows,
     });
     table.root.classList.add('u2-domain-import-mapping');
-    return divV([table.root, statusLine(signal(null), computed(() => this._mappingStatus()))],
+    const links = divV([]);
+    links.dataset.u2Part = 'import-links';
+    const step = divV([table.root, links, statusLine(signal(null), computed(() => this._mappingStatus()))],
       'u2-domain-import-mapping-step');
+    const control = new Control(step);
+    control.effect(() => {
+      this._recheck.value;
+      const frame = this._frame.value;
+      if (frame !== null && this._links.size > 0)
+        void this._checkLinks(frame);
+    });
+    control.effect(() => links.replaceChildren(...this._linkStatus.value.map((line) =>
+      divH([dot(line.ok ? 'success' : 'error'), span(line.text)]))));
+    return step;
+  }
+
+  private async _checkLinks(frame: DG.DataFrame): Promise<void> {
+    const mapping = JSON.stringify([...this._mapping()]);
+    const matches = await this._resolveLinks(frame, [...this._mapping()]).catch((e) => e as Error);
+    if (this._frame.peek() !== frame || mapping !== JSON.stringify([...this._mapping()]))
+      return;
+    const byLink = this._linkMapping([...this._mapping()]);
+    this._linkStatus.value = [...byLink.keys()].map((column) => {
+      const link = this._links.get(column)!;
+      const by = byLink.get(column)!.map(([field]) => DomainTable.captionOf(field.prop)).join(' + ');
+      const title = `${DomainTable.captionOf(link.prop)} by ${by}`;
+      if (matches instanceof Error)
+        return {text: `${title}: ${matches.message}`, ok: false};
+      const named = matches.get(column)!.filter((m) => m.id !== null || m.error !== null);
+      const hit = named.filter((m) => m.id !== null).length;
+      const found = `${hit === named.length ? 'all ' : `${hit} of `}${plural(named.length, 'row', 'rows')} found`;
+      return {text: `${title}: ${found}`, ok: hit === named.length && hit > 0};
+    });
+  }
+
+  // per link, the fields mapped to it and the file column each comes from
+  private _linkMapping(mapping: [string, string][]): Map<string, [LinkField, string][]> {
+    const out = new Map<string, [LinkField, string][]>();
+    for (const [target, column] of mapping) {
+      const [name, field] = target.split('.');
+      const prop = field === undefined ? undefined : this._links.get(name)?.fields.find((f) => f.prop.name === field);
+      if (prop !== undefined)
+        out.set(name, [...out.get(name) ?? [], [prop, column]]);
+    }
+    return out;
+  }
+
+  private _resolveLinks(frame: DG.DataFrame, mapping: [string, string][]): Promise<Map<string, LinkMatch[]>> {
+    const byLink = this._linkMapping(mapping);
+    const key = JSON.stringify([...byLink].map(([name, fields]) => [name, fields.map(([f, c]) => [f.path, c])]));
+    if (this._linked?.frame !== frame || this._linked.key !== key) {
+      const matches = Promise.all([...byLink].map(async ([name, fields]): Promise<[string, LinkMatch[]]> => {
+        const columns = fields.map(([, column]) => frame.columns.byName(column));
+        const values = Array.from({length: frame.rowCount},
+          (_, i) => columns.map((c) => ImportFlow._valueOrNull(c, i)));
+        return [name, await ImportLinks.resolve(this._links.get(name)!, fields.map(([f]) => f), values)];
+      })).then((entries) => new Map(entries));
+      this._linked = {frame, key, matches};
+      matches.catch(() => {
+        if (this._linked?.matches === matches)
+          this._linked = undefined;
+      });
+    }
+    return this._linked.matches;
   }
 
   private _sample(name: string): HTMLElement {
@@ -302,7 +375,7 @@ class ImportFlow {
     const mapped = this._mapping();
     const imported = [...this._choices.values()].filter((c) => this._claimants(c.peek()).length > 0).length;
     const required = this._required()
-      .map((name) => `${ImportFlow._caption(this, name)} ${mapped.has(name) ? '✓' : '✗'}`);
+      .map((name) => `${ImportFlow._caption(this, name)} ${ImportFlow._covers(mapped, name) ? '✓' : '✗'}`);
     return [...(required.length > 0 ? [`Required: ${required.join(', ')}`] : []),
       ...[...mapped.keys()].filter((t) => this._claimants(t).length > 1)
         .map((name) => `${ImportFlow._caption(this, name)} is mapped twice`),
@@ -437,8 +510,8 @@ class ImportFlow {
 
   private _row(index: number, planned: Planned, kind: string, note: string, errors: DomainImportError[]):
     DomainImportRow {
-    return {index, values: planned.payload ?? planned.cells, kind, label: planned.verdict.label ?? '', note, errors,
-      id: null, key: ''};
+    return {index, values: {...planned.cells, ...planned.payload}, kind, label: planned.verdict.label ?? '', note,
+      errors, id: null, key: ''};
   }
 
   private _rowsTable(owner: Control, step: DomainImportStep, rows: DomainImportRow[],
@@ -539,16 +612,27 @@ class ImportFlow {
 
   private async _planRows(frame: DG.DataFrame, mapping: [string, string][], progress: (done: number) => void):
     Promise<Planned[]> {
-    const rows = this._payload(frame, mapping, frame.rowCount);
+    const cells = this._payload(frame, mapping, frame.rowCount);
+    // what is sent: a link's id in place of the fields that found it; a row naming no record leaves the link alone
+    const rows = cells.map((row) => Object.fromEntries(Object.entries(row).filter(([key]) => !key.includes('.'))));
+    const missed: (string | null)[] = rows.map(() => null);
+    for (const [column, matches] of await this._resolveLinks(frame, mapping)) {
+      for (const [i, row] of rows.entries()) {
+        if (matches[i].id !== null)
+          row[column] = matches[i].id;
+        missed[i] ??= matches[i].error;
+      }
+    }
     const prepare = this._table.importer?.prepare;
     const verdicts = prepare === undefined ? [] : await prepare(rows, progress);
-    return rows.map((cells, i): Planned => {
-      const verdict = verdicts[i] ?? {};
+    return cells.map((cell, i): Planned => {
+      const verdict = missed[i] !== null ? {error: missed[i]!} : verdicts[i] ?? {};
       if (verdict.error !== undefined || verdict.existing !== undefined || verdict.sameAs !== undefined)
-        return {cells, payload: null, verdict};
-      const payload = {...cells, ...verdict.values};
+        return {cells: cell, payload: null, verdict};
+      const payload = {...rows[i], ...verdict.values};
       const problem = this._validate(payload);
-      return problem === null ? {cells, payload, verdict} : {cells, payload: null, verdict: {error: problem}};
+      return problem === null ? {cells: cell, payload, verdict} :
+        {cells: cell, payload: null, verdict: {error: problem}};
     });
   }
 
@@ -603,6 +687,7 @@ class ImportFlow {
   private _remap(frame: DG.DataFrame | null): void {
     this._checked = undefined;
     this._planned = undefined;
+    this._linked = undefined;
     for (const choice of this._choices.values())
       choice.dispose();
     this._choices.clear();
@@ -611,8 +696,13 @@ class ImportFlow {
       return;
     }
     // the asterisk the forms use, in the option itself: a picker's own list is all the user sees
+    const linked = [...this._links.values()].flatMap((link) => link.fields.map((f): ChoiceItem => {
+      const title = DomainTable.captionOf(link.prop);
+      return {value: `${link.prop.name}.${f.prop.name}`, label: `${title} › ${DomainTable.captionOf(f.prop)}`,
+        group: `${title}: find by`};
+    }));
     const items: ChoiceItem[] = [{value: SKIP, label: SKIP_LABEL}, ...this._targets.map((p) =>
-      ({value: p.name!, label: `${DomainTable.captionOf(p)}${p.nullable === false ? ' *' : ''}`}))];
+      ({value: p.name!, label: `${DomainTable.captionOf(p)}${p.nullable === false ? ' *' : ''}`})), ...linked];
     const columns = frame.columns.names();
     for (const column of columns) {
       // owned by hand, not by a scope: the first remap runs inside the wizard's own constructor
@@ -622,7 +712,8 @@ class ImportFlow {
       // required as the forms say it: a target the table will not take empty
       choice.effect(() => {
         const target = choice.value;
-        choice.required = this._targets.some((p) => p.name === target && p.nullable === false);
+        const name = (target ?? '').split('.')[0];
+        choice.required = this._targets.some((p) => p.name === name && p.nullable === false);
         choice.root.classList.toggle('u2-domain-import-skipped', target === SKIP);
       });
       choice.addValidator((target) => {
@@ -646,8 +737,11 @@ class ImportFlow {
   }
 
   private static _caption(flow: ImportFlow, column: string): string {
-    const prop = flow._table.properties.find((p) => p.name === column);
-    return prop === undefined ? column : DomainTable.captionOf(prop);
+    const [name, field] = column.split('.');
+    const prop = flow._table.properties.find((p) => p.name === name);
+    const caption = prop === undefined ? name : DomainTable.captionOf(prop);
+    const linked = flow._links.get(name)?.fields.find((f) => f.prop.name === field);
+    return linked === undefined ? caption : `${caption} › ${DomainTable.captionOf(linked.prop)}`;
   }
 
   private _keyColumn(): string | null {
@@ -709,6 +803,10 @@ class ImportFlow {
       return ['Choose an open table or a file'];
     const problems: string[] = [];
     const seen = this._mapping();
+    for (const name of this._links.keys()) {
+      if (seen.has(name) && [...seen.keys()].some((target) => target.startsWith(`${name}.`)))
+        problems.push(`"${ImportFlow._caption(this, name)}" is mapped both itself and by its fields — keep one.`);
+    }
     for (const target of seen.keys()) {
       const columns = this._claimants(target).map((c) => `"${c}"`);
       if (columns.length > 1) {
@@ -721,13 +819,17 @@ class ImportFlow {
       problems.push('Map at least one column.');
     const upsert = this._mode?.peek() === 'upsert';
     for (const name of this._required()) {
-      if (seen.has(name))
+      if (ImportFlow._covers(seen, name))
         continue;
       const caption = ImportFlow._caption(this, name);
       problems.push(upsert ? `Add or update matches rows by ${caption} — map a column to "${caption}".` :
         `Required column "${caption}" is not mapped — rows without a value will fail.`);
     }
     return problems;
+  }
+
+  private static _covers(mapping: Map<string, string>, name: string): boolean {
+    return mapping.has(name) || [...mapping.keys()].some((target) => target.startsWith(`${name}.`));
   }
 
   private _required(): string[] {

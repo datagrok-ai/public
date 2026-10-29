@@ -587,6 +587,9 @@ export class AggregatedColumnsInput extends Input<ColumnAggregation[], Aggregate
     const column = new ChoiceInput({inline: true, nullable: false,
       items: Platform.listedColumns(this.options.table).map((c) => c.name), value: row.column,
       onChanged: (value) => this._onColumn(row, value!, aggregation)});
+    // a row's choices share it, not the width a form around the input gives its own choices
+    column.root.classList.add('u2-input-fill');
+    aggregation.root.classList.add('u2-input-fill');
     return divH([column.root, aggregation.root, this._addButton(index + 1),
       iconButton('minus', () => this._remove(index), {tooltip: 'Remove aggregation'})],
     'u2-aggregations-row');

@@ -7,6 +7,7 @@ import {moltrackDb} from '../generated/db';
 import {Compounds} from './compounds';
 import {MolTrackTables, SCHEMA} from './tables';
 import {AppHeader} from '@datagrok-libraries/u2';
+import type {RowView} from '@datagrok-libraries/u2';
 import {ViewHost} from '@datagrok-libraries/u2/dg';
 import {_package} from '../package';
 
@@ -20,11 +21,15 @@ const FILTERS = {filters: {mode: 'builder' as const, placement: 'left' as const}
 const BATCH_GRID = {open: 'batch_regno', columns: ['batch_regno', 'source', 'source_batch_code', 'acquired_date',
   'synthesized_date', 'purity', 'project']};
 
+const STRUCTURE = (row: RowView) => row.structure ? grok.chem.drawMolecule(String(row.structure), 120, 56) : '';
+const COMPOUND_GRID = {rowHeight: 60, cells: {structure: STRUCTURE}};
+
 const KEYS: Record<string, string> = {[`${SCHEMA}.compound`]: 'molregno', [`${SCHEMA}.compound_batch`]: 'batch_regno'};
 
 const ENTRIES: DomainViewEntry[] = [
   {table: `${SCHEMA}.compound`, name: 'Compounds', options: {...FILTERS, sort: '!molregno',
     mode: 'cards', itemHeight: 88, exclude: Compounds.DERIVED, setup: Compounds.setup, menu: Compounds.menu,
+    grid: COMPOUND_GRID,
     children: {tables: ['compound_batch'], grids: {compound_batch: BATCH_GRID}}}},
   {table: `${SCHEMA}.compound_batch`, name: 'Batches', options: {...FILTERS, sort: '!batch_regno',
     children: {tables: ['batch_addition', 'assay_result']}}},

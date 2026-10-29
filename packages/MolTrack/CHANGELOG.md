@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Import: Added finding linked records by their fields: map a file column to Batch › EPA Batch ID, Assay Run › Cell Lot and the like
+* Compounds: Added a table view with Output columns and Aggregations over batches and assay results under the filters
 * Compounds: Fixed the Identity pane's form staying alive after going back from a compound or a new registration to the list
 * App: Fixed reloading a view, opening a view link and Back from a record opening Compounds: the views live under `/apps/Moltrack`, where the platform serves the app
 * Added Compound properties and Batch properties: add your own fields to compounds and batches, which then show on forms, grids and filters

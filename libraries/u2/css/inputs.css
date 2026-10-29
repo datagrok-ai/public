@@ -973,13 +973,19 @@ textarea.u2-list-area {
 
 .u2-aggregations-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--dg-space-s);
 }
 
+/* in a narrow host the aggregation and the + and − go under the column instead of over its edge */
 .u2-aggregations-row > .u2-input-root {
-  flex: 1;
+  flex: 1 1 96px;
   min-width: 0;
+}
+
+.u2-aggregations-row > .u2-input-root:nth-child(2) {
+  flex: 0 0 72px;
 }
 
 /* property editor (u2/dg): the identity form and the type-dependent one under it, a form row apart

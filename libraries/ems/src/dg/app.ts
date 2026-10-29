@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divH, divV, span,
-  icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu, LabelColumn, Reason}
-  from '@datagrok-libraries/u2';
+  icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu, LabelColumn, Reason,
+  text} from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView, Scope} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {capital, nounOf} from '../core/domain-backend.js';
@@ -19,6 +19,8 @@ import type {DomainChildrenOptions} from './children.js';
 import {DomainAddress} from './address.js';
 import {DomainErrors} from './errors.js';
 import {DgDomainTable} from './backend.js';
+import {DomainDataTable} from './grid.js';
+import {domainOutput, outputKey} from './output.js';
 import {PropertyDialog} from './authoring/property-dialog.js';
 import {ViewSync} from '@datagrok-libraries/u2/dg';
 import type {ViewState} from '@datagrok-libraries/u2/dg';
@@ -104,6 +106,9 @@ export interface DomainAppOptions {
   /** What the app wires beyond its options, run once it is built under its owner `self`: validators,
    * effects over its pages, a hosted filter on `listSource`. */
   setup?: (app: DomainApp, self: Scope) => void;
+  /** The list page as a table (the ribbon's list/table switch): its row height, and a column's cell where the app
+   * draws it better than its type. */
+  grid?: {rowHeight?: number, cells?: Record<string, (row: RowView) => HTMLElement | string>};
 }
 
 /** The app shape over one table: a list page and an entity page under one `SharedSession`, the URL following
@@ -161,6 +166,10 @@ export class DomainApp extends Control {
   shortcuts: Record<string, string>;
   /** The view is too narrow for the whole ribbon: the presets fold into the Actions menu. */
   readonly compact = signal(false);
+  /** The list page's rows as the list or as a table — the ribbon's switch. */
+  readonly view = signal<'list' | 'table'>('list');
+  /** The table view's columns: the Output and Aggregations under the filters. */
+  readonly output: ReturnType<typeof domainOutput>;
 
   private readonly _mode = signal<DomainAppMode>('live');
   private readonly _count = signal('');
@@ -247,8 +256,12 @@ export class DomainApp extends Control {
       span(`Deleted ${plural}. Restore what you need, then Save.`)], 'u2-domain-app-trash-banner'));
     banner.dataset.u2Part = 'trash-banner';
     this.effect(() => banner.hidden = !this.trash.value);
-    const listPage = divV([banner, ...(_options.filters?.placement === 'left' ? [this.filters.pane(this.list.root)] :
-      [this.filters.root, this.list.root])], 'u2-domain-app-list');
+    this.output = this.build(() => domainOutput(this.listSource, table, _options.exclude ?? [],
+      computed(() => this.view.value === 'table')));
+    const listPage = divV([banner, ...(_options.filters?.placement === 'left' ?
+      [this.filters.pane(this.list.root, [this.output.root])] : [this.filters.root, this.output.root, this.list.root])],
+    'u2-domain-app-list');
+    this._tableView();
     listPage.dataset.u2Part = 'list-page';
     const entityPage = divV([this._formHost, this.panes], 'u2-domain-app-entity');
     entityPage.dataset.u2Part = 'entity-page';
@@ -489,15 +502,57 @@ export class DomainApp extends Control {
     reload.effect(() => reload.root.hidden = !this.stale.value);
     const search = domains.search(this.listSource);
     const sort = this._sortMenu();
-    const tools: Control[] = [search, sort];
+    const switcher = this._viewSwitch();
+    const tools: Control[] = [search, sort, switcher];
     if (this.table.table instanceof DgDomainTable)
       tools.push(this._propertiesButton());
     for (const control of [add, save, discard, more, reload, ...tools])
       this.own(() => control.dispose());
     this._listOnly(search);
     this._listOnly(sort, () => this.trash.value);
+    this._listOnly(switcher);
     const base: DomainRibbon = {main: [add, save, discard, more, reload], tools, presets: []};
     return this._ribbon = this._options.ribbon?.(base, this) ?? base;
+  }
+
+  // the table takes the list's place, rebuilt when its columns change; the aggregations' values repaint it in place
+  private _tableView(): void {
+    let shown: DomainDataTable | null = null;
+    this.effect(() => {
+      const table = this.view.value === 'table';
+      const columns = this.output.columns.value;
+      const extraColumns = this.output.aggregations.value.map((a) => ({name: outputKey(a),
+        header: outputKey(a), align: 'right' as const, render: (row: RowView) => {
+          const value = this.output.values.peek().get(String(row.id))?.[outputKey(a)];
+          return typeof value === 'number' ? DomainDataTable.number(value) : text(value);
+        }}));
+      this.list.root.hidden = table;
+      this.output.root.hidden = !table;
+      // the pane's filters stop taking its height, so Output sits right under them
+      this.filters.root.style.flex = table ? 'none' : '';
+      if (!table)
+        return;
+      this.output.show();
+      const view = shown = new DomainDataTable(this.listSource, {columns, extraColumns,
+        rowHeight: this._options.grid?.rowHeight, cells: this._options.grid?.cells});
+      this.list.root.after(view.root);
+      return () => {
+        view.root.remove();
+        shown = null;
+      };
+    });
+    this.effect(() => {
+      this.output.values.value;
+      shown?.table.peek()?.refresh();
+    });
+  }
+
+  private _viewSwitch(): Control {
+    const group = this.build(() => new ButtonGroup({toggle: 'single', iconOnly: true, density: 'ribbon', items: [
+      {id: 'list', icon: 'list', tooltip: 'Show as list', onClick: () => this.view.value = 'list'},
+      {id: 'table', icon: 'table', tooltip: 'Show as table', onClick: () => this.view.value = 'table'}]}));
+    group.effect(() => group.selected.value = [this.view.value]);
+    return group;
   }
 
   private _propertiesButton(): Control {
