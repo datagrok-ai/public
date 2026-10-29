@@ -65,6 +65,8 @@ viewers, titled after the script:
 | Contingency               | Stacked bar chart of counts                |
 | Graph Builder             | Scatter plot, line chart, bar chart, box plot, histogram or pie chart, one per panel, by its first element, with its title, axis ranges, log scales and reference lines; a trellis plot of it when the graph is grouped or paged |
 | Tabulate                  | Pivot table                                |
+| Multivariate              | Correlation plot (Pearson, or Spearman when only that was asked for) and a matrix plot |
+| Scatterplot Matrix        | Matrix plot of scatter plots, coloured by its Group |
 | Fit Model, Fit Group (least squares) | Actual by Predicted scatter plot per response, from the prediction formula saved from that model |
 | Fit Group of other analyses | Each analysis it holds, as above |
 

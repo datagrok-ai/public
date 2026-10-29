@@ -121,6 +121,34 @@ category('JMP: dataframe', () => {
     }
   });
 
+  test('a Multivariate opens as a correlation plot and a matrix plot', async () => {
+    const df = grok.data.demo.demog(100);
+    const tv = grok.shell.addTableView(df);
+    try {
+      const text = 'Multivariate(Y(:age, :height, :weight), Correlations Multivariate(0), Spearman\'s ρ(1), ' +
+        'Scatterplot Matrix(Fit Line))';
+      const conversion = convertScript({name: 'Sizes', text, body: parseJsl(text)},
+        df.columns.toList().map((c) => ({name: c.name, numeric: c.isNumerical})));
+      expect(addSavedAnalyses(tv, [conversion]), 2);
+      const corr = Array.from(tv.viewers).find((v) => v.type === DG.VIEWER.CORR_PLOT)!;
+      expectArray(corr.props.xColumnNames, ['age', 'height', 'weight']);
+      expect(corr.props.correlationType, 'Spearman');
+      const matrix = Array.from(tv.viewers).find((v) => v.type === DG.VIEWER.MATRIX_PLOT)!;
+      expectArray(matrix.props.yColumnNames, ['age', 'height', 'weight']);
+      expect(matrix.props.cellPlotType, DG.VIEWER.SCATTER_PLOT);
+      const look = JSON.stringify(matrix.getOptions(true));
+      expect(look.includes('"showRegressionLine":true'), true, look.slice(0, 400));
+      const grouped = 'Scatterplot Matrix(Y(:height, :weight), Group(:sex))';
+      expect(addSavedAnalyses(tv, [convertScript({name: 'By sex', text: grouped, body: parseJsl(grouped)},
+        df.columns.toList().map((c) => ({name: c.name, numeric: c.isNumerical})))]), 1);
+      const bySex = Array.from(tv.viewers).filter((v) => v.type === DG.VIEWER.MATRIX_PLOT)[1];
+      const sexLook = JSON.stringify(bySex.getOptions(true));
+      expect(sexLook.includes('"colorColumnName":"sex"'), true, sexLook.slice(0, 400));
+    } finally {
+      tv.close();
+    }
+  });
+
   test('a Graph Builder axis frames the plot without filtering, and its smoother averages over X', async () => {
     const df = grok.data.demo.demog(100);
     const tv = grok.shell.addTableView(df);

@@ -3,7 +3,7 @@
 // so the Node tests can run it.
 
 import {
-  JslNode, columnNames, findAll, findArg, isCall, jslKey, numberValue, referencedColumns, statements,
+  JslNode, columnNames, findAll, findArg, isCall, isOn, jslKey, numberValue, referencedColumns, statements,
 } from './jsl';
 import {JmpScript, isSourceScript} from './jmp-scripts';
 import type {JmpColumn} from './jmp-types';
@@ -77,6 +77,8 @@ const BAR = 'Bar chart';
 const LINE = 'Line chart';
 const PIE = 'Pie chart';
 const PIVOT = 'Pivot table';
+const CORR = 'Correlation plot';
+const MATRIX = 'Matrix plot';
 const TRELLIS = 'Trellis plot';
 
 class Unconvertible extends Error {}
@@ -240,6 +242,8 @@ const PLATFORMS: Record<string, Converter> = {
   fitgroup: fitGroup,
   graphbuilder: graphBuilder,
   tabulate: tabulate,
+  multivariate: multivariate,
+  scatterplotmatrix: scatterplotMatrix,
 };
 
 /** Distribution: a histogram per continuous column, a bar chart of counts per categorical one. A column
@@ -409,6 +413,57 @@ function fitModels(models: Call[], cols: Columns, notes: string[]): JmpViewerSpe
   if (profiler)
     notes.push('Profiler not shown');
   return viewers;
+}
+
+/** Multivariate: the correlation matrix as a correlation plot, Pearson unless only Spearman's was asked
+ * for, and the scatterplot matrix JMP shows by default. */
+function multivariate(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
+  const ys = columnNames(findArg(call, 'Y')).map((n) => cols.get(n).name);
+  if (ys.length < 2)
+    throw new Unconvertible('Multivariate needs two or more Y columns');
+  const spearman = isOn(call, 'Spearman\'s ρ');
+  const pearson = !findAll(call, 'Correlations Multivariate').some((c) => c.args[0]?.type === 'number' &&
+    c.args[0].value === 0);
+  if (spearman && pearson)
+    notes.push('Spearman\'s ρ not shown; the correlation plot shows Pearson\'s r');
+  for (const report of ['Correlation Probability', 'Pairwise Correlations', 'Covariance Matrix',
+    'Partial Correlations', 'Inverse Correlations', 'Kendall\'s τ', 'Hoeffding\'s D', 'Principal Components',
+    'Mahalanobis Distances', 'Jackknife Distances', 'T Square', 'Cluster the Correlations',
+    'Color Map on p-Values', 'Item Reliability']) {
+    if (isOn(call, report))
+      notes.push(`${report} not shown`);
+  }
+  const viewers: JmpViewerSpec[] = [{type: CORR, options: {
+    xColumnNames: ys, yColumnNames: ys, correlationType: pearson ? 'Pearson' : 'Spearman', showPearsonR: true,
+  }, subtitle: 'Correlations'}];
+  // JMP shows the scatterplot matrix unless it was turned off
+  const matrix = findArg(call, 'Scatterplot Matrix');
+  if (!(matrix?.args[0]?.type === 'number' && matrix.args[0].value === 0)) {
+    const [m] = scatterplotMatrix({type: 'call', name: 'Scatterplot Matrix',
+      args: [findArg(call, 'Y')!, ...matrix?.args ?? []]}, cols, notes);
+    viewers.push({...m, subtitle: 'Scatterplot Matrix'});
+  }
+  return viewers;
+}
+
+/** Scatterplot Matrix: a matrix plot of the Y columns (by the X columns, when given), coloured by its Group,
+ * each cell with its regression line when JMP fits one. */
+function scatterplotMatrix(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
+  const ys = columnNames(findArg(call, 'Y')).map((n) => cols.get(n).name);
+  const xs = columnNames(findArg(call, 'X')).map((n) => cols.get(n).name);
+  if (ys.length === 0)
+    throw new Unconvertible('Scatterplot Matrix names no Y columns');
+  const group = [...columnNames(findArg(call, 'Group')), ...columnNames(findArg(call, 'Group By'))]
+    .map((n) => cols.get(n).name)[0];
+  if (['Density Ellipses', 'Shaded Ellipses'].some((e) => isOn(call, e)))
+    notes.push('Density ellipses not shown');
+  return [{type: MATRIX, options: {
+    xColumnNames: xs.length > 0 ? xs : ys, yColumnNames: ys, cellPlotType: SCATTER,
+    innerViewerLook: {
+      ...(isOn(call, 'Fit Line') ? {showRegressionLine: true} : {}),
+      ...(group ? {colorColumnName: group} : {}),
+    },
+  }}];
 }
 
 function contingency(call: Call, cols: Columns): JmpViewerSpec[] {

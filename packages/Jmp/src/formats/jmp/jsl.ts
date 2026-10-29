@@ -374,6 +374,17 @@ export function findAll(node: JslNode, name: string): Extract<JslNode, {type: 'c
   return out;
 }
 
+/** Whether an option is on anywhere under `node`: `Fit Line`, `Fit Line()`, `Fit Line(1)` or
+ * `Scatterplot Matrix(Fit Line)` are, `Fit Line(0)` isn't. */
+export function isOn(node: JslNode, name: string): boolean {
+  const key = jslKey(name);
+  const visit = (n: JslNode): boolean =>
+    (n.type === 'name' && jslKey(n.name) === key) ||
+    (isCall(n, name) && !(n.args[0]?.type === 'number' && n.args[0].value === 0)) ||
+    children(n).some(visit);
+  return visit(node);
+}
+
 /** A number literal's value; a negative number is a minus applied to a number, not a literal. */
 export function numberValue(node: JslNode | undefined): number | undefined {
   return node?.type === 'number' ? node.value :

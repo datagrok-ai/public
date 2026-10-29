@@ -448,6 +448,25 @@ category('JMP: analyses', () => {
       'The response Log("weight") is a transform, which isn\'t converted yet');
   });
 
+  test('Multivariate: correlations and the scatterplot matrix', async () => {
+    const c = convert('Multivariate(Y(:height, :weight, :age), Scatterplot Matrix(Show Correlations(1), Fit Line), ' +
+      'Pairwise Correlations(1), Spearman\'s ρ(1), Principal Components("on Correlations"))', 'Sizes');
+    expectArray(c.viewers.map((v) => `${v.type}: ${v.options.title}`),
+      ['Correlation plot: Sizes: Correlations', 'Matrix plot: Sizes: Scatterplot Matrix']);
+    const [corr, matrix] = c.viewers.map((v) => v.options);
+    expectArray(corr.xColumnNames as string[], ['height', 'weight', 'age']);
+    expect(corr.correlationType, 'Pearson');
+    expectArray(matrix.yColumnNames as string[], ['height', 'weight', 'age']);
+    expect((matrix.innerViewerLook as {showRegressionLine?: boolean}).showRegressionLine, true);
+    expectArray(c.notes, ['Spearman\'s ρ not shown; the correlation plot shows Pearson\'s r',
+      'Pairwise Correlations not shown', 'Principal Components not shown']);
+    const spearman = convert('Multivariate(Y(:height, :weight), Correlations Multivariate(0), Spearman\'s ρ(1), ' +
+      'Scatterplot Matrix(0))');
+    expect(only(spearman).options.correlationType, 'Spearman');
+    expectArray(spearman.notes, []);
+    expect(convert('Multivariate(Y(:height))').reason, 'Multivariate needs two or more Y columns');
+  });
+
   test('Fit Group: each analysis it holds, as if launched on its own', async () => {
     const c = convert('Fit Group(Oneway(Y(:height), X(:sex), Means(1)), Bivariate(Y(:weight), X(:height), ' +
       'Fit Line()), Contingency(Y(:sex), X(:age)), Matched Pairs(Y(:height, :weight)), <<{Arrange in Rows(1)})');
@@ -522,6 +541,11 @@ category('JMP: public files', () => {
     expectArray(labels.valueLabels!.keys, [0, 1, 2, 3, 4]);
     expectArray(labels.valueLabels!.labels, ['', 'A', 'V', 'R', 'D']);
     expect(labels.properties.some((p) => p.name === 'Value Colors' && p.node !== undefined), true);
+    const matrix = only(convertScript(t.scripts.find((s) => s.name === 'Scatterplot Matrix')!, columnRefs(t.columns)));
+    expect(matrix.type, 'Matrix plot');
+    expectArray(matrix.options.xColumnNames as string[], ['Compactness', 'Majority-Minority', 'Population Equality',
+      'County integrity', 'Partisan Balance', 'Competitiveness']);
+    expect(JSON.stringify(matrix.options.innerViewerLook), '{"colorColumnName":"Entity"}');
   });
 
   test('JMP 11: value labels and a Graph Builder', async () => {
