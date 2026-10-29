@@ -291,13 +291,14 @@ export const DOMAINS: Domain[] = [
 ];
 
 /** One-line operation menu for a domain — what goes in the tool description. */
-/** Each operation's signature and purpose, e.g. `get(id: string) — Full details of one function…`:
- *  enough to call it right without first listing the domain. */
+/** Each operation with its purpose and every parameter's type and meaning, e.g.
+ *  `get — Full details of one function…; id: string — Function ID or name`: enough to call it right without
+ *  first listing the domain. */
 export function opMenu(d: Domain): string {
   return Object.entries(d.ops).map(([name, op]) => {
     const params = Object.entries(op.params ?? {})
-      .map(([p, meta]) => `${p}${meta.required ? '' : '?'}: ${meta.type}`).join(', ');
-    return `- ${name}(${params}) — ${op.desc}`;
+      .map(([p, meta]) => `\n    ${p}${meta.required ? '' : '?'}: ${meta.type} — ${meta.desc}`).join('');
+    return `- ${name} — ${op.desc}${params}`;
   }).join('\n');
 }
 

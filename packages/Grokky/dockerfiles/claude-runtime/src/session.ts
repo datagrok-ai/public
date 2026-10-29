@@ -10,7 +10,7 @@ import {markQueryStart, markQueryEnd} from './sync/workspace';
 import {Verifier} from './verify';
 import {GroundingGate, isSmallTalk} from './grounding';
 import {buildSystemPrompt} from './prompts';
-import {EFFORT, WORKSPACE, apiUrlFromMcpUrl, rewriteForDocker} from './constants';
+import {WORKSPACE, apiUrlFromMcpUrl, rewriteForDocker} from './constants';
 import {waitForClaim, endTask} from './tasks';
 import {runTurn as runAgentTurn} from './agent/turn';
 import {hasSession, parkSession} from './agent/pool';
@@ -219,7 +219,7 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
 
     const it = runAgentTurn({
       sessionKey: sid, text: message, images: data.images, systemPrompt: buildSystemPrompt(mode),
-      effort: fullPromptTurn ? EFFORT : undefined,
+      effort: fullPromptTurn ? 'high' : undefined,
       cwd: userDir || WORKSPACE, userDir, resumeExpected: data.resumeExpected,
       outputSchema: data.outputSchema, clientTools: data.clientTools,
       datagrokMcp: mcpUrl ? {url: mcpUrl, headers: {

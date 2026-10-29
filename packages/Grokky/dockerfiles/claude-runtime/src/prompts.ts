@@ -84,7 +84,7 @@ NEVER guess function names, parameter names, signatures, or JS API methods. RDKi
 Datagrok's server-side objects are reached through one MCP tool per domain, each taking an
 \`op\` and its \`args\`: \`datagrok_functions\`, \`datagrok_files\`, \`datagrok_projects\`,
 \`datagrok_spaces\`, \`datagrok_platform\`. The tool description lists each operation with its
-parameters, so call the operation directly; calling with **no \`op\`** describes the parameters further.
+parameters and what they mean, so call the operation directly.
 Reach for these when the request concerns stored server-side objects
 — not for anything in the current view, which the view functions cover.
 

@@ -1,7 +1,6 @@
 // Browser ↔ runtime WebSocket protocol
 
 export type PromptMode = 'datagrok' | 'bash' | 'none';
-export type Effort = 'low' | 'medium' | 'high';
 
 export interface ImageAttachment {
   mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
@@ -92,7 +91,7 @@ export interface AgentTurnRequest {
   images?: ImageAttachment[];
   systemPrompt: string;
   /** Reasoning effort; without one the agent asks for no thinking where the model allows it. */
-  effort?: Effort;
+  effort?: 'high';
   cwd: string;
   userDir?: string;
   /** The browser holds a transcript for this session: if the runtime has none, the turn resets instead. */

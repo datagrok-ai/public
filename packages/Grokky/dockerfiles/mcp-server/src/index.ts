@@ -53,8 +53,7 @@ function createServer(): McpServer {
     server.tool(
       d.tool,
       `${d.blurb} Use this tool, not source code or raw HTTP, for these operations. ` +
-      'Call it as {op: "<name>", args: {<parameters>}}; `?` marks an optional parameter, and a call with ' +
-      `no \`op\` returns each parameter's description.\n${opMenu(d)}`,
+      'Call it as {op: "<name>", args: {<parameters>}}; `?` marks an optional parameter.\n' + opMenu(d),
       {
         op: z.string().optional().describe(`One of: ${Object.keys(d.ops).join(', ')}.`),
         args: z.record(z.string(), z.unknown()).optional().describe('Arguments for the chosen operation.'),
