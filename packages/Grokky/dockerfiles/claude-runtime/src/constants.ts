@@ -1,3 +1,5 @@
+import type {Effort} from './types';
+
 export const WORKSPACE = process.env['CLAUDE_WORKSPACE'] || '/workspace';
 
 export function rewriteForDocker(url: string): string {
@@ -30,3 +32,5 @@ export function takeEnv(names: string[], env: NodeJS.ProcessEnv = process.env): 
 // Out of the environment at startup: every child the server runs (git for the workspace sync) would inherit them,
 // and a child is dumpable again after its exec.
 export const PROVIDER_ENV = takeEnv(PROVIDER_CREDENTIALS);
+/** The `effort` credential: how hard a full-prompt turn reasons. Faster models answer as well on less. */
+export const EFFORT: Effort = (['low', 'medium', 'high'] as const).find((e) => e === takeEnv(['effort']).effort) ?? 'high';

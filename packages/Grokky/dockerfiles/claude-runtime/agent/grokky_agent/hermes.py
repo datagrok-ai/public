@@ -1,7 +1,6 @@
 """Every Hermes API the driver uses, typed as the driver uses it. Hermes is imported on first use, so the unit
 tests run without it."""
 from collections.abc import Callable
-from pathlib import Path
 from typing import Any, Literal, NotRequired, Protocol, TypedDict
 
 from .protocol import JsonObject
@@ -174,23 +173,13 @@ def tool_registry() -> ToolRegistry:
     return tools
 
 
-def describe_skills(skills_dir: str) -> None:
+def describe_skills(skills: list[tuple[str, str]]) -> None:
     """Puts the index of Grokky's skills into the skill_view tool's own description: models that weigh tool
     definitions over a long system prompt (Qwen) otherwise act without loading the skill the request matches."""
-    import re
-
     from tools.skills_tool import SKILL_VIEW_SCHEMA
-    lines = []
-    for skill in sorted(Path(skills_dir).glob('*/SKILL.md')):
-        text = skill.read_text()
-        head = text.split('---')[1] if text.startswith('---') else ''
-        name = re.search(r'^name:\s*(.+)$', head, re.M)
-        description = re.search(r'^description:\s*(.+)$', head, re.M)
-        if name and description:
-            lines.append(f'- {name.group(1).strip()}: {description.group(1).strip()}')
     SKILL_VIEW_SCHEMA['description'] = (
         'Load the Datagrok skill whose description matches the request BEFORE acting: it gives the exact API calls '
-        'and conventions for the task. Skills:\n' + '\n'.join(lines))
+        'and conventions for the task. Skills:\n' + '\n'.join(f'- {name}: {desc}' for name, desc in skills))
 
 
 def run_tool(agent: Agent, task_id: str, name: str, args: JsonObject) -> str:

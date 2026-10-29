@@ -7,7 +7,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from . import browser_tools, formats, guard, hermes, structured, textcalls
+from . import browser_tools, formats, guard, hermes, skills, structured, textcalls
 from .hermes import Usage
 from .protocol import BrowserResultCommand, ContinueCommand, Emit, JsonObject, McpServer, Metrics, TurnCommand
 from .providers import Provider
@@ -80,6 +80,7 @@ class Turn:
         self.in_flight: set[str] = set()
         self.model_call_since: float | None = None
         self.approvals = guard.Approvals()
+        self.redirected = False
 
     def metrics(self) -> Metrics:
         return {'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
@@ -150,6 +151,7 @@ class Session:
         # The stored session this process reloads, until a turn has restored it.
         self.restore: str | None = None
         self.calls: dict[str, BrowserCall] = {}
+        self.skills: list[skills.Skill] = []
         self.hooks_registered = False
         browser_tools.register(registry, self.call_browser)
         threading.Thread(target=self._beat_every_second, daemon=True).start()
@@ -175,6 +177,9 @@ class Session:
         why = guard.violation(tool_name, args, t.user_dir, self.homes, self.spillover) or \
             t.approvals.check(tool_name, args)
         if why:
+            return {'action': 'block', 'message': why}
+        if not t.redirected and (why := skills.redirect(tool_name, args, self.skills)):
+            t.redirected = True
             return {'action': 'block', 'message': why}
         t.in_flight.add(tool_call_id or tool_name)
         path = guard.absolute_edit_path(tool_name, args, t.cwd)

@@ -52,10 +52,11 @@ function createServer(): McpServer {
   for (const d of DOMAINS) {
     server.tool(
       d.tool,
-      `${d.blurb} Operations: ${opMenu(d)}. ` +
-      'Pass `op` plus its `args`; call with no `op` to get every operation\'s parameters.',
+      `${d.blurb} Use this tool, not source code or raw HTTP, for these operations. ` +
+      'Call it as {op: "<name>", args: {<parameters>}}; `?` marks an optional parameter, and a call with ' +
+      `no \`op\` returns each parameter's description.\n${opMenu(d)}`,
       {
-        op: z.string().optional().describe(`One of: ${opMenu(d)}. Omit to list the operations and their parameters.`),
+        op: z.string().optional().describe(`One of: ${Object.keys(d.ops).join(', ')}.`),
         args: z.record(z.string(), z.unknown()).optional().describe('Arguments for the chosen operation.'),
       },
       ({op, args}) => runOp(d, op, (args ?? {}) as Record<string, unknown>),

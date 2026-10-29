@@ -599,6 +599,7 @@ platform passes to the container as environment variables.
 | `region` | Bedrock: the AWS region the key was created in |
 | `apiFormat` | Custom: `anthropic-messages`, `openai-responses` or `openai-chat-completions` |
 | `service` | Databricks: a model service of the workspace (`<catalog>.<schema>.<name>`) to call `model` through |
+| `effort` | How hard a chat turn reasons: `low`, `medium` or `high` (default). Lower is faster on the slower models |
 
 The server takes these (and `TEST_UPSTREAM`) out of its environment at startup and sends them to each agent in
 its `init` line (`PROVIDER_CREDENTIALS` in `src/constants.ts`). Each provider (`agent/grokky_agent/providers/`)

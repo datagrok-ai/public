@@ -11,6 +11,8 @@
 * AI: Web addresses the assistant writes as plain text, such as a documentation link, are clickable
 * AI: Qwen, Kimi, Gemini and Llama models run through OpenRouter (Chat Completions) and Amazon Bedrock (Converse), and pick the matching skill more reliably
 * AI: Spaces the assistant creates are real spaces, not plain projects
+* AI: The assistant uses Datagrok's skills and server tools before reading the platform's source code, so non-Claude models answer with fewer steps
+* AI: The `effort` credential of the `claude-runtime` container sets how hard a chat turn reasons (`low`, `medium` or `high`, the default)
 * AI: Deleting a project, space or file always waits for you to approve it on a confirmation card, even after you declined an earlier one
 * AI: Box plots and pivot tables the assistant adds are split by the columns you asked for, and the averages and medians it reports skip missing values
 * AI: On GPT models the assistant works through its skills and the view's functions instead of searching the platform's source code, and answers a question about the data without detours, in about a quarter fewer steps

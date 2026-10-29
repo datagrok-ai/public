@@ -21,7 +21,7 @@ and `datagrok-selection`.
 | Get column by name (may be absent)           | `t.col(name)` — returns `null`                                  |
 | First column with a given semType            | `t.columns.bySemType(DG.SEMTYPE.MOLECULE)`                      |
 | Every column with a given semType            | `t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)`                   |
-| All numeric / categorical / dateTime columns | `t.columns.numerical` / `.categorical` / `.dateTime`            |
+| All numeric / categorical / dateTime columns | iterables, not arrays: `Array.from(t.columns.numerical, (c) => c.name)` / `.categorical` / `.dateTime` |
 | All names                                    | `t.columns.names()`                                             |
 | Add typed empty column                       | `t.columns.addNewFloat(name)` (and `addNewInt/String/Bool/...`) |
 | Add column from values                       | `t.columns.add(DG.Column.fromList(type, name, values))`         |
@@ -50,7 +50,7 @@ and `datagrok-selection`.
 | "column named X" (may be absent)            | `t.col('X')` — returns `null` if missing                |
 | "the molecule column"                       | `t.columns.bySemType(DG.SEMTYPE.MOLECULE)`              |
 | "every molecule column"                     | `t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)`           |
-| "all numeric columns"                       | iterate `t.columns.numerical`                           |
+| "all numeric columns"                       | `for (const c of t.columns.numerical)` (no `.map`: not an array) |
 | "an IC50 column"                            | `t.columns.bySemType(DG.SEMTYPE.IC50)`                  |
 | "columns tagged `quality=Molecule`"         | `t.columns.byTags({quality: 'Molecule'})`               |
 | "any of these columns: X, Y, Z (first hit)" | `t.columns.firstWhere(c => names.includes(c.name))`     |
