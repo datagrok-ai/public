@@ -14,10 +14,13 @@ dialog session or data source, each saying in its description what it claims and
 | `search/` | power search enter | Enter on the md's queries once the results have answered (`aria-busy=false`), with and without the suggestion menu, and the suggestions walked with the arrows |
 | `navigation/` | direct link loading | a project opened by its direct link on a fresh page load and the same project from the Browse tree |
 | `io/` | xlsx open, xlsx shared with me | a three-sheet workbook through My files, a drop, the file chooser, File > Open and Shared with me — exactly three table views |
+| `domains/` | ChEMBL without code | a Postgres connection to the real ChEMBL (db.datagrok.ai), Create Domain Schema over its 71 tables (one left out, friendly names, name and search columns, Validate, Create), the generic domain pages: targets searched and opened, a compound found by name among 2.9M, its structure recognized as a molecule, its activities, an activity's assay and document followed through their links and Back |
 | `enrichment/` | data enrichment | creating, applying, editing and deleting enrichments, several at once, a layout and a reopened project, the enrichments of a referenced column offered through a foreign key |
 
 `annotation-regions/` and `formula-lines/` came from `packages/UsageAnalysis/bdd/features/viewers/`:
 the feature belongs to PowerPack (the Formula Lines dialog is `PowerPack:formulaLinesDialog`).
+
+`domains/chembl-without-code` is `@full-stand` too: it needs db.datagrok.ai, Datlas with bigint external bindings and Settings › Beta › Domain databases (the feature turns it on and back off).
 
 `add-new-column/persistence-northwind` is `@full-stand`: it needs the Postgres Northwind database
 (the NorthwindTest connection of dev); a stand without it runs with `--grep-invert @full-stand`.
