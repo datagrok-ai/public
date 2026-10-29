@@ -181,6 +181,30 @@ scoped('grid mode hosts a domains.grid per pane; `tables` narrows the tabs', asy
   parent.dispose();
 });
 
+scoped('a grid pane opens a row from its name column unless the caller names another', async () => {
+  emsBackends.domain = crm();
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source());
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const grid = domains.grid;
+  const opens = [];
+  domains.grid = (source, options) => {
+    opens.push(options.open?.column);
+    return grid(source, options);
+  };
+  try {
+    const children = testOwner().build(() => domains.children(parent, {tables: ['deal']}));
+    await settle();
+    const deals = await domains.table('crm.deal');
+    assert.deepEqual(opens, [deals.info.nameColumn ?? deals.info.businessKey[0]]);
+    children.dispose();
+  } finally {
+    domains.grid = grid;
+  }
+  parent.dispose();
+});
+
 scoped('spec: u2-domain-children over a bound source', async () => {
   emsBackends.domain = crm();
   const companies = await domains.table('crm.company');

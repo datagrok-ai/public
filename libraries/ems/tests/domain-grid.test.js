@@ -135,6 +135,20 @@ scoped('the js-api editor is attached with the source\'s edit state, decorated f
   grid.dispose();
 });
 
+scoped('the grid takes edits only while its source can: the trash is read-only', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const live = testOwner().build(() => table.source({pageSize: 10}));
+  const trash = testOwner().build(() => table.source({pageSize: 10, deleted: 'only'}));
+  const editable = testOwner().build(() => domains.grid(live));
+  const readOnly = testOwner().build(() => domains.grid(trash));
+  await flush();
+  assert.equal(editable.grid.props.allowEdit, true);
+  assert.equal(readOnly.grid.props.allowEdit, false);
+  for (const c of [editable, readOnly, live, trash])
+    c.dispose();
+});
+
 scoped('spec: u2-domain-grid over a bound source', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');

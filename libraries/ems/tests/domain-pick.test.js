@@ -94,10 +94,12 @@ scoped('a written id resolves to its name; an unknown id shows itself', async ()
   pick.dispose();
 });
 
-scoped('a backend that declares resolveNames answers an id there: one call, no query', async () => {
+scoped('a backend that declares resolveNames answers an id there; an id it names nothing reads its row', async () => {
   const calls = [];
+  const rows = {'SINGLE%20PROTEIN': {id: 'SINGLE%20PROTEIN', target_type: 'SINGLE PROTEIN'}};
   emsBackends.domain = {
-    table: () => assert.fail('the resolver path reads no row'),
+    table: async () => ({info: {nameColumn: null, businessKey: ['target_type'], searchableColumns: []},
+      query: async ({filter}) => rows[filter.value] === undefined ? [] : [rows[filter.value]]}),
     saveAll: () => Promise.resolve(true),
     resolveNames: (table, ids) => {
       calls.push({table, ids: [...ids]});
@@ -106,8 +108,10 @@ scoped('a backend that declares resolveNames answers an id there: one call, no q
   };
   assert.deepEqual(await DomainPick.resolve('grit.project', 'p1'), {id: 'p1', name: 'Grit'});
   assert.deepEqual(calls, [{table: 'grit.project', ids: ['p1']}]);
+  assert.deepEqual(await DomainPick.resolve('chembl.target_type', 'SINGLE%20PROTEIN'),
+    {id: 'SINGLE%20PROTEIN', name: 'SINGLE PROTEIN'}, 'an external table names nothing on the server: the row does');
   assert.deepEqual(await DomainPick.resolve('grit.project', 'gone'), {id: 'gone', name: 'gone'},
-    'an id the resolver answers null for is shown as itself');
+    'an id nobody names is shown as itself');
 });
 
 scoped('an extra filter narrows the candidates; an empty query lists them all', async () => {

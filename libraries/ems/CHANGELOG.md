@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Children: A child row opens from its name (or its key) in a tab's grid with nothing configured, and the tabs keep room for a long table name and its count
+* Grids: Fixed a grid over a read-only source (an external table bound without writes, the trash) taking cell edits it can never save
+* Links: Fixed a link into an external table showing its encoded key (`SINGLE%20PROTEIN`) instead of the row's name
 * Authoring: Fixed a schema created over one deleted earlier in the session under the same name showing the old one's tables (captions, plural names): the create drops that name's cached table handles
 * Authoring: Fixed Create domain schema and Edit binding building their dialog with no owner (a u2 usage error; under strict usage checks the dialog did not open): each opens under a root of its own
 * Authoring: The key column's locked checkbox in the design tree says why it is always bound

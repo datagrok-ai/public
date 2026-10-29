@@ -146,7 +146,9 @@ export class DomainPick extends PickInput<PickItem> {
     const backend = emsBackends.domain;
     if (caption === null && backend?.resolveNames !== undefined) {
       const name = (await backend.resolveNames(table, [id]))[id];
-      return {id, name: name || id};
+      // no name from the server is also how an external table answers: its row is read instead
+      if (name)
+        return {id, name};
     }
     const t = await DomainPick.table(table);
     const [row] = await t.query({filter: {property: 'id', operator: '=', value: id}, limit: 1});

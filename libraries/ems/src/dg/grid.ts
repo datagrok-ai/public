@@ -55,6 +55,7 @@ export class DomainGrid extends Control {
     this.root.append(this.grid.root);
     if (_options.look?.colHeaderHeight === undefined)
       this.grid.setOptions({colHeaderHeight: HEADER_HEIGHT});
+    this.effect(() => this.grid.setOptions({allowEdit: !source.readOnly.value}));
     // the editor follows the source's writer: attached over each frame the source loads, released
     // when the source lets the frame go
     this.effect(() => {

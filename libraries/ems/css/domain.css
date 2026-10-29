@@ -388,6 +388,11 @@
   min-height: 0;
 }
 
+/* a tab names a table and its count ("Compound records (531694)"): room for both before it ellipsizes */
+.u2-domain-children-tabs .u2-tabs-tab {
+  max-width: 280px;
+}
+
 .u2-domain-children-pane {
   display: flex;
   flex-direction: column;
