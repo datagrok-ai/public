@@ -355,6 +355,11 @@ category('JMP: analyses', () => {
     only(c);
     expect(c.notes.some((n) => /Smoother shown as a moving average/.test(n)), true);
     expect(c.viewers[0].options.showMovingAverageLine, true);
+    expectArray(convert('Graph Builder(Variables(X(:sex), Y(:height)), Elements(Box Plot(X, Y), ' +
+      'Line(X, Y, Connection("Centered Step"), Summary Statistic("Median"))))').notes,
+    ['The line joining the group medians isn\'t drawn']);
+    expectArray(convert('Graph Builder(Variables(X(:sex), Y(:height)), Elements(Box Plot(X, Y), Line(X, Y)))').notes,
+      ['Line not shown']);
     expect(/Contour/.test(convert('Graph Builder(Variables(X(:height), Y(:weight)), Elements(Contour(X, Y)))').reason!),
       true);
   });

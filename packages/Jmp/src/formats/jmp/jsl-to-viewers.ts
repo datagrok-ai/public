@@ -484,8 +484,12 @@ function graphBuilderViewer(panel: GraphPanel, role: (r: string) => JmpColumnRef
   const overlaid = [...xs.slice(1), ...first === 'line' ? [] : ys.slice(1)].map((c) => c.name);
   if (overlaid.length > 0)
     notes.push(`${quoted(overlaid)} overlaid on the same axis not shown`);
-  for (const e of others)
-    notes.push(`${e.name} not shown`);
+  for (const e of others) {
+    // The box plot draws each median already; only the line through them is lost
+    const medianLine = first === 'boxplot' && jslKey(e.name) === 'line' &&
+      jslKey(stringArg(findAll(e, 'Summary Statistic')[0]) ?? '') === 'median';
+    notes.push(medianLine ? 'The line joining the group medians isn\'t drawn' : `${e.name} not shown`);
+  }
 
   switch (first) {
   case 'points':
