@@ -56,6 +56,8 @@ const FILTER = str('Smart search filter, e.g. name="Chem"');
 const LIMIT = {type: 'number' as const, desc: 'Max items to return (default 50)'};
 const OFFSET = {type: 'number' as const, desc: 'Items to skip, for paging (default 0)'};
 const PAGING = {limit: LIMIT, offset: OFFSET};
+// Every operation shares these; the dry-run note of a destructive op already says what `confirm` is for.
+const SELF_EVIDENT = new Set<Param>([LIMIT, OFFSET, CONFIRM]);
 
 export const DOMAINS: Domain[] = [
   {
@@ -296,8 +298,10 @@ export const DOMAINS: Domain[] = [
  *  first listing the domain. */
 export function opMenu(d: Domain): string {
   return Object.entries(d.ops).map(([name, op]) => {
-    const params = Object.entries(op.params ?? {})
-      .map(([p, meta]) => `\n    ${p}${meta.required ? '' : '?'}: ${meta.type} — ${meta.desc}`).join('');
+    const params = Object.entries(op.params ?? {}).map(([p, meta]) => {
+      const desc = SELF_EVIDENT.has(meta) ? '' : ` — ${meta.desc}`;
+      return `\n    ${p}${meta.required ? '' : '?'}: ${meta.type}${desc}`;
+    }).join('');
     return `- ${name} — ${op.desc}${params}`;
   }).join('\n');
 }
