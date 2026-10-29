@@ -243,6 +243,7 @@ const PLATFORMS: Record<string, Converter> = {
   graphbuilder: graphBuilder,
   tabulate: tabulate,
   multivariate: multivariate,
+  matchedpairs: matchedPairs,
   scatterplotmatrix: scatterplotMatrix,
 };
 
@@ -464,6 +465,31 @@ function scatterplotMatrix(call: Call, cols: Columns, notes: string[]): JmpViewe
       ...(group ? {colorColumnName: group} : {}),
     },
   }}];
+}
+
+/** Matched Pairs: each Y against the one paired with it, on a line of no difference, Y = X; a point off the
+ * line is a pair that differs. JMP plots the difference by the mean of the pair instead, which shows the
+ * same thing turned 45°. Several Ys are compared in every pair, so they become one matrix plot. */
+function matchedPairs(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
+  const ys = columnNames(findArg(call, 'Y')).map((n) => cols.get(n).name);
+  if (ys.length < 2)
+    throw new Unconvertible('Matched Pairs needs two or more Y columns');
+  notes.push('The paired t test not shown');
+  for (const test of ['Wilcoxon Signed Rank', 'Sign Test']) {
+    if (isOn(call, test))
+      notes.push(`${test} results not shown`);
+  }
+  const x = columnNames(findArg(call, 'X'));
+  if (x.length > 0)
+    notes.push(`The comparison of the differences across ${quoted(x)} not shown`);
+  const noDifference = JSON.stringify([{type: 'line', formula: 'Y = X', title: 'No difference'}]);
+  if (ys.length === 2) {
+    return [{type: SCATTER, options: {
+      xColumnName: ys[0], yColumnName: ys[1], title: `${ys[1]} vs ${ys[0]}`, formulaLines: noDifference,
+    }}];
+  }
+  return [{type: MATRIX, options: {xColumnNames: ys, yColumnNames: ys, cellPlotType: SCATTER,
+    innerViewerLook: {formulaLines: noDifference}}}];
 }
 
 function contingency(call: Call, cols: Columns): JmpViewerSpec[] {

@@ -67,6 +67,7 @@ viewers, titled after the script:
 | Tabulate                  | Pivot table                                |
 | Multivariate              | Correlation plot (Pearson, or Spearman when only that was asked for) and a matrix plot |
 | Scatterplot Matrix        | Matrix plot of scatter plots, coloured by its Group |
+| Matched Pairs             | Scatter plot of one Y against its pair, on the line of no difference; a matrix plot for several Ys |
 | Fit Model, Fit Group (least squares) | Actual by Predicted scatter plot per response, from the prediction formula saved from that model |
 | Fit Group of other analyses | Each analysis it holds, as above |
 

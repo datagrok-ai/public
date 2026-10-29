@@ -149,6 +149,21 @@ category('JMP: dataframe', () => {
     }
   });
 
+  test('a Matched Pairs of several Ys draws the line of no difference in each cell', async () => {
+    const df = grok.data.demo.demog(100);
+    const tv = grok.shell.addTableView(df);
+    try {
+      const text = 'Matched Pairs(Y(:age, :height, :weight))';
+      expect(addSavedAnalyses(tv, [convertScript({name: 'Pairs', text, body: parseJsl(text)},
+        df.columns.toList().map((c) => ({name: c.name, numeric: c.isNumerical})))]), 1);
+      const matrix = Array.from(tv.viewers).find((v) => v.type === DG.VIEWER.MATRIX_PLOT)!;
+      const look = JSON.stringify(matrix.getOptions(true));
+      expect(look.includes('Y = X'), true, look.slice(0, 600));
+    } finally {
+      tv.close();
+    }
+  });
+
   test('a Graph Builder axis frames the plot without filtering, and its smoother averages over X', async () => {
     const df = grok.data.demo.demog(100);
     const tv = grok.shell.addTableView(df);

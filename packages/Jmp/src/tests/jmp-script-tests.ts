@@ -467,14 +467,30 @@ category('JMP: analyses', () => {
     expect(convert('Multivariate(Y(:height))').reason, 'Multivariate needs two or more Y columns');
   });
 
+  test('Matched Pairs: each Y against its pair, on the line of no difference', async () => {
+    const two = convert('Matched Pairs(Y(:height, :weight), X(:sex), Reference Frame(0), Wilcoxon Signed Rank(1))');
+    const v = only(two);
+    expect(v.type, 'Scatter plot');
+    expect(v.options.xColumnName, 'height');
+    expect(v.options.yColumnName, 'weight');
+    expect(v.options.title, 'weight vs height');
+    expect(JSON.parse(v.options.formulaLines as string)[0].formula, 'Y = X');
+    expectArray(two.notes, ['The paired t test not shown', 'Wilcoxon Signed Rank results not shown',
+      'The comparison of the differences across "sex" not shown']);
+    const many = only(convert('Matched Pairs(Y(:age, :height, :weight), Separate Pairs(0))'));
+    expect(many.type, 'Matrix plot');
+    expectArray(many.options.xColumnNames as string[], ['age', 'height', 'weight']);
+    expect(convert('Matched Pairs(Y(:height))').reason, 'Matched Pairs needs two or more Y columns');
+  });
+
   test('Fit Group: each analysis it holds, as if launched on its own', async () => {
     const c = convert('Fit Group(Oneway(Y(:height), X(:sex), Means(1)), Bivariate(Y(:weight), X(:height), ' +
-      'Fit Line()), Contingency(Y(:sex), X(:age)), Matched Pairs(Y(:height, :weight)), <<{Arrange in Rows(1)})');
+      'Fit Line()), Contingency(Y(:sex), X(:age)), Partition(Y(:weight), X(:height)), <<{Arrange in Rows(1)})');
     expect(c.platform, 'Fit Group');
     expectArray(c.viewers.map((v) => `${v.type}: ${v.options.title}`),
       ['Box plot: height by sex', 'Scatter plot: weight by height', 'Bar chart: sex by age']);
     expect(c.viewers[1].options.showRegressionLine, true);
-    expectArray(c.notes, ['Means results not shown', 'JMP\'s Matched Pairs isn\'t converted to Datagrok viewers yet']);
+    expectArray(c.notes, ['Means results not shown', 'JMP\'s Partition isn\'t converted to Datagrok viewers yet']);
     expect(convert('Fit Group(Oneway(Y(:sex), X(:age)))').reason,
       'Oneway needs a continuous Y column; "sex" is categorical');
   });
