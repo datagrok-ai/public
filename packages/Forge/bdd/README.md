@@ -37,10 +37,6 @@ unedited for the BDD resume:
 
 - `apply-iris` 3.13: its XGBoost model's Apply dialog hides Missing values and skips no row; it needs a model of a
   method without `mlnativenans` (SVM).
-- `train-demog` 3.14: Preparation no longer shows Missing values for XGBoost on demog's gaps.
-- `train-demog` 5.10: Preparation shows Predict probability only for XGBoost, not Missing values.
-- `train-demog` 5.14: a knock-on of 5.10, which stops before Predict probability is checked; ROC Curve already shows
-  there (XGBoost's class probabilities, no marked point).
 
 ## Running
 

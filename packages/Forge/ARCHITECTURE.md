@@ -316,8 +316,9 @@ complete method at once (`applicableEngines`, see "Choosing a method" under the 
 columns and target (so with Predict probability the regressors are listed, as for any numerical target), and rule 8
 becomes: the selection's method is not among them (the rule 8 text), or none is (`No method can learn from this
 selection. Check the features and the target.`). The result (`SelectionCheck`) also has `best` (`selectBestEngine`
-over the listed methods and the selection's features and target: a prepared target is a 0 / 1 float with Predict
-probability, and one-hot copies hide a molecule feature), `failed` (the methods whose check threw, for the caller to log),
+over the listed methods, the prepared columns (one-hot copies count as numerical features) and the selection's target
+(a prepared target is a 0 / 1 float with Predict probability); the molecule rule reads the selection's features, as
+preparation drops or one-hot encodes a molecule column), `failed` (the methods whose check threw, for the caller to log),
 `isInteractive`: the selection's method is listed and `retrainsLive` (its `isLiveUpdate` is on and its
 `isInteractive` says yes on the prepared columns), `prepared`, those columns and target (none from
 `failedCheck`), and `insights`, the data insights of the prepared columns and the selection's target (see "Insights";
@@ -1749,8 +1750,8 @@ CatBoost, Decision Tree and TabM; see "Missing values").
   left out and returned in `failed` with its error, for the caller to log (nothing is logged here). On iris, Species
   gets every EDA method but Linear Regression and PLS Regression (14); Petal.Length every one but Softmax, Naive Bayes
   and LDA (13).
-- `selectBestEngine(engines, features, target)` (`engines/best-engine.ts`) is the built-in tool's suggestion, ported
-  as is: a feature with the `Molecule` semantic type gives `Chemprop`; a classification (the target is not numerical)
+- `selectBestEngine(engines, features, target, selected = features)` (`engines/best-engine.ts`) is the built-in tool's
+  suggestion, ported as is: a `selected` column with the `Molecule` semantic type gives `Chemprop`; a classification (the target is not numerical)
   with at least one categorical and one numerical feature gives `XGBoost`; a regression with five or more numerical
   features gives `PLS Regression`, any other regression `Linear Regression`; everything else `XGBoost`. "Numerical"
   and "categorical" are the platform's `isNumerical` / `isCategorical` (dates count as numerical, as in the built-in

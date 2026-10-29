@@ -36,7 +36,11 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
   Where the product moved on from the manual text: 3.15 step 1 is claimed without saving "Demog gaps"; the Apply
   dialogs of 5.8, 5.9 and 5.10 choose the feature's model by name, since the user's own demog models fit too and the
   dialog presets the newest; Features lists the columns in the order they were checked (5.10 ends on HEIGHT, WEIGHT,
-  AGE); the ROC Curve plot has its X and Y column selectors (added after 5.14's "no column selectors" was written).
+  AGE); the ROC Curve plot has its X and Y column selectors (added after 5.14's "no column selectors" was written);
+  XGBoost, the method suggested in 3.14 and 5.10, takes the rows with missing values as they are, so Missing values
+  is hidden (3.14 starts without the Preparation group, 5.10 shows Predict probability only) and its probability
+  model predicts every row; Predict probability keeps the method the view chose (XGBoost), so 5.14 switches to
+  Linear Regression for its second curve.
   The hovered point of 5.14 step 3 is a row of the plot past demog's first skipped row (965), claimed by its values.
   5.4 runs on a demo table of 50000 rows, not the manual's 20000: SVM takes about half a second on 20000 rows on the
   stand, a narrow margin for the cancel, and about 1.5 s on 50000 (the package test 'a training completed after a
@@ -58,9 +62,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     Then editor of Target input should have text "SEVERITY"
     And editor of Features input should have text "(3) AGE, HEIGHT, WEIGHT"
     And Method input should have value "XGBoost"
-    And the groups of train form should be "Data, Preparation, Method"
-    And the "Preparation" group should show exactly the inputs "Missing values"
-    And "Missing values" input in "Preparation" group should have "Skip rows" chosen
+    And the groups of train form should be "Data, Method"
     When user remembers the training run count of the table "forge-test-demog-{time}"
     And user clicks on editor of Features input
     And user types "STARTED" into column search in "Select columns..." dialog
@@ -257,7 +259,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     And user clicks on OK button in "Select columns..." dialog
     Then a new training's result should be shown
     And editor of Features input should have text "(3) HEIGHT, WEIGHT, AGE"
-    And the "Preparation" group should show exactly the inputs "Missing values, Predict probability"
+    And the "Preparation" group should show exactly the inputs "Predict probability"
     And "Predict probability" input should not be checked
     And Method input should have value "XGBoost"
     And Method input should offer "CatBoost, Decision Tree, Extra Trees, Hist Gradient Boosting, k-Nearest Neighbors, LDA, Naive Bayes, Neural Network, Random Forest, RealMLP, Softmax, SVM, TabM, XGBoost"
@@ -276,7 +278,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     Then "Positive class cutoff" input in "Preparation" group should be visible
     And "Positive class cutoff" input should have value "0.5"
     And a new training's result should be shown
-    And Method input should have value "Linear Regression"
+    And Method input should have value "XGBoost"
     And Method input should offer "CatBoost, Decision Tree, Extra Trees, Hist Gradient Boosting, k-Nearest Neighbors, Linear Regression, Neural Network, PLS Regression, Random Forest, RealMLP, SVM, TabM, XGBoost"
     And the "rows" reading of grid viewer in "Performance" results panel should be 10
     And the "text of cell 7 of Metric" reading of grid viewer in "Performance" results panel should be "AUC-ROC"
@@ -328,7 +330,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     Then the "Save model" dialog should close
     And the Forge model "forge-test-sex-prob-{time}" on the server should have:
       | task                                  | regression                |
-      | engine_name                           | Linear Regression         |
+      | engine_name                           | XGBoost                   |
       | options.postprocessingInfo            | ["binary-classification"] |
       | options.positiveClass                 | F                         |
       | options.negativeClass                 | M                         |
@@ -346,7 +348,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     Then the "Apply predictive model" dialog should close
     And the task bar entry that showed "Predicting SEX" should have ended
     And the table should have a column "SEX (predicted)"
-    And the "SEX (predicted)" column should be empty exactly in the rows where any of "AGE, HEIGHT, WEIGHT" columns is empty
+    And "SEX (predicted)" column should have 0 missing values
     And the value of "SEX (predicted)" column in row 1 should match "^(F|M)$"
     And every value of "SEX (predicted)" column should match "^(F|M)$"
     When user switches to the "Predictive model" view
@@ -374,7 +376,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     And the same training's result should be shown
     And the AUC in the title of ROC Curve panel should equal the "text of cell 7 of Train" reading of grid viewer in "Performance" results panel
     And the results panels should keep their remembered sizes
-    When user selects "XGBoost" in Method input
+    When user selects "Linear Regression" in Method input
     Then a new training's result should be shown
     And Train button in train form should be hidden
     And ROC Curve panel should be visible

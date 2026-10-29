@@ -157,7 +157,8 @@ export async function checkSelection(selection: TrainingSelection, engines: Engi
   const isListed = applicable.some((e) => e.name === engine.name);
   if (!isListed)
     problems.method.push(applicable.length === 0 ? NO_METHOD : cannotLearn(engine));
-  return {problems, engines: applicable, best: selectBestEngine(applicable, selection.features, selection.target),
+  return {problems, engines: applicable,
+    best: selectBestEngine(applicable, columns, selection.target, selection.features),
     isInteractive: isListed && await retrainsLive(engine, columns, target), failed, prepared,
     insights: dataInsights(columns, selection.target)};
 }

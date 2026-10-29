@@ -423,6 +423,11 @@ category('Training', () => {
     expect(regressor.best?.name, 'Linear Regression');
     expect(regressor.problems.method.length, 0);
 
+    const demog = grok.data.demo.demog(100);
+    const encoded = selectionOf(columnsOf(demog, ['HEIGHT', 'SEX', 'RACE']), demog.getCol('AGE'));
+    const oneHot = await checkSelection({...encoded, steps: {...encoded.steps, oneHot: true}}, engines);
+    expect(oneHot.best?.name, 'PLS Regression', 'The one-hot columns are not counted as numerical features');
+
     const softmax = engineByName(engines, 'Softmax');
     const notListed = await checkSelection(engineSelection(softmax, three, petalLength), engines);
     expectArray(notListed.problems.method, [NOT_SOFTMAX]);
