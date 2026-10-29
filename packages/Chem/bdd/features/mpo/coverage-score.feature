@@ -10,10 +10,8 @@ Feature: MPO Score counts the measured profile parameters of a row with Coverage
 
   The table is the shipped ADME Test profile's three properties with some cells empty: row 1 has all
   three, row 2 misses Caco2, row 3 misses Caco2 and Solubility, row 4 has none, row 5 has Caco2 "<-5",
-  row 6 Caco2 ">-5" and no Lipophilicity, so Caco2 is a qnum column and the counts are 3, 2, 1, 0, 3, 2. Coverage Score
-  is the dialog's option only, and an unchecked run keeps a coverage column left by an earlier checked
-  one; neither is claimed here. log10 curves and the cached calculator are asked for as package tests in
-  MISSING.md.
+  row 6 Caco2 ">-5" and no Lipophilicity, so Caco2 is a qnum column and the counts are 3, 2, 1, 0, 3, 2. log10 curves and
+  the cached calculator are asked for as package tests in MISSING.md.
 
   Background:
     Given user is logged in
