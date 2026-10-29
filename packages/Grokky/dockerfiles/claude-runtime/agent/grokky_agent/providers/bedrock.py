@@ -10,8 +10,8 @@ REGION = re.compile(r'(af|ap|ca|eu|il|me|mx|sa|us)-[a-z]+-\d{1,2}')
 
 class BedrockProvider(Provider):
     """Models on Amazon Bedrock's bedrock-runtime endpoint with an Amazon Bedrock API key: Claude on the Messages API
-    (the key as x-api-key), GPT on the Responses API (as Bearer), and every other model (Llama, Qwen, Kimi, ...) on the
-    Converse API, which turns their tool calls into structured ones. A model is named by its inference profile,
+    (the key as x-api-key), GPT on the Responses API (as Bearer), and every other model (Qwen, Kimi, ...) on the
+    Converse API. A model is named by its inference profile,
     such as global.anthropic.claude-sonnet-5-5: a global profile reaches the model from every commercial region at the
     vendor's own price, a geographic one costs 10% more
     (https://docs.aws.amazon.com/bedrock/latest/userguide/models-endpoint-availability.html)."""

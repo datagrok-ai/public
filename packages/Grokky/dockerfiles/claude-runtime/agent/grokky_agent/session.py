@@ -7,7 +7,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from . import browser_tools, formats, guard, hermes, skills, structured, textcalls
+from . import browser_tools, formats, guard, hermes, skills, structured
 from .hermes import Usage
 from .protocol import BrowserResultCommand, ContinueCommand, Emit, JsonObject, McpServer, Metrics, TurnCommand
 from .providers import Provider
@@ -398,8 +398,7 @@ class Session:
 
     def _prompt(self, agent: hermes.Agent, t: Turn, content: str | list[JsonObject]) -> None:
         problem = ''
-        attempts = 0
-        while attempts < MAX_STRUCTURED_ATTEMPTS:
+        for _ in range(MAX_STRUCTURED_ATTEMPTS):
             t.segment_start = True
             # One above what is left, so the request patch, not Hermes' own limit, ends the turn at the limit.
             agent.max_iterations = max(1, t.max_calls - t.api_calls) + 1
@@ -420,10 +419,6 @@ class Session:
                            'message': t.api_error or result.get('error') or 'The model request failed.'})
                 return
             text = result.get('final_response') or ''
-            # The call limit bounds these: every run makes at least one model call.
-            if call := textcalls.parse(text, sorted(agent.valid_tool_names)):
-                content = textcalls.result_message(call[0], hermes.run_tool(agent, self.key, *call))
-                continue
             if t.schema is None:
                 if text:
                     self.emit({'type': 'stopped', 'text': text, 'metrics': t.metrics()})
@@ -434,7 +429,6 @@ class Session:
             if error is None:
                 self.emit({'type': 'stopped', 'text': text, 'structuredOutput': value, 'metrics': t.metrics()})
                 return
-            attempts += 1
             problem = error
             content = RETRY_STRUCTURED.format(problem)
         self.emit({'type': 'error', 'message': 'The model did not return valid structured output after '

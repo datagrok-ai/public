@@ -134,10 +134,6 @@ def use_bedrock_key(key: str) -> None:
     # Hermes learns a window by sending ~1.3M tokens to provoke a length error: over 30 s for some models (Kimi,
     # Qwen), and a billed call for any that accepts it. Its table, or 128k, serves instead.
     bedrock_adapter.probe_bedrock_context_length = lambda model_id, region: None
-    # Llama on Bedrock calls tools only without streaming: Hermes' fallback for a refused stream then takes over.
-    denied = bedrock_adapter.is_streaming_access_denied_error
-    bedrock_adapter.is_streaming_access_denied_error = \
-        lambda exc: denied(exc) or "doesn't support tool use in streaming mode" in str(exc)
 
 
 def usage_cost(model: str, usage: Usage, billing: str, base_url: str) -> float | None:
@@ -181,13 +177,6 @@ def describe_skills(skills: list[tuple[str, str]]) -> None:
         'Load the Datagrok skill whose description matches the request BEFORE acting: it gives the exact API calls '
         'and conventions for the task. Skills:\n' + '\n'.join(f'- {name}: {desc}' for name, desc in skills))
 
-
-def run_tool(agent: Agent, task_id: str, name: str, args: JsonObject) -> str:
-    """One tool call through Hermes' own dispatch, its pre and post tool hooks included."""
-    import model_tools
-    result: str = model_tools.handle_function_call(name, args, task_id, session_id=agent.session_id or '',
-                                                   enabled_tools=sorted(agent.valid_tool_names) or None)
-    return result
 
 
 def tool_definitions(toolsets: list[str]) -> list[JsonObject]:

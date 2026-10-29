@@ -9,7 +9,7 @@
 * AI: At startup the AI runtime checks its provider and model with one short call, and logs whether it answered
 * AI: A turn's cost limit applies only where the AI runtime knows the model's price (OpenAI, OpenRouter, older Claude models); on Claude 5.5, Bedrock, Azure, Databricks and custom endpoints only the call limit bounds a turn
 * AI: Web addresses the assistant writes as plain text, such as a documentation link, are clickable
-* AI: Qwen, Kimi, Gemini and Llama models run through OpenRouter (Chat Completions) and Amazon Bedrock (Converse), and pick the matching skill more reliably
+* AI: Qwen, Kimi and Gemini models run through OpenRouter (Chat Completions) and Amazon Bedrock (Converse), and pick the matching skill more reliably
 * AI: Spaces the assistant creates are real spaces, not plain projects
 * AI: The assistant uses Datagrok's skills and server tools before reading the platform's source code, so non-Claude models answer with fewer steps
 * AI: Deleting a project, space or file always waits for you to approve it on a confirmation card, even after you declined an earlier one

@@ -127,8 +127,8 @@ class ChatCompletions(ApiFormat):
 
 
 class BedrockConverse(ApiFormat):
-    """Amazon Bedrock's Converse API, which parses the tool calls of models whose OpenAI-compatible hosts return them
-    as text (Llama). Hermes calls it through boto3 with Converse's own request shape."""
+    """Amazon Bedrock's Converse API, for the models Bedrock serves neither on the Messages nor on the Responses API
+    (Qwen, Kimi). Hermes calls it through boto3 with Converse's own request shape."""
     mode = 'bedrock_converse'
     credential = ''
     refusal: ClassVar[JsonObject] = {'modelId': 'grokky-refused', 'inferenceConfig': {'maxTokens': 1},

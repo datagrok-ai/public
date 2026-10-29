@@ -10,7 +10,7 @@ ATTRIBUTION = {'HTTP-Referer': 'https://datagrok.ai', 'X-Title': 'Datagrok', 'X-
 
 class OpenRouterProvider(Provider):
     """Claude on OpenRouter's Anthropic Messages API, OpenAI's models on its Responses API and every other model on
-    its Chat Completions API, with an OpenRouter API key, Bearer as OpenRouter documents it. Gemini, Qwen and Llama
+    its Chat Completions API, with an OpenRouter API key, Bearer as OpenRouter documents it. Gemini, Qwen and Kimi
     return no tool calls through the Responses API."""
 
     name = 'OpenRouter'
