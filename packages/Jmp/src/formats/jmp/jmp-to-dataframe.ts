@@ -6,7 +6,7 @@ import {
 } from './jmp-types';
 import {JmpValueLabels} from './jmp-properties';
 import {JslNode, isCall, jslKey} from './jsl';
-import {JmpColumnRef, JmpScriptConversion, convertScripts} from './jsl-to-viewers';
+import {JmpScriptConversion, columnRefs, convertScripts} from './jsl-to-viewers';
 import {isSourceScript} from './jmp-scripts';
 
 /** The columns that come across: all but those the reader couldn't decode, which would hold nothing. */
@@ -39,9 +39,8 @@ export function hideJmpHiddenColumns(tv: DG.TableView): void {
 
 /** The saved analyses, converted to viewers where we can; the "Source" import script isn't one. */
 export function savedAnalyses(table: JmpTable): JmpScriptConversion[] {
-  const columns: JmpColumnRef[] = dataColumns(table).filter((c) => c.kind !== 'rowstate')
-    .map((c) => ({name: c.info.name, numeric: c.kind !== 'string'}));
-  return convertScripts(table.scripts.filter((s) => !isSourceScript(s)), columns);
+  return convertScripts(table.scripts.filter((s) => !isSourceScript(s)),
+    columnRefs(dataColumns(table).filter((c) => c.kind !== 'rowstate')));
 }
 
 /** JMP marker index to the nearest Datagrok marker; markers with no counterpart are left to the default. */

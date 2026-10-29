@@ -4,6 +4,7 @@
 
 import {JslNode, columnNames, findAll, findArg, isCall, jslKey, statements} from './jsl';
 import {JmpScript, isSourceScript} from './jmp-scripts';
+import type {JmpColumn} from './jmp-types';
 
 /** A viewer to add to the table view: a Datagrok viewer type (DG.VIEWER) and its properties. */
 export interface JmpViewerSpec {
@@ -27,6 +28,16 @@ export interface JmpScriptConversion {
 export interface JmpColumnRef {
   name: string;
   numeric: boolean;
+  /** For a saved prediction formula, the column it predicts (JMP's `Predicting` column property). */
+  predicts?: string;
+}
+
+/** What the converter needs to know about the table's columns. */
+export function columnRefs(columns: JmpColumn[]): JmpColumnRef[] {
+  return columns.map((c) => {
+    const predicting = c.properties?.properties.find((p) => p.name === 'Predicting')?.node;
+    return {name: c.info.name, numeric: c.kind !== 'string', predicts: columnNames(predicting)[0]};
+  });
 }
 
 type Call = Extract<JslNode, {type: 'call'}>;
@@ -44,9 +55,18 @@ class Unconvertible extends Error {}
 
 class Columns {
   private readonly byKey = new Map<string, JmpColumnRef>();
+  private readonly predictions = new Map<string, JmpColumnRef>();
   constructor(columns: JmpColumnRef[]) {
-    for (const c of columns)
+    for (const c of columns) {
       this.byKey.set(jslKey(c.name), c);
+      if (c.predicts !== undefined)
+        this.predictions.set(jslKey(c.predicts), c);
+    }
+  }
+
+  /** The saved prediction formula column for `name`, if the fit saved one to the table. */
+  predictionOf(name: string): JmpColumnRef | undefined {
+    return this.predictions.get(jslKey(name));
   }
 
   /** The table's column for a name used in the script; JSL matches names ignoring case and spaces. */
@@ -113,9 +133,9 @@ export function convertScript(script: JmpScript, columns: JmpColumnRef[]): JmpSc
     }
   }
   if (result.viewers.length === 0)
-    result.reason = reasons.join('; ');
+    result.reason = [...new Set(reasons)].join('; ');
   else
-    result.notes.push(...reasons);
+    result.notes = [...new Set([...result.notes, ...reasons])];
   return result;
 }
 
@@ -182,6 +202,8 @@ const PLATFORMS: Record<string, Converter> = {
   oneway: oneway,
   contingency: contingency,
   fitybyx: fitYByX,
+  fitmodel: fitModel,
+  fitgroup: fitGroup,
   graphbuilder: graphBuilder,
   tabulate: tabulate,
 };
@@ -244,6 +266,60 @@ function oneway(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
       valueColumnName: y.name, categoryColumnNames: [x.name], title: `${y.name} by ${x.name}`,
     }};
   });
+}
+
+/** Fit Model: JMP's Actual by Predicted plot for each Y, drawn from the prediction formula the fit saved to
+ * the table, with the Y = X line a perfect fit would follow. The model isn't refit, so a Y without a saved
+ * prediction formula has no plot. */
+function fitModel(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
+  const personality = stringArg(findArg(call, 'Personality'));
+  if (personality !== undefined && jslKey(personality) !== 'standardleastsquares')
+    throw new Unconvertible(`Fit Model's ${personality} personality isn't converted yet`);
+  const ys = columnNames(findArg(call, 'Y')).map((n) => cols.get(n));
+  if (ys.length === 0)
+    throw new Unconvertible('Fit Model names no Y column');
+  const viewers: JmpViewerSpec[] = [];
+  const unsaved: string[] = [];
+  for (const y of ys) {
+    const predicted = cols.predictionOf(y.name);
+    if (!predicted) {
+      unsaved.push(y.name);
+      continue;
+    }
+    viewers.push({type: SCATTER, options: {
+      xColumnName: predicted.name, yColumnName: y.name, title: `${y.name} Actual by Predicted`,
+      formulaLines: JSON.stringify([{type: 'line', formula: 'Y = X', title: 'Actual = Predicted'}]),
+    }});
+  }
+  if (viewers.length === 0) {
+    throw new Unconvertible(`The fit of ${quoted(unsaved)} saved no prediction formula to the table, ` +
+      'and the model isn\'t refit');
+  }
+  if (unsaved.length > 0)
+    notes.push(`No Actual by Predicted plot for ${quoted(unsaved)}: no prediction formula saved`);
+  notes.push('The model\'s reports (fit summary, estimates, effect tests) and its other plots not shown');
+  if (findAll(call, 'Profiler').some((p) => p.args[0]?.type === 'number' && p.args[0].value === 1))
+    notes.push('Profiler not shown');
+  return viewers;
+}
+
+/** Fit Group: the Fit Models it holds, each converted on its own. JMP separates them with `,` or `;`. */
+function fitGroup(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
+  const viewers: JmpViewerSpec[] = [];
+  const reasons: string[] = [];
+  for (const model of call.args.flatMap(statements).filter((a): a is Call => isCall(a, 'Fit Model'))) {
+    try {
+      viewers.push(...fitModel(model, cols, notes));
+    } catch (e) {
+      if (!(e instanceof Unconvertible))
+        throw e;
+      reasons.push(e.message);
+    }
+  }
+  if (viewers.length === 0)
+    throw new Unconvertible([...new Set(reasons)].join('; ') || 'Fit Group holds no Fit Model');
+  notes.push(...reasons);
+  return viewers;
 }
 
 function contingency(call: Call, cols: Columns): JmpViewerSpec[] {

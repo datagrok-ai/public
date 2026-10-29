@@ -5,7 +5,7 @@ import {JslNode, JslSyntaxError, columnNames, findArg, isCall, parseJsl, stateme
 import {readJmp} from '../formats/jmp/jmp-parser';
 import {JmpScript, readTableScripts} from '../formats/jmp/jmp-scripts';
 import {JmpInfo} from '../formats/jmp/jmp-types';
-import {JmpColumnRef, JmpScriptConversion, convertScript} from '../formats/jmp/jsl-to-viewers';
+import {JmpColumnRef, JmpScriptConversion, columnRefs, convertScript} from '../formats/jmp/jsl-to-viewers';
 import {fixture} from './jmp-reader-tests';
 
 // Scripts in the form JMP saves them; the column names follow JMP's Big Class sample.
@@ -358,8 +358,31 @@ category('JMP: analyses', () => {
       .options.title, 'Growth');
   });
 
+  test('Fit Model: Actual by Predicted, from the saved prediction formula', async () => {
+    const cols = [...BIG_CLASS, {name: 'Pred Formula weight', numeric: true, predicts: 'weight'}];
+    const fit = (text: string) => convertScript({name: 'Fit', text, body: parseJsl(text)}, cols);
+    const one = fit('Fit Model(Y(:weight), Effects(:height), Personality("Standard Least Squares"), ' +
+      'Run(:weight << {Profiler(1)}))');
+    expect(one.viewers.length, 1);
+    const o = one.viewers[0].options;
+    expect(one.viewers[0].type, 'Scatter plot');
+    expect(o.xColumnName, 'Pred Formula weight');
+    expect(o.yColumnName, 'weight');
+    expect(o.title, 'weight Actual by Predicted');
+    expect(JSON.parse(o.formulaLines as string)[0].formula, 'Y = X');
+    expect(one.notes.includes('Profiler not shown'), true);
+    const group = fit('Fit Group(Fit Model(Y(:weight), Effects(:height)), Fit Model(Y(:height), Effects(:age)))');
+    expect(group.platform, 'Fit Group');
+    expect(group.viewers.length, 1);
+    expect(group.notes.filter((n) => /reports/.test(n)).length, 1);
+    expect(/The fit of "height" saved no prediction formula/.test(group.notes.join()), true);
+    expect(/Generalized Regression personality isn't converted/
+      .test(fit('Fit Model(Y(:weight), Effects(:height), Personality("Generalized Regression"))').reason!), true);
+  });
+
   test('not converted, with a reason', async () => {
-    expect(/Fit Model isn't converted/.test(convert('Fit Model(Y(:weight), Effects(:height), Run)').reason!), true);
+    expect(/"weight" saved no prediction formula/
+      .test(convert('Fit Model(Y(:weight), Effects(:height), Run)').reason!), true);
     expect(/Column "nope"/.test(convert('Bivariate(Y(:weight), X(:nope))').reason!), true);
     expect(/Doesn't launch an analysis/.test(convert('Names Default To Here(1)').reason!), true);
     const program = convert('Names Default To Here(1); cols = Current Data Table() << Get Column Names(Numeric); ' +
@@ -461,7 +484,7 @@ category('JMP: public files', () => {
     expect(analyses.every((a) => a.viewers.length === 0 && /isn't converted/.test(a.reason!)), true);
   });
 
-  test('JMP 18: spec limits on predicted quality attributes', async () => {
+  test('JMP 18: spec limits on predicted quality attributes, and their fits', async () => {
     const t = await read('mdpi-bioengineering-11-01089-wp1');
     expect(t.info.jmpVersion, '18.1.0');
     expect(t.info.nrows, 21);
@@ -470,9 +493,17 @@ category('JMP: public files', () => {
     expect(spec('Pred Formula CQA2 - WP1'), 'Spec Limits({USL(-0.51833593600000005), Show Limits(1)})');
     expect(spec('Pred Formula CQA3 - WP1'),
       'Spec Limits({LSL(-2.3376879380000002), USL(1.8659177870000001), Show Limits(1)})');
+    const fits = convertScript(t.scripts.find((s) => s.name === 'Fit OLS')!, columnRefs(t.columns));
+    expect(fits.platform, 'Fit Group');
+    expectArray(fits.viewers.map((v) => `${v.options.yColumnName} by ${v.options.xColumnName}`),
+      ['CQA1 - WP1 by Pred Formula CQA1 - WP1', 'CQA2 - WP1 by Pred Formula CQA2 - WP1',
+        'CQA3 - WP1 by Pred Formula CQA3 - WP1']);
     const design = await read('mdpi-bioengineering-11-01089-wp1-3');
-    const cols = design.columns.map((c) => ({name: c.info.name, numeric: c.kind !== 'string'}));
-    const evaluate = convertScript(design.scripts.find((s) => s.name === 'Evaluate Design')!, cols);
-    expect(evaluate.platform, 'DOE');
+    const convert3 = (name: string) => convertScript(design.scripts.find((s) => s.name === name)!,
+      columnRefs(design.columns));
+    expect(convert3('Evaluate Design').platform, 'DOE');
+    expect(convert3('Fit Least Squares').viewers.length, 3);
+    expect(convert3('Generalized Regression').reason,
+      'Fit Model\'s Generalized Regression personality isn\'t converted yet');
   });
 }, {node: true});
