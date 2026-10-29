@@ -170,6 +170,16 @@ mechanism from `pin()`; do not mix them in one view):
 view.grid.setOptions({frozenColumns: 2});
 ```
 
+Reading pinning and sorting back (there is no `isPinned`): `frozenColumns` counts the row header, and pinned
+columns come right after it.
+
+```js
+const g = view.grid;
+const pinned = Array.from({length: g.props.frozenColumns - 1}, (_, i) => g.columns.byIndex(i + 1).name);
+const sort = g.sortByColumns.map((c, i) => `${c.name} ${g.sortTypes[i] ? 'asc' : 'desc'}`);
+return {pinned, sort};
+```
+
 ## Row height
 
 ```js

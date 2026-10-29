@@ -63,7 +63,8 @@ variables**, and returns its result as `verified: {passed, observed?}` — one r
 separate verify call needed.
 
 The assertion is yours to design for whatever you changed: re-read that thing and `return` the
-observed result (truthy = verified).
+values you read (truthy = verified), e.g. `return {type: col.meta.colors.getType(), hidden: !gc.visible}`.
+A bare `true` is rejected: a comparison can be true for the wrong reason, and the values show what is there.
 `verified.passed: true` → report the observed value, not the value you intended.
 `verified.passed: false` (or missing) → the action is NOT confirmed — but do **not** assume it
 failed: a faulty assertion (wrong property, wrong count, missing `return`) reads exactly the same.
@@ -74,6 +75,17 @@ viewers/columns/rows. The standalone **`datagrok_verify`** tool exists for that 
 MCP calls that changed platform state (it takes the same `{assertion, description}`). The runtime
 blocks the turn from ending until a verification passes (bounded retries — if they run out, the
 response is shown to the user flagged as **unverified**, so never present unverified work as done).
+
+Re-reading what an MCP call saved on the server — use these calls as written, without looking them up:
+
+| Saved | Assertion |
+|---|---|
+| file | `return await grok.dapi.files.readAsText('Conn:path/file.txt')` (connector-qualified path, e.g. `System:DemoFiles/...`; the user's home connection is `(await grok.dapi.connections.filter('name = "Home"').first()).nqName`) |
+| script | `const s = await grok.dapi.scripts.filter('name = "X"').first(); return s && s.script` |
+| query | `const q = await grok.dapi.queries.filter('name = "X"').first(); return q && q.query` |
+| project | `return await grok.dapi.projects.filter('name = "X"').first()` |
+| space | `const s = (await grok.dapi.spaces.list()).find((x) => x.friendlyName === 'X'); return s && (await grok.dapi.spaces.id(s.id).children.list()).map((c) => c.friendlyName)` |
+| deleted entity | the same lookup, `return` that it is `null` / absent |
 
 ## Returning a result to the chat
 

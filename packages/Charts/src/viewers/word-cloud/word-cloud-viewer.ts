@@ -168,6 +168,7 @@ export class WordCloudViewer extends DG.JsViewer {
   }
 
   render() {
+    clearTimeout(this._renderTimer);
     this._renderPending = 1;
     if (!this._testColumns()) {
       this.showError('Not enough data to produce the result.');
