@@ -197,6 +197,15 @@ export class JsInputBase {
  * export is a live binding, so a swap mid-test reaches modules that imported the namespace. */
 export let ColumnGrid = undefined;
 export function _installColumnGrid(cls) { ColumnGrid = cls; }
+
+/** A sampled table query: \`answers[table](fields)\` is the frame a test has it return. */
+export class TableQueryBuilder {
+  static answers = {};
+  static from(table) { return Object.assign(new TableQueryBuilder(), {table}); }
+  select(fields) { this.fields = fields; return this; }
+  limit(rows) { this.rows = rows; return this; }
+  build() { return {executeTable: async () => TableQueryBuilder.answers[this.table](this.fields, this.rows)}; }
+}
 `;
 
 const GROK_STUB = `
@@ -224,7 +233,8 @@ export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shel
   onViewAdded: new Stream(), onViewRemoving: new Stream(), onCurrentViewChanged: new Stream(),
   onViewRemoved: new Stream(), onViewLayoutApplied: new Stream(), onContextMenu: new Stream()};
 
-export const data = {parseCsv: () => new DataFrame()};
+export const data = {parseCsv: () => new DataFrame(), detectSemanticTypes: async () => {}};
+
 
 export const userSettings = {values: {}, get: (name) => userSettings.values[name],
   add: (name, key, value) => (userSettings.values[name] ??= {})[key] = value,

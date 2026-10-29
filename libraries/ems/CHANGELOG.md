@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Create Domain Schema: Recognizes what text columns hold from a sample of their values (a SMILES column is drafted as a Molecule), so bound tables draw structures with nothing declared
 * Lists: A table opened at `/domains/<schema>/<table>` shows its rows as cards with the structure (any column a display rule draws) beside the name and two text lines, or as a table of columns where no column has a picture, with the condition builder beside them
 * Tables: A column a display rule draws (a structure) is drawn in its cells, the rows tall enough for it; added the `view` app option to open the list page as a table
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"

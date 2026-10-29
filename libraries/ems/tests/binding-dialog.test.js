@@ -1213,3 +1213,26 @@ scoped('WO-A5.1 #13 (P2): a stray Enter does not close the Created report; CLOSE
   await flush();
   assert.equal((await done).access.failed.length, 2);
 });
+
+scoped('recognize: a sampled text column the detectors read as a structure is drafted as one', async () => {
+  const DG = await import('datagrok-api/dg');
+  const {BindingDialog} = await import('../src/dg/authoring/binding-dialog.js');
+  const manifest = {name: 'chembl', tables: {
+    compound: {table: 'compound_structures', columns: {molregno: {type: 'int'},
+      smiles: {type: 'string', column: 'canonical_smiles'}, inchi: {type: 'string', column: 'standard_inchi'}}},
+    secret: {columns: {code: {type: 'string'}}},
+  }};
+  const asked = [];
+  DG.TableQueryBuilder.answers = {
+    'public.compound_structures': (fields, rows) => {
+      asked.push([fields, rows]);
+      return {col: (name) => ({semType: name === 'canonical_smiles' ? 'Molecule' : null})};
+    },
+    'public.secret': () => { throw new Error('permission denied'); },
+  };
+  await BindingDialog.recognize({nqName: 'Chembl'}, 'public', manifest);
+  assert.deepEqual(asked, [[['canonical_smiles', 'standard_inchi'], BindingDialog.SAMPLE_ROWS]], 'text columns only');
+  assert.equal(manifest.tables.compound.columns.smiles.semType, 'Molecule');
+  assert.equal('semType' in manifest.tables.compound.columns.inchi, false);
+  assert.equal('semType' in manifest.tables.secret.columns.code, false, 'a table it cannot sample stays as drafted');
+});

@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {Permission} from 'datagrok-api/dg';
+import {Permission, TableQueryBuilder} from 'datagrok-api/dg';
 import {computed, signal, Control, div, divV, link, span, plural, Wizard, Section, ChoiceInput, Form, badge,
   notify} from '@datagrok-libraries/u2';
 import type {WizardOptions} from '@datagrok-libraries/u2';
@@ -10,7 +10,7 @@ import {groupInput} from '@datagrok-libraries/u2/dg';
 import {ManifestEditor} from './manifest-editor.js';
 import type {ManifestPlan} from './manifest-editor.js';
 import {ManifestModel} from './manifest-model.js';
-import type {AccessPrincipal, DraftEnvelope, ManifestDiagnostic, ManifestJson} from './manifest-model.js';
+import type {AccessPrincipal, DraftEnvelope, ManifestDiagnostic, ManifestJson, ManifestTableJson} from './manifest-model.js';
 
 export interface CreateBindingOptions {
   connection?: DG.DataConnection;
@@ -432,6 +432,10 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       if (gen !== this._readGen)
         return;
       const draft: DraftEnvelope = {...answer, manifest: answer.manifest as ManifestJson};
+      this._reading.value = 'Recognizing what the columns hold…';
+      await BindingDialog.recognize(conn, schema, draft.manifest);
+      if (gen !== this._readGen)
+        return;
       const tables = answer.inventory.tables;
       const bindable = tables.filter((t) => t.bindable).length;
       this._facts.textContent = `${conn.dataSource} · ${schema}: ${bindable} of ` +
@@ -548,6 +552,31 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     return BindingDialog._canonical({name: model.name.value, friendlyName: model.friendlyName.value,
       manifest: model.toJSON()});
   }
+
+  /** Stamps the semantic type the platform's detectors see in a sample of each text column — a SMILES
+   * column becomes a Molecule — so the bound tables draw what they hold with nothing declared. */
+  static async recognize(conn: DG.DataConnection, schema: string, manifest: ManifestJson): Promise<void> {
+    const sample = async (logical: string, table: ManifestTableJson) => {
+      const text = Object.entries(table.columns).filter(([, c]) => c.type === 'string' && c.semType === undefined);
+      if (text.length === 0)
+        return;
+      const remote = text.map(([name, c]) => c.column ?? name);
+      const df = await TableQueryBuilder.from(`${schema}.${table.table ?? logical}`, conn).select(remote)
+        .limit(BindingDialog.SAMPLE_ROWS).build().executeTable();
+      await grok.data.detectSemanticTypes(df);
+      text.forEach(([, c], i) => {
+        const semType = df.col(remote[i])?.semType;
+        if (semType)
+          c.semType = semType;
+      });
+    };
+    // a few tables at a time, and one the login cannot read stays as drafted
+    const tables = Object.entries(manifest.tables);
+    for (let i = 0; i < tables.length; i += 4)
+      await Promise.all(tables.slice(i, i + 4).map(([logical, table]) => sample(logical, table).catch(() => {})));
+  }
+
+  static readonly SAMPLE_ROWS = 50;
 
   private static _key(conn: DG.DataConnection, schema: string): string {
     return `${conn.id}\u0000${schema}`;
