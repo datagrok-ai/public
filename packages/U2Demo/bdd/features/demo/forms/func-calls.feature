@@ -3,12 +3,13 @@ Feature: FuncCalls
   One FuncCall edited by the platform's DG.InputForm.forFuncCall in the Platform section and by u2's
   funcForm in the u2 section. An edit on either side writes the call, the other side follows and the
   sync line counts it once; the required parameter of the second function gates isValid on both
-  forms alike. The page's `seed` default names a variable that does not exist on purpose, so every
-  open raises its error balloon.
+  forms alike. The page's `seed` default names a variable that does not exist on purpose; only the u2
+  form is given it and shows the failure on its field, so the page raises no balloon.
 
   Background:
     Given user opens the "FuncCalls" demo page
-    Then an error balloon containing "nosuchvar" should have been shown
+    Then "u2" section should contain text "nosuchvar"
+    And no error or warning balloon should have been shown
 
   Scenario: The two sides never lie on one another, side by side or stacked
     Then Stage input in "u2" section should not overlap Stage input in "Platform" section

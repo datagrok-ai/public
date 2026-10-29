@@ -47,7 +47,7 @@ category('Grit: issues app', () => {
       expect(app.shortcuts['c'], 'Close');
       const ribbon = app.ribbon();
       expect(ribbon.main.length, 5, 'New, Save, Discard, the ⋯ menu, Refresh');
-      expect(ribbon.tools.length, 3, 'the search box, Sort by and Edit properties…');
+      expect(ribbon.tools.length, 4, 'the search box, Sort by, the list/table switch and Edit properties…');
       expect(ribbon.presets.length, 1, 'the Mine / Open switch');
       const presets = ribbon.presets[0];
       expect(('root' in presets ? presets.root : presets).dataset.u2, 'domain-presets');

@@ -60,7 +60,11 @@ let _closed: Promise<string | null> | undefined;
 /** The two actions, the closing rule and the card, on every handle over `issue`. */
 domains.configure<IssueRow>('grit.issue', async (issues) => {
   const [closedId] = await Promise.all([
-    _closed ??= gritDb.statuses.getByKey({name: 'closed'}).then((closed) => closed?.id ?? null), warmLookups()]);
+    _closed ??= gritDb.statuses.getByKey({name: 'closed'}).then((closed) => closed?.id ?? null, (e) => {
+      // a failed read is asked again by the next handle, not kept for the page
+      _closed = undefined;
+      throw e;
+    }), warmLookups()]);
   const me = () => grok.shell.user.id;
   issues.actions.add({name: 'Assign to me', icon: 'user', requires: 'edit',
     when: (r) => r.assignee !== me(), run: (r) => { r.assignee = me(); }});

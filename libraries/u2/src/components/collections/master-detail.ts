@@ -53,7 +53,9 @@ interface Pane {
 }
 
 /** A list beside the detail of its current item, split by a sash: rows with a check and a hint, the arrow keys
- * moving the current one and Space checking it, each detail built when first shown and kept. */
+ * moving the current one and Space checking it, each detail built when first shown and kept. For lists up to a few
+ * hundred items: it renders every row. A longer list is a `VirtualList` (`new VirtualList({keyOf, render})`, then
+ * `setItems(items)`; its `selectedIndex` is the current row) beside a detail of your own, in a `Splitter`. */
 export class MasterDetail<T> extends Control {
   /** The current item's key. */
   readonly current: Signal<string | null>;

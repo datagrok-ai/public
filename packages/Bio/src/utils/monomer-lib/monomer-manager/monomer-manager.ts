@@ -205,6 +205,7 @@ export class MonomerManager implements IMonomerManager {
   /** The libraries the Monomer Library input offers, as of the last time the view was opened. */
   private _libraries: string[] = [];
   private _newMonomer: Monomer = DUMMY_MONOMER;
+  private _loads = 0;
   /** The editor docked in the open view; made with the view and disposed when it closes. */
   private _editor: MonomerEditor | null = null;
   private monomerLib: IMonomerLib;
@@ -690,10 +691,16 @@ export class MonomerManager implements IMonomerManager {
     return editor;
   }
 
+  /** Loads the row's monomer into the editor, unless a row asked for later got there first: a row without a natural
+   * analog reads slower (its analog is computed), and must not land over the one picked after it. */
   async editMonomer(dfRow: DG.Row): Promise<Monomer> {
-    this._newMonomer = await monomerFromDfRow(dfRow);
-    this.editor.setMonomer(this._newMonomer);
-    return this._newMonomer;
+    const load = ++this._loads;
+    const monomer = await monomerFromDfRow(dfRow);
+    if (load === this._loads) {
+      this._newMonomer = monomer;
+      this.editor.setMonomer(monomer);
+    }
+    return monomer;
   }
 
   async getMonomersDf(fileName?: string) {

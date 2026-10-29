@@ -290,7 +290,6 @@ export const U2_KINDS: readonly U2KindDef[] = [
   def('container', 'form', 'form', {role: 'form', nameFrom: ['aria'], state: ['valid', 'error', 'items'],
     styling: {
       '--u2-form-max-width': 'the widest a form gets (a CSS length); 700px, or as wide as the page in a Page',
-      '--u2-form-label-width': 'the label column\'s width, set by the form as it measures (labelWidth fixes it)',
       '--u2-form-section-gap': 'the space between two sections of the form; 0',
     }}),
   def('container', 'object-form', 'object form', {role: 'form', nameFrom: ['aria'],

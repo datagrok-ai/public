@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import * as api from '../package-api';
 import {HitDesignApp} from '../app/hit-design-app';
+import {CampaignJsonName} from '../app/consts';
 import {designCampaign, designCsv, noComputeTemplate, Sandbox} from './fixtures';
 
 type Query = (name: string, ...args: unknown[]) => Promise<DG.DataFrame>;
@@ -99,4 +100,51 @@ category('Campaign view: other sessions', () => {
       await sb.dispose();
     }
   }, {timeout: 120000});
+});
+
+type FileRead = (file: unknown, ...rest: unknown[]) => Promise<unknown>;
+
+/** ZZB3-1 is asked for first, and its `read` of the file at `path` waits until ZZB3-2 is open: the app must end on
+ * ZZB3-2, whichever read of the open holds ZZB3-1 back. */
+async function openWhileFirstReads(read: 'readAsText' | 'readCsv', path: (sb: Sandbox) => string): Promise<void> {
+  const sb = await Sandbox.create('open');
+  const files = Object.getPrototypeOf(grok.dapi.files) as {[name: string]: FileRead};
+  const original = files[read];
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => release = resolve);
+  try {
+    const t = noComputeTemplate('ZZB3 Open', 'ZZB3');
+    await sb.writeTemplate(t);
+    await sb.writeCampaign(designCampaign(sb, 'ZZB3-1', t), designCsv);
+    await sb.writeCampaign(designCampaign(sb, 'ZZB3-2', t), designCsv);
+    const app = await sb.hitDesign();
+    let holding = false;
+    files[read] = async function(this: unknown, file: unknown, ...rest: unknown[]) {
+      if (String(file) === path(sb)) {
+        holding = true;
+        await held;
+      }
+      return original.call(this, file, ...rest);
+    };
+    const first = app.infoView.setCampaign('ZZB3-1');
+    await waitUntil(() => holding, `ZZB3-1's ${read} of ${path(sb)} was not reached`, 30000);
+    await sb.openDesign(app, 'ZZB3-2');
+    release();
+    await first;
+    expect(app.campaignId, 'ZZB3-2', 'the campaign the app has open');
+    expect(app.designView?.name, 'Friendly ZZB3-2', 'the campaign view shown');
+  } finally {
+    files[read] = original;
+    release();
+    await sb.dispose();
+  }
+}
+
+category('Campaign view: opening', () => {
+  test('of two campaigns opened in quick succession the one opened last is shown, though the first reads its table ' +
+    'slower', () => openWhileFirstReads('readCsv', (sb) => sb.savePath('ZZB3-1')), {timeout: 120000});
+
+  test('of two campaigns opened in quick succession the one opened last is shown, though the first reads its ' +
+    'campaign.json slower', () => openWhileFirstReads('readAsText',
+    (sb) => `${sb.appName}/campaigns/ZZB3-1/${CampaignJsonName}`), {timeout: 120000});
 });

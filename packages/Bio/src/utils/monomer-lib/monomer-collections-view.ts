@@ -5,14 +5,15 @@ import * as DG from 'datagrok-api/dg';
 import {MonomerCollection, IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {Card, Control, TextInput, badge, button, component, computed, div, each, iconButton, on, show, signal, span}
-  from '@datagrok-libraries/u2';
+import {Card, Control, TextInput, badge, button, component, computed, div, each, emptyState, iconButton, on, show,
+  signal, span} from '@datagrok-libraries/u2';
 import type {ReadonlySignal} from '@datagrok-libraries/u2';
 import {ViewHost} from '@datagrok-libraries/u2/dg';
 
 import {MonomerLibManager} from './lib-manager';
 import {MonomerCollectionHandler, MonomerCollectionInfo} from './monomer-collection-handler';
 import {CollectionDialogs, CollectionRef} from './collection-dialogs';
+import type {CollectionAccess} from './collection-dialogs';
 import {attachMonomerCollectionsAi} from './ai-functions';
 import {SEM_TYPES} from '../constants';
 import {_package} from '../../package';
@@ -31,6 +32,8 @@ export interface MonomerCollectionsView {
   readonly search: TextInput;
   /** The files the search keeps, in file order. */
   readonly shown: ReadonlySignal<string[]>;
+  /** Who may change which collection, read when the view opened. */
+  readonly access: CollectionAccess;
   /** Reads the collection list and every collection again; the selection is dropped. */
   refresh(): Promise<void>;
   create(): void;
@@ -42,7 +45,7 @@ export interface MonomerCollectionsView {
  * collection with its monomers, a New Collection card last. A click selects (Ctrl adds), a right
  * click opens the collection's menu, the context panel shows the selection. */
 export function monomerCollectionsView(libHelper: MonomerLibManager, monomerLib: IMonomerLib,
-  user: string): Control & MonomerCollectionsView {
+  access: CollectionAccess): Control & MonomerCollectionsView {
   return component((self) => {
     const names = signal<string[]>([]);
     /** Each file's content once read; a file that failed to read is absent. */
@@ -162,7 +165,7 @@ export function monomerCollectionsView(libHelper: MonomerLibManager, monomerLib:
 
     const actions = (name: string, data: {readonly value: MonomerCollection | undefined}): HTMLElement[] => {
       const notOwner = computed(() => data.value === undefined ? null :
-        CollectionDialogs.notEditable(data.value, user));
+        CollectionDialogs.notEditable(data.value, access));
       return [
         button('Edit', () => {
           const r = ref(name);
@@ -221,7 +224,8 @@ export function monomerCollectionsView(libHelper: MonomerLibManager, monomerLib:
       (name) => name === '' ? addCard() : collectionCard(name));
     const empty = div([], 'monomer-collections-empty');
     show(empty, computed(() => shown.value.length === 0 && names.value.length > 0),
-      () => span('No collection matches the search.'));
+      () => emptyState('No collection matches the search.', {icon: 'search',
+        actions: [button('Clear search', () => search.value = '')]}));
     const root = div([empty, grid], 'monomer-collections-view');
     self.listen(root, 'click', (e) => {
       if ((e.target as Element).closest('[data-u2="card"]') === null)
@@ -241,7 +245,7 @@ export function monomerCollectionsView(libHelper: MonomerLibManager, monomerLib:
         .show();
     });
     root.tabIndex = 0;
-    return {root, names, selected, search, shown, refresh, create, editCollectionPublic};
+    return {root, names, selected, search, shown, access, refresh, create, editCollectionPublic};
   }, {name: 'monomerCollections'});
 }
 
@@ -270,9 +274,10 @@ export async function showMonomerCollectionsView(addView = true): Promise<DG.Vie
   }
   const libHelper = await MonomerLibManager.getInstance();
   await libHelper.awaitLoaded();
+  const access = await CollectionDialogs.access();
   let content!: Control & MonomerCollectionsView;
   const view = ViewHost.create({name: VIEW_NAME, content: () => {
-    content = monomerCollectionsView(libHelper, libHelper.getMonomerLib(), DG.User.current().login);
+    content = monomerCollectionsView(libHelper, libHelper.getMonomerLib(), access);
     return {root: content,
       ribbon: [[content.search], [
         iconButton('plus', () => content.create(), {tooltip: 'New collection'}),

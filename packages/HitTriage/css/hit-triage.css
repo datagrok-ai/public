@@ -60,9 +60,9 @@
     max-width: 762px;
 }
 
-/* the progress tracker (src/app/hit-design-views/tiles-view.ts): lanes too wide for the dialog scroll sideways */
+/* the progress tracker (tiles-view.ts): lanes scroll sideways; the Tile Viewer has no setting for a value's ellipsis */
 .hit-design-tracker-lanes {
     height: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: auto hidden;
 }
+.hit-design-tracker-lanes .d4-tile-viewer-form input.ui-input-editor {text-overflow: ellipsis;}

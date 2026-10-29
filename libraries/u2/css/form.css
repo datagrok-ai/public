@@ -20,9 +20,13 @@
   gap: 0;
 }
 
+/* platform caption skin: grey, right-aligned in the label column (ui.css:1068-1075) —
+   bridged platform inputs (.ui-input-label) share it */
 .u2-form .u2-input-label,
 .u2-form .ui-input-label {
   min-width: var(--u2-form-label-width, 100px);
+  color: var(--dg-text-color-light);
+  text-align: right;
 }
 
 /* while a form measures its captions (form.ts _measureLabels): each at its own text's width, whatever
@@ -32,14 +36,6 @@
   flex-basis: auto !important;
   width: max-content !important;
   min-width: 0 !important;
-}
-
-/* platform caption skin: grey, right-aligned in the label column (ui.css:1068-1075) —
-   bridged platform inputs (.ui-input-label) share it */
-.u2-form .u2-input-label,
-.u2-form .ui-input-label {
-  color: var(--dg-text-color-light);
-  text-align: right;
 }
 
 .u2-form-captions-left .u2-input-label,

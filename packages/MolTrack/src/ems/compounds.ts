@@ -146,9 +146,10 @@ export class Compounds {
     const structure = identity?.structure;
     // the parent is drawn only where it differs from the Structure the form draws (a salt or a charge taken off)
     if (!isEmpty(structure)) {
-      void Chemistry.same(original ?? '', structure!).catch(() => false).then((same) => {
+      form.task(async (t) => {
+        const same = await Chemistry.same(original ?? '', structure!).catch(() => false);
         if (!same)
-          formula.before(field('Parent', grok.chem.drawMolecule(structure!, 160, 120)));
+          t.build(() => formula.before(field('Parent', grok.chem.drawMolecule(structure!, 160, 120))));
       });
     }
     pane.section.body.replaceChildren(...(problem === null ? [] : [ui.divText(problem, 'moltrack-problem')]),

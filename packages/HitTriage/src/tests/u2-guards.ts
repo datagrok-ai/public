@@ -204,6 +204,27 @@ category('u2 guards', () => {
     expectSame(saved, [{edit: [allUsers], view: [allUsers]}], 'what OK saved');
   }), {timeout: 60000});
 
+  test('Edit Permissions of a campaign view closes with the view when another campaign opens',
+    u2test(async () => {
+      const sb = await Sandbox.create('guards');
+      try {
+        const t = noComputeTemplate('ZZB3 Guards', 'ZZB3');
+        await sb.writeTemplate(t);
+        await sb.writeCampaign(designCampaign(sb, 'ZZB3-1', t), designCsv);
+        await sb.writeCampaign(designCampaign(sb, 'ZZB3-2', t), designCsv);
+        const app = await sb.hitDesign();
+        await sb.openDesign(app, 'ZZB3-1');
+        const icon = document.querySelector<HTMLElement>('[data-u2-item="Edit campaign permissions"]');
+        expect(icon !== null, true, 'the ribbon\'s Edit campaign permissions');
+        icon!.click();
+        const dialog = await dialogNamed('edit-permissions');
+        await sb.openDesign(app, 'ZZB3-2');
+        await waitUntil(() => !dialog.isConnected, 'Edit Permissions of ZZB3-1 stayed open over ZZB3-2', 10000);
+      } finally {
+        await sb.dispose();
+      }
+    }), {timeout: 120000});
+
   test('Submit: Enter in the edited Name saves it and keeps the dialog; Download gives the campaign\'s table',
     u2test(async () => {
       const sb = await Sandbox.create('guards');

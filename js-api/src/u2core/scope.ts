@@ -254,8 +254,9 @@ export class Scope {
       return () => {};
     }
     const scope = this.child('subscription');
-    const subscription = source.subscribe(scope.bind(handler));
-    scope.own(() => subscription.unsubscribe());
+    // a signal's `subscribe` (plain JS hands one in) answers the unsubscribe itself, not a subscription
+    const subscription: {unsubscribe(): void} | (() => void) = source.subscribe(scope.bind(handler));
+    scope.own(typeof subscription === 'function' ? subscription : () => subscription.unsubscribe());
     return () => scope.dispose();
   }
 

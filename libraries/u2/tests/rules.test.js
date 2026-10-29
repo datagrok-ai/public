@@ -103,7 +103,7 @@ function shapeProblems(rules) {
 
 /** Rules nothing catches yet; adding a guard takes a rule off this list, and a new rule needs a guard. */
 const UNGUARDED = ['on-input', 'reset-follow', 'two-verdicts', 'tabs-mark', 'label-column', 'docked-editor', 'dock',
-  'find-from-root', 'dialog-cancel', 'settings-scope', 'dialog-outlives-row', 'balloon-content', 'app-header',
+  'find-from-root', 'settings-scope', 'dialog-outlives-row', 'balloon-content', 'app-header',
   'confirm', 'records-checklist', 'catalog-table'];
 
 test('rules: an id, one sentence for the rule, its why and its detail, one line each for the wrong and the right code',

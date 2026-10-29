@@ -164,9 +164,11 @@ category('U2', () => {
 
   test('Usage', async () => {
     const usage = DG.U2.Usage;
+    const was = usage.mode;
     const gone = DG.U2.Scope.root('api-tests session');
     gone.dispose();
     try {
+      usage.mode = 'throw';
       usage.clear();
       for (let i = 0; i < 2; i++) {
         let thrown: unknown;
@@ -189,7 +191,7 @@ category('U2', () => {
       gone.listen(document, 'click', () => {});
       expect(usage.reports().length, 0);
     } finally {
-      usage.mode = 'throw';
+      usage.mode = was;
       usage.clear();
     }
   }, {owner: 'askalkin@datagrok.ai'});

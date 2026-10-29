@@ -200,15 +200,28 @@ class EventTargetBase {
 const observers = new Set();
 
 function notifyMutation(parent) {
+  queueRecord({type: 'childList', target: parent});
+}
+
+function notifyAttribute(target, attributeName) {
+  queueRecord({type: 'attributes', target, attributeName});
+}
+
+function queueRecord(record) {
   if (observers.size === 0)
     return;
   for (const observer of observers) {
-    if (observer._queued || !observer._watches(parent))
+    if (!observer._watches(record))
+      continue;
+    observer._records.push(record);
+    if (observer._queued)
       continue;
     observer._queued = true;
     queueMicrotask(() => {
       observer._queued = false;
-      observer._callback([], observer);
+      const records = observer.takeRecords();
+      if (records.length > 0)
+        observer._callback(records, observer);
     });
   }
 }
@@ -217,25 +230,35 @@ class MutationObserver {
   constructor(callback) {
     this._callback = callback;
     this._targets = [];
+    this._records = [];
     this._queued = false;
   }
 
+  // as the DOM's, except that an observer asking for neither childList nor attributes gets childList records
   observe(target, options = {}) {
-    this._targets.push({target, subtree: !!options.subtree});
+    const attributes = options.attributes ?? options.attributeFilter !== undefined;
+    this._targets.push({target, subtree: !!options.subtree, childList: options.childList ?? !attributes, attributes,
+      filter: options.attributeFilter});
     observers.add(this);
   }
 
   disconnect() {
     this._targets.length = 0;
+    this._records = [];
     observers.delete(this);
   }
 
   takeRecords() {
-    return [];
+    const records = this._records;
+    this._records = [];
+    return records;
   }
 
-  _watches(node) {
-    return this._targets.some((t) => t.target === node || (t.subtree && t.target.contains(node)));
+  _watches(record) {
+    const node = record.target;
+    return this._targets.some((t) => (t.target === node || (t.subtree && t.target.contains(node))) &&
+      (record.type === 'childList' ? t.childList :
+        t.attributes && (t.filter === undefined || t.filter.includes(record.attributeName))));
   }
 }
 
@@ -520,13 +543,17 @@ class Element extends Node {
       this.className = value;
     else
       this._attributes.set(name, String(value));
+    notifyAttribute(this, name);
   }
 
   removeAttribute(name) {
+    if (!this.hasAttribute(name))
+      return;
     if (name === 'class')
       this._classes.clear();
     else
       this._attributes.delete(name);
+    notifyAttribute(this, name);
   }
 
   getAttributeNames() {
@@ -840,6 +867,10 @@ class Document extends EventTargetBase {
 
   createTextNode(data) {
     return new Text(data);
+  }
+
+  contains(node) {
+    return node === this || this.documentElement.contains(node);
   }
 
   querySelector(selector) {

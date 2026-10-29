@@ -1,4 +1,4 @@
-import {Signal, Registry, registry as globalRegistry} from '@datagrok-libraries/u2';
+import {Input, Signal, Registry, registry as globalRegistry} from '@datagrok-libraries/u2';
 import type {LiveOption, ComponentMeta, FormLayout, U2Plugin} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
 import {emsSourcesPlugin} from '../core/registrations.js';
@@ -113,8 +113,6 @@ const METAS: ComponentMeta[] = [
     tag: 'u2-domain-pick',
     category: 'Inputs',
     create: (props: Props) => {
-      const value = props.value;
-      const bound = value instanceof Signal;
       return new DomainPick(String(props.table ?? ''), {
         label: props.label as LiveOption<string> | undefined,
         name: props.name as string | undefined,
@@ -123,8 +121,7 @@ const METAS: ComponentMeta[] = [
         nullable: props.nullable as boolean | undefined,
         placeholder: props.placeholder as string | undefined,
         filter: props.filter as string | undefined,
-        value: bound ? undefined : value as string | null | undefined,
-        bind: bound ? value as Signal<string | null> : undefined,
+        ...Input.specValue<string | null>(props.value),
       });
     },
     description: 'Picks a row of a domain table by typing its name; the value is the row id — what a ' +

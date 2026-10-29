@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {signal, computed, Scope, div, divV, divH, span, h3, button} from '@datagrok-libraries/u2';
+import type {Reason} from '@datagrok-libraries/u2';
 import {funcForm, FuncCallForm, functionsBrowser} from '@datagrok-libraries/u2/dg';
-import {ensureFuncs, ensureTable, fmt, gateTitle, prose} from './func-convergence';
+import {ensureFuncs, ensureTable, fmt, gateReason, prose} from './func-convergence';
 import {readout} from './pages/common';
 
 const INTRO = 'One FuncCall, two editors: the platform\'s `DG.InputForm.forFuncCall` on the ' +
@@ -128,6 +129,11 @@ export function funcsPage(): HTMLElement {
       shown.build(() => {
         const result = signal('');
         const failed = signal(false);
+        const gate = form;
+        const off: Reason = gate === undefined ? 'The u2 form failed to build' :
+          gate.inputs.length === 0 && gate.unsupported.length > 0 ?
+            'Nothing to run with: this form can\'t edit ' + gate.unsupported.map((name) => `'${name}'`).join(', ') :
+            computed(() => gateReason(gate));
         const run = button('Run', async () => {
           try {
             await call.call();
@@ -139,26 +145,7 @@ export function funcsPage(): HTMLElement {
             failed.value = true;
             result.value = 'Run failed: ' + String(e?.message ?? e);
           }
-        }, {primary: true});
-        if (form === undefined) {
-          run.disabled = true;
-          run.title = 'The u2 form failed to build';
-        }
-        else if (form.inputs.length === 0 && form.unsupported.length > 0) {
-          run.disabled = true;
-          run.title = 'Nothing to run with: this form can\'t edit ' +
-            form.unsupported.map((name) => `'${name}'`).join(', ');
-        }
-        else {
-          const gate = form;
-          const blocked = computed(() =>
-            gate.missingRequired.value.length > 0 || gate.invalidFields.value.length > 0);
-          Scope.ambient!.effect(() => {
-            run.disabled = blocked.value;
-            run.title = gateTitle(blocked.value, gate.missingRequired.value,
-              gate.invalidFields.value);
-          });
-        }
+        }, {primary: true, disabled: off});
         const status = readout('result', result);
         Scope.ambient!.effect(() => status.classList.toggle('u2demo-error', failed.value));
         detail.append(divH([run], 'u2demo-row'), status);

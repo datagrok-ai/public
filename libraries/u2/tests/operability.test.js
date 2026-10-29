@@ -6,6 +6,7 @@ import {operability} from 'datagrok-api/u2core';
 import {TextInput, DynamicInput, ColorInput, Input, Reason, button, iconButton, div} from '../src/index.js';
 import {SliderInput} from '../src/components/inputs/slider-input.js';
 import {u2test, mount, expectOperable} from '../src/testing/index.js';
+import {reasonless} from './platform-doubles.mjs';
 
 const NO_CASCADE = typeof CSSStyleSheet !== 'function' && 'needs a DOM with the CSS cascade';
 
@@ -121,7 +122,7 @@ test('inert: a region made inert with no reason is reported once, with a reason 
 }));
 
 test('disabled-without-reason: a reasonless off button and input are reported; a reasoned one is not', u2test(() => {
-  const off = Object.assign(button('Save', () => {}), {disabled: true});
+  const off = reasonless(button('Save', () => {}));
   const why = button('Submit', () => {}, {disabled: 'Name the campaign first'});
   const input = new TextInput({label: 'Name'});
   // the API takes no off without a reason: one taken off its root by hand is the misuse left
@@ -148,7 +149,7 @@ test('name-mismatch: an icon button whose accessible name is not its tooltip, or
 }));
 
 test('what a user cannot see is not probed', u2test(() => {
-  const off = Object.assign(button('Save', () => {}), {disabled: true});
+  const off = reasonless(button('Save', () => {}));
   const box = div([div([off])]);
   box.firstChild.hidden = true;
   assert.deepEqual(findings(box), []);

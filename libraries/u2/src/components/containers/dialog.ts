@@ -6,7 +6,7 @@
 
 import {signal, computed, batch, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
-import {Scope} from '../../core/scope.js';
+import {Scope, Usage} from '../../core/scope.js';
 import {Ownership} from '../../core/owner.js';
 import type {Owner} from '../../core/owner.js';
 import {Overlay, OverlayDialog} from '../../core/overlay.js';
@@ -25,7 +25,8 @@ export interface DialogOptions {
    * scope that built it. Default: closing disposes. */
   keepAlive?: boolean;
   /** One way out: a CLOSE button, never a CANCEL — for a dialog whose work applies as it is done (a tracker),
-   * where there is nothing to take back. CLOSE, ✕ and Escape all close it as OK does (`onOK` runs if given). */
+   * where there is nothing to take back. CLOSE, ✕ and Escape all close it as OK does (`onOK` runs if given) — while
+   * CLOSE is off (`okDisabled`, a form in it not valid), ✕ and Escape close it as a cancel, without `onOK`. */
   closeOnly?: boolean;
 }
 
@@ -237,11 +238,11 @@ export class Dialog extends Control implements OverlayDialog {
   }
 
   /** A button by its caption, case-insensitive: the footer's, OK and CANCEL included, and the ✕
-   * (`Close`) and ? (`Help`). */
+   * (`Close`) and ? (`Help`). The footer comes first: in a close-only dialog `Close` is its CLOSE. */
   getButton(text: string): HTMLButtonElement | undefined {
     const wanted = text.trim().toLowerCase();
-    return [...this._bar.querySelectorAll<HTMLButtonElement>('button'),
-      ...this._buttons.querySelectorAll<HTMLButtonElement>('button')].find((b) =>
+    return [...this._buttons.querySelectorAll<HTMLButtonElement>('button'),
+      ...this._bar.querySelectorAll<HTMLButtonElement>('button')].find((b) =>
       (b.textContent ?? '').trim().toLowerCase() === wanted || b.getAttribute('aria-label')?.toLowerCase() === wanted);
   }
 
@@ -307,6 +308,10 @@ export class Dialog extends Control implements OverlayDialog {
 
   /** CANCEL, ✕ and Escape; answering `false` keeps the dialog open. */
   onCancel(fn: () => void): this {
+    if (this._closeOnly) {
+      Usage.report('close-only-cancel', 'onCancel() on a close-only dialog: it has no CANCEL, and CLOSE, ✕ and ' +
+        'Escape close it as OK does — put the work in onOK, or in onClose to run on every close.');
+    }
     this._onCancel = Dialog._owned(fn);
     this._cancelButton();
     return this;
@@ -450,11 +455,11 @@ export class Dialog extends Control implements OverlayDialog {
     super.dispose();
   }
 
-  /** Escape and ✕: aborts a pending OK, else cancels — in a close-only dialog, closes as OK does. */
+  /** Escape and ✕: aborts a pending OK, else cancels — in a close-only dialog, closes as OK does unless CLOSE is off. */
   cancelByKey(): void {
     if (this._pending !== undefined)
       this._pending.abort();
-    else if (this._closeOnly)
+    else if (this._closeOnly && this._okBtn?.disabled !== true)
       this._accept();
     else
       this._dismiss();
@@ -583,8 +588,11 @@ export class Dialog extends Control implements OverlayDialog {
       ok?.append(this._spinner);
       return;
     }
-    for (const b of this._held)
-      Reason.apply(b, null);
+    // a button whose own reason turned on meanwhile keeps it
+    for (const b of this._held) {
+      if (Reason.of(b) === Dialog.WAITING)
+        Reason.apply(b, null);
+    }
     this._held = [];
     if (ok !== undefined)
       Reason.apply(ok, this._okReason.peek());

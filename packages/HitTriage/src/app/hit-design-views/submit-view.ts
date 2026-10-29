@@ -78,9 +78,14 @@ export class HitDesignSubmitView {
       }, {disabled: canEdit ? null : VIEW_ONLY});
       dialog.onOK(async () => {
         const undo = keepSubmitFunction();
-        const submitted = await this.submit(statusToSave());
-        if (!submitted)
-          undo();
+        let submitted = false;
+        try {
+          submitted = await this.submit(statusToSave());
+        } finally {
+          // a submit function that threw leaves the template as it was; the dialog shows the error
+          if (!submitted)
+            undo();
+        }
         return submitted;
       }, {text: 'Submit', primary: true});
       dialog.okDisabled(computed(() => !canEdit ? VIEW_ONLY :

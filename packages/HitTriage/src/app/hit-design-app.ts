@@ -81,6 +81,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
   private _nextSave?: {request: SaveRequest, done: Promise<HitDesignCampaign | undefined>};
   /** What the app kept of each campaign it switched away from, for a save of it still to run. */
   private readonly _closed = new WeakMap<DG.DataFrame, CampaignState>();
+  private _opens = 0;
   /** The latest single-cell calculation per row: an earlier one still running drops its results. */
   private readonly _rowRuns = new Map<number, number>();
 
@@ -136,7 +137,12 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     let chosenMolColName: string | null = molCols[0]!.name;
     if (molCols.length > 1) {
       const likely = molCols.find((c) => c?.name?.toLowerCase() === 'smiles' || c?.name?.toLowerCase() === 'molecule') ?? molCols[0];
-      chosenMolColName = await pickMoleculeColumn(molCols.map((c) => c.name), likely.name);
+      const session = this._session;
+      const table = this.dataFrame;
+      chosenMolColName = await pickMoleculeColumn(molCols.map((c) => c.name), likely.name, session?.host);
+      // the table goes into the campaign it was dropped on, or nowhere
+      if (session?.host.scope.isDisposed || this.dataFrame !== table)
+        return;
       if (!chosenMolColName) {
         grok.shell.info('Operation cancelled by user');
         return;
@@ -166,20 +172,21 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     return this.campaign?.template?.stages ?? this.template?.stages ?? [];
   }
 
-  /** The campaign's stages from now on, duplicates merged; rows in a stage that goes move to the first one. Saved. */
-  public async setStages(st: string[]) {
+  /** The campaign's stages from now on, duplicates merged; rows in a stage that goes move to the first one. Saved;
+   * answers whether the save happened (a balloon says why not). */
+  public async setStages(st: string[]): Promise<boolean> {
     if (!this.campaign || !this.campaign.template || !this.template) {
       grok.shell.error('Campaign or template is not set');
-      return;
+      return false;
     }
     if (!st?.length) {
       grok.shell.error('Removing all stages is not allowed');
-      return;
+      return false;
     }
     const stageCol = this.dataFrame?.col(TileCategoriesColName);
     if (!stageCol) {
       grok.shell.error('No stage column found');
-      return;
+      return false;
     }
     const stageSet = new Set(st);
     const uniqueStages = [...stageSet];
@@ -190,7 +197,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     this.campaign.template.stages = uniqueStages;
     this.template.stages = uniqueStages;
     stageCol.setTag(DG.TAGS.CHOICES, JSON.stringify(uniqueStages));
-    await this.saveCampaign(true);
+    return await this.saveCampaign(true) !== undefined;
   }
 
   /** Reads the campaign's table from the server again into a new view; the rest of the campaign stays as it is. */
@@ -206,11 +213,19 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     await this.setTemplate(this.template, this._campaignId);
   }
 
+  /** The ticket of an open asked for now: of the opens asked for, only the latest one takes its campaign. */
+  openTicket(): number {
+    return ++this._opens;
+  }
+
   /** Opens the campaign of `campaignId` (`campaign` is its campaign.json, by default the open one: a refresh) with
    * `template`, or a new campaign of the template without one. Everything is read first; then the app takes the
-   * campaign and its view at once, so no save sees half of one campaign and half of another. */
+   * campaign and its view at once, so no save sees half of one campaign and half of another. An open asked for later
+   * wins: `ticket` ({@link openTicket}) is taken when the open is asked for, before what the caller reads first.
+   * Answers whether this one took the campaign. */
   public async setTemplate(template: T, campaignId?: string,
-    campaign: HitDesignCampaign | undefined = campaignId ? this._campaign : undefined) {
+    campaign: HitDesignCampaign | undefined = campaignId ? this._campaign : undefined,
+    ticket = this.openTicket()): Promise<boolean> {
     let df: DG.DataFrame;
     let filePath: string;
     if (!campaignId) {
@@ -266,7 +281,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
 
     if (!df) {
       grok.shell.error('DataFrame is empty');
-      return;
+      return false;
     }
     const base = df.clone();
     await df.meta.detectSemanticTypes();
@@ -285,6 +300,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     // column. Like the auto-merge pass, this runs only for existing campaigns and is not auto-saved.
     if (campaign)
       await this.reComputeOnCampaignOpen(df, template, molColName);
+    if (ticket !== this._opens)
+      return false;
 
     if (this.dataFrame && this.dataFrame !== df)
       this._closed.set(this.dataFrame, {...this.state(), session: undefined});
@@ -303,6 +320,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     this.openView();
     this.setBaseUrl();
     modifyUrl(CampaignIdKey, campaignId);
+    return true;
   }
 
   /** The campaign's view, the one open before closed first. */
@@ -353,7 +371,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
   /** A new campaign from `template`, opened and saved at once: nothing of the campaign open before carries over, the
    * name typed names it, and its first save takes the code that is free then. */
   async startNewCampaign(template: T, fields: {[key: string]: unknown}, name?: string): Promise<void> {
-    await this.setTemplate(template);
+    if (!await this.setTemplate(template))
+      return;
     this.campaignProps = fields;
     await this.saveCampaign(false, true, {friendlyName: name});
   }
@@ -608,7 +627,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       grok.shell.error('You do not have permission to modify this campaign');
       return undefined;
     }
-    const session = state.session;
+    // a closed view's session shows no feedback: its timers would start on a disposed host
+    const session = state.session?.host.scope.isDisposed ? undefined : state.session;
     let {campaignId, filePath} = state;
     session?.waitingForLock(true);
     try {

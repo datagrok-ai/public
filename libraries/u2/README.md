@@ -106,30 +106,32 @@ wrong; both lists are generated from `src/core/rules.ts` (`npm run manifest`).
   writes it; `input.peek()` reads it untracked, and `input.signal` is the signal for wiring (`bind: input.signal`,
   `span(input.signal)` — `span(input.value)` shows a snapshot). A validator may read other inputs: it re-judges
   whenever they change. Held by: lint `u2/no-snapshot-in-live-slot`; API convention `value-signal`; ratchet
-  `valueValue`, `valuePeek`.
+  `valueValue`, `valuePeek`; usage error `bind-readonly`.
 - **Register on the thing that lives as long.** Inside an `each()` row or an effect run, put effects and cleanups on
   a control built in that row (`input.effect(...)`), not on the long-lived control around it — that one would gain
   one more per rebuild. With u2 debug on (`localStorage['u2.debug'] = '1'`, and in every bdd run with the leak audit)
   u2 warns when the same call site registers on a long-lived control from two different rows or runs. Held by: debug
   warning (`tests/rebuilt-scope-warning.test.js`).
 - **Act on the user with `onInput`.** `onChanged` also hears writes from code (it matches the platform's
-  `onChanged`). "The user picked a library, load it" is `onInput`.
+  `onChanged`). "The user picked a library, load it" is `onInput`. Docs only: no check catches a slip yet.
 - **Load a record with `reset(value)`; follow a model with `follow(read)`.** Neither fires `onChanged`; `reset` also
   clears the touched state and any unreadable text. `Input.system()` is the input's own pruning, and it is *not*
-  silent.
+  silent. Docs only: no check catches a slip yet.
 - **Save goes by `validity`; what a field shows goes by `error`.** An input has two verdicts. `validity` judges the
   value from the start (what Save goes by — disable it and say why in its tooltip); `error` is what the input shows,
-  only once it was edited, left or validated (what a tab marker or a status line goes by). A `Form` has both.
+  only once it was edited, left or validated (what a tab marker or a status line goes by). A `Form` has both. Docs
+  only: no check catches a slip yet.
 - **A tab marks itself: give it a `validity`, or make its content a `Form`.** Before reaching for tabs in a narrow
   panel, consider showing what matters and folding the rest into a `Section` with a `hint` (what it holds), a
-  `validity` (an error is never hidden by the fold) and a `persistKey` (the user's open or close is remembered).
+  `validity` (an error is never hidden by the fold) and a `persistKey` (the user's open or close is remembered). Docs
+  only: no check catches a slip yet.
 - **Say why something is disabled.** Every off takes the reason the user reads, a string or a signal of one (`null`
   while it is on): `disabled: 'Pick a file first'` on an input, a button, an action, a menu item, a ribbon button;
   `dialog.okDisabled(reason)`. There is no `enabled` and no `disabled: true`. The reason is the tooltip; a dialog's
   OK also names the form's first failing field. A disabled u2 button is `aria-disabled` and keeps its tab stop, so
   keyboard focus shows the reason too; a press on it does nothing. Held by: type `ButtonOptions.disabled`,
   `InputOptions.disabled`; API convention `no-enabled`, `disabled-reason`; lint `u2/reason-text`; operability probe
-  `disabled-without-reason`; ratchet `enabledOpt`, `okEnabled`.
+  `disabled-without-reason`; ratchet `enabledOpt`, `okEnabled`; usage error `reason-boolean`, `reason-missing`.
 - **An action's `run` returns a promise or nothing.** `run: () => save()` hands back what `save` answers; a value
   handed back by mistake (a `DG.Row`) is a type error, so wrap a call that answers one in braces. A `run` or a click
   handler that throws or rejects goes to its owner's `onError`, then up its owners, then to `Scope.onUnhandledError`,
@@ -137,21 +139,25 @@ wrong; both lists are generated from `src/core/rules.ts` (`npm run manifest`).
   for a whole component (`self.onError = (e) => notify.error(…)`); `confirmDialog` and a dialog's `onOK` keep their
   own failure in the dialog. Held by: type `Action.run`.
 - **Forms that must line up share one `LabelColumn`.** The tabs of one editor, a header over a body: each `Form`
-  takes the same `labelColumn`; `labelWidth` fixes a column (one-letter captions).
+  takes the same `labelColumn`; `labelWidth` fixes a column (one-letter captions). Docs only: no check catches a slip
+  yet.
 - **Widths are options, not CSS.** `fill: true` stretches an editor across its row; `width` (px or a CSS length) sets
   it outright. No `!important` needed. A form is 700px at most: `new Form({maxWidth: 820})` sets its own. Several
   inputs under one caption (Colors: Line, Background, Text) are `form.addGroup(caption, inputs)`. A form's button row
   is on the right (`form.addButtons(build, {align: 'start' | 'editors'})` moves it). Spacing too:
   `divH([cancel, save], {gap: 'm'})` on the token scale (`xs` 2px … `xxl` 24px), never `style.gap`. Held by: ratchet
   `cssImportant`, `cssInternalLines`.
-- **Lay a view out with `Page`; a list beside its details is a `MasterDetail`.**
-  `new Page({header, sections, footer, maxWidth})`: the header stays put, the body alone scrolls and the action row
-  stays pinned under it, its buttons on the right and a `statusLine` on their left; the forms on the page share one
-  label column. A section is a heading with its actions over its content (`{title, actions, content, maxWidth}`).
-  `new MasterDetail({items, keyOf, row, detail, disabled})` puts the rows — a check, a hint — beside the current
-  one's detail, built when first shown and kept, off with its reason; the arrow keys move the current row and Space
-  checks it. Spacing and heights are the `--u2-page-*` and `--u2-master-detail-height` properties, set on an element
-  of your own. Held by: ratchet `cssLines`, `cssInternalLines`.
+- **Lay a view out with `Page`; a list beside its details is a `MasterDetail`, past a few hundred items a
+  `VirtualList`.** `new Page({header, sections, footer, maxWidth})`: the header stays put, the body alone scrolls and
+  the action row stays pinned under it, its buttons on the right and a `statusLine` on their left; the forms on the
+  page share one label column. A section is a heading with its actions over its content
+  (`{title, actions, content, maxWidth}`). `new MasterDetail({items, keyOf, row, detail, disabled})` puts the rows —
+  a check, a hint — beside the current one's detail, built when first shown and kept, off with its reason; the arrow
+  keys move the current row and Space checks it. It renders every row, so it is for lists up to a few hundred items;
+  a longer one is a `VirtualList` (`new VirtualList({keyOf, render})`, `setItems(items)`, its `selectedIndex` the
+  current row) beside a detail of your own, in a `Splitter`. Spacing and heights are the `--u2-page-*` and
+  `--u2-master-detail-height` properties, set on an element of your own. Held by: ratchet `cssLines`,
+  `cssInternalLines`.
 - **Style your own classes, never u2's.** A package's CSS styles its own classes and sets u2's `--u2-*` custom
   properties on its own elements — the ones each kind lists as `styling` in manifest.json (README › Styling); it
   never targets `.u2-*` classes or `[data-u2…]` attributes, and code never looks u2's parts up by class name. Tests
@@ -171,32 +177,35 @@ wrong; both lists are generated from `src/core/rules.ts` (`npm run manifest`).
   when narrow. `statusLine(problem, otherwise)` beside Save says what it does or why it cannot yet; a flush
   `Accordion` pane with a `hint` folds the rest; a `ChoiceChip` (each item's `description` says what it stands for)
   changes a small choice in two clicks. The recipe: docs/recipes/forms-and-details.md. `new Form({quiet: true})`
-  drops the underlines at rest: for an inspector, not a form people fill in.
+  drops the underlines at rest: for an inspector, not a form people fill in. Docs only: no check catches a slip yet.
 - **Dock with `ViewHost.of(view).dock(control, place)`.** Closing the panel — its ✕, or `dockManager.close` from code
   — disposes the control, and so does the view's close; disposing the control closes the panel. Chrome that is not a
   view (a context-panel widget, a pane) takes `host(control)`, which the platform's close of that chrome disposes.
+  Docs only: no check catches a slip yet.
 - **Find a view's control from its root.** The platform hands out a new wrapper object for a view each time
   (`grok.shell.views`), so nothing stored on one is there the next time; reach the content with
-  `Control.forElement(view.root.querySelector('.my-view'))`.
+  `Control.forElement(view.root.querySelector('.my-view'))`. Docs only: no check catches a slip yet.
 - **A dialog comes with CANCEL; one whose work applies as it is done is `closeOnly`.** The first `onOK` / `addButton`
   adds CANCEL, as in every platform dialog. A dialog whose work applies as it is done (a tracker, a viewer of
   progress) is `new Dialog(title, {closeOnly: true})`: one CLOSE, never a CANCEL; ✕ and Escape close it the same way.
+  Held by: usage error `close-only-cancel`.
 - **Personal settings apply at once; shared and admin settings stage behind SAVE N CHANGES.** A form of the user's
   own settings (`grok.userSettings`, a view's look) writes and keeps each valid edit as it is made, with no Save
   button: `propertyForm(props, settings, {onChanged: save})` (docs/samples/property-form.ts). Settings shared with a
   team or set by an admin keep the edits in the form and save them together with one button that counts them ("SAVE 3
-  CHANGES"), off with its reason while there is nothing to save or a field is invalid.
+  CHANGES"), off with its reason while there is nothing to save or a field is invalid. Docs only: no check catches a
+  slip yet.
 - **A dialog opened from a row outlives the row.** Shown, a dialog or a `confirmDialog` leaves the row or effect run
   that built it, so a rebuild does not close it; the content's own handlers and live text stay with whoever built
   them, so build that content with `dialog.add(() => …)`. A `keepAlive` dialog belongs to its builder: make it in the
-  control that reopens it, not in a row.
+  control that reopens it, not in a row. Docs only: no check catches a slip yet.
 - **A balloon's content is the balloon's.** `notify.info(() => div(['Deleted. ', link('Undo', undo)]), {onClose})`
   builds the content owned by the balloon and ends it when the balloon goes; an element built in a row's handler
-  would keep its handlers on the row.
+  would keep its handlers on the row. Docs only: no check catches a slip yet.
 - **An app home starts with `AppHeader`.** The icon, what the app does as bullets (text, an element or a link each)
   and Learn more: the same header in every app, built in one call (docs/recipes/shell-integration.md). It follows its
   own width, so build it under the view's host — in the `ViewHost.create` builder, or in `ViewHost.of(view).build(…)`
-  on a view you made — and it goes with the view.
+  on a view you made — and it goes with the view. Docs only: no check catches a slip yet.
 - **Own a platform subscription with the owner's `subscribe`.** `self.subscribe(grok.events.onViewRemoved, handler)`
   — or `host.subscribe(…)` on a view's host — ends with that owner, runs the handler batched and contained, and shows
   in the leak audit. The free `subscribe` from u2 takes whoever is building: an effect run or an `each()` row, so a
@@ -211,14 +220,14 @@ wrong; both lists are generated from `src/core/rules.ts` (`npm run manifest`).
   and dock with `host.dock`. A new view is `ViewHost.create({name, content})` (docs/recipes/shell-integration.md).
   Held by: usage error `view-not-ready`; ratchet `viewZoo`.
 - **Ask with `confirmDialog()` before what cannot be undone.** CANCEL and the action as a verb; `onConfirm` keeps the
-  dialog busy until the work is done.
+  dialog busy until the work is done. Docs only: no check catches a slip yet.
 - **Rows the user edits are a `RecordsInput`; a pick with an order is a `ChecklistInput`.** A template's fields or
   stages, the functions to run in order — never an `ItemsGrid` or a hidden columns input
-  (docs/recipes/forms-and-details.md).
+  (docs/recipes/forms-and-details.md). Docs only: no check catches a slip yet.
 - **A list of records is a `CatalogTable`.** Columns (`value` to sort and group by, `render` to draw), groupings, row
   `actions` and a `persist` adapter; it owns the order, the groups and the chosen columns, and `chrome()` gives the
   heading its columns, group and refresh icons. Never a `ui.table` with header listeners and injected rows
-  (docs/recipes/catalog-table.md).
+  (docs/recipes/catalog-table.md). Docs only: no check catches a slip yet.
 - **A column choice is `columnInput`.** Picking a column of a table is u2/dg's `columnInput(label, df, …)` (or
   `Platform.listedColumns(df, filter)` for a list of your own): they list what the platform's pickers list, hidden
   `~` columns left out. Never a `ChoiceInput` over `df.columns`. Held by: lint `u2/no-raw-column-list`; choke point
@@ -254,10 +263,18 @@ A package styles its own classes and tunes u2 with the custom properties each ki
 | `--u2-page-gap` | page | the space between the sections (24px) |
 | `--u2-page-section-indent` | page | how far a section's content sits in from its heading (0) |
 | `--u2-form-max-width` | form | the widest a form gets (700px; as wide as the page in a `Page`) |
-| `--u2-form-label-width` | form | the label column, which the form sets as it measures (`labelWidth` fixes it) |
 | `--u2-form-section-gap` | form | the space between two sections of the form (0) |
 | `--u2-master-detail-height` | master-detail | its height; it fills its host by default |
 | `--u2-row-base-bg`, `--u2-row-hover-bg`, `--u2-row-hover-stripe`, `--u2-row-selected-bg`, `--u2-section-header-bg` | table, catalog-table (`--u2-row-selected-bg`: master-detail's current row) | a row at rest, under the pointer, selected; a group's header |
+
+Three u2 classes are utilities a package puts on its own elements, and the only ones the lint and the ratchet let it
+name (docs/recipes/list-item-rendering.md, css/adaptive.css):
+
+| Class | On | What it does |
+|---|---|---|
+| `u2-adaptive` | a list or pane host | makes it a container its parts adapt to |
+| `u2-p2` | a part inside it | hides first, below 420px of the host's width |
+| `u2-p1` | a part inside it | hides last, below 340px |
 
 ## Testing
 

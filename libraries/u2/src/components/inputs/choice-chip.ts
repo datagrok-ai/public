@@ -23,7 +23,8 @@ export interface ChoiceChipOptions {
   bind?: Signal<string | null>;
   /** The choices — a list, or a signal of one; the menu reads them each time it opens. */
   items: ChoiceChipItem[] | ReadonlySignal<ChoiceChipItem[]>;
-  /** Runs after the user picked an item in the menu, never for a write from code. */
+  /** Runs after the user picked another item in the menu (re-picking the current one is no change), never for a write
+   * from code. */
   onInput?: (value: string | null, chip: ChoiceChip) => void;
   /** Why the chip is off: greyed, its menu closed, the reason as its tooltip. `null` while on. */
   disabled?: Reason;
@@ -223,6 +224,8 @@ export class ChoiceChip extends Control {
   }
 
   private _pick(value: string): void {
+    if (Object.is(value, this.signal.peek()))
+      return;
     this.signal.value = value;
     this._onInput?.(value, this);
   }

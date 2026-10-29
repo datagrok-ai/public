@@ -78,12 +78,16 @@ category('TableView: Ribbon', () => {
       expect(parentCrumb()!.nextElementSibling, viewName());
       expect(viewName()!.textContent, tv.name);
 
-      const other = DG.View.create();
-      other.name = 'Ribbon test other app';
-      tv.parentView = other;
-      await waitUntil(() => parentCrumb()?.textContent === other.name, 'the crumb did not follow the new parent');
-      tv.parentView = home;
-      await waitUntil(() => parentCrumb()?.textContent === home.name, 'the crumb did not follow the parent back');
+      const other = grok.shell.newView('Ribbon test other app');
+      try {
+        grok.shell.v = tv;
+        tv.parentView = other;
+        await waitUntil(() => parentCrumb()?.textContent === other.name, 'the crumb did not follow the new parent');
+        tv.parentView = home;
+        await waitUntil(() => parentCrumb()?.textContent === home.name, 'the crumb did not follow the parent back');
+      } finally {
+        other.close();
+      }
 
       tv.showParentCrumb = false;
       await waitUntil(() => parentCrumb() == null, 'the crumb stayed after showParentCrumb = false');
@@ -114,6 +118,45 @@ category('TableView: Ribbon', () => {
       grok.shell.v = tv;
       await waitUntil(() => parentCrumb()?.textContent === home.name, 'no crumb after switching back');
     });
+  }, {skipReason: nodeSkip});
+
+  test('a parent closed while its table view is current takes its crumb with it', async () => {
+    await withAppTableView(async (tv, home) => {
+      tv.parentView = home;
+      tv.showParentCrumb = true;
+      await waitUntil(() => parentCrumb()?.textContent === home.name, 'no parent crumb');
+      const name = viewName();
+      home.close();
+      expect(sameView(grok.shell.v, tv), true, 'closing the parent changed the current view');
+      await waitUntil(() => parentCrumb() == null, 'the crumb of the closed parent stayed on the ribbon');
+      expect(viewName() !== name && viewName()?.textContent === tv.name, true, 'the ribbon was not drawn again');
+    });
+  }, {skipReason: nodeSkip});
+
+  test('a plain view shows its open parent as a link crumb that makes the parent current', async () => {
+    const home = grok.shell.newView('Ribbon test app', [ui.divText('home')]);
+    const view = DG.View.create();
+    view.name = 'Ribbon test editor';
+    view.parentView = home;
+    grok.shell.addView(view);
+    try {
+      await waitUntil(() => parentCrumb()?.textContent === home.name, 'no parent crumb');
+      const link = parentCrumb()!.querySelector<HTMLElement>('a.ui-link');
+      expect(link !== null, true, 'the parent crumb of a plain view is not a link');
+      expect(textLook(link!), breadcrumbsLinkLook(), 'the parent is not drawn as a breadcrumbs link');
+      link!.click();
+      await waitUntil(() => sameView(grok.shell.v, home), 'the parent did not become current');
+
+      grok.shell.v = view;
+      await waitUntil(() => parentCrumb()?.textContent === home.name, 'no crumb after switching back');
+      home.close();
+      await waitUntil(() => parentCrumb() == null, 'the crumb of the closed parent stayed on the ribbon');
+    } finally {
+      for (const v of [view, home]) {
+        if (isOpen(v))
+          v.close();
+      }
+    }
   }, {skipReason: nodeSkip});
 
   test('closing a table view makes its parent current', async () => {

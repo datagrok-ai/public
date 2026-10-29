@@ -4,14 +4,16 @@ import * as DG from 'datagrok-api/dg';
 import {after, waitUntil, category, expect, expectArray, expectObject, test} from '@datagrok-libraries/test/src/test';
 import {Monomer, RGroup} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {Control, Scope} from '@datagrok-libraries/u2';
+import {byKind, byName, state, user} from '@datagrok-libraries/u2/testing';
 
 import {CapGroups, COMMON_CAP_GROUPS} from '../utils/monomer-lib/monomer-manager/cap-groups';
 import {RGroupsEditor, rgroupsEditor} from '../utils/monomer-lib/monomer-manager/rgroups-editor';
 import {DRAW_STRUCTURE, MonomerEditor, monomerEditor} from '../utils/monomer-lib/monomer-manager/monomer-editor';
-import {MonomerManager} from '../utils/monomer-lib/monomer-manager/monomer-manager';
+import {MONOMER_DF_COLUMN_NAMES, MonomerManager} from '../utils/monomer-lib/monomer-manager/monomer-manager';
 import {MonomerLibManager} from '../utils/monomer-lib/lib-manager';
 import {monomerCollectionsView} from '../utils/monomer-lib/monomer-collections-view';
 import {CollectionDialogs} from '../utils/monomer-lib/collection-dialogs';
+import type {CollectionAccess} from '../utils/monomer-lib/collection-dialogs';
 
 const rg = (label: string, smiles: string, name: string, alternateId: string): RGroup =>
   ({label, capGroupSMILES: smiles, capGroupName: name, alternateId});
@@ -283,6 +285,32 @@ category('monomerManager: editor', () => {
       Array.from(grok.shell.tableViews).find((v) => v.name === MonomerManager.VIEW_NAME)?.close();
     }
   });
+
+  test('of two rows loaded one after the other, the editor ends on the second, though the first loads slower',
+    async () => {
+      const manager = await MonomerManager.getInstance();
+      const view = grok.shell.v = await manager.getViewRoot();
+      await waitUntil(() => view.root.querySelector('.monomer-manager-editor') !== null,
+        'the Manage Monomers view did not dock its editor', 30000);
+      try {
+        const editor = Control.forElement(view.root.querySelector('.monomer-manager-editor')) as Control & MonomerEditor;
+        const df = manager.tableView!.dataFrame;
+        const symbols = df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!;
+        const analogs = df.col(MONOMER_DF_COLUMN_NAMES.NATURAL_ANALOG)!;
+        expect(df.rowCount > 1, true, 'the library has two monomers to pick');
+        // a row without a natural analog loads slower (its analog is computed): picked first when there is one
+        const rows = Array.from({length: df.rowCount}, (_, i) => i);
+        const slow = rows.find((i) => !analogs.get(i)) ?? 0;
+        const fast = rows.find((i) => i !== slow && !!analogs.get(i)) ?? rows.find((i) => i !== slow)!;
+        // a load the view started on opening is over before the two
+        await manager.editMonomer(df.rows.get(fast));
+        await Promise.all([manager.editMonomer(df.rows.get(slow)), manager.editMonomer(df.rows.get(fast))]);
+        expect(editor.symbol.peek(), symbols.get(fast), 'the symbol of the monomer the editor holds');
+        expect(manager.newMonomer.symbol, symbols.get(fast), 'the monomer the manager holds');
+      } finally {
+        Array.from(grok.shell.tableViews).find((v) => v.name === MonomerManager.VIEW_NAME)?.close();
+      }
+    });
 });
 
 category('monomerCollections: view', () => {
@@ -290,7 +318,7 @@ category('monomerCollections: view', () => {
     const libHelper = await MonomerLibManager.getInstance();
     await libHelper.awaitLoaded();
     const live = Scope.liveCount;
-    const view = monomerCollectionsView(libHelper, libHelper.getMonomerLib(), 'zz-nobody');
+    const view = monomerCollectionsView(libHelper, libHelper.getMonomerLib(), {user: 'zz-nobody', shareEditor: false});
     document.body.append(view.root);
     try {
       await view.refresh();
@@ -316,5 +344,72 @@ category('monomerCollections: view', () => {
       view.dispose();
     }
     expect(Scope.liveCount, live, 'scopes left behind by the view');
+  });
+
+  test('another author\'s collection: an editor of the AppData share may change it, anyone else may not', async () => {
+    const libHelper = await MonomerLibManager.getInstance();
+    await libHelper.awaitLoaded();
+    const access = await CollectionDialogs.access();
+    expect(access.shareEditor, true, 'the test user holds Edit on System:AppData');
+    const file = 'zz-bio-theirs.json';
+    // written by hand: a save through the library manager names the current user its author
+    await grok.dapi.files.writeAsText(`System:AppData/Bio/monomer-collections/${file}`,
+      JSON.stringify({monomerSymbols: ['A', 'C'], updatedBy: 'zz-somebody-else'}));
+    const buttonsOf = async (who: CollectionAccess): Promise<boolean[]> => {
+      const view = monomerCollectionsView(libHelper, libHelper.getMonomerLib(), who);
+      document.body.append(view.root);
+      try {
+        await view.refresh();
+        const card = view.root.querySelector<HTMLElement>('[data-u2="card"][data-u2-name="zz-bio-theirs"]');
+        expect(card !== null, true, `the card of ${file}`);
+        return [...card!.querySelectorAll<HTMLButtonElement>('.u2-card-footer button')].map((b) => b.disabled);
+      } finally {
+        view.root.remove();
+        view.dispose();
+      }
+    };
+    try {
+      expectArray(await buttonsOf(access), [false, false]);
+      expectArray(await buttonsOf({user: access.user, shareEditor: false}), [true, true]);
+      const theirs = await libHelper.readMonomerCollection(file);
+      expect(CollectionDialogs.notEditable(theirs, access), null, 'what stops the share\'s editor');
+      expect(CollectionDialogs.notEditable(theirs, {user: 'zz-nobody', shareEditor: false}),
+        'Only zz-somebody-else or an editor of the AppData share can change this collection', 'what stops anyone else');
+    } finally {
+      await libHelper.deleteMonomerCollection(file);
+    }
+  });
+
+  test('Edit: a name typed with .json after it is the collection\'s own: Save keeps the collection', async () => {
+    const libHelper = await MonomerLibManager.getInstance();
+    await libHelper.awaitLoaded();
+    const file = 'zz-bio-rename.json';
+    const opened = (): HTMLElement | undefined => {
+      try {
+        return byKind(document, 'dialog').find((d) => state(d).name === 'editCollection');
+      }
+      catch {
+        return undefined;
+      }
+    };
+    await libHelper.addOrUpdateMonomerCollection(file, ['A', 'C'], 'rename check');
+    try {
+      const data = await libHelper.readMonomerCollection(file);
+      void CollectionDialogs.edit(libHelper, libHelper.getMonomerLib(), {name: file, data}, () => {});
+      await waitUntil(() => opened() !== undefined, 'Edit Collection did not open', 15000);
+      const dialog = opened()!;
+      user.type(byName(dialog, 'name'), file, {replace: true});
+      const save = byName(dialog, 'Save');
+      await waitUntil(() => state(save).enabled, () => `Save stayed off: ${state(save).disabledReason}`, 10000);
+      user.click(save);
+      await waitUntil(() => !dialog.isConnected, 'Save left Edit Collection open', 15000);
+      expect((await libHelper.listMonomerCollections()).includes(file), true, `${file} after Save`);
+      expectArray((await libHelper.readMonomerCollection(file)).monomerSymbols, ['A', 'C']);
+    } finally {
+      const left = opened();
+      if (left)
+        user.click(byName(left, 'Cancel'));
+      await libHelper.deleteMonomerCollection(file);
+    }
   });
 });

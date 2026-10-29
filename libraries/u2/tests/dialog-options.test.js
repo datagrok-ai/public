@@ -7,7 +7,7 @@ import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {Scope, Control, Dialog, TextInput, signal, confirmDialog} from '../src/index.js';
+import {Scope, Control, Dialog, Form, TextInput, signal, confirmDialog} from '../src/index.js';
 
 function smoke(name, body) {
   test(name, async () => {
@@ -153,8 +153,9 @@ smoke('closeOnly: one CLOSE and never a CANCEL; CLOSE, ✕ and Escape all close 
   const closed = [];
   const dialog = new Dialog('Progress tracker', {closeOnly: true})
     .addButton('Modify Stages', () => {}, {start: true})
-    .onCancel(() => closed.push('cancel ran'))
     .onClose((reason) => closed.push(reason));
+  assert.throws(() => dialog.onCancel(() => closed.push('cancel ran')), {code: 'close-only-cancel'},
+    'there is no CANCEL to hang it on');
   dialog.show();
   const footer = [...dialog.root.querySelectorAll('[data-u2-part="footer"] button')].map((b) => b.textContent);
   assert.deepEqual(footer, ['Modify Stages', 'CLOSE'], 'a footer button brings no CANCEL');
@@ -169,6 +170,48 @@ smoke('closeOnly: one CLOSE and never a CANCEL; CLOSE, ✕ and Escape all close 
   fire(again.getButton('CLOSE'), 'click');
   assert.deepEqual(closed, ['ok', 'ok', 'ok'], '✕ and CLOSE alike');
   again.dispose();
+});
+
+smoke('closeOnly: while CLOSE is off, Escape and ✕ close as a cancel and never run onOK; getButton(\'Close\') is CLOSE',
+  () => {
+    const ran = [];
+    const held = new Dialog('Tracker', {closeOnly: true}).onOK(() => ran.push('ok'))
+      .okDisabled('Wait for the upload to finish').onClose((r) => ran.push(r));
+    held.show();
+    const close = held.root.querySelector('[data-u2-part="footer"] button');
+    assert.equal(held.getButton('Close'), close, 'the footer\'s CLOSE, not the title bar\'s ✕');
+    fire(close, 'click');
+    assert.deepEqual(ran, [], 'CLOSE is off');
+    fire(held.root, 'keydown', {key: 'Escape'});
+    assert.deepEqual(ran, ['cancel'], 'closed, onOK never ran');
+
+    const saved = [];
+    const form = new Dialog('Settings', {closeOnly: true}).onOK(() => saved.push('saved'));
+    const f = new Form();
+    f.add(new TextInput({label: 'Name', required: true}));
+    form.add(f).show();
+    fire(form.root.querySelector('[data-u2-part="close"]'), 'click');
+    assert.deepEqual(saved, [], 'an invalid form is never saved by ✕');
+    assert.equal(form.isOpen.value, false);
+  });
+
+smoke('a footer button whose own reason turned on while OK was busy keeps it when OK settles', async () => {
+  const off = signal(null);
+  let finish;
+  const dialog = new Dialog('Run').addButton('Export', () => {}, {disabled: off})
+    .onOK(() => new Promise((resolve) => finish = resolve)).show();
+  const exp = dialog.getButton('Export');
+  fire(dialog.getButton('OK'), 'click');
+  assert.equal(exp.getAttribute('aria-description'), Dialog.WAITING);
+  off.value = 'Nothing to export yet';
+  finish(false);
+  await flush();
+  assert.equal(dialog.busy.value, false);
+  assert.equal(exp.getAttribute('aria-disabled'), 'true', 'still off');
+  assert.equal(exp.getAttribute('aria-description'), 'Nothing to export yet');
+  off.value = null;
+  assert.equal(exp.getAttribute('aria-disabled'), null, 'and on with its reason gone');
+  dialog.close();
 });
 
 smoke('okDisabled takes a reason: OK is off saying why, and on again with null', () => {

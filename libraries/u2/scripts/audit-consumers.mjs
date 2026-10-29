@@ -11,6 +11,8 @@ const u2Root = fileURLToPath(new URL('..', import.meta.url));
 const publicRoot = join(u2Root, '..', '..');
 const baselineFile = join(u2Root, 'consumers-baseline.json');
 const ts = createRequire(import.meta.url)('typescript');
+const {INTERNAL_SELECTOR, PUBLIC_TAIL} = createRequire(join(publicRoot, 'libraries', 'eslint-plugin-u2', 'package.json'))(
+  './lib/u2-imports.js');
 
 const args = process.argv.slice(2);
 const flag = (name) => args.includes(name);
@@ -40,7 +42,8 @@ const PATTERNS = {
   newAppHeader: /new AppHeader\(/g,
 };
 const CONSUMER_ONLY = {
-  tsInternalSelectors: /(querySelector(All)?|closest|matches)\(\s*['"`][^'"`]*(\.u2-|\[data-u2)|classList\.(add|remove|toggle|contains)\(\s*['"`]u2-/g,
+  tsInternalSelectors: new RegExp('(querySelector(All)?|closest|matches)\\(\\s*[\'"`][^\'"`]*(\\.u2-' + PUBLIC_TAIL +
+    '|\\[data-u2)|classList\\.(add|remove|toggle|contains)\\(\\s*[\'"`]u2-' + PUBLIC_TAIL, 'g'),
 };
 
 /** The trees audited: u2 itself (code patterns only), its engine, the companions, and every package that depends
@@ -291,7 +294,7 @@ function audit(tree) {
     const text = readFileSync(f, 'utf8');
     metrics.cssFiles++;
     metrics.cssLines += text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
-    metrics.cssInternalLines += text.split('\n').filter((l) => /\.u2-|\[data-u2/.test(l)).length;
+    metrics.cssInternalLines += text.split('\n').filter((l) => INTERNAL_SELECTOR.test(l)).length;
     metrics.cssImportant += (text.match(/!important/g) ?? []).length;
   }
   return {metrics, classes};

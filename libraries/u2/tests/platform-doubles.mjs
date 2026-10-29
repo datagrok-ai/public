@@ -31,6 +31,13 @@ function fields(cls, ...keys) {
     Object.defineProperty(cls.prototype, key, {get() { return this.dart[key]; }, set(x) { this.dart[key] = x; }});
 }
 
+/** `button` off with no reason, as platform code leaves one: u2's own `disabled = true` reports that
+ * (`reason-missing`). */
+export function reasonless(button) {
+  button.setAttribute('aria-disabled', 'true');
+  return button;
+}
+
 /** The rxjs shape u2 subscribes to, plus what a test needs to drive it: `fire` and `count`. */
 export class Stream {
   constructor() { this.subs = new Set(); }

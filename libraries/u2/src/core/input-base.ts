@@ -1,5 +1,5 @@
 import {signal, computed, Signal, ReadonlySignal, untracked, isWritableSignal} from './signals.js';
-import {Scope} from './scope.js';
+import {Scope, Usage} from './scope.js';
 import {bindTypeOf, ITEMS_CAP} from './widget-like.js';
 import type {BindProp, BindSource, ObservableLike, IItemState, IItemsState} from './widget-like.js';
 import {Control} from './component.js';
@@ -13,6 +13,7 @@ import type {IWidgetStatus} from './widget-like.js';
 export type LiveOption<T> = T | ReadonlySignal<T>;
 
 const EDIT_OPTION = 'u2-input-edit-option';
+const ROOT = 'u2-input-root';
 
 /** The literal a chrome option carries — undefined where it is a signal or absent. */
 export function labelText(x?: LiveOption<string>): string | undefined {
@@ -149,7 +150,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     else
       this.deriveName(labelText(options.label));
 
-    this.root.classList.add('u2-input-root');
+    this.root.classList.add(ROOT);
     if (options.inline)
       this.root.classList.add('u2-input-inline');
     if (options.fill)
@@ -197,6 +198,11 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     });
     this.liveOption('visible', options.visible, (x) => this.visible = x);
     this.liveOption('readOnly', options.readOnly, (x) => this.readOnly = x);
+    if (options.readOnly === undefined && !isWritableSignal(this.signal)) {
+      Usage.report('bind-readonly', `${this.constructor.name} is bound to a signal it cannot write (a computed): ` +
+        'every edit would fail. Bind a `signal` or a `lens(…)` to edit it; to show the value, pass `readOnly: true`.');
+      this.readOnly = true;
+    }
     this.liveOption('required', options.required, (x) => this.required = x);
     if (options.nullable === false)
       this._wireTouch();
@@ -256,6 +262,18 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   static itemsState(list: IItemState[], all?: boolean): IItemsState {
     const truncated = !all && list.length > ITEMS_CAP;
     return {count: list.length, list: truncated ? list.slice(0, ITEMS_CAP) : list, truncated};
+  }
+
+  /** The `value`, `bind` and `readOnly` options for a spec's `value` prop, as a registration's `create` hands them on:
+   * a bound signal is adopted, and one the input cannot write (a read-only path) is shown read-only unless `readOnly`
+   * says otherwise; anything else is the starting value.
+   * @example
+   * create: (props) => new TextInput({label: props.label as string, ...Input.specValue<string>(props.value)}) */
+  static specValue<T>(value: unknown, readOnly?: LiveOption<boolean>):
+    Pick<InputOptions<T>, 'value' | 'bind' | 'readOnly'> {
+    if (!(value instanceof Signal))
+      return {value: value as T, readOnly};
+    return {bind: value as Signal<T>, readOnly: readOnly ?? (isWritableSignal(value) ? undefined : true)};
   }
 
   /** One watch of the value for `onChanged`, `onInput` and the `change` / `input` events: the initial
@@ -437,11 +455,33 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     this._shown.value = x;
   }
 
-  /** Whether a form counts this input's verdict: visible — no `hidden` on the root or above it —
-   * and on. Reads signals, so a computed over it follows {@link visible} and {@link disabled};
-   * an ancestor hidden by other means is seen on the next read. */
+  /** Whether a form counts this input's verdict: visible — no `hidden` on the root or above it —, on, and within
+   * reach — no `inert` above it (a section off with a reason). Reads signals, so a computed over it follows
+   * {@link visible} and {@link disabled}, and — a microtask later — any `hidden` or `inert` set on the page. */
   get validates(): boolean {
-    return this._shown.value && this._offReason.value === null && this.root.closest('[hidden]') === null;
+    Input._layoutVersion();
+    return this._shown.value && this._offReason.value === null && this.root.closest('[hidden], [inert]') === null;
+  }
+
+  // bumped by a `hidden` or `inert` change on an input or around one, watched from the first `validates`
+  private static _layout: Signal<number> | undefined;
+
+  private static _layoutVersion(): number {
+    if (Input._layout === undefined) {
+      const layout = Input._layout = signal(0);
+      if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
+        new MutationObserver((records) => {
+          if (records.some((r) => Input._holdsInput(r.target)))
+            layout.value++;
+        }).observe(document, {attributes: true, attributeFilter: ['hidden', 'inert'], subtree: true});
+      }
+    }
+    return Input._layout.value;
+  }
+
+  private static _holdsInput(node: Node): boolean {
+    const el = node as Element;
+    return el.classList?.contains(ROOT) === true || el.querySelector?.(`.${ROOT}`) != null;
   }
 
   get readOnly(): boolean {
@@ -693,7 +733,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   /** Off with `reason` — greyed out, edits blocked, the reason as its tooltip and in `aria-description` — or on
    * with `null` (or `''`). */
   set disabled(reason: string | null) {
-    const off = reason === '' ? null : reason;
+    const off = Reason.now(reason);
     this._offReason.value = off;
     this.root.classList.toggle('u2-input-disabled', off !== null);
     Reason.apply(this.root, off);

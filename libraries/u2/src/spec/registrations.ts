@@ -64,8 +64,6 @@ type Child = Control | HTMLElement;
 /** A bound `value` arrives as the context signal itself, so the input adopts it instead of copying:
  * no bridge, no echo, and the spec's two-way contract holds through every edit. */
 function inputOptions<T>(props: Props): InputOptions<T> {
-  const value = props.value;
-  const bound = value instanceof Signal;
   return {
     label: props.label as LiveOption<string> | undefined,
     name: props.name as string | undefined,
@@ -73,10 +71,8 @@ function inputOptions<T>(props: Props): InputOptions<T> {
     postfix: props.postfix as LiveOption<string> | undefined,
     tooltipText: props.tooltipText as LiveOption<string> | undefined,
     disabled: props.disabled as Reason | undefined,
-    readOnly: props.readOnly as LiveOption<boolean> | undefined,
     required: props.required as LiveOption<boolean> | undefined,
-    value: bound ? undefined : value as T,
-    bind: bound ? value as Signal<T> : undefined,
+    ...Input.specValue<T>(props.value, props.readOnly as LiveOption<boolean> | undefined),
   };
 }
 

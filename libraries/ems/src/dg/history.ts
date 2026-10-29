@@ -1,7 +1,7 @@
 import {emsBackends, nounOf} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Component, Control, signal, AsyncSource, div, divH, divV, span, timestamp, text, badge, button, AsyncView,
-  Accordion, Rows, Scope, isEmpty} from '@datagrok-libraries/u2';
+  Accordion, Reason, Rows, Scope, isEmpty} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
 import type {AuditEntryLike} from '../core/domain-backend.js';
 import type {DomainSource} from '../core/domain-source.js';
@@ -143,7 +143,7 @@ export class DomainHistory extends Control {
     let oldest = items.at(-1)!;
     // a button, not a scroll trigger: on the entity page the page scrolls, not the list
     const more: HTMLButtonElement = button('Show older', async () => {
-      more.disabled = true;
+      Reason.apply(more, 'Loading older entries…');
       try {
         const table = await emsBackends.domain!.table(this.source.table);
         const page = await table.audit!(oldest.id, {limit: PAGE_SIZE, before: oldest.seq});
@@ -157,7 +157,7 @@ export class DomainHistory extends Control {
         if (!scope.isDisposed)
           DomainErrors.report(e, this.source);
       } finally {
-        more.disabled = false;
+        Reason.apply(more, null);
       }
     });
     more.classList.add('u2-domain-history-more');

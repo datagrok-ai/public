@@ -1,6 +1,6 @@
 'use strict';
 
-const {DEFAULT_CONTROLS, U2Imports, calleeName, isFunction, sourceOf, walk} = require('../lib/u2-imports');
+const {DEFAULT_CONTROLS, U2Imports, calleeName, isFunction, sourceOf, valueOf, walk} = require('../lib/u2-imports');
 
 const isScope = (node) => node.type === 'Identifier' && node.name === 'Scope' ||
   node.type === 'MemberExpression' && !node.computed && node.property.type === 'Identifier' &&
@@ -24,6 +24,13 @@ const VIEW_TYPE = /\b(?:View|ViewBase|TableView)\b/;
 const VIEW_CALLS = new Set(['fromRoot', 'addView', 'addPreview', 'addTablePreview', 'addTableView']);
 
 const keyName = (key) => key.type === 'Identifier' ? key.name : key.type === 'Literal' ? String(key.value) : null;
+
+const unwrap = (node) => {
+  let e = node;
+  while (e && (WRAPPERS.has(e.type) || e.type === 'AwaitExpression'))
+    e = e.type === 'AwaitExpression' ? e.argument : e.expression;
+  return e;
+};
 
 const nameOf = (node) => node.type === 'Identifier' ? node.name :
   node.type === 'MemberExpression' && !node.computed ? keyName(node.property) : null;
@@ -69,6 +76,19 @@ module.exports = {
         'released, and u2 strict mode throws on it. Build it under the view or control that shows it — ' +
         '`ViewHost.of(view).build(() => {{what}})`, `owner.build(() => …)`, inside `component((self) => …)` — or ' +
         'under a named root on purpose: `Scope.root(\'<what>\').build(…)`.',
+      unownedCall: '`{{what}}` is built with no owner: what it holds (an observer, a subscription, a timer) is ' +
+        'never released. Build it under the view or control that shows it — `ViewHost.create({name, content: () => ' +
+        '{{what}}})`, `ViewHost.of(view).build(() => {{what}})`, inside `component((self) => …)` — or under a named ' +
+        'root on purpose: `Scope.root(\'<what>\').build(…)`.',
+      hostView: '`{{what}}` made into a platform view is never disposed: the view closes and what the control holds ' +
+        'lives on. Make the view with `ViewHost.create({name, content: () => …})` and show `host.view` ' +
+        '(`grok.shell.addView(host.view)`, or answer it from the app function).',
+      hostWidget: '`{{what}}` handed to `DG.Widget.fromRoot` is never disposed when the panel closes. Hand over ' +
+        '`host(control)` from u2/dg, which the platform\'s close disposes: `DG.Widget.fromRoot(host(control))`.',
+      hostDialog: '`{{what}}` added to a platform dialog is never disposed when the dialog closes. Use u2\'s ' +
+        '`Dialog` (`new Dialog(title).add(() => …).show()`), or add `host(control)` from u2/dg.',
+      hostDock: '`{{what}}` docked by hand outlives its panel and its view. Dock with ' +
+        '`ViewHost.of(view).dock(control, place, {title})`: closing the panel or the view disposes the control.',
       afterAwait: '`{{what}}` is built after an `await`, where nothing is building, so it has no owner. Build it ' +
         'back in its owner: `owner.task(async (t) => { await …; t.build(() => {{what}}); })`.',
     },
@@ -89,17 +109,20 @@ module.exports = {
     const built = [];
     const calls = [];
     const handed = [];
-    const bindings = [];
-    let views = new Set();
+    // this file's functions that answer a control they build: `const panel = () => component(…)`
+    const localBuilders = new Set();
 
     const isControl = (name) => !roots.has(name) &&
       (controls === null ? DEFAULT_CONTROLS.test(name) : controls.has(name));
 
-    /** `new X(…)` of a u2 or ems control, or a call of a control factory imported from either; else null. */
+    /** `new X(…)` of a u2 or ems control, a call of a control factory imported from either or of a local builder;
+     * else null. */
     const builtControl = (node) => {
       const ref = imports.resolve(node.callee);
-      if (ref === null)
-        return null;
+      if (ref === null) {
+        return node.type === 'CallExpression' && node.callee.type === 'Identifier' &&
+          localBuilders.has(node.callee.name) ? `${node.callee.name}(…)` : null;
+      }
       if (node.type === 'NewExpression')
         return isControl(ref.name) ? `new ${ref.name}(…)` : null;
       return factories.has(ref.name) ? `${ref.name}(…)` : null;
@@ -191,7 +214,7 @@ module.exports = {
       const values = answered(fn);
       if (values.length === 0)
         return 'none';
-      return values.some((v) => makesView(v) || v.type === 'Identifier' && views.has(v.name) ||
+      return values.some((v) => makesView(v) || v.type === 'Identifier' && makesView(valueOf(context, v)) ||
         v.type === 'MemberExpression' && nameOf(v) === 'view') ? 'view' : 'value';
     };
 
@@ -237,10 +260,70 @@ module.exports = {
       return false;
     };
 
+    const enclosingFunction = (node) => {
+      let p = node.parent;
+      while (p && !isFunction(p))
+        p = p.parent;
+      return p ?? null;
+    };
+
+    const functionName = (fn) => fn.type === 'FunctionDeclaration' ? fn.id?.name ?? null :
+      fn.parent.type === 'VariableDeclarator' && fn.parent.init === fn && fn.parent.id.type === 'Identifier' ?
+        fn.parent.id.name : null;
+
+    /** What the name `id` holds where it is read, through its own scopes. */
+    const bindingOf = (id) => unwrap(valueOf(context, id));
+
+    /** `ui.dialog(…)`, a chain of its `.add(…)`s, or a name bound to one. */
+    const platformDialog = (expr) => {
+      let e = unwrap(expr);
+      if (e?.type === 'Identifier')
+        e = bindingOf(e);
+      while (e?.type === 'CallExpression' && e.callee.type === 'MemberExpression' && calleeName(e) !== 'dialog')
+        e = unwrap(e.callee.object);
+      return e?.type === 'CallExpression' && calleeName(e) === 'dialog' && imports.resolve(e.callee) === null;
+    };
+
+    /** The message for a call that hands an element to the platform to show, keep and close; else null. */
+    const hostKind = (call) => {
+      const c = call.callee;
+      if (c.type !== 'MemberExpression')
+        return null;
+      const name = calleeName(call);
+      const on = nameOf(c.object);
+      if (name === 'newView' || name === 'addView')
+        return 'hostView';
+      if (name === 'fromRoot')
+        return on === 'View' ? 'hostView' : on === 'Widget' ? 'hostWidget' : null;
+      if (name === 'dock')
+        return on === 'dockManager' ? 'hostDock' : null;
+      return name === 'add' && platformDialog(c.object) ? 'hostDialog' : null;
+    };
+
+    /** `<control>.root`, the control built here or by a name bound to one: the control and how to name it. */
+    const rootOf = (expr) => {
+      const e = unwrap(expr);
+      if (e?.type !== 'MemberExpression' || e.computed || e.property.type !== 'Identifier' || e.property.name !== 'root')
+        return null;
+      const object = unwrap(e.object);
+      if (built.includes(object))
+        return {node: object, what: `${builtControl(object)}.root`};
+      const bound = object.type === 'Identifier' ? bindingOf(object) : null;
+      return bound !== null && built.includes(bound) ? {node: bound, what: `${object.name}.root`} : null;
+    };
+
     /** 'owned', 'unowned', 'await' (built after an `await`), or 'class' (a control's own code: build-in-owner's). */
     function verdict(node, depth) {
       if (inControlClass(node))
         return 'class';
+      let arg = node;
+      while (WRAPPERS.has(arg.parent.type))
+        arg = arg.parent;
+      // handed to what takes it over: `host(control)`, `ViewHost.of(view).dock(control, …)`
+      const taker = arg.parent;
+      if (taker.type === 'CallExpression' && taker.arguments.includes(arg) &&
+        (calleeName(taker) === 'dock' || calleeName(taker) !== 'add' && owns(taker)))
+        return 'owned';
       for (let child = node, p = node.parent; p; child = p, p = p.parent) {
         if (child === node && node.type === 'Identifier') {
           if (owns(p))
@@ -296,21 +379,38 @@ module.exports = {
         if (builtControl(node) !== null)
           built.push(node);
       },
-      VariableDeclarator(node) {
-        if (node.id.type === 'Identifier')
-          bindings.push([node.id.name, node.init]);
-      },
-      AssignmentExpression(node) {
-        if (node.left.type === 'Identifier')
-          bindings.push([node.left.name, node.right]);
-      },
       'Program:exit'() {
-        views = new Set(bindings.filter(([, value]) => makesView(value)).map(([name]) => name));
+        for (let grew = true; grew;) {
+          grew = false;
+          for (const node of built) {
+            const fn = enclosingFunction(node);
+            const name = fn !== null && returns(fn, node) ? functionName(fn) : null;
+            if (name !== null && !localBuilders.has(name)) {
+              localBuilders.add(name);
+              grew = true;
+            }
+          }
+          if (grew)
+            built.push(...calls.filter((c) => !built.includes(c) && builtControl(c) !== null));
+        }
+        const hosted = new Set();
+        for (const call of calls) {
+          const messageId = call.type === 'CallExpression' ? hostKind(call) : null;
+          if (messageId === null)
+            continue;
+          for (const part of call.arguments.flatMap((a) => valueParts(a))) {
+            const control = rootOf(part);
+            if (control !== null) {
+              hosted.add(control.node);
+              context.report({node: part, messageId, data: {what: control.what}});
+            }
+          }
+        }
         for (const node of built) {
-          const found = verdict(node, 0);
+          const found = hosted.has(node) ? 'hosted' : verdict(node, 0);
           if (found === 'unowned' || found === 'await') {
-            context.report({node, messageId: found === 'await' ? 'afterAwait' : 'unownedControl',
-              data: {what: builtControl(node)}});
+            context.report({node, messageId: found === 'await' ? 'afterAwait' :
+              node.type === 'NewExpression' ? 'unownedControl' : 'unownedCall', data: {what: builtControl(node)}});
           }
         }
       },

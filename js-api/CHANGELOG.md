@@ -2,6 +2,9 @@
 
 ## v.next
 
+* u2core: Fixed `dfBindings` writing a bound datetime cell back to the frame in a loop: a fresh `dayjs` per read never matched, so binding `currentRow.<column>` wrote the cell and each write's refresh wrote it again; binding and moving the row now write nothing, and an edit writes once
+* u2core: Fixed `owner.subscribe(signal, handler)` from plain JS throwing on dispose and leaving the signal subscribed; a source whose `subscribe` returns the unsubscribe function is now released by calling it
+* u2core: Added `task` and `subscribe` to the types of every component, `DG.Widget`, viewers and views included (`interface Component extends Pick<OwnerVerbs, 'task' | 'subscribe'>`); `build` stays typed by u2 only, because compute-utils' function views declare their own `build(): void`
 * Node: Fixed packages failing to load in queue workers with `rxjs is not defined`
 * u2core: `DG.U2.operability` reads the reason of a control around the element's own: what a control holds inside another that is off and says why (a disabled filter builder, a designer canvas in Design mode) is off with that reason
 * Viewers: Fixed `props.get(name)` returning `undefined` and `props.set(name, value)` doing nothing on core viewers: both now use the viewer's look, as `props[name]` does (#1154)

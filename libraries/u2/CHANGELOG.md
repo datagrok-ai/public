@@ -2,6 +2,34 @@
 
 ## v.next
 
+* Inputs: Fixed `disabled: false` (and `input.disabled = false`) from plain JS turning the input off with no reason and taking it out of its form's verdict; `false` now means on
+* Inputs: Added the `reason-boolean` usage report for `disabled: true`; where it is only reported, the reason reads "Unavailable" instead of "true"
+* Inputs: Added the `bind-readonly` usage report: an input bound to a signal it cannot write (`bind: computed(…)`) is shown read-only instead of throwing on every keystroke; `readOnly: true` says it is read-only on purpose
+* Inputs: Added `Input.specValue(value, readOnly?)`, which the spec registrations use to hand an input a spec's value, so an input bound to a read-only path (`bind: {value: '$.ro'}` over a computed) renders read-only instead of a spec error
+* Form: Fixed a required empty field the user cannot reach holding the form, and a dialog's OK, off: an input inside an `inert` region (a `Section` off with a reason) is no longer counted
+* Form: Fixed a form's verdict going stale when an input, or an element around one, becomes `hidden` or `inert` after the form is built; such a change re-judges the forms a microtask later
+* Dialog: Changed (behaviour change) a close-only dialog whose CLOSE is off (`okDisabled`, or a form in it not valid) to close as a cancel on Escape and ✕ without running `onOK`; before, they ran `onOK` past CLOSE's reason
+* Dialog: Fixed a footer button whose own reason turned on while an async OK ran coming back on when OK settled; the dialog now releases only the buttons still saying "Wait for OK to finish"
+* Dialog: Fixed `getButton('Close')` returning the title bar's ✕ instead of the footer's CLOSE in a close-only dialog
+* Dialog: Added the `close-only-cancel` usage report for `onCancel()` on a close-only dialog, which has no CANCEL
+* Buttons: Added the `reason-missing` usage report for `button.disabled = true` on a u2 button that gives no reason; use `Reason.apply(button, '<why>')`, or `{disabled: '<why>'}` when it is built
+* ChoiceChip: Fixed re-picking the value the chip holds firing `onInput`
+* Lint: Improved `u2/no-unowned-root` to follow a package's own builders (`const panel = () => component(…)`) and to flag a control's `.root` handed to `grok.shell.newView`/`addView`, `DG.View.fromRoot`, `DG.Widget.fromRoot`, `ui.dialog().add` or `dockManager.dock`, naming `ViewHost.create`, `host(control)` or `ViewHost.of(view).dock`
+* Lint: Fixed the `u2/no-unowned-root` message claiming that strict mode throws for a factory call
+* Lint: Improved `u2/reason-text` to flag `x.disabled = <boolean>` and `x.setAttribute('disabled', …)` on a u2 control
+* Lint: Added `...`, "Not allowed", "Cannot save" and a blank reason to the reasons `u2/reason-text` treats as empty
+* Lint: Fixed `u2/reason-text` and `u2/no-unowned-root` taking their verdict from a variable of the same name in another function; they now resolve a name through its own scopes
+* Ratchet: Fixed a new package's lint findings being recorded by its first `--update-baseline` instead of failing on growth: `check-consumer.mjs` counts a lint count that was never recorded as 0
+* Styling: Added `u2-adaptive`, `u2-p1` and `u2-p2` to README › Styling as the documented utility classes; the lint and the ratchet no longer count them as internal selectors
+* Styling: Removed `--u2-form-label-width` from the documented styling properties: Form sets it inline when it measures, so a package's value never applied
+* Styling: Added `css/motion.css`: under reduced motion the dialog's busy spinner, the notify countdown and the chevron and switch transitions stand still
+* Samples: Changed "A list with details" to a `MasterDetail` with `--u2-master-detail-height`, as the rule says, instead of a hand-built splitter
+* Docs: Changed AGENTS.md to write the owner verbs as `owner.build`, `owner.task`, `owner.subscribe` and `owner.own`
+* Docs: Added to AGENTS.md how to open an app (`grok.shell.addView(ViewHost.create({…}).view)`) and that a lint finding alone is a warning
+* Docs: Changed README to mark the rules that no check holds as docs only
+* Testing: Fixed `tests/dom-shim.js`'s `document` missing `contains`, which a browser's has, so an observer on the whole document failed under the shim
+* Testing: Fixed the DOM shim (`U2_DOM=shim`) not notifying attribute observers: `setAttribute` and `removeAttribute` now notify them, honouring `attributeFilter` and `subtree`, and observers get their records
+* MasterDetail: Documented that it renders every row, so it is for lists up to a few hundred items; a longer list is a `VirtualList` beside a detail of your own, in a `Splitter`
 * tableFromMap: Fixed an element value's cell (a molecule drawing) carrying a text row's 22px height and `overflow: hidden`: the value cell takes the element's height and clips nothing that reaches past it; a text row stays 22px
 * FilterBuilder: Fixed a disabled builder's own buttons (and/or, not, add, remove) saying no reason and its links (Advanced, Add condition, Flatten) still working from the keyboard: each carries the builder's reason and does nothing while it is off
 * Inputs: A read-only input's editing options (the colour swatch, the number clicker, the pickers) are off with the reason "Read-only" instead of a focusable button that does nothing; a read-only slider takes the pointer again, so its value shows on hover (a drag or a key still does not move it)

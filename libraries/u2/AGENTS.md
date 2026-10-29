@@ -22,15 +22,15 @@ Everything u2 builds belongs to an owner and goes when the owner goes:
 
 1. `component((self) => { …; return {root, …api}; }, {name})`: a piece of UI with a life of its own; the builder runs
    with `self` as the owner, and what it answers becomes the control and its handle.
-2. `build(fn)`: runs `fn` with an owner building, so what it makes is that owner's.
-3. `task(async (t) => …)`: async work for an owner; after an `await`, get back in with `t.build(…)`.
-4. `subscribe(source, handler)`: on an owner, a subscription that ends with it.
+2. `owner.build(fn)`: runs `fn` with that owner building (`self`, a host), so what it makes is the owner's.
+3. `owner.task(async (t) => …)`: async work for an owner; after an `await`, get back in with `t.build(…)`.
+4. `owner.subscribe(source, handler)`: a subscription that ends with the owner.
 5. `effect(fn)`: runs again when the signals it reads change, until its owner goes.
-6. `own(cleanup)`: a cleanup the owner runs when it goes.
+6. `owner.own(cleanup)`: a cleanup the owner runs when it goes.
 7. `on(el, type, handler)`: a listener that goes with whoever built the element.
 8. `Scope.root(label)`: a tree nothing else owns, started on purpose and disposed by whoever started it.
-9. `ViewHost`: a platform view as an owner, `ViewHost.of(view)` for an open view, `ViewHost.create({name, content})`
-   for a new one.
+9. `ViewHost`: a platform view as an owner, `ViewHost.of(view)` for an open view; an app opens a new one with
+   `grok.shell.addView(ViewHost.create({name, content: () => myApp()}).view)`, never a control's `.root` in a view.
 10. `host(control)`: chrome that is not a view (a context-panel widget, a pane); its close disposes the control.
 
 A value is `input.value` (followed inside an effect), `input.peek()` (not followed) or `input.signal` (to wire). An
@@ -76,9 +76,9 @@ off is `disabled`: the text the user reads, a signal of it, or `null` while on; 
 - **Widths are options, not CSS.** A width rule over u2's classes fights u2's own sizing (hence the `!important`) and
   breaks when they change. Write `new TextInput({label: 'Name', fill: true})`, not
   `.my-panel .u2-input-editor { width: 100% !important; }`.
-- **Lay a view out with `Page`; a list beside its details is a `MasterDetail`.** A layout written in package CSS
-  breaks as the view narrows, and drifts from every other view's. Write
-  `new Page({content: form, footer: [statusLine(form.shownProblem), saveButton], maxWidth: 820})`, not
+- **Lay a view out with `Page`; a list beside its details is a `MasterDetail`, past a few hundred items a
+  `VirtualList`.** A layout written in package CSS breaks as the view narrows, and drifts from every other view's.
+  Write `new Page({content: form, footer: [statusLine(form.shownProblem), saveButton], maxWidth: 820})`, not
   `.my-editor { display: flex; flex-direction: column; height: 100%; }  /* and a pinned footer by hand */`.
 - **Style your own classes, never u2's.** u2's classes and attributes are its internals: they change without notice,
   and a rule over them fights u2's own. Write `.my-app { --u2-row-hover-bg: var(--blue-1); }`, not
@@ -175,8 +175,9 @@ and `state(el)` find controls and read their state.
 From `public/`:
 
 - `node libraries/u2/scripts/check-consumer.mjs packages/<Package>`: the u2 lint rules and the package's counts
-  against `libraries/u2/consumers-baseline.json` (`grok check` runs the same; `--all` checks every consumer). A count
-  only shrinks: growth needs `--update-baseline --allow-growth "<why>"` in the same change.
+  against `libraries/u2/consumers-baseline.json` (`grok check` runs the same; `--all` checks every consumer). A lint
+  finding alone is a warning; a count that grows fails, and a new package starts at 0. A count only shrinks: growth
+  needs `--update-baseline --allow-growth "<why>"` in the same change.
 - `node libraries/u2/scripts/audit-consumers.mjs --check`: the counts alone, every tree.
 - u2 reports a misuse as `u2 usage: <code>: <what to do>`; `DG.U2.Usage.mode = 'throw'` makes it throw.
 

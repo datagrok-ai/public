@@ -4,6 +4,7 @@ import './dom-shim.js';
 import {layout} from './layout.mjs';
 import {Scope, TextInput, ChoiceInput, button, iconButton, div, signal} from '../src/index.js';
 import {u2test, mount, byName, byKind, state, expectOperable, user} from '../src/testing/index.js';
+import {reasonless} from './platform-doubles.mjs';
 
 const NO_CASCADE = typeof CSSStyleSheet !== 'function' && 'needs a DOM with the CSS cascade';
 
@@ -69,7 +70,7 @@ test('user.click: off, hidden, inert and detached elements are refused, saying w
   let runs = 0;
   const run = () => runs++;
   const why = mount(() => button('Submit', run, {disabled: 'Choose a submit function'}));
-  const bare = mount(() => Object.assign(button('Save', run), {disabled: true}));
+  const bare = mount(() => reasonless(button('Save', run)));
   const pane = mount(() => div([button('Run', run)], 'pane'));
   const folded = mount(() => div([button('Fold', run)], 'folded'));
   assert.throws(() => user.click(why), {message: 'user.click: button "Submit" is disabled: Choose a submit function'});
@@ -137,7 +138,7 @@ test('expectOperable: a clean form passes; the old read-only rail rule and a rea
     const {input} = campaignName();
     form.append(input.root, button('Save', () => {}, {disabled: 'Name it first'}));
     expectOperable(form);
-    form.append(Object.assign(button('Submit', () => {}), {disabled: true}));
+    form.append(reasonless(button('Submit', () => {})));
     const rule = pageRule(OLD_RAIL);
     try {
       assert.throws(() => expectOperable(form), {message: 'expectOperable: 2 control(s) in div.form cannot be ' +

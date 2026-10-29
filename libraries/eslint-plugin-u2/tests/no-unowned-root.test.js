@@ -4,13 +4,15 @@ const tester = require('./tester');
 const rule = require('../rules/no-unowned-root');
 
 const U2 = `import {AppHeader, Form, TextInput, Dialog, component, Scope} from '@datagrok-libraries/u2';
-import {ViewHost, funcForm} from '@datagrok-libraries/u2/dg';
+import {ViewHost, funcForm, host} from '@datagrok-libraries/u2/dg';
 `;
 const options = [{controls: ['Control', 'AppHeader', 'Form', 'TextInput', 'Dialog', 'ViewHost'],
-  roots: ['Dialog', 'ViewHost'], factories: ['funcForm']}];
+  roots: ['Dialog', 'ViewHost'], factories: ['funcForm', 'component']}];
 const ok = (code) => ({code: U2 + code, options});
 const unowned = (code, what, messageId = 'unownedControl') => ({code: U2 + code, options,
   errors: [{messageId, data: {what}}]});
+const PANEL = `const panel = () => component(() => new TextInput({label: 'Name'}), {name: 'panel'});
+`;
 
 tester.run('no-unowned-root', rule, {
   valid: [
@@ -49,6 +51,14 @@ tester.run('no-unowned-root', rule, {
     export const x = () => { const f = new LocalForm(); f.show(); };`),
     {code: U2 + `export function app() { DG.View.fromRoot(new AppHeader({icon: 'flask'}).root); }`,
       options: [{controls: [], factories: []}]},
+    ok(PANEL + `export const app = () => ViewHost.create({name: 'App', content: () => panel()}).view;`),
+    ok(PANEL + `export function dockIt(view) { ViewHost.of(view).dock(panel(), 'right'); }`),
+    ok(PANEL + `export function info() { return DG.Widget.fromRoot(host(panel())); }`),
+    ok(PANEL + `export function edit() { new Dialog('Edit').add(() => panel()).show(); }`),
+    ok(`const field = () => new TextInput({label: 'Name'});
+    export const form = () => component(() => field(), {name: 'form'});`),
+    ok(PANEL + `function make() { const p = panel(); return p; }
+    export function show(p) { grok.shell.newView('Elements', [p.root]); }`),
   ],
   invalid: [
     {code: `this.home = Scope.runWith(undefined, () => new HitHome(this.homeOptions(preset)));`,
@@ -65,7 +75,31 @@ tester.run('no-unowned-root', rule, {
         view.name = 'Benchling';
         return view;
       }
-    }`, 'new AppHeader(…)'),
+    }`, 'appHeader.root', 'hostView'),
+    unowned(PANEL + `export function myApp() { grok.shell.newView('My app', [panel().root]); }`, 'panel(…).root',
+      'hostView'),
+    unowned(`function panel() { return component(() => new Form(), {name: 'panel'}); }
+    export function myApp() { const p = panel(); grok.shell.addView(DG.View.fromRoot(p.root)); }`, 'p.root', 'hostView'),
+    unowned(`const field = () => new TextInput({label: 'Name'});
+    const panel = () => component(() => field(), {name: 'panel'});
+    export function myApp() { grok.shell.newView('My app', [panel().root]); }`, 'panel(…).root', 'hostView'),
+    unowned(PANEL + `export function info() { return DG.Widget.fromRoot(panel().root); }`, 'panel(…).root',
+      'hostWidget'),
+    unowned(`export function edit() {
+      const f = component(() => new Form(), {name: 'edit'});
+      ui.dialog('Edit').add(f.root).onOK(() => {}).show();
+    }`, 'f.root', 'hostDialog'),
+    unowned(`export function dockIt(tv) {
+      ViewHost.of(tv).build(() => { const p = new TextInput({label: 'Filter'}); tv.dockManager.dock(p.root, 'right'); });
+    }`, 'p.root', 'hostDock'),
+    unowned(PANEL + `export function myApp() { document.body.append(panel().root); }`, 'panel(…)', 'unownedCall'),
+    unowned(PANEL + `export function myApp() {
+      const p = panel();
+      const footer = () => { const p = ui.div(); return p; };
+      grok.shell.newView('My app', [p.root, footer()]);
+    }`, 'p.root', 'hostView'),
+    unowned(PANEL + `function make() { const d = ui.dialog('Make'); return d; }
+    export function edit(d) { d.add(panel().root); }`, 'panel(…)', 'unownedCall'),
     unowned(`function getAppHeader() {
       const appHeader = new AppHeader({icon: 'revvity.png', title: 'RevvityLink'});
       return appHeader.root;
@@ -83,7 +117,8 @@ tester.run('no-unowned-root', rule, {
     unowned(`export function load(host) {
       host.task(async () => { const rows = await fetchRows(); host.root.append(new Form({rows}).root); });
     }`, 'new Form(…)', 'afterAwait'),
-    unowned(`export const pane = (func) => { const form = funcForm(func); grok.shell.o = form.root; };`, 'funcForm(…)'),
+    unowned(`export const pane = (func) => { const form = funcForm(func); grok.shell.o = form.root; };`, 'funcForm(…)',
+      'unownedCall'),
     unowned(`export function wire(button) {
       button.addEventListener('click', () => { document.body.append(new TextInput({label: 'Name'}).root); });
     }`, 'new TextInput(…)'),
@@ -91,6 +126,6 @@ tester.run('no-unowned-root', rule, {
     document.body.append(header.root);`, 'new Control(…)'),
     {code: `import * as u2 from '@datagrok-libraries/u2';
     export function app() { return DG.View.fromRoot(new u2.AppHeader({icon: 'flask'}).root); }`,
-    errors: [{messageId: 'unownedControl', data: {what: 'new AppHeader(…)'}}]},
+    errors: [{messageId: 'hostView', data: {what: 'new AppHeader(…).root'}}]},
   ],
 });

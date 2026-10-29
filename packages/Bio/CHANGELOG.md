@@ -2,6 +2,11 @@
 
 ## v.next
 
+* Monomer Collections: Allowed a user with Edit on the AppData share the collections are kept in to edit and delete any collection, not only its author; the reason everyone else sees names both
+* Monomer Collections: Added a centred empty state with Clear search for a search that matches no collection, as the domain lists have
+* Monomer Collections: Fixed a collection renamed to its own name with `.json` typed after it ("Foo.json") being deleted; a typed `.json` is now dropped from every collection name
+* Manage Monomers: Fixed the editor showing an earlier row's monomer when that row (one without a natural analog) loaded slower than the row picked last
+* Monomer Collections: Allowed a user with Edit on the AppData share the collections are kept in to edit and delete any collection, not only its author; the reason everyone else sees names both
 * Manage Monomers: The R-group chips are u2's `ChoiceChip` (same look, menu, keyboard and reasons); the hand-built chip, its menu wiring and its 11 CSS rules are gone
 * Monomer Collections: The New, Edit, Duplicate and Merge dialogs build their inputs under the dialog, so they go with it and no longer fail with a u2 `owner-missing` error where u2 is strict (dev, tests)
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Manage Monomers sets its column widths once semantic types are detected and scrolls to a saved monomer right after, instead of after 200 and 500 ms; the MSA header refreshes on filter at once; demos: no waits before applying a layout, and the siRNA demo detects types before its layout

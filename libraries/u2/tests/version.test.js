@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {register} from 'node:module';
+import './dom-shim.js';
 import {Scope, version} from 'datagrok-api/u2core';
 import {VERSION} from '../src/index.js';
 

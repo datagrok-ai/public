@@ -2,6 +2,9 @@
 
 ## v.next
 
+* FuncCalls: Fixed a red balloon from the deliberately broken `seed` default staying after leaving the page: the default is given to the u2 form alone and shown on its field, and the page puts the function's default back when it closes
+* FuncCalls: Fixed the W4 Run gate never blocking: `cylinders` is now registered required (`nullable = false`), as the page says
+* FuncCalls, Functions: Changed Run to be off with its reason ("Fill Email to run", "The form is still building"), as u2 buttons are, instead of a bare `disabled`, which u2 reports where it is strict
 * TableView chrome: The campaign view's ribbon group is built under the view's host, so it no longer fails with a u2 `owner-missing` error where u2 is strict; the package tests build what they make after an `await` under an owner of their own
 * u2: Moved to the u2 v1 API: plain input values, off states with a reason (the Catalog's disabled samples, the menu's Delete), owners as receivers, the `@datagrok-libraries/u2/dg` entry point
 * Tests: Added the package test category "u2/dg: affordance parity": every platform `ui.input.X` with a u2/dg twin (file, files, folder, file on a connection, table, column, columns, user, group, molecule, choice, date), and the twin must offer the platform input's accessible affordances

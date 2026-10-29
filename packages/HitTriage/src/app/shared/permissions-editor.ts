@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {AccessGrid, Dialog, computed, divV, signal, statusLine} from '@datagrok-libraries/u2';
 import type {AccessRow} from '@datagrok-libraries/u2';
 import {groupIcon, groupInput} from '@datagrok-libraries/u2/dg';
+import type {ViewHost} from '@datagrok-libraries/u2/dg';
 import {TriagePermissions} from '../types';
 
 export const defaultPermissions: TriagePermissions = {
@@ -19,6 +20,8 @@ export interface PermissionsEditorOptions {
   author?: string;
   /** Runs on OK, the dialog busy until it is done; a failure stays in the dialog. */
   save: (permissions: TriagePermissions) => unknown;
+  /** The campaign view the dialog belongs to: pinned to it, closed when it goes. */
+  host?: ViewHost;
 }
 
 export class PermissionsEditor {
@@ -27,6 +30,8 @@ export class PermissionsEditor {
     const ids = [...new Set([...current.view, ...current.edit])];
     const groups = (await Promise.all(ids.map((id) => grok.dapi.groups.find(id))))
       .filter((g): g is DG.Group => g != null);
+    if (options.host?.scope.isDisposed)
+      return;
     let shown: AccessRow[] = groups.map((g) =>
       ({principal: g.id, can: {view: true, edit: current.edit.includes(g.id)}}));
     const known = new Map(groups.map((g) => [g.id, g]));
@@ -58,12 +63,12 @@ export class PermissionsEditor {
       dialog.add(divV([grid.root,
         statusLine(signal(null), computed(() => nobody.value ? 'With no one listed, all users can view.' :
           'Can Edit includes Can View.')),
-        statusLine(signal(null), computed(() => editors.value ? `Saves the access of ${options.subject}` :
+        statusLine(signal(null), computed(() => editors.value ? `OK saves who can access ${options.subject}` :
           `Only ${options.author ?? 'the author'} will be able to edit ${options.subject}`)),
       ]));
       dialog.onOK(() => options.save(PermissionsEditor.stored(grid.peek() ?? [])));
     });
-    dialog.show({width: 440});
+    options.host ? options.host.show(dialog, {width: 440}) : dialog.show({width: 440});
   }
 
   /** Checking Can Edit checks Can View; unchecking Can View unchecks Can Edit. Answers `next` when it holds. */

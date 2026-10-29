@@ -31,7 +31,8 @@ interface IHitApp {
   campaignId?: string;
   molColName?: string;
   infoView: IHitInfoView;
-  saveCampaign(...args: unknown[]): Promise<AnyCampaign>;
+  /** Answers nothing when the campaign was not saved (a balloon says why). */
+  saveCampaign(...args: unknown[]): Promise<AnyCampaign | undefined>;
   submitParams?: {fName: string, package: string};
   submitView?: {submit(): Promise<boolean>, submitWithStatus?(status?: string): Promise<boolean>};
 }
@@ -45,6 +46,7 @@ type HitApp = HitAppBase<AnyTemplate> & IHitApp;
 
 const AI_NAMESPACE = 'HitTriageAI';
 const DEFAULT_SEARCH_LIMIT = 10;
+const NOT_SAVED = 'The campaign was not saved; the balloon says why';
 
 const _funcs = new Map<string, DG.Func>();
 
@@ -306,7 +308,8 @@ function campaignSharedFunctions(): DG.Func[] {
         const app = appOf(view);
         if (!app.canEdit)
           return {success: false, error: 'You do not have permission to modify this campaign'};
-        await app.saveCampaign();
+        if (await app.saveCampaign() === undefined)
+          return {success: false, error: NOT_SAVED};
         return {success: true, campaign: app.campaignId ?? app.campaign?.name};
       }),
 
@@ -320,9 +323,14 @@ function campaignSharedFunctions(): DG.Func[] {
           return {success: false, error: 'No campaign is open'};
         if (!app.canEdit)
           return {success: false, error: 'You do not have permission to modify this campaign'};
-        app.campaign.status = status.trim();
-        await app.saveCampaign();
-        return {success: true, status: app.campaign.status};
+        const campaign = app.campaign;
+        const before = campaign.status;
+        campaign.status = status.trim();
+        if (await app.saveCampaign() === undefined) {
+          campaign.status = before;
+          return {success: false, error: NOT_SAVED};
+        }
+        return {success: true, status: app.campaign?.status};
       }),
 
     aiFunc('submitHitCampaign', 'dynamic submitHitCampaign(view view, string status)',
@@ -458,7 +466,8 @@ function designCampaignFunctions(): DG.Func[] {
         if (!app.stages.includes(stage))
           return {success: false, error: `Unknown stage '${stage}' — the stages are: ${app.stages.join(', ')}`};
         stageCol.set(row, stage, true);
-        await app.saveCampaign(false);
+        if (await app.saveCampaign(false) === undefined)
+          return {success: false, error: `The row moved to ${stage}, but ${NOT_SAVED.toLowerCase()}`};
         return {success: true, row, stage};
       }),
 
@@ -474,7 +483,8 @@ function designCampaignFunctions(): DG.Func[] {
           return {success: false, error: 'No campaign is open'};
         if (!app.dataFrame?.col(TileCategoriesColName))
           return {success: false, error: 'This campaign has no stage column'};
-        await app.setStages(stages.map((s) => s.trim()));
+        if (!await app.setStages(stages.map((s) => s.trim())))
+          return {success: false, error: `The stages changed, but ${NOT_SAVED.toLowerCase()}`};
         return {success: true, stages: app.stages};
       }),
 
