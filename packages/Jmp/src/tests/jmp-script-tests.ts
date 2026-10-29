@@ -300,8 +300,13 @@ category('JMP: analyses', () => {
     v = gb('X(:sex), Y(:height)', 'Bar(X, Y, Legend(4), Summary Statistic("Median"))');
     expect(v.type, 'Bar chart');
     expect(v.options.valueAggrType, 'med');
+    expect(v.options.orientation, 'vertical');
     v = gb('X(:sex)', 'Bar(X, Legend(4))');
     expect(v.options.valueAggrType, 'count');
+    v = gb('X(:height), Y(:sex)', 'Bar(X, Y)');
+    expect(v.options.splitColumnName, 'sex');
+    expect(v.options.valueColumnName, 'height');
+    expect(v.options.orientation, 'horizontal');
     v = gb('X(:sex), Y(:height)', 'Box Plot(X, Y, Legend(5))');
     expect(v.type, 'Box plot');
     expect(v.options.valueColumnName, 'height');
@@ -324,13 +329,30 @@ category('JMP: analyses', () => {
     expect(v.options.viewerType, 'Bar chart');
     expectArray(v.options.xColumnNames as string[], ['age']);
     expect(v.options.useTiledView, true);
+    v = only(convert('Graph Builder(Variables(X(:height), Y(:weight), Page(:sex), Group Y(:age)), ' +
+      'Elements(Points(X, Y)))'));
+    expectArray(v.options.yColumnNames as string[], ['sex', 'age']);
+  });
+
+  test('Graph Builder: a viewer per panel, overlays named', async () => {
+    const c = convert('Graph Builder(Variables(X(:sex), Y(:height), Y(:weight)), ' +
+      'Elements(Position(1, 1), Bar(X, Y), Bar(X, Y)), Elements(Position(1, 2), Box Plot(X, Y)), ' +
+      'SendToReport(Dispatch({}, "height", ScaleBox, {Add Ref Line(60, "Solid", "Red", "", 1)}), ' +
+      'Dispatch({}, "weight", ScaleBox, {Min(0)})))', 'Sizes');
+    expectArray(c.viewers.map((v) => `${v.type}: ${v.options.title}`),
+      ['Bar chart: Sizes: height', 'Box plot: Sizes: weight']);
+    expect(c.viewers[0].options.valueColumnName, 'height');
+    expect(JSON.parse(c.viewers[0].options.formulaLines as string)[0].formula, '${height} = 60');
+    expect(c.viewers[1].options.valueMin, 0);
+    expectArray(c.notes, []);
+    const overlay = convert('Graph Builder(Variables(X(:age), Y(:height), Y(:weight, Position(1))), ' +
+      'Elements(Points(X, Y(1), Y(2))))');
+    expectArray(overlay.notes, ['"weight" overlaid on the same axis not shown']);
   });
 
   test('Graph Builder: what doesn\'t come across is named', async () => {
-    const c = convert('Graph Builder(Variables(X(:height), Y(:weight), Page(:sex)), ' +
-      'Elements(Points(X, Y), Smoother(X, Y)))');
+    const c = convert('Graph Builder(Variables(X(:height), Y(:weight)), Elements(Points(X, Y), Smoother(X, Y)))');
     only(c);
-    expect(c.notes.some((n) => /Pages by "sex"/.test(n)), true);
     expect(c.notes.some((n) => /Smoother shown as a moving average/.test(n)), true);
     expect(c.viewers[0].options.showMovingAverageLine, true);
     expect(/Contour/.test(convert('Graph Builder(Variables(X(:height), Y(:weight)), Elements(Contour(X, Y)))').reason!),

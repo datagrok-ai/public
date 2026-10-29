@@ -12,6 +12,8 @@ import type {JmpColumn} from './jmp-types';
 export interface JmpViewerSpec {
   type: string;
   options: Record<string, unknown>;
+  /** What tells this viewer from the others the analysis opens, such as one panel's Y; added to its title. */
+  subtitle?: string;
 }
 
 export interface JmpScriptConversion {
@@ -154,7 +156,7 @@ export function convertScript(script: JmpScript, columns: JmpColumnRef[]): JmpSc
       const notes: string[] = [];
       const viewers = converter(call, cols, notes);
       for (const v of viewers)
-        v.options.title ??= script.name;
+        v.options.title ??= v.subtitle ? `${script.name}: ${v.subtitle}` : script.name;
       noteIgnored(call, notes);
       result.viewers.push(...viewers);
       result.notes.push(...notes);
@@ -402,50 +404,86 @@ function fitYByX(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
   return out;
 }
 
-/** Graph Builder: variables by role, and the elements drawn with them. The first element decides the
- * viewer; a Line of Fit over points becomes the scatter plot's regression line. Panels (Group X, Group Y,
- * Wrap) make it a trellis plot of that viewer. */
+/** One panel of a Graph Builder: the X and Y variables of its place in the grid, and its elements. */
+interface GraphPanel {
+  xs: JmpColumnRef[];
+  ys: JmpColumnRef[];
+  elements: Call[];
+}
+
+/** Graph Builder: variables by role, and the elements drawn with them. Each panel of the grid, set by the X
+ * and Y variables (`Y(:a), Y(:b)` stacks two; `Y(:b, Position(1))` overlays b on the first), becomes a
+ * viewer. A panel's first element decides the viewer; a Line of Fit over points becomes the scatter plot's
+ * regression line. Group X, Group Y and Wrap make each a trellis plot of that viewer. */
 function graphBuilder(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
   const vars = findArg(call, 'Variables');
   if (!vars)
     throw new Unconvertible('Graph Builder names no variables');
-  const role = (r: string): JmpColumnRef[] =>
-    vars.args.filter((a) => isCall(a, r)).flatMap((a) => columnNames(a as Call)).map((n) => cols.get(n));
-  const inner = graphBuilderViewer(call, role, notes);
+  const roleCalls = (r: string): Call[] => vars.args.filter((a): a is Call => isCall(a, r));
+  const role = (r: string): JmpColumnRef[] => roleCalls(r).flatMap((a) => columnNames(a)).map((n) => cols.get(n));
+  const slots = (r: string): JmpColumnRef[][] => {
+    const out: JmpColumnRef[][] = [];
+    for (const a of roleCalls(r)) {
+      const position = numberValue(findArg(a, 'Position')?.args[0]);
+      const columns = columnNames(a).map((n) => cols.get(n));
+      if (position !== undefined && out[position - 1])
+        out[position - 1].push(...columns);
+      else
+        out.push(columns);
+    }
+    return out;
+  };
+  const xSlots = slots('X');
+  const ySlots = slots('Y');
+  const blocks = findAll(call, 'Elements');
+  const panels: GraphPanel[] = (blocks.length > 0 ? blocks : [undefined]).map((b) => {
+    const position = b && findArg(b, 'Position');
+    const [i, j] = [0, 1].map((k) => numberValue(position?.args[k]) ?? 1);
+    return {xs: xSlots[i - 1] ?? [], ys: ySlots[j - 1] ?? [],
+      elements: b?.args.filter((a): a is Call => a.type === 'call' && !isCall(a, 'Position')) ?? []};
+  });
   const report = graphBuilderReport(call);
-  applyAxes(inner, report.axes, cols, notes);
-  if (report.title)
-    inner.options.title = report.title;
   const groupX = [...role('Group X'), ...role('Wrap')].map((c) => c.name);
-  const groupY = role('Group Y').map((c) => c.name);
-  if (role('Page').length > 0)
-    notes.push(`Pages by ${quoted(role('Page').map((c) => c.name))} not reproduced`);
-  if (groupX.length === 0 && groupY.length === 0)
-    return [inner];
-  return [{type: TRELLIS, options: {
-    viewerType: inner.type, xColumnNames: groupX, yColumnNames: groupY, innerViewerLook: inner.options,
-    ...(role('Wrap').length > 0 ? {useTiledView: true} : {}),
-  }}];
+  // JMP stacks a graph per page, as the rows of a trellis plot do
+  const groupY = [...role('Page'), ...role('Group Y')].map((c) => c.name);
+  const applied = new Set<string>();
+  const viewers = panels.map((panel): JmpViewerSpec => {
+    const inner = graphBuilderViewer(panel, role, notes);
+    for (const axis of applyAxes(inner, report.axes, cols))
+      applied.add(axis);
+    const subtitle = panels.length > 1 ? (panel.ys[0] ?? panel.xs[0])?.name : undefined;
+    if (report.title)
+      inner.options.title = subtitle ? `${report.title}: ${subtitle}` : report.title;
+    if (groupX.length === 0 && groupY.length === 0)
+      return {...inner, subtitle};
+    return {type: TRELLIS, subtitle, options: {
+      viewerType: inner.type, xColumnNames: groupX, yColumnNames: groupY, innerViewerLook: inner.options,
+      ...(role('Wrap').length > 0 ? {useTiledView: true} : {}),
+      ...(inner.options.title ? {title: inner.options.title} : {}),
+    }};
+  });
+  const unapplied = [...report.axes].filter(([k, a]) => !applied.has(k) &&
+    (a.min !== undefined || a.max !== undefined || a.log || a.refLines.length > 0)).map(([, a]) => a.column);
+  if (unapplied.length > 0)
+    notes.push(`Axis settings of ${quoted(unapplied)} not applied`);
+  return viewers;
 }
 
-function graphBuilderViewer(call: Call, role: (r: string) => JmpColumnRef[], notes: string[]): JmpViewerSpec {
-  const xs = role('X');
-  const ys = role('Y');
+function graphBuilderViewer(panel: GraphPanel, role: (r: string) => JmpColumnRef[], notes: string[]):
+  JmpViewerSpec {
+  const {xs, ys, elements} = panel;
   const color = role('Color')[0] ?? role('Overlay')[0];
   const size = role('Size')[0];
-
-  const elements = findAll(call, 'Elements').flatMap((e) => e.args.filter((a): a is Call =>
-    a.type === 'call' && !isCall(a, 'Position')));
-  if (findAll(call, 'Elements').length > 1)
-    notes.push('Only the first panel is shown');
   const kinds = elements.map((e) => jslKey(e.name));
   const first = kinds[0] ?? 'points';
   const x = xs[0];
   const y = ys[0];
-  const others = elements.slice(1).filter((e) => !['lineoffit', 'points', 'smoother'].includes(jslKey(e.name)));
-  // JMP overlays every Y of a line chart on one axis, as Datagrok does
-  if (jslKey(elements[0]?.name ?? '') === 'line' ? xs.length > 1 : xs.length > 1 || ys.length > 1)
-    notes.push('Only the first X and Y variables are shown');
+  const others = elements.slice(1)
+    .filter((e) => ![first, 'lineoffit', 'points', 'smoother'].includes(jslKey(e.name)));
+  // JMP overlays every Y of a line chart on one axis, as Datagrok does; the other viewers take one
+  const overlaid = [...xs.slice(1), ...first === 'line' ? [] : ys.slice(1)].map((c) => c.name);
+  if (overlaid.length > 0)
+    notes.push(`${quoted(overlaid)} overlaid on the same axis not shown`);
   for (const e of others)
     notes.push(`${e.name} not shown`);
 
@@ -482,13 +520,15 @@ function graphBuilderViewer(call: Call, role: (r: string) => JmpColumnRef[], not
     }};
   }
   case 'bar': {
-    const category = x ?? y;
+    // The bars stand on the categorical variable: on X they are vertical, on Y horizontal
+    const category = x && !(x.numeric && y && !y.numeric) ? x : y;
     if (!category)
       throw new Unconvertible('A Graph Builder bar chart needs a variable');
-    const value = x && y ? y : undefined;
+    const other = category === x ? y : x;
+    const value = other?.numeric ? other : undefined;
     const stat = statistic(stringArg(findAll(elements[0], 'Summary Statistic')[0]), notes);
     return {type: BAR, options: {
-      splitColumnName: category.name,
+      splitColumnName: category.name, orientation: category === x ? 'vertical' : 'horizontal',
       ...(value ? {valueColumnName: value.name, valueAggrType: stat ?? 'avg'} : {valueAggrType: 'count'}),
       ...(color && !color.numeric && color !== category ? {stackColumnName: color.name} : {}),
     }};
@@ -562,8 +602,9 @@ const AXES: Record<string, [string, string, string, string][]> = {
   [BAR]: [['valueColumnName', 'valueMin', 'valueMax', 'axisType']],
 };
 
-/** Sets a viewer's axis ranges, log scales and reference lines from Graph Builder's axes. */
-function applyAxes(viewer: JmpViewerSpec, axes: Map<string, JmpAxis>, cols: Columns, notes: string[]): void {
+/** Sets a viewer's axis ranges, log scales and reference lines from Graph Builder's axes; returns the axes
+ * it used. */
+function applyAxes(viewer: JmpViewerSpec, axes: Map<string, JmpAxis>, cols: Columns): string[] {
   const o = viewer.options;
   const lines: Record<string, unknown>[] = [];
   const applied = new Set<string>();
@@ -587,14 +628,9 @@ function applyAxes(viewer: JmpViewerSpec, axes: Map<string, JmpAxis>, cols: Colu
         ...(r.label ? {title: r.label} : {})});
     }
   }
-  if (lines.length > 0 && viewer.type === SCATTER)
+  if (lines.length > 0)
     o.formulaLines = JSON.stringify(lines);
-  else if (lines.length > 0)
-    notes.push('Reference lines not shown');
-  const unapplied = [...axes].filter(([k, a]) => !applied.has(k) &&
-    (a.min !== undefined || a.max !== undefined || a.log || a.refLines.length > 0)).map(([, a]) => a.column);
-  if (unapplied.length > 0)
-    notes.push(`Axis settings of ${quoted(unapplied)} not applied`);
+  return [...applied];
 }
 
 function stringArg(call: Call | undefined): string | undefined {

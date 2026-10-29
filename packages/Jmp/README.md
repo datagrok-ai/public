@@ -63,7 +63,7 @@ viewers, titled after the script:
 | Bivariate, Fit Y by X     | Scatter plot, with the regression line for a line fit |
 | Oneway                    | Box plot by group                          |
 | Contingency               | Stacked bar chart of counts                |
-| Graph Builder             | Scatter plot, line chart, bar chart, box plot, histogram or pie chart, by its first element, with its title, axis ranges, log scales and reference lines; a trellis plot of it when the graph has panels |
+| Graph Builder             | Scatter plot, line chart, bar chart, box plot, histogram or pie chart, one per panel, by its first element, with its title, axis ranges, log scales and reference lines; a trellis plot of it when the graph is grouped or paged |
 | Tabulate                  | Pivot table                                |
 | Fit Model, Fit Group (least squares) | Actual by Predicted scatter plot per response, from the prediction formula saved from that model |
 
