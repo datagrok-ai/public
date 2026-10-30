@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as Vue from 'vue';
 import {category, test, expect, waitUntil, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {closeViewsAfter, awaitWebComponents, deleteSavedWorkflow} from './utils';
@@ -150,6 +151,35 @@ category('RFV: run ObjectCooling2', () => {
 
 category('Pipeline: MockPipeline1 static', () => {
   const track = closeViewsAfter();
+
+  test('A never saved workflow shows its root title until it is saved under its own name', async () => {
+    await awaitWebComponents();
+    const call = DG.Func.byName('Compute2:MockPipeline1').prepare();
+    const view = track(await grok.functions.call(
+      'Compute2:TreeWizardEditor', {call},
+    ) as unknown as DG.ViewBase);
+    const model = call.func.friendlyName;
+    await waitUntil(() => view.name === `${model} - Pipeline 1 title`, 'View should show the root title', 5000);
+
+    await waitUntil(() => ribbonIcons(view, 'save').length > 0, 'Expected a save icon', 5000);
+    (ribbonIcons(view, 'save')[0] as HTMLElement).click();
+    await waitUntil(() => document.querySelector('.d4-dialog .c2-runs-field input') !== null,
+      'Save dialog not shown', 5000);
+    const name = uniqueName('Own name');
+    const input = document.querySelector<HTMLInputElement>('.d4-dialog .c2-runs-field input')!;
+    expect(input.value, 'Pipeline 1 title');
+    input.value = name;
+    input.dispatchEvent(new Event('input'));
+    await Vue.nextTick();
+    Array.from(document.querySelectorAll<HTMLElement>('.d4-dialog button'))
+      .find((b) => b.textContent?.trim() === 'Save')!.click();
+    await waitUntil(() => savedRunId(view) != null, 'URL should carry the saved run id', 5000);
+    try {
+      await waitUntil(() => view.name === `${model} - ${name}`, 'View should show the saved name', 5000);
+    } finally {
+      await deleteSavedWorkflow(savedRunId(view)!);
+    }
+  });
 
   test('Renders tree with steps and Next button', async () => {
     await awaitWebComponents();

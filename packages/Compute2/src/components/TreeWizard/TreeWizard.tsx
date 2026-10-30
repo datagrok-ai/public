@@ -356,15 +356,19 @@ export const TreeWizard = Vue.defineComponent({
       setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '?');
     });
 
-    Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
+    const rootTitle = Vue.computed(() => nodeMetadata(treeState.value?.uuid).title);
+
+    Vue.watch([currentMetaCallData, hasNotSavedEdits, rootTitle], ([metadata, hasNotSavedEdits, rootTitle]) => {
       if (hasNotSavedEdits)
         pinView(currentView);
       const {id, title} = metadata?.id ? metadata : {id: undefined, title: undefined};
       searchParams.id = id && !hasNotSavedEdits ? id : undefined;
-      if (!title)
-        setViewName(modelName.value);
-      else
+      if (title)
         setViewName(`${modelName.value} - ${title}${hasNotSavedEdits ? ' (edited)' : ''}`);
+      else if (!id && rootTitle)
+        setViewName(`${modelName.value} - ${rootTitle}`);
+      else
+        setViewName(modelName.value);
     });
 
 

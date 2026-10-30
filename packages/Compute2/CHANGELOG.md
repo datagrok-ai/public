@@ -8,6 +8,7 @@
 * Runs: Removed Share to workspace and the `sharingMethod` setting
 * Custom function views: Save opens the Save run dialog and History the Open run dialog instead of a docked history panel, so the whole view is the custom content; saved runs are listed under the custom view's function in the run browsers and open in that view again
 * Run compare: Several comparisons of the same runs open as tabs in one view; each tab has its own selected values, Hide equal values, chart and export, while index columns, mappings, matched columns and Hide outdated outputs are shared
+* Workflows: A workflow that was never saved shows its root `title` link in the view name
 * Workflows: Fixed Run ready steps running a step before its debounced or async validators checked its new inputs, or before an async link set them; the workflow stays busy until they finish, and validator debounce applies to edits only
 * Workflows: Added `RunWorkflow` to run a workflow without UI from an initial configuration, as `StartWorkflow` takes it; it returns every step's values, status and validations, and a summary. `SaveWorkflowRun` saves the result to history
 * RFV: In workflows, inputs with the `disabled` or `restricted` restriction are hidden behind a Show linked inputs row and show a link icon while the value is the one the workflow set; `meta.inputToggles` picks the inputs (by category or name, linked or not) and the row captions, the `keepVisible` input annotation exempts an input, and inputs with errors, warnings or an inconsistent value are always shown
