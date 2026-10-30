@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {COMPARISON_SERVICE, ComparisonAddition} from './comparison-service';
+import {showAddToComparisonDialog} from './comparison-views';
 
 import {IconFA, ResizeHandle, ToggleInput, Tabs, ifOverlapping} from '@datagrok-libraries/webcomponents-vue';
 import {getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -21,7 +22,7 @@ import {
 import {
   matchesFilter, unmatchedItems, isSplitCandidate, selectionToMap, computeIndexRows,
   equalTargetKeys as findEqualTargets, resolveAxisModes, targetContexts, withDefaultPicks, uniqueEntryName,
-  withoutOutdatedOutputs,
+  withEntryName, withoutOutdatedOutputs,
 } from './selection';
 import {entryFromDataFrame, loadRunEntries} from './entry-extraction';
 import {pruneOverrides, withCandidateEnabled, withoutTargetOverrides} from './target-selection';
@@ -68,34 +69,40 @@ export const RunComparison = Vue.defineComponent({
     const sidebarWidth = Vue.ref(360);
 
 
-    // ids of runs to load are titled by the history selection when they come from it
-    const addRunsById = async (ids: string[], titles = new Map<string, string>()) => {
+    const addRunsById = async (ids: string[], names = new Map<string, string>()) => {
       isAddingRuns.value = true;
       try {
         const {entries: loaded, failed} = await loadRunEntries(ids);
         for (const entry of loaded) {
-          addEntry(entry);
+          addEntry(withEntryName(entry, names.get(entry.id) ?? entry.name));
           if (entry.failedSteps)
             grok.shell.warning(`${entry.name}: could not load ${entry.failedSteps.join(', ')}`);
         }
         if (failed.length > 0)
-          grok.shell.error(`Could not load ${failed.map((id) => titles.get(id) ?? `run ${id}`).join(', ')}`);
+          grok.shell.error(`Could not load ${failed.map((id) => names.get(id) ?? `run ${id}`).join(', ')}`);
       } finally {
         isAddingRuns.value = false;
       }
     };
 
-    const add = async ({runIds = [], entries: added = [], model, selectModel = false}: ComparisonAddition) => {
+    const add = async (
+      {runIds = [], runNames, entries: added = [], model, selectModel = false}: ComparisonAddition,
+    ) => {
       if (model && !extraModels.value.some((f) => f.nqName === model.nqName))
         extraModels.value = [...extraModels.value, Vue.markRaw(model)];
       if (model && selectModel)
         selectedModel.value = Vue.markRaw(model);
-      if (runIds.length > 0)
-        await addRunsById(runIds);
+      const present = entries.value.filter((entry) => runIds.includes(entry.id) || runIds.includes(entry.runId ?? ''));
+      if (present.length > 0)
+        grok.shell.warning(`Already in this comparison: ${present.map((entry) => entry.name).join(', ')}`);
+      const newRunIds = runIds.filter((id) => !hasEntry(id));
+      if (newRunIds.length > 0)
+        await addRunsById(newRunIds, runNames);
       added.forEach(addEntry);
     };
 
-    Vue.inject(COMPARISON_SERVICE)!.connect({add, entryNames: () => entries.value.map((entry) => entry.name)});
+    const service = Vue.inject(COMPARISON_SERVICE)!;
+    service.connect({add, entryNames: () => entries.value.map((entry) => entry.name)});
 
 
     const tableInput = ui.input.table('Add table');
@@ -125,16 +132,13 @@ export const RunComparison = Vue.defineComponent({
       axisModeSelection.value = next.axis;
     };
 
-    const withName = (entry: ComparisonEntry, name: string): ComparisonEntry =>
-      name === entry.name ? entry : {...entry, name, nodes: {...entry.nodes, entryName: name}};
-
     // a saved snapshot keeps its id, so its run is known by runId
     const hasEntry = (id: string) => entries.value.some((existing) => existing.id === id || existing.runId === id);
 
     const addEntry = (entry: ComparisonEntry) => {
       if (hasEntry(entry.id))
         return;
-      const added = withName(entry, uniqueEntryName(entry.name, entries.value.map((existing) => existing.name)));
+      const added = withEntryName(entry, uniqueEntryName(entry.name, entries.value.map((existing) => existing.name)));
       applyDefaultPicks(added, entries.value);
       entries.value = [...entries.value, Vue.markRaw(added)];
     };
@@ -149,11 +153,12 @@ export const RunComparison = Vue.defineComponent({
       axisModeSelection.value = restAxis;
     };
 
-    const addSelectedRuns = async () => {
+    const addSelectedRuns = () => {
       if (isAddingRuns.value || historySelection.value.length === 0)
         return;
       const calls = historySelection.value.filter((call) => !hasEntry(call.id));
-      await addRunsById(calls.map((call) => call.id), new Map(calls.map((call) => [call.id, getRunTitle(call)])));
+      if (calls.length > 0)
+        showAddToComparisonDialog(calls.map((call) => ({runId: call.id, name: getRunTitle(call)})), {into: service});
     };
 
     const saveSnapshot = async (entry: ComparisonEntry) => {
@@ -168,7 +173,7 @@ export const RunComparison = Vue.defineComponent({
       try {
         const run = await entry.snapshot!.save!(asItemMetadata(result));
         const others = entries.value.filter((item) => item.id !== entry.id).map((item) => item.name);
-        const named = withName(entry, uniqueEntryName(getRunTitle(run), others));
+        const named = withEntryName(entry, uniqueEntryName(getRunTitle(run), others));
         const saved: ComparisonEntry = {...named, runId: run.id, snapshot: undefined};
         entries.value = entries.value.map((item) => item.id === entry.id ? Vue.markRaw(saved) : item);
       } catch (e: any) {

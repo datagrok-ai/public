@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {ResizeHandle} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
-import {getRunName} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {getRunName, getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/src/model-handler';
 import {PlacesTree} from './PlacesTree';
 import {ModelSelector} from './ModelSelector';
@@ -25,7 +25,7 @@ import {useRunDetails} from './use-run-details';
 import {useRunSelection} from './use-run-selection';
 import {useMyRuns} from './use-my-runs';
 import {useRunAuthors} from './use-run-authors';
-import {openRunComparison} from '../RunComparison/comparison-views';
+import {showAddToComparisonDialog} from '../RunComparison/comparison-views';
 import './RunStorage.css';
 
 /** Opens and manages saved runs of one model, in My runs and in spaces, browsed like folders. */
@@ -211,8 +211,8 @@ export const RunBrowser = Vue.defineComponent({
       return names.size === 1 ? modelOf(selection.value[0]) : undefined;
     });
     const compareSelected = () => {
-      openRunComparison({runIds: selection.value.map((run) => run.id), model: compareModel.value});
-      emit('cancel');
+      showAddToComparisonDialog(selection.value.map((run) => ({runId: run.id, name: getRunTitle(run)})),
+        {model: compareModel.value, preferNew: true, onAdded: () => emit('cancel')});
     };
     // the run as listed, without its tables: most hosts open runs by id, the rest load what they need
     const openRun = (run: DG.FuncCall) => {
