@@ -139,7 +139,11 @@ export function convertScript(script: JmpScript, columns: JmpColumnRef[]): JmpSc
     result.reason = 'Re-imports the file the table came from; not an analysis';
     return result;
   }
-  const launches = platformCalls(script.body);
+  const launches = platformCalls(namedGraphBuilder(script.body));
+  if (launches.length > 0 && launches.every((c) => notAnalysis(c))) {
+    result.reason = `${notAnalysis(launches[0])}; not an analysis`;
+    return result;
+  }
   if (launches.length === 0) {
     result.reason = isProgram(script.body) ? 'A JSL program rather than a saved analysis' :
       'Doesn\'t launch an analysis';
@@ -148,7 +152,7 @@ export function convertScript(script: JmpScript, columns: JmpColumnRef[]): JmpSc
   const cols = new Columns(columns,
     findAll(script.body, 'Transform Column').map(stringArg).filter((n) => n !== undefined));
   const reasons: string[] = [];
-  for (const call of launches) {
+  for (const call of launches.filter((c) => !notAnalysis(c))) {
     result.platform ??= call.name;
     const converter = PLATFORMS[jslKey(call.name)];
     if (!converter) {
@@ -174,6 +178,32 @@ export function convertScript(script: JmpScript, columns: JmpColumnRef[]): JmpSc
   else
     result.notes = [...new Set([...result.notes, ...reasons])];
   return result;
+}
+
+/** A Graph Builder can be saved without its name, as just `Variables(...), Elements(...)`. */
+function namedGraphBuilder(body: JslNode): JslNode {
+  const items = body.type === 'list' ? body.items : [body];
+  return items.some((i) => isCall(i, 'Variables')) ? {type: 'call', name: 'Graph Builder', args: items} : body;
+}
+
+/** Scripts that change the table, or how it shows, rather than analysing it. */
+const TABLE_OPERATIONS: Record<string, string> = {
+  colorbycolumn: 'Colours and marks the rows',
+  datafilter: 'Filters the rows',
+  // JMP's Update, as a German JMP saves it
+  update: 'Updates the table from another',
+  aktualisieren: 'Updates the table from another',
+};
+
+/** What a call that isn't an analysis does: a table operation, or a DOE dialog that a designed experiment keeps
+ * to re-open its design (`DOE(Custom Design, {Add Factor(...), ...})`). */
+function notAnalysis(c: Call): string | undefined {
+  if (TABLE_OPERATIONS[jslKey(c.name)])
+    return TABLE_OPERATIONS[jslKey(c.name)];
+  const design = isCall(c, 'DOE') && c.args[0]?.type === 'name' ? c.args[0].name : undefined;
+  if (design && jslKey(design) !== 'evaluatedesign')
+    return `Re-opens JMP's ${design} dialog with the experiment's factors and responses`;
+  return undefined;
 }
 
 /** The platform launches in a script: `Bivariate(...)`, `dt << Bivariate(...)`, one per statement. */
@@ -245,6 +275,9 @@ const PLATFORMS: Record<string, Converter> = {
   tabulate: tabulate,
   multivariate: multivariate,
   matchedpairs: matchedPairs,
+  chart: chart,
+  fitcurve: fitCurve,
+  doe: evaluateDesign,
   scatterplotmatrix: scatterplotMatrix,
 };
 
@@ -491,6 +524,65 @@ function matchedPairs(call: Call, cols: Columns, notes: string[]): JmpViewerSpec
   }
   return [{type: MATRIX, options: {xColumnNames: ys, yColumnNames: ys, cellPlotType: SCATTER,
     innerViewerLook: {formulaLines: noDifference}}}];
+}
+
+/** DOE's Evaluate Design: the correlations among the design's continuous factors, which a good design keeps
+ * near zero. JMP maps those of every model term; the main effects' are what a correlation plot shows. */
+function evaluateDesign(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
+  const factors = columnNames(findArg(call, 'X')).map((n) => cols.get(n));
+  const continuous = factors.filter((f) => f.numeric).map((f) => f.name);
+  if (continuous.length < 2)
+    throw new Unconvertible('The design has fewer than two continuous factors to correlate');
+  const categorical = factors.filter((f) => !f.numeric).map((f) => f.name);
+  if (categorical.length > 0)
+    notes.push(`The categorical factors ${quoted(categorical)} not in the correlations`);
+  notes.push('The correlations of the interaction and squared terms, power and prediction variance not shown');
+  return [{type: CORR, subtitle: 'Correlations of the factors', options: {
+    xColumnNames: continuous, yColumnNames: continuous, showPearsonR: true,
+  }}];
+}
+
+/** Fit Curve: the data it fits, Y by X, coloured by its Group, with a straight-line fit (per group) when it
+ * has one. The nonlinear fits (Gompertz, logistic, exponential and the rest) aren't drawn; each is named. */
+function fitCurve(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
+  const group = columnNames(findArg(call, 'Group')).map((n) => cols.get(n))[0];
+  const fits = call.args.flatMap((a) => a.type === 'call' || a.type === 'name' ? [a.name] : [])
+    .filter((n) => /^fit /i.test(n));
+  const linear = fits.some((f) => jslKey(f) === 'fitlinear');
+  for (const fit of fits.filter((f) => jslKey(f) !== 'fitlinear'))
+    notes.push(`The ${fit.replace(/^fit /i, '')} fit not shown`);
+  return pairs(call, cols).map(({x, y}) => ({type: SCATTER, options: {
+    xColumnName: x.name, yColumnName: y.name, title: `${y.name} by ${x.name}`,
+    ...(group ? {colorColumnName: group.name} : {}),
+    ...(linear ? {showRegressionLine: true, ...(group ? {regressionPerCategory: true} : {})} : {}),
+  }}));
+}
+
+/** Chart, JMP's older charting platform: a bar chart (or pie) of a statistic of each Y, such as `N(:a)` or
+ * `Mean(:b)`, over the X categories. */
+function chart(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
+  const x = columnNames(findArg(call, 'X')).map((n) => cols.get(n))[0];
+  const ys = findArg(call, 'Y')?.args ?? [];
+  if (!x || ys.length === 0)
+    throw new Unconvertible('Chart needs X and Y columns');
+  for (const other of ['Line Chart', 'Needle Chart', 'Point Chart', 'Overlay Chart']) {
+    if (isOn(call, other))
+      notes.push(`${other} shown as a bar chart`);
+  }
+  const pie = isOn(call, 'Pie Chart');
+  return ys.map((y) => {
+    const column = cols.get(y.type === 'call' ? columnNames(y)[0] ?? '' : y.type === 'column' ? y.name : '').name;
+    // a bare column charts each row's value; N counts the rows
+    const agg = y.type === 'call' ? statistic(y.name, notes) : statistic('Data', notes);
+    const title = `${y.type === 'call' ? `${y.name}(${column})` : column} by ${x.name}`;
+    if (pie) {
+      return {type: PIE, options: {categoryColumnName: x.name, title,
+        ...(agg === 'count' ? {} : {segmentAngleColumnName: column, segmentAngleAggrType: agg})}};
+    }
+    return {type: BAR, options: {splitColumnName: x.name, title,
+      orientation: isOn(call, 'Horizontal') ? 'horizontal' : 'vertical',
+      ...(agg === 'count' ? {valueAggrType: 'count'} : {valueColumnName: column, valueAggrType: agg})}};
+  });
 }
 
 function contingency(call: Call, cols: Columns): JmpViewerSpec[] {

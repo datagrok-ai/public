@@ -68,6 +68,9 @@ viewers, titled after the script:
 | Multivariate              | Correlation plot (Pearson, or Spearman when only that was asked for) and a matrix plot |
 | Scatterplot Matrix        | Matrix plot of scatter plots, coloured by its Group |
 | Matched Pairs             | Scatter plot of one Y against its pair, on the line of no difference; a matrix plot for several Ys |
+| Chart                     | Bar chart (or pie chart) of each Y's statistic by the X categories |
+| Fit Curve                 | Scatter plot of the data it fits, coloured by its Group; a straight-line fit is drawn, the nonlinear ones are named |
+| DOE: Evaluate Design      | Correlation plot of the design's continuous factors |
 | Fit Model, Fit Group (least squares) | Actual by Predicted scatter plot per response, from the prediction formula saved from that model |
 | Fit Group of other analyses | Each analysis it holds, as above |
 

@@ -483,6 +483,44 @@ category('JMP: analyses', () => {
     expect(convert('Matched Pairs(Y(:height))').reason, 'Matched Pairs needs two or more Y columns');
   });
 
+  test('Fit Curve: the data it fits, by group, with its fits named', async () => {
+    const c = convert('Fit Curve(Y(:weight), X(:age), Group(:sex), Fit Gompertz 3P(Custom Inverse Prediction(' +
+      'Response(100))), Fit Linear)');
+    const v = only(c);
+    expect(v.type, 'Scatter plot');
+    expect(v.options.colorColumnName, 'sex');
+    expect(v.options.showRegressionLine, true);
+    expect(v.options.regressionPerCategory, true);
+    expectArray(c.notes, ['The Gompertz 3P fit not shown']);
+  });
+
+  test('Chart: a bar chart, or a pie, of a statistic by category', async () => {
+    const counts = only(convert('Chart(X(:sex), Y(N(:sex)), Horizontal(1), Bar Chart(1))'));
+    expect(counts.type, 'Bar chart');
+    expect(counts.options.orientation, 'horizontal');
+    expect(counts.options.valueAggrType, 'count');
+    const means = only(convert('Chart(X(:sex), Y(Mean(:height)), Pie Chart(1))'));
+    expect(means.type, 'Pie chart');
+    expect(means.options.segmentAngleColumnName, 'height');
+    expect(means.options.segmentAngleAggrType, 'avg');
+  });
+
+  test('scripts that change the table aren\'t analyses; an unnamed Graph Builder is one', async () => {
+    const color = convert('Current Data Table() << Color by Column(sex, Color(1), Marker(1))');
+    expect(color.platform === undefined, true);
+    expect(color.reason, 'Colours and marks the rows; not an analysis');
+    expect(convert('Data Table("A") << Aktualisieren(Mit(Data Table("B")))').reason,
+      'Updates the table from another; not an analysis');
+    expect(convert('Current Data Table() << Data Filter(Add Filter(columns(:sex)))').reason,
+      'Filters the rows; not an analysis');
+    // the file holds `Graph Builder(Variables(...), Elements(...))`, read as a script so named, its body the two calls
+    const text = 'Variables(X(:sex), Y(:height)), Elements(Bar(X, Y))';
+    const items = (parseJsl(`Graph Builder(${text})`) as Extract<JslNode, {type: 'call'}>).args;
+    const unnamed = convertScript({name: 'Graph Builder', text, body: {type: 'list', items}}, BIG_CLASS);
+    expect(unnamed.platform, 'Graph Builder');
+    expect(only(unnamed).type, 'Bar chart');
+  });
+
   test('Fit Group: each analysis it holds, as if launched on its own', async () => {
     const c = convert('Fit Group(Oneway(Y(:height), X(:sex), Means(1)), Bivariate(Y(:weight), X(:height), ' +
       'Fit Line()), Contingency(Y(:sex), X(:age)), Partition(Y(:weight), X(:height)), <<{Arrange in Rows(1)})');
@@ -604,10 +642,15 @@ category('JMP: public files', () => {
       'Factor Changes(Easy)']);
     expect(props('Block')[0].text, 'RunsPerBlock(9)');
     expect(props('RNA Yield (ng/uL)')[0].text, 'Response Limits({Goal(Maximize), Importance(.), Show Limits(0)})');
-    const cols = t.columns.map((c) => ({name: c.info.name, numeric: c.kind !== 'string'}));
-    const analyses = t.scripts.filter((s) => s.name !== 'Source').map((s) => convertScript(s, cols));
-    expectArray(analyses.map((a) => a.platform!), ['Fit Definitive Screening', 'DOE', 'DOE']);
-    expect(analyses.every((a) => a.viewers.length === 0 && /isn't converted/.test(a.reason!)), true);
+    const scripts = t.scripts.filter((s) => s.name !== 'Source').map((s) => convertScript(s, columnRefs(t.columns)));
+    expectArray(scripts.map((a) => `${a.platform}: ${a.viewers.map((v) => v.type).join()}`),
+      ['Fit Definitive Screening: ', 'DOE: Correlation plot', 'undefined: ']);
+    expect(/Fit Definitive Screening isn't converted/.test(scripts[0].reason!), true);
+    // Evaluate Design: the continuous factors only
+    expectArray(scripts[1].viewers[0].options.xColumnNames as string[],
+      ['Pyrophosphatase', 'Spermidine', 'Surfactant', 'DMSO', 'Betaine']);
+    expect(scripts[2].reason, 'Re-opens JMP\'s Definitive Screening Design dialog with the experiment\'s factors and ' +
+      'responses; not an analysis');
   });
 
   test('JMP 18: spec limits on predicted quality attributes, and their fits', async () => {
