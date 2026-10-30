@@ -128,6 +128,53 @@ test('DATABRICKS_URL selects databricks mode, its Anthropic route, and the endpo
   assert.notEqual(resolveConfig({apiKey: 'sk-ant-x'}).mode, 'databricks');
 });
 
+test('an AI Gateway DATABRICKS_URL selects the gateway route and DATABRICKS_MODEL as every model tier', () => {
+  for (const path of ['anthropic', 'anthropic/v1/messages', 'mlflow/v1/responses']) {
+    const cfg = resolveConfig({
+      DATABRICKS_URL: `https://dbc-123.cloud.databricks.com/ai-gateway/${path}`,
+      DATABRICKS_TOKEN: 'dapiSECRET', DATABRICKS_MODEL: 'system.ai.claude-sonnet-5-5',
+    });
+    assert.equal(cfg.mode, 'databricks');
+    assert.equal(cfg.upstreams.databricks, 'https://dbc-123.cloud.databricks.com/ai-gateway/anthropic');
+    assert.deepEqual(cfg.models, {
+      opus: 'system.ai.claude-sonnet-5-5', sonnet: 'system.ai.claude-sonnet-5-5', haiku: 'system.ai.claude-sonnet-5-5',
+    });
+  }
+});
+
+test('the AI Gateway gets the token and the coding-agent header, and refuses a call without a model', async () => {
+  const up = stubUpstream();
+  const upPort = await listen(up.server);
+  const upstreams = {anthropic: 'http://unused', databricks: `http://127.0.0.1:${upPort}/ai-gateway/anthropic`};
+  const call = (port) => fetch(`http://127.0.0.1:${port}/v1/messages?beta=true`, {
+    method: 'POST', headers: {'x-api-key': 'sk-ant-broker-placeholder'}, body: '{}',
+  });
+  try {
+    const broker = createBroker(baseCfg({
+      mode: 'databricks', databricksToken: 'dapiSECRET', upstreams, models: {sonnet: 'system.ai.claude-sonnet-5-5'},
+    }));
+    const noModel = createBroker(baseCfg({mode: 'databricks', databricksToken: 'dapiSECRET', upstreams, models: {}}));
+    const port = await listen(broker);
+    const noModelPort = await listen(noModel);
+    try {
+      await call(port);
+      assert.equal(up.seen.url, '/ai-gateway/anthropic/v1/messages?beta=true');
+      assert.equal(up.seen.headers['authorization'], 'Bearer dapiSECRET');
+      assert.equal(up.seen.headers['x-databricks-use-coding-agent-mode'], 'true');
+      assert.ok(!up.seen.headers['x-api-key']);
+
+      const refused = await call(noModelPort);
+      assert.equal(refused.status, 500);
+      assert.match((await refused.json()).error, /DATABRICKS_MODEL/);
+    } finally {
+      await close(broker);
+      await close(noModel);
+    }
+  } finally {
+    await close(up.server);
+  }
+});
+
 test('databricks mode sends the token as Bearer to the anthropic route and strips the placeholder', async () => {
   const up = stubUpstream();
   const upPort = await listen(up.server);

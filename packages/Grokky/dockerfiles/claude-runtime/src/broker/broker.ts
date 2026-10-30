@@ -37,7 +37,7 @@ export function resolveConfig(env: NodeJS.ProcessEnv = process.env): BrokerConfi
   const provider = env['provider'] || 'Anthropic';
   const credentialsPath = env['CREDENTIALS_PATH'] || '/home/broker/.claude/.credentials.json';
 
-  const databricks = parseDatabricksUrl(env['DATABRICKS_URL']);
+  const databricks = parseDatabricksUrl(env['DATABRICKS_URL'], env['DATABRICKS_MODEL']);
 
   let mode: BrokerMode;
   if (databricks)
@@ -77,11 +77,14 @@ export function resolveConfig(env: NodeJS.ProcessEnv = process.env): BrokerConfi
   };
 }
 
-/** `https://<host>/serving-endpoints/<name>/invocations` → the workspace's Anthropic Messages route, `<name>` as the model. */
-export function parseDatabricksUrl(raw?: string): {upstream: string; endpoint: string} | undefined {
+/** `https://<host>/serving-endpoints/<name>/invocations` → the workspace's Anthropic Messages route, `<name>` as the model.
+ * `https://<host>/ai-gateway/...` → the AI Gateway's Anthropic route; its URL names no model, so `model` does. */
+export function parseDatabricksUrl(raw?: string, model?: string): {upstream: string; endpoint?: string} | undefined {
   if (!raw)
     return undefined;
   const url = new URL(raw);
+  if (url.pathname.startsWith('/ai-gateway/'))
+    return {upstream: `${url.origin}/ai-gateway/anthropic`, endpoint: model};
   return {upstream: `${url.origin}/serving-endpoints/anthropic`, endpoint: url.pathname.split('/')[2]};
 }
 
@@ -310,8 +313,13 @@ class DatabricksProvider extends Provider {
   async forward(req: http.IncomingMessage, res: http.ServerResponse, pathname: string, search: string): Promise<void> {
     if (!this.cfg.upstreams.databricks || !this.cfg.databricksToken)
       return send(res, 500, {error: 'databricks selected but DATABRICKS_URL or DATABRICKS_TOKEN is missing'});
-    return proxy(req, res, this.cfg.upstreams.databricks + pathname + search,
-      {'Authorization': `Bearer ${this.cfg.databricksToken}`});
+    const gateway = this.cfg.upstreams.databricks.endsWith('/ai-gateway/anthropic');
+    if (gateway && !this.cfg.models.sonnet)
+      return send(res, 500, {error: 'the Databricks AI Gateway needs DATABRICKS_MODEL, such as system.ai.claude-sonnet-5-5'});
+    return proxy(req, res, this.cfg.upstreams.databricks + pathname + search, {
+      'Authorization': `Bearer ${this.cfg.databricksToken}`,
+      ...(gateway ? {'x-databricks-use-coding-agent-mode': 'true'} : {}),
+    });
   }
 }
 
