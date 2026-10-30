@@ -13,7 +13,9 @@ import {
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
-import {dfToViewerMapping, getStartedOrNull, replaceForWindowsPath, richFunctionViewReport, ValidationResult} from '@datagrok-libraries/compute-utils';
+import {dfToViewerMapping, richFunctionViewReport} from '@datagrok-libraries/compute-utils/shared-utils/export';
+import {getStartedOrNull, replaceForWindowsPath} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import type ExcelJS from 'exceljs';
 import {getCustomExports} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/webcomponents-vue';
@@ -27,7 +29,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
 import type {AugmentedStat, Status} from './components/TreeWizard/types';
 import {BehaviorSubject} from 'rxjs';
-import type * as Vue from 'vue';
+import * as Vue from 'vue';
 
 declare let ENABLE_VUE_DEV_TOOLS: any;
 
@@ -35,6 +37,41 @@ export function setVueAppOptions(app: Vue.App<any>) {
   app.config.compilerOptions.isCustomElement = (tag) => tag.startsWith('dg-') || tag === 'dock-spawn-ts';
   if (ENABLE_VUE_DEV_TOOLS)
     app.config.performance = true;
+}
+
+// fullScreen lifts the platform's cap on dialog content height, so a large dialog fills its size
+export type DialogSize = {width: number, height: number, fullScreen?: boolean};
+
+/** Mounts a Vue component into a modal platform dialog and resolves what the component reports. */
+export function showVueDialog<T>(
+  title: string,
+  component: Vue.Component,
+  props: Record<string, any>,
+  size: DialogSize,
+): Promise<T | null> {
+  return new Promise((resolve) => {
+    const host = ui.div([], {style: {width: '100%', height: '100%'}});
+    // the component renders its own buttons
+    const dialog = ui.dialog({title, showFooter: false});
+    let settled = false;
+    const app = Vue.createApp(component, {
+      ...props,
+      onDone: (result: T | null) => {
+        settled = true;
+        resolve(result);
+        dialog.close();
+      },
+    });
+    setVueAppOptions(app);
+    dialog.add(host);
+    dialog.onClose.subscribe(() => {
+      app.unmount();
+      if (!settled)
+        resolve(null);
+    });
+    dialog.show({modal: true, resizable: true, ...size, center: true});
+    app.mount(host);
+  });
 }
 
 export type NodeWithPath = {

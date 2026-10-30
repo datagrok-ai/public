@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import type ExcelJS from 'exceljs';
 import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
-import {richFunctionViewReport} from '@datagrok-libraries/compute-utils';
+import {richFunctionViewReport} from '@datagrok-libraries/compute-utils/shared-utils/export';
 import {closeViewsAfter, awaitWebComponents} from './utils';
 
 const PNG_PREFIX = 'iVBORw0KGgo';

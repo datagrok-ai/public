@@ -6,10 +6,11 @@ import {BehaviorSubject, EMPTY, Observable, Subject, from} from 'rxjs';
 import {catchError, filter, finalize, shareReplay, switchMap, take, tap} from 'rxjs/operators';
 import $ from 'cash-dom';
 import {historyUtils} from '../../history-utils';
+import {pullRunsByName} from './history-runs';
 import '../css/history-input.css';
 import {HistoricalRunsList} from './history-list';
 import {getStarted, isIncomplete} from '../../shared-utils/utils';
-import {extractStringValue, getMainParams} from '../../shared-utils/history';
+import {extractStringValue, getMainParams} from './history';
 
 class DatabaseService {
   static getHistoryRuns(
@@ -17,7 +18,7 @@ class DatabaseService {
     skipDfsOnInit: boolean = true,
   ): Observable<DG.FuncCall[]> {
     return from((async () => {
-      const res = await historyUtils.pullRunsByName(
+      const res = await pullRunsByName(
         funcName, [
           {author: grok.shell.user},
           // EXPLAIN WHY FUNC.PARAMS

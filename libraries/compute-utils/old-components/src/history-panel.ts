@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject} from 'rxjs';
-import {historyUtils} from '../../history-utils';
+import {pullRunsByName} from './history-runs';
 import '../css/history-panel.css';
 import {HistoricalRunsList} from './history-list';
 import {filter} from 'rxjs/operators';
@@ -69,7 +69,7 @@ export class HistoryPanel extends DG.Widget {
 
     const allRunsFetch = this.allRunsFetch.subscribe(async () => {
       ui.setUpdateIndicator(this.root, true);
-      historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {}, ['session.user', 'options'])
+      pullRunsByName(this.func.name, [{author: grok.shell.user}], {}, ['session.user', 'options'])
         .then((historicalRuns) => {
           ui.empty(this.root);
           this.root.appendChild(this.panel);

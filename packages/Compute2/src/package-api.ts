@@ -90,16 +90,19 @@ export namespace funcs {
     return await grok.functions.call('Compute2:CompareRuns', {});
   }
 
+  /**
+   * Browse saved runs of any model in My runs and in spaces, and open or compare them
+   */
+  export async function browseRuns(): Promise<void> {
+    return await grok.functions.call('Compute2:BrowseRuns', {});
+  }
+
   export async function viewerTestApp(): Promise<void> {
     return await grok.functions.call('Compute2:ViewerTestApp', {});
   }
 
   export async function formTestApp(): Promise<void> {
     return await grok.functions.call('Compute2:FormTestApp', {});
-  }
-
-  export async function historyTestApp(): Promise<void> {
-    return await grok.functions.call('Compute2:HistoryTestApp', {});
   }
 
   /**

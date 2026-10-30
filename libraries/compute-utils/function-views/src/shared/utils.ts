@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {RUN_ID_COL_LABEL, RUN_NAME_COL_LABEL, VIEWER_PATH} from '../../../shared-utils/consts';
-import {getPropViewers, getStarted} from '../../../shared-utils/utils';
+import {getPropViewers, getRunName, getStarted} from '../../../shared-utils/utils';
 
 export const getDefaultValue = (prop: DG.Property) => {
   // Before 1.19 the default value was in .defaultValue. In 1.19 it was moved to options.default
@@ -88,7 +88,7 @@ export const getDfFromRuns = (
   const comparisonDf = DG.DataFrame.create(comparedRuns.length);
   const uniqueRunNames = [] as string[];
   comparedRuns.forEach((run) => {
-    let defaultRunName = run.options['title'] ??
+    let defaultRunName = getRunName(run) ||
         `${run.func.name} - ${getStarted(run)}`;
     let idx = 2;
     while (uniqueRunNames.includes(defaultRunName)) {

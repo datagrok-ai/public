@@ -2,23 +2,41 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
-import {saveIsFavorite} from '../../shared-utils/history';
-import {deepCopy} from '../../shared-utils/utils';
+import {CUSTOM_VIEW_OPTION, deepCopy} from '../../shared-utils/utils';
 import {historyUtils} from '../../history-utils';
-import {take} from 'rxjs/operators';
-import {EditRunMetadataDialog} from '../../shared-components/src/history-dialogs';
+import type {RunMetadata, SaveTarget} from '../../history-utils/src/history-utils';
+
+/** The Save and Open dialogs a host gives the view; each resolves null when the user cancels. */
+export interface RunStorageHost {
+  // where and under which name to save a run
+  saveDialog: (call: DG.FuncCall) => Promise<{metadata: RunMetadata, target: SaveTarget} | null>;
+  // a saved run of the function, loaded with its inputs and outputs
+  openDialog: (func: DG.Func) => Promise<DG.FuncCall | null>;
+  // the function that opens this view, recorded on saved runs so that they open here again
+  customView?: string;
+}
 
 declare global {
   var initialURLHandled: boolean;
 }
 
 export abstract class CustomFunctionView extends DG.ViewBase {
-  public showHistory = new BehaviorSubject(false);
   public isReady = new BehaviorSubject(false);
 
-  public historyRoot = ui.div('', {style: {height: '100%', width: '100%'}});
-
   public funcCall?: DG.FuncCall;
+
+  private _runStorage?: RunStorageHost;
+
+  /** Set by the host that provides the Save and Open dialogs; without it the view has no History and Save buttons. */
+  get runStorage(): RunStorageHost | undefined {
+    return this._runStorage;
+  }
+
+  set runStorage(host: RunStorageHost | undefined) {
+    this._runStorage = host;
+    if (this.funcCall)
+      this.buildRibbonPanels();
+  }
 
   constructor(public funcNqName: string) {
     super();
@@ -79,13 +97,15 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     this.build();
   }
 
-  public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
+  public async saveRun(callToSave: DG.FuncCall, metadata?: RunMetadata, target?: SaveTarget): Promise<DG.FuncCall> {
     const callCopy = deepCopy(callToSave);
     await this.onBeforeSaveRun(callCopy);
 
     if (callCopy.id) callCopy.newId();
+    if (this.runStorage?.customView)
+      callCopy.options[CUSTOM_VIEW_OPTION] = this.runStorage.customView;
 
-    const savedCall = await historyUtils.saveRun(callCopy);
+    const savedCall = await historyUtils.saveRun(callCopy, {metadata, target});
     const loadedCall = await historyUtils.loadRun(savedCall.id);
 
     this.linkFunccall(loadedCall);
@@ -94,16 +114,29 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     return loadedCall;
   }
 
-  public async saveRunWithDialog(currentFuncCall: DG.FuncCall) {
-    const dialog = EditRunMetadataDialog.forFuncCall(currentFuncCall);
-    dialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
-      currentFuncCall.options['title'] = editOptions.title;
-      currentFuncCall.options['description'] = editOptions.description;
-      currentFuncCall.options['tags'] = editOptions.tags;
-      const loadedRun = await this.saveRun(currentFuncCall);
-      await saveIsFavorite(loadedRun, !!editOptions.isFavorite);
-    });
-    dialog.show({center: true, width: 500});
+  public async saveRunWithDialog(currentFuncCall: DG.FuncCall): Promise<DG.FuncCall | null> {
+    try {
+      const result = await this.runStorage?.saveDialog(currentFuncCall);
+      return result ? await this.saveRun(currentFuncCall, result.metadata, result.target) : null;
+    } catch (e: any) {
+      grok.shell.error(e);
+      return null;
+    }
+  }
+
+  /** Opens a saved run picked in the host's Open dialog. */
+  public async openRunWithDialog(): Promise<DG.FuncCall | null> {
+    try {
+      const run = await this.runStorage?.openDialog(DG.Func.byName(this.funcNqName));
+      if (!run)
+        return null;
+      this.linkFunccall(run);
+      await this.onAfterLoadRun(run);
+      return run;
+    } catch (e: any) {
+      grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`);
+      return null;
+    }
   }
 
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
@@ -119,7 +152,6 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     ui.empty(this.root);
     const rootItem = ui.div([
       this.buildIO(),
-      this.historyRoot,
     ], {style: {width: '100%', height: '100%', display: 'flex'}});
     this.root.appendChild(rootItem);
 
@@ -128,14 +160,15 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   }
 
   public buildRibbonPanels(): HTMLElement[][] {
-    const historyButton = ui.iconFA('history', () => this.showHistory.next(!this.showHistory.value), 'History');
+    const historyButton = ui.iconFA('history', () => this.openRunWithDialog(), 'Open a saved run');
     const saveButton = ui.iconFA('save', () => this.funcCall ? this.saveRunWithDialog(this.funcCall) : undefined, 'Save');
     const exportBtn = ui.comboPopup(
       ui.iconFA('arrow-to-bottom'),
       this.getFormats(),
       this.exportRun.bind(this),
     );
-    const newRibbonPanels: HTMLElement[][] = [[historyButton, saveButton, ...(this.hasExport() ? [exportBtn] : [] )]];
+    const newRibbonPanels: HTMLElement[][] =
+      [[...(this.runStorage ? [historyButton, saveButton] : []), ...(this.hasExport() ? [exportBtn] : [] )]];
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
   }

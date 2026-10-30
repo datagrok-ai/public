@@ -7,19 +7,19 @@ import {filter, take} from 'rxjs/operators';
 
 import {ViewerTestApp as ViewerAppInstance} from './apps/ViewerTestApp';
 import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
-import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
 import {provideDgViewService} from '@datagrok-libraries/webcomponents-vue';
-import {CustomFunctionView as CustomFunctionViewInst, historyUtils} from '@datagrok-libraries/compute-utils';
-import type {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
+import type {PipelineConfiguration} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
-import {HistoryApp} from './apps/HistoryApp';
+import {attachRunStorage} from './components/RunStorage/custom-function-view-runs';
+import {browseRuns} from './components/RunStorage/run-browser-dialog';
 import {setVueAppOptions} from './utils';
 import {openRunComparison} from './components/RunComparison/comparison-views';
-import {Subject} from 'rxjs';
 import {normalizePipelineInstanceConfig} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import type {
@@ -27,6 +27,7 @@ import type {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
+import {CUSTOM_VIEW_OPTION} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {runWorkflow, saveWorkflowRun} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import type {RunState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
@@ -41,9 +42,6 @@ import {ModelCatalogView,
   setModelCatalogEventHandlers,
   setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import dayjs from 'dayjs';
-
-// for compute-api pakage
-export const CFV = CustomFunctionViewInst;
 
 declare global {
   var initialURLHandled: boolean;
@@ -79,6 +77,7 @@ class Compute2ModelCatalogView extends ModelCatalogView {
   constructor(viewName: string, roleOnlyFilter = false) {
     super(viewName, roleOnlyFilter);
     this.ribbonMenu.group('Tools')
+      .item('Browse Runs...', () => grok.functions.call('Compute2:BrowseRuns'))
       .item('Compare Runs...', () => grok.functions.call('Compute2:CompareRuns'))
       .endGroup();
   }
@@ -163,27 +162,17 @@ export class PackageFunctions {
     setViewHierarchyData(call, view);
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    const updateFCBus = new Subject<DG.FuncCall>();
-
-    const app = Vue.createApp(HistoryApp, {name: view.funcNqName, showHistory: view.showHistory, updateFCBus: Vue.markRaw(updateFCBus)});
-    setVueAppOptions(app);
-
-    const sub = updateFCBus.subscribe((fc) => {
-      view.linkFunccall(fc);
-      view.onAfterLoadRun(fc);
-    });
-
-    app.mount(view.historyRoot);
+    const detach = attachRunStorage(view, call.func);
+    if (call.aux.initialRunId)
+      await view.loadRun(call.aux.initialRunId)
+        .catch((e) => grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`));
 
     grok.events.onViewRemoved.pipe(
       filter((closedView) => {
         return closedView === (view as any);
       }),
       take(1),
-    ).subscribe(() => {
-      sub.unsubscribe();
-      app.unmount();
-    });
+    ).subscribe(() => detach());
 
     return view;
   }
@@ -324,9 +313,11 @@ export class PackageFunctions {
   static async OpenWorkflowRun(
     @grok.decorators.param({options: {description: 'Meta FuncCall id of the saved workflow run'}}) id: string) {
     const metaCall = await historyUtils.shallowLoadRun(id);
-    const call = metaCall.func.prepare({});
+    // a run saved from a custom view opens in it again, unless that view is gone
+    const customView = metaCall.options[CUSTOM_VIEW_OPTION];
+    const call = ((customView && DG.Func.byName(customView)) || metaCall.func).prepare({});
     call.aux.initialRunId = id;
-    if (`${metaCall.func.options['editor'] ?? ''}`.startsWith('Compute2:')) {
+    if (`${call.func.options['editor'] ?? ''}`.startsWith('Compute2:')) {
       call.edit();
       return;
     }
@@ -358,6 +349,14 @@ export class PackageFunctions {
     openRunComparison();
   }
 
+  @grok.decorators.func({
+    name: 'Browse Runs',
+    description: 'Browse saved runs of any model in My runs and in spaces, and open or compare them',
+  })
+  static async BrowseRuns() {
+    await browseRuns();
+  }
+
 
   // Code for testing
 
@@ -382,17 +381,6 @@ export class PackageFunctions {
     grok.shell.addView(view);
   }
 
-
-  @grok.decorators.func()
-  static async HistoryTestApp() {
-    const view = new DG.ViewBase();
-    const app = Vue.createApp(HistoryAppInstance);
-    view.root.classList.remove('ui-panel');
-    setVueAppOptions(app);
-    app.mount(view.root);
-    view.name = 'HistoryTestApp';
-    grok.shell.addView(view);
-  }
 
   @grok.decorators.func({
     name: 'Mock Pipeline 1',

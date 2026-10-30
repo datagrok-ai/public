@@ -34,6 +34,5 @@ Read through `_package.settings` (`grok_Package_Get_Settings_Sync`, `js-api/src/
 | Property | Read at | What is gated |
 |---|---|---|
 | `roleOnlyModelFilter` (bool, default `false`) | `packages/Compute2/src/package.ts:103` | `modelCatalogOptions.roleOnlyFilter`: faster role-only model filter, drops the legacy `#model` tag branch |
-| `sharingMethod` (`none` \| `workspaces`, default `none`) | `packages/Compute2/src/sharing/sharing.ts:23-35` | `getShareAction()`: share-to-workspace action shown only for `workspaces` and when `isWorkspaceSharingAvailable()` |
 
 Host-package properties read through the deprecated `getProperties()`: `REPORT_BUG_URL` / `REQUEST_FEATURE_URL` in `libraries/compute-utils/function-views/src/custom-function-view.ts:208-212` and `old-views/src/function-view.ts:268-272`.

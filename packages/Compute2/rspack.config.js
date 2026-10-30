@@ -116,6 +116,8 @@ module.exports = (env = {}) => {
       'openchemlib/full.js': 'OCL',
       'rxjs': 'rxjs',
       'rxjs/operators': 'rxjs.operators',
+      // TestScheduler has to come from the platform's rxjs, the one the code under test uses
+      'rxjs/testing': 'rxjs.testing',
       'cash-dom': '$',
       'dayjs': 'dayjs',
       'wu': 'wu',

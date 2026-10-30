@@ -2,10 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME, COMPLETE_COLUMN_NAME, DESC_COLUMN_NAME, EXP_COLUMN_NAME, EXPERIMENTAL_TAG, FAVORITE_COLUMN_NAME, HistoryOptions, STARTED_COLUMN_NAME, HISTORY_SUPPORTED_COL_TYPES, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, storageName, VERSION_COLUMN_NAME} from './consts';
+import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME, COMPLETE_COLUMN_NAME, DESC_COLUMN_NAME, EXPERIMENTAL_TAG, EXP_COLUMN_NAME, FAVORITE_COLUMN_NAME, HistoryOptions, ID_COLUMN_NAME, STARTED_COLUMN_NAME, HISTORY_SUPPORTED_COL_TYPES, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, storageName, VERSION_COLUMN_NAME} from './consts';
 import dayjs from 'dayjs';
-import {ID_COLUMN_NAME} from './consts';
-import {getStartedOrNull, isIncomplete, getStarted, parseJsonOption} from './utils';
+import {getStartedOrNull, isIncomplete, getStarted, parseJsonOption} from '../../shared-utils/utils';
 
 export const getFavStorageName = (func: DG.Func) => {
   return `${storageName}_${func.name}_Fav`;

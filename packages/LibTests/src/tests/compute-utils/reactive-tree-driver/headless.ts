@@ -224,7 +224,7 @@ category('ComputeUtils: Driver headless saving', async () => {
       const [step1, step2] = (loaded as PipelineStateStatic<any, {}>).steps;
       expectDeepEqual([step1.funcCall.outputs.res, step2.funcCall.outputs.res], [3, 30]);
       expectDeepEqual([step1.isOutputOutdated, step2.isOutputOutdated], [false, false]);
-      expectDeepEqual(metaCall.options['title'], 'headless');
+      expectDeepEqual(metaCall.friendlyName, 'headless');
     } finally {
       await deleteRuns([metaCallId, ...callIds]);
     }

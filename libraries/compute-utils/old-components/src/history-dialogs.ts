@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject, fromEvent, race} from 'rxjs';
 import {map, take} from 'rxjs/operators';
-import {ItemMetadata} from '../../reactive-tree-driver/src/view/ViewCommunication';
 
 export type EditOptions = {
   title?: string,
@@ -12,7 +11,7 @@ export type EditOptions = {
   tags?: string[],
 }
 
-export type EditItemMetadata = ItemMetadata;
+export type EditItemMetadata = EditOptions;
 
 export class EditRunMetadataDialog extends DG.Dialog {
   private _onMetadataEdit = new Subject<EditOptions>();

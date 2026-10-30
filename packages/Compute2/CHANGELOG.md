@@ -2,6 +2,11 @@
 
 ## v.next
 
+* Help: Fixed the help panel staying empty for every later step after one help file failed to load
+* Runs: Added the Save run dialog: saves to My runs or a space with a name, description and tags; names are unique in a space, where a taken run name asks to replace it (the space link moves to the new run) and a name taken by another item is refused; its spaces open like folders, and clicking a run of a space offers to overwrite it. My runs lists all of the user's runs, including those saved to spaces but not the step runs saved as part of a workflow, and names can repeat there
+* Runs: The Runs panel, Model Hub's Tools > Browse Runs... and the Compare Runs run picker browse runs of all models or one in My runs and spaces like a file browser: subspaces as folders with `..` and a path, tree counts of the runs in a space and all its subspaces, linked subspaces under each parent, and filters that search a space and its subspaces and show where each run is; they offer tag and author filters, platform favorites, Edit details, Add to space for one or several runs and Delete with a confirmation for one or several runs (a run that fails to delete is named and stays selected, and the others are still deleted); they replace the history panel
+* Runs: Removed Share to workspace and the `sharingMethod` setting
+* Custom function views: Save opens the Save run dialog and History the Open run dialog instead of a docked history panel, so the whole view is the custom content; saved runs are listed under the custom view's function in the run browsers and open in that view again
 * Run compare: Several comparisons of the same runs open as tabs in one view; each tab has its own selected values, Hide equal values, chart and export, while index columns, mappings, matched columns and Hide outdated outputs are shared
 * Workflows: Fixed Run ready steps running a step before its debounced or async validators checked its new inputs, or before an async link set them; the workflow stays busy until they finish, and validator debounce applies to edits only
 * Workflows: Added `RunWorkflow` to run a workflow without UI from an initial configuration, as `StartWorkflow` takes it; it returns every step's values, status and validations, and a summary. `SaveWorkflowRun` saves the result to history
@@ -45,7 +50,7 @@
 * TreeWizard: Added duplicating a dynamic workflow item (step or nested workflow) from the tree; the copy keeps input and state values, and the outputs of a run step, and does not rerun init hooks
 * TreeWizard: The workflow Excel export adds a `000_summary.xlsx` with each step's status, run error, messages and inconsistent inputs, and each workflow's validations and step counts; custom exports get the same data from `getExportSummary` and `reportSummaryExcel`, and the step callback gets the `status`
 * TreeWizard: Step forms only render and bind (`skipLogic`): the workflow owns values, choices, validation, visibility and enabled state, and the form no longer overrides them
-* TreeWizard: Opt-in compact view for single-step workflows (`compactView: true`; no tree or navigation; save, share, history and export on the step ribbon, history always available)
+* TreeWizard: Opt-in compact view for single-step workflows (`compactView: true`; no tree or navigation; Save run, the Runs panel and export on the step ribbon, the Runs panel always available)
 * RFV: Default Excel export includes validation and consistency
 * Run compare: Fixed a fuzzy-named value taking a run's slot from an exact match declared after it
 * RFV: Graphics outputs (R/Python plots) render as images in their own panel instead of base64 text, and export to Excel

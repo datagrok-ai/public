@@ -32,7 +32,7 @@ category('Workflows: headless run', () => {
     const run: DG.FuncCall = await callFunc('Compute2:SaveWorkflowRun',
       {...workflow, state: result.state, metadata: {title: 'headless'}});
     try {
-      expectDeepEqual(run.options['title'], 'headless');
+      expectDeepEqual(run.friendlyName, 'headless');
       const saved = (await loadStateSnapshot(run)) as any;
       expectDeepEqual(saved.steps.map((step: any) => [step.funcCall.outputs.result, step.isOutputOutdated]),
         [[3, false], [40, false]]);

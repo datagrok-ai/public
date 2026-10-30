@@ -13,7 +13,7 @@ import {ValidationResult} from './data/common-types';
 import {DriverLogger, reportError} from './data/Logger';
 import {LinksData} from './runtime/LinksState';
 import {inspectConfig, inspectLinks} from './runtime/inspection';
-import {getStartedOrNull} from '../../shared-utils/utils';
+import {getRunName, getStartedOrNull} from '../../shared-utils/utils';
 
 export type CommandAck = {cid: number, result: any} | {cid: number, error: unknown};
 
@@ -236,8 +236,8 @@ export class Driver {
 
   private saveDynamicItem(msg: SaveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    const {title, description, tags} = msg;
-    return state.save(msg.uuid, {title, description, tags});
+    const {title, description, tags, target} = msg;
+    return state.save(msg.uuid, {title, description, tags, target});
   }
 
   private removeDynamicItem(msg: RemoveDynamicItem, state?: StateTree) {
@@ -283,12 +283,11 @@ export class Driver {
 
   private savePipeline(msg: SavePipeline, state?: StateTree) {
     this.checkState(msg, state);
-    const {title, description, isFavorite, tags} = msg;
-    return state.save(undefined, {title, description, isFavorite, tags}).pipe(
+    const {title, description, tags, target} = msg;
+    return state.save(undefined, {title, description, tags, target}).pipe(
       tap((call) => this.currentMetaCallData$.next({
         id: call?.id,
-        title: call?.options.title,
-        isFavorite,
+        title: call ? getRunName(call) : undefined,
         description: call?.options.description,
         tags: call?.options.tags,
         started: getStartedOrNull(call),
@@ -299,19 +298,19 @@ export class Driver {
 
   private loadPipeline(msg: LoadPipeline) {
     return from(loadInstanceState(msg.funcCallId)).pipe(
-      concatMap(([stateLoaded, metaCall, isFavorite]) => {
+      concatMap(([stateLoaded, metaCall]) => {
         if (isFuncCallSerializedState(stateLoaded))
           throw new Error(`Wrong pipeline config in wrapper FuncCall ${msg.funcCallId}`);
         if (!stateLoaded.nqName)
           throw new Error(`Pipeline config in wrapper FuncCall ${msg.funcCallId} missing nqName`);
         if (msg.config)
-          return of([stateLoaded, msg.config, metaCall, isFavorite] as const);
+          return of([stateLoaded, msg.config, metaCall] as const);
         return callHandler<PipelineConfiguration>(stateLoaded.nqName, {version: stateLoaded.version}).pipe(
           concatMap((conf) => from(getProcessedConfig(conf, this.logger))),
-          map((config) => [stateLoaded, config, metaCall, isFavorite] as const),
+          map((config) => [stateLoaded, config, metaCall] as const),
         );
       }),
-      map(([state, config, metaCall, isFavorite]) =>
+      map(([state, config, metaCall]) =>
         [StateTree.fromInstanceState({
           state,
           config,
@@ -320,15 +319,14 @@ export class Driver {
           batchLinks: true,
           mockMode: this.mockMode,
           logger: this.logger,
-        }), metaCall, isFavorite] as const),
-      concatMap(([state, metaCall, isFavorite]) => state.init().pipe(mapTo([state, metaCall, isFavorite] as const))),
-      tap(([state, metaCall, isFavorite]) => {
+        }), metaCall] as const),
+      concatMap(([state, metaCall]) => state.init().pipe(mapTo([state, metaCall] as const))),
+      tap(([state, metaCall]) => {
         this.states$.next(state);
         this.currentMetaCallData$.next({
           id: metaCall?.id,
-          title: metaCall?.options.title,
+          title: metaCall ? getRunName(metaCall) : undefined,
           description: metaCall?.options.description,
-          isFavorite,
           tags: metaCall?.options.tags,
           started: getStartedOrNull(metaCall),
         });

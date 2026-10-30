@@ -162,7 +162,7 @@ export function useReactiveTreeDriver(
   };
 
   const saveDynamicItem = (uuid:string, metaData?: ItemMetadata) => {
-    driver.sendCommand({event: 'saveDynamicItem', uuid, ...metaData});
+    return driver.sendCommand({event: 'saveDynamicItem', uuid, ...metaData});
   };
 
   const runStep = async (uuid: string) => {

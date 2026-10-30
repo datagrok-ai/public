@@ -36,7 +36,7 @@ Compute2/
       RFV/                  # Rich Function View - single function editor
       TreeWizard/           # Workflow tree navigation and step editor
       PipelineView/         # Pipeline flow visualization
-      History/              # Run history browser
+      RunStorage/           # Save run dialog and run browser (My runs and spaces)
       Inspector/            # Developer debug tool for RTD internals
       Logger/               # Real-time log viewer
     composables/

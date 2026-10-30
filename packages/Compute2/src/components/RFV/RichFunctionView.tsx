@@ -16,11 +16,12 @@ import {
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {tryParseJson} from '@datagrok-libraries/utils/src/string-utils';
-import {History} from '../History/History';
+import {RunBrowser} from '../RunStorage/RunBrowser';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {buildDiffGrokFromFunc} from '@datagrok-libraries/compute-utils/function-views/src/fitting/diff-studio/diff-grok-meta';
-import {richFunctionViewReport, SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
+import {richFunctionViewReport} from '@datagrok-libraries/compute-utils/shared-utils/export';
+import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {ScalarsPanel, ScalarsSection, ScalarState} from './ScalarsPanel';
 import {BehaviorSubject} from 'rxjs';
@@ -33,7 +34,6 @@ import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
 import {applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
 import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
-import {getShareAction} from '../../sharing/sharing';
 import {getToggledInputs} from './input-toggles';
 import {compareRibbonIcon} from '../RunComparison/comparison-views';
 
@@ -278,9 +278,9 @@ export const RichFunctionView = Vue.defineComponent({
     },
     // run history and the save icon: 'function' lists the function's runs, 'step' only runs saved
     // for this step (emits `saveToHistory`), 'workflow' the provider's saved runs (row emits
-    // `historyRunChosen`). The share icon follows the sharingMethod setting whenever history is on.
+    // `historyRunChosen`).
     history: {
-      type: Object as Vue.PropType<{mode: 'function' | 'step' | 'workflow', func?: DG.Func, version?: string}>,
+      type: Object as Vue.PropType<{mode: 'function' | 'step' | 'workflow', func?: DG.Func}>,
     },
     viewersHook: {
       type: Function as Vue.PropType<ViewersHook>,
@@ -299,7 +299,6 @@ export const RichFunctionView = Vue.defineComponent({
     'historyRunChosen': (_call: DG.FuncCall) => true,
     'stepRunChosen': (_call: DG.FuncCall, _readonly: boolean) => true,
     'saveToHistory': (_call: DG.FuncCall) => true,
-    'publishRun': (_call: DG.FuncCall) => true,
     'compareRequested': () => true,
     'runClicked': () => true,
     'actionRequested': (_actionUuid: string, _additionalParams?: Record<string, any>) => true,
@@ -356,7 +355,6 @@ export const RichFunctionView = Vue.defineComponent({
 
     const historyMode = Vue.computed(() => props.history?.mode);
     const isWorkflowHistory = Vue.computed(() => historyMode.value === 'workflow');
-    const shareAction = getShareAction();
 
     const formHidden = Vue.ref(false);
     const inputToggles = Vue.shallowRef<Utils.InputToggle[]>([]);
@@ -380,7 +378,13 @@ export const RichFunctionView = Vue.defineComponent({
       }
     };
 
-    const historyRef = Vue.shallowRef<InstanceType<typeof History> | undefined>(undefined);
+    const historyRef = Vue.shallowRef<InstanceType<typeof RunBrowser> | undefined>(undefined);
+
+    const historyFunc = () => props.history?.func ?? currentCall.value.func;
+    const onHistoryRunChosen = (chosenCall: DG.FuncCall, readonly: boolean) => isWorkflowHistory.value ?
+      emit('historyRunChosen', chosenCall) :
+      emit('stepRunChosen', chosenCall, readonly);
+
     const helpRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
     const formRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
     const dockSpawnRef = Vue.shallowRef<InstanceType<typeof DockManager> | undefined>(undefined);
@@ -763,18 +767,13 @@ export const RichFunctionView = Vue.defineComponent({
       }] : []),
       ...(props.history && (historyMode.value !== 'step' || exportsVisible.value) && !uiBlocked.value ? [{
         icon: historyMode.value === 'step' ? 'cloud-upload-alt' : 'save',
-        tooltip: 'Save run to history',
+        tooltip: 'Save run',
         onClick: () => emit('saveToHistory', currentCall.value),
       }] : []),
       ...(isComparable.value ? [compareRibbonIcon(() => emit('compareRequested'))] : []),
-      ...(props.history && shareAction && !uiBlocked.value ? [{
-        icon: 'share-alt',
-        tooltip: shareAction.tooltip,
-        onClick: () => emit('publishRun', currentCall.value),
-      }] : []),
       ...(props.history ? [{
         icon: 'history',
-        tooltip: 'Open history panel',
+        tooltip: 'Open runs panel',
         active: !historyHidden.value && !historyReadonly.value,
         onClick: () => toggleHistory(false),
       }] : []),
@@ -807,24 +806,18 @@ export const RichFunctionView = Vue.defineComponent({
           ref={dockSpawnRef}
         >
           { !historyHidden.value && props.history &&
-            <History
+            <RunBrowser
               key="__HISTORY__"
-              func={props.history.func ?? currentCall.value.func}
-              version={props.history.version}
-              allowOtherVersions={isWorkflowHistory.value}
-              savedOnly={historyMode.value === 'step'}
-              onRunChosen={(chosenCall) => isWorkflowHistory.value ?
-                emit('historyRunChosen', chosenCall) :
-                emit('stepRunChosen', chosenCall, historyReadonly.value)}
-              allowCompare={!isWorkflowHistory.value}
-              forceHideInputs={isWorkflowHistory.value}
-              showIsComplete={!isWorkflowHistory.value}
+              model={historyFunc()}
+              stepHistory={historyMode.value === 'step'}
+              openLabel={historyReadonly.value ? 'Open read-only' : 'Open'}
+              onOpen={(chosenCall: DG.FuncCall) => onHistoryRunChosen(chosenCall, historyReadonly.value)}
               dock-spawn-dock-type='right'
-              dock-spawn-dock-ratio={0.2}
-              dock-spawn-title={historyReadonly.value ? 'History (read-only load)' : 'History'}
+              dock-spawn-dock-ratio={0.3}
+              dock-spawn-title={historyReadonly.value ? 'Runs (read-only load)' : 'Runs'}
               dock-spawn-panel-icon='history'
               ref={historyRef}
-              class='overflow-scroll h-full'
+              class='h-full'
             /> }
           { !formHidden.value &&
               <div

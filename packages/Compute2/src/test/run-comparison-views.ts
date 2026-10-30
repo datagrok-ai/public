@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, expectArray, awaitCheck, waitUntil} from '@datagrok-libraries/test/src/test';
-import {historyUtils} from '@datagrok-libraries/compute-utils';
+import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {OUTPUT_OUTDATED_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {
@@ -8,7 +8,10 @@ import {
 } from '../components/RunComparison/comparison-views';
 import {ComparisonAddition, ComparisonService} from '../components/RunComparison/comparison-service';
 import {entryFromLiveCall} from '../components/RunComparison/entry-extraction';
-import {deleteSavedRun} from './utils';
+import {deleteSavedRun, deleteSavedWorkflow} from './utils';
+import {DAY_CALCULATION, withRunStorage} from './run-storage';
+import {runWorkflow, saveWorkflowRun} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 
 const snapshot = (name: string) => entryFromLiveCall(
   DG.Script.create('//name: rcViewsProbe\n//language: javascript\n//output: int x\nx = 1;').prepare(),
@@ -74,6 +77,39 @@ category('RunComparison: service', () => {
 });
 
 category('RunComparison: views', () => {
+  test('the run picker lists runs of all models and adds a selection of several models', () =>
+    withRunStorage(async (f) => {
+      const stamp = Date.now();
+      await f.saveDayRun(`RC day ${stamp}`);
+      const result = await runWorkflow('Bioreactorworkflowdemo:BioreactorWorkflow', '1.0');
+      const workflow = await saveWorkflowRun('Bioreactorworkflowdemo:BioreactorWorkflow', '1.0', result.state,
+        {title: `RC workflow ${stamp}`});
+      const handle = openRunComparison({model: DG.Func.byName(DAY_CALCULATION)});
+      const root = handle.view.root;
+      try {
+        const picker = modelPicker(root);
+        picker.open();
+        await awaitCheck(() => picker.items().includes('All models'), 'no All models option', 3000);
+        Array.from(root.querySelectorAll<HTMLElement>('.c2-runs-model-dropdown .c2-runs-row'))
+          .find((row) => row.textContent === 'All models')!.click();
+        const row = (name: string) => root.querySelector<HTMLElement>(`.c2-runs-row-name[title="${name}"]`)
+          ?.closest<HTMLElement>('.c2-runs-row');
+        await awaitCheck(() => !!row(`RC day ${stamp}`) && !!row(`RC workflow ${stamp}`),
+          'runs of both models should be listed', 15000);
+        row(`RC day ${stamp}`)!.dispatchEvent(new MouseEvent('click', {bubbles: true, detail: 1}));
+        row(`RC workflow ${stamp}`)!.dispatchEvent(new MouseEvent('click', {bubbles: true, detail: 1, ctrlKey: true}));
+        const add = () => Array.from(root.querySelectorAll<HTMLButtonElement>('button'))
+          .find((button) => button.textContent?.startsWith('Add selected runs'));
+        await awaitCheck(() => add()?.textContent === 'Add selected runs (2)', 'both runs should be selected', 3000);
+        add()!.click();
+        await awaitCheck(() => handle.service.entryNames.length === 2, 'both runs should be compared', 15000);
+        expectArray([...handle.service.entryNames].sort(), [`RC day ${stamp}`, `RC workflow ${stamp}`]);
+      } finally {
+        handle.view.close();
+        await deleteSavedWorkflow(workflow.id);
+      }
+    }));
+
   test('a snapshot without outdated outputs compares without asking', async () => {
     let called = false;
     confirmOutdated(snapshot('Current'), () => called = true);

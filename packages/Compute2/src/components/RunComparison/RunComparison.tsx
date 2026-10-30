@@ -2,15 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {onClickOutside} from '@vueuse/core';
 import {COMPARISON_SERVICE, ComparisonAddition} from './comparison-service';
 
 import {IconFA, ResizeHandle, ToggleInput, Tabs, ifOverlapping} from '@datagrok-libraries/webcomponents-vue';
 import {getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
-import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/src/model-handler';
+import {openSaveRunDialog} from '../RunStorage/SaveRunDialog';
+import {asItemMetadata, defaultRunName} from '../RunStorage/run-storage';
+import {RunBrowser} from '../RunStorage/RunBrowser';
 
-import {History} from '../History/History';
 import {
   ComparisonTarget, ColumnTarget, ColumnCandidate, CandidateOverrides,
   ComparisonEntry, NameMapping, UnitMapping,
@@ -40,16 +39,11 @@ export const RunComparison = Vue.defineComponent({
     },
   },
   setup(props) {
-    const isLoadingModels = Vue.ref(true);
     const isAddingRuns = Vue.ref(false);
     const isSaving = Vue.ref(false);
-    const models = Vue.shallowRef<DG.Func[]>([]);
     const selectedModel = Vue.shallowRef<DG.Func | undefined>(undefined);
     // models of compared snapshots that the model filter leaves out (no model role)
     const extraModels = Vue.shallowRef<DG.Func[]>([]);
-    const modelSearch = Vue.ref('');
-    const modelDropdownOpen = Vue.ref(false);
-    const modelDropdownRef = Vue.ref<HTMLElement>();
 
     const mergeSameFuncs = Vue.ref(true);
     const hideOutdated = Vue.ref(false);
@@ -70,21 +64,9 @@ export const RunComparison = Vue.defineComponent({
     const tabTitles = Vue.ref<Record<string, string>>({});
     let lastTabNumber = 1;
 
-    const historyHeight = Vue.ref(320);
+    const historyHeight = Vue.ref(440);
     const sidebarWidth = Vue.ref(360);
 
-    Vue.onMounted(async () => {
-      try {
-        const list = await grok.dapi.functions.filter(getModelFilter(props.roleOnlyFilter)).list();
-        models.value = list.map((f) => Vue.markRaw(f));
-      } catch (e: any) {
-        grok.shell.error(e);
-      } finally {
-        isLoadingModels.value = false;
-      }
-    });
-
-    onClickOutside(modelDropdownRef, () => modelDropdownOpen.value = false);
 
     // ids of runs to load are titled by the history selection when they come from it
     const addRunsById = async (ids: string[], titles = new Map<string, string>()) => {
@@ -115,15 +97,6 @@ export const RunComparison = Vue.defineComponent({
 
     Vue.inject(COMPARISON_SERVICE)!.connect({add, entryNames: () => entries.value.map((entry) => entry.name)});
 
-    const modelLabel = (f: DG.Func) => f.friendlyName ?? f.name;
-    const modelList = Vue.computed(() => [
-      ...models.value,
-      ...extraModels.value.filter((extra) => !models.value.some((f) => f.nqName === extra.nqName)),
-    ]);
-    const filteredModels = Vue.computed(() => {
-      const query = modelSearch.value.toLowerCase();
-      return modelList.value.filter((f) => !query || modelLabel(f).toLowerCase().includes(query));
-    });
 
     const tableInput = ui.input.table('Add table');
     const tableInputSub = tableInput.onChanged.subscribe(() => {
@@ -184,12 +157,16 @@ export const RunComparison = Vue.defineComponent({
     };
 
     const saveSnapshot = async (entry: ComparisonEntry) => {
-      const metadata = await new EditRunMetadataDialog(entry.snapshot!.metadata).awaitMetadata();
-      if (!metadata)
+      const {metadata, model} = entry.snapshot!;
+      if (!model)
+        return;
+      const result = await openSaveRunDialog({func: model, name: defaultRunName(model, undefined, metadata.title),
+        description: metadata.description, tags: metadata.tags});
+      if (!result)
         return;
       isSaving.value = true;
       try {
-        const run = await entry.snapshot!.save!(metadata);
+        const run = await entry.snapshot!.save!(asItemMetadata(result));
         const others = entries.value.filter((item) => item.id !== entry.id).map((item) => item.name);
         const named = withName(entry, uniqueEntryName(getRunTitle(run), others));
         const saved: ComparisonEntry = {...named, runId: run.id, snapshot: undefined};
@@ -383,46 +360,6 @@ export const RunComparison = Vue.defineComponent({
       </select>
     );
 
-    const renderModelSelector = () => (
-      <div ref={modelDropdownRef} style={{position: 'relative'}}>
-        <div
-          style={{
-            padding: '4px 8px', cursor: 'pointer', border: '1px solid var(--grey-2)',
-            borderRadius: '3px', userSelect: 'none', display: 'flex', justifyContent: 'space-between',
-          }}
-          onClick={() => {modelDropdownOpen.value = !modelDropdownOpen.value; modelSearch.value = '';}}
-        >
-          <span>{selectedModel.value ? modelLabel(selectedModel.value) : 'Select model...'}</span>
-          <span>&#9662;</span>
-        </div>
-        { modelDropdownOpen.value &&
-          <div style={{
-            position: 'absolute', top: '100%', left: '0', right: '0', zIndex: '100',
-            background: 'var(--white)', border: '1px solid var(--grey-2)',
-            borderRadius: '3px', maxHeight: '300px', overflow: 'auto', boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          }}>
-            <input
-              type='text'
-              placeholder='Filter models...'
-              value={modelSearch.value}
-              onInput={(e: Event) => modelSearch.value = (e.target as HTMLInputElement).value}
-              style={{width: '100%', padding: '4px 8px', border: 'none', borderBottom: '1px solid var(--grey-2)', outline: 'none'}}
-            />
-            { filteredModels.value.map((f) =>
-              <div
-                key={f.id}
-                style={{padding: '4px 8px', cursor: 'pointer'}}
-                class='hover:bg-slate-100'
-                onClick={() => {selectedModel.value = Vue.markRaw(f); modelDropdownOpen.value = false;}}
-              >{modelLabel(f)}</div>,
-            )}
-            { filteredModels.value.length === 0 &&
-              <div style={{padding: '4px 8px', color: 'var(--grey-4)'}}>No models found</div> }
-          </div>
-        }
-      </div>
-    );
-
     const renderBasket = () => (
       <div style={{display: 'flex', flexDirection: 'column'}}>
         <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Comparison set</div>
@@ -532,43 +469,41 @@ export const RunComparison = Vue.defineComponent({
           gap: '8px', padding: '8px', overflow: 'auto',
         }}>
           <div style={{fontWeight: 'bold'}}>Model</div>
-          { renderModelSelector() }
-          { selectedModel.value &&
-            <div style={{
-              height: `${historyHeight.value}px`, flexShrink: '0',
-              border: '1px solid var(--grey-1)', borderRadius: '3px',
-            }}>
-              <History
-                func={selectedModel.value}
-                allowCompare={false}
-                showIsComplete={true}
-                fallbackText='No runs found for this model'
-                onSelectionChanged={(calls: DG.FuncCall[]) => historySelection.value = calls.map((c) => Vue.markRaw(c))}
-              />
-            </div>
-          }
-          { selectedModel.value &&
-            <ResizeHandle
-              axis='y'
-              size={historyHeight.value}
-              min={150}
-              max={800}
-              onUpdate:size={(size) => historyHeight.value = size}
+          <div style={{
+            height: `${historyHeight.value}px`, flexShrink: '0',
+            border: '1px solid var(--grey-1)', borderRadius: '3px',
+          }}>
+            <RunBrowser
+              model={selectedModel.value}
+              onUpdate:model={(func?: DG.Func) => selectedModel.value = func && Vue.markRaw(func)}
+              selectModel={true}
+              allowAllModels={true}
+              extraModels={extraModels.value}
+              roleOnlyFilter={props.roleOnlyFilter}
+              allowCompare={false}
+              allowOpen={false}
+              showDetails={false}
+              onSelectionChanged={(calls: DG.FuncCall[]) => historySelection.value = calls.map((c) => Vue.markRaw(c))}
             />
-          }
-          { selectedModel.value &&
-            <button
-              onClick={addSelectedRuns}
-              disabled={historySelection.value.length === 0 || isAddingRuns.value}
-              style={{
-                padding: '4px 8px', cursor: 'pointer', borderRadius: '3px',
-                border: '1px solid var(--grey-2)',
-              }}
-            >
-              {isAddingRuns.value ? 'Adding...' :
-                `Add selected runs${historySelection.value.length ? ` (${historySelection.value.length})` : ''}`}
-            </button>
-          }
+          </div>
+          <ResizeHandle
+            axis='y'
+            size={historyHeight.value}
+            min={150}
+            max={800}
+            onUpdate:size={(size) => historyHeight.value = size}
+          />
+          <button
+            onClick={addSelectedRuns}
+            disabled={historySelection.value.length === 0 || isAddingRuns.value}
+            style={{
+              padding: '4px 8px', cursor: 'pointer', borderRadius: '3px',
+              border: '1px solid var(--grey-2)',
+            }}
+          >
+            {isAddingRuns.value ? 'Adding...' :
+              `Add selected runs${historySelection.value.length ? ` (${historySelection.value.length})` : ''}`}
+          </button>
           <div ref={(el) => {
             if (el && !(el as HTMLElement).contains(tableInput.root))
               (el as HTMLElement).appendChild(tableInput.root);
@@ -609,7 +544,7 @@ export const RunComparison = Vue.defineComponent({
           </div>
         </div>
       </div>,
-      [[ifOverlapping, isLoadingModels.value || isAddingRuns.value || isSaving.value, 'Loading...']],
+      [[ifOverlapping, isAddingRuns.value || isSaving.value, 'Loading...']],
     );
   },
 });

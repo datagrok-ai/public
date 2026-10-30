@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {DfExportEntry, prepareExportEntries} from './project-export-data';
+import {getRunName} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {modelLabel} from './components/RunStorage/run-storage';
 
 export type {DfExportEntry};
 
@@ -53,7 +55,7 @@ export async function saveCallToProject(call: DG.FuncCall, entries: DfExportEntr
   }
   const cloned = prepareExportEntries(call, entries);
   const layouts = cloned.map((entry) => captureTableLayout(entry.df, entry.viewers));
-  const name = call.options['title'] ?? call.func.friendlyName ?? call.func.name;
+  const name = getRunName(call) || modelLabel(call.func);
   try {
     const saved = await showProjectSaveDialog(cloned.map((e) => e.df), layouts, name, call.func.description ?? '');
     if (saved?.id)
