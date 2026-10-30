@@ -372,7 +372,7 @@ function fitGroup(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
   };
   if (models.length > 0)
     convert((own) => fitModels(models, cols, own));
-  for (const m of members.filter((m) => !isCall(m, 'Fit Model'))) {
+  for (const m of members.filter((m) => jslKey(m.name) !== 'fitmodel')) {
     const converter = PLATFORMS[jslKey(m.name)];
     if (!converter) {
       reasons.push(`JMP's ${m.name} isn't converted to Datagrok viewers yet`);

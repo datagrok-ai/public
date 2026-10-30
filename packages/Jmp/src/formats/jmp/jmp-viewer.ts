@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {filter, take} from 'rxjs/operators';
 
 import {badge, Control, div, divH, divV, icon, link, Section, show, signal, span} from '@datagrok-libraries/u2';
-import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 
 import {JmpTable} from './jmp-types';
 import {addSavedAnalyses, dataColumns, hideJmpHiddenColumns, jmpTableToDataFrame, savedAnalyses, skippedColumns}
@@ -34,7 +34,7 @@ export function createJmpTableView(table: JmpTable, fileName: string): DG.TableV
   const tv = DG.TableView.create(jmpTableToDataFrame(table, fileName.replace(/\.jmp$/i, '')), false);
   // A table view has no grid, and takes no viewers, until the shell shows it, as a preview or a view. The
   // context panel's small preview of the file builds a view it never shows, so it doesn't warn twice.
-  const shown = grok.events.onViewAdded.pipe(filter((v) => v.dart === tv.dart), take(1)).subscribe(() => {
+  ViewHost.of(tv).subscribe(grok.events.onViewAdded.pipe(filter((v) => v.dart === tv.dart), take(1)), () => {
     warnSkipped(table);
     hideJmpHiddenColumns(tv);
     addSavedAnalyses(tv, savedAnalyses(table));
@@ -43,7 +43,6 @@ export function createJmpTableView(table: JmpTable, fileName: string): DG.TableV
     about.setAttribute('aria-label', 'About this JMP file');
     tv.setRibbonPanels([...tv.getRibbonPanels(), [about]]);
   });
-  tv.subs.push(shown);
   return tv;
 }
 
@@ -85,7 +84,7 @@ export function showJmpSummary(table: JmpTable, fileName: string): DG.Dialog {
     return root;
   });
   const dialog = ui.dialog(fileName).add(content.root);
-  dialog.onClose.subscribe(() => content.dispose());
+  content.subscribe(dialog.onClose, () => content.dispose());
   return dialog.show();
 }
 
@@ -102,7 +101,7 @@ function analysesSection(analyses: JmpScriptConversion[]): Section {
   section.name = 'saved analyses';
   section.add(divV(analyses.map((a) => {
     const status = a.viewers.length > 0 ? a.viewers.map((v) => v.type).join(', ') :
-      a.platform !== undefined ? `Not converted: ${a.reason}` : a.reason;
+      a.platform !== undefined ? `Not converted: ${a.reason}` : a.reason ?? '';
     const scriptShown = signal(false);
     const toggle = link('Script', () => scriptShown.value = !scriptShown.value);
     toggle.dataset.u2Name = 'script toggle';
@@ -146,5 +145,5 @@ export function createJmpErrorView(fileName: string, reason: string): DG.ViewBas
     Object.assign(root.style, {gap: '8px', padding: '24px', alignItems: 'flex-start'});
     return root;
   });
-  return appView({name: fileName, content});
+  return ViewHost.create({name: fileName, content: () => content}).view;
 }
