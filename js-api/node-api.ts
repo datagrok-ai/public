@@ -9,6 +9,7 @@ export * from './src/interfaces/d4';
 export * from './src/const';
 export * from './src/events';
 export * from './src/dapi';
+export * from './src/domains';
 export * from './src/dataframe';
 export {BitArray} from './src/u2core/bit-array.js';
 export type {BitPredicate} from './src/u2core/bit-array.js';
