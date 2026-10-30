@@ -161,7 +161,7 @@ export class CombinedAISearchAssistant {
     if (this.lastUiprompt === prompt)
       return;
     this.lastUiprompt = prompt;
-    if (!await UsageLimiter.getInstance().tryCheckAndIncrement('search', prompt, 'Fast'))
+    if (!await UsageLimiter.getInstance().tryCheckAndIncrement('search', 'Fast'))
       return;
     // add components to right places in ui
     const searchResultHost = document.getElementsByClassName('power-pack-search-host')[0];
@@ -222,6 +222,7 @@ User query: ${prompt}`;
       const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt, {
         systemPromptMode: 'none',
         outputSchema: orderSchema,
+        feature: 'search',
       });
       const parsed = (res as {order?: unknown})?.order;
       if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string' && this.functions[s]) && parsed.length > 0)

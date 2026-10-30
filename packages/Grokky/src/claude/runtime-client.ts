@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
+import {_package} from '../package';
 
 export type ChunkEvent = {sessionId: string, content: string};
 export type ImageAttachment = {mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp', data: string};
@@ -42,6 +43,7 @@ export class ClaudeRuntimeClient {
   public onClose = new rxjs.Subject<void>();
   private _skillNames: string[] | null = null;
   private _resumable = new Set<string>();
+  private _turnFeatures = new Map<string, string>();
 
   private constructor() {}
 
@@ -133,6 +135,7 @@ export class ClaudeRuntimeClient {
         break;
       case 'final':
         this._resumable.add(data.sessionId);
+        this.logTurn(data.sessionId, data.metrics);
         this.onFinal.next({
           sessionId: data.sessionId, content: data.content,
           ...(data.structured_output ? {structured_output: data.structured_output} : {}),
@@ -143,14 +146,17 @@ export class ClaudeRuntimeClient {
         break;
       case 'error':
         this._resumable.add(data.sessionId);
+        this._turnFeatures.delete(data.sessionId);
         this.onError.next({sessionId: data.sessionId, message: data.message});
         break;
       case 'session_reset':
         this._resumable.delete(data.sessionId);
+        this._turnFeatures.delete(data.sessionId);
         this.onSessionReset.next({sessionId: data.sessionId});
         break;
       case 'aborted':
         this._resumable.add(data.sessionId);
+        this._turnFeatures.delete(data.sessionId);
         this.onAborted.next({sessionId: data.sessionId});
         break;
       case 'input_request':
@@ -185,9 +191,10 @@ export class ClaudeRuntimeClient {
 
   send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string;
     taskId?: string; clientTools?: {name: string; description: string; inputSchema?: object}[];
-    images?: ImageAttachment[]}): void {
+    images?: ImageAttachment[]; feature?: string}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
+    this._turnFeatures.set(sessionId, options?.feature ?? 'unknown');
     this.ws.send(JSON.stringify({
       type: 'user_message', sessionId, message,
       apiKey: grok.dapi.token,
@@ -240,7 +247,7 @@ export class ClaudeRuntimeClient {
   }
 
   async query(message: string, options?: {sessionId?: string, outputSchema?: object,
-    systemPromptMode?: string, timeoutMs?: number}): Promise<any> {
+    systemPromptMode?: string, timeoutMs?: number, feature?: string}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
     // Bounds a turn whose socket or runtime vanished: no final or error arrives then.
@@ -269,8 +276,29 @@ export class ClaudeRuntimeClient {
       this.send(sid, message, {
         ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
         ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
+        ...(options?.feature ? {feature: options.feature} : {}),
       });
     });
+  }
+
+  /** Parameter names avoid `token`: the platform's log redactor blanks any parameter named so. */
+  private logTurn(sessionId: string, metrics?: TurnServerMetrics): void {
+    const feature = this._turnFeatures.get(sessionId) ?? 'unknown';
+    this._turnFeatures.delete(sessionId);
+    if (!metrics)
+      return;
+    const params: {[key: string]: string | number} = {turnId: crypto.randomUUID(), chatId: sessionId, feature};
+    const values: {[key: string]: number | null} = {
+      inputCount: metrics.inputTokens, outputCount: metrics.outputTokens,
+      cacheReadCount: metrics.cacheReadTokens, cacheCreationCount: metrics.cacheCreationTokens,
+      costUsd: metrics.costUsd, numTurns: metrics.numTurns,
+      durationMs: metrics.durationMs, apiDurationMs: metrics.durationApiMs,
+    };
+    for (const [name, value] of Object.entries(values)) {
+      if (value != null)
+        params[name] = value;
+    }
+    _package.logger.usage('ai-turn', params, 'ai-turn');
   }
 
   disconnect(): void {

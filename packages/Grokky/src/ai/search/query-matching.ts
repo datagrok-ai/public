@@ -149,7 +149,7 @@ Analyze the user request and return a JSON object with:
 
   try {
     const rawResult = await ClaudeRuntimeClient.getInstance().query(`${systemPrompt}\n\n${userPrompt}`,
-      {outputSchema: schema});
+      {outputSchema: schema, feature: 'query-match'});
     if (rawResult.searchPattern === NO_MATCH)
       return null;
     const parametersRecord: Record<string, string> = {};

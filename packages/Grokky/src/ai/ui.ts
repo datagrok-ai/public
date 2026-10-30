@@ -47,6 +47,7 @@ interface StreamingOpts {
   sessionId?: string;
   outputSchema?: object;
   onFinal: (evt: FinalEvent, host: HTMLElement) => void | Promise<void>;
+  feature: string;
 }
 
 
@@ -110,7 +111,7 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     stopListening();
   });
 
-  client.send(sessionId, prompt, opts.outputSchema ? {outputSchema: opts.outputSchema} : undefined);
+  client.send(sessionId, prompt, {feature: opts.feature, ...(opts.outputSchema ? {outputSchema: opts.outputSchema} : {})});
   return widget;
 }
 
@@ -118,6 +119,7 @@ export async function smartExecution(prompt: string, sessionId?: string): Promis
   return streamingWidget(prompt, {
     sessionId,
     sessionPrefix: 'execute',
+    feature: 'execute',
     outputSchema: executionPlanSchema,
     onFinal: async (evt, host) => {
       const result = evt.structured_output as ExecutionPlan | undefined;
@@ -156,6 +158,7 @@ export async function askWiki(question: string, sessionId?: string): Promise<DG.
   return streamingWidget(question, {
     sessionId,
     sessionPrefix: 'help',
+    feature: 'help',
     onFinal: (evt, host) => {
       const md = ui.markdown(evt.content || '');
       md.style.userSelect = 'text';
@@ -252,7 +255,7 @@ export async function runPromptWithLifecycle(
     prompt = prompt.slice(1); // !!cmd → !cmd, falls through to normal pipeline
   else if (prompt.startsWith('!')) {
     const command = prompt.slice(1).trimStart();
-    if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, command))
+    if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory))
       return;
     await runClaudeStreaming(panel, command, view, 'bash');
     return;
@@ -281,7 +284,7 @@ export async function runPromptWithLifecycle(
       return;
     }
   }
-  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt)) {
+  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory)) {
     session?.endSession();
     return;
   }
@@ -541,6 +544,7 @@ async function streamOnce(
         const options = {
           ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
           ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
+          feature: resolvedMode === 'bash' ? 'bash' : 'chat',
         };
         // Queued-task admission (queue-task.ts): the queued call only holds the turn's
         // admission slot; the turn itself streams over this socket as usual.
