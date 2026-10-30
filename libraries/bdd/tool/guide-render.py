@@ -197,6 +197,9 @@ class Renderer:
         pad = 6
         x0, y0 = max(0, box['x'] - pad), max(0, box['y'] - pad)
         x1, y1 = min(self.w, box['x'] + box['width'] + pad), min(self.h, box['y'] + box['height'] + pad)
+        # a target outside the frame (scrolled off, or behind the window's edge) has nothing to light
+        if x1 <= x0 or y1 <= y0:
+            return img
         layer = Image.new('RGBA', (self.w, self.h), (0, 0, 0, 105))
         d = ImageDraw.Draw(layer)
         d.rounded_rectangle((x0, y0, x1, y1), radius=6, fill=(0, 0, 0, 0))
