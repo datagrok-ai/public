@@ -8,8 +8,7 @@ Feature: Statistics edge cases: no rows counted, one row, columns added, removed
   columns), so a calculated column added while it is open gets a row and a removed column loses its
   row. A renamed column is followed by the viewer's settings (the viewer base renames column
   settings on the table's rename event), so its row is shown under the new name with the same
-  numbers. Over no values the numeric statistics (avg, min, stdev) are empty, not 0 (the rule of
-  `viewer-rules-edge-cases.feature`). Data: demog-1000 (11 columns, AGE averages 45.68 over 1000 rows).
+  numbers. Over no values the numeric statistics (avg, min, stdev) are empty, not 0 (core#1125). Data: demog-1000 (11 columns, AGE averages 45.68 over 1000 rows).
 
   Background:
     Given user is logged in
@@ -74,7 +73,7 @@ Feature: Statistics edge cases: no rows counted, one row, columns added, removed
     And statistics viewer should not have a "row AGE" area
     And no errors should have been logged
 
-  @known-failure:85 @realizes:core#1125
+  @known-failure:84 @realizes:core#1125
   Scenario: A numeric column with no values has empty numeric statistics, not 0
     Today avg is empty but stdev reads 0.00.
     When user adds a calculated column "EMPTY" with formula "if(${AGE} > 1000, ${AGE}, null)"

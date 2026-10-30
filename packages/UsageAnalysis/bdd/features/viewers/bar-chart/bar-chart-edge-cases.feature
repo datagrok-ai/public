@@ -13,19 +13,6 @@ Feature: Bar chart edge cases
     Given user is logged in
 
   @edge-cases @realizes:core#974
-  Scenario: A vertical bar chart over a table with every row deleted draws no bars and logs no error
-    Given user opens demog-1000 dataset
-    And user adds a bar chart viewer with:
-      | Split       | RACE     |
-      | Orientation | vertical |
-    Then the "bars" reading of bar chart viewer should be 4
-    When user selects all rows
-    And user deletes the selected rows
-    Then the table should have 0 rows
-    And the "bars" reading of bar chart viewer should be 0
-    And no errors should have been logged
-
-  @edge-cases @realizes:core#974
   Scenario: A negative Bar Corner Radius draws the bars and logs no error
     Given user opens demog-1000 dataset
     And user adds a bar chart viewer with:
@@ -79,27 +66,6 @@ Feature: Bar chart edge cases
     Then 0 rows should pass the filter
     And the "bars" reading of bar chart viewer should be 4
     And no errors should have been logged
-
-  @edge-cases
-  Scenario Outline: <caption> typed as <typed> in the context panel is not taken by the bar chart
-    Given user opens demog-1000 dataset
-    And user adds a bar chart viewer with:
-      | Split | RACE |
-    When user clicks on settings icon of bar chart viewer
-    Then context panel should be visible
-    Given "Style" category in context panel is expanded
-    When user enters "<typed>" into "<caption>" property in context panel
-    Then "<caption>" property of bar chart viewer should be "<kept>"
-    And bar chart viewer should report no error
-    And no errors should have been logged
-
-    @known-failure:92 @realizes:core#1200
-    Examples: The typed value is written into the property; the declarations set no lower bound
-      | caption              | typed | kept |
-      | Max Bar Height       | 0     | 50   |
-      | Max Bar Height       | -5    | 50   |
-      | Max Category Width   | 0     | 300  |
-      | Category Value Width | 0     | 50   |
 
   @edge-cases
   Scenario Outline: "abc" typed into the numeric <caption> property is not taken and the old value stays

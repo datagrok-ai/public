@@ -1,7 +1,7 @@
 @viewers @edge-cases @realizes:viewers.heat-map
-Feature: Heat map edge cases — every row deleted, a column removed
-  The heat map on data changes its other features do not reach (a table filtered down to nothing:
-  `viewer-rules-edge-cases.feature`). A table whose rows are all deleted logs no error. A column removed from the table while the map shows it
+Feature: Heat map edge cases — a column removed
+  The heat map on data changes its other features do not reach (a table filtered down to nothing
+  or with every row deleted: `viewer-rules-edge-cases.feature`). A column removed from the table while the map shows it
   leaves the map with its band gone and the other columns kept, as a grid shows the table's
   columns. demog-1000, whose map shows its 11 columns.
 
@@ -12,14 +12,6 @@ Feature: Heat map edge cases — every row deleted, a column removed
     Then the "rows shown" reading of heat map viewer should be 1000
     And the "columns shown" reading of heat map viewer should be 11
     And heat map viewer should be painted
-
-  Scenario: Once every row of the table is deleted the map logs no error
-    When user selects all rows
-    And user deletes the selected rows
-    Then the table should have 0 rows
-    And the "rows" reading of heat map viewer should be 0
-    And heat map viewer should report no error
-    And no errors should have been logged
 
   Scenario: A column removed from the table leaves the map without its band and keeps the others
     Then heat map viewer should have a "column AGE" area
@@ -44,7 +36,7 @@ Feature: Heat map edge cases — every row deleted, a column removed
     And no rows should be selected
     And no errors should have been logged
 
-  @known-failure:61 @realizes:core#1202
+  @known-failure:53 @realizes:core#1202
   Scenario: A column hidden under Max Heatmap Columns stays hidden when the limit is raised (core#1202)
     When user sets "maxHeatmapColumns" property of heat map viewer to "5"
     Then the "columns shown" reading of heat map viewer should be 5

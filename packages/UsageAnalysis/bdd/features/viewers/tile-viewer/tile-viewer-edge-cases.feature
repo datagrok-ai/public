@@ -46,7 +46,7 @@ Feature: Tile viewer edge cases: nothing selected under Row Source Selected, one
     And the form designer should show value fields "CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, SEX, STARTED, USUBJID, WEIGHT"
     And no errors should have been logged
 
-  @known-failure:62 @realizes:core#1217
+  @known-failure:61 @realizes:core#1217
   Scenario: A card dropped into the (empty) lane gets an empty value
     Today the lane of the empty value has no name (the empty-category row of
     `viewer-rules-edge-cases.feature`), so there is no "(empty)" lane to drop the card into.
@@ -58,20 +58,9 @@ Feature: Tile viewer edge cases: nothing selected under Row Source Selected, one
     And user adds a tile viewer with:
       | Lanes Column Name | arm |
     Then the "lane of row 1" reading of tile viewer should be "x"
+    And tile viewer should have a "lane (empty)" area
     When user moves the pointer away from tile viewer
     And user drags the card of row 1 of tile viewer into lane "(empty)"
     Then the value of "arm" column in row 1 should be ""
     And the "lane of row 1" reading of tile viewer should be "(empty)"
-    And no errors should have been logged
-
-  Scenario: A card dragged between the lanes of a calculated column writes the lane's value
-    The edit is the user's: AGE_GROUP takes the value of the lane and AGE stays as it was.
-    When user adds a calculated column "AGE_GROUP" with formula "if(${AGE} > 40, \"old\", \"young\")"
-    And user sets "lanesColumnName" property of tile viewer to "AGE_GROUP"
-    Then the "lane of row 1" reading of tile viewer should be "young"
-    When user moves the pointer away from tile viewer
-    And user drags the card of row 1 of tile viewer into lane "old"
-    Then the "lane of row 1" reading of tile viewer should be "old"
-    And the value of "AGE_GROUP" column in row 1 should be "old"
-    And the value of "AGE" column in row 1 should be "26"
     And no errors should have been logged

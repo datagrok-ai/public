@@ -4,7 +4,7 @@ Feature: Box plot edge cases
   AGE by SEX. A table with every row deleted or every row filtered out, and a pointer moved over a
   plot shrunk below the size of its category axis, made the box plot throw on every frame or every
   mouse move; core#960 fixed them, and these scenarios hold them: no error is logged (every row
-  filtered out, and a removed category column: `viewer-rules-edge-cases.feature`). The group
+  filtered out or deleted, and a removed category column: `viewer-rules-edge-cases.feature`). The group
   comparison needs at least two groups: it goes when the filter leaves one SEX and comes back with
   both (help box-plot.md, "Group comparison": 2 groups give a t-test; `box_plot_group_comparison.dart`
   gates it on two categories or more).
@@ -16,14 +16,6 @@ Feature: Box plot edge cases
       | Value      | AGE |
       | Category 1 | SEX |
     Then box plot viewer should be painted
-
-  @edge-cases @realizes:core#960
-  Scenario: A box plot over a table with every row deleted logs no error
-    When user selects all rows
-    And user deletes the selected rows
-    Then the table should have 0 rows
-    And box plot viewer should report no error
-    And no errors should have been logged
 
   @edge-cases @realizes:core#960
   Scenario: The pointer over a box plot shrunk below its axes logs no error

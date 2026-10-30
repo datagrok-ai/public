@@ -44,5 +44,5 @@ Feature: URL parameters edge cases: a value of the wrong type
     Then the "Share BDDUrlEdgeP{time}" dialog should close
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
-    When user opens the address "/p/Admin.BDDUrlEdgeP{time}?lim=abc"
+    When user opens the address "/p/{login}.BDDUrlEdgeP{time}?lim=abc"
     Then an error or warning balloon matching "lim" should have been shown

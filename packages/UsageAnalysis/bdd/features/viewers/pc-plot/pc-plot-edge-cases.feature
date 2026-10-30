@@ -4,9 +4,8 @@ Feature: PC plot edge cases — a layout with line width 0, an unparsable font, 
   0 and density on, applied back to the view, renders and takes a hover without an error, and an
   Axis Font the browser cannot parse (`bold`) leaves the plot painting (both crashes of core#967,
   fixed). With a single column the plot reports "please select at least 2 columns" and a second
-  column brings it back (`validateState`, `pc_plot_core.dart`). A table whose rows are all deleted
-  leaves a plot that draws no line and logs no error (filtered down to nothing: the rules feature);
-  `lines drawn` and `rows shown` at 0 tell an empty source, not the ink, since the axes stay drawn.
+  column brings it back (`validateState`, `pc_plot_core.dart`). Filtered down to nothing or
+  with every row deleted: `viewer-rules-edge-cases.feature`.
   demog-1000, AGE, HEIGHT and WEIGHT.
 
   Background:
@@ -50,14 +49,6 @@ Feature: PC plot edge cases — a layout with line width 0, an unparsable font, 
     And the "lines drawn" reading of pc plot viewer should be 1000
     And no errors should have been logged
 
-  Scenario: Once every row of the table is deleted the plot draws no line and logs no error
-    When user selects all rows
-    And user deletes the selected rows
-    Then the table should have 0 rows
-    And pc plot viewer should show 0 rows
-    And the "lines drawn" reading of pc plot viewer should be 0
-    And no errors should have been logged
-
   @realizes:core#967
   Scenario: A transformation turned on releases the filter of the axis sliders it replaces (core#967)
     When user hovers over pc plot viewer
@@ -68,7 +59,7 @@ Feature: PC plot edge cases — a layout with line width 0, an unparsable font, 
     And all rows should pass the filter
     And no errors should have been logged
 
-  @known-failure:76 @realizes:core#1203
+  @known-failure:67 @realizes:core#1203
   Scenario: Log Columns on a column holding zero says the axis cannot be logarithmic (core#1203)
     When user sets "WEIGHT" column in row 1 to "0"
     And user sets "Log Columns" property of pc plot viewer to "WEIGHT"

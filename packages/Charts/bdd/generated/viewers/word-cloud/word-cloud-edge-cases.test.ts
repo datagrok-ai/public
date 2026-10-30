@@ -22,14 +22,14 @@ test.describe("Word cloud edge cases: the word column removed", () => {
   const session = feature(test, "features/viewers/word-cloud/word-cloud-edge-cases.feature", import.meta.url);
   test("Removing the word column logs no error", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.word-cloud", "@realizes:core#1136"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(11, "Given user is logged in", () => loggedIn(page));
-    await session.step(12, "And the package autostarts have completed", () => autostartsCompleted(page));
-    await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(14, "And user adds a word cloud viewer with:", () => addViewerWith(page, "word cloud", [["wordColumnName","RACE"]]), [["wordColumnName","RACE"]]);
-    await session.step(16, "Then the \"words\" reading of word cloud viewer should be 4", () => readingIs(page, "words", el("word cloud viewer"), 4));
-    await session.step(17, "And the \"rows shown\" reading of word cloud viewer should be 1000", () => readingIs(page, "rows shown", el("word cloud viewer"), 1000));
-    await session.step(23, "When user removes \"RACE\" column", () => removeColumn(page, "RACE"));
-    await session.step(24, "Then the table should not have a column \"RACE\"", () => hasNoColumn(page, "RACE"));
-    await session.step(25, "And no errors should have been logged", () => noErrors(page));
+    await session.step(10, "Given user is logged in", () => loggedIn(page));
+    await session.step(11, "And the package autostarts have completed", () => autostartsCompleted(page));
+    await session.step(12, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(13, "And user adds a word cloud viewer with:", () => addViewerWith(page, "word cloud", [["wordColumnName","RACE"]]), [["wordColumnName","RACE"]]);
+    await session.step(15, "Then the \"words\" reading of word cloud viewer should be 4", () => readingIs(page, "words", el("word cloud viewer"), 4));
+    await session.step(16, "And the \"rows shown\" reading of word cloud viewer should be 1000", () => readingIs(page, "rows shown", el("word cloud viewer"), 1000));
+    await session.step(22, "When user removes \"RACE\" column", () => removeColumn(page, "RACE"));
+    await session.step(23, "Then the table should not have a column \"RACE\"", () => hasNoColumn(page, "RACE"));
+    await session.step(24, "And no errors should have been logged", () => noErrors(page));
   });
 });

@@ -4,8 +4,7 @@ Feature: Sunburst edge cases: an empty hierarchy, a hierarchy column removed, On
   shows the viewer's message instead of a chart ("requires at least one categorical column",
   `sunburst-viewer.ts`). A hierarchy column removed from the table is dropped from the hierarchy
   (the viewer's column-removed handler), and the remaining rings are drawn. Switching On Click from
-  Filter to Select should give back the rows a clicked segment filtered out; it does not, a known
-  failure (public#4425). No rows, a renamed hierarchy column, a layout naming a missing column, and
+  Filter to Select gives back the rows a clicked segment filtered out (public#4425). No rows, a renamed hierarchy column, a layout naming a missing column, and
   the filter left by a closed sunburst or by the removed column of its clicked segment are rows of
   `viewer-rules-edge-cases.feature`. Data: demog-1000 (SEX F 553 / M 447; 10 segments over SEX,
   RACE).

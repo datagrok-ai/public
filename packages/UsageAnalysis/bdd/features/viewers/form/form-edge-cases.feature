@@ -9,7 +9,7 @@ Feature: Form viewer edge cases
   (`fixtures/cars-small.csv`, `fixtures/nx/spgi-legend-position-old.layout`). In an editable form,
   text typed into a numeric field leaves the cell as it was (core#1192), and a column removed from
   the table takes its field with it, on a default form and on a form built from chosen columns
-  (today the second keeps an empty field).
+  (core#1214: today the second brings back every other column).
 
   Background:
     Given user is logged in

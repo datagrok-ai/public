@@ -53,3 +53,16 @@ Feature: Forms viewer edge cases
     When user resets the filter
     Then the "pinned records" reading of forms viewer should be 1
     And no errors should have been logged
+
+  @edge-cases @known-failure:66 @realizes:public#4452
+  Scenario: A layout naming a field column the table no longer has shows the other fields
+    Today the forms viewer takes the removed column's name back into its fields and throws a
+    TypeError on every render.
+    When user sets "fields" property of forms viewer to "AGE, HEIGHT, SEX"
+    Then the "fields shown" reading of forms viewer should be 3
+    When user saves the layout of the current table view
+    And user removes "HEIGHT" column
+    And user loads the saved layout
+    Then the "fields shown" reading of forms viewer should be 2
+    And the "fields" reading of forms viewer should be "AGE, SEX"
+    And no errors should have been logged

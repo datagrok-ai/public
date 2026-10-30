@@ -1,8 +1,7 @@
 @viewers @realizes:viewers.density-plot
 Feature: Density plot edge cases
-  Edge cases of the density plot that the density plot audit core#1048 (open) found wrong, each
-  written as the behaviour the audit and the plot's own contract expect and tagged as a known failure
-  of core#1048: a click on a rectangular bin selects the rows counted in it (as it does for hexagons,
+  Edge cases of the density plot that the density plot audit core#1048 fixed, each written as the
+  behaviour the audit and the plot's own contract expect: a click on a rectangular bin selects the rows counted in it (as it does for hexagons,
   `density-plot-select-and-zoom.feature`); a change of Bins after a zoom bins the same rows while
   Bin To Range is off (the column's range is binned unless Bin To Range is on); a logarithmic X axis
   leaves out the rows it cannot place, so only the positive values are binned; and a column name with

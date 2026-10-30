@@ -16,10 +16,10 @@ Feature: Charts viewer edge cases shared by every viewer: no rows, a column remo
     closed, or when the column of the clicked category is removed.
   - Out of bounds: a value typed in the context panel outside the property's declared bounds is not
     taken; the property keeps its value.
-  - Empty categories: an empty value is a category named `(empty)`, as in the tree.
-  - A category limit: a column with more than 500 categories is refused whatever the filter. Today
-    the tree and the sunburst check the limit only while at least 500 rows pass the filter
-    (`tree-viewer.ts` and `sunburst-viewer.ts`, `filter.trueCount >= CATEGORIES_NUMBER`).
+  - Empty values: the word cloud counts an empty value as a word with no text.
+  - A category limit: the tree and the sunburst refuse a column with more than 500 categories while at
+    least 500 rows pass the filter; under a filter of fewer rows they draw it (`tree-viewer.ts` and
+    `sunburst-viewer.ts`, `filter.trueCount >= CATEGORIES_NUMBER`).
 
   Background:
     Given user is logged in

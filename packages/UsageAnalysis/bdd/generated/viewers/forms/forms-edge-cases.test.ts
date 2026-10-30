@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/forms/forms-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.forms]
+sub_features_covered: [viewers.forms, public#4452]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -21,10 +21,10 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clearSelection, deleteSelected, filterPassesFewer, filterTo, resetFilter, rowCount, selectAllRows, selectWhereIs} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {clearSelection, deleteSelected, filterPassesFewer, filterTo, removeColumn, resetFilter, rowCount, selectAllRows, selectWhereIs} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, noErrors, pickFromAreaContextMenu, readingAtLeast, readingIs, readingReads, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
+import {addViewer, loadLayout, noErrors, pickFromAreaContextMenu, readingAtLeast, readingIs, readingReads, saveLayout, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Forms viewer edge cases", () => {
   const session = feature(test, "features/viewers/forms/forms-edge-cases.feature", import.meta.url);
@@ -80,5 +80,22 @@ test.describe("Forms viewer edge cases", () => {
     await session.step(53, "When user resets the filter", () => resetFilter(page));
     await session.step(54, "Then the \"pinned records\" reading of forms viewer should be 1", () => readingIs(page, "pinned records", el("forms viewer"), 1));
     await session.step(55, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("A layout naming a field column the table no longer has shows the other fields", {tag: ["@viewers", "@realizes:viewers.forms", "@edge-cases", "@known-failure:66", "@realizes:public#4452"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(11, "Given user is logged in", () => loggedIn(page));
+    await session.step(12, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(13, "And user adds a forms viewer", () => addViewer(page, "forms"));
+    await session.step(14, "Then the \"fields shown\" reading of forms viewer should be 11", () => readingIs(page, "fields shown", el("forms viewer"), 11));
+    await knownFailure(async () => {
+      await session.step(61, "When user sets \"fields\" property of forms viewer to \"AGE, HEIGHT, SEX\"", () => setProperty(page, "fields", el("forms viewer"), "AGE, HEIGHT, SEX"));
+      await session.step(62, "Then the \"fields shown\" reading of forms viewer should be 3", () => readingIs(page, "fields shown", el("forms viewer"), 3));
+      await session.step(63, "When user saves the layout of the current table view", () => saveLayout(page));
+      await session.step(64, "And user removes \"HEIGHT\" column", () => removeColumn(page, "HEIGHT"));
+      await session.step(65, "And user loads the saved layout", () => loadLayout(page));
+      await session.step(66, "Then the \"fields shown\" reading of forms viewer should be 2", () => readingIs(page, "fields shown", el("forms viewer"), 2));
+      await session.step(67, "And the \"fields\" reading of forms viewer should be \"AGE, SEX\"", () => readingReads(page, "fields", el("forms viewer"), "AGE, SEX"));
+      await session.step(68, "And no errors should have been logged", () => noErrors(page));
+    }, 66);
   });
 });

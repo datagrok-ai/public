@@ -1,8 +1,7 @@
 @viewers @edge-cases @realizes:viewers.word-cloud
 Feature: Word cloud edge cases: the word column removed
   Guards for the changes under an open word cloud. Removing the word column while the cloud is open
-  throws "No such column" on the removal and on every later filter change and resize (core#1136):
-  that scenario is a known failure, and the tag goes when core#1136 is fixed. No rows, a renamed
+  raises no error (core#1136). No rows, a renamed
   word column, Rotation Step 0 typed in the context panel (public#4424) and an empty value are rows
   of `viewer-rules-edge-cases.feature`. Data: demog-1000, words from RACE (Caucasian 896, Other 62,
   Black 27, Asian 15).

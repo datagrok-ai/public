@@ -5,8 +5,8 @@ Feature: Tree edge cases: a column renamed under a filter, a hierarchy column re
   hierarchy; the tree keeps drawing and logs no error. A hierarchy column removed from the table is
   dropped from the hierarchy (the viewer's column-removed handler). An empty value is a branch named
   `(empty)` only while Include Nulls is on (the property's meaning; Charts tree/CLAUDE.md).
-  Switching On Click from Filter to Select should give back the rows a clicked branch filtered out;
-  it does not, a known failure (public#4425). No rows, a rename with every row passing, a removed
+  Switching On Click from Filter to Select gives back the rows a clicked branch filtered out
+  (public#4425). No rows, a rename with every row passing, a removed
   Size or Color column (public#4423), a layout naming a missing column, values typed out of bounds
   and the filter left by a closed tree are rows of `viewer-rules-edge-cases.feature`. Data:
   demog-1000 with the hierarchy CONTROL, SEX, RACE.

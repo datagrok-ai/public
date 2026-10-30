@@ -6,7 +6,7 @@ Feature: Tooltip edge cases: Edit Tooltip cancelled, every column unticked, a to
   (`tooltip.dart`, "Columns explicitly set to none"), which is not the same as no tooltip set: the
   box plot then shows no tooltip on its marker, where one ticked column brings the tooltip back. A
   column of the tooltip removed from the table is skipped and the remaining ones still show, without
-  an error; a renamed one should show under its new name, a known failure with no ticket yet. Data: demog-1000 with a box plot that inherits the table's tooltip (it lists exactly the
+  an error; a renamed one should show under its new name, a known failure (core#1215). Data: demog-1000 with a box plot that inherits the table's tooltip (it lists exactly the
   table's tooltip columns), Show Column Names Always, so the tooltip's columns are read by name; the
   tooltip is first set to AGE, SEX and WEIGHT in the dialog.
 

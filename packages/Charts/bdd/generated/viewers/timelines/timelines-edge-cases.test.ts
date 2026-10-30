@@ -67,7 +67,7 @@ test.describe("Timelines edge cases: a cleared color, long lane names, no rows, 
     await session.step(54, "And timelines viewer should be painted", () => painted(page, el("timelines viewer")));
     await session.step(55, "And no errors should have been logged", () => noErrors(page));
   });
-  test("An event whose End is earlier than its Start is drawn as a point", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.timelines"]}, async ({browser}) => {
+  test("An event whose End is earlier than its Start is drawn, as a point, in its own lane", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.timelines"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(9, "Given user is logged in", () => loggedIn(page));
     await session.step(10, "And the package autostarts have completed", () => autostartsCompleted(page));

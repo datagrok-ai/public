@@ -5,10 +5,9 @@ Feature: 3D scatter plot edge cases: no rows, columns removed or renamed, a tabl
   column settings and the on-viewer column selectors. A filter that removes every row leaves the
   plot with nothing to draw and no error, and the frame comes back with the rows. A renamed column
   is followed by every column setting that named it (the viewer base renames column settings on the
-  table's rename event). Three defects of core#1027 are pinned as known failures: removing the Size
-  column throws in the scene update, removing the Color column resets the X, Y and Z the user chose,
-  and a table swap and back takes the four column selectors off the plot. Each tag goes when
-  core#1027 is fixed. Data: demog-1000, X = AGE, Y = WEIGHT, Z = HEIGHT (872 rows with all three).
+  table's rename event). Removing the Size column draws on, removing the Color column keeps the X, Y
+  and Z the user chose, and a table swap and back keeps the four column selectors on the plot
+  (core#1027). Data: demog-1000, X = AGE, Y = WEIGHT, Z = HEIGHT (872 rows with all three).
 
   Background:
     Given user is logged in

@@ -37,57 +37,43 @@ Feature: Sankey and Chord edge cases — Source equal to Target, too many catego
     And "Too many categories to render." text in chord viewer should be absent
     And no errors should have been logged
 
-  @realizes:public#4420
-  Scenario: The Sankey's Source column removed from the table raises no error
-    Guards public#4420 (fixed): the Sankey kept reading the removed column and logged "No such
-    column: SEX" (`sankey.ts`, `getCol` in `prepareData`).
-    When user adds a sankey viewer
-    Then "Source" property of sankey viewer should be "SEX"
+  Scenario Outline: The <viewer>'s <property> column removed from the table raises no error
+    The viewer kept reading the removed column and logged "No such column: SEX" (`getCol`).
+    When user adds a <viewer> viewer
+    Then "<property>" property of <viewer> viewer should be "SEX"
     When user removes "SEX" column
     Then the table should not have a column "SEX"
     When user filters rows where "AGE" is between 30 and 50
     Then 494 rows should pass the filter
     And no errors should have been logged
 
-  @realizes:public#4421
-  Scenario: The Chord's From column removed from the table raises no error
-    Guards public#4421 (fixed): the Chord kept reading the removed column and logged "No such
-    column: SEX" (`chord-viewer.ts`, `getCol` in `draw`).
-    When user adds a chord viewer
-    Then "From" property of chord viewer should be "SEX"
-    When user removes "SEX" column
-    Then the table should not have a column "SEX"
-    When user filters rows where "AGE" is between 30 and 50
-    Then 494 rows should pass the filter
-    And no errors should have been logged
+    @realizes:public#4420
+    Examples: The Sankey (`sankey.ts`, `prepareData`)
+      | viewer | property |
+      | sankey | Source   |
 
-  @known-failure:73 @realizes:public#4462
-  Scenario: A Sankey whose Value column holds negative values refuses to draw and says so, as the pie does
-    The pie chart refuses a negative angle column with "sum(NEG) contains negative values"
-    (`pie_chart_core.dart`, `_aggregate`); the Sankey should refuse the same way. The claim reads
-    the words the two messages share.
-    When user adds a calculated column "NEG" with formula "-${AGE}"
+    @realizes:public#4421
+    Examples: The Chord (`chord-viewer.ts`, `draw`)
+      | viewer | property |
+      | chord  | From     |
+
+  Scenario Outline: A Sankey whose Value column holds <values> refuses to draw and says so, as the pie does
+    The pie chart refuses such an angle column with "<message>" (`pie_chart_core.dart`,
+    `_aggregate`); the Sankey should refuse the same way. The claim reads the words the two messages
+    share.
+    When user adds a calculated column "<column>" with formula "<formula>"
     And user adds a sankey viewer
     Then "Value" property of sankey viewer should be "AGE"
-    When user sets "Value" property of sankey viewer to "NEG"
-    Then sankey viewer should contain the text "contains negative values"
+    When user sets "Value" property of sankey viewer to "<column>"
+    Then sankey viewer should contain the text "<words>"
     And no errors should have been logged
     When user sets "Value" property of sankey viewer to "AGE"
     Then "Caucasian" text in sankey viewer should be visible
-    And sankey viewer should not contain the text "contains negative values"
+    And sankey viewer should not contain the text "<words>"
     And no errors should have been logged
 
-  @known-failure:88 @realizes:public#4462
-  Scenario: A Sankey whose Value column holds only zeros refuses to draw and says so, as the pie does
-    The pie chart refuses an angle column of zeros with "sum(ZERO): all values are 0"
-    (`pie_chart_core.dart`, `_aggregate`); the Sankey should refuse the same way.
-    When user adds a calculated column "ZERO" with formula "0"
-    And user adds a sankey viewer
-    Then "Value" property of sankey viewer should be "AGE"
-    When user sets "Value" property of sankey viewer to "ZERO"
-    Then sankey viewer should contain the text "all values are 0"
-    And no errors should have been logged
-    When user sets "Value" property of sankey viewer to "AGE"
-    Then "Caucasian" text in sankey viewer should be visible
-    And sankey viewer should not contain the text "all values are 0"
-    And no errors should have been logged
+    @known-failure:68 @realizes:public#4462
+    Examples: Today the Sankey draws with no message
+      | values          | column | formula | message                           | words                    |
+      | negative values | NEG    | -${AGE} | sum(NEG) contains negative values | contains negative values |
+      | only zeros      | ZERO   | 0       | sum(ZERO): all values are 0       | all values are 0         |

@@ -56,7 +56,7 @@ test.describe("URL parameters edge cases: a value of the wrong type", () => {
     await session.step(44, "Then the \"Share BDDUrlEdgeP{time}\" dialog should close", () => dialogCloses(page, session.text("Share BDDUrlEdgeP{time}")));
     await session.step(45, "When user picks \"Close All\" from the context menu of browse tab", () => pickFromContextMenu(page, "Close All", el("browse tab")));
     await session.step(46, "Then the \"Home\" view should be current", () => viewIsCurrent(page, "Home"));
-    await session.step(47, "When user opens the address \"/p/Admin.BDDUrlEdgeP{time}?lim=abc\"", () => openAddress(page, session.text("/p/Admin.BDDUrlEdgeP{time}?lim=abc")));
+    await session.step(47, "When user opens the address \"/p/{login}.BDDUrlEdgeP{time}?lim=abc\"", () => openAddress(page, session.text("/p/{login}.BDDUrlEdgeP{time}?lim=abc")));
     await session.step(48, "Then an error or warning balloon matching \"lim\" should have been shown", () => errorOrWarningBalloonMatching(page, "lim"));
   });
 });

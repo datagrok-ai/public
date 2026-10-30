@@ -5,6 +5,8 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
   rows, none with AGE between 500 and 600. The Charts viewers' rows are in packages/Charts/bdd.
   - No rows: with every row filtered out a viewer shows no row, draws nothing, reports no error and
     shows no message; the rows come back with the filter.
+  - Every row deleted: a viewer over a table whose rows are all deleted draws nothing and reports no
+    error.
   - A column removed: a column a viewer uses for an encoding (color, size, lanes, category) leaves
     the viewer's settings and nothing is logged. A viewer may pick another column in its place (the
     box plot picks another category). The bar chart's Stack is in bar-chart-edge-cases.feature.
@@ -42,6 +44,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
       | viewer          | property             | value               | drawn           |
       | bar chart       | splitColumnName      | RACE                | rows shown      |
       | box plot        | valueColumnName      | AGE                 | rows shown      |
+      | correlation plot | rowSource           | Filtered            | rows shown      |
       | heat map        | rowSource            | Filtered            | rows shown      |
       | histogram       | valueColumnName      | AGE                 | rows shown      |
       | matrix plot     | rowSource            | Filtered            | rows shown      |
@@ -53,6 +56,30 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
       | tile viewer     | lanesColumnName      | RACE                | tiles           |
       | tree map        | splitByColumnNames   | RACE, SEX           | leaves          |
       | trellis plot    | yColumnNames         | RACE                | rows shown      |
+
+  Scenario Outline: Once every row of the table is deleted a <viewer> draws nothing and logs no error
+    When user adds a <viewer> viewer with:
+      | <property> | <value> |
+    Then the "<drawn>" reading of <viewer> viewer should be at least 1
+    When user selects all rows
+    And user deletes the selected rows
+    Then the table should have 0 rows
+    And the "<drawn>" reading of <viewer> viewer should be 0
+    And <viewer> viewer should report no error
+    And no errors should have been logged
+
+    Examples:
+      | viewer          | property           | value               | drawn           |
+      | bar chart       | splitColumnName    | RACE                | bars            |
+      | box plot        | valueColumnName    | AGE                 | rows shown      |
+      | calendar        | onClick            | Select              | rows shown      |
+      | heat map        | rowSource          | Filtered            | rows shown      |
+      | line chart      | xColumnName        | AGE                 | markers drawn   |
+      | matrix plot     | rowSource          | Filtered            | rows shown      |
+      | network diagram | node1ColumnName    | RACE                | rows shown      |
+      | pc plot         | columnNames        | AGE, HEIGHT, WEIGHT | lines drawn     |
+      | pie chart       | categoryColumnName | RACE                | slices          |
+      | pivot table     | rowSource          | Filtered            | aggregated rows |
 
   Scenario Outline: The <property> column removed from the table leaves the settings of the <viewer>
     When user adds a <viewer> viewer with:
@@ -89,7 +116,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
       | tree map     | splitByColumnNames   | RACE, SEX           | SEX    | GENDER    | RACE, GENDER         |
       | trellis plot | yColumnNames         | RACE                | RACE   | ORIGIN    | ORIGIN               |
 
-    @known-failure:78 @realizes:core#1213
+    @known-failure:105 @realizes:core#1213
     Examples: A Filter formula keeps the old name: the rename handler renames column settings only (`DataFrameViewer._renameColumnInLook`)
       | viewer       | property | value       | column | new name | renamed       |
       | scatter plot | filter   | ${AGE} > 44 | AGE    | YEARS    | ${YEARS} > 44 |
@@ -111,11 +138,6 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
       | pc plot      | columnNames          | AGE, HEIGHT, WEIGHT | HEIGHT | AGE, HEIGHT, WEIGHT |
       | tree map     | splitByColumnNames   | RACE, SEX           | SEX    | RACE, SEX           |
 
-    @known-failure:106 @realizes:public#4452
-    Examples: The forms viewer takes the removed column's name back into its fields and throws a TypeError on every render
-      | viewer       | property             | value               | column | left                |
-      | forms        | fields               | AGE, HEIGHT, SEX    | HEIGHT | AGE, HEIGHT, SEX    |
-
   Scenario Outline: Closing a <viewer> gives back the rows its click filtered out
     When user adds a <viewer> viewer with:
       | <property> | <value> |
@@ -131,7 +153,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
       | viewer    | property        | value | area      |
       | bar chart | splitColumnName | RACE  | bar Asian |
 
-    @known-failure:127 @realizes:core#233
+    @known-failure:149 @realizes:core#233
     Examples: The calendar leaves the table filtered until something else asks for a refilter
       | viewer   | property | value  | area           |
       | calendar | onClick  | Filter | month 1990-01  |
@@ -146,7 +168,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     Then all rows should pass the filter
     And no errors should have been logged
 
-    @known-failure:146 @realizes:core#1174
+    @known-failure:168 @realizes:core#1174
     Examples: The removal does not refilter the table; the rows come back on the next refilter
       | viewer    | property             | value              | area                            | column |
       | bar chart | splitColumnName      | RACE               | bar Asian                       | RACE   |
@@ -160,12 +182,18 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     Then "<caption>" property of <viewer> viewer should be "<kept>"
     And no errors should have been logged
 
-    @known-failure:160 @realizes:core#1200
+    @known-failure:182 @realizes:core#1200
     Examples: The value is written into the property although the input marks it invalid
       | viewer       | category | caption            | typed | kept |
       | histogram    | X Axis   | Bins               | 201   | 20   |
       | pie chart    | Misc     | Max Radius         | 600   | 150  |
       | trellis plot | Misc     | Tiles Per Row      | 11    | 4    |
+      | bar chart    | Style    | Max Bar Height       | 0     | 50   |
+      | bar chart    | Style    | Max Bar Height       | -5    | 50   |
+      | bar chart    | Style    | Max Category Width   | 0     | 300  |
+      | bar chart    | Style    | Category Value Width | 0     | 50   |
+      | pie chart    | Misc     | Start Angle          | -30   | 0    |
+      | pie chart    | Misc     | Start Angle          | 400   | 0    |
 
   Scenario Outline: <property> set through the API outside its declared bounds is not taken by the <viewer>
     When user adds a <viewer> viewer
@@ -173,7 +201,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     Then "<property>" property of <viewer> viewer should be "<kept>"
     And no errors should have been logged
 
-    @known-failure:173 @realizes:core#1200
+    @known-failure:201 @realizes:core#1200
     Examples: The value is written into the property
       | viewer       | property         | set | kept |
       | histogram    | bins             | 201 | 20   |
@@ -194,7 +222,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     And the "<shown>" reading of <viewer> viewer should be 3
     And the "<reading>" reading of <viewer> viewer should contain "(empty)"
 
-    @known-failure:195 @realizes:core#1217
+    @known-failure:223 @realizes:core#1217
     Examples: The tile viewer shows the empty value as a lane with no name ("x, y, ")
       | viewer      | property        | shown | reading    |
       | tile viewer | lanesColumnName | tiles | lane names |

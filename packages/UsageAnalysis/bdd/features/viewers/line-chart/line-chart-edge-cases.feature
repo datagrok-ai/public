@@ -3,8 +3,7 @@ Feature: Line chart edge cases — a log Y axis below zero, an empty row set, a 
   The line chart on data and settings its other features do not reach. `Chemical Space X` starts at
   −4.25 and 41 of spgi-100's values are not positive, so a logarithmic Y axis over it drops them as
   the logarithmic X axis does (`line-chart-axes-and-filter.feature`). A table filtered down to
-  nothing takes a Shift-drag that selects nothing, a table whose rows are all deleted draws no
-  point, and the Y column removed from the table while the chart shows it raises no error (core#1100
+  nothing takes a Shift-drag that selects nothing (every row deleted: `viewer-rules-edge-cases.feature`), and the Y column removed from the table while the chart shows it raises no error (core#1100
   lists it among the cases that render without errors). SPC computes its process average over the
   rows that pass the filter (`spc average` is "the filtered process mean"): with the first 50
   CAST Idea IDs kept (634783 to 634834) their Chemical Space X averages 2.497, against 3.483 over
@@ -37,14 +36,6 @@ Feature: Line chart edge cases — a log Y axis below zero, an empty row set, a 
     And the "rows selected" reading of line chart viewer should be 0
     And no errors should have been logged
 
-  Scenario: Once every row of the table is deleted the chart draws no point and logs no error
-    When user selects all rows
-    And user deletes the selected rows
-    Then the table should have 0 rows
-    And the "rows shown" reading of line chart viewer should be 0
-    And the "markers drawn" reading of line chart viewer should be 0
-    And no errors should have been logged
-
   Scenario: The Y column removed from the table while the chart shows it raises no error
     When user removes "Chemical Space X" column
     Then the table should not have a column "Chemical Space X"
@@ -63,7 +54,7 @@ Feature: Line chart edge cases — a log Y axis below zero, an empty row set, a 
     Then 50 rows should pass the filter
     And the "spc average" reading of line chart viewer should be between 2.4 and 2.6
 
-  Scenario: X Min and X Max outside every X value are kept and the data stays in view
+  Scenario: X Min and X Max outside every X value are kept in the settings, and the window still shows the data
     When user sets properties of line chart viewer:
       | X Min | 700000 |
       | X Max | 800000 |

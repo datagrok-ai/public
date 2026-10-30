@@ -3,12 +3,10 @@ Feature: Trellis plot edge cases: Tiles Per Row 0, keys after a table swap, a la
   Guards for the property bounds and the changes under an open trellis plot (no rows, a renamed
   split column and Tiles Per Row above its maximum: `viewer-rules-edge-cases.feature`).
   Closing the trellis gives back the rows its clicked cell filtered out (a filter that outlives its
-  viewer is a defect, core#233). Three defects of core#1057 are pinned as known failures. Tiles Per
-  Row declares 1..10 (`trellis_plot_look.dart`), yet 0 typed in the context panel is taken, and on a
-  one-column trellis every render then throws a truncating division by zero. After the trellis is
-  set to another table and back, the arrow keys no longer move the current cell. A click on a
-  category label under a filter selects rows the filter removed, while a cell click selects only the
-  rows that pass it. Each tag goes when core#1057 is fixed. Data: demog-1000, SEX by RACE, scatter
+  viewer is a defect, core#233). Tiles Per Row 0 typed in the context panel on a one-column
+  trellis logs no error; after the trellis is set to another table and back, the arrow keys move
+  the current cell; a click on a category label under a filter selects only the rows that pass it,
+  as a cell click does (core#1057). Data: demog-1000, SEX by RACE, scatter
   plots inside.
 
   Background:

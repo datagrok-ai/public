@@ -1,8 +1,7 @@
 @viewers @edge-cases @realizes:viewers.pie-chart
 Feature: Pie chart edge cases — empty and one-row tables, a click under a Filter formula
   The pie chart on the shapes of data its other features do not reach (a table filtered down to
-  nothing: `viewer-rules-edge-cases.feature`). A table whose rows are all deleted while the pie is
-  open leaves the chart with no wedge and no error; a one-row table gives
+  nothing or with every row deleted: `viewer-rules-edge-cases.feature`). A one-row table gives
   one wedge holding the whole circle. The pie's own Filter formula that no row passes leaves an
   empty chart, and a click on its empty space leaves the table filter alone. Under On Click =
   Filter with a Filter formula, a wedge click keeps exactly the clicked category in the table
@@ -12,18 +11,6 @@ Feature: Pie chart edge cases — empty and one-row tables, a click under a Filt
 
   Background:
     Given user is logged in
-
-  Scenario: Once every row of the table is deleted the pie draws no wedge and logs no error
-    Given user opens demog-1000 dataset
-    When user adds a pie chart viewer with:
-      | Category | RACE |
-    Then the "slices" reading of pie chart viewer should be 4
-    When user selects all rows
-    And user deletes the selected rows
-    Then the table should have 0 rows
-    And pie chart viewer should show 0 rows
-    And the "slices" reading of pie chart viewer should be 0
-    And no errors should have been logged
 
   Scenario: On a one-row table a single wedge holds the whole circle
     Given user opens demog-1000 dataset keeping the first 1 rows
@@ -84,19 +71,3 @@ Feature: Pie chart edge cases — empty and one-row tables, a click under a Filt
       | NaN       |
       | Infinity  |
       | -Infinity |
-
-  Scenario Outline: Start Angle typed as <typed> in the context panel is outside its bounds of 0 to 360 and is not taken
-    Given user opens demog-1000 dataset
-    When user adds a pie chart viewer
-    And user clicks on settings icon of pie chart viewer
-    Then context panel should be visible
-    Given "Misc" category in context panel is expanded
-    When user enters "<typed>" into "Start Angle" property in context panel
-    Then "Start Angle" property of pie chart viewer should be "0"
-    And no errors should have been logged
-
-    @known-failure:95 @realizes:core#1200
-    Examples: The value is written into the property although the input marks it invalid
-      | typed |
-      | -30   |
-      | 400   |

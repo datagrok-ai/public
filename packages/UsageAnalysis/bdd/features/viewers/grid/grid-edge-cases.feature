@@ -39,7 +39,9 @@ Feature: Grid edge cases
     range". Remove the tag when core#1137 is fixed and this scenario passes.
     When user sets "Frozen Columns" property of grid to "20"
     And user picks "Pin > Unpin Column" from the context menu of the "header AGE" area of grid
-    Then no errors should have been logged
+    Then the "column order" reading of grid should contain "AGE"
+    And grid should have a "header AGE" area
+    And no errors should have been logged
 
   @edge-cases
   Scenario Outline: Frozen Columns typed in the context panel as <typed> is not taken
@@ -51,13 +53,13 @@ Feature: Grid edge cases
     Then "Frozen Columns" property of grid should be "1"
     And no errors should have been logged
 
-    @known-failure:51 @realizes:core#1137
+    @known-failure:53 @realizes:core#1137
     Examples: The typed value is taken
       | typed |
       | 20    |
       | -1    |
 
-  @edge-cases @known-failure:72 @realizes:core#1137
+  @edge-cases @known-failure:74 @realizes:core#1137
   Scenario: Frozen Columns is brought down to the column count when columns are removed
     When user sets "Frozen Columns" property of grid to "6"
     And user removes "DEMOG" column
@@ -95,7 +97,7 @@ Feature: Grid edge cases
     Then the value of "AGE" column in row 11 should be "46"
     And no errors should have been logged
 
-  @edge-cases @known-failure:104 @realizes:core#1193
+  @edge-cases @known-failure:106 @realizes:core#1193
   Scenario: A read-only grid keeps its rows on Shift+Delete
     When user sets "Allow Edit" property of grid to "false"
     And user clicks on the "row header 5" area of grid holding Control
@@ -120,7 +122,7 @@ Feature: Grid edge cases
     And the "row order" reading of grid should be "3, 1, 4, 2"
     And no errors should have been logged
 
-  @edge-cases @known-failure:133 @realizes:core#1195
+  @edge-cases @known-failure:135 @realizes:core#1195
   Scenario: A column group named with spaces only is not made
     When user clicks on the "header AGE" area of grid holding Control
     And user clicks on the "header SEX" area of grid holding Control
@@ -134,7 +136,7 @@ Feature: Grid edge cases
     And "SEX" column should have tag "group" equal to ""
     And no errors should have been logged
 
-  @edge-cases @known-failure:142 @realizes:core#1194
+  @edge-cases @known-failure:144 @realizes:core#1194
   Scenario: Shift+Enter selects nothing while Allow Row Selection is off
     When user sets "Allow Row Selection" property of grid to "false"
     And user clicks on the "cell 1 of SEX" area of grid
@@ -142,7 +144,7 @@ Feature: Grid edge cases
     Then no rows should be selected
     And no errors should have been logged
 
-  @edge-cases @known-failure:150 @realizes:core#1194
+  @edge-cases @known-failure:152 @realizes:core#1194
   Scenario: Shift+Enter selects only the same rows that pass the filter
     When user filters rows where "AGE" is between 20 and 30
     And user clicks on the "cell 1 of SEX" area of grid
@@ -150,7 +152,7 @@ Feature: Grid edge cases
     Then every selected row should pass the filter
     And no errors should have been logged
 
-  @edge-cases @known-failure:160 @realizes:core#1191
+  @edge-cases @known-failure:162 @realizes:core#1191
   Scenario: Twelve rows pinned show ten, and the grid says that pinned rows are hidden
     When user clicks on the "row header 1" area of grid
     And user clicks on the "row header 12" area of grid holding Shift
@@ -159,7 +161,7 @@ Feature: Grid edge cases
     Then the "pinned rows" reading of grid should be 10
     And a warning balloon containing "10" should have been shown
 
-  @edge-cases @known-failure:172 @realizes:core#1191
+  @edge-cases @known-failure:174 @realizes:core#1191
   Scenario: Unpin All Rows unpins the pinned rows the grid does not show
     When user clicks on the "row header 1" area of grid
     And user clicks on the "row header 12" area of grid holding Shift
@@ -172,7 +174,7 @@ Feature: Grid edge cases
     Then the "pinned rows" reading of grid should be 0
     And no errors should have been logged
 
-  @edge-cases @known-failure:184 @realizes:core#1196
+  @edge-cases @known-failure:186 @realizes:core#1196
   Scenario: A pinned row deleted and brought back by Control+Z is pinned again
     When user picks "Pin > Pin Row" from the context menu of the "cell 3 of USUBJID" area of grid
     Then the "pinned rows" reading of grid should be 1
@@ -184,20 +186,20 @@ Feature: Grid edge cases
     And the "pinned rows" reading of grid should be 1
     And no errors should have been logged
 
-  @edge-cases @known-failure:191 @realizes:core#1197
+  @edge-cases @known-failure:193 @realizes:core#1197
   Scenario: Default HTML Form with no column ticked cannot be confirmed
     When user picks "Add > Summary Columns > Default HTML Form" from the context menu of the "cell 2 of USUBJID" area of grid
     Then "Select columns..." dialog should be visible
     And OK button in "Select columns..." dialog should be disabled
 
-  @edge-cases @known-failure:198 @realizes:core#1198
+  @edge-cases @known-failure:200 @realizes:core#1198
   Scenario: A malformed number format marks the format field invalid
     When user picks "Format > Custom..." from the context menu of the "header AGE" area of grid
     Then Format AGE dialog should be visible
     When user enters "0.0.0" into Custom input in Format AGE dialog
     Then Custom input in Format AGE dialog should be invalid
 
-  @edge-cases @known-failure:206 @realizes:core#1198
+  @edge-cases @known-failure:208 @realizes:core#1198
   Scenario: A malformed number format is not taken and the old format stays
     When user picks "Format > Custom..." from the context menu of the "header AGE" area of grid
     Then Format AGE dialog should be visible
@@ -249,7 +251,7 @@ Feature: Grid edge cases
     Then "Row Height" property of grid should be "28"
     And no errors should have been logged
 
-    @known-failure:249 @realizes:core#1200
+    @known-failure:251 @realizes:core#1200
     Examples: The typed value is taken although the property declares 1..500
       | typed |
       | 0     |

@@ -77,8 +77,8 @@ None.
 **Decided (2026-10-30):** a lanes column with more than 20 categories cannot be picked as Lanes; closing
 the form designer's tab after deleting a field works as it does today. Neither has a scenario.
 
-**Decided:** a drag between the lanes of a calculated column writes the lane's value, as any edit
-of a calculated column is allowed (2026-10-30, core#1237): claimed in `tile-viewer-edge-cases.feature`.
+**Decided:** a drag between the lanes of a calculated column writes the lane's value: core#1237 was
+closed as won't fix (2026-10-30), not tested.
 
 #### 3. API or Dart tests to write
 

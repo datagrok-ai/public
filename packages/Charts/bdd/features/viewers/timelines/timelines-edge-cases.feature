@@ -54,7 +54,7 @@ Feature: Timelines edge cases: a cleared color, long lane names, no rows, End be
     And timelines viewer should be painted
     And no errors should have been logged
 
-  Scenario: An event whose End is earlier than its Start is drawn as a point
+  Scenario: An event whose End is earlier than its Start is drawn, as a point, in its own lane
     Given user opens a table "reversed" with:
       | subject | start      | end        |
       | s1      | 2020-01-01 | 2020-01-10 |

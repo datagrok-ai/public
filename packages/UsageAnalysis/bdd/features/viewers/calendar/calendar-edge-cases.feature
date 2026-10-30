@@ -1,8 +1,7 @@
 @viewers @realizes:viewers.calendar
 Feature: Calendar edge cases
   Guards for the calendar at the edges of its data and its lifecycle, on demog-1000 (32 rows start
-  in January 1990). A calendar over a table whose rows are all deleted counts nothing and logs no
-  error. Closing a calendar whose On Click = Filter click is filtering the table (the open defect
+  in January 1990). Every row deleted is a row of `viewer-rules-edge-cases.feature`. Closing a calendar whose On Click = Filter click is filtering the table (the open defect
   core#233) is a row of `viewer-rules-edge-cases.feature`.
 
   Background:
@@ -11,16 +10,7 @@ Feature: Calendar edge cases
     And user adds a calendar viewer
     Then the "rows shown" reading of calendar viewer should be 1000
 
-  @edge-cases
-  Scenario: A calendar over a table with every row deleted counts no rows and logs no error
-    When user selects all rows
-    And user deletes the selected rows
-    Then the table should have 0 rows
-    And the "rows shown" reading of calendar viewer should be 0
-    And calendar viewer should not have a "busiest day" area
-    And no errors should have been logged
-
-  @edge-cases @known-failure:33 @realizes:core#1221
+  @edge-cases @known-failure:23 @realizes:core#1221
   Scenario: The calendar's click filter stays when a category is toggled in the filter panel, and goes when On Click is switched to Select
     The category click releases the calendar's filter: 553 rows pass (every F row), not the 19 F rows
     of January 1990.
@@ -35,7 +25,7 @@ Feature: Calendar edge cases
     Then 553 rows should pass the filter
     And no errors should have been logged
 
-  @edge-cases @known-failure:51 @realizes:core#1222
+  @edge-cases @known-failure:41 @realizes:core#1222
   Scenario: A calendar over a date column whose values are all empty shows a "No data" message instead of a grid
     The calendar reports no message.
     Given user opens a table "empty-dates" with:
@@ -52,7 +42,7 @@ Feature: Calendar edge cases
     And calendar viewer should not have a "days" area
     And no errors should have been logged
 
-  @edge-cases @known-failure:59 @realizes:core#1222
+  @edge-cases @known-failure:49 @realizes:core#1222
   Scenario: Removing the date column of an open calendar shows a "No data" message instead of a grid
     The calendar reports no message.
     When user removes "STARTED" column
