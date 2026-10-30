@@ -2,6 +2,8 @@
 
 ## v.next
 
+* DataTable: Short values (an id, a code) are no longer cut off when a crowded table fits its columns; long text and headers give way instead
+* Forms: Fixed a long read-only caption overflowing the label column and pushing its value out of line
 * VirtualTree: `locked` takes the reason a checkbox cannot be toggled, read out on the box
 * Forms: A read-only structure field shows the drawn molecule instead of its SMILES; added `Editors.registerDisplay`/`display`, which cards and tables use for the same picture
 * Inputs: Fixed `disabled: false` (and `input.disabled = false`) from plain JS turning the input off with no reason and taking it out of its form's verdict; `false` now means on

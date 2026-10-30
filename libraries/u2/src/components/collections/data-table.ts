@@ -68,7 +68,7 @@ const MAX_HEADER_HEIGHT = 28;
 const MIN_COLUMN_WIDTH = 32;
 /** The floor of a column without a width: ten characters or so beside the cell's padding. */
 const SHARE_MIN_WIDTH = 80;
-const FIT = {rows: 100, padding: 16, sort: 20, max: 400};
+const FIT = {rows: 100, padding: 16, sort: 20, max: 400, short: 140};
 
 export class DataTable<T> extends VirtualRows<T> {
   private _columns: DataTableColumn<T>[];
@@ -297,14 +297,16 @@ export class DataTable<T> extends VirtualRows<T> {
         return c;
       const head = Math.ceil(textWidth(c.header ?? c.name, `bold ${font}`)) + FIT.padding +
         (this._sort === undefined ? 0 : FIT.sort);
-      let widest = head;
+      let values = 0;
       for (const [i, item] of items.entries()) {
         const content = c.render === undefined ? DataTable._text(item, c.name) : c.render(item, i, scratch);
         const label = typeof content === 'string' ? content : content.textContent ?? '';
-        widest = Math.max(widest, Math.ceil(textWidth(label, font)) + FIT.padding);
+        values = Math.max(values, Math.ceil(textWidth(label, font)) + FIT.padding);
       }
-      const width = Math.min(widest, FIT.max);
-      return {...c, width: `minmax(${Math.max(head, Math.min(Number(track[1]), width))}px, ${width}fr)`};
+      const width = Math.min(Math.max(head, values), FIT.max);
+      // short values (an id, a code) never truncate: a crowded table squeezes its long text and headers instead
+      const floor = Math.max(Number(track[1]), Math.min(values, FIT.short));
+      return {...c, width: `minmax(${floor}px, ${width}fr)`};
     });
     this._template = DataTable._templateOf(this._columns);
     this._head.style.gridTemplateColumns = this._template;
