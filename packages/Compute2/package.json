@@ -75,7 +75,8 @@
   "category": "Compute",
   "grok": {
     "testDependencies": [
-      "@datagrok/webcomponents"
+      "@datagrok/webcomponents",
+      "@datagrok/bioreactorworkflowdemo"
     ]
   },
   "meta": {
