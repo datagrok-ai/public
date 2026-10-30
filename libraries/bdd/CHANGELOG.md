@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Session: The shell is reset only after its preloader is gone, so a reload with a start-up URL (a script, a project) no longer has its view replace the Home view a step expects
+
 * Vocabulary: Added `user drags the {string} area of {widget} to the first|last position` — a grid column header onto the ⇤ or ⇥ drop zone a grid wider than its view shows beside itself during the drag
 * Guides: A drag from one element to another is filmed through the page's mouse, pressed on the source's text, so the video shows it; a native select whose list did not open takes the option on the typing, and no Enter follows it into the dialog around the select, which took it as OK
 * Audits: The layout, errors, balloons and operability audits fail a scenario by default (`report` and `off` stay a project's or `BDD_AUDIT`'s choice; leaks stay `off`); the library accepts the platform's grid ribbon icons "Remove selected rows/columns", off with no reason
