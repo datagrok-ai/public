@@ -1,6 +1,6 @@
 # Chem changelog
 
-## v.next
+## 1.17.18 (2026-10-30)
 
 * MPO: Fixed the score preview not appearing after picking a profile on platform 1.27.x
 
