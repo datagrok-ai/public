@@ -198,9 +198,11 @@ export class DomainChildren extends Control {
         this._sources.set(entry.id, child);
         state.current.value = child;
         // the parent's id is the same on every row here, and the column is not the user's to edit
-        const shape = this._grids[entry.table.address] ?? this._grids[entry.table.address.split('.').pop()!] ?? {};
-        // a row opens from its name, or from its key where it has none
-        const open = shape.open ?? entry.table.info.nameColumn ?? entry.table.info.businessKey[0];
+        const configured = this._grids[entry.table.address] ?? this._grids[entry.table.address.split('.').pop()!];
+        const shape = configured ?? {};
+        // a tab nothing configured opens a row from its name, or from its key where it has none
+        const open = configured !== undefined ? shape.open :
+          entry.table.info.nameColumn ?? entry.table.info.businessKey[0];
         const grid = this.mode === 'grid' ? domains.grid(child, {hiddenColumns: [entry.fk], columns: shape.columns,
           ...(open === undefined ? {} : {open: {column: open, run: (r: RowView) => entry.table.open(r)}})}) : null;
         const body = grid?.root ??

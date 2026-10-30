@@ -237,7 +237,7 @@ scoped('the column tracks follow the column types, so a wide table is not a wall
   assert.equal(of('weight'), 'minmax(48px, 0.5fr)');
   assert.equal(of('due'), 'minmax(96px, 0.8fr)');
   assert.equal(of('description'), 'minmax(72px, 1fr)');
-  assert.equal(of('project_id'), 'minmax(96px, 1.5fr)', 'a reference reads as a name, not as an id');
+  assert.equal(of('project_id'), 'minmax(104px, 1.5fr)', 'a reference reads as a name, not as an id');
   // ten columns of minimums must still fit a pane, or the last one is off-screen behind a
   // scrollbar the rows (absolutely positioned) never paint
   const floor = tracks.reduce((sum, t) => sum + Number(/minmax\((\d+)px/.exec(t)[1]), 0);

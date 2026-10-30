@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Pages: A table page nothing configured heads a row with its name and picture, also one kept in a table extending it one to one (a compound's structure), and lays the fields out in columns; a configured table keeps its app's pages
+* Links: Fixed a page of links firing one query per cell, which held back the search: captions are read in one query per table
+* Cards: Molfiles, InChIs and other machine strings are left out of a card's description lines
 * Children: A child row opens from its name (or its key) in a tab's grid with nothing configured, and the tabs keep room for a long table name and its count
 * Grids: Fixed a grid over a read-only source (an external table bound without writes, the trash) taking cell edits it can never save
 * Links: Fixed a link into an external table showing its encoded key (`SINGLE%20PROTEIN`) instead of the row's name

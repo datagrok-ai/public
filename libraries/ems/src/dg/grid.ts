@@ -354,14 +354,17 @@ export class DomainDataTable extends Control {
     if (prop !== undefined && Editors.displays(prop))
       return `${Math.round((DomainDataTable.PICTURE_ROW_HEIGHT - 4) * 1.5) + 8}px`;
     switch (prop?.propertyType ?? prop?.type) {
-      case 'bool': case 'int': case 'bigint': case 'double': case 'float': case 'num':
+      case 'bigint':
+        // an external key: six or seven digits, read whole
+        return 'minmax(64px, 0.5fr)';
+      case 'bool': case 'int': case 'double': case 'float': case 'num':
         return 'minmax(48px, 0.5fr)';
       case 'datetime':
         return 'minmax(96px, 0.8fr)';
       default:
         // a reference reads as the target's name, not as the id behind it: it grows like the name
         // column, but keeps a smaller floor — a wide table of refs must still fit a pane
-        return prop !== undefined && DomainTable.isReference(prop) ? 'minmax(96px, 1.5fr)' :
+        return prop !== undefined && DomainTable.isReference(prop) ? 'minmax(104px, 1.5fr)' :
           'minmax(72px, 1fr)';
     }
   }

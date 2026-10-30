@@ -3,6 +3,7 @@ import {domains, DomainTable} from './facade.js';
 import {DomainAddress} from './address.js';
 import {DomainApp} from './app.js';
 import {DomainErrors} from './errors.js';
+import {GenericPage} from './generic-page.js';
 
 /** The view for a `/domains` address, null where the platform keeps the address: anything that is
  * not a table route (`/domains`, `/domains/<schema>` — the schema gallery and the diagram stay
@@ -31,11 +32,8 @@ export async function route(address: string): Promise<DG.ViewBase | null> {
     return null;
   // the platform's own address is the canonical one, and a list opened from it follows the server
   // like the app a package mounts does — two addresses onto one table must not behave differently
-  // nothing configured this table: the conditions beside the rows, cards where a picture tells them apart,
-  // a table of columns where nothing does
-  const pictured = DomainTable.pictureOf(handle.properties) !== undefined;
-  const view = handle.app({path: base, live: true, filters: {mode: 'builder', placement: 'left'},
-    ...pictured ? {mode: 'cards' as const, itemHeight: 96} : {view: 'table' as const}});
+  const view = handle.app({path: base, live: true,
+    ...DomainTable.isConfigured(handle.address) ? {} : GenericPage.options(handle)});
   await DomainApp.of(view)!.open(rest);
   return view;
 }

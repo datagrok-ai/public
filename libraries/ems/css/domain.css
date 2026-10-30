@@ -800,3 +800,34 @@
 .u2-domain-app-invisible {
   visibility: hidden;
 }
+
+.u2-domain-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--dg-space-l);
+  padding: var(--dg-space-s) var(--dg-space-m) var(--dg-space-m);
+}
+
+.u2-domain-header-picture:empty {
+  display: none;
+}
+
+.u2-domain-header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--dg-text-color);
+}
+
+.u2-domain-header-key {
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-generic .u2-domain-form > .u2-form {
+  max-width: none;
+}
+
+.u2-domain-generic .u2-domain-form .u2-form-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  column-gap: var(--dg-space-xxl);
+}

@@ -151,8 +151,33 @@ export class DomainPick extends PickInput<PickItem> {
         return {id, name};
     }
     const t = await DomainPick.table(table);
-    const [row] = await t.query({filter: {property: 'id', operator: '=', value: id}, limit: 1});
+    const row = await DomainPick.rowOf(table, t, id);
     return row === undefined ? {id, name: id} : DomainPick.item(row, t.info, caption);
+  }
+
+  private static _pending = new Map<string, Map<string, ((row: Record<string, unknown> | undefined) => void)[]>>();
+
+  /** The row behind an id, read together with every other id of the table asked for in the same tick: a page
+   * of links costs one query per table, not one per cell. */
+  private static rowOf(address: string, t: DomainTableLike, id: string): Promise<Record<string, unknown> | undefined> {
+    let ids = DomainPick._pending.get(address);
+    if (ids === undefined) {
+      const batch = ids = new Map();
+      DomainPick._pending.set(address, batch);
+      setTimeout(() => {
+        DomainPick._pending.delete(address);
+        const keys = [...batch.keys()];
+        const answer = (rows: Record<string, unknown>[]) => {
+          const byId = new Map(rows.map((r) => [String(r.id), r]));
+          for (const [key, waiting] of batch) {
+            for (const done of waiting)
+              done(byId.get(key));
+          }
+        };
+        t.query({filter: {property: 'id', operator: 'in', value: keys}, limit: keys.length}).then(answer, () => answer([]));
+      });
+    }
+    return new Promise((done) => ids!.set(id, [...ids!.get(id) ?? [], done]));
   }
 
   private static renderItem(item: PickItem): HTMLElement {

@@ -94,25 +94,31 @@ scoped('a written id resolves to its name; an unknown id shows itself', async ()
   pick.dispose();
 });
 
-scoped('a backend that declares resolveNames answers an id there; an id it names nothing reads its row', async () => {
-  const calls = [];
-  const rows = {'SINGLE%20PROTEIN': {id: 'SINGLE%20PROTEIN', target_type: 'SINGLE PROTEIN'}};
-  emsBackends.domain = {
-    table: async () => ({info: {nameColumn: null, businessKey: ['target_type'], searchableColumns: []},
-      query: async ({filter}) => rows[filter.value] === undefined ? [] : [rows[filter.value]]}),
-    saveAll: () => Promise.resolve(true),
-    resolveNames: (table, ids) => {
-      calls.push({table, ids: [...ids]});
-      return Promise.resolve({p1: 'Grit'});
-    },
-  };
-  assert.deepEqual(await DomainPick.resolve('grit.project', 'p1'), {id: 'p1', name: 'Grit'});
-  assert.deepEqual(calls, [{table: 'grit.project', ids: ['p1']}]);
-  assert.deepEqual(await DomainPick.resolve('chembl.target_type', 'SINGLE%20PROTEIN'),
-    {id: 'SINGLE%20PROTEIN', name: 'SINGLE PROTEIN'}, 'an external table names nothing on the server: the row does');
-  assert.deepEqual(await DomainPick.resolve('grit.project', 'gone'), {id: 'gone', name: 'gone'},
-    'an id nobody names is shown as itself');
-});
+scoped('a backend that declares resolveNames answers an id there; one it names nothing reads the rows once per tick',
+  async () => {
+    const calls = [];
+    const queries = [];
+    const rows = {CHEMBL1: {id: 'CHEMBL1', pref_name: 'ASPIRIN'}, CHEMBL2: {id: 'CHEMBL2', pref_name: 'IBRUTINIB'}};
+    emsBackends.domain = {
+      table: async () => ({info: {nameColumn: 'pref_name', businessKey: ['chembl_id'], searchableColumns: []}, query: async ({filter}) => {
+        queries.push(filter);
+        return filter.value.map((id) => rows[id]).filter((r) => r !== undefined);
+      }}),
+      saveAll: () => Promise.resolve(true),
+      resolveNames: (table, ids) => {
+        calls.push({table, ids: [...ids]});
+        return Promise.resolve({p1: 'Grit'});
+      },
+    };
+    assert.deepEqual(await DomainPick.resolve('grit.project', 'p1'), {id: 'p1', name: 'Grit'});
+    assert.deepEqual(calls, [{table: 'grit.project', ids: ['p1']}]);
+    const named = await Promise.all(['CHEMBL1', 'CHEMBL2', 'CHEMBL1', 'gone']
+      .map((id) => DomainPick.resolve('chembl.molecule', id)));
+    assert.deepEqual(named.map((item) => item.name), ['ASPIRIN', 'IBRUTINIB', 'ASPIRIN', 'gone'],
+      'an id nobody names is shown as itself');
+    assert.deepEqual(queries, [{property: 'id', operator: 'in', value: ['CHEMBL1', 'CHEMBL2', 'gone']}],
+      'the ids asked for together are read in one query');
+  });
 
 scoped('an extra filter narrows the candidates; an empty query lists them all', async () => {
   emsBackends.domain = backend();
@@ -181,6 +187,8 @@ scoped('ergonomics: the candidates open on focus sorted by name with nothing hig
     emsBackends.domain = backend();
     const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p2'});
     const input = mount(pick);
+    // the caption is read with the batch of its tick
+    await flush();
     await flush();
     assert.equal(input.placeholder, '', 'no placeholder repeating the caption');
     assert.equal(input.value, 'Datagrok');

@@ -201,6 +201,16 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     };
   }
 
+  /** True when an app {@link configure}s the table: its pages are the app's, not the generic ones. */
+  static isConfigured(address: string): boolean {
+    return (CONFIGURE.get(address)?.size ?? 0) > 0;
+  }
+
+  /** Text a card can show as a line: not empty, one line, and no machine string (a molfile, an InChI). */
+  static isProse(value: string): boolean {
+    return value !== '' && !value.includes('\n') && !/\S{40}/.test(value);
+  }
+
   /** A column as a form labels it: the declared caption, else the name made presentable. */
   static captionOf(prop: IProperty): string {
     return capital(prop.friendlyName ?? (prop.name ?? '').replace(/_/g, ' '));
@@ -371,7 +381,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       const {properties, info} = schema();
       const prose = properties.filter((p) => p.name !== info.nameColumn &&
         !SYSTEM_COLUMNS.some(([name]) => name === p.name) && !DomainTable.isReference(p) &&
-        (p.propertyType ?? p.type) === 'string' && !Editors.displays(p) && text(row[p.name!]) !== '');
+        (p.propertyType ?? p.type) === 'string' && !Editors.displays(p) && DomainTable.isProse(text(row[p.name!])));
       const first = prose.find((p) => p.name === 'description');
       return [...first === undefined ? [] : [first], ...prose.filter((p) => p !== first)].slice(0, count)
         .map((p) => text(row[p.name!]));
