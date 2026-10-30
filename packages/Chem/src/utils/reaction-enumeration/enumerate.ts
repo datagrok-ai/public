@@ -92,6 +92,8 @@ export interface EnumerateOptions {
   perRoundOverrides?: PerRoundOverride[];
   onProgress?: (p: EnumerationProgress) => void;
   isCancelled?: () => boolean;
+  /** A capped sample run: warns about the setup, inputs and failures, not about what its sample met. */
+  preview?: boolean;
 }
 
 export function splitSmartsByReactants(lhs: string): string[] {
@@ -638,7 +640,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
 /** The enumeration on one engine's `module`. */
 async function enumerateOn(module: RDModule, opts: EnumerateOptions): Promise<{rows: OutputRow[]; warnings: string[]}> {
   const {config, templates, buildingBlocks, exclusionSmarts, reagents,
-    perRoundOverrides, onProgress, isCancelled} = opts;
+    perRoundOverrides, onProgress, isCancelled, preview} = opts;
   const warnings: string[] = [];
 
   // Shared canonicalize + dedup for the global BB/reagent pools and every per-round override, so an
@@ -648,11 +650,14 @@ async function enumerateOn(module: RDModule, opts: EnumerateOptions): Promise<{r
   // the same reason.
   const canonCache = new DG.LruCache<string, string | null>(1000);
   const warnedInvalid = new Set<string>();
+  const invalidByLabel = new Map<string, string[]>();
   const canonOne = (s: string, label: string): string | null => {
     const c = canonCache.getOrCreate(s, (k) => canonicalize(module, k));
     if (!c && !warnedInvalid.has(s)) {
       warnedInvalid.add(s);
-      warnings.push(`Skipped invalid ${label} SMILES: ${s}`);
+      let invalid = invalidByLabel.get(label);
+      if (!invalid) invalidByLabel.set(label, invalid = []);
+      invalid.push(s);
     }
     return c || null;
   };
@@ -706,6 +711,12 @@ async function enumerateOn(module: RDModule, opts: EnumerateOptions): Promise<{r
 
   const {templateKeys: roundAllowedTemplateKeys, buildingBlocks: roundBBs, reagents: roundReagents} =
     roundPools(config.enumeration.num_rounds, perRoundOverrides, parsedTemplates, canonUnique, warnings);
+  // One line per list: a file with many unreadable rows would otherwise bury every other warning.
+  for (const [label, invalid] of invalidByLabel) {
+    console.warn(`Skipped invalid ${label} SMILES:`, invalid);
+    warnings.push(`Skipped ${invalid.length} invalid ${label} SMILES: ` +
+      `${invalid.slice(0, 3).join(', ')}${invalid.length > 3 ? ', …' : ''}`);
+  }
 
   const molCache = new MolCache(module);
 
@@ -949,6 +960,8 @@ async function enumerateOn(module: RDModule, opts: EnumerateOptions): Promise<{r
             }
           }
         }
+        // What a few sampled combinations met says little about the run, either way.
+        if (preview) continue;
         if (truncated)
           warnings.push(`Template ${t.index + 1} (${t.reactionName || ''}): truncated at ${executed}/${totalCombos} combinations (cap=${comboCap}).`);
         const where = `Step ${round}, template ${t.index + 1} (${t.reactionName || ''})`;
