@@ -1,4 +1,4 @@
-Chem@guide @help:govern/catalog
+@guide @help:govern/catalog
 Feature: Draw an undetected SMILES column as molecules
   A guide: the answer to "if I have a smiles column that is not detected as smiles, how do I set its
   semtype to smiles so that molecules are drawn in grid?". The semantic type of SMILES is Molecule
