@@ -186,4 +186,21 @@ test.describe("Statistics edge cases: no rows counted, one row, columns added, r
     await session.step(107, "And statistics viewer should report no error", () => reportsNoError(page, el("statistics viewer")));
     await session.step(108, "And no errors should have been logged", () => noErrors(page));
   });
+  test("A column added while Columns is an explicit list gets no row", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.stats-viewer"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(15, "Given user is logged in", () => loggedIn(page));
+    await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(17, "And user adds a statistics viewer", () => addViewer(page, "statistics"));
+    await session.step(18, "And user resizes statistics viewer to 900 by 400", () => resizeTo(page, el("statistics viewer"), 900, 400));
+    await session.step(19, "Then the \"rows shown\" reading of statistics viewer should be 1000", () => readingIs(page, "rows shown", el("statistics viewer"), 1000));
+    await session.step(20, "And the \"columns shown\" reading of statistics viewer should be 11", () => readingIs(page, "columns shown", el("statistics viewer"), 11));
+    await session.step(21, "And the \"avg of AGE\" reading of statistics viewer should be \"45.68\"", () => readingReads(page, "avg of AGE", el("statistics viewer"), "45.68"));
+    await session.step(111, "When user sets \"columnNames\" property of statistics viewer to \"AGE, HEIGHT\"", () => setProperty(page, "columnNames", el("statistics viewer"), "AGE, HEIGHT"));
+    await session.step(112, "Then statistics viewer should have a \"row AGE\" area", () => hasArea(page, el("statistics viewer"), "row AGE"));
+    await session.step(113, "And statistics viewer should not have a \"row WEIGHT\" area", () => hasNoArea(page, el("statistics viewer"), "row WEIGHT"));
+    await session.step(114, "When user adds a calculated column \"OLDER\" with formula \"${AGE} + 1\"", () => addCalculated(page, "OLDER", "${AGE} + 1"));
+    await session.step(115, "Then statistics viewer should have a \"row HEIGHT\" area", () => hasArea(page, el("statistics viewer"), "row HEIGHT"));
+    await session.step(116, "And statistics viewer should not have a \"row OLDER\" area", () => hasNoArea(page, el("statistics viewer"), "row OLDER"));
+    await session.step(117, "And no errors should have been logged", () => noErrors(page));
+  });
 });

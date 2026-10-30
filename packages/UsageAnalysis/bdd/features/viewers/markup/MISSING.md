@@ -6,7 +6,7 @@ Written for `markup-edge-cases.feature`: the edge cases of this viewer that the 
 
 **Questions for owners**
 
-1. Html mode content from a shared layout or project with `<img onerror>` / `<script>`: the content is inserted with `NodeTreeSanitizer.trusted`. Is author HTML trusted (d4 rule 8 allows `trusted` for constants only)?
+None. Html mode content from a shared layout or project runs its scripts (`NodeTreeSanitizer.trusted`): core#1239, no scenario (a script run is not observable from a step).
 
 **API or Dart tests to write**
 

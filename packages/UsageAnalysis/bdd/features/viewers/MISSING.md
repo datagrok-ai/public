@@ -71,7 +71,7 @@ tests, the known failures failing at their pinned steps.
   DOM with `NodeTreeSanitizer.trusted`, so `<script>` and `<img onerror=...>` from someone else's
   layout or project run in the viewer's session. The d4 rule is `NodeTreeSanitizer.trusted` only for
   constants. No scenario: whether the content should be sanitized, and what may stay (styles,
-  links), is the owner's call.
+  links), is the owner's call: core#1239.
 
 ### Found on the run, no ticket yet
 

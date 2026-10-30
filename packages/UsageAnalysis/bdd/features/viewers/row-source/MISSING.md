@@ -11,7 +11,7 @@ Written for `row-source-edge-cases.feature`: the edge cases of this viewer that 
 
 **Questions for owners**
 
-1. A viewer Filter whose column is removed: should the removal be reported? (The rules say a removed column's setting is dropped without a message.)
+None. A viewer Filter whose column is removed is dropped without a message, as the rules say (2026-10-30).
 
 **API or Dart tests to write**
 

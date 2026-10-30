@@ -71,8 +71,7 @@ None.
 
 #### 3. Questions for owners
 
-1. **A column added while Columns is an explicit list**: does it get a row? (With Columns empty it
-   does; claimed.)
+None. A column added while Columns is an explicit list gets no row (2026-10-30): claimed.
 
 #### 3. API or Dart tests to write
 

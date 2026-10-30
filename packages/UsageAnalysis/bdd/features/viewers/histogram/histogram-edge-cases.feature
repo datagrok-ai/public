@@ -61,3 +61,29 @@ Feature: Histogram edge cases
     Then 0 rows should pass the filter
     And histogram viewer should show 0 rows
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: Text typed into the range min input is not taken and the filter stays as it was
+    When user enters "abc" into the "range min input" area of histogram viewer
+    Then all rows should pass the filter
+    And histogram viewer should show 1000 rows
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: Switching Value while a range filters releases the range
+    When user enters "30" into the "range min input" area of histogram viewer
+    And user enters "50" into the "range max input" area of histogram viewer
+    Then the filter should pass exactly the rows where "AGE" is between 30 and 50
+    When user sets "Value" property of histogram viewer to "WEIGHT"
+    Then all rows should pass the filter
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: A layout whose Value column the table no longer has leaves the histogram empty with a message
+    When user sets "Value" property of histogram viewer to "HEIGHT"
+    And user saves the layout of the current table view
+    And user removes "HEIGHT" column
+    And user loads the saved layout
+    Then histogram viewer should contain the text "does not exist"
+    And histogram viewer should not have a "bin 1" area
+    And no errors should have been logged

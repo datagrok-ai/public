@@ -29,24 +29,3 @@ Written during the viewer gap review of 23 Oct 2026. What could be said is in
     And the "rows fitted" and "rows shown" readings of scatter plot viewer should be the same
     And no errors should have been logged
   ```
-
-## Edge cases (`nx-edge-cases.feature`)
-
-Written for `nx-edge-cases.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
-
-### Still open
-
-**Questions for owners**
-
-1. SPGI-linked1, the middle table of the chain SPGI → linked1 → linked2, closed and then rows selected in SPGI: does linked2 still follow?
-2. The Formula Lines editor: a line's formula edited, then Cancel or Escape — the standard dialog cancel is assumed; confirm it applies to this editor before a feature claims it.
-3. An invalid formula typed into the Formula Lines editor (`X + 25`, an unbalanced `${`): no line is drawn; should the editor show an inline error?
-4. A column renamed to a name holding `}` or `$`: should the `${name}` references still resolve, or should the rename be refused?
-
-**API or Dart tests to write**
-
-1. Dart regTest: a regression line over one fitted row, or over rows sharing one X (division by zero in the fit).
-
-### Won't do
-
-- The column removed through the API (`user removes … column`): the balloon is raised by the Remove command only, so the feature removes it through the header's context menu.

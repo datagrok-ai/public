@@ -87,8 +87,9 @@ None.
 
 #### 3. Questions for owners
 
-1. **A layout naming an inner viewer type that is not installed** (core#1057 W2): fall back to the
-   default inner type or show a message?
+None. Decided (2026-10-30): a layout naming an inner viewer type that is not installed falls back to
+the default inner type, the pie chart a trellis opens with, with a warning (core#1057 W2). No scenario: no viewer can be uninstalled from
+a feature.
 
 #### 4. API or Dart tests to write
 

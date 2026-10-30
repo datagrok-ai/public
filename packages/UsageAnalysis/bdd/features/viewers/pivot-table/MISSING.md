@@ -54,7 +54,7 @@ Written for `pivot-table-edge-cases.feature`: the edge cases of this viewer that
 
 **Questions for owners**
 
-1. Row Source Filtered with nothing passing, then ADD: hide ADD, or publish an empty table? (Every row filtered out is a row of the no-rows outline in `viewer-rules-edge-cases.feature`; ADD is not part of it.)
+None. ADD with nothing passing the filter adds an empty table, the user's choice (2026-10-30): claimed in `pivot-table-edge-cases.feature`.
 
 **Remark on the code docs**
 

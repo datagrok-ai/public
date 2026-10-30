@@ -53,11 +53,12 @@ Written for `line-chart-edge-cases.feature`: the edge cases of this viewer that 
 **Decided**
 
 1. X Min / X Max outside every X value (700000..800000 on spgi-100) are kept and the data stays in view (all 100 markers drawn): written in `line-chart-edge-cases.feature`.
+3. Line Width 0 (only the markers) and a negative width are taken and break nothing (2026-10-30): claimed in `line-chart-edge-cases.feature`.
+2. The chart bound to another table whose view is then closed keeps drawing that table, with no error: right as it is (2026-10-30).
 
 **Questions for owners**
 
-1. Line Width 0 or negative: the canvas ignores it and keeps the previous width. Should the property have a minimum?
-2. The chart bound to another table whose view is then closed: rebind to the view's table, or show an empty chart with a message?
+None.
 
 **API or Dart tests to write**
 

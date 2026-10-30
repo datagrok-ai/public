@@ -23,7 +23,7 @@ import {addTileViewerWith, deleteValueField, designerValueFields, dragCardIntoLa
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {pressKey, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {selectNoRows, selectWhereIs} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {addCalculated, selectNoRows, selectWhereIs} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors, pointerAway, readingIs, readingReads, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {pickFromViewerMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
@@ -94,5 +94,22 @@ test.describe("Tile viewer edge cases: nothing selected under Row Source Selecte
       await session.step(64, "And the \"lane of row 1\" reading of tile viewer should be \"(empty)\"", () => readingReads(page, "lane of row 1", el("tile viewer"), "(empty)"));
       await session.step(65, "And no errors should have been logged", () => noErrors(page));
     }, 62);
+  });
+  test("A card dragged between the lanes of a calculated column writes the lane's value", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.tile-viewer"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(11, "Given user is logged in", () => loggedIn(page));
+    await session.step(12, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(13, "And user adds a tile viewer with:", () => addTileViewerWith(page, [["Lanes Column Name","RACE"]]), [["Lanes Column Name","RACE"]]);
+    await session.step(15, "Then tile viewer should show 1000 rows", () => showsRows(page, el("tile viewer"), 1000));
+    await session.step(16, "And the \"lane names\" reading of tile viewer should be \"Asian, Black, Caucasian, Other\"", () => readingReads(page, "lane names", el("tile viewer"), "Asian, Black, Caucasian, Other"));
+    await session.step(69, "When user adds a calculated column \"AGE_GROUP\" with formula \"if(${AGE} > 40, \\\"old\\\", \\\"young\\\")\"", () => addCalculated(page, "AGE_GROUP", "if(${AGE} > 40, \"old\", \"young\")"));
+    await session.step(70, "And user sets \"lanesColumnName\" property of tile viewer to \"AGE_GROUP\"", () => setProperty(page, "lanesColumnName", el("tile viewer"), "AGE_GROUP"));
+    await session.step(71, "Then the \"lane of row 1\" reading of tile viewer should be \"young\"", () => readingReads(page, "lane of row 1", el("tile viewer"), "young"));
+    await session.step(72, "When user moves the pointer away from tile viewer", () => pointerAway(page, el("tile viewer")));
+    await session.step(73, "And user drags the card of row 1 of tile viewer into lane \"old\"", () => dragCardIntoLane(page, 1, el("tile viewer"), "old"));
+    await session.step(74, "Then the \"lane of row 1\" reading of tile viewer should be \"old\"", () => readingReads(page, "lane of row 1", el("tile viewer"), "old"));
+    await session.step(75, "And the value of \"AGE_GROUP\" column in row 1 should be \"old\"", () => valueInRow(page, "AGE_GROUP", 1, "old"));
+    await session.step(76, "And the value of \"AGE\" column in row 1 should be \"26\"", () => valueInRow(page, "AGE", 1, "26"));
+    await session.step(77, "And no errors should have been logged", () => noErrors(page));
   });
 });

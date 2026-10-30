@@ -118,4 +118,32 @@ test.describe("Line chart edge cases — a log Y axis below zero, an empty row s
     await session.step(73, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
     await session.step(74, "And no errors should have been logged", () => noErrors(page));
   });
+  test("Line Width 0 is taken and the chart keeps drawing its points [width=0]", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.line-chart"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(14, "Given user is logged in", () => loggedIn(page));
+    await session.step(15, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
+    await session.step(16, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]), [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]);
+    await session.step(19, "Then 100 rows should pass the filter", () => filterPasses(page, 100));
+    await session.step(20, "And the \"markers drawn\" reading of line chart viewer should be 100", () => readingIs(page, "markers drawn", el("line chart viewer"), 100));
+    await session.step(21, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
+    await session.step(79, "When user sets \"lineWidth\" property of line chart viewer to \"0\"", () => setProperty(page, "lineWidth", el("line chart viewer"), "0"));
+    await session.step(80, "Then \"lineWidth\" property of line chart viewer should be \"0\"", () => propertyShouldBe(page, "lineWidth", el("line chart viewer"), "0"));
+    await session.step(81, "And the \"markers drawn\" reading of line chart viewer should be 100", () => readingIs(page, "markers drawn", el("line chart viewer"), 100));
+    await session.step(82, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
+    await session.step(83, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("Line Width -3 is taken and the chart keeps drawing its points [width=-3]", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.line-chart"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(14, "Given user is logged in", () => loggedIn(page));
+    await session.step(15, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
+    await session.step(16, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]), [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]);
+    await session.step(19, "Then 100 rows should pass the filter", () => filterPasses(page, 100));
+    await session.step(20, "And the \"markers drawn\" reading of line chart viewer should be 100", () => readingIs(page, "markers drawn", el("line chart viewer"), 100));
+    await session.step(21, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
+    await session.step(79, "When user sets \"lineWidth\" property of line chart viewer to \"-3\"", () => setProperty(page, "lineWidth", el("line chart viewer"), "-3"));
+    await session.step(80, "Then \"lineWidth\" property of line chart viewer should be \"-3\"", () => propertyShouldBe(page, "lineWidth", el("line chart viewer"), "-3"));
+    await session.step(81, "And the \"markers drawn\" reading of line chart viewer should be 100", () => readingIs(page, "markers drawn", el("line chart viewer"), 100));
+    await session.step(82, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
+    await session.step(83, "And no errors should have been logged", () => noErrors(page));
+  });
 });

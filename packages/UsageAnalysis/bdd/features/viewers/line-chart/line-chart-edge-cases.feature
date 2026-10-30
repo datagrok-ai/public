@@ -72,3 +72,17 @@ Feature: Line chart edge cases — a log Y axis below zero, an empty row set, a 
     And the "markers drawn" reading of line chart viewer should be 100
     And line chart viewer should report no error
     And no errors should have been logged
+
+  Scenario Outline: Line Width <width> is taken and the chart keeps drawing its points
+    Line Width 0 leaves only the markers, for a user who wants the points alone; a negative width
+    breaks nothing.
+    When user sets "lineWidth" property of line chart viewer to "<width>"
+    Then "lineWidth" property of line chart viewer should be "<width>"
+    And the "markers drawn" reading of line chart viewer should be 100
+    And line chart viewer should report no error
+    And no errors should have been logged
+
+    Examples:
+      | width |
+      | 0     |
+      | -3    |

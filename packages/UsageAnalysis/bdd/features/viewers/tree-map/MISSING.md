@@ -79,10 +79,9 @@ None.
 
 #### 3. Questions for owners
 
-1. **A category whose sizes sum to a negative number** is clamped to 0 (`tree_map_core.dart:246`)
-   and its leaf disappears with its rows: hide, use the absolute value, or warn?
-2. **Outer margins larger than half the viewer, or negative** (no bounds,
-   `tree_map_look.dart:33-36`): clamp or reject?
+None. Decided (2026-10-30): outer margins larger than half the viewer or negative are taken and
+break nothing (no viewer bounds its margins); a category whose sizes sum to a negative number
+cannot be picked.
 
 #### 4. API or Dart tests to write
 

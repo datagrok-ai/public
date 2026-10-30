@@ -31,3 +31,11 @@ Feature: Pivot table edge cases — its Group by column removed, every row delet
     And the "aggregated rows" reading of pivot table viewer should be 0
     And the "error" reading of pivot table viewer should be ""
     And no errors should have been logged
+
+  Scenario: ADD with every row filtered out adds an empty table
+    When user filters rows where "AGE" is between 200 and 300
+    Then 0 rows should pass the filter
+    When user clicks on the "add to workspace" area of pivot table viewer
+    Then table "demog-1000 aggregation" should be open
+    And table "demog-1000 aggregation" should have 0 rows
+    And no errors should have been logged

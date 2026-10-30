@@ -72,12 +72,13 @@ None.
 
 #### 3. Questions for owners
 
-1. **A lanes column with more than 20 categories** set from a layout or the API (the picker offers
-   only columns of at most 20, `tile_viewer_look.dart:21`): reject it as a numeric column is
-   rejected, or accept?
-2. **Leaving the form designer by the window close** after deleting a field: discard, apply or ask?
-   (Escape is decided: as Cancel.)
-3. **A drag between lanes when the lanes column is calculated**: block it, or write and recompute?
+None.
+
+**Decided (2026-10-30):** a lanes column with more than 20 categories cannot be picked as Lanes; closing
+the form designer's tab after deleting a field works as it does today. Neither has a scenario.
+
+**Decided:** a drag between the lanes of a calculated column writes the lane's value, as any edit
+of a calculated column is allowed (2026-10-30, core#1237): claimed in `tile-viewer-edge-cases.feature`.
 
 #### 3. API or Dart tests to write
 

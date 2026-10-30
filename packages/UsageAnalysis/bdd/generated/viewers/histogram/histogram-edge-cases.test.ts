@@ -22,9 +22,10 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {rangeInputReads} from '../../../bindings/histogram.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {addCategoricalFilter, filterIsExactly, filterPasses} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {addCategoricalFilter, filterIsExactly, filterPasses, filterPassesAll, removeColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, enterIntoArea, hasNoArea, noErrors, readingIs, readingReads, resizeTo, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, enterIntoArea, hasNoArea, loadLayout, noErrors, readingIs, readingReads, resizeTo, saveLayout, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Histogram edge cases", () => {
@@ -98,5 +99,49 @@ test.describe("Histogram edge cases", () => {
     await session.step(61, "Then 0 rows should pass the filter", () => filterPasses(page, 0));
     await session.step(62, "And histogram viewer should show 0 rows", () => showsRows(page, el("histogram viewer"), 0));
     await session.step(63, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("Text typed into the range min input is not taken and the filter stays as it was", {tag: ["@viewers", "@realizes:viewers.histogram", "@edge-cases"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(9, "Given user is logged in", () => loggedIn(page));
+    await session.step(10, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(11, "And user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["Value","AGE"],["Show Range Inputs","true"],["Filtering Enabled","true"]]), [["Value","AGE"],["Show Range Inputs","true"],["Filtering Enabled","true"]]);
+    await session.step(15, "And user resizes histogram viewer to 500 by 400", () => resizeTo(page, el("histogram viewer"), 500, 400));
+    await session.step(16, "Then histogram viewer should show 1000 rows", () => showsRows(page, el("histogram viewer"), 1000));
+    await session.step(17, "And the \"error\" reading of histogram viewer should be \"\"", () => readingReads(page, "error", el("histogram viewer"), ""));
+    await session.step(67, "When user enters \"abc\" into the \"range min input\" area of histogram viewer", () => enterIntoArea(page, "abc", "range min input", el("histogram viewer")));
+    await session.step(68, "Then all rows should pass the filter", () => filterPassesAll(page));
+    await session.step(69, "And histogram viewer should show 1000 rows", () => showsRows(page, el("histogram viewer"), 1000));
+    await session.step(70, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("Switching Value while a range filters releases the range", {tag: ["@viewers", "@realizes:viewers.histogram", "@edge-cases"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(9, "Given user is logged in", () => loggedIn(page));
+    await session.step(10, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(11, "And user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["Value","AGE"],["Show Range Inputs","true"],["Filtering Enabled","true"]]), [["Value","AGE"],["Show Range Inputs","true"],["Filtering Enabled","true"]]);
+    await session.step(15, "And user resizes histogram viewer to 500 by 400", () => resizeTo(page, el("histogram viewer"), 500, 400));
+    await session.step(16, "Then histogram viewer should show 1000 rows", () => showsRows(page, el("histogram viewer"), 1000));
+    await session.step(17, "And the \"error\" reading of histogram viewer should be \"\"", () => readingReads(page, "error", el("histogram viewer"), ""));
+    await session.step(74, "When user enters \"30\" into the \"range min input\" area of histogram viewer", () => enterIntoArea(page, "30", "range min input", el("histogram viewer")));
+    await session.step(75, "And user enters \"50\" into the \"range max input\" area of histogram viewer", () => enterIntoArea(page, "50", "range max input", el("histogram viewer")));
+    await session.step(76, "Then the filter should pass exactly the rows where \"AGE\" is between 30 and 50", () => filterIsExactly(page, "AGE", 30, 50));
+    await session.step(77, "When user sets \"Value\" property of histogram viewer to \"WEIGHT\"", () => setProperty(page, "Value", el("histogram viewer"), "WEIGHT"));
+    await session.step(78, "Then all rows should pass the filter", () => filterPassesAll(page));
+    await session.step(79, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("A layout whose Value column the table no longer has leaves the histogram empty with a message", {tag: ["@viewers", "@realizes:viewers.histogram", "@edge-cases"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(9, "Given user is logged in", () => loggedIn(page));
+    await session.step(10, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(11, "And user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["Value","AGE"],["Show Range Inputs","true"],["Filtering Enabled","true"]]), [["Value","AGE"],["Show Range Inputs","true"],["Filtering Enabled","true"]]);
+    await session.step(15, "And user resizes histogram viewer to 500 by 400", () => resizeTo(page, el("histogram viewer"), 500, 400));
+    await session.step(16, "Then histogram viewer should show 1000 rows", () => showsRows(page, el("histogram viewer"), 1000));
+    await session.step(17, "And the \"error\" reading of histogram viewer should be \"\"", () => readingReads(page, "error", el("histogram viewer"), ""));
+    await session.step(83, "When user sets \"Value\" property of histogram viewer to \"HEIGHT\"", () => setProperty(page, "Value", el("histogram viewer"), "HEIGHT"));
+    await session.step(84, "And user saves the layout of the current table view", () => saveLayout(page));
+    await session.step(85, "And user removes \"HEIGHT\" column", () => removeColumn(page, "HEIGHT"));
+    await session.step(86, "And user loads the saved layout", () => loadLayout(page));
+    await session.step(87, "Then histogram viewer should contain the text \"does not exist\"", () => shouldContainText(page, el("histogram viewer"), "does not exist"));
+    await session.step(88, "And histogram viewer should not have a \"bin 1\" area", () => hasNoArea(page, el("histogram viewer"), "bin 1"));
+    await session.step(89, "And no errors should have been logged", () => noErrors(page));
   });
 });

@@ -57,10 +57,11 @@ Added with `histogram-edge-cases.feature` (edge-case round of 2026-10-26, localh
    reads the inputs' invalid state.
 2. **Decided**: Bins typed as 201 is not taken (the out-of-bounds rule): a known failure with no
    ticket yet in `viewer-rules-edge-cases.feature`; every row filtered out is a row there too.
-3. **Questions for owners**: `abc` in a range input; Value switched to WEIGHT while a range of AGE
-   filters; a layout whose Value column the table lacks (the Value column is required, so the layout
-   rule, "skip the column", does not say what to draw); bin labels dropped above 100 bins; X Axis
-   Height at 0, below 0 or above the viewer's height.
+3. **Decided (2026-10-30)**, claimed in `histogram-edge-cases.feature`: `abc` in a range input is not
+   taken and the filter stays; switching Value while a range filters releases the range; a layout
+   whose Value column the table lacks leaves the histogram empty with the message `value: Column
+   "HEIGHT" does not exist.`. Bin labels dropped above 100 bins are right as they are (no scenario:
+   no reading of the axis labels).
 4. **Not written yet**: the selectors hidden at 200 × 200 and shown at 201 × 201. The range checks
    for a date value column (`STARTED`, date inputs) are in `histogram-edge-cases.feature`: a maximum
    below the minimum is reported, a bound past the dates is clamped, a range normalized to the

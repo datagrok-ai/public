@@ -106,7 +106,7 @@ feature; it lists what the feature could not claim and why.
 
 #### 3. Questions for owners
 
-1. **Null labels** read "undefined" (core#1027): should they be empty or "(no value)"?
+None. A null label is empty, as on the scatter plot (2026-10-30, not reproduced).
 
 #### 3. API or Dart tests to write
 

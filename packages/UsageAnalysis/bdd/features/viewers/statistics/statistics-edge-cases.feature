@@ -106,3 +106,12 @@ Feature: Statistics edge cases: no rows counted, one row, columns added, removed
     And the "avg of AGE" reading of statistics viewer should be "45.68"
     And statistics viewer should report no error
     And no errors should have been logged
+
+  Scenario: A column added while Columns is an explicit list gets no row
+    When user sets "columnNames" property of statistics viewer to "AGE, HEIGHT"
+    Then statistics viewer should have a "row AGE" area
+    And statistics viewer should not have a "row WEIGHT" area
+    When user adds a calculated column "OLDER" with formula "${AGE} + 1"
+    Then statistics viewer should have a "row HEIGHT" area
+    And statistics viewer should not have a "row OLDER" area
+    And no errors should have been logged
