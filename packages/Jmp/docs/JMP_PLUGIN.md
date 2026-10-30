@@ -419,6 +419,7 @@ DATAGROK_URL=http://localhost:8080 node ../../libraries/bdd/bin/grok-bdd.js run 
 ```
 
 Result on the local stand (2026-10-23): 12 passed, 0 audit findings, run with `--workers=1`. With the default workers, the first scenario on each worker sometimes times out on the stand's cold start (server unavailable at login, or the Files node slow to expand) before any package step runs.
+
 ---
 
 ## 10. Licensing and Attribution
@@ -529,12 +530,12 @@ The bigger payoff: **backfill historical JMP files into shared, searchable Datag
 6. **Other JMP file types.** Is there demand for `.jmpprj` (projects that bundle tables + reports) or `.jrn` journals? A JMP project probably holds the decision record that Phase 4 is after.
 7. **Write support.** Confirm the non-goal. Is there any customer flow that needs Datagrok → `.jmp`, rather than CSV/Excel?
 8. **Preview on double-click.** Decided 2026-10-28: the Browse preview is the table itself (§6.1), so a double-click keeps it open; the file summary moved behind a ribbon icon.
-10. **Analyses through the file handler.** `importJmp` returns tables only, so with the core fix (a viewer that declines falls through to the handler), a file from disk would open without its analyses. Either the handler adds them once its view opens, or the shell lets a handler return a view.
+9. **Analyses through the file handler.** `importJmp` returns tables only, so with the core fix (a viewer that declines falls through to the handler), a file from disk would open without its analyses. Either the handler adds them once its view opens, or the shell lets a handler return a view.
 
 ---
 
 ## References
 
-- JMPReader.jl: https://github.com/jaakkor2/JMPReader.jl (MIT) · [announcement on Julia Discourse](https://discourse.julialang.org/t/ann-jmpreader-jl-reader-for-jmp-files-in-julia/120710)
-- JMP's `jmp` Python package (runs only inside JMP, so it isn't usable as a reader): https://www.jmp.com/support/help/en/19.1/jmp/the-jmp-package-for-python.shtml
+- JMPReader.jl: <https://github.com/jaakkor2/JMPReader.jl> (MIT) · [announcement on Julia Discourse](https://discourse.julialang.org/t/ann-jmpreader-jl-reader-for-jmp-files-in-julia/120710)
+- JMP's `jmp` Python package (runs only inside JMP, so it isn't usable as a reader): <https://www.jmp.com/support/help/en/19.1/jmp/the-jmp-package-for-python.shtml>
 - Minitab plugin (structural template): [`../../Minitab/docs/MINITAB_PLUGIN.md`](../../Minitab/docs/MINITAB_PLUGIN.md), [`../../Minitab/src/package.ts`](../../Minitab/src/package.ts), [`../../Minitab/CREDITS.md`](../../Minitab/CREDITS.md)
