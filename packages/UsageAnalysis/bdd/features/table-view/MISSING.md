@@ -9,7 +9,7 @@ and the findings.
 Features: `data-join-tables.feature`, `data-unpivot.feature`, `data-text-to-columns.feature`,
 `select-menu.feature`, `edit-add-rows.feature` (30 Oct 2026, local stand).
 
-### Needs a step
+### Needs a step (Data, Select)
 
 - **Select > Selection to Top** sorts the grid so that the selected rows come first (`selection_to_top.dart`).
   No step reads the grid's row order (every row step reads the table, which the sort leaves as it was).
@@ -41,7 +41,7 @@ Features: `data-join-tables.feature`, `data-unpivot.feature`, `data-text-to-colu
     And no errors should have been logged
   ```
 
-### Questions
+### Questions (Data, Select)
 
 - **Join Tables, "OK disabled while keys are missing"**: the first key pair has no remove button (only the
   `+`), so the keys can never be all missing from the UI; with no pair (`keysGrid` empty) the code joins by
@@ -58,7 +58,7 @@ Features: `data-join-tables.feature`, `data-unpivot.feature`, `data-text-to-colu
 - **Split Column and Unpivot: undo.** Neither help page (`text-to-columns.md`, `unpivot.md`) nor
   `datagrok/navigation/undo.md` says whether Ctrl+Z removes the columns Split Column adds. Not claimed.
 
-### Findings 30 Oct 2026
+### Findings 30 Oct 2026 (Data, Select)
 
 - **Split Column: the default Split by is ";," and splits nothing** ([core#1236](https://github.com/datagrok-ai/core/issues/1236)). Steps: open a
   table with a text column holding "a;b"; Data > Split Column...; leave Split by at its default
@@ -69,7 +69,7 @@ Features: `data-join-tables.feature`, `data-unpivot.feature`, `data-text-to-colu
 
 Features: `undo-redo.feature`, `change-type.feature`, `column-properties.feature`, `table-properties.feature`.
 
-### Needs a step
+### Needs a step (column operations)
 
 - **Change column type: the Convertible / Not convertible / Empty counts.** The dialog shows each count as a
   bare `label.ui-input-label` beside the category's label, with no name or role tying the two together, so no
@@ -83,13 +83,13 @@ Features: `undo-redo.feature`, `change-type.feature`, `column-properties.feature
   And the value of "Empty" readout in "Change column type" dialog should be "1"
   ```
 
-### Questions
+### Questions (column operations)
 
 - **Table tags and description.** `datagrok/concepts/table.md` says "each table can be annotated with
   attributes", but no dialog or context-panel pane edits a table's tags or description (the context panel shows
   General and Actions; Actions has Rename... and Clone). Is there meant to be a Table Properties editor? Not
   claimed.
-### Findings 30 Oct 2026
+### Findings 30 Oct 2026 (column operations)
 
 - **Edit > Add New Column: Ctrl+Z does not remove the added column** ([public#4461](https://github.com/datagrok-ai/public/issues/4461)). Steps: open a table with columns
   name, city, weight; Edit > Add New Column...; formula `${weight} * 2`, name `double`; OK; click a grid cell;
@@ -146,7 +146,7 @@ Features: `undo-redo.feature`, `change-type.feature`, `column-properties.feature
 Features: `shortcuts.feature`, `column-manager.feature` (this folder), `../browse/files-lifecycle.feature`
 (30 Oct 2026, local stand). No plugins feature: see the questions below.
 
-### Needs a step
+### Needs a step (shortcuts, Column Manager, Files)
 
 - **Ctrl+Shift+R shows "Ctrl+Z to undo".** `cmdViewLayoutClear` (`commands/view/layout.dart`) calls `info()`,
   which writes the text into the top-right `label.grok-info` for 5 s (`features/info.dart`), not a balloon, so
@@ -184,7 +184,7 @@ Features: `shortcuts.feature`, `column-manager.feature` (this folder), `../brows
     And "Viewer suggestions" dock panel should be absent
   ```
 
-### Questions
+### Questions (shortcuts, Column Manager, Files)
 
 - **Ctrl+L is "Open Gallery" in the help** (`shortcuts.md`: "Table View | Layouts | Open Gallery"), and the
   command's top menu path is View > Layout > Open Gallery, but what it does is dock two panels, "Viewer
@@ -216,7 +216,7 @@ Features: `batch-edit.feature`, `anonymize.feature`, `categorize.feature`, `comp
 local stand). All four dialogs are core (`xamgle`): `views/batch_edit_view.dart`, `commands/tools/tools_anonymize_data.dart`,
 `commands/data/data_commands.dart` + `tools/data_categorizer.dart`, `commands/data/compare_tables.dart`.
 
-### Needs a step (or a name in core)
+### Needs a step or a name in core (Batch Edit, Anonymize, Categorize, Compare)
 
 - **Categorize: typed patterns.** The Pattern and Category editors of each row are bare `ui.textInput`s with no
   name, label or aria-label (only a tooltip), so no phrase reaches them; the feature drives the dialog through
@@ -258,14 +258,14 @@ local stand). All four dialogs are core (`xamgle`): `views/batch_edit_view.dart`
     And no errors should have been logged
   ```
 
-### Questions
+### Questions (Batch Edit, Anonymize, Categorize, Compare)
 
 - **Batch Edit: undo.** Neither `transform/batch-edit.md` nor `datagrok/navigation/undo.md` says whether Ctrl+Z
   takes back a value written by the batch editor (`Column.setAllValues`). Not claimed.
 - **Categorize: undo.** The help and `undo.md` say nothing about Ctrl+Z after SAVE COLUMN / SAVE MATRIX /
   APPLY COLOR CODING. Not claimed.
 
-### Findings 30 Oct 2026
+### Findings 30 Oct 2026 (Batch Edit, Anonymize, Categorize, Compare)
 
 - **Anonymize: an invalid Number randomization factor throws instead of being refused** ([core#1225](https://github.com/datagrok-ai/core/issues/1225)). Steps: open any table
   with a number column (e.g. demog); Data > Anonymize...; check AGE in the column list; type `abc` into Number
