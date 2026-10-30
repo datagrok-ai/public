@@ -250,8 +250,10 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       const tp = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Trellis plot') as any;
       tp.props.globalScale = true;
     });
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
-    const after = await cellHashes(page, probes);
+    // waitForViewerRendered returns at once when the plot rendered in the last 400 ms, which can
+    // be before this change reaches the canvas: wait for the cells themselves to change
+    const after = await v.pollValue(() => cellHashes(page, probes),
+      (h) => h[0] !== before[0] && h[1] !== before[1], 3000, 50);
 
     expect(before.every((h) => h !== null)).toBe(true);
     expect(after.every((h) => h !== null)).toBe(true);
@@ -299,8 +301,7 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       const tp = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Trellis plot') as any;
       tp.props.showXAxes = 'Never';
     });
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
-    const countXHidden = await rangeSliderCount(page);
+    const countXHidden = await v.pollValue(() => rangeSliderCount(page), (n) => n < countAxesShown, 3000, 50);
     console.log(`[Scenario 1 Step 11] count_axes_shown=${countAxesShown} count_x_hidden=${countXHidden}`);
     expect(countAxesShown).toBeGreaterThan(countXHidden);
 
@@ -309,7 +310,7 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       tp.props.showXAxes = 'Always';
       tp.props.showYAxes = 'Always';
     });
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
+    await v.pollValue(() => rangeSliderCount(page), (n) => n > countXHidden, 3000, 50);
     await expect(cellLocator).toHaveCount(8);
   });
 
