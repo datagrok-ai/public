@@ -2,107 +2,168 @@
 
 The package setting **Chemical Engine** (`ChemicalEngine`: `RDKit`, the default, or `Crux`) picks the engine behind
 Chem's own chemistry. Crux ([crux-core](https://github.com/datagrok-ai/crux-core), Rust compiled to one wasm file,
-`vendor/chem-wasm/`) answers RDKit.js's calls with the same names, arguments and return shapes. In Crux mode, what
-has moved to Crux runs on Crux, and every Crux path has the RDKit path behind it. Other packages get RDKit objects
-from Chem in both modes (`getRdKitModule()`, `getRdKitService()`); in Crux mode the pictures and values of the moved
-functions come from Crux (the last table below).
+`vendor/chem-wasm/`) answers RDKit.js's calls with the same names, arguments and return shapes, and adds calls of its
+own (descriptors, properties, QED, the scripts' replacements). In Crux mode a feature that has moved runs on Crux, with
+its old RDKit path behind it for what Crux cannot do; in RDKit mode it runs as before. Other packages get RDKit objects
+from Chem in both modes.
+
+The history of each move, its parity numbers and timings are in `CHANGELOG.md`.
 
 ## What lives where
 
-| File | What it does |
+| File | What it holds |
 |---|---|
-| `chem-engine.ts` | The one reader of the setting (`requestedEngine`, throttled to one read a second, through `chemSetting`, which reads the published Chem's settings from the package-test bundle too) and the tests' override (`setChemicalEngine`); the engine in effect (`engineInEffect`: Crux once its module is ready, else RDKit), a generation number that changes with it (caches compare it), switch listeners (the package repaints the grids), `renderingModule` (the module drawing goes through), `cruxReady` |
-| `crux-module.ts` | The lazy loader of `vendor/chem-wasm/chem_wasm_bg.wasm`: fetched and compiled once (`compileCrux`, the compiled Module handed to the Crux workers), instantiated once on the main thread (`loadCrux`, set up like RDKit: `prefer_coordgen(false)`, `use_legacy_stereo_perception(false)`); a load not done within 60 s of its fetch's start (a stalled fetch) has failed; a failure to load is logged once and leaves RDKit until one retry a minute later (a second failure is final for the session); a trap in a Crux call (`WebAssembly.RuntimeError`, `noteCruxError`) leaves RDKit for the session, as the instance may be broken |
-| `fallback.ts` | `cruxOrRdKit` / `cruxOrRdKitAsync` and `warnCruxFallback`: a Crux failure or a "not supported by Crux" refusal runs the call on RDKit, logged once per call name with `console.warn` |
-| `worker-jobs.ts` | The worker jobs by engine: fingerprints (`fingerprintsByEngine`, and the engine a cache belongs to) and structural alerts (`alertsByEngine`): the Crux pool in Crux mode, the RDKit pool otherwise and behind it (the whole call when Crux fails; otherwise the molecules Crux cannot read, on the RDKit pool) |
-| `../crux/crux-service.ts` | The Crux worker pool: molecules in chunks, each worker handed its next chunk when the last is done, each chunk within its own time (30 s plus a per-molecule allowance, from its start); a trap, a timeout or a lost worker restarts the pool (another failure keeps it and its search indexes), and the call falls back to RDKit |
+| `engine/chem-engine.ts` | The setting (`requestedEngine`, `isCruxRequested`, the tests' `setChemicalEngine`); the engine in effect (`engineInEffect`: Crux once its module is ready), `engineGeneration` and `onEngineSwitch` for caches and repaints; `byEngineAsync` (a call by the setting's engine); the main-thread helpers `renderingModule`, `byEngineModule`, `withMol`, `cruxReady` |
+| `engine/crux-module.ts` | The loader of the Crux file: compiled once (the workers get the compiled module), one main-thread instance (`cruxModuleSync`); a failed load leaves RDKit (one retry after a minute), a wasm trap leaves RDKit for the session (`noteCruxError`) |
+| `engine/fallback.ts` | The fallback: `cruxOrRdKit` / `cruxOrRdKitAsync` (the RDKit side when the Crux side throws), `rdkitForRows` (a column job's RDKit side for the rows Crux left), `warnCruxFallback` (logged once per call name, to the console and the platform's log) |
+| `engine/worker-jobs.ts` | Column jobs by engine: fingerprints, structural alerts and pharmacophores, notation conversions, InChI; `cruxInput` (a column as the Crux workers get it) |
+| `engine/molecule-jobs.ts` | Column jobs by engine: CoordGen coordinates, flattening, beautifying, elemental analysis, the R-group dialog's cores, the SAR matrix's atom counts |
+| `engine/analysis-jobs.ts` | Analyses by engine: MMPA fragments, R-groups, MCS, cluster MCS and R-groups, fragment linking; `molzip` (Crux in both modes) |
+| `crux/crux-service.ts` | The Crux worker pool (`CruxService`, `getCruxService` in `crux-searches.ts`): `jobInChunks` (a column in chunks across the workers), `idleWorkerJob` (one long call with its own deadline), clusters one per job, typed methods; the search index's segments; time limits, worker restarts |
+| `crux/crux.worker.ts` | The worker: the search segments (`build`, `search`, `drop`) and `JOBS`, every job table by name |
+| `crux/jobs/*.ts`, `crux/crux-analysis-jobs.ts` | The job tables, one per area (`calculations`, `batch`, `molecule-jobs`, `search-types`, `python-free`, `synthon-search`; the analyses), each job a `WorkerJob` |
+| `crux/crux-api.ts` | Crux's calls beyond RDKit.js's; the job shape (`WorkerJobContext`, `WorkerJob`, `throwIfTrap`) |
+| `crux/crux-searches.ts`, `crux/crux-search-types.ts` | The substructure search on Crux: Contains / Not contains on the index; Exact, Stereo agnostic, (Not) included in, Similar |
+| `crux/crux-inchi.ts` | InChI by the split: InChI's input from Crux, the InChI library in crux-sketch's module |
+| `rdkit-service/` | RDKit: the pool (`rdkit-service.ts`, `rdkit-service-worker-client.ts`, `rdkit-service-worker-api.ts`, `../rdkit.worker.ts`) and the worker code (`rdkit-service-worker*.ts`, `query-features.ts`), which the Crux workers also run, on the Crux module |
+| `utils/chem-common-rdkit.ts` | RDKit's main-thread module and pool (`getRdKitModule`, `getRdKitService`); drawing (`drawMoleculeToCanvas`, by engine); `canonicalWith`, `readsAsMolecule`, `sameMolecule` (by engine) |
+| `utils/mol-creation_rdkit.ts` | Reading molecules and queries with either engine's module (`getMolSafe`, `getQueryMolSafe`, `readsAsQuery`, `clusterMcsSmiles`) |
+| `utils/convert-notation-utils.ts` | `_convertMolNotation` (by engine) and `_convertMolNotationByRdKit` (RDKit in both modes) |
+| `rendering/rdkit-cell-renderer.ts`, `rendering/mixture-cell-renderer.ts` | The Molecule and mixture cell renderers, by the engine in effect (the "RDKit" names stay: other packages use them); `_fetchMolByEngine` holds the per-molecule fallback |
+| `rendering/rdkit-reaction-renderer.ts`, `rendering/reaction-depiction.ts`, `utils/reactions/reaction-drawing.ts` | Reaction drawing: RDKit in both modes until Crux draws reactions |
+| `rendering/atom-picker-controller.ts`, `rendering/mol3d-hover-handler.ts` | The 2D↔3D atom picker and hover, by engine (`mapAtomIndices2Dto3DByEngine`) |
 
-RDKit mode fetches the file only for what runs on Crux in both modes: `molzip`, and fingerprints with the FCFP or
-chirality option (Chem's RDKit.js has neither).
-In Crux mode the package's init loads it beside RDKit; a switch at run time draws with RDKit until it is ready, then
-the renderers empty their caches and the grids repaint.
-
-## What follows the setting
-
-| Area | Crux mode | RDKit behind it |
-|---|---|---|
-| Molecule cell renderer (`rendering/rdkit-cell-renderer.ts`), `drawMolecule`, the mixture renderer | parse, layout, alignment, highlights and drawing through the Crux module; caches per engine, emptied on a switch | per molecule: what Crux cannot read (`null`), a scaffold it cannot read, a call it refuses |
-| `canvasMol` (`utils/chem-common-rdkit.ts`, `drawMoleculeToCanvas`) | the same | per molecule |
-| Descriptors (`descriptors/descriptors-engine.ts`: the menu and its editor, the transform, the vector function, the panel, `chemDescriptors`, `chemDescriptorsTree`) | the tree from the main thread's instance, the values from the Crux workers (`crux/crux-service.ts`, each distinct molecule once, in chunks of 1000 across the pool, back as typed arrays) | the chem-chem container, per call and per molecule Crux cannot read (a row of nulls for a molecule given) |
-| Scaffold tree (`getScaffoldTree`) | a Crux worker, the same JSON as `scripts/scaffold_tree.py` | the Python script, per call |
-| Contains / Not contains search (`crux/crux-searches.ts`, `getSubstructureSearchEngine`; until 2026-10-22 it had a setting of its own, `SubstructureSearchEngine`) | the Crux workers index the column in segments and search it with the query molecule Chem builds for RDKit | RDKit search per query Crux cannot read / per unreadable molecule, and per search that fails |
-| Fingerprints (`chemGetFingerprints` and its cached `~<column>.<type>` columns, the query's fingerprint, similarity and diversity, chemical space and cliffs' preprocessing, BitBIRCH, the SAR matrix's clustering; `engine/worker-jobs.ts`) | the Crux workers run the RDKit worker's own code on the Crux module (the same types and options: Morgan r2/2048 after `remove_hs_in_place`, ...); a cached column belongs to the engine that filled it (`~<column>.Morgan.Crux`, RDKit's `~<column>.Morgan`), and saving one drops the other engine's; options other than the defaults are in its name (`~<column>.Morgan(radius=3)`, `utils/fingerprint-options.ts`); each cache keeps the column's edits since it was read. FCFP and chirality (`useFeatures`, `useChirality`) are Crux's in both modes: Chem's RDKit.js has neither | the RDKit pool, per call and per molecule Crux cannot read (none for FCFP and chirality) |
-| Structural alerts and pharmacophore features (`panels/structural-alerts.ts`, `panels/pharmacophore-features.ts`) | the Crux workers, matching as the RDKit worker does, each molecule parsed once | the RDKit pool, per call and per molecule Crux cannot read |
-| An activity cliff's MCS, highlighted in its tooltip and panel (`analysis/activity-cliffs.ts`, `cliffMcs`) | RDKit's Rascal MCES (crux's `get_mces`) on a Crux worker (`CruxService.pairUncommonAtomsAndBonds`): each molecule's atoms and bonds outside it, from its own matches; the most bonds the two molecules share, possibly in several fragments, where FMCS finds one connected substructure; no highlight for a pair under its similarity threshold | RDKit's FMCS on the RDKit pool, per call (a Crux failure) |
-| The property table (`widgets/properties.ts`: the Properties panel, Chemical Properties' columns, `getProperties`, `getChemPropertyFunction`) | crux's `chemProperties` (a column on the Crux workers, a panel's molecule on the main thread's instance): RDKit's definitions, each with its method and reference (`CRUX_PROPERTY_METHODS`) | OpenChemLib's workers per call; a panel's molecule Crux cannot read: OpenChemLib (a column keeps one method: empty cells) |
-| Reactions (`utils/reactions/reaction-engine.ts`: Transformation and Two-Component reactions, Deprotect, Reaction Enumeration) | `get_rxn`, `run_reactants` and their molecules on the main thread's Crux module; drawing a reaction stays RDKit's | RDKit's module per molecule (per run for an enumeration) |
-| MMPA fragmentation (`getMmpFrags`: MMP analysis, the SAR matrix's series and clusters; `engine/analysis-jobs.ts`) | the Crux workers run the RDKit worker's `mmpGetFragments` on the Crux module (`crux/crux-analysis-jobs.ts`), the molecules in chunks across the pool | the RDKit pool, per call and per molecule Crux does not read |
-| R-group decomposition (`rGroupsMinilib`: the R-group analysis dialog, `rGroupDecomposition`; the SAR matrix's clusters) | a Crux worker runs the RDKit worker's `rGroupAnalysis`, a SAR matrix cluster per job across the pool; a cancel ends the operation at once (the worker's result is dropped) | the RDKit pool, per call (a molecule Crux cannot read, a failure) and per cluster |
-| FMCS (`getMCS`: the R-group dialog's MCS; Cluster MCS, `performClusterMCS`; the SAR matrix's anchors) | a Crux worker runs the RDKit worker's `mostCommonStructure`; a cluster per job across the pool, within FMCS's own Timeout of 45 s ('' past it, as the RDKit pool gives a cluster whose worker it restarts after 45 s); Cluster MCS' SMILES from the main thread's Crux module | the RDKit pool, per call and per cluster Crux cannot read |
-| Fragment linking (the SAR matrix's `linkRGroupFragments`) | RDKit's molzip on the Crux workers: the RDKit worker's `linkRGroupFragments` joins by molzip where the module has it | the RDKit worker's string assembly, per call and per row molzip does not join |
-| `molzip` (a package function for Bio and other packages) | RDKit's molzip on the Crux workers, in both modes: Chem's RDKit.js has none | none: it throws when the Crux file does not load |
-| Notation conversions (`convertMolNotation`, `canonicalize`, Convert Notation, Save as SDF, `_convertMolNotation` and what calls it: `grok.chem.convert`, the sketchers' getters, the panels' SMILES; `utils/convert-notation-utils.ts`, `convertMolNotationByEngine`) | a molecule on the main thread's Crux module, a column the RDKit worker's code on the Crux workers: RDKit.js 2026.03.6's strings (the product owner, 2026-10-23: ~0.9 % of canonical SMILES write stereo marks or order otherwise than Chem's RDKit 2024.09, the same molecules). Code whose next step is RDKit's converts by RDKit in both modes (`_convertMolNotationByRdKit`: reaction drawing, the substructure filter's query names, an R-group core's checks) | per molecule Crux cannot read or refuses, and a CXSMILES whose query features Crux's reader skips (`cruxReadsCxExtension`, the search's guard); per column call |
-| `isSmiles`, `validateMolecule` (`package.ts`) | a molecule Crux reads (`validateMolecule`: as it stands, getMolSafe's first read) is a molecule / valid (`''`) | RDKit for the rest: `validateMolecule`'s messages are RDKit's (Crux keeps no RDKit log) |
-| The context panel's Structural Alerts, Pharmacophores and 2D Structure (`widgets/structural-alerts.ts`, `widgets/pharmacophore-features.ts`, `widgets/structure2d.ts`), the MMP viewer's pair alignment and highlights (`mmp-mol-rendering.ts`, `mmp-substruct-provider.ts`) | the main thread's Crux module (`byEngineModule` in `chem-engine.ts`: one query-molecule cache per module) | per molecule Crux cannot read, a SMARTS it does not read, a call that throws |
-| The MMP viewer's generated molecules and a SAR matrix's single-cut cells (`mmpLinkFragmentsByEngine`) | the RDKit worker's `mmpLinkFragments` on the Crux workers | the RDKit pool per call and per row Crux does not join |
-| InChI and InChIKeys (`getInchis`, `getInchiKeys`, To InchI... / To InchI Keys..., the Identifiers panel: `panels/inchi.ts`, `widgets/identifiers.ts`) | by the split (crux-core decision chem-wasm-inchi): InChI's input from Crux (chem-wasm's `get_inchi_input`: RDKit's MolToInchi up to the library call; the Crux workers for a column, `inchisByEngine`), the InChI library in crux-sketch's InChI module, the page's (`crux/crux-inchi.ts`): RDKit.js 2026.03.6's strings | the RDKit pool per molecule Crux cannot read and a CXSMILES whose query features Crux's reader skips; per call (the module fails to load) |
-| 3D coordinates: `Chem:embed3d` (`embed3d` in `widgets/structure3d.ts`), the one entry point the 3D Structure pane and Bio's macromolecule pane call | crux's `chemEmbed3d` with its recommended options (`chemEmbed3dRecommendedOptions`: ETKDGv3 all-in-one without Hs, random starting coordinates above 50 atoms, 200 attempts, UFF, a 10 s deadline; crux-core decision chem-props) on the least busy Crux worker (`CruxService.embed3d`): a timeout throws and leaves the worker usable, a worker still busy 2 s past it is replaced alone | the script per molecule Crux cannot read and per failed call; none for a timeout (the pane says so) |
-| Drug Likeness and Toxicity (`widgets/drug-likeness.ts`, `widgets/toxicity.ts`; the product owner, 2026-10-22) | RDKit's QED with the eight properties it weighs (crux's `chemQed`), and RDKit's FilterCatalog Brenk and NIH alerts with their atoms (`chemAlerts`): the panels, their whole-table columns (`QED`, `Brenk alerts`, `NIH alerts`) and Chem \| Calculate \| Toxicity Alerts... | OpenChemLib's score and four risks per molecule Crux cannot read or a failed call; the alert counts have none (RDKit.js has no FilterCatalog: Toxicity Alerts asks for the Crux engine). Toxicity Risks... stays OpenChemLib's in both modes |
-
-Fingerprints by Crux are RDKit 2026.03's, Chem's RDKit is 2024.09: on Chem's test molecules (1,402) Morgan, pattern,
-MACCS and RDKit fingerprints are identical, atom-pair and topological-torsion ones differ on 17 and 16 molecules, each
-of them RDKit's own change between the two releases (RDKit.js 2026.03.6 gives Crux's bits). Structural alerts match
-identically. A fingerprint cache belongs to the engine that filled it: the RDKit substructure search keeps its own
-pattern fingerprints (the plain-named columns) on RDKit in both modes.
-
-In Crux mode the RDKit pool is not started for what has moved; everything else (reaction drawing, the substructure
-search's RDKit path, the Identifiers pane's other identifiers) is RDKit in both modes.
-
-Descriptors in Crux mode are `dockerfiles/chem/chem.py` as this package has it, on the RDKit release Crux reproduces:
-the same tree (groups, versions, names, order; the descriptions RDKit's docstrings give) and the same values (2D within
-1e-12; the 3D ones from Crux's own embedding: chem.py embeds unseeded, so the container's 3D values change from call to
-call too). A container image built before commit 30215919ce (GROK-20505: `chem_utils.py`'s curated descriptions, a
-"type" key and per-name tags replaced by RDKit's docstrings) shows the old texts in the dialog; the next container
-build gives what Crux gives. The scaffold tree is `scripts/scaffold_tree.py`'s (ScaffoldGraphDG 1.1.8, which drops a
-molecule RDKit cannot read back from its own aromatic MOL block, e.g. an aromatic `[nH]`; Crux does the same); its
-nodes' MOL blocks are Crux's layout.
-
-Settings on existing servers: the server keeps each group's saved settings as one map (the settings editor saves every
-property, defaults included) and shows a property the map lacks with the published version's default
-(`packages_service.dart`, `getPropertyValues` / `getUserPackagesProperties`); publishing stores nothing. A value saved for the retired `SubstructureSearchEngine`
-stays in such a map and is not read. `ChemicalEngine` is new: RDKit everywhere until switched.
-
-## What other packages see
-
-RDKit mode (the default) changes nothing they receive. In Crux mode, only the pictures and the values that come
-from Crux:
-
-| What they call | RDKit mode | Crux mode |
-|---|---|---|
-| `getRdKitModule()` (Bio, Helm, SequenceTranslator, Peptides, PowerPack, Chembl, SureChembl, KetcherSketcher, the BDD bindings), `getRdKitService()` and its methods | RDKit | RDKit (never a Crux object) |
-| `drawMolecule` / `grok.chem.drawMolecule`, `canvasMol` / `grok.chem.canvasMol`, the Molecule cell renderer, `rdKitCellRenderer` | RDKit's picture | Crux's picture (the same drawing calls; RDKit per molecule Crux cannot do) |
-| `chemDescriptors` / `grok.chem.descriptors`, `chemDescriptorsTree`, the descriptors vector function and menu (HitTriage, statistics, Flow) | the chem-chem container | Crux: the same names, types and nulls; the 3D values from Crux's own embedding |
-| `getScaffoldTree`, the Scaffold Tree viewer | the Python script | Crux: the same JSON |
-| `searchSubstructure`, `filterBySubstructure`, the substructure filter (Bio, DrugBank, PowerPack, Flow, ...) | RDKit's | Crux's: the same hits |
-| `getMorganFingerprints`, `getFingerprints`, `getSimilarities`, `findSimilar`, `getDiversities` (Bio, Dendrogram, Flow, Chemspace, ...); `getStructuralAlerts`, `runPharmacophoreFeatures` | RDKit's (`getFingerprints`' FCFP and chirality options: Crux's) | Crux's (the same types and options: identical bits on Chem's datasets but where RDKit 2024.09 and 2026.03 differ) |
-| `getProperties`, `getChemPropertyFunction`, Chemical Properties (Admetica's MW, HitTriage) | OpenChemLib's | Crux's: RDKit's definitions (MW the average weight, not OpenChemLib's monoisotopic mass) |
-| `getMCS`, Cluster MCS (`clusterMCS`), `rGroupDecomposition`, MMP analysis | RDKit | Crux's: RDKit 2026.03's (an MCS SMARTS may name its atoms in another order than Chem's RDKit 2024.09, the same query) |
-| `molzip` | Crux's | Crux's |
-| `convertMolNotation`, `canonicalize`, `grok.chem.convert` (every sketcher's getters), `isSmiles`, `validateMolecule` | RDKit | Crux's: RDKit.js 2026.03.6's strings, RDKit per molecule Crux cannot read; `validateMolecule`'s messages RDKit's |
-| `getInchis`, `getInchiKeys` | RDKit | Crux's: RDKit.js 2026.03.6's InChIs (the library in crux-sketch's InChI module) |
-| every other function | RDKit | RDKit |
+RDKit mode loads the Crux file only for what is Crux's in both modes (`molzip`; FCFP and chirality fingerprints, which
+Chem's RDKit.js lacks). Crux mode loads it at the package's init; a switch at run time draws with RDKit until it is
+ready, then the renderers empty their caches and the grids repaint.
 
 ## Moving a feature behind the setting
 
-1. Find its RDKit path and keep it as it is: it stays the RDKit-mode path and the fallback.
-2. Write the Crux path beside it with the same inputs and outputs (the same JSON, columns, types and nulls); Crux
-   objects never leave Chem.
-3. Branch once at the feature's entry: `isCruxRequested()` for a call (a worker job, a calculation), `renderingModule`
-   / `engineInEffect` for main-thread drawing; wrap the Crux path in `cruxOrRdKit(Async)` with the call's name.
-4. Caches holding engine objects: compare `engineGeneration()` and empty themselves when it changes.
-5. Tests in the `chemical engine` category: both engines, the switch, the fallback (`setCruxLoadFailureForTests`),
-   Crux against RDKit on Chem's datasets.
+1. Keep the RDKit path as it is: it stays RDKit mode's path and the fallback. Name RDKit-only code so it can be found
+   (`…ByRdKit`, an `rdkit` closure, a function in `rdkit-service/`).
+2. Write the Crux path beside it with the same inputs and outputs (the same JSON, columns, types and nulls). Crux
+   objects never leave Chem. A helper both paths use takes the module (`RDModule`, RDKit.js's shape) as a parameter
+   and never calls `getRdKitModule()` or the RDKit pool itself.
+3. Branch once, at the feature's entry, in one of three shapes:
+   - **One molecule on the main thread** (a panel, a drawing, a check): `byEngineModule(call, rdKitModule,
+     (module, crux) => ...)`, the job written once against the module (`withMol(module, crux, molecule, read)` parses
+     the molecule); null (or a throw) from Crux's runs it on RDKit.
+   - **A column** (work that would freeze the page and is the same per molecule): a job in a table of `crux/jobs/`
+     (`(ctx, chunk, ...args) => result`), sent by `CruxService.jobInChunks`, typed arrays back where they pay; on the
+     main thread a `…ByEngine` function: `byEngineAsync(call, crux, rdkit)` (Crux mode: `crux()`, `rdkit()` when it
+     fails; RDKit mode: `rdkit()`), with `cruxInput` for the column and `rdkitForRows` for the rows Crux leaves.
+   - **One long call** (an embedding, a conformer search): a job sent by `CruxService.idleWorkerJob(op, args,
+     timeoutMs)` with its own deadline in its options, behind `byEngineAsync` as a column's.
+4. Caches holding engine objects compare `engineGeneration()` and empty themselves when it changes.
+5. Tests in the `chemical engine` category (or the feature's own), through `src/tests/engine-utils.ts`:
+   `inBothEngines` (the same run in each engine, compared), `inEngine`, `expectNoFallback`, `withCruxUnreadable` (a
+   molecule the Crux workers cannot read); its header says what each becomes when RDKit goes.
 
-Running a whole suite in Crux mode: `setChemicalEngine(ChemicalEngine.Crux)` in code, or the package setting on the
-server, which every page then starts with (`misc/crux/engine-setting.sh set Crux`, `restore` after: package tests, the
-BDD suite, the tests of the packages that call Chem).
+A whole suite in Crux mode: `setChemicalEngine(ChemicalEngine.Crux)` in code, or the package setting on the server
+(`misc/crux/engine-setting.sh set Crux`, `restore` after).
+
+## What follows the setting
+
+Behind every Crux path below, besides what is listed: RDKit for the whole call when Crux fails, and for a molecule
+Crux cannot read or a CXSMILES whose query features Crux's reader skips (`cruxReadsCxExtension`).
+
+| Area (where it branches) | Crux mode | RDKit behind it |
+|---|---|---|
+| Drawing: the cell renderer, `drawMolecule`, `canvasMol`, the mixture renderer (`rendering/rdkit-cell-renderer.ts`, `utils/chem-common-rdkit.ts`) | the Crux module; caches per engine | per molecule, per scaffold Crux cannot read |
+| Descriptors (`descriptors/descriptors-engine.ts`) | the tree on the main thread's module, the values on the workers | the chem-chem container |
+| Scaffold tree (`getScaffoldTree`, `package.ts`) | a Crux worker, `scaffold_tree.py`'s JSON | the script |
+| Substructure search, every type, and the filter's query names (`crux/crux-searches.ts`, `crux/crux-search-types.ts`) | the workers over the column's index segments; Similar by the engine's fingerprints | the RDKit search per query Crux cannot read, per failed search; per row Crux cannot read |
+| Fingerprints, similarity, diversity, chemical space (`engine/worker-jobs.ts`) | the workers (`crux/jobs/batch.ts`); caches per engine (`~<column>.Morgan.Crux`) | the RDKit pool; none for FCFP and chirality (Crux's in both modes) |
+| Structural alerts, pharmacophore features (`engine/worker-jobs.ts`) | the workers, a chunk per Crux call | the RDKit pool; per SMARTS Crux reads nothing from |
+| Notation conversions, `canonicalize`, `grok.chem.convert` (`utils/convert-notation-utils.ts`, `engine/worker-jobs.ts`) | a molecule on the main thread's module, a column on the workers | RDKit's module or pool |
+| `isSmiles`, `isSmarts`, `validateMolecule`, `removeDuplicates`, the cell editor's check (`package.ts`, `utils/chem-common-rdkit.ts`) | the main thread's module | RDKit's module (`validateMolecule`'s messages are RDKit's) |
+| InChI and InChIKeys (`engine/worker-jobs.ts`, `crux/crux-inchi.ts`) | InChI's input from Crux, the library in crux-sketch's module | the RDKit pool |
+| CoordGen, Flatten, `beautifyMols`, elemental analysis (`engine/molecule-jobs.ts`) | the workers (`crux/jobs/molecule-jobs.ts`) | the RDKit pool, or the main thread's loop |
+| MMPA, R-groups, MCS, cluster MCS, fragment linking, the MMP viewer's generations (`engine/analysis-jobs.ts`) | the RDKit worker's own code on the workers (`crux/crux-analysis-jobs.ts`) | the RDKit pool per call, molecule, row or cluster |
+| An activity cliff's MCS (`analysis/activity-cliffs.ts`) | RDKit's Rascal MCES on a worker | FMCS on the RDKit pool |
+| The R-group dialog, the SAR matrix, the Scaffold Tree viewer, the MMP viewer's pictures (`analysis/`, `widgets/scaffold-tree.ts`) | columns on the workers, single structures on the main thread's module | RDKit's module per structure |
+| Reactions (`utils/reactions/reaction-engine.ts`) | `get_rxn`, `run_reactants` on the main thread's module | RDKit's module per molecule or run |
+| Properties, Drug Likeness, Toxicity (`widgets/properties.ts`, `widgets/drug-likeness.ts`, `widgets/toxicity.ts`) | crux's `chemProperties`, `chemQed`, `chemAlerts` | OpenChemLib (Toxicity Alerts... is Crux's only) |
+| 3D coordinates (`Chem:embed3d`, `widgets/structure3d.ts`) | crux's `chemEmbed3d` on an idle worker, its own deadline | the script (none for a timeout) |
+| One molecule on the main thread: `getCLogP`, the sketcher's free text, the atom picker, panels (`widgets/`, `rendering/`) | the main thread's module (`byEngineModule`) | RDKit's module |
+| The Python scripts replaced (`python-free.ts`: Curate, Mutate, Generate Conformers, Gasteiger charges, Butina, InchiToMol, Calculate logP, Murcko Scaffolds, Filter by Catalogs, Map Identifiers; `widgets/synthon-search.ts`: Synthon Search) | crux's replacements of the scripts (`crux/jobs/python-free.ts`, `crux/jobs/synthon-search.ts`) | the script, renamed with the suffix `Python`, per call |
+| `molzip` (`engine/analysis-jobs.ts`) | the workers, in both modes | none: it throws when Crux does not load |
+
+Known differences, both deliberate: Crux is RDKit 2026.03, Chem's RDKit.js is 2024.09, so where they differ (some
+canonical SMILES' stereo marks or atom order, atom-pair and torsion fingerprints of a few molecules, an MCS SMARTS'
+atom order) Crux gives 2026.03's answer; and the property table's MW is RDKit's average weight where OpenChemLib gave
+the monoisotopic mass.
+
+## What other packages see
+
+RDKit mode changes nothing they receive. In Crux mode, the pictures and values of the moved functions come from Crux:
+
+| What they call | Crux mode |
+|---|---|
+| `getRdKitModule()`, `getRdKitService()` (Bio and the bio library, Helm, SequenceTranslator, Chembl, SureChembl, KetcherSketcher, the BDD bindings) | RDKit, never a Crux object |
+| `drawMolecule`, `canvasMol`, the Molecule cell renderer | Crux's picture |
+| `chemDescriptors`, `chemDescriptorsTree`, `getScaffoldTree`, `getProperties`, `getChemPropertyFunction` | Crux's: the same names, types and nulls |
+| `searchSubstructure`, `filterBySubstructure`, the substructure filter | Crux's search: the same hits (Similar: Crux's fingerprints) |
+| `getFingerprints`, `getMorganFingerprints`, `getSimilarities`, `findSimilar`, `getDiversities`, `getStructuralAlerts` | Crux's |
+| `getMCS`, `clusterMCS`, `rGroupDecomposition`, MMP analysis | Crux's |
+| `convertMolNotation`, `canonicalize`, `grok.chem.convert`, `isSmiles`, `validateMolecule`, `getInchis`, `getInchiKeys`, `removeDuplicates` | Crux's strings |
+| `beautifyMols`, `getCLogP`, `embed3d` | Crux's |
+| The replaced scripts' functions (`Curate`, `Mutate`, `GenerateConformers`, `ButinaMoleculesClustering`, `InchiToMol`, `CalculateLogP`, `MurckoScaffolds`, `FilterByCatalogs`, `Chem:SynthonSearch`) | Crux's: the scripts' names, inputs and outputs |
+| `molzip` | Crux's in both modes |
+| every other function | RDKit |
+
+## What stays RDKit, by design or for now
+
+| What | Why |
+|---|---|
+| `getRdKitModule()` / `getRdKitService()` for other packages | they take RDKit objects; each needs its own move (or a Crux object API) |
+| Reaction drawing (`rendering/rdkit-reaction-renderer.ts`, the reaction dialogs' previews: `drawReactionByRdKit` in `utils/reactions/reaction-drawing.ts`, `_convertMolNotationByRdKit`; `validateReactionSmarts` in `utils/reactions/reaction-storage.ts`, which gates the drawing) | crux has no `drawReaction` yet |
+| `validateMolecule`'s messages | RDKit's log; Crux keeps none |
+| The chem-chem container's other identifiers, Toxicity Risks... (OpenChemLib) | not RDKit |
+
+## Removing RDKit
+
+When Crux becomes the default and RDKit.js goes, the change is deletion, in this order:
+
+1. **Close the gaps first**, each a fallback that would otherwise have nothing behind it: CXSMILES query features in
+   Crux's reader (`cruxReadsCxExtension` then always true), reaction drawing, a Crux object API (or moves) for the
+   packages that call `getRdKitModule()`, `validateMolecule`'s messages. The platform log's `Crux fallback: <call>`
+   warnings show what else RDKit still does in practice.
+2. **Make Crux the only engine**: the setting goes (`package.json` `ChemicalEngine`, `chem-engine.ts`' reading of it);
+   `isCruxRequested()` and `engineInEffect() === Crux` are true.
+3. **Delete every RDKit side**, mechanically:
+   - `byEngineAsync(call, crux, rdkit)`, `cruxOrRdKit(call, crux, rdkit)`, `cruxOrRdKitAsync(...)` → `crux()`;
+   - the `rdkit` closure of each `…ByEngine` function (and any `if (!isCruxRequested()) return rdkit();`) → gone;
+   - `await rdkitForRows(...)` → gone (the rows stay Crux's answer: none);
+   - `byEngineModule(call, rdKitModule, job)` → `job(cruxModuleSync(), true)`; `renderingModule` → the Crux module;
+   - the `if (crux)` branches inside drawing and conversions (`drawMoleculeWith`, `convertWith`, `withMol`: the
+     `crux` flag) → the Crux branch;
+   - the fallbacks that are not one call: the cell renderer's per molecule (`_fetchMolByEngine`, `_rendererGetOrCreate`, `_molToSvg`),
+     descriptors' container rows, the 3D embedding's (`cruxEmbed3d`), `rdkitCoreMolblock`
+     (`analysis/r-group-analysis.ts`), `v3000SmilesByRdKit` (`widgets/scaffold-tree.ts`);
+   - each replaced Python script (`*Python`) and its call.
+4. **Delete the RDKit-only files and functions** (the table below).
+5. Remove RDKit.js itself (`src/RDKit_minimal.js`, its wasm, `rdkit_lib_version.js`, the package init's RDKit load).
+
+| File or area | What goes | What stays |
+|---|---|---|
+| `engine/chem-engine.ts` | `ChemicalEngine`, `requestedEngine`, `setChemicalEngine`, `isCruxRequested`, `engineInEffect`, the generation and switch listeners, `byEngineAsync`, `renderingModule`, `byEngineModule`, `withMol`'s `crux` flag | `chemSetting`, `cruxReady` (as "the module is loaded") |
+| `engine/fallback.ts` | the whole file (`cruxOrRdKit`, `cruxOrRdKitAsync`, `rdkitForRows`, `warnCruxFallback`, the counts and the reporter) | — |
+| `engine/crux-module.ts` | the failure-to-RDKit logic (`cruxLoadFailed`, the retry, `noteCruxError`'s switch to RDKit; a load failure becomes an error); `getRdKitWebRoot` (Chem's web root from the package) | the loader |
+| `engine/worker-jobs.ts`, `engine/molecule-jobs.ts`, `engine/analysis-jobs.ts` | each function's `rdkit` closure, `byEngineAsync` and `rdkitForRows` calls; `fingerprintsByEngine`'s `engine` parameter and `fingerprintsKey`'s RDKit suffix; `cruxInput`'s CXSMILES skip, `forCrux` and `setCruxUnreadableForTests` (the fallback's tests); `coreMolblocksByCrux`'s `undefined` rows | the Crux sides, renamed without `ByEngine` |
+| `crux/crux-searches.ts` | `SubstructureSearchEngine`, `get`/`setSubstructureSearchEngine`, `rdkitMatcher`, `runCruxSearch`'s `rdkitSearch` | the search |
+| `crux/crux-search-types.ts` | `rdkitAnswer`, `SegmentState`'s RDKit keys, the `rdkitSearch` parameters | the search types |
+| `crux/crux-service.ts`, `crux/crux.worker.ts`, `crux/jobs/`, `crux/crux-analysis-jobs.ts` | the jobs' `rest` / `unread` rows (what the RDKit side did); `cruxReadsCxExtension` and `withinCruxReader` once Crux reads CXSMILES query features | the pool, the worker, the jobs |
+| `rdkit-service/` | the pool: `rdkit-service.ts`, `rdkit-service-worker-client.ts`, `rdkit-service-worker-api.ts`, `../rdkit.worker.ts`; the worker code's pool-only parts (the molecule cache, `WORKER_CALL`) | the worker code (`rdkit-service-worker*.ts`, `query-features.ts`): the Crux workers run it on the Crux module (move it under `crux/`) |
+| `utils/chem-common-rdkit.ts` | `initRdKitModuleLocal`, `initRdKitService`, `getRdKitModule`, `getRdKitService`, `_rdKitModule`, `_rdKitService`, `moduleInitialized`, `cancelChemOp`, `checkMoleculeValid`, `checkMolEqualSmiles` | drawing, the render options, `canonicalWith`, `readsAsMolecule`, `sameMolecule`, the web root |
+| `utils/mol-creation_rdkit.ts` | — (it takes the module) | all of it (rename) |
+| `utils/convert-notation-utils.ts` | `_convertMolNotationByRdKit` (with reaction drawing; the substructure filter's last resort for its query's SMARTS becomes `_convertMolNotation`), the CXSMILES check | `_convertMolNotation` on the Crux module |
+| `package.ts` | the RDKit load in `init`; `validateMolecule`'s `validationMessageByRdKit` once Crux writes messages; `getScaffoldTree`'s `pythonTree`; `getRdKitModule` once no package calls it (a deprecated alias first) | the registrations; the RDKit module handed to renderers and helpers becomes Crux's |
+| `python-free.ts` | each `cruxOrPython` call's script side, `pythonScript`, `scriptOutput`, `PYTHON_SCRIPTS`; the `*Python` scripts; Map Identifiers' container endpoints | the Crux paths (`ChemistryGasteigerPartialCharges` is a Flow node type: a decision) |
+| `rendering/` | the cell renderer's RDKit branches (above), `IMolRenderingInfo.engine` and the engine prefix of its cache keys | drawing, the caches; the reaction renderer and depiction until Crux draws reactions |
+| `widgets/` | `identifiers.ts`' RDKit side; the OpenChemLib side of drug likeness, properties and toxicity; `structure3d.ts`' script fallback; the substructure filter's `initRdKitService()` and `isUnchanged`'s RDKit side; `synthon-search.ts`' script call; `scaffold-tree.ts`' `v3000SmilesByRdKit` and its `byEngineModule` fallbacks | the panels and viewers |
+| `descriptors/descriptors-engine.ts` | the container's tree and values, `fromContainerWhereUnread` | Crux's descriptors |
+| `analysis/` | SAR Matrix: `withEngineMol`'s fallback, `canonicalCache`'s `crux` flag, the `engineGeneration()` key prefix, the RDKit warm-up; activity cliffs: `cliffMcs`' FMCS, `drawMolecules`' SMARTS branch, `pairKey`'s prefix; R-groups: `rdkitCoreMolblock`, the cancel race and the `_rdKitService` restart; Deprotect: `addDeprotectedColumn`'s module parameter; MMP: the `rdkit` fields behind `byEngineModule` | the analyses |
+| `utils/reactions/`, `utils/reaction-enumeration/` | `EngineReaction`'s RDKit side, `onReactionEngine`'s fallback, `EnumerateOptions.rdkit`, `readOtherwise`; the dialogs' `rdkit` parameters once reactions draw on Crux | `reaction-drawing.ts` and the reaction renderer until then |
+| `utils/fingerprint-options.ts` | `needsCrux` (always Crux) | the options |
+| `tests/` | the RDKit legs, the parity and fallback tests (`engine-utils.ts`' header says what each helper's callers become) | the Crux tests |

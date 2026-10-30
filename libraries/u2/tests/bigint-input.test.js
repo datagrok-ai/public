@@ -1,6 +1,6 @@
 /* BigIntInput: text in, an exact bigint out — however many digits, with no double in between. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
@@ -50,15 +50,15 @@ test('parse: blank is null, an integer is exact, anything else is undefined', ()
 
 smoke('a thirty-digit number round-trips through the editor unchanged', async () => {
   const input = mount(new BigIntInput({label: 'Molecules'}));
-  assert.equal(input.value.value, null);
+  assert.equal(input.value, null);
 
   type(input, HUGE);
-  assert.equal(input.value.value, BigInt(HUGE));
-  assert.equal(String(input.value.value), HUGE, 'every digit survives');
+  assert.equal(input.value, BigInt(HUGE));
+  assert.equal(String(input.value), HUGE, 'every digit survives');
   assert.equal(input.validity.value, null);
   assert.notEqual(Number(HUGE).toString(), HUGE, 'which a double could not have done');
 
-  input.value.value = BigInt(HUGE) + 1n;
+  input.value = BigInt(HUGE) + 1n;
   assert.equal(editor(input).value, '123456789012345678901234567891');
   input.dispose();
 });
@@ -70,13 +70,13 @@ smoke('non-integer text stays on screen and marks the input invalid', async () =
   type(input, '1.5');
   assert.equal(input.validity.value, 'Not an integer');
   assert.equal(editor(input).value, '1.5', 'the text is not taken away');
-  assert.equal(input.value.value, 7n, 'the value keeps the last good number');
+  assert.equal(input.value, 7n, 'the value keeps the last good number');
 
   fire(editor(input), 'blur');
   assert.equal(editor(input).value, '1.5', 'blur does not overwrite text that is still invalid');
 
   type(input, '');
-  assert.equal(input.value.value, null, 'blank clears the value, as in Dart (big_int_input.dart:29)');
+  assert.equal(input.value, null, 'blank clears the value, as in Dart (big_int_input.dart:29)');
   assert.equal(input.validity.value, null);
   input.dispose();
 });
@@ -85,11 +85,11 @@ smoke('blur normalises the committed text, and onChanged reports every commit', 
   const changes = [];
   const input = mount(new BigIntInput({label: 'Count', onChanged: (v) => changes.push(String(v))}));
   type(input, ' +007 ');
-  assert.equal(input.value.value, 7n);
+  assert.equal(input.value, 7n);
   fire(editor(input), 'blur');
   assert.equal(editor(input).value, '7');
 
-  input.value.value = -1n;
+  input.value = -1n;
   assert.equal(editor(input).value, '-1');
   assert.deepEqual(changes, ['7', '-1']);
   input.dispose();
@@ -98,16 +98,16 @@ smoke('blur normalises the committed text, and onChanged reports every commit', 
 smoke('two editors on one signal, and dispose kills the listeners', async () => {
   const before = Scope.liveCount;
   const first = mount(new BigIntInput({label: 'From'}));
-  const second = mount(new BigIntInput({label: 'Also from', bind: first.value}));
+  const second = mount(new BigIntInput({label: 'Also from', bind: first.signal}));
 
   type(first, '900719925474099100');
   assert.equal(editor(second).value, '900719925474099100');
-  assert.equal(second.value.value, 900719925474099100n);
+  assert.equal(second.value, 900719925474099100n);
 
   second.dispose();
   first.dispose();
   assert.equal(Scope.liveCount, before);
 
   type(first, '5');
-  assert.equal(first.value.value, 900719925474099100n, 'listeners died with the scope');
+  assert.equal(first.value, 900719925474099100n, 'listeners died with the scope');
 });

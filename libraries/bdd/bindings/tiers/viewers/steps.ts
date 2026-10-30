@@ -1,13 +1,3 @@
-/* The `viewers` tier: viewers on the current table view — adding them, their properties by
-   caption, their context menus and hit areas, their canvas, their events, and the page's error
-   floor. A project opts in with `{"tiers": ["viewers"]}` in its bdd.config.json.
-   A step that reads or changes a viewer takes `{widget}` — a phrase naming a viewer or a widget —
-   so the general shapes ("X of Y should be Z") stay free for what they say; the context menu and
-   the pointer steps take any element.
-   Every step here asks the platform (properties, hit areas, render and menu events) instead of
-   guessing pixels or sleeping; viewers render immediately (no debounce) on a bdd page.
-   `widgets.ts` next to this file holds the tier's other half: the steps a package wrote for one
-   viewer that a second viewer then wanted. */
 import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Given, Then, When} from '../../../src/registry.js';
@@ -333,11 +323,11 @@ export const areaColor = Then('the {string} area of {widget} should contain the 
 
 export const areasDiffer = Then('the {string} and {string} areas of {widget} should be painted in different colors',
   (page: Page, a: string, b: string, target: ElementRef) => v.expectAreaColorsAlike(page, target, a, b, false),
-  {description: 'one area has a color the other does not — per-category coloring, not chrome'});
+  {description: 'one area has a hue the other does not — per-category coloring; greys (text, gridlines, edges) do not count'});
 
 export const areasSame = Then('the {string} and {string} areas of {widget} should be painted in the same colors',
   (page: Page, a: string, b: string, target: ElementRef) => v.expectAreaColorsAlike(page, target, a, b, true),
-  {description: 'every significant color of either area has a match in the other — a linked color coding, a swatch and its category'});
+  {description: 'every significant hue of either area has a match in the other — a linked color coding, a swatch and its category; greys do not count'});
 
 export const areaNotColor = Then('the {string} area of {widget} should not contain the color {string}', (page: Page, area: string, target: ElementRef, color: string) =>
   v.expectAreaNotColor(page, target, area, color), {description: 'no pixel of the #rrggbb color (nor a shade of it) inside the hit area, read once'});

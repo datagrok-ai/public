@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {renderReactionToCanvas} from '../../rendering/rdkit-reaction-renderer';
+import {drawReactionByRdKit} from './reaction-drawing';
 import {NamedReaction, ReactionMode} from './types';
 import {getReactionCategories} from './consts';
 import {loadAllReactions, deleteUserReaction, invalidateReactionsCache} from './reaction-storage';
@@ -179,7 +179,7 @@ export class ReactionBrowser {
 
     // Render reaction preview
     try {
-      renderReactionToCanvas(this.rdkit, canvas, previewSmarts, canvas.width, canvas.height);
+      drawReactionByRdKit(canvas, previewSmarts, canvas.width, canvas.height);
     } catch {
       const ctx = canvas.getContext('2d')!;
       ctx.save();
@@ -283,20 +283,25 @@ export class ReactionBrowser {
     ui.tooltip.bind(card, 'Create a new custom reaction');
 
     card.addEventListener('click', () => {
-      openReactionEditor(this.rdkit, {
-        defaultMode: this.modeFilter !== 'all' ? this.modeFilter : undefined,
-        onSave: async () => {
-          invalidateReactionsCache();
-          await this.reload();
-          this.onReactionsChanged.next();
-        },
-      });
+      this.openEditor({defaultMode: this.modeFilter !== 'all' ? this.modeFilter : undefined});
     });
 
     card.addEventListener('mouseenter', () => {card.style.borderColor = 'var(--blue-1)';});
     card.addEventListener('mouseleave', () => {card.style.borderColor = 'var(--grey-2)';});
 
     return card;
+  }
+
+  /** The reaction editor (`preset`: the reaction to edit; else a new one); a save reloads the browser. */
+  private openEditor(options: {preset?: NamedReaction, defaultMode?: ReactionMode}): void {
+    openReactionEditor(this.rdkit, {
+      ...options,
+      onSave: async () => {
+        invalidateReactionsCache();
+        await this.reload();
+        this.onReactionsChanged.next();
+      },
+    });
   }
 
   private selectReaction(reaction: NamedReaction, allowEdit: boolean): void {
@@ -319,16 +324,7 @@ export class ReactionBrowser {
     const actions = ui.divH([], {style: {gap: '6px', flexShrink: '0'}});
     if (allowEdit) {
       if (reaction.isUserDefined) {
-        actions.append(ui.button('Edit', () => {
-          openReactionEditor(this.rdkit, {
-            preset: reaction,
-            onSave: async () => {
-              invalidateReactionsCache();
-              await this.reload();
-              this.onReactionsChanged.next();
-            },
-          });
-        }, 'Edit this reaction'));
+        actions.append(ui.button('Edit', () => this.openEditor({preset: reaction}), 'Edit this reaction'));
 
         actions.append(ui.button('Delete', async () => {
           if (!confirm(`Delete reaction "${reaction.name}"?`))
@@ -355,14 +351,7 @@ export class ReactionBrowser {
           name: `${reaction.name} (copy)`,
           isUserDefined: true,
         };
-        openReactionEditor(this.rdkit, {
-          preset: copy,
-          onSave: async () => {
-            invalidateReactionsCache();
-            await this.reload();
-            this.onReactionsChanged.next();
-          },
-        });
+        this.openEditor({preset: copy});
       }, 'Create a copy of this reaction for editing'));
     }
 

@@ -227,7 +227,8 @@ category('Flow: inline preview', () => {
       const mountedPortal = portalEl(container, viewer.id);
       previewEl(container, viewer.id)!.dispatchEvent(new PointerEvent('pointerenter', {buttons: 0}));
       mountedPortal!.dispatchEvent(new PointerEvent('pointerenter', {buttons: 0}));
-      await new Promise((r) => setTimeout(r, 200));
+      // portal re-syncs run on the next frame
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
       expect(portalEl(container, viewer.id) === mountedPortal, true,
         'hover changes nothing — same portal, no re-mount');
       expect(mountedPortal!.contains(fakeRoot), true, 'the content never moved');
@@ -835,8 +836,10 @@ category('Flow: inline preview', () => {
       // Right-click on the content: the portal swallows it before the canvas —
       // no node menu, and the event is left for the viewer's own menu.
       const ev = new MouseEvent('contextmenu', {bubbles: true, cancelable: true, clientX: 5, clientY: 5});
+      let escapedPortal = false;
+      portalEl(container, viewer.id)!.parentElement!.addEventListener('contextmenu', () => escapedPortal = true);
       fakeRoot.dispatchEvent(ev);
-      await new Promise((r) => setTimeout(r, 300));
+      expect(escapedPortal, false, 'the portal stops the right-click before the canvas can route it');
       expect(flowMenuItem('Duplicate'), null, 'no node context menu over the preview content');
       expect(ev.defaultPrevented, false, 'the event is not defaultPrevented — the viewer may handle it');
 
@@ -882,6 +885,8 @@ category('Flow: inline preview', () => {
       // DG may reuse a previously-built popup element on later clicks — remember
       // the ones we've seen and accept a known popup that became visible again.
       const knownPopups = new Set<HTMLElement>();
+      const isShown = (el: HTMLElement): boolean => el.isConnected &&
+        getComputedStyle(el).position === 'fixed' && el.getBoundingClientRect().width > 10;
       const clickSelector = async (): Promise<HTMLElement[]> => {
         const selEl = root()!.querySelector('.d4-column-selector-column') as HTMLElement;
         const r = selEl.getBoundingClientRect();
@@ -895,15 +900,15 @@ category('Flow: inline preview', () => {
           }
         });
         mo.observe(document.documentElement, {childList: true, subtree: true});
+        const shownBefore = new Set(Array.from(knownPopups).filter(isShown));
         for (const t of ['pointermove', 'mousemove', 'pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
           const Ev = t.startsWith('pointer') ? PointerEvent : MouseEvent;
           selEl.dispatchEvent(new Ev(t, {bubbles: true, cancelable: true, view: window,
             clientX: px, clientY: py, button: 0} as MouseEventInit));
         }
-        await new Promise((r2) => setTimeout(r2, 600));
+        await until(() => added.some(isShown) ||
+          Array.from(knownPopups).some((p) => !shownBefore.has(p) && isShown(p)));
         mo.disconnect();
-        const isShown = (el: HTMLElement): boolean => el.isConnected &&
-          getComputedStyle(el).position === 'fixed' && el.getBoundingClientRect().width > 10;
         const found = added.filter(isShown);
         for (const el of found) knownPopups.add(el);
         return found.length > 0 ? found : Array.from(knownPopups).filter(isShown);
@@ -935,7 +940,8 @@ category('Flow: inline preview', () => {
       expect(popups.length > 0, true, 'clicking the axis selector opens its popup');
       await assertNear(popups[0], 'k=1');
       document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-      await new Promise((r) => setTimeout(r, 300));
+      // not asserted: a popup Escape fails to dismiss is handled by openSelectorPopup's retry
+      await until(() => !popups.some(isShown));
 
       // Zoomed: same guarantee — the portal never scales or displaces the viewer.
       flow.setZoom(1.5);
@@ -944,7 +950,7 @@ category('Flow: inline preview', () => {
       expect(popups.length > 0, true, 'the selector still opens its popup at zoom 1.5');
       await assertNear(popups[0], 'k=1.5');
       document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-      await new Promise((r) => setTimeout(r, 300));
+      await until(() => !popups.some(isShown));
       flow.setZoom(1);
 
       // Right-click on the plot: the VIEWER's menu, not the node's.

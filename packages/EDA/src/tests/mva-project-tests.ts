@@ -3,7 +3,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, awaitCheck, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {callMvaTransform, getMvaNames, MvaInput, MvaNames, runDemoMVA} from '../pls/pls-tools';
 import {MVA_MODEL_TAG, MVA_TRANSFORM_FUNC, TITLE} from '../pls/pls-constants';
 
@@ -84,12 +84,12 @@ async function saveAndOpenProject(tv: DG.TableView, names: MvaNames, dataSync: b
 async function checkResults(tableName: string, names: MvaNames): Promise<void> {
   const expected = names.xScores.concat(names.yScores).concat([names.prediction]);
 
-  await awaitCheck(() => grok.shell.tableNames.includes(tableName),
+  await waitUntil(() => grok.shell.tableNames.includes(tableName),
     `The '${tableName}' table has not been opened`, CHECK_TIMEOUT);
 
   const table = grok.shell.table(tableName);
 
-  await awaitCheck(() => expected.every((name) => table.col(name) !== null),
+  await waitUntil(() => expected.every((name) => table.col(name) !== null),
     `The analysis columns are missing, expected: ${expected.join(', ')}`, CHECK_TIMEOUT);
 
   expect(grok.shell.tableNames.includes(names.analysisTable), true,

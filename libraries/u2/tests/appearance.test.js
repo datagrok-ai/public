@@ -2,7 +2,7 @@
    root style once after create (literals) or through an effect (bound signals), filtered back out
    of the per-component manifest entries, and routed through the HTML-node path. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
@@ -89,7 +89,7 @@ spec('collision: a component-own prop wins, the shared one is skipped and never 
   }, new SpecContext(), reg);
   const box = instance.node('box');
   assert.equal(box.root.style.color, 'red');
-  assert.equal(box.root.style.width, undefined, 'the applier never touches the colliding prop');
+  assert.equal(box.root.style.getPropertyValue('width'), '', 'the applier never touches the colliding prop');
   instance.dispose();
 });
 
@@ -182,7 +182,7 @@ spec('editor round-trip: set + clear leaves the document byte-identical, undo an
   // applyAll: a separate undo entry — apply would coalesce the clear into the set
   editor.applyAll([{op: 'set-prop', node, name: 'color', value: undefined}]);
   assert.equal(JSON.stringify(instance.dump()), before, 'the cleared prop leaves no trace');
-  assert.equal(instance.node('name').root.style.color, undefined, 'the rebuilt node carries no style');
+  assert.equal(instance.node('name').root.style.getPropertyValue('color'), '', 'the rebuilt node carries no style');
 
   editor.undo();
   assert.equal(JSON.stringify(instance.dump()), styled);
@@ -194,7 +194,7 @@ spec('editor round-trip: set + clear leaves the document byte-identical, undo an
   assert.equal(instance.node('name').root.style.color, 'red');
   editor.redo();
   assert.equal(JSON.stringify(instance.dump()), before);
-  assert.equal(instance.node('name').root.style.color, undefined);
+  assert.equal(instance.node('name').root.style.getPropertyValue('color'), '');
   instance.dispose();
 });
 

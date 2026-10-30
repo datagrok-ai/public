@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {u2} from '@datagrok-libraries/utils/src/u2';
+import {AppHeader} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 
 import {_package} from './package';
 import {getCachedRecentModelsTable, prefetchRecentModelsTable,
@@ -22,6 +23,7 @@ export class DiffStudioHub {
   name = 'Diff Studio';
   root = ui.divV([]);
   view: DG.View;
+  private header: HTMLElement | null = null;
 
   constructor() {
     prefetchRecentModelsTable();
@@ -58,18 +60,22 @@ export class DiffStudioHub {
     }
   }
 
-  /** Return the hub header element */
+  /** Return the hub header element, built once and owned by the view, so it goes when the view closes */
   private buildHeader(): HTMLElement {
-    const header = u2.appHeader({
-      iconPath: `${_package.webRoot}/package.png`,
-      learnMoreUrl: 'https://datagrok.ai/help/compute/diff-studio',
-      description:
-        '- Solve initial value problems for ordinary differential equations\n' +
-        '- Enter formulas in a declarative form or modify templates\n' +
-        '- Run computations and explore your model interactively\n' +
-        '- Use sensitivity analysis and parameter fitting\n',
-    });
+    if (this.header)
+      return this.header;
+    const header = ViewHost.of(this.view).build(() => new AppHeader({
+      icon: `${_package.webRoot}/package.png`,
+      learnMore: 'https://datagrok.ai/help/compute/diff-studio',
+      items: [
+        'Solve initial value problems for ordinary differential equations',
+        'Enter formulas in a declarative form or modify templates',
+        'Run computations and explore your model interactively',
+        'Use sensitivity analysis and parameter fitting',
+      ],
+    })).root;
     header.classList.add('diff-studio-hub-header');
+    this.header = header;
     return header;
   }
 

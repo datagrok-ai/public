@@ -17,7 +17,7 @@ Feature: A project through its card in the Dashboards gallery
   description is the one still missing); Copy > ID
   (a UUID the feature cannot know without reading the project on the server); the filled star in
   the context panel's header after Add To Favorites. The words of the recipient's line in the
-  Sharing pane ("has special permissions") are claimed on the pane as a whole.
+  Sharing pane ("can view and use") are claimed on the pane as a whole.
 
   The recipient of the share is the library's sharing user (the md's "qa_playwright" is any user
   other than yourself). The Grok name, markup and URL are claimed for the admin account the suite
@@ -67,7 +67,7 @@ Feature: A project through its card in the Dashboards gallery
     When user clicks on BDDSmoke{time} gallery card
     Then the context panel should show "BDDSmoke{time}"
     And the sharing pane should not list the sharing user
-    And Sharing pane in context panel should not contain text "has special permissions"
+    And Sharing pane in context panel should not contain text "can view and use"
 
   Scenario: A tag is added in the Details pane and the "#tag" search finds the project by it
     When user clicks on BDDSmoke{time} gallery card
@@ -114,7 +114,7 @@ Feature: A project through its card in the Dashboards gallery
     When user clicks on BDDSmoke{time} gallery card
     Then the context panel should show "BDDSmoke{time}"
     And the sharing pane should list the sharing user
-    And Sharing pane in context panel should contain text "has special permissions"
+    And Sharing pane in context panel should contain text "can view and use"
 
   Scenario: The project is renamed from its card
     When user picks "Rename..." from the context menu of BDDSmoke{time} gallery card

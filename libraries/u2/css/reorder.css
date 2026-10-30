@@ -1,0 +1,18 @@
+/* Rows a user puts in order (src/components/inputs/reorder.ts): RecordsInput's and ChecklistInput's drag handle,
+   and the row being dragged. Tokens only. */
+.u2-reorder-grip {
+  flex-shrink: 0;
+  color: var(--dg-grey-3);
+  cursor: grab;
+  touch-action: none;
+}
+
+/* nothing to move while the input takes no edits */
+.u2-input-disabled .u2-reorder-grip,
+.u2-input-readonly .u2-reorder-grip {
+  visibility: hidden;
+}
+
+.u2-reorder-dragging {
+  background: var(--dg-hover-subtle);
+}

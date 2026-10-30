@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {delay, expect, testEvent} from '@datagrok-libraries/test/src/test';
+import {delay, expect, testEvent, waitUntil} from '@datagrok-libraries/test/src/test';
 import {PdbEntry} from '../pdb-entry';
 import {byId} from '../viewers/molstar-viewer/utils';
 
@@ -63,4 +63,9 @@ export async function awaitGrid(grid: DG.Grid, timeout: number = 5000): Promise<
   await delay(0);
   await testEvent(grid.onAfterDrawContent, () => {},
     () => { grid.invalidate(); }, timeout);
+}
+
+/** Resolves once [viewer] has no load or update on its way to the scene, a debounced request included. */
+export async function awaitViewerUpdated(viewer: DG.Viewer, timeout: number = 15000): Promise<void> {
+  await waitUntil(() => !viewer.isRenderPending, `${viewer.type} is still updating`, timeout);
 }

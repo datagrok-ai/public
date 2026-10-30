@@ -1,7 +1,3 @@
-/* The editing-state protocol a `DomainSource` drives (STATE-CONTRACT): what is dirty, what is
-   valid, one write path, drafts, deletes, discard and save. The platform implementation is the
-   js-api `DomainFrameEditor` (dg); `MemoryEditState` is the same machine over a `MemoryFrame` —
-   the memory backend's writer, which the tests and the gallery run. */
 import {signal, computed, ReadonlySignal, Emitter, EMPTY, isEmpty, FrameRows, Rows} from '@datagrok-libraries/u2';
 import type {ObservableLike, IProperty, Access, MemoryFrame} from '@datagrok-libraries/u2';
 import type {DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from './domain-backend.js';
@@ -70,7 +66,7 @@ export interface MemoryPendingOp {
  * draft's stamped `~new:` id): originals per (row, column), the row's state in its `~state`
  * cell, the batch built in row order as the js-api editor builds it, every write announced
  * through `onChanged` — a save removes deleted rows and re-keys drafts without a frame event, as
- * the editor does (H10). No conflict UI — a refused transaction is thrown to the caller with the
+ * the editor does. No conflict UI — a refused transaction is thrown to the caller with the
  * batch still pending. */
 export class MemoryEditState implements EditState {
   readonly isDirty: ReadonlySignal<boolean>;
@@ -296,7 +292,7 @@ export class MemoryEditState implements EditState {
   /** The landed batch written back: deleted rows leave, every other row takes its result (a
    * draft its real id), every cell holding a draft id of the batch — this writer's or, through
    * `resolved`, another's — takes the real id, everything settles — without a frame event, as
-   * the platform editor's `applyResults` (H10) — and `onSaved` carries this writer's draft → id map. */
+   * the platform editor's `applyResults` — and `onSaved` carries this writer's draft → id map. */
   applyResults(pending: MemoryPendingOp[], results: DomainTransactionResultLike[],
     resolved: Record<string, string> = {}): void {
     const removed = new Set<Row>();
@@ -383,7 +379,6 @@ export class MemoryEditState implements EditState {
     this.df.onRowsRemoved.fire(undefined);
   }
 
-  /** Every row clean. */
   private _settle(): void {
     for (const row of this.df.rows) {
       row[Rows.STATE] = '';
@@ -408,7 +403,6 @@ export class MemoryEditState implements EditState {
     }
   }
 
-  /** A rule broken on a draft, or on a cell of an existing row the batch will send. */
   private _error(row: Row, prop: IProperty): string | null {
     const state = row[Rows.STATE];
     if (!state || state === 'deleted' || state === 'restored')

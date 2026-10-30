@@ -66,7 +66,7 @@ export async function render(main) {
 
   section('Qualified number, formatted', () => {
     const input = new QNumInput({label: 'IC50', value: QNum.less(5.2), format: (v) => v.toFixed(2)});
-    return [input, readout('shown', computed(() => QNum.format(input.value.value, (v) => v.toFixed(2))))];
+    return [input, readout('shown', computed(() => QNum.format(input.value, (v) => v.toFixed(2))))];
   });
 
   const molecules = signal(123456789012345678901234567890n);

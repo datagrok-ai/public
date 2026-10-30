@@ -8,8 +8,8 @@ Feature: The Multi curve viewer inside a Trellis plot
   (GROK-20668). On a table without curves every cell says the viewer needs a curve column, and moving
   over the cells or switching inner viewers logs no error (GROK-18171, GROK-18389).
 
-  The journey adds a Multi curve viewer first: once one has been created in the session, Log Y set on
-  the MultiCurveViewer tab used not to reach the inner look (core#854).
+  The journey adds a Multi curve viewer first, and Log Y set on the MultiCurveViewer tab after that is
+  kept by a layout saved to the server and applied again (scenario 3, step 4; core#854).
 
   core#646 is open: its NullError needs a session where no curve cell has been drawn yet, which a
   journey that opens the curves table first does not give; the demog scenarios do not claim it away.
@@ -57,6 +57,13 @@ Feature: The Multi curve viewer inside a Trellis plot
     When user clicks on OK button in "Select columns..." dialog
     Then "Curves" property in context panel should contain text "5 / 5"
     And "Merge Column Series" property in context panel should be visible
+    And no errors should have been logged
+
+  Scenario: A layout saved and applied again keeps Log Y of the inner viewer
+    When user saves the layout of the current table view to the server
+    And user loads the saved layout
+    Then the open tableview should have 1 trellis plot viewer
+    And "logY" inner property of trellis plot viewer should be "true"
     And no errors should have been logged
 
   Scenario: On a table without curves every cell says it needs a curve column

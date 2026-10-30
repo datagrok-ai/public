@@ -20,6 +20,7 @@ Feature: Trellis plot split columns and the inner viewer
 
   Background:
     Given user is logged in
+    And the package autostarts have completed
     And user opens demog-1000 dataset
     And user adds a trellis plot viewer with:
       | X Column Names | SEX          |

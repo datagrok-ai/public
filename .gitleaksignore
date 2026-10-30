@@ -66,3 +66,6 @@ packages/GIS/src/package.ts:generic-api-key:340
 # --- saved notebook session_token ---
 packages/Samples/_deprecated/projects/demo-notebooks/notebooks/rigid_body_transformations_in_a_plane_2d.json:generic-api-key:1391
 packages/Samples/projects/demo-notebooks/notebooks/rigid_body_transformations_in_a_plane_2d.json:generic-api-key:1391
+
+# --- not a secret: the value is a CSS custom property name (u2's table header background) ---
+libraries/u2/scripts/check-tokens.mjs:generic-api-key:29

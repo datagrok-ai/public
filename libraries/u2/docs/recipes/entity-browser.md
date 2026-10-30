@@ -7,18 +7,22 @@ main controls in the ribbon. Reference implementation: the U2Demo **Reports Brow
 ## The shape
 
 ```ts
-const query = signal('');
-const pager = dapiPager<DG.UserReport>(() => grok.dapi.reports.include('reporter,assignee'), {
-  pageSize: 30, order: 'createdOn', desc: true,
-  filter: () => query.value.trim() || undefined,       // dapi smart-filter string
-});
-
-const list = new VirtualList({itemHeight: 44, keyOf: (r) => r.id, render: reportRow});
-list.setItems(pager.items);                            // near-bottom scroll → pager.loadMore()
-
-const current = computed(() => pager.items.value[list.selectedIndex.value] ?? null);
-// selection → details pane AND the shell's context panel:
-scope.effect(() => { if (current.value) grok.shell.o = current.value; });
+const reportsBrowser = () => component((self) => {
+  const query = new TextInput({search: true, inline: true, placeholder: 'Search reports'});
+  const pager = dapiPager<DG.UserReport>(() => grok.dapi.reports.include('reporter,assignee'), {
+    pageSize: 30, order: 'createdOn', desc: true,
+    filter: () => query.value.trim() || undefined,     // dapi smart-filter string
+  });
+  const list = new VirtualList<DG.UserReport>({itemHeight: 44, keyOf: (r) => r.id, render: reportRow});
+  list.setItems(pager.items);                          // near-bottom scroll → pager.loadMore()
+  const current = computed(() => pager.items.value[list.selectedIndex.value] ?? null);
+  // selection → details pane AND the shell's context panel:
+  self.effect(() => {
+    if (current.value)
+      grok.shell.o = current.value;
+  });
+  return {root: list, query};
+}, {name: 'reports-browser'});
 ```
 
 The pieces, each written once and reused:
@@ -29,11 +33,12 @@ The pieces, each written once and reused:
   see the [list-item-rendering](list-item-rendering.md) recipe.
 - **Loading / empty / error-with-retry** live in the content area under the list; the
   one-line summary (`${loaded} of ${total}`) is a computed signal sent to the status bar.
-- **Details**: a key/value pane (see [forms-and-details](forms-and-details.md)) and/or the
-  context panel via `grok.shell.o`. Rebuild details under a per-selection `Scope` so the
-  previous selection's components are disposed.
-- **Chrome**: search input and refresh go to the ribbon via `appView` (see
-  [shell-integration](shell-integration.md)).
+- **Details**: a key/value pane (`tableFromMap`, see [forms-and-details](forms-and-details.md)) and/or the
+  context panel via `grok.shell.o`. Build the details with `each(pane, () => [current.value], …)` keyed by the
+  item: each selection's details are built in a row of their own, so the previous selection's components are
+  disposed when it changes.
+- **Chrome**: search input and refresh go to the ribbon the `ViewHost.create` builder answers — here
+  `{root: browser, ribbon: [[browser.query]]}` (see [shell-integration](shell-integration.md)).
 
 ## Anti-patterns
 

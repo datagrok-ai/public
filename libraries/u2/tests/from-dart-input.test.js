@@ -3,9 +3,10 @@
    structurally (checked at compile time by src/dg/forms/object-form.ts's auto mode) — and the core's
    validation surface is faked through the same globals the bridge feature-detects. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {Form} from '../src/components/forms/form.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
@@ -36,10 +37,11 @@ function bridge(name, body) {
 function dartInput(options = {}) {
   const root = document.createElement('div');
   root.className = 'ui-input-root';
+  root.setAttribute('data-widget', 'true');
   const label = document.createElement('label');
   label.className = 'ui-input-label';
   label.textContent = options.caption ?? 'Name';
-  label.offsetWidth = options.labelWidth ?? 0;
+  layout(label, {offsetWidth: options.labelWidth ?? 0});
   const editor = document.createElement('input');
   editor.className = 'ui-input-editor';
   root.append(label, editor);
@@ -114,7 +116,7 @@ bridge('mirrors the value both ways, with the platform value canonical', () => {
   const input = mount(fromDartInput(dg));
   assert.equal(input instanceof PlatformInput, true);
   assert.equal(input.name, 'Compound', 'the caption is the u2 name');
-  assert.equal(input.value.value, 'Aspirin');
+  assert.equal(input.value, 'Aspirin');
   assert.equal(input.root.dataset.u2, 'dart-input');
   assert.equal(dg.root.parentNode, input.box, 'the platform root is the whole editor');
   assert.equal(input.root.querySelector('.u2-input-label'), null, 'no second caption');
@@ -122,13 +124,13 @@ bridge('mirrors the value both ways, with the platform value canonical', () => {
   assert.equal(dg.editor.classList.contains('u2-input-editor'), true, 'the skin moved to the editor');
 
   dg.value = 'Ibuprofen';
-  assert.equal(input.value.value, 'Ibuprofen');
+  assert.equal(input.value, 'Ibuprofen');
   assert.equal(dg.writes, 1, 'a platform edit is not echoed back');
 
-  input.value.value = 'Paracetamol';
+  input.value = 'Paracetamol';
   assert.equal(dg.value, 'Paracetamol');
   assert.equal(dg.writes, 2);
-  input.value.value = 'Paracetamol';
+  input.value = 'Paracetamol';
   assert.equal(dg.writes, 2, 'an unchanged value writes nothing');
   input.dispose();
 });
@@ -147,13 +149,13 @@ bridge('the echo check compares what the platform holds, not the fresh object it
     assert.equal(dg.writes, 0, 'constructing writes nothing back');
     dg.value = copy(stored);
     assert.equal(dg.writes, 1, 'a platform edit is not echoed back');
-    input.value.value = copy(stored);
+    input.value = copy(stored);
     assert.equal(dg.writes, 1, 'an equal value writes nothing');
     input.dispose();
   }
   const dg = dartInput({value: new Date(2026, 9, 15)});
   const input = mount(fromDartInput(dg));
-  input.value.value = new Date(2026, 9, 16);
+  input.value = new Date(2026, 9, 16);
   assert.equal(dg.writes, 1, 'a different time is written');
   input.dispose();
 });
@@ -206,6 +208,7 @@ bridge('without the core surface only u2 validators apply', () => {
   assert.equal(input.validity.value, null, 'an older platform is opaque to u2');
   input.addValidator((value) => value === '' ? 'Required' : null);
   assert.equal(input.validity.value, 'Required');
+  input.touch();
   assert.equal(input.root.querySelector('.u2-input-error').textContent, 'Required',
     'and u2 keeps its own error line, since the platform shows no u2 message');
   input.dispose();
@@ -222,7 +225,7 @@ bridge('a platform input in a form flips form validity and joins the label colum
   const dg = dartInput({dart: source, caption: 'Compound', labelWidth: 80});
   const platform = fromDartInput(dg);
   const plain = new TextInput({label: 'Batch'});
-  plain.root.querySelector('.u2-input-label').offsetWidth = 40;
+  layout(plain.root.querySelector('.u2-input-label'), {offsetWidth: 40});
   const form = mount(new Form().addAll([platform, plain]));
   await flush();
   assert.equal(form.root.style.getPropertyValue('--u2-form-label-width'), '80px',
@@ -267,8 +270,8 @@ bridge('dispose severs the bridge and leaves the platform input alone', () => {
   assert.equal(dg.root.parentNode, input.box, 'the platform input is never detached');
 
   dg.value = 'b';
-  assert.equal(input.value.value, 'a', 'a severed bridge carries nothing');
-  input.value.value = 'c';
+  assert.equal(input.value, 'a', 'a severed bridge carries nothing');
+  input.value = 'c';
   assert.equal(dg.value, 'b');
 });
 
@@ -317,7 +320,7 @@ bridge('auto mode falls back to the generated editor', () => {
   delete globalThis.DG;
   const offPlatform = mount(propertyForm([prop('smiles', {dart: {}})], target, {editors: 'auto'}));
   assert.deepEqual(offPlatform.inputs.map((i) => i.root.dataset.u2), ['text-input']);
-  assert.equal(offPlatform.inputs[0].value.value, 'CCO', 'the generated editor is wired as always');
+  assert.equal(offPlatform.inputs[0].value, 'CCO', 'the generated editor is wired as always');
   offPlatform.dispose();
 });
 

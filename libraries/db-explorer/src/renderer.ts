@@ -98,7 +98,6 @@ export function helmRenderer(value: string): HTMLElement {
       editable: false,
     });
     helmInput.setStringValue(value);
-    await DG.delay(200); // wait for proper sizing
     helmInput.getInput().addEventListener('click', () => {
       grok.shell.o = helmInput.getValue();
     });

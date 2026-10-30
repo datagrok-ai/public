@@ -1,5 +1,5 @@
 export { createSketcher, type SketcherHandle } from './create.js';
 export { CruxSketchElement, type CruxSketchEventMap } from './element/crux-sketch.js';
-export { inchiFromInput, inchiKeyFromInchi } from './inchi-api.js';
+export { inchiFromInput, inchiKeyFromInchi, inchiToMol } from './inchi-api.js';
 export { version } from './version.js';
 export type { AnalysisPanel, ReadoutItem, AtomColours, Density, HostKeys, KeymapProfile, Message, MethylLabels, AtomNumbers, SketcherSettings, PluralForms, SketcherStrings, SketchAnalysis, SketchFragmentAnalysis, SketchWarningKind, SketchLossCode, WarningMarks, ChangeDetail, ElementSymbol, ChangeSource, RingName, CreateSketcherOptions, SetValueOptions, PngOptions, SketchError, SketchErrorCode, DrawnBox, DrawnPoint, DrawnPositions, RenderDetail, SketcherLayout, SketcherTool, SketchSelection, SketchNotice, ToolbarPlace, SketchWarning, SketcherApi, SketcherEvents, SketcherEventType, SketcherFormat, SketcherListener, SketcherMode, StereoDisplay, StereoLabelStyle, StereoPanel, SketchStereo, SketchStereoElement, SketchStereoGroup, ToolbarAction, UnspecifiedDoubleBonds, ToolbarConfig, ToolbarElementTool, ToolbarEntry, ToolbarGroup, ToolbarMenu, ToolbarMenuItem, ToolbarPalette, ToolbarReadout, ToolbarRingTool, ToolbarTool, } from './core/types.js';

@@ -13,7 +13,7 @@ import {EChartViewer} from '../echart/echart-viewer';
 import {options, deepCopy} from './echarts-options';
 import {ColumnData, ColumnsData, Indexable, markerPosition, markerType, timePoint, DateFormats} from './constants';
 import {LegendHelper, VISIBILITY_MODE, VisibilityMode} from '../../utils/legend-utils';
-import {ERROR_CLASS} from '../../utils/utils';
+import {ERROR_CLASS, subscribeToColumnRemoval} from '../../utils/utils';
 import {timelinesStatus} from './timelines-status';
 
 export class TimelinesViewer extends EChartViewer {
@@ -136,6 +136,15 @@ export class TimelinesViewer extends EChartViewer {
         });
       }));
 
+      this.subs.push(subscribeToColumnRemoval(this, {
+        splitByColumnName: () => this.defaultColumnNames().splitByColumnName,
+        startColumnName: () => this.defaultColumnNames().startColumnName,
+        endColumnName: () => this.defaultColumnNames().endColumnName,
+        colorColumnName: null,
+        eventColumnName: null,
+        eventsColumnNames: null,
+      }));
+
       this.subs.push(this.dataFrame.onMetadataChanged.subscribe((ev) => {
         if (this.columnData.colorColumnName && ev.args.key === '.color-coding-categorical')
           this.colorMap = this.getColorMap(this.columnData.colorColumnName.column);
@@ -199,6 +208,10 @@ export class TimelinesViewer extends EChartViewer {
         }
       } else {
         this.columnData[property.name] = null;
+        if (property.name === 'eventsColumnNames') {
+          this.updateColumnData(this.props.getProperty('startColumnName'));
+          this.updateColumnData(this.props.getProperty('endColumnName'));
+        }
         if (property.name === 'colorColumnName') {
           this.legendHelper.hide(this.chart.getDom());
           this.colorMap = null;
@@ -263,29 +276,36 @@ export class TimelinesViewer extends EChartViewer {
     return (strColumns!.length >= 1 && numColumns!.length >= 1);
   }
 
-  onTableAttached(): void {
-    this.init();
-
+  defaultColumnNames(): {[prop: string]: string | undefined} {
     const columns = this.dataFrame.columns.toList();
-
     const strColumns = columns.filter((col) => col.type === DG.COLUMN_TYPE.STRING)
       .sort((a, b) => a.categories.length - b.categories.length);
-
     const numColumns = [...this.dataFrame.columns.numerical].sort((a, b) => a.stats.avg - b.stats.avg);
     const numericalTypes = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.DATE_TIME];
 
-    if (strColumns.length < 1 || numColumns.length < 1) {
+    return {
+      splitByColumnName: (this.findColumn(columns, this.splitByRegexps) ?? strColumns[strColumns.length - 1])?.name,
+      startColumnName: (this.findColumn(columns, this.startRegexps, numericalTypes) ?? numColumns[0])?.name,
+      endColumnName: (this.findColumn(columns, this.endRegexps, numericalTypes) ?? numColumns[numColumns.length - 1])?.name,
+      colorColumnName: (this.findColumn(columns, this.colorByRegexps, [DG.COLUMN_TYPE.STRING]) ?? strColumns[0])?.name,
+      eventColumnName: (this.findColumn(columns, this.eventRegexps, [DG.COLUMN_TYPE.STRING]) ?? strColumns[0])?.name,
+    };
+  }
+
+  onTableAttached(): void {
+    this.init();
+
+    const defaults = this.defaultColumnNames();
+    if (!defaults.colorColumnName || !defaults.startColumnName) {
       this.showErrorMessage('The Timelines viewer requires a minimum of 1 column.');
       return;
     }
 
-    this.splitByColumnName = (this.findColumn(columns, this.splitByRegexps) || strColumns[strColumns.length - 1]).name;
-    this.startColumnName = (this.findColumn(columns, this.startRegexps, numericalTypes) || numColumns[0]).name;
-    this.endColumnName = (this.findColumn(columns, this.endRegexps, numericalTypes) ||
-      numColumns[numColumns.length - 1]).name;
-    this.colorColumnName = (this.findColumn(columns, this.colorByRegexps, [DG.COLUMN_TYPE.STRING]) ||
-      strColumns[0]).name;
-    this.eventColumnName = (this.findColumn(columns, this.eventRegexps, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
+    this.splitByColumnName = defaults.splitByColumnName!;
+    this.startColumnName = defaults.startColumnName;
+    this.endColumnName = defaults.endColumnName!;
+    this.colorColumnName = defaults.colorColumnName;
+    this.eventColumnName = defaults.eventColumnName!;
 
     const columnPropNames = [
       'splitByColumnName', 'startColumnName', 'endColumnName', 'colorColumnName', 'eventColumnName',
@@ -677,7 +697,7 @@ export class TimelinesViewer extends EChartViewer {
     }
     const data = this.getSeriesData();
     const selectedCategories = this.legendHelper.selectedCategories;
-    if (selectedCategories)
+    if (selectedCategories && this.colorColumnName)
       this.data = data.filter((item) => selectedCategories.includes(item[3][0]));
     this.option.series[0].data = this.data;
     this.updateZoom();

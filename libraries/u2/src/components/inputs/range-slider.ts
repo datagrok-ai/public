@@ -163,7 +163,7 @@ export class RangeSlider extends Control {
     if (this.vertical)
       handle.setAttribute('aria-orientation', 'vertical');
     this.scope.listen(handle, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent, kind));
-    Tooltip.bind(handle, () => this._format((kind === 'lo' ? this.lo : this.hi).peek()), this.scope);
+    Tooltip.bind(handle, () => this._format((kind === 'lo' ? this.lo : this.hi).peek()), {owner: this.scope});
     return handle;
   }
 

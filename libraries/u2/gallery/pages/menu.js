@@ -32,8 +32,8 @@ function button(text, onClick) {
 function readout(scope, menu) {
   const state = el('code');
   const open = el('code');
-  bindText(scope, state, menu.machineState);
-  bindText(scope, open, computed(() => String(menu.isOpen.value)));
+  bindText(state, menu.machineState, {owner: scope});
+  bindText(open, computed(() => String(menu.isOpen.value)), {owner: scope});
   const row = el('p', 'u2-gallery-status');
   row.append('machine = ', state, '  ·  isOpen = ', open);
   return row;
@@ -56,8 +56,8 @@ export async function render(main) {
 
   const action = el('b');
   const wrapText = el('b');
-  bindText(page, action, last);
-  bindText(page, wrapText, computed(() => String(wrap.value)));
+  bindText(action, last, {owner: page});
+  bindText(wrapText, computed(() => String(wrap.value)), {owner: page});
   const values = el('p', 'u2-gallery-status');
   values.append('last action = ', action, '  ·  word wrap signal = ', wrapText);
 
@@ -67,7 +67,7 @@ export async function render(main) {
     return Menu.popup()
       .item('Cut', () => last.value = 'Cut', {icon: '✂', shortcut: 'Ctrl+X'})
       .item('Copy', () => last.value = 'Copy', {shortcut: 'Ctrl+C'})
-      .item('Paste', () => last.value = 'Paste', {shortcut: 'Ctrl+V', enabled: false})
+      .item('Paste', () => last.value = 'Paste', {shortcut: 'Ctrl+V', disabled: 'The clipboard is empty'})
       .separator()
       .item('Word wrap', () => wrap.value = !wrap.value, {check: wrap.value, shortcut: 'Alt+Z'})
       .separator()
@@ -93,8 +93,8 @@ export async function render(main) {
     page.own(() => watch.dispose());
     anchored = build();
     slot.replaceChildren(readout(watch, anchored));
-    bindText(watch, live, computed(() =>
-      `${Scope.liveCount} live scopes while the menu is ${anchored.isOpen.value ? 'open' : 'closed'}`));
+    bindText(live, computed(() =>
+      `${Scope.liveCount} live scopes while the menu is ${anchored.isOpen.value ? 'open' : 'closed'}`), {owner: watch});
     anchored.show({anchor: open});
   });
   main.append(open, slot, values);
@@ -113,7 +113,7 @@ export async function render(main) {
       .item('Email…', () => last.value = 'Share → Email')
     .endGroup()
     .item('Delete', () => last.value = 'Delete', {shortcut: 'Del'});
-  context.bindContext(region, page);
+  context.bindContext(region, {owner: page});
   main.append(region, readout(page, context));
 
   main.append(el('h2', null, 'Disposal'));
@@ -175,7 +175,7 @@ export async function render(main) {
       .item('Documentation', () => last.value = 'Help → Documentation', {shortcut: 'F1'})
       .separator()
       .item('About', () => last.value = 'Help → About'));
-  bar.setEnabled('Tools', false);
+  bar.setDisabled('Tools', 'Turned off by the button below');
 
   const ribbon = el('div');
   ribbon.style.cssText = 'width: 720px; max-width: 100%; background: var(--dg-bg-secondary);' +
@@ -186,9 +186,9 @@ export async function render(main) {
   const openText = el('code');
   const barWrapText = el('code');
   const layoutText = el('code');
-  bindText(barScope, openText, computed(() => bar.openMenu.value ?? '(closed)'));
-  bindText(barScope, barWrapText, computed(() => String(barWrap.value)));
-  bindText(barScope, layoutText, computed(() => layout.value));
+  bindText(openText, computed(() => bar.openMenu.value ?? '(closed)'), {owner: barScope});
+  bindText(barWrapText, computed(() => String(barWrap.value)), {owner: barScope});
+  bindText(layoutText, computed(() => layout.value), {owner: barScope});
   const barStatus = el('p', 'u2-gallery-status');
   barStatus.append('openMenu = ', openText, '  ·  word wrap = ', barWrapText, '  ·  view = ', layoutText);
   main.append(barStatus);
@@ -196,13 +196,13 @@ export async function render(main) {
   let toolsEnabled = false;
   const toolsToggle = button('Enable Tools', () => {
     toolsEnabled = !toolsEnabled;
-    bar.setEnabled('Tools', toolsEnabled);
+    bar.setDisabled('Tools', toolsEnabled ? null : 'Turned off by the button below');
     toolsToggle.textContent = toolsEnabled ? 'Disable Tools' : 'Enable Tools';
   });
   main.append(toolsToggle);
   main.append(el('p', 'u2-gallery-status',
     'Tools starts disabled: it never opens, ←/→ skip over it, and hovering it while another menu ' +
-    'is open changes nothing. setEnabled() puts it back, and disabling the open item closes it.'));
+    'is open changes nothing. setDisabled(label, null) puts it back, and disabling the open item closes it.'));
 
   main.append(el('h2', null, 'Disposal'));
   const barLive = el('code', null, `${Scope.liveCount} live scopes`);

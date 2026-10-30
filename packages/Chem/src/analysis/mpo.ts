@@ -29,6 +29,7 @@ export class MpoProfileDialog {
   profileInput: DG.ChoiceInput<string | null>;
   designModeInput: DG.InputBase<boolean>;
   addParetoFront: DG.InputBase<boolean>;
+  addCoverageScore: DG.InputBase<boolean>;
   addRadarInCell: DG.InputBase<boolean>;
   mpoProfiles: MpoProfileInfo[] = [];
   currentProfile: DesirabilityProfile | null = null;
@@ -73,6 +74,7 @@ export class MpoProfileDialog {
     });
 
     this.addParetoFront = ui.input.bool('Pareto front');
+    this.addCoverageScore = ui.input.bool('Coverage Score', {tooltipText: 'Number of measured parameters per row'});
     this.addRadarInCell = ui.input.bool('Add radar');
 
     this.manageButton = ui.button('Manage...', async () => {
@@ -392,6 +394,7 @@ export class MpoProfileDialog {
         false,
         false,
         radarRequested,
+        this.addCoverageScore.value,
       );
 
       if (scoreColumnNames.length && this.addParetoFront.value)
@@ -433,6 +436,7 @@ export class MpoProfileDialog {
       this.designModeInput.root,
       this.mpoProfileEditor.root,
       this.addParetoFront.root,
+      this.addCoverageScore.root,
       this.addRadarInCell.root,
     ]);
   }

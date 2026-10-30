@@ -1,22 +1,22 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {domains, DomainTable} from '@datagrok-libraries/ems/src/dg';
-import {Rows, divH, divV, isEmpty, span} from '@datagrok-libraries/u2';
-import type {RowView} from '@datagrok-libraries/u2';
+import {Filters, Rows, divH, divV, isEmpty, span} from '@datagrok-libraries/u2';
+import type {FilterGroup, RowView} from '@datagrok-libraries/u2';
 import type {AssayResultRow, CompoundBatchRow, CompoundRow} from '../generated/db';
-import {moltrackEmsDb} from '../generated/db';
+import {moltrackDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS, MATCH_RULES} from './chemistry';
-import {CompoundsApp} from './compounds';
 import {BulkRegistration} from './registration';
+import {StructureSearch} from './structure-search';
 import type {MatchRule} from './chemistry';
 
-export const SCHEMA = 'moltrack_ems';
+export const SCHEMA = 'moltrack';
 
 const CAS = /^[1-9]\d{1,6}-\d{2}-\d$/;
 
-// one handle per table: every view shares its validators and renderer
 export class MolTrackTables {
-  private static readonly _handles = new Map<string, Promise<DomainTable<any>>>();
+  private static readonly _names = new Map<string, Promise<string>>();
+  private static _asked: Map<string, (name: string) => void> | null = null;
 
   static matchRule(): MatchRule {
     const rule = Chemistry.package().settings?.['CompoundMatchingRule'];
@@ -43,76 +43,131 @@ export class MolTrackTables {
   }
 
   static registeredAs(hash: string, rule: MatchRule): Promise<CompoundRow | null> {
-    return moltrackEmsDb.compounds.first({filter: DG.cond(HASH_COLUMNS[rule], '=', hash),
+    return moltrackDb.compounds.first({filter: DG.cond(HASH_COLUMNS[rule], '=', hash),
       columns: ['molregno', 'common_name'], sort: 'molregno'});
   }
 
   static table(name: string): Promise<DomainTable<any>> {
-    let handle = MolTrackTables._handles.get(name);
-    if (handle === undefined) {
-      handle = MolTrackTables._open(name);
-      handle.catch(() => MolTrackTables._handles.delete(name));
-      MolTrackTables._handles.set(name, handle);
-    }
-    return handle;
+    return DomainTable.shared(`${SCHEMA}.${name}`);
   }
 
   static compounds(): Promise<DomainTable<CompoundRow>> {
     return MolTrackTables.table('compound');
   }
 
+  /** A table's rows as a data frame, structure conditions answered in the browser first. */
+  static async frame(name: string, root: FilterGroup, scope: Omit<DG.DomainQuerySpec, 'filter'> = {}):
+    Promise<DG.DataFrame> {
+    const resolved = await StructureSearch.resolve(root);
+    const df = await grok.dapi.domains.table(`${SCHEMA}.${name}`).queryDf({...scope,
+      ...(resolved.nodes.length === 0 ? {} : {filter: Filters.toDomainTree(resolved) as DG.DomainFilter})});
+    df.name = (await MolTrackTables.table(name)).info.pluralName || name;
+    return df;
+  }
+
   static warmUp(): void {
     Chemistry.load().catch((e) => grok.log.warning(`MolTrack: Crux did not load: ${e}`));
   }
 
-  private static async _open(name: string): Promise<DomainTable<any>> {
-    const table = await domains.table<any>(`${SCHEMA}.${name}`);
-    if (name === 'compound')
-      MolTrackTables._configureCompounds(table);
-    else if (name === 'compound_batch')
-      MolTrackTables._configureBatches(table, await MolTrackTables.compounds());
-    else if (name === 'assay_result')
-      MolTrackTables._configureAssayResults(table, await MolTrackTables.table('compound_batch'));
-    return table;
+  private static _number(table: DomainTable, column: string, value: number): string {
+    return DG.format(value, table.properties.find((p) => p.name === column)?.format || undefined);
+  }
+
+  /** Registered at load, so every handle over a table is configured alike. */
+  static configure(): void {
+    const id = {id: 'moltrack'};
+    domains.configure<CompoundRow>(`${SCHEMA}.compound`, (table) => MolTrackTables._configureCompounds(table), id);
+    domains.configure<CompoundBatchRow>(`${SCHEMA}.compound_batch`, async (table) =>
+      MolTrackTables._configureBatches(table, await MolTrackTables.compounds()), id);
+    domains.configure<AssayResultRow>(`${SCHEMA}.assay_result`, async (table) =>
+      MolTrackTables._configureAssayResults(table, await MolTrackTables.table('compound_batch')), id);
   }
 
   private static _configureCompounds(table: DomainTable<CompoundRow>): void {
-    CompoundsApp.configure(table);
     table.importer = BulkRegistration.importer(table);
     table.validators.add('cas', (value) =>
       typeof value === 'string' && value !== '' && !CAS.test(value) ? 'CAS must look like 50-78-2' : null);
     const caption = (row: RowView<CompoundRow>) => Rows.isDraft(row) ? 'New compound' :
       MolTrackTables.corporateId(table, 'molregno', row.molregno);
     const card = (row: RowView<CompoundRow>) => divH([
-      row.structure ? grok.chem.drawMolecule(row.structure, 84, 56) : span(''),
+      row.structure ? grok.chem.drawMolecule(row.structure, 120, 80) : span(''),
       divV([
         span(caption(row), 'u2-domain-card-title'),
-        span(row.common_name ?? '', 'u2-domain-card-description'),
-        span(row.formula ?? '', 'u2-domain-card-description'),
-      ], 'moltrack-ems-card-text'),
-    ], 'moltrack-ems-card');
+        span(row.common_name ?? '', 'u2-domain-card-description moltrack-card-line'),
+        span(row.formula ?? '', 'u2-domain-card-description moltrack-card-line'),
+      ], 'moltrack-card-text'),
+    ], 'moltrack-card');
     table.renderer = {...table.renderer, caption, card};
   }
 
   private static _configureBatches(table: DomainTable<CompoundBatchRow>, compounds: DomainTable<CompoundRow>): void {
     const caption = (row: RowView<CompoundBatchRow>) => Rows.isDraft(row) ? 'New batch' :
       MolTrackTables.corporateId(table, 'batch_regno', row.batch_regno);
-    const compound = (row: RowView<CompoundBatchRow>) =>
-      MolTrackTables.corporateId(compounds, 'molregno', row[Rows.caption('compound_id')]);
-    table.renderer = {...table.renderer, caption, listItem: (row) => divH([span(caption(row), 'u2-domain-list-name'),
-      span([compound(row), row.project, row.source_batch_code].filter((d) => !isEmpty(d)).join(' · '),
-        'u2-domain-card-description')], 'moltrack-ems-line')};
+    const listItem = (row: RowView<CompoundBatchRow>) => {
+      const compound = MolTrackTables.corporateId(compounds, 'molregno', row[Rows.caption('compound_id')]);
+      const rest = [row.project, row.source_batch_code].filter((d) => !isEmpty(d));
+      const details = (name: string) => [[compound, name].filter((d) => d !== '').join(' '), ...rest]
+        .filter((d) => d !== '').join(' · ');
+      const line = span(details(''), 'u2-domain-list-details');
+      if (!isEmpty(row.compound_id)) {
+        void MolTrackTables.compoundName(row.compound_id).then((name) => {
+          if (name !== '')
+            line.textContent = details(name);
+        });
+      }
+      return divH([span(caption(row), 'u2-domain-list-name'), line], 'u2-domain-list-line');
+    };
+    table.renderer = {...table.renderer, caption, listItem};
   }
 
   private static _configureAssayResults(table: DomainTable<AssayResultRow>, batches: DomainTable<CompoundBatchRow>):
     void {
+    const batch = (row: RowView<AssayResultRow>) =>
+      MolTrackTables.corporateId(batches, 'batch_regno', row[Rows.caption('batch_id')]);
+    // the server captions a run by its key columns joined with ", "
+    const run = (row: RowView<AssayResultRow>) =>
+      String(row[Rows.caption('assay_run_id')] ?? '').replace(/, /g, ' · ');
     const caption = (row: RowView<AssayResultRow>) => Rows.isDraft(row) ? 'New assay result' :
-      [MolTrackTables.corporateId(batches, 'batch_regno', row[Rows.caption('batch_id')]),
-        row[Rows.caption('assay_run_id')]].filter((d) => !isEmpty(d)).join(' · ');
+      [batch(row), run(row)].filter((d) => d !== '').join(' · ');
     const clint = (row: RowView<AssayResultRow>) => isEmpty(row.reported_clint) ? '' :
-      `CLint ${row.reported_clint_qualifier === '=' ? '' : row.reported_clint_qualifier ?? ''}${row.reported_clint}`;
-    table.renderer = {...table.renderer, caption, listItem: (row) => divH([span(caption(row), 'u2-domain-list-name'),
-      span([isEmpty(row.dosed_concentration) ? '' : `${row.dosed_concentration} uM`, clint(row)]
-        .filter((d) => d !== '').join(' · '), 'u2-domain-card-description')], 'moltrack-ems-line')};
+      `CLint ${row.reported_clint_qualifier === '=' ? '' : row.reported_clint_qualifier ?? ''}` +
+      MolTrackTables._number(table, 'reported_clint', row.reported_clint!);
+    const dosed = (row: RowView<AssayResultRow>) => isEmpty(row.dosed_concentration) ? '' :
+      `${MolTrackTables._number(table, 'dosed_concentration', row.dosed_concentration!)} uM`;
+    table.renderer = {...table.renderer, caption, listItem: (row) => Rows.isDraft(row) ?
+      span(caption(row), 'u2-domain-list-name') : divH([
+        span(batch(row), 'u2-domain-list-name moltrack-batch'),
+        span(run(row), 'moltrack-run'),
+        span([dosed(row), clint(row)].filter((d) => d !== '').join(' · '), 'u2-domain-list-details'),
+      ], 'u2-domain-list-line moltrack-result')};
+  }
+
+  /** A compound's common name; names asked for together are read in one query. */
+  static compoundName(id: string): Promise<string> {
+    let name = MolTrackTables._names.get(id);
+    if (name === undefined) {
+      const asked = MolTrackTables._asked ??= MolTrackTables._readNames();
+      name = new Promise((resolve) => asked.set(id, resolve));
+      MolTrackTables._names.set(id, name);
+    }
+    return name;
+  }
+
+  private static _readNames(): Map<string, (name: string) => void> {
+    const asked: Map<string, (name: string) => void> = new Map();
+    setTimeout(async () => {
+      MolTrackTables._asked = null;
+      const ids = [...asked.keys()];
+      const rows = await moltrackDb.compounds.query({filter: DG.cond('id', '=', ids), columns: ['common_name'],
+        limit: ids.length}).catch(() => null);
+      for (const [id, resolve] of asked) {
+        if (rows === null)
+          MolTrackTables._names.delete(id);
+        resolve(rows?.find((r) => r.id === id)?.common_name ?? '');
+      }
+    });
+    return asked;
   }
 }
+
+MolTrackTables.configure();

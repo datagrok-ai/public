@@ -43,7 +43,8 @@ export type DesignerActionPatch =
 
 /** A per-component design-time verb ('Add tab'), shown on the designer's context menus. */
 export interface DesignerAction {
-  name: string;
+  /** The verb's caption in the designer's menus. */
+  text: string;
   /** A platform icon name ('filter') for the menus that show it. */
   icon?: string;
   /** Reads the node's current children/props — and what it built, when rendered — and answers
@@ -152,6 +153,8 @@ const KNOWN_PLUGINS: Record<string, string> = {
 export class Registry {
   private readonly _metas = new Map<string, ComponentMeta>();
   private readonly _plugins: {plugin: U2Plugin, uninstall: () => void}[] = [];
+  /** Set by `registerAll()`: u2's own components are registered here. */
+  builtins = false;
 
   /** Installs a plugin once per name: its tags register, and its spec ambient wraps every spec
    * rendered over this registry from then on. Answers the uninstall, which removes the tags it
@@ -190,7 +193,11 @@ export class Registry {
     if (owner !== undefined)
       return `${owner.plugin.name} is installed and registers no such tag`;
     const known = Object.keys(KNOWN_PLUGINS).find((prefix) => tag.startsWith(prefix));
-    return known === undefined ? null : `it comes with ${KNOWN_PLUGINS[known]}`;
+    if (known !== undefined)
+      return `it comes with ${KNOWN_PLUGINS[known]}`;
+    // u2's own components are registered by a call, not by importing the library
+    return tag.startsWith('u2-') && !this.builtins ?
+      'u2\'s components are not registered in this registry — call registerAll() first' : null;
   }
 
   /** The construction hooks are wrapped so that everything the registry builds carries its

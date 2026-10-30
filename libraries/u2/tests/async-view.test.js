@@ -3,7 +3,7 @@
    so a render that writes a signal (a builder normalizing its bound tree) neither throws nor
    re-triggers the view. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {Scope, signal} from '../src/index.js';

@@ -1,7 +1,17 @@
 # Charts changelog
 
-## v.next
+## 1.8.2 (2026-10-29)
 
+* Word cloud: Fixed errors logged after the viewer is closed while a render waits for its size
+* Radar: Fixed the legend overlapping the chart
+* [public#4422](https://github.com/datagrok-ai/public/issues/4422): Charts: Sunburst does not show rows selected in the grid
+* [public#4423](https://github.com/datagrok-ai/public/issues/4423): Tree viewer: Doesn't handle removal of the Size and Color columns
+* [public#4421](https://github.com/datagrok-ai/public/issues/4421): Chord: Doesn't handle removal of the From column correctly
+* [public#4420](https://github.com/datagrok-ai/public/issues/4420): Sankey: Doesn't handle removal of the Source column
+* Sunburst, Radar, Timelines, Surface plot, Globe, Word cloud: Fixed handling of removed columns: an optional column is cleared, a required one is replaced, and a column whose type changes stays selected
+* Group analysis: Fixed handling of a removed Group by column
+* [public#4425](https://github.com/datagrok-ai/public/issues/4425): Sunburst, Tree: the filter of a click stays after the viewer is closed or On Click is switched to Select
+* [public#4424](https://github.com/datagrok-ai/public/issues/4424): Word Cloud: Incorrect handling of invalid Rotation Step input
 * [public#4393](https://github.com/datagrok-ai/public/issues/4393): Tree: Fixed Shift+click on a branch not filtering, with an error, when On Click is Filter
 * [core#881](https://github.com/datagrok-ai/core/issues/881): Word cloud: Fixed out-of-memory errors and missing words when a column's values are very long
 * GROK-21150: Surface plot: Fixed an error when the plot opened on a table with a datetime column on an axis

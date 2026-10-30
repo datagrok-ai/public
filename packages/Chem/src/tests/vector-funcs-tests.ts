@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, test, before, after, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, before, after, waitUntil} from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
@@ -68,11 +68,11 @@ category('vector functions', () => {
 export async function testVectorFunc(formula: string, colName: string, idxsToCheck: number[],
   expectedVals: any[], checkFunc?: (val: any) => any) {
   const df = grok.data.demo.molecules(10);
-  df.columns.addNewCalculated(colName, formula, 'auto');
-  await awaitCheck(() => df.columns.names().includes(colName), `${colName} column hasn't been added`, 3000);
+  await df.columns.addNewCalculated(colName, formula, 'auto');
+  await waitUntil(() => df.columns.names().includes(colName), `${colName} column hasn't been added`, 3000);
   for (let i = 0; i < idxsToCheck.length; i++) {
     const val = df.get(colName, idxsToCheck[i]);
-    await awaitCheck(() => checkFunc ? checkFunc(val) : val === expectedVals[i],
+    await waitUntil(() => checkFunc ? checkFunc(val) : val === expectedVals[i],
       `Column ${colName}, idx ${idxsToCheck[i]}, expected: ${expectedVals[i]}, got: ${val}`, 1000);
   }
 }

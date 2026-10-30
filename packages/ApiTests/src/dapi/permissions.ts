@@ -138,6 +138,42 @@ category('Dapi: permissions', () => {
     expect((await held(script)).join(), '', 'after the revoke');
   });
 
+  test('the owner keeps every privilege after every grant is revoked', async () => {
+    const own = await asGrantee(() => grok.dapi.scripts.save(DG.Script.create(
+      `//name: ApiTestsPerm${DG.Utils.randomString(6)}\n//language: javascript\nlet x = 1;`)));
+    try {
+      await asGrantee(() => grok.dapi.permissions.grant(own, allUsers, true));
+      await asGrantee(() => grok.dapi.permissions.revoke(own, allUsers));
+      expect((await held(own)).join(), BASIC.join());
+    }
+    finally {
+      await grok.dapi.scripts.delete(own);
+    }
+  });
+
+  test('a space shared for viewing cannot be changed, deleted or shared further by the grantee', async () => {
+    const space = await grok.dapi.spaces.createRootSpace(`ApiTestsPerm${DG.Utils.randomString(6)}`);
+    try {
+      await grok.dapi.permissions.grant(space, grantee.group, false);
+      expect((await held(space)).join(), 'View');
+      const edit = await asGrantee(() => thrown(async () => {
+        const s = await grok.dapi.projects.find(space.id);
+        s.description = 'edited by the grantee';
+        await grok.dapi.projects.save(s);
+      }));
+      expect(edit != null, true, 'the grantee saved an edit');
+      expect(await asGrantee(() => thrown(() => grok.dapi.spaces.delete(space))) != null, true, 'the grantee deleted the space');
+      expect(await grok.dapi.projects.find(space.id) != null, true, 'the space is gone');
+      const reshare = await asGrantee(() => thrown(() => grok.dapi.permissions.grant(space, allUsers, false)));
+      expect(String(reshare?.message ?? reshare).includes('You don\'t have a permission to share this object'), true,
+        `the grantee shared the space further: ${reshare}`);
+    }
+    finally {
+      await grok.dapi.permissions.revoke(space, grantee.group);
+      await grok.dapi.spaces.delete(space);
+    }
+  });
+
   test('a space shared for viewing passes View and use to its content, and takes no new content from the grantee', async () => {
     const space = await grok.dapi.spaces.createRootSpace(`ApiTestsPerm${DG.Utils.randomString(6)}`);
     try {
@@ -178,6 +214,23 @@ category('Dapi: permissions', () => {
     }
     finally {
       await grok.dapi.permissions.revoke(connection, grantee.group);
+      await grok.dapi.connections.delete(connection);
+    }
+  });
+
+  test('a database connection shared on its own shares none of its queries', async () => {
+    const name = `ApiTestsPerm${DG.Utils.randomString(6)}`;
+    const connection = await grok.dapi.connections.save(DG.DataConnection.create(name,
+      {dataSource: 'Postgres', server: 'localhost', port: 1, db: 'apitests', login: 'apitests', password: 'apitests'}));
+    const q = await grok.dapi.queries.save(connection.query(name, 'select 1 as x'));
+    try {
+      await grok.dapi.permissions.grant(connection, grantee.group, false);
+      expect((await held(connection, ['View'])).join(), 'View', 'the connection');
+      expect((await held(q, ['View', 'DataQuery.Execute'])).join(), '', 'its query');
+    }
+    finally {
+      await grok.dapi.permissions.revoke(connection, grantee.group);
+      await grok.dapi.queries.delete(q);
       await grok.dapi.connections.delete(connection);
     }
   });

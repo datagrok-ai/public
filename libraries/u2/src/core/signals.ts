@@ -1,6 +1,7 @@
 import {Signal} from 'datagrok-api/u2core';
 
-export {signal, computed, batch, untracked, Signal, rawEffect, isWritableSignal} from 'datagrok-api/u2core';
+export {signal, computed, batch, untracked, Signal, rawEffect, isWritableSignal, lens, afterFlush}
+  from 'datagrok-api/u2core';
 export type {ReadonlySignal} from 'datagrok-api/u2core';
 
 // Two engines on a page split every `instanceof Signal`, ambient adoption and the leak counts.

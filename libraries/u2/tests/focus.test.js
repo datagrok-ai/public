@@ -98,7 +98,7 @@ ui('an unkeyed element, a gone key or a disabled target: nothing is focused in i
   const host = build();
   inputs(host)[4].focus();
   kept(host, () => rebuild(host));
-  assert.equal(document.body.contains(document.activeElement), false, 'an empty path refocuses nothing');
+  assert.equal(host.contains(document.activeElement), false, 'an empty path refocuses nothing');
   const plain = host.querySelector('button');
   plain.focus();
   refocus(host, null);

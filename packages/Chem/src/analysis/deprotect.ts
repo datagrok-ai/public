@@ -7,6 +7,7 @@ import {Observable, Subject} from 'rxjs';
 import {hasNewLines} from '../utils/chem-common';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {EngineReaction} from '../utils/reactions/reaction-engine';
+import {byEngineModule} from '../engine/chem-engine';
 
 function correctRGroups(smiles: string): string {
   const elementRGroupRegex = /\[R[1-9]\]/g;
@@ -161,13 +162,22 @@ function deprotectOne(module: RDModule, reaction: RDReaction, molSmiles: string)
 /** In Crux mode the reaction runs on the Crux module, on RDKit's (`rdModule`) per molecule Crux cannot do. */
 export function addDeprotectedColumn(table: DG.DataFrame, molColumn: DG.Column, fragment: string, rdModule: RDModule): DG.Column | null {
   try {
-    const fragmentMol = rdModule.get_mol(fragment);
-    if (!fragmentMol)
+    // "Chemical engine": the fragment by the main thread's module (Crux's in Crux mode, which runs the reaction), RDKit's
+    // where Crux reads none
+    const hFragmentSmiles = byEngineModule('deprotection fragment', rdModule, (module) => {
+      const fragmentMol = module.get_mol(fragment);
+      if (!fragmentMol)
+        return null;
+      try {
+        // we need to add explicit hydrogens to the fragment to make sure the reaction works correctly
+        fragmentMol.add_hs_in_place();
+        return fragmentMol.get_smiles();
+      } finally {
+        fragmentMol.delete();
+      }
+    });
+    if (hFragmentSmiles === null)
       throw new Error('Invalid fragment molecule');
-    // we need to add explicit hydrogens to the fragment to make sure the reaction works correctly
-    fragmentMol.add_hs_in_place();
-    const hFragmentSmiles = fragmentMol.get_smiles();
-    fragmentMol.delete();
     if (!hFragmentSmiles)
       throw new Error('Invalid fragment molecule after adding hydrogens');
     const reactionSmirks = `${hFragmentSmiles}>>[*:1]`;

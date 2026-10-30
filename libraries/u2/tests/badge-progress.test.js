@@ -2,7 +2,8 @@
    the bar's clamp / width / aria contract. Same contract as smoke.test.js — every test leaves the
    live-scope count where it found it. */
 
-import {test} from 'node:test';
+import {test as nodeTest} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, computed, Scope, Control} from '../src/index.js';
@@ -11,8 +12,8 @@ import {effect, div} from '../src/core/elements.js';
 import {Tooltip} from '../src/core/tooltip.js';
 import {ProgressBar} from '../src/components/display/progress.js';
 
-function ui(name, body) {
-  test(name, async () => {
+function ui(name, body, run = test) {
+  run(name, async () => {
     const live = Scope.liveCount;
     try {
       await body();
@@ -22,6 +23,11 @@ function ui(name, body) {
     }
     assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
   });
+}
+
+/** A test of what happens with no owner: no test scope around its body. */
+function unowned(name, body) {
+  ui(name, body, nodeTest);
 }
 
 function track(bar) {
@@ -78,7 +84,7 @@ ui('countBadge: caps at max, hides at zero and follows its signal', () => {
   assert.equal(el.textContent, '99+', 'the effect died with its owner');
 });
 
-ui('badge and countBadge: a signal argument needs an ambient owner', () => {
+unowned('badge and countBadge: a signal argument needs an ambient owner', () => {
   assert.throws(() => badge(signal('x')), /needs an owner/);
   assert.throws(() => countBadge(signal(1)), /needs an owner/);
 });
@@ -113,18 +119,18 @@ ui('ProgressBar: clamps the value, drives the fill width and aria-valuenow', () 
   assert.equal(track(bar).getAttribute('aria-valuemax'), '1');
   assert.equal(fill(bar).style.width, '0%');
 
-  bar.value.value = 0.4;
+  bar.value = 0.4;
   assert.equal(fill(bar).style.width, '40%');
   assert.equal(track(bar).getAttribute('aria-valuenow'), '0.4');
   assert.equal(percent.textContent, '40%');
 
-  bar.value.value = 1.5;
-  assert.equal(bar.value.value, 1, 'above the range clamps to 1');
+  bar.value = 1.5;
+  assert.equal(bar.value, 1, 'above the range clamps to 1');
   assert.equal(fill(bar).style.width, '100%');
   assert.equal(percent.textContent, '100%');
 
-  bar.value.value = -2;
-  assert.equal(bar.value.value, 0);
+  bar.value = -2;
+  assert.equal(bar.value, 0);
   assert.equal(fill(bar).style.width, '0%');
   assert.equal(track(bar).getAttribute('aria-valuenow'), '0');
   bar.dispose();
@@ -136,7 +142,7 @@ ui('ProgressBar: indeterminate drops aria-valuenow, and switching back restores 
   assert.equal(bar.root.classList.contains('u2-progress-indeterminate'), true);
   assert.equal(track(bar).hasAttribute('aria-valuenow'), false);
 
-  bar.value.value = 0.5;
+  bar.value = 0.5;
   assert.equal(track(bar).hasAttribute('aria-valuenow'), false, 'a value means nothing while indeterminate');
   assert.equal(fill(bar).style.width, '', 'the sliding fill is sized by CSS');
   assert.equal(percent.textContent, '');
@@ -155,7 +161,7 @@ ui('ProgressBar: indeterminate drops aria-valuenow, and switching back restores 
 ui('ProgressBar: the description line takes a signal and dies with the bar', () => {
   const value = signal(0);
   const bar = new ProgressBar({description: computed(() => `${Math.round(value.value * 100)} of 100 rows`)});
-  bar.effect(() => bar.value.value = value.value);
+  bar.effect(() => bar.value = value.value);
   const description = bar.root.querySelector('.u2-progress-description');
   assert.equal(description.textContent, '0 of 100 rows');
 
@@ -187,7 +193,7 @@ ui('statusLine: what the action will do, or why it cannot yet — marked, and sa
   owner.dispose();
 });
 
-ui('effect() and Tooltip.bind belong to whoever is building, and go with it', () => {
+unowned('effect() and Tooltip.bind belong to whoever is building, and go with it', () => {
   const name = signal('R1');
   let runs = 0;
   const owner = Control.build(() => {

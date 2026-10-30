@@ -5,28 +5,14 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {fire, flush, resetDom} from './dom-shim.js';
+import './dom-shim.js';
 import {signal} from '../src/core/signals.js';
-import {Scope} from '../src/core/scope.js';
 import {Component, Control} from '../src/core/component.js';
 import {button} from '../src/core/elements.js';
 import {Registry} from '../src/spec/registry.js';
 import {registerAll} from '../src/spec/registrations.js';
 import {renderSpec} from '../src/spec/spec.js';
-
-/** Every test runs against a clean document and must leave the live-scope count where it was. */
-function widget(name, body) {
-  test(name, async () => {
-    const live = Scope.liveCount;
-    try {
-      await body();
-    } finally {
-      resetDom();
-      await flush();
-    }
-    assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
-  });
-}
+import {u2test, mount, user} from '../src/testing/index.js';
 
 /** A component of the shape a registration builds: signal-backed props, a callable, an event. */
 class Gauge extends Control {
@@ -69,7 +55,7 @@ function gauge() {
   return g;
 }
 
-widget('properties are generated from the registry metadata, over live signals', () => {
+test('properties are generated from the registry metadata, over live signals', u2test(() => {
   const g = gauge();
   const props = g.getProperties();
   assert.deepEqual(props.map((p) => p.name), ['value', 'caption']);
@@ -85,16 +71,16 @@ widget('properties are generated from the registry metadata, over live signals',
   assert.equal(props[1].get(null), 'Pressure', 'a plain member reads as itself');
   assert.equal(props[1].set, undefined, 'and stays read-only');
   g.dispose();
-});
+}));
 
-widget('a component without metadata has no properties', () => {
+test('a component without metadata has no properties', u2test(() => {
   const g = new Gauge();
   g.name = 'gauge1';
   assert.deepEqual(g.getProperties(), []);
   g.dispose();
-});
+}));
 
-widget('the registry stamps the metadata of the tag it built', () => {
+test('the registry stamps the metadata of the tag it built', u2test(() => {
   const reg = new Registry();
   reg.register(GAUGE_META);
   const meta = reg.get('u2-gauge');
@@ -108,9 +94,9 @@ widget('the registry stamps the metadata of the tag it built', () => {
   assert.deepEqual(built.getProperties().filter((p) => p.category !== 'Appearance').map((p) => p.name),
     ['value', 'caption', 'visible']);
   instance.dispose();
-});
+}));
 
-widget('properties of a spec-rendered input read its live state, options included', () => {
+test('properties of a spec-rendered input read its live state, options included', u2test(() => {
   const reg = new Registry();
   registerAll(reg);
   const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-text-input', name: 'q', props: {
@@ -130,11 +116,11 @@ widget('properties of a spec-rendered input read its live state, options include
   assert.equal(input.root.querySelector('.u2-input-label').textContent, 'Filter',
     'the accessor write reaches the live element');
   props.get('value').set(null, 'ibuprofen');
-  assert.equal(input.value.peek(), 'ibuprofen', 'a signal-backed prop still writes through');
+  assert.equal(input.peek(), 'ibuprofen', 'a signal-backed prop still writes through');
   instance.dispose();
-});
+}));
 
-widget('a component that keeps nothing still reports the props the spec set on it', () => {
+test('a component that keeps nothing still reports the props the spec set on it', u2test(() => {
   const reg = new Registry();
   reg.register({
     tag: 'u2-fake-button',
@@ -151,9 +137,9 @@ widget('a component that keeps nothing still reports the props the spec set on i
   assert.equal(props.get('primary').get(null), true);
   assert.equal(props.get('text').set, undefined, 'a construction-time value renders read-only');
   instance.dispose();
-});
+}));
 
-widget('a prop the component stores under another name reports what the spec set', () => {
+test('a prop the component stores under another name reports what the spec set', u2test(() => {
   const reg = new Registry();
   registerAll(reg);
   const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-splitter', name: 'layout',
@@ -162,9 +148,9 @@ widget('a prop the component stores under another name reports what the spec set
 
   assert.equal(direction.get(null), 'vertical');
   instance.dispose();
-});
+}));
 
-widget('a declared name prop is the form key, not the component identity', () => {
+test('a declared name prop is the form key, not the component identity', u2test(() => {
   const reg = new Registry();
   registerAll(reg);
   const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-text-input', name: 'firstNameField',
@@ -175,9 +161,9 @@ widget('a declared name prop is the form key, not the component identity', () =>
   assert.equal(key.get(null), 'firstName');
   assert.notEqual(key.get(null), 'firstNameField', 'and never reads the spec identity');
   instance.dispose();
-});
+}));
 
-widget('declared functions are what the component registered', async () => {
+test('declared functions are what the component registered', u2test(async () => {
   const g = gauge();
   const [reset] = g.getFunctions();
   assert.equal(reset.name, 'reset');
@@ -185,9 +171,9 @@ widget('declared functions are what the component registered', async () => {
   assert.equal(await reset.apply({to: 7}), 7);
   assert.equal(g.value.peek(), 7);
   g.dispose();
-});
+}));
 
-widget('onEvent delivers component events, by id and unfiltered', () => {
+test('onEvent delivers component events, by id and unfiltered', u2test(() => {
   const g = gauge();
   const seen = [];
   const all = [];
@@ -204,33 +190,35 @@ widget('onEvent delivers component events, by id and unfiltered', () => {
   assert.deepEqual(all, [11, 12]);
   every.unsubscribe();
   g.dispose();
-});
+}));
 
-widget('onEvent on a control also delivers DOM events of that name from its root', () => {
-  const g = gauge();
+test('onEvent on a control also delivers DOM events of that name from its root', u2test(() => {
+  const g = mount(() => gauge());
   const seen = [];
   const sub = g.onEvent('click').subscribe((e) => seen.push(e.type));
 
-  fire(g.root, 'click');
+  user.click(g);
   assert.deepEqual(seen, ['click']);
 
   sub.unsubscribe();
-  fire(g.root, 'click');
+  user.click(g);
   assert.deepEqual(seen, ['click'], 'the listener is removed with the subscription');
   g.dispose();
-});
+}));
 
-widget('a subscription left open is disposed with the component', () => {
-  const g = gauge();
+test('a subscription left open is disposed with the component', u2test(() => {
+  const g = mount(() => gauge());
   const seen = [];
   g.onEvent('click').subscribe(() => seen.push(1));
   g.dispose();
+  // dispose took it off the page; put back, a click still reaches nobody
+  document.body.append(g.root);
 
-  fire(g.root, 'click');
+  user.click(g);
   assert.deepEqual(seen, []);
-});
+}));
 
-widget('a component-event subscription left open dies with the component too', () => {
+test('a component-event subscription left open dies with the component too', u2test(() => {
   const g = gauge();
   const seen = [];
   g.onEvent('bumped').subscribe((x) => seen.push(x));
@@ -239,9 +227,9 @@ widget('a component-event subscription left open dies with the component too', (
 
   g.bump();
   assert.deepEqual(seen, []);
-});
+}));
 
-widget('the status snapshot reports the declared events and description', () => {
+test('the status snapshot reports the declared events and description', u2test(() => {
   const g = gauge();
   const status = g.getWidgetStatus();
   assert.deepEqual(status.events, [{name: 'bumped', eventName: 'bumped', description: ''}]);
@@ -249,9 +237,9 @@ widget('the status snapshot reports the declared events and description', () => 
   assert.deepEqual(status.parts, {});
   assert.equal(status.error, null);
   g.dispose();
-});
+}));
 
-widget('the AI briefing falls back to usage, then description, and is overridable', () => {
+test('the AI briefing falls back to usage, then description, and is overridable', u2test(() => {
   const c = new Component();
   assert.equal(c.aiDescription, null);
   c.componentMeta = {props: [], description: 'A gauge'};
@@ -261,4 +249,4 @@ widget('the AI briefing falls back to usage, then description, and is overridabl
   c.aiDescription = 'Set by hand';
   assert.equal(c.aiDescription, 'Set by hand');
   c.dispose();
-});
+}));

@@ -1,8 +1,3 @@
-/* The Browse panel beyond opening and clicking nodes (its Refresh is in steps.ts): the
-   tree's own "children are there" state, favorites, and moving inside the app by address. Refresh and Find path fire
-   `grok.events.onBrowseTreeRefreshed` once the tree is rebuilt and the path parsed
-   (browse_panel.dart); a group fetching its children carries `data-state="loading"` on its host
-   (tree_view.dart `loadChildren`). */
 import {type Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';

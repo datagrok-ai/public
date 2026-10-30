@@ -1,0 +1,18 @@
+.template-editor {
+  max-width: 640px;
+}
+
+.template-editor .u2-input-box {
+  flex-grow: 1;
+}
+
+.template-editor-key .u2-input-box,
+.template-editor-key .u2-input-editor {
+  flex-grow: 0 !important;
+  width: 120px !important;
+}
+
+.template-editor .u2-form-buttons {
+  justify-content: flex-end;
+  gap: 8px;
+}

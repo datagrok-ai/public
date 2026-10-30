@@ -2,7 +2,8 @@
    (kindsVersion 1) — do not edit; `npm run vocab` regenerates, `npm run vocab:check` reports drift */
 import type {U2KindSpec} from '../../src/u2-vocabulary.js';
 
-export const U2_KINDS: U2KindSpec[] = [
+export const U2_KINDS: (U2KindSpec & {interactive?: string[], styling?: Record<string, string>, whenToUse?: string})[] =
+  [
   {
     "kind": "access-grid",
     "noun": "access grid",
@@ -36,7 +37,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "principals",
@@ -140,6 +141,43 @@ export const U2_KINDS: U2KindSpec[] = [
       "open",
       "toggle"
     ],
+    "source": "u2"
+  },
+  {
+    "kind": "app-header",
+    "noun": "app header",
+    "aliases": [
+      "app hero"
+    ],
+    "family": "display",
+    "tag": "u2-app-header",
+    "nameFrom": [
+      "label",
+      "aria"
+    ],
+    "parts": {
+      "icon": "[data-u2-part=\"icon\"]",
+      "title": "[data-u2-part=\"title\"]",
+      "subtitle": "[data-u2-part=\"subtitle\"]",
+      "learn more": "[data-u2-part=\"learn-more\"]"
+    },
+    "state": [
+      "label",
+      "items",
+      "extra"
+    ],
+    "props": [
+      "title",
+      "subtitle",
+      "visible"
+    ],
+    "gestures": [],
+    "items": {
+      "role": "listitem",
+      "noun": "header item",
+      "gestures": []
+    },
+    "whenToUse": "the top of an app's home: its icon, what it does and Learn more",
     "source": "u2"
   },
   {
@@ -294,7 +332,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "visible"
@@ -358,6 +396,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "text",
       "primary",
       "icon",
+      "disabled",
       "visible"
     ],
     "gestures": [
@@ -429,6 +468,113 @@ export const U2_KINDS: U2KindSpec[] = [
     "source": "u2"
   },
   {
+    "kind": "catalog-table",
+    "noun": "catalog table",
+    "aliases": [
+      "records table"
+    ],
+    "family": "collection",
+    "tag": "u2-catalog-table",
+    "nameFrom": [
+      "aria"
+    ],
+    "parts": {
+      "item-label": "[data-u2-part=\"item-label\"]",
+      "section": "[data-u2-part=\"section\"]",
+      "footer": ":scope > [data-u2-part=\"footer\"]"
+    },
+    "state": [
+      "items",
+      "busy",
+      "extra"
+    ],
+    "props": [
+      "items",
+      "visible"
+    ],
+    "gestures": [
+      "scroll"
+    ],
+    "items": {
+      "role": "row",
+      "noun": "table row",
+      "gestures": [
+        "expand",
+        "collapse"
+      ]
+    },
+    "styling": {
+      "--u2-row-base-bg": "a row at rest",
+      "--u2-row-hover-bg": "the tint over the row under the pointer",
+      "--u2-row-hover-stripe": "the stripe at the start of the row under the pointer",
+      "--u2-row-selected-bg": "a selected row",
+      "--u2-section-header-bg": "a group's header row"
+    },
+    "whenToUse": "a list of records to sort, group, choose the columns of and act on",
+    "source": "u2"
+  },
+  {
+    "kind": "checklist-input",
+    "noun": "checklist",
+    "aliases": [
+      "checklist input",
+      "orderable checklist"
+    ],
+    "family": "input",
+    "tag": "u2-checklist-input",
+    "focusRole": "list",
+    "nameFrom": [
+      "label",
+      "aria",
+      "placeholder"
+    ],
+    "parts": {
+      "label": "[data-u2-part=\"label\"]",
+      "editor": "[data-u2-part=\"editor\"]",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]",
+      "handle": "[data-u2-part=\"handle\"]"
+    },
+    "state": [
+      "label",
+      "value",
+      "text",
+      "valid",
+      "error",
+      "readOnly",
+      "required",
+      "items",
+      "selection"
+    ],
+    "props": [
+      "label",
+      "name",
+      "value",
+      "postfix",
+      "tooltipText",
+      "disabled",
+      "readOnly",
+      "required",
+      "items",
+      "visible"
+    ],
+    "gestures": [
+      "toggle",
+      "drag"
+    ],
+    "items": {
+      "role": "listitem",
+      "noun": "item",
+      "gestures": [
+        "toggle",
+        "drag"
+      ],
+      "multi": true
+    },
+    "whenToUse": "a pick where the order matters too: the functions to run, in order",
+    "source": "u2"
+  },
+  {
     "kind": "chip",
     "noun": "chip",
     "family": "display",
@@ -479,7 +625,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "items",
@@ -497,6 +643,50 @@ export const U2_KINDS: U2KindSpec[] = [
       ],
       "multi": true
     },
+    "source": "u2"
+  },
+  {
+    "kind": "choice-chip",
+    "noun": "choice chip",
+    "family": "action",
+    "tag": "u2-choice-chip",
+    "role": "button",
+    "nameFrom": [
+      "label",
+      "aria",
+      "text"
+    ],
+    "parts": {
+      "label": "[data-u2-part=\"label\"]",
+      "value": "[data-u2-part=\"value\"]"
+    },
+    "state": [
+      "label",
+      "value",
+      "text",
+      "valid",
+      "error",
+      "open",
+      "items",
+      "selection"
+    ],
+    "props": [
+      "name",
+      "value",
+      "visible"
+    ],
+    "gestures": [
+      "open",
+      "pick"
+    ],
+    "items": {
+      "role": "menuitemcheckbox",
+      "noun": "menu item",
+      "gestures": [
+        "pick"
+      ]
+    },
+    "whenToUse": "a small choice inline among others, its label inside it (\"R1 OH ▾\", \"Sort Name ▾\"): a menu of the choices, each with what it stands for, the current one checked",
     "source": "u2"
   },
   {
@@ -538,7 +728,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "items",
@@ -592,7 +782,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "visible"
@@ -648,6 +838,24 @@ export const U2_KINDS: U2KindSpec[] = [
         "pick"
       ]
     },
+    "whenToUse": "a column choice in the platform's column combo: `columnInput(label, df, {grid: true})`, never a list built from `df.columns`",
+    "source": "u2"
+  },
+  {
+    "kind": "column-header",
+    "noun": "column header",
+    "family": "collection",
+    "role": "columnheader",
+    "nameFrom": [
+      "text",
+      "aria"
+    ],
+    "parts": {},
+    "state": [],
+    "props": [],
+    "gestures": [
+      "press"
+    ],
     "source": "u2"
   },
   {
@@ -689,6 +897,7 @@ export const U2_KINDS: U2KindSpec[] = [
         "pick"
       ]
     },
+    "whenToUse": "a column choice with a search over the columns: `columnInput(label, df, {rich: true})`, never a list built from `df.columns`",
     "source": "u2"
   },
   {
@@ -1048,6 +1257,7 @@ export const U2_KINDS: U2KindSpec[] = [
     "state": [],
     "props": [
       "cls",
+      "gap",
       "visible"
     ],
     "gestures": [],
@@ -1065,6 +1275,7 @@ export const U2_KINDS: U2KindSpec[] = [
     "state": [],
     "props": [
       "cls",
+      "gap",
       "visible"
     ],
     "gestures": [],
@@ -1436,6 +1647,23 @@ export const U2_KINDS: U2KindSpec[] = [
       "type",
       "pick"
     ],
+    "whenToUse": "a value shown as an element (a structure drawing, a chart): its row grows to fit it, where an options-rail child would spill",
+    "source": "u2"
+  },
+  {
+    "kind": "empty-state",
+    "noun": "empty state",
+    "family": "display",
+    "role": "status",
+    "nameFrom": [
+      "text"
+    ],
+    "parts": {},
+    "state": [
+      "text"
+    ],
+    "props": [],
+    "gestures": [],
     "source": "u2"
   },
   {
@@ -1741,7 +1969,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "mode",
@@ -1818,7 +2046,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "placeholder",
@@ -1892,7 +2120,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "visible"
@@ -1930,6 +2158,11 @@ export const U2_KINDS: U2KindSpec[] = [
       "visible"
     ],
     "gestures": [],
+    "styling": {
+      "--u2-form-max-width": "the widest a form gets (a CSS length); 700px, or as wide as the page in a Page",
+      "--u2-form-label-width": "the label column's width, set by the form as it measures (labelWidth fixes it)",
+      "--u2-form-section-gap": "the space between two sections of the form; 0"
+    },
     "source": "u2"
   },
   {
@@ -2207,7 +2440,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "visible"
@@ -2252,7 +2485,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "alt",
@@ -2324,7 +2557,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "placeholder",
@@ -2421,7 +2654,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "visible"
@@ -2438,6 +2671,46 @@ export const U2_KINDS: U2KindSpec[] = [
         "remove"
       ]
     },
+    "source": "u2"
+  },
+  {
+    "kind": "master-detail",
+    "noun": "master detail",
+    "aliases": [
+      "list with details"
+    ],
+    "family": "collection",
+    "nameFrom": [
+      "aria"
+    ],
+    "parts": {
+      "list": "[data-u2-part=\"list\"]",
+      "detail": "[data-u2-part=\"detail\"]",
+      "reason": "[data-u2-part=\"reason\"]"
+    },
+    "state": [
+      "current",
+      "items",
+      "selection"
+    ],
+    "props": [],
+    "gestures": [
+      "select",
+      "toggle"
+    ],
+    "items": {
+      "role": "option",
+      "noun": "item",
+      "gestures": [
+        "select",
+        "toggle"
+      ]
+    },
+    "styling": {
+      "--u2-master-detail-height": "its height (a CSS length); it fills its host by default",
+      "--u2-row-selected-bg": "the current row"
+    },
+    "whenToUse": "a short list beside the detail of its current item, each item with a check and a hint, its detail kept while it is not shown",
     "source": "u2"
   },
   {
@@ -2582,7 +2855,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "items",
@@ -2730,12 +3003,13 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "min",
       "max",
       "step",
+      "placeholder",
       "visible"
     ],
     "gestures": [
@@ -2763,6 +3037,35 @@ export const U2_KINDS: U2KindSpec[] = [
     "source": "u2"
   },
   {
+    "kind": "page",
+    "noun": "page",
+    "family": "container",
+    "tag": "u2-page",
+    "nameFrom": [
+      "aria"
+    ],
+    "parts": {
+      "header": ":scope > [data-u2-part=\"header\"]",
+      "body": ":scope > [data-u2-part=\"body\"]",
+      "footer": ":scope > [data-u2-part=\"footer\"]",
+      "section title": ":scope > [data-u2-part=\"body\"] > [data-u2-part=\"section\"] > [data-u2-part=\"section-header\"] > [data-u2-part=\"section-title\"]"
+    },
+    "state": [],
+    "props": [
+      "visible"
+    ],
+    "gestures": [],
+    "styling": {
+      "--u2-page-max-width": "the body's widest (a CSS length); its forms go as wide",
+      "--u2-page-padding-x": "the space left and right of the header, the body and the action row; 24px",
+      "--u2-page-padding-y": "the space above the header and the body; 12px",
+      "--u2-page-gap": "the space between the sections; 24px",
+      "--u2-page-section-indent": "how far a section's content sits in from its heading; 0"
+    },
+    "whenToUse": "the content of a view or a dialog-sized editor: a header, a body that alone scrolls, a pinned action row, sections with their actions",
+    "source": "u2"
+  },
+  {
     "kind": "palette",
     "noun": "palette",
     "family": "composite",
@@ -2787,6 +3090,7 @@ export const U2_KINDS: U2KindSpec[] = [
     "state": [],
     "props": [
       "cls",
+      "gap",
       "visible"
     ],
     "gestures": [],
@@ -2830,7 +3134,7 @@ export const U2_KINDS: U2KindSpec[] = [
         "pick"
       ]
     },
-    "source": "ems"
+    "source": "u2"
   },
   {
     "kind": "progress-bar",
@@ -2943,7 +3247,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "placeholder",
@@ -2992,7 +3296,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "items",
@@ -3073,6 +3377,67 @@ export const U2_KINDS: U2KindSpec[] = [
     "source": "u2"
   },
   {
+    "kind": "records-input",
+    "noun": "records input",
+    "aliases": [
+      "records editor",
+      "editable list"
+    ],
+    "family": "input",
+    "tag": "u2-records-input",
+    "focusRole": "grid",
+    "nameFrom": [
+      "label",
+      "aria",
+      "placeholder"
+    ],
+    "parts": {
+      "label": "[data-u2-part=\"label\"]",
+      "editor": "[data-u2-part=\"editor\"]",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]",
+      "add": "[data-u2-part=\"add\"]",
+      "handle": "[data-u2-part=\"handle\"]"
+    },
+    "state": [
+      "label",
+      "value",
+      "text",
+      "valid",
+      "error",
+      "readOnly",
+      "required",
+      "items"
+    ],
+    "props": [
+      "label",
+      "name",
+      "value",
+      "postfix",
+      "tooltipText",
+      "disabled",
+      "readOnly",
+      "required",
+      "visible"
+    ],
+    "gestures": [
+      "add",
+      "remove",
+      "type",
+      "drag"
+    ],
+    "items": {
+      "role": "row",
+      "noun": "item",
+      "gestures": [
+        "remove",
+        "drag"
+      ]
+    },
+    "whenToUse": "rows the user edits in place: a template's fields or stages",
+    "source": "u2"
+  },
+  {
     "kind": "ref-input",
     "noun": "ref input",
     "family": "input",
@@ -3131,6 +3496,38 @@ export const U2_KINDS: U2KindSpec[] = [
       "press"
     ],
     "source": "ems"
+  },
+  {
+    "kind": "ribbon-group",
+    "noun": "ribbon group",
+    "aliases": [
+      "package ribbon"
+    ],
+    "family": "navigation",
+    "role": "toolbar",
+    "nameFrom": [
+      "aria"
+    ],
+    "parts": {
+      "more button": "[data-u2-part=\"more\"]"
+    },
+    "state": [
+      "items",
+      "extra"
+    ],
+    "props": [],
+    "gestures": [
+      "press"
+    ],
+    "items": {
+      "role": "button",
+      "noun": "ribbon button",
+      "gestures": [
+        "press"
+      ]
+    },
+    "whenToUse": "a package's group on a platform view's ribbon: `ViewHost.of(view).ribbon({actions, buttons})`",
+    "source": "u2"
   },
   {
     "kind": "row-actions",
@@ -3285,7 +3682,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "min",
@@ -3297,6 +3694,31 @@ export const U2_KINDS: U2KindSpec[] = [
       "drag"
     ],
     "source": "u2"
+  },
+  {
+    "kind": "sort-menu",
+    "noun": "dropdown button",
+    "aliases": [
+      "sort"
+    ],
+    "family": "action",
+    "role": "button",
+    "nameFrom": [
+      "aria",
+      "title"
+    ],
+    "parts": {},
+    "state": [
+      "label",
+      "open"
+    ],
+    "props": [],
+    "gestures": [
+      "press",
+      "open",
+      "pick"
+    ],
+    "source": "ems"
   },
   {
     "kind": "splitter",
@@ -3445,6 +3867,14 @@ export const U2_KINDS: U2KindSpec[] = [
         "select"
       ]
     },
+    "styling": {
+      "--u2-row-base-bg": "a row at rest",
+      "--u2-row-hover-bg": "the tint over the row under the pointer",
+      "--u2-row-hover-stripe": "the stripe at the start of the row under the pointer",
+      "--u2-row-selected-bg": "a selected row",
+      "--u2-section-header-bg": "a group's header row"
+    },
+    "whenToUse": "read-only details of an item in a pane of their own: `tableFromMap(map)`, muted keys and wrapping values",
     "source": "u2"
   },
   {
@@ -3582,7 +4012,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "placeholder",
@@ -3632,7 +4062,7 @@ export const U2_KINDS: U2KindSpec[] = [
       "value",
       "postfix",
       "tooltipText",
-      "enabled",
+      "disabled",
       "readOnly",
       "required",
       "placeholder",

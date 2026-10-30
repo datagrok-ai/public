@@ -1,3 +1,5 @@
+import {Format} from './format.js';
+
 /** A value as the text a field shows: null and undefined are empty, everything else is String(). */
 export function text(value: unknown): string {
   return value === null || value === undefined ? '' : String(value);
@@ -14,7 +16,7 @@ export function isEmpty(value: unknown): boolean {
 /** A count and the word it agrees with: `plural(2, 'row', 'rows')` is "2 rows". The two forms are
  * whole phrases, so a verb agrees with them too — `plural(1, 'row has errors', 'rows have errors')`. */
 export function plural(n: number, one: string, many: string): string {
-  return `${n.toLocaleString()} ${n === 1 ? one : many}`;
+  return `${Format.count(n)} ${n === 1 ? one : many}`;
 }
 
 const CONJUNCTIONS = new Set(['and', 'or', 'than', 'if', 'but', 'so', 'as', 'that']);
@@ -31,4 +33,15 @@ export function camelCaseToWords(name: string): string {
       return i === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word;
     })
     .join(' ');
+}
+
+let measure: CanvasRenderingContext2D | null | undefined;
+
+/** The width `value` takes in the CSS `font`; 0 without a canvas. */
+export function textWidth(value: string, font: string): number {
+  measure ??= document.createElement('canvas').getContext?.('2d') ?? null;
+  if (measure === null)
+    return 0;
+  measure.font = font;
+  return measure.measureText(value).width;
 }

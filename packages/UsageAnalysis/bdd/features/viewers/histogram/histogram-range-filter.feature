@@ -116,7 +116,7 @@ Feature: Histogram range filter
 
   Scenario: Bounds outside the column extent are clamped, the typed text is kept
     When user enters "40" into the "range min input" area of histogram viewer
-    Then fewer than 1000 rows should pass the filter
+    Then 665 rows should pass the filter
     And the "range min" reading of histogram viewer should be 40
     When user enters "-999" into the "range min input" area of histogram viewer
     Then all rows should pass the filter
@@ -140,7 +140,7 @@ Feature: Histogram range filter
     Then histogram viewer should have a "range min handle" area
     And histogram viewer should have a "range max handle" area
     When user drags the "range max handle" area of histogram viewer to the "bin 12" area
-    Then fewer than 1000 rows should pass the filter
+    Then 809 rows should pass the filter
     And the "range max" reading of histogram viewer should be lower than before
     And histogram viewer should show fewer rows than before
     And histogram viewer should have a "range bar" area

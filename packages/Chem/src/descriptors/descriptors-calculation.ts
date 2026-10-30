@@ -2,7 +2,6 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable, Subject} from 'rxjs';
-import {Chem} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {addCopyIcon} from '../utils/ui-utils';
@@ -127,23 +126,6 @@ export function addDescriptorsColsToDf(table: DG.DataFrame, colsArr: DG.Column[]
   }
 }
 
-/** Adds descriptors to table */
-export async function addDescriptors(smilesCol: DG.Column, viewTable: DG.DataFrame): Promise<void> {
-  openDescriptorsDialog(await getSelected(), async (selected: any) => {
-    grok.userSettings.add(_STORAGE_NAME, _KEY, JSON.stringify(selected));
-    selected = await getSelected();
-    const pi = DG.TaskBarProgressIndicator.create('Calculating descriptors...');
-    try {
-      const cols = (await calculateDescriptors(smilesCol, selected));
-      addDescriptorsColsToDf(viewTable, cols);
-    } catch (e: any) {
-      grok.shell.error(e);
-    } finally {
-      pi.close();
-    }
-  });
-}
-
 /** Calculates descriptors for single entry*/
 export function getDescriptorsSingle(smiles: string): DG.Widget {
   const rdKitModule = getRdKitModule();
@@ -189,62 +171,6 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
   update();
 
   return widget;
-}
-
-/** demo application for descriptor calculation*/
-export function getDescriptorsApp(): void {
-  const defaultSmiles = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
-  let sketcherValue = defaultSmiles;
-
-  const windows = grok.shell.windows;
-  windows.showToolbox = false;
-  windows.showHelp = false;
-  windows.showContextPanel = false;
-
-  let table = DG.DataFrame.create();
-  table.name = 'Descriptors';
-  const view = grok.shell.addTableView(table);
-
-  const dsDiv = ui.divV([], 'grok-prop-panel');
-  dsDiv.appendChild(getDescriptorsSingle(defaultSmiles).root);
-
-  const sketcher = grok.chem.sketcher((smiles: string, _molfile: string) => {
-    sketcherValue = smiles;
-    removeChildren(dsDiv);
-    dsDiv.appendChild(getDescriptorsSingle(smiles).root);
-  }, defaultSmiles);
-  const addButton = ui.bigButton('ADD', async () => {
-    getSelected().then((selected) => {
-      Chem.getDescriptorsPy(
-        'smiles', DG.DataFrame.fromCsv(`smiles\n${sketcherValue}`), 'selected',
-        DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
-      ).then((t) => {
-      //grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${sketcherValue}`), 'smiles', selected).then(t => {
-        const columnNames = table.columns.names();
-        if ((table.columns.length !== selected.length + 1) || selected.some((s: any) => !columnNames.includes(s))) {
-          table = DG.DataFrame.create();
-          table.name = 'Descriptors';
-          view.dataFrame = table;
-          for (const col of t.columns.toList())
-            table.columns.addNew(col.name, col.type);
-        }
-        table.rows.addNew(t.columns.toList().map((c: any) => c.get(0)));
-      });
-    });
-  });
-  addButton.style.marginTop = '12px';
-  const skDiv = ui.divV([sketcher, addButton], 'grok-prop-panel,dlg-sketcher,pure-form');
-
-  const skNode = view.dockManager.dock(skDiv, DG.DOCK_TYPE.RIGHT, null, 'Sketcher', 0.25);
-  view.dockManager.dock(dsDiv, DG.DOCK_TYPE.DOWN, skNode, 'Descriptors', 0.5);
-
-  grok.events.onViewRemoved.subscribe((v: any) => {
-    if (v.name === view.name) {
-      windows.showToolbox = true;
-      windows.showHelp = true;
-      windows.showContextPanel = true;
-    }
-  });
 }
 
 type onOk = (selectedDescriptors: string[]) => void;

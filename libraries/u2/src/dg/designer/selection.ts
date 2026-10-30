@@ -141,8 +141,9 @@ export class Selection {
 
   /** Re-selecting what is already selected is not a no-op: the context panel can miss an update
    * when clicks come faster than the platform renders it, and clicking the row again is how a user
-   * asks for it back — so `shell.o` is always re-assigned. */
-  select(node: SpecNode): void {
+   * asks for it back — so `shell.o` is always re-assigned. `reveal: false` is for a selection the
+   * tree reported: sent back, the reveals still in flight would re-select each other forever. */
+  select(node: SpecNode, reveal = true): void {
     const instance = this._host.instance();
     if (!instance)
       return;
@@ -156,7 +157,7 @@ export class Selection {
     grok.shell.windows.showContextPanel = true;
     this._issue(instance, node);
     const id = this._host.model()?.ids.get(node);
-    if (id !== undefined)
+    if (reveal && id !== undefined)
       void this._host.tree.expandPath(idPath(id));
   }
 
@@ -204,7 +205,7 @@ export class Selection {
     if (!node)
       return;
     if (node !== this.selected)
-      this.select(node);
+      this.select(node, false);
     else if (this.multi.length > 1) {
       // a tree rebuild (setItems) collapsed its set under a live multi-selection — the designer
       // must follow, or Delete would act on members no longer shown anywhere. Deferred past the

@@ -79,25 +79,25 @@ select count(from_id) from src10src11
 --end
 
 
---name: FracClassification
---friendlyName: Search | By FRAC Classification
---description: Searches compound structures by FRAC (Fungicide Resistance Action Committee) classification hierarchy levels.
+--name: AtcClassification
+--friendlyName: Search | By ATC Classification
+--description: Searches compound structures by the four levels of the WHO ATC (Anatomical Therapeutic Chemical) classification, each level's choices depending on the level above.
 --connection: Chembl
---input: string level1 = 'MITOSIS AND CELL DIVISION' {choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
---input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
---input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
---input: string level4 {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")}
-SELECT s.*
+--input: string level1 = 'NERVOUS SYSTEM' {choices: Query("SELECT DISTINCT level1_description FROM atc_classification ORDER BY 1")} [Anatomical main group]
+--input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM atc_classification WHERE level1_description = @level1 ORDER BY 1")} [Therapeutic subgroup]
+--input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM atc_classification WHERE level2_description = @level2 ORDER BY 1")} [Pharmacological subgroup]
+--input: string level4 {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM atc_classification WHERE level3_description = @level3 ORDER BY 1")} [Chemical subgroup]
+SELECT DISTINCT s.*
 FROM compound_structures s
-JOIN molecule_frac_classification m
+JOIN molecule_atc_classification m
 ON s.molregno = m.molregno
-JOIN frac_classification f
-ON m.frac_class_id = f.frac_class_id
+JOIN atc_classification a
+ON m.level5 = a.level5
 WHERE
-  (@level1 is null or @level1 = '' or f.level1_description = @level1) and
-  (@level2 is null or @level2 = '' or f.level2_description = @level2) and
-  (@level3 is null or @level3 = '' or f.level3_description = @level3) and
-  (@level4 is null or @level4 = '' or f.level4_description = @level4)
+  (@level1 is null or @level1 = '' or a.level1_description = @level1) and
+  (@level2 is null or @level2 = '' or a.level2_description = @level2) and
+  (@level3 is null or @level3 = '' or a.level3_description = @level3) and
+  (@level4 is null or @level4 = '' or a.level4_description = @level4)
 --end
 
 
@@ -181,25 +181,25 @@ WHERE md.chembl_id = @chemblId
 --end
 
 
---name: FracClassificationWithSubstructure
---friendlyName: Search | By FRAC Classification And Substructure
---description: Combines FRAC classification hierarchy search with molecular substructure matching.
+--name: AtcClassificationWithSubstructure
+--friendlyName: Search | By ATC Classification And Substructure
+--description: Combines the four-level WHO ATC classification search with molecular substructure matching.
 --connection: Chembl
---input: string level1 = 'STEROL BIOSYNTHESIS IN MEMBRANES' {choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
---input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
---input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
---input: string level4 {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")}
+--input: string level1 = 'ANTIINFECTIVES FOR SYSTEMIC USE' {choices: Query("SELECT DISTINCT level1_description FROM atc_classification ORDER BY 1")} [Anatomical main group]
+--input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM atc_classification WHERE level1_description = @level1 ORDER BY 1")} [Therapeutic subgroup]
+--input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM atc_classification WHERE level2_description = @level2 ORDER BY 1")} [Pharmacological subgroup]
+--input: string level4 {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM atc_classification WHERE level3_description = @level3 ORDER BY 1")} [Chemical subgroup]
 --input: string substructure = "Clc1ccccc1" {semType: Substructure}
-SELECT s.*, f.level1_description, f.level2_description, f.level3_description, f.level4_description
+SELECT s.*, a.who_name, a.level1_description, a.level2_description, a.level3_description, a.level4_description
 FROM compound_structures s
-JOIN molecule_frac_classification m
+JOIN molecule_atc_classification m
 ON s.molregno = m.molregno
-JOIN frac_classification f
-ON m.frac_class_id = f.frac_class_id
+JOIN atc_classification a
+ON m.level5 = a.level5
 WHERE
-  (@level1 is null or @level1 = '' or f.level1_description = @level1) and
-  (@level2 is null or @level2 = '' or f.level2_description = @level2) and
-  (@level3 is null or @level3 = '' or f.level3_description = @level3) and
-  (@level4 is null or @level4 = '' or f.level4_description = @level4) and
+  (@level1 is null or @level1 = '' or a.level1_description = @level1) and
+  (@level2 is null or @level2 = '' or a.level2_description = @level2) and
+  (@level3 is null or @level3 = '' or a.level3_description = @level3) and
+  (@level4 is null or @level4 = '' or a.level4_description = @level4) and
  s.canonical_smiles::mol @>@substructure::qmol
 --end

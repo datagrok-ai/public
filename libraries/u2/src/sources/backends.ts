@@ -1,5 +1,5 @@
-/* The platform seam of the v1 data sources (Q5): dg fills it at import, headless tests fake it.
-   Type skeleton only — the source implementations and the dg filling arrive with WO-14. */
+/* The platform seam (Q5) of the data sources and of the platform defaults the components fall back to — a
+   principal's picture, the formatting: dg fills it at import, headless tests fake it. */
 import type {IProperty} from '../core/property-like.js';
 import type {NamedProperty, ObservableLike} from '../core/widget-like.js';
 import type {DapiPagerSourceLike} from '../dg/entities/dapi-source.js';
@@ -32,6 +32,14 @@ export interface WorkspaceLike {
   onTablesChanged: ObservableLike<unknown>;
 }
 
+/** The platform's formatting, which `Format` applies. */
+export interface FormatBackend {
+  /** The date pattern dates read in: the user's Settings › Date format; null or '' for the platform's default. */
+  dateFormat(): string | null;
+  /** `x` in a platform number format: '#,##0.00', 'compact', 'scientific'. */
+  number(x: number, format: string): string;
+}
+
 export interface SourceBackends {
   funcRunner?: FuncRunnerLike;
   /** Fresh source per call — HttpDataSource's fluent setters mutate (the dapiPager rule). */
@@ -40,6 +48,10 @@ export interface SourceBackends {
   workspace?: WorkspaceLike;
   /** Sample rows → a DataFrameLike (DG.DataFrame.fromObjects in the platform). */
   tableFromRows?: (rows: object[]) => DataFrameLike;
+  /** The picture before a principal's name in an `AccessGrid` with no `icon` of its own — a principal is a group's
+   * id or its name: a user's picture, a group's icon; null where there is none. */
+  principalIcon?: (principal: string) => HTMLElement | null;
+  format?: FormatBackend;
 }
 
 export const backends: SourceBackends = {};

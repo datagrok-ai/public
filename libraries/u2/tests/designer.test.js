@@ -3,13 +3,16 @@
    `DG.ObjectHandler` comes from tests/dg-stub.mjs. The glass pane hit-test and the shell view need
    a real browser and a running platform; they are the live pass, not this file. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {signal} from '../src/core/signals.js';
 import {Control} from '../src/core/component.js';
+import {Reason} from '../src/core/reason.js';
+import {operability} from 'datagrok-api/u2core';
 import {TextInput} from '../src/components/inputs/text-input.js';
 import {TabStrip} from '../src/components/containers/tabs.js';
 import {Accordion} from '../src/components/containers/accordion.js';
@@ -25,6 +28,7 @@ const {SpecNodeRef, SpecNodesRef, specTree, idPath, brokenCount, nodeLabel} =
   await import('../src/dg/designer/node-ref.js');
 const {SpecNodeHandler, SpecNodesHandler} = await import('../src/dg/designer/handler.js');
 const {SpecDesigner} = await import('../src/dg/designer/view.js');
+const {VirtualTree} = await import('../src/components/collections/tree.js');
 const {registerPlatformComponents} = await import('../src/dg/viewers/registrations.js');
 const {shell} = await import('datagrok-api/grok');
 
@@ -325,7 +329,7 @@ function element(view, node) {
 }
 
 function stamped(view) {
-  return view.root.querySelectorAll('[data-u2-name]').map((el) => el.dataset.u2Name);
+  return [...view.root.querySelectorAll('[data-u2-name]')].map((el) => el.dataset.u2Name);
 }
 
 designer('the palette groups the registry into accordion panes, filters across them, and tags every row', () => {
@@ -337,9 +341,9 @@ designer('the palette groups the registry into accordion panes, filters across t
   reg.register({tag: 'u2-p-number', category: 'Inputs', description: 'Numeric editor',
     create: () => new Control(), props: [], example: {tag: 'u2-p-number'}});
   const palette = new Palette(reg);
-  const panes = () => palette.root.querySelectorAll('.u2-accordion-pane').filter((p) => !p.hidden);
+  const panes = () => [...palette.root.querySelectorAll('.u2-accordion-pane')].filter((p) => !p.hidden);
   const headers = () => panes().map((p) => p.querySelector('.u2-accordion-title').textContent);
-  const items = () => palette.root.querySelectorAll('.u2-palette-item')
+  const items = () => [...palette.root.querySelectorAll('.u2-palette-item')]
     .filter((el) => !el.hidden && !el.closest('.u2-accordion-pane').hidden)
     .map((el) => el.dataset.u2Tag);
 
@@ -352,10 +356,10 @@ designer('the palette groups the registry into accordion panes, filters across t
   assert.equal(text.textContent, 'p-text', 'the row is labelled by the tag suffix');
   assert.equal(text.title, 'Single-line text editor');
 
-  palette.filter.value.value = 'numeric';
+  palette.filter.value = 'numeric';
   assert.deepEqual(items(), ['u2-p-number'], 'the filter reads the description too');
   assert.deepEqual(headers(), ['Inputs'], 'a pane with nothing left in it hides whole');
-  palette.filter.value.value = '';
+  palette.filter.value = '';
   assert.equal(items().length, 3);
   palette.dispose();
 });
@@ -371,9 +375,9 @@ designer('a viewer row: its platform label and icon, the Viewers pane sorted and
   plain('u2-p-odd', 'Oddities', 'Unlisted category');
   plain('u2-p-box', 'Containers', 'Vertical stack', {acceptsChildren: true});
   const palette = new Palette(reg);
-  const panes = () => palette.root.querySelectorAll('.u2-accordion-pane').filter((p) => !p.hidden);
+  const panes = () => [...palette.root.querySelectorAll('.u2-accordion-pane')].filter((p) => !p.hidden);
   const headers = () => panes().map((p) => p.querySelector('.u2-accordion-title').textContent);
-  const items = () => palette.root.querySelectorAll('.u2-palette-item')
+  const items = () => [...palette.root.querySelectorAll('.u2-palette-item')]
     .filter((el) => !el.hidden && !el.closest('.u2-accordion-pane').hidden)
     .map((el) => el.dataset.u2Tag);
 
@@ -389,9 +393,9 @@ designer('a viewer row: its platform label and icon, the Viewers pane sorted and
   assert.equal(scatter.title, 'Two numeric columns', 'usage is the tooltip where there is one');
   assert.equal(bar.title, 'Bars', 'the description otherwise');
 
-  palette.filter.value.value = 'numeric';
+  palette.filter.value = 'numeric';
   assert.deepEqual(items(), ['u2-viewer-scatter-plot'], 'usage is searchable');
-  palette.filter.value.value = 'scatter plot';
+  palette.filter.value = 'scatter plot';
   assert.deepEqual(items(), ['u2-viewer-scatter-plot'], 'so is the label');
   palette.dispose();
 });
@@ -402,7 +406,7 @@ designer('a collapsed palette pane is remembered across rebuilds, and the filter
     create: () => new Control(), props: [], example: {tag: 'u2-m-alpha'}});
   reg.register({tag: 'u2-m-beta', category: 'BetaCat', description: 'Beta thing',
     create: () => new Control(), props: [], example: {tag: 'u2-m-beta'}});
-  const pane = (p, title) => p.root.querySelectorAll('.u2-accordion-pane')
+  const pane = (p, title) => [...p.root.querySelectorAll('.u2-accordion-pane')]
     .find((el) => el.querySelector('.u2-accordion-title').textContent === title);
   const expanded = (p, title) =>
     pane(p, title).querySelector('.u2-accordion-header').getAttribute('aria-expanded') === 'true';
@@ -411,10 +415,10 @@ designer('a collapsed palette pane is remembered across rebuilds, and the filter
   fire(pane(palette, 'BetaCat').querySelector('.u2-accordion-header'), 'click');
   assert.equal(expanded(palette, 'BetaCat'), false, 'the header click collapsed the pane');
 
-  palette.filter.value.value = 'beta';
+  palette.filter.value = 'beta';
   assert.equal(expanded(palette, 'BetaCat'), true, 'a filter match force-opens its pane');
   assert.equal(pane(palette, 'AlphaCat').hidden, true, 'the pane with no match hides');
-  palette.filter.value.value = '';
+  palette.filter.value = '';
   assert.equal(expanded(palette, 'BetaCat'), false, 'clearing the query restores what the user chose');
   assert.equal(pane(palette, 'AlphaCat').hidden, false);
   palette.dispose();
@@ -503,8 +507,8 @@ designer('Delete removes the node and selects its parent; the root refuses every
 
   view._select(spec.root);
   const actions = view._actions();
-  assert.deepEqual(actions.map((a) => a.name), ACTIONS);
-  assert.deepEqual(actions.filter((a) => a.enabled).map((a) => a.name), [],
+  assert.deepEqual(actions.map((a) => a.text), ACTIONS);
+  assert.deepEqual(actions.filter((a) => !a.disabled).map((a) => a.text), [],
     'the root can be neither removed, reordered nor duplicated');
 
   shell.o = null;
@@ -517,15 +521,16 @@ designer('Move Up and Move Down reorder the document, the canvas and the tree, a
   const group = find(spec, 'group');
   const second = find(spec, 'second');
   view._select(second);
-  assert.deepEqual(view._actions().filter((a) => a.enabled).map((a) => a.name),
+  assert.deepEqual(view._actions().filter((a) => !a.disabled).map((a) => a.text),
     ['Delete', 'Move Up', 'Duplicate'], 'the last child cannot move down');
+  assert.equal(view._actions().find((a) => a.text ==='Move Down').disabled, 'Already the last', 'and says why');
 
   view._run('Move Up');
   assert.deepEqual(group.children.map((c) => c.name), ['second', 'first']);
   assert.deepEqual(stamped(view), ['layout', 'group', 'second', 'first', 'empty']);
   assert.deepEqual(view._model.roots[0].children[0].children.map((c) => c.label), ['second', 'first']);
   assert.equal(shell.o.node, second, 'the moved node keeps the selection');
-  assert.deepEqual(view._actions().filter((a) => a.enabled).map((a) => a.name),
+  assert.deepEqual(view._actions().filter((a) => !a.disabled).map((a) => a.text),
     ['Delete', 'Move Down', 'Duplicate'], 'and now it is the first child');
 
   view._run('Move Down');
@@ -590,8 +595,8 @@ designer('a right-click on a tree row selects it and answers the same action lis
   const first = find(spec, 'first');
   const actions = view._rowActions({id: '0.0.0', label: 'first', data: first});
   assert.equal(shell.o.node, first, 'the row is selected before its menu is built');
-  assert.deepEqual(actions.map((a) => a.name), ACTIONS);
-  assert.deepEqual(actions.filter((a) => a.enabled).map((a) => a.name),
+  assert.deepEqual(actions.map((a) => a.text), ACTIONS);
+  assert.deepEqual(actions.filter((a) => !a.disabled).map((a) => a.text),
     ['Delete', 'Move Down', 'Duplicate']);
 
   shell.o = null;
@@ -681,7 +686,7 @@ designer('a designer over a private registry builds and offers that registry alo
 
   assert.equal(view._instance.registry, reg);
   assert.equal(brokenCount(view._instance), 0, 'a tag only this registry knows still builds');
-  assert.deepEqual(view.toolbox.querySelectorAll('.u2-palette-item').map((el) => el.dataset.u2Tag),
+  assert.deepEqual([...view.toolbox.querySelectorAll('.u2-palette-item')].map((el) => el.dataset.u2Tag),
     ['u2-solo-box'], 'and the palette offers what the canvas can build');
 
   shell.o = null;
@@ -736,13 +741,46 @@ designer('a ribbon click hands focus back to the root, so the next Ctrl+Z is the
   assert.equal(document.activeElement, view.root);
 
   const wrapped = view._rowActions({id: '0.0.1', label: 'second', data: find(spec, 'second')});
-  document.activeElement = document.body;
-  wrapped.find((a) => a.name === 'Delete').run();
+  document.activeElement.blur();
+  wrapped.find((a) => a.text ==='Delete').run();
   assert.deepEqual(group.children.map((c) => c.name), ['first']);
   assert.equal(document.activeElement, view.root, 'a context-menu action hands focus back as well');
 
   shell.o = null;
   view.dispose();
+});
+
+designer('selections made back to back settle: the designer and its tree do not re-select each other', async () => {
+  const CAP = 200;
+  let reveals = 0;
+  const expandPath = VirtualTree.prototype.expandPath;
+  // past CAP the tree stops answering, which ends the loop the test is about instead of hanging the run
+  VirtualTree.prototype.expandPath = function(ids) {
+    return ++reveals > CAP ? Promise.resolve() : expandPath.call(this, ids);
+  };
+  const view = new SpecDesigner(editable());
+  try {
+    const spec = view._instance.spec;
+    const second = find(spec, 'second');
+    document.body.append(view.root);
+    const buttons = view.ribbon();
+    const named = (label) => buttons.find((b) => b.getAttribute('aria-label') === label);
+    view._select(second);
+    fire(named('Delete'), 'click');
+    fire(view.root, 'keydown', {key: 'z', ctrlKey: true});
+    fire(named('Redo'), 'click');
+    fire(named('Undo'), 'click');
+    view._rowActions({id: '0.0.1', label: 'second', data: second});
+    for (let i = 0; i < 5; i++)
+      await flush();
+    assert.ok(reveals <= CAP, `the tree was asked to reveal ${reveals} times`);
+    assert.equal(view._selected, second);
+    assert.equal(view._tree.selectedNode.peek()?.data, second, 'the tree shows what the designer selected');
+  } finally {
+    VirtualTree.prototype.expandPath = expandPath;
+    shell.o = null;
+    view.dispose();
+  }
 });
 
 /* P3.5 WO-3 — canvas & navigation: Escape to the parent, the design-time class stamps, and tabs /
@@ -756,7 +794,7 @@ const STRIP = {
   createWithChildren: (_props, children, nodes) => {
     const strip = new TabStrip();
     for (let i = 0; i < children.length; i++)
-      strip.addTab({id: `tab-${i}`, label: nodes[i].props?.title ?? `Tab ${i + 1}`,
+      strip.addTab({id: `tab-${i}`, title: nodes[i].props?.title ?? `Tab ${i + 1}`,
         content: rootOf(children[i])});
     return strip;
   },
@@ -940,11 +978,11 @@ designer('New form asks only when the document is modified; OK discards, Cancel 
   const dialog = document.querySelector('.u2-dialog');
   assert.ok(dialog, 'a modified document asks first');
   assert.match(dialog.textContent, /Discard changes\?/);
-  fire(dialog.querySelectorAll('button').find((b) => b.textContent === 'CANCEL'), 'click');
+  fire([...dialog.querySelectorAll('button')].find((b) => b.textContent === 'CANCEL'), 'click');
   assert.match(view.status.value, /modified/, 'Cancel keeps the edits');
 
   view._ribbon.newForm();
-  fire(document.querySelectorAll('.u2-dialog button').find((b) => b.textContent === 'OK'), 'click');
+  fire([...document.querySelectorAll('.u2-dialog button')].find((b) => b.textContent === 'OK'), 'click');
   assert.match(view.status.value, /^form1 . 1 node$/, 'OK discards and opens the blank sample');
   assert.equal(view._editor.peek().canUndo.peek(), false, 'a fresh editor — nothing to undo');
 
@@ -957,13 +995,13 @@ designer('New form asks only when the document is modified; OK discards, Cancel 
 
 /** Renders the tree rows headless: give the virtual list a height, expand `ids`, refresh. */
 function showTree(view, ids) {
-  view.toolbox.querySelector('.u2-list').clientHeight = 220;
+  layout(view.toolbox.querySelector('.u2-list'), {clientHeight: 220});
   view._tree.expanded.value = new Set(ids);
   view._tree.setRoots([...view._model.roots]);
 }
 
 function treeRow(view, label) {
-  return view.toolbox.querySelectorAll('.u2-list-row')
+  return [...view.toolbox.querySelectorAll('.u2-list-row')]
     .find((row) => row.querySelector('.u2-tree-label')?.textContent === label);
 }
 
@@ -986,7 +1024,7 @@ designer('Ctrl and Shift clicks build a multi-selection: one SpecNodesRef per ge
   assert.deepEqual(toggled[0].refs.map((r) => r.node.name), ['first', 'second']);
   assert.equal(view._selected, find(spec, 'second'), 'the lead follows the toggle');
   assert.match(view.status.value, /^2 selected · 5 nodes/, view.status.value);
-  const shown = () => view.root.querySelectorAll('.u2-designer-selected')
+  const shown = () => [...view.root.querySelectorAll('.u2-designer-selected')]
     .filter((box) => box.style.display === 'block').length;
   assert.equal(shown(), 2, 'one adorner per member');
 
@@ -1054,7 +1092,7 @@ designer('multi-delete: the ancestor cover, one compound entry, the survivor is 
     assert.match(view.status.value, /^3 selected/);
     assert.deepEqual(view._verbs.cover().map((n) => n.name), ['group', 'empty'],
       'a member under a selected ancestor rides that ancestor\'s remove');
-    assert.deepEqual(view._actions().map((a) => [a.name, a.enabled !== false]),
+    assert.deepEqual(view._actions().map((a) => [a.text, !a.disabled]),
       [['Delete', true], ['Move Up', false], ['Move Down', false], ['Duplicate', false]],
       'the reorder verbs wait for a single node');
 
@@ -1250,11 +1288,11 @@ designer('a click then a dblclick anywhere on a fresh-insert row opens the inlin
 
 designer('saving to the gallery marks the document clean: the status and the New form guard agree', async () => {
   const store = {};
-  globalThis.localStorage = {
+  Object.defineProperty(globalThis, 'localStorage', {configurable: true, value: {
     getItem: (k) => store[k] ?? null,
     setItem: (k, v) => store[k] = String(v),
     removeItem: (k) => delete store[k],
-  };
+  }});
   const view = new SpecDesigner(editable());
   try {
     view._dragLayer.drop({tag: 'u2-fake-input', label: 'fake-input'}, into(view._instance.spec.root, 0));
@@ -1265,7 +1303,7 @@ designer('saving to the gallery marks the document clean: the status and the New
     const name = dialog.querySelector('input');
     name.value = 'My form';
     fire(name, 'input');
-    fire(dialog.querySelectorAll('button').find((b) => b.textContent === 'OK'), 'click');
+    fire([...dialog.querySelectorAll('button')].find((b) => b.textContent === 'OK'), 'click');
 
     assert.ok(store['u2.designer.gallery']?.includes('My form'), 'the entry was stored');
     assert.equal(view._editor.peek().dirty.peek(), false, 'a saved document is clean');
@@ -1286,7 +1324,7 @@ designer('a tree-row hover highlights the node on the canvas, and a drag suppres
   const view = new SpecDesigner(editable());
   const spec = view._instance.spec;
   const tree = view.toolbox.querySelector('.u2-tree');
-  tree.querySelector('.u2-list').clientHeight = 220;
+  layout(tree.querySelector('.u2-list'), {clientHeight: 220});
   // a fresh array: the signal skips a same-reference write, and the rows need a re-render
   // now that the list has a height
   view._tree.setRoots([...view._model.roots]);
@@ -1317,7 +1355,7 @@ const TRAY_SPEC = {
   ]},
 };
 
-const chips = (view) => view.root.querySelectorAll('.u2-designer-chip');
+const chips = (view) => [...view.root.querySelectorAll('.u2-designer-chip')];
 
 designer('the tray shows a chip per component, stamped, broken-marked and selectable', async () => {
   const warn = console.warn;
@@ -1338,7 +1376,7 @@ designer('the tray shows a chip per component, stamped, broken-marked and select
 
   // the reorder verbs have no parent to work against; Delete knows which removal it is
   const actions = view._actions();
-  assert.deepEqual(actions.slice(0, 4).map((a) => [a.name, a.enabled !== false]),
+  assert.deepEqual(actions.slice(0, 4).map((a) => [a.text, !a.disabled]),
     [['Delete', true], ['Move Up', false], ['Move Down', false], ['Duplicate', false]]);
   actions[0].run();
   assert.equal(view._instance.spec.components.includes(draft), false);
@@ -1392,6 +1430,19 @@ designer('the Design/Run toggle rebuilds the tray for the mode it switches to', 
   assert.equal(view._instance.designTime, false);
   assert.equal(view._instance.node('draft') === before, false, 'every component is built again');
 
+  shell.o = null;
+  view.dispose();
+});
+
+designer('Design mode: the canvas under the glass pane is off and says why, Run mode puts it on', () => {
+  const view = new SpecDesigner(editable());
+  const surface = view._surface;
+  assert.equal(Reason.of(surface), SpecDesigner.DESIGNING, 'the controls a click only selects say so');
+  assert.deepEqual(operability(view.root).filter((f) => f.rule === 'disabled-without-reason'), []);
+  view._mode.selected.value = ['run'];
+  assert.equal(Reason.of(surface), null, 'in Run mode they are the form\'s');
+  view._mode.selected.value = ['design'];
+  assert.equal(Reason.of(surface), SpecDesigner.DESIGNING);
   shell.o = null;
   view.dispose();
 });
@@ -1767,7 +1818,7 @@ designer('an "Add binding…" pick that breaks the viewer is one shell.o write �
       fire(shown.querySelector('[data-u2-bind-pick="add-binding"]'), 'click');
       const dialog = document.querySelector('.u2-bind-picker');
       const list = dialog.querySelector('.u2-list');
-      list.clientHeight = 400;
+      layout(list, {clientHeight: 400});
       fire(list, 'scroll');
       fire([...dialog.querySelectorAll('.u2-list-row')]
         .find((row) => (row.querySelector('.u2-tree-label')?.textContent ?? '').startsWith('boom')), 'click');
@@ -1852,7 +1903,7 @@ designer('the selection\'s ref answers the designer\'s actions over the selected
     view._select(find(view._instance.spec, 'nameInput'));
     await flush();
     assert.equal(typeof shell.o.actions, 'function');
-    assert.deepEqual(shell.o.actions().map((a) => a.name).slice(0, 4), ['Delete', 'Move Up', 'Move Down', 'Duplicate']);
+    assert.deepEqual(shell.o.actions().map((a) => a.text).slice(0, 4), ['Delete', 'Move Up', 'Move Down', 'Duplicate']);
   } finally {
     console.warn = warn;
     shell.o = null;

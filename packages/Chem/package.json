@@ -76,6 +76,7 @@
     "@datagrok-libraries/statistics": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/tutorials": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@types/pako": "^2.0.3",
     "@webgpu/types": "^0.1.40",
@@ -111,7 +112,8 @@
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
-    "test": "grok test"
+    "test": "grok test",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"

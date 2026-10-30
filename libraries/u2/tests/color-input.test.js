@@ -1,7 +1,7 @@
 /* ColorInput: the hex text contract (parse, validity, last-good swatch), the native picker
    behind the swatch, and the swatch-only variant. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
@@ -47,20 +47,20 @@ smoke('typing a hex color paints the swatch and writes the value', async () => {
   const changes = [];
   const input = mount(new ColorInput({label: 'Color', onChanged: (v) => changes.push(v)}));
   assert.equal(input.root.dataset.u2, 'color-input');
-  assert.equal(input.value.value, '#000000', 'black by default, as Dart ColorInput is');
+  assert.equal(input.value, '#000000', 'black by default, as Dart ColorInput is');
   assert.equal(text(input).value, '#000000');
   assert.equal(swatch(input).style.background, '#000000');
   assert.equal(picker(input).type, 'color');
 
   type(input, '#ff0000');
-  assert.equal(input.value.value, '#ff0000');
+  assert.equal(input.value, '#ff0000');
   assert.equal(swatch(input).style.background, '#ff0000');
   assert.equal(picker(input).value, '#ff0000', 'the native picker follows the text');
   assert.equal(input.validity.value, null);
   assert.deepEqual(changes, ['#ff0000']);
 
   type(input, '#0F0');
-  assert.equal(input.value.value, '#0F0', 'the short form is a color too');
+  assert.equal(input.value, '#0F0', 'the short form is a color too');
   assert.equal(picker(input).value, '#00ff00', '…expanded for the picker, which takes no short form');
   input.dispose();
 });
@@ -70,7 +70,7 @@ smoke('text that is not a color marks the input invalid and keeps the last good 
 
   type(input, 'crimson');
   assert.equal(input.validity.value, 'Not a color');
-  assert.equal(input.value.value, '#123456', 'the value signal keeps the last good color');
+  assert.equal(input.value, '#123456', 'the value signal keeps the last good color');
   assert.equal(swatch(input).style.background, '#123456');
   assert.equal(text(input).value, 'crimson', 'the typed text stays on screen');
   assert.equal(input.root.querySelector('.u2-input-error').textContent, 'Not a color');
@@ -80,7 +80,7 @@ smoke('text that is not a color marks the input invalid and keeps the last good 
 
   type(input, '#abcdef');
   assert.equal(input.validity.value, null);
-  assert.equal(input.value.value, '#abcdef');
+  assert.equal(input.value, '#abcdef');
   input.dispose();
 });
 
@@ -94,7 +94,7 @@ smoke('the swatch opens the native picker, and the picker writes text, swatch an
 
   picker(input).value = '#336699';
   fire(picker(input), 'input');
-  assert.equal(input.value.value, '#336699');
+  assert.equal(input.value, '#336699');
   assert.equal(text(input).value, '#336699', 'the text follows the picker');
   assert.equal(swatch(input).style.background, '#336699');
   input.dispose();
@@ -114,7 +114,7 @@ smoke('swatchOnly hides the text field; a programmatic write still repaints', as
   assert.equal(text(input).hidden, true);
   assert.equal(input.root.classList.contains('u2-color-box-only'), true);
 
-  input.value.value = '#00ff00';
+  input.value = '#00ff00';
   assert.equal(swatch(input).style.background, '#00ff00');
   assert.equal(text(input).value, '#00ff00');
   input.dispose();
@@ -123,7 +123,7 @@ smoke('swatchOnly hides the text field; a programmatic write still repaints', as
 smoke('two inputs on one signal stay in step; dispose kills the listeners', async () => {
   const before = Scope.liveCount;
   const first = mount(new ColorInput({label: 'Fill', value: '#111111'}));
-  const second = mount(new ColorInput({label: 'Also fill', bind: first.value}));
+  const second = mount(new ColorInput({label: 'Also fill', bind: first.signal}));
   assert.equal(text(second).value, '#111111');
 
   type(first, '#222222');
@@ -135,7 +135,7 @@ smoke('two inputs on one signal stay in step; dispose kills the listeners', asyn
   assert.equal(Scope.liveCount, before);
 
   type(first, '#333333');
-  assert.equal(first.value.value, '#222222', 'listeners died with the scope');
+  assert.equal(first.value, '#222222', 'listeners died with the scope');
 });
 
 smoke('required: black by default, as the platform; an empty value is invalid, a cleared field too', async () => {
@@ -143,7 +143,7 @@ smoke('required: black by default, as the platform; an empty value is invalid, a
   assert.equal(fresh.getState().valid, true);
   const empty = mount(new ColorInput({label: 'Color', required: true, value: ''}));
   assert.equal(empty.getState().valid, false);
-  empty.value.value = '#ff0000';
+  empty.value = '#ff0000';
   assert.equal(empty.getState().valid, true);
   const text = fresh.root.querySelector('.u2-color-text');
   text.value = '';
@@ -157,7 +157,7 @@ smoke('a value set from outside clears the "not a color" a typed text left', asy
   const input = mount(new ColorInput({label: 'Color'}));
   type(input, 'notacolor');
   assert.equal(input.validity.value, 'Not a color');
-  input.value.value = '#202020';
+  input.value = '#202020';
   assert.equal(text(input).value, '#202020');
   assert.equal(input.validity.value, null, 'the loaded color is the one shown, and it is one');
   input.dispose();

@@ -7,7 +7,7 @@ import {Registry, registerAll} from '@datagrok-libraries/u2';
 import {registerDomainSources} from '../src/core/registrations.js';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
-const {registerPlatformComponents} = await import('@datagrok-libraries/u2/src/dg/index.js');
+const {registerPlatformComponents} = await import('@datagrok-libraries/u2/dg');
 const {registerEmsComponents} = await import('../src/dg/registrations.js');
 
 const CONTROLS = ['u2-domain-form', 'u2-domain-list', 'u2-domain-pick', 'u2-domain-grid',

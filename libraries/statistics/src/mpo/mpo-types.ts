@@ -77,6 +77,10 @@ export function getMpoScoreColumnName(name: string): string {
   return name ? `MPO ${name}` : 'MPO';
 }
 
+export function getMpoCoverageColumnName(scoreColumnName: string): string {
+  return `${scoreColumnName} coverage`;
+}
+
 /// A map of desirability lines with their weights
 export type DesirabilityProfile = {
   type: typeof DESIRABILITY_PROFILE_TYPE;
@@ -90,6 +94,7 @@ export type DesirabilityProfile = {
 export type MpoResult = {
   scoreColumn: DG.Column;
   desirabilityColumns?: DG.Column[];
+  coverageColumn?: DG.Column;
 }
 
 /// The raw-data array kinds DG.Column.getRawData() can return (int/categorical → Int32Array, float → Float32/64, etc).

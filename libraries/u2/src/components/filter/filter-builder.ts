@@ -11,7 +11,9 @@ import {signal, computed, Signal, ReadonlySignal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
 import {Tooltip} from '../../core/tooltip.js';
 import {Input, InputOptions} from '../../core/input-base.js';
-import {div, span, link, button} from '../../core/elements.js';
+import {div, divH, span, link, button} from '../../core/elements.js';
+import type {Text} from '../../core/elements.js';
+import {Reason} from '../../core/reason.js';
 import type {IWidgetStatus} from '../../core/widget-like.js';
 import {Filters} from '../../core/filter/index.js';
 import type {FilterCondition, FilterGroup, FilterNode, FilterProblem, FilterProperty, FilterSchema, FilterTarget,
@@ -56,6 +58,8 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
   readonly query: ReadonlySignal<string>;
   readonly problems: ReadonlySignal<FilterProblem[]>;
   readonly mode: Signal<FilterMode>;
+  /** The Simple/Advanced link, for a host to move into its own title row. */
+  readonly modeSwitch: HTMLElement;
 
   // every field below is built by createEditor(), which the base constructor calls before
   // subclass initializers would run — none of them may carry an inline initializer
@@ -70,6 +74,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
   private _panel!: HTMLElement;
   private _rootRow!: FilterGroupRow;
   private _modeLink!: HTMLElement;
+  private _links!: HTMLElement[];
   private _none!: HTMLElement;
   private _hint!: HTMLElement;
   private _hintText!: HTMLElement;
@@ -88,13 +93,14 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     this.query = this._query;
     this.problems = this._problems;
     this.mode = this._mode;
+    this.modeSwitch = this._modeLink;
     this.root.classList.add('u2-filter-builder');
     this.root.dataset.u2 = 'filter-builder';
   }
 
   /** Appends a condition on the first offered property with its first operator; the new id. */
   addCondition(parentId?: string, index?: number): string {
-    const root = this.value.peek();
+    const root = this.peek();
     const prop = this._host.properties()[0];
     if (!prop)
       return '';
@@ -106,11 +112,26 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
 
   /** Appends an empty sub-group with the other connector; edited by advanced mode. */
   addGroup(parentId?: string, index?: number): string {
-    const root = this.value.peek();
+    const root = this.peek();
     const parent = (parentId && Filters.find(root, parentId)) || root;
     const group = Filters.group(Filters.isGroup(parent) && parent.op === 'and' ? 'or' : 'and');
     this._append(root, group, parentId, index);
     return group.id;
+  }
+
+  get disabled(): string | null {
+    return super.disabled;
+  }
+
+  /** The rows follow: every editor in them reads and acts disabled, and a locked one keeps its lock
+   * once the builder is on again. */
+  set disabled(reason: string | null) {
+    super.disabled = reason;
+    this._rootRow?.applyLock();
+    for (const row of this._rows?.values() ?? [])
+      row.applyLock();
+    for (const el of [...this._links ?? [], ...this._joins?.values() ?? []])
+      Reason.apply(el, this.disabled);
   }
 
   /** Shows every row's problem — what Apply or `Form.validate` asks for. */
@@ -120,14 +141,14 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
   }
 
   removeNode(id: string): void {
-    this.value.value = Filters.remove(this.value.peek(), id);
+    this.value = Filters.remove(this.peek(), id);
   }
 
   /** False — with the hint shown — when simple mode cannot show the tree or the template keeps
    * the builder simple. */
   setMode(mode: FilterMode): boolean {
-    if (mode === 'simple' && !Filters.isFlat(this.value.peek())) {
-      this._showHint(this.value.peek());
+    if (mode === 'simple' && !Filters.isFlat(this.peek())) {
+      this._showHint(this.peek());
       return false;
     }
     if (mode === 'advanced' && this.options.template?.allowAdvanced === false) {
@@ -146,7 +167,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     status.parts.mode = this._modeLink;
     if (this._queryEl)
       status.parts.query = this._queryEl;
-    status.tree = this.value.peek();
+    status.tree = this.peek();
     status.query = this._query.peek();
     status.problems = this._problems.peek();
     status.mode = this._advanced() ? 'advanced' : 'simple';
@@ -174,8 +195,8 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
   protected createEditor(): HTMLElement {
     const o = this.options;
     this._mode = o.mode instanceof Signal ? o.mode : signal(o.mode ?? 'simple');
-    this._query = computed(() => Filters.format(this.value.value));
-    this._problems = computed(() => Filters.validate(this.value.value, o.schema, o.target, o.template));
+    this._query = computed(() => Filters.format(this.value));
+    this._problems = computed(() => Filters.validate(this.value, o.schema, o.target, o.template));
     this._rows = new Map();
     this._scopes = new Map();
     this._joins = new Map();
@@ -190,6 +211,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
       properties: () => this._properties(),
       operators: (prop) => this._operators(prop),
       lockOf: (id) => this._lockOf(id),
+      disabled: () => this.disabled,
       advanced: () => this._advanced(),
       change: (id, patch) => this._change(id, patch),
       add: (parentId, kind) => kind === 'group' ? this.addGroup(parentId) : this.addCondition(parentId),
@@ -197,27 +219,42 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     };
 
     // the first render adopts an id-less literal; until then the root row must not see it
-    this._rootRow = new FilterGroupRow(FilterBuilder.withIds(this.value.peek()), this._host, true);
-    this._modeLink = link(computed(() => this._mode.value === 'simple' ? 'Advanced' : 'Simple'),
+    this._rootRow = new FilterGroupRow(FilterBuilder.withIds(this.peek()), this._host, true);
+    this._links = [];
+    // a link has no native off switch: while the builder is off it does nothing, as its buttons do
+    const offLink = (text: Text, onClick: () => void) => {
+      const el = link(text, () => {
+        if (this.disabled === null)
+          onClick();
+      });
+      this._links.push(el);
+      return el;
+    };
+    this._modeLink = offLink(computed(() => this._mode.value === 'simple' ? 'Advanced' : 'Simple'),
       () => this.setMode(this._mode.peek() === 'simple' ? 'advanced' : 'simple'));
     this._modeLink.classList.add('u2-fb-mode');
     this._modeLink.dataset.u2Part = 'mode';
     this._modeLink.hidden = o.template?.allowAdvanced === false;
     this._rootRow.header.append(this._modeLink);
-    this._none = this._host.allowAdd ? link('No conditions — add one', () => this.addCondition()) :
-      span('No conditions');
-    this._none.classList.add('u2-fb-none');
+    const none: HTMLElement[] = [span('No conditions')];
+    if (this._host.allowAdd) {
+      const add = offLink('Add condition', () => this.addCondition());
+      add.classList.add('u2-fb-none-add');
+      add.dataset.u2Part = 'none-add';
+      none.push(add);
+    }
+    this._none = divH(none, 'u2-fb-none');
     this._none.dataset.u2Part = 'none';
     this._hintText = span('', 'u2-fb-hint-text');
-    this._flatten = link('Flatten', () => {
-      const flat = Filters.flatten(this.value.peek());
+    this._flatten = offLink('Flatten', () => {
+      const flat = Filters.flatten(this.peek());
       if (flat) {
-        this.value.value = flat;
+        this.value = flat;
         this._mode.value = 'simple';
       }
     });
     this._flatten.dataset.u2Part = 'flatten';
-    this._hintMode = link('Advanced', () => this.setMode('advanced'));
+    this._hintMode = offLink('Advanced', () => this.setMode('advanced'));
     this._hintMode.dataset.u2Part = 'hint-mode';
     this._hint = div([this._hintText, this._flatten, this._hintMode], 'u2-fb-hint');
     this._hint.dataset.u2Part = 'hint';
@@ -232,10 +269,10 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     }
     this._drag = new FilterDragLayer({
       root: this._panel,
-      tree: () => this.value.peek(),
+      tree: () => this.peek(),
       hits: () => this._hits(),
       accepts: (movingId, parentId) => this._accepts(movingId, parentId),
-      drop: (id, target) => this.value.value = Filters.move(this.value.peek(), id, target.parentId, target.index),
+      drop: (id, target) => this.value = Filters.move(this.peek(), id, target.parentId, target.index),
     });
     this.own(() => this._drag.dispose());
     this.scope.listen(this._panel, 'focusout', (e) => {
@@ -265,25 +302,25 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
   private _change(id: string, patch: Partial<FilterCondition> | Partial<FilterGroup>): void {
     if ('value' in patch)
       this._touchRow(id);
-    const root = this.value.peek();
+    const root = this.peek();
     const node: Record<string, unknown> = {...Filters.find(root, id), ...patch};
     for (const key of Object.keys(patch)) {
       if (node[key] === undefined)
         delete node[key];
     }
-    this.value.value = Filters.replace(root, id, node as unknown as FilterNode);
+    this.value = Filters.replace(root, id, node as unknown as FilterNode);
   }
 
   private _accepts(movingId: string, parentId: string): boolean {
     if (this._lockOf(movingId) !== 'none' || this._lockOf(parentId) !== 'none')
       return false;
-    return this._host.allowAdd || Filters.parentOf(this.value.peek(), movingId)?.id === parentId;
+    return this._host.allowAdd || Filters.parentOf(this.peek(), movingId)?.id === parentId;
   }
 
   private _append(root: FilterGroup, node: FilterNode, parentId?: string, index?: number): void {
     const parent = (parentId && Filters.find(root, parentId)) || root;
     const into = Filters.isGroup(parent) ? parent : root;
-    this.value.value = Filters.insert(root, into.id, index ?? into.nodes.length, node);
+    this.value = Filters.insert(root, into.id, index ?? into.nodes.length, node);
   }
 
   private _properties(): FilterProperty[] {
@@ -301,7 +338,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
 
   /** The strongest lock on the node and its ancestors, in the value and in the template. */
   private _lockOf(id: string): Lock {
-    const own = Filters.lockOf(this.value.peek(), id);
+    const own = Filters.lockOf(this.peek(), id);
     const template = this.options.template?.root;
     const inherited = template ? Filters.lockOf(template, id) : 'none';
     return own === 'all' || inherited === 'all' ? 'all' : own === 'value' || inherited === 'value' ? 'value' : 'none';
@@ -310,7 +347,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
   private _hits(): FilterDropHit[] {
     const hits: FilterDropHit[] = Array.from(this._panel.querySelectorAll<HTMLElement>('[data-u2-node]'))
       .map((el) => ({id: el.dataset.u2Node!, rect: el.getBoundingClientRect()}));
-    hits.push({id: this.value.peek().id, rect: this._rootRow.rows.getBoundingClientRect()});
+    hits.push({id: this.peek().id, rect: this._rootRow.rows.getBoundingClientRect()});
     return hits;
   }
 
@@ -328,7 +365,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
   }
 
   private _render(): void {
-    const value = this.value.value;
+    const value = this.value;
     // a bound literal without ids (a spec's `value`, a fresh state) is adopted with ids first
     const root = FilterBuilder.withIds(value);
     if (root !== value) {
@@ -364,6 +401,8 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     }
     for (const join of this._joins.values())
       join.textContent = root.op;
+    // a row mounted while the builder is disabled starts with live controls
+    this.refreshDisabled();
   }
 
   private _renderChildren(group: FilterGroup, into: FilterGroupRow, advanced: boolean, horizontal: boolean,
@@ -382,7 +421,8 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
         row.update(node as FilterCondition);
       else
         row.update(node as FilterGroup);
-      row.setProblem(problems.find((p) => p.nodeId === node.id)?.message ?? null);
+      const problem = problems.find((p) => p.nodeId === node.id);
+      row.setProblem(problem?.message ?? null, problem?.code === 'missing-value');
       seen.add(node.id);
       if (horizontal && order.length > 0)
         order.push(this._join(node.id));
@@ -405,7 +445,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     this.scope.own(disposer);
     scope.own(() => this.scope.disown(disposer));
     this._scopes.set(node.id, scope);
-    const row = Scope.runWith(scope, () => kind === 'cond' ? new FilterRow(node as FilterCondition, this._host) :
+    const row = scope.build(() => kind === 'cond' ? new FilterRow(node as FilterCondition, this._host) :
       kind === 'group' ? new FilterGroupRow(node as FilterGroup, this._host) :
         new FilterNestedRow(node as FilterGroup, this._host));
     this._rows.set(node.id, row);
@@ -440,13 +480,13 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     let join = this._joins.get(id);
     if (!join) {
       const scope = this._scopes.get(id)!;
-      join = Scope.runWith(scope, () => button('', () => {
-        const root = this.value.peek();
-        this.value.value = Filters.update(root, root.id, {op: root.op === 'and' ? 'or' : 'and'});
+      join = scope.build(() => button('', () => {
+        const root = this.peek();
+        this.value = Filters.update(root, root.id, {op: root.op === 'and' ? 'or' : 'and'});
       }));
       join.classList.add('u2-fb-join');
       join.setAttribute('aria-label', 'Switch and/or');
-      Tooltip.bind(join, 'Switch and/or', scope);
+      Tooltip.bind(join, 'Switch and/or', {owner: scope});
       this._joins.set(id, join);
     }
     return join;

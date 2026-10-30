@@ -106,8 +106,10 @@ test.describe.serial('Scripts: Browser', () => {
   // scripts-run-debugged (the R compute container can cold-start for minutes, so the
   // Activity-count increment is not a reliable signal to assert here).
   test('Run script from context menu launches the script', async () => {
-    await loadCarsDemoTable(page);
     await resetToScripts(page);
+    await loadCarsDemoTable(page);
+    await page.evaluate(() => (window as any).grok.shell.route('/scripts'));
+    await expect(page.locator('.grok-gallery-search-bar')).toBeVisible({ timeout: 15_000 });
 
     const card = await searchScript(page, SCRIPT_NAME);
     await card.click();
@@ -118,6 +120,7 @@ test.describe.serial('Scripts: Browser', () => {
 
     const dialog = page.locator('.d4-dialog').first();
     await expect(dialog, 'Run dialog must open from the context menu').toBeVisible({ timeout: 8_000 });
+    await dialog.locator('select.ui-input-editor').selectOption('cars');
     const okBtn = dialog.locator('button.ui-btn-ok').first();
     await expect(okBtn, 'Run dialog must expose an OK button').toBeVisible({ timeout: 5_000 });
     await okBtn.click();

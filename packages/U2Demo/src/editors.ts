@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {dartInputFor, inputForProperty, IProperty, FunctionInput}
-  from '@datagrok-libraries/u2/src/dg/index.js';
+  from '@datagrok-libraries/u2/dg';
 
 /** Property types a u2 editor can take over. The platform matches a `valueEditor` by
  * `options.propertyType`, and for these five that string is also the `DG.TYPE` the bridge has to

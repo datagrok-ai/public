@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck, category, delay, test} from '@datagrok-libraries/test/src/test';
+import {category, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {SEMTYPE} from '../utils/proteomics-types';
 
 const SPIKE_TAG_KEYS = [
@@ -144,7 +144,6 @@ category('Publishing-Spike', () => {
 
     // (2) Open in a TableView and add a scatter plot mimicking the volcano shape.
     const tv = grok.shell.addTableView(df);
-    await delay(100);
     let sp: DG.ScatterPlotViewer | null = null;
     try {
       const tvAny = tv as any;
@@ -159,7 +158,6 @@ category('Publishing-Spike', () => {
     } catch (e) {
       emit('scatter-add-error', `${(e as Error)?.message ?? e}`);
     }
-    await delay(100);
 
     // (3) Create Project, set TWO options entries (A4 probe), attach children.
     const project = DG.Project.create();
@@ -200,7 +198,6 @@ category('Publishing-Spike', () => {
 
     // (4) Capture id, close shell, find + open.
     try { grok.shell.closeAll(); } catch (e) { emit('closeAll-error', `${(e as Error)?.message ?? e}`); }
-    await delay(100);
 
     let reopenedProject: DG.Project | null = null;
     try {
@@ -215,7 +212,7 @@ category('Publishing-Spike', () => {
     }
 
     try {
-      await awaitCheck(
+      await waitUntil(
         () => !!grok.shell.tv && !!grok.shell.tv.dataFrame,
         'TableView did not materialize after Project.open()',
         5000,

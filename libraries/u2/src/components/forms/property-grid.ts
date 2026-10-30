@@ -55,12 +55,12 @@ export class PropertyGrid extends Control {
   constructor(options: PropertyGridOptions = {}) {
     super();
     this._onChange = options.onChanged &&
-      Input.bindOwned(this.scope, options.onChanged) as PropertyGridOptions['onChanged'];
+      Input.bindOwned(options.onChanged, {owner: this.scope}) as PropertyGridOptions['onChanged'];
     this.root.classList.add('u2-propgrid');
     this.root.dataset.u2 = 'property-grid';
     this.root.setAttribute('role', 'grid');
     // a kept category follows its rows itself, so a new descriptor list never rebuilds it
-    this.runInScope(() => each(this.root, this._groups, ([category]) => `category:${category}`,
+    this.build(() => each(this.root, this._groups, ([category]) => `category:${category}`,
       ([category]) => this._group(category), {update: () => true}));
   }
 
@@ -214,9 +214,9 @@ export class PropertyGrid extends Control {
   // Echo suppression compares values instead of raising a flag: a write made inside an effect is
   // flushed after that effect returns, so a transient flag would already be down by then.
   private _bridge(prop: PropDescriptor, input: Input<any>, value: ReadonlySignal<unknown>, scope: Scope): void {
-    scope.effect(() => input.value.value = PropertyGrid._coerce(prop, value.value));
+    scope.effect(() => input.value = PropertyGrid._coerce(prop, value.value));
     scope.effect(() => {
-      const edited = input.value.value;
+      const edited = input.value;
       const record = this.values.peek();
       if (PropertyGrid.same(prop, PropertyGrid._coerce(prop, record[prop.name]), edited))
         return;

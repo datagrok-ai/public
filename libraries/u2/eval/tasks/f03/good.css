@@ -1,0 +1,9 @@
+.campaigns-home {
+  display: flex;
+  gap: 16px;
+}
+
+.campaigns-home-details {
+  flex: none;
+  width: 320px;
+}

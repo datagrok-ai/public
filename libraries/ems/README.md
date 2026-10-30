@@ -44,4 +44,5 @@ pnpm -C libraries/ems run e2e:stand-domain   # the domain apps on a stand (U2_ST
 ```
 
 `gallery/index.html` hosts the two pages over u2's built `src/` through an import map; run
-`pnpm test` in both libraries first, which emits the `.js` next to the sources.
+`pnpm test` in both libraries first, which compiles them into `.test-build/`, where `e2e/gallery.mjs`
+serves the `.js` from.

@@ -362,13 +362,32 @@ export class PackageFunctions {
         return summaryCols;
       };
 
+      // names pruned on removal, per summary column, so that a column brought back (Ctrl+Z) rejoins its summary
+      const pruned = new Map<string, {name: string, index: number}[]>();
       const colsRemovedSub = dataFrame.onColumnsRemoved.subscribe((args: DG.ColumnsArgs) => {
         const summaryCols = findSummaryCols(args.columns);
         for (const col of args.columns) {
           for (const summaryCol of summaryCols) {
             const sparklineSettings = getSparklineSettings(summaryCol);
-            if (sparklineSettings.columnNames.includes(col.name))
-              sparklineSettings.columnNames = sparklineSettings.columnNames.filter((name) => name !== col.name);
+            const index = sparklineSettings.columnNames.indexOf(col.name);
+            if (index === -1)
+              continue;
+            sparklineSettings.columnNames = sparklineSettings.columnNames.filter((name) => name !== col.name);
+            pruned.set(summaryCol.name, [...pruned.get(summaryCol.name) ?? [], {name: col.name, index}]);
+          }
+        }
+      });
+      const colsAddedSub = dataFrame.onColumnsAdded.subscribe((args: DG.ColumnsArgs) => {
+        for (const col of args.columns) {
+          for (const [summaryName, names] of pruned) {
+            const i = names.findIndex((n) => n.name === col.name);
+            if (i === -1)
+              continue;
+            const [entry] = names.splice(i, 1);
+            const summaryCol = grid.columns.byName(summaryName);
+            const sparklineSettings = summaryCol ? getSparklineSettings(summaryCol) : undefined;
+            if (sparklineSettings?.columnNames && !sparklineSettings.columnNames.includes(col.name))
+              sparklineSettings.columnNames.splice(entry.index, 0, col.name);
           }
         }
       });
@@ -383,6 +402,7 @@ export class PackageFunctions {
       });
       const gridDetachedSub = grid.onDetached.subscribe(() => grid.detach());
       grid.sub(colsRemovedSub);
+      grid.sub(colsAddedSub);
       grid.sub(colsRenamedSub);
       grid.sub(gridDetachedSub);
     };

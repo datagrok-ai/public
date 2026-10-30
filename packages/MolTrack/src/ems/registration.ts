@@ -4,7 +4,7 @@ import type {DomainImportColumn, DomainImporter, DomainImportRow, DomainImportVe
   from '@datagrok-libraries/ems/src/dg';
 import {isEmpty, span} from '@datagrok-libraries/u2';
 import type {CompoundRow} from '../generated/db';
-import {moltrackEmsDb} from '../generated/db';
+import {moltrackDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS, IDENTITY_COLUMNS} from './chemistry';
 import type {CompoundIdentity, MatchRule} from './chemistry';
 import {MolTrackTables} from './tables';
@@ -23,7 +23,7 @@ export class BulkRegistration {
       derives: IDENTITY_COLUMNS,
       match: (column) => NOTATIONS.includes(column.name.toLowerCase().replace(/[^a-z]/g, '')) ? STRUCTURE : undefined,
       prepare: (rows, progress) => BulkRegistration.prepare(rows, compounds, progress),
-      rowHeight: 52,
+      rowHeight: 64,
       columns: (defaults, step) => step === 'preview' ?
         defaults.map((c) => c.name === STRUCTURE ? BulkRegistration._structure(c.header) : c) :
         defaults.flatMap((c) => c.name === '~key' ? [c, BulkRegistration._structure('Structure')] : [c]),
@@ -31,10 +31,11 @@ export class BulkRegistration {
   }
 
   private static _structure(header: string): DomainImportColumn {
-    return {name: STRUCTURE, header, width: '140px', render: (row: DomainImportRow) => {
+    return {name: STRUCTURE, header, width: '180px', render: (row: DomainImportRow) => {
       const input = row.values[STRUCTURE];
-      return isEmpty(input) || row.kind === 'error' ? span(String(input ?? '')) :
-        grok.chem.drawMolecule(String(input), 120, 44);
+      return isEmpty(input) || row.kind === 'error' ?
+        span(String(input ?? ''), row.kind === 'error' ? 'u2-cell-error' : undefined) :
+        grok.chem.drawMolecule(String(input), 160, 60);
     }};
   }
 
@@ -72,7 +73,7 @@ export class BulkRegistration {
     const found = new Map<string, CompoundRow>();
     for (let at = 0; at < hashes.length; at += LOOKUP_CHUNK) {
       const filter = DG.cond(column, '=', hashes.slice(at, at + LOOKUP_CHUNK));
-      const rows = await moltrackEmsDb.compounds.query({filter, columns: [column, 'molregno'], sort: 'molregno'});
+      const rows = await moltrackDb.compounds.query({filter, columns: [column, 'molregno'], sort: 'molregno'});
       for (const row of rows) {
         if (!found.has(row[column]!))
           found.set(row[column]!, row);

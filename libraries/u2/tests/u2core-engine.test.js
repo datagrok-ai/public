@@ -2,7 +2,7 @@
    error containment, disposal that survives a throwing cleanup, the scope helpers and `DG.U2.debug`. */
 
 import './dom-shim.js';
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {Scope, Control, Component, signal, debug} from 'datagrok-api/u2core';
 
@@ -160,6 +160,77 @@ test('bind reports a throw and answers undefined', () => {
   scope.dispose();
 });
 
+const rowLike = () => new Proxy({}, {get: (_, name) => {
+  throw new Error(`No such column: ${String(name)}`);
+}});
+
+test('Scope.thenable: a promise, or an object or function with a callable then; never a throw on reading then', () => {
+  const promise = Promise.reject(new Error('unread'));
+  promise.catch(() => {});
+  const custom = {then: () => {}};
+  const callable = Object.assign(() => {}, {then: () => {}});
+  assert.equal(Scope.thenable(promise), promise);
+  assert.equal(Scope.thenable(custom), custom);
+  assert.equal(Scope.thenable(callable), callable);
+  for (const x of [rowLike(), {then: 1}, {}, () => {}, null, undefined, 0, 'then'])
+    assert.equal(Scope.thenable(x), undefined);
+});
+
+test('a handler answering a proxy that throws on then reports nothing; a rejecting thenable is reported', () => {
+  const scope = new Control().scope;
+  const seen = [];
+  scope.onError = (e) => seen.push(e.message);
+  const row = rowLike();
+  assert.equal(scope.bind(() => row)(), row);
+  assert.deepEqual(seen, []);
+  let fail;
+  const pending = {then: (_ok, reject) => fail = reject};
+  assert.equal(scope.bind(() => pending)(), pending);
+  fail(new Error('rejected'));
+  assert.deepEqual(seen, ['rejected']);
+  scope.dispose();
+});
+
+test('a static control with text only leaves Scope.liveCount unchanged, alone or under an owner', () => {
+  class Caption extends Control {
+    constructor(text) {
+      super();
+      this.root.dataset.u2 = 'caption';
+      this.scope.run(() => this.root.textContent = text);
+    }
+  }
+  const base = Scope.liveCount;
+  let owned;
+  const owner = Control.build(() => [owned = new Caption('Campaigns')]);
+  const alone = new Caption('Hit Design');
+  alone.name = 'title';
+  assert.equal(alone.getState().kind, 'caption');
+  assert.ok(alone.rootId.startsWith('u2-'));
+  assert.equal(Scope.liveCount, base + 1, 'the owner only');
+  owned.own(() => {});
+  assert.equal(Scope.liveCount, base + 2, 'counted once it owns something');
+  alone.dispose();
+  owner.dispose();
+  assert.equal(owned.scope.isDisposed, true, 'disposed with its owner');
+  assert.equal(Scope.liveCount, base);
+});
+
+test('a control marked singleton before it owns anything keeps the mark, and owns the listener it adds', () =>
+  tracking(() => {
+    const snap = debug.snapshot();
+    const control = new Control();
+    debug.markSingleton(control);
+    assert.equal(debug.diff(snap).scopes.length, 0, 'not tracked while it owns nothing');
+    control.scope.listen(document, 'u2-late', () => {});
+    const report = debug.diff(snap);
+    assert.equal(report.scopes.length, 1);
+    assert.equal(report.listeners.length, 1);
+    assert.equal(report.listeners[0].owner, report.scopes[0].id);
+    assert.equal(report.listeners[0].label, 'singleton');
+    assert.equal(report.total, 0);
+    control.dispose();
+  }));
+
 test('bind reports the rejection of an async handler, and still answers its promise', async () => {
   const scope = new Scope();
   const seen = [];
@@ -183,7 +254,7 @@ test('a raw global listener the browser drops itself — once, or on its signal 
   try {
     const handler = () => {};
     const abort = new AbortController();
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       doc.addEventListener('u2-once', handler, {once: true});
       doc.addEventListener('u2-signal', handler, {signal: abort.signal});
       doc.addEventListener('u2-plain', handler);
@@ -307,7 +378,7 @@ test('Component.on passes (arg, source) and stops once its owner is disposed', (
   const emitter = new Emitter();
   const owner = new Scope();
   const got = [];
-  Scope.runWith(owner, () => emitter.on('ping', (x, source) => got.push([x, source === emitter])));
+  owner.build(() => emitter.on('ping', (x, source) => got.push([x, source === emitter])));
   emitter.emit(1);
   owner.dispose();
   emitter.emit(2);
@@ -339,13 +410,13 @@ test('an adopted component disowns itself from its adopter on dispose', () => {
   const host = new Scope();
   const base = Scope.liveCount;
   for (let i = 0; i < 100; i++) {
-    const c = Scope.runWith(host, () => new Control());
+    const c = host.build(() => new Control());
     c.dispose();
   }
   assert.equal(Scope.liveCount, base);
   assert.equal(host._disposers?.size ?? 0, 0);
   let calls = 0;
-  const c = Scope.runWith(host, () => new Control());
+  const c = host.build(() => new Control());
   c.own(() => calls++);
   host.dispose();
   assert.equal(calls, 1);
@@ -353,7 +424,7 @@ test('an adopted component disowns itself from its adopter on dispose', () => {
 
 test('runWith(undefined) builds with no owner', () => {
   const host = new Scope();
-  const free = Scope.runWith(host, () => Scope.runWith(undefined, () => new Control()));
+  const free = host.build(() => Scope.runWith(undefined, () => new Control()));
   host.dispose();
   assert.equal(free.scope.isDisposed, false);
   free.dispose();

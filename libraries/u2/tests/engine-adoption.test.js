@@ -2,7 +2,7 @@
    contained (R17, P83), empty text for empty values (P67), and content built once inside an effect
    run kept alive by an explicit owner (R5 — a lazy tab). */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope, signal, span, link, button, bindValue, TabStrip, TextInput} from '../src/index.js';
@@ -36,7 +36,7 @@ test('a second signal engine on the page fails at import, naming the fix', async
 smoke('link() and button() hand their handler the DOM event', async () => {
   const scope = new Scope();
   const got = [];
-  const [a, b] = Scope.runWith(scope, () => [
+  const [a, b] = scope.build(() => [
     link('Open', (e) => got.push(`link ${e.type}`)),
     button('Run', (e) => got.push(`button ${e.type}`)),
   ]);
@@ -58,11 +58,11 @@ smoke('an element handler is batched and a throw is reported to its owner, not t
   const b = signal(0);
   const seen = [];
   scope.effect(() => seen.push(`${a.value}/${b.value}`));
-  const el = Scope.runWith(scope, () => button('Both', () => {
+  const el = scope.build(() => button('Both', () => {
     a.value = 1;
     b.value = 1;
   }));
-  const bad = Scope.runWith(scope, () => button('Bad', () => {
+  const bad = scope.build(() => button('Bad', () => {
     throw new Error('boom');
   }));
   fire(el, 'click');
@@ -94,7 +94,7 @@ smoke('a handler on an element built with no owner still runs, and its throw is 
 smoke('span(signal) shows null and undefined as empty', async () => {
   const scope = new Scope();
   const value = signal(null);
-  const el = Scope.runWith(scope, () => span(value));
+  const el = scope.build(() => span(value));
   assert.equal(el.textContent, '');
   value.value = undefined;
   assert.equal(el.textContent, '');
@@ -117,7 +117,7 @@ smoke('bindValue: a commit writes the signal and is not echoed back; an outside 
     fire(input, 'input');
   };
   const source = signal('a');
-  bindValue(scope, input, source);
+  bindValue(input, source, {owner: scope});
   assert.equal(text, 'a');
   fieldWrites = 0;
   type('ab ');
@@ -136,14 +136,14 @@ smoke('a lazy tab built once survives switching away and back, and stays live', 
   let builds = 0;
   let input;
   const tabs = new TabStrip({tabs: [
-    {id: 'a', label: 'A', content: () => {
+    {id: 'a', title: 'A', content: () => {
       builds++;
       input = new TextInput({label: 'Name'});
       const el = document.createElement('div');
       el.append(input.root, span(count, 'count'));
       return el;
     }},
-    {id: 'b', label: 'B', content: document.createElement('div')},
+    {id: 'b', title: 'B', content: document.createElement('div')},
   ]});
   document.body.append(tabs.root);
   assert.equal(builds, 1);

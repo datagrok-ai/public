@@ -173,7 +173,7 @@ export class DuplicateMonomerManager {
           await setUserLibSettings(this.settings);
           libManager.assignDuplicatePreferances(this.settings);
           grok.shell.info(`Default Monomer Source for Duplicates set to '${libSelector.value}'.`);
-          setTimeout(() => this.refresh(), 100);
+          await this.refresh();
         })
         .show();
     });

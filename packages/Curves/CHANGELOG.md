@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Added BDD claims for Show Selected Rows Curves of the Multi curve viewer, Log Y kept by a saved layout in a trellis, the Level choices of the curve options and a JSON formula column typed as `fit`
 * Multi curve viewer: Added the axes it draws (`x range`, `y range`) and the number of points outside them to `getWidgetStatus()`; extracted the renderer's layout into one method (`layOutChart`) both use
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Data | Curves | Data to Curves is disabled unless the current view is a table view
 * [public#4306](https://github.com/datagrok-ai/public/issues/4306): Fixed the Context Panel replacing the Curves panes with the generic cell panes a second after a curve cell is clicked

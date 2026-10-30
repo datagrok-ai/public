@@ -168,13 +168,14 @@ export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: string) 
 }
 
 export function createViewForExpandabelNode(viewName: string,
-  getElement: (root: HTMLElement, libName?: string, typeName?: string) => Promise<HTMLDivElement>, libName?: string, typeName?: string) {
+  getElement: (view: DG.ViewBase, root: HTMLElement, libName?: string, typeName?: string) => Promise<HTMLDivElement>,
+  libName?: string, typeName?: string) {
   openedView?.close();
   const div = ui.div();
   openedView = grok.shell.addPreview(DG.View.fromRoot(div));
   const name = typeName ? getViewNameByCompoundType(typeName) : libName ?? viewName;
   openedView.name = name.charAt(0).toUpperCase() + name.slice(1);
-  getElement(div, libName, typeName);
+  getElement(openedView, div, libName, typeName);
 }
 
 export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, path: string[], libName: string,

@@ -1,14 +1,3 @@
-/* grok-bdd <command> — run inside a package (features under bdd/features) or inside the library.
-     init                  bootstrap bdd/ in the package: config, starter bindings, a smoke feature, manifest entries
-     compile [--check] [--verbose]  features/** → generated/**.test.ts; --check reports drift instead of writing, --verbose prints how every phrase resolves
-     lint                  diagnostics only, notes included
-     list-steps            the vocabulary this project sees (base tiers + its tiers + its own bindings)
-     run [playwright args] compile --check, then Playwright over generated/ with the library's config
-     guide <features> [--gif] [--help-mode] [--help-pages] [--out <dir>] [--settle <ms>]
-           [--fps <n>] [--colors <n>] [--size <px>] [--hold <s>] [playwright args]
-                           run the scenarios in guide mode, render each into a how-to video (tool/guide-render.py);
-                           --help-mode films a help-page GIF (an 800x500 window at 2x, the bare shell, no captions)
-     link [--undo]         wire the package to this checkout of the library (one Playwright per run) */
 import {spawn} from 'node:child_process';
 import {copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmdirSync, rmSync,
   statSync, symlinkSync, unlinkSync, writeFileSync} from 'node:fs';

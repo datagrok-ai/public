@@ -21,8 +21,7 @@ import {runActivityCliffs, getActivityCliffsEmbeddings, ISequenceSpaceResult} fr
 import {ActivityCliffsEditor as ActivityCliffsFunctionEditor}
   from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
 import {
-  MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, EMPTY_MOLECULE_MESSAGE,
-  SMARTS_MOLECULE_MESSAGE, elementsTable,
+  MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, elementsTable,
   CHEM_SPACE_EMBEDDING_COL,
   CHEM_SPACE_CLUSTER_COL,
   SubstructureSearchType,
@@ -30,7 +29,6 @@ import {
 } from './constants';
 import {MAX_SMILES_LENGTH} from './utils/chem-constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
-import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {calculateDescriptors, getDescriptorsTree} from './descriptors/descriptors-engine';
 import {addDescriptorsColsToDf, DescriptorsEditor, getDescriptorsSingle, getSelected} from './descriptors/descriptors-calculation';
 import {identifiersWidget, getMapIdentifiers, MapIdentifiersEditor, textToSmiles} from './widgets/identifiers';
@@ -44,7 +42,8 @@ import {pharmacophoreFeaturesWidget} from './widgets/pharmacophore-features';
 import {getPharmacophoreFeaturesByFamilies, PharmFamilySet} from './panels/pharmacophore-features';
 import {structure2dWidget} from './widgets/structure2d';
 import {getToxicityAlertsColumns, getToxicityRisksColumns, toxicityWidget} from './widgets/toxicity';
-import {_synthonSubstructureSearchWidget, _synthonSimilaritySearchWidget, getSynthonSpaces} from './widgets/synthon-search';
+import {_synthonSubstructureSearchWidget, _synthonSimilaritySearchWidget, getSynthonSpaces, synthonSearch}
+  from './widgets/synthon-search';
 
 //panels imports
 import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
@@ -53,14 +52,13 @@ import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
 import {Fingerprint, hasNewLines} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {IMolContext, getMolSafe, isFragment, _isSmarts, getQueryMolSafe, readsAsQueryOnly, isSmilesSyntax,
+import {getMolSafe, _isSmarts, getQueryMolSafe, readsAsQuery, isSmilesSyntax,
   withoutCxExtension} from './utils/mol-creation_rdkit';
-import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
-import {_convertMolNotation, convertNotationForColumn} from './utils/convert-notation-utils';
-import {molToMolblock, asSmiles} from './utils/convert-notation-utils';
+import {canonicalWith, _rdKitModule, sameMolecule, validationMessageByRdKit} from './utils/chem-common-rdkit';
+import {_convertMolNotation, convertNotationForColumn, molToMolblock, asSmiles} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {getSdfString, saveAsSdfDialog} from './utils/sdf-utils';
-import {getSimilaritiesMarix} from './utils/similarity-utils';
+import {getSimilaritiesMarix, similarityMatrix} from './utils/similarity-utils';
 
 //analytical imports
 import {ActivityCliffsParams, createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
@@ -83,12 +81,14 @@ import {embed3d, structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {
   _demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA, _demoSarMatrix,
+  _demoSarMatrixProtac,
   _demoRgroupAnalysis, _demoRGroups, _demoScaffoldTree, _demoSimilarityDiversitySearch,
 } from './demo/demo';
 import {getStructuralAlertsByRules, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
-import {RDLog, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {malformedDataWarning} from './utils/malformed-data-utils';
+import {moleculePanel} from './utils/ui-utils';
 import {DimReductionBaseEditor} from '@datagrok-libraries/ml/src/functionEditors/dimensionality-reduction-editor';
 import {getEmbeddingColsNames}
   from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
@@ -109,7 +109,7 @@ import {MmmpFunctionEditor, MmpDiffTypes} from './analysis/molecular-matched-pai
 import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
 import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
-import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
+import {createMixtureTreeWidget, createMixtureWidget, mixtureSmiles} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from '@datagrok-libraries/utils/src/view-utils';
 import {getMpoScoreColumnName, isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
@@ -125,13 +125,13 @@ import {MpoProfileHandler} from './mpo/mpo-profile-handler';
 import {applyDesirabilityTags, collectMpoResultColumns, computeMpo, findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT} from './mpo/utils';
 import {removeWaterAndSalts, runTransformationReaction} from './utils/reactions/reactions';
 import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
-import {scripts} from './package-api';
-import {ChemicalEngine, cruxReady, engineInEffect, isCruxRequested, onEngineSwitch, requestedEngine}
-  from './engine/chem-engine';
-import {cruxOrRdKit, cruxOrRdKitAsync} from './engine/fallback';
-import {cruxModuleSync, noteCruxError} from './engine/crux-module';
+import {byEngineAsync, byEngineModule, cruxReady, onEngineSwitch, requestedEngine} from './engine/chem-engine';
+import {noteCruxError} from './engine/crux-module';
 import {getCruxService} from './crux/crux-searches';
 import {clusterMcsByEngine, molzip as molzipOnCrux, MolzipParams} from './engine/analysis-jobs';
+import {atomsColumnByEngine, beautifyMolsByEngine, coordGenCoordsByEngine, flattenMoleculesByEngine}
+  from './engine/molecule-jobs';
+import * as pythonFree from './python-free';
 
 export {getMCS};
 export * from './package.g';
@@ -166,7 +166,6 @@ decorators.forEach((decorator) => {
 
 /** End temporary polyfill */
 
-const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: { [key: string]: string } = {
   OpenChemLib: 'OpenChemLib',
   Ketcher: 'Ketcher',
@@ -240,6 +239,8 @@ async function initChemInt(): Promise<void> {
 
     DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
   }
+  // here, not in init: other packages call Chem:init too (HitTriage), and each call would add another handler
+  DG.ObjectHandler.register(new MpoProfileHandler());
 }
 
 export class PackageFunctions {
@@ -265,7 +266,6 @@ export class PackageFunctions {
     if (!_initChemPromise)
       _initChemPromise = initChemInt();
     await _initChemPromise;
-    DG.ObjectHandler.register(new MpoProfileHandler());
   }
 
   @grok.decorators.autostart()
@@ -286,10 +286,8 @@ export class PackageFunctions {
       const oclService = new OCLService();
       newMols = await oclService.recalculateCoordinates(molecules.toList());
       oclService.terminate();
-    } else {
-      const rdKitService = await chemCommonRdKit.getRdKitService();
-      newMols = await rdKitService.getCoordGenCoords(molecules.toList());
-    }
+    } else // "Chemical engine": in Crux mode Crux's CoordGen on the Crux workers, the RDKit pool behind it
+      newMols = await coordGenCoordsByEngine(molecules.toList());
 
     if (!newMols)
       throw new Error('Failed to recalculate coordinates with ' + method);
@@ -349,7 +347,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object', options: {optional: true}}) options: any = {normalizeDepiction: true, straightenDepiction: true},
     @grok.decorators.param({type: 'object', options: {optional: true}}) renderingOptions: any = {},
   ): void {
-    drawMoleculeToCanvas(x, y, w, h, canvas,
+    chemCommonRdKit.drawMoleculeToCanvas(x, y, w, h, canvas,
       molString, scaffoldMolString == '' ? null : scaffoldMolString,
       options, null, renderingOptions);
   }
@@ -369,10 +367,18 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}}) smiles: string): number {
     if (!smiles || (!hasNewLines(smiles) && smiles.length > MAX_SMILES_LENGTH))
       return NaN; // do not attempt to parse very long SMILES, will cause MOB.
-    const mol = PackageFunctions.getRdKitModule().get_mol(smiles);
-    const res = JSON.parse(mol.get_descriptors()).CrippenClogP;
-    mol?.delete();
-    return res;
+    // "Chemical engine": the main thread's module (Crux's in Crux mode: RDKit 2026.03's Crippen logP; RDKit's where
+    // Crux reads no molecule)
+    return byEngineModule<number>('getCLogP', PackageFunctions.getRdKitModule(), (module, crux) => {
+      const mol = module.get_mol(smiles);
+      if (!mol && crux)
+        return null;
+      try {
+        return JSON.parse(mol!.get_descriptors()).CrippenClogP; // RDKit: a molecule it does not read throws
+      } finally {
+        mol?.delete();
+      }
+    })!;
   }
 
   @grok.decorators.func({
@@ -587,7 +593,7 @@ export class PackageFunctions {
     saveAsSdfDialog();
   }
 
-  //#region Top menu
+  //#region Top menu: Search, Calculate and Analyze, with their viewers, editors and transforms
 
   @grok.decorators.func({
     name: 'Chem Similarity Search',
@@ -644,37 +650,9 @@ export class PackageFunctions {
       },
     }) fingerprintType: string = 'Morgan',
   ): Promise<DG.DataFrame> {
-    const pb = DG.TaskBarProgressIndicator.create('Computing similarity matrix...');
-    const dmService = new DistanceMatrixService(true, true);
-    try {
-      const fingerprints = await chemSearches.chemGetFingerprints(molecules, fingerprintType as Fingerprint, false);
-      const n = fingerprints.length;
-
-      const symbolValues: string[] = symbols.toList().map((v) => v == null ? '' : v.toString());
-
-      // parallel pairwise Tanimoto distances on web workers; condensed upper-triangular form
-      const distances = await dmService.calc(fingerprints, BitArrayMetricsNames.Tanimoto, false);
-      const dm = new DistanceMatrix(distances, n);
-
-      const result = DG.DataFrame.create(n);
-      result.name = `${molecules.name} similarity matrix`;
-      result.columns.add(DG.Column.fromStrings('symbol', symbolValues));
-
-      for (let j = 0; j < n; j++) {
-        const values = new Float32Array(n);
-        for (let i = 0; i < n; i++)
-          values[i] = i === j ? 1 : 1 - dm.get(i, j);
-        const colName = result.columns.getUnusedName(symbolValues[j] || `mol_${j}`);
-        const col = DG.Column.fromFloat32Array(colName, values);
-        col.meta.format = '0.000';
-        result.columns.add(col);
-      }
-
-      grok.shell.addTableView(result);
-      return result;
-    } finally {
-      pb.close();
-    }
+    const result = await similarityMatrix(molecules, symbols, fingerprintType as Fingerprint);
+    grok.shell.addTableView(result);
+    return result;
   }
 
 
@@ -842,12 +820,23 @@ export class PackageFunctions {
     const filterHeader = Array.from(fg.root!.getElementsByClassName('d4-filter-header'))
       .find((el) => Array.from(el!.getElementsByTagName('label')).find((it) => it.textContent === molecules.name));
     if (filterHeader) {
-      setTimeout(() => {
-        const sketchLink = (filterHeader.parentElement as HTMLElement).getElementsByClassName('sketch-link')[0];
-        const element = sketchLink ?? (filterHeader.parentElement as HTMLElement)
-          .getElementsByClassName('chem-canvas')[0];
-        (element as HTMLElement).click();
-      }, 500);
+      // the filter builds its sketch link once it is attached; open it as soon as it is there
+      const host = filterHeader.parentElement as HTMLElement;
+      const target = () => (host.getElementsByClassName('sketch-link')[0] ??
+        host.getElementsByClassName('chem-canvas')[0]) as HTMLElement | undefined;
+      const existing = target();
+      if (existing)
+        existing.click();
+      else {
+        const observer = new MutationObserver(() => {
+          const element = target();
+          if (element) {
+            observer.disconnect();
+            element.click();
+          }
+        });
+        observer.observe(host, {childList: true, subtree: true});
+      }
     }
   }
 
@@ -990,7 +979,7 @@ export class PackageFunctions {
         choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], initialValue: 'Morgan',
       },
     }) fingerprintType: Fingerprint = Fingerprint.Morgan,
-    // the fingerprint options (utils/fingerprint-options.ts): optional, today's fingerprints by default
+    // the fingerprint options (utils/fingerprint-options.ts): optional, the default fingerprints when left out
     @grok.decorators.param({type: 'int', options: {caption: 'Radius', optional: true, initialValue: '2', min: '0',
       max: '10', description: 'Morgan only. The radius (2 for ECFP4, 3 for ECFP6)'}}) radius?: number,
     @grok.decorators.param({type: 'int', options: {caption: 'Size', optional: true, initialValue: '2048', min: '1',
@@ -1003,7 +992,7 @@ export class PackageFunctions {
     //TODO: get rid of fallback
     let fingerprintTypeStr = fingerprintType as string;
     if ((fingerprintTypeStr.startsWith('\'') || fingerprintTypeStr.startsWith('"')) &&
-      fingerprintTypeStr.endsWith('\'') || fingerprintTypeStr.endsWith('"'))
+      (fingerprintTypeStr.endsWith('\'') || fingerprintTypeStr.endsWith('"')))
       fingerprintTypeStr = fingerprintTypeStr.slice(1, -1);
 
     const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintTypeStr as Fingerprint, false,
@@ -1095,7 +1084,6 @@ export class PackageFunctions {
   ): Promise<DG.Viewer | undefined> {
     const res = await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, JSON.parse(options ?? '{}'),
       undefined, clusterEmbeddings, undefined, embedColsNames, clusterColName);
-    console.log(`returned from runChemSpace`);
     //setting specific tags on columns added by dimentinality reduction - issue https://github.com/datagrok-ai/public/issues/3708 (client request)
     if (embedColsNames) {
       for (const colName of embedColsNames)
@@ -1254,10 +1242,12 @@ export class PackageFunctions {
     outputs: [{name: 'res', type: 'list'}],
     meta: {role: 'transform'},
   })
-  static runElementalAnalysis(
+  static async runElementalAnalysis(
     table: DG.DataFrame,
-    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column): string[] {
-    const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molecules);
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column): Promise<string[]> {
+    // "Chemical engine": in Crux mode the Crux workers count the atoms (the main thread's RDKit loop froze the page on a
+    // large column), getAtomsColumn the molecules they leave
+    const [elements, invalid]: [Map<string, Int32Array>, number[]] = await atomsColumnByEngine(molecules, getAtomsColumn);
     const columnNames: string[] = [];
     if (invalid.filter((el) => el !== null).length > 0) {
       console.log(`Invalid rows ${invalid.map((i) => i.toString()).join(', ')}`);
@@ -1723,17 +1713,17 @@ export class PackageFunctions {
     return getmolColumnHighlights(molColumn);
   }
 
+  //#endregion
+
+  //#region Molecule panels (the context panel) and the functions behind them
+
   @grok.decorators.panel({
     name: 'Chemistry | Descriptors',
     meta: {role: 'widgets', domain: 'chem'},
   })
   static descriptorsWidget(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): DG.Widget {
-    if (!smiles || DG.chem.Sketcher.isEmptyMolfile(smiles))
-      return new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
-    return _isSmarts(smiles) || isFragment(smiles) ?
-      new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
-      getDescriptorsSingle(smiles);
+    return moleculePanel(smiles, () => getDescriptorsSingle(smiles));
   }
 
   @grok.decorators.panel({
@@ -1744,9 +1734,7 @@ export class PackageFunctions {
   })
   static drugLikeness(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
-    return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
-      _isSmarts(smiles.value) || isFragment(smiles.value) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
-        drugLikenessWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+    return moleculePanel(smiles?.value, () => drugLikenessWidget(smiles));
   }
 
 
@@ -1757,9 +1745,7 @@ export class PackageFunctions {
   })
   static properties(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
-    return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
-      _isSmarts(smiles.value) || isFragment(smiles.value) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
-        propertiesWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+    return moleculePanel(smiles?.value, () => propertiesWidget(smiles));
   }
 
   @grok.decorators.func({
@@ -1780,9 +1766,7 @@ export class PackageFunctions {
   })
   static async structuralAlerts(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): Promise<DG.Widget> {
-    return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
-      _isSmarts(smiles) || isFragment(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
-        structuralAlertsWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+    return moleculePanel(smiles, () => structuralAlertsWidget(smiles));
   }
 
   @grok.decorators.panel({
@@ -1792,9 +1776,7 @@ export class PackageFunctions {
   })
   static async pharmacophoreFeatures(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): Promise<DG.Widget> {
-    return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
-      _isSmarts(smiles) || isFragment(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
-        pharmacophoreFeaturesWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+    return moleculePanel(smiles, () => pharmacophoreFeaturesWidget(smiles));
   }
 
   @grok.decorators.panel({
@@ -1803,9 +1785,7 @@ export class PackageFunctions {
   })
   static async identifiers(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): Promise<DG.Widget> {
-    return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
-      _isSmarts(smiles) || isFragment(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
-        await identifiersWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+    return moleculePanel(smiles, () => identifiersWidget(smiles));
   }
 
   @grok.decorators.panel({
@@ -1815,9 +1795,7 @@ export class PackageFunctions {
   })
   static async structure3D(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
-    return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
-      _isSmarts(molecule) || isFragment(molecule) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
-        structure3dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+    return moleculePanel(molecule, () => structure3dWidget(molecule));
   }
 
   @grok.decorators.func({description: 'A molecule with 3D coordinates (a MOL block), by the Chemical Engine in effect'})
@@ -1832,8 +1810,7 @@ export class PackageFunctions {
   })
   static structure2d(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): DG.Widget {
-    return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
-      structure2dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+    return moleculePanel(molecule, () => structure2dWidget(molecule), true);
   }
 
   @grok.decorators.panel({
@@ -1844,9 +1821,7 @@ export class PackageFunctions {
   })
   static toxicity(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
-    return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
-      _isSmarts(smiles.value) || isFragment(smiles.value) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
-        toxicityWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+    return moleculePanel(smiles?.value, () => toxicityWidget(smiles));
   }
 
   @grok.decorators.panel({
@@ -1856,8 +1831,7 @@ export class PackageFunctions {
   })
   static async synthonSubstructureSearchWidget(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
-    return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
-      await _synthonSubstructureSearchWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+    return moleculePanel(molecule, () => _synthonSubstructureSearchWidget(molecule), true);
   }
 
   @grok.decorators.panel({
@@ -1867,8 +1841,27 @@ export class PackageFunctions {
   })
   static async synthonSimilaritySearchWidget(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
-    return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
-      await _synthonSimilaritySearchWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+    return moleculePanel(molecule, () => _synthonSimilaritySearchWidget(molecule), true);
+  }
+
+  //#endregion
+
+  //#region Synthon search
+
+  @grok.decorators.func({
+    name: 'Synthon Space Search',
+    description: 'Search in synthon chemical space using RDKit SynthonSpaceSearch (in Crux mode on Crux)',
+  })
+  static async SynthonSearch(
+    @grok.decorators.param({options: {semType: 'Molecule'}, description: 'Query molecule in SMILES or Molblock format'}) molecule: string,
+    @grok.decorators.param({description: 'Synthon library (RDKit\'s synthon text format)'}) synthonLibrary: DG.FileInfo,
+    @grok.decorators.param({description: 'Original library file name for caching'}) libraryName: string,
+    @grok.decorators.param({type: 'int', options: {initialValue: '100'}, description: 'Maximum number of hit molecules to return'}) maxHits: number,
+    @grok.decorators.param({options: {choices: ['substructure', 'similarity', 'exact'], initialValue: 'substructure'}, description: 'Search type'}) searchType: string,
+    @grok.decorators.param({options: {initialValue: '0.5'}, description: 'Minimum Tanimoto similarity threshold (used for similarity/exact)'}) similarityCutoff: number,
+    @grok.decorators.param({options: {initialValue: 'false'}, description: 'Include synthon structures and IDs'}) includeSynthons: boolean,
+  ): Promise<DG.DataFrame> {
+    return synthonSearch(molecule, synthonLibrary, libraryName, maxHits, searchType, similarityCutoff, includeSynthons);
   }
 
   @grok.decorators.func({
@@ -1892,7 +1885,8 @@ export class PackageFunctions {
 
     //we need to pass library Name to the script since we are caching the DB created from file and look for it by the name
     //we cannot rely on the file name since when passing into python script file is renamed to <script parameter name> + some hash
-    const df = await scripts.synthonSearch(
+    // eslint-disable-next-line new-cap -- the function keeps the script's name (Chem:SynthonSearch)
+    const df = await PackageFunctions.SynthonSearch(
       molecule, lib, fileName, maxHits, searchType,
       similarityCutoff ?? 0.5, includeSynthons ?? false,
     );
@@ -1917,6 +1911,10 @@ export class PackageFunctions {
   static async getSynthonSpacesFunc(): Promise<string[]> {
     return await getSynthonSpaces();
   }
+
+  //#endregion
+
+  //#region Notation conversions
 
   @grok.decorators.func({
     name: 'convertMoleculeNotation',
@@ -1998,7 +1996,8 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
     @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
     @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
-    const res = await (await chemCommonRdKit.getRdKitService()).flattenMolecules(molecules.toList());
+    // "Chemical engine": in Crux mode on the Crux workers, the RDKit pool behind them
+    const res = await flattenMoleculesByEngine(molecules.toList());
     if (overwrite) {
       molecules.init((i) => res[i]);
       molecules.meta.units = DG.UNITS.Molecule.SMILES;
@@ -2032,35 +2031,8 @@ export class PackageFunctions {
   static convertMixtureToSmiles(
     @grok.decorators.param({options: {semType: 'ChemicalMixture'}}) col: DG.Column): void {
     // Each cell is a Mixfile JSON string
-    const smilesArr: string[] = [];
-
-    function collectSmiles(component: any, smilesList: string[]) {
-      if (component.smiles)
-        smilesList.push(component.smiles);
-      else if (component.molfile) {
-        try {
-          const smiles = PackageFunctions.convertMolNotation(component.molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
-          smilesList.push(smiles);
-        } catch { }
-      }
-      if (Array.isArray(component.contents)) {
-        for (const child of component.contents)
-          collectSmiles(child, smilesList);
-      }
-    }
-
-    for (let i = 0; i < col.length; ++i) {
-      let mixfile: Mixfile;
-      try {
-        mixfile = JSON.parse(col.get(i));
-      } catch {
-        smilesArr.push('');
-        continue;
-      }
-      const smilesList: string[] = [];
-      collectSmiles(mixfile, smilesList);
-      smilesArr.push(smilesList.join('.'));
-    }
+    const smilesArr = col.toList().map((mixfile) => mixtureSmiles(mixfile,
+      (molfile) => PackageFunctions.convertMolNotation(molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles)));
 
     if (col.dataFrame) {
       const name = col.dataFrame.columns.getUnusedName(`${col.name}_smiles`);
@@ -2070,6 +2042,10 @@ export class PackageFunctions {
       col.dataFrame.columns.add(smilesCol);
     }
   }
+
+  //#endregion
+
+  //#region Cell editor, sketchers, file handlers
 
   @grok.decorators.func({
     description: 'Molecule',
@@ -2102,17 +2078,17 @@ export class PackageFunctions {
       .add(sketcher)
       .onOK(() => {
         if (unit === DG.chem.Notation.Smiles) {
-          //set new cell value only in case smiles has been edited (to avoid undesired molecule orientation change)
+          //set new cell value only in case smiles has been edited (to avoid undesired molecule orientation change);
+          // "Chemical engine": compared by the main thread's module (Crux's in Crux mode); a cell that does not read
+          // counts as edited
           const newValue = sketcher.getSmiles();
-          const mol = checkMoleculeValid(cell.cell.value);
-          if (!checkMolEqualSmiles(mol, newValue)) {
+          if (!sameMolecule(cell.cell.value, newValue)) {
             try {
               cell.setValue(newValue, true);
             } catch {
               cell.cell.value = newValue;
             }
           }
-          mol?.delete();
         } else {
           try {
             cell.setValue(sketcher.getMolFile(), true);
@@ -2205,6 +2181,10 @@ export class PackageFunctions {
     }
   }
 
+  //#endregion
+
+  //#region Molecule actions
+
   @grok.decorators.func({
     name: 'Sort by similarity',
     description: 'Sorts a molecular column by similarity',
@@ -2226,7 +2206,7 @@ export class PackageFunctions {
       throw new Error('Cannnot access value grid');
     ui.setUpdateIndicator(grid.root, true);
     const progressBar = DG.TaskBarProgressIndicator.create('Sorting Structures...');
-    progressBar.update(0, 'Installing ScaffoldGraph..: 0% completed');
+    progressBar.update(0, 'Sorting Structures...: 0% completed');
     const fingerprints: DG.DataFrame = await PackageFunctions.callChemSimilaritySearch(dframe, molCol, smiles,
       BitArrayMetricsNames.Tanimoto, Fingerprint.Morgan, 1000000, 0.0);
     ui.setUpdateIndicator(grid.root, false);
@@ -2409,22 +2389,20 @@ export class PackageFunctions {
     DG.Utils.download('molecule.svg', svg, 'image/svg+xml');
   }
 
+  //#endregion
+
+  //#region Detectors
+
   @grok.decorators.func()
   static isSmiles(
     @grok.decorators.param({type: 'string'}) s: string): boolean {
-    // "Chemical Engine" (engine/README.md): in Crux mode Crux reads it, RDKit what Crux cannot
-    if (engineInEffect() === ChemicalEngine.Crux && cruxOrRdKit('isSmiles', () => {
-      const mol = getMolSafe(s, {}, cruxModuleSync()!, true, noteCruxError).mol;
+    // "Chemical Engine" (engine/README.md): read by the main thread's module (Crux's in Crux mode, RDKit's where Crux
+    // reads no molecule)
+    return byEngineModule('isSmiles', _rdKitModule, (module, crux) => {
+      const mol = getMolSafe(s, {}, module, true, crux ? noteCruxError : undefined).mol;
       mol?.delete();
-      return mol !== null;
-    }, () => false))
-      return true;
-    const ctx: IMolContext = getMolSafe(s, {}, _rdKitModule, true);
-    if (ctx.mol !== null) {
-      ctx.mol.delete();
-      return true;
-    }
-    return false;
+      return mol ? true : null; // (a string neither module reads is no fallback)
+    }) ?? false;
   }
 
   /** Whether a molecule string is SMARTS (the platform's sketcher sets it as SMARTS, `DG.chem.Sketcher.setMolecule`): no
@@ -2436,8 +2414,10 @@ export class PackageFunctions {
   static isSmarts(s: string): boolean {
     if (/M  END|V2000|V3000/.test(s))
       return false;
-    return _isSmarts(s) ||
-      (!isSmilesSyntax(withoutCxExtension(s)) && _rdKitModule != null && readsAsQueryOnly(s, _rdKitModule));
+    // "Chemical engine": the reading by the main thread's module (Crux's in Crux mode; RDKit's where Crux reads s as
+    // neither a molecule nor a query)
+    return _isSmarts(s) || (!isSmilesSyntax(withoutCxExtension(s)) && _rdKitModule != null &&
+      (byEngineModule('isSmarts', _rdKitModule, (module) => readsAsQuery(s, module)) ?? false));
   }
 
   @grok.decorators.func()
@@ -2449,6 +2429,8 @@ export class PackageFunctions {
       col.meta.cellRenderer = 'Molecule';
     }
   }
+
+  //#endregion
 
   @grok.decorators.func({
     name: 'Chemical Similarity Search',
@@ -2481,6 +2463,8 @@ export class PackageFunctions {
     return await chemDiversitySearch(col, similarityMetric[metricName], limit,
       fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
   }
+
+  //#region Properties and toxicity columns
 
   @grok.decorators.func({
     'name': 'Chemical Properties (OCL)',
@@ -2592,7 +2576,8 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'true', caption: 'Brenk'}}) brenk?: boolean,
     @grok.decorators.param({options: {initialValue: 'true', caption: 'NIH'}}) nih?: boolean,
   ): Promise<void> {
-    // the product owner, 2026-10-22: Crux mode's toxicity alerts get their own menu; Toxicity Risks stays OpenChemLib's
+    // Crux only (RDKit.js has no FilterCatalog: getToxicityAlertsColumns throws in RDKit mode); Toxicity Risks stays
+    // OpenChemLib's
     const catalogs = [...(brenk ? ['Brenk'] : []), ...(nih ? ['NIH'] : [])];
     if (!catalogs.length) {
       grok.shell.warning('Please select at least one alert set');
@@ -2609,6 +2594,10 @@ export class PackageFunctions {
       pb.close();
     }
   }
+
+  //#endregion
+
+  //#region Scaffold Tree, Matched Molecular Pairs, SAR Matrix
 
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Scaffold Tree',
@@ -2651,14 +2640,15 @@ export class PackageFunctions {
   static async mmpAnalysis(
     table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'column_list', options: {type: 'numerical'}}) activities: DG.Column[],
+    @grok.decorators.param({type: 'column_list', options: {type: 'numerical'}}) activities: DG.ColumnList,
     @grok.decorators.param({type: 'string_list'}) diffTypes: MmpDiffTypes[],
     @grok.decorators.param({type: 'string_list'}) scalings: SCALING_METHODS[],
     @grok.decorators.param({
       type: 'double',
       options: {description: 'Maximum fragment size relative to core', initialValue: '0.4'},
     }) fragmentCutoff: number = 0.4, @grok.decorators.param({options: {optional: true, nullable: true}}) runOnFilteredData: boolean = true): Promise<void> {
-    if (activities.length < 1) {
+    let activityCols = Array.from(activities);
+    if (activityCols.length < 1) {
       grok.shell.warning('MMP analysis requires at least one activity');
       return;
     }
@@ -2670,7 +2660,7 @@ export class PackageFunctions {
       grok.shell.addTableView(table);
       // these two must exist, so they will throw if not
       molecules = table.getCol(molecules.name);
-      activities = activities.map((col) => table.getCol(col.name));
+      activityCols = activityCols.map((col) => table.getCol(col.name));
     }
 
     checkCurrentView(table);
@@ -2680,9 +2670,9 @@ export class PackageFunctions {
     const activityColsNames = [];
     for (let i = 0; i < scalings.length; i++) {
       if (scalings[i] === SCALING_METHODS.NONE)
-        activityColsNames.push(activities[i].name);
+        activityColsNames.push(activityCols[i].name);
       else {
-        const scaledCol = scaleActivity(activities[i], scalings[i]);
+        const scaledCol = scaleActivity(activityCols[i], scalings[i]);
         const name = table.columns.getUnusedName(scaledCol.name);
         scaledCol.name = name;
         table.columns.add(scaledCol);
@@ -2695,7 +2685,7 @@ export class PackageFunctions {
       moleculesColumnName: molecules.name, activities: activityColsNames, diffTypes: diffTypes,
       scalings: scalings, fragmentCutoff,
     });
-    viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
+    viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/help/refs/heads/master/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
   }
 
   @grok.decorators.func({
@@ -2789,7 +2779,7 @@ export class PackageFunctions {
       type: 'column_list',
       options: {nullable: true, caption: 'R-groups',
         description: 'Columns with the substituent at each attachment point of the core'},
-    }) rGroupColumns: DG.Column[] = [],
+    }) rGroupColumns: DG.ColumnList | DG.Column[] = [],
     @grok.decorators.param({
       type: 'string',
       options: {nullable: true, caption: 'Matrix columns',
@@ -2814,21 +2804,30 @@ export class PackageFunctions {
         'Pick a series column from that table, or leave it empty to group by structure.');
       return;
     }
-    const rgroups = rGroupColumns ?? [];
+    const rgroups = Array.from(rGroupColumns ?? []);
     const axis = matrixColumns ?? '';
     const named = coreColumn !== null || rgroups.length > 0;
+    if (coreColumn !== null && rgroups.some((c) => c.name === coreColumn.name)) {
+      grok.shell.error(`SAR Matrix: ${coreColumn.name} is named as both the core column and an ` +
+        'R-group column — a column is the scaffold every row is drawn from or a substituent on it, ' +
+        'not both.');
+      return;
+    }
     if (named && (coreColumn === null || coreColumn.name === axis || !rgroups.some((c) => c.name === axis))) {
       grok.shell.error('SAR Matrix: pick the core, the R-groups, and which R-group becomes the matrix columns.');
       return;
     }
     checkCurrentView(table);
     const view = grok.shell.tv as DG.TableView;
+    // Omitted inputs arrive as null, which the parameter defaults don't replace: left out, so the viewer's own
+    // defaults apply.
+    const settings = {scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors};
     const viewer = view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
       activityColumnName: activity.name,
       seriesColumnName: seriesName,
       coreColumnName: named ? coreColumn!.name : '', axisColumnName: named ? axis : '',
       rGroupColumnNames: named ? rgroups.map((c) => c.name) : [],
-      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors});
+      ...Object.fromEntries(Object.entries(settings).filter(([, value]) => value !== null && value !== undefined))});
     dockSarMatrixTabs(view, viewer);
   }
 
@@ -2874,32 +2873,40 @@ export class PackageFunctions {
       return scriptRes;
     };
     // "Chemical engine": in Crux mode a Crux worker builds the same JSON as the script, which stays the fallback
-    if (!isCruxRequested())
-      return pythonTree();
-    return cruxOrRdKitAsync('scaffoldTree',
+    return byEngineAsync('scaffoldTree',
       async () => (await getCruxService()).scaffoldTree(smilesList.map((s) => s ?? ''), ringCutoff,
         dischargeAndDeradicalize), pythonTree);
   }
 
+  //#endregion
 
+
+  // js-api's Sketcher (Recent and Favorites) calls it by this name (Chem:removeDuplicates)
   @grok.decorators.func({
-    name: 'filterMoleculeDuplicates',
+    name: 'removeDuplicates',
   })
   static removeDuplicates(molecules: string[], molecule: string): string[] {
-    const mol1 = checkMoleculeValid(molecule);
-    if (!mol1) {
-      // try to get qmol
-      const qMol = getQueryMolSafe(molecule, '', PackageFunctions.getRdKitModule());
-      if (qMol) {
-        qMol?.delete();
-        return molecules;
-      }
+    const rdKitModule = PackageFunctions.getRdKitModule();
+    // "Chemical engine": the canonical SMILES compared by the main thread's module (Crux's in Crux mode; RDKit's where
+    // Crux reads no molecule); a stored molecule that does not read is kept
+    const kept = byEngineModule('removeDuplicates', rdKitModule, (module, crux) => {
+      const key = canonicalWith(module, crux, molecule);
+      return key === null ? null : molecules.filter((m) => canonicalWith(module, crux, m) !== key);
+    });
+    if (kept)
+      return kept;
+    // not a molecule: a query has no duplicates, anything else is malformed (read by the module, as above)
+    const isQuery = byEngineModule('removeDuplicates query', rdKitModule, (module) => {
+      const qMol = getQueryMolSafe(molecule, '', module);
+      qMol?.delete();
+      return qMol ? true : null;
+    });
+    if (!isQuery)
       throw new Error(`Molecule is possibly malformed`);
-    }
-    const filteredMolecules = molecules.filter((smiles) => !checkMolEqualSmiles(mol1, smiles));
-    mol1.delete();
-    return filteredMolecules;
+    return molecules;
   }
+
+  //#region Demos
 
   @grok.decorators.func({
     name: 'Demo Similarity Search',
@@ -2926,6 +2933,15 @@ export class PackageFunctions {
   })
   static async demoSarMatrix(): Promise<void> {
     await _demoSarMatrix();
+  }
+
+  @grok.decorators.func({
+    name: 'Demo PROTAC SAR Matrix',
+    description: 'Rank warhead, linker and E3 ligand across 2792 patent degraders whose parts are columns',
+    meta: {demoPath: 'Cheminformatics | PROTAC SAR Matrix'},
+  })
+  static async demoSarMatrixProtac(): Promise<void> {
+    await _demoSarMatrixProtac();
   }
 
   @grok.decorators.func({
@@ -2966,6 +2982,8 @@ export class PackageFunctions {
     await _demoScaffoldTree();
   }
 
+  //#endregion
+
   @grok.decorators.func({
     'name': 'Names To Smiles',
     'description': 'Resolves chemical names to SMILES structures and adds them as a column.',
@@ -3004,28 +3022,19 @@ export class PackageFunctions {
   @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static validateMolecule(s: string): string | null {
     // "Chemical Engine" (engine/README.md): in Crux mode a molecule Crux reads as it stands (getMolSafe's first read) is
-    // valid; RDKit writes the message for the rest (Crux keeps no RDKit log)
-    if (engineInEffect() === ChemicalEngine.Crux && cruxOrRdKit('validateMolecule', () => {
-      const ctx = getMolSafe(s, {}, cruxModuleSync()!, true, noteCruxError);
+    // valid; the message for the rest is RDKit's log (Crux keeps none). Not a fallback: an invalid molecule is no Crux
+    // failure, so only a throw on Crux's side is logged as one.
+    const validOnCrux = byEngineModule<boolean>('validateMolecule', _rdKitModule, (module, crux) => {
+      if (!crux)
+        return false;
+      const ctx = getMolSafe(s, {}, module, true, noteCruxError);
       ctx.mol?.delete();
       return ctx.mol !== null && ctx.kekulize && !ctx.isQMol;
-    }, () => false))
-      return '';
-    let logHandle: RDLog | null = null;
-    let mol: RDMol | null = null;
-    try {
-      logHandle = _rdKitModule.set_log_capture('rdApp.error');
-      mol = getMolSafe(s, {}, _rdKitModule, true).mol;
-      let logBuffer = logHandle?.get_buffer();
-      logHandle?.clear_buffer();
-      if (!mol && !logBuffer)
-        logBuffer = 'unknown error';
-      return logBuffer ?? null;
-    } finally {
-      logHandle?.delete();
-      mol?.delete();
-    }
+    });
+    return validOnCrux ? '' : validationMessageByRdKit(_rdKitModule, s);
   }
+
+  //#region Chemprop
 
   static async getContainer() {
     if (!container)
@@ -3227,6 +3236,8 @@ export class PackageFunctions {
     return true;
   }
 
+  //#endregion
+
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Reactions | Deprotect...',
     'requiresTableView': true,
@@ -3256,7 +3267,8 @@ export class PackageFunctions {
     description: 'Beautifies the list of molecules and returns the list of beautified molecules',
   })
   static async beautifyMols(mols: string[]): Promise<string[]> {
-    return await (await chemCommonRdKit.getRdKitService()).beautifyMolsV3K(mols);
+    // "Chemical engine": in Crux mode on the Crux workers, the RDKit pool behind them
+    return await beautifyMolsByEngine(mols);
   }
 
   @grok.decorators.func({
@@ -3268,6 +3280,8 @@ export class PackageFunctions {
     oc.terminate();
     return result;
   }
+
+  //#region MPO
 
   @grok.decorators.func({
     'name': 'mpo',
@@ -3292,12 +3306,13 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Score column', description: 'Name of the resulting score column, e.g. "MPO <profile name>". The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name'}}) profileName: string,
     @grok.decorators.param({type: 'string', options: {initialValue: 'Average', choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
     createDesirabilityColumns: boolean = false,
+    @grok.decorators.param({options: {description: 'Add a column counting non-empty properties per row'}}) createCoverageColumn: boolean = false,
   ): DG.DataFrame | null {
     if (columns.length === 0)
       return null;
     const cols = Array.from(columns);
     const isDifferent = df.rowCount !== cols[0].length;
-    const result = mpo(df, cols, profileName, aggregation, isDifferent, createDesirabilityColumns);
+    const result = mpo(df, cols, profileName, aggregation, isDifferent, createDesirabilityColumns, createCoverageColumn);
     const resultColumns = collectMpoResultColumns(df, result, isDifferent);
     return resultColumns.length > 0 ? DG.DataFrame.fromColumns(resultColumns) : null;
   }
@@ -3424,6 +3439,8 @@ export class PackageFunctions {
     return isDesirabilityProfile(JSON.parse(content));
   }
 
+  //#endregion
+
   @grok.decorators.panel({
     name: 'Chemistry | Mixture',
     meta: {role: 'widgets', domain: 'chem'},
@@ -3439,16 +3456,7 @@ export class PackageFunctions {
   })
   static async mixtureTreeWidget(
     @grok.decorators.param({options: {semType: 'ChemicalMixture'}}) mixture: string): Promise<DG.Widget> {
-    const mixtureObj = JSON.parse(mixture) as Mixfile;
-    const resDiv = ui.divV([]);
-    resDiv.append(ui.divText(`mixfileVersion: ${mixtureObj.mixfileVersion}`));
-    if (mixtureObj.contents && mixtureObj.contents.length) {
-      const contentsAcc = ui.accordion('contents');
-      for (let i = 0; i < mixtureObj.contents.length; i++)
-        contentsAcc.addPane(mixtureObj.contents![i].name ?? `component ${i + 1}`, () => createComponentPane(mixtureObj.contents![i]));
-      resDiv.append(contentsAcc.root);
-    }
-    return new DG.Widget(resDiv);
+    return createMixtureTreeWidget(mixture);
   }
 
   @grok.decorators.func({
@@ -3771,70 +3779,155 @@ export class PackageFunctions {
     calculateMpo();
     return DG.Widget.fromRoot(container);
   }
+
+  //#region Chem's Python scripts in Crux mode (python-free.ts): the scripts' names (a method's name is its function's
+  // name, which Flow's allowlist and saved flows match case-sensitively), inputs, outputs and tags; the scripts, named in
+  // PYTHON_SCRIPTS, are the RDKit side
+
+  @grok.decorators.func({
+    'name': 'Curate',
+    'description': 'Standardizes the dataset',
+    'top-menu': 'Chem | Transform | Curate...',
+    'meta': {domain: 'chem'},
+    'outputs': [{name: 'curated', type: 'dataframe',
+      options: {action: 'join(data)', semType: 'Molecule', description: 'Molecules, in SMILES format'}}],
+  })
+  static async Curate(
+    @grok.decorators.param({options: {nullable: false, description: 'Input data table'}}) data: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', semType: 'Molecule', nullable: false}}) molecules: DG.Column,
+    @grok.decorators.param({options: {initialValue: 'false', description: 'Write the result as a Kekule SMILES instead of an aromatic one'}}) kekulization: boolean = false,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Apply RDKit functional-group normalization'}}) normalization: boolean = true,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Move protons to the strongest acidic sites'}}) reionization: boolean = true,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Neutralize formal charges where possible'}}) neutralization: boolean = true,
+    @grok.decorators.param({options: {initialValue: 'false', description: 'Canonicalize the tautomer — slow, and opinionated'}}) tautomerization: boolean = false,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Keep only the largest fragment, dropping salts and solvents'}}) mainFragment: boolean = true,
+  ): Promise<DG.DataFrame> {
+    return pythonFree.curate(data, molecules,
+      {kekulization, normalization, reionization, neutralization, tautomerization, mainFragment});
+  }
+
+  @grok.decorators.func({
+    'name': 'Mutate',
+    'description': 'Generates the new dataset based on the given structure. Generated table has a column named \'mutations\' with mutated structures.',
+    'help-url': 'https://datagrok.ai/help/domains/chem/functions/mutate',
+    'top-menu': 'Chem | Transform | Mutate...',
+    'meta': {domain: 'chem'},
+    'outputs': [{name: 'mutations', type: 'dataframe', options: {semType: 'Molecule'}}],
+  })
+  static async Mutate(
+    @grok.decorators.param({options: {semType: 'Molecule', initialValue: '\'CN1C(CC(O)C1=O)C1=CN=CC=C1\''}}) molecule: string = 'CN1C(CC(O)C1=O)C1=CN=CC=C1',
+    @grok.decorators.param({type: 'int', options: {initialValue: '1', description: 'Number of mutation steps'}}) steps: number = 1,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Randomize mutations'}}) randomize: boolean = true,
+    @grok.decorators.param({type: 'int', options: {initialValue: '100', description: 'Maximum random results to calculate'}}) maxRandomResults: number = 100,
+  ): Promise<DG.DataFrame> {
+    return pythonFree.mutate(molecule, steps, randomize, maxRandomResults);
+  }
+
+  @grok.decorators.func({
+    'name': 'Generate Conformers',
+    'description': 'Generates multiple conformers for a molecule using RDKit',
+    'help-url': 'https://datagrok.ai/help/domains/chem/functions/conformers',
+    'top-menu': 'Chem | Calculate | Generate Conformers...',
+    'meta': {domain: 'chem'},
+    'outputs': [{name: 'conformers', type: 'dataframe'}],
+  })
+  static async GenerateConformers(
+    @grok.decorators.param({options: {semType: 'Molecule', initialValue: '\'CCCC\''}}) molecule: string = 'CCCC',
+    @grok.decorators.param({type: 'int', options: {initialValue: '50', caption: 'Num conformers', description: 'Number of conformers to generate'}}) num_conformers: number = 50,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Optimize with MMFF94 force field'}}) optimize: boolean = true,
+    @grok.decorators.param({type: 'double', options: {initialValue: '0.1', caption: 'RMS threshold', description: 'RMS threshold for conformer pruning - LOWER for butane'}}) rms_threshold: number = 0.1,
+    @grok.decorators.param({type: 'int', options: {initialValue: '5000', caption: 'Max attempts', description: 'Maximum generation attempts'}}) max_attempts: number = 5000,
+    @grok.decorators.param({type: 'int', options: {initialValue: '42', caption: 'Random seed', description: 'Random seed for reproducibility'}}) random_seed: number = 42,
+  ): Promise<DG.DataFrame> {
+    return pythonFree.generateConformers(molecule, num_conformers, optimize, rms_threshold, max_attempts, random_seed);
+  }
+
+  @grok.decorators.panel({
+    'name': 'Chemistry | Gasteiger Partial Charges',
+    'description': 'The Gasteiger partial charges, drawn as a similarity map',
+    'help-url': 'https://datagrok.ai/help/domains/chem/functions/gasteiger-charges',
+    'meta': {domain: 'chem'},
+  })
+  // one input, as Chem's other panels (with the script's `contours` input too the context panel did not offer it): the
+  // contour lines are under the panel's settings icon
+  static gasteigerPartialChargesPanel(
+    @grok.decorators.param({options: {semType: 'Molecule', description: 'Molecule, in SMILES format'}}) mol: string,
+  ): DG.Widget {
+    return pythonFree.gasteigerWidget(mol, 10);
+  }
+
+  @grok.decorators.func({
+    'name': 'Butina Molecules Clustering',
+    'description': 'Implementation of the clustering algorithm published in: Butina JCICS 39 747-750 (1999)',
+    'help-url': 'https://datagrok.ai/help/domains/chem/functions/butina-cluster',
+    'top-menu': 'Chem | Analyze | Butina Cluster...',
+    'meta': {domain: 'chem', vectorFunc: 'true'},
+    'outputs': [{name: 'clusters', type: 'dataframe', options: {action: 'join(data)', description: 'Clusters'}}],
+  })
+  static async ButinaMoleculesClustering(
+    @grok.decorators.param({options: {nullable: false, description: 'Input data table'}}) data: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule', nullable: false, description: 'Molecules, in SMILES and MolBlock format'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'double', options: {initialValue: '0.4', min: '0', max: '1', description: 'Tanimoto distance cutoff for clustering (0-1)'}}) distanceCutoff: number = 0.4,
+  ): Promise<DG.DataFrame> {
+    return pythonFree.butinaCluster(data, molecules, distanceCutoff);
+  }
+
+  @grok.decorators.func({
+    'name': 'inchiToMol',
+    'meta': {role: 'converter', inputRegexp: '(InChI\\=.+)'},
+    'outputs': [{name: 'smiles', type: 'string', options: {semType: 'Molecule'}}],
+  })
+  static async InchiToMol(id: string): Promise<string> {
+    return pythonFree.inchiToMol(id);
+  }
+
+  @grok.decorators.func({
+    'name': 'Calculate logP',
+    'description': 'Calculates the octanol-water partition coefficient (logP) using RDKit\'s Crippen method.',
+    'meta': {'function_family': 'biochem-calculator', 'timeout': '900000', 'role': 'transform',
+      'method_info.author': 'RDKit Team', 'method_info.year': '2024', 'method_info.package': 'rdkit-base',
+      'method_info.github': 'https://github.com/rdkit/rdkit',
+      'method_info.crux_author': 'RDKit\'s Crippen logP, calculated by Crux',
+      'method_info.crux_github': 'https://github.com/rdkit/rdkit'},
+    'outputs': [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
+  })
+  static async CalculateLogP(
+    table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
+  ): Promise<DG.DataFrame> {
+    return pythonFree.calculateLogP(table, molecules);
+  }
+
+  @grok.decorators.func({
+    'name': 'Murcko Scaffolds',
+    'description': 'Generation of Murcko scaffolds from a molecule',
+    'help-url': 'https://datagrok.ai/help/domains/chem/functions/murcko-scaffolds',
+    'meta': {domain: 'chem'},
+    'outputs': [{name: 'scaffolds', type: 'dataframe',
+      options: {action: 'join(data)', semType: 'Molecule', description: 'Murcko scaffolds, in SMILES format'}}],
+  })
+  static async MurckoScaffolds(
+    @grok.decorators.param({options: {nullable: false, description: 'Input data table'}}) data: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', semType: 'Molecule', nullable: false, description: 'Molecules, in SMILES format'}}) smiles: DG.Column,
+  ): Promise<DG.DataFrame> {
+    return pythonFree.murckoScaffolds(data, smiles);
+  }
+
+  @grok.decorators.func({
+    'name': 'Filter by Catalogs',
+    'description': 'Finds undesireable molecules based on various criteria',
+    'help-url': 'https://datagrok.ai/help/domains/chem/functions/filter-catalogs',
+    'meta': {domain: 'chem'},
+    'outputs': [{name: 'filter', type: 'dataframe', options: {action: 'join(data)', description: 'Column with filter matches'}}],
+  })
+  static async FilterByCatalogs(
+    @grok.decorators.param({options: {description: 'Input data table'}}) data: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', semType: 'Molecule', description: 'Molecules in SMILES format'}}) smiles: DG.Column,
+    // python-free.ts FILTER_CATALOGS
+    @grok.decorators.param({type: 'string', options: {choices: ['BRENK', 'NIH', 'PAINS_A', 'PAINS_B', 'PAINS_C', 'ZINC'], initialValue: 'BRENK'}}) catalog: string = 'BRENK',
+  ): Promise<DG.DataFrame> {
+    return pythonFree.filterByCatalogs(data, smiles, catalog);
+  }
+
+  //#endregion
 }
-
-// removed because is not useful enaugh and can freeze browser.
-// @grok.decorators.func({
-//   name: 'Chemistry | Most Diverse Structures',
-// })
-// static async chemTooltip(
-//   @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column): Promise<DG.Widget | undefined> {
-//   const initialWidth = 255;
-//   const initialHeight = 90;
-//   const tooltipMaxWidth = 500;
-//   const version = col.version;
-//   const colCategories = col.categories;
-//   for (let i = 0; i < Math.min(colCategories.length, 100); ++i) {
-//     if (!!colCategories[i] && _isSmarts(colCategories[i]))
-//       return;
-//   }
-
-//   const divMain = ui.div();
-//   divMain.append(ui.divText('Most diverse structures', 'chem-tooltip-text'));
-//   const divStructures = ui.div([ui.loader()]);
-//   divStructures.classList.add('chem-tooltip-structure-div');
-//   const getDiverseStructures = async (): Promise<void> => {
-//     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
-//       const molIds = await chemDiversitySearch(
-//         col, similarityMetric[BitArrayMetricsNames.Tanimoto], Math.min(6, colCategories.length), Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
-
-//       Object.assign(col.temp, {
-//         'version': version,
-//         'molIds': molIds,
-//       });
-//     }
-//     ui.empty(divStructures);
-//     const molIdsCached = col.temp['molIds'];
-//     for (let i = 0; i < molIdsCached.length; ++i)
-//       divStructures.append(renderMolecule(col.categories[molIdsCached[i]], {width: 75, height: 32}));
-//   };
-
-//   divMain.append(divStructures);
-//   const widget = new DG.Widget(divMain);
-
-//   Object.assign(widget.root.style, {
-//     position: 'relative',
-//     width: `${initialWidth}px`,
-//     height: `${initialHeight}px`,
-//   });
-
-//   const tooltip = document.querySelector('.d4-tooltip');
-//   if (tooltip) {
-//     const rect = tooltip.getBoundingClientRect();
-//     const {width, height} = rect;
-//     const isWideTooltip = width + initialWidth > tooltipMaxWidth;
-//     const fitsRight = rect.right + initialWidth + 20 <= window.innerWidth;
-
-//     if (!isWideTooltip && fitsRight) {
-//       Object.assign(widget.root.style, {
-//         left: `${width}px`,
-//         top: `${30 - height}px`,
-//         width: `${initialWidth + width}px`,
-//         height: '0',
-//       });
-//     }
-//   }
-
-//   setTimeout(() => getDiverseStructures(), 10);
-//   return widget;
-// }

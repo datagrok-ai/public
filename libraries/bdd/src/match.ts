@@ -1,7 +1,3 @@
-/* Step text → step definition, through cucumber expressions. Every definition is tried; when
-   several match, the one that spells out more of the text wins (`user right-clicks on the
-   {string} area of {element}` over `user right-clicks (on ){element}`), then the one with fewer
-   parameters; an exact tie is reported as ambiguous rather than picked silently. */
 import {CucumberExpression, ParameterType, ParameterTypeRegistry} from '@cucumber/cucumber-expressions';
 import {parameterTypes, ParameterTypeDef, StepDef, steps} from './registry.js';
 

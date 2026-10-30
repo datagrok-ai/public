@@ -55,9 +55,6 @@
 /* hover-only while expanded; a collapsed section keeps its chevron, or nothing says it folds */
 .u2-section-header[aria-expanded='false'] .u2-section-chevron {
   opacity: 1;
-}
-
-.u2-section-header[aria-expanded='false'] .u2-section-chevron {
   transform: rotate(-90deg);
 }
 
@@ -102,6 +99,31 @@
   display: none !important;
 }
 
+/* the icons and links acting on the body, after the title */
+.u2-section-actions {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  margin-left: var(--dg-space-m);
+  font-weight: var(--dg-font-weight-regular);
+}
+
+/* why the body is off, after the title */
+.u2-section-reason {
+  min-width: 0;
+  margin-left: var(--dg-space-m);
+  overflow: hidden;
+  font-weight: var(--dg-font-weight-regular);
+  color: var(--dg-text-color-light);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-section-reason:empty {
+  display: none;
+}
+
 /* chevron: 'end' — after the title and hint, always shown, down while folded and up while open */
 .u2-section-header.u2-section-chevron-end > .u2-section-chevron {
   position: static;
@@ -119,4 +141,22 @@
 .u2-section-body {
   display: flex;
   flex-direction: column;
+}
+
+/* a section in a splitter panel fills it, so its body scrolls inside the pane */
+.u2-splitter-panel:has(> .u2-section) {
+  display: flex;
+  flex-direction: column;
+}
+
+.u2-splitter-panel > .u2-section {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.u2-splitter-panel > .u2-section > .u2-section-body {
+  flex: 1;
+  min-height: 0;
 }

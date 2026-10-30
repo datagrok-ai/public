@@ -27,22 +27,22 @@ injectOnce('u2-inputs-css', '../../css/inputs.css');
 injectOnce('u2-form-css', '../../css/form.css');
 
 const ALIGN = [
-  {id: 'left', label: 'Left', icon: 'align-left'},
-  {id: 'center', label: 'Center', icon: 'align-center'},
-  {id: 'right', label: 'Right', icon: 'align-right'},
+  {id: 'left', text: 'Left', icon: 'align-left'},
+  {id: 'center', text: 'Center', icon: 'align-center'},
+  {id: 'right', text: 'Right', icon: 'align-right'},
 ];
 
 const VIEWS = [
-  {id: 'grid', label: 'Grid', icon: 'table'},
-  {id: 'cards', label: 'Cards', icon: 'th-large'},
-  {id: 'chart', label: 'Chart', icon: 'chart-bar'},
+  {id: 'grid', text: 'Grid', icon: 'table'},
+  {id: 'cards', text: 'Cards', icon: 'th-large'},
+  {id: 'chart', text: 'Chart', icon: 'chart-bar'},
 ];
 
 const ACTIONS = [
-  {id: 'add', label: 'Add row', icon: 'plus'},
-  {id: 'copy', label: 'Copy', icon: 'copy'},
-  {id: 'delete', label: 'Delete', icon: 'trash-alt'},
-  {id: 'refresh', label: 'Refresh', icon: 'sync'},
+  {id: 'add', text: 'Add row', icon: 'plus'},
+  {id: 'copy', text: 'Copy', icon: 'copy'},
+  {id: 'delete', text: 'Delete', icon: 'trash-alt'},
+  {id: 'refresh', text: 'Refresh', icon: 'sync'},
 ];
 
 function el(tag, cls, text) {
@@ -146,7 +146,7 @@ export async function render(main) {
   });
 
   section('Icon-only action group', () => [
-    new ButtonGroup({items: ACTIONS.map((i) => ({...i, onClick: act(i.label)})), iconOnly: true}),
+    new ButtonGroup({items: ACTIONS.map((i) => ({...i, onClick: act(i.text)})), iconOnly: true}),
     readout('last action', last),
     el('div', 'u2-gallery-status', 'toggle: none — nothing is ever selected, and each label ' +
       'becomes the tooltip and the accessible name.'),
@@ -154,7 +154,7 @@ export async function render(main) {
 
   section('The same group at three densities', () => {
     const at = (density) => labelled(density, new ButtonGroup({
-      items: ACTIONS.map((i) => ({...i, onClick: act(`${i.label} (${density})`)})),
+      items: ACTIONS.map((i) => ({...i, onClick: act(`${i.text} (${density})`)})),
       iconOnly: true,
       density,
     }).root);
@@ -170,8 +170,8 @@ export async function render(main) {
     const bar = new Toolbar({ariaLabel: 'Document actions'});
     const zoom = new ButtonGroup({
       items: [
-        {id: 'out', icon: 'search-minus', label: 'Zoom out', onClick: act('Zoom out')},
-        {id: 'in', icon: 'search-plus', label: 'Zoom in', onClick: act('Zoom in')},
+        {id: 'out', icon: 'search-minus', text: 'Zoom out', onClick: act('Zoom out')},
+        {id: 'in', icon: 'search-plus', text: 'Zoom in', onClick: act('Zoom in')},
       ],
       iconOnly: true,
       density: 'toolbar',
@@ -206,7 +206,7 @@ export async function render(main) {
       buttons.append(
         layout.root,
         buttonWithIcon('Save', 'save', () => saved.value =
-          `${name.value.value} · ${layout.selected.value.join(', ') || 'no alignment'}`, {primary: true})
+          `${name.value} · ${layout.selected.value.join(', ') || 'no alignment'}`, {primary: true})
       );
     });
     return [form, readout('saved', saved)];
@@ -215,9 +215,9 @@ export async function render(main) {
   section('Disabled items', () => {
     const guarded = new ButtonGroup({
       items: [
-        {id: 'run', label: 'Run', icon: 'play', onClick: act('Run')},
-        {id: 'stop', label: 'Stop', icon: 'stop', onClick: act('Stop'), enabled: false},
-        {id: 'reset', label: 'Reset', icon: 'undo', onClick: act('Reset')},
+        {id: 'run', text: 'Run', icon: 'play', onClick: act('Run')},
+        {id: 'stop', text: 'Stop', icon: 'stop', onClick: act('Stop'), disabled: 'Nothing is running'},
+        {id: 'reset', text: 'Reset', icon: 'undo', onClick: act('Reset')},
       ],
     });
     const stopEnabled = signal(false);
@@ -225,7 +225,7 @@ export async function render(main) {
       guarded,
       row([button(computed(() => stopEnabled.value ? 'Disable Stop' : 'Enable Stop'), () => {
         stopEnabled.value = !stopEnabled.peek();
-        guarded.setEnabled('stop', stopEnabled.peek());
+        guarded.setDisabled('stop', stopEnabled.peek() ? null : 'Nothing is running');
       })]),
       el('div', 'u2-gallery-status',
         'A disabled cell drops out of the roving tab order, so ←/→ skip straight over it.'),

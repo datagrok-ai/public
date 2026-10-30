@@ -253,10 +253,9 @@ export class PackageFunctions {
     'description': 'Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)'
   })
   static async chemEnumerateMarkushTopMenu(): Promise<void> {
-    let cell: DG.Cell | undefined = undefined;
-    if (grok.shell.tv?.dataFrame && grok.shell.tv.dataFrame.currentCell && grok.shell.tv.dataFrame.currentCell.column.semType === DG.SEMTYPE.MOLECULE)
-      cell = grok.shell.tv.dataFrame.currentCell;
-    polyToolEnumerateChemUI(cell);
+    // a table view has no current column until the grid picks one
+    const current = grok.shell.tv?.dataFrame.currentCell;
+    polyToolEnumerateChemUI(current?.column?.semType === DG.SEMTYPE.MOLECULE ? current : undefined);
   }
 
 

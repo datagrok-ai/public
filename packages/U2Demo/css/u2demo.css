@@ -56,7 +56,7 @@
   border-right: var(--dg-border-width) solid var(--dg-border);
 }
 
-/* the content host replaces .u2-tabs-content: same scroller, same padding */
+/* the content host: the scroller and the padding of a tab's content */
 .u2demo-content {
   box-sizing: border-box;
   container: u2demo-pane / inline-size;
@@ -69,7 +69,7 @@
 /* the ribbon's toggles (Inspect, Show navigation): the shared pressed skin is a grey a shade off
    hover, so an armed toggle reads as a hovered button — the accent wash is what a platform ribbon
    toggle wears */
-.u2-btn.u2demo-toggle.u2-icon-btn-pressed {
+.d4-ribbon-item > .u2demo-toggle[aria-pressed='true'] {
   color: var(--dg-accent);
   background: var(--dg-selection-bg);
   border-color: var(--dg-accent);
@@ -151,7 +151,7 @@
   flex-wrap: wrap;
 }
 
-.u2demo-cards > .u2-card {
+.u2demo-cards > * {
   width: 220px;
 }
 
@@ -168,7 +168,7 @@
 }
 
 /* a splitter divides its host: at one column's width its 30% panel cannot hold a captioned input */
-.u2demo-catalog-cell:has(> .u2-spec > [data-u2='splitter']) {
+.u2demo-catalog-cell-wide {
   width: 600px;
   max-width: 100%;
 }
@@ -199,7 +199,7 @@
   gap: 0;
 }
 
-.u2demo-report-list .u2-list {
+.u2demo-report-list .u2demo-report-items {
   flex: 1;
   min-height: 0;
   border: none;
@@ -280,7 +280,7 @@
   grid-column: 3;
 }
 
-.u2demo-ab-side > .u2-section-body > * {
+.u2demo-ab-side > .u2demo-ab-cells > * {
   grid-row: var(--ab-row);
 }
 
@@ -290,8 +290,8 @@
 }
 
 .u2demo-ab > :not(.u2demo-ab-side),
-.u2demo-ab-side > .u2-section-header,
-.u2demo-ab-side > .u2-section-body > * {
+.u2demo-ab-side > .u2demo-ab-head,
+.u2demo-ab-side > .u2demo-ab-cells > * {
   min-width: 0;
   margin: 0;
   padding: var(--dg-space-xs) 0;
@@ -308,19 +308,18 @@
   min-width: 0;
 }
 
-.u2demo-ab-side > .u2-section-header {
+.u2demo-ab-side > .u2demo-ab-head {
   grid-row: 1;
   gap: var(--dg-space-m);
   align-self: stretch;
 }
 
-.u2demo-ab-side > .u2-section-body {
+.u2demo-ab-side > .u2demo-ab-cells {
   display: contents;
 }
 
-/* an input's own caption only: the platform column selector keeps a caption of its own inside its
-   editor */
-.u2demo-ab .u2-input-label,
+/* a platform input's own caption only, as wide as u2's: the platform column selector keeps a caption of its own
+   inside its editor */
 .u2demo-ab .ui-input-root > .ui-input-label {
   min-width: 100px;
 }
@@ -396,30 +395,30 @@
     display: contents;
   }
 
-  .u2demo-ab-side > .u2-section-header,
-  .u2demo-ab-side > .u2-section-body > * {
+  .u2demo-ab-side > .u2demo-ab-head,
+  .u2demo-ab-side > .u2demo-ab-cells > * {
     grid-column: 2;
   }
 
-  .u2demo-ab-platform > .u2-section-body > * {
+  .u2demo-ab-platform > .u2demo-ab-cells > * {
     grid-row: calc(var(--ab-row) * 2 - 1);
   }
 
-  .u2demo-ab-side.u2demo-ab-u2 > .u2-section-header {
+  .u2demo-ab-side.u2demo-ab-u2 > .u2demo-ab-head {
     grid-row: 2;
   }
 
-  .u2demo-ab-u2 > .u2-section-body > * {
+  .u2demo-ab-u2 > .u2demo-ab-cells > * {
     grid-row: calc(var(--ab-row) * 2);
   }
 
   /* stacked, the two rows of a pair no longer sit under their side's header, so the u2 one says so */
-  .u2demo-ab-side > .u2-section-body > * {
+  .u2demo-ab-side > .u2demo-ab-cells > * {
     position: relative;
     padding-right: var(--dg-space-xxl);
   }
 
-  .u2demo-ab-u2 > .u2-section-body > *::after {
+  .u2demo-ab-u2 > .u2demo-ab-cells > *::after {
     content: 'u2';
     position: absolute;
     top: var(--dg-space-xs);
@@ -457,8 +456,7 @@
   margin-right: var(--dg-space-s);
 }
 
-/* the Function forms pane fills the host and scrolls its own columns (was
-   .u2-tabs-panel:has(.u2demo-funcs)) */
+/* the Function forms pane fills the host and scrolls its own columns */
 .u2demo-content:has(.u2demo-funcs) {
   overflow: hidden;
 }
@@ -482,7 +480,7 @@
 }
 
 /* the browser fills the column; its own virtualized list is the scroller */
-.u2demo-funcs-list .u2-functions-browser {
+.u2demo-funcs-list .u2demo-funcs-browser {
   height: 100%;
 }
 
@@ -536,4 +534,17 @@
     border-right: none;
     border-bottom: var(--dg-border-width) solid var(--dg-border);
   }
+}
+
+/* the catalog table page: a table takes the pane's width, the heading carries the table's icons */
+.u2demo-page.u2demo-page-wide {
+  max-width: none;
+}
+
+.u2demo-catalog-heading {
+  gap: var(--dg-space-xs);
+}
+
+.u2demo-catalog-heading h1 {
+  margin: 0 var(--dg-space-m) 0 0;
 }

@@ -4,14 +4,15 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
-import {fire, flush, resetDom} from './dom-shim.js';
+import {fire, flush} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {signal} from '../src/core/signals.js';
-import {Scope} from '../src/core/scope.js';
 import {Control} from '../src/core/component.js';
 import {DataTable} from '../src/components/collections/data-table.js';
 import {FrameRows} from '../src/sources/df-rows.js';
 import {MemoryFrame} from '../src/sources/memory-frame.js';
 import {collectionSelection} from '../src/dg/shell/collection-selection.js';
+import {u2test, mount, user} from '../src/testing/index.js';
 
 register('./dg-stub.mjs', import.meta.url);
 const {under} = await import('../src/dg/shell/view-sync.js');
@@ -19,28 +20,14 @@ const {under} = await import('../src/dg/shell/view-sync.js');
 const COLUMNS = [{name: 'id', type: 'string'}, {name: 'title', type: 'string'}];
 const frameOf = (ids) => new MemoryFrame(COLUMNS, ids.map((id) => ({id, title: id.toUpperCase()})));
 
-function scoped(name, body) {
-  test(name, async () => {
-    const live = Scope.liveCount;
-    try {
-      await body();
-    } finally {
-      resetDom();
-      await flush();
-    }
-    assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
-  });
-}
-
 async function bound() {
-  const owner = new Control();
+  const owner = mount(() => new Control());
   const df = signal(frameOf(['a', 'b', 'c']));
-  const source = {currentRow: signal(null), rows: new FrameRows(df, owner.scope), df};
-  const table = owner.runInScope(() => new DataTable({rowHeight: 20, items: source.rows, columns: [{name: 'title'}]}));
-  collectionSelection(owner, source, table);
+  const source = {currentRow: signal(null), rows: new FrameRows(df, {owner: owner.scope}), df};
+  const table = owner.build(() => new DataTable({rowHeight: 20, items: source.rows, columns: [{name: 'title'}]}));
+  collectionSelection(source, table, {owner: owner});
   owner.root.append(table.root);
-  document.body.append(owner.root);
-  table.root.clientHeight = 300;
+  layout(table.root, {clientHeight: 300});
   fire(table.root, 'scroll');
   await flush();
   return {source, owner, table};
@@ -49,29 +36,29 @@ async function bound() {
 const marked = (df) => df.rows.map((r, i) => df.selection.get(i) ? r.id : null).filter((id) => id !== null);
 const rowAt = (table, i) => table.root.querySelector(`.u2-data-table-row[data-index="${i}"]`);
 
-scoped('collectionSelection: the lead and currentRow are one value; only a gesture marks the frame', async () => {
+test('collectionSelection: the lead and currentRow are one value; only a gesture marks the frame', u2test(async () => {
   const {source, owner, table} = await bound();
   source.currentRow.value = source.rows.byKey('b');
   await flush();
   assert.equal(table.selectedIndex.value, 1);
   assert.deepEqual(marked(source.df.value), [], 'a lead nobody picked is not a selection');
 
-  fire(rowAt(table, 0), 'click');
-  fire(rowAt(table, 2), 'click', {ctrlKey: true});
+  user.click(rowAt(table, 0));
+  user.click(rowAt(table, 2), {ctrlKey: true});
   await flush();
   assert.deepEqual(marked(source.df.value), ['a', 'c']);
 
-  fire(table.root, 'keydown', {key: 'Escape'});
+  user.press(table.root, 'Escape');
   await flush();
   assert.deepEqual(marked(source.df.value), []);
   assert.equal(source.currentRow.value, null);
   owner.dispose();
-});
+}));
 
-scoped('collectionSelection: a new frame keeps the selection by key, one without the keys clears it', async () => {
+test('collectionSelection: a new frame keeps the selection by key, one without the keys clears it', u2test(async () => {
   const {source, owner, table} = await bound();
-  fire(rowAt(table, 0), 'click');
-  fire(rowAt(table, 2), 'click', {ctrlKey: true});
+  user.click(rowAt(table, 0));
+  user.click(rowAt(table, 2), {ctrlKey: true});
   await flush();
 
   source.df.value = frameOf(['c', 'b', 'a']);
@@ -82,7 +69,7 @@ scoped('collectionSelection: a new frame keeps the selection by key, one without
   await flush();
   assert.deepEqual(marked(source.df.value), []);
   owner.dispose();
-});
+}));
 
 test('under: a base continues at a segment or a query, never mid-segment', () => {
   assert.equal(under('/apps/grit', '/apps/grit'), true);

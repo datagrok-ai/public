@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {u2} from '@datagrok-libraries/utils/src/u2';
+import {AppHeader} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 import * as yaml from 'js-yaml';
 import {filter, take} from 'rxjs/operators';
 
@@ -17,12 +18,14 @@ export class Boltz1AppView {
   private pocketInputs: Map<string, DG.InputBase> = new Map();
   private entityCounters: Map<FUNC_PROPS_FIELD, number> = new Map();
   private divV: HTMLDivElement;
+  private view: DG.View;
   private menu!: DG.Menu;
   samplesInput!: DG.InputBase<number | null>;
 
   constructor() {
     this.divV = ui.divV([], 'ui-form');
     this.divV.classList.add('boltz-app-wrapper');
+    this.view = DG.View.fromRoot(this.divV);
 
     this.createHeader();
     this.createSamplesInput();
@@ -30,16 +33,18 @@ export class Boltz1AppView {
   }
 
   private createHeader(): void {
-    const appHeader = u2.appHeader({
-      iconPath: `${_package.webRoot}/images/boltz1_pred_figure.png`,
-      learnMoreUrl: 'https://github.com/jwohlwend/boltz/blob/main/README.md',
-      description: `- Seamless integration with Boltz.\n` +
-        `- Predicts 3D structures for proteins, RNA, DNA, and small molecules.\n` +
-        `- Supports modified residues, covalent ligands, glycans, and condition generation on pocket residues.\n` +
-        `- Matches or outperforms the performance of AlphaFold3.`,
-    });
+    const appHeader = ViewHost.of(this.view).build(() => new AppHeader({
+      icon: `${_package.webRoot}/images/boltz1_pred_figure.png`,
+      learnMore: 'https://github.com/jwohlwend/boltz/blob/main/README.md',
+      items: [
+        'Seamless integration with Boltz.',
+        'Predicts 3D structures for proteins, RNA, DNA, and small molecules.',
+        'Supports modified residues, covalent ligands, glycans, and condition generation on pocket residues.',
+        'Matches or outperforms the performance of AlphaFold3.',
+      ],
+    }));
 
-    this.divV.append(appHeader);
+    this.divV.append(appHeader.root);
   }
 
   private createSamplesInput(): void {
@@ -268,9 +273,8 @@ export class Boltz1AppView {
   }
 
   public getView(): DG.ViewBase {
-    const view = DG.View.fromRoot(this.divV);
-    view.name = 'Boltz-1';
-    return view;
+    this.view.name = 'Boltz-1';
+    return this.view;
   }
 }
 

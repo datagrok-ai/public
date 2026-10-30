@@ -1,10 +1,3 @@
-/* ManifestModel over the Northwind draft fixture: the untouched draft round-trips, including
-   and excluding a table flips the dependent relation between ref and plain, renames are checked
-   with the server's rules and refused names keep the old one, one name column per table, an
-   excluded column is dropped, key columns cannot go, writable and the read-only opt-out, the
-   inventory's unbindable tables and unsupported columns are shown and never submitted; the
-   access model round-trips; the field offer's arms. */
-
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -251,7 +244,7 @@ test('the field offer: the external vocabulary under create and view; the other 
   const edit = fieldOffer({mode: 'edit', storage: 'external'});
   assert.deepEqual([edit.editable, edit.identifier, edit.description, edit.type, edit.writable], [true, false, true, 'readonly', true]);
   assert.throws(() => fieldOffer({mode: 'create', storage: 'domain'}), /not built yet/);
-  assert.throws(() => fieldOffer({mode: 'extend', storage: 'external'}), /"extend" mode is not built yet/);
+  assert.throws(() => fieldOffer({mode: 'extend', storage: 'external'}), /only a platform-stored schema is extended/);
 });
 
 test('the identifier follows the friendly name, harmonized and free of the registered names, until set by hand', () => {

@@ -33,14 +33,14 @@ control, so it is the view's content; the designer opens the same file for editi
 
 ```ts
 import {renderSpec} from '@datagrok-libraries/u2';
-import {appView, designerView, registerPlatformComponents} from '@datagrok-libraries/u2/src/dg/index.js';
+import {ViewHost, designerView, registerPlatformComponents} from '@datagrok-libraries/u2/dg';
 import {installEms} from '@datagrok-libraries/ems/src/dg';
 import spec from './app.spec.json';                              // tsconfig: resolveJsonModule
 
 registerPlatformComponents();                                    // once per package: every u2-* tag
 installEms();                                                    // the u2-domain-* tags and the spec session
 export function stockroomApp(): DG.ViewBase {
-  return appView({name: 'Stockroom', content: renderSpec(spec)});
+  return ViewHost.create({name: 'Stockroom', content: () => renderSpec(spec)}).view;
 }
 export function stockroomDesigner(): DG.ViewBase {
   return designerView(spec, {name: 'Stockroom (design)'});

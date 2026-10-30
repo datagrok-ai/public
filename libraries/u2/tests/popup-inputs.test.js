@@ -3,7 +3,7 @@
    role/data-u2-item/aria-selected/item-label, the state block reports open/busy/items, revealItem
    opens the popup over everything, and the events pass the control. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {state} from 'datagrok-api/u2core';
@@ -147,7 +147,7 @@ smoke('Combobox: change passes the value and the control; Enter and Escape go to
   fire(input, 'keydown', {key: 'Escape'});
   assert.deepEqual(keys, [['enter', 'Enter', true], ['escape', 'Escape', true]]);
   assert.equal(enter, false, 'a handled Enter is kept from the form around');
-  assert.equal(combobox.value.value, 'alpha', 'an Escape with onEscape does not clear');
+  assert.equal(combobox.value, 'alpha', 'an Escape with onEscape does not clear');
   combobox.dispose();
 });
 
@@ -222,7 +222,7 @@ smoke('TypeAhead: revealItem lists everything past minChars; the next keystroke 
   assert.equal(options(popup, '.u2-typeahead-option').length, 0);
   typeahead.dispose();
 
-  const sync = mount(new TypeAhead({source: ['alpha', 'beta'], itemText: (x) => x, minChars: 1}));
+  const sync = mount(testOwner().build(() => new TypeAhead({source: ['alpha', 'beta'], itemText: (x) => x, minChars: 1})));
   assert.equal((await sync.revealItem('alpha'))?.dataset.u2Item, 'alpha', 'a sync source too');
   sync.dispose();
 });
@@ -275,9 +275,9 @@ smoke('MapInput: rows are items keyed by key; typing keeps the cell, a write fro
   cell.value = '10';
   fire(cell, 'input');
   await flush();
-  assert.deepEqual(map.value.value, {a: '10', b: '2'});
+  assert.deepEqual(map.value, {a: '10', b: '2'});
   assert.equal(map.root.querySelector('[data-u2-item="a"] .u2-map-value'), cell, 'an edit never rebuilds the rows');
-  map.value.value = {c: '3'};
+  map.value = {c: '3'};
   assert.deepEqual(state(map.root).items.list.map((i) => i.key), ['c']);
   map.dispose();
 });

@@ -9,7 +9,7 @@
  * to simulate DOM events through Datagrok's `InputBase` wrapper here.
  */
 
-import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -56,7 +56,6 @@ category('Mol3DAtomPickerLinkWidget', () => {
     smilesB.setTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG, mol3DCol.name);
 
     const widget = await callWidget(mol3DCol);
-    await delay(50);
 
     const select = findSelect(widget.root);
     // ui.input.choice may render as <select> or as a custom widget; skip the

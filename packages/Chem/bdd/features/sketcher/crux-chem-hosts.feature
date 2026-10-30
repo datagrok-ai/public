@@ -184,7 +184,7 @@ Feature: Crux in Chem's hosts
     And user clicks on close of "Structure" filter card
     And user picks "Current Value > Use as filter" from the context menu of the "cell 1 of Structure" area of grid
     Then there should be 1 visible "Structure" filter card
-    And the "structure of Structure" reading of filter panel should be the molecule of row 1 of "Structure" column
+    And the "structure of Structure" reading of filter panel should be the molecule in row 1 of "Structure" column
     And 1 row should pass the filter
     When user remembers the "molecule of Structure" reading of filter panel
     And user clicks on the "card Structure" area of filter panel

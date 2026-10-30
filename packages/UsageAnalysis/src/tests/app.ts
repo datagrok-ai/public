@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {before, after, category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {before, after, category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {ViewHandler} from '../view-handler';
 
 
@@ -25,7 +25,7 @@ category('App', () => {
       handler.changeTab(tab);
       const view = handler.getCurrentView();
       expect(view.name === tab, true, `expected tab "${tab}", got "${view.name}"`);
-      await awaitCheck(() => view.root.children.length > 0, `"${tab}" failed to initialize`, 30000);
+      await waitUntil(() => view.root.children.length > 0, `"${tab}" failed to initialize`, 30000);
     });
   }
 

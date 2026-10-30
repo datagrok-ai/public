@@ -1,11 +1,11 @@
-/* Choice inputs over platform collections. The value is always the name, not the object: the
-   caller resolves it (`table.col(input.value.peek())`, `grok.shell.table(...)`), which keeps the
-   inputs plain `ChoiceInput`s that serialize, bind and validate like any other. */
+/* Choice inputs over platform collections. The value is always the name, not the object, which keeps the
+   inputs plain `ChoiceInput`s that serialize, bind and validate like any other; `TableInput.table` holds the
+   frame itself. What they list is what the platform's pickers list (`Platform`). */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Input, InputOptions, LiveOption} from '../../core/input-base.js';
 import {Control} from '../../core/component.js';
-import {Scope} from '../../core/scope.js';
+import {Scope, Usage} from '../../core/scope.js';
 import {ChoiceInput, MultiChoiceInput} from '../../components/inputs/choice-input.js';
 import type {ChoiceInputOptions} from '../../components/inputs/choice-input.js';
 import {TypeAhead} from '../../components/inputs/typeahead.js';
@@ -13,8 +13,12 @@ import {iconButton} from '../../components/actions/buttons.js';
 import {columnRenderer} from '../entities/column-renderer.js';
 import type {IItemsState} from '../../core/widget-like.js';
 import {ColumnInput} from './column-combo.js';
+import {Platform} from '../shell/platform.js';
 
-export interface ColumnInputOptions {
+/** The input options every u2 input takes (`value`, `nullable`, `required`, …), plus the column ones. */
+export interface ColumnInputOptions extends Omit<InputOptions<string | null>, 'label'> {
+  /** Narrows the listed columns; a hidden `~` column or one with no name is never listed
+   * ({@link Platform.listedColumns}). */
   filter?: (column: DG.Column) => boolean;
   /** The searchable variant: a type-ahead over the column rows (glyph, name, semantic type)
    * instead of the native select — Dart's ColumnComboBox affordances (`column_input.dart:13-17`).
@@ -37,8 +41,9 @@ export function onColumnRenamed(table: DG.DataFrame,
     handler(e.args.oldName, e.args.newName));
 }
 
-/** Picks a column of `table` by name; the item list follows `table.onColumnsChanged` until the
- * input is disposed. A dropped column clears the value, a renamed one carries it over. */
+/** Picks a column of `table` by name, among the columns the platform lists; the item list follows
+ * `table.onColumnsChanged` until the input is disposed. A dropped column clears the value, a renamed one carries it
+ * over. */
 export function columnInput(label: string, table: DG.DataFrame,
   options: ColumnInputOptions & {grid: true}): ColumnInput;
 export function columnInput(label: string, table: DG.DataFrame,
@@ -47,18 +52,19 @@ export function columnInput(label: string, table: DG.DataFrame,
   options?: ColumnInputOptions): ChoiceInput;
 export function columnInput(label: string, table: DG.DataFrame,
   options: ColumnInputOptions = {}): ChoiceInput | ColumnPicker | ColumnInput {
-  if (options.grid)
-    return new ColumnInput({label, table, filter: options.filter, placeholder: options.placeholder});
-  if (options.rich)
-    return new ColumnPicker({label, table, filter: options.filter, placeholder: options.placeholder});
-  const items = () => columnNames(table, options.filter);
-  const input = new ChoiceInput({label, items: items()});
+  const {filter, rich, grid, placeholder, ...rest} = options;
+  if (grid)
+    return new ColumnInput({...rest, label, table, filter, placeholder});
+  if (rich)
+    return new ColumnPicker({...rest, label, table, filter, placeholder});
+  const items = () => columnNames(table, filter);
+  const input = new ChoiceInput({...rest, label, items: items()});
   const subs = [
     table.onColumnsChanged.subscribe(() => input.setItems(items())),
     // the value moves first: setItems drops a value the new item list no longer offers
     onColumnRenamed(table, (oldName, newName) => {
-      if (input.value.peek() === oldName)
-        Input.system(() => input.value.value = newName);
+      if (input.peek() === oldName)
+        Input.system(() => input.value = newName);
       input.setItems(items());
     }),
   ];
@@ -92,24 +98,48 @@ export interface TableInputOptions extends Omit<ChoiceInputOptions, 'items'> {
   actions?: InputAction[];
 }
 
-/** Picks an open table by name; the item list follows `onTableAdded`/`onTableRemoved` until the
- * input is disposed. A closed table clears the value. The options rail carries the platform
- * input's action icons: 'Open file' always; 'Add file from Files' and 'Query database' where
- * the platform dialogs answer (feature-detected once, at default construction — headless hosts
- * render the open-file icon alone). A picked frame joins the workspace and becomes the value as
- * a user edit (divergence #16: the Dart icons feed the input's private item list only). */
+/** Picks an open table by name ({@link Platform.tableNames}: a table with no name is not offered, a name several
+ * tables share is offered once); the frame itself is {@link table}. The item list follows
+ * `onTableAdded`/`onTableRemoved` until the input is disposed. A closed table clears the value. The options rail
+ * carries the platform input's action icons: 'Open file' always; 'Add file from Files' and 'Query database' where
+ * the platform dialogs answer (feature-detected once, at default construction — headless hosts render the
+ * open-file icon alone). A picked frame joins the workspace and becomes the value as a user edit (divergence #16:
+ * the Dart icons feed the input's private item list only). */
 export class TableInput extends ChoiceInput {
   private _actions: InputAction[];
   private _actionsScope: Scope | undefined;
+  private _held: DG.DataFrame | null = null;
 
   constructor(options: TableInputOptions) {
     const {actions, ...rest} = options;
-    super({...rest, items: grok.shell.tableNames,
+    super({...rest, items: Platform.tableNames(),
       emptyText: 'No open tables'});
     followOpenTables(this, (names) => this.setItems(names));
     this._actions = actions ?? TableInput._defaults();
     this._renderActions();
     this.own(() => this._actionsScope?.dispose());
+  }
+
+  /** The picked table itself: the frame last given to this setter while it is open and its name is the value —
+   * so of several open tables under one name, that one — else the open table of that name. Tracked. */
+  get table(): DG.DataFrame | null {
+    const name = this.value;
+    if (name === null)
+      return null;
+    const held = this._held;
+    return held !== null && held.name === name && Platform.isOpen(held) ? held : grok.shell.table(name) ?? null;
+  }
+
+  /** Picks `x`, one of the open tables the input offers; any other (a table with no name, one not open) is
+   * reported and clears the pick. */
+  set table(x: DG.DataFrame | null) {
+    const offered = x === null || (Platform.tableNames().includes(x.name) && Platform.isOpen(x));
+    if (!offered) {
+      Usage.report('table-not-offered', 'a table input holds one of the open tables it offers, and this one has no ' +
+        'name or is not open: name it and open it (`grok.shell.addTable`) first');
+    }
+    this._held = offered ? x : null;
+    this.value = this._held?.name ?? null;
   }
 
   /** The current action list (a copy — add/remove/replace is read-modify-write through the
@@ -128,15 +158,14 @@ export class TableInput extends ChoiceInput {
     this._actionsScope?.dispose();
     const scope = new Scope();
     this._actionsScope = scope;
-    const rail = optionsRail(this);
-    rail.textContent = '';
+    this.box.querySelector('.u2-input-options')?.replaceChildren();
     for (const action of this._actions) {
-      rail.append(Scope.runWith(scope, () =>
+      this.addOptions(scope.build(() =>
         iconButton(action.icon, () => {
           const run = action.run(this);
           if (run instanceof Promise)
             run.catch((e) => grok.shell.error(String(e)));
-        }, {tooltip: action.tooltip})));
+        }, {tooltip: action.tooltip})), {edits: true});
     }
   }
 
@@ -152,14 +181,14 @@ export class TableInput extends ChoiceInput {
   }
 
   /** The platform input's `folder-open` icon (`table_input.dart:37-58`) as an action: a
-   * transient hidden file picker, the table into the workspace, its name as a user edit. */
+   * transient hidden file picker, the table into the workspace, held as a user edit. */
   private static _openFileAction(): InputAction {
     return {id: 'open-file', icon: 'folder-open', tooltip: 'Open file',
       run: async (input) => {
-        const name = await TableInput._pickLocalFile(input);
-        if (name !== null && !input.scope.isDisposed) {
-          input.setItems(grok.shell.tableNames);
-          input.value.value = name;
+        const table = await TableInput._pickLocalFile(input);
+        if (table !== null && !input.scope.isDisposed) {
+          input.setItems(Platform.tableNames());
+          input.table = table;
         }
       }};
   }
@@ -171,14 +200,14 @@ export class TableInput extends ChoiceInput {
       if (df == null || input.scope.isDisposed)
         return;
       grok.shell.addTable(df);
-      input.setItems(grok.shell.tableNames);
-      input.value.value = df.name;
+      input.setItems(Platform.tableNames());
+      input.table = df;
     }};
   }
 
-  /** Settles with the opened table's name, or null when nothing usable was picked. The picker
+  /** Settles with the opened table, or null when nothing usable was picked. The picker
    * with no selection settles only where the browser reports the dialog's `cancel`. */
-  private static _pickLocalFile(input: TableInput): Promise<string | null> {
+  private static _pickLocalFile(input: TableInput): Promise<DG.DataFrame | null> {
     return new Promise((resolve) => {
       const picker = document.createElement('input');
       picker.type = 'file';
@@ -206,12 +235,12 @@ export function tableInput(label: LiveOption<string>,
  * platform input's own, where it is a hidden-selector `TableInput` sitting under the checks
  * (`tables_multi_choice_input.dart:66-77`): the imported table joins the workspace checked. */
 export function tablesInput(label: string): MultiChoiceInput {
-  const input = new MultiChoiceInput({label, items: grok.shell.tableNames, emptyText: 'No open tables'});
+  const input = new MultiChoiceInput({label, items: Platform.tableNames(), emptyText: 'No open tables'});
   followOpenTables(input, (names) => input.setItems(names));
   importAction(input, (name) => {
-    input.setItems(grok.shell.tableNames);
-    const checked = input.value.peek();
-    input.value.value = checked.includes(name) ? checked : [...checked, name];
+    input.setItems(Platform.tableNames());
+    const checked = input.peek();
+    input.value = checked.includes(name) ? checked : [...checked, name];
   });
   return input;
 }
@@ -263,26 +292,26 @@ export class ColumnPicker extends Input<string | null, ColumnPickerOptions> {
 
     // seeded before the effects, or the first one would push the type-ahead's empty selection
     // over the value the input was constructed with
-    typeAhead.selected.value = this.value.peek();
+    typeAhead.selected.value = this.peek();
     this.effect(() => {
       const picked = typeAhead.selected.value;
-      if (picked !== this.value.peek())
-        this.value.value = picked;
+      if (picked !== this.peek())
+        this.value = picked;
     });
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (value !== typeAhead.selected.peek())
         typeAhead.selected.value = value;
     });
 
     const subs = [
       table.onColumnsChanged.subscribe(() => {
-        const value = this.value.peek();
+        const value = this.peek();
         if (value !== null && !names().includes(value))
           this.systemWrite(null);
       }),
       onColumnRenamed(table, (oldName, newName) => {
-        if (this.value.peek() === oldName)
+        if (this.peek() === oldName)
           this.systemWrite(newName);
       }),
     ];
@@ -295,7 +324,7 @@ export class ColumnPicker extends Input<string | null, ColumnPickerOptions> {
 }
 
 function columnNames(table: DG.DataFrame, filter?: (column: DG.Column) => boolean): string[] {
-  return filter ? table.columns.toList().filter(filter).map((c) => c.name) : table.columns.names();
+  return Platform.listedColumns(table, filter).map((c) => c.name);
 }
 
 function match(names: string[], query: string): string[] {
@@ -305,7 +334,7 @@ function match(names: string[], query: string): string[] {
 
 function followOpenTables(input: Control, apply: (names: string[]) => void): void {
   const subs = [grok.events.onTableAdded, grok.events.onTableRemoved]
-    .map((event) => event.subscribe(() => apply(grok.shell.tableNames)));
+    .map((event) => event.subscribe(() => apply(Platform.tableNames())));
   input.own(() => {
     for (const sub of subs)
       sub.unsubscribe();
@@ -329,32 +358,21 @@ function importAction(input: Input<any, any>, pick: (name: string) => void): voi
     picker.value = '';
     if (file === undefined)
       return;
-    const name = await openTable(file);
-    if (name !== null && !input.scope.isDisposed)
-      pick(name);
+    const table = await openTable(file);
+    if (table !== null && !input.scope.isDisposed)
+      pick(table.name);
   };
   input.scope.listen(picker, 'change', onChange);
-  const open = input.runInScope(() => iconButton('folder-open', () => picker.click(), {tooltip: 'Open file'}));
-  optionsRail(input).append(picker, open);
+  const open = input.build(() => iconButton('folder-open', () => picker.click(), {tooltip: 'Open file'}));
+  input.box.append(picker);
+  input.addOptions(open, {edits: true});
 }
 
-/** The input's options rail. `Input.addOptions` materializes it with its first child and is
- * protected, so a picker built by a factory function puts the same rail there itself. */
-function optionsRail(input: Input<any, any>): HTMLElement {
-  const existing = input.box.querySelector('.u2-input-options') as HTMLElement | null;
-  if (existing !== null)
-    return existing;
-  const rail = document.createElement('div');
-  rail.className = 'u2-input-options';
-  input.box.append(rail);
-  return rail;
-}
-
-/** A local file as the workspace's newest table, and the name it ended up with. An extension
+/** A local file as the workspace's newest table, under the name it ended up with. An extension
  * neither reader takes is refused with the platform input's own message
  * (`table_input.dart:41-43`) — Dart hands those to `FileHandler`, which opens xlsx, sdf and the
  * rest, and js-api has no door to it. */
-async function openTable(file: File): Promise<string | null> {
+async function openTable(file: File): Promise<DG.DataFrame | null> {
   const dot = file.name.lastIndexOf('.');
   const ext = dot < 0 ? '' : file.name.substring(dot + 1).toLowerCase();
   if (ext !== BINARY_FORMAT && !TEXT_FORMATS.includes(ext)) {
@@ -366,7 +384,7 @@ async function openTable(file: File): Promise<string | null> {
       DG.DataFrame.fromByteArray(new Uint8Array(await file.arrayBuffer())) :
       grok.data.parseCsv(await file.text());
     table.name = dot < 0 ? file.name : file.name.substring(0, dot);
-    return grok.shell.addTable(table).name;
+    return grok.shell.addTable(table);
   } catch (e) {
     grok.shell.error(`${file.name} could not be opened.`);
     return null;

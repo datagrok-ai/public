@@ -5,8 +5,8 @@
    `apitests.item_event` (item_id → item), rows prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
-import {Rows} from '@datagrok-libraries/u2';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
+import {Rows, Scope} from '@datagrok-libraries/u2';
 import {SharedSession, confirmDiscard} from '@datagrok-libraries/ems';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {domains, DomainGrid, DomainTable} from '@datagrok-libraries/ems/src/dg';
@@ -21,15 +21,18 @@ category('U2: domain session', () => {
   const query = `sku starts "${prefix}"`;
   let itemTable: DomainTable;
   let eventTable: DomainTable;
+  /** What the tests build after an await is the category's. */
+  let owner: Scope;
 
   async function ready(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
+      () => `source is ${src.state.value}: ${String(src.error.value)}`);
     if (src.state.value !== 'ready')
       throw new Error(`source is ${src.state.value}: ${String(src.error.value)}`);
   }
 
   before(async () => {
+    owner = Scope.root('u2 domain session tests');
     await items().insert([
       {sku: `${prefix}-1`, name: 'Alpha', quantity: 1},
       {sku: `${prefix}-2`, name: 'Beta', quantity: 2},
@@ -39,6 +42,7 @@ category('U2: domain session', () => {
   });
 
   after(async () => {
+    owner.dispose();
     const mine = await items().query({filter: query});
     for (const item of mine)
       await events().deleteWhere(`item_id = "${item.id}"`);
@@ -47,15 +51,15 @@ category('U2: domain session', () => {
 
   test('one session, two tables: a draft item and a draft event referencing it land as one transaction', async () => {
     const session = new SharedSession();
-    const parent = itemTable.source({query, pageSize: 10, session});
+    const parent = owner.build(() => itemTable.source({query, pageSize: 10, session}));
     let kids: DomainSource | undefined;
     try {
       await ready(parent);
       const draft = parent.newRow({sku: `${prefix}-3`, name: 'Gamma', quantity: 3});
       expect(Rows.isDraft(draft), true);
       // the master–detail shape: the child collection is queried by the parent's id, draft or real
-      kids = eventTable.source({query: `item_id = "${draft.id}"`, defaults: {item_id: draft.id},
-        pageSize: 10, session});
+      kids = owner.build(() => eventTable.source({query: `item_id = "${draft.id}"`, defaults: {item_id: draft.id},
+        pageSize: 10, session}));
       await ready(kids);
       expect(kids.rows.items.value.length, 0, 'a query naming a draft id is not sent to the server');
       expect(session.sources.value.length, 2);
@@ -83,11 +87,11 @@ category('U2: domain session', () => {
   });
 
   test('domains.grid: the source\'s editor attached, service columns hidden, a cell edit tracked and saved', async () => {
-    const src = itemTable.source({query, pageSize: 10});
+    const src = owner.build(() => itemTable.source({query, pageSize: 10}));
     let grid: DomainGrid | undefined;
     try {
       await ready(src);
-      grid = domains.grid(src);
+      grid = owner.build(() => domains.grid(src));
       const g = grid.grid;
       expect(g.dataFrame.dart === (src.df.value as DG.DataFrame).dart, true, 'over the source\'s frame');
       expect(g.editor !== null, true, 'an editor is attached');
@@ -101,7 +105,7 @@ category('U2: domain session', () => {
       const at = df.col('name')!.toList().indexOf('Alpha');
       expect(at >= 0, true);
       g.cell('name', at).setValue('Alpha G');
-      await delay(50);
+      await waitUntil(() => src.isDirty.value, 'the in-cell edit to reach the source', 5000);
       expect(src.isDirty.value, true, 'the in-cell edit reached the source');
       const id = df.get('id', at) as string;
       expect(src.edit.value!.isChanged(id, 'name'), true);
@@ -117,19 +121,17 @@ category('U2: domain session', () => {
   });
 
   test('search narrows the rows and the total', async () => {
-    const src = itemTable.source({query, pageSize: 10});
+    const src = owner.build(() => itemTable.source({query, pageSize: 10}));
     try {
       await ready(src);
       const all = src.rows.items.value.length;
       expect(all >= 2, true);
       expect(src.total.value, all);
       src.search.value = 'Beta';
-      await delay(100);
       await ready(src);
       expect(src.rows.items.value.map((r) => r.name).join(), 'Beta');
       expect(src.total.value, 1, 'the count agrees with the rows');
       src.search.value = '';
-      await delay(100);
       await ready(src);
       expect(src.rows.items.value.length, all);
     } finally {
@@ -138,7 +140,7 @@ category('U2: domain session', () => {
   });
 
   test('confirmDiscard over a clean session answers true without a dialog', async () => {
-    const src = itemTable.source({query, pageSize: 10});
+    const src = owner.build(() => itemTable.source({query, pageSize: 10}));
     try {
       await ready(src);
       const dialogs = document.querySelectorAll('.u2-dialog').length;

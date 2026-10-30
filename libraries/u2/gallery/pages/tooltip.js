@@ -65,7 +65,7 @@ export async function render(main) {
   row.style.cssText = 'display: flex; gap: var(--dg-space-xl); align-items: center;';
 
   const plain = target('String tooltip');
-  Tooltip.bind(plain, 'Molecular weight, g/mol', page.scope);
+  Tooltip.bind(plain, 'Molecular weight, g/mol', {owner: page.scope});
 
   const live = target('HTML callback');
   Tooltip.bind(live, () => {
@@ -73,10 +73,10 @@ export async function render(main) {
     box.append(el('b', null, 'Evaluated at show time'));
     box.append(el('div', null, `signal read on open: ${now.value}`));
     return box;
-  }, page.scope);
+  }, {owner: page.scope});
 
   const long = target('Long text');
-  Tooltip.bind(long, LONG_TEXT, page.scope);
+  Tooltip.bind(long, LONG_TEXT, {owner: page.scope});
 
   row.append(plain, live, long);
   main.append(row);

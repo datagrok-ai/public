@@ -24,7 +24,7 @@ test.describe("Forms", () => {
     await session.step(6, "Given user opens the \"Form\" demo page", () => openDemoPage(page, "Form"));
     enter(page, "U2 Demo");
     await session.step(9, "Then value of \"form validity\" readout should have text \"Required\"", () => shouldHaveText(page, el("value of \"form validity\" readout"), "Required"));
-    await session.step(10, "And error of \"Last name\" input should have text \"Required\"", () => shouldHaveText(page, el("error of \"Last name\" input"), "Required"));
+    await session.step(10, "And error of \"Last name\" input should be hidden", () => shouldBe(page, el("error of \"Last name\" input"), "hidden"));
     await session.step(11, "When user types \"Lovelace\" into \"Last name\" input", () => typeInto(page, "Lovelace", el("\"Last name\" input")));
     await session.step(12, "Then value of \"form validity\" readout should have text \"valid\"", () => shouldHaveText(page, el("value of \"form validity\" readout"), "valid"));
     await session.step(13, "When user clicks on Submit button", () => clickOn(page, el("Submit button")));

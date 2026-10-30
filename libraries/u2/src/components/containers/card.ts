@@ -49,7 +49,7 @@ export class Card extends Control {
     this.root.classList.add('u2-card');
     this.root.classList.toggle('u2-card-compact', options.compact === true);
     this.root.dataset.u2 = 'card';
-    this.body = this.runInScope(() => this._build(options));
+    this.body = this.build(() => this._build(options));
     this._wire(options);
   }
 

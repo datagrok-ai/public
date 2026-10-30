@@ -1,10 +1,5 @@
-/* `SharedSession` (2-4a) over two memory-backed sources: the aggregate state, one `saveAll` for a
-   draft parent and a draft child referencing it, a refusal that leaves both pending, discard
-   fanning out, the ambient session `runWith` hands every source built inside it, and the
-   `confirmDiscard` gate through the dialog DOM. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, Rows, notify} from '@datagrok-libraries/u2';
@@ -268,11 +263,11 @@ scoped('confirmDiscard: clean passes silently; SAVE, DISCARD and CANCEL through 
   let answer = confirmDiscard(session, {action: 'leave this page', subject: 'the issue'});
   await flush();
   const dialog = document.body.querySelector('.u2-dialog');
-  assert.equal(dialog.querySelector('.u2-dialog-title-text').textContent, 'Unsaved changes');
-  assert.deepEqual([...dialog.querySelectorAll('p')].map((p) => p.textContent),
-    ['2 unsaved changes in the issue.', 'Save them, discard them, or cancel and do not leave this page.']);
+  assert.equal(dialog.querySelector('.u2-dialog-title-text').textContent, 'Save changes?');
+  assert.equal(dialog.querySelector('.u2-dialog-content').textContent,
+    '2 unsaved changes in 2 tables will be lost if you leave this page.', 'two records: the summary');
   assert.deepEqual([...dialog.querySelectorAll('.u2-dialog-buttons button')].map((b) => b.textContent),
-    ['CANCEL', 'SAVE', 'DISCARD'], 'the u2 dialog keeps CANCEL first');
+    ['CANCEL', 'DISCARD', 'SAVE'], 'CANCEL first and SAVE right-most, as the platform prompt');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await answer, false);
   assert.equal(document.body.querySelector('.u2-dialog'), null);
@@ -280,7 +275,7 @@ scoped('confirmDiscard: clean passes silently; SAVE, DISCARD and CANCEL through 
 
   answer = confirmDiscard(session);
   await flush();
-  assert.match(document.body.querySelector('.u2-dialog p').textContent, /in this view\./);
+  assert.match(document.body.querySelector('.u2-dialog-content').textContent, /will be lost if you continue\./);
   fire(buttonNamed('SAVE'), 'click');
   assert.equal(await answer, true);
   assert.equal(session.isDirty.value, false, 'saved');
@@ -330,15 +325,16 @@ scoped('a backend that refuses without throwing still says so in the summary, an
   issues.dispose();
 });
 
-scoped('confirmDiscard agrees in number: one change is "it", several are "them"', async () => {
+scoped('confirmDiscard names the record and the field at stake', async () => {
   emsBackends.domain = backend();
   const session = new SharedSession();
   const {projects, issues} = await pair(session);
   issues.rows.byKey('i1').title = 'A';
   const answer = confirmDiscard(session, {action: 'leave this page'});
   await flush();
-  assert.deepEqual([...document.body.querySelectorAll('.u2-dialog p')].map((p) => p.textContent),
-    ['1 unsaved change in this view.', 'Save it, discard it, or cancel and do not leave this page.']);
+  assert.deepEqual([document.body.querySelector('.u2-dialog-title-text').textContent,
+    document.body.querySelector('.u2-dialog-content').textContent],
+  ['Save changes to "A"?', 'Your change to title will be lost if you leave this page.']);
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await answer, false);
   projects.dispose();
@@ -352,8 +348,8 @@ scoped('a child collection under a draft parent: the save puts the assigned id i
   projects.start();
   await flush();
   const parent = projects.newRow({key: 'NEW', name: 'New project'});
-  const issues = new DomainSource({table: 'grit.issue', session, defaults: {project_id: parent.id},
-    query: `project_id = "${parent.id}"`}, env);
+  const issues = testOwner().build(() => new DomainSource({table: 'grit.issue', session,
+    defaults: {project_id: parent.id}, query: `project_id = "${parent.id}"`}, env));
   issues.start();
   await flush();
   assert.equal(issues.state.value, 'ready', 'a query naming a draft id is not sent');
@@ -408,8 +404,8 @@ scoped('a query naming a draft id is never sent: a backend refusing the literal 
   projects.start();
   await flush();
   const parent = projects.newRow({key: 'NEW', name: 'New project'});
-  const issues = new DomainSource({table: 'grit.issue', session, defaults: {project_id: parent.id},
-    query: `project_id = "${parent.id}"`}, env);
+  const issues = testOwner().build(() => new DomainSource({table: 'grit.issue', session,
+    defaults: {project_id: parent.id}, query: `project_id = "${parent.id}"`}, env));
   issues.start();
   await flush();
   assert.equal(issues.state.value, 'ready', 'no query, no error');
@@ -434,7 +430,8 @@ scoped('a source outside the batch: its defaults follow the assigned id, and not
   await flush();
   const parent = projects.newRow({key: 'NEW', name: 'New project'});
   // the children pane's shape under a draft parent: no query, the parent's id as the default
-  const pane = new DomainSource({table: 'grit.issue', session, empty: true, defaults: {project_id: parent.id}}, env);
+  const pane = testOwner().build(() =>
+    new DomainSource({table: 'grit.issue', session, empty: true, defaults: {project_id: parent.id}}, env));
   pane.start();
   await flush();
   const pristine = pane.newRow({title: 'Later'}, {pristine: true});
@@ -456,7 +453,8 @@ scoped('the pristine child of a saved parent saves on its own afterwards, under 
   projects.start();
   await flush();
   const parent = projects.newRow({key: 'NEW', name: 'New project'});
-  const pane = new DomainSource({table: 'grit.issue', session, empty: true, defaults: {project_id: parent.id}}, env);
+  const pane = testOwner().build(() =>
+    new DomainSource({table: 'grit.issue', session, empty: true, defaults: {project_id: parent.id}}, env));
   pane.start();
   await flush();
   const child = pane.newRow({title: 'Later'}, {pristine: true});
@@ -569,8 +567,8 @@ scoped('the assigned map is read by own properties only: a cell, a default or a 
   assert.equal(issues.currentRow.value.description, 'toString');
   assert.equal(projects.currentRow.value.name, 'constructor');
   // Astra's reproducer: an empty map re-acquires the prototype through every spread on the way
-  const src = new DomainSource({table: 'grit.issue', session,
-    query: 'title = "constructor"', defaults: {title: 'valueOf'}}, env);
+  const src = testOwner().build(() => new DomainSource({table: 'grit.issue', session,
+    query: 'title = "constructor"', defaults: {title: 'valueOf'}}, env));
   src.start();
   await flush();
   assert.equal(src.rebind({}), false, 'nothing was assigned: nothing to rewrite');
@@ -598,7 +596,7 @@ scoped('a batch of deletes alone is "deleted", not "saved" — in the table\'s o
   assert.equal(balloon(), '2 issues deleted');
 
   notify.closeAll();
-  const trash = new DomainSource({table: 'grit.issue', session, deleted: 'only'}, env);
+  const trash = testOwner().build(() => new DomainSource({table: 'grit.issue', session, deleted: 'only'}, env));
   trash.start();
   await flush();
   trash.stageRestore(['i1', 'i3']);
@@ -608,7 +606,7 @@ scoped('a batch of deletes alone is "deleted", not "saved" — in the table\'s o
 
   notify.closeAll();
   issues.rows.byKey('i1');
-  const live = new DomainSource({table: 'grit.project', session}, env);
+  const live = testOwner().build(() => new DomainSource({table: 'grit.project', session}, env));
   live.start();
   await flush();
   live.rows.byKey('p1').name = 'Renamed';

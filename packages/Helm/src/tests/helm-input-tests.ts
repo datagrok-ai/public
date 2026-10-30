@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {after, before, category, delay, expect, test, testEvent} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, testEvent, waitUntil} from '@datagrok-libraries/test/src/test';
 import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
@@ -43,7 +43,7 @@ category('HelmInput', () => {
     const dlg = ui.dialog('Helm Input Test')
       .add(helmInput)
       .show();
-    await delay(500);
+    await waitUntil(() => helmInput.molValue.atoms.length === 4, 'the molecule has not been set');
 
     const mol = helmInput.molValue;
     expect(mol.atoms.length, 4);
@@ -58,8 +58,9 @@ category('HelmInput', () => {
     helmInput.stringValue = 'PEPTIDE1{[meY].A.G.T}$$$$';
     const dlg = ui.dialog('Helm Input Height Test').add(helmInput).show();
     try {
-      await delay(500);
       const hostEl = helmInput.getInput();
+      await waitUntil(() => (hostEl.querySelector('svg')?.getBoundingClientRect().height ?? 0) > 0,
+        'the editor has not mounted a visible SVG');
       expect(hostEl.clientHeight > 0, true, `editor host height must be > 0 (was ${hostEl.clientHeight})`);
       const svg = hostEl.querySelector('svg');
       expect(svg != null, true, 'an SVG must be mounted in the editor host');
@@ -77,8 +78,9 @@ category('HelmInput', () => {
     helmInput.stringValue = 'PEPTIDE1{[meY].A.G.T.T.T.T.T.T.T.T.T.T.T.T}$$$$';
     const dlg = ui.dialog('Helm Input Default Size').add(helmInput).show();
     try {
-      await delay(500);
       const host = helmInput.getInput();
+      await waitUntil(() => Math.abs(host.clientWidth - 306) <= 4 && Math.abs(host.clientHeight - 250) <= 4,
+        () => `the host has not settled at ~306x250 (was ${host.clientWidth}x${host.clientHeight})`);
       expect(Math.abs(host.clientWidth - 306) <= 4, true, `default width ~306 (was ${host.clientWidth})`);
       expect(Math.abs(host.clientHeight - 250) <= 4, true, `default height ~250 (was ${host.clientHeight})`);
     } finally {
@@ -91,8 +93,9 @@ category('HelmInput', () => {
     helmInput.stringValue = 'PEPTIDE1{[meY].A.G.T}$$$$';
     const dlg = ui.dialog('Helm Input Custom Size').add(helmInput).show();
     try {
-      await delay(500);
       const host = helmInput.getInput();
+      await waitUntil(() => Math.abs(host.clientWidth - 320) <= 4 && Math.abs(host.clientHeight - 180) <= 4,
+        () => `the host has not settled at ~320x180 (was ${host.clientWidth}x${host.clientHeight})`);
       expect(Math.abs(host.clientWidth - 320) <= 4, true, `width ~320 from editorOptions (was ${host.clientWidth})`);
       expect(Math.abs(host.clientHeight - 180) <= 4, true, `height ~180 from editorOptions (was ${host.clientHeight})`);
     } finally {
@@ -111,12 +114,15 @@ category('HelmInput', () => {
     helmInput.stringValue = 'PEPTIDE1{[meY].A.G.T}$$$$';
     const dlg = ui.dialog('Helm getInput() Size Test').add(helmInput).show();
     try {
-      await delay(300);
       const host = helmInput.getInput();
+      await waitUntil(() => host.querySelector('svg') != null, 'the editor has not mounted its SVG');
       // Consumer sizes the host element directly (the db-explorer pattern).
       host.style.setProperty('width', '360px', 'important');
       host.style.setProperty('height', '260px', 'important');
-      await delay(500); // ResizeObserver → editor.setSize → re-render
+      await waitUntil(() => { // ResizeObserver → editor.setSize → re-render
+        const r = host.querySelector('svg')?.getBoundingClientRect();
+        return r != null && r.height >= host.clientHeight - 8 && r.width >= host.clientWidth - 8;
+      }, 'the editor canvas has not followed the host box');
 
       expect(host.clientWidth, 360, `host width (was ${host.clientWidth})`);
       expect(host.clientHeight, 260, `host height (was ${host.clientHeight})`);
@@ -144,16 +150,16 @@ category('HelmInput', () => {
     const changedSub = helmInput.onChanged.subscribe(() => changed++);
     const hostDlg = ui.dialog('Helm Editor OK Test').add(helmInput).show();
     try {
-      await delay(300);
       // The broken state: the drawing holds a molecule the value never saw.
       helmInput.viewer.editor.setHelm(helmValue);
       expect(helmInput.stringValue, '', 'precondition: the value is still empty');
       helmInput.showEditorDialog();
-      await delay(2000); // the full web editor app builds asynchronously
+      await waitUntil(() => DG.Dialog.getOpenDialogs().some((d) => d.root !== hostDlg.root),
+        'the editor dialog has not opened');
       const editorDlg = DG.Dialog.getOpenDialogs().find((d) => d.root !== hostDlg.root);
       expect(editorDlg != null, true, 'the editor dialog opened');
       editorDlg!.getButton('OK').click();
-      await delay(300);
+      await waitUntil(() => changed > 0, 'onChanged has not fired after OK');
       const v = helmInput.stringValue;
       expect(v.startsWith('PEPTIDE1{') && v.includes('meY'), true,
         `OK propagates the sketched HELM into the value (was "${v}")`);
@@ -203,7 +209,6 @@ async function _testTooltipOnHelmInput(): Promise<void> {
     expect(tooltipEl.style.display != 'none', true);
     expect(elemDiv?.innerText, mon.elem);
   } finally {
-    await delay(50);
     ui.tooltip.hide();
   }
 }

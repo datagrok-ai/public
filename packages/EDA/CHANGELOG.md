@@ -2,6 +2,8 @@
 
 ## v.next
 
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): Pareto Front: Fixed a 1 s check that ran for the rest of the session when the table was not applicable
+* Tests: `models/share-model` claims the second account's side: it finds the shared model under Shared with me and applies it (back in the serial lane, since it signs in as the second account)
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Menu: Reduce Dimensionality, PLS, Multivariate Analysis, T-test, ANOVA, Control Comparisons, Impute Missing Values, Pareto Front and MCL are disabled unless the current view is a table view, instead of failing or warning
 * GROK-20795: Tests: Added the package test of Control comparisons on a filtered table (the women of demog only); `analyze/filtered-group-comparison` keeps to the dialog
 * Tests: `models/train-options` moves the Positive class cutoff of Predict probability and reads the re-rendered accuracy (the preview is busy until the re-render ends)

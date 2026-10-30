@@ -1,10 +1,5 @@
-/* `domains.history` (2-8) over the memory backend's audit: the current row's entries newest first,
-   an update line naming the changed captions (never the version stamp), the refresh after the
-   session saves, a draft's "Not saved yet" until it is, the hint without a row, and the
-   `u2-domain-history` tag. `DG` and `grok` come from tests/dg-stub.mjs. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
@@ -47,21 +42,25 @@ async function settle() {
   await flush();
 }
 
-/** The virtual list renders rows for a viewport only. */
 function lines(history) {
-  const list = history.view.root.querySelector('.u2-domain-history-lines');
-  list.clientHeight = 300;
-  fire(list, 'scroll');
-  return [...list.querySelectorAll('.u2-domain-history-line')];
+  return [...history.view.root.querySelectorAll('.u2-domain-history-line')];
+}
+
+/** An entry's change lines as "<caption>: <before> → <after>". */
+function changes(line) {
+  return [...line.querySelectorAll('.u2-domain-history-change')].map((c) => {
+    const [field, before, , after] = [...c.children].map((e) => e.textContent);
+    return `${field}: ${before} → ${after}`;
+  });
 }
 
 scoped('entries from the audit, newest first; an update names the changed captions; refreshed on save', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
+  const src = testOwner().build(() => table.source({pageSize: 10}));
   await flush();
   src.currentRow.value = src.rows.byKey('i1');
-  const history = domains.history(src);
+  const history = testOwner().build(() => domains.history(src));
   assert.equal(history.root.dataset.u2, 'domain-history');
   assert.equal(history.row, src.currentRow, 'the source\'s current row by default');
   await settle();
@@ -77,18 +76,18 @@ scoped('entries from the audit, newest first; an update names the changed captio
   assert.equal(rows[0].querySelector('.u2-badge').textContent, 'updated');
   assert.equal(rows[0].querySelector('.u2-domain-history-actor').textContent, 'system');
   assert.equal(rows[0].querySelector('.u2-timestamp') !== null, true);
-  assert.equal(rows[0].querySelector('.u2-domain-history-changes').textContent,
-    'title: Aspirin → Aspirin 2, weight: 1.5 → 3', 'the version stamp is not a change');
+  assert.deepEqual(changes(rows[0]), ['Title: Aspirin → Aspirin 2', 'Weight: 1.5 → 3'],
+    'one line per changed column; the version stamp is not a change');
 
   src.rows.byKey('i1').done = false;
   assert.equal(await src.save(), true);
   await settle();
   rows = lines(history);
   assert.equal(rows.length, 2);
-  assert.equal(rows[0].querySelector('.u2-domain-history-changes').textContent, 'done: true → false', 'newest first');
+  assert.deepEqual(changes(rows[0]), ['Done: true → false'], 'newest first');
   assert.equal(history.changesOf({op: 'insert', before: null, after: {title: 'x'}}), '');
   assert.equal(history.changesOf({op: 'update', before: {title: 'A', version: 1, priority: null},
-    after: {title: 'B', version: 2, priority: 'high', nosuch: 1}}), 'title: A → B, Priority:  → high');
+    after: {title: 'B', version: 2, priority: 'high', nosuch: 1}}), 'title: A → B, Priority: (empty) → high');
   history.dispose();
   src.dispose();
 });
@@ -102,9 +101,9 @@ scoped('the actor is the user\'s name, looked up once per id; a draft is not sav
     return id === 'u1' ? {friendlyName: 'Ann'} : null;
   };
   const table = await domains.table('grit.issue');
-  const draft = table.draft({project_id: 'p1', title: 'Draft'});
+  const draft = testOwner().build(() => table.draft({project_id: 'p1', title: 'Draft'}));
   await flush();
-  const history = domains.history(draft);
+  const history = testOwner().build(() => domains.history(draft));
   await settle();
   const hint = history.root.querySelector('[data-u2-part="hint"]');
   assert.equal(hint.textContent, 'Not saved yet');
@@ -147,19 +146,20 @@ scoped('the trail loads 50 entries at a time; "Show older" loads the older ones 
     pages.push(page);
     return audit(id, page);
   }});
-  const src = (await domains.table('grit.issue')).source({pageSize: 10});
+  const issues = await domains.table('grit.issue');
+  const src = testOwner().build(() => issues.source({pageSize: 10}));
   await flush();
   src.currentRow.value = src.rows.byKey('i1');
-  const history = domains.history(src);
+  const history = testOwner().build(() => domains.history(src));
   await settle();
   assert.deepEqual(pages, [{limit: 50}]);
   const more = history.view.root.querySelector('[data-u2-part="more"]');
-  const shown = () => [lines(history)[0].parentElement.getAttribute('aria-setsize'), more.hidden];
-  assert.deepEqual(shown(), ['50', false]);
+  const shown = () => [lines(history).length, more.hidden];
+  assert.deepEqual(shown(), [50, false]);
 
   fire(more, 'click');
   await settle();
-  assert.deepEqual([pages[1], shown()], [{limit: 50, before: 10}, ['60', true]]);
+  assert.deepEqual([pages[1], shown()], [{limit: 50, before: 10}, [60, true]]);
   history.dispose();
   src.dispose();
 });
@@ -171,10 +171,10 @@ scoped('a table that keeps no history says so instead of showing an empty list',
   Object.defineProperty(issue, 'audit', {value: undefined, configurable: true});
   emsBackends.domain = memory;
   const table = await domains.table('grit.issue');
-  const source = table.source();
+  const source = testOwner().build(() => table.source());
   await flush();
   source.currentRow.value = source.rows.items.value[0];
-  const history = domains.history(source);
+  const history = testOwner().build(() => domains.history(source));
   await settle();
   const hint = history.root.querySelector('[data-u2-part="hint"]');
   assert.equal(hint.textContent, 'This table keeps no history.');
@@ -186,13 +186,13 @@ scoped('a table that keeps no history says so instead of showing an empty list',
 scoped('spec: u2-domain-history over a bound source', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
-  const src = table.source();
+  const src = testOwner().build(() => table.source());
   const reg = new Registry();
   registerAll(reg);
   registerDomainComponents(reg);
   assert.equal(reg.get('u2-domain-history').props[0].name, 'source', 'the source, then the shared appearance props');
-  const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-domain-history', name: 'h',
-    bind: {source: '$.issues'}}}, new SpecContext({data: {issues: signal(src)}}), reg);
+  const instance = testOwner().build(() => renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-domain-history',
+    name: 'h', bind: {source: '$.issues'}}}, new SpecContext({data: {issues: signal(src)}}), reg));
   await flush();
   assert.equal(instance.node('h') instanceof DomainHistory, true);
   assert.equal(instance.node('h').source, src);
@@ -203,20 +203,18 @@ scoped('spec: u2-domain-history over a bound source', async () => {
 scoped('a reference cell shows the name it points at, not the uuid; the pane carries a History header', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
+  const src = testOwner().build(() => table.source({pageSize: 10}));
   await flush();
   src.currentRow.value = src.rows.byKey('i1');
-  const history = domains.history(src);
+  const history = testOwner().build(() => domains.history(src));
   await settle();
-  assert.equal(history.root.querySelector('.u2-section-title').textContent, 'History');
+  assert.equal(history.root.querySelector('.u2-accordion-title').textContent, 'History');
 
   src.rows.byKey('i1').project_id = 'p2';
   assert.equal(await src.save(), true);
   await settle();
-  const changes = lines(history)[0].querySelector('.u2-domain-history-changes');
-  assert.equal(changes.textContent, 'project_id: Grit → Datagrok',
+  assert.deepEqual(changes(lines(history)[0]), ['Project id: Grit → Datagrok'],
     'a ref cell shows the name of the row it points at, not the uuid');
-  assert.equal(changes.title, changes.textContent, 'the full line rides the title');
   history.dispose();
   src.dispose();
 });

@@ -39,7 +39,7 @@ export class Chemistry {
 
   // the package-test bundle's own `_package` is never initialized: this is the published package either way
   static package(): DG.Package {
-    return Chemistry._moltrack ??= DG.Func.find({package: 'Moltrack', name: 'molTrackEmsApp'})[0].package;
+    return Chemistry._moltrack ??= DG.Func.find({package: 'Moltrack', name: 'molTrackApp'})[0].package;
   }
 
   static load(): Promise<void> {
@@ -95,6 +95,18 @@ export class Chemistry {
     Chemistry._each(structures, (mol, i) =>
       scores[i] = Chemistry.tanimoto(fp, mol.get_morgan_fp_as_uint8array(Chemistry.FINGERPRINT)));
     return scores;
+  }
+
+  /** Whether two structures are one molecule as RDKit writes it; false where either cannot be read. */
+  static async same(a: string, b: string): Promise<boolean> {
+    await Chemistry.load();
+    const [x, y] = [Chemistry._parse(a), Chemistry._parse(b)];
+    try {
+      return x !== null && y !== null && x.get_smiles() === y.get_smiles();
+    } finally {
+      x?.delete();
+      y?.delete();
+    }
   }
 
   static tanimoto(a: Uint8Array, b: Uint8Array): number {

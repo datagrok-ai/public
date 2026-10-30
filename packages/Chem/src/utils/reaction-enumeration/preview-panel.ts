@@ -175,7 +175,7 @@ export class PreviewPanel {
     try {
       const result = await enumerate({
         rdkit, config: previewConfig, ...inputs, perRoundOverrides,
-        isCancelled: () => myRunId !== this.runId,
+        isCancelled: () => myRunId !== this.runId, preview: true,
       });
       rows = result.rows;
       warnings = [...result.warnings, ...propagation.missing];

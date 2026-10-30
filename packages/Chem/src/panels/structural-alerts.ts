@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {RdKitService} from '../rdkit-service/rdkit-service';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {alertsByEngine} from '../engine/worker-jobs';
 
@@ -10,7 +9,7 @@ export const STRUCT_ALERTS_RULES_NAMES = ['PAINS', 'BMS', 'SureChEMBL', 'MLSMR',
 
 export async function runStructuralAlertsDetection(moleculeCol: DG.Column<string>, ruleSet: RuleSet,
   alertsDf: DG.DataFrame,
-  rdkitService: Pick<RdKitService, 'getStructuralAlerts'>): Promise<DG.DataFrame> {
+  matcher: typeof alertsByEngine): Promise<DG.DataFrame> {
   const ruleSetCol: DG.Column<string> = alertsDf.getCol('rule_set_name');
   const ruleSetColCategories = ruleSetCol.categories;
   const ruleSetColData = ruleSetCol.getRawData();
@@ -27,7 +26,7 @@ export async function runStructuralAlertsDetection(moleculeCol: DG.Column<string
     }
   }
 
-  const result = await rdkitService.getStructuralAlerts(smarts, moleculeCol.toList());
+  const result = await matcher.getStructuralAlerts(smarts, moleculeCol.toList());
 
   // Build the result dataframe
   const resultDf = DG.DataFrame.create(moleculeCol.length);
@@ -38,12 +37,11 @@ export async function runStructuralAlertsDetection(moleculeCol: DG.Column<string
 }
 
 export async function getStructuralAlertsByRules(molecules: DG.Column, ruleSet: RuleSet): Promise<DG.DataFrame | undefined> {
-  // by the "Chemical engine" setting: the RDKit pool, or in Crux mode the Crux pool (RDKit's behind it)
-  const rdkitService = alertsByEngine;
   const alertsDf = await grok.data.loadTable(chemCommonRdKit.getRdKitWebRoot() + 'files/alert-collection.csv');
   const progress = DG.TaskBarProgressIndicator.create('Detecting structural alerts...');
   try {
-    const resultDf = await runStructuralAlertsDetection(molecules, ruleSet, alertsDf, rdkitService);
+    // by the "Chemical engine" setting: the RDKit pool, or in Crux mode the Crux pool (RDKit's behind it)
+    const resultDf = await runStructuralAlertsDetection(molecules, ruleSet, alertsDf, alertsByEngine);
     return resultDf;
   } catch (e) {
     grok.shell.error('Structural alerts detection failed');

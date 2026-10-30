@@ -36,8 +36,8 @@ export class Palette extends Control {
     super();
     this.root.classList.add('u2-palette');
     this.root.dataset.u2 = 'palette';
-    this.filter = this.runInScope(() => new TextInput({search: true, inline: true, placeholder: 'Filter'}));
-    const accordion = this.runInScope(() => new Accordion());
+    this.filter = this.build(() => new TextInput({search: true, inline: true, placeholder: 'Filter'}));
+    const accordion = this.build(() => new Accordion());
     accordion.root.classList.add('u2-palette-list');
     this.root.append(this.filter.root, accordion.root);
 
@@ -51,11 +51,11 @@ export class Palette extends Control {
       // is the filter's doing, not the user's choice
       this.effect(() => {
         const on = pane.expanded.value;
-        if (this.filter.value.peek().trim() === '')
+        if (this.filter.peek().trim() === '')
           expandedByCategory.set(category, on);
       });
     }
-    this.effect(() => this._apply(this.filter.value.value.trim().toLowerCase()));
+    this.effect(() => this._apply(this.filter.value.trim().toLowerCase()));
   }
 
   private _apply(query: string): void {

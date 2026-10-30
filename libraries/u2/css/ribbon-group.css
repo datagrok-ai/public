@@ -1,0 +1,74 @@
+/* A package's group on a platform view's ribbon (src/dg/shell/table-view-chrome.ts): a rule, the small icons
+   (or the "…" they fold into), the raised buttons. It sits in one `.d4-ribbon-item` as a `.d4-ribbon-wrapper`,
+   so the item's own hover and press skins stay off the group and each button keeps its own; the icons take the
+   platform ribbon icon's metrics (d4 toolbar.css:395-412). */
+.u2-ribbon-group {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  height: 100%;
+}
+
+/* the platform's panel holding the group, kept at the ribbon's visible end; while the platform's icons run under
+   it, it casts the overflow edge (elements.css) */
+.d4-ribbon-panel.u2-ribbon-pinned {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: var(--dg-bg);
+}
+
+.u2-ribbon-rule {
+  flex-shrink: 0;
+  width: 1px;
+  height: 18px;
+  background: var(--dg-grey-2);
+}
+
+.u2-ribbon-icons {
+  display: flex;
+  align-items: center;
+}
+
+.u2-ribbon-icons[hidden],
+.u2-ribbon-group > .u2-btn[hidden],
+.u2-ribbon-icons > .u2-btn[hidden] {
+  display: none;
+}
+
+.d4-ribbon-item .u2-ribbon-group .u2-btn.u2-icon-btn {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  color: var(--dg-steel-5);
+}
+
+.d4-ribbon-item .u2-ribbon-group .u2-btn.u2-icon-btn .u2-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+/* the item's hover darkens every icon in it; each icon keeps its own button's colour */
+.d4-ribbon-item:hover .u2-ribbon-group .u2-icon-btn .u2-icon {
+  color: inherit;
+}
+
+.u2-ribbon-more {
+  position: relative;
+}
+
+/* a hint (new changes) carried to "…" while the icon it is on is folded */
+.u2-ribbon-hint-dot {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dg-orange-2);
+}
+
+.u2-ribbon-hint-dot[hidden] {
+  display: none;
+}

@@ -1,23 +1,20 @@
-// The Crux worker's analysis jobs (crux.worker.ts runs them; engine/analysis-jobs.ts sends them): MMPA fragmentation,
-// R-group decomposition, FMCS and fragment linking run the RDKit worker's own code
-// (rdkit-service-worker-substructure.ts) on the Crux module, which answers RDKit.js's calls; molzip is RDKit's molzip,
-// which Chem's RDKit.js lacks.
+/**
+ * The Crux worker's analysis jobs (crux.worker.ts runs them; engine/analysis-jobs.ts sends them): MMPA fragmentation,
+ * R-group decomposition, FMCS and fragment linking run the RDKit worker's own code
+ * (rdkit-service-worker-substructure.ts) on the Crux module, which answers RDKit.js's calls; molzip is RDKit's molzip,
+ * which Chem's RDKit.js lacks; an activity cliff's MCS is RDKit's Rascal MCES.
+ */
 import type {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import type {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import type {RdKitServiceWorker} from '../rdkit-service/rdkit-service-worker';
 import {IMmpFragmentsResult, IRGroupAnalysisResult, hasMolzip, zippedSmiles}
   from '../rdkit-service/rdkit-service-worker-substructure';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
-import {CLUSTER_MCS_TIMEOUT_S} from './crux-api';
+import {getUncommonAtomsAndBondsOfMatches} from '../utils/chem-common';
+import {CLUSTER_MCS_TIMEOUT_S, CruxWorkerApi, WorkerJob, throwIfTrap} from './crux-api';
 
 /** A cluster's R-group decomposition, as RdKitService.clusterRGroups takes it. */
 export interface RGroupCluster {molecules: string[], core: string, coreIsQMol: boolean, options?: string}
-
-/** Rethrows a wasm trap, which a job must not turn into "no result": the call fails, so the service replaces the worker
- * (its instance may be broken) and RDKit does the work. Other errors are the job's to handle. */
-export function throwIfTrap(e: unknown): void {
-  if (e instanceof WebAssembly.RuntimeError)
-    throw e;
-}
 
 /** The rows of `molecules` Crux reads no molecule from (an empty one is no such row). */
 function unreadRows(molecules: string[], module: RDModule): number[] {
@@ -92,17 +89,36 @@ function molzip(module: RDModule, molecules: string[], details: string): {smiles
   return {smiles, error};
 }
 
-type Job = (worker: RdKitServiceWorker, module: RDModule, ...args: any[]) => unknown;
+/**
+ * Each molecule's atoms and bonds outside the RDKit Rascal MCES of the two (`get_mces`; `details`: its options), each
+ * molecule read as Chem's getMolSafe reads it; null when the pair is below the similarity threshold. Throws for a
+ * molecule Crux cannot read.
+ */
+function pairUncommonAtomsAndBonds(module: RDModule, molecule1: string, molecule2: string, details: string):
+  ISubstruct[] | null {
+  const read = [molecule1, molecule2].map((m) => getMolSafe(m, {}, module));
+  try {
+    const unreadable = read.findIndex((m) => !m.mol || m.isQMol);
+    if (unreadable >= 0)
+      throw new Error(`Crux reads no molecule from ${[molecule1, molecule2][unreadable]}`);
+    const [mces] = JSON.parse((module as unknown as CruxWorkerApi).get_mces(read[0].mol!, read[1].mol!, details));
+    return !mces ? null : read.map(({mol}, k) => getUncommonAtomsAndBondsOfMatches(mol!,
+      mces.atomMatches.map((match: number[]) => match[k]), mces.bondMatches.map((match: number[]) => match[k])));
+  } finally {
+    read.forEach((m) => m.mol?.delete());
+  }
+}
 
-/** The jobs by name (the Crux worker's `op`), each with the RDKit worker over the Crux module and the module. */
-export const ANALYSIS_JOBS: {[op: string]: Job} = {
+/** The jobs by name (the Crux worker's `op`). */
+export const ANALYSIS_JOBS: {[op: string]: WorkerJob} = {
   /**
    * MMPA fragments as RdKitServiceWorker.mmpGetFragments gives them, and the rows the RDKit pool does (`unread`): a
    * molecule Crux did not read, or whose fragmentation threw (a "not supported by Crux" refusal, say). RDKit's code
    * gives both no SMILES and no fragments; a molecule RDKit itself does not fragment (get_mmpa_frags gives no lists:
    * fragmentMol found no cut) gets the same from Crux and stays.
    */
-  mmpGetFragments: (worker, module, molecules: string[]): IMmpFragmentsResult & {unread: number[]} => {
+  mmpGetFragments: ({rdkitWorker}, molecules: string[]): IMmpFragmentsResult & {unread: number[]} => {
+    const worker = rdkitWorker();
     const result = worker.mmpGetFragments(molecules);
     const unread: number[] = [];
     for (let i = 0; i < molecules.length; i++) {
@@ -112,29 +128,33 @@ export const ANALYSIS_JOBS: {[op: string]: Job} = {
     return {...result, unread};
   },
   /** One R-group decomposition (RdKitServiceWorker.rGroupAnalysis); null where Crux cannot read a molecule. */
-  rGroupAnalysis: async (worker, module, molecules: string[], core: string, coreIsQMol: boolean, options?: string):
-    Promise<IRGroupAnalysisResult | null> => unreadRows(molecules, module).length > 0 ? null :
-    worker.rGroupAnalysis(molecules, core, coreIsQMol, options),
+  rGroupAnalysis: async ({rdkitWorker, module}, molecules: string[], core: string, coreIsQMol: boolean,
+    options?: string): Promise<IRGroupAnalysisResult | null> => unreadRows(molecules, module).length > 0 ? null :
+    rdkitWorker().rGroupAnalysis(molecules, core, coreIsQMol, options),
   /** The FMCS SMARTS of the molecules (RdKitServiceWorker.mostCommonStructure); null where Crux cannot read one. */
-  mostCommonStructure: (worker, module, molecules: string[], exactAtoms: boolean, exactBonds: boolean): string | null =>
-    unreadRows(molecules, module).length > 0 ? null : worker.mostCommonStructure(molecules, exactAtoms, exactBonds),
+  mostCommonStructure: ({rdkitWorker, module}, molecules: string[], exactAtoms: boolean, exactBonds: boolean):
+    string | null => unreadRows(molecules, module).length > 0 ? null :
+    rdkitWorker().mostCommonStructure(molecules, exactAtoms, exactBonds),
   /** Each cluster's FMCS SMARTS within {@link CLUSTER_MCS_TIMEOUT_S} ('' past it); null for one the RDKit pool does. */
-  clusterMCS: (worker, module, clusters: string[][], exactAtoms: boolean, exactBonds: boolean) =>
+  clusterMCS: ({rdkitWorker, module}, clusters: string[][], exactAtoms: boolean, exactBonds: boolean) =>
     perCluster(clusters, (molecules) => molecules, module,
-      (molecules) => worker.mostCommonStructure(molecules, exactAtoms, exactBonds, CLUSTER_MCS_TIMEOUT_S)),
+      (molecules) => rdkitWorker().mostCommonStructure(molecules, exactAtoms, exactBonds, CLUSTER_MCS_TIMEOUT_S)),
   /** Each cluster's R-group decomposition; null for one the RDKit pool does. */
-  clusterRGroups: (worker, module, clusters: RGroupCluster[]) => perCluster(clusters, (c) => c.molecules, module,
-    (c) => worker.rGroupAnalysis(c.molecules, c.core, c.coreIsQMol, c.options)),
+  clusterRGroups: ({rdkitWorker, module}, clusters: RGroupCluster[]) => perCluster(clusters, (c) => c.molecules,
+    module, (c) => rdkitWorker().rGroupAnalysis(c.molecules, c.core, c.coreIsQMol, c.options)),
   /** RdKitServiceWorker.linkRGroupFragments of rows `[core, a fragment per column...]`: by molzip on Crux. */
-  linkRGroupFragments: (worker, module, rows: string[][], attachIdx: (number | number[])[]): string[] => {
+  linkRGroupFragments: ({rdkitWorker, module}, rows: string[][], attachIdx: (number | number[])[]): string[] => {
     if (!hasMolzip(module))
       throw new Error('not supported by Crux: molzip');
-    return worker.linkRGroupFragments(rows.map((row) => row[0]),
+    return rdkitWorker().linkRGroupFragments(rows.map((row) => row[0]),
       attachIdx.map((_, p) => rows.map((row) => row[p + 1])), attachIdx);
   },
-  molzip: (_worker, module, molecules: string[], details: string) => molzip(module, molecules, details),
+  molzip: ({module}, molecules: string[], details: string) => molzip(module, molecules, details),
   /** RdKitServiceWorker.mmpLinkFragments of rows `[core, fragment]` (the MMP viewer's generations, a SAR matrix's
    * single-cut cells): '' where Crux joins none. */
-  mmpLinkFragments: (worker, _module, rows: string[][]): string[] =>
-    worker.mmpLinkFragments(rows.map((row) => row[0]), rows.map((row) => row[1])),
+  mmpLinkFragments: ({rdkitWorker}, rows: string[][]): string[] =>
+    rdkitWorker().mmpLinkFragments(rows.map((row) => row[0]), rows.map((row) => row[1])),
+  /** An activity cliff's MCS ({@link pairUncommonAtomsAndBonds}). */
+  pairUncommonAtomsAndBonds: ({module}, molecule1: string, molecule2: string, details: string) =>
+    pairUncommonAtomsAndBonds(module, molecule1, molecule2, details),
 };

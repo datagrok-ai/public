@@ -6,8 +6,6 @@
  * single instance of this controller; render-machinery (mol fetch, raster
  * cache, atom-position SVG extraction) stays on the renderer and is reached
  * through `AtomPickerRendererDeps`.
- *
- * Extracted from `rdkit-cell-renderer.ts` to keep the renderer file focused.
  */
 
 import * as grok from 'datagrok-api/grok';
@@ -21,7 +19,7 @@ import {
   CHEM_ATOM_SELECTION_EVENT, CHEM_ATOM_PICKER_LINKED_3D_COL_TAG,
   CHEM_MOL3D_SELECTION_EVENT,
 } from '@datagrok-libraries/chem-meta/src/types';
-import {mapAtomIndices2Dto3D, AtomIndexMapping} from '../utils/atom-index-mapper';
+import {mapAtomIndices2Dto3DByEngine, AtomIndexMapping} from '../utils/atom-index-mapper';
 import {findNearestAtom, computeSelectedBonds} from '../utils/chem-atom-picker-utils';
 import {handleMol3DHoverEvent, Mol3DHoverRendererDeps} from './mol3d-hover-handler';
 
@@ -48,6 +46,7 @@ export interface CellInteractiveInfo {
  *  Kept narrow so the controller can be unit-tested without the full
  *  renderer surface and mirrors the pattern in `mol3d-hover-handler.ts`. */
 export interface AtomPickerRendererDeps {
+  /** RDKit's module: the 2D→3D mapping's, which runs by the engine in effect, falls back to it. */
   readonly rdKitModule: RDModule;
   /** Returns positions/bondAtoms for the cell, populating the cache. */
   _getCellAtomPositions(molString: string, cssWidth: number,
@@ -98,7 +97,7 @@ export class AtomPickerController {
           const smiles2D = col.get(rowIdx);
           const pose3D = mol3DCol.get(rowIdx);
           if (smiles2D && pose3D) {
-            const mapping = mapAtomIndices2Dto3D(this.deps.rdKitModule, smiles2D, pose3D);
+            const mapping = mapAtomIndices2Dto3DByEngine(this.deps.rdKitModule, smiles2D, pose3D);
             if (mapping) {
               event.mapping3D = mapping;
               event.mol3DColumnName = mol3DCol.name;

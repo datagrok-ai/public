@@ -9,7 +9,8 @@ import {removeWaterAndSalts, runTransformationReaction, runTwoComponentReaction}
 import {NamedReaction} from '../utils/reactions/types';
 import {addDeprotectedColumn, defaultFragment} from '../analysis/deprotect';
 import {loadFileAsText, readDataframe} from './utils';
-import {ChemicalEngine, cruxReady, setChemicalEngine} from '../engine/chem-engine';
+import {ChemicalEngine} from '../engine/chem-engine';
+import {inBothEngines, inEngine} from './engine-utils';
 import {cruxFallbackCount} from '../engine/fallback';
 import {cruxLoadFailed, resetCruxLoaderForTests} from '../engine/crux-module';
 import {lastReactionEngine, setCruxUnreadableReactantsForTests} from '../utils/reactions/reaction-engine';
@@ -100,9 +101,6 @@ category('Reactions', () => {
     const fmoc = DG.Column.fromStrings('smiles', ['O=C(O)CNC(=O)OCC1c2ccccc2-c2ccccc21',
       'O=C(O)C1CCCN1C(=O)OCC1c2ccccc2-c2ccccc21', 'CC(C)C(N)C(=O)O', 'C1CC(']);
     const run = async (engine: ChemicalEngine) => {
-      setChemicalEngine(engine);
-      if (engine === ChemicalEngine.Crux)
-        expect(await cruxReady(), true, 'the Crux module loads');
       const hydrolysis = await runTransformationReaction(rdkit, smartsOf('Ester Hydrolysis (Saponification)'),
         molecules);
       expect(lastReactionEngine(), engine, 'the transformation\'s engine');
@@ -115,33 +113,29 @@ category('Reactions', () => {
       return {hydrolysis: canonical(hydrolysis.products), errors: hydrolysis.errors,
         coupling: canonical(coupling.products), deprotected: canonical(deprotected.slice(0, 3)).concat(deprotected[3])};
     };
-    try {
-      const rdkitMode = await run(ChemicalEngine.RDKit);
-      const fallbacks = ['transformation reaction', 'two-component reaction'].map((c) => cruxFallbackCount(c));
-      const cruxMode = await run(ChemicalEngine.Crux);
-      expect(cruxMode.hydrolysis.filter((p, i) => p !== rdkitMode.hydrolysis[i]).length, 0, 'hydrolysis products');
-      expect(cruxMode.errors, rdkitMode.errors);
-      expectArray(cruxMode.coupling, rdkitMode.coupling);
-      expect(cruxMode.coupling.filter((p) => p).length, 16, 'amide couplings');
-      expectArray(cruxMode.deprotected, rdkitMode.deprotected);
-      expectArray(cruxMode.deprotected, canonical(['NCC(=O)O', 'O=C(O)C1CCCN1', 'CC(C)C(N)C(=O)O']).concat('C1CC('));
-      expect(['transformation reaction', 'two-component reaction'].map((c) => cruxFallbackCount(c)).join(', '),
-        fallbacks.join(', '), 'Crux did every molecule');
-      // a molecule Crux cannot read gets RDKit's product, the fallback counted
-      const esters = ['CCOC(C)=O', 'CC(=O)OC'];
-      const hydrolysis = async () => canonical((await runTransformationReaction(rdkit,
-        smartsOf('Ester Hydrolysis (Saponification)'), esters)).products);
-      setChemicalEngine(ChemicalEngine.RDKit);
-      const rdkitProducts = await hydrolysis();
-      setChemicalEngine(ChemicalEngine.Crux);
+    const {rdkit: rdkitMode, crux: cruxMode} = await inBothEngines(run,
+      {noFallback: ['transformation reaction', 'two-component reaction']});
+    expect(cruxMode.hydrolysis.filter((p, i) => p !== rdkitMode.hydrolysis[i]).length, 0, 'hydrolysis products');
+    expect(cruxMode.errors, rdkitMode.errors);
+    expectArray(cruxMode.coupling, rdkitMode.coupling);
+    expect(cruxMode.coupling.filter((p) => p).length, 16, 'amide couplings');
+    expectArray(cruxMode.deprotected, rdkitMode.deprotected);
+    expectArray(cruxMode.deprotected, canonical(['NCC(=O)O', 'O=C(O)C1CCCN1', 'CC(C)C(N)C(=O)O']).concat('C1CC('));
+    // a molecule Crux cannot read gets RDKit's product, the fallback counted
+    const esters = ['CCOC(C)=O', 'CC(=O)OC'];
+    const hydrolysis = async () => canonical((await runTransformationReaction(rdkit,
+      smartsOf('Ester Hydrolysis (Saponification)'), esters)).products);
+    const rdkitProducts = await inEngine(ChemicalEngine.RDKit, hydrolysis);
+    await inEngine(ChemicalEngine.Crux, async () => {
       setCruxUnreadableReactantsForTests([esters[0]]);
-      const before = cruxFallbackCount('transformation reaction');
-      expectArray(await hydrolysis(), rdkitProducts);
-      expect(cruxFallbackCount('transformation reaction'), before + 1, 'RDKit did the molecule Crux could not read');
-    } finally {
-      setCruxUnreadableReactantsForTests(null);
-      setChemicalEngine(null);
-    }
+      try {
+        const before = cruxFallbackCount('transformation reaction');
+        expectArray(await hydrolysis(), rdkitProducts);
+        expect(cruxFallbackCount('transformation reaction'), before + 1, 'RDKit did the molecule Crux could not read');
+      } finally {
+        setCruxUnreadableReactantsForTests(null);
+      }
+    });
   });
 
   test('break it: a product RDKit 2026 cannot write leaves Crux running', async () => {
@@ -151,17 +145,12 @@ category('Reactions', () => {
     const molecules = ['O[C@@H]1CC[C@H](c2ccccc2)CC1', 'c1ccncc1'];
     const brominate = async () => (await runTransformationReaction(rdkit, '[cH:1]>>[c:1]Br', molecules)).products;
     try {
-      setChemicalEngine(ChemicalEngine.RDKit);
-      const rdkitProducts = await brominate();
-      setChemicalEngine(ChemicalEngine.Crux);
-      expect(await cruxReady(), true, 'the Crux module loads');
-      const cruxProducts = await brominate();
+      const {rdkit: rdkitProducts, crux: cruxProducts} = await inBothEngines(brominate);
       expect(cruxLoadFailed(), false, 'the Crux module did not trap');
       expectArray(cruxProducts, rdkitProducts);
     } finally {
       if (cruxLoadFailed())
         resetCruxLoaderForTests(null);
-      setChemicalEngine(null);
     }
   });
 

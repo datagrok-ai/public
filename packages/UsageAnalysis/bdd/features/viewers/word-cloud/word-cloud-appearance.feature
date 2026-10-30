@@ -12,9 +12,17 @@ Feature: Word cloud text size, rotation, shape and font
   a single value first and restore it after.
   The Background pins RACE: Caucasian 896, Other 62, Black 27, Asian 15 on demog-1000 — four words
   whose sizes are far enough apart for a size claim to mean something.
+  From the manual part of `word-cloud.md`: Grid Size and Context menu. Grid Size is claimed by how
+  many words the layout draws on DEMOG (about two hundred values) with Draw Out Of Bound off, since
+  with it on every word is drawn whatever the grid. How many fit is claimed against the default 8 —
+  more at 2, fewer at 40 — not as a count: the boxes are measured with the system's sans-serif, so
+  the counts differ by platform (74, 123 and 31 on the author's machine; 86 at 8 on macOS). The md's
+  20 is replaced by 40 because at 20 the cloud still draws about as many words as at the default. The context menu lists the viewer's commands, General > Save as PNG among them, and
+  its Properties... makes the viewer the object the context panel shows.
 
   Background:
     Given user is logged in
+    And the package autostarts have completed
     And user opens demog-1000 dataset
     And user adds a word cloud viewer with:
       | wordColumnName    | RACE |
@@ -96,4 +104,34 @@ Feature: Word cloud text size, rotation, shape and font
       | bold       | true       |
       | fontFamily | sans-serif |
     Then the "font" reading of word cloud viewer should be "bold sans-serif"
+    And no errors should have been logged
+
+  Scenario: Grid Size spaces the words, so a coarser grid fits fewer of them
+    When user sets properties of word cloud viewer:
+      | wordColumnName | DEMOG |
+      | drawOutOfBound | false |
+    Then "gridSize" property of word cloud viewer should be "8"
+    When user remembers the "words" reading of word cloud viewer
+    And user sets "gridSize" property of word cloud viewer to "2"
+    Then the "words" reading of word cloud viewer should be higher than remembered
+    When user sets "gridSize" property of word cloud viewer to "40"
+    Then the "words" reading of word cloud viewer should be lower than remembered
+    When user sets properties of word cloud viewer:
+      | gridSize       | 8    |
+      | drawOutOfBound | true |
+      | wordColumnName | RACE |
+    Then the "words" reading of word cloud viewer should be 4
+    And no errors should have been logged
+
+  Scenario: The context menu offers the viewer's commands and opens its properties
+    Given the context panel is open
+    When user opens the context menu of word cloud viewer
+    Then the open menu should list "Properties..."
+    And the open menu should list "General"
+    And the open menu should list "Pick Up / Apply"
+    And the open menu should list "To Script"
+    And the open menu should list "General > Save as PNG"
+    When user closes the context menu
+    And user picks "Properties..." from the context menu of word cloud viewer
+    Then the context panel should show "Word cloud"
     And no errors should have been logged

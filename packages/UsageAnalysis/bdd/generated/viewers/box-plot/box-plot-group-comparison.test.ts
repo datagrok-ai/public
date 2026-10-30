@@ -158,6 +158,9 @@ test.describe("Box plot group comparison", () => {
       await session.step(151, "Then \"Adjust By\" property of box plot viewer should be \"\"", () => propertyShouldBe(page, "Adjust By", el("box plot viewer"), ""));
       await session.step(152, "And \"Adjustment\" property of box plot viewer should be \"\"", () => propertyShouldBe(page, "Adjustment", el("box plot viewer"), ""));
       await session.step(153, "And \"Method\" property of box plot viewer should be \"\"", () => propertyShouldBe(page, "Method", el("box plot viewer"), ""));
+      await session.step(154, "When user hovers over box plot viewer", () => hoverOver(page, el("box plot viewer")));
+      await session.step(155, "Then \"Adjust by\" column input in box plot viewer should be hidden", () => shouldBe(page, el("\"Adjust by\" column input in box plot viewer"), "hidden"));
+      await session.step(156, "And Value column input in box plot viewer should be visible", () => shouldBe(page, el("Value column input in box plot viewer"), "visible"));
     });
     run.finish();
   });

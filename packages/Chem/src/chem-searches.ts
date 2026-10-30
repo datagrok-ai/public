@@ -23,10 +23,10 @@ import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {filter} from 'rxjs/operators';
 import {cruxReadsQuery, cruxSubstructureSearch, isCruxSearch} from './crux/crux-searches';
-import {ChemicalEngine, isCruxRequested} from './engine/chem-engine';
+import {cruxSearchByType, cruxSimilaritySearch} from './crux/crux-search-types';
+import {byEngineModule, ChemicalEngine, isCruxRequested} from './engine/chem-engine';
 import {fingerprintsByEngine, fingerprintsKey} from './engine/worker-jobs';
-import {cruxModuleSync, noteCruxError} from './engine/crux-module';
-import {cruxOrRdKit} from './engine/fallback';
+import {noteCruxError} from './engine/crux-module';
 import {FingerprintOptions, fingerprintOptions, fingerprintOptionsKey, needsCrux} from './utils/fingerprint-options';
 
 
@@ -387,10 +387,20 @@ export async function chemSubstructureSearchLibrary(
   _package.logger.debug(`in chemSubstructureSearchLibrary, filterType: ${filterType}, searchkey: ${searchKey}, currentSearch: ${currentSearch}`);
   if (isCruxSearch(searchType) && await cruxReadsQuery(molString, molBlockFailover)) {
     subscribeToColumnChanges(molStringsColumn);
-    return cruxSubstructureSearch(molStringsColumn, molString, molBlockFailover, awaitAll, searchType, includeMask,
-      () => currentSearchSmiles[filterType][searchKey] !== currentSearch,
-      (result) => rdkitSubstructureSearch(molStringsColumn, molString, molBlockFailover, filterType,
-        columnIsCanonicalSmiles, awaitAll, searchType, similarityCutOff, fp, includeMask, result));
+    const isSuperseded = () => currentSearchSmiles[filterType][searchKey] !== currentSearch;
+    const rdkit = (result: BitArray) => rdkitSubstructureSearch(molStringsColumn, molString, molBlockFailover,
+      filterType, columnIsCanonicalSmiles, awaitAll, searchType, similarityCutOff, fp, includeMask, result);
+    if (searchType === SubstructureSearchType.IS_SIMILAR) { // the fingerprints by the engine in effect, Chem's Tanimoto
+      return cruxSimilaritySearch(molStringsColumn, molString, molBlockFailover, awaitAll, similarityCutOff, fp,
+        isSuperseded, rdkit, () => chemGetFingerprints(molStringsColumn, fp, false),
+        () => chemGetFingerprint(molString, fp));
+    }
+    if (searchType === SubstructureSearchType.CONTAINS || searchType === SubstructureSearchType.NOT_CONTAINS) {
+      return cruxSubstructureSearch(molStringsColumn, molString, molBlockFailover, awaitAll, searchType, includeMask,
+        isSuperseded, rdkit);
+    }
+    return cruxSearchByType(molStringsColumn, molString, molBlockFailover, awaitAll, searchType, includeMask,
+      isSuperseded, rdkit);
   }
   return rdkitSubstructureSearch(molStringsColumn, molString, molBlockFailover, filterType, columnIsCanonicalSmiles,
     awaitAll, searchType, similarityCutOff, fp, includeMask, new BitArray(molStringsColumn.length));
@@ -571,9 +581,8 @@ export function chemGetFingerprint(molString: string, fingerprint: Fingerprint, 
   (error: Error) => any, convertToBitArray = true): BitArray {
   try {
     // in Crux mode the query's fingerprint is Crux's, as the column's are (RDKit's where Crux cannot read it or fails)
-    const crux = isCruxRequested() ? cruxModuleSync() : null;
-    const fp = (crux ? cruxOrRdKit('fingerprints', () => fingerprintWith(crux, molString, fingerprint, true),
-      () => null) : null) ?? fingerprintWith(getRdKitModule(), molString, fingerprint, false);
+    const fp = byEngineModule('fingerprints', getRdKitModule(),
+      (module, crux) => fingerprintWith(module, molString, fingerprint, crux));
     if (fp)
       return rdKitFingerprintToBitArray(fp) as BitArray;
     throw new Error(`Chem | Possibly a malformed molString: ${molString}`);

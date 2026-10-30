@@ -1,0 +1,46 @@
+/* Checklist input (src/components/inputs/checklist-input.ts): the platform's check list — a bare column of 20px
+   rows, the box 4px in and 8px off its label — with a drag handle before the box when the order is part of the
+   pick. */
+div.u2-input-editor.u2-checklist {
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  height: auto;
+  padding: var(--dg-space-s) 0;
+  border: none;
+}
+
+/* never underlined, as the platform's check list: an invalid one is not either */
+div.u2-input-editor.u2-checklist.u2-invalid,
+div.u2-input-editor.u2-checklist.u2-invalid:focus-within {
+  border-bottom: none;
+}
+
+.u2-checklist-item {
+  display: flex;
+  align-items: center;
+  min-height: 20px;
+  white-space: nowrap;
+}
+
+.u2-checklist-label {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.u2-checklist-label > .u2-input-checkbox {
+  margin: 0 var(--dg-space-m) 0 var(--dg-space-s);
+}
+
+/* no items: one row of grey text, so the caption beside it lines up as beside a one-item list */
+.u2-checklist-empty {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--dg-space-s);
+  color: var(--dg-text-color-light);
+  white-space: nowrap;
+}

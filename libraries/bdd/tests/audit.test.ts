@@ -11,10 +11,10 @@ import {after, before, test} from 'node:test';
 import {type Browser, chromium, type Page} from '@playwright/test';
 
 import {auditModes, auditScenario, BUILTIN_ALLOW, errorFindings, leakCheck, leakFindings, markLeakBaseline, resolveAllow,
-  resolveModes, settleAudit, shouldAudit, trackLeaks} from '../src/runtime/audit.js';
+  resolveModes, settleAudit, shouldAudit, strictU2, trackLeaks} from '../src/runtime/audit.js';
 import {feature, journey} from '../src/runtime/harness.js';
 
-for (const key of ['BDD_AUDIT', 'BDD_AUDIT_LAYOUT', 'BDD_AUDIT_ERRORS', 'BDD_AUDIT_LEAKS'])
+for (const key of ['BDD_AUDIT', 'BDD_AUDIT_LAYOUT', 'BDD_AUDIT_ERRORS', 'BDD_AUDIT_BALLOONS', 'BDD_AUDIT_OPERABILITY', 'BDD_AUDIT_LEAKS'])
   delete process.env[key];
 
 const tmp = mkdtempSync(join(tmpdir(), 'bdd-audit-'));
@@ -24,7 +24,8 @@ function project(name: string, audits: object): string {
   writeFileSync(join(dir, 'bdd.config.json'), JSON.stringify({audits}));
   return dir;
 }
-const REPORT = project('report', {leaks: 'report', allow: {leaks: [{label: '^tooltip$', reason: 'the tooltip service lives with the page'}]}});
+const REPORT = project('report', {layout: 'report', errors: 'report', balloons: 'report', operability: 'report', leaks: 'report',
+  allow: {leaks: [{label: '^tooltip$', reason: 'the tooltip service lives with the page'}]}});
 const FAIL = project('fail', {layout: 'fail', errors: 'report', leaks: 'fail'});
 process.env.BDD_ROOT = REPORT;
 
@@ -97,22 +98,25 @@ const STACK = 'Error\n    at new TextInput (https://host/api/packages/published/
   '    at textInput (https://host/dist/package.js:2:900)\n    at basicInputs (https://host/dist/package.js:9:12)\n    at four (x.js:1:1)';
 
 test('modes: per-audit env over BDD_AUDIT over the project config over the defaults', () => {
-  assert.deepEqual(resolveModes(undefined, {}), {layout: 'report', errors: 'report', leaks: 'off'});
-  assert.deepEqual(resolveModes({leaks: 'report', layout: 'fail'}, {}), {layout: 'fail', errors: 'report', leaks: 'report'});
-  assert.deepEqual(resolveModes({leaks: 'report', layout: 'fail'}, {BDD_AUDIT: 'off'}), {layout: 'off', errors: 'off', leaks: 'off'});
-  assert.deepEqual(resolveModes({layout: 'fail'}, {BDD_AUDIT: 'off', BDD_AUDIT_LEAKS: 'fail'}), {layout: 'off', errors: 'off', leaks: 'fail'});
+  assert.deepEqual(resolveModes(undefined, {}), {layout: 'fail', errors: 'fail', balloons: 'fail', operability: 'fail', leaks: 'off'});
+  assert.deepEqual(resolveModes({leaks: 'report', layout: 'report', errors: 'off'}, {}),
+    {layout: 'report', errors: 'off', balloons: 'fail', operability: 'fail', leaks: 'report'});
+  assert.deepEqual(resolveModes({leaks: 'report', layout: 'fail'}, {BDD_AUDIT: 'off'}),
+    {layout: 'off', errors: 'off', balloons: 'off', operability: 'off', leaks: 'off'});
+  assert.deepEqual(resolveModes({layout: 'fail'}, {BDD_AUDIT: 'off', BDD_AUDIT_LEAKS: 'fail', BDD_AUDIT_OPERABILITY: 'report', BDD_AUDIT_BALLOONS: 'fail'}),
+    {layout: 'off', errors: 'off', balloons: 'fail', operability: 'report', leaks: 'fail'});
   assert.throws(() => resolveModes(undefined, {BDD_AUDIT_LAYOUT: 'strict'}), /BDD_AUDIT_LAYOUT: "strict" is not an audit mode \(fail, report, off\)/);
   assert.throws(() => resolveModes({errors: 'warn' as never}, {}), /bdd.config.json audits.errors: "warn"/);
 });
 
 test('modes are read from the project once per worker; a project without audits gets the defaults', () => {
-  assert.deepEqual(auditModes(REPORT), {layout: 'report', errors: 'report', leaks: 'report'});
-  assert.deepEqual(auditModes(FAIL), {layout: 'fail', errors: 'report', leaks: 'fail'});
+  assert.deepEqual(auditModes(REPORT), {layout: 'report', errors: 'report', balloons: 'report', operability: 'report', leaks: 'report'});
+  assert.deepEqual(auditModes(FAIL), {layout: 'fail', errors: 'report', balloons: 'fail', operability: 'fail', leaks: 'fail'});
   const plain = join(tmp, 'plain');
   mkdirSync(plain);
-  assert.deepEqual(auditModes(plain), {layout: 'report', errors: 'report', leaks: 'off'});
+  assert.deepEqual(auditModes(plain), {layout: 'fail', errors: 'fail', balloons: 'fail', operability: 'fail', leaks: 'off'});
   writeFileSync(join(plain, 'bdd.config.json'), JSON.stringify({audits: {layout: 'off'}}));
-  assert.equal(auditModes(plain).layout, 'report');
+  assert.equal(auditModes(plain).layout, 'fail');
 });
 
 test('every allowed finding says why; its patterns are regular expressions; the library\'s come first', () => {
@@ -223,6 +227,32 @@ scenario('tracking is switched on before the page\'s own scripts run, and only w
   }
 });
 
+scenario('u2 throws on a misuse in every page, set before the page\'s own scripts run; U2_STRICT names another mode', async () => {
+  const fresh = await browser!.newPage();
+  const named = await browser!.newPage();
+  const was = process.env.U2_STRICT;
+  const probe = 'data:text/html,<script>document.title = String(globalThis.__U2_STRICT__)</script>';
+  try {
+    delete process.env.U2_STRICT;
+    await strictU2(fresh);
+    await strictU2(fresh);
+    await fresh.goto(probe);
+    assert.equal(await fresh.title(), 'throw');
+    process.env.U2_STRICT = 'report';
+    await strictU2(named);
+    await named.goto(probe);
+    assert.equal(await named.title(), 'report');
+  }
+  finally {
+    if (was === undefined)
+      delete process.env.U2_STRICT;
+    else
+      process.env.U2_STRICT = was;
+    await fresh.close();
+    await named.close();
+  }
+});
+
 scenario('a record still live after the view closed is a leak; one that clears within 2 s, or a singleton, is not', async () => {
   await standIn(page!);
   await markLeakBaseline(page!);
@@ -282,7 +312,7 @@ scenario('a u2 view is audited for layout and console errors; a view without u2 
     return [{message: 'TypeError: boom', url: 'https://host/dist/package.js'}];
   };
   const outcome = await auditScenario(page!, logged);
-  assert.deepEqual(outcome.ran, ['layout', 'errors']);
+  assert.deepEqual(outcome.ran, ['layout', 'errors', 'balloons']);
   assert.deepEqual(outcome.findings.map((f) => f.rule), ['overlap', 'console-error']);
   assert.match(outcome.findings[0].detail, /"Name" text input overlaps "Notes" text input/);
   assert.equal(taken, 1);
@@ -324,7 +354,7 @@ scenario('the harness audits the final state before the shell reset and the leak
     console.warn = warn;
   }
   assert.equal(await p.evaluate(() => (window as any).__closed), 1);
-  assert.deepEqual(info.annotations.map((a) => a.description?.split(' — ')[0]), ['layout, errors, leaks',
+  assert.deepEqual(info.annotations.map((a) => a.description?.split(' — ')[0]), ['layout, errors, balloons, leaks',
     info.annotations[1].description, 'leak: scope #100 text-input (org) still live after the view closed']);
   assert.match(info.annotations[1].description!, /^overlap: "Name" text input overlaps "Notes"/);
 
@@ -351,8 +381,8 @@ scenario('a journey audits each scenario as it ends and fails the one with findi
   await run.scenario('Clean', async () => undefined);
   assert.throws(() => run.finish(), (e: Error) => /Overlapping/.test(e.message) && /audit: 1 finding\(s\) after "Journey › Overlapping"/.test(e.message) &&
     !/Clean/.test(e.message.split('\n')[0]));
-  assert.deepEqual(info.annotations.map((a) => a.description?.replace(/: ".*/, '')), ['layout, errors (scenario "Overlapping")', 'overlap',
-    'layout, errors (scenario "Clean")']);
+  assert.deepEqual(info.annotations.map((a) => a.description?.replace(/: ".*/, '')), ['layout, errors, balloons (scenario "Overlapping")', 'overlap',
+    'layout, errors, balloons (scenario "Clean")']);
   info.annotations.length = 0;
   await open(p, {kind: 'listener', target: 'window', type: 'resize', capture: false});
   await assert.rejects(hooks.afterEach!(), /audit: 1 finding\(s\) after "Journey"\n {2}leak: window resize listener still attached/);
@@ -368,7 +398,9 @@ test('audit-summary counts findings by rule, feature and scenario, and reads the
     {file: 'demo/a.test.ts', specs: [spec('demo/a.test.ts', 'One', [{type: 'bdd-audits', description: 'layout, errors, leaks'},
       {type: 'bdd-audit', description: 'overlap: "A" overlaps "B"'}, {type: 'bdd-audit', description: 'leak: scope #4 dialog still live after the view closed'},
       {type: 'bdd-audit', description: 'leak: window keydown listener still attached after the view closed'}]),
-    spec('demo/a.test.ts', 'Two', [{type: 'bdd-audits', description: 'layout, errors'}])]},
+    spec('demo/a.test.ts', 'Two', [{type: 'bdd-audits', description: 'layout, errors, balloons, operability'},
+      {type: 'bdd-audit', description: 'no-pointer: button "Edit" takes no pointer: pointer-events: none on div.u2-input-options — in dialog "Submit"'},
+      {type: 'bdd-audit', description: 'balloon: warning balloon "Error adding filter" that no step claimed'}])]},
     {file: 'demo/b.test.ts', specs: [spec('demo/b.test.ts', 'J', [{type: 'bdd-audits', description: 'layout, errors (scenario "S1")'},
       {type: 'bdd-audit', description: 'leak: scope #9 dialog still live after the view closed (scenario "S1")'}])]},
   ]}));
@@ -377,10 +409,11 @@ test('audit-summary counts findings by rule, feature and scenario, and reads the
   writeFileSync(join(dir, 'memory.jsonl'), [line('0', 1, 150), line('0', 2, 170), line('0', 1, 140), line('1', 1, 160)].join('\n') + '\n');
   const out = execFileSync(process.execPath, [join(import.meta.dirname, '..', 'tool', 'audit-summary.mjs'), join(dir, 'report.json'),
     join(dir, 'memory.jsonl')], {encoding: 'utf8'});
-  assert.match(out, /audited 3 test\(s\): layout 3, console errors 3, leaks 1; findings 4/);
-  assert.match(out, /\n {2}leak {15}3\n {2}overlap {12}1\n/);
-  assert.match(out, /demo\/a +2 +\| 1 +\| 0 +\| 1, 0, 1/);
-  assert.match(out, /demo\/b › J › S1: 0 \| 0 \| 1, 0, 0/);
+  assert.match(out, /audited 3 test\(s\): layout 3, console errors 3, balloons 1, operability 1, leaks 1; findings 6/);
+  assert.match(out, /\n {2}leak {15}3\n {2}balloon {12}1\n {2}no-pointer {9}1\n {2}overlap {12}1\n/);
+  assert.match(out, /demo\/a +2 +\| 1 +\| 1 +\| 1 +\| 1, 0, 1/);
+  assert.match(out, /demo\/a › Two: 0 \| 1 \| 1 \| 0, 0, 0/);
+  assert.match(out, /demo\/b › J › S1: 0 \| 0 \| 0 \| 1, 0, 0/);
   assert.match(out, /2× +leak: scope #n dialog still live after the view closed/);
   assert.match(out, /worker 0: 3 features on 2 page\(s\); JS heap 150 → 140 MB, after GC 100 → 90 MB; renderer 600 → 560 MB \(after GC 450 → 420 MB\)/);
 });

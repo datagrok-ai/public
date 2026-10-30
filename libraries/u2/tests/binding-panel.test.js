@@ -4,10 +4,11 @@
    that echoes nothing — and the viewer tier path unmoved (UB-8). Harness idioms of
    tests/handler-edit.test.js; dg-stub.mjs serves the platform. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {signal} from '../src/core/signals.js';
 import {Control} from '../src/core/component.js';
@@ -99,7 +100,7 @@ function picker() {
   const dialog = document.querySelector('.u2-bind-picker');
   const list = dialog?.querySelector('.u2-list');
   if (list) {
-    list.clientHeight = 400;
+    layout(list, {clientHeight: 400});
     fire(list, 'scroll');
   }
   return dialog;

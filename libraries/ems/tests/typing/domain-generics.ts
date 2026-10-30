@@ -1,6 +1,4 @@
-/* Compile-only: the typed domain surface (`DomainTable<TRow>` and what hangs off it) against an
-   app's own row interface, and the untyped default beside it. Type-checked by `npm run build`
-   (tsconfig includes this folder); never run. */
+// compile-only: type-checked by the build (tsconfig includes this folder), never run
 import {domains, DomainTable, DomainApp} from '../../src/dg/index.js';
 import type {DomainRibbon} from '../../src/dg/index.js';
 import type {DomainSource} from '../../src/index.js';
@@ -55,13 +53,12 @@ async function untyped(): Promise<void> {
   domains.saveButton(src);
   domains.discardButton(src);
   domains.newButton(src, {title: 'x'});
-  class Sub extends DomainApp {
-    shortcuts = {'Ctrl+Shift+C': 'Close'};
-    ribbon(): DomainRibbon {
-      return {...super.ribbon(), presets: [this.presets(['Mine', 'reporter = $me'])]};
-    }
-  }
-  issues.app({app: Sub, shortcuts: {'Delete': 'Delete'}});
+  issues.app({shortcuts: {'Ctrl+Shift+C': 'Close'},
+    ribbon: (base: DomainRibbon, app: DomainApp) => ({...base, presets: [app.presets(['Mine', 'reporter = $me'])]}),
+    menu: (base, app) => [...base, {text: 'Refresh', run: () => void app.refresh()}],
+    setup: (app, self) => void self.effect(() => void app.listSource.search.value)});
+  // @ts-expect-error the app is configured through options, not a class
+  issues.app({app: DomainApp});
   domains.app({table: issues, base: '/x'});
   void anything;
 }

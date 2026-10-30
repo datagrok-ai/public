@@ -109,20 +109,20 @@ export async function render(main) {
   section('Free entry (allowNew)', () => {
     const input = new TagsInput({label: 'Keywords', items: KEYWORDS, allowNew: true,
       placeholder: 'Type and press Enter'});
-    return [input, readout('value', computed(() => JSON.stringify(input.value.value)))];
+    return [input, readout('value', computed(() => JSON.stringify(input.value)))];
   });
 
   section('Objects, rendered', () => {
     const input = new TagsInput({label: 'Reviewers', items: USERS, renderer: USER_RENDERER,
       value: [USERS[0]], placeholder: 'Type a name…'});
     return [input, readout('logins',
-      computed(() => input.value.value.map((u) => u.login).join(', ') || '—'))];
+      computed(() => input.value.map((u) => u.login).join(', ') || '—'))];
   });
 
   section('Async source', () => {
     const input = new TagsInput({label: 'Reviewers', source: userSource(false),
       renderer: USER_RENDERER, minChars: 2, placeholder: 'At least two characters…'});
-    return [input, readout('picked', computed(() => String(input.value.value.length)))];
+    return [input, readout('picked', computed(() => String(input.value.length)))];
   });
 
   section('Async source that fails once', () => {
@@ -134,7 +134,7 @@ export async function render(main) {
 
   section('Protected chips (deleteEnabled)', () => {
     const input = new TagsInput({label: 'Roles', items: ['Author', 'Reviewer', 'Owner'],
-      value: ['Owner', 'Reviewer'], deleteEnabled: (item) => item !== 'Owner'});
+      value: ['Owner', 'Reviewer'], deletable: (item) => item !== 'Owner'});
     return [input, el('p', 'u2-gallery-status',
       'Owner keeps its chip but loses the ✕, and Backspace will not take it either.')];
   });

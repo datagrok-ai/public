@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
-import {before, after, expect, category, test, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {before, after, expect, category, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {chemSpace, runChemSpace} from '../analysis/chem-space';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getSimilaritiesMarix, getSimilaritiesMarixFromDistances} from '../utils/similarity-utils';
@@ -55,11 +55,10 @@ category('top menu chem space', async () => {
     DG.Balloon.closeAll();
     await _testChemSpaceReturnsResult(testSmilesMalformed, 'canonical_smiles');
     try {
-      await awaitCheck(() => {
+      await waitUntil(() => {
         return document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
         '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis';
-      },
-      'cannot find warning balloon', 5000);
+      }, 'cannot find warning balloon', 5000);
     } finally {DG.Balloon.closeAll();}
   });
 
@@ -105,7 +104,7 @@ category('top menu chem space', async () => {
 async function _testChemSpaceReturnsResult(df: DG.DataFrame, col: string) {
   await grok.data.detectSemanticTypes(df);
   const tv = grok.shell.addTableView(df);
-  await awaitCheck(() => tv.name?.toLowerCase() === df.name?.toLowerCase(),
+  await waitUntil(() => tv.name?.toLowerCase() === df.name?.toLowerCase(),
     'Chem space table view hasn\'t been created', 1000);
   try {
     const sp = await runChemSpace(df, df.getCol(col), DimReductionMethods.UMAP,

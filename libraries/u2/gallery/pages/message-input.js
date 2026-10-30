@@ -77,7 +77,7 @@ function valueReadout(compose) {
   compose.root.addEventListener('input', update);
   compose.root.addEventListener('click', update);
   compose.root.addEventListener('keyup', update);
-  bindText(compose.scope, code, computed(() => value.value === '' ? '(empty)' : value.value));
+  bindText(code, computed(() => value.value === '' ? '(empty)' : value.value), {owner: compose.scope});
   const row = el('p', 'u2-gallery-status');
   row.append('value = ', code);
   return row;
