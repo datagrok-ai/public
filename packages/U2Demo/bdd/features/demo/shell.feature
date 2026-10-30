@@ -35,6 +35,18 @@ Feature: The demo shell
     And user opens the "Overview" demo page
     Then demo navigation should be 180 px wide
 
+  Scenario Outline: The context panel shows the source of the page, whatever file of the demo it lives in
+    Given user opens the "<page>" demo page
+    And the context panel is open
+    Then context panel should contain text "export function <factory>("
+    And context panel should not contain text "Not bundled"
+
+    Examples:
+      | page             | factory         |
+      | Records          | recordsPage     |
+      | TableView chrome | tableChromePage |
+      | Tables           | tablesPage      |
+
   Scenario: The ribbon's demo tools open and close tables
     Given user opens the "Overview" demo page
     When user clicks on "Demo tools" dropdown button

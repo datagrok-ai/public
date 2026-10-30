@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {u2} from '@datagrok-libraries/utils/src/u2';
+import {AppHeader} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 import {_package, SUPPORTED_VIEWS, VIEW_CREATE_FUNC} from '../package';
 import {CDISC_STANDARD, ClinCaseTableView, ClinStudyConfig} from './types';
 import {defineXmlFileName, STENDTC, STSTDTC, StudyConfigFileName,
@@ -177,19 +178,6 @@ export function createImportStudyView(standard: string) {
 }
 
 export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | void> {
-  const appHeader = u2.appHeader({
-    iconPath: _package.webRoot + `/img/${standard === CDISC_STANDARD.SDTM ?
-      'clin_case_icon.png' : 'preclinical_case_icon.png'}`,
-    learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/README.md',
-    description:
-      `-  Visualize and explore your ${standard} data\n` +
-      '-  Find patterns and trends in your data\n' +
-      '-  Explore data on patient specific and trial specific levels\n' +
-      '-  Browse through AEs and related data\n' +
-      `-  Validate your ${standard} data`,
-    iconSize: 120,
-  });
-
   const studiesHeader = ui.h1('Studies');
   const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').
     getOrCreateGroup(standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case');
@@ -209,11 +197,24 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
   importStudyDiv.append(importStudyButton);
   currentOpenedView?.close();
   currentOpenedView = DG.View.create();
+  const appHeader = ViewHost.of(currentOpenedView).build(() => new AppHeader({
+    icon: _package.webRoot + `/img/${standard === CDISC_STANDARD.SDTM ?
+      'clin_case_icon.png' : 'preclinical_case_icon.png'}`,
+    learnMore: 'https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/README.md',
+    items: [
+      `Visualize and explore your ${standard} data`,
+      'Find patterns and trends in your data',
+      'Explore data on patient specific and trial specific levels',
+      'Browse through AEs and related data',
+      `Validate your ${standard} data`,
+    ],
+    iconSize: 120,
+  }));
   currentOpenedView.name = standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case';
   currentOpenedView.path = standard === CDISC_STANDARD.SEND ? PRECLINICAL_CASE_APP_PATH :
     CLINICAL_CASE_APP_PATH;
   currentOpenedView.root.append(ui.divV([
-    appHeader,
+    appHeader.root,
     studiesHeader,
     studiesDiv,
     importStudyDiv,

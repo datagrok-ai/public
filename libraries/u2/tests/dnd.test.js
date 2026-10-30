@@ -1,10 +1,11 @@
 /* Where a drag may land (WO-9): the pure half of drag-and-drop. Legality comes from registry child
-   metadata, geometry from the rendered elements — and the shim lays nothing out, so every test
-   feeds the rects itself (`el.rect` is what getBoundingClientRect answers). */
+   metadata, geometry from the rendered elements — and the test DOM lays nothing out, so every test
+   feeds the rects itself (layout.mjs). The instance is mounted: a detached element has no computed style. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {Control} from '../src/core/component.js';
 import {Registry} from '../src/spec/registry.js';
@@ -58,18 +59,18 @@ function render(root, reg) {
   const warn = console.warn;
   console.warn = () => {};
   try {
-    return renderSpec({$schema: 'dg-ui/1', root}, new SpecContext(), reg);
+    const instance = renderSpec({$schema: 'dg-ui/1', root}, new SpecContext(), reg);
+    document.body.append(instance.root);
+    return instance;
   } finally {
     console.warn = warn;
   }
 }
 
-/** The shim has no layout: this is where a node "is" for the resolver. */
+/** Where a node "is" for the resolver. */
 function place(instance, node, x, y, width, height) {
   const built = instance.nodes().get(node);
-  const el = built instanceof Control ? built.root : built;
-  el.rect = new DOMRect(x, y, width, height);
-  return el;
+  return layout(built instanceof Control ? built.root : built, {rect: new DOMRect(x, y, width, height)});
 }
 
 function stack(instance, parent, direction) {

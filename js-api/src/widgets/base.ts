@@ -81,6 +81,8 @@ export class TypedEventArgs<TData> {
 export class ObjectPropertyBag {
   /** The source object whose properties are being wrapped */
   source: any;
+  /** The object the properties read and write: the look for core viewers, else the source */
+  _target: any;
 
   constructor(source: any, x: any = null) {
 
@@ -89,6 +91,7 @@ export class ObjectPropertyBag {
 
     if (x == null)
       x = source;
+    this._target = x;
 
     let props = this;
 
@@ -129,13 +132,13 @@ export class ObjectPropertyBag {
   /**
    * Gets the value of the specified property */
   get(propertyName: string): object {
-    return this.getProperty(propertyName).get(this.source);
+    return this.getProperty(propertyName).get(this._target);
   }
 
   /**
    * Sets the value of the specified property */
   set(propertyName: string, propertyValue: object) {
-    this.getProperty(propertyName).set(this.source, propertyValue);
+    this.getProperty(propertyName).set(this._target, propertyValue);
   }
 
   /** Sets all properties according to the passed object containing key-value pairs */

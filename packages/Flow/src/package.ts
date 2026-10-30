@@ -276,7 +276,7 @@ export class PackageFunctions {
   static extractRows(
     @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
     @grok.decorators.param({options: {nullable: false, description: 'Boolean expression over the table columns'}}) condition: string,
-    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns to keep. Leave empty to keep all of them'}}) columns?: DG.Column[],
+    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns to keep. Leave empty to keep all of them'}}) columns?: DG.ColumnList,
   ): Promise<DG.DataFrame> {
     return dataOps.extractRows(table, condition, columns);
   }
@@ -341,7 +341,7 @@ export class PackageFunctions {
   })
   static deleteColumns(
     @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
-    @grok.decorators.param({type: 'column_list', options: {nullable: false, description: 'Columns to remove'}}) columns: DG.Column[],
+    @grok.decorators.param({type: 'column_list', options: {nullable: false, description: 'Columns to remove'}}) columns: DG.ColumnList,
   ): DG.DataFrame {
     return dataOps.deleteColumns(table, columns);
   }
@@ -353,7 +353,7 @@ export class PackageFunctions {
   })
   static tagColumns(
     @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
-    @grok.decorators.param({type: 'column_list', options: {nullable: false, description: 'Columns to tag'}}) columns: DG.Column[],
+    @grok.decorators.param({type: 'column_list', options: {nullable: false, description: 'Columns to tag'}}) columns: DG.ColumnList,
     @grok.decorators.param({options: {nullable: false, description: 'Tag name, for example units or .formula'}}) tag: string,
     @grok.decorators.param({options: {nullable: true, description: 'Tag value'}}) value: string,
   ): DG.DataFrame {
@@ -381,9 +381,9 @@ export class PackageFunctions {
   })
   static aggregate(
     @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
-    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns to group by. Leave empty to aggregate the whole table into one row'}}) groupByColumns: DG.Column[],
+    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns to group by. Leave empty to aggregate the whole table into one row'}}) groupByColumns: DG.ColumnList,
     @grok.decorators.param({options: {nullable: false, description: 'Aggregations to compute, as a list of column and function pairs'}}) aggregations: string,
-    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns whose values become result columns'}}) pivotColumns?: DG.Column[],
+    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns whose values become result columns'}}) pivotColumns?: DG.ColumnList,
   ): DG.DataFrame {
     return dataOps.aggregate(table, groupByColumns, aggregations, pivotColumns);
   }
@@ -395,8 +395,8 @@ export class PackageFunctions {
   })
   static unpivot(
     @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
-    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns repeated alongside every produced row'}}) copyColumns: DG.Column[],
-    @grok.decorators.param({type: 'column_list', options: {nullable: false, description: 'Columns folded into the category and value pair'}}) mergeColumns: DG.Column[],
+    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns repeated alongside every produced row'}}) copyColumns: DG.ColumnList,
+    @grok.decorators.param({type: 'column_list', options: {nullable: false, description: 'Columns folded into the category and value pair'}}) mergeColumns: DG.ColumnList,
     @grok.decorators.param({options: {initialValue: 'Category', description: 'Name of the column holding the source column names'}}) categoryColumnName: string,
     @grok.decorators.param({options: {initialValue: 'Value', description: 'Name of the column holding the values'}}) valueColumnName: string,
   ): Promise<DG.DataFrame> {

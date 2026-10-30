@@ -4,7 +4,7 @@
    filtering reset a collection, a table source follows the workspace, and an entity ref answers
    its properties as binding leaves. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
@@ -149,7 +149,7 @@ source('func-source: the design-time cap is passed exactly when the designer is 
   running.dispose();
 
   backends.funcRunner = fakeRunner(QUERY, () => ({rows: 1}));
-  const designed = new FuncSource({func: 'Orders', debounce: 0}, env({designTime: true}));
+  const designed = testOwner().build(() => new FuncSource({func: 'Orders', debounce: 0}, env({designTime: true})));
   await flush();
   assert.equal(designed.designData, 'live', 'a query defaults to live at design time');
   assert.equal(backends.funcRunner.calls.length, 1,

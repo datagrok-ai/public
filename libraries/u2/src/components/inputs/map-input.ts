@@ -35,7 +35,7 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
     body.setAttribute('role', 'grid');
     // an edit's own write reads back as the rows it came from: only another writer reloads them
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (this._rows === undefined || !MapInput._same(value, this._value()))
         this._load(value);
     });
@@ -48,7 +48,7 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
   }
 
   protected resetEditor(): void {
-    this._load(this.value.peek());
+    this._load(this.peek());
   }
 
   private _load(value: Record<string, string>): void {
@@ -63,7 +63,7 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
     for (let i = 0; i < this._rows.length; i++)
       this._body.append(this._row(i));
     this._mark();
-    this.refreshEnabled();
+    this.refreshDisabled();
   }
 
   private _row(index: number): HTMLElement {
@@ -137,8 +137,8 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
     this._mark();
     // while a key repeats the rows stand for no map: the value keeps the last one they did, rather
     // than one with the earlier row dropped
-    if (!this._dup.peek() && !MapInput._same(this.value.peek(), value))
-      this.value.value = value;
+    if (!this._dup.peek() && !MapInput._same(this.peek(), value))
+      this.value = value;
   }
 
   /** The value the rows stand for: the last of a repeated key wins, a row without a key is left out. */

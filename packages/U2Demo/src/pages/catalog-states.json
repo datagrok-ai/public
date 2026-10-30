@@ -2,14 +2,14 @@
   "order": ["default", "disabled", "readOnly", "invalid", "busy", "empty"],
   "states": {
     "default": {},
-    "disabled": {"enabled": false},
+    "disabled": {"disabled": "Fill in the fields above first"},
     "readOnly": {"readOnly": true},
     "invalid": {"required": true, "value": null},
     "busy": {"busy": true},
     "empty": {"items": []}
   },
   "requires": {
-    "disabled": ["enabled"],
+    "disabled": ["disabled"],
     "readOnly": ["readOnly"],
     "invalid": ["required"],
     "busy": ["busy"],

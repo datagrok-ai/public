@@ -25,7 +25,7 @@ export class BoolInput extends Input<boolean, BoolInputOptions> {
 
   /** The base state plus `checked`, the value as the box shows it. */
   getState(): ReturnType<Input<boolean>['getState']> {
-    return {...super.getState(), checked: this.value.peek() === true};
+    return {...super.getState(), checked: this.peek() === true};
   }
 
   protected createEditor(): HTMLElement {
@@ -39,8 +39,8 @@ export class BoolInput extends Input<boolean, BoolInputOptions> {
     const box = document.createElement('input');
     box.type = 'checkbox';
     box.className = 'u2-input-checkbox';
-    this.effect(() => box.checked = this.value.value === true);
-    this.scope.listen(box, 'change', () => this.value.value = box.checked);
+    this.effect(() => box.checked = this.value === true);
+    this.scope.listen(box, 'change', () => this.value = box.checked);
     return box;
   }
 
@@ -53,7 +53,7 @@ export class BoolInput extends Input<boolean, BoolInputOptions> {
     thumb.className = 'u2-input-switch-thumb';
     track.append(thumb);
     this.effect(() => {
-      const on = this.value.value === true;
+      const on = this.value === true;
       track.classList.toggle('u2-input-switch-on', on);
       track.setAttribute('aria-checked', String(on));
     });
@@ -69,7 +69,7 @@ export class BoolInput extends Input<boolean, BoolInputOptions> {
   }
 
   private _toggle(): void {
-    if (this.enabled && !this.readOnly)
-      this.value.value = !this.value.peek();
+    if ((this.disabled === null) && !this.readOnly)
+      this.value = !this.peek();
   }
 }

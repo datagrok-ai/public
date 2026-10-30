@@ -1,7 +1,7 @@
 /* The list row (WO-10): a string_list descriptor edits through ListInput, and the element-wise
    comparison that keeps a rebuilt array from reading as an edit — identity would loop. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';

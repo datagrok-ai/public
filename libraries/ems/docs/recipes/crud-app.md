@@ -7,7 +7,7 @@ validates, tracks a change or checks a permission by hand. Reference implementat
 (`packages/Stockroom`), a chemical stockroom on the GHS taxonomy; the whole app is:
 
 ```ts
-import {domains} from '@datagrok-libraries/u2/src/dg/index.js';
+import {domains} from '@datagrok-libraries/ems/src/dg';
 
 //name: Stockroom
 //tags: app
@@ -18,8 +18,8 @@ export async function stockroomApp(): Promise<DG.ViewBase> {
 ```
 
 The other two tiers build on the same handle: [spec-app](spec-app.md) lays the page out as a
-designer-editable spec, [custom-app](custom-app.md) adds actions, validators, renderers and an app
-subclass in code.
+designer-editable spec, [custom-app](custom-app.md) adds actions, validators, renderers and the
+app's own ribbon, menu, shortcuts and setup in code.
 
 ## What the schema declares → what the app shows
 
@@ -57,12 +57,16 @@ under its own `SharedSession`:
   draft) on the entity page; `base` is `/domains/<schema>/<table>` unless `path` says otherwise.
   Deep links land through `acceptsPath`/`handlePath`; a saved row opened from anywhere
   (`DomainTable.open(row)`) activates the running app instead of a second view.
-- **The ribbon** is `[[New, Save, Discard, ⋯, Refresh], [search, filters]]`: New hidden without
-  `insert`, Save (Ctrl+S; Tab from the form's last field lands on it) and Discard disabled while
-  there is nothing to save, the ⋯ menu carrying Import… / Bulk edit… / Trash (below), Refresh
-  shown only while the page is stale, search and filters shown on the list page only.
+- **The ribbon** is `DomainApp.ribbon()`, three named slots: `main` — New as an icon button,
+  Save (Ctrl+S; Tab from the form's last field lands on it) the one raised button, Discard, the
+  ⋮ **Actions** menu (below), Refresh shown only while the page is stale; `tools` — the
+  search box and the Sort by menu, on the list page only; `presets` — empty unless the `ribbon`
+  option fills it. New is hidden without `insert`; Save and Discard are off while there is nothing to save
+  and say so ("No changes to save", "Nothing to discard"), except Discard on an untouched create page,
+  which it leaves. The filter box is a row of the list page,
+  under the ribbon.
 - **The status bar** is the session's summary while it is dirty ("3 unsaved changes in 2 tables"),
-  else the page's ("50 of 2,077", "New substance", "Substance saved"). A `live` source that has
+  else the page's ("50 of 2,077 substances", "New substance", "Substance saved"). A `live` source that has
   seen the server move while the page is dirty says "Data changed — Refresh", and the ribbon's
   Refresh button appears beside it.
 - **Three gates in front of dropping unsaved changes**, each the same Save / Discard / Cancel
@@ -72,22 +76,25 @@ under its own `SharedSession`:
 | `app()` option | What it does |
 |---|---|
 | `name`, `path` | the view's name (the plural name by default) and its base path |
-| `query`, `pageSize`, `mode: 'brief' \| 'cards'` | the list page's initial query, page size and row shape |
+| `query`, `sort`, `pageSize`, `mode: 'brief' \| 'cards'`, `itemHeight` | the list page's initial query, order, page size, row shape and row height |
+| `live`, `defaults`, `filters` | following the server, what a draft starts with, the filter box or builder (`placement: 'left'`) — see [dg.md](../dg.md) |
 | `include: string[]` | the form's columns, in this order |
-| `children: false \| {tables, mode: 'grid' \| 'list'}`, `history: false` | the entity-page panes (both on by default) |
-| `shortcuts`, `app` | keys onto the table's actions, and a `DomainApp` subclass — the [code tier](custom-app.md) |
+| `children: false \| {tables, mode: 'grid' \| 'list', grids}`, `history: false` | the entity-page panes (both on by default) |
+| `shortcuts`, `ribbon`, `menu`, `setup` | keys onto the table's actions, and the app's own ribbon, Actions menu and wiring — the [code tier](custom-app.md) |
 
-## The ⋯ menu: import, bulk edit, trash
+## The Actions menu: import, bulk edit, the deleted rows
 
-The ribbon's ⋯ menu is `DomainApp.menuActions()` — three table-wide actions, each gated on the
-capability it needs, so a caller without it never sees the item. A `DomainApp` subclass that adds
-to the ribbon keeps them (`[...super.ribbon(), [this.presets(…)]]`); one that overrides
-`menuActions()` should extend the result rather than replace it.
+The ribbon's ⋮ Actions menu is `DomainApp.menuActions()`, in sections, each item gated on the
+capability it needs, so a caller without it never sees the item: on the entity page the row's own
+actions first (the table's row actions, then Delete); Import… and Bulk edit…; then **Show deleted**.
+The `menu` option drops or adds an item (`menu: (base) => base.filter((a) => a.name !== 'Bulk edit…')`);
+it should extend the list rather than replace it. A `ribbon` option that adds to the ribbon keeps
+them (`ribbon: (base, app) => ({...base, presets: [app.presets(…)]})`).
 
 ### Trash and restore
 
 `delete` is soft everywhere: the row keeps its place with `is_deleted` set and leaves every query
-that does not ask for it. **Trash** flips the list source's `deleted` mode, so the search box, the
+that does not ask for it. **Show deleted** flips the list source's `deleted` mode, so the search box, the
 filter box and the paging are the ones already in force:
 
 ```ts
@@ -95,15 +102,16 @@ source.deleted.value = 'only';        // 'exclude' (default) | 'include' | 'only
 ```
 
 In the app that flip is one move: the list page is shown, the breadcrumb reads
-`<Table> › Trash`, Save and Discard are hidden (a deleted row is read-only until it comes back),
-the path grows `?trash=1`, and the whole thing is ONE history entry — Back leaves the trash.
+`<Table> › Trash` (the root crumb leads back) and a line over the list says what the page is; a
+deleted row is read-only until it comes back, and keeps its line with when it was deleted; the
+path grows `?trash=1`, and the whole thing is ONE history entry — Back leaves the trash.
 Each row offers **Restore** where `~can_delete` says the caller may (restore IS the Delete grant,
 not a permission of its own), and a selection restores in one go:
 
 ```ts
-await table.restore(row.id);           // one row, through the handle
-await source.restore([id1, id2]);      // several, then one re-read
-await source.restoreSelection();       // the frame's selection — the trash list's bulk Restore
+await table.restore(row.id);           // one row at once, through the handle
+source.stageRestore([id1, id2]);       // several, staged into the session: the Save lands them
+source.stageRestoreSelection();        // the frame's selection — the trash list's bulk Restore
 ```
 
 A backend that does not implement `restore` cannot answer a `deleted` query either, and a source
@@ -115,12 +123,18 @@ asking for one over it is refused by name (`DomainSource.requireRestore`).
 const updated = await domains.bulkEdit(source);         // resolves to the row count, or null
 ```
 
-The dialog offers every column the caller may write, each with an **include checkbox**: only the
-checked columns reach the server, so "clear this field" (checked, left empty) and "leave it alone"
-(unchecked) are different requests. The target is either **N selected** — posted as
-`id in ("…","…")`, refused by name past the server's 1000-row cap — or **all M matching**, the
-list's filter as it stands. A bulk edit is not part of the unit of work: it lands the moment OK is
-pressed, so the session's pending changes are settled through `confirmDiscard` first, and the
+The dialog is one aligned form: **Apply to**, **Change** — a picker over the columns the caller
+may write (a business key only for a single row) — and an editor for each chosen field. Only the
+chosen columns reach the server, so "clear this field" (chosen, left empty) and "leave it alone"
+(not chosen) are different requests; a muted line under each field says "N different values"
+where the selected rows differ, or "Will be cleared". The target is either **N selected** —
+posted as `id in ("…","…")`, refused by name past the server's 1000-row cap — or **all M
+matching**, the list's filter as it stands (plain text when only one exists); the button reads
+"Update N <rows>" and is disabled, with the reason as its tooltip, until a field is chosen. The
+table's validators (`domains.configure`) run over the target rows as they would land — the
+matching ones read for it, at most 1000 — and a refusal, theirs or the server's, stays in the
+dialog's error line. A bulk edit is not part of the unit of work: it lands the moment the button
+is pressed, so the session's pending changes are settled through `confirmDiscard` first, and the
 source re-reads afterwards.
 
 Two refusals worth knowing: "all matching" needs a filter and is refused while a **search** is set
@@ -156,7 +170,7 @@ renamed source column never reaches the server, and the source frame is never to
 ## Rules the controls follow (so the app does not re-implement them)
 
 - **Permission ⇒ hidden, state ⇒ disabled.** A column the caller may not see is absent; a row
-  action they may not run is absent; Save is disabled while there is nothing to save.
+  action they may not run is absent; Save is off while there is nothing to save, and says why.
 - **Readonly is text.** A column the caller may not write — the table says so, the row does
   (`~can_edit`), or a draft under a caller without `insert` — is caption + value, never a dead
   input, and never in the payload.
@@ -181,7 +195,7 @@ renamed source column never reaches the server, and the source frame is never to
 
 - A `grok.dapi.domains.table(...).update(...)` behind a Save button — `app()` already saves every
   pending row as one transaction.
-- Re-declaring in code what the schema says (`if (!access.can.edit) input.enabled = false`, a
+- Re-declaring in code what the schema says (`if (!access.can('edit')) input.disabled = 'Read-only'`, a
   hand-written "required" check) — declare it in `schema.json` and every tier gets it.
 - A second view over the same table for "create" — New is the entity page over a draft.
 - A `for (const id of selected) await client.update(id, values)` loop behind a "Close all" button —

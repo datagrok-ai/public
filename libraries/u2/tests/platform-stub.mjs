@@ -10,7 +10,7 @@
 const DOUBLES = new URL('./platform-doubles.mjs', import.meta.url).href;
 
 const GROK = `
-import {DataFrame, Shell} from '${DOUBLES}';
+import {DataFrame, Shell, strayTables} from '${DOUBLES}';
 
 export const shell = new Shell();
 
@@ -25,7 +25,7 @@ export const openTable = (name) => shell.addTable(new DataFrame([], [], name));
 export const closeTable = (name) => shell.closeTable(name);
 
 export function resetShell() {
-  shell.dart.tableNames = [];
+  shell.dart.tables = strayTables();
   delete shell.error;
   data.parseCsv = () => new DataFrame();
   events.onTableAdded.subs.clear();

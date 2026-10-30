@@ -9,6 +9,7 @@ import {signal, computed, untracked, Signal, ReadonlySignal} from '../../core/si
 import {VirtualList} from './list.js';
 import type {VirtualListOptions} from './list.js';
 import {icon} from '../display/icon.js';
+import {Reason} from '../../core/reason.js';
 import type {Action} from '../actions/actions.js';
 import {ITEMS_CAP} from '../../core/widget-like.js';
 import type {IItemState, IItemsState} from '../../core/widget-like.js';
@@ -24,9 +25,9 @@ export interface TreeNode<T = unknown> {
   checked?: boolean;
   /** The checkbox cannot be toggled — a state the node's owner decides (a key column). */
   locked?: boolean;
-  /** The row is greyed out (`u2-tree-row-disabled`, `aria-disabled`): still selectable, so the
-   * reason in its tooltip and its detail can be read. */
-  disabled?: boolean;
+  /** Why the row is greyed out (`u2-tree-row-disabled`, `aria-disabled`, the reason as its tooltip and
+   * `aria-description`): still selectable, so the reason and the row's detail can be read. */
+  disabled?: string | null;
 }
 
 export interface TreeOptions<T> {
@@ -60,7 +61,7 @@ interface FlatRow<T> {
   tooltip?: string;
   checked?: boolean;
   locked?: boolean;
-  disabled?: boolean;
+  disabled?: string | null;
 }
 
 /** A lazy branch's read: the loader it ran, the scope it ran in, and its answer once there. */
@@ -126,7 +127,7 @@ export class VirtualTree<T = unknown> extends Control {
     this._check = options.onCheck;
     this._checkLabel = options.checkLabel;
     const contextActions = options.contextActions;
-    this._list = new TreeRows<T>({
+    this._list = this.build(() => new TreeRows<T>({
       itemHeight: options.itemHeight ?? 20,
       rowRole: 'treeitem',
       keyOf: VirtualTree._key,
@@ -135,8 +136,7 @@ export class VirtualTree<T = unknown> extends Control {
       contextActions: contextActions ?
         (row) => row.kind === 'node' ? contextActions(row.node) : [] :
         undefined,
-    }, this);
-    this.own(() => this._list.dispose());
+    }, this));
     this.own(() => this._endRename?.());
 
     this.root.classList.add('u2-tree');
@@ -232,7 +232,7 @@ export class VirtualTree<T = unknown> extends Control {
       if (opts?.all || count < ITEMS_CAP) {
         list.push({key: row.node.id, label: row.label, index: count, level: row.depth + 1,
           expanded: row.branch ? row.open : undefined, checked: row.checked,
-          selected: selected.has(at), disabled: row.disabled === true, rendered: this._list.rowAt(at) !== null});
+          selected: selected.has(at), disabled: !!row.disabled, rendered: this._list.rowAt(at) !== null});
       }
       count++;
     }
@@ -363,7 +363,7 @@ export class VirtualTree<T = unknown> extends Control {
     this._loads.set(node.id, load);
     let started: Promise<TreeNode<T>[]>;
     try {
-      started = Scope.runWith(scope, () => untracked(loader));
+      started = scope.build(() => untracked(loader));
     } catch (e) {
       started = Promise.reject(e);
     }
@@ -436,11 +436,11 @@ export class VirtualTree<T = unknown> extends Control {
     if (row.checked !== undefined)
       el.append(this._checkbox(row));
     el.append(label);
-    if (row.disabled === true) {
+    if (row.disabled) {
       el.classList.add('u2-tree-row-disabled');
-      rowEl.setAttribute('aria-disabled', 'true');
+      Reason.apply(rowEl, row.disabled);
     }
-    el.title = row.tooltip ?? row.label;
+    el.title = row.disabled || (row.tooltip ?? row.label);
     return el;
   }
 
@@ -612,10 +612,10 @@ export class VirtualTree<T = unknown> extends Control {
     return row ? Number(row.dataset.index) : -1;
   }
 
-  /** The platform's caret, not a text glyph: it inherits the icon sheet every other twistie in
+  /** The platform's chevron, not a text glyph: it inherits the icon sheet every other twistie in
    * the app is drawn from, and keeps its box when it is hidden so the rows stay aligned. */
   private static _twistie(branch: boolean, open: boolean): HTMLElement {
-    const el = icon(open ? 'caret-down' : 'caret-right', {variant: 'solid', cls: 'u2-tree-twistie'});
+    const el = icon(open ? 'chevron-down' : 'chevron-right', {cls: 'u2-tree-twistie'});
     if (!branch)
       el.classList.add('u2-tree-twistie-hidden');
     return el;

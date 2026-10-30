@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, category, test, expect, expectFloat, before} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, test, expect, expectFloat, before} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
@@ -1543,7 +1543,7 @@ category('SAR Matrix: viewer', () => {
     const tv = grok.shell.addTableView(df);
     const viewer = dockViewer(tv, options);
     try {
-      await awaitCheck(() => settled(viewer), 'the build never finished', 30000);
+      await waitUntil(() => settled(viewer), 'the build never finished', 30000);
       await body(viewer);
     } finally {
       viewer.detach();
@@ -1607,7 +1607,7 @@ category('SAR Matrix: viewer', () => {
     const open = async (state: {[name: string]: unknown}): Promise<SarMatrixViewer> => {
       const viewer = dockViewer(tv, state);
       opened.push(viewer);
-      await awaitCheck(() => settled(viewer), 'the viewer built no matrices', 30000);
+      await waitUntil(() => settled(viewer), 'the viewer built no matrices', 30000);
       return viewer;
     };
     const restored = (viewer: SarMatrixViewer): unknown => viewer.getWidgetStatus().values?.['restored'];
@@ -1653,7 +1653,7 @@ category('SAR Matrix: viewer', () => {
       const stale = addButton();
       const built = viewer.matrices;
       df.rows.removeAt(0);
-      await awaitCheck(() => settled(viewer) && viewer.matrices !== built, 'the rebuild never finished', 30000);
+      await waitUntil(() => settled(viewer) && viewer.matrices !== built, 'the rebuild never finished', 30000);
       stale.click();
       expect(makeList.count, 0, 'a pane opened before the rebuild added its cell under the new analysis');
       addButton().click();
@@ -1675,7 +1675,7 @@ category('SAR Matrix: viewer', () => {
       const potencyShown = async (row: number, column: string): Promise<string> => {
         const before = opened.length;
         list.currentCell = list.cell(row, column);
-        await awaitCheck(() => opened.length > before, `a click on row ${row} opened nothing`, 3000);
+        await waitUntil(() => opened.length > before, `a click on row ${row} opened nothing`, 3000);
         const shown = opened[opened.length - 1];
         expect(shown.smiles, list.get(MAKELIST_STRUCTURE, row), 'the row opened another structure');
         return shown.build?.().querySelector('.chem-sar-cp-value')?.textContent ?? 'no SAR pane';
@@ -1700,10 +1700,10 @@ category('SAR Matrix: viewer', () => {
         throw new Error('induced failure');
       };
       viewer.props.setAll({minCompounds: 2});
-      await awaitCheck(() => idle(viewer), 'the rebuild never finished', 30000);
+      await waitUntil(() => idle(viewer), 'the rebuild never finished', 30000);
       expect(viewer['matrixSlot'].state === null, true, 'a grid drawn during the failed build is still alive');
       viewer.props.setAll({rankScheme: SarRankScheme.Discontinuity});
-      await awaitCheck(() => idle(viewer), 'the re-rank never settled', 30000);
+      await waitUntil(() => idle(viewer), 'the re-rank never settled', 30000);
       expect(viewer.matrices.length, 0, 'a ranking change brought back the set the failed build replaced');
       expect(((viewer['host'] as HTMLElement).textContent ?? '').includes('SAR Matrix failed'), true,
         'the failure is no longer shown');
@@ -1720,12 +1720,12 @@ category('SAR Matrix: viewer', () => {
       expect(viewer.matrices.length > 0, true, 'renaming the molecules and activity dropped the analysis');
       // The matrices name their positions after the R-group columns.
       df.col('R2')!.name = 'Halogen';
-      await awaitCheck(() => settled(viewer) && viewer.getWidgetStatus().values?.['axis'] === 'Halogen',
+      await waitUntil(() => settled(viewer) && viewer.getWidgetStatus().values?.['axis'] === 'Halogen',
         'the matrices still name the axis by its old name', 30000);
       expect(viewer.rGroupColumnNames.join(','), 'R1,Halogen', 'the R-groups still name the old column');
       const built = viewer.matrices;
       viewer.props.setAll({minCompounds: 2});
-      await awaitCheck(() => settled(viewer) && viewer.matrices !== built,
+      await waitUntil(() => settled(viewer) && viewer.matrices !== built,
         'a setting change found none of the renamed columns and built nothing', 30000);
     });
   }, {timeout: 90000});

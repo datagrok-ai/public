@@ -1,5 +1,4 @@
-/* Platform base steps: setup through the JS API (the openers of @datagrok-libraries/test keep the
-   provenance tags the UI would set). Viewer steps live in the `viewers` tier. */
+// setup goes through @datagrok-libraries/test's openers: they keep the provenance tags the UI would set
 import {type Locator, type Page, test} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';

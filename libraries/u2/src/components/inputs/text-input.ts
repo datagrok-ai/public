@@ -2,6 +2,9 @@ import {Input, InputOptions, LiveOption} from '../../core/input-base.js';
 import {bindValue} from '../../core/bind.js';
 import {icon} from '../display/icon.js';
 
+const blank = (value: string | null | undefined) =>
+  Input.isEmpty(value) || typeof value === 'string' && value.trim() === '';
+
 export interface TextInputOptions extends InputOptions<string> {
   /** Magnifier affordance plus a clear button, revealed on hover as the platform's is
    * (`text_input.dart:131-141` wires it through `htmlMouseOverVisibility`). */
@@ -39,12 +42,16 @@ export class TextInput extends Input<string, TextInputOptions> {
     this._remeasure?.();
   }
 
+  protected isEmptyValue(value: string): boolean {
+    return blank(value);
+  }
+
   protected createEditor(): HTMLElement {
     const input = document.createElement('input');
     this._input = input;
     input.type = this.options.password ? 'password' : 'text';
     input.autocomplete = 'off';
-    bindValue(this.scope, input, this.value, this.options.commitOn);
+    bindValue(input, this.signal, {owner: this.scope, commitOn: this.options.commitOn});
     if (this.options.autoResize)
       this._autoResize();
     if (this.options.password)
@@ -54,16 +61,11 @@ export class TextInput extends Input<string, TextInputOptions> {
 
     const editor = document.createElement('div');
     editor.className = 'u2-input-search';
-    const clear = document.createElement('button');
-    clear.type = 'button';
-    clear.className = 'u2-input-clear';
-    clear.textContent = '✕';
-    clear.setAttribute('aria-label', 'Clear');
-    this.scope.listen(clear, 'click', () => {
-      this.value.value = '';
+    const clear = this.createClearButton(() => {
+      this.value = '';
       input.focus();
     });
-    this.effect(() => clear.hidden = this.value.value === '');
+    this.effect(() => clear.hidden = this.value === '');
     editor.append(input, clear);
     return editor;
   }
@@ -97,14 +99,14 @@ export class TextInput extends Input<string, TextInputOptions> {
     measure.setAttribute('aria-hidden', 'true');
     this.root.append(measure);
     this._remeasure = () => {
-      const text = this.value.peek();
+      const text = this.peek();
       measure.textContent = text === '' ? this._input.placeholder : text;
       const min = this.options.minWidth ?? 100;
       const max = this.options.maxWidth ?? 300;
       this._input.style.width = `${Math.min(Math.max(measure.offsetWidth + 10, min), max)}px`;
     };
     this.effect(() => {
-      void this.value.value;
+      void this.value;
       this._remeasure!();
     });
   }
@@ -134,6 +136,10 @@ export class TextArea extends Input<string, TextAreaOptions> {
     this._area.placeholder = x;
   }
 
+  protected isEmptyValue(value: string): boolean {
+    return blank(value);
+  }
+
   /** Visible text lines. */
   get rows(): number {
     return this._area.rows;
@@ -151,9 +157,9 @@ export class TextArea extends Input<string, TextAreaOptions> {
     this._area = area;
     if (this.options.rows !== undefined)
       area.rows = this.options.rows;
-    bindValue(this.scope, area, this.value, this.options.commitOn);
+    bindValue(area, this.signal, {owner: this.scope, commitOn: this.options.commitOn});
     if (this.options.autoGrow)
-      this.effect(() => this._grow(this.value.value));
+      this.effect(() => this._grow(this.value));
     return area;
   }
 

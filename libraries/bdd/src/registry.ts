@@ -1,10 +1,3 @@
-/* The three vocabularies a feature file binds to — steps (verbs), elements and kinds (nouns),
-   datasets (data) — plus the custom parameter types that carry them through cucumber
-   expressions. Binding modules under `bindings/` call these at import time; the compiler and the
-   runtime import the same modules, so both sides read one registry.
-   Element names are global and unique: bindings/platform registers the Datagrok shell (toolbox,
-   browse tab, grid …) and those names are reserved everywhere; an app registers its own names on a
-   context — a named region whose vocabulary applies once a step `enters` it. */
 import type {Page} from '@playwright/test';
 
 export type StepKeyword = 'Given' | 'When' | 'Then' | 'Step';

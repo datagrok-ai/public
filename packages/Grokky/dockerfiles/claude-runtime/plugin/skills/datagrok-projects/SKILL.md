@@ -82,7 +82,9 @@ it with data sync":
 - **Create** an empty project: `datagrok_projects(op: "create", args: {name})` once.
 - **Attach** the current table/view to a project: use the Save dialog flow above.
 - **Share**: `datagrok_projects(op: "share", args: {projectId, groups, access})` —
-  `access` `"View"`|`"Edit"`, default `"View"`; ask when no group is named.
+  `access` `"View"`|`"Edit"`, default `"View"`; ask when no group is named. Confirm it with
+  `datagrok_projects(op: "list_shares", args: {projectId})`, not with `grok.dapi.permissions`
+  (its lists come back empty from a script).
   When the platform's **Share dialog** is open instead (a `dlg<N>` ref), drive it the same way:
   `getShareInfo`, `addShareGrantee(name)`, `setShareAccess(access)`, `setShareMessage(message)`,
   then `clickButton OK`.

@@ -1,8 +1,11 @@
 import {createRequire} from 'node:module';
-const require = createRequire('C:/Users/rizhi/Desktop/GROK-CORE/reddata/public/libraries/bdd/package.json');
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+const require = createRequire(new URL('../../../../libraries/bdd/package.json', import.meta.url));
 const {chromium} = require('@playwright/test');
 
-const storageState = 'C:/Users/rizhi/Desktop/GROK-CORE/reddata/public/packages/Peptides/bdd/e2e/.auth.json';
+const storageState = fileURLToPath(new URL('../e2e/.auth.json', import.meta.url));
 const browser = await chromium.launch({args: ['--disable-accelerated-2d-canvas']});
 const page = await (await browser.newContext({storageState, viewport: {width: 1600, height: 1000}})).newPage();
 page.on('pageerror', (e) => console.log('pageerror:', String(e).slice(0, 200)));
@@ -83,5 +86,5 @@ console.log('svm grid status sample:', await page.evaluate(() => {
   const vals = Object.entries(st.values).filter(([k]) => !k.startsWith('color of') && !k.startsWith('text of') && !k.startsWith('cell type') && !k.startsWith('column width'));
   return JSON.stringify({areas, vals, textSample: Object.entries(st.values).filter(([k]) => k.startsWith('text of')).slice(0, 8)});
 }));
-await page.screenshot({path: 'C:/Users/rizhi/AppData/Local/Temp/claude/c--Users-rizhi-Desktop-GROK-CORE-reddata/5064346e-d8d5-4cff-a425-aab38edc88c6/scratchpad/sar.png'});
+await page.screenshot({path: join(tmpdir(), 'sar.png')});
 await browser.close();

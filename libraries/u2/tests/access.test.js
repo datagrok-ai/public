@@ -4,29 +4,16 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {fire, flush, resetDom} from './dom-shim.js';
-import {Scope} from '../src/core/scope.js';
+import './dom-shim.js';
 import {Access} from '../src/core/access.js';
 import {Rows} from '../src/sources/rows-like.js';
 import {rowActions, actionsMenu} from '../src/components/actions/actions.js';
-
-function scoped(name, body) {
-  test(name, async () => {
-    const live = Scope.liveCount;
-    try {
-      await body();
-    } finally {
-      resetDom();
-      await flush();
-    }
-    assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
-  });
-}
+import {u2test, mount, byName, user} from '../src/testing/index.js';
 
 const DATA = {can: {view: true, insert: true, edit: true, delete: false, approve: true},
   fields: {title: 'editable', number: 'readonly'}};
 
-scoped('Access.full and Access.readOnly answer every capability and field, and are frozen', () => {
+test('Access.full and Access.readOnly answer every capability and field, and are frozen', u2test(() => {
   assert.equal(Access.full.can('delete'), true);
   assert.equal(Access.full.can('approve'), true, 'a custom capability too');
   assert.equal(Access.full.field('anything'), 'editable');
@@ -36,9 +23,9 @@ scoped('Access.full and Access.readOnly answer every capability and field, and a
   assert.equal(Access.readOnly.field('anything'), 'readonly');
   assert.equal(Object.isFrozen(Access.full), true);
   assert.equal(Object.isFrozen(Access.readOnly), true);
-});
+}));
 
-scoped('Access.from: listed capabilities and fields as given, an unlisted field is hidden', () => {
+test('Access.from: listed capabilities and fields as given, an unlisted field is hidden', u2test(() => {
   const access = Access.from(DATA);
   assert.equal(access.can('edit'), true);
   assert.equal(access.can('delete'), false);
@@ -50,9 +37,9 @@ scoped('Access.from: listed capabilities and fields as given, an unlisted field 
   DATA.can.edit = false;
   assert.equal(access.can('edit'), true, 'a copy of the data, not a view over it');
   DATA.can.edit = true;
-});
+}));
 
-scoped('Access.row: a carried ~can_* column replaces the table\'s answer either way', () => {
+test('Access.row: a carried ~can_* column replaces the table\'s answer either way', u2test(() => {
   assert.deepEqual(Access.ROW_COLUMNS.map(([column]) => column), ['~can_edit', '~can_delete', '~can_share'],
     'the js-api DOMAIN_ACCESS_COLUMNS');
   const access = Access.from({...DATA, can: {...DATA.can, share: true}});
@@ -90,9 +77,9 @@ scoped('Access.row: a carried ~can_* column replaces the table\'s answer either 
   assert.equal(fullRow.can('edit'), true);
   assert.equal(fullRow.can('approve'), true, 'full stays full for everything the row did not narrow');
   assert.equal(fullRow.field('anything'), 'editable');
-});
+}));
 
-scoped('field folds the write capability in: editable needs edit on a row, insert on a draft', () => {
+test('field folds the write capability in: editable needs edit on a row, insert on a draft', u2test(() => {
   // the server lists every unrestricted column as editable even for a caller with no grants
   const none = Access.from({can: {view: true, insert: false, edit: false, delete: false, share: false},
     fields: {title: 'editable', number: 'readonly'}});
@@ -140,9 +127,9 @@ scoped('field folds the write capability in: editable needs edit on a row, inser
   assert.equal(editor.row({'~can_edit': false}).forDraft().field('title'), 'editable');
   assert.equal(Access.full.forDraft().field('anything'), 'editable');
   assert.equal(Access.readOnly.forDraft().field('anything'), 'readonly');
-});
+}));
 
-scoped('Access.narrow: an upper bound row() cannot lift, and a field follows it', () => {
+test('Access.narrow: an upper bound row() cannot lift, and a field follows it', u2test(() => {
   const access = Access.from({...DATA, can: {...DATA.can, delete: true}});
   const trash = access.narrow({edit: false, insert: false});
   assert.equal(trash.can('edit'), false);
@@ -162,9 +149,9 @@ scoped('Access.narrow: an upper bound row() cannot lift, and a field follows it'
   assert.equal(trash.narrow({delete: false}).can('delete'), false, 'bounds compose');
   assert.equal(Access.full.narrow({edit: false}).can('edit'), false);
   assert.equal(Access.full.narrow({edit: false}).can('delete'), true);
-});
+}));
 
-scoped('Access.narrow is deny-only: a true entry grants nothing and lifts no bound', () => {
+test('Access.narrow is deny-only: a true entry grants nothing and lifts no bound', u2test(() => {
   const access = Access.from(DATA);
   assert.equal(access.can('delete'), false);
   assert.equal(access.narrow({delete: true}).can('delete'), false, 'a true entry is not a grant');
@@ -172,9 +159,9 @@ scoped('Access.narrow is deny-only: a true entry grants nothing and lifts no bou
   assert.equal(trash.narrow({edit: true}).can('edit'), false, 'and cannot lift a bound it set');
   assert.equal(trash.narrow({edit: true}).field('title'), 'readonly');
   assert.equal(Access.readOnly.narrow({edit: true}).can('edit'), false);
-});
+}));
 
-scoped('Access.columnPolicy: the fields as declared, every capability granted and unbounded', () => {
+test('Access.columnPolicy: the fields as declared, every capability granted and unbounded', u2test(() => {
   const policy = Access.from(DATA).narrow({edit: false, insert: false}).columnPolicy();
   assert.equal(policy.can('edit'), true, 'the bound a trash source set is not read here');
   assert.equal(policy.can('delete'), true);
@@ -183,44 +170,47 @@ scoped('Access.columnPolicy: the fields as declared, every capability granted an
   assert.equal(policy.field('number'), 'readonly', 'a restricted one is not');
   assert.equal(policy.field('salary'), 'hidden', 'and an unlisted one stays hidden');
   assert.equal(Access.readOnly.columnPolicy().field('anything'), 'readonly');
-});
+}));
 
 function actions(log) {
   return [
-    {name: 'Open', icon: 'external-link-alt', run: () => log.push('open')},
-    {name: 'Escalate', icon: 'arrow-up', requires: 'edit', enabled: false, run: () => log.push('escalate')},
-    {name: 'Delete', icon: 'trash', requires: 'delete', run: () => log.push('delete')},
-    {name: 'Approve', requires: 'approve', run: () => log.push('approve')},
+    {text: 'Open', icon: 'external-link-alt', run: () => log.push('open')},
+    {text: 'Escalate', icon: 'arrow-up', requires: 'edit', disabled: 'Already escalated', run: () => log.push('escalate')},
+    {text: 'Delete', icon: 'trash', requires: 'delete', run: () => log.push('delete')},
+    {text: 'Approve', requires: 'approve', run: () => log.push('approve')},
   ];
 }
 
-scoped('rowActions: a denied `requires` is not rendered, `enabled: false` is disabled; default full', () => {
+test('rowActions: a denied `requires` is not rendered, a `disabled` reason is off; default full', u2test(() => {
   const log = [];
   const all = rowActions(actions(log));
   assert.deepEqual([...all.querySelectorAll('button')].map((b) => b.getAttribute('aria-label')),
     ['Open', 'Escalate', 'Delete'], 'Access.full by default: nothing outside EMS changes');
 
-  const block = rowActions(actions(log), {access: Access.from(DATA)});
+  const block = mount(() => rowActions(actions(log), {access: Access.from(DATA)}));
   const buttons = [...block.querySelectorAll('button')];
   assert.deepEqual(buttons.map((b) => b.getAttribute('aria-label')), ['Open', 'Escalate'],
     'permission ⇒ hidden');
   assert.equal(buttons[1].disabled, true, 'state ⇒ disabled');
-  fire(buttons[0], 'click');
+  // hover-revealed: the block takes the pointer only under a hovered row, which no script can produce; the keyboard
+  // reaches it
+  assert.throws(() => user.press(byName(block, 'Escalate'), 'Enter'), /user\.press: button "Escalate" is disabled/);
+  user.press(byName(block, 'Open'), 'Enter');
   assert.deepEqual(log, ['open']);
 
   const perRow = rowActions(actions(log), {access: Access.from(DATA), row: {'~can_edit': false}});
   assert.deepEqual([...perRow.querySelectorAll('button')].map((b) => b.getAttribute('aria-label')), ['Open'],
     'the row refines the table');
-});
+}));
 
-scoped('actionsMenu: the same rule over the full list', () => {
+test('actionsMenu: the same rule over the full list', u2test(() => {
   const log = [];
   const menu = actionsMenu(actions(log), {access: Access.from(DATA)});
   menu.show({x: 10, y: 10});
   const items = [...document.querySelectorAll('[role="menuitem"]')];
   assert.deepEqual(items.map((el) => el.querySelector('.u2-menu-label').textContent),
     ['Open', 'Escalate', 'Approve'], 'Delete is gone; the custom permission the table grants stays');
-  fire(items[2], 'click');
+  user.click(byName(document, 'Approve'));
   assert.deepEqual(log, ['approve']);
   assert.equal(menu.isOpen.value, false);
-});
+}));

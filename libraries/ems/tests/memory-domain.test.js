@@ -1,9 +1,3 @@
-/* MemoryDomainBackend (WO-7): a schema.json as properties, info and access; queries evaluated by
-   the filter feature's own `toMask`, sorted, paged, projected, with the per-row access columns on
-   demand; transactions all-or-nothing with `$ref` resolution, the schema's rules and version
-   conflicts; the rows as a frame with the writer attached. The cases every backend must agree on
-   are listed in docs/domain-backend-contract.md. */
-
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {MemoryDomainBackend, MemoryTable} from '../src/core/memory-domain.js';

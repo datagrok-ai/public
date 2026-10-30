@@ -4,10 +4,11 @@
    string, the scalarOnly / ignorePackages predicates, punctuation-blind ordering — lands in the
    rendered rows. `DG` and `grok` come from tests/dg-stub.mjs. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {Registry} from '../src/spec/registry.js';
 import {Func, Property} from './platform-doubles.mjs';
@@ -42,7 +43,7 @@ function ui(name, body) {
   });
 }
 
-const rowNames = (fb) => fb.root.querySelectorAll('.u2-list-row[data-u2-func]')
+const rowNames = (fb) => [...fb.root.querySelectorAll('.u2-list-row[data-u2-func]')]
   .map((r) => r.getAttribute('data-u2-func'));
 
 ui('registerPlatformComponents carries the u2-functions-browser meta, and create() builds it', () => {
@@ -66,11 +67,11 @@ ui('registerPlatformComponents carries the u2-functions-browser meta, and create
 ui('the factory maps the platform registry: lowercase tags, roles, signature, sort, shell.o', () => {
   const fb = functionsBrowser();
   document.body.append(fb.root);
-  fb.root.querySelector('.u2-list').clientHeight = 220;
+  layout(fb.root.querySelector('.u2-list'), {clientHeight: 220});
   fb.query.value = 'x';
   fb.query.value = '';
 
-  const rows = fb.root.querySelectorAll('.u2-list-row[data-u2-func]');
+  const rows = [...fb.root.querySelectorAll('.u2-list-row[data-u2-func]')];
   assert.deepEqual(rows.map((r) => r.getAttribute('data-u2-func')),
     ['_autoPowerGrid', 'MolWeight', 'Sin', 'Chem:Sketch'],
     'ordered by label with punctuation ignored — the underscore entry files under "a"');
@@ -104,7 +105,7 @@ ui('scalarOnly keeps one scalar (or dynamic) output; setCurrentObject false leav
     const before = grok.shell.o;
     const fb = functionsBrowser({scalarOnly: true, setCurrentObject: false});
     document.body.append(fb.root);
-    fb.root.querySelector('.u2-list').clientHeight = 220;
+    layout(fb.root.querySelector('.u2-list'), {clientHeight: 220});
     fb.query.value = 'x';
     fb.query.value = '';
     assert.deepEqual(rowNames(fb).sort(), ['MolWeight', 'Sin'],

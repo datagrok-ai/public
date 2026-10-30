@@ -8,8 +8,13 @@ Feature: Categorical filter card
   back by Ctrl+Z bring their category back to the card (GROK-19537), a numeric column's card
   switches to categorical with its menu at hand (GROK-19915) and back to a histogram that keeps
   nothing it kept as categories, and a numeric column holding one value gets a histogram card that
-  takes a click without an error (GROK-19897). One journey on demog-1000, whose DIS_POP is RA 434,
-  Psoriasis 204, Indigestion 152, UC 123, AS 49 and PsA 38; its AGE takes 72 values from 18 to 89.
+  takes a click without an error (GROK-19897), and a "(" typed into the in-card search keeps the
+  categories holding one, with no error (it used to go into a regular expression and throw). One
+  journey on demog-1000, whose DIS_POP is RA 434, Psoriasis 204, Indigestion 152, UC 123, AS 49 and
+  PsA 38; its AGE takes 72 values from 18 to 89, and a band on SEX and AGE over 60 holds F (60+) 98,
+  F [..60] 455, M (60+) 55, M [..60] 392. The search syntax itself (other regular-expression
+  characters, the "*" wildcard, "," between alternatives, a pasted list) is the Dart test
+  "d4 | Filters | Categorical search" (xamgle filters_test.dart), not a scenario.
   Not translated: the row deletion is "Edit > Remove > Selected Rows" over a selection made through
   the table's API — the md's own grid-selection gesture is not the subject; Ctrl+Z is pressed for real.
   The panel is opened, and the one-value column made and removed, through the API; the card's own
@@ -168,5 +173,20 @@ Feature: Categorical filter card
     And no errors should have been logged
     When user removes "probe_constant" column
     Then "probe_constant" filter card should be absent
+    And all rows should pass the filter
+    And no errors should have been logged
+
+  Scenario: A "(" typed into the in-card search keeps the categories holding one
+    When user adds a calculated column "AGE_BAND" with formula "${SEX} + if(${AGE} > 60, \" (60+)\", \" [..60]\")"
+    And user adds a card for "AGE_BAND" to the filter panel
+    Then the "categories of AGE_BAND" reading of filter panel should be "F (60+), F [..60], M (60+), M [..60]"
+    When user hovers over "AGE_BAND" filter card
+    And user clicks on search icon of "AGE_BAND" filter card
+    And user types "(" into the search of the "AGE_BAND" filter card
+    Then the "selected categories of AGE_BAND" reading of filter panel should be "F (60+), M (60+)"
+    And 153 rows should pass the filter
+    And no errors should have been logged
+    When user removes "AGE_BAND" column
+    Then "AGE_BAND" filter card should be absent
     And all rows should pass the filter
     And no errors should have been logged

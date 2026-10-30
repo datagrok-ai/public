@@ -200,6 +200,18 @@ M  END
       .every((it) => sampleTable.columns.names().includes(it)), true);
   });
 
+  test('rgroups.prefixWithRegexCharacters', async () => {
+    const df = DG.DataFrame.fromColumns([sampleTable.col('smiles')!.clone()]);
+    for (let run = 0; run < 2; run++) {
+      await DG.Func.find({name: 'rGroupDecomposition'})[0].prepare({
+        df, molColName: 'smiles', core: 'c1ccccc1', rGroupName: 'R(', rGroupMatchingStrategy: 'Greedy',
+        onlyMatchAtRGroups: false,
+      }).call(undefined, undefined, {processed: false});
+    }
+    expect(df.col('R(1') != null, true, 'the R-group columns take the prefix as typed');
+    expect(df.col('R(1_1') != null, true, 'a second run numbers its columns after the first');
+  });
+
   test('rgroups.noRGroups.sameMolecules', async () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', new Array(5).fill('c1ccccc1'))]);
     await grok.data.detectSemanticTypes(df);
@@ -259,10 +271,12 @@ M  END
     let bWorkRan = false;
     let aStarted!: () => void;
     const aStartedP = new Promise<void>((r) => aStarted = r);
+    let releaseA!: () => void;
+    const aReleased = new Promise<void>((r) => releaseA = r);
     // process 1 (A): grabs the section (called first → wins the lock), holds it, completes; never cancelled
     const aProm = runCancellableChemOp(opA, () => false, async () => {
       aStarted();   // A now holds the section (runningOpId === opA)
-      await new Promise((r) => setTimeout(r, 500));
+      await aReleased; // A keeps the section until B has been cancelled
       return 'A-done';
     });
     // process 2 (B): launched second, so it queues behind A on the section
@@ -274,6 +288,7 @@ M  END
     bCanceled = true;
     // no-op while B is only queued — cancelChemOp must not touch A (the running op)
     await chemCommonRdKit.cancelChemOp(opB, [0]);
+    releaseA();
     const [aRes, bRes] = await Promise.all([aProm, bProm]);
     expect(aRes, 'A-done', 'first (running) op completes — not collaterally cancelled');
     expect(bRes === undefined, true, 'second (queued) op is cancelled');

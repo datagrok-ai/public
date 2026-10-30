@@ -48,7 +48,7 @@ Feature: The Activity Cliffs tutorial
 
     When user remembers the "x axis span" reading of scatter plot viewer
     And user drags a zoom box over the "view" area of scatter plot viewer
-    Then the tutorial step "Use Alt + Mouse Drag to zoom in" should be done
+    Then the tutorial step "Zoom in" should be done
     And the "x axis span" reading of scatter plot viewer should be lower than remembered
 
     When user hovers over the first free "line" area of scatter plot viewer

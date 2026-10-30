@@ -84,6 +84,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
 
   public async awaitLoaded(timeout: number = Infinity): Promise<void> {
     timeout = timeout === Infinity ? 1 * 60000 : timeout; // Limit the max lib loaded timeout
+    let timer: ReturnType<typeof setTimeout> | undefined;
     return await Promise.race([
       (async () => {
         const providers = await this.getProviders();
@@ -91,11 +92,9 @@ export class MonomerLibManager implements IMonomerLibHelper {
         await this.loadLibrariesPromise;
         return true;
       })(),
-      (async () => {
-        await DG.delay(timeout);
-        return false;
-      })(),
+      new Promise<boolean>((resolve) => timer = setTimeout(() => resolve(false), timeout)),
     ]).then((res) => {
+      clearTimeout(timer);
       if (!res)
         throw new Error(`Loading monomer libraries timeout ${timeout} ms.`);
     });

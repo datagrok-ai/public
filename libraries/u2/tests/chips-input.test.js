@@ -2,7 +2,7 @@
    system write, a disabled input ignoring clicks, chips kept by value across changes and addressable
    as items; registered as u2-chips-input. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope, Input} from '../src/index.js';
@@ -23,8 +23,19 @@ function ui(name, body) {
   });
 }
 
-const chips = (input) => input.root.querySelectorAll('.u2-chips-chip');
+const chips = (input) => [...input.root.querySelectorAll('.u2-chips-chip')];
 const pressed = (input) => chips(input).filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => c.textContent);
+
+/** What a browser does and the shim does not: a node that leaves `host` takes the focus with it, even when it is
+ * put straight back (an `insertBefore` of a connected node removes it first). */
+function dropFocusOnMove(host) {
+  const removeChild = host.removeChild.bind(host);
+  host.removeChild = (node) => {
+    if (node.contains(document.activeElement))
+      document.activeElement.blur();
+    return removeChild(node);
+  };
+}
 
 ui('a chip per item, pressed where the value says; a click toggles, the value keeps item order', () => {
   const input = new ChipsInput({label: 'Visible to', items: ['Sales', 'Developers', 'Chemists'], value: ['Chemists']});
@@ -32,10 +43,10 @@ ui('a chip per item, pressed where the value says; a click toggles, the value ke
   assert.deepEqual(chips(input).map((c) => c.textContent), ['Sales', 'Developers', 'Chemists']);
   assert.deepEqual(pressed(input), ['Chemists']);
   fire(chips(input)[0], 'click');
-  assert.deepEqual(input.value.value, ['Sales', 'Chemists']);
+  assert.deepEqual(input.value, ['Sales', 'Chemists']);
   assert.deepEqual(pressed(input), ['Sales', 'Chemists']);
   fire(chips(input)[2], 'click');
-  assert.deepEqual(input.value.value, ['Sales']);
+  assert.deepEqual(input.value, ['Sales']);
   input.dispose();
 });
 
@@ -43,11 +54,11 @@ ui('setItems prunes a pick whose item vanished as a system write; an empty list 
   const input = new ChipsInput({label: 'Visible to', items: ['Sales', 'Chemists'], value: ['Sales', 'Chemists']});
   let system = null;
   input.effect(() => {
-    input.value.value;
+    input.value;
     system = Input.isSystemWrite;
   });
   input.setItems(['Chemists']);
-  assert.deepEqual(input.value.value, ['Chemists']);
+  assert.deepEqual(input.value, ['Chemists']);
   assert.equal(system, true);
   input.setItems([]);
   assert.equal(input.root.querySelector('.u2-chips-empty').textContent, 'No items');
@@ -60,16 +71,17 @@ ui('the pressed chip is the same element, still focused, so a second Space toggl
   const chip = chips(input)[1];
   chip.focus();
   fire(chip, 'click');
-  assert.deepEqual(input.value.value, ['Developers']);
+  assert.deepEqual(input.value, ['Developers']);
   assert.equal(chips(input)[1] === chip, true, 'kept, not rebuilt');
   assert.equal(chip.classList.contains('u2-chips-chip-on'), true);
   assert.equal(document.activeElement === chip, true);
   fire(chip, 'click');
-  assert.deepEqual(input.value.value, []);
+  assert.deepEqual(input.value, []);
   assert.equal(chip.getAttribute('aria-pressed'), 'false');
+  dropFocusOnMove(chip.parentElement);
   input.setItems(['Chemists', 'Developers', {value: 'Sales', label: 'Sales team'}]);
   assert.equal(chips(input)[1] === chip, true, 'a chip whose item stays keeps its element across setItems');
-  assert.equal(document.activeElement === chip, true);
+  assert.equal(document.activeElement === chip, true, 'and the focus: Sales moved behind it, it did not move');
   assert.deepEqual(chips(input).map((c) => c.textContent), ['Chemists', 'Developers', 'Sales team'],
     'a relabelled item is patched in place');
   input.dispose();
@@ -93,9 +105,9 @@ ui('chips are addressable items: data-u2-item, role, item-label; the pressed one
 });
 
 ui('a disabled input ignores clicks', () => {
-  const input = new ChipsInput({label: 'Visible to', items: ['Sales'], enabled: false});
+  const input = new ChipsInput({label: 'Visible to', items: ['Sales'], disabled: 'Only the owner shares it'});
   fire(chips(input)[0], 'click');
-  assert.deepEqual(input.value.value, []);
+  assert.deepEqual(input.value, []);
   assert.equal(chips(input)[0].disabled, true);
   input.dispose();
 });

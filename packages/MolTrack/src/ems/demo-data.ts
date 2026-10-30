@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {moltrackEmsDb} from '../generated/db';
+import {moltrackDb} from '../generated/db';
 import type {AssayResultInsert, AssayRunInsert, CompoundBatchInsert, CompoundInsert} from '../generated/db';
 import {Chemistry} from './chemistry';
 import {BulkRegistration} from './registration';
@@ -16,15 +16,15 @@ type Values = Record<string, any>;
 export class DemoData {
   static async load(): Promise<string> {
     const additions = DemoData.records(await DemoData.table('additions'));
-    await moltrackEmsDb.additions.batch(additions.map((r) => ({...r,
+    await moltrackDb.additions.batch(additions.map((r) => ({...r,
       molecular_weight: Number(r.molecular_weight) > 0 ? Number(r.molecular_weight) : null})), {mode: 'upsert'});
-    if (await moltrackEmsDb.compounds.count() === 0)
+    if (await moltrackDb.compounds.count() === 0)
       await DemoData._compoundsAndBatches();
     await DemoData._assays();
     const [additionCount, compoundCount, batchCount, runCount, resultCount] = await Promise.all([
-      moltrackEmsDb.additions.count(), moltrackEmsDb.compounds.count(), moltrackEmsDb.compoundBatches.count(),
-      moltrackEmsDb.assayRuns.count(), moltrackEmsDb.assayResults.count()]);
-    const summary = `MolTrack EMS demo: ${additionCount} additions, ${compoundCount} compounds, ` +
+      moltrackDb.additions.count(), moltrackDb.compounds.count(), moltrackDb.compoundBatches.count(),
+      moltrackDb.assayRuns.count(), moltrackDb.assayResults.count()]);
+    const summary = `MolTrack demo: ${additionCount} additions, ${compoundCount} compounds, ` +
       `${batchCount} batches, ${runCount} assay runs, ${resultCount} assay results`;
     grok.log.info(summary);
     return summary;
@@ -44,7 +44,7 @@ export class DemoData {
     const verdicts = await BulkRegistration.prepare(records.map((r) => ({original_structure: r['smiles']})),
       await MolTrackTables.compounds());
     const fresh = records.flatMap((r, i) => verdicts[i].values === undefined ? [] : [i]);
-    const inserted = await moltrackEmsDb.compounds.batch(fresh.map((i): CompoundInsert => {
+    const inserted = await moltrackDb.compounds.batch(fresh.map((i): CompoundInsert => {
       const r = records[i];
       return {...verdicts[i].values as Omit<CompoundInsert, 'original_structure'>, original_structure: r['smiles'],
         common_name: r['Common Name']?.trim(), cas: r['CAS'], epa_compound_id: r['EPA Compound ID'],
@@ -56,7 +56,7 @@ export class DemoData {
       if (v.sameAs !== undefined)
         ids[i] = ids[v.sameAs];
     });
-    await moltrackEmsDb.compoundBatches.batch(records.flatMap((r, i): CompoundBatchInsert[] =>
+    await moltrackDb.compoundBatches.batch(records.flatMap((r, i): CompoundBatchInsert[] =>
       ids[i] !== null ? [{compound_id: ids[i]!, epa_batch_id: r['EPA Batch ID'],
         source: r['Source'], source_batch_code: r['Source Batch Code'], responsible_party: r['Responsible Party'],
         eln_reference: r['ELN Reference'], purity: DemoData.number(r['Purity']), project: r['Project'],
@@ -65,22 +65,22 @@ export class DemoData {
   }
 
   private static async _assays(): Promise<void> {
-    await moltrackEmsDb.assays.upsert({name: ASSAY, assay_format: 'in cellulo', biological_system: 'hepatocyte'});
-    const assay = (await moltrackEmsDb.assays.getByKey({name: ASSAY}))!;
-    if (await moltrackEmsDb.assayRuns.count() === 0) {
+    await moltrackDb.assays.upsert({name: ASSAY, assay_format: 'in cellulo', biological_system: 'hepatocyte'});
+    const assay = (await moltrackDb.assays.getByKey({name: ASSAY}))!;
+    if (await moltrackDb.assayRuns.count() === 0) {
       const runs = DemoData.records(await DemoData.table('assay_runs'));
-      await moltrackEmsDb.assayRuns.batch(runs.map((r): AssayRunInsert => ({
+      await moltrackDb.assayRuns.batch(runs.map((r): AssayRunInsert => ({
         name: `${ASSAY}, ${String(r['cell lot']).trim()}, ${DemoData.day(r['assay date'])}`, assay_id: assay.id,
         cell_species: String(r['cell species']).trim(), cell_lot: String(r['cell lot']).trim(),
         run_date: DemoData.date(r['assay date']), assayer: String(r['assayer']).trim()})));
     }
-    if (await moltrackEmsDb.assayResults.count() > 0)
+    if (await moltrackDb.assayResults.count() > 0)
       return;
-    const runOf = new Map((await moltrackEmsDb.assayRuns.query({columns: ['cell_lot', 'run_date'], limit: ALL}))
+    const runOf = new Map((await moltrackDb.assayRuns.query({columns: ['cell_lot', 'run_date'], limit: ALL}))
       .map((r) => [`${r.cell_lot}|${DemoData.day(r.run_date)}`, r.id]));
-    const batchOf = new Map((await moltrackEmsDb.compoundBatches.query({columns: ['epa_batch_id'], limit: ALL}))
+    const batchOf = new Map((await moltrackDb.compoundBatches.query({columns: ['epa_batch_id'], limit: ALL}))
       .map((b) => [b.epa_batch_id, b.id]));
-    await moltrackEmsDb.assayResults.batch(DemoData.records(await DemoData.table('assay_results'))
+    await moltrackDb.assayResults.batch(DemoData.records(await DemoData.table('assay_results'))
       .map((r): AssayResultInsert => {
         const clint = DemoData.qualified(r['Reported CLint (µL/min/ 106 cells)']);
         return {

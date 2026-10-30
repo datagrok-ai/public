@@ -1,8 +1,3 @@
-/* What a worker's browser holds when a feature ends, written as one JSON line per feature to the
-   file BDD_MEMORY_LOG names: the renderer, GPU and browser processes by the operating system's count
-   (working set and private bytes on Windows, the resident set elsewhere), and the page's JS heap and
-   DOM counts by the DevTools protocol. BDD_MEMORY_GC=1 adds the JS heap and the renderer after a
-   forced garbage collection, which tells what the page keeps from what it has not collected yet. */
 import {execFile} from 'node:child_process';
 import {appendFile} from 'node:fs/promises';
 import {promisify} from 'node:util';

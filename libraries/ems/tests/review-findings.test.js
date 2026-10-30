@@ -1,14 +1,7 @@
-/* The seven findings of the phase-1 external review, reproduced against the phase-2 code. A `todo`
-   test is one that FAILS today (the finding stands) — it asserts the behaviour the fix would give,
-   and node reports it without failing the suite; a plain test is one that PASSES, recording what
-   the code actually does where the review asked a question or got the shape wrong.
-
-   Findings 3 and 5 run the REAL compiled js-api (`domains-editor.js`, `domains-session.js`) through
-   a resolve hook: its ESM is webpack-shaped (extensionless relative imports, CSS imports), which
-   node cannot load on its own. */
-
+// a `todo` test FAILS today (the finding stands) and asserts what the fix would give, without failing the suite;
+// a plain test PASSES, recording what the code does where the review asked a question
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';

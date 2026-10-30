@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
-import {awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {createTableView, readDataframe} from './utils';
 import {getMmpFrags, getMmpRules} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-fragments';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
@@ -147,10 +147,10 @@ category('mmpa', () => {
       activities: tv.dataFrame.clone().columns.remove('smiles').names(),
       fragmentCutoff: 0.4});
     //wait for MMPA viewer to be created
-    await awaitCheck(() => {
+    await waitUntil(() => {
       let mmpCreated = false;
       for (const v of tv.viewers) {
-        if (v.type === 'Matched Molecular Pairs Analysis') {
+        if (v.type === 'Matched Molecular Pairs Analysis' && 'pairedGrids' in v) {
           mmp = v as MatchedMolecularPairsViewer;
           mmpCreated = true;
         }
@@ -158,10 +158,10 @@ category('mmpa', () => {
       return mmpCreated;
     }, 'MMPA hasn\'t been initialized', 3000);
     //ensure MMPA opened
-    await awaitCheck(() => document.getElementsByClassName('chem-mmpa-transformation-tab-header').length > 0,
+    await waitUntil(() => document.getElementsByClassName('chem-mmpa-transformation-tab-header').length > 0,
       'MMPA hasn\'t been started', 3000);
     //ensure fragments and pairs grids have been created
-    await awaitCheck(() => document.getElementsByClassName('d4-grid').length === 3,
+    await waitUntil(() => document.getElementsByClassName('d4-grid').length === 3,
       'Fragments and Pairs grids haven\'t been created', 3000);
     expect(mmp.mmpa!.rules.rules.length, 40, `Incorrect rules`);
     expect(mmp.mmpa!.rules!.smilesFrags.length, 14, `Incorrect smilesFrags`);
@@ -176,10 +176,10 @@ category('mmpa', () => {
       activities: tv.dataFrame.clone().columns.remove('smiles').names(),
       fragmentCutoff: 0.4});
     //wait for MMPA viewer to be created
-    await awaitCheck(() => {
+    await waitUntil(() => {
       let mmpCreated = false;
       for (const v of tv.viewers) {
-        if (v.type === 'Matched Molecular Pairs Analysis') {
+        if (v.type === 'Matched Molecular Pairs Analysis' && 'pairedGrids' in v) {
           mmp = v as MatchedMolecularPairsViewer;
           mmpCreated = true;
         }
@@ -188,27 +188,27 @@ category('mmpa', () => {
     }, 'MMPA hasn\'t been initialized', 3000);
 
     //check Fragments Grid
-    await awaitCheck(() => mmp.pairedGrids?.fpGrid?.dataFrame != null, 'All pairs grid hasn\'t been created', 3000);
+    await waitUntil(() => mmp.pairedGrids?.fpGrid?.dataFrame != null, 'All pairs grid hasn\'t been created', 3000);
     const fragsDf = mmp.pairedGrids!.fpGrid.dataFrame;
-    await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 10, 'Incorrect fragments grid', 3000);
+    await waitUntil(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 10, 'Incorrect fragments grid', 3000);
     checkRandomValues(fragsDf, 'Transformations_Fragments', true);
 
     //check Pairs Grid
-    await awaitCheck(() => mmp.pairedGrids?.mmpGridTrans?.dataFrame != null, 'mmpGrid hasn\'t been created', 3000);
+    await waitUntil(() => mmp.pairedGrids?.mmpGridTrans?.dataFrame != null, 'mmpGrid hasn\'t been created', 3000);
     const pairsDf = mmp.pairedGrids!.mmpGridTrans.dataFrame;
-    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 19, 'Incorrect pairs grid', 3000);
+    await waitUntil(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 19, 'Incorrect pairs grid', 3000);
     checkRandomValues(mmp.pairedGrids!.mmpGridTrans.dataFrame, 'Transformations_Pairs', true);
 
     //changing fragment
     mmp.followCurrentRowInFragGrid!.value = true;
     mmp.pairedGrids!.fpGrid.dataFrame.currentRowIdx = 2;
-    await awaitCheck(() => pairsDf.filter.trueCount === 2 && pairsDf.filter.get(6) && pairsDf.filter.get(7),
+    await waitUntil(() => pairsDf.filter.trueCount === 2 && pairsDf.filter.get(6) && pairsDf.filter.get(7),
       'Pairs haven\'t been changed after fragment change', 3000);
 
     mmp.showFragmentsChoice!.value = SHOW_FRAGS_MODE.Current;
     //changing target molecule
     tv.dataFrame.currentRowIdx = 4;
-    await awaitCheck(() => fragsDf.filter.trueCount === 3 &&
+    await waitUntil(() => fragsDf.filter.trueCount === 3 &&
         fragsDf.filter.get(3) && fragsDf.filter.get(4) && fragsDf.filter.get(7),
     'Fragments haven\'t been changed after target change', 3000);
   });
@@ -222,10 +222,10 @@ category('mmpa', () => {
       activities: tv.dataFrame.clone().columns.remove('smiles').names(),
       fragmentCutoff: 0.4});
     //wait for MMPA viewer to be created
-    await awaitCheck(() => {
+    await waitUntil(() => {
       let mmpCreated = false;
       for (const v of tv.viewers) {
-        if (v.type === 'Matched Molecular Pairs Analysis') {
+        if (v.type === 'Matched Molecular Pairs Analysis' && 'pairedGrids' in v) {
           mmp = v as MatchedMolecularPairsViewer;
           mmpCreated = true;
         }
@@ -233,20 +233,20 @@ category('mmpa', () => {
       return mmpCreated;
     }, 'MMPA hasn\'t been initialized', 3000);
     //open cliffs tab
-    await awaitCheck(() => mmp.root.querySelector('[name=\'Cliffs\']') != null,
+    await waitUntil(() => mmp.root.querySelector('[name=\'Cliffs\']') != null,
       'Cliffs tab hasn\'t been created', 10000);
     const cliffsTabHeader = mmp.root.querySelector('[name=\'Cliffs\']') as HTMLElement;
     cliffsTabHeader.click();
     //ensure embeddings columns have been created for cliffs tab
-    await awaitCheck(() => tv.dataFrame.columns.names().includes('~Embed_X_1') &&
+    await waitUntil(() => tv.dataFrame.columns.names().includes('~Embed_X_1') &&
      tv.dataFrame.columns.names().includes('~Embed_Y_1'), 'Embeddings haven\'t been created', 3000);
     //ensure embeddings columns have been calculated
-    await awaitCheck(() => tv.dataFrame.col('~Embed_X_1')!.stats.missingValueCount === 0 &&
+    await waitUntil(() => tv.dataFrame.col('~Embed_X_1')!.stats.missingValueCount === 0 &&
      tv.dataFrame.col('~Embed_Y_1')!.stats.missingValueCount === 0, 'Embeddings haven\'t been calculated', 10000);
     //check created lines
-    await awaitCheck(() => mmp.lines?.from.length === 81 && mmp.lines?.to.length === 81 &&
+    await waitUntil(() => mmp.lines?.from.length === 81 && mmp.lines?.to.length === 81 &&
     mmp.linesIdxs!.length === 81, 'Incorrect lines number', 3000);
-    await awaitCheck(() => mmp.linesMask?.allTrue == false, 'Incorrect initial lines mask');
+    await waitUntil(() => mmp.linesMask?.allTrue == false, 'Incorrect initial lines mask');
     checkRandomArrayVals(mmp.lines?.from, [0, 10, 30, 50, 70], [30, 6, 37, 23, 9], 'mmp.lines.from');
     checkRandomArrayVals(mmp.lines?.to, [0, 10, 30, 50, 70], [0, 28, 0, 27, 23], 'mmp.lines.to');
     checkRandomArrayVals(mmp.linesIdxs,
@@ -260,12 +260,12 @@ category('mmpa', () => {
     mmp.mmpFilters!.activitySliderInputs![0].value = 11.87;
     mmp.mmpFilters!.activitySliderInputs![1].value = 14.15;
     mmp.mmpFilters!.activitySliderInputs![2].value = 1.627;
-    await awaitCheck(() => !!mmp.linesMask && DG.BitSet.fromBytes(mmp.linesMask.buffer.buffer, 81).trueCount === 7,
+    await waitUntil(() => !!mmp.linesMask && DG.BitSet.fromBytes(mmp.linesMask.buffer.buffer, 81).trueCount === 7,
       'Incorrect lines mask after slider input changed', 3000);
 
     //switch of one of activities
     mmp.mmpFilters!.activityActiveInputs[2].value = false;
-    await awaitCheck(() => !!mmp.linesMask && DG.BitSet.fromBytes(mmp.linesMask!.buffer.buffer, 81).trueCount === 2,
+    await waitUntil(() => !!mmp.linesMask && DG.BitSet.fromBytes(mmp.linesMask!.buffer.buffer, 81).trueCount === 2,
       'Incorrect lines mask after checkboxes values changed', 3000);
   });
 
@@ -278,26 +278,26 @@ category('mmpa', () => {
       activities: tv.dataFrame.clone().columns.remove('smiles').names(),
       fragmentCutoff: 0.4});
     //wait for MMPA viewer to be created
-    await awaitCheck(() => {
+    await waitUntil(() => {
       let mmpCreated = false;
       for (const v of tv.viewers) {
-        if (v.type === 'Matched Molecular Pairs Analysis') {
+        if (v.type === 'Matched Molecular Pairs Analysis' && 'pairedGrids' in v) {
           mmp = v as MatchedMolecularPairsViewer;
           mmpCreated = true;
         }
       }
       return mmpCreated;
     }, 'MMPA hasn\'t been initialized', 3000);
-    await awaitCheck(() => mmp.root.querySelector('[name=\'Generation\']') != null,
+    await waitUntil(() => mmp.root.querySelector('[name=\'Generation\']') != null,
       'Generation tab hasn\'t been created', 10000);
     const genTabHeader = mmp.root.querySelector('[name=\'Generation\']') as HTMLElement;
     genTabHeader.click();
-    await awaitCheck(() => mmp.generationsGrid?.dataFrame != null, 'Generation grid hasn\'t been created', 10000);
+    await waitUntil(() => mmp.generationsGrid?.dataFrame != null, 'Generation grid hasn\'t been created', 10000);
     const genDf = mmp.generationsGrid!.dataFrame;
-    await awaitCheck(() => genDf.rowCount === 110, 'Incorrect row count');
+    await waitUntil(() => genDf.rowCount === 110, 'Incorrect row count');
     checkRandomValues(genDf, 'Generation');
     //check that 'Prediction' column has been calculated
-    await awaitCheck(() =>
+    await waitUntil(() =>
       genDf.columns.names().includes('Prediction'), '\'Prediction\' column hasn\'t been created', 10000);
 
     const isExpected = () => {

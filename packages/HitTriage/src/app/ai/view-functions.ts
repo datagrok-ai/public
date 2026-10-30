@@ -12,6 +12,7 @@
  */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {Platform} from '@datagrok-libraries/u2/dg';
 import {HitAppBase} from '../hit-app-base';
 import {HitDesignApp} from '../hit-design-app';
 import {_package} from '../../package';
@@ -19,7 +20,6 @@ import {AppName, HitDesignCampaign, HitDesignTemplate, HitTriageCampaign, HitTri
 import {TileCategoriesColName, ViDColName} from '../consts';
 import {checkEditPermissions, loadTemplate} from '../utils';
 import {registerMol} from '../utils/molreg';
-import {createNewHitDesignDataFrame} from '../accordeons/new-hit-design-campaign-accordeon';
 
 type AnyCampaign = HitTriageCampaign | HitDesignCampaign;
 type AnyTemplate = HitTriageTemplate | HitDesignTemplate;
@@ -31,7 +31,8 @@ interface IHitApp {
   campaignId?: string;
   molColName?: string;
   infoView: IHitInfoView;
-  saveCampaign(...args: unknown[]): Promise<AnyCampaign>;
+  /** Answers nothing when the campaign was not saved (a balloon says why). */
+  saveCampaign(...args: unknown[]): Promise<AnyCampaign | undefined>;
   submitParams?: {fName: string, package: string};
   submitView?: {submit(): Promise<boolean>, submitWithStatus?(status?: string): Promise<boolean>};
 }
@@ -45,6 +46,7 @@ type HitApp = HitAppBase<AnyTemplate> & IHitApp;
 
 const AI_NAMESPACE = 'HitTriageAI';
 const DEFAULT_SEARCH_LIMIT = 10;
+const NOT_SAVED = 'The campaign was not saved; the balloon says why';
 
 const _funcs = new Map<string, DG.Func>();
 
@@ -94,7 +96,7 @@ function campaignTableView(view: any): DG.TableView {
   if (v instanceof DG.TableView)
     return v;
   const app = appOf(view) as any;
-  const tv = app._designView ?? app._pickView;
+  const tv = app.designView ?? app._pickView;
   if (tv instanceof DG.TableView)
     return tv;
   throw new Error('No campaign table view is open');
@@ -145,7 +147,7 @@ function serializeResult(value: any): any {
   if (value == null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
     return value;
   if (value instanceof DG.DataFrame)
-    return {type: 'dataframe', name: value.name, rowCount: value.rowCount, columns: value.columns.names()};
+    return {type: 'dataframe', name: value.name, rowCount: value.rowCount, columns: Platform.listedColumns(value).map((c) => c.name)};
   if (value instanceof DG.Column)
     return {type: 'column', name: value.name, length: value.length};
   if (value instanceof DG.ViewBase)
@@ -254,14 +256,7 @@ export function hitInfoViewFunctions(): DG.Func[] {
           .map((f) => f.name);
         if (missing.length)
           return {success: false, error: `Missing required campaign fields: ${missing.join(', ')} — pass them in campaignFields`};
-        app.clearCampaign();
-        app.dataFrame = createNewHitDesignDataFrame(template, app.appName === 'PeptiHit');
-        await app.setTemplate(template as any);
-        app.campaignProps = {...(campaignFields ?? {})};
-        const friendly = campaignName?.trim() ? campaignName.trim() : undefined;
-        await app.saveCampaign(false, true, {friendlyName: friendly});
-        if (template.layoutViewState && app.campaign)
-          app.campaign.layout = template.layoutViewState;
+        await app.startNewCampaign(template, {...(campaignFields ?? {})}, campaignName?.trim() || undefined);
         return {success: true, campaign: app.campaignId, note: 'The campaign is created and its design view is open'};
       }),
 
@@ -299,7 +294,7 @@ function campaignSharedFunctions(): DG.Func[] {
           ...(stages.length ? {stages} : {}),
           rows: df?.rowCount ?? 0,
           filteredRows: df?.filter.trueCount ?? 0,
-          columns: df ? df.columns.toList().filter((c) => !c.name.startsWith('~'))
+          columns: df ? Platform.listedColumns(df)
             .map((c) => ({name: c.name, type: c.type, ...(c.semType ? {semType: c.semType} : {})})) : [],
           canEdit: app.canEdit,
           submitFunction: app.submitParams ? `${app.submitParams.package}:${app.submitParams.fName}` : null,
@@ -313,7 +308,8 @@ function campaignSharedFunctions(): DG.Func[] {
         const app = appOf(view);
         if (!app.canEdit)
           return {success: false, error: 'You do not have permission to modify this campaign'};
-        await app.saveCampaign();
+        if (await app.saveCampaign() === undefined)
+          return {success: false, error: NOT_SAVED};
         return {success: true, campaign: app.campaignId ?? app.campaign?.name};
       }),
 
@@ -327,9 +323,14 @@ function campaignSharedFunctions(): DG.Func[] {
           return {success: false, error: 'No campaign is open'};
         if (!app.canEdit)
           return {success: false, error: 'You do not have permission to modify this campaign'};
-        app.campaign.status = status.trim();
-        await app.saveCampaign();
-        return {success: true, status: app.campaign.status};
+        const campaign = app.campaign;
+        const before = campaign.status;
+        campaign.status = status.trim();
+        if (await app.saveCampaign() === undefined) {
+          campaign.status = before;
+          return {success: false, error: NOT_SAVED};
+        }
+        return {success: true, status: app.campaign?.status};
       }),
 
     aiFunc('submitHitCampaign', 'dynamic submitHitCampaign(view view, string status)',
@@ -465,7 +466,8 @@ function designCampaignFunctions(): DG.Func[] {
         if (!app.stages.includes(stage))
           return {success: false, error: `Unknown stage '${stage}' — the stages are: ${app.stages.join(', ')}`};
         stageCol.set(row, stage, true);
-        await app.saveCampaign(false);
+        if (await app.saveCampaign(false) === undefined)
+          return {success: false, error: `The row moved to ${stage}, but ${NOT_SAVED.toLowerCase()}`};
         return {success: true, row, stage};
       }),
 
@@ -481,7 +483,8 @@ function designCampaignFunctions(): DG.Func[] {
           return {success: false, error: 'No campaign is open'};
         if (!app.dataFrame?.col(TileCategoriesColName))
           return {success: false, error: 'This campaign has no stage column'};
-        await app.setStages(stages.map((s) => s.trim()));
+        if (!await app.setStages(stages.map((s) => s.trim())))
+          return {success: false, error: `The stages changed, but ${NOT_SAVED.toLowerCase()}`};
         return {success: true, stages: app.stages};
       }),
 

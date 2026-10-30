@@ -820,12 +820,23 @@ export class PackageFunctions {
     const filterHeader = Array.from(fg.root!.getElementsByClassName('d4-filter-header'))
       .find((el) => Array.from(el!.getElementsByTagName('label')).find((it) => it.textContent === molecules.name));
     if (filterHeader) {
-      setTimeout(() => {
-        const sketchLink = (filterHeader.parentElement as HTMLElement).getElementsByClassName('sketch-link')[0];
-        const element = sketchLink ?? (filterHeader.parentElement as HTMLElement)
-          .getElementsByClassName('chem-canvas')[0];
-        (element as HTMLElement).click();
-      }, 500);
+      // the filter builds its sketch link once it is attached; open it as soon as it is there
+      const host = filterHeader.parentElement as HTMLElement;
+      const target = () => (host.getElementsByClassName('sketch-link')[0] ??
+        host.getElementsByClassName('chem-canvas')[0]) as HTMLElement | undefined;
+      const existing = target();
+      if (existing)
+        existing.click();
+      else {
+        const observer = new MutationObserver(() => {
+          const element = target();
+          if (element) {
+            observer.disconnect();
+            element.click();
+          }
+        });
+        observer.observe(host, {childList: true, subtree: true});
+      }
     }
   }
 
@@ -2629,14 +2640,15 @@ export class PackageFunctions {
   static async mmpAnalysis(
     table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'column_list', options: {type: 'numerical'}}) activities: DG.Column[],
+    @grok.decorators.param({type: 'column_list', options: {type: 'numerical'}}) activities: DG.ColumnList,
     @grok.decorators.param({type: 'string_list'}) diffTypes: MmpDiffTypes[],
     @grok.decorators.param({type: 'string_list'}) scalings: SCALING_METHODS[],
     @grok.decorators.param({
       type: 'double',
       options: {description: 'Maximum fragment size relative to core', initialValue: '0.4'},
     }) fragmentCutoff: number = 0.4, @grok.decorators.param({options: {optional: true, nullable: true}}) runOnFilteredData: boolean = true): Promise<void> {
-    if (activities.length < 1) {
+    let activityCols = Array.from(activities);
+    if (activityCols.length < 1) {
       grok.shell.warning('MMP analysis requires at least one activity');
       return;
     }
@@ -2648,7 +2660,7 @@ export class PackageFunctions {
       grok.shell.addTableView(table);
       // these two must exist, so they will throw if not
       molecules = table.getCol(molecules.name);
-      activities = activities.map((col) => table.getCol(col.name));
+      activityCols = activityCols.map((col) => table.getCol(col.name));
     }
 
     checkCurrentView(table);
@@ -2658,9 +2670,9 @@ export class PackageFunctions {
     const activityColsNames = [];
     for (let i = 0; i < scalings.length; i++) {
       if (scalings[i] === SCALING_METHODS.NONE)
-        activityColsNames.push(activities[i].name);
+        activityColsNames.push(activityCols[i].name);
       else {
-        const scaledCol = scaleActivity(activities[i], scalings[i]);
+        const scaledCol = scaleActivity(activityCols[i], scalings[i]);
         const name = table.columns.getUnusedName(scaledCol.name);
         scaledCol.name = name;
         table.columns.add(scaledCol);
@@ -2673,7 +2685,7 @@ export class PackageFunctions {
       moleculesColumnName: molecules.name, activities: activityColsNames, diffTypes: diffTypes,
       scalings: scalings, fragmentCutoff,
     });
-    viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
+    viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/help/refs/heads/master/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
   }
 
   @grok.decorators.func({
@@ -2767,7 +2779,7 @@ export class PackageFunctions {
       type: 'column_list',
       options: {nullable: true, caption: 'R-groups',
         description: 'Columns with the substituent at each attachment point of the core'},
-    }) rGroupColumns: DG.Column[] = [],
+    }) rGroupColumns: DG.ColumnList | DG.Column[] = [],
     @grok.decorators.param({
       type: 'string',
       options: {nullable: true, caption: 'Matrix columns',
@@ -2792,7 +2804,7 @@ export class PackageFunctions {
         'Pick a series column from that table, or leave it empty to group by structure.');
       return;
     }
-    const rgroups = rGroupColumns ?? [];
+    const rgroups = Array.from(rGroupColumns ?? []);
     const axis = matrixColumns ?? '';
     const named = coreColumn !== null || rgroups.length > 0;
     if (coreColumn !== null && rgroups.some((c) => c.name === coreColumn.name)) {

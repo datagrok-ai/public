@@ -6,7 +6,7 @@ from typing import Any, ClassVar, Literal
 
 from .protocol import JsonObject
 
-ApiMode = Literal['anthropic_messages', 'codex_responses', 'chat_completions']
+ApiMode = Literal['anthropic_messages', 'codex_responses', 'chat_completions', 'bedrock_converse']
 SCHEMA_NAME = 'output'
 # Hermes sends no Responses call without instructions, and puts its own identity into empty ones.
 NO_INSTRUCTIONS = 'You are a helpful assistant.'
@@ -126,9 +126,27 @@ class ChatCompletions(ApiFormat):
         return out
 
 
-FORMATS: dict[str, ApiFormat] = {f.mode: f for f in (AnthropicMessages(), OpenAIResponses(), ChatCompletions())}
+class BedrockConverse(ApiFormat):
+    """Amazon Bedrock's Converse API, for the models Bedrock serves neither on the Messages nor on the Responses API
+    (Qwen, Kimi). Hermes calls it through boto3 with Converse's own request shape."""
+    mode = 'bedrock_converse'
+    credential = ''
+    refusal: ClassVar[JsonObject] = {'modelId': 'grokky-refused', 'inferenceConfig': {'maxTokens': 1},
+                                     'messages': [{'role': 'user', 'content': [{'text': 'refused'}]}]}
+
+    def patch(self, request: JsonObject, system_prompt: str, output_schema: JsonObject | None) -> JsonObject:
+        out = dict(request)
+        if system_prompt:
+            out['system'] = [{'text': system_prompt}]
+        else:
+            out.pop('system', None)
+        return out
+
+
+FORMATS: dict[str, ApiFormat] = {f.mode: f for f in (AnthropicMessages(), OpenAIResponses(), ChatCompletions(),
+                                                    BedrockConverse())}
 # The apiFormat container credential's values.
-BY_CREDENTIAL: dict[str, ApiFormat] = {f.credential: f for f in FORMATS.values()}
+BY_CREDENTIAL: dict[str, ApiFormat] = {f.credential: f for f in FORMATS.values() if f.credential}
 
 
 def refused(api_mode: str) -> JsonObject:

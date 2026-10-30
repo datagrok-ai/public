@@ -5,7 +5,7 @@
    microtask; what never becomes a patch (a bound prop, a same value, an object, Run mode, a viewer
    mid-repoint); the grid re-pointed at the viewer a patch re-creates; the release with the panel. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -452,8 +452,8 @@ grid('the panel\'s disposal kills the Dart grid through the kill-walk global, on
 grid('the filter group\'s panel surfaces the tag\'s designer actions as buttons, run through the designer\'s verbs (U6)',
   ({instance, editor, plot}) => {
     const ran = [];
-    const verbs = () => [{name: 'Delete', run: () => ran.push('delete')},
-      {name: 'Add filter for column…', run: () => ran.push('add')}, {name: 'Remove filter…', run: () => ran.push('remove')}];
+    const verbs = () => [{text: 'Delete', run: () => ran.push('delete')},
+      {text: 'Add filter for column…', run: () => ran.push('add')}, {text: 'Remove filter…', run: () => ran.push('remove')}];
     const shown = new SpecNodeHandler().renderProperties(new SpecNodeRef(instance, plot, editor, verbs));
     const row = shown.querySelector('.u2-designer-verbs');
     assert.deepEqual([...row.querySelectorAll('button')].map((b) => b.textContent),
@@ -468,7 +468,7 @@ grid('the filter group\'s panel surfaces the tag\'s designer actions as buttons,
   }, {tag: 'u2-viewer-filters', props: {}});
 
 grid('a tag with no designer actions shows no verb row', ({instance, editor, plot}) => {
-  const verbs = () => [{name: 'Delete', run: () => {}}, {name: 'Refresh', run: () => {}}];
+  const verbs = () => [{text: 'Delete', run: () => {}}, {text: 'Refresh', run: () => {}}];
   assert.equal(new SpecNodeHandler().renderProperties(new SpecNodeRef(instance, plot, editor, verbs))
     .querySelector('.u2-designer-verbs'), null);
 });

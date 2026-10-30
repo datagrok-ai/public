@@ -4,16 +4,15 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {signal, computed, Scope, div, divV, divH, span, h3, link, iconButton, BoolInput, QNum}
   from '@datagrok-libraries/u2';
-import {propertyForm, propertyEditor} from '@datagrok-libraries/u2/src/dg/index.js';
+import {propertyForm, propertyEditor} from '@datagrok-libraries/u2/dg';
 import {EDITOR_TYPES, enabledEditorTypes, registeredEditorTypes, setEditorTypes} from './editors';
-import {AbGrid, readout} from './pages/common';
+import {abGrid, readout} from './pages/common';
 
 const HOVER = 'Number rows keep the platform\'s hover chrome, ported as it is: the slider and the ' +
   '− + clicker are invisible at rest and appear the moment the pointer enters the input. Each ' +
   'side reveals its OWN chrome and nothing else, so hover the two `Dose` cells one after the ' +
   'other — a bare cell means the pointer is on the other one, not that the chrome is missing. ' +
-  'The revealed slider overlaps the row below by 9px — that is what the platform does, not a ' +
-  'layout bug.';
+  'The platform\'s revealed slider overlaps the row below by 9px; u2\'s row keeps that room for it.';
 
 const EDITOR = 'The leading `…` opens that row\'s own metadata in the context panel: an identity ' +
   'section, plus the fields its type actually has (bounds and slider flags for numbers, choices ' +
@@ -373,8 +372,8 @@ export function convergencePage(): HTMLElement {
     gridScope = generation;
     ui.empty(grid);
 
-    Scope.runWith(generation, () => {
-      const ab = new AbGrid(grid, 'ui.input.forProperty', 'propertyForm');
+    generation.build(() => {
+      const ab = abGrid(grid, 'ui.input.forProperty', 'propertyForm');
       const shown = Object.values(records).filter((r) =>
         (hasChem || r.semType !== 'Molecule') && DEAD[r.name!] == null);
       const props = shown.map((r) => DG.Property.fromOptions(r));

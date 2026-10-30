@@ -11,6 +11,7 @@ import {AsyncSource, AsyncFetch, AsyncState} from '../../core/async-source.js';
 import {SuggestionList} from '../../core/suggestion-list.js';
 import {ObjectRenderer} from '../../core/object-renderer.js';
 import {button} from '../../core/elements.js';
+import {Reason} from '../../core/reason.js';
 import {iconButton} from '../actions/buttons.js';
 
 export interface MentionProvider<T = unknown> {
@@ -94,7 +95,7 @@ export class MessageInput extends Control {
     editor.dataset.placeholder = options.placeholder ?? '';
     editor.style.maxHeight = `${options.maxHeight ?? 160}px`;
 
-    this.runInScope(() => {
+    this.build(() => {
       const tools = document.createElement('div');
       tools.className = 'u2-msg-tools';
       for (const provider of this._providers) {
@@ -110,7 +111,7 @@ export class MessageInput extends Control {
       toolbar.className = 'u2-msg-toolbar';
       toolbar.append(tools, send);
       this.root.append(editor, toolbar);
-      this.effect(() => send.disabled = this._empty.value);
+      this.effect(() => Reason.apply(send, this._empty.value ? 'Type a message first' : null));
     });
 
     this.scope.listen(editor, 'input', () => this._onInput());

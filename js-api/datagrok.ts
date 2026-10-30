@@ -1,5 +1,7 @@
 import * as dayjs from "dayjs";
 import * as wu from "wu";
+import * as rxjs from "rxjs";
+import * as rxjsOperators from "rxjs/operators";
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createWindowProxy, DGNotSupportedError } from './src/node/window-proxy';
 import { installDomStub } from './src/node/dom-stub';
@@ -131,6 +133,7 @@ export async function startDatagrok(options: {apiUrl: string, apiToken?: string 
     api.DG = DG;
     g.wu = wu;
     g.dayjs = dayjs;
+    g.rxjs = {...rxjs, operators: rxjsOperators};
 
 
     DG.grok.dapi.token = options.apiToken;

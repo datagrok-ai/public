@@ -27,6 +27,17 @@
   color: var(--dg-text-color-light);
 }
 
+/* a popup sized to its rows (`matchWidth: false`); a matched popup's inline min-width wins */
+.u2-typeahead-popup {
+  min-width: 240px;
+  max-width: 480px;
+}
+
+/* the open popup covers the verdict line: hide it until the popup closes */
+.u2-input-root:has(.u2-typeahead-input[aria-expanded='true']) > .u2-input-error {
+  visibility: hidden;
+}
+
 .u2-typeahead-option-active .u2-typeahead-text,
 .u2-typeahead-option-active .u2-typeahead-user-name {
   color: var(--dg-accent);
@@ -62,6 +73,10 @@
   color: var(--dg-text-color-light);
 }
 
+.u2-typeahead-user-secondary:empty::before {
+  content: '\00a0';
+}
+
 .u2-avatar {
   box-sizing: border-box;
   display: flex;
@@ -83,9 +98,107 @@
   height: 100%;
 }
 
+.u2-avatar-group {
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color-light);
+}
+
 .u2-avatar-1 { background: var(--dg-steel-4); }
 .u2-avatar-2 { background: var(--dg-blue-1); }
 .u2-avatar-3 { background: var(--dg-green-2); }
 .u2-avatar-4 { background: var(--dg-orange-3); }
 .u2-avatar-5 { background: var(--dg-steel-5); }
 .u2-avatar-6 { background: var(--dg-grey-5); }
+
+/* the right edge holds the clear while a value is set, else a magnifier on hover and focus */
+.u2-pick-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.u2-pick-box.u2-input-editor {
+  padding: 0;
+}
+
+/* the inner box draws the underline, so it carries the error, not the outer editor */
+.u2-pick-box.u2-input-editor.u2-invalid {
+  border-bottom: none;
+}
+
+.u2-pick-box.u2-invalid .u2-typeahead-input {
+  border-bottom-color: var(--dg-error);
+}
+
+.u2-pick-box::before {
+  content: '';
+  position: absolute;
+  right: var(--dg-space-s);
+  visibility: hidden;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  background-color: var(--dg-text-color-light);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E") no-repeat center / 12px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+
+.u2-pick-box > .u2-typeahead {
+  flex: 1;
+  min-width: 0;
+}
+
+.u2-input-root:not(.u2-input-disabled) .u2-pick-box:is(:hover, :focus-within):has(> .u2-input-clear[hidden])::before {
+  visibility: visible;
+}
+
+.u2-pick-box .u2-typeahead-input {
+  padding: 0 20px 0 var(--dg-space-s);
+}
+
+.u2-pick-box-open .u2-typeahead-input {
+  padding-right: 40px;
+}
+
+.u2-btn.u2-icon-btn.u2-pick-open {
+  position: absolute;
+  right: 20px;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  font-size: var(--dg-font-size-xs);
+  visibility: hidden;
+}
+
+.u2-input-root:not(.u2-input-disabled):hover .u2-pick-open,
+.u2-pick-box:focus-within .u2-pick-open {
+  visibility: visible;
+}
+
+.u2-pick-open[hidden] {
+  display: none;
+}
+
+.u2-pick-hint {
+  flex: 1 0 100%;
+  min-width: 0;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+/* PickInput.asDropdown: no typing, a chevron */
+.u2-pick-dropdown .u2-typeahead-input {
+  cursor: pointer;
+}
+
+.u2-pick-dropdown .u2-pick-box::before {
+  visibility: visible;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E") no-repeat center / 12px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+
+.u2-pick-dropdown:hover .u2-pick-box:has(> .u2-input-clear:not([hidden]))::before {
+  visibility: hidden;
+}

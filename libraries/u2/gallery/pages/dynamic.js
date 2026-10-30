@@ -86,7 +86,7 @@ export async function render(main) {
     const input = new DynamicInput({label: 'Owner', render: (user) =>
       user === null ? null : mockCard(user)});
     input.addValidator((value) => value === null ? 'Nothing selected' : null);
-    return [divV([input, button('Pick Ada', () => input.value.value = users[0])])];
+    return [divV([input, button('Pick Ada', () => input.value = users[0])])];
   });
 
   main.append(el('h2', null, 'Disposal'));

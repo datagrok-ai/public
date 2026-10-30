@@ -1,6 +1,6 @@
 ---
 name: datagrok-df-and-columns
-description: Find, describe, add, remove, rename, clone, or set metadata on columns of a Datagrok DataFrame via the datagrok_exec tool. Use whenever the user asks to locate "the X column", summarize a column, add a typed/empty/values-filled/virtual column, set semantic type / units / format / friendly name, apply linear or categorical or conditional color coding, drop or rename columns, copy a DataFrame, compute a statistic of a column (mean, median, count), or group rows into a new summary table of counts and per-group aggregates (groupBy). Covers everything in DataFrame.columns and Column.meta — but not row filtering/selection (datagrok-filtering, datagrok-selection) and not formula-only columns (datagrok-calc-column).
+description: Find, describe, add, remove, rename, clone, or set metadata on columns of a Datagrok DataFrame via the datagrok_exec tool. Use whenever the user asks to locate "the X column", list the table's numeric / categorical / date columns, summarize a column, add a typed/empty/values-filled/virtual column, set semantic type / units / format / friendly name, apply linear or categorical or conditional color coding, drop or rename columns, copy a DataFrame, compute a statistic of a column (mean, median, count), or group rows into a new summary table of counts and per-group aggregates (groupBy). Covers everything in DataFrame.columns and Column.meta — but not row filtering/selection (datagrok-filtering, datagrok-selection) and not formula-only columns (datagrok-calc-column).
 ---
 
 # datagrok-df-and-columns
@@ -21,7 +21,7 @@ and `datagrok-selection`.
 | Get column by name (may be absent)           | `t.col(name)` — returns `null`                                  |
 | First column with a given semType            | `t.columns.bySemType(DG.SEMTYPE.MOLECULE)`                      |
 | Every column with a given semType            | `t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)`                   |
-| All numeric / categorical / dateTime columns | `t.columns.numerical` / `.categorical` / `.dateTime`            |
+| All numeric / categorical / dateTime columns | iterables, not arrays: `Array.from(t.columns.numerical, (c) => c.name)` / `.categorical` / `.dateTime` |
 | All names                                    | `t.columns.names()`                                             |
 | Add typed empty column                       | `t.columns.addNewFloat(name)` (and `addNewInt/String/Bool/...`) |
 | Add column from values                       | `t.columns.add(DG.Column.fromList(type, name, values))`         |
@@ -50,7 +50,7 @@ and `datagrok-selection`.
 | "column named X" (may be absent)            | `t.col('X')` — returns `null` if missing                |
 | "the molecule column"                       | `t.columns.bySemType(DG.SEMTYPE.MOLECULE)`              |
 | "every molecule column"                     | `t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)`           |
-| "all numeric columns"                       | iterate `t.columns.numerical`                           |
+| "all numeric columns"                       | `for (const c of t.columns.numerical)` (no `.map`: not an array) |
 | "an IC50 column"                            | `t.columns.bySemType(DG.SEMTYPE.IC50)`                  |
 | "columns tagged `quality=Molecule`"         | `t.columns.byTags({quality: 'Molecule'})`               |
 | "any of these columns: X, Y, Z (first hit)" | `t.columns.firstWhere(c => names.includes(c.name))`     |

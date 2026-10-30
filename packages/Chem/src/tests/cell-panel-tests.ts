@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {category, test, expect, expectFloat, before, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectFloat, before, waitUntil} from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {QED_PROPERTIES, assessDruglikeness, cruxQed, drugLikenessWidget} from '../widgets/drug-likeness';
 import {getIdentifiersSingle} from '../widgets/identifiers';
@@ -301,27 +301,32 @@ category('cell panel', async () => {
   //   const df = DG.DataFrame.fromColumns([grok.data.demo.molecules(1000).columns.byIndex(0)]);
   //   const view = grok.shell.addTableView(df);
   //   view.filters();
-  //   await delay(100);
-  //   (document.getElementsByClassName(
-  //     'panel-titlebar disable-selection panel-titlebar-tabhost')[0].childNodes[0] as HTMLElement).click();
-  //   await delay(100);
-  //   const menuItem = document.getElementsByClassName(
-  //     'd4-menu-item-container d4-vert-menu d4-menu-popup')[0].childNodes[3];
-  //   menuItem.dispatchEvent(new MouseEvent('mouseenter')); await delay(100);
-  //   menuItem.dispatchEvent(new MouseEvent('mousemove')); await delay(100);
+  //   const titleBars = () =>
+  //     document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost');
+  //   await waitUntil(() => titleBars().length > 0, 'the filter panel did not open');
+  //   (titleBars()[0].childNodes[0] as HTMLElement).click();
+  //   const menus = () => document.getElementsByClassName('d4-menu-item-container d4-vert-menu d4-menu-popup');
+  //   await waitUntil(() => menus().length > 0, 'the filter panel menu did not open');
+  //   const menuItem = menus()[0].childNodes[3];
+  //   menuItem.dispatchEvent(new MouseEvent('mouseenter'));
+  //   menuItem.dispatchEvent(new MouseEvent('mousemove'));
+  //   await waitUntil(() => menuItem.childNodes[0]?.childNodes[0]?.childNodes[1] != null, 'the submenu did not open');
   //   const submenuItem = menuItem.childNodes[0].childNodes[0].childNodes[1];
-  //   submenuItem.dispatchEvent(new MouseEvent('mouseenter')); await delay(100);
-  //   submenuItem.dispatchEvent(new MouseEvent('mousedown')); await delay(100);
+  //   submenuItem.dispatchEvent(new MouseEvent('mouseenter'));
+  //   submenuItem.dispatchEvent(new MouseEvent('mousedown'));
+  //   await waitUntil(() => document.getElementsByClassName('d4-dialog-contents').length > 0, 'no columns dialog');
   //   // https://developer.chrome.com/docs/devtools/console/utilities/#getEventListeners-function
   //   const dialogContents = document.getElementsByClassName('d4-dialog-contents')[0];
   //   const allButton = dialogContents.childNodes[2].childNodes[1].childNodes[0];
   //   (allButton as HTMLElement).click();
   //   const dialogFooter = document.getElementsByClassName('d4-dialog-footer')[0];
   //   const okButton = dialogFooter.childNodes[0].childNodes[0];
-  //   (okButton as HTMLElement).click(); await delay(100);
-  //   const smilesInput = document.getElementsByClassName('grok-sketcher-input ui-div')[0].childNodes[0];
-  //   (smilesInput as HTMLInputElement).value = 'c1ccccc1'; await delay(100);
-  //   smilesInput.dispatchEvent(new Event('focus')); await delay(100);
+  //   (okButton as HTMLElement).click();
+  //   const inputs = () => document.getElementsByClassName('grok-sketcher-input ui-div');
+  //   await waitUntil(() => inputs().length > 0, 'the substructure filter shows no sketcher input');
+  //   const smilesInput = inputs()[0].childNodes[0];
+  //   (smilesInput as HTMLInputElement).value = 'c1ccccc1';
+  //   smilesInput.dispatchEvent(new Event('focus'));
   //   // Only this combination of parameters worked:
   //   // https://tutorial.eyehunts.com/js/how-to-press-enter-key-programmatically-in-javascript-example-code/
   //   smilesInput.dispatchEvent(new KeyboardEvent('keydown', {
@@ -329,8 +334,7 @@ category('cell panel', async () => {
   //     charCode: 0, code: 'Enter', composed: true, ctrlKey: false,
   //     detail: 0, isComposing: false, key: 'Enter', keyCode: 13, location: 0,
   //     metaKey: false, repeat: false, shiftKey: false}));
-  //   await delay(100);
-  //   expect(df.filter.trueCount, 700);
+  //   await waitUntil(() => df.filter.trueCount === 700, () => `${df.filter.trueCount} rows pass, 700 expected`);
   // });
 
   test('gasteiger-partial-charges.smiles', async () => {

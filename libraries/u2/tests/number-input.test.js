@@ -3,8 +3,9 @@
    within real bounds, the clicker clamps only from an in-range value, and floats pick their own
    precision. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {NumberInput} from '../src/components/inputs/number-input.js';
@@ -50,12 +51,12 @@ function type(input, text) {
 smoke('out-of-range text stays on screen, reaches the value, and only marks the input invalid', () => {
   const input = mount(new NumberInput({label: 'Dose', min: 0, max: 100}));
   type(input, '1000');
-  assert.equal(input.value.value, 1000, 'the typed number reaches the signal, as it does in Dart');
+  assert.equal(input.value, 1000, 'the typed number reaches the signal, as it does in Dart');
   assert.equal(input.validity.value, 'Value must be at most 100');
   assert.equal(editor(input).value, '1000');
 
   fire(editor(input), 'blur');
-  assert.equal(input.value.value, 1000, 'blur does not clamp');
+  assert.equal(input.value, 1000, 'blur does not clamp');
   assert.equal(editor(input).value, '1000');
 
   type(input, '-1');
@@ -72,12 +73,12 @@ smoke('the stepper steps an out-of-range value instead of clamping it to a bound
   assert.equal(input.validity.value, 'Value must be at most 10');
   const [minus, plus] = clickers(input);
   fire(minus, 'click');
-  assert.equal(input.value.value, 54, 'steps from the typed value, no clamp to max');
+  assert.equal(input.value, 54, 'steps from the typed value, no clamp to max');
   assert.equal(editor(input).value, '54');
   assert.equal(input.validity.value, 'Value must be at most 10', 'still invalid at 54');
   fire(plus, 'click');
   fire(plus, 'click');
-  assert.equal(input.value.value, 56, 'and + walks up unguarded too');
+  assert.equal(input.value, 56, 'and + walks up unguarded too');
   assert.equal(input.validity.value, 'Value must be at most 10');
   input.dispose();
 });
@@ -87,10 +88,23 @@ smoke('the stepper walks an out-of-range value back into range and the validity 
   type(input, '12');
   assert.equal(input.validity.value, 'Value must be at most 10');
   fire(input.root.querySelectorAll('.u2-number-spin')[1], 'click');
-  assert.equal(input.value.value, 10);
+  assert.equal(input.value, 10);
   assert.equal(editor(input).value, '10');
   assert.equal(input.validity.value, null);
   input.dispose();
+});
+
+smoke('the slider hangs under the field in room the box keeps, never over the next row nor under the unit', () => {
+  const sheet = readFileSync(new URL('../css/number.css', import.meta.url), 'utf8');
+  const hang = /\.u2-number-slider \{[^}]*bottom: -(\d+)px;/.exec(sheet);
+  const room = /\.u2-input-box:has\(> \.u2-input-editor\.u2-number > \.u2-number-slider\) \{\s*padding-bottom: (\d+)px;/
+    .exec(sheet);
+  assert.notEqual(hang, null);
+  assert.notEqual(room, null, 'a box with a slider keeps room below the field and its rail');
+  assert.equal(room[1], hang[1], 'as much as the slider hangs');
+  // the rail sits at the box's end (`align-self: flex-end`): room below the editor alone drops the unit and its
+  // underline under the field's
+  assert.doesNotMatch(sheet, /\.u2-number[^{]*\{[^}]*margin-bottom/, 'the editor keeps no room of its own');
 });
 
 smoke('the slider materializes only within real bounds', () => {
@@ -120,10 +134,10 @@ smoke('the slider step defaults per mode and drags as a user edit', () => {
 
   slider(float).value = '75';
   fire(slider(float), 'input');
-  assert.equal(float.value.value, 75);
+  assert.equal(float.value, 75);
   assert.equal(editor(float).value, '75', 'the text box follows the thumb');
 
-  float.value.value = 20;
+  float.value = 20;
   assert.equal(slider(float).value, '20', 'and the thumb follows a programmatic write');
   type(float, '30');
   assert.equal(slider(float).value, '30', 'and typing');
@@ -147,16 +161,16 @@ smoke('the clicker sits on the options rail and steps inside the bounds', () => 
   assert.equal(input.root.querySelector('.u2-number-spinner'), null, 'and the spinner stays opt-in');
 
   fire(plus, 'click');
-  assert.equal(input.value.value, 10);
+  assert.equal(input.value, 10);
   fire(plus, 'click');
-  assert.equal(input.value.value, 10, 'the clicker clamps at max');
+  assert.equal(input.value, 10, 'the clicker clamps at max');
   fire(minus, 'click');
-  assert.equal(input.value.value, 9);
+  assert.equal(input.value, 9);
   input.dispose();
 
   const stepped = mount(new NumberInput({min: 0, max: 10, step: 0.5, clicker: true, value: 1}));
   fire(clickers(stepped)[1], 'click');
-  assert.equal(stepped.value.value, 1.5, 'stepping by `step`');
+  assert.equal(stepped.value, 1.5, 'stepping by `step`');
   stepped.dispose();
 });
 
@@ -166,12 +180,12 @@ smoke('format drives the display but never rewrites text under the cursor', () =
 
   type(input, '3.14159');
   assert.equal(editor(input).value, '3.14159', 'typing is left alone');
-  assert.equal(input.value.value, 3.14159);
+  assert.equal(input.value, 3.14159);
 
   fire(editor(input), 'blur');
   assert.equal(editor(input).value, '3.1', 'and formatted on commit');
 
-  input.value.value = 5;
+  input.value = 5;
   assert.equal(editor(input).value, '5.0');
   input.dispose();
 });
@@ -219,7 +233,7 @@ smoke('a bare number input is a bare field: no spinner, no clicker, no rail', ()
   const opted = mount(new NumberInput({label: 'Dose', spinner: true}));
   assert.notEqual(opted.root.querySelector('.u2-number-spinner'), null);
   fire(opted.root.querySelector('.u2-number-spin'), 'click');
-  assert.equal(opted.value.value, null, 'and it is the wave-1 spinner, empty field included');
+  assert.equal(opted.value, null, 'and it is u2\'s own hover spinner, empty field included');
   opted.dispose();
 });
 
@@ -237,7 +251,7 @@ smoke('the stepper and the slider follow the value, not the text a format rewrot
   assert.equal(slider(input).value, '1234');
 
   fire(clickers(input)[1], 'click');
-  assert.equal(input.value.value, 1235, 'the stepper reads the signal');
+  assert.equal(input.value, 1235, 'the stepper reads the signal');
   assert.equal(slider(input).value, '1235');
   input.dispose();
 });
@@ -245,11 +259,11 @@ smoke('the stepper and the slider follow the value, not the text a format rewrot
 smoke('the stepper does nothing on an empty field, as the platform clicker does', () => {
   const input = mount(new NumberInput({min: 0, max: 10, clicker: true}));
   fire(clickers(input)[1], 'click');
-  assert.equal(input.value.value, null);
+  assert.equal(input.value, null);
   assert.equal(editor(input).value, '');
 
   fire(clickers(input)[0], 'click');
-  assert.equal(input.value.value, null);
+  assert.equal(input.value, null);
   input.dispose();
 });
 
@@ -263,7 +277,7 @@ smoke('P74: a bound signal holding undefined builds and shows an empty field; st
   const input = mount(new NumberInput({label: 'Dose', bind: signal(undefined), clicker: true, min: 0, max: 5}));
   assert.equal(editor(input).value, '');
   clickers(input)[1].click();
-  assert.equal(input.value.peek(), undefined);
+  assert.equal(input.peek(), undefined);
   input.dispose();
 });
 
@@ -274,8 +288,17 @@ smoke('commitOn change: typing marks bad text at once but writes only on blur', 
   assert.equal(input.validity.peek(), 'Not a number');
   editor(input).value = '9';
   fire(editor(input), 'input');
-  assert.equal(input.value.peek(), 2);
+  assert.equal(input.peek(), 2);
   fire(editor(input), 'blur');
-  assert.equal(input.value.peek(), 9);
+  assert.equal(input.peek(), 9);
+  input.dispose();
+});
+
+smoke('placeholder: shown in the empty field, and live from a signal', () => {
+  const text = signal('Auto');
+  const input = mount(new NumberInput({label: 'Animals', placeholder: text}));
+  assert.equal(editor(input).placeholder, 'Auto');
+  text.value = 'Auto (target power)';
+  assert.equal(editor(input).placeholder, 'Auto (target power)');
   input.dispose();
 });

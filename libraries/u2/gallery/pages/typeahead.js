@@ -82,9 +82,9 @@ function fakeProvider(query, abort) {
 function readout(typeahead) {
   const selected = el('code');
   const state = el('code');
-  bindText(typeahead.scope, selected, computed(() => JSON.stringify(typeahead.selected.value)));
-  bindText(typeahead.scope, state, computed(() =>
-    `${typeahead.machineState.value}${typeahead.isOpen.value ? ', open' : ''}, text "${typeahead.text.value}"`));
+  bindText(selected, computed(() => JSON.stringify(typeahead.selected.value)), {owner: typeahead.scope});
+  bindText(state, computed(() =>
+    `${typeahead.machineState.value}${typeahead.isOpen.value ? ', open' : ''}, text "${typeahead.text.value}"`), {owner: typeahead.scope});
   const row = el('p', 'u2-gallery-status');
   row.append('selected = ', selected, '  ·  machine = ', state);
   return row;

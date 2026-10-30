@@ -1,11 +1,8 @@
-/* A bdd project: where its features, bindings and generated specs live, and which binding tiers it
-   loads. A package keeps everything under `<package>/bdd/`; the library itself is a project too
-   (its own smoke features under `features/`). Every project sees the base tiers (`common`,
-   `platform`), the tiers its `bdd.config.json` names, and its own `bindings/`. */
 import {existsSync, readdirSync, readFileSync, statSync} from 'node:fs';
 import {basename, dirname, join, relative, resolve, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import type {AllowEntry} from './runtime/layout.js';
+import type {OperabilityAllow} from './runtime/operability.js';
 
 export const PACKAGE_NAME = '@datagrok-libraries/bdd';
 /** The directory holding this build's `bindings/`: `dist/` when running compiled, the library root
@@ -31,11 +28,16 @@ export type AuditMode = 'fail' | 'report' | 'off';
 export interface AuditConfig {
   layout?: AuditMode;
   errors?: AuditMode;
+  balloons?: AuditMode;
+  operability?: AuditMode;
   leaks?: AuditMode;
   allow?: {
     layout?: AllowEntry[];
     /** Regex sources: `message` must match the logged text, and `url`, when given, where it came from. */
     errors?: {message: string; url?: string; reason: string}[];
+    /** A regex source over the balloon's text without its markup. */
+    balloons?: {message: string; reason: string}[];
+    operability?: OperabilityAllow[];
     /** Regex sources over what a leaked record is (a scope's label, `interval timer`, `window keydown
      * listener`) and its creation stack; every one given must match. */
     leaks?: {label?: string; stack?: string; reason: string}[];

@@ -18,8 +18,8 @@ Feature: Grid summary columns
   `PowerGrid/summary-columns.md` scenario 3 steps 7-8 (Ctrl+Z brings the removed CONTROL back
   between DEMOG and STARTED, 11 columns); scenario 4 steps 10-14 (the eight summary columns through a
   saved project) are tested in the package's 'Project' test named below. The md's step 8, "the Tags
-  column again shows a CONTROL tag", is a scenario of its own, the last one, marked known-failure:
-  after Ctrl+Z the Tags cells of the flagged rows stay blank (public#4378).
+  column again shows a CONTROL tag", is a scenario of its own, the last one (public#4378): the
+  handler that drops a removed column from its summary columns puts it back when it returns.
   The rename scenario is beyond the TestTrack specs. The menu offers eight renderer items — the
   seven of the TestTrack spec and VlaaiVis (operator decision D3: all of them); the `bar` renderer
   the package also registers is not virtual and the menu does not list it (measured on dev; not
@@ -169,7 +169,7 @@ Feature: Grid summary columns
     And the "cell type of Confidence Interval" reading of grid should be "confidenceinterval"
     And no errors should have been logged
 
-  @known-failure:182 @realizes:public#4378
+  @realizes:public#4378
   Scenario: Ctrl+Z of a removed source column draws its tags again
     When user picks "Add > Summary Columns > Tags" from the context menu of the "cell 2 of USUBJID" area of grid
     Then the "cell 3 of Tags" area of grid should be painted in at least 1 colors

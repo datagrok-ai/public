@@ -258,7 +258,7 @@
      "canonical": "a = 1 and b = 2"},
     {"id": "juxtaposition-paren", "input": "a = 1 (b = 2)",
      "tree": [{"property": "a", "operator": "=", "value": 1}, "and", [{"property": "b", "operator": "=", "value": 2}]],
-     "canonical": "a = 1 and b = 2"},
+     "canonical": "a = 1 and (b = 2)"},
     {"id": "paren-single", "input": "(a = 1)",
      "tree": [[{"property": "a", "operator": "=", "value": 1}]],
      "canonical": "a = 1"},

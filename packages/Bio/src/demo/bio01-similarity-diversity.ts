@@ -35,7 +35,6 @@ export async function demoBioSimDivLayout() {
   const tv = grok.shell.addTableView(t);
   await _package.files.readAsText('demo-files/bio_similarity_diversity.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
-    await DG.delay(100);
     tv.loadLayout(layout);
   });
 }

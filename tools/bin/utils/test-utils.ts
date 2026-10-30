@@ -139,6 +139,35 @@ export function getDevKey(hostKey: string): { url: string, key: string } {
   return {url, key};
 }
 
+const U2_USAGE = 'u2 usage:';
+/** The u2 usage mode a package built on u2 or ems is tested in: a misuse throws, unless `U2_STRICT` says otherwise
+ * (`report` logs each one as a `u2 usage:` line and the run does not fail on them). */
+const U2_MODE = process.env.U2_STRICT ?? 'throw';
+
+/** Whether a `u2 usage:` line the page logged fails the run: the package is tested with u2 strict. */
+function failsOnU2Usage(): boolean {
+  return U2_MODE !== 'report' && usesU2(process.cwd());
+}
+
+/** Whether a `u2 usage:` line is the tested package's: a stack frame it carries is in the package's bundle
+ * (`…/files/<package>/…`), or it carries none to tell. A line whose frames are all in other bundles is another
+ * package's misuse, reported but not failed on. */
+export function isPackageU2Usage(line: string, packageName: string | undefined): boolean {
+  const frames = line.match(/https?:\/\/[^\s()]+/g) ?? [];
+  const bundle = `/files/${packageName?.toLowerCase()}/`;
+  return packageName === undefined || frames.length === 0 || frames.some((f) => f.toLowerCase().includes(bundle));
+}
+
+function usesU2(packageDir: string): boolean {
+  try {
+    const json = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'));
+    const deps = {...json.dependencies, ...json.devDependencies};
+    return '@datagrok-libraries/u2' in deps || '@datagrok-libraries/ems' in deps;
+  } catch {
+    return false;
+  }
+}
+
 function appendUrlParams(url: string, extraParams?: string): string {
   if (!extraParams) return url;
   return url + (url.includes('?') ? '&' : '?') + extraParams;
@@ -180,6 +209,8 @@ export async function getBrowserPage(
     height: 1080,
   });
   page.setDefaultNavigationTimeout(0);
+  if (usesU2(process.cwd()))
+    await page.evaluateOnNewDocument((mode: string) => {(globalThis as any).__U2_STRICT__ = mode;}, U2_MODE);
   await page.goto(`${url}/oauth/`);
   await page.browser().setCookie({name: 'auth', value: token, domain: new URL(url).hostname});
   await page.evaluate((token: string) => {
@@ -566,6 +597,20 @@ export function printBrowsersResult(browserResult: ResultObject, verbose: boolea
     console.log('Failed tests:  ' + (browserResult?.failedAmount ?? 0));
   }
 
+  const own = browserResult.u2Usage?.filter((l) => isPackageU2Usage(l, process.env.TARGET_PACKAGE)) ?? [];
+  const others = browserResult.u2Usage?.filter((l) => !own.includes(l)) ?? [];
+  if (own.length) {
+    color.warn(failsOnU2Usage() ? `${own.length} u2 usage error(s) caught on the page (the run fails):` :
+      `${own.length} u2 usage report(s), in report mode (the run does not fail on them):`);
+    for (const line of own)
+      color.warn(`  ${line}`);
+  }
+  if (others.length) {
+    color.warn(`${others.length} u2 usage line(s) from other packages' code (the run does not fail on them):`);
+    for (const line of others)
+      color.warn(`  ${line}`);
+  }
+
   if (browserResult.failed) {
     if (browserResult.verboseFailed === 'Package not found')
       color.fail('Tests not found');
@@ -931,6 +976,13 @@ export async function runBrowser(
     // On retry, old listeners were removed so we need to re-attach
     page.on('console', (msg) => reporter.onLine(msg.text()));
 
+    const u2Usage: string[] = [];
+    page.on('console', (msg) => {
+      const text = msg.text();
+      if (text.includes(U2_USAGE) && !u2Usage.includes(text))
+        u2Usage.push(text);
+    });
+
     const testingResults = await page.evaluate((testData, options): Promise<ResultObject> => {
 
       if (options.benchmark)
@@ -1002,8 +1054,11 @@ export async function runBrowser(
     // Return browser session for potential reuse
     return {
       ...testingResults,
+      failed: testingResults.failed ||
+        failsOnU2Usage() && u2Usage.some((l) => isPackageU2Usage(l, process.env.TARGET_PACKAGE)),
       browserSession: browserOptions.keepBrowserOpen ? {browser, page, webUrl} : undefined,
       modernOutput: reporter.modernOutput,
+      u2Usage,
     };
   }, testInvocationTimeout);
 }
@@ -1020,6 +1075,7 @@ export async function mergeBrowsersResults(browsersResults: ResultObject[]): Pro
     csv: browsersResults[0].csv,
     error: '',
     modernOutput: browsersResults.some((r) => r.modernOutput),
+    u2Usage: [...new Set(browsersResults.flatMap((r) => r.u2Usage ?? []))],
   };
 
   for (const browsersResult of browsersResults) {
@@ -1067,7 +1123,8 @@ export type ResultObject = {
   csv: string,
   lastFailedTest?: {category: string, test: string},
   retrySupported?: boolean,
-  modernOutput?: boolean
+  modernOutput?: boolean,
+  u2Usage?: string[]
 };
 
 export class TestContext {

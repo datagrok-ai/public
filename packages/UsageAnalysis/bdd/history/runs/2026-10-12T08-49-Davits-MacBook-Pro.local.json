@@ -19,7 +19,7 @@
   },
   "projects": [
     {
-      "name": "/Users/davitrizhinashvili/Desktop/grok/Core/reddata/public/libraries/bdd/generated",
+      "name": "bdd library",
       "start": "2026-10-12T08:49:51.772Z",
       "duration": 8430,
       "workers": 2,

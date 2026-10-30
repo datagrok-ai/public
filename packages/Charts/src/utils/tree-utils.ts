@@ -202,7 +202,7 @@ export class TreeUtils {
     includeNulls: boolean = true, selection: boolean = false, inherit: boolean = false,
   ) {
     const tree = await TreeUtils.toTree(
-      dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], false, selection, inherit, includeNulls,
+      dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], true, selection, inherit, includeNulls,
     );
     return tree.children;
   }

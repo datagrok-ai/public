@@ -147,7 +147,7 @@ function groupFrom(list: DomainConditionTree, schema?: FilterSchema): FilterGrou
       node = foldedList(item, schema);
       if (!node) {
         const sub = groupFrom(item, schema);
-        node = sub.nodes.length === 0 ? null : sub.nodes.length === 1 ? sub.nodes[0] : sub;
+        node = sub.nodes.length === 0 ? null : sub.nodes.length === 1 && isGroup(sub.nodes[0]) ? sub.nodes[0] : sub;
       }
     }
     if (!node)
@@ -185,7 +185,7 @@ export function toDomainTree(root: FilterGroup, options?: {now?: Date, schema?: 
         const sub = emit(n);
         if (sub.length === 0)
           continue;
-        piece = sub.length === 1 ? sub[0] : sub;
+        piece = sub.length === 1 && (Array.isArray(sub[0]) || n.not === true) ? sub[0] : sub;
       } else {
         const prop = options?.schema ? propertyOf(options.schema, n.property) : null;
         const op = operators.get(n.operator, prop ?? undefined) ?? operators.get(n.operator);
@@ -283,11 +283,11 @@ function formatGroup(group: FilterGroup, nested: boolean): string {
   const joined = pieces.length === 1 ? pieces[0] : pieces.join(` ${group.op} `);
   if (group.not === true)
     return `not (${pieces.length === 1 && joined.startsWith('(') ? joined.slice(1, -1) : joined})`;
-  return nested && pieces.length > 1 ? `(${joined})` : joined;
+  return nested && (pieces.length > 1 || !joined.startsWith('(')) ? `(${joined})` : joined;
 }
 
 /** The canonical string: `"`-quoted, bracketed names where needed, nested groups
- * parenthesized, single-node groups inlined, `''` for an empty tree. */
+ * parenthesized — a one-condition one too, so it reads back as a group — `''` for an empty tree. */
 export function format(node: FilterNode): string {
   return isGroup(node) ? formatGroup(node, false) : formatCondition(node);
 }

@@ -16,6 +16,27 @@ export function unsubscribeAll(subs: Subscription[]): void {
   subs.length = 0;
 }
 
+/** Keeps the viewer's column properties valid when table columns are removed: removed names are dropped,
+ * and a property left empty takes its fallback value (none for an optional column). */
+export function subscribeToColumnRemoval(viewer: DG.JsViewer,
+  columns: {[prop: string]: (() => string | string[] | undefined) | null}): Subscription {
+  return viewer.dataFrame.onColumnsRemoved.subscribe((args) => {
+    const removed = args.columns.map((col: DG.Column) => col.name.toLowerCase());
+    // a type change removes a column and adds it back under the same name, so the table is read after it
+    queueMicrotask(() => {
+      for (const [name, fallback] of Object.entries(columns)) {
+        const prop = viewer.props.getProperty(name);
+        const value = prop.get(viewer);
+        const names: string[] = Array.isArray(value) ? value : value ? [value] : [];
+        if (!names.some((column) => removed.includes(column.toLowerCase())))
+          continue;
+        const kept = names.filter((column) => viewer.dataFrame.col(column));
+        prop.set(viewer, kept.length ? (Array.isArray(value) ? kept : value) : fallback?.() ?? null);
+      }
+    });
+  });
+}
+
 /** Runs [done] once [owed] stops reporting a frame outstanding, re-checking on up to [frames] frames.
  * `setOption` returns before echarts lays a series out, and zrender paints it a frame later, so
  * neither the promise nor the canvas says the picture is there — what the layout left does. */

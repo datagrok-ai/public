@@ -3,11 +3,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {badge, div, divV, span} from '@datagrok-libraries/u2';
 import type {BadgeVariant, RowView} from '@datagrok-libraries/u2';
-import {DomainApp, domains} from '@datagrok-libraries/ems/src/dg';
-import type {DomainRibbon, DomainTable} from '@datagrok-libraries/ems/src/dg';
+import {domains} from '@datagrok-libraries/ems/src/dg';
+import type {DomainViewOptions} from '@datagrok-libraries/ems/src/dg';
 import {GritIssueHandler, lookupName, warmLookups} from './grit-issue-handler';
 import {gritDb, IssueRow} from './generated/db';
-import {getGritDb, GritDb} from './generated/db-ui';
+import {getGritDb} from './generated/db-ui';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -55,22 +55,16 @@ export function gritIssueHandler(): DG.ObjectHandler<DG.DomainRow> {
 const priorityVariants: {[name: string]: BadgeVariant} = {critical: 'error', high: 'warning', medium: 'accent'};
 
 /** The id of the `closed` status; null where the lookup table has no such row, so nothing closes. */
-let closedId: string | null = null;
+let _closed: Promise<string | null> | undefined;
 
-let _grit: Promise<GritDb> | undefined;
-
-/** The typed schema handles (one await, cached per page) with what Grit declares on `issue`:
- * the two actions, the closing rule and the card — made once, shared by every view and test. */
-export function openGrit(): Promise<GritDb> {
-  return _grit ??= Promise.all([getGritDb(), gritDb.statuses.getByKey({name: 'closed'}), warmLookups()])
-    .then(([db, closed]) => {
-      closedId = closed?.id ?? null;
-      declareIssues(db.tables.issues);
-      return db;
-    });
-}
-
-function declareIssues(issues: DomainTable<IssueRow>): void {
+/** The two actions, the closing rule and the card, on every handle over `issue`. */
+domains.configure<IssueRow>('grit.issue', async (issues) => {
+  const [closedId] = await Promise.all([
+    _closed ??= gritDb.statuses.getByKey({name: 'closed'}).then((closed) => closed?.id ?? null, (e) => {
+      // a failed read is asked again by the next handle, not kept for the page
+      _closed = undefined;
+      throw e;
+    }), warmLookups()]);
   const me = () => grok.shell.user.id;
   issues.actions.add({name: 'Assign to me', icon: 'user', requires: 'edit',
     when: (r) => r.assignee !== me(), run: (r) => { r.assignee = me(); }});
@@ -78,11 +72,12 @@ function declareIssues(issues: DomainTable<IssueRow>): void {
     when: (r) => closedId !== null && r.status_id !== closedId, run: (r) => { r.status_id = closedId!; }});
   issues.validators.add('status_id', (v, r) =>
     closedId !== null && v === closedId && !r.assignee ? 'Assign before closing' : null);
+  // the status heads the second line, so a card without a description still fills its height
   issues.renderer = {...issues.renderer, card: (r) => divV([
     div([span(`#${r.number} ${r.title}`, 'u2-domain-card-title'), ...priorityBadge(r)]),
-    ...(r.description ? [span(r.description, 'u2-domain-card-description')] : []),
+    span([lookupName(r.status_id), r.description].filter((d) => !!d).join(' · '), 'u2-domain-card-description'),
   ], 'u2-domain-card')};
-}
+}, {id: 'grit'});
 
 function priorityBadge(r: RowView<IssueRow>): HTMLElement[] {
   const name = lookupName(r.priority_id);
@@ -90,25 +85,19 @@ function priorityBadge(r: RowView<IssueRow>): HTMLElement[] {
 }
 
 /** The Issues app: the platform ribbon plus the Mine / Open presets, and a key for each action. */
-export class IssuesApp extends DomainApp {
-  shortcuts = {'m': 'Assign to me', 'c': 'Close'};
-  private _full: DomainRibbon | undefined;
+export const issuesOptions: DomainViewOptions = {mode: 'cards', itemHeight: 48, children: {tables: ['comment']},
+  shortcuts: {'m': 'Assign to me', 'c': 'Close'},
+  ribbon: (base, app) => ({...base,
+    presets: [app.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]}),
+};
 
-  ribbon(): DomainRibbon {
-    return this._full ??= {...super.ribbon(),
-      presets: [this.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]};
-  }
-}
-
-/** A view per Grit table — the issues where they were, at `/apps/Grit/Issues` — over the handles {@link openGrit}
- * configured, so the actions, the closing rule and the card hold in each. Grit's one app answers everything under
- * `/apps/Grit`. */
+/** A view per Grit table — the issues where they were, at `/apps/Grit/Issues`. Grit's one app answers everything
+ * under `/apps/Grit`. */
 const views = domains.views({
   path: '/apps/Grit',
-  handle: async (address) => Object.values((await openGrit()).tables).find((t) => t.address === address)!,
+  handle: async (address) => Object.values((await getGritDb()).tables).find((t) => t.address === address)!,
   views: [
-    {table: 'grit.issue', name: 'Issues', options: {app: IssuesApp, mode: 'cards',
-      children: {tables: ['comment']}}},
+    {table: 'grit.issue', name: 'Issues', options: issuesOptions},
     {table: 'grit.project', name: 'Projects'},
     {table: 'grit.label', name: 'Labels'},
     {table: 'grit.status', name: 'Statuses'},
@@ -123,7 +112,7 @@ const views = domains.views({
 //meta.icon: images/bug.svg
 //input: string path {meta.url: true; optional: true}
 //output: view result
-export async function issuesApp(path?: string): Promise<DG.ViewBase> {
+export async function issuesApp(path?: string): Promise<DG.ViewBase | null> {
   return views.open(path ?? '');
 }
 

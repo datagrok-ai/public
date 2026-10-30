@@ -2,10 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {from, fromEvent, interval, merge, Observable, Subject, Subscription} from 'rxjs';
+import {from, fromEvent, interval, merge, Observable, Subject, Subscription, timer} from 'rxjs';
 import {filter, first, map, switchMap} from 'rxjs/operators';
 import {Track} from './track';
 import {awardBadge} from './utils/badges-utils';
+import {Shortcuts} from './shortcuts';
 
 
 /** What a step can point a hint at: an element, or a function that resolves one every time the
@@ -463,6 +464,11 @@ export abstract class Tutorial extends DG.Widget {
       this.activity.append(h3);
   }
 
+  private renderShortcuts(): void {
+    for (const root of [this.root, this.bar])
+      Shortcuts.render(root, () => this.renderShortcuts());
+  }
+
   describe(text: string): void {
     const div = ui.div();
     div.innerHTML = text;
@@ -470,6 +476,7 @@ export abstract class Tutorial extends DG.Widget {
       this.currentSection.append(div);
     else
       this.activity.append(div);
+    this.renderShortcuts();
     div.scrollIntoView();
   }
 
@@ -561,6 +568,7 @@ export abstract class Tutorial extends DG.Widget {
       this.activity.append(entry);
       this.activity.append(descriptionDiv);
     }
+    this.renderShortcuts();
     if (this.appPane)
       $(descriptionDiv).hide();
     (this.appPane ? entry : descriptionDiv).scrollIntoView();
@@ -631,7 +639,7 @@ export abstract class Tutorial extends DG.Widget {
       $(chevron).toggleClass('tutorials-chevron-expanded');
       $(descriptionDiv).toggle();
     });
-    ui.tooltip.bind(entry, description);
+    ui.tooltip.bind(entry, () => descriptionDiv.innerHTML);
 
     this.progress.value++;
     this.progressSteps.innerHTML = '';
@@ -891,7 +899,7 @@ export abstract class Tutorial extends DG.Widget {
       console.error('Tutorial step skipped: no column input', this.name, caption);
       return;
     }
-    const source = interval(intervalPeriod).pipe(
+    const source = timer(0, intervalPeriod).pipe(
       map((_) => this.getElement(columnInput, valueSelector)?.textContent),
       filter((value) => value === columnName));
     return this.action(instructions, source, columnInput, description);

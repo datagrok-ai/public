@@ -18,6 +18,7 @@ import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
+import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {Subscription} from 'rxjs';
 
 const R_GROUP_PARAMS_STORAGE_NAME = 'r-group-params';
@@ -177,10 +178,8 @@ export function rGroupAnalysis(col: DG.Column): void {
           grok.shell.error('No core was provided');
           return;
         }
-        if (replaceLatest.value) {
+        if (replaceLatest.value)
           removeLatestAnalysis(col);
-          await DG.delay(50);
-        }
         const funcCall = await DG.Func.find({name: 'rGroupDecomposition'})[0].prepare({
           df: col.dataFrame,
           molColName: columnInput.value!,
@@ -243,7 +242,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     }
     return prefixIdx;
   };
-  const rGroupPrefixRe = `${params.rGroupName}\\d+`;
+  const rGroupPrefixRe = `${StringUtils.escapeRegExp(params.rGroupName)}\\d+`;
   const corePrefixRe = `Core`;
   const rGroupPrefixIdx = getPrefixIdx(rGroupPrefixRe);
   const corePrefixIdx = getPrefixIdx(corePrefixRe);

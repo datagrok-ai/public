@@ -22,6 +22,8 @@ import './shell/shell';
 import './shell/undo';
 import './shell/ml';
 import './shell/settings';
+import './shell/table-view-ribbon';
+import './shell/view-layout';
 import './dapi/files';
 import './dapi/files-list';
 import './dapi/functions';

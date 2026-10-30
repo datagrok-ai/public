@@ -1,7 +1,8 @@
 /* The platform chat's compose box: the u2 MessageInput with @-mentions of users. The Dart chat
    (xamgle chat.dart, ChatInput, through jsu.JsChatInput) sets `onSend` and calls the methods below. */
 import * as DG from 'datagrok-api/dg';
-import {messageInput} from '@datagrok-libraries/u2/src/dg/index.js';
+import {messageInput} from '@datagrok-libraries/u2/dg';
+import {Scope} from '@datagrok-libraries/u2';
 import type {MessageInput} from '@datagrok-libraries/u2';
 
 export class ChatInputWidget extends DG.Widget {
@@ -11,7 +12,9 @@ export class ChatInputWidget extends DG.Widget {
 
   constructor(value?: string, placeholder?: string, sendOnEnter?: boolean, draftKey?: string) {
     super(document.createElement('div'));
-    this.input = messageInput({
+    // the Dart chat creates and disposes this widget, so the input lives on a tree of its own
+    const owner = Scope.root('chat input');
+    this.input = owner.build(() => messageInput({
       value: value ?? undefined,
       placeholder: placeholder ?? undefined,
       sendOn: sendOnEnter ? 'enter' : 'ctrlEnter',
@@ -20,9 +23,9 @@ export class ChatInputWidget extends DG.Widget {
         if (!await this.onSend(markup))
           throw new Error('the chat did not post the message');
       },
-    });
+    }));
     this.root.append(this.input.root);
-    this.own(() => this.input.dispose());
+    this.own(() => owner.dispose());
   }
 
   /** Sends what the box holds; true once the chat has taken it. */

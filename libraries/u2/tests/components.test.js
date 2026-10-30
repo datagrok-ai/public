@@ -3,7 +3,7 @@
    Design/Run toggle. Everything bound to a component comes back with it — that is the crux, so
    most of what follows watches component identity on both sides of a change. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
@@ -137,17 +137,17 @@ tray('u2-state: the default step binds a text input two ways, end to end', () =>
   const {instance} = open(STATE_SPEC);
   const state = instance.node('draft');
   assert.equal(state instanceof StateSource, true);
-  assert.equal(state.value.peek(), 'seed');
+  assert.equal(state.peek(), 'seed');
 
   const editor = editors(instance)[0];
   assert.equal(editor.value, 'seed', '$.draft resolves through bindStep(\'\')');
-  state.value.value = 'from the source';
+  state.value = 'from the source';
   assert.equal(editor.value, 'from the source');
   type(editor, 'typed');
-  assert.equal(state.value.peek(), 'typed', 'and the input writes back');
+  assert.equal(state.peek(), 'typed', 'and the input writes back');
 
   state.getFunctions().find((f) => f.name === 'clear').apply({});
-  assert.equal(state.value.peek(), 'seed', 'clear returns to the initial value');
+  assert.equal(state.peek(), 'seed', 'clear returns to the initial value');
   assert.equal(editor.value, 'seed');
   instance.dispose();
 });
@@ -155,7 +155,7 @@ tray('u2-state: the default step binds a text input two ways, end to end', () =>
 tray('u2-state: an initial value that does not fit the type warns and starts empty', () => {
   const warnings = captureWarnings(() => {
     const source = new StateSource({type: 'int', initial: 'nope'});
-    assert.equal(source.value.peek(), 0);
+    assert.equal(source.peek(), 0);
     source.dispose();
   });
   assert.equal(warnings.length, 1, warnings.join('; '));
@@ -359,13 +359,13 @@ tray('a source bound to another source is started exactly once per toggle', () =
 tray('a component mounted while another scope is ambient belongs to the instance', () => {
   const {instance, editor} = open(STATE_SPEC);
   const panel = new Scope();
-  Scope.runWith(panel, () =>
+  panel.build(() =>
     editor.apply({op: 'set-prop', node: instance.spec.components[0], name: 'initial', value: 'two'}));
   panel.dispose();
 
   const state = instance.node('draft');
   assert.equal(state.scope.isDisposed, false, 'the panel that happened to be building took it down');
-  state.value.value = 'from the source';
+  state.value = 'from the source';
   assert.equal(editors(instance)[0].value, 'from the source', 'and the form still follows it');
   instance.dispose();
 });
@@ -382,7 +382,7 @@ tray('a re-mounted source starts against the form the dependent re-render leaves
       {tag: 'u2-text-input', name: 'echo', props: {label: 'Echo'}, bind: {value: '$.src.value'}},
     ]}};
   const {instance, editor} = open(spec);
-  const field = () => instance.nodes().get(instance.spec.root.children[0]).value;
+  const field = () => instance.nodes().get(instance.spec.root.children[0]).signal;
   assert.equal(built[0].started, 'seed');
   assert.equal(built[0].bound, field(), 'construction resolves against the form it just built');
 

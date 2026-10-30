@@ -39,7 +39,7 @@ export class FunctionInput extends Input<string, FunctionInputOptions> {
   }
 
   protected displayText(): string {
-    return this.value.peek() === '' ? '' : this._name.textContent ?? '';
+    return this.peek() === '' ? '' : this._name.textContent ?? '';
   }
 
   private get _prompt(): string {
@@ -54,7 +54,7 @@ export class FunctionInput extends Input<string, FunctionInputOptions> {
     for (const [k, v] of [['role', 'button'], ['aria-haspopup', 'listbox'], ['aria-expanded', 'false']])
       control.setAttribute(k, v);
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       const func = value === '' ? undefined :
         DG.Func.find({}).find((f) => f.nqName === value);
       const glyph = func ? funcIcon(func) : null;
@@ -69,7 +69,7 @@ export class FunctionInput extends Input<string, FunctionInputOptions> {
       const key = (e as KeyboardEvent).key;
       const clear = (key === 'Backspace' || key === 'Delete') && this.nullable;
       if (clear)
-        this.value.value = '';
+        this.value = '';
       else if (key === 'Enter' || key === ' ')
         this._toggle();
       else
@@ -81,14 +81,14 @@ export class FunctionInput extends Input<string, FunctionInputOptions> {
   }
 
   private _toggle(): void {
-    if (!this.enabled) // the editor is a div, so the base's disabled sweep never reaches it
+    if (this.disabled !== null) // the editor is a div, so the base's disabled sweep never reaches it
       return;
     if (this._popup)
       return this._close();
     const scope = this._popup = new Scope();
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       const commit = (picked: string): void => {
-        this.value.value = picked;
+        this.value = picked;
         this._close();
       };
       const browser = functionsBrowser({
@@ -109,7 +109,7 @@ export class FunctionInput extends Input<string, FunctionInputOptions> {
           commit(picked);
       });
       scope.listen(popup, OVERLAY_CLOSE_EVENT, () => this._close());
-      Overlay.show(this._control, popup, scope);
+      Overlay.show(this._control, popup, {owner: scope});
       this._control.setAttribute('aria-expanded', 'true');
       browser.root.querySelector<HTMLElement>('input')?.focus();
     });

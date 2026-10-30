@@ -74,8 +74,8 @@ function makeWizard(logLine, outcome) {
       title: 'Summary',
       content: divV([
         paragraph('Reads the signals of the inputs from the earlier steps.'),
-        span(computed(() => `Notes: ${notes.value.value || '(empty)'}`)),
-        span(computed(() => `Email: ${email.value.value || '(empty)'}`)),
+        span(computed(() => `Notes: ${notes.value || '(empty)'}`)),
+        span(computed(() => `Email: ${email.value || '(empty)'}`)),
         span(computed(() => `Options: ${flavor.value}`)),
       ]),
     },
@@ -83,7 +83,7 @@ function makeWizard(logLine, outcome) {
 
   return new Wizard({
     steps,
-    onFinish: () => outcome.value = `finished with ${email.value.peek() || '(no email)'}`,
+    onFinish: () => outcome.value = `finished with ${email.peek() || '(no email)'}`,
     onCancel: () => outcome.value = 'cancelled',
   });
 }

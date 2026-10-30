@@ -1207,15 +1207,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.progressBar !== null)
       this.progressBar.update(100, 'Tree is ready');
 
-    setTimeout(async () => {
-      // Perform heavy updates after the layout is applied
-      await updateVisibleMols(thisViewer);
-      this.updateUI();
-      await updateVisibleNodes(thisViewer, {updateBitset: false, includeExpanded: true, includeChecked: true});
-      this.appendOrphanFolders(this.tree);
-      this.updateFilters();
-      this.updateTag();
-    }, 0);
+    // the heavy updates run after the layout is applied; the load is done when they are
+    await new Promise((resolve) => setTimeout(resolve));
+    await updateVisibleMols(thisViewer);
+    this.updateUI();
+    await updateVisibleNodes(thisViewer, {updateBitset: false, includeExpanded: true, includeChecked: true});
+    this.appendOrphanFolders(this.tree);
+    this.updateFilters();
+    this.updateTag();
   }
 
   get molColumn(): DG.Column | null {

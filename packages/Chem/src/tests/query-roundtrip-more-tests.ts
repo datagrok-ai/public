@@ -17,7 +17,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {PackageFunctions} from '../package';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {SubstructureFilter} from '../widgets/chem-substructure-filter';
@@ -143,7 +143,7 @@ async function held(filter: SubstructureFilter): Promise<Held> {
   const impl: any = filter.sketcher.sketcher;
   if (isCrux(impl)) {
     const el = cruxOf(filter);
-    await awaitCheck(() => !el.isPending, 'Crux did not settle', 5000);
+    await waitUntil(() => !el.isPending, 'Crux did not settle', 5000);
     const molfile = (el as any).isEmpty ? '' : el.molfile;
     return {molfile, search: searchReads(molfile), smarts: el.smarts};
   }
@@ -247,7 +247,6 @@ async function draw(filter: SubstructureFilter, d: Draw): Promise<void> {
       filter.sketcher.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true}));
     } else
       pasteInField(filter, d.field);
-    await delay(50);
     if (isKetcher(filter.sketcher.sketcher))
       await ketcherSettled(filter.sketcher.sketcher);
   }
@@ -787,7 +786,6 @@ async function pastedInSketcher(type: SketcherType, cxsmiles: string, at: {stage
     const data = new DataTransfer();
     data.setData('text/plain', cxsmiles);
     host.molInput.dispatchEvent(new ClipboardEvent('paste', {clipboardData: data, bubbles: true, cancelable: true}));
-    await delay(100);
     if (isKetcher(host.sketcher))
       await ketcherSettled(host.sketcher);
     if (host._smarts !== null)
@@ -795,7 +793,7 @@ async function pastedInSketcher(type: SketcherType, cxsmiles: string, at: {stage
     const impl: any = host.sketcher;
     if (isCrux(impl)) {
       const el = impl.root.querySelector('crux-sketch');
-      await awaitCheck(() => !el.isPending, 'Crux did not settle', 5000);
+      await waitUntil(() => !el.isPending, 'Crux did not settle', 5000);
       if (el.hasQuery)
         problems.push(`Crux shows a query: ${el.smarts}`);
     }
@@ -851,7 +849,8 @@ async function reopenUnchanged(type: SketcherType, d: Draw, intended: string, at
     await openDialog(filter, type);
     if (isKetcher(filter.sketcher.sketcher))
       await ketcherSettled(filter.sketcher.sketcher);
-    await delay(300);
+    await waitUntil(() => filter.sketcher.sketcher?.isRenderPending !== true,
+      'the reopened sketcher did not settle', 5000);
     pressDialogButton(filter, 'OK');
     at.stage = 'the search after the second OK';
     await settle(filter);
@@ -939,14 +938,14 @@ async function throughLayout(c: Case, at: {stage: string}): Promise<string[]> {
   at.stage = 'applying the layout';
   tv2.loadLayout(layout);
   let restored: SubstructureFilter | undefined;
-  await awaitCheck(() => {
+  await waitUntil(() => {
     restored = tv2.getFiltersGroup({createDefaultFilters: false}).filters
       .find((f: any) => f?.sketcher instanceof DG.chem.Sketcher && f.columnName === column) as unknown as SubstructureFilter;
     return restored !== undefined && restored.laidOut;
   }, 'the layout restored no substructure filter card', 20000);
   at.stage = 'the restored card\'s search';
-  await awaitCheck(() => sameRows(rows(df2.filter), want) && !restored!.calculating && restored!.currentSearches.size === 0,
-    '', 20000).catch(() => problems.push(
+  await waitUntil(() => sameRows(rows(df2.filter), want) && !restored!.calculating && restored!.currentSearches.size === 0,
+    'the restored card\'s search did not end', 20000).catch(() => problems.push(
     `the restored card passes ${rows(df2.filter).length} rows; ${describe(c.intended)} matches ${want.length}`));
   at.stage = 'opening the restored card\'s sketcher';
   await openDialog(restored!, c.sketcher);
@@ -975,8 +974,12 @@ async function cleared(how: 'sketcher' | 'card', type: SketcherType, at: {stage:
   if (df.filter.trueCount === df.rowCount)
     problems.push('the query filtered nothing');
   at.stage = 'clearing';
-  if (how === 'card')
+  if (how === 'card') {
+    // the card draws the query asynchronously and shows its Clear button with it
+    await waitUntil(() => filter.sketcher.extSketcherDiv.contains(filter.sketcher.clearSketcherButton),
+      'the card shows no Clear button for the query', 10000);
     filter.sketcher.clearSketcherButton.click();
+  }
   else {
     await openDialog(filter, type);
     if (type === 'Crux')
@@ -987,9 +990,10 @@ async function cleared(how: 'sketcher' | 'card', type: SketcherType, at: {stage:
     pressDialogButton(filter, 'OK');
   }
   await settle(filter);
-  await awaitCheck(() => df.filter.trueCount === df.rowCount, `cleared: ${df.filter.trueCount} of ${df.rowCount} rows pass`, 10000)
+  await waitUntil(() => df.filter.trueCount === df.rowCount,
+    `cleared: ${df.filter.trueCount} of ${df.rowCount} rows pass`, 10000)
     .catch((e) => problems.push(e?.message ?? String(e)));
-  await awaitCheck(() => filter.sketcher.extSketcherDiv.querySelector('.sketch-link') !== null, '', 5000)
+  await waitUntil(() => filter.sketcher.extSketcherDiv.querySelector('.sketch-link') !== null, 'no Sketch link', 5000)
     .catch(() => problems.push('the card shows no Sketch link after the clearing'));
   DG.Balloon.closeAll();
   at.stage = 'reopening';
@@ -1047,7 +1051,7 @@ function molfileWithElement(molfile: string, atom: number, element: string): str
 /** The cell editor's host once its sketcher is ready. */
 async function cellEditorHost(): Promise<DG.chem.Sketcher> {
   let host: DG.chem.Sketcher | null = null;
-  await awaitCheck(() => {
+  await waitUntil(() => {
     const dialogs = DG.Dialog.getOpenDialogs();
     const box = dialogs[dialogs.length - 1]?.root.querySelector('.chem-sketcher-host');
     const child = box?.firstElementChild;
@@ -1067,11 +1071,12 @@ async function shownMolecule(host: DG.chem.Sketcher, units: string): Promise<str
   const impl: any = host.sketcher;
   if (isCrux(impl)) {
     const el = impl.root.querySelector('crux-sketch') as CruxElement;
-    await awaitCheck(() => !el.isPending, 'Crux did not settle', 5000);
+    await waitUntil(() => !el.isPending, 'Crux did not settle', 5000);
     return units === DG.chem.Notation.MolBlock ? (el as any).molV3000 : (el as any).smiles;
   }
   if (isKetcher(impl)) {
-    await awaitCheck(() => impl._smiles !== null || impl._molV3000 !== null, 'Ketcher exported nothing', 10000).catch(() => {});
+    await waitUntil(() => impl._smiles !== null || impl._molV3000 !== null,
+      'Ketcher exported nothing', 10000).catch(() => {});
     return units === DG.chem.Notation.MolBlock ? impl._molV3000 ?? impl._molV2000 : impl._smiles ?? impl._molV2000;
   }
   return units === DG.chem.Notation.MolBlock ? impl._sketcher.getMolFileV3() : impl._sketcher.getSmiles();
@@ -1085,14 +1090,13 @@ async function editAtom(host: DG.chem.Sketcher, atom: number, element: string): 
     const el = impl.root.querySelector('crux-sketch') as CruxElement;
     await cruxSteps(el, [['tool', `element.${element.toLowerCase()}`, 'atom', atom]]);
   } else if (isKetcher(impl)) {
-    await awaitCheck(() => impl._molV3000 !== null, 'Ketcher exported no V3000', 10000);
+    await waitUntil(() => impl._molV3000 !== null, 'Ketcher exported no V3000', 10000);
     const exported = impl._exportId;
     await within(impl._sketcher.setMolecule(molfileWithElement(impl._molV3000, atom, element)),
       'Ketcher did not load the edit', 15000);
     await ketcherExported(impl, 5000, exported);
   } else
     impl._sketcher.setMolFile(molfileWithElement(impl._sketcher.getMolFile(), atom, element));
-  await delay(100);
 }
 
 async function pressOK(host: DG.chem.Sketcher): Promise<void> {

@@ -2,7 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {u2} from '@datagrok-libraries/utils/src/u2';
+import {AppHeader} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 import {getKnimeClient} from './knime-client-factory';
 import {getOrRegisterFunc, sanitizeFuncName} from './function-registry';
 import {loadCachedEntries, registerFromCache, refreshAndUpdateCache} from './function-cache';
@@ -44,16 +45,19 @@ export class PackageFunctions {
     name: 'KNIME',
   })
   static async knimeLinkApp(): Promise<DG.ViewBase> {
-    const appHeader = u2.appHeader({
-      iconPath: _package.webRoot + '/images/knime.png',
-      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/KnimeLink/README.md',
-      description: '- Connect to your KNIME Business Hub.\n' +
-        '- Browse available deployments.\n' +
-        '- Pass tables, parameters, and files as input.\n' +
-        '- Execute workflows and view results as DataFrames.\n',
-    });
+    const view = DG.View.create();
+    const appHeader = ViewHost.of(view).build(() => new AppHeader({
+      icon: _package.webRoot + '/images/knime.png',
+      learnMore: 'https://github.com/datagrok-ai/public/blob/master/packages/KnimeLink/README.md',
+      items: [
+        'Connect to your KNIME Business Hub.',
+        'Browse available deployments.',
+        'Pass tables, parameters, and files as input.',
+        'Execute workflows and view results as DataFrames.',
+      ],
+    }));
 
-    const view = DG.View.fromRoot(appHeader);
+    view.root.append(appHeader.root);
     view.name = 'KNIME';
     return view;
   }

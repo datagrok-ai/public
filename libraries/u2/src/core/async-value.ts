@@ -1,5 +1,7 @@
-import {signal, computed, Signal, ReadonlySignal} from './signals.js';
+import {signal, computed, untracked, Signal, ReadonlySignal} from './signals.js';
 import {Scope} from './scope.js';
+import {Ownership} from './owner.js';
+import type {Owner} from './owner.js';
 
 export type AsyncValueState<T> =
   {kind: 'idle'} |
@@ -10,9 +12,13 @@ export type AsyncValueState<T> =
 export interface AsyncValueOptions {
   /** Signals read here re-trigger the run (debounced) — how a bound param makes a source reactive. */
   deps?: () => void;
+  /** Coalesces the runs `deps` trigger, the first one included (300ms by default). A value without `deps` loads
+   * once, at once: there is nothing to coalesce. */
   debounceMs?: number;
   /** Run at construction and on deps changes (default true); false = only {@link AsyncValue.refresh} runs. */
   auto?: boolean;
+  /** Disposes the value with it: whoever is building by default; after an `await` nobody is — pass it. */
+  owner?: Owner;
 }
 
 /** The single-value twin of {@link AsyncSource} (DD8/C2): one abortable run at a time, stale
@@ -20,11 +26,13 @@ export interface AsyncValueOptions {
  * Consumers never see this object — a source projects its outputs as computeds over `state`. */
 export class AsyncValue<T> {
   readonly state: ReadonlySignal<AsyncValueState<T>>;
-  readonly value: ReadonlySignal<T | undefined>;
+  /** The loaded value's signal, for wiring; undefined until a run is ready. */
+  readonly signal: ReadonlySignal<T | undefined>;
   private readonly _state: Signal<AsyncValueState<T>>;
   private readonly _fetch: (abort: AbortSignal) => Promise<T>;
   private readonly _debounceMs: number;
   private readonly _scope = new Scope();
+  private readonly _release: (() => void) | undefined;
   private _timer: ReturnType<typeof setTimeout> | undefined;
   private _abort: AbortController | undefined;
   private _disposed = false;
@@ -34,10 +42,11 @@ export class AsyncValue<T> {
     this._debounceMs = options?.debounceMs ?? 300;
     this._state = signal<AsyncValueState<T>>({kind: 'idle'});
     this.state = this._state;
-    this.value = computed(() => {
+    this.signal = computed(() => {
       const s = this._state.value;
       return s.kind === 'ready' ? s.value : undefined;
     });
+    this._release = Ownership.adopt(options?.owner, () => this.dispose());
     if (options?.auto ?? true) {
       const deps = options?.deps;
       if (deps) {
@@ -46,9 +55,18 @@ export class AsyncValue<T> {
           this._trigger();
         });
       } else
-        this._trigger();
+        untracked(() => void this.refresh());
     }
-    Scope.ambient?.own(() => this.dispose());
+  }
+
+  /** The loaded value, followed when read inside an `effect` or a `computed`; undefined until a run is ready. */
+  get value(): T | undefined {
+    return this.signal.value;
+  }
+
+  /** The loaded value, not followed. */
+  peek(): T | undefined {
+    return this.signal.peek();
   }
 
   /** Manual run; retry after an error is the same call. It starts NOW: the debounce exists to
@@ -66,6 +84,7 @@ export class AsyncValue<T> {
     this._disposed = true;
     this._cancel();
     this._scope.dispose();
+    this._release?.();
   }
 
   private _trigger(): void {

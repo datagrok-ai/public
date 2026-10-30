@@ -1,12 +1,11 @@
-/* Several tables as one app: a view per table at `<path>/<Segment>` — what the app func answers the router, a
-   deep link (`?entity=<id>`, `?q=`) replayed by the view — an item per view in the app's tree, and where a row of
-   one of the tables opens from anywhere: the app's own view of the table, not the platform's entity view. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {domains} from './facade.js';
-import type {DomainAppViewOptions, DomainTable} from './facade.js';
+import {domains, DomainTable} from './facade.js';
+import type {DomainAppViewOptions} from './facade.js';
 import {DomainApp} from './app.js';
 import {DomainAddress} from './address.js';
+import {SavedSearches} from './saved-searches.js';
+import {rawEffect} from 'datagrok-api/u2core';
 
 /** What `DomainTable.app()` takes for one view, less what the views decide: its name and path. */
 export type DomainViewOptions = Omit<DomainAppViewOptions, 'name' | 'path'>;
@@ -33,9 +32,12 @@ export interface DomainViewsOptions {
   ready?: (app: DomainApp, table: string) => void;
 }
 
+/** Several tables as one app: a view per table at `<path>/<Segment>`, and a row of one of the tables opens from
+ * anywhere in the app's own view of the table, not the platform's entity view. */
 export class DomainViews {
-  /** Where each table's rows open: the views made over it last. */
+  // where each table's rows open: the views made over it last
   private static readonly _byTable = new Map<string, DomainViews>();
+  private static _deleteSaved: {unsubscribe(): void} | undefined;
 
   constructor(private readonly _options: DomainViewsOptions) {
     for (const entry of _options.views)
@@ -51,22 +53,20 @@ export class DomainViews {
     return views !== undefined;
   }
 
-  /** A new view at an address under the path — `Batches`, `Compounds?entity=<id>`; '' is the first view's list —
-   * what the app func answers the router, which docks it. The router hands over the path alone: where the address
-   * bar is this view's, its query is replayed by the view itself. */
-  async open(address = ''): Promise<DG.ViewBase> {
+  /** What the app func answers the router for an address under the path — `Batches`, `Compounds?entity=<id>`; '' is
+   * the first view's list: a new view, which the router docks, or null where the open view of the table takes the
+   * address and comes forward. Back and Forward inside an open view reach the app func too (the router cannot ask a
+   * plain view for its path), and the open view answered again would be docked twice. */
+  async open(address = ''): Promise<DG.ViewBase | null> {
     const {entry, rest} = this._route(address);
-    const view = await this.view(entry.table);
-    const own = window.location.pathname.toLowerCase().endsWith(this.baseOf(entry.table).toLowerCase());
-    void DomainApp.of(view)!.open(rest || (own ? undefined : ''));
-    return view;
+    return DomainApp.openAt(this.baseOf(entry.table), this._at(entry, rest)) === undefined ? this._new(address) : null;
   }
 
   /** An address from inside the app — a tree item, a link: the open view comes forward at it, else a new one
    * docks. */
   async show(address: string): Promise<DG.ViewBase> {
     const {entry, rest} = this._route(address);
-    return DomainApp.openAt(this.baseOf(entry.table), rest) ?? grok.shell.addView(await this.open(address));
+    return DomainApp.openAt(this.baseOf(entry.table), rest) ?? grok.shell.addView(await this._new(address));
   }
 
   /** The create page of a table's view — the open view's, else a new one's. */
@@ -83,16 +83,62 @@ export class DomainViews {
     return view;
   }
 
-  /** An item per view under `node` — the app's tree browser: one selected brings its view forward at the list. */
+  static async reload(schema: string): Promise<void> {
+    DomainTable.forget(schema);
+    for (const app of [...DomainApp.live]) {
+      const old = DomainApp.viewOf(app);
+      if (!app.table.address.startsWith(`${schema}.`) || old === undefined || app.session.isDirty.peek())
+        continue;
+      const views = DomainViews._byTable.get(app.table.address);
+      const view = views !== undefined ? await views._new(app.path.peek().slice(views._options.path.length)) :
+        (await domains.table(app.table.address)).app({path: app.base});
+      grok.shell.addView(view);
+      old.close();
+    }
+  }
+
+  /** An item per view under `node` — the app's tree browser: one selected brings its view forward at the list —
+   * then the user's saved searches. */
   tree(node: DG.TreeViewGroup): void {
     for (const entry of this._options.views)
       node.item(entry.name).onSelected.subscribe(() => void this.show(this._segment(entry)));
+    const saved = node.group('Saved searches', null, false);
+    rawEffect(() => {
+      SavedSearches.changed.value;
+      for (const child of [...saved.children])
+        child.remove();
+      for (const entry of this._options.views) {
+        for (const [name, search] of SavedSearches.saved(entry.table)) {
+          saved.item(`${entry.name}: ${name}`, {savedSearch: {table: entry.table, name}})
+            .onSelected.subscribe(() => void this.show(`${this._segment(entry)}${SavedSearches.query(search)}`));
+        }
+      }
+    });
+    type ContextMenu = {args: {item?: DG.TreeViewNode, menu: DG.Menu}};
+    DomainViews._deleteSaved ??= grok.events.onContextMenu.subscribe((e: ContextMenu) => {
+      const saved = e.args.item?.value?.savedSearch;
+      if (saved !== undefined)
+        e.args.menu.item('Delete', () => SavedSearches.remove(saved.table, saved.name));
+    });
   }
 
   /** The route of a table's view: the app's path and the view's segment. */
   baseOf(table: string): string {
     const segment = this._segment(this._entry(table));
     return segment === '' ? this._options.path : `${this._options.path}/${segment}`;
+  }
+
+  private async _new(address: string): Promise<DG.ViewBase> {
+    const {entry, rest} = this._route(address);
+    const view = await this.view(entry.table);
+    void DomainApp.of(view)!.open(this._at(entry, rest));
+    return view;
+  }
+
+  // the router hands over the path alone: where the address bar is this view's, its query is replayed from there
+  private _at(entry: DomainViewEntry, rest: string): string {
+    const own = window.location.pathname.toLowerCase().endsWith(this.baseOf(entry.table).toLowerCase());
+    return rest || (own ? `${window.location.pathname}${window.location.search}` : '');
   }
 
   private _entry(table: string): DomainViewEntry {
@@ -103,7 +149,6 @@ export class DomainViews {
     return entry.segment ?? entry.name.replace(/ /g, '');
   }
 
-  /** The view an address names by its first segment — the first view where it names none — and the rest of it. */
   private _route(address: string): {entry: DomainViewEntry, rest: string} {
     const [, segment, rest] = /^\/?([^/?]*)(.*)$/.exec(address)!;
     const views = this._options.views;

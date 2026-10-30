@@ -74,7 +74,7 @@ export async function render(main) {
   main.append(pathFrame);
 
   const current = el('code');
-  bindText(path.scope, current, computed(() => path.items.value.join(' / ')));
+  bindText(current, computed(() => path.items.value.join(' / ')), {owner: path.scope});
   const readout = el('p', 'u2-gallery-status');
   readout.append('items = ', current);
   main.append(readout);

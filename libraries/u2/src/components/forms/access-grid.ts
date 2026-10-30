@@ -7,7 +7,9 @@
 import {batch, signal, Signal, untracked} from '../../core/signals.js';
 import {Input, InputOptions, LiveOption} from '../../core/input-base.js';
 import {span} from '../../core/elements.js';
+import {Reason} from '../../core/reason.js';
 import {each} from '../../core/region.js';
+import {backends} from '../../sources/backends.js';
 import type {ChoiceItem} from '../inputs/choice-input.js';
 import type {IItemsState} from '../../core/widget-like.js';
 
@@ -31,6 +33,9 @@ export interface AccessGridOptions extends InputOptions<AccessRow[]> {
   principals: LiveOption<ChoiceItem[]>;
   /** The first column's header ('Group' by default). */
   principalLabel?: string;
+  /** The picture before a principal's name; none where it answers null. By default the platform's: a user's picture,
+   * a group's icon, for a principal that is a group's id or its name (`backends.principalIcon`). */
+  icon?: (principal: string) => HTMLElement | null;
   /** Rows granted elsewhere, shown muted above the editable ones. */
   inherited?: LiveOption<InheritedAccessRow[]>;
   /** Capabilities that cannot be granted now; their boxes stay, disabled. */
@@ -49,7 +54,8 @@ interface GridRow {
   label: string;
   /** Where an inherited row comes from; null on an editable one. */
   from: string | null;
-  enabled: boolean;
+  /** Why the grid is off, or null. */
+  off: string | null;
   locked: string[];
 }
 
@@ -65,12 +71,17 @@ function itemLabel(item: ChoiceItem): string {
 const NAV_KEYS = ['ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'];
 
 export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
+  /** Why an inherited row's boxes do not change here. */
+  static readonly INHERITED = 'Inherited: change it where it is granted';
+  /** Why a locked capability's boxes do not change. */
+  static readonly LOCKED = 'This capability cannot be changed here';
+
   private declare _body: HTMLElement;
   private declare _capabilities: {name: string, label: string}[];
   private declare _principals: Signal<ChoiceItem[]>;
   private declare _inherited: Signal<InheritedAccessRow[]>;
   private declare _locked: Signal<string[]>;
-  /** Bumped after every `enabled` sweep, which re-enables every box: the rows re-apply their own. */
+  /** Bumped after every `disabled` sweep, which re-enables every box: the rows re-apply their own. */
   private declare _sweeps: Signal<number>;
   /** A key is moving the add select's choice: the `change` it fires in its task waits for Enter. */
   private declare _keyNav: boolean;
@@ -121,12 +132,12 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
     this._principals.value = items;
   }
 
-  get enabled(): boolean {
-    return super.enabled;
+  get disabled(): string | null {
+    return super.disabled;
   }
 
-  set enabled(x: boolean) {
-    super.enabled = x;
+  set disabled(reason: string | null) {
+    super.disabled = reason;
     this._sweeps.value = this._sweeps.peek() + 1;
   }
 
@@ -158,7 +169,7 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
     head.append(AccessGrid._cell('th', this.options.principalLabel ?? 'Group'));
     for (const c of this._capabilities)
       head.append(AccessGrid._cell('th', c.label, 'u2-access-grid-cap'));
-    head.append(AccessGrid._cell('th', ''));
+    head.append(AccessGrid._cell('th', '', 'u2-access-grid-action'));
     const thead = document.createElement('thead');
     thead.append(head);
     this._body = document.createElement('tbody');
@@ -185,7 +196,7 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
 
   private _rows(): GridRow[] {
     this._sweeps.value;
-    const enabled = this.enabled;
+    const off = this.disabled;
     const locked = this._locked.value;
     const principals = this._principals.value;
     const label = (principal: string) => {
@@ -194,9 +205,9 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
     };
     return [
       ...this._inherited.value.map((row) => ({key: `inherited:${row.principal}`, row, label: label(row.principal),
-        from: row.from, enabled, locked})),
-      ...(this.value.value ?? []).map((row) => ({key: row.principal, row, label: label(row.principal), from: null,
-        enabled, locked})),
+        from: row.from, off, locked})),
+      ...(this.value ?? []).map((row) => ({key: row.principal, row, label: label(row.principal), from: null,
+        off, locked})),
     ];
   }
 
@@ -206,6 +217,12 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
     tr.setAttribute('role', 'row');
     tr.dataset.u2Key = r.row.principal;
     const who = AccessGrid._cell('td', '');
+    const picture = (this.options.icon ?? backends.principalIcon)?.(r.row.principal);
+    if (picture) {
+      const box = span('', 'u2-access-grid-icon');
+      box.append(picture);
+      who.append(box);
+    }
     const name = span(r.label, 'u2-access-grid-principal');
     name.dataset.u2Part = 'item-label';
     who.append(name);
@@ -221,7 +238,7 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
       cell.append(box);
       tr.append(cell);
     }
-    const last = AccessGrid._cell('td', '');
+    const last = AccessGrid._cell('td', '', 'u2-access-grid-action');
     tr.append(last);
     if (r.from === null) {
       const remove = document.createElement('button');
@@ -245,12 +262,15 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
       const locked = r.locked.includes(capability.name);
       // a locked capability is not granted whatever the row holds: the box shows what applies
       box.checked = r.row.can[capability.name] === true && !locked;
-      box.disabled = !r.enabled || r.from !== null || locked;
+      box.disabled = r.off !== null || r.from !== null || locked;
+      // off with the grid, the grid says why
+      Reason.apply(box, r.off !== null ? null : r.from !== null ? AccessGrid.INHERITED :
+        locked ? AccessGrid.LOCKED : null);
       box.setAttribute('aria-label', `${capability.label} for ${r.label}`);
     }
     const remove = tr.querySelector<HTMLButtonElement>('.u2-access-grid-remove');
     if (remove !== null) {
-      remove.disabled = !r.enabled;
+      remove.disabled = r.off !== null;
       remove.setAttribute('aria-label', `Remove ${r.label}`);
     }
     return true;
@@ -291,7 +311,7 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
   }
 
   private _fillPicker(picker: HTMLSelectElement): void {
-    const taken = new Set([...this.value.value ?? [], ...this._inherited.value].map((r) => r.principal));
+    const taken = new Set([...this.value ?? [], ...this._inherited.value].map((r) => r.principal));
     const principals = this._principals.value;
     picker.textContent = '';
     picker.append(new Option(this.options.addText ?? '+ add group or user…', ''));
@@ -304,8 +324,8 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
 
   /** Adds an editable row granting the first capability not locked. */
   private _add(principal: string, label?: string): void {
-    const rows = this.value.peek() ?? [];
-    if (principal === '' || !this.enabled || rows.some((r) => r.principal === principal))
+    const rows = this.peek() ?? [];
+    if (principal === '' || this.disabled !== null || rows.some((r) => r.principal === principal))
       return;
     const locked = this._locked.peek();
     const first = this._capabilities.find((c) => !locked.includes(c.name));
@@ -315,7 +335,7 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
     batch(() => {
       if (label !== undefined && !this._principals.peek().some((p) => itemValue(p) === principal))
         this._principals.value = [...this._principals.peek(), {value: principal, label}];
-      this.value.value = [...rows, {principal, can}];
+      this.value = [...rows, {principal, can}];
     });
   }
 
@@ -327,18 +347,18 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
     if (capability === undefined || principal === undefined)
       return;
     const fixed = tr!.classList.contains('u2-access-grid-inherited') || this._locked.peek().includes(capability);
-    if (!this.enabled || fixed) {
+    if (this.disabled !== null || fixed) {
       target.checked = !target.checked;
       return;
     }
-    this.value.value = (this.value.peek() ?? []).map((r) =>
+    this.value = (this.peek() ?? []).map((r) =>
       r.principal === principal ? {...r, can: {...r.can, [capability]: target.checked}} : r);
   }
 
   /** Focus on a removed row goes to the next row's remove, else the previous one's, else the add control. */
   private _onClick(target: HTMLElement): void {
     const remove = target.closest<HTMLElement>('.u2-access-grid-remove');
-    if (remove === null || !this.enabled)
+    if (remove === null || this.disabled !== null)
       return;
     const tr = remove.closest('tr') as HTMLElement;
     if (tr.contains(document.activeElement)) {
@@ -348,7 +368,7 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
         'input, select, button, [tabindex]');
       (removes[at + 1] ?? removes[at - 1] ?? add)?.focus();
     }
-    this.value.value = (this.value.peek() ?? []).filter((r) => r.principal !== tr.dataset.u2Key);
+    this.value = (this.peek() ?? []).filter((r) => r.principal !== tr.dataset.u2Key);
   }
 
   private static _cell(tag: 'th' | 'td', text: string, cls?: string): HTMLTableCellElement {

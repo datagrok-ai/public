@@ -3,7 +3,7 @@
    `flex: 1`, and a bool editor shrunk to nothing puts its box under the hint, where a click
    lands on the hint. Layout is not measurable here, so the rules are asserted as written. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {resetDom} from './dom-shim.js';
@@ -73,14 +73,14 @@ test('a switch toggles from its caption too; read-only or disabled it does not',
     document.body.append(sw.root);
     const caption = sw.root.querySelector('[data-u2-part="label"]');
     caption.click();
-    assert.equal(sw.value.peek(), true);
+    assert.equal(sw.peek(), true);
     sw.readOnly = true;
     caption.click();
-    assert.equal(sw.value.peek(), true, 'read-only');
+    assert.equal(sw.peek(), true, 'read-only');
     sw.readOnly = false;
-    sw.enabled = false;
+    sw.disabled = 'Not editable in this test';
     caption.click();
-    assert.equal(sw.value.peek(), true, 'disabled');
+    assert.equal(sw.peek(), true, 'disabled');
     sw.dispose();
   } finally {
     resetDom();
@@ -90,7 +90,7 @@ test('a switch toggles from its caption too; read-only or disabled it does not',
 test('required: false is an answer, so a fresh box is valid; only a null value is empty', () => {
   try {
     const box = new BoolInput({label: 'Agree', required: true});
-    assert.equal(box.value.peek(), false);
+    assert.equal(box.peek(), false);
     assert.equal(box.getState().valid, true);
     const bound = signal(null);
     const unanswered = new BoolInput({label: 'Agree', required: true, bind: bound});

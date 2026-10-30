@@ -13,7 +13,7 @@ export type AdditionRole = 'SALT' | 'SOLVATE';
 
 export type AssayResultReportedClintQualifier = '=' | '<' | '>';
 
-/** Row of `moltrack_ems.compound`. */
+/** Row of `moltrack.compound`. */
 export interface CompoundRow {
   id: string;
   version: number;
@@ -41,7 +41,7 @@ export interface CompoundRow {
   match_rule?: CompoundMatchRule;
 }
 
-/** Insert payload for `moltrack_ems.compound`. */
+/** Insert payload for `moltrack.compound`. */
 export interface CompoundInsert {
   molregno?: number;
   original_structure: string;
@@ -69,12 +69,12 @@ export type CompoundColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'a
   'source_compound_code' | 'mol_logp' | 'formula' | 'inchikey' | 'inchi' | 'hash_mol' | 'hash_all_layers' |
   'hash_stereo_insensitive' | 'hash_tautomer_insensitive' | 'match_rule';
 
-/** Expand keys of `moltrack_ems.compound` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `moltrack.compound` → fields each adds to the row (consumed by query()/builder). */
 export type CompoundExpand = {
   'details:compound_batch': {compound_batch?: CompoundBatchRow[]};
 };
 
-/** Row of `moltrack_ems.compound_batch`. */
+/** Row of `moltrack.compound_batch`. */
 export interface CompoundBatchRow {
   id: string;
   version: number;
@@ -95,7 +95,7 @@ export interface CompoundBatchRow {
   notes?: string;
 }
 
-/** Insert payload for `moltrack_ems.compound_batch`. */
+/** Insert payload for `moltrack.compound_batch`. */
 export interface CompoundBatchInsert {
   batch_regno?: number;
   compound_id: string;
@@ -115,7 +115,7 @@ export type CompoundBatchColumn = 'id' | 'version' | 'created_on' | 'updated_on'
   'compound_id' | 'epa_batch_id' | 'source' | 'source_batch_code' | 'acquired_date' | 'synthesized_date' |
   'responsible_party' | 'eln_reference' | 'purity' | 'project' | 'notes';
 
-/** Expand keys of `moltrack_ems.compound_batch` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `moltrack.compound_batch` → fields each adds to the row (consumed by query()/builder). */
 export type CompoundBatchExpand = {
   'compound_id': {'compound_id.molregno'?: number; 'compound_id.original_structure'?: string;
     'compound_id.structure'?: string; 'compound_id.common_name'?: string; 'compound_id.cas'?: string;
@@ -129,7 +129,7 @@ export type CompoundBatchExpand = {
   'details:assay_result': {assay_result?: AssayResultRow[]};
 };
 
-/** Row of `moltrack_ems.addition`. */
+/** Row of `moltrack.addition`. */
 export interface AdditionRow {
   id: string;
   version: number;
@@ -145,7 +145,7 @@ export interface AdditionRow {
   description?: string;
 }
 
-/** Insert payload for `moltrack_ems.addition`. */
+/** Insert payload for `moltrack.addition`. */
 export interface AdditionInsert {
   name: string;
   role: AdditionRole;
@@ -159,12 +159,12 @@ export interface AdditionInsert {
 export type AdditionColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'role' |
   'code' | 'structure' | 'formula' | 'molecular_weight' | 'description';
 
-/** Expand keys of `moltrack_ems.addition` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `moltrack.addition` → fields each adds to the row (consumed by query()/builder). */
 export type AdditionExpand = {
   'details:batch_addition': {batch_addition?: BatchAdditionRow[]};
 };
 
-/** Row of `moltrack_ems.batch_addition`. */
+/** Row of `moltrack.batch_addition`. */
 export interface BatchAdditionRow {
   id: string;
   version: number;
@@ -176,7 +176,7 @@ export interface BatchAdditionRow {
   equivalents: number;
 }
 
-/** Insert payload for `moltrack_ems.batch_addition`. */
+/** Insert payload for `moltrack.batch_addition`. */
 export interface BatchAdditionInsert {
   batch_id: string;
   addition_id: string;
@@ -186,7 +186,7 @@ export interface BatchAdditionInsert {
 export type BatchAdditionColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'batch_id' |
   'addition_id' | 'equivalents';
 
-/** Expand keys of `moltrack_ems.batch_addition` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `moltrack.batch_addition` → fields each adds to the row (consumed by query()/builder). */
 export type BatchAdditionExpand = {
   'batch_id': {'batch_id.batch_regno'?: number; 'batch_id.compound_id'?: string; 'batch_id.epa_batch_id'?: string;
     'batch_id.source'?: string; 'batch_id.source_batch_code'?: string; 'batch_id.acquired_date'?: Dayjs;
@@ -197,7 +197,7 @@ export type BatchAdditionExpand = {
     'addition_id.description'?: string};
 };
 
-/** Row of `moltrack_ems.assay`. */
+/** Row of `moltrack.assay`. */
 export interface AssayRow {
   id: string;
   version: number;
@@ -210,7 +210,7 @@ export interface AssayRow {
   biological_system?: string;
 }
 
-/** Insert payload for `moltrack_ems.assay`. */
+/** Insert payload for `moltrack.assay`. */
 export interface AssayInsert {
   name: string;
   description?: string;
@@ -221,12 +221,12 @@ export interface AssayInsert {
 export type AssayColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'description' |
   'assay_format' | 'biological_system';
 
-/** Expand keys of `moltrack_ems.assay` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `moltrack.assay` → fields each adds to the row (consumed by query()/builder). */
 export type AssayExpand = {
   'details:assay_run': {assay_run?: AssayRunRow[]};
 };
 
-/** Row of `moltrack_ems.assay_run`. */
+/** Row of `moltrack.assay_run`. */
 export interface AssayRunRow {
   id: string;
   version: number;
@@ -242,7 +242,7 @@ export interface AssayRunRow {
   cell_concentration?: number;
 }
 
-/** Insert payload for `moltrack_ems.assay_run`. */
+/** Insert payload for `moltrack.assay_run`. */
 export interface AssayRunInsert {
   name?: string;
   assay_id: string;
@@ -256,14 +256,14 @@ export interface AssayRunInsert {
 export type AssayRunColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'assay_id' |
   'run_date' | 'assayer' | 'cell_species' | 'cell_lot' | 'cell_concentration';
 
-/** Expand keys of `moltrack_ems.assay_run` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `moltrack.assay_run` → fields each adds to the row (consumed by query()/builder). */
 export type AssayRunExpand = {
   'assay_id': {'assay_id.name'?: string; 'assay_id.description'?: string; 'assay_id.assay_format'?: string;
     'assay_id.biological_system'?: string};
   'details:assay_result': {assay_result?: AssayResultRow[]};
 };
 
-/** Row of `moltrack_ems.assay_result`. */
+/** Row of `moltrack.assay_result`. */
 export interface AssayResultRow {
   id: string;
   version: number;
@@ -279,7 +279,7 @@ export interface AssayResultRow {
   sd_htc_recovery?: number;
 }
 
-/** Insert payload for `moltrack_ems.assay_result`. */
+/** Insert payload for `moltrack.assay_result`. */
 export interface AssayResultInsert {
   assay_run_id: string;
   batch_id: string;
@@ -294,7 +294,7 @@ export type AssayResultColumn = 'id' | 'version' | 'created_on' | 'updated_on' |
   'batch_id' | 'dosed_concentration' | 'reported_clint' | 'reported_clint_qualifier' | 'mean_htc_recovery' |
   'sd_htc_recovery';
 
-/** Expand keys of `moltrack_ems.assay_result` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `moltrack.assay_result` → fields each adds to the row (consumed by query()/builder). */
 export type AssayResultExpand = {
   'assay_run_id': {'assay_run_id.name'?: string; 'assay_run_id.assay_id'?: string; 'assay_run_id.run_date'?: Dayjs;
     'assay_run_id.assayer'?: string; 'assay_run_id.cell_species'?: string; 'assay_run_id.cell_lot'?: string;
@@ -305,7 +305,7 @@ export type AssayResultExpand = {
     'batch_id.purity'?: number; 'batch_id.project'?: string; 'batch_id.notes'?: string};
 };
 
-export type MoltrackEmsTransactionOp =
+export type MoltrackTransactionOp =
   {op: 'insert'; table: 'compound'; ref?: string; values: DG.DomainTxValues<CompoundInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'compound'; id: string; values: DG.DomainTxValues<Partial<CompoundRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'compound'; id: string} |
@@ -335,32 +335,32 @@ export type MoltrackEmsTransactionOp =
   {op: 'delete'; table: 'assay_result'; id: string} |
   {op: 'restore'; table: 'assay_result'; id: string};
 
-/** Typed clients for the `moltrack_ems` domain schema tables (lazy — no import-time side effects). */
-export const moltrackEmsDb = {
+/** Typed clients for the `moltrack` domain schema tables (lazy — no import-time side effects). */
+export const moltrackDb = {
   get compounds() {
-    return grok.dapi.domains.table<CompoundRow, CompoundInsert, CompoundColumn, CompoundExpand>('moltrack_ems.compound');
+    return grok.dapi.domains.table<CompoundRow, CompoundInsert, CompoundColumn, CompoundExpand>('moltrack.compound');
   },
   get compoundBatches() {
-    return grok.dapi.domains.table<CompoundBatchRow, CompoundBatchInsert, CompoundBatchColumn, CompoundBatchExpand>('moltrack_ems.compound_batch');
+    return grok.dapi.domains.table<CompoundBatchRow, CompoundBatchInsert, CompoundBatchColumn, CompoundBatchExpand>('moltrack.compound_batch');
   },
   get additions() {
-    return grok.dapi.domains.table<AdditionRow, AdditionInsert, AdditionColumn, AdditionExpand>('moltrack_ems.addition');
+    return grok.dapi.domains.table<AdditionRow, AdditionInsert, AdditionColumn, AdditionExpand>('moltrack.addition');
   },
   get batchAdditions() {
-    return grok.dapi.domains.table<BatchAdditionRow, BatchAdditionInsert, BatchAdditionColumn, BatchAdditionExpand>('moltrack_ems.batch_addition');
+    return grok.dapi.domains.table<BatchAdditionRow, BatchAdditionInsert, BatchAdditionColumn, BatchAdditionExpand>('moltrack.batch_addition');
   },
   get assays() {
-    return grok.dapi.domains.table<AssayRow, AssayInsert, AssayColumn, AssayExpand>('moltrack_ems.assay');
+    return grok.dapi.domains.table<AssayRow, AssayInsert, AssayColumn, AssayExpand>('moltrack.assay');
   },
   get assayRuns() {
-    return grok.dapi.domains.table<AssayRunRow, AssayRunInsert, AssayRunColumn, AssayRunExpand>('moltrack_ems.assay_run');
+    return grok.dapi.domains.table<AssayRunRow, AssayRunInsert, AssayRunColumn, AssayRunExpand>('moltrack.assay_run');
   },
   get assayResults() {
-    return grok.dapi.domains.table<AssayResultRow, AssayResultInsert, AssayResultColumn, AssayResultExpand>('moltrack_ems.assay_result');
+    return grok.dapi.domains.table<AssayResultRow, AssayResultInsert, AssayResultColumn, AssayResultExpand>('moltrack.assay_result');
   },
-  transaction<T extends MoltrackEmsTransactionOp[]>(ops: [...T]):
+  transaction<T extends MoltrackTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {
-    return grok.dapi.domains.transaction('moltrack_ems', ops) as
+    return grok.dapi.domains.transaction('moltrack', ops) as
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}>;
   },
 };

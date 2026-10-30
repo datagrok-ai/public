@@ -1,7 +1,7 @@
 /* SuggestInput (plan-w2.md FP-W2-6): a free-text input whose value IS the typed text, with a
    SuggestionList popup over an async fetch — the `u2-typeahead` row vocabulary reused. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
@@ -34,7 +34,7 @@ function popup() {
 }
 
 function rows() {
-  return popup()?.querySelectorAll('.u2-typeahead-option') ?? [];
+  return [...popup()?.querySelectorAll('.u2-typeahead-option') ?? []];
 }
 
 function type(input, text) {
@@ -67,7 +67,7 @@ smoke('every keystroke writes the value signal, and typing opens the popup with 
   assert.equal(box(input).type, 'text');
 
   type(input, 'as');
-  assert.equal(input.value.value, 'as', 'the value is the typed text, on every keystroke');
+  assert.equal(input.value, 'as', 'the value is the typed text, on every keystroke');
   await until(() => rows().length === 2, 'the popup rows');
   assert.deepEqual(calls, ['as'], 'queried with the typed text');
   assert.deepEqual(rows().map((r) => r.textContent), ['as-1', 'as-2']);
@@ -83,7 +83,7 @@ smoke('a pointer pick commits the row value and dismisses the popup', async () =
   await until(() => rows().length === 1, 'the popup rows');
   fire(rows()[0], 'pointerdown');
   await flush();
-  assert.equal(input.value.value, 'b-1');
+  assert.equal(input.value, 'b-1');
   assert.equal(box(input).value, 'b-1', 'the box shows the pick');
   assert.equal(popup(), null, 'the popup is dismissed');
   assert.equal(changes[changes.length - 1], 'b-1');
@@ -110,7 +110,7 @@ smoke('keyboard: arrows move the active row, Enter commits it and is contained, 
 
   const passed = key(input, 'Enter');
   await flush();
-  assert.equal(input.value.value, 'aa', 'Enter commits the active row');
+  assert.equal(input.value, 'aa', 'Enter commits the active row');
   assert.equal(popup(), null);
   assert.equal(passed, false, 'preventDefault while the popup is open — dialog-OK protection');
   assert.deepEqual(seen, [], 'the committing Enter never reaches the host');
@@ -129,11 +129,11 @@ smoke('Escape dismisses the popup; closed, it reverts to the focus-time value; b
   await until(() => rows().length === 1, 'the popup rows');
   key(input, 'Escape');
   assert.equal(popup(), null, 'Esc closes the popup');
-  assert.equal(input.value.value, 'x', 'and keeps the text');
+  assert.equal(input.value, 'x', 'and keeps the text');
   key(input, 'Escape');
-  assert.equal(input.value.value, '', 'Esc with the popup closed reverts to the value at focus');
+  assert.equal(input.value, '', 'Esc with the popup closed reverts to the value at focus');
   key(input, 'Escape');
-  assert.equal(input.value.value, '', 'and is a no-op once nothing changed');
+  assert.equal(input.value, '', 'and is a no-op once nothing changed');
 
   type(input, 'x');
   await until(() => rows().length === 1, 'the popup again');
@@ -155,16 +155,16 @@ smoke('a committed pick is the revert point: a type-over then Escape restores it
   await until(() => rows().length === 1, 'the popup rows');
   fire(rows()[0], 'pointerdown');
   await flush();
-  assert.equal(input.value.value, 'bo-1');
+  assert.equal(input.value, 'bo-1');
 
   type(input, 'cl');
-  assert.equal(input.value.value, 'cl', 'the type-over still writes through on every keystroke');
+  assert.equal(input.value, 'cl', 'the type-over still writes through on every keystroke');
   await until(() => rows().length === 1, 'the popup reopens');
   key(input, 'Escape');
   assert.equal(popup(), null, 'the first Esc only dismisses the popup');
-  assert.equal(input.value.value, 'cl');
+  assert.equal(input.value, 'cl');
   key(input, 'Escape');
-  assert.equal(input.value.value, 'bo-1', 'the second Esc reverts to the committed pick');
+  assert.equal(input.value, 'bo-1', 'the second Esc reverts to the committed pick');
   assert.equal(box(input).value, 'bo-1', 'the box shows the revert');
   input.dispose();
 });
@@ -175,11 +175,11 @@ smoke('an external write while focused moves the revert point — Escape keeps t
   fire(box(input), 'focus');
   type(input, 'ty');
   await until(() => rows().length === 1, 'the popup rows');
-  input.value.value = 'ext';
+  input.value = 'ext';
   key(input, 'Escape');
-  assert.equal(input.value.value, 'ext', 'the first Esc only dismisses the popup');
+  assert.equal(input.value, 'ext', 'the first Esc only dismisses the popup');
   key(input, 'Escape');
-  assert.equal(input.value.value, 'ext', 'the external write is the new revert point, not the focus-time value');
+  assert.equal(input.value, 'ext', 'the external write is the new revert point, not the focus-time value');
   assert.equal(box(input).value, 'ext');
   input.dispose();
 });

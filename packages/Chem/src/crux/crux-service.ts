@@ -54,8 +54,6 @@ const ANALYSIS_MS = {mmpa: 50, rGroups: 100, link: 20, molzip: 20, clusterMCS: C
   clusterRGroups: 60000, mcs: 3600000};
 /** A Synthon Space Search job's limit: scripts/synthon_search.py's own (RDKit's SynthonSpaceSearchParams.timeOut). */
 const SYNTHON_MS = 600000;
-/** How often a call waiting for an idle worker looks again (CruxService.eachCluster, idleWorker). */
-const IDLE_POLL_MS = 50;
 
 /** Whether `e` is a wasm trap, as the worker reports one (`RuntimeError: ...`; out of memory): its instance may be
  * broken. */
@@ -125,9 +123,26 @@ export function withinCruxReader(m: unknown): string | null {
   return s !== null && cruxReadsCxExtension(s) ? s : null;
 }
 
+/** `arg` with no holes: a hole (`toList()`'s empty cell) as null, the empty cell it is. */
+function withoutHoles(arg: unknown): unknown {
+  if (!Array.isArray(arg))
+    return arg;
+  for (let i = 0; i < arg.length; i++) {
+    if (!(i in arg))
+      return Array.from(arg, (v) => v === undefined ? null : v);
+  }
+  return arg;
+}
+
 class CruxWorkerClient extends WorkerMessageBusClient {
   constructor() {
     super(new Worker(new URL('./crux.worker', import.meta.url)));
+  }
+
+  /** Every call, its array arguments without holes: `DG.Column.toList()` leaves an empty cell a hole, which the
+   * worker's `map` keeps and the joins of the chunks' results (`flat`, `flatMap`) drop, moving every row after it. */
+  override call(op: string, args: any[] = [], gated = true): Promise<any> {
+    return super.call(op, args.map(withoutHoles), gated);
   }
 
   moduleInit(module: WebAssembly.Module): Promise<unknown> {
@@ -705,8 +720,8 @@ export class CruxService {
     let next = 0;
     await Promise.all(this.workers.map(async (_, w) => {
       while (next < clusters.length) {
-        if (this.workers[w].pendingCalls > 0) { // busy (a search, a long FMCS, its own init): look again later
-          await new Promise((resolve) => setTimeout(resolve, IDLE_POLL_MS));
+        if (this.workers[w].pendingCalls > 0) { // busy (a search, a long FMCS, its own init): look again once it is not
+          await this.workers[w].whenIdle();
           continue;
         }
         const i = next++;
@@ -739,7 +754,7 @@ export class CruxService {
         if (this.workers[w].pendingCalls === 0)
           return w;
       }
-      await new Promise((resolve) => setTimeout(resolve, IDLE_POLL_MS));
+      await Promise.race(this.workers.map((worker) => worker.whenIdle()));
     }
   }
 

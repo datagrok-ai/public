@@ -1,10 +1,5 @@
-/* `domains.filters` (WO 2-7) over the memory backend: the query box appears once the table's
-   schema is known, a query set in code formats into it, a committed text writes the source's
-   query (text stays text, a tree stays a tree) and round-trips to `?q=`, and a change while the
-   session is dirty goes through the gate — cancel puts the previous filter back. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
@@ -13,6 +8,8 @@ import {backend, hierarchyBackend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
+const {SavedSearches} = await import('../src/dg/saved-searches.js');
+const {userSettings} = await import('datagrok-api/grok');
 const {registerDomainComponents} = await import('../src/dg/registrations.js');
 
 function scoped(name, body) {
@@ -39,7 +36,7 @@ function scoped(name, body) {
 async function issues(options = {}) {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10, ...options});
+  const src = testOwner().build(() => table.source({pageSize: 10, ...options}));
   await flush();
   return src;
 }
@@ -54,7 +51,7 @@ function commit(filters, text) {
 
 scoped('a query set in code formats into the box; a committed text writes the query and round-trips to ?q=', async () => {
   const src = await issues();
-  const filters = domains.filters(src);
+  const filters = testOwner().build(() => domains.filters(src));
   assert.equal(filters.root.dataset.u2, 'domain-filters');
   await flush();
   const input = filters.input.value;
@@ -80,12 +77,12 @@ scoped('a query set in code formats into the box; a committed text writes the qu
 
 scoped('a tree query stays a tree; the builder mode shows rows', async () => {
   const src = await issues({query: Filters.group('and', [Filters.cond('done', '=', true)])});
-  const filters = domains.filters(src, {mode: 'builder'});
+  const filters = testOwner().build(() => domains.filters(src, {mode: 'builder'}));
   await flush();
   const builder = filters.input.value;
   assert.equal(builder.root.dataset.u2, 'filter-builder');
   assert.equal(builder.query.value, 'done = true');
-  builder.value.value = Filters.group('and', [Filters.cond('done', '=', false)]);
+  builder.value = Filters.group('and', [Filters.cond('done', '=', false)]);
   await flush();
   assert.equal(typeof src.query.value, 'object');
   assert.equal(Filters.format(src.query.value), 'done = false');
@@ -95,21 +92,57 @@ scoped('a tree query stays a tree; the builder mode shows rows', async () => {
   src.dispose();
 });
 
+scoped('a filter from outside opens the builder in the mode its shape needs; the builder\'s own edits keep it', async () => {
+  const src = await issues({query: ''});
+  const filters = testOwner().build(() => domains.filters(src, {mode: 'builder'}));
+  await flush();
+  const builder = filters.input.value;
+  src.query.value = 'title like "a" or (done = true)';
+  await flush();
+  assert.equal(builder.mode.value, 'advanced', 'a sub-group needs Advanced');
+  src.query.value = 'done = true';
+  await flush();
+  assert.equal(builder.mode.value, 'simple', 'a flat filter opens Simple');
+  builder.setMode('advanced');
+  builder.value = Filters.group('and', [Filters.cond('done', '=', false)]);
+  await flush();
+  assert.equal(src.query.value, 'done = false');
+  assert.equal(builder.mode.value, 'advanced', 'an edit in the builder never flips its mode');
+  filters.dispose();
+  src.dispose();
+});
+
+scoped('the builder follows a filter set from outside even when it is the one the builder last sent', async () => {
+  const src = await issues({query: ''});
+  const filters = testOwner().build(() => domains.filters(src, {mode: 'builder'}));
+  await flush();
+  const builder = filters.input.value;
+  builder.value = Filters.group('and', [Filters.cond('done', '=', true)]);
+  await flush();
+  src.query.value = 'done = false';
+  await flush();
+  src.query.value = 'done = true';
+  await flush();
+  assert.equal(Filters.format(builder.value), 'done = true');
+  filters.dispose();
+  src.dispose();
+});
+
 scoped('the builder keeps a half-written row and sends only the complete conditions', async () => {
   const src = await issues({query: ''});
-  const filters = domains.filters(src, {mode: 'builder'});
+  const filters = testOwner().build(() => domains.filters(src, {mode: 'builder'}));
   await flush();
   const half = {...Filters.cond('title', 'like', null), property: ''};
-  filters.input.value.value.value = Filters.group('and', [Filters.cond('done', '=', true), half]);
+  filters.input.value.value = Filters.group('and', [Filters.cond('done', '=', true), half]);
   await flush();
-  assert.deepEqual([src.query.value, filters.input.value.value.value.nodes.length], ['done = true', 2]);
+  assert.deepEqual([src.query.value, filters.input.value.value.nodes.length], ['done = true', 2]);
   filters.dispose();
   src.dispose();
 });
 
 scoped('a change while the session is dirty asks: cancel puts the filter back, discard applies it', async () => {
   const src = await issues({query: 'done = true'});
-  const filters = domains.filters(src);
+  const filters = testOwner().build(() => domains.filters(src));
   await flush();
   src.rows.byKey('i1').title = 'Edited';
   assert.equal(src.isDirty.value, true);
@@ -146,8 +179,8 @@ scoped('spec: u2-domain-filters is registered with usage and a mode', () => {
 scoped('a schema the platform refuses leaves the box out, says why through the source, and is tried again', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
-  const filters = domains.filters(src);
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  const filters = testOwner().build(() => domains.filters(src));
   const schema = filters._schema.bind(filters);
   filters._schema = () => Promise.reject(new Error('no filter schema'));
   await flush();
@@ -165,9 +198,9 @@ scoped('a schema the platform refuses leaves the box out, says why through the s
 scoped('"is under" is offered only where the hierarchy it walks exists', async () => {
   emsBackends.domain = hierarchyBackend();
   const table = await domains.table('stock.location');
-  const src = table.source({pageSize: 10});
+  const src = testOwner().build(() => table.source({pageSize: 10}));
   await flush();
-  const filters = domains.filters(src);
+  const filters = testOwner().build(() => domains.filters(src));
   await flush();
   const offers = (name) => filters.input.value.options.schema
     .operators(src.schema.properties.find((p) => p.name === name), Filters.operators.for({name, kind: 'string'}))
@@ -181,9 +214,9 @@ scoped('"is under" is offered only where the hierarchy it walks exists', async (
 
   emsBackends.domain = backend();
   const issue = await domains.table('grit.issue');
-  const issues = issue.source({pageSize: 10});
+  const issues = testOwner().build(() => issue.source({pageSize: 10}));
   await flush();
-  const plain = domains.filters(issues);
+  const plain = testOwner().build(() => domains.filters(issues));
   await flush();
   const prop = issues.schema.properties.find((p) => p.name === 'project_id');
   assert.equal(plain.input.value.options.schema.operators(prop, Filters.operators.for(prop))
@@ -194,7 +227,7 @@ scoped('"is under" is offered only where the hierarchy it walks exists', async (
 
 scoped('clearing a refused filter releases it: the box, the status and the stale mark all let go', async () => {
   const src = await issues();
-  const filters = domains.filters(src);
+  const filters = testOwner().build(() => domains.filters(src));
   await flush();
   const input = filters.input.value;
   commit(filters, 'zzz = "1"');
@@ -213,9 +246,9 @@ scoped('clearing a refused filter releases it: the box, the status and the stale
 scoped('an `under` value slot offers the rows of the hierarchy, not the values the column holds', async () => {
   emsBackends.domain = hierarchyBackend();
   const table = await domains.table('stock.location');
-  const src = table.source({pageSize: 10});
+  const src = testOwner().build(() => table.source({pageSize: 10}));
   await flush();
-  const filters = domains.filters(src);
+  const filters = testOwner().build(() => domains.filters(src));
   await flush();
   const schema = filters.input.value.options.schema;
   const prop = src.schema.properties.find((p) => p.name === 'parent_id');
@@ -239,9 +272,9 @@ scoped('an `under` value slot offers the rows of the hierarchy, not the values t
 scoped('an unquoted `under` value says what to do about it, in the status line as well as the box', async () => {
   emsBackends.domain = hierarchyBackend();
   const table = await domains.table('stock.location');
-  const src = table.source({pageSize: 10});
+  const src = testOwner().build(() => table.source({pageSize: 10}));
   await flush();
-  const filters = domains.filters(src);
+  const filters = testOwner().build(() => domains.filters(src));
   await flush();
   // this one fails in the GRAMMAR, before the schema check that knows what `under` takes —
   // "Expected a value" named neither the operator nor the way out of it
@@ -260,9 +293,9 @@ scoped('over a real hierarchy: a two-word location narrows to it, and Enter does
     {id: 'b2', name: 'Building B', kind: 'site'},
     {id: 'l1', name: 'Lab 101', parent_id: 'b1', kind: 'room'}]}});
   const table = await domains.table('stock.location');
-  const src = table.source({pageSize: 10});
+  const src = testOwner().build(() => table.source({pageSize: 10}));
   await flush();
-  const filters = domains.filters(src);
+  const filters = testOwner().build(() => domains.filters(src));
   await flush();
   const input = filters.input.value;
 
@@ -292,9 +325,10 @@ scoped('a `basic` backend is offered no under, regex, !like, fuzzy or between, n
   const issue = memory.tableSync('grit.issue');
   issue.support = {...issue.support, filters: 'basic'};
   emsBackends.domain = memory;
-  const src = (await domains.table('grit.issue')).source({pageSize: 10});
+  const issues = await domains.table('grit.issue');
+  const src = testOwner().build(() => issues.source({pageSize: 10}));
   await flush();
-  const filters = domains.filters(src);
+  const filters = testOwner().build(() => domains.filters(src));
   await flush();
   const offers = offersOf(filters, src);
   const title = offers('title');
@@ -319,11 +353,36 @@ scoped('a `basic` backend is offered no under, regex, !like, fuzzy or between, n
   const location = stock.tableSync('stock.location');
   location.support = {...location.support, filters: 'basic'};
   emsBackends.domain = stock;
-  const tree = (await domains.table('stock.location')).source({pageSize: 10});
+  const locations = await domains.table('stock.location');
+  const tree = testOwner().build(() => locations.source({pageSize: 10}));
   await flush();
-  const treeFilters = domains.filters(tree);
+  const treeFilters = testOwner().build(() => domains.filters(tree));
   await flush();
   assert.equal(offersOf(treeFilters, tree)('parent_id').includes('under'), false, 'no under on a basic backend');
   treeFilters.dispose();
   tree.dispose();
+});
+
+scoped('saved and recent searches: the list names the saved search it holds, history keeps 20, newest first', async () => {
+  userSettings.values = {};
+  const high = {q: 'priority = "high"', search: 'Nap', sort: '!number'};
+  SavedSearches.save('grit.issue', 'High', high);
+  const src = await issues();
+  const filters = testOwner().build(() => domains.filters(src));
+  await flush();
+  assert.equal(filters.root.querySelectorAll('.u2-domain-filters-tools button').length, 2);
+  SavedSearches.apply(src, high);
+  await flush();
+  assert.equal(SavedSearches.title(src), 'High');
+  src.search.value = 'Na';
+  await flush();
+  assert.equal(SavedSearches.title(src), 'High (edited)');
+  assert.deepEqual(SavedSearches.recent('grit.issue').map((r) => r.search), ['Na', 'Nap']);
+  for (let i = 0; i < 25; i++)
+    SavedSearches.record('grit.issue', {...high, search: `t${i}`});
+  assert.equal(SavedSearches.recent('grit.issue').length, 20);
+  SavedSearches.remove('grit.issue', 'High');
+  assert.equal(SavedSearches.title(src), null);
+  filters.dispose();
+  src.dispose();
 });

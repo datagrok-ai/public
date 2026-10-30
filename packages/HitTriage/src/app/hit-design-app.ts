@@ -2,36 +2,62 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AppName, HitDesignCampaign, HitDesignTemplate, IFunctionArgs, TriagePermissions} from './types';
+import {Dialog, computed, signal} from '@datagrok-libraries/u2';
+import {AppName, HitDesignCampaign, HitDesignTemplate, IFunctionArgs, TemplateCompute, TriagePermissions} from './types';
 import {HitDesignInfoView} from './hit-design-views/info-view';
-import {CampaignIdKey, CampaignJsonName, CampaignTableName,
-  HTQueryPrefix, HTScriptPrefix, HitDesignCampaignIdKey,
-  HitDesignMolColName, HitDesignerFunctionTag, TileCategoriesColName, ViDColName, ViDSemType, i18n} from './consts';
+import {CampaignIdKey, CampaignJsonName, CampaignTableName, HTFunctionOrderingLSKey,
+  HTQueryPrefix, HTScriptPrefix, HitDesignMolColName, TileCategoriesColName, ViDColName} from './consts';
 import {calculateColumns, calculateCellValues} from './utils/calculate-single-cell';
 // @ts-ignore
 import '../../css/hit-triage.css';
+// @ts-ignore
+import './hit-design-views/utils.css';
 import {_package} from '../package';
-import {addBreadCrumbsToRibbons, checkFileExists, checkRibbonsHaveSubmit, editableTableField, modifyUrl, toFormatedDateString} from './utils';
+import {modifyUrl, toFormatedDateString} from './utils';
 import {HitDesignSubmitView} from './hit-design-views/submit-view';
-import {getTilesViewDialog} from './hit-design-views/tiles-view';
-import {HitAppBase} from './hit-app-base';
+import {CampaignLockHeldError, HitAppBase} from './hit-app-base';
 import {HitBaseView} from './base-view';
-import {chemFunctionsDialog} from './dialogs/functions-dialog';
-import {Observable, Subscription} from 'rxjs';
-import {filter} from 'rxjs/operators';
-import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
+import {descriptorsTree, rerunOnOpenOption} from './dialogs/functions-dialog';
+import {defaultPermissions} from './shared/permissions-editor';
+import {computeEditor} from './shared/compute-editor';
+import {CampaignSession, CampaignSessionOptions, openCampaignSession, pickMoleculeColumn}
+  from './shared/campaign-session';
+import {createNewHitDesignDataFrame} from './accordeons/new-hit-design-campaign-accordeon';
 import {getDefaultCampaignStorageSettings, getDefaultSharingSettings} from '../packageSettingsEditor';
-import * as api from '../package-api';
 import {registerMol} from './utils/molreg';
-import {autoMergeOnCampaignOpen, mergeIntoCampaign} from './utils/merge-table';
-import {openMergeTableDialog} from './dialogs/merge-table-dialog';
+import {PlaceholderTag, autoMergeOnCampaignOpen, isEmptyPlaceholder, mergeIntoCampaign, mergeServerTable}
+  from './utils/merge-table';
 import {attachHitInfoAi, attachHitCampaignAi} from './ai/view-functions';
+
+interface SaveRequest {
+  /** The table of the campaign the save was asked for. */
+  df: DG.DataFrame;
+  notify: boolean;
+  isCreating: boolean;
+  customProps?: Partial<HitDesignCampaign>;
+}
+
+/** A campaign besides its table, as a save writes it: the app's own while the campaign is open, else what the app
+ * kept of it when another one opened. */
+interface CampaignState {
+  campaign?: HitDesignCampaign;
+  template: HitDesignTemplate;
+  campaignId: string;
+  filePath: string;
+  molColName: string;
+  /** The table as the app last read it from the server or wrote it there: what a save over another session's save
+   * tells the other session's edits by. */
+  base?: DG.DataFrame;
+  canEdit: boolean;
+  /** A new campaign's fields. */
+  fields: {[key: string]: any};
+  session?: CampaignSession;
+}
 
 export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> extends HitAppBase<T> {
   multiView: DG.MultiView;
   protected _infoView: HitDesignInfoView;
   get infoView(): HitDesignInfoView {return this._infoView;}
-  protected _designView?: DG.TableView;
   public _submitView?: HitDesignSubmitView;
   get submitView(): HitDesignSubmitView | undefined {return this._submitView;}
   protected _designViewName = 'Design';
@@ -40,27 +66,61 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
   protected _molColName: string = HitDesignMolColName;
   protected _campaign?: HitDesignCampaign;
   public campaignProps: {[key: string]: any} = {};
-
-  protected currentDesignViewId?: string;
   public mainView: DG.ViewBase;
   protected get version() {return this._campaign?.version ?? 0;};
   public existingStatuses: string[] = [];
+  /** Merges running: the rows they add are not the user's. */
+  public joining = 0;
+  private _session?: CampaignSession;
+  private _base?: DG.DataFrame;
+  /** Saves asked for and not finished. */
+  private _saves = 0;
+  /** The last save asked for: the next one starts after it. */
+  private _queue: Promise<unknown> = Promise.resolve();
+  /** The save waiting for the running one: a save of its campaign asked for meanwhile is folded into it. */
+  private _nextSave?: {request: SaveRequest, done: Promise<HitDesignCampaign | undefined>};
+  /** What the app kept of each campaign it switched away from, for a save of it still to run. */
+  private readonly _closed = new WeakMap<DG.DataFrame, CampaignState>();
+  private _opens = 0;
+  /** The latest single-cell calculation per row: an earlier one still running drops its results. */
+  private readonly _rowRuns = new Map<number, number>();
+
   constructor(c: DG.FuncCall, an: AppName = 'Hit Design',
     infoViewConstructor: (app: HitDesignApp) => HitDesignInfoView = (app) => new HitDesignInfoView(app)) {
     super(c, an);
     this._infoView = infoViewConstructor(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
+    this.multiView.helpUrl = this._infoView.helpUrl;
     this.multiView.subs.push(this.multiView.tabs.onTabChanged.subscribe((_) => {
       if (this.multiView.currentView instanceof HitBaseView)
         (this.multiView.currentView as HitBaseView<T, typeof this>).onActivated();
+    }));
+    this.multiView.subs.push(grok.events.onCurrentViewChanged.subscribe(() => {
+      if (grok.shell.v === this.mainView)
+        this.setBaseUrl();
     }));
 
     this.multiView.parentCall = c;
     attachHitInfoAi(this.multiView, this);
 
     this.mainView = this.multiView;
-    this._initViewSubs();
   }
+
+  /** The open campaign's view. */
+  get designView(): DG.TableView | undefined {return this._session?.view;}
+
+  /** A save is running or waiting for the one that runs. */
+  get isSaving(): boolean {return this._saves > 0;}
+
+  /** How the campaign view of this app works: Hit Design's. */
+  protected sessionOptions(): CampaignSessionOptions {
+    const layout = this.campaign?.layout ?? (this.campaign ? undefined : this.template?.layoutViewState);
+    return {entryColumn: this.molColName, editor: 'Chem:editMoleculeCell', duplicateLabel: 'Duplicate molecule',
+      registerFirst: true, designer: true, layout};
+  }
+
+  /** Gets the campaign's table ready before its view shows it. */
+  protected prepareTable(_df: DG.DataFrame): void {}
 
   /**
    * Correctly joins the incoming dataframe with the existing campaign dataframe.
@@ -68,32 +128,26 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
    * @param df Dataframe to be joined into existing campaign dataframe
    */
   async handleJoiningDataframe(df: DG.DataFrame) {
-    const molCols = df.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
-    if (!molCols || molCols.length === 0) {
+    const molCols = HitAppBase.moleculeColumns(df);
+    if (molCols.length === 0) {
       grok.shell.error('No molecule column found');
       return;
     }
 
-    let chosenMolColName: string | null = null;
+    let chosenMolColName: string | null = molCols[0]!.name;
     if (molCols.length > 1) {
-      const molColNames = molCols.map((c) => c.name);
-      const likelyMolCol = molCols.find((c) => c?.name?.toLowerCase() === 'smiles' || c?.name?.toLowerCase() === 'molecule') ?? molCols[0];
-      const molColInput = ui.input.choice('Primary Molecule Column', {items: molColNames, value: likelyMolCol.name, nullable: false});
-      const promise = new Promise<string | null>((resolve) => {
-        ui.dialog('Select Primary Molecule Column')
-          .add(ui.divText('Multiple molecule columns found. Please select the primary molecule column to be used for calculations.'))
-          .add(molColInput)
-          .onOK(() => resolve(molColInput.value!))
-          .onCancel(() => resolve(null))
-          .show();
-      });
-      chosenMolColName = await promise;
+      const likely = molCols.find((c) => c?.name?.toLowerCase() === 'smiles' || c?.name?.toLowerCase() === 'molecule') ?? molCols[0];
+      const session = this._session;
+      const table = this.dataFrame;
+      chosenMolColName = await pickMoleculeColumn(molCols.map((c) => c.name), likely.name, session?.host);
+      // the table goes into the campaign it was dropped on, or nowhere
+      if (session?.host.scope.isDisposed || this.dataFrame !== table)
+        return;
       if (!chosenMolColName) {
         grok.shell.info('Operation cancelled by user');
         return;
       }
-    } else
-      chosenMolColName = molCols[0]!.name!;
+    }
 
     if (!df.col(chosenMolColName)) {
       grok.shell.error('No molecule column found');
@@ -114,197 +168,98 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     return this.campaign?.template?.submit ?? this.template?.submit;
   }
 
-  _initViewSubs() {
-    this.multiView.subs.push(grok.events.onCurrentViewChanged.subscribe(async () => {
-      try {
-        if (grok.shell.v === this._designView) {
-          grok.shell.windows.showHelp = false;
-
-          this.setBaseUrl();
-          modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
-
-          const {sub} = addBreadCrumbsToRibbons(grok.shell.v, this.appName, grok.shell.v?.name, () => {
-            grok.shell.v = this.mainView;
-            this._designView?.close();
-            this._infoView.init();
-            sub.unsubscribe();
-          });
-        } else if (grok.shell.v === this.mainView)
-          this.setBaseUrl();
-      } catch (e) {
-        console.error(e);
-      }
-    }));
-
-    this.multiView.subs.push((grok.events.onFileImportRequest as unknown as Observable<DG.EventData<DG.FileImportArgs>>).subscribe((args) => {
-      if (!grok.shell.tv || !this._designView || grok.shell.tv !== this._designView)
-        return;
-      if (!args?.args?.file)
-        return;
-      const file = args.args.file;
-
-      if (!file.name?.endsWith('.csv') && !HitAppBase.molFileExtReaders.some((ext) => file.name?.endsWith(ext.ext)))
-        return;
-      // at this point, we can start checking the file, and prevent default behavior
-      args.preventDefault();
-      this.handleUploadingDataframe(file);
-    }));
-  }
-
-  private async handleUploadingDataframe(file: File) {
-    // TODO: Expose api for file readers
-    try {
-      let df: DG.DataFrame | null = null;
-
-      if (file.name.endsWith('.csv'))
-        df = DG.DataFrame.fromCsv(await file.text());
-      else {
-        const fileBytes: Uint8Array | null = await new Promise(async (resolve) => {
-          const reader = new FileReader();
-          let timeout: any = null;
-          let result: Uint8Array | null = null;
-          reader.onload = () => {
-            result = reader.result ? new Uint8Array(reader.result as ArrayBuffer) : null;
-            timeout && clearTimeout(timeout);
-            resolve(result);
-          };
-          reader.readAsArrayBuffer(file);
-          timeout = setTimeout(() => {
-            reader.abort();
-            resolve(null);
-          }, 10000);
-        });
-        if (!fileBytes) {
-          grok.shell.error('Failed to read file');
-          return;
-        }
-        // since we are here, we can assume that the file extention reader exists
-        const readerFunc = HitAppBase.molFileExtReaders.find((ext) => file.name.endsWith(ext.ext))!.handlerFunc!;
-        const bytesArg = readerFunc.inputs[0].name;
-        df = (await readerFunc.apply({[bytesArg]: fileBytes}))[0];
-      }
-
-      if (!df)
-        throw new Error('Failed to read file');
-      df.name = file.name.slice(0, file.name.lastIndexOf('.'));
-      await df.meta.detectSemanticTypes();
-      await grok.data.detectSemanticTypes(df);
-      // TODO: Support choosing molecule column if there are multiple
-      const molCol = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
-      if (!molCol) {
-        // default behavior: add dataframe
-        grok.shell.addTableView(df);
-        return;
-      }
-
-      const dialog = ui.dialog('Uploading table with molecules')
-        .add(ui.divText('Add new table to workspace or join with existing Hit Design campaign'))
-        .addButton('Add to workspace', () => {
-          dialog.close();
-          grok.shell.addTableView(df);
-        })
-        .addButton('Add to existing campaign', () => {
-          dialog.close();
-          this.handleJoiningDataframe(df);
-        });
-      dialog.getButton('CANCEL')?.remove();
-      dialog.show();
-    } catch (e) {
-      grok.shell.error('Hit Design Failed to read file');
-      console.error(e);
-    }
-  }
-
   public get stages() {
     return this.campaign?.template?.stages ?? this.template?.stages ?? [];
   }
 
-  public async setStages(st: string[]) {
+  /** The campaign's stages from now on, duplicates merged; rows in a stage that goes move to the first one. Saved;
+   * answers whether the save happened (a balloon says why not). */
+  public async setStages(st: string[]): Promise<boolean> {
     if (!this.campaign || !this.campaign.template || !this.template) {
       grok.shell.error('Campaign or template is not set');
-      return;
+      return false;
     }
     if (!st?.length) {
       grok.shell.error('Removing all stages is not allowed');
-      return;
+      return false;
     }
     const stageCol = this.dataFrame?.col(TileCategoriesColName);
     if (!stageCol) {
       grok.shell.error('No stage column found');
-      return;
+      return false;
     }
-    const removedStages: string[] = [];
-    //make sure there is no duplication
     const stageSet = new Set(st);
     const uniqueStages = [...stageSet];
-    const dfLen = this.dataFrame!.rowCount;
-    const stageCats = stageCol.categories;
-    const stageIndexes = stageCol.getRawData() as Int32Array;
-    for (let i = 0; i < dfLen; i++) {
-      const stage = stageCats[stageIndexes[i]];
-      if (!stageSet.has(stage)) {
+    for (let i = 0; i < this.dataFrame!.rowCount; i++) {
+      if (!stageSet.has(stageCol.get(i)))
         stageCol.set(i, st[0], false);
-        removedStages.push(stage);
-      }
     }
-
-    if (removedStages.length > 0)
-      grok.shell.warning(`Some stages were removed: (${removedStages.join(', ')}). Corresponding rows were set to stage "${st[0]}"`);
-
-
     this.campaign.template.stages = uniqueStages;
     this.template.stages = uniqueStages;
-    await this.saveCampaign(true);
+    stageCol.setTag(DG.TAGS.CHOICES, JSON.stringify(uniqueStages));
+    return await this.saveCampaign(true) !== undefined;
   }
 
-  private _refreshIconTooltip = 'Refresh Campaign';
-  protected async refreshCampaign() {
+  /** Reads the campaign's table from the server again into a new view; the rest of the campaign stays as it is. */
+  public async refreshCampaign() {
     if (!this._campaignId || !this.template) {
       grok.shell.warning('No campaign to refresh');
       return; // should not happen
     }
-    if (this._isSaving) {
+    if (this.isSaving) {
       grok.shell.info('Campaign is being saved. Please wait a moment and try again.');
       return;
     }
-    clearInterval(this._updateCheckIntervalId);
-    this._refreshIconTooltip = 'Refresh Campaign';
     await this.setTemplate(this.template, this._campaignId);
   }
 
-  private _updateCheckIntervalId: any = null;
-  private _needsRefresh: boolean = false;
-  public async setTemplate(template: T, campaignId?: string) {
+  /** The ticket of an open asked for now: of the opens asked for, only the latest one takes its campaign. */
+  openTicket(): number {
+    return ++this._opens;
+  }
+
+  /** Opens the campaign of `campaignId` (`campaign` is its campaign.json, by default the open one: a refresh) with
+   * `template`, or a new campaign of the template without one. Everything is read first; then the app takes the
+   * campaign and its view at once, so no save sees half of one campaign and half of another. An open asked for later
+   * wins: `ticket` ({@link openTicket}) is taken when the open is asked for, before what the caller reads first.
+   * Answers whether this one took the campaign. */
+  public async setTemplate(template: T, campaignId?: string,
+    campaign: HitDesignCampaign | undefined = campaignId ? this._campaign : undefined,
+    ticket = this.openTicket()): Promise<boolean> {
+    let df: DG.DataFrame;
+    let filePath: string;
     if (!campaignId) {
-      this._designView?.dataFrame && grok.shell.closeTable(this._designView.dataFrame);
-      this._designView = undefined;
       campaignId = await this.getNewCampaignName(`${this.appName}/campaigns`, template.key);
-      modifyUrl(HitDesignCampaignIdKey, campaignId);
       let defaultFolderPath = await getDefaultCampaignStorageSettings();
       if (!defaultFolderPath.endsWith('/'))
         defaultFolderPath += '/';
-      this._filePath = `${defaultFolderPath}${this.appName}/campaigns/${campaignId}/${CampaignTableName}`;
+      filePath = `${defaultFolderPath}${this.appName}/campaigns/${campaignId}/${CampaignTableName}`;
+      df = this.newCampaignFrame(template);
     } else {
       const fileLoc = `System.AppData/HitTriage/${this.appName}/campaigns`;
-      this._filePath = this.campaign?.savePath ?? `${fileLoc}/${campaignId}/${CampaignTableName}`;
-      this.dataFrame = await grok.dapi.files.readCsv(this._filePath);
-      if (this._campaign?.columnSemTypes) {
-        Object.entries(this._campaign.columnSemTypes).forEach(([colName, semtype]) => {
-          const col = this.dataFrame!.columns.byName(colName);
-          if (col && semtype)
-            col.semType = semtype;
-        });
+      filePath = campaign?.savePath ?? `${fileLoc}/${campaignId}/${CampaignTableName}`;
+      df = await grok.dapi.files.readCsv(filePath);
+      for (const name of df.columns.names().filter((name) => name.startsWith('~')))
+        df.columns.remove(name);
+      for (const [colName, semtype] of Object.entries(campaign?.columnSemTypes ?? {})) {
+        const col = df.columns.byName(colName);
+        if (col && semtype)
+          col.semType = semtype;
       }
-      if (this._campaign?.columnTypes) {
-        Object.entries(this._campaign.columnTypes).forEach(([colName, type]) => {
-          const col = this.dataFrame!.columns.byName(colName);
-          if (col && col.type !== type)
-            try {this.dataFrame!.changeColumnType(colName, type as DG.COLUMN_TYPE);} catch (e) {console.error(e);}
-        });
+      for (const [colName, type] of Object.entries(campaign?.columnTypes ?? {})) {
+        const col = df.columns.byName(colName);
+        if (!col || col.type === type)
+          continue;
+        try {
+          df.changeColumnType(colName, type as DG.COLUMN_TYPE);
+        }
+        catch (e) {
+          console.error(e);
+        }
       }
       // restored before the view binds the table, which subscribes formula columns to recalculation only if it has any
-      for (const [colName, tags] of Object.entries(this._campaign?.columnTags ?? {})) {
-        const col = this.dataFrame.columns.byName(colName);
+      for (const [colName, tags] of Object.entries(campaign?.columnTags ?? {})) {
+        const col = df.columns.byName(colName);
         if (!col)
           continue;
         for (const [tag, value] of Object.entries(tags))
@@ -313,117 +268,119 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         if (tags['.category-order'] && col.type === DG.COLUMN_TYPE.STRING)
           col.setCategoryOrder(col.getCategoryOrder());
       }
-      //await this.dataFrame.meta.detectSemanticTypes();
+      // the CSV reader formats a number column to every digit it read ('0.0000000000000' for a calculated MW): unless
+      // the campaign chose another format, the column shows as the grid shows numbers, as it did before the reload
+      for (const col of df.columns.toList()) {
+        const digits = col.getTag(DG.TAGS.SOURCE_PRECISION);
+        if (digits !== null && col.getTag(DG.TAGS.FORMAT) === `0.${'0'.repeat(parseInt(digits, 10))}`) {
+          col.tags.delete(DG.TAGS.FORMAT);
+          col.tags.delete(DG.TAGS.SOURCE_PRECISION);
+        }
+      }
     }
 
-    if (!this.dataFrame) {
+    if (!df) {
       grok.shell.error('DataFrame is empty');
-      clearInterval(this._updateCheckIntervalId);
-      this._updateCheckIntervalId = null;
-      return;
+      return false;
     }
-    await this.dataFrame.meta.detectSemanticTypes();
-    this._molColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name ?? HitDesignMolColName;
-    this._campaignId = campaignId;
-    this.template = template;
-
-    this._submitView ??= new HitDesignSubmitView(this);
-    grok.shell.windows.showHelp = false;
-    if (this.campaign)
-      await this.setCanEdit(this.campaign);
-    else
-      this.hasEditPermission = true; // if the campaign is new, obviously the user can edit it
+    const base = df.clone();
+    await df.meta.detectSemanticTypes();
+    const molColName = HitAppBase.moleculeColumn(df)?.name ?? HitDesignMolColName;
+    const canEdit = await this.canEditCampaign(campaign);
 
     // Implicit merge pass before the view is shown: only runs when the campaign carries a
     // mergeConfig with autoMergeOnOpen and a remembered fileshare path. Compute is forced off
     // and we deliberately do not save — the user can save manually after the merge.
-    if (campaignId && this.campaign?.mergeConfig?.autoMergeOnOpen && this.campaign.mergeConfig.filePath)
-      await autoMergeOnCampaignOpen(this);
+    if (campaign) {
+      await autoMergeOnCampaignOpen(this, campaign.mergeConfig, {df, molColName, campaignId,
+        stages: campaign.template?.stages ?? template.stages ?? []});
+    }
 
     // Recompute any compute functions flagged "re-run when campaign opens" over the whole molecule
     // column. Like the auto-merge pass, this runs only for existing campaigns and is not auto-saved.
-    if (campaignId && this.campaign)
-      await this.reComputeOnCampaignOpen();
+    if (campaign)
+      await this.reComputeOnCampaignOpen(df, template, molColName);
+    if (ticket !== this._opens)
+      return false;
 
-    const designV = this.designView;
-    this.currentDesignViewId = designV.name;
+    if (this.dataFrame && this.dataFrame !== df)
+      this._closed.set(this.dataFrame, {...this.state(), session: undefined});
+    this._campaign = campaign;
+    if (campaign)
+      campaign.template = template;
+    this.template = template;
+    this._campaignId = campaignId;
+    this._filePath = filePath;
+    this.dataFrame = df;
+    this._base = base;
+    this._molColName = molColName;
+    this.hasEditPermission = canEdit;
+    this._submitView ??= new HitDesignSubmitView(this);
+    grok.shell.windows.showHelp = false;
+    this.openView();
     this.setBaseUrl();
-    modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
-    if (this.campaign)
-      this.campaign.template = template;
-
-    // get the last saved time
-    api.queries.getLastModified(this.appName, this._campaignId!).then((timeDf) => {
-      const timeStr = timeDf?.col('updated_at')?.getString(0);
-      this._lastExpiresTimeString = timeStr ?? null;
-      this._needsRefresh = false;
-      // add the interval to check for updates
-      clearInterval(this._updateCheckIntervalId);
-      let isChecking = false;
-      this._updateCheckIntervalId = setInterval(async () => {
-        if (isChecking || this._needsRefresh)
-          return;
-        isChecking = true;
-        // first, check if this view is still active
-        if (this._designView && !Array.from(grok.shell.tableViews).some((tv) => tv === this._designView)) {
-          clearInterval(this._updateCheckIntervalId);
-          console.log('Clearing campaign update check interval');
-          this._updateCheckIntervalId = null;
-          isChecking = false;
-          return;
-        }
-        if (!this._campaignId || !this.template || this._isSaving || this.isJoining || !this._designView || grok.shell.v !== this._designView) {
-          isChecking = false;
-          return;
-        }
-        try {
-          const timeDf = await api.queries.getLastModified(this.appName, this._campaignId);
-          const timeStr = timeDf?.col('updated_at')?.getString(0);
-          if (!timeStr) {
-            isChecking = false;
-            return;
-          }
-          if (this._lastExpiresTimeString !== timeStr && this._refreshCampaignIcon) {
-            this._lastExpiresTimeString = timeStr;
-            ui.hints.addHintIndicator(this._refreshCampaignIcon, true, 10000);
-            this._refreshIconTooltip = 'New changes available. Click to refresh campaign.';
-            this._lastExpiresTimeString = timeStr;
-            this._needsRefresh = true;
-          }
-        } catch (e) {
-          console.error(e);
-        }
-        isChecking = false;
-      }, 3000);
-    }).catch((e) => console.error(e));
+    modifyUrl(CampaignIdKey, campaignId);
+    return true;
   }
 
-  private _lastExpiresTimeString: string | null = null;
+  /** The campaign's view, the one open before closed first. */
+  private openView(): void {
+    this._session?.view.close();
+    const df = this.dataFrame!;
+    this.prepareTable(df);
+    this._designViewName = this.campaign?.friendlyName ?? this.campaign?.name ?? this._designViewName;
+    const view = grok.shell.addTableView(df);
+    view.name = this._designViewName;
+    view.parentCall = this.parentCall;
+    attachHitCampaignAi(view, this, 'design');
+    const session = this._session = openCampaignSession(this, view, this.sessionOptions());
+    session.host.own(() => {
+      if (this._session === session)
+        this._session = undefined;
+    });
+  }
 
   get campaignId(): string | undefined {return this._campaignId;}
-
-  get designView(): DG.TableView {
-    const view = this.getDesignView();
-    attachHitCampaignAi(view, this, 'design');
-    return this._designView = view;
-  }
 
   get designViewName(): string {return this._designViewName;}
 
   set designViewName(name: string) {
     this._designViewName = name;
-    this._designView && (this._designView.name = name);
+    if (this.designView)
+      this.designView.name = name;
   }
 
   get molColName() {
-    return this._molColName ??= this.dataFrame?.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name ?? HitDesignMolColName;
+    return this._molColName ??= (this.dataFrame && HitAppBase.moleculeColumn(this.dataFrame)?.name) ?? HitDesignMolColName;
+  }
+
+  /** Where the campaign's table is kept. */
+  get filePath(): string {return this._filePath;}
+  set filePath(path: string) {this._filePath = path;}
+
+  /** The folder the campaign's own folder is in. */
+  get campaignFolder(): string {
+    const at = this._filePath.indexOf((this.campaignId ?? this._campaign?.name)!);
+    return at === -1 ? this._filePath : this._filePath.substring(0, at - 1);
   }
 
   get campaign(): HitDesignCampaign | undefined {return this._campaign;}
 
   set campaign(campaign: HitDesignCampaign | undefined) {this._campaign = campaign;}
 
-  clearCampaign() {this._campaign = undefined;}
+  /** A new campaign from `template`, opened and saved at once: nothing of the campaign open before carries over, the
+   * name typed names it, and its first save takes the code that is free then. */
+  async startNewCampaign(template: T, fields: {[key: string]: unknown}, name?: string): Promise<void> {
+    if (!await this.setTemplate(template))
+      return;
+    this.campaignProps = fields;
+    await this.saveCampaign(false, true, {friendlyName: name});
+  }
+
+  /** The one-row table a new campaign starts from. */
+  protected newCampaignFrame(template: T): DG.DataFrame {
+    return createNewHitDesignDataFrame(template);
+  }
 
   private _duplicateVidCache?: {
     colVersion: number,
@@ -453,36 +410,70 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     return this._duplicateVidCache;
   }
 
+  /** Starts the row's calculation; answers its number, which {@link isLatestRun} checks after each await. */
+  protected nextRun(row: number): number {
+    const run = (this._rowRuns.get(row) ?? 0) + 1;
+    this._rowRuns.set(row, run);
+    return run;
+  }
+
+  protected isLatestRun(row: number, run: number): boolean {
+    return this._rowRuns.get(row) === run;
+  }
+
+  /** The template's compute on the row's molecule, the results into the row (new columns added); saved. A later
+   * calculation of the row started meanwhile wins. */
   async performSingleCellCalculations(newValueIdx: number, newValue?: string) {
     const computeObj = this.template!.compute;
-    if (!newValue || newValue === '')
+    // OK on an empty sketcher writes an empty molfile into a molblock cell: no molecule to calculate
+    if (!newValue || !_package.convertToSmiles(newValue))
       return;
-
+    const df = this.dataFrame!;
+    const run = this.nextRun(newValueIdx);
     const calcDf =
               await calculateCellValues(
                 [newValue], computeObj.descriptors.args, computeObj.functions, computeObj.scripts, computeObj.queries);
-
+    if (!this.isLatestRun(newValueIdx, run) || this.dataFrame !== df)
+      return;
     for (const col of calcDf.columns.toList()) {
       if (col.name === HitDesignMolColName) continue;
-      if (!this.dataFrame!.columns.contains(col.name)) {
-        const newCol = this.dataFrame!.columns.addNew(col.name, col.type);
+      const target = df.col(col.name);
+      if (!target) {
+        const newCol = df.columns.addNew(col.name, col.type);
         newCol.semType = col.semType;
       }
-            this.dataFrame!.col(col.name)!.set(newValueIdx, col.get(0), false);
+      else if (target.type !== col.type && isEmptyPlaceholder(target) &&
+        // a number placeholder keeps counts as they come: a retype would take the layout's filter on it away
+        !(target.type === DG.COLUMN_TYPE.FLOAT && col.type === DG.COLUMN_TYPE.INT))
+        df.changeColumnType(col.name, col.type as DG.COLUMN_TYPE);
+      df.col(col.name)!.set(newValueIdx, col.get(0), false);
     }
-          this.dataFrame!.fireValuesChanged();
-          this.saveCampaign(false);
+    df.fireValuesChanged();
+    void this.saveCampaign(false);
+  }
+
+  /** The V-iD of the row's molecule, registered with the campaign; written only while the row still holds that
+   * molecule, so the registration of a later edit wins. */
+  async registerRow(row: number): Promise<void> {
+    const df = this.dataFrame;
+    const molecules = df?.col(this.molColName);
+    const molecule = molecules?.get(row);
+    if (!df || !molecule)
+      return;
+    const vid = await registerMol(molecule, this._campaignId!, this.appName);
+    if (vid && molecules!.get(row) === molecule)
+      df.col(ViDColName)?.set(row, vid, true);
   }
 
   /**
    * Recomputes the compute functions/scripts/queries flagged with `rerunOnOpen` over the whole
-   * molecule column. Called once when an existing campaign is opened, before the design view is
+   * molecule column of `df`, the table of a campaign being opened, before the design view is
    * shown. Mirrors the auto-merge-on-open pass: values are updated in memory but the campaign is
    * not auto-saved, and failures never bubble up so the campaign still opens.
    */
-  private async reComputeOnCampaignOpen(): Promise<void> {
-    const compute = this.template?.compute;
-    if (!compute || !this.dataFrame || !this.molColName)
+  private async reComputeOnCampaignOpen(df: DG.DataFrame, template: T, molColName: string): Promise<void> {
+    const compute = template.compute;
+    if (!compute)
       return;
 
     // Descriptors are deterministic from structure, so they are intentionally never re-run on open.
@@ -492,7 +483,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     if (!functions.length && !scripts.length && !queries.length)
       return;
 
-    const molCol = this.dataFrame.col(this.molColName);
+    const molCol = df.col(molColName);
     if (!molCol)
       return;
 
@@ -503,588 +494,227 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       const values = molCol.toList();
       const calcDf = await calculateCellValues(values, [], functions, scripts, queries);
       for (const resCol of calcDf.columns.toList()) {
-        if (resCol.name === this.molColName || resCol.name === HitDesignMolColName)
+        if (resCol.name === molColName || resCol.name === HitDesignMolColName)
           continue;
-        let targetCol = this.dataFrame.col(resCol.name);
+        let targetCol = df.col(resCol.name);
         if (!targetCol || targetCol.type !== resCol.type) {
           if (targetCol) // existing column of a different type: replace it wholesale
-            this.dataFrame.columns.remove(resCol.name);
-          targetCol = this.dataFrame.columns.addNew(resCol.name, resCol.type);
+            df.columns.remove(resCol.name);
+          targetCol = df.columns.addNew(resCol.name, resCol.type);
         }
         targetCol.semType = resCol.semType;
         const rows = Math.min(resCol.length, targetCol.length);
         for (let i = 0; i < rows; i++)
           targetCol.set(i, resCol.isNone(i) ? null : resCol.get(i), false);
       }
-      this.dataFrame.fireValuesChanged();
+      df.fireValuesChanged();
     } catch (e) {
       _package.logger.error(e);
       grok.shell.warning('Re-run on open failed for some functions; opening the campaign anyway.');
     }
   }
 
-  private _refreshCampaignIcon: HTMLElement | null = null;
-  protected initDesignViewRibbons(view: DG.TableView, subs: Subscription[], addDesignerButton = false) {
-    const onRemoveSub = grok.events.onViewRemoved.subscribe((v) => {
-      if (v.id === view?.id) {
-        subs.forEach((s) => s.unsubscribe());
-        onRemoveSub.unsubscribe();
-      }
+  /** "Calculate additional properties": the campaign's compute in the compute editor; on OK what is new or changed
+   * is calculated over the whole table, and the campaign saved. */
+  editCompute(): void {
+    const dialog = new Dialog('Compute', {name: 'compute'});
+    dialog.build(() => {
+      const editor = computeEditor({functions: this.computeFunctions,
+        value: this.campaign?.template?.compute ?? this.template!.compute, descriptors: descriptorsTree,
+        orderKey: HTFunctionOrderingLSKey, rerunOnOpen: rerunOnOpenOption});
+      // the descriptors picked are written in the tree's order, as the compute dialog wrote them
+      const listed = signal(false);
+      void editor.ready.then(() => listed.value = true);
+      dialog.add(editor);
+      dialog.okDisabled(computed(() => listed.value ? null : 'Listing the descriptors…'), {footer: true});
+      dialog.onOK(() => void this.applyCompute(editor.read()));
     });
-    let ribbons = view?.getRibbonPanels();
-    if (ribbons) {
-      const hasSubmit = checkRibbonsHaveSubmit(ribbons);
-      if (!hasSubmit) {
-        setTimeout(() => {
-          const {sub} = addBreadCrumbsToRibbons(view, this.appName, view.name, () => {
-            grok.shell.v = this.mainView;
-            view?.close();
-            this._infoView.init();
-            sub.unsubscribe();
-          });
-        }, 1000);
-        const getComputeDialog = async () => {
-          chemFunctionsDialog(this, async (resultMap) => {
-            const oldDescriptors = this.template!.compute.descriptors.args;
-            const oldFunctions = this.template!.compute.functions;
-            const oldScripts = this.template!.compute.scripts ?? [];
-            const oldQueries = this.template!.compute.queries ?? [];
-            const newDescriptors = resultMap.descriptors;
-            const newComputeObj = {
-              descriptors: {
-                enabled: !!resultMap?.descriptors?.length,
-                args: resultMap?.descriptors ?? [],
-              },
-              functions: Object.entries(resultMap?.externals ?? {}).map(([funcName, args]) => {
-                const splitFunc = funcName.split(':');
-                return ({
-                  name: splitFunc[1],
-                  package: splitFunc[0],
-                  args: args,
-                  rerunOnOpen: !!resultMap?.rerunOnOpen?.[funcName],
-                });
-              }),
-              scripts: Object.entries(resultMap?.scripts ?? {})
-                .filter(([name, _]) => name.startsWith(HTScriptPrefix) && name.split(':').length === 3)
-                .map(([scriptId, args]) => {
-                  const scriptNameParts = scriptId.split(':');
-                  return ({
-                    name: scriptNameParts[1] ?? '',
-                    id: scriptNameParts[2] ?? '',
-                    args: args,
-                    rerunOnOpen: !!resultMap?.rerunOnOpen?.[scriptId],
-                  });
-                }),
-              queries: Object.entries(resultMap?.queries ?? {})
-                .filter(([name, _]) => name.startsWith(HTQueryPrefix) && name.split(':').length === 3)
-                .map(([queryName, args]) => {
-                  const queryNameParts = queryName.split(':');
-                  return ({
-                    name: queryNameParts[1] ?? '',
-                    id: queryNameParts[2] ?? '',
-                    args: args,
-                    rerunOnOpen: !!resultMap?.rerunOnOpen?.[queryName],
-                  });
-                }),
-            };
-            this.template!.compute = newComputeObj;
-            this.campaign!.template = this.template;
-            const uncalculatedDescriptors = newDescriptors.filter((d) => !oldDescriptors.includes(d));
-
-            const newFunctions: {[_: string]: IFunctionArgs} = {};
-            Object.entries(resultMap?.externals ?? {})
-              .filter(([funcName, args]) => {
-                const oldFunc = oldFunctions.find((f) => `${f.package}:${f.name}` === funcName);
-                if (!oldFunc)
-                  return true;
-                return !Object.entries(args).every(([key, value]) => oldFunc.args[key] === value);
-              }).forEach(([funcName, args]) => {newFunctions[funcName] = args;});
-
-            const newScripts: {[_: string]: IFunctionArgs} = {};
-            Object.entries(resultMap?.scripts ?? {})
-              .filter(([scriptName, args]) => {
-                const oldScript = oldScripts.find((f) => `${HTScriptPrefix}:${f.name}:${f.id}` === scriptName);
-                if (!oldScript)
-                  return true;
-                return !Object.entries(args).every(([key, value]) => oldScript.args[key] === value);
-              }).forEach(([scriptName, args]) => {newScripts[scriptName] = args;});
-
-            const newQueries: {[_: string]: IFunctionArgs} = {};
-            Object.entries(resultMap?.queries ?? {})
-              .filter(([queryName, args]) => {
-                const oldQuery = oldQueries.find((f) => `${HTQueryPrefix}:${f.name}:${f.id}` === queryName);
-                if (!oldQuery)
-                  return true;
-                return !Object.entries(args).every(([key, value]) => oldQuery.args[key] === value);
-              }).forEach(([queryName, args]) => {newQueries[queryName] = args;});
-            ui.setUpdateIndicator(view.grid.root, true);
-            try {
-              await calculateColumns({descriptors: uncalculatedDescriptors, externals: newFunctions,
-                scripts: newScripts, queries: newQueries}, this.dataFrame!, this.molColName!);
-              this.dataFrame!.fireValuesChanged();
-            } finally {
-              ui.setUpdateIndicator(view.grid.root, false);
-              this.saveCampaign(false);
-            }
-          }, () => null, this.campaign?.template!, true, true);
-        };
-
-        const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
-        const mergeTableButton = ui.iconFA('code-merge', () => {openMergeTableDialog(this);},
-          'Merge another table into the campaign');
-        const addNewRowButton = ui.icons.add(() => {this.dataFrame?.rows.addNew(null, true);}, 'Add new row');
-        const applyLayoutButton = ui.iconSvg('view-layout', () => {this.applyTemplateLayout(view);}, `Apply template layout ${this.template?.localLayoutPath ? '(Loaded from mounted file storage)' : '(Static)'}`);
-        this._refreshCampaignIcon = ui.icons.sync(async () => {this.refreshCampaign();}, 'Refresh');
-        ui.tooltip.bind(this._refreshCampaignIcon, () => this._refreshIconTooltip);
-        const permissionsButton = ui.iconFA('share', async () => {
-          await (new PermissionsDialog(this.campaign?.permissions)).show((res) => {
-            this.campaign!.permissions = res;
-            this.saveCampaign(true);
-          });
-        }, 'Edit campaign permissions');
-        const tilesButton = ui.bigButton('Progress tracker', () => {
-          getTilesViewDialog(this, () => this._designView ?? null);
-        });
-
-        const submitButton = ui.bigButton('Submit...', () => {
-          this._submitView?.render();
-        });
-
-        const designerFuncs = DG.Func.find({meta: {role: HitDesignerFunctionTag}}).filter((f) => f.outputs.length === 1 && f.outputs[0].propertyType === DG.TYPE.DATA_FRAME);
-        submitButton.classList.add('hit-design-submit-button');
-        const ribbonButtons: HTMLElement[] = [submitButton];
-        if (this.stages.length > 0)
-          ribbonButtons.unshift(tilesButton);
-        // only initialize campaign template if its not exsitent yet
-        if (this.campaign && this.template && !this.campaign.template)
-          this.campaign.template = this.template;
-
-        if (this.template?.layoutViewState || this.template?.localLayoutPath)
-          ribbonButtons.unshift(applyLayoutButton);
-        if (this.hasEditPermission)
-          ribbonButtons.unshift(permissionsButton);
-
-        if (designerFuncs.length > 0 && addDesignerButton) {
-          // TODO: Support multiple functions
-          const designerFunc = designerFuncs[0];
-          const designerButton = ui.iconFA('pen-nib', async () => {
-            const prepareObj: any = {};
-            if (designerFunc.inputs.length > 0 && this.dataFrame && this.dataFrame.currentRowIdx >=0 && designerFunc.inputs[0].semType === DG.SEMTYPE.MOLECULE) {
-              const mol = _package.convertToSmiles(this.dataFrame.col(this.molColName)?.get(this.dataFrame.currentRowIdx));
-              if (mol)
-                prepareObj[designerFunc.inputs[0].name] = mol;
-            }
-            const fc = designerFunc.prepare(prepareObj);
-            // the editor we get here will be editing the funccall, so then we can just call it.
-            const dialogContent = await fc.getEditor();
-            ui.dialog(designerFunc.friendlyName)
-              .add(dialogContent)
-              .onOK(async () => {
-                const pg = DG.TaskBarProgressIndicator.create(`Running ${designerFunc.friendlyName}`);
-                try {
-                  await fc.call();
-                  const res: DG.DataFrame = fc.getOutputParamValue();
-                  if (!res || !res.rowCount) {
-                    grok.shell.warning(`${designerFunc.friendlyName} returned an empty result`);
-                    pg.close();
-                    return;
-                  }
-                  await res.meta.detectSemanticTypes();
-                  await grok.data.detectSemanticTypes(res);
-                  await this.handleJoiningDataframe(res);
-                } catch (e) {
-                  grok.shell.error(`Failed to run ${designerFunc.friendlyName}`);
-                  _package.logger.error(e);
-                } finally {
-                  pg.close();
-                }
-              })
-              .show();
-          }, designerFunc.description ? designerFunc.description : designerFunc.friendlyName);
-          ribbonButtons.unshift(designerButton);
-        }
-        ribbonButtons.unshift(calculateRibbon);
-        ribbonButtons.unshift(mergeTableButton);
-        ribbonButtons.unshift(addNewRowButton);
-        ribbonButtons.unshift(this._refreshCampaignIcon);
-
-        ribbons.push(ribbonButtons);
-        // remove project save button from the ribbon
-        ribbons.some((rg) => {
-          const saveBtnIdx = rg?.findIndex((r) => r?.textContent?.toLowerCase() === 'save') ?? -1;
-          if (saveBtnIdx !== -1) {
-            rg.splice(saveBtnIdx, 1);
-            return true;
-          }
-          return false;
-        });
-        // remove empty ribbon arrays
-        ribbons = ribbons.filter((r) => (r?.length ?? 0) > 0);
-        view.setRibbonPanels(ribbons);
-      }
-    }
-    return view;
+    this._session!.host.show(dialog, {width: 800, resizable: true});
   }
 
-  protected async applyTemplateLayout(view: DG.TableView) {
-    if (!view) {
-      grok.shell.error('No view found');
+  /** The campaign's compute from now on: what it calculates anew or with other settings is calculated over the
+   * whole table, and the campaign saved. */
+  private async applyCompute(compute: TemplateCompute): Promise<void> {
+    const old = this.template!.compute;
+    const df = this.dataFrame!;
+    this.template!.compute = compute;
+    if (this.campaign)
+      this.campaign.template = this.template;
+    const changed = <F extends {args: IFunctionArgs}>(items: F[], before: F[], key: (f: F) => string) =>
+      Object.fromEntries(items.filter((f) => {
+        const was = before.find((b) => key(b) === key(f));
+        return !was || !Object.entries(f.args).every(([name, value]) => was.args[name] === value);
+      }).map((f) => [key(f), f.args]));
+    const grid = this.designView?.grid;
+    grid && ui.setUpdateIndicator(grid.root, true);
+    try {
+      await calculateColumns({
+        descriptors: compute.descriptors.args.filter((d) => !old.descriptors.args.includes(d)),
+        externals: changed(compute.functions, old.functions, (f) => `${f.package}:${f.name}`),
+        scripts: changed(compute.scripts ?? [], old.scripts ?? [], (s) => `${HTScriptPrefix}:${s.name}:${s.id}`),
+        queries: changed(compute.queries ?? [], old.queries ?? [], (q) => `${HTQueryPrefix}:${q.name}:${q.id}`),
+      }, df, this.molColName!);
+    } finally {
+      grid && ui.setUpdateIndicator(grid.root, false);
+      if (this.dataFrame === df)
+        void this.saveCampaign(false);
+    }
+  }
+
+  /** Saves the open campaign: one save at a time; a save of a campaign asked for while one runs is folded into the
+   * next one of that campaign. Answers the saved campaign, or nothing when it was not saved (a balloon says why). */
+  saveCampaign(notify = true, isCreating = false, customProps?: Partial<HitDesignCampaign>): Promise<HitDesignCampaign | undefined> {
+    const df = this.dataFrame;
+    if (!df)
+      return Promise.resolve(undefined);
+    const next = this._nextSave;
+    if (next?.request.df === df) {
+      next.request.notify ||= notify;
+      next.request.isCreating ||= isCreating;
+      next.request.customProps ??= customProps;
+      return next.done;
+    }
+    const request: SaveRequest = {df, notify, isCreating, customProps};
+    const queued = this._saves > 0;
+    this._saves++;
+    const start = () => {
+      if (this._nextSave?.request === request)
+        this._nextSave = undefined;
+      return this._write(request);
+    };
+    const done = (queued ? this._queue.then(start, start) : start()).finally(() => this._saves--);
+    this._queue = done;
+    if (queued)
+      this._nextSave = {request, done};
+    return done;
+  }
+
+  /** The open campaign besides its table. */
+  private state(): CampaignState {
+    return {campaign: this._campaign, template: this.template!, campaignId: this._campaignId!, filePath: this._filePath,
+      molColName: this.molColName, base: this._base, canEdit: this.hasEditPermission, fields: this.campaignProps,
+      session: this._session};
+  }
+
+  /** What a save changed of the campaign of `df`: the app's own if it still has it open, else what it kept of it. */
+  private recordSave(df: DG.DataFrame, changes: Partial<CampaignState>): void {
+    if (this.dataFrame !== df) {
+      const kept = this._closed.get(df);
+      if (kept)
+        Object.assign(kept, changes);
       return;
     }
-    if (this.template?.localLayoutPath) {
-      try {
-        const file = await grok.dapi.files.readAsText(this.template.localLayoutPath);
-        const layout = DG.ViewLayout.fromJson(file);
-        view.loadLayout(layout);
-        return;
-      } catch (e) {
-        grok.shell.error('Failed to apply layout from mounted file storage. Falling back to static layout');
-        _package.logger.error(e);
+    if (changes.campaign)
+      this._campaign = changes.campaign;
+    if (changes.base)
+      this._base = changes.base;
+    if (changes.filePath !== undefined)
+      this._filePath = changes.filePath;
+    if (changes.campaignId !== undefined) {
+      this._campaignId = changes.campaignId;
+      modifyUrl(CampaignIdKey, changes.campaignId);
+    }
+  }
+
+  /** One save of the campaign of `df` under the campaign's lock: refused before the lock when the user may not edit
+   * the campaign. The app shows the saved campaign only if it still has that one open. */
+  private async _write({df, notify, isCreating, customProps}: SaveRequest): Promise<HitDesignCampaign | undefined> {
+    const open = () => this.dataFrame === df;
+    const state = open() ? this.state() : this._closed.get(df);
+    if (!state)
+      return undefined;
+    if (!state.canEdit) {
+      grok.shell.error('You do not have permission to modify this campaign');
+      return undefined;
+    }
+    // a closed view's session shows no feedback: its timers would start on a disposed host
+    const session = state.session?.host.scope.isDisposed ? undefined : state.session;
+    let {campaignId, filePath} = state;
+    session?.waitingForLock(true);
+    try {
+      if (state.campaign) {
+        const lock = await this.aquireAndWaitCampaignLock(campaignId);
+        if (!lock?.aquired)
+          throw new CampaignLockHeldError('Could not acquire lock for campaign during 30 seconds');
+      } else {
+        const locked = await this.lockNewCampaignCode(campaignId, state.template.key);
+        if (locked !== campaignId) {
+          filePath = filePath.replace(`/${campaignId}/${CampaignTableName}`, `/${locked}/${CampaignTableName}`);
+          campaignId = locked;
+          this.recordSave(df, {campaignId, filePath});
+        }
       }
     }
-    if (!this.template?.layoutViewState) {
-      grok.shell.error('No layout found');
-      return;
-    }
-    try {
-      const layout = DG.ViewLayout.fromViewState(this.template.layoutViewState);
-      view.loadLayout(layout);
-    } catch (e) {
-      grok.shell.error('Failed to apply template layout. Check console for more details.');
+    catch (e) {
       _package.logger.error(e);
+      // only a lock another session kept is "someone else"; a query that failed says why
+      grok.shell.error(e instanceof CampaignLockHeldError ?
+        'Failed to acquire campaign lock. Someone else might be editing the campaign. Please try again later.' :
+        `Failed to save the campaign: ${e instanceof Error ? e.message : e}`);
+      return undefined;
+    } finally {
+      session?.waitingForLock(false);
     }
-  }
-
-  protected getDesignView(): DG.TableView {
-    this._designView && this._designView.close();
-    const subs: Subscription[] = [];
-    const isNew = this.dataFrame!.col(this.molColName)?.toList().every((m) => !m && m === '');
-    const view = grok.shell.addTableView(this.dataFrame!);
-    this._designViewName = this.campaign?.friendlyName ?? this.campaign?.name ?? this._designViewName;
-    view.name = this._designViewName;
-
-    view._onAdded();
-    const layoutViewState = this._campaign?.layout;
-    if (layoutViewState) {
-      try {
-        const layout = DG.ViewLayout.fromViewState(layoutViewState);
-        view.loadLayout(layout);
-      } catch (e) {
-        grok.shell.error('Failed to apply layout. Falling back to default layout.');
-        console.error(e);
-      }
-    }
-    this.checkGrid(view);
-    if (isNew)
-      grok.functions.call('Chem:editMoleculeCell', {cell: view.grid.cell(this._molColName, 0)});
-
-    this.initGridSubs(view, subs);
-    // make VID column non-editable
-    const vidGridCol = view.grid?.col(ViDColName);
-    if (vidGridCol)
-      vidGridCol.editable = false;
-    // set the semType of vidCol
-    const vidCol = this.dataFrame!.col(ViDColName);
-    if (vidCol) {
-      vidCol.semType = ViDSemType;
-      vidCol.valueComparer = (a: string | null, b: string | null) => {
-        if (a === b) return 0;
-        if (a === null) return -1;
-        if (b === null) return 1;
-        // column is in string format of V######, but at some point it might go beyond 1 million, so remove the 'V' and compare as numbers
-        const aNum = parseInt(a.substring(1));
-        const bNum = parseInt(b.substring(1));
-        return aNum - bNum;
-      };
-    }
-
-    subs.push(this.dataFrame!.onRowsAdded.pipe(filter(() => !this.isJoining))
-      .subscribe(() => { // TODO, insertion of rows in the middle
-        try {
-          if (this.stages.length > 0) {
-            for (let i = 0; i < this.dataFrame!.rowCount; i++) {
-              const colVal = this.dataFrame!.col(TileCategoriesColName)!.get(i);
-              if (!colVal || colVal === '' || this.dataFrame!.col(TileCategoriesColName)?.isNone(i))
-                this.dataFrame!.set(TileCategoriesColName, i, this.stages[0]);
-            }
-          }
-          let lastAddedCell: DG.GridCell | null = null;
-          for (let i = 0; i < this.dataFrame!.rowCount; i++) {
-            const cell = view.grid.cell(this.molColName, i);
-            if (!cell)
-              continue;
-            if (cell.cell.value === '' || cell.cell.value === null)
-              lastAddedCell = cell;
-          }
-          if (lastAddedCell)
-            grok.functions.call('Chem:editMoleculeCell', {cell: lastAddedCell});
-        } catch (e) {
-          console.error(e);
-        }
-      }));
-    subs.push(grok.events.onContextMenu.subscribe((args) => {
-      try {
-        const viewer: DG.Viewer = args?.args?.context;
-        if (!viewer)
-          return;
-        if (viewer?.type !== DG.VIEWER.GRID)
-          return;
-        if (!viewer.tableView || viewer.tableView.id !== view.id)
-          return;
-        if (args?.args?.item?.tableColumn?.name !== this.molColName || !args?.args?.item?.isTableCell)
-          return;
-        const menu: DG.Menu = args?.args?.menu;
-        if (!menu)
-          return;
-        menu.item('Add new row', () => {
-            this.dataFrame!.rows.addNew(null, true);
-        });
-        menu.item('Duplicate molecule', () => {
-          try {
-            const row = this.dataFrame!.rows.addNew(null, true);
-            const cell = row.get(this.molColName);
-            if (cell != null && row.idx > -1)
-              this.dataFrame!.cell(row.idx, this.molColName).value = args?.args?.item?.cell?.value ?? '';
-          } catch (e) {
-            console.error(e);
-          }
-        });
-
-        const cellIndex = args?.args?.item?.tableRowIndex;
-        const cellValue = args?.args?.item?.cell?.value;
-        if (cellValue && (cellIndex ?? -1) > -1) {
-          menu.item('Re-Run Calculations', async () => {
-            try {
-              await this.performSingleCellCalculations(cellIndex, cellValue);
-            } catch (e) {
-              console.error(e);
-            }
-          });
-        }
-      } catch (e: any) {
-        grok.log.error(e);
-      }
-    }));
-
-    subs.push(grok.events.onViewLayoutApplied.subscribe((vI) => {
-      if (!vI || vI.view !== view)
-        return;
-      this.initGridSubs(view, subs);
-    }));
-
-    this.initDesignViewRibbons(view, subs, true);
-    view.parentCall = this.parentCall;
-    return view;
-  }
-
-  checkGrid(view: DG.TableView) {
-    if (!view.grid) {
-      grok.shell.error('Applied layout created view without grid. Resetting layout.');
-      view.resetLayout();
-    }
-  }
-
-  // some of the subs are on grid, layout application will detach the grid, thus we need to re-init those subs
-  protected _gridSubs: {grid: DG.Grid, subs: Subscription[]} | null = null;
-
-  protected initGridSubs(view: DG.TableView, subs: Subscription[]) {
-    if (this._gridSubs && this._gridSubs.grid === view.grid)
-      return;
-    if (this._gridSubs)
-      this._gridSubs.subs.forEach((s) => s.unsubscribe());
-    this.checkGrid(view);
-    if (!view.grid) {
-      grok.shell.error('No grid found, cannot initialize grid subscriptions');
-      return;
-    }
-    this._gridSubs = {grid: view.grid, subs: []};
-    view?.grid && this._gridSubs.subs.push(view.grid.onCellValueEdited.subscribe(async (gc) => {
-      try {
-        if (gc.tableColumn?.name === TileCategoriesColName) {
-          await this.saveCampaign(false);
-          return;
-        }
-        if (gc.tableColumn?.name !== this.molColName)
-          return;
-        const newValue = gc.cell.value;
-        const newValueIdx = gc.tableRowIndex!;
-
-        if (newValue) {
-          try {
-            const newVid = await registerMol(newValue, this._campaignId!, this.appName);
-            this.dataFrame!.col(ViDColName)!.set(newValueIdx, newVid, true);
-          } catch (e) {
-            console.error('Failed to register molecule');
-          }
-        }
-
-
-        await this.performSingleCellCalculations(newValueIdx, newValue);
-      } catch (e) {
-        grok.shell.error('Failed to process molecule edit, check console for details');
-        console.error(e);
-      }
-    }));
-
-    view?.grid && this._gridSubs.subs.push(view.grid.onCellRender.subscribe((args) => {
-      try {
-        // color duplicate vid values
-        const cell = args.cell;
-        const vdCache = this.duplicateVidCache;
-        if (!cell || !cell.isTableCell || !cell.tableColumn || !vdCache ||
-            cell.tableColumn.name !== ViDColName || (cell.tableRowIndex ?? -1) < 0)
-          return;
-
-        if (vdCache.valueCounts[vdCache.indexes[cell.tableRowIndex!]] > 1) {
-          args.cell.style.backColor =
-              DG.Color.setAlpha(DG.Color.getCategoricalColor(vdCache.indexes[cell.tableRowIndex!])
-                , 150);
-        }
-      } catch (e) {}
-    }));
-    this._gridSubs.subs.forEach((s) => subs.push(s));
-  }
-
-  getSummary(): {[_: string]: any} {
-    const getFolderPath = () => {
-      const campaignIndex = this._filePath.indexOf((this.campaignId ?? this._campaign?.name)!);
-      const folderPath = campaignIndex === -1 ? this._filePath : this._filePath.substring(0, campaignIndex - 1);
-      return folderPath;
-    };
-    const campaignProps = {...(this.campaign?.campaignFields ?? this.campaignProps)};
-    if (this.template && this.template.campaignFields) {
-      Object.entries(campaignProps).forEach(([key, value]) => {
-        const field = this.template!.campaignFields!.find((f) => f.name === key);
-        if (field && field.type === 'Date' && value) {
-          const dateString = (new Date(value)).toString();
-          if (dateString !== 'Invalid Date')
-            campaignProps[key] = (new Date(value)).toLocaleDateString();
-          else {
-            if (value.date)
-              campaignProps[key] = new Date(value.date).toLocaleDateString();
-            else
-              campaignProps[key] = value;
-          }
-        } else {
-          if (field && field.type === DG.SEMTYPE.MOLECULE && value)
-            campaignProps[key] = grok.chem.drawMolecule(value);
-        }
-      });
-    }
-
-    const getPathEditor = () => {
-      const editIcon = ui.icons.edit(() => {
-        const folderPath = getFolderPath();
-        const newPathInput = ui.input.string('Path', {value: folderPath});
-        const labelElement = newPathInput.root.getElementsByTagName('label').item(0);
-        if (labelElement)
-          labelElement.remove();
-        newPathInput.root.style.width = '100%';
-
-        const saveButton = ui.button('Save', async () => {
-          const exists = await checkFileExists(newPathInput.value);
-          if (!exists)
-            return;
-          const newPath = newPathInput.value;
-          if (newPath.endsWith('/'))
-            this._filePath = `${newPath}${this.campaignId}/${CampaignTableName}`;
-          else
-            this._filePath = `${newPath}/${this.campaignId}/${CampaignTableName}`;
-
-          if (this._campaign)
-            this._campaign!.savePath = this._filePath;
-          await this.saveCampaign(true);
-          ui.empty(pathDiv);
-          const folderPath = getFolderPath();
-          link = ui.link(folderPath,
-            () => this.download(this.dataFrame!, this.campaignId ?? this._campaign?.name ?? 'Molecules'),
-            i18n.download);
-          pathDiv.appendChild(link);
-          pathDiv.appendChild(editIcon);
-        });
-        const cancelButton = ui.button('Cancel', () => {
-          ui.empty(pathDiv);
-          pathDiv.appendChild(link);
-          pathDiv.appendChild(editIcon);
-        });
-        ui.empty(pathDiv);
-        newPathInput.addOptions(cancelButton);
-        newPathInput.addOptions(saveButton);
-        pathDiv.appendChild(newPathInput.root);
-        newPathInput.input.focus();
-      }, 'Edit file path');
-      editIcon.style.marginLeft = '5px';
-      const folderPath = getFolderPath();
-      let link = ui.link(folderPath,
-        () => this.download(this.dataFrame!, this.campaignId ?? this._campaign?.name ?? 'Molecules'), i18n.download);
-      const pathDiv = ui.divH([link, editIcon], {style: {alignItems: 'center'}});
-      return pathDiv;
-    };
-
-    const campaignName = this.campaign?.friendlyName ?? this.campaign?.name ?? this.campaignId!;
-    const campaignNameField = editableTableField(ui.divText(campaignName), {
-      tooltip: 'Edit Campaign Name',
-      nullable: false,
-      onOk: async (a) => {
-        this.campaign!.friendlyName = a!;
-        await this.saveCampaign(true);
-      },
-      validator: async (a) => !!a?.trim() ? null : 'Campaign name can not be empty',
-    });
-
-
-    return {
-      'Name': campaignNameField,
-      'Code': this.campaignId ?? this._campaign?.name,
-      'Template': this.template?.name ?? 'Molecules',
-      'File Path': getPathEditor(),
-      ...(this.campaign?.authorUserFriendlyName ? {'Author': this.campaign.authorUserFriendlyName} : {}),
-      ...(this.campaign?.lastModifiedUserName ? {'Last Modified By': this.campaign.lastModifiedUserName} : {}),
-      ...(this.campaign?.createDate ? {'Create Date': this.campaign.createDate} : {}),
-      ...campaignProps,
-      'Number of Molecules': (this.dataFrame!.rowCount).toString(),
-      'Enrichment Methods': [this.template!.compute.descriptors.enabled ? 'descriptors' : '',
-        ...this.template!.compute.functions.map((func) => func.name)].filter((f) => f && f.trim() !== '').join(', '),
-    };
-  }
-
-  private _isSaving: boolean = false;
-
-  async saveCampaign(notify = true, isCreating = false, customProps?: Partial<HitDesignCampaign>): Promise<HitDesignCampaign> {
-    this._isSaving = true;
-    const campaignId = this.campaignId!;
-    const someoneElseEditingLoaderTimeout = setTimeout(() => {
-      if (this._designView?.grid)
-        ui.setUpdateIndicator(this._designView.grid.root, true, 'Someone else is saving the campaign. Please wait...');
-    }, 500);
+    session?.saving(true);
+    const save: CampaignState = {...state, campaignId, filePath};
+    const version = state.campaign?.version ?? 0;
+    let written = false;
     try {
-      const lock = await this.aquireAndWaitCampaignLock(campaignId);
-      if (!lock?.aquired) // could not acquire lock
-        throw new Error('Could not acquire lock for campaign during 30 seconds');
-    } catch (e) {
-      clearTimeout(someoneElseEditingLoaderTimeout);
-      if (this._designView?.grid)
-        ui.setUpdateIndicator(this._designView.grid.root, false);
-      grok.shell.error('Failed to acquire campaign lock. Someone else might be editing the campaign. Please try again later.');
-      this._isSaving = false;
-      return this.campaign!;
-    }
-    clearTimeout(someoneElseEditingLoaderTimeout);
-    if (this._designView?.grid)
-      ui.setUpdateIndicator(this._designView.grid.root, true, 'Saving Campaign...');
-    // await DG.delay(3000); // artificial delay to simulate long save
+      const serverVersion = await this.mergeStaleSave(df, save);
+      const campaign = await this.campaignToSave(df, save, customProps);
+      if (serverVersion !== undefined)
+        campaign.version = Math.max(version, serverVersion) + 1;
+      const saved = df.columns.toList().filter((col) => !col.name.startsWith('~') && !isEmptyPlaceholder(col));
+      const csvDf = DG.DataFrame.fromColumns(saved).toCsv();
+      const base = df.clone();
+      await grok.dapi.files.writeAsText(filePath, csvDf);
+      written = true;
+      // a view closed meanwhile keeps the layout saved before
+      const view = session && !session.host.scope.isDisposed ? session.view : undefined;
+      const newLayout = view?.saveLayout();
+      if (view && !newLayout)
+        grok.shell.warning('Layout cound not be saved');
+      else if (newLayout)
+        campaign.layout = newLayout.viewState;
+      campaign.template = save.template;
 
-    const templateName = this.template!.name;
-    const enrichedDf = this.dataFrame!;
-    const campaignName = campaignId;
+      await _package.saveCampaignJson(this.appName, campaign);
+      notify && grok.shell.info('Campaign saved successfully.');
+      !notify && isCreating && grok.shell.info('Campaign created successfully.');
+      const updatedAt = await this.releaseCampaignLock(campaignId);
+      this.recordSave(df, {campaign, base});
+      if (open()) {
+        this.designViewName = campaign.friendlyName ?? campaign.name;
+        session?.saved(updatedAt);
+      }
+      return campaign;
+    } catch (e) {
+      _package.logger.error(e);
+      // nothing written yet: the lock goes without logging a save other sessions would be told of
+      await (written ? this.releaseCampaignLock(campaignId) : this.dropCampaignLock(campaignId))
+        .catch((err) => _package.logger.error(err));
+      grok.shell.error(`Failed to save the campaign: ${e instanceof Error ? e.message : e}`);
+      return undefined;
+    } finally {
+      session?.saving(false);
+    }
+  }
+
+  /** campaign.json as the save writes it: the keys this app knows, and every key of the stored one it does not. A
+   * layout's column nothing filled yet is left out. */
+  private async campaignToSave(df: DG.DataFrame, save: CampaignState,
+    customProps?: Partial<HitDesignCampaign>): Promise<HitDesignCampaign> {
+    const columns = df.columns.toList().filter((col) => !col.name.startsWith('~') && !isEmptyPlaceholder(col));
     const columnSemTypes: {[_: string]: string} = {};
-    enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
     const colTypeMap: {[_: string]: string} = {};
-    enrichedDf.columns.toList().forEach((col) => colTypeMap[col.name] = col.type);
     const columnTags: {[_: string]: {[_: string]: string}} = {};
-    for (const col of enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')))
-      columnTags[col.name] = Object.fromEntries(col.tags);
-    const sketchStateString = this.campaign?.tilesViewerFormSketch ?? undefined;
+    for (const col of columns) {
+      columnSemTypes[col.name] = col.semType;
+      colTypeMap[col.name] = col.type;
+      // the Stage choices are the template's stages, set on every open: a stored copy would go stale
+      columnTags[col.name] = Object.fromEntries(Array.from(col.tags).filter(([tag]) => tag !== PlaceholderTag &&
+        !(col.name === TileCategoriesColName && tag === DG.TAGS.CHOICES)));
+    }
 
     const getDefaultPerms = async () => {
       try {
@@ -1101,81 +731,46 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       }
       return defaultPermissions;
     };
+    const previous = save.campaign;
     // if its first time save author as current user, else keep the same
-    const authorUserId = this.campaign?.authorUserId ?? grok.shell.user.id;
-    const permissions = this.campaign?.permissions ?? await getDefaultPerms();
-    const authorName = authorUserId ? this.campaign?.authorUserFriendlyName ?? (await grok.dapi.users.find(authorUserId))?.friendlyName : undefined;
-    const campaign: HitDesignCampaign = {
-      name: campaignName,
-      friendlyName: this.campaign?.friendlyName ?? customProps?.friendlyName ?? campaignName,
-      templateName,
-      status: this.campaign?.status ?? 'In Progress',
-      createDate: this.campaign?.createDate ?? toFormatedDateString(new Date()),
-      campaignFields: this.campaign?.campaignFields ?? this.campaignProps,
+    const authorUserId = previous?.authorUserId ?? grok.shell.user.id;
+    const permissions = previous?.permissions ?? await getDefaultPerms();
+    const authorName = authorUserId ? previous?.authorUserFriendlyName ?? (await grok.dapi.users.find(authorUserId))?.friendlyName : undefined;
+    return {
+      ...previous,
+      name: save.campaignId,
+      friendlyName: previous?.friendlyName ?? customProps?.friendlyName ?? save.campaignId,
+      templateName: save.template.name,
+      status: previous?.status ?? 'In Progress',
+      createDate: previous?.createDate ?? toFormatedDateString(new Date()),
+      campaignFields: previous?.campaignFields ?? save.fields,
       columnSemTypes,
-      rowCount: enrichedDf.rowCount,
-      filteredRowCount: enrichedDf.filter.trueCount,
-      savePath: this._filePath,
+      rowCount: df.rowCount,
+      filteredRowCount: df.filter.trueCount,
+      savePath: save.filePath,
       columnTypes: colTypeMap,
       columnTags,
-      tilesViewerFormSketch: sketchStateString,
-      version: this.version + 1,
+      version: (previous?.version ?? 0) + 1,
       authorUserId,
       authorUserFriendlyName: authorName,
       lastModifiedUserName: grok.shell.user.friendlyName,
       permissions,
-      mergeConfig: this.campaign?.mergeConfig,
     };
-    if (!this.hasEditPermission) {
-      grok.shell.error('You do not have permission to modify this campaign');
-      if (this._designView?.grid)
-        ui.setUpdateIndicator(this._designView.grid.root, false);
-      await this.releaseCampaignLock(campaignId);
-      this._isSaving = false;
-      return campaign;
-    }
-    const campaignPath = `${this.appName}/campaigns/${campaignId}/${CampaignJsonName}`;
-    // check if someone already saved the campaign
-    let resDf = enrichedDf;
+  }
 
-
-    if (await _package.files.exists(campaignPath)) {
-      const prevCamp: HitDesignCampaign = JSON.parse(await _package.files.readAsText(campaignPath));
-      if ((prevCamp.version ?? 0) > this.version) {
-        campaign.version = Math.max(this.version, (prevCamp.version ?? 0)) + 1;
-        if (await grok.dapi.files.exists(this._filePath)) {
-          try {
-            const prevCampDf = await grok.dapi.files.readCsv(this._filePath);
-            const joined = this.unionDataframes(prevCampDf, enrichedDf, this.molColName, this.molColName);
-            resDf = joined;
-          } catch (e) {
-            console.error(e);
-          }
-        }
-      }
-    }
-    const csvDf = DG.DataFrame.fromColumns(
-      resDf.columns.toList().filter((col) => !col.name.startsWith('~')),
-    ).toCsv();
-    await grok.dapi.files.writeAsText(this._filePath, csvDf);
-    const newLayout = this._designView!.saveLayout();
-    if (!newLayout)
-      grok.shell.warning('Layout cound not be saved');
-    else
-      campaign.layout = newLayout.viewState;
-    campaign.template = this.template;
-
-    await _package.saveCampaignJson(this.appName, campaign);
-    notify && grok.shell.info('Campaign saved successfully.');
-    !notify && isCreating && grok.shell.info('Campaign created successfully.');
-    this.campaign = campaign;
-    this.designViewName = campaign.friendlyName ?? campaign.name;
-    const updatedAt = await this.releaseCampaignLock(campaignId);
-    this._lastExpiresTimeString = updatedAt;
-    if (this._designView?.grid)
-      ui.setUpdateIndicator(this._designView.grid.root, false);
-    this._isSaving = false;
-    this._refreshIconTooltip = 'Refresh Campaign';
-    return campaign;
+  /** Another session saved the campaign since this one read it: its table, where its campaign.json says, is merged
+   * into `df`. Answers the version it saved, nothing when there was no such save. */
+  private async mergeStaleSave(df: DG.DataFrame, save: CampaignState): Promise<number | undefined> {
+    const campaignPath = `${this.appName}/campaigns/${save.campaignId}/${CampaignJsonName}`;
+    if (!await _package.files.exists(campaignPath))
+      return undefined;
+    const server: HitDesignCampaign = JSON.parse(await _package.files.readAsText(campaignPath));
+    const serverVersion = server.version ?? 0;
+    if (serverVersion <= (save.campaign?.version ?? 0))
+      return undefined;
+    const table = server.savePath ?? save.filePath;
+    if (await grok.dapi.files.exists(table))
+      mergeServerTable(this, df, save.molColName, await grok.dapi.files.readCsv(table), save.base);
+    return serverVersion;
   }
 }

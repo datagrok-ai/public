@@ -1,10 +1,3 @@
-/* Noun plan → Playwright Locator. Registry entries are plain selectors; kinds try their qualifier
-   strategies in the R9 order (`effectiveOrder`: what the user sees first, `data-u2-name` after it,
-   Dart names where they were) and keep the first that finds something (the union of all of them when
-   nothing does, so negative assertions still have a locator to fail against); scopes nest
-   locators, with the u2 owner edge as the fallback for popups portaled out of their owner. Inside
-   a context, the context's own names and generic kinds are looked up in its root first, then on
-   the whole page (dialogs and notifications are portaled out of it); global names are global. */
 import {appendFileSync} from 'node:fs';
 import {type Locator, type Page, test} from '@playwright/test';
 import {contextFirst, describeNoun, KindSplit, NounRef, parseNoun} from '../nouns.js';
@@ -259,6 +252,7 @@ async function inBase(page: Page, base: Base, ref: NounRef): Promise<Locator> {
   const hit = await firstHit(all);
   if (process.env.BDD_RESOLVE_TRACE)
     await trace(page, base, ref, plan, hit);
+  // nothing found: the union of all, so a negative assertion still has a locator to fail against
   return hit?.loc ?? all.map((c) => c.loc).reduce((a, b) => a.or(b));
 }
 

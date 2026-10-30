@@ -1,11 +1,13 @@
 /* Every component a dg-ui/1 spec can build, with the prop metadata that validates specs and feeds
    manifest.json. Left out: components whose options are functions (list, tree, combobox, dialog,
    toolbar, async view). */
-import {Signal} from '../core/signals.js';
+import {Signal, signal} from '../core/signals.js';
+import {Scope} from '../core/scope.js';
 import {Control} from '../core/component.js';
-import {button, divH, divV, panel, span, type Text} from '../core/elements.js';
+import {button, divH, divV, panel, span, type SpaceSize, type Text} from '../core/elements.js';
 import {icon, IconVariant} from '../components/display/icon.js';
 import {Input, InputOptions, LiveOption} from '../core/input-base.js';
+import type {Reason} from '../core/reason.js';
 import {TextInput, TextArea} from '../components/inputs/text-input.js';
 import {BoolInput} from '../components/inputs/bool-input.js';
 import {NumberInput} from '../components/inputs/number-input.js';
@@ -16,6 +18,8 @@ import {RadioInput} from '../components/inputs/radio-input.js';
 import {ColorInput} from '../components/inputs/color-input.js';
 import {ListInput} from '../components/inputs/list-input.js';
 import {MapInput} from '../components/inputs/map-input.js';
+import {RecordsInput} from '../components/inputs/records-input.js';
+import {ChecklistInput} from '../components/inputs/checklist-input.js';
 import {ChipsInput} from '../components/inputs/chips-input.js';
 import {AccessGrid} from '../components/forms/access-grid.js';
 import type {AccessRow} from '../components/forms/access-grid.js';
@@ -27,12 +31,17 @@ import {IconInput} from '../components/inputs/icon-input.js';
 import {Form} from '../components/forms/form.js';
 import type {FormLayout} from '../components/forms/form.js';
 import {Section} from '../components/containers/section.js';
+import {Page} from '../components/containers/page.js';
+import {ChoiceChip} from '../components/inputs/choice-chip.js';
 import {Splitter} from '../components/containers/splitter.js';
 import {Accordion} from '../components/containers/accordion.js';
 import {Card} from '../components/containers/card.js';
 import {StatCard} from '../components/display/stat-card.js';
+import {AppHeader} from '../components/display/app-header.js';
 import {DataTable} from '../components/collections/data-table.js';
 import type {DataTableColumn} from '../components/collections/data-table.js';
+import {CatalogTable} from '../components/collections/catalog-table.js';
+import type {CatalogColumn} from '../components/collections/catalog-table.js';
 import {TabStrip, TabStripOptions} from '../components/containers/tabs.js';
 import {Wizard} from '../components/containers/wizard.js';
 import {PropertyGrid, PropDescriptor} from '../components/forms/property-grid.js';
@@ -55,19 +64,15 @@ type Child = Control | HTMLElement;
 /** A bound `value` arrives as the context signal itself, so the input adopts it instead of copying:
  * no bridge, no echo, and the spec's two-way contract holds through every edit. */
 function inputOptions<T>(props: Props): InputOptions<T> {
-  const value = props.value;
-  const bound = value instanceof Signal;
   return {
     label: props.label as LiveOption<string> | undefined,
     name: props.name as string | undefined,
     inline: props.inline as boolean | undefined,
     postfix: props.postfix as LiveOption<string> | undefined,
     tooltipText: props.tooltipText as LiveOption<string> | undefined,
-    enabled: props.enabled as LiveOption<boolean> | undefined,
-    readOnly: props.readOnly as LiveOption<boolean> | undefined,
+    disabled: props.disabled as Reason | undefined,
     required: props.required as LiveOption<boolean> | undefined,
-    value: bound ? undefined : value as T,
-    bind: bound ? value as Signal<T> : undefined,
+    ...Input.specValue<T>(props.value, props.readOnly as LiveOption<boolean> | undefined),
   };
 }
 
@@ -97,8 +102,8 @@ function inputProps(value: string, ...extra: SpecPropMeta[]): SpecPropMeta[] {
     {name: 'postfix', type: 'string', bindable: true,
       description: 'Units or a short suffix shown after the editor.'},
     {name: 'tooltipText', type: 'string', bindable: true},
-    {name: 'enabled', type: 'bool', bindable: true,
-      description: 'false grays the input out and blocks edits.'},
+    {name: 'disabled', type: 'string', bindable: true,
+      description: 'Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on.'},
     {name: 'readOnly', type: 'bool', bindable: true,
       description: 'Shows the value, selectable, but blocks edits.'},
     {name: 'required', type: 'bool', bindable: true,
@@ -180,6 +185,10 @@ function wizard(children: Child[], nodes: SpecNode[]): Wizard {
   return new Wizard({steps: steps.length > 0 ? steps : [{id: 'step-0', title: 'Step 1', content: divV([])}]});
 }
 
+function page(props: Props, children: Child[]): Page {
+  return new Page({content: children, maxWidth: props.maxWidth as number | undefined});
+}
+
 function section(props: Props, children: Child[]): Section {
   const s = new Section({
     title: (props.title as Text | undefined) ?? '',
@@ -189,16 +198,30 @@ function section(props: Props, children: Child[]): Section {
   return s.add(...children.map(element));
 }
 
-/** `u2-button`: text, primary and icon are written in place — the element stays. */
+/** `u2-button`: text, primary, icon and disabled are written in place — the element stays. */
 class SpecButton extends Control {
   private declare _text: string;
   private declare _icon: string;
+  private declare _disabled: Signal<string | null>;
 
   constructor(props: Props) {
-    super(button('', () => {}, {primary: props.primary === true}));
+    const disabled = signal<string | null>((props.disabled as string | undefined) ?? null);
+    // the button follows the reason under the control's own scope
+    const scope = new Scope();
+    super(scope.build(() => button('', () => {}, {primary: props.primary === true, disabled})), scope);
+    this._disabled = disabled;
     this._text = (props.text as string | undefined) ?? '';
     this._icon = (props.icon as string | undefined) ?? '';
     this._paint();
+  }
+
+  /** Why the button is off — its tooltip, and what a screen reader says on focus; empty or null on. */
+  get disabled(): string | null {
+    return this._disabled.peek();
+  }
+
+  set disabled(x: string | null) {
+    this._disabled.value = x || null;
   }
 
   get text(): string {
@@ -234,9 +257,10 @@ class SpecButton extends Control {
   }
 }
 
-/** A layout container whose extra `cls` follows the prop in place. */
+/** A layout container whose extra `cls` and `gap` follow their props in place. */
 class SpecContainer extends Control {
   private declare _cls: string[];
+  private declare _gap: SpaceSize | '';
 
   get cls(): string {
     return (this._cls ?? []).join(' ');
@@ -246,6 +270,27 @@ class SpecContainer extends Control {
     this.root.classList.remove(...this._cls ?? []);
     this._cls = String(x ?? '').split(/\s+/).filter((c) => c);
     this.root.classList.add(...this._cls);
+  }
+
+  get gap(): SpaceSize | '' {
+    return this._gap ?? '';
+  }
+
+  set gap(x: SpaceSize | '') {
+    if (this._gap)
+      this.root.classList.remove(`u2-gap-${this._gap}`);
+    this._gap = x ?? '';
+    if (this._gap)
+      this.root.classList.add(`u2-gap-${this._gap}`);
+  }
+}
+
+/** `u2-form-buttons`: a row of buttons, 8px apart; inside a u2-form it is the form's button row. */
+class SpecFormButtons extends SpecContainer {
+  constructor(readonly align: 'end' | 'editors' | 'start' | undefined) {
+    super(divH([], {gap: 'm'}));
+    // no kind of its own: to automation it is a horizontal stack, and features address its buttons, never the row
+    this.root.dataset.u2 = 'div-h';
   }
 }
 
@@ -297,10 +342,13 @@ function container(tag: string, create: () => HTMLElement, description: string):
     create: (props) => {
       const built = new SpecContainer(create());
       built.cls = (props.cls as string | undefined) ?? '';
+      built.gap = (props.gap as SpaceSize | undefined) ?? '';
       return built;
     },
     description,
-    props: [{name: 'cls', type: 'string', description: 'Extra layout class.'}],
+    props: [{name: 'cls', type: 'string', description: 'Extra layout class.'},
+      {name: 'gap', type: 'string', choices: ['xs', 's', 'm', 'l', 'xl', 'xxl'],
+        description: 'Space between the children on the token scale: 2, 4, 8, 12, 16 or 24px.'}],
     acceptsChildren: true,
     example: {tag, children: [{tag: 'u2-text-input', props: {label: 'Name'}}]},
   };
@@ -319,10 +367,10 @@ const METAS: ComponentMeta[] = [
     }),
     description: 'Single-line text editor with validation.',
     usage: 'With `search: true` this is the filter box; in a platform view the main filter belongs ' +
-      'in the view ribbon (`appView({ribbon})`), not inside the content area. Every input: act on the ' +
-      'user\'s edits with `onInput` (`onChanged` also hears writes from code); load another record with ' +
-      '`reset(value)`, keep in step with a model with `follow(read)`; a status line or tab marker reads ' +
-      '`error` (shown, touch-gated), Save reads `validity`.',
+      'in the view ribbon (the `ribbon` a `ViewHost.create` builder answers), not inside the content area. ' +
+      'Every input: act on the user\'s edits with `onInput` (`onChanged` also hears writes from code); load ' +
+      'another record with `reset(value)`, keep in step with a model with `follow(read)`; a status line or ' +
+      'tab marker reads `error` (shown, touch-gated), Save reads `validity`.',
     props: inputProps('string',
       {name: 'placeholder', type: 'string', bindable: true},
       {name: 'search', type: 'bool', structural: true, description: 'Magnifier affordance plus a clear button.'},
@@ -376,6 +424,7 @@ const METAS: ComponentMeta[] = [
       slider: props.slider as boolean | undefined,
       clicker: props.clicker as boolean | undefined,
       spinner: props.spinner as boolean | undefined,
+      placeholder: props.placeholder as LiveOption<string> | undefined,
     }),
     description: 'Numeric editor; text that does not parse or falls outside min/max stays on ' +
       'screen and only marks the input invalid.',
@@ -389,7 +438,8 @@ const METAS: ComponentMeta[] = [
         description: 'Range control under the box, revealed on hover; needs both bounds.'},
       {name: 'clicker', type: 'bool', structural: true,
         description: '− / + buttons on the options rail, revealed on hover.'},
-      {name: 'spinner', type: 'bool', structural: true, description: 'Hover spinner inside the field.'}),
+      {name: 'spinner', type: 'bool', structural: true, description: 'Hover spinner inside the field.'},
+      {name: 'placeholder', type: 'string', bindable: true}),
     events: ['input', 'change'],
     example: {tag: 'u2-number-input', props: {label: 'Amount', value: 10, min: 0, max: 100}},
   },
@@ -418,6 +468,30 @@ const METAS: ComponentMeta[] = [
     example: {tag: 'u2-choice-input', props: {label: 'Series', items: ['a', 'b', 'c'], value: 'b'}},
   },
   {
+    tag: 'u2-choice-chip',
+    category: 'Inputs',
+    create: (props) => new ChoiceChip({label: props.label as string | undefined, name: props.name as string | undefined,
+      items: itemList(props.items), value: (props.value as string | undefined) ?? null,
+      disabled: props.disabled as Reason | undefined, invalid: props.invalid as Reason | undefined}),
+    description: 'A small choice inline, reading "label value ▾": a press opens a menu of the choices, the current ' +
+      'one checked.',
+    usage: 'For a choice among others in a row or a heading (an R group\'s cap, a sort): two clicks to change it. In ' +
+      'code an item takes a `description` (its grey detail in the menu and the chip\'s tooltip), `invalid` turns the ' +
+      'chip red with its reason and `actions` add entries under the choices. A field of a form is `u2-choice-input`.',
+    props: [
+      {name: 'label', type: 'string', structural: true},
+      {name: 'name', type: 'string', description: 'The automation id.'},
+      {name: 'value', type: 'string'},
+      {name: 'items', type: 'string_list', structural: true},
+      {name: 'disabled', type: 'string', structural: true,
+        description: 'Why the chip is off — greyed out, its menu closed; empty while on.'},
+      {name: 'invalid', type: 'string', structural: true,
+        description: 'Why the current choice cannot stand — the chip turns red; empty while it is fine.'},
+    ],
+    defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
+    example: {tag: 'u2-choice-chip', props: {label: 'Sort', items: ['Name', 'Created'], value: 'Name'}},
+  },
+  {
     tag: 'u2-multi-choice-input',
     category: 'Inputs',
     create: (props) => {
@@ -443,15 +517,18 @@ const METAS: ComponentMeta[] = [
     tag: 'u2-button',
     category: 'Actions',
     create: (props) => new SpecButton(props),
-    description: 'Push button; `on: {"click": "cmd:<name>"}` runs a context command.',
-    usage: 'In code, `button(text, onClick, {disabled: reason})` disables it and shows the reason (a string, ' +
-      'or a signal of one) as its tooltip — say what is missing rather than leaving the user to guess; a ' +
-      'dialog\'s OK takes the same through `okDisabled(reason)`.',
+    description: 'Push button; `on: {"click": "cmd:<name>"}` runs a context command. Inside a u2-form it goes ' +
+      'to the form\'s button row.',
+    usage: 'Off with the reason: `disabled` takes why (bind it to a context value that is null while the button ' +
+      'can run) and shows it as the tooltip — say what is missing rather than leaving the user to guess. In code, ' +
+      '`button(text, onClick, {disabled: reason})`; a dialog\'s OK takes the same through `okDisabled(reason)`.',
     props: [
       {name: 'text', type: 'string'},
       {name: 'primary', type: 'bool', description: 'Accent styling for the main action.'},
       {name: 'icon', type: 'string', inputType: 'Icon',
         description: 'Font Awesome icon name shown before the text.'},
+      {name: 'disabled', type: 'string', description: 'Why the button is off: its tooltip, said on keyboard ' +
+        'focus too; a press does nothing. Empty or null: on.'},
     ],
     defaults: {text: 'Button'},
     events: ['click'],
@@ -473,6 +550,20 @@ const METAS: ComponentMeta[] = [
     return el;
   }, 'Horizontal row.'),
   {
+    tag: 'u2-form-buttons',
+    category: 'Containers',
+    create: (props) => new SpecFormButtons(props.align as 'end' | 'editors' | 'start' | undefined),
+    description: 'A row of buttons; as a child of a u2-form it is the form\'s button row, under the rows.',
+    usage: 'A form\'s Save and Cancel: `{"tag": "u2-form-buttons", "children": [{"tag": "u2-button", "props": ' +
+      '{"text": "Save", "primary": true}, "bind": {"disabled": "$.saveProblem"}}]}` — the button off with the ' +
+      'reason it is off.',
+    props: [{name: 'align', type: 'string', choices: ['end', 'editors', 'start'], structural: true,
+      description: 'In a form: the buttons at the end (default), starting where the editors do, or at the start.'}],
+    acceptsChildren: true,
+    example: {tag: 'u2-form-buttons', children: [{tag: 'u2-button', props: {text: 'Cancel'}},
+      {tag: 'u2-button', props: {text: 'Save', primary: true}}]},
+  },
+  {
     tag: 'u2-splitter',
     category: 'Containers',
     create: (props) => splitter(props, []),
@@ -490,7 +581,7 @@ const METAS: ComponentMeta[] = [
     defaults: {direction: 'horizontal'},
     // two, not one: a single-panel splitter has no sash to drag and is a panel with extra steps
     defaultChildren: [{tag: 'u2-panel'}, {tag: 'u2-panel'}],
-    designerActions: [{name: 'Add panel',
+    designerActions: [{text: 'Add panel',
       produce: () => ({op: 'add-child', node: {tag: 'u2-panel'}})}],
     example: {tag: 'u2-splitter', props: {direction: 'horizontal', sizes: [0.3, 0.7]}, children: [
       {tag: 'u2-panel', children: [{tag: 'u2-text-input', props: {label: 'Name'}}]},
@@ -562,7 +653,7 @@ const METAS: ComponentMeta[] = [
     ],
     acceptsChildren: true,
     defaultChildren: [{tag: 'u2-panel', props: {title: 'Pane 1'}}],
-    designerActions: [{name: 'Add pane', produce: (node) => ({op: 'add-child',
+    designerActions: [{text: 'Add pane', produce: (node) => ({op: 'add-child',
       node: {tag: 'u2-panel', props: {title: `Pane ${(node.children?.length ?? 0) + 1}`}}})}],
     example: {tag: 'u2-accordion', children: [
       {tag: 'u2-panel', props: {title: 'General'}, children: [{tag: 'u2-text-input', props: {label: 'Name'}}]},
@@ -595,13 +686,32 @@ const METAS: ComponentMeta[] = [
     ]},
   },
   {
+    tag: 'u2-page',
+    category: 'Containers',
+    create: (props) => page(props, []),
+    createWithChildren: (props, children) => page(props, children),
+    description: 'A view\'s content: a body that alone scrolls, every spec child in it one under the other.',
+    usage: 'For the content of a view or a dialog-sized editor. In code, `new Page({header, sections, footer, ' +
+      'maxWidth})` adds a header that stays put, titled sections with their actions, and an action row pinned ' +
+      'under the body (buttons on the right, a status line beside them); the forms on a page share one label ' +
+      'column. Spacing is the `--u2-page-*` properties, set on an element of your own.',
+    props: [
+      {name: 'maxWidth', type: 'double', structural: true,
+        description: 'The body\'s widest, in px; its forms go as wide.'},
+    ],
+    acceptsChildren: true,
+    example: {tag: 'u2-page', props: {maxWidth: 640}, children: [
+      {tag: 'u2-text-input', props: {label: 'Name'}},
+    ]},
+  },
+  {
     tag: 'u2-tabs',
     category: 'Containers',
     create: (props) => new TabStrip(tabStrip(props)),
     createWithChildren: (props, children, nodes) => {
       const tabs = new TabStrip(tabStrip(props));
       for (let i = 0; i < children.length; i++) {
-        tabs.addTab({id: `tab-${i}`, label: childTitle(nodes[i], `Tab ${i + 1}`), icon: childIcon(nodes[i]),
+        tabs.addTab({id: `tab-${i}`, title: childTitle(nodes[i], `Tab ${i + 1}`), icon: childIcon(nodes[i]),
           content: element(children[i])});
       }
       if (typeof props.activeTab === 'string')
@@ -621,7 +731,7 @@ const METAS: ComponentMeta[] = [
     },
     setChildProp: (parent, index, name, value) => {
       if (name === 'title')
-        (parent as TabStrip).setTabLabel(`tab-${index}`, typeof value === 'string' ? value : `Tab ${index + 1}`);
+        (parent as TabStrip).setTabTitle(`tab-${index}`, typeof value === 'string' ? value : `Tab ${index + 1}`);
     },
     description: 'Tab strip with one tab per spec child; the child node carries the tab label.',
     usage: 'In code, give a tab a `validity` signal and it is marked while that says something; a tab ' +
@@ -644,7 +754,7 @@ const METAS: ComponentMeta[] = [
     acceptsChildren: true,
     defaults: {orientation: 'horizontal', variant: 'platform'},
     defaultChildren: [{tag: 'u2-panel', props: {title: 'Tab 1'}}],
-    designerActions: [{name: 'Add tab', produce: (node) => ({op: 'add-child',
+    designerActions: [{text: 'Add tab', produce: (node) => ({op: 'add-child',
       node: {tag: 'u2-panel', props: {title: `Tab ${(node.children?.length ?? 0) + 1}`}}})}],
     example: {tag: 'u2-tabs', children: [
       {tag: 'u2-panel', props: {title: 'Data', icon: 'table'},
@@ -663,11 +773,14 @@ const METAS: ComponentMeta[] = [
       const form = parent as Form;
       if (child instanceof Input)
         form.add(child);
+      else if (child instanceof SpecFormButtons)
+        form.addButtons((row) => row.append(child.root), {align: child.align});
       else
         form.addElement(element(child));
     },
     description: 'Vertical input layout: spec children that are inputs join the form and share its ' +
-      'label column, validity and Enter navigation; anything else renders as a plain row in place.',
+      'label column, validity and Enter navigation; a u2-form-buttons child is its button row; anything else ' +
+      'renders as a plain row in place.',
     usage: 'Labels share a left column and values stay left-aligned — never center form content. ' +
       'For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building. ' +
       'Forms that must line up — the tabs of one editor — share a `LabelColumn` (`labelColumn` option); ' +
@@ -741,7 +854,7 @@ const METAS: ComponentMeta[] = [
     props: [{name: 'items', type: 'string_list'}],
     defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
     events: ['click'],
-    designerActions: [{name: 'Add item', produce: (node) => {
+    designerActions: [{text: 'Add item', produce: (node) => {
       const items = (node.props?.items ?? []) as string[];
       return {op: 'set-prop', name: 'items', value: [...items, `Item ${items.length + 1}`]};
     }}],
@@ -862,6 +975,56 @@ const METAS: ComponentMeta[] = [
     props: inputProps('object'),
     events: ['input', 'change'],
     example: {tag: 'u2-map-input', props: {label: 'Params', value: {solvent: 'DMSO'}}},
+  },
+  {
+    tag: 'u2-records-input',
+    category: 'Inputs',
+    create: (props) => new RecordsInput<Record<string, unknown>>({
+      ...inputOptions<Record<string, unknown>[]>(props),
+      columns: itemList(props.fields).map((name) => ({name,
+        input: (value) => new TextInput({inline: true, value: (value as string | undefined) ?? ''})})),
+      addText: props.addText as string | undefined,
+      orderable: props.orderable as boolean | undefined,
+    }),
+    description: 'An editable list of records: a row each, an inline input per field under a header, a ' +
+      'remove button per row and an add link; orderable rows move by a handle or Alt+↑/↓. The value is the ' +
+      'records; a failing cell names its row in the verdict ("Row 2: Name: Value can\'t be empty").',
+    usage: 'For a short list of typed rows edited in place — a template\'s fields, its stages. In code each ' +
+      'column gives the input its cells get (`{name, header, input: (value) => new ChoiceInput({inline: ' +
+      'true, …}), width}`); a spec gives text fields by name. Validate the list as a whole with ' +
+      '`addValidator` (duplicate names).',
+    props: inputProps('object',
+      {name: 'fields', type: 'string_list', structural: true, description: 'The columns: text fields, in order.'},
+      {name: 'addText', type: 'string', structural: true, description: 'The add link\'s text; Add by default.'},
+      {name: 'orderable', type: 'bool', structural: true, description: 'Rows move by a handle or Alt+↑/↓.'}),
+    defaults: {fields: ['name']},
+    events: ['change'],
+    example: {tag: 'u2-records-input', props: {label: 'Stages', fields: ['name'], addText: 'Add stage',
+      orderable: true, value: [{name: 'Design'}, {name: 'Synthesis'}, {name: 'Assay'}]}},
+  },
+  {
+    tag: 'u2-checklist-input',
+    category: 'Inputs',
+    create: (props) => {
+      const input = new ChecklistInput({
+        ...inputOptions<string[]>(props),
+        items: itemList(props.items),
+        orderable: props.orderable as boolean | undefined,
+      });
+      boundItems(input, props.items);
+      return input;
+    },
+    description: 'Checkboxes the user can also put in order: the value is the checked items in the order ' +
+      'shown, `order` every item\'s.',
+    usage: 'For picking a subset where the order matters too — the functions to run and their order, the ' +
+      'columns to show. Without `orderable` it is a plain check list (`u2-multi-choice-input` adds a ' +
+      'summary checkbox).',
+    props: inputProps('string_list', {name: 'items', type: 'string_list', bindable: true},
+      {name: 'orderable', type: 'bool', structural: true, description: 'Rows move by a handle or Alt+↑/↓.'}),
+    defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
+    events: ['change'],
+    example: {tag: 'u2-checklist-input', props: {label: 'Run', items: ['Descriptors', 'Toxicity', 'Solubility'],
+      value: ['Toxicity', 'Descriptors'], orderable: true}},
   },
   {
     tag: 'u2-chips-input',
@@ -1004,6 +1167,37 @@ const METAS: ComponentMeta[] = [
     example: {tag: 'u2-stat-card', props: {label: 'Revenue', value: '1.2M', delta: 0.12, icon: 'chart-line'}},
   },
   {
+    tag: 'u2-app-header',
+    category: 'Display',
+    create: (props) => new AppHeader({
+      icon: (props.icon as string | undefined) ?? 'rocket',
+      iconSize: props.iconSize as number | undefined,
+      title: props.title as Text | undefined,
+      subtitle: props.subtitle as Text | undefined,
+      items: itemList(props.items),
+      learnMore: props.learnMore as string | undefined,
+      bottomLine: props.bottomLine as boolean | undefined,
+    }),
+    description: 'An app home\'s hero: a big icon beside the bullets of what the app does, and a Learn more link.',
+    usage: 'At the top of an app\'s home view, above what the user starts from. A titled header puts the ' +
+      'app name and a one-line subtitle beside a smaller icon; an item may be an element or a link ' +
+      '(`AppHeader` in code).',
+    props: [
+      {name: 'icon', type: 'string', inputType: 'Icon', structural: true,
+        description: 'An image URL or a Font Awesome name.'},
+      {name: 'iconSize', type: 'int', structural: true, description: 'In pixels: 150, or 90 beside a title.'},
+      {name: 'title', type: 'string', bindable: true},
+      {name: 'subtitle', type: 'string', bindable: true},
+      {name: 'items', type: 'string_list', structural: true, description: 'The bullets, in order.'},
+      {name: 'learnMore', type: 'string', structural: true, description: 'The URL Learn more opens in a new tab.'},
+      {name: 'bottomLine', type: 'bool', structural: true, description: 'A rule under the header.'},
+    ],
+    defaults: {icon: 'rocket', items: ['What the app does']},
+    example: {tag: 'u2-app-header', props: {icon: 'flask',
+      items: ['Sketch molecules in the spreadsheet', 'Calculate molecular properties'],
+      learnMore: 'https://datagrok.ai/help'}},
+  },
+  {
     tag: 'u2-data-table',
     category: 'Display',
     create: (props) => {
@@ -1031,6 +1225,48 @@ const METAS: ComponentMeta[] = [
     defaults: {columns: ['name', 'value']},
     example: {tag: 'u2-data-table', props: {columns: ['name', 'cas:CAS number'],
       items: [{name: 'Aspirin', cas: '50-78-2'}, {name: 'Caffeine', cas: '58-08-2'}]}},
+  },
+  {
+    tag: 'u2-catalog-table',
+    category: 'Display',
+    create: (props) => {
+      const columns = dataTableColumns(props.columns).map((c, i): CatalogColumn<Record<string, unknown>> =>
+        ({name: c.name, header: c.header, value: (r) => r[c.name], pinned: i === 0}));
+      const key = (props.key as string | undefined) ?? columns[0]?.name ?? 'name';
+      return new CatalogTable<Record<string, unknown>>({
+        items: (props.items instanceof Signal || Array.isArray(props.items) ? props.items : []) as
+          Record<string, unknown>[] | Signal<Record<string, unknown>[]>,
+        keyOf: (r) => String(r[key] ?? ''),
+        columns,
+        groupings: itemList(props.groupings).map((name) =>
+          ({name, label: columns.find((c) => c.name === name)?.header ?? name, key: (r) => r[name]})),
+        persist: props.persistKey as string | undefined,
+      });
+    },
+    description: 'A table of records people come back to: double-click a header to sort, group the rows into ' +
+      'foldable sections with counts, choose the columns; the choices are kept.',
+    usage: 'For a catalog of records with a name and a few attributes (campaigns, profiles, templates) where the ' +
+      'whole list fits the page. In code, `CatalogTable` takes columns with `value`/`render`, groupings, row ' +
+      '`actions`, an `AsyncValue` of items and a `persist` adapter; `chrome()` gives the columns, group and refresh ' +
+      'icons for the heading. Thousands of rows belong in `u2-data-table`. Recipe: docs/recipes/catalog-table.md.',
+    props: [
+      {name: 'columns', type: 'string_list', structural: true,
+        description: 'The record properties to show, in order; `name:Header` gives one its own header. The first is ' +
+          'the record\'s name: always shown, first.'},
+      {name: 'items', type: 'object', bindable: true,
+        description: 'The records — bind a source\'s rows (`$.campaigns.rows`).'},
+      {name: 'key', type: 'string', structural: true,
+        description: 'The property that identifies a record; the first column by default.'},
+      {name: 'groupings', type: 'string_list', structural: true,
+        description: 'The columns the group menu offers.'},
+      {name: 'persistKey', type: 'string', structural: true,
+        description: 'Keeps the sort, grouping, columns and folds in the browser under this key.'},
+    ],
+    defaults: {columns: ['name:Name', 'status:Status']},
+    example: {tag: 'u2-catalog-table', props: {columns: ['name:Name', 'status:Status', 'molecules:Molecules'],
+      groupings: ['status'], items: [{name: 'Kinase hits', status: 'In progress', molecules: 120},
+        {name: 'GPCR series', status: 'Submitted', molecules: 48},
+        {name: 'Fragments', status: 'In progress', molecules: 9}]}},
   },
   {
     tag: 'u2-filter-builder',
@@ -1140,13 +1376,11 @@ const METAS: ComponentMeta[] = [
   },
 ];
 
-const registered = new WeakSet<Registry>();
-
 /** Idempotent per registry — the gallery, the manifest script and tests all call it freely. */
 export function registerAll(reg: Registry = globalRegistry): void {
-  if (registered.has(reg))
+  if (reg.builtins)
     return;
-  registered.add(reg);
+  reg.builtins = true;
   for (const meta of METAS)
     reg.register(meta);
   registerDataSources(reg);

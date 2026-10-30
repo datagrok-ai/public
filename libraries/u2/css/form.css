@@ -6,7 +6,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  max-width: 700px;
+  max-width: var(--u2-form-max-width, 700px);
   font-family: var(--dg-font-family);
   font-size: var(--dg-font-size);
   line-height: var(--dg-line-height);
@@ -20,9 +20,13 @@
   gap: 0;
 }
 
+/* platform caption skin: grey, right-aligned in the label column (ui.css:1068-1075) —
+   bridged platform inputs (.ui-input-label) share it */
 .u2-form .u2-input-label,
 .u2-form .ui-input-label {
   min-width: var(--u2-form-label-width, 100px);
+  color: var(--dg-text-color-light);
+  text-align: right;
 }
 
 /* while a form measures its captions (form.ts _measureLabels): each at its own text's width, whatever
@@ -34,17 +38,14 @@
   min-width: 0 !important;
 }
 
-/* platform caption skin: grey, right-aligned in the label column (ui.css:1068-1075) —
-   bridged platform inputs (.ui-input-label) share it */
-.u2-form .u2-input-label,
-.u2-form .ui-input-label {
-  color: var(--dg-text-color-light);
-  text-align: right;
-}
-
 .u2-form-captions-left .u2-input-label,
 .u2-form-captions-left .ui-input-label {
   text-align: left;
+}
+
+/* the space between two sections of a form: --u2-form-section-gap, set on an element around it */
+.u2-form-rows > .u2-section + .u2-section {
+  margin-top: var(--u2-form-section-gap, 0);
 }
 
 /* a non-input row (Form.addElement) carries the pitch the input roots get from their padding */
@@ -70,6 +71,10 @@
   white-space: pre-wrap;
 }
 
+.u2-form-readonly-empty {
+  color: var(--dg-text-color-light);
+}
+
 /* a verdict is a line of its own under the editor, past the label column in the caption-left
    layouts (the max-width it once had clamped its flex basis, so it fit beside the editor and
    shrank it instead) */
@@ -79,6 +84,16 @@
 
 .u2-form-tall .u2-input-error {
   padding-left: 0;
+}
+
+/* a muted line under an editor or a row, past the label column as a verdict is */
+.u2-form:not(.u2-form-tall) .u2-form-note {
+  padding-left: calc(var(--u2-form-label-width, 100px) + var(--dg-space-m));
+}
+
+.u2-form-note {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
 }
 
 /* a platform input bridged into a platform form or dialog (asDartInput) brings only its box: it
@@ -132,9 +147,10 @@
   margin-top: 0;
 }
 
-/* wide — the platform's ui-form-wide (ui.css:635-688): captions stay left, editors fill the row */
+/* wide — the platform's ui-form-wide (ui.css:635-688): captions stay left, editors fill the row, up to the form's
+   or its page's max width when one is set */
 .u2-form-wide {
-  max-width: none;
+  max-width: var(--u2-form-max-width, none);
 }
 
 .u2-form-wide .u2-input-box {
@@ -153,17 +169,18 @@
 /* the widths ui.form gives, in the plain caption-left layout and in the auto form's roomy wide
    state: a choice as wide as its longest option plus 30px (form.ts measures it into
    --u2-choice-width, as js-api ui.ts getInputsMinWidths does), a number 150px (ui.css:261-271
-   grown by the form's flex-grow); an explicit wide form stretches both, as ui-form-wide does */
+   grown by the form's flex-grow); an explicit wide form stretches both, as ui-form-wide does. Each width is a
+   cap: in a row with less room the editor shrinks with its box instead of overflowing it */
 .u2-form:not(.u2-form-wide):not(.u2-form-tall) .u2-input-root:not(.u2-input-fill)[data-u2='choice-input'] select.u2-input-editor,
 .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='choice-input'] select.u2-input-editor {
-  flex: none;
+  flex: 0 1 auto;
   width: var(--u2-choice-width, 200px);
   max-width: none;
 }
 
 .u2-form:not(.u2-form-wide):not(.u2-form-tall) .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-number,
 .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-number {
-  flex: none;
+  flex: 0 1 auto;
   width: 150px;
   max-width: 150px;
 }
@@ -171,7 +188,7 @@
 /* a date is a short value too: its own width, the calendar toggle beside it, never across the row */
 .u2-form:not(.u2-form-wide):not(.u2-form-tall) .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-date,
 .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-date {
-  flex: none;
+  flex: 0 1 auto;
   width: 140px;
   max-width: 140px;
 }
@@ -185,6 +202,21 @@
 .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='bigint-input'] > .u2-input-box > input.u2-input-editor,
 .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='qnum-input'] > .u2-input-box > input.u2-input-editor {
   max-width: 150px;
+}
+
+/* the u2-form-fill class on the form's host: in the auto form's wide state numbers, dates and
+   choices fill the row too, so every editor ends at one right edge */
+.u2-form-fill .u2-form-auto.u2-form-wide .u2-input-root .u2-input-box:has(> .u2-input-editor:is(.u2-number, .u2-date)),
+.u2-form-fill .u2-form-auto.u2-form-wide .u2-input-root[data-u2='choice-input'] .u2-input-box {
+  flex: 1;
+  max-width: none;
+}
+
+.u2-form-fill .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2] .u2-input-editor:is(.u2-number, .u2-date),
+.u2-form-fill .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='choice-input'] select.u2-input-editor {
+  flex: 1;
+  width: auto;
+  max-width: none;
 }
 
 /* a checklist row's caption follows its box and takes no part in the label column */
@@ -323,6 +355,8 @@
 .u2-form-buttons {
   display: flex;
   justify-content: flex-end;
+  /* a statusLine beside the buttons ("Saved") sits on their middle */
+  align-items: center;
   gap: var(--dg-space-m);
   margin-top: var(--dg-space-l);
 }
@@ -343,12 +377,12 @@
 
 /* a raised button in a form is the platform's form button, blue-2 and 12px in
    (grok.css .ui-form .ui-btn.ui-btn-raised) — in the form's button row too, wherever addButtons placed it */
-.u2-form .u2-btn-primary:not(:disabled),
-.u2-form .u2-btn-primary:hover:not(:disabled),
-.u2-form .u2-btn-primary:active:not(:disabled),
-.u2-form-buttons .u2-btn-primary:not(:disabled),
-.u2-form-buttons .u2-btn-primary:hover:not(:disabled),
-.u2-form-buttons .u2-btn-primary:active:not(:disabled) {
+.u2-form .u2-btn-primary:not(:disabled, [aria-disabled='true']),
+.u2-form .u2-btn-primary:hover:not(:disabled, [aria-disabled='true']),
+.u2-form .u2-btn-primary:active:not(:disabled, [aria-disabled='true']),
+.u2-form-buttons .u2-btn-primary:not(:disabled, [aria-disabled='true']),
+.u2-form-buttons .u2-btn-primary:hover:not(:disabled, [aria-disabled='true']),
+.u2-form-buttons .u2-btn-primary:active:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-blue-2);
 }
 
