@@ -483,8 +483,11 @@ export class MpoProfileDialog {
       this.draftColumn = this.dataFrame.columns.addNewFloat(name);
 
     const gridColumn = grok.shell.tableView(this.dataFrame.name)?.grid.columns.byName(name);
-    if (gridColumn)
+    if (gridColumn) {
       gridColumn.visible = true;
+      // The grid gives a `~` column no width of its own, so it stays collapsed without one.
+      gridColumn.width = 125;
+    }
     return name;
   }
 }
