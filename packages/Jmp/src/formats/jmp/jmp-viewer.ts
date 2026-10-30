@@ -18,7 +18,9 @@ export function warnSkipped(table: JmpTable): void {
   const names = skippedColumns(table).map((s) => s.name);
   if (names.length > 0)
     grok.shell.warning(`JMP: ${names.length} column${names.length === 1 ? '' : 's'} not imported: ${list(names)}`);
-  const analyses = savedAnalyses(table).filter((a) => a.viewers.length === 0).map((a) => a.name);
+  // a script that isn't an analysis (a table operation, a program) has no platform, and isn't missed
+  const analyses = savedAnalyses(table).filter((a) => a.platform !== undefined && a.viewers.length === 0)
+    .map((a) => a.name);
   if (analyses.length > 0) {
     grok.shell.warning(`JMP: ${analyses.length} saved ${analyses.length === 1 ? 'analysis' : 'analyses'} ` +
       `not converted: ${list(analyses)}`);
@@ -93,13 +95,14 @@ function analysesSection(analyses: JmpScriptConversion[]): Section {
   const converted = analyses.filter((a) => a.viewers.length > 0).length;
   const section = new Section({
     title: 'Saved analyses',
-    hint: `${converted} of ${analyses.length} open as viewers`,
+    hint: `${converted} of ${analyses.filter((a) => a.platform !== undefined).length} open as viewers`,
     expanded: true,
     persistKey: 'jmp.preview.analyses',
   });
   section.name = 'saved analyses';
   section.add(divV(analyses.map((a) => {
-    const status = a.viewers.length > 0 ? a.viewers.map((v) => v.type).join(', ') : `Not converted: ${a.reason}`;
+    const status = a.viewers.length > 0 ? a.viewers.map((v) => v.type).join(', ') :
+      a.platform !== undefined ? `Not converted: ${a.reason}` : a.reason;
     const scriptShown = signal(false);
     const toggle = link('Script', () => scriptShown.value = !scriptShown.value);
     toggle.dataset.u2Name = 'script toggle';
