@@ -132,9 +132,9 @@ Everything re-derives from `entries` + the selections. In `RunComparison`:
 
 In each `ComparisonTab`:
 
-4. `selectedTarget`, `compatibleTargets` (multi-value candidates for the current anchor), `filteredTargets` (`listedTargets`).
-5. `charted` (`chartedTargets`: the anchor, or the multi-value selection anchor first), `gaps`, and `comparison` — `buildComparison` over `charted`, wrapped in `markRaw` (DataFrames must not be made reactive); `currentChartSpec` turns it into a `ChartSpec`.
-6. `entryStatuses` — exclusion chips, through `statusChips`.
+1. `selectedTarget`, `compatibleTargets` (multi-value candidates for the current anchor), `filteredTargets` (`listedTargets`).
+2. `charted` (`chartedTargets`: the anchor, or the multi-value selection anchor first), `gaps`, and `comparison` — `buildComparison` over `charted`, wrapped in `markRaw` (DataFrames must not be made reactive); `currentChartSpec` turns it into a `ChartSpec`.
+3. `entryStatuses` — exclusion chips, through `statusChips`.
 
 ### Notable mechanics
 
