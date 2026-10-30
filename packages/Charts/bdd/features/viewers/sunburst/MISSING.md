@@ -17,7 +17,7 @@ None.
    filter. Today the table stays filtered to F after SEX is removed until the next refilter, as for
    the bar chart and the tree: core#1174, a known failure.
 2. **A hierarchy column renamed** is followed: claimed (SEX, ORIGIN).
-3. **Closing the sunburst in Filter mode** gives every row back: public#4425, a known failure.
+3. **Closing the sunburst in Filter mode** gives every row back: public#4425, fixed, claimed.
 4. **A layout naming a missing hierarchy column** keeps the remaining levels (RACE), claimed; no rows
    is a row of the no-rows outline.
 

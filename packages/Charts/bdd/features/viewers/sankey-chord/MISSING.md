@@ -11,7 +11,7 @@ Written for `sankey-chord-edge-cases.feature`: the edge cases of this viewer tha
 **Decided** (the rules of `viewer-rules-edge-cases.feature`)
 
 1. A blank Source value is a node named `(empty)`. No outline row: the Sankey needs a numeric Value column the outline's three-column table lacks, and no reading lists its node names yet.
-2. The Source / From column removed: no other column is picked and the viewer shows its requires-message. The two known failures (public#4420, public#4421) claim only "no error" for now; once the removal is handled they should also claim the message (`"The Sankey viewer requires…" text in sankey viewer` visible).
+2. The Source / From column removed: no other column is picked and the viewer shows its requires-message. The two scenarios (public#4420, public#4421, fixed) claim only "no error"; they should also claim the message (`"The Sankey viewer requires…" text in sankey viewer` visible).
 
 3. Sankey Source set through the property to a column with more than 50 categories (demog USUBJID) is cut as on the table, and the viewer says so (the silent-cut rule). Today the 50-category rule is checked only when the viewer picks its columns. Steps requested: the note has no wording yet, and the Sankey reports no readings on the stand (Steps requested, 1).
 

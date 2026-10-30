@@ -15,7 +15,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {filterPasses, filterPassesAll, filterTo, removeColumn, renameColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, openDataset, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, clickArea, hasArea, hasNoArea, noErrors, propertyShouldBe, readingIs, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Tree edge cases: a column renamed under a filter, a hierarchy column removed, empty values, On Click switched from Filter to Select", () => {
   const session = feature(test, "features/viewers/tree/tree-edge-cases.feature", import.meta.url);
@@ -67,7 +67,7 @@ test.describe("Tree edge cases: a column renamed under a filter, a hierarchy col
     await session.step(53, "Then tree viewer should have a \"branch All | A | (empty)\" area", () => hasArea(page, el("tree viewer"), "branch All | A | (empty)"));
     await session.step(54, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Switching On Click from Filter to Select gives back the rows its clicked branch filtered out", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.tree", "@known-failure:62", "@realizes:public#4425"]}, async ({browser}) => {
+  test("Switching On Click from Filter to Select gives back the rows its clicked branch filtered out", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.tree", "@realizes:public#4425"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -75,13 +75,11 @@ test.describe("Tree edge cases: a column renamed under a filter, a hierarchy col
     await session.step(18, "And user adds a tree viewer with:", () => addViewerWith(page, "tree", [["hierarchyColumnNames","CONTROL, SEX, RACE"]]), [["hierarchyColumnNames","CONTROL, SEX, RACE"]]);
     await session.step(20, "Then tree viewer should have a \"branch All | false | F | Asian\" area", () => hasArea(page, el("tree viewer"), "branch All | false | F | Asian"));
     await session.step(21, "And the \"rows shown\" reading of tree viewer should be 1000", () => readingIs(page, "rows shown", el("tree viewer"), 1000));
-    await knownFailure(async () => {
-      await session.step(58, "When user sets \"onClick\" property of tree viewer to \"Filter\"", () => setProperty(page, "onClick", el("tree viewer"), "Filter"));
-      await session.step(59, "And user clicks on the \"branch All | false | F | Asian\" area of tree viewer", () => clickArea(page, "branch All | false | F | Asian", el("tree viewer")));
-      await session.step(60, "Then 7 rows should pass the filter", () => filterPasses(page, 7));
-      await session.step(61, "When user sets \"onClick\" property of tree viewer to \"Select\"", () => setProperty(page, "onClick", el("tree viewer"), "Select"));
-      await session.step(62, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(63, "And no errors should have been logged", () => noErrors(page));
-    }, 62);
+    await session.step(58, "When user sets \"onClick\" property of tree viewer to \"Filter\"", () => setProperty(page, "onClick", el("tree viewer"), "Filter"));
+    await session.step(59, "And user clicks on the \"branch All | false | F | Asian\" area of tree viewer", () => clickArea(page, "branch All | false | F | Asian", el("tree viewer")));
+    await session.step(60, "Then 7 rows should pass the filter", () => filterPasses(page, 7));
+    await session.step(61, "When user sets \"onClick\" property of tree viewer to \"Select\"", () => setProperty(page, "onClick", el("tree viewer"), "Select"));
+    await session.step(62, "Then all rows should pass the filter", () => filterPassesAll(page));
+    await session.step(63, "And no errors should have been logged", () => noErrors(page));
   });
 });

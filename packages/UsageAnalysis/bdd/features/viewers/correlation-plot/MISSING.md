@@ -33,7 +33,7 @@ Added with `correlation-plot-edge-cases.feature` (edge-case round of 2026-10-26,
 
 ### Still open
 
-1. **Decided** (2026-10-28): a column removed from narrowed axes leaves only that column: core#1172, a
-   known failure in `correlation-plot-edge-cases`. No row passing, Row Source Selected with one row and
+1. **Decided** (2026-10-28): a column removed from narrowed axes leaves only that column: core#1172,
+   fixed, claimed in `correlation-plot-edge-cases`. No row passing, Row Source Selected with one row and
    a table with no numeric column give an empty plot with no message; that is right as it is.
 2. **ApiTests to write**: a table with 120 numeric columns opens with Show Coefficients off.

@@ -45,7 +45,7 @@ Feature: Form viewer edge cases
       | fixtures/cars-small.csv                     | cars-small.csv                   |
       | fixtures/nx/spgi-legend-position-old.layout | spgi-legend-position-old.layout  |
 
-  @edge-cases @known-failure:54 @realizes:core#1192
+  @edge-cases @realizes:core#1192
   Scenario: Text typed into a numeric field of an editable form leaves the cell as it was
     When user clicks on the "edit" area of form viewer
     And user enters "31" into the "field AGE" area of form viewer

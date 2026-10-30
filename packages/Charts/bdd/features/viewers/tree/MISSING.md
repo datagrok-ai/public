@@ -17,7 +17,7 @@ None.
    the no-rows outline.
 2. **The Size and Color columns removed** are dropped, with no other column picked. The removal
    handler cleans the hierarchy only (`:629-633`), and a removed Size or Color column throws on every
-   render: public#4423, known failures in the removal outline.
+   render: public#4423, fixed, claimed in the removal outline.
 3. **Values above the declared maximum typed in the panel** (Initial Tree Depth 6, Font Size 31) are
    not taken: known failures with no ticket yet in the out-of-bounds outline. A negative Label
    Rotate has no declared minimum (`:130`), so the rule does not reach it.

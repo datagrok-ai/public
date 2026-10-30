@@ -24,7 +24,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {filterBetween, filterPasses, removeColumn, renameColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, hasArea, hasNoArea, noErrors, readingIs, readingReads, reportsNoError, setProperties} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Correlation plot edge cases", () => {
   const session = feature(test, "features/viewers/correlation-plot/correlation-plot-edge-cases.feature", import.meta.url);
@@ -56,20 +56,18 @@ test.describe("Correlation plot edge cases", () => {
     await session.step(32, "And correlation plot viewer should report no error", () => reportsNoError(page, el("correlation plot viewer")));
     await session.step(33, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A column removed from narrowed axes leaves only that column", {tag: ["@viewers", "@realizes:viewers.correlation-plot", "@edge-cases", "@known-failure:42", "@realizes:core#1172"]}, async ({browser}) => {
+  test("A column removed from narrowed axes leaves only that column", {tag: ["@viewers", "@realizes:viewers.correlation-plot", "@edge-cases", "@realizes:core#1172"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(11, "Given user is logged in", () => loggedIn(page));
     await session.step(12, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(13, "And user adds a correlation plot viewer", () => addViewer(page, "correlation plot"));
     await session.step(14, "Then the \"x columns\" reading of correlation plot viewer should be \"AGE, HEIGHT, WEIGHT, STARTED\"", () => readingReads(page, "x columns", el("correlation plot viewer"), "AGE, HEIGHT, WEIGHT, STARTED"));
     await session.step(15, "And the \"text of cell HEIGHT x AGE\" reading of correlation plot viewer should be \"-0.23\"", () => readingReads(page, "text of cell HEIGHT x AGE", el("correlation plot viewer"), "-0.23"));
-    await knownFailure(async () => {
-      await session.step(37, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT, WEIGHT"]]), [["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT, WEIGHT"]]);
-      await session.step(40, "Then the \"x columns\" reading of correlation plot viewer should be \"AGE, HEIGHT, WEIGHT\"", () => readingReads(page, "x columns", el("correlation plot viewer"), "AGE, HEIGHT, WEIGHT"));
-      await session.step(41, "When user removes \"WEIGHT\" column", () => removeColumn(page, "WEIGHT"));
-      await session.step(42, "Then the \"x columns\" reading of correlation plot viewer should be \"AGE, HEIGHT\"", () => readingReads(page, "x columns", el("correlation plot viewer"), "AGE, HEIGHT"));
-      await session.step(43, "And the \"y columns\" reading of correlation plot viewer should be \"AGE, HEIGHT\"", () => readingReads(page, "y columns", el("correlation plot viewer"), "AGE, HEIGHT"));
-      await session.step(44, "And no errors should have been logged", () => noErrors(page));
-    }, 42);
+    await session.step(37, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT, WEIGHT"]]), [["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT, WEIGHT"]]);
+    await session.step(40, "Then the \"x columns\" reading of correlation plot viewer should be \"AGE, HEIGHT, WEIGHT\"", () => readingReads(page, "x columns", el("correlation plot viewer"), "AGE, HEIGHT, WEIGHT"));
+    await session.step(41, "When user removes \"WEIGHT\" column", () => removeColumn(page, "WEIGHT"));
+    await session.step(42, "Then the \"x columns\" reading of correlation plot viewer should be \"AGE, HEIGHT\"", () => readingReads(page, "x columns", el("correlation plot viewer"), "AGE, HEIGHT"));
+    await session.step(43, "And the \"y columns\" reading of correlation plot viewer should be \"AGE, HEIGHT\"", () => readingReads(page, "y columns", el("correlation plot viewer"), "AGE, HEIGHT"));
+    await session.step(44, "And no errors should have been logged", () => noErrors(page));
   });
 });

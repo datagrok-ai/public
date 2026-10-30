@@ -52,11 +52,11 @@ Feature: Line chart edge cases — a log Y axis below zero, an empty row set, a 
     And user moves the pointer away from line chart viewer
     Then no errors should have been logged
 
-  @known-failure:64 @realizes:core#1100
+  @realizes:core#1100
   Scenario: SPC computes its process average over the rows that pass the filter (core#1100)
-    The average stays at the all-rows value (3.48) while the filter keeps 50 rows that average 2.50:
-    SPC samples every row (core#1100, wrong behaviour 5). Remove the tag once the average follows
-    the filter.
+    Guards core#1100 (wrong behaviour 5, fixed): SPC sampled every row, so the average stayed at the
+    all-rows value (3.48) while the filter kept 50 rows that average 2.50.
+
     When user sets "showStatisticalProcessControl" property of line chart viewer to "true"
     Then the "spc average" reading of line chart viewer should be between 3.4 and 3.6
     When user filters rows where "CAST Idea ID" is between 634783 and 634834

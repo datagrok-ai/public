@@ -20,8 +20,8 @@ Added with `form-edge-cases.feature` (edge-case round of 2026-10-26, localhost).
 1. **Decided and claimed in `form-edge-cases`**:
    - A file that is not a form (a CSV file, a saved table layout) is refused with the error balloon
      "<file> is not a valid form file" and the form keeps its fields (core#1138, fixed).
-   - Text typed into a numeric field of an editable form leaves the cell as it was: core#1192, a
-     known failure (today the cell is emptied on the first keystroke).
+   - Text typed into a numeric field of an editable form leaves the cell as it was: core#1192,
+     fixed (the cell was emptied on the first keystroke).
    - A column removed from the table takes its field off the form. A default form does; a form built
      from chosen columns (`columnNames`) keeps an empty field: a known failure with no ticket yet.
      The scenario that claimed the empty field is gone from `form.feature`.

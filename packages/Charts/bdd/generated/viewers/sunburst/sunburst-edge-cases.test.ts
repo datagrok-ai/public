@@ -16,7 +16,7 @@ import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterPasses, filterPassesAll, removeColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, clickArea, noErrors, readingIs, readingReads, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Sunburst edge cases: an empty hierarchy, a hierarchy column removed, On Click switched from Filter to Select", () => {
   const session = feature(test, "features/viewers/sunburst/sunburst-edge-cases.feature", import.meta.url);
@@ -49,7 +49,7 @@ test.describe("Sunburst edge cases: an empty hierarchy, a hierarchy column remov
     await session.step(34, "And the \"rows of segment Caucasian\" reading of sunburst viewer should be 896", () => readingIs(page, "rows of segment Caucasian", el("sunburst viewer"), 896));
     await session.step(35, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Switching On Click from Filter to Select gives back the rows its clicked segment filtered out", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sunburst", "@known-failure:43", "@realizes:public#4425"]}, async ({browser}) => {
+  test("Switching On Click from Filter to Select gives back the rows its clicked segment filtered out", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sunburst", "@realizes:public#4425"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -57,13 +57,11 @@ test.describe("Sunburst edge cases: an empty hierarchy, a hierarchy column remov
     await session.step(17, "And user adds a sunburst viewer with:", () => addViewerWith(page, "sunburst", [["hierarchyColumnNames","SEX, RACE"]]), [["hierarchyColumnNames","SEX, RACE"]]);
     await session.step(19, "Then the \"hierarchy columns\" reading of sunburst viewer should be \"SEX, RACE\"", () => readingReads(page, "hierarchy columns", el("sunburst viewer"), "SEX, RACE"));
     await session.step(20, "And the \"segments\" reading of sunburst viewer should be 10", () => readingIs(page, "segments", el("sunburst viewer"), 10));
-    await knownFailure(async () => {
-      await session.step(39, "When user sets \"onClick\" property of sunburst viewer to \"Filter\"", () => setProperty(page, "onClick", el("sunburst viewer"), "Filter"));
-      await session.step(40, "And user clicks on the \"segment F\" area of sunburst viewer", () => clickArea(page, "segment F", el("sunburst viewer")));
-      await session.step(41, "Then 553 rows should pass the filter", () => filterPasses(page, 553));
-      await session.step(42, "When user sets \"onClick\" property of sunburst viewer to \"Select\"", () => setProperty(page, "onClick", el("sunburst viewer"), "Select"));
-      await session.step(43, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(44, "And no errors should have been logged", () => noErrors(page));
-    }, 43);
+    await session.step(39, "When user sets \"onClick\" property of sunburst viewer to \"Filter\"", () => setProperty(page, "onClick", el("sunburst viewer"), "Filter"));
+    await session.step(40, "And user clicks on the \"segment F\" area of sunburst viewer", () => clickArea(page, "segment F", el("sunburst viewer")));
+    await session.step(41, "Then 553 rows should pass the filter", () => filterPasses(page, 553));
+    await session.step(42, "When user sets \"onClick\" property of sunburst viewer to \"Select\"", () => setProperty(page, "onClick", el("sunburst viewer"), "Select"));
+    await session.step(43, "Then all rows should pass the filter", () => filterPassesAll(page));
+    await session.step(44, "And no errors should have been logged", () => noErrors(page));
   });
 });

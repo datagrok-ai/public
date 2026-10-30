@@ -48,9 +48,7 @@ Written for `pc-plot-edge-cases.feature`: the edge cases of this viewer that the
 
 ### Still open
 
-**Questions for owners**
-
-1. A Log Columns axis over a column holding zero or negative values is drawn linear without a word (`pc_plot_core.dart`, `col.min > 0`). Silent fallback, or a warning?
+**Decided**: a Log Columns axis over a column holding zero or negative values says it cannot be logarithmic (core#1203, a defect): written in `pc-plot-edge-cases.feature` as a known failure on a non-empty `error` reading (today the axis is drawn linear without a message, `pc_plot_core.dart`, `col.min > 0`; the wording of the message is not set).
 
 **Decided**: a transformation turned on releases the filter of the axis sliders it replaces (core#967, behaviour): claimed in `pc-plot-edge-cases.feature`, green on localhost (core#967 is closed).
 

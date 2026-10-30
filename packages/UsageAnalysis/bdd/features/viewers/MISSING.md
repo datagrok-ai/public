@@ -75,12 +75,12 @@ tests, the known failures failing at their pinned steps.
 
 ### Found on the run, no ticket yet
 
-- **A setting keeps the name of a column the table lacks.** A layout naming a removed column puts
-  that name back into the viewer's setting (scatter plot Color, PC plot columns, tree map split,
-  sunburst and tree hierarchies), and the bar chart's Stack keeps the name of a removed column. The
-  viewers draw without the column and report no error; the context panel shows the missing name.
-  Pinned as one `@ticket-pending` block in the layout outline and a row of the removal outline. The
-  forms viewer also throws a TypeError on every render: public#4452, its own block.
+- **The bar chart's Stack keeps the name of a removed column.** Stacking is dropped and nothing is
+  logged; the context panel shows the missing name. A row of the removal outline, `@ticket-pending`.
+- A layout naming a removed column puts that name back into the viewer's setting (scatter plot
+  Color, PC plot columns, tree map split, sunburst and tree hierarchies); the viewers draw without
+  the column and report no error. Not a defect (2026-10-30): the layout outline claims the name is
+  kept. The forms viewer throws a TypeError on every render instead: public#4452, its own block.
 - A viewer that picks another column after its column is removed (the box plot's category) is
   correct: the removal outline claims only that the removed column leaves the setting.
 - **The tile viewer shows an empty value as a lane with no name** (lane names "x, y, "), not

@@ -26,7 +26,7 @@ import {everyValueContains} from '@datagrok-libraries/bdd/bindings/platform/colu
 import {addCalculated, deleteSelected, filterTo, rowCount, selectAllRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, addViewerWith, noErrors, readingIs, readingReads, reportsNoError, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Network diagram edge cases — every row deleted, one column for both nodes", () => {
   const session = feature(test, "features/viewers/network-diagram/network-diagram-edge-cases.feature", import.meta.url);
@@ -44,19 +44,17 @@ test.describe("Network diagram edge cases — every row deleted, one column for 
     await session.step(22, "And network diagram viewer should report no error", () => reportsNoError(page, el("network diagram viewer")));
     await session.step(23, "And no errors should have been logged", () => noErrors(page));
   });
-  test("With the same column as Node 1 and Node 2 a filter change raises no error (core#1041)", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.network-diagram", "@known-failure:32", "@realizes:core#1041"]}, async ({browser}) => {
+  test("With the same column as Node 1 and Node 2 a filter change raises no error (core#1041)", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.network-diagram", "@realizes:core#1041"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(11, "Given user is logged in", () => loggedIn(page));
     await session.step(12, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(13, "And user adds a network diagram viewer", () => addViewer(page, "network diagram"));
     await session.step(14, "Then the \"nodes\" reading of network diagram viewer should be 4", () => readingIs(page, "nodes", el("network diagram viewer"), 4));
     await session.step(15, "And the \"edges\" reading of network diagram viewer should be 4", () => readingIs(page, "edges", el("network diagram viewer"), 4));
-    await knownFailure(async () => {
-      await session.step(29, "When user sets \"node2ColumnName\" property of network diagram viewer to \"SEX\"", () => setProperty(page, "node2ColumnName", el("network diagram viewer"), "SEX"));
-      await session.step(30, "Then the \"node 2 column\" reading of network diagram viewer should be \"SEX\"", () => readingReads(page, "node 2 column", el("network diagram viewer"), "SEX"));
-      await session.step(31, "When user filters rows where \"SEX\" is \"F\"", () => filterTo(page, "SEX", "F"));
-      await session.step(32, "Then no errors should have been logged", () => noErrors(page));
-    }, 32);
+    await session.step(29, "When user sets \"node2ColumnName\" property of network diagram viewer to \"SEX\"", () => setProperty(page, "node2ColumnName", el("network diagram viewer"), "SEX"));
+    await session.step(30, "Then the \"node 2 column\" reading of network diagram viewer should be \"SEX\"", () => readingReads(page, "node 2 column", el("network diagram viewer"), "SEX"));
+    await session.step(31, "When user filters rows where \"SEX\" is \"F\"", () => filterTo(page, "SEX", "F"));
+    await session.step(32, "Then no errors should have been logged", () => noErrors(page));
   });
   test("More than 10000 nodes are not drawn and the diagram says so", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.network-diagram"]}, async ({browser}) => {
     const page = await session.page(browser);

@@ -43,3 +43,20 @@ Feature: Heat map edge cases — every row deleted, a column removed
     Then the "y scroll span" reading of heat map viewer should be between 0.1 and 0.99
     And no rows should be selected
     And no errors should have been logged
+
+  @known-failure:61 @realizes:core#1202
+  Scenario: A column hidden under Max Heatmap Columns stays hidden when the limit is raised (core#1202)
+    When user sets "maxHeatmapColumns" property of heat map viewer to "5"
+    Then the "columns shown" reading of heat map viewer should be 5
+    And heat map viewer should have a "column AGE" area
+    When user clicks on settings icon of heat map viewer
+    And user expands "Columns" category in context panel
+    And user clicks on first button in "Columns" property in context panel
+    Then Order or Hide Columns dialog should be visible
+    When user toggles the "AGE" column in the column list of Order or Hide Columns dialog
+    And user clicks on CLOSE button in Order or Hide Columns dialog
+    Then the "columns shown" reading of heat map viewer should be 4
+    And heat map viewer should not have a "column AGE" area
+    When user sets "maxHeatmapColumns" property of heat map viewer to "6"
+    Then heat map viewer should not have a "column AGE" area
+    And no errors should have been logged

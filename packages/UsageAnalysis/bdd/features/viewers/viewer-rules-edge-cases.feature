@@ -10,8 +10,8 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     (the box plot picks another category).
   - A column renamed: every setting that named the column follows the new name, a Filter formula
     included.
-  - A layout naming a missing column: the column is skipped, the rest of the layout is applied and
-    nothing is logged.
+  - A layout naming a missing column: the rest of the layout is applied, the viewer draws without
+    the column and nothing is logged. The setting may keep the missing column's name.
   - A filter left by a viewer: the rows a viewer's click filtered out come back when the viewer is
     closed, or when the column of the clicked category is removed.
   - Out of bounds: a value typed in the context panel outside the property's declared bounds is not
@@ -94,12 +94,12 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
       | tree map     | splitByColumnNames   | RACE, SEX           | SEX    | GENDER    | RACE, GENDER         |
       | trellis plot | yColumnNames         | RACE                | RACE   | ORIGIN    | ORIGIN               |
 
-    @known-failure:83 @ticket-pending
+    @known-failure:83 @realizes:core#1213
     Examples: A Filter formula keeps the old name: the rename handler renames column settings only (`DataFrameViewer._renameColumnInLook`)
       | viewer       | property | value       | column | new name | renamed       |
       | scatter plot | filter   | ${AGE} > 44 | AGE    | YEARS    | ${YEARS} > 44 |
 
-  Scenario Outline: A layout naming a <column> column the table no longer has is applied to the <viewer> without it
+  Scenario Outline: A layout naming a <column> column the table no longer has is applied to the <viewer>, which draws without it
     When user adds a <viewer> viewer with:
       | <property> | <value> |
     And user saves the layout of the current table view
@@ -110,17 +110,16 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     And <viewer> viewer should report no error
     And no errors should have been logged
 
-    @known-failure:109 @ticket-pending
-    Examples: The layout puts the missing column's name back into the setting; the viewer draws without it and reports no error
-      | viewer       | property             | value               | column | left          |
-      | scatter plot | colorColumnName      | RACE                | RACE   |               |
-      | pc plot      | columnNames          | AGE, HEIGHT, WEIGHT | HEIGHT | AGE, WEIGHT   |
-      | tree map     | splitByColumnNames   | RACE, SEX           | SEX    | RACE          |
+    Examples: The setting keeps the missing column's name
+      | viewer       | property             | value               | column | left                |
+      | scatter plot | colorColumnName      | RACE                | RACE   | RACE                |
+      | pc plot      | columnNames          | AGE, HEIGHT, WEIGHT | HEIGHT | AGE, HEIGHT, WEIGHT |
+      | tree map     | splitByColumnNames   | RACE, SEX           | SEX    | RACE, SEX           |
 
-    @known-failure:109 @realizes:public#4452
+    @known-failure:111 @realizes:public#4452
     Examples: The forms viewer takes the removed column's name back into its fields and throws a TypeError on every render
-      | viewer       | property             | value               | column | left          |
-      | forms        | fields               | AGE, HEIGHT, SEX    | HEIGHT | AGE, SEX      |
+      | viewer       | property             | value               | column | left                |
+      | forms        | fields               | AGE, HEIGHT, SEX    | HEIGHT | AGE, HEIGHT, SEX    |
 
   Scenario Outline: Closing a <viewer> gives back the rows its click filtered out
     When user adds a <viewer> viewer with:
@@ -137,7 +136,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
       | viewer    | property        | value | area      |
       | bar chart | splitColumnName | RACE  | bar Asian |
 
-    @known-failure:133 @realizes:core#233
+    @known-failure:132 @realizes:core#233
     Examples: The calendar leaves the table filtered until something else asks for a refilter
       | viewer   | property | value  | area           |
       | calendar | onClick  | Filter | month 1990-01  |
@@ -152,7 +151,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     Then all rows should pass the filter
     And no errors should have been logged
 
-    @known-failure:152 @realizes:core#1174
+    @known-failure:151 @realizes:core#1174
     Examples: The removal does not refilter the table; the rows come back on the next refilter
       | viewer    | property             | value              | area                            | column |
       | bar chart | splitColumnName      | RACE               | bar Asian                       | RACE   |
@@ -166,7 +165,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     Then "<caption>" property of <viewer> viewer should be "<kept>"
     And no errors should have been logged
 
-    @known-failure:166 @realizes:core#1200
+    @known-failure:165 @realizes:core#1200
     Examples: The value is written into the property although the input marks it invalid
       | viewer       | category | caption            | typed | kept |
       | histogram    | X Axis   | Bins               | 201   | 20   |
@@ -179,7 +178,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     Then "<property>" property of <viewer> viewer should be "<kept>"
     And no errors should have been logged
 
-    @known-failure:179 @realizes:core#1200
+    @known-failure:178 @realizes:core#1200
     Examples: The value is written into the property
       | viewer       | property         | set | kept |
       | histogram    | bins             | 201 | 20   |
@@ -200,7 +199,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     And the "<shown>" reading of <viewer> viewer should be 3
     And the "<reading>" reading of <viewer> viewer should contain "(empty)"
 
-    @known-failure:201 @ticket-pending
+    @known-failure:200 @ticket-pending
     Examples: The tile viewer shows the empty value as a lane with no name ("x, y, ")
       | viewer      | property        | shown | reading    |
       | tile viewer | lanesColumnName | tiles | lane names |

@@ -92,12 +92,9 @@ Written for `heat-map-edge-cases.feature`: the edge cases of this viewer that th
 
 3. Max Heatmap Columns −1 typed in the context panel is not taken (the out-of-bounds rule of `viewer-rules-edge-cases.feature`). The heat map is a grid: its row in that outline needs the grid's settings opened (`user clicks on settings icon of heat map viewer` is to be checked) and the property's declared minimum confirmed.
 
-**Questions for owners**
-
-1. A column hidden in the Columns dialog, then Max Heatmap Columns 3: the cap shows the first three numerical columns again, the hidden one included. Should the cap count visible columns only?
-
 **Decided**
 
 1. An Alt-click without moving zooms the map to one row and an Alt-drag to the rows it spans (no row is selected): claimed green in `heat-map-edge-cases.feature` on `y scroll span`.
+2. Max Heatmap Columns counts only the visible columns, so a column hidden in the Columns dialog stays hidden when the cap is raised (core#1202, a defect): written in `heat-map-edge-cases.feature` as a known failure (today raising the cap from 5 to 6 shows the hidden AGE again).
 
 ### Won't do

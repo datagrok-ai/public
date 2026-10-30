@@ -22,10 +22,10 @@ Feature: Network diagram edge cases — every row deleted, one column for both n
     And network diagram viewer should report no error
     And no errors should have been logged
 
-  @known-failure:32 @realizes:core#1041
+  @realizes:core#1041
   Scenario: With the same column as Node 1 and Node 2 a filter change raises no error (core#1041)
-    A filter change logs "Column named 'SEX' already exists" and the graph stops following the
-    filter (core#1041, crash 1). Remove the tag once the diagram follows the filter.
+    Guards core#1041 (crash 1, fixed): a filter change logged "Column named 'SEX' already exists"
+    and the graph stopped following the filter.
     When user sets "node2ColumnName" property of network diagram viewer to "SEX"
     Then the "node 2 column" reading of network diagram viewer should be "SEX"
     When user filters rows where "SEX" is "F"

@@ -37,10 +37,10 @@ Feature: Sankey and Chord edge cases — Source equal to Target, too many catego
     And "Too many categories to render." text in chord viewer should be absent
     And no errors should have been logged
 
-  @known-failure:50 @realizes:public#4420
+  @realizes:public#4420
   Scenario: The Sankey's Source column removed from the table raises no error
-    The Sankey keeps reading the removed column and logs "No such column: SEX" (`sankey.ts`,
-    `getCol` in `prepareData`); public#4420. Remove the tag once the removal is handled.
+    Guards public#4420 (fixed): the Sankey kept reading the removed column and logged "No such
+    column: SEX" (`sankey.ts`, `getCol` in `prepareData`).
     When user adds a sankey viewer
     Then "Source" property of sankey viewer should be "SEX"
     When user removes "SEX" column
@@ -49,10 +49,10 @@ Feature: Sankey and Chord edge cases — Source equal to Target, too many catego
     Then 494 rows should pass the filter
     And no errors should have been logged
 
-  @known-failure:62 @realizes:public#4421
+  @realizes:public#4421
   Scenario: The Chord's From column removed from the table raises no error
-    The Chord keeps reading the removed column and logs "No such column: SEX" (`chord-viewer.ts`,
-    `getCol` in `draw`); public#4421. Remove the tag once the removal is handled.
+    Guards public#4421 (fixed): the Chord kept reading the removed column and logged "No such
+    column: SEX" (`chord-viewer.ts`, `getCol` in `draw`).
     When user adds a chord viewer
     Then "From" property of chord viewer should be "SEX"
     When user removes "SEX" column

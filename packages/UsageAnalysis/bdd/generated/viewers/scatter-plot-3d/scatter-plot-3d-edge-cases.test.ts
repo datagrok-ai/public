@@ -25,7 +25,7 @@ import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterBetween, filterPasses, removeColumn, renameColumn, resetFilter} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, boundTable, noBalloons, noErrors, propertyShouldBe, readingAsRemembered, readingIs, readingNotAsRemembered, rememberReading, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("3D scatter plot edge cases: no rows, columns removed or renamed, a table swap", () => {
   const session = feature(test, "features/viewers/scatter-plot-3d/scatter-plot-3d-edge-cases.feature", import.meta.url);
@@ -59,53 +59,47 @@ test.describe("3D scatter plot edge cases: no rows, columns removed or renamed, 
     await session.step(39, "And the \"rows shown\" reading of 3d scatter plot viewer should be 872", () => readingIs(page, "rows shown", el("3d scatter plot viewer"), 872));
     await session.step(40, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Removing the Size column keeps the plot working without an error", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.scatter-plot3d", "@known-failure:48", "@realizes:core#1027"]}, async ({browser}) => {
+  test("Removing the Size column keeps the plot working without an error", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.scatter-plot3d", "@realizes:core#1027"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(16, "And user adds a 3d scatter plot viewer with:", () => addViewerWith(page, "3d scatter plot", [["xColumnName","AGE"],["yColumnName","WEIGHT"],["zColumnName","HEIGHT"]]), [["xColumnName","AGE"],["yColumnName","WEIGHT"],["zColumnName","HEIGHT"]]);
     await session.step(20, "Then the \"rows shown\" reading of 3d scatter plot viewer should be 872", () => readingIs(page, "rows shown", el("3d scatter plot viewer"), 872));
-    await knownFailure(async () => {
-      await session.step(46, "When user sets \"Size\" property of 3d scatter plot viewer to \"WEIGHT\"", () => setProperty(page, "Size", el("3d scatter plot viewer"), "WEIGHT"));
-      await session.step(47, "And user removes \"WEIGHT\" column", () => removeColumn(page, "WEIGHT"));
-      await session.step(48, "Then no errors should have been logged", () => noErrors(page));
-      await session.step(49, "When user remembers the \"scene signature\" reading of 3d scatter plot viewer", () => rememberReading(page, "scene signature", el("3d scatter plot viewer")));
-      await session.step(50, "And user sets \"Marker Type\" property of 3d scatter plot viewer to \"box\"", () => setProperty(page, "Marker Type", el("3d scatter plot viewer"), "box"));
-      await session.step(51, "Then the \"scene signature\" reading of 3d scatter plot viewer should not be as remembered", () => readingNotAsRemembered(page, "scene signature", el("3d scatter plot viewer")));
-    }, 48);
+    await session.step(46, "When user sets \"Size\" property of 3d scatter plot viewer to \"WEIGHT\"", () => setProperty(page, "Size", el("3d scatter plot viewer"), "WEIGHT"));
+    await session.step(47, "And user removes \"WEIGHT\" column", () => removeColumn(page, "WEIGHT"));
+    await session.step(48, "Then no errors should have been logged", () => noErrors(page));
+    await session.step(49, "When user remembers the \"scene signature\" reading of 3d scatter plot viewer", () => rememberReading(page, "scene signature", el("3d scatter plot viewer")));
+    await session.step(50, "And user sets \"Marker Type\" property of 3d scatter plot viewer to \"box\"", () => setProperty(page, "Marker Type", el("3d scatter plot viewer"), "box"));
+    await session.step(51, "Then the \"scene signature\" reading of 3d scatter plot viewer should not be as remembered", () => readingNotAsRemembered(page, "scene signature", el("3d scatter plot viewer")));
   });
-  test("Removing the Color column keeps the chosen X, Y and Z", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.scatter-plot3d", "@known-failure:60", "@realizes:core#1027"]}, async ({browser}) => {
+  test("Removing the Color column keeps the chosen X, Y and Z", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.scatter-plot3d", "@realizes:core#1027"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(16, "And user adds a 3d scatter plot viewer with:", () => addViewerWith(page, "3d scatter plot", [["xColumnName","AGE"],["yColumnName","WEIGHT"],["zColumnName","HEIGHT"]]), [["xColumnName","AGE"],["yColumnName","WEIGHT"],["zColumnName","HEIGHT"]]);
     await session.step(20, "Then the \"rows shown\" reading of 3d scatter plot viewer should be 872", () => readingIs(page, "rows shown", el("3d scatter plot viewer"), 872));
-    await knownFailure(async () => {
-      await session.step(57, "When user sets \"Color\" property of 3d scatter plot viewer to \"RACE\"", () => setProperty(page, "Color", el("3d scatter plot viewer"), "RACE"));
-      await session.step(58, "And user removes \"RACE\" column", () => removeColumn(page, "RACE"));
-      await session.step(59, "Then \"xColumnName\" property of 3d scatter plot viewer should be \"AGE\"", () => propertyShouldBe(page, "xColumnName", el("3d scatter plot viewer"), "AGE"));
-      await session.step(60, "And \"yColumnName\" property of 3d scatter plot viewer should be \"WEIGHT\"", () => propertyShouldBe(page, "yColumnName", el("3d scatter plot viewer"), "WEIGHT"));
-      await session.step(61, "And \"zColumnName\" property of 3d scatter plot viewer should be \"HEIGHT\"", () => propertyShouldBe(page, "zColumnName", el("3d scatter plot viewer"), "HEIGHT"));
-      await session.step(62, "And no errors should have been logged", () => noErrors(page));
-    }, 60);
+    await session.step(57, "When user sets \"Color\" property of 3d scatter plot viewer to \"RACE\"", () => setProperty(page, "Color", el("3d scatter plot viewer"), "RACE"));
+    await session.step(58, "And user removes \"RACE\" column", () => removeColumn(page, "RACE"));
+    await session.step(59, "Then \"xColumnName\" property of 3d scatter plot viewer should be \"AGE\"", () => propertyShouldBe(page, "xColumnName", el("3d scatter plot viewer"), "AGE"));
+    await session.step(60, "And \"yColumnName\" property of 3d scatter plot viewer should be \"WEIGHT\"", () => propertyShouldBe(page, "yColumnName", el("3d scatter plot viewer"), "WEIGHT"));
+    await session.step(61, "And \"zColumnName\" property of 3d scatter plot viewer should be \"HEIGHT\"", () => propertyShouldBe(page, "zColumnName", el("3d scatter plot viewer"), "HEIGHT"));
+    await session.step(62, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A table swap and back keeps the on-viewer column selectors", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.scatter-plot3d", "@known-failure:74", "@realizes:core#1027"]}, async ({browser}) => {
+  test("A table swap and back keeps the on-viewer column selectors", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.scatter-plot3d", "@realizes:core#1027"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(16, "And user adds a 3d scatter plot viewer with:", () => addViewerWith(page, "3d scatter plot", [["xColumnName","AGE"],["yColumnName","WEIGHT"],["zColumnName","HEIGHT"]]), [["xColumnName","AGE"],["yColumnName","WEIGHT"],["zColumnName","HEIGHT"]]);
     await session.step(20, "Then the \"rows shown\" reading of 3d scatter plot viewer should be 872", () => readingIs(page, "rows shown", el("3d scatter plot viewer"), 872));
-    await knownFailure(async () => {
-      await session.step(68, "Given user opens cars dataset", () => openDataset(page, ds("cars")));
-      await session.step(69, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
-      await session.step(70, "When user sets \"table\" property of 3d scatter plot viewer to \"cars\"", () => setProperty(page, "table", el("3d scatter plot viewer"), "cars"));
-      await session.step(71, "Then 3d scatter plot viewer should be bound to table \"cars\"", () => boundTable(page, el("3d scatter plot viewer"), "cars"));
-      await session.step(72, "When user sets \"table\" property of 3d scatter plot viewer to \"demog-1000\"", () => setProperty(page, "table", el("3d scatter plot viewer"), "demog-1000"));
-      await session.step(73, "Then 3d scatter plot viewer should be bound to table \"demog-1000\"", () => boundTable(page, el("3d scatter plot viewer"), "demog-1000"));
-      await session.step(74, "And X column input in 3d scatter plot viewer should be visible", () => shouldBe(page, el("X column input in 3d scatter plot viewer"), "visible"));
-      await session.step(75, "And Y column input in 3d scatter plot viewer should be visible", () => shouldBe(page, el("Y column input in 3d scatter plot viewer"), "visible"));
-      await session.step(76, "And Z column input in 3d scatter plot viewer should be visible", () => shouldBe(page, el("Z column input in 3d scatter plot viewer"), "visible"));
-      await session.step(77, "And Color column input in 3d scatter plot viewer should be visible", () => shouldBe(page, el("Color column input in 3d scatter plot viewer"), "visible"));
-    }, 74);
+    await session.step(68, "Given user opens cars dataset", () => openDataset(page, ds("cars")));
+    await session.step(69, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
+    await session.step(70, "When user sets \"table\" property of 3d scatter plot viewer to \"cars\"", () => setProperty(page, "table", el("3d scatter plot viewer"), "cars"));
+    await session.step(71, "Then 3d scatter plot viewer should be bound to table \"cars\"", () => boundTable(page, el("3d scatter plot viewer"), "cars"));
+    await session.step(72, "When user sets \"table\" property of 3d scatter plot viewer to \"demog-1000\"", () => setProperty(page, "table", el("3d scatter plot viewer"), "demog-1000"));
+    await session.step(73, "Then 3d scatter plot viewer should be bound to table \"demog-1000\"", () => boundTable(page, el("3d scatter plot viewer"), "demog-1000"));
+    await session.step(74, "And X column input in 3d scatter plot viewer should be visible", () => shouldBe(page, el("X column input in 3d scatter plot viewer"), "visible"));
+    await session.step(75, "And Y column input in 3d scatter plot viewer should be visible", () => shouldBe(page, el("Y column input in 3d scatter plot viewer"), "visible"));
+    await session.step(76, "And Z column input in 3d scatter plot viewer should be visible", () => shouldBe(page, el("Z column input in 3d scatter plot viewer"), "visible"));
+    await session.step(77, "And Color column input in 3d scatter plot viewer should be visible", () => shouldBe(page, el("Color column input in 3d scatter plot viewer"), "visible"));
   });
 });

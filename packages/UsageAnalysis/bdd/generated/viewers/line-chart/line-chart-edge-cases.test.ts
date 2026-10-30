@@ -25,7 +25,7 @@ import {hasNoColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {deleteSelected, filterBetween, filterPasses, noneSelected, removeColumn, rowCount, selectAllRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, dragSelectionOverArea, hoverArea, noErrors, painted, pointerAway, propertyShouldBe, readingBetween, readingIs, reportsNoError, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Line chart edge cases — a log Y axis below zero, an empty row set, a removed column, SPC under a filter", () => {
   const session = feature(test, "features/viewers/line-chart/line-chart-edge-cases.feature", import.meta.url);
@@ -89,7 +89,7 @@ test.describe("Line chart edge cases — a log Y axis below zero, an empty row s
     await session.step(52, "And user moves the pointer away from line chart viewer", () => pointerAway(page, el("line chart viewer")));
     await session.step(53, "Then no errors should have been logged", () => noErrors(page));
   });
-  test("SPC computes its process average over the rows that pass the filter (core#1100)", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.line-chart", "@known-failure:64", "@realizes:core#1100"]}, async ({browser}) => {
+  test("SPC computes its process average over the rows that pass the filter (core#1100)", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.line-chart", "@realizes:core#1100"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
@@ -97,13 +97,11 @@ test.describe("Line chart edge cases — a log Y axis below zero, an empty row s
     await session.step(19, "Then 100 rows should pass the filter", () => filterPasses(page, 100));
     await session.step(20, "And the \"markers drawn\" reading of line chart viewer should be 100", () => readingIs(page, "markers drawn", el("line chart viewer"), 100));
     await session.step(21, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
-    await knownFailure(async () => {
-      await session.step(60, "When user sets \"showStatisticalProcessControl\" property of line chart viewer to \"true\"", () => setProperty(page, "showStatisticalProcessControl", el("line chart viewer"), "true"));
-      await session.step(61, "Then the \"spc average\" reading of line chart viewer should be between 3.4 and 3.6", () => readingBetween(page, "spc average", el("line chart viewer"), 3.4, 3.6));
-      await session.step(62, "When user filters rows where \"CAST Idea ID\" is between 634783 and 634834", () => filterBetween(page, "CAST Idea ID", 634783, 634834));
-      await session.step(63, "Then 50 rows should pass the filter", () => filterPasses(page, 50));
-      await session.step(64, "And the \"spc average\" reading of line chart viewer should be between 2.4 and 2.6", () => readingBetween(page, "spc average", el("line chart viewer"), 2.4, 2.6));
-    }, 64);
+    await session.step(60, "When user sets \"showStatisticalProcessControl\" property of line chart viewer to \"true\"", () => setProperty(page, "showStatisticalProcessControl", el("line chart viewer"), "true"));
+    await session.step(61, "Then the \"spc average\" reading of line chart viewer should be between 3.4 and 3.6", () => readingBetween(page, "spc average", el("line chart viewer"), 3.4, 3.6));
+    await session.step(62, "When user filters rows where \"CAST Idea ID\" is between 634783 and 634834", () => filterBetween(page, "CAST Idea ID", 634783, 634834));
+    await session.step(63, "Then 50 rows should pass the filter", () => filterPasses(page, 50));
+    await session.step(64, "And the \"spc average\" reading of line chart viewer should be between 2.4 and 2.6", () => readingBetween(page, "spc average", el("line chart viewer"), 2.4, 2.6));
   });
   test("X Min and X Max outside every X value are kept and the data stays in view", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.line-chart"]}, async ({browser}) => {
     const page = await session.page(browser);

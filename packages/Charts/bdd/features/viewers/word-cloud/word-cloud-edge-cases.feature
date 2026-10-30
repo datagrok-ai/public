@@ -16,10 +16,10 @@ Feature: Word cloud edge cases: the word column removed
     Then the "words" reading of word cloud viewer should be 4
     And the "rows shown" reading of word cloud viewer should be 1000
 
-  @known-failure:25 @realizes:core#1136
+  @realizes:core#1136
   Scenario: Removing the word column logs no error
-    core#1136: removing the word column throws "No such column" on the removal and on every later
-    filter change and resize. Remove the tag when core#1136 is fixed.
+    Guards core#1136 (fixed): removing the word column threw "No such column" on the removal and on
+    every later filter change and resize.
     When user removes "RACE" column
     Then the table should not have a column "RACE"
     And no errors should have been logged

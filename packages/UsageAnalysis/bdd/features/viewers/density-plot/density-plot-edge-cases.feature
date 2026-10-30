@@ -11,10 +11,10 @@ Feature: Density plot edge cases
   Background:
     Given user is logged in
 
-  @edge-cases @known-failure:28 @realizes:core#1048
+  @edge-cases @realizes:core#1048
   Scenario: A click on a rectangular bin selects exactly the rows counted in it
-    core#1048 ("Wrong 1"): with rectangular bins the click selects a different number of rows than the
-    bin holds. Remove the tag when core#1048 is fixed and this scenario passes.
+    Guards core#1048 ("Wrong 1", fixed): with rectangular bins the click selected a different number
+    of rows than the bin held.
     Given user opens demog-1000 dataset
     And user adds a density plot viewer with:
       | xColumnName | AGE       |
@@ -27,10 +27,10 @@ Feature: Density plot edge cases
     Then the "rows in densest bin" reading of density plot viewer should be at least 1
     And the "rows selected" and "rows in densest bin" readings of density plot viewer should be the same
 
-  @edge-cases @known-failure:43 @realizes:core#1048
+  @edge-cases @realizes:core#1048
   Scenario: Changing Bins after a zoom bins the same rows while Bin To Range is off
-    core#1048 ("Wrong 2"): with rectangular bins a change of Bins after a zoom drops rows from the plot.
-    Remove the tag when core#1048 is fixed and this scenario passes.
+    Guards core#1048 ("Wrong 2", fixed): with rectangular bins a change of Bins after a zoom dropped
+    rows from the plot.
     Given user opens demog-1000 dataset
     And user adds a density plot viewer with:
       | xColumnName | AGE       |
@@ -42,11 +42,11 @@ Feature: Density plot edge cases
     And user sets "bins" property of density plot viewer to "30"
     Then the "rows shown" reading of density plot viewer should be 1000
 
-  @edge-cases @known-failure:63 @realizes:core#1048
+  @edge-cases @realizes:core#1048
   Scenario: A logarithmic X axis bins only the positive values
-    core#1048 ("Wrong 5"): with hexagons the rows with zero or negative X are binned at the bottom of
-    the log axis instead of being left out. Remove the tag when core#1048 is fixed and this scenario
-    passes.
+    Guards core#1048 ("Wrong 5", fixed): with hexagons the rows with zero or negative X were binned at
+    the bottom of the log axis instead of being left out.
+
     Given user opens a table "log-x" with:
       | X   | Y |
       | -5  | 1 |
@@ -62,10 +62,10 @@ Feature: Density plot edge cases
     When user sets "xAxisType" property of density plot viewer to "logarithmic"
     Then the "rows shown" reading of density plot viewer should be 3
 
-  @edge-cases @known-failure:76 @realizes:core#1048
+  @edge-cases @realizes:core#1048
   Scenario: A column name with markup characters is shown in the bin tooltip as typed
-    core#1048 ("Other"): the tooltip caption is built as HTML from the raw column names, so "<b>X</b>"
-    shows as a bold X. Remove the tag when core#1048 is fixed and this scenario passes.
+    Guards core#1048 ("Other", fixed): the tooltip caption was built as HTML from the raw column
+    names, so "<b>X</b>" showed as a bold X.
     Given user opens demog-1000 dataset
     And user renames "AGE" column to "<b>X</b>"
     And user adds a density plot viewer with:

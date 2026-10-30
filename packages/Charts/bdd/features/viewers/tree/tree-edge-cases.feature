@@ -53,7 +53,7 @@ Feature: Tree edge cases: a column renamed under a filter, a hierarchy column re
     Then tree viewer should have a "branch All | A | (empty)" area
     And no errors should have been logged
 
-  @known-failure:62 @realizes:public#4425
+  @realizes:public#4425
   Scenario: Switching On Click from Filter to Select gives back the rows its clicked branch filtered out
     When user sets "onClick" property of tree viewer to "Filter"
     And user clicks on the "branch All | false | F | Asian" area of tree viewer

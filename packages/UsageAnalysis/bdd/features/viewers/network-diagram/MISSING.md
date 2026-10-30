@@ -53,7 +53,7 @@ Written for `network-diagram-edge-cases.feature`: the edge cases of this viewer 
 
 **Steps requested**
 
-1. core#1041 crash 2 (Merge Nodes off plus a categorical Node 1 Color column, then a hover on a node) did not reproduce through `user hovers over the "node \"F\"" area`: with Merge Nodes off the label F belongs to two nodes and the hover lands on the one that does not throw. Needs the second group's node by its id (`node "<id>"`, the area the status already names for a duplicate label) documented in `network_diagram/CLAUDE.md`, then a hover on it, tagged `@known-failure … @realizes:core#1041`.
+1. core#1041 crash 2 (Merge Nodes off plus a categorical Node 1 Color column, then a hover on a node) did not reproduce through `user hovers over the "node \"F\"" area`: with Merge Nodes off the label F belongs to two nodes and the hover lands on the one that does not throw. Needs the second group's node by its id (`node "<id>"`, the area the status already names for a duplicate label) documented in `network_diagram/CLAUDE.md`, then a hover on it, tagged `@realizes:core#1041` (closed).
 2. core#1041 crash 3 (node columns removed, then a hover on a node) did not reproduce with a hover on the `view` area: the removed columns take the node areas with them. Needs a hover at the place a node was (`user remembers the place of the "node \"F\"" area` before the removal, then a hover there).
 
 **Decided**

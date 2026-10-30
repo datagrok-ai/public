@@ -34,7 +34,7 @@ Feature: Sunburst edge cases: an empty hierarchy, a hierarchy column removed, On
     And the "rows of segment Caucasian" reading of sunburst viewer should be 896
     And no errors should have been logged
 
-  @known-failure:43 @realizes:public#4425
+  @realizes:public#4425
   Scenario: Switching On Click from Filter to Select gives back the rows its clicked segment filtered out
     When user sets "onClick" property of sunburst viewer to "Filter"
     And user clicks on the "segment F" area of sunburst viewer

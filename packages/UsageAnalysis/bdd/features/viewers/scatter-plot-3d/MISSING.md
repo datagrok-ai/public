@@ -95,7 +95,7 @@ feature; it lists what the feature could not claim and why.
    defects have no claim: a one-row table draws nothing (the marker scale `1/(10*ln 1)` is
    Infinity) and rows removed while the plot is open stay drawn (200 markers after 50 of 200 rows
    are removed). Needs a `markers drawn` reading from the instanced mesh (`JsScatterPlot3dCore`);
-   then a one-row table → 1, and remove 50 of 200 rows → 150, both `@known-failure` on core#1027.
+   then a one-row table → 1, and remove 50 of 200 rows → 150, both tagged `@realizes:core#1027` (closed).
 
 #### 2. Decided
 

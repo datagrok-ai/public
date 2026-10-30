@@ -32,7 +32,7 @@ Feature: Correlation plot edge cases
     And correlation plot viewer should report no error
     And no errors should have been logged
 
-  @edge-cases @known-failure:42 @realizes:core#1172
+  @edge-cases @realizes:core#1172
   Scenario: A column removed from narrowed axes leaves only that column
     When user sets properties of correlation plot viewer:
       | xColumnNames | AGE, HEIGHT, WEIGHT |

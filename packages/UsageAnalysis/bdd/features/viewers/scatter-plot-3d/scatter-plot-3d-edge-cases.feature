@@ -39,10 +39,10 @@ Feature: 3D scatter plot edge cases: no rows, columns removed or renamed, a tabl
     And the "rows shown" reading of 3d scatter plot viewer should be 872
     And no errors should have been logged
 
-  @known-failure:48 @realizes:core#1027
+  @realizes:core#1027
   Scenario: Removing the Size column keeps the plot working without an error
-    core#1027: removing the size column throws in updateAll, and the viewer then ignores every later
-    property change. Remove the tag when core#1027 is fixed.
+    Guards core#1027 (fixed): removing the size column threw in updateAll, and the viewer then
+    ignored every later property change.
     When user sets "Size" property of 3d scatter plot viewer to "WEIGHT"
     And user removes "WEIGHT" column
     Then no errors should have been logged
@@ -50,10 +50,10 @@ Feature: 3D scatter plot edge cases: no rows, columns removed or renamed, a tabl
     And user sets "Marker Type" property of 3d scatter plot viewer to "box"
     Then the "scene signature" reading of 3d scatter plot viewer should not be as remembered
 
-  @known-failure:60 @realizes:core#1027
+  @realizes:core#1027
   Scenario: Removing the Color column keeps the chosen X, Y and Z
-    core#1027: removing only the color column resets the X, Y and Z the user chose. Remove the tag
-    when core#1027 is fixed.
+    Guards core#1027 (fixed): removing only the color column reset the X, Y and Z the user chose.
+
     When user sets "Color" property of 3d scatter plot viewer to "RACE"
     And user removes "RACE" column
     Then "xColumnName" property of 3d scatter plot viewer should be "AGE"
@@ -61,10 +61,10 @@ Feature: 3D scatter plot edge cases: no rows, columns removed or renamed, a tabl
     And "zColumnName" property of 3d scatter plot viewer should be "HEIGHT"
     And no errors should have been logged
 
-  @known-failure:74 @realizes:core#1027
+  @realizes:core#1027
   Scenario: A table swap and back keeps the on-viewer column selectors
-    core#1027: a table swap removes the four column selectors from the plot. Remove the tag when
-    core#1027 is fixed.
+    Guards core#1027 (fixed): a table swap removed the four column selectors from the plot.
+
     Given user opens cars dataset
     And user switches to the "demog-1000" table view
     When user sets "table" property of 3d scatter plot viewer to "cars"

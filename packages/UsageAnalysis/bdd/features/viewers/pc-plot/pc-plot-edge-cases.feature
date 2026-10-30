@@ -67,3 +67,11 @@ Feature: PC plot edge cases — a layout with line width 0, an unparsable font, 
     Then the "transformed" reading of pc plot viewer should be "true"
     And all rows should pass the filter
     And no errors should have been logged
+
+  @known-failure:76 @realizes:core#1203
+  Scenario: Log Columns on a column holding zero says the axis cannot be logarithmic (core#1203)
+    When user sets "WEIGHT" column in row 1 to "0"
+    And user sets "Log Columns" property of pc plot viewer to "WEIGHT"
+    Then "Log Columns" property of pc plot viewer should be "WEIGHT"
+    And the "error" reading of pc plot viewer should not be ""
+    And no errors should have been logged

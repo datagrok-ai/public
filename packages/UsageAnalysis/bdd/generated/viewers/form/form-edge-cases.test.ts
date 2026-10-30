@@ -72,20 +72,18 @@ test.describe("Form viewer edge cases", () => {
     await session.step(40, "And the \"fields shown\" reading of form viewer should be 11", () => readingIs(page, "fields shown", el("form viewer"), 11));
     await session.step(41, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Text typed into a numeric field of an editable form leaves the cell as it was", {tag: ["@viewers", "@realizes:viewers.form", "@edge-cases", "@known-failure:54", "@realizes:core#1192"]}, async ({browser}) => {
+  test("Text typed into a numeric field of an editable form leaves the cell as it was", {tag: ["@viewers", "@realizes:viewers.form", "@edge-cases", "@realizes:core#1192"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(17, "And user adds a form viewer", () => addViewer(page, "form"));
     await session.step(18, "Then the \"fields shown\" reading of form viewer should be 11", () => readingIs(page, "fields shown", el("form viewer"), 11));
-    await knownFailure(async () => {
-      await session.step(50, "When user clicks on the \"edit\" area of form viewer", () => clickArea(page, "edit", el("form viewer")));
-      await session.step(51, "And user enters \"31\" into the \"field AGE\" area of form viewer", () => enterIntoArea(page, "31", "field AGE", el("form viewer")));
-      await session.step(52, "Then the value of \"AGE\" column in row 1 should be \"31\"", () => valueInRow(page, "AGE", 1, "31"));
-      await session.step(53, "When user enters \"abc\" into the \"field AGE\" area of form viewer", () => enterIntoArea(page, "abc", "field AGE", el("form viewer")));
-      await session.step(54, "Then the value of \"AGE\" column in row 1 should be \"31\"", () => valueInRow(page, "AGE", 1, "31"));
-      await session.step(55, "And no errors should have been logged", () => noErrors(page));
-    }, 54);
+    await session.step(50, "When user clicks on the \"edit\" area of form viewer", () => clickArea(page, "edit", el("form viewer")));
+    await session.step(51, "And user enters \"31\" into the \"field AGE\" area of form viewer", () => enterIntoArea(page, "31", "field AGE", el("form viewer")));
+    await session.step(52, "Then the value of \"AGE\" column in row 1 should be \"31\"", () => valueInRow(page, "AGE", 1, "31"));
+    await session.step(53, "When user enters \"abc\" into the \"field AGE\" area of form viewer", () => enterIntoArea(page, "abc", "field AGE", el("form viewer")));
+    await session.step(54, "Then the value of \"AGE\" column in row 1 should be \"31\"", () => valueInRow(page, "AGE", 1, "31"));
+    await session.step(55, "And no errors should have been logged", () => noErrors(page));
   });
   test("A column removed from the table takes its field off the form", {tag: ["@viewers", "@realizes:viewers.form", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
