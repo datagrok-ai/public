@@ -111,7 +111,7 @@ export interface DomainSupportLike {
    * old values of the changed columns, or not at all. */
   concurrency: 'version' | 'expected' | 'none';
   /** The filter grammar the backend answers: `'basic'` has no `under`, no regex, no `!like`, no
-   * datetime `!=` and no bool null test. */
+   * datetime `!=`, no bool null test and no bigint ordering. */
   filters: 'full' | 'basic';
   /** What {@link DomainTableLike.batch} does beyond a plain insert; `validate` gates
    * {@link DomainTableLike.validate}. */

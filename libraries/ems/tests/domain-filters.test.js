@@ -316,7 +316,7 @@ scoped('over a real hierarchy: a two-word location narrows to it, and Enter does
   src.dispose();
 });
 
-scoped('a `basic` backend is offered no under, regex, !like, fuzzy or between, no datetime != and no bool null test', async () => {
+scoped('a `basic` backend is offered no under, regex, !like, fuzzy or between, no datetime !=, no bool null test and no bigint ordering', async () => {
   const offersOf = (filters, src) => (name) => {
     const prop = src.schema.properties.find((p) => p.name === name);
     return filters.input.value.options.schema.operators(prop, Filters.operators.for(prop)).map((o) => o.id);
@@ -345,6 +345,12 @@ scoped('a `basic` backend is offered no under, regex, !like, fuzzy or between, n
     assert.equal(offers('done').includes(id), false, `no bool ${id}`);
   assert.equal(offers('done').includes('='), true);
   assert.equal(offers('number').includes('is null'), true, 'an int keeps its null test');
+  const big = {name: 'molregno', propertyType: 'bigint'};
+  const bigOffers = filters.input.value.options.schema.operators(big, Filters.operators.for(big)).map((o) => o.id);
+  for (const id of ['>', '>=', '<', '<='])
+    assert.equal(bigOffers.includes(id), false, `no bigint ${id}: the connector compares a bigint by equality only`);
+  for (const id of ['=', '!=', 'in'])
+    assert.equal(bigOffers.includes(id), true, `bigint ${id} stays`);
   filters.dispose();
   src.dispose();
 

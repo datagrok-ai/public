@@ -209,7 +209,7 @@ export type FieldAccess = 'editable' | 'readonly' | 'immutable';
 export type DomainConcurrency = 'version' | 'expected' | 'none';
 
 /** Which part of the filter grammar a table answers: `'full'` — every operator; `'basic'` — no
- * `under`, no regex (`matches`/`!matches`), no `!like`, no datetime `!=` and no bool null test
+ * `under`, no regex (`matches`/`!matches`), no `!like`, no datetime `!=`, no bool null test and no bigint ordering
  * (an external table). */
 export type DomainFilterProfile = 'full' | 'basic';
 

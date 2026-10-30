@@ -16,10 +16,11 @@ export type DomainFiltersMode = 'query' | 'builder';
 const UNDER = 'under';
 /** What a `'basic'` backend is not offered: the operators it refuses by name, and the two whose
  * emitted payload is a nested group it cannot run — `fuzzy` (two clauses under an `or`) and
- * `between` (a pair under an `and`, on every kind). The datetime `!=` and the bool null tests it
- * also lacks go by kind. */
+ * `between` (a pair under an `and`, on every kind). The datetime `!=`, the bool null tests and a
+ * bigint's ordering it also lacks go by kind. */
 const NOT_BASIC = new Set([UNDER, 'matches', '!matches', '!like', 'fuzzy', 'between']);
 const NULL_TESTS = new Set(['is null', 'is not null']);
+const ORDERING = new Set(['>', '>=', '<', '<=']);
 /** How many rows of the target table an `under` value slot offers at once. */
 const PICK_LIMIT = 50;
 const EMPTY: Promise<FilterValueItem[]> = Promise.resolve([]);
@@ -139,7 +140,7 @@ export class DomainFilters extends Control {
     const runs = (prop: FilterProperty, id: string) => {
       const kind = Filters.kindOf(prop);
       return !NOT_BASIC.has(id) && !(kind === Filters.KIND.DATE_TIME && id === '!=') &&
-        !(kind === Filters.KIND.BOOL && NULL_TESTS.has(id));
+        !(kind === Filters.KIND.BOOL && NULL_TESTS.has(id)) && !(kind === Filters.KIND.BIG_INT && ORDERING.has(id));
     };
     return (prop, ops) => {
       const out = (applies(prop) ? ops : ops.filter((o) => o.id !== UNDER)).filter(offered);
