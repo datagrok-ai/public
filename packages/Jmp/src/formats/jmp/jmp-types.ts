@@ -138,6 +138,17 @@ export interface JmpColumn {
   properties?: JmpColumnProperties;
 }
 
+/** JMP's modeling type of a column, which decides how an analysis treats it: a Nominal or Ordinal number is a
+ * category. The descriptor's second byte holds it for numbers and text (0 Continuous, 1 Ordinal, 2 Nominal):
+ * text columns, Nominal unless set otherwise, have 2, as do the numbers saved scripts launch as
+ * `Nominal Distribution`, and those launched as `Continuous Distribution` have 0. */
+export function modelingType(c: JmpColumn): 'continuous' | 'ordinal' | 'nominal' {
+  const [dt1, dt2] = c.descriptor;
+  if (![0x01, 0x0a, 0x02, 0x09].includes(dt1) || c.kind === 'rowstate')
+    return 'continuous';
+  return dt2 === 1 ? 'ordinal' : dt2 === 2 ? 'nominal' : c.kind === 'string' ? 'nominal' : 'continuous';
+}
+
 /** The glyph JMP draws for a row-state marker index. */
 export function rowStateGlyph(marker: number): string {
   return marker <= 0x1f ? ROWSTATE_MARKERS[marker] : String.fromCodePoint(marker);

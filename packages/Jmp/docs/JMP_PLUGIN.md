@@ -201,6 +201,8 @@ A row-state **column** is data the user saved, one state per row. The table's ow
 
 **Currency code**: a currency column's descriptor doesn't vary with the currency. The code is in the column header, as `13 00`, a `u32` length of 5, the three-letter ISO code, then two bytes that are `02 00` in every fixture (perhaps the decimals). The reader looks for that within 256 bytes after the descriptor. Confirmed on all nine columns of `currencies.jmp`.
 
+**Modeling type**: for numbers and text (`dt1` of `0x01`, `0x0A`, `0x02`, `0x09`), `dt2` is the column's modeling type: 0 Continuous, 1 Ordinal, 2 Nominal. Not in JMPReader.jl; read from the public corpus (§9.4): 3,678 of 3,710 text columns have 2 (JMP's default for text), every numeric column a saved script launches as `Continuous Distribution` has 0 and every one launched as `Nominal Distribution` has 1 or 2, and `New Column(…, "Nominal")` in saved scripts matches 2. A Nominal or Ordinal number is a category in JMP's analyses; the refit of a Fit Model (`jmp-model.ts`) reads it so. A refit also needs a factor's **Coding** property (`Coding({-1, 0.38})`, set by DOE): JMP fits the factor scaled to −1..1, `(x − mid) / half-range`, and doesn't centre it on its mean as it does other factors of crossed terms. With both, a least-squares refit of the corpus's Fit Models reproduces the 16 saved prediction formulas fit on the whole table, row for row; the 2 that differ were fit with rows excluded (the table row states above).
+
 **Unknown combinations** of `dt1..dt6`: JMPReader.jl logs an error and returns a NaN column. We do the same (§7).
 
 ### 4.4 What is *not* decoded yet (by anyone, publicly)

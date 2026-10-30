@@ -5,6 +5,7 @@ import {runTests, tests, TestContext} from '@datagrok-libraries/test/src/test';
 import './tests/jmp-reader-tests';
 import './tests/jmp-dataframe-tests';
 import './tests/jmp-script-tests';
+import './tests/jmp-model-tests';
 
 export const _package = new DG.Package();
 export {tests};
