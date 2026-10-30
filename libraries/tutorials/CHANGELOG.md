@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [#4437](https://github.com/datagrok-ai/public/issues/4437): Tutorials: Show both Windows and Mac keyboard shortcuts in step instructions
 * Tutorial: Column inputs are checked at once instead of after the first second (core#1146)
 * Tutorial: A running tutorial shows its current step in a bar docked on top; `showAllSteps()` opens the full pane
 * Tutorial: `cleanup()` removes what a tutorial created on the server; it runs when the tutorial finishes and when it is closed

@@ -6,6 +6,7 @@ import {funcConvergencePage} from './func-convergence';
 import {funcsPage} from './funcs';
 import {funcHistoryPage} from './func-history';
 import {basicInputsPage, rangeSliderPage, multiSelectPage, asyncPage} from './pages/inputs';
+import {chainedChoicesPage} from './pages/chained-choices';
 import {containersPage, popupsPage} from './pages/containers';
 import {listsPage, treesPage} from './pages/collections';
 import {catalogTablePage} from './pages/catalog-table';
@@ -87,6 +88,10 @@ export const DEMO_TREE: DemoGroup[] = [
       description: 'Combobox over local and async items, AsyncView loading states',
       build: () => asyncPage(),
       source: {file: `${SRC_ROOT}/pages/inputs.ts`, symbol: 'asyncPage'}},
+    {id: 'chained-choices', label: 'Chained choices',
+      description: 'Five choices, each loading its options from every pick above it (a mock 500 ms server)',
+      build: () => chainedChoicesPage(),
+      source: {file: `${SRC_ROOT}/pages/chained-choices.ts`, symbol: 'chainedChoices'}},
     {id: 'records', label: 'Records',
       description: 'RecordsInput: rows edited in place, add / remove / reorder; ChecklistInput with an order',
       build: () => recordsPage(),

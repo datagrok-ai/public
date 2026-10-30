@@ -5,7 +5,6 @@ import $ from 'cash-dom';
 import {timer} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
-import {Platform, getPlatform, platformKeyMap} from '../../shortcuts';
 
 
 export class GridTutorial extends Tutorial {
@@ -26,7 +25,6 @@ export class GridTutorial extends Tutorial {
   }
 
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/grid';
-  platform: Platform = getPlatform();
 
   protected async _run(): Promise<void> {
     this.header.textContent = this.name;
@@ -43,23 +41,23 @@ export class GridTutorial extends Tutorial {
 
     await this.action('Jump back to the first row', this.t!.onCurrentRowChanged.pipe(filter(() =>
       this.t!.currentRow.idx === 0)), null,
-    `Press <b>${platformKeyMap['Ctrl + Home'][this.platform]}</b> to return to the first row.`,
+    'Press <kbd>Ctrl+Home</kbd> to return to the first row.',
     () => this.t!.currentRowIdx = 0);
 
     await this.action('Jump to the last row', this.t!.onCurrentRowChanged.pipe(filter(() =>
       this.t!.currentRow.idx === (this.t!.rowCount - 1))), null,
-    `Press <b>${platformKeyMap['Ctrl + End'][this.platform]}</b> to go to the last row.`,
+    'Press <kbd>Ctrl+End</kbd> to go to the last row.',
     () => this.t!.currentRowIdx = this.t!.rowCount - 1);
 
     const columnNames = this.t!.columns.names();
     const columnNumber = this.t!.columns.length;
     await this.action('Jump to the last column', this.t!.onCurrentColChanged.pipe(filter(() =>
       this.t!.currentCol.name === columnNames[columnNumber - 1])), null,
-    `Press <b>${platformKeyMap['End'][this.platform]}</b> to go to the last column.`,
+    'Press <kbd>End</kbd> to go to the last column.',
     () => this.t!.currentCol = this.t!.getCol(columnNames[columnNumber - 1]));
     await this.action('Jump to the first column', this.t!.onCurrentColChanged.pipe(filter(() =>
     this.t!.currentCol.name === columnNames[0])), null,
-    `Press <b>${platformKeyMap['Home'][this.platform]}</b> to return to the first column.`,
+    'Press <kbd>Home</kbd> to return to the first column.',
     () => this.t!.currentCol = this.t!.getCol(columnNames[0]));
 
     this.title('Editing');
@@ -87,8 +85,8 @@ export class GridTutorial extends Tutorial {
     await this.action(`Copy the value from row #${lastRowIdx} to row #${lastRowIdx + 1} for the RACE column`,
       this.t!.onValuesChanged.pipe(filter(() => this.t!.cell(lastRowIdx, 'RACE').value ===
       this.t!.cell(lastRowIdx - 1, 'RACE').value)), null,
-      `Use <b>${platformKeyMap['Ctrl'][this.platform]}+C</b> to copy the value of the ` +
-      `current cell and <b>${platformKeyMap['Ctrl'][this.platform]}+V</b> ` +
+      'Use <kbd>Ctrl+C</kbd> to copy the value of the ' +
+      'current cell and <kbd>Ctrl+V</kbd> ' +
       'to paste the copied value into the current cell.',
       () => this.t!.set('RACE', lastRowIdx, this.t!.get('RACE', lastRowIdx - 1)));
 
@@ -110,10 +108,10 @@ export class GridTutorial extends Tutorial {
       '<b>Esc</b> being the simplest. It removes selection entirely, both from rows and columns.',
     () => this.t!.selection.setAll(false));
 
-    await this.action(`Select all rows with "${platformKeyMap['Ctrl'][this.platform]}+A"`,
+    await this.action('Select all rows',
       this.t!.onSelectionChanged.pipe(filter(() => !this.t!.selection.anyFalse)), null,
-      'There is a key combination to revert this action. You can use ' +
-      `<b>${platformKeyMap['Ctrl'][this.platform]}+Shift+A</b> to deselect all rows. ` +
+      'Press <kbd>Ctrl+A</kbd>. There is a key combination to revert this action: ' +
+      '<kbd>Ctrl+Shift+A</kbd> deselects all rows. ' +
       'It differs from <b>Esc</b>, since it affects only row selection.',
       () => this.t!.selection.setAll(true));
 
@@ -124,14 +122,14 @@ export class GridTutorial extends Tutorial {
       this.t!.onSelectionChanged.pipe(filter(() =>
         this.t!.selection.trueCount === 10 && selectedIndexes.every((idx, i) =>
           this.t!.selection.getSelectedIndexes()[i] === idx))), null, 'Make use of the previously learned shortcuts. ' +
-      `<b>Shift+Drag</b> selects rows, <b>${platformKeyMap['Ctrl'][this.platform]}+Shift+Drag</b> deselects rows, ` +
-      `<b>${platformKeyMap['Ctrl'][this.platform]}+Click</b> toggles selected state. ` +
-      `<b>${platformKeyMap['Ctrl + Shift + Home'][this.platform]}</b> selects rows above the current row, ` +
-      `while <b>${platformKeyMap['Ctrl + Shift + End'][this.platform]}</b> selects rows below the ` +
+      '<b>Shift+Drag</b> selects rows, <kbd>Ctrl+Shift+Drag</kbd> deselects rows, ' +
+      '<kbd>Ctrl+Click</kbd> toggles selected state. ' +
+      '<kbd>Ctrl+Shift+Home</kbd> selects rows above the current row, ' +
+      'while <kbd>Ctrl+Shift+End</kbd> selects rows below the ' +
       'current one (inclusively).', () => this.t!.selection.init((i) => selectedIndexes.includes(i)));
 
     await this.action('Clear the selection', this.t!.onSelectionChanged.pipe(filter(() => !this.t!.selection.anyTrue)),
-      null, `Hit either <b>Esc</b> or <b>${platformKeyMap['Ctrl'][this.platform]}+Shift+A</b>.`,
+      null, 'Hit either <b>Esc</b> or <kbd>Ctrl+Shift+A</kbd>.',
       () => this.t!.selection.setAll(false));
 
     grok.shell.windows.showContextPanel = true;
@@ -140,7 +138,7 @@ export class GridTutorial extends Tutorial {
     await this.action('Find the SEVERITY column and select all rows with the "None" value',
       this.t!.onSelectionChanged.pipe(filter(() => this.t!.selection.trueCount === noneSeverityRowCount)), null,
       'First, find any cell with "None" severity ' +
-      `and click to make it current. Then press <b>Shift+${platformKeyMap['Enter'][this.platform]}</b>, ` +
+      'and click to make it current. Then press <b>Shift+Enter</b>, ' +
       'it will select all rows containing the same value.',
       () => this.t!.selection.init((i) => this.t!.get('SEVERITY', i) === 'None'));
 
@@ -158,15 +156,15 @@ export class GridTutorial extends Tutorial {
     await this.action('Select HEIGHT and WEIGHT columns', this.t!.onColumnSelectionChanged.pipe(filter(() =>
       heightGridCol.selected && weightGridCol.selected)), null,
     'You can do this by holding <b>Shift</b> and clicking ' +
-      `the column headers. <b>${platformKeyMap['Ctrl'][this.platform]}</b> will also work in this case. ` +
+      'the column headers. <kbd>Ctrl</kbd> will also work in this case. ' +
       'The difference is that holding <b>Shift</b> ' +
-      `always adds to selection, whereas <b>${platformKeyMap['Ctrl'][this.platform]}</b> toggles the state ` +
+      'always adds to selection, whereas <kbd>Ctrl</kbd> toggles the state ' +
       '(so you can both select and deselect with it).',
     () => heightGridCol.selected = weightGridCol.selected = true);
 
     await this.action('Clear the selection', this.t!.onColumnSelectionChanged.pipe(filter(() =>
       !heightGridCol.selected && !weightGridCol.selected)), null,
-    `Either hit <b>Esc</b> or hold <b>${platformKeyMap['Ctrl'][this.platform]}+Shift</b> ` +
+    'Either hit <b>Esc</b> or hold <kbd>Ctrl+Shift</kbd> ' +
       'while clicking the column headers.',
     () => heightGridCol.selected = weightGridCol.selected = false);
 
@@ -176,7 +174,7 @@ export class GridTutorial extends Tutorial {
       grid.sortByColumns.length === 1 && grid.sortByColumns[0].name === 'AGE' && grid.sortTypes[0] === false)), null,
     'Double-click the column header once. To change the order to ascending, double-click again. Repeating it one ' +
       'more time will remove the column sorting. You can also sort rows from the column context menu. If a column ' +
-      `you want to sort is current, simply press <b>${platformKeyMap['Ctrl'][this.platform]}+Shift+UP</b> ` +
+      'you want to sort is current, simply press <kbd>Ctrl+Shift+UP</kbd> ' +
       'in any cell to order its rows.',
     () => grid.sort(['AGE'], [false]));
 

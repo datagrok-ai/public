@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
-import {Platform, getPlatform, platformKeyMap} from '../../shortcuts';
 
 
 export class ScatterPlotTutorial extends Tutorial {
@@ -20,7 +19,6 @@ export class ScatterPlotTutorial extends Tutorial {
   }
 
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/scatter-plot';
-  platform: Platform = getPlatform();
 
   protected async _run() {
     this.showToolbox();
@@ -45,7 +43,7 @@ export class ScatterPlotTutorial extends Tutorial {
     const colSelection = 'There are a few ways to choose a column in a scatter plot. ' +
       'The easiest way to do this is to click on the column selector on the viewer. ' +
       'Alternatively, you can drag the column right from the spreadsheet, or from ' +
-      `the column list (Windows | Columns, or ${platformKeyMap['Alt'][this.platform]}+C). ` +
+      'the column list (Windows | Columns, or <kbd>Alt+C</kbd>). ' +
       'Also, you can make this choice ' +
       'from the context panel on the right (Windows | Properties, or F4). ' +
       'Please try different ways in the next steps.';
@@ -58,7 +56,7 @@ export class ScatterPlotTutorial extends Tutorial {
     await this.action('Set Color to SEX', columnCheck(info.colorColSelector, 'SEX'), info.colorColSelector.root, '',
       Tutorial.apiSkip(() => plot.props.colorColumnName = 'SEX'));
 
-    const zoomDescription = `To zoom in, hold the <b>${platformKeyMap['Alt'][this.platform]}</b> key ` +
+    const zoomDescription = 'To zoom in, hold the <kbd>Alt</kbd> key ' +
       'and drag a rectangle that you want to zoom in to.';
     await this.action('Zoom in', plot.onZoomed, null, zoomDescription, Tutorial.apiSkip(() => {
       const vp = plot.viewport;

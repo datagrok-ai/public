@@ -5,7 +5,6 @@ import $ from 'cash-dom';
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Observable} from 'rxjs';
-import {getPlatform, Platform, platformKeyMap} from '../../shortcuts';
 
 
 export class CalculatedColumnsTutorial extends Tutorial {
@@ -25,7 +24,6 @@ export class CalculatedColumnsTutorial extends Tutorial {
 
   helpUrl: string = 'https://datagrok.ai/help/transform/add-new-column';
   prerequisites: TutorialPrerequisites = {packages: ['PowerPack']};
-  platform: Platform = getPlatform();
   // To do: adjust the tutorial based on presence/absence of the package
 
   protected async _run(): Promise<void> {
@@ -102,7 +100,7 @@ export class CalculatedColumnsTutorial extends Tutorial {
       'field either from the grid or from the column list in the dialog (use search input to find a column in ' +
       'large datasets). These actions will create a column reference. The notation is <b>${COLUMN_NAME}</b>, ' +
       'e.g., <b>Div(${HEIGHT}, 100)</b>.<br>You can also press "$" while editing the formula to open up a ' +
-      `column list popup and use arrow keys + "${platformKeyMap['Enter'][this.platform]}" to select a column. ` +
+      'column list popup and use arrow keys + <b>Enter</b> to select a column. ' +
       'If you are editing the formula from ' +
       'the context panel, or in the column properties dialog, type the column name in this notation manually.<br>' +
       'Note that the column type is not updated automatically during editing.<br>Some mathematical functions, ' +

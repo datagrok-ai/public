@@ -63,6 +63,10 @@ export interface InputOptions<T> {
    * false` refuses an empty value too, without the asterisk: a choice that always holds a value is not a field
    * to fill in. */
   required?: LiveOption<boolean>;
+  /** The input says it is loading: `aria-busy` at once, and a spinner in its box once the load runs past
+   * {@link Input.loadingGraceMs}, so a fast one never blinks. It stays usable: a list that reloads keeps its items
+   * and value until the new ones land. Live. */
+  loading?: LiveOption<boolean>;
   /** Enter in the editor: handled here, never seen by the form or dialog around the input — unless the handler
    * answers `false`, which leaves the key to them. A promise is waited for by nobody: its failure is reported. */
   onEnter?: (e: KeyboardEvent, input: Input<T>) => boolean | void | Promise<void>;
@@ -124,6 +128,9 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   private readonly _required = signal<boolean | undefined>(undefined);
   private readonly _touched = signal(false);
   private _readOnly = false;
+  private _loading = false;
+  private _spinner: HTMLElement | undefined;
+  private _spinnerSoon: (() => void) | undefined;
   private _guarded = false;
   private _touchWired = false;
   /** The user pressed a key or the pointer in the input: leaving it now touches it. */
@@ -204,6 +211,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
       this.readOnly = true;
     }
     this.liveOption('required', options.required, (x) => this.required = x);
+    this.liveOption('loading', options.loading, (x) => this.loading = x);
     if (options.nullable === false)
       this._wireTouch();
 
@@ -482,6 +490,38 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   private static _holdsInput(node: Node): boolean {
     const el = node as Element;
     return el.classList?.contains(ROOT) === true || el.querySelector?.(`.${ROOT}`) != null;
+  }
+
+  /** How long a load runs before the spinner of {@link InputOptions.loading} shows. */
+  static loadingGraceMs = 150;
+
+  get loading(): boolean {
+    return this._loading;
+  }
+
+  /** {@link InputOptions.loading}. */
+  set loading(x: boolean) {
+    if (x === this._loading)
+      return;
+    this._loading = x;
+    this._spinnerSoon?.();
+    this._spinnerSoon = undefined;
+    if (!x) {
+      this.root.removeAttribute('aria-busy');
+      if (this._spinner !== undefined)
+        this._spinner.hidden = true;
+      return;
+    }
+    this.root.setAttribute('aria-busy', 'true');
+    this._spinnerSoon = this.scope.setTimeout(() => {
+      this._spinnerSoon = undefined;
+      if (this._spinner === undefined) {
+        this._spinner = span('', 'u2-input-loading');
+        this._spinner.append(span('', 'u2-loader-spinner'));
+        this._inputBox.append(this._spinner);
+      }
+      this._spinner.hidden = false;
+    }, Input.loadingGraceMs);
   }
 
   get readOnly(): boolean {

@@ -1,3 +1,8 @@
+/* A long Columns list would otherwise widen the pane past the Context Panel */
+.power-grid-pie-settings {
+  min-width: 0;
+}
+
 .power-grid-pie-settings > .ui-form {
   padding-bottom: 12px;
 }

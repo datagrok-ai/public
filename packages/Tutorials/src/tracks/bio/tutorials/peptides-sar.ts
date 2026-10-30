@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {getPlatform, Platform} from '../../shortcuts';
 import {_package} from '../../../package';
 import $ from 'cash-dom';
 import * as rxjs from 'rxjs';
@@ -29,7 +28,6 @@ export class PeptidesSarTutorial extends Tutorial {
 
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar';
   prerequisites: TutorialPrerequisites = {packages: ['Bio', 'Peptides']};
-  platform: Platform = getPlatform();
 
   protected async _run() {
     grok.shell.windows.showBrowse = false;

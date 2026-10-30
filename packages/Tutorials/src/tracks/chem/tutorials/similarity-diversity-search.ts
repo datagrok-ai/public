@@ -7,7 +7,6 @@ import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src
 import {Observable} from 'rxjs';
 import $ from 'cash-dom';
 import {_package} from '../../../package';
-import {getPlatform, Platform, platformKeyMap} from '../../shortcuts';
 
 
 export class SimilarityDiversitySearchTutorial extends Tutorial {
@@ -30,7 +29,6 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#similarity-and-diversity-search';
   demoTable: string = '';
   prerequisites: TutorialPrerequisites = {packages: ['Chem']};
-  platform: Platform = getPlatform();
   // manualMode = true;
 
   protected async _run() {
@@ -120,7 +118,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     await this.action('Set new reference molecule',
       d.onClose, undefined, `In the sketcher, paste<br>
       <b>${MOL}</b>${copyButton.outerHTML}<br>
-      Press <b>${platformKeyMap['Enter'][this.platform]}</b> to apply.<br>
+      Press <b>Enter</b> to apply.<br>
       Then, click <b>OK</b>`, () => {
         const smiles = d.root.querySelector('input[placeholder^="SMILES"]') as HTMLInputElement;
         smiles.value = MOL;

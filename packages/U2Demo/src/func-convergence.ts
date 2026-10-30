@@ -212,7 +212,8 @@ const W4_SLOW = '`validators: ["fceW4Async"]` where the func is registered `isAs
   '`Couldn\'t validate (validator \'fceW4Async\' is misconfigured)` inline after an edit, the ' +
   'full reason on the message\'s tooltip (divergence #21).';
 
-const W4_GATE = 'The u2 Run gate is the form\'s own `missingRequired` + `invalidFields`: ' +
+const W4_GATE = 'The u2 Run gate is the form\'s own `loadingFields` + `missingRequired` + `invalidFields`: ' +
+  'while a field\'s choices or computed default load, Run waits for them. ' +
   '`cylinders` is the one required field, so Run opens blocked with the tooltip naming it. ' +
   'Flip `type` to Electric and Run unblocks — a field hidden by an expression is exempt from ' +
   'validation and the gate while its value stays in the call (divergence #20). The Dart form ' +
@@ -442,11 +443,13 @@ function inputsText(call: DG.FuncCall): string {
 /** Why `form` cannot run yet, the reason both Run buttons show: empty fields first, invalid ones next, either list
  * cut past three names (`Fill Name, Stage, Site and 9 more to run`); null once it can. Reads the form's signals. */
 export function gateReason(form: FuncCallForm): string | null {
+  const loading = form.loadingFields.value;
   const empty = form.missingRequired.value;
   const invalid = form.invalidFields.value;
   const names = (list: string[]) => list.length <= 3 ? list.join(', ') :
     `${list.slice(0, 3).join(', ')} and ${list.length - 3} more`;
-  return empty.length > 0 ? `Fill ${names(empty)} to run` : invalid.length > 0 ? `Fix ${names(invalid)} to run` : null;
+  return loading.length > 0 ? `Wait for ${names(loading)} to load` :
+    empty.length > 0 ? `Fill ${names(empty)} to run` : invalid.length > 0 ? `Fix ${names(invalid)} to run` : null;
 }
 
 /** Page prose with `backticked` spans rendered as code rather than shown as backticks. */

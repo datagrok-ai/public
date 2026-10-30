@@ -4,7 +4,6 @@ import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import $ from 'cash-dom';
 import {timer} from 'rxjs';
 import {filter} from 'rxjs/operators';
-import {Platform, getPlatform, platformKeyMap} from '../../shortcuts';
 
 
 export class AggregationTutorial extends Tutorial {
@@ -23,7 +22,6 @@ export class AggregationTutorial extends Tutorial {
   }
 
   helpUrl: string = 'https://datagrok.ai/help/transform/aggregate-rows';
-  platform: Platform = getPlatform();
 
   protected async _run() {
     grok.shell.windows.showToolbox = false;
@@ -36,7 +34,7 @@ export class AggregationTutorial extends Tutorial {
 
     await this.action('Open Aggregation Editor', grok.functions.onAfterRunAction.pipe(
       filter((call) => call.func.name === 'CmdAggregateRows')), this.getMenuItem('Data'),
-    `Select <b>Data > Aggregate Rows</b> in the top menu, or press <b>${platformKeyMap['Alt'][this.platform]}+A</b>.`,
+    'Select <b>Data > Aggregate Rows</b> in the top menu, or press <kbd>Alt+A</kbd>.',
     () => grok.functions.call('CmdAggregateRows'));
 
     const pivotViewer = Array.from(grok.shell.tv.viewers).find((v) => v instanceof DG.PivotViewer) as DG.PivotViewer;

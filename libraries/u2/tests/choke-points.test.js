@@ -88,7 +88,7 @@ const CHOKE_POINTS = [
       'src/core/input-base.ts': 1,
       'src/core/region.ts': 1,
       'src/dg/designer/prop-editors.ts': 1,
-      'src/dg/funcs/param-sources.ts': 4,
+      'src/dg/funcs/param-sources.ts': 2,
       'src/dg/funcs/param-tables.ts': 1,
       'src/dg/viewers/viewer-control.ts': 1,
       'src/spec/spec.ts': 5,
