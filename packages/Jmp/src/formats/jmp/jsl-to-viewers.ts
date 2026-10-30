@@ -6,7 +6,7 @@ import {
   JslNode, columnNames, findAll, findArg, isCall, isOn, jslKey, numberValue, referencedColumns, statements,
 } from './jsl';
 import {JmpScript, isSourceScript} from './jmp-scripts';
-import type {JmpColumn} from './jmp-types';
+import {JmpColumn, modelingType} from './jmp-types';
 
 /** A viewer to add to the table view: a Datagrok viewer type (DG.VIEWER) and its properties. */
 export interface JmpViewerSpec {
@@ -44,7 +44,8 @@ export function columnRefs(columns: JmpColumn[]): JmpColumnRef[] {
     const property = (name: string) => c.properties?.properties.find((p) => p.name === name)?.node;
     const predicting = property('Predicting');
     const formula = property('Formula')?.args[0];
-    return {name: c.info.name, numeric: c.kind !== 'string',
+    // a Nominal or Ordinal number is a category, as JMP's analyses take it
+    return {name: c.info.name, numeric: c.kind !== 'string' && modelingType(c) === 'continuous',
       ...(predicting && {predicts: columnNames(predicting)[0], terms: formula ? formulaTerms(formula) : []})};
   });
 }

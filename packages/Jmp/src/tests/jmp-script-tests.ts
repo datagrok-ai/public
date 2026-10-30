@@ -4,7 +4,7 @@ import {_package} from '../package-test';
 import {JslNode, JslSyntaxError, columnNames, findArg, isCall, parseJsl, statements} from '../formats/jmp/jsl';
 import {readJmp} from '../formats/jmp/jmp-parser';
 import {JmpScript, readTableScripts} from '../formats/jmp/jmp-scripts';
-import {JmpInfo} from '../formats/jmp/jmp-types';
+import {JmpInfo, modelingType} from '../formats/jmp/jmp-types';
 import {JmpColumnRef, JmpScriptConversion, columnRefs, convertScript} from '../formats/jmp/jsl-to-viewers';
 import {fixture} from './jmp-reader-tests';
 
@@ -545,6 +545,12 @@ category('JMP: public files', () => {
     const groups = acoustic.columns.find((c) => c.info.name === 'MaxFreq Groups')!;
     expect(groups.properties!.properties[0].node !== undefined, true);
     expect(groups.properties!.properties[0].text, 'Formula(If(:MaxFreq_mean > 1900, 1, 2))');
+    // a number the table marks Nominal: a category to the analyses, as to JMP's
+    expect(modelingType(groups), 'nominal');
+    expect(columnRefs(acoustic.columns).find((c) => c.name === 'MaxFreq Groups')!.numeric, false);
+    const byGroup = 'Fit Y by X(Y(:MaxFreq_mean), X(:MaxFreq Groups))';
+    expect(convertScript({name: 'Groups', text: byGroup, body: parseJsl(byGroup)}, columnRefs(acoustic.columns))
+      .viewers[0].type, 'Box plot');
   });
 
   test('JMP 10: hidden columns, value labels and colors', async () => {
