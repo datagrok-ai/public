@@ -120,6 +120,19 @@ export const subtreeCounts = (index: SpaceIndex, filter: RunFilter) =>
 export const parentsOf = (index: SpaceIndex, spaceId: string) =>
   (index.parents.get(spaceId) ?? []).flatMap((id) => index.nodes.get(id)?.space ?? []);
 
+/** The favorite spaces of an index and every space above them. */
+export function favoriteSpaces(index: SpaceIndex, favorites: Set<string>): Set<string> {
+  const kept = new Set<string>();
+  const keep = (id: string) => {
+    if (kept.has(id))
+      return;
+    kept.add(id);
+    index.parents.get(id)?.forEach(keep);
+  };
+  [...favorites].filter((id) => index.nodes.has(id)).forEach(keep);
+  return kept;
+}
+
 /** The spaces a run is linked into. */
 export const spacesWithRun = (index: SpaceIndex, runId: string) =>
   [...index.nodes.entries()].filter(([, node]) => node.runs.some((run) => run.id === runId)).map(([id]) => id);

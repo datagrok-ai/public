@@ -8,6 +8,7 @@ import {
 } from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {PlacesTree} from './PlacesTree';
 import {Breadcrumbs, FolderRows, spaceFolders} from './RunList';
+import {useFavorites} from './use-favorites';
 import {useSpaceIndex} from './use-space-index';
 import {MY_RUNS, SPACES, locationKey, useSpaceNavigation} from './use-space-navigation';
 import {
@@ -41,6 +42,7 @@ export const SaveRunDialog = Vue.defineComponent({
     const isLinkingSeveral = props.linkedRuns.length > 0;
     const isLinking = !!props.linkedRun || isLinkingSeveral;
     const spaces = useSpaceIndex();
+    const favorites = useFavorites();
     // runs are added to spaces only, so linking starts at the spaces
     const nav = useSpaceNavigation(spaces.index, isLinking ? SPACES : MY_RUNS);
     const place = Vue.computed<Place>(() => nav.location.value.myRuns ? null : nav.space.value ?? null);
@@ -296,7 +298,7 @@ export const SaveRunDialog = Vue.defineComponent({
           <div class='c2-runs-pane c2-runs-tree-pane'>
             <div class='c2-runs-label'>{isLinking ? 'Add to' : 'Save to'}</div>
             <PlacesTree index={spaces.index.value} error={spaces.error.value} location={nav.location.value}
-              showMyRuns={!isLinking} runFilter={runFilter} myRunsCount={myRunsCount.value}
+              showMyRuns={!isLinking} runFilter={runFilter} myRunsCount={myRunsCount.value} favorites={favorites}
               onSelect={nav.go} onRetry={spaces.reload}/>
           </div>
           { renderListing() }

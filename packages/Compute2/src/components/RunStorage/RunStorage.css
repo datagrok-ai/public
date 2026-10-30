@@ -138,6 +138,8 @@
 }
 
 .c2-runs-tree-root {
+  display: flex;
+  align-items: center;
   cursor: pointer;
 }
 
@@ -208,6 +210,33 @@
 
 .c2-runs-star-on {
   color: var(--orange-2, var(--blue-1));
+}
+
+.c2-runs-tree-row .c2-runs-star:not(.c2-runs-star-on) {
+  visibility: hidden;
+}
+
+.c2-runs-tree-row:hover .c2-runs-star {
+  visibility: visible;
+}
+
+.c2-runs-star-filter:not(.c2-runs-star-on) {
+  color: var(--grey-4);
+}
+
+.c2-runs-favorites-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border: 1px solid var(--grey-2);
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.c2-runs-favorites-toggle.c2-runs-tag {
+  border-color: var(--blue-1);
 }
 
 .c2-runs-form {

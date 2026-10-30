@@ -17,6 +17,7 @@ import {
   notifyRunsChanged, spaceListingError,
 } from './run-storage';
 import {subtreeRuns} from './space-index';
+import {useFavorites} from './use-favorites';
 import {useSpaceIndex} from './use-space-index';
 import {locationKey, useSpaceNavigation} from './use-space-navigation';
 import {NO_FILTERS, RunFilters, useRunFilters} from './use-run-filters';
@@ -89,7 +90,7 @@ export const RunBrowser = Vue.defineComponent({
 
     const {runs: myRuns, count: myRunsCount, isLoading, error: listError} =
       useMyRuns(() => listedModels.value, () => props.stepHistory);
-    const favorites = Vue.ref(new Set<string>());
+    const favorites = useFavorites();
     const treeHeight = Vue.ref(160);
 
     // what a filter searches: My runs, or the location's runs and those of everything below it
@@ -111,7 +112,7 @@ export const RunBrowser = Vue.defineComponent({
     const {authors, error: authorsError} =
       useRunAuthors(() => isMyRuns.value ? [] : scopeRuns.value.map((item) => item.run));
     const {filters, tagOptions, authorOptions, isActive, matches} =
-      useRunFilters(() => scopeRuns.value.map((item) => item.run), authors);
+      useRunFilters(() => scopeRuns.value.map((item) => item.run), authors, favorites.ids);
     const listed = Vue.computed(() => isActive.value ?
       scopeRuns.value.filter(({run}) => matches(run)) : folderRuns.value);
     const {selection, isSelected, click, actionRuns, clear, keepOnly} =
@@ -120,10 +121,6 @@ export const RunBrowser = Vue.defineComponent({
       nodeOf(scopeRuns.value.find((item) => item.run.id === run.id)?.spaceId ?? nav.spaceId.value)?.space ?? null;
 
     Vue.onMounted(async () => {
-      grok.dapi.entities.getFavorites()
-        .then((items) => favorites.value = new Set(items.filter((item) => item.entityType === 'FuncCall')
-          .map((item) => item.id)))
-        .catch(() => {});
       if (!props.selectModel)
         return;
       isLoadingModels.value = true;
@@ -154,22 +151,6 @@ export const RunBrowser = Vue.defineComponent({
       choose(run);
       if (opens)
         openRun(run);
-    };
-
-    const toggleFavorite = async (run: DG.FuncCall) => {
-      const next = new Set(favorites.value);
-      try {
-        if (next.has(run.id)) {
-          await DG.Favorites.remove(run);
-          next.delete(run.id);
-        } else {
-          await DG.Favorites.add(run);
-          next.add(run.id);
-        }
-        favorites.value = next;
-      } catch (e: any) {
-        grok.shell.error(`Couldn't change the favorite: ${e?.message ?? e}`);
-      }
     };
 
     const runsToDelete = () => actionRuns(details.value?.run ?? current.value!);
@@ -273,12 +254,15 @@ export const RunBrowser = Vue.defineComponent({
         return isLoading.value && myRuns.value.length === 0 ? 'Loading…' : undefined;
       return !spaces.index.value && !spaces.error.value ? 'Loading spaces…' : undefined;
     };
+    const favoritesError = () => filters.value.favorites && favorites.error.value ?
+      `Couldn't load favorites: ${favorites.error.value}` : undefined;
+    const listingError = () => (isMyRuns.value ? listError.value : spaceError()) ?? favoritesError();
 
     const renderTree = () => (
       <div class='c2-runs-pane c2-runs-tree-pane'
         style={props.layout === 'docked' ? {height: `${treeHeight.value}px`} : {}}>
         <PlacesTree index={spaces.index.value} error={spaces.error.value} location={nav.location.value}
-          runFilter={runFilter.value} myRunsCount={myRunsCount.value}
+          runFilter={runFilter.value} myRunsCount={myRunsCount.value} favorites={favorites}
           onSelect={nav.go} onRetry={spaces.reload}/>
       </div>
     );
@@ -290,8 +274,8 @@ export const RunBrowser = Vue.defineComponent({
         folders={folders.value}
         runs={listed.value}
         resultsLabel={isActive.value ? `Results in ${scopeLabel()}` : undefined}
-        status={listStatus()} error={isMyRuns.value ? listError.value : spaceError()}
-        isSelected={isSelected} favorites={favorites.value}
+        status={listStatus()} error={listingError()}
+        isSelected={isSelected} favorites={favorites.ids.value}
         modelOf={model.value ? undefined : (run: DG.FuncCall) => {
           const func = modelOf(run);
           return func ? modelLabel(func) : (run.func?.friendlyName || run.func?.name);
@@ -300,7 +284,7 @@ export const RunBrowser = Vue.defineComponent({
         locationOf={(spaceId?: string) =>
           spaceId === nav.spaceId.value ? 'here' : (nodeOf(spaceId) ? placeName(nodeOf(spaceId)!.space) : '')}
         onGoTo={nav.goTo} onEnter={nav.enter} onUp={nav.up}
-        onClickRun={clickRun} onToggleFavorite={toggleFavorite} onClearFilters={() => filters.value = NO_FILTERS}>
+        onClickRun={clickRun} onToggleFavorite={favorites.toggle} onClearFilters={() => filters.value = NO_FILTERS}>
         {{filters: () => <RunFiltersBar modelValue={filters.value}
           onUpdate:modelValue={(value: RunFilters) => filters.value = value}
           tagOptions={tagOptions.value} authorOptions={authorOptions.value}
