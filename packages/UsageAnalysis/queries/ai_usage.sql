@@ -161,3 +161,32 @@ from turns
 group by feature
 order by cost_usd desc nulls last, input_tokens desc
 --end
+
+--name: AiTurnContent
+--input: string date {pattern: datetime}
+--input: list<string> groups
+--connection: System:Datagrok
+with recursive selected_groups as (
+  select id from groups
+  where id = any(@groups)
+  union
+  select gr.child_id as id from selected_groups sg
+  join groups_relations gr on sg.id = gr.parent_id
+)
+select e.event_time, u.friendly_name as user,
+  max(v.value) filter (where p.name = 'feature') as feature,
+  max(v.value) filter (where p.name = 'prompt') as prompt,
+  max(v.value) filter (where p.name = 'response') as response,
+  max(v.value) filter (where p.name = 'toolCalls') as tool_calls
+from events e
+join event_types et on e.event_type_id = et.id
+join users_sessions s on e.session_id = s.id
+join users u on u.id = s.user_id
+join event_parameter_values v on v.event_id = e.id
+join event_parameters p on p.id = v.parameter_id
+where et.source = 'usage' and et.friendly_name = 'ai-turn-content'
+  and @date(e.event_time)
+  and u.group_id in (select id from selected_groups)
+group by e.id, e.event_time, u.friendly_name
+order by e.event_time desc
+--end

@@ -44,11 +44,13 @@ export class AiUsageView extends UaView {
     const byUser = grid('By user', 'AiUsageByUser');
     const byGroup = grid('By group', 'AiUsageByGroup');
     const byFeature = grid('By feature', 'AiUsageByFeature');
+    const content = grid('Content', 'AiTurnContent');
 
-    this.viewers.push(timeline, byUser, byGroup, byFeature);
+    this.viewers.push(timeline, byUser, byGroup, byFeature, content);
     this.root.append(ui.splitV([
       ui.box(timeline.root, {style: {maxHeight: '320px'}}),
-      ui.box(ui.tabControl({'By user': byUser.root, 'By group': byGroup.root, 'By feature': byFeature.root}).root),
+      ui.box(ui.tabControl({'By user': byUser.root, 'By group': byGroup.root, 'By feature': byFeature.root,
+        'Content': content.root}).root),
     ]));
   }
 }

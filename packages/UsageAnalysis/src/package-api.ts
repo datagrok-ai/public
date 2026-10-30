@@ -28,6 +28,10 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:AiUsageByFeature', { date, groups });
   }
 
+  export async function aiTurnContent(date: string , groups: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:AiTurnContent', { date, groups });
+  }
+
   export async function allTestRuns(benchmarks: boolean ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:AllTestRuns', { benchmarks });
   }
