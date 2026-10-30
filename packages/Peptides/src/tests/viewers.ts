@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, awaitCheck, before, category, delay, expect, expectFloat, test, testViewer}
-  from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, expectFloat, settled, test, testEvent, testViewer, uiSettled,
+  waitUntil} from '@datagrok-libraries/test/src/test';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -68,10 +68,10 @@ category('Viewers: Monomer-Position', () => {
     model = tempModel;
     mpViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition;
 
-    await delay(500);
+    await settled(mpViewer);
   });
 
-  after(async () => await delay(3000));
+  after(async () => await uiSettled('Peptides analysis'));
 
   test('Tooltip', async () => {
     const cellCoordinates = {col: '9', row: 6};
@@ -104,8 +104,7 @@ category('Viewers: Monomer-Position', () => {
 
   test('Highlighting after row removal', async () => {
     const monomerPosition = mpViewer.getMonomerPosition(mpViewer.viewerGrid.cell('9', 6));
-    df.rows.removeAt(0, 2);
-    await delay(100);
+    await testEvent(df.onRowsRemoved, () => {}, () => df.rows.removeAt(0, 2), 5000, 'Rows removal is not reported');
 
     // Highlighting or's a fresh row-count-sized mask with the cached ones, so stale masks throw 'Array lengths differ'
     highlightMonomerPosition(monomerPosition, df, mpViewer.monomerPositionStats);
@@ -114,10 +113,8 @@ category('Viewers: Monomer-Position', () => {
   test('Highlighting after row removal with viewer-specific scaling', async () => {
     // Scaling differing from the analysis settings makes the viewer compute stats from its own cached activity column
     mpViewer.getProperty(SAR_PROPERTIES.ACTIVITY_SCALING)!.set(mpViewer, SCALING_METHODS.LG);
-    await delay(50);
     expect(mpViewer.monomerPositionStats != null, true, 'Stats should be computed with viewer-specific scaling');
-    df.rows.removeAt(0, 2);
-    await delay(100);
+    await testEvent(df.onRowsRemoved, () => {}, () => df.rows.removeAt(0, 2), 5000, 'Rows removal is not reported');
 
     const stats = mpViewer.monomerPositionStats;
     const position = Object.keys(stats).find((key) => key !== 'general')!;
@@ -152,10 +149,10 @@ category('Viewers: Most Potent Residues', () => {
     model = tempModel;
     mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues;
 
-    await delay(500);
+    await settled(mprViewer);
   });
 
-  after(async () => await delay(3000));
+  after(async () => await uiSettled('Peptides analysis'));
 
   test('Tooltip', async () => {
     const cellCoordinates = {col: 'Diff', row: 6};
@@ -196,10 +193,10 @@ category('Viewers: Logo Summary Table', () => {
 
     lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
 
-    await delay(500);
+    await settled(lstViewer);
   });
 
-  after(async () => await delay(3000));
+  after(async () => await uiSettled('Peptides analysis'));
 
   test('Properties', async () => {
     // Change Logo Summary Table Web Logo Mode property to full
@@ -229,8 +226,7 @@ category('Viewers: Logo Summary Table', () => {
 
   test('Property change after close', async () => {
     lstViewer.close();
-    await delay(100);
-    expect(lstViewer.dataFrame == null, true, 'Expected the closed viewer to have no dataFrame');
+    await waitUntil(() => lstViewer.dataFrame == null, 'Expected the closed viewer to have no dataFrame');
     lstViewer.getProperty(LST_PROPERTIES.COLUMNS)!.set(lstViewer, [TEST_COLUMN_NAMES.ACTIVITY]);
     lstViewer.render();
   });
@@ -250,10 +246,7 @@ category('Viewers: Peptide Generation', () => {
       [PEPTIDE_GENERATION_PROPS.SEQUENCE]: TEST_COLUMN_NAMES.SEQUENCE,
       [PEPTIDE_GENERATION_PROPS.ACTIVITY]: TEST_COLUMN_NAMES.ACTIVITY,
     }) as PeptideGenerationViewer;
-    await delay(500);
   });
-
-  after(async () => await delay(1000));
 
   test('Generates peptides', async () => {
     const peptideCount = 10;
@@ -300,7 +293,7 @@ category('Viewers: Export', () => {
     split = splitSequences(df.getCol(DEMO_COLUMN_NAMES.SEQUENCE));
     model = await analyzeDemoPeptides(df);
     const mpViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition;
-    await awaitCheck(() => mpViewer.mutationCliffs !== null, 'Mutation cliffs are not calculated', 30000);
+    await waitUntil(() => mpViewer.mutationCliffs !== null, 'Mutation cliffs are not calculated', 30000);
   });
 
   after(async () => grok.shell.closeAll());
@@ -396,7 +389,7 @@ category('Viewers: Mutation Cliffs', () => {
 
   test('Cliff counts', async () => {
     const mpViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition;
-    await awaitCheck(() => mpViewer.mutationCliffs !== null, 'Mutation cliffs are not calculated', 30000);
+    await waitUntil(() => mpViewer.mutationCliffs !== null, 'Mutation cliffs are not calculated', 30000);
     const cliffs = mpViewer.mutationCliffs!;
     const cliffCount = (monomer: string, position: string): number =>
       Array.from(cliffs.get(monomer)?.get(position)?.values() ?? []).reduce((sum, targets) => sum + targets.length, 0);
@@ -443,7 +436,7 @@ category('Viewers: Mutation Cliffs', () => {
     model.analysisView.addViewer(viewer);
     const chartAt = async (position: number): Promise<DG.DataFrame> => {
       viewer.getProperty('position')!.set(viewer, position);
-      await awaitCheck(() => viewer.getWidgetStatus().values.position === position && !viewer.isRenderPending,
+      await waitUntil(() => viewer.getWidgetStatus().values.position === position && !viewer.isRenderPending,
         `The position ${position} chart is not rendered`, 15000);
       return viewer.innerDf;
     };
@@ -479,11 +472,11 @@ category('Viewers: Logo Summary Table WebLogo', () => {
     const filterSub = df.onRowsFiltering.subscribe(() => df.filter.and(mask));
     try {
       df.rows.requestFilter();
-      await awaitCheck(() => lst.viewerGrid !== unfilteredGrid, 'Logo Summary Table is not rebuilt on filter', 5000);
+      await waitUntil(() => lst.viewerGrid !== unfilteredGrid, 'Logo Summary Table is not rebuilt on filter', 5000);
       lst.getProperty(`${LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN_NAME}${COLUMN_NAME}`)!
         .set(lst, DEMO_COLUMN_NAMES.ACTIVITY);
       lst.getProperty(LST_PROPERTIES.WEB_LOGO_AGGREGATION_TYPE)!.set(lst, DG.AGG.AVG);
-      await awaitCheck(() => lst.viewerGrid.root.querySelector('.bio-wl-host') !== null,
+      await waitUntil(() => lst.viewerGrid.root.querySelector('.bio-wl-host') !== null,
         'WebLogo is not rendered for the filtered table', 10000);
     } finally {
       filterSub.unsubscribe();

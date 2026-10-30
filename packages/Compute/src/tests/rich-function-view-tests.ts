@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, before, delay} from '@datagrok-libraries/test/src/test';
+import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {createRFV, initComputeApi} from '@datagrok-libraries/compute-api';
 import {take, filter} from 'rxjs/operators';
 import {applyTransformations} from '@datagrok-libraries/utils/src/json-serialization';
-import {getFuncCallIO} from './utils';
+import {getFuncCallIO, inputsRendered, inputsApplied, eventually} from './utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import fc1 from './snapshots/fc1.json';
 import {InputVariants} from '@datagrok-libraries/compute-utils/old-views/src/rich-function-view';
@@ -77,13 +77,13 @@ category('Compute API: RFV Inputs', async () => {
       inputsMap[prop.name] = input;
     });
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    await delay(100);
+    await inputsRendered(view, inputsMap);
     for (const [name, input] of Object.entries(inputsMap)) {
       input.value = inputValues[name];
       const element = (input as any).input;
       element.dispatchEvent(new Event('input', {bubbles: true}));
     }
-    await delay(300);
+    await inputsApplied(view, inputValues);
     await view.doRun();
     const expected = {
       'inputs': [
@@ -132,7 +132,7 @@ category('Compute API: RFV Inputs', async () => {
     });
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    await delay(100);
+    await inputsRendered(view, inputsMap);
     await view.doRun();
     view.funcCall.setParamValue('a', 2);
     view.funcCall.setParamValue('b', 3.2);
@@ -186,15 +186,14 @@ category('Compute API: RFV Inputs', async () => {
       inputsMap[prop.name] = input;
     });
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    await delay(100);
+    await inputsRendered(view, inputsMap);
     await view.doRun();
-    await delay(100);
     for (const [name, input] of Object.entries(inputsMap)) {
       input.value = inputValues[name];
       const element = (input as any).input;
       element.dispatchEvent(new Event('input', {bubbles: true}));
     }
-    await delay(300);
+    await inputsApplied(view, inputValues);
     await view.doRun();
     const expected = {
       'inputs': [
@@ -234,7 +233,6 @@ category('Compute API: RFV Inputs', async () => {
     const view = createRFV('Compute:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    await delay(100);
     const expected = {
       'inputs': [
         [
@@ -251,7 +249,7 @@ category('Compute API: RFV Inputs', async () => {
         ],
       ],
     };
-    expectDeepEqual(getFuncCallIO(view.funcCall).inputs, expected.inputs);
+    await eventually(() => expectDeepEqual(getFuncCallIO(view.funcCall).inputs, expected.inputs));
   });
 
   test('Complex inputs setParamValue', async () => {
@@ -287,11 +285,11 @@ category('Compute API: RFV Inputs', async () => {
       inputsMap[prop.name] = input;
     });
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    await delay(100);
+    await inputsRendered(view, inputsMap);
     inputsMap['data'].value = inputValues['data'];
     // TODO: test df input, not rly used rn
     view.funcCall.setParamValue('df', inputValues['df']);
-    await delay(300);
+    await inputsApplied(view, inputValues);
     await view.doRun();
     expectDeepEqual(getFuncCallIO(view.funcCall), applyTransformations(fc1), {prefix: 'funcCall'});
     expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
@@ -341,11 +339,11 @@ category('Compute API: RFV Inputs', async () => {
       inputsMap[prop.name] = input;
     });
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    await delay(100);
+    await inputsRendered(view, inputsMap);
     inputsMap['data'].value = inputValuesPre['data'];
     // TODO: test df input, not rly used rn
     view.funcCall.setParamValue('df', inputValuesPre['df']);
-    await delay(300);
+    await inputsApplied(view, inputValuesPre);
     await view.doRun();
     const inputValues: Record<string, any> = {
       df: DG.DataFrame.fromColumns([
@@ -356,7 +354,7 @@ category('Compute API: RFV Inputs', async () => {
     inputsMap['data'].value = inputValues['data'];
     // TODO: test df input, not rly used rn
     view.funcCall.setParamValue('df', inputValues['df']);
-    await delay(300);
+    await inputsApplied(view, inputValues);
     await view.doRun();
     expectDeepEqual(getFuncCallIO(view.funcCall), applyTransformations(fc1), {prefix: 'funcCall'});
     expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
@@ -372,10 +370,8 @@ category('Compute API: RFV Validation', async () => {
   test('Validate on start', async () => {
     const view = createRFV('Compute:validationTest', {historyEnabled: false, isTabbed: false});
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    await delay(1500);
-    const results = view.getValidationState();
-    expectDeepEqual(
-      results,
+    await eventually(() => expectDeepEqual(
+      view.getValidationState(),
       {
         'a': {
           'errors': [
@@ -417,7 +413,7 @@ category('Compute API: RFV Validation', async () => {
           'context': {},
         },
       },
-    );
+    ));
   });
 
   test('Validate on input', async () => {
@@ -432,17 +428,14 @@ category('Compute API: RFV Validation', async () => {
       inputsMap[prop.name] = input;
     });
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    await delay(1500);
+    await inputsRendered(view, inputsMap);
     for (const [name, input] of Object.entries(inputsMap)) {
       input.value = inputValues[name];
       const element = (input as any).input;
       element.dispatchEvent(new Event('input', {bubbles: true}));
     }
-    await delay(400);
-
-    const results = view.getValidationState();
-    expectDeepEqual(
-      results,
+    await eventually(() => expectDeepEqual(
+      view.getValidationState(),
       {
         'b': {
           'errors': [
@@ -452,7 +445,7 @@ category('Compute API: RFV Validation', async () => {
           ],
         },
       },
-    );
+    ));
   });
 
   test('Revalidation sequence', async () => {
@@ -467,16 +460,14 @@ category('Compute API: RFV Validation', async () => {
       inputsMap[prop.name] = input;
     });
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    await delay(1500);
+    await inputsRendered(view, inputsMap);
     for (const [name, input] of Object.entries(inputsMap)) {
       input.value = inputValues[name];
       const element = (input as any).input;
       element.dispatchEvent(new Event('input', {bubbles: true}));
     }
-    await delay(1000);
-    const results = view.getValidationState();
-    expectDeepEqual(
-      results,
+    await eventually(() => expectDeepEqual(
+      view.getValidationState(),
       {
         'a': {
           'revalidate': [
@@ -507,6 +498,6 @@ category('Compute API: RFV Validation', async () => {
           ],
         },
       },
-    );
+    ));
   });
 });

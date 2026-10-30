@@ -21,7 +21,7 @@ Feature: Histogram property surface
     And histogram viewer should have an "x axis" area
     And histogram viewer should have a "y axis" area
 
-  Scenario: The value column and the bin count, from the panel and from the plot
+  Scenario: The value column and the bin count, from the panel and from the plot (github-2296)
     When user sets "Value" property of histogram viewer to "WEIGHT"
     Then Value column input in histogram viewer should contain text "WEIGHT"
     And the "axis min" reading of histogram viewer should be higher than before
@@ -39,8 +39,8 @@ Feature: Histogram property surface
     And user hovers over histogram viewer
     Then histogram viewer should have a "bins slider" area
     When user drags the "bins slider" area of histogram viewer by 40 pixels to the right
-    Then "Bins" property of histogram viewer should not be "50"
-    And the "bins shown" reading of histogram viewer should be higher than before
+    Then "Bins" property of histogram viewer should be "169"
+    And the "bins shown" reading of histogram viewer should be 169
     And histogram viewer should have repainted by at least 2000 pixels
     When user sets "Bins" property of histogram viewer to "20"
     Then the "bins shown" reading of histogram viewer should be 20

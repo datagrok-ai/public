@@ -1,7 +1,3 @@
-/* The session is the storage state global setup writes (@datagrok-libraries/test); this step only
-   lands in the shell — once per browser page, the scenarios of a feature share it — and applies the
-   automation-friendly shell settings every suite applies, plus the viewer runtime: every viewer the
-   page holds or adds later renders immediately (no debounce, no animation-frame wait). */
 import type {BrowserContext, Page} from '@playwright/test';
 import {Given, When} from '../../src/registry.js';
 import {markLeakBaseline} from '../../src/runtime/audit.js';

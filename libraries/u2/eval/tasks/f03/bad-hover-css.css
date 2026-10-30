@@ -1,0 +1,13 @@
+.campaigns-home {
+  display: flex;
+  gap: 16px;
+}
+
+.campaigns-home-details {
+  flex: none;
+  width: 320px;
+}
+
+.campaigns-home .u2-table-row:hover {
+  background: var(--dg-hover-subtle);
+}

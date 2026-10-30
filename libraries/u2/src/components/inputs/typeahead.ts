@@ -33,6 +33,10 @@ export interface TypeAheadOptions<T> {
   emptyText?: string | ((query: string) => string);
   /** A ceiling on the popup's height (a CSS length or pixels), under the room the overlay gives it. */
   maxHeight?: number | string;
+  /** At least as wide as the box (default); `false` sizes the popup to its rows. */
+  matchWidth?: boolean;
+  /** A muted line under the candidates ("10 of 20 — type to narrow"). */
+  footer?: () => string | null;
   /** The accessible name (`aria-label` on the editor); a type-ahead shows no caption of its own. */
   label?: string;
   /** Enter with the popup closed: handled here, never seen by the form or dialog around. */
@@ -129,6 +133,8 @@ export class TypeAhead<T> extends Control {
 
     const minChars = this._minChars;
     const all = this._all;
+    const selected = this.selected;
+    const openOnFocus = this._openOnFocus;
     this._list = new SuggestionList<T>({
       prefix: 'u2-typeahead',
       anchor: input,
@@ -140,12 +146,18 @@ export class TypeAhead<T> extends Control {
       get minChars() { return all.value ? 0 : minChars; },
       render,
       keyOf: options.keyOf ?? itemText,
-      autoHighlight: this._openOnFocus ? 'always' : true,
+      // a held value is not swapped for the first row by a plain Enter
+      get autoHighlight() {
+        return selected.value !== null ? false : openOnFocus ? 'always' as const : true;
+      },
       onPick: (index) => this._send({type: 'select', index}),
       onDismiss: () => this._send({type: 'dismiss'}),
       onRetry: () => this._source?.retry(),
       emptyText: options.emptyText,
       maxHeight: options.maxHeight,
+      matchWidth: options.matchWidth,
+      footer: options.footer,
+      currentKey: () => selected.value === null ? null : (options.keyOf ?? itemText)(selected.value),
     });
     this.isOpen = this._list.isOpen;
     // a fast Enter: the intent was clear — the name typed, else the first candidate, once they land
@@ -161,7 +173,7 @@ export class TypeAhead<T> extends Control {
       this._commit(exact >= 0 ? exact : 0, document.activeElement === input);
     });
 
-    bindValue(this.scope, input, this._text);
+    bindValue(input, this._text, {owner: this.scope});
     this.scope.listen(input, 'input', () => this._onInput());
     this.scope.listen(input, 'focus', () => this._send({type: 'focus'}));
     this.scope.listen(input, 'blur', () => this._send({type: 'blur'}));
@@ -267,7 +279,9 @@ export class TypeAhead<T> extends Control {
       case 'enter':
         if (state !== 'open')
           break;
-        if (this._view.peek().kind === 'ready')
+        if (this.selected.peek() !== null && this._list.activeIndex.peek() < 0)
+          this._dismiss();
+        else if (this._view.peek().kind === 'ready')
           this._commit(this._list.activeIndex.peek());
         else
           this._pendingPick = true;
@@ -286,6 +300,16 @@ export class TypeAhead<T> extends Control {
         this._commit(ev.index);
         break;
     }
+  }
+
+  /** Opens the candidates as focus does, listing all of them over a held item rather than
+   * querying its name — for a box read as a dropdown. */
+  open(): void {
+    if (this._source && this.selected.peek() !== null)
+      this._source.query('');
+    else
+      this._refresh();
+    this._openPopup();
   }
 
   /** Closes the candidates without touching the selection — what a host does when something

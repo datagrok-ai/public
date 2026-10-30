@@ -2,7 +2,7 @@
    nodes, and round-trip through dump(). Every test registers its own fakes in a private registry,
    so nothing here depends on which components the library has registered. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Signal, computed, signal} from '../src/core/signals.js';
@@ -61,7 +61,7 @@ function registerEcho(reg) {
 }
 
 function editors(instance) {
-  return instance.root.querySelectorAll('input');
+  return [...instance.root.querySelectorAll('input')];
 }
 
 function type(editor, text) {
@@ -175,7 +175,7 @@ spec('renderSpec: broken nodes become placeholders, siblings still render', () =
     ]},
   }, new SpecContext(), reg);
 
-  const errors = instance.root.querySelectorAll('.u2-spec-error').map((el) => el.textContent);
+  const errors = [...instance.root.querySelectorAll('.u2-spec-error')].map((el) => el.textContent);
   assert.equal(errors.length, 4);
   assert.match(errors[0], /^u2-missing: /);
   assert.match(errors[1], /^blink: /);
@@ -591,7 +591,7 @@ spec('designer metadata: actions read the node state, and the manifest keeps def
   registerAll(reg);
 
   const tabs = reg.get('u2-tabs').designerActions;
-  assert.deepEqual(tabs.map((a) => a.name), ['Add tab']);
+  assert.deepEqual(tabs.map((a) => a.text), ['Add tab']);
   assert.deepEqual(tabs[0].produce({tag: 'u2-tabs', children: [{tag: 'u2-panel'}, {tag: 'u2-panel'}]}),
     {op: 'add-child', node: {tag: 'u2-panel', props: {title: 'Tab 3'}}},
     'the title counts the children the node has now');
@@ -654,9 +654,9 @@ spec('resolveBinding: a named node is a bind source — explicit prop, default s
 
   const source = instance.node('doseInput');
   const resolved = instance.resolveBinding('$.doseInput.value');
-  assert.equal(resolved.signal, source.value, 'the node shadows the same-named context key');
+  assert.equal(resolved.signal, source.signal, 'the node shadows the same-named context key');
   assert.equal(resolved.writable, true);
-  assert.equal(instance.resolveBinding('$.doseInput').signal, source.value,
+  assert.equal(instance.resolveBinding('$.doseInput').signal, source.signal,
     'the default step is the value signal');
   assert.deepEqual(source.bindProps().map((p) => [p.name, p.writable]), [['value', true]],
     'only signal-backed meta props enumerate');
@@ -722,7 +722,7 @@ spec('resolveBinding: a plain HTML node is not a bind source, before or after th
       ]},
     }, new SpecContext(), reg);
   });
-  const errors = instance.root.querySelectorAll('.u2-spec-error').map((el) => el.textContent);
+  const errors = [...instance.root.querySelectorAll('.u2-spec-error')].map((el) => el.textContent);
   assert.equal(errors.length, 1);
   assert.match(errors[0], /"static" is not a bind source/, 'a plain HTML node has no signals');
   assert.deepEqual(warnings, ['u2 spec: u2-fake-echo: "later" is not a bind source'],
@@ -802,7 +802,7 @@ spec('forward reference: a target that fails to build leaves the referencing nod
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /not built/);
   assert.equal(instance.node('early') instanceof TextInput, true, 'built, unlinked');
-  const errors = instance.root.querySelectorAll('.u2-spec-error').map((el) => el.textContent);
+  const errors = [...instance.root.querySelectorAll('.u2-spec-error')].map((el) => el.textContent);
   assert.equal(errors.length, 1, 'the target\'s own placeholder names the real problem');
   assert.match(errors[0], /prop "label" expects string/);
   instance.dispose();
@@ -819,7 +819,7 @@ spec('forward reference: a loop through a later node is still a cycle — both m
       {tag: 'u2-fake-echo', name: 'c', bind: {value: '$.a'}},
     ]},
   }, new SpecContext(), reg);
-  const errors = instance.root.querySelectorAll('.u2-spec-error').map((el) => el.textContent);
+  const errors = [...instance.root.querySelectorAll('.u2-spec-error')].map((el) => el.textContent);
   assert.equal(errors.length, 2);
   assert.match(errors[0], /binding cycle: a → c → a/);
   assert.match(errors[1], /binding cycle: a → c → a/);
@@ -896,6 +896,28 @@ spec('twoWay to a read-only leaf: the one-way bridge still applies, with a singl
   instance.dispose();
 });
 
+spec('a real input bound to a read-only path renders read-only, following it, not an error', () => {
+  const reg = new Registry();
+  registerAll(reg);
+  const base = signal('Ada');
+  const ro = computed(() => `${base.value} Lovelace`);
+  let instance;
+  captureWarnings(() => {
+    instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'div', children: [
+      {tag: 'u2-text-input', name: 'shown', props: {label: 'Full name'}, bind: {value: '$.ro'}},
+      {tag: 'u2-text-input', name: 'edited', props: {label: 'Name'}, bind: {value: '$.name'}},
+    ]}}, new SpecContext({data: {ro, name: signal('Ada')}}), reg);
+  });
+  assert.equal(instance.root.querySelectorAll('.u2-spec-error').length, 0);
+  const [shown, edited] = instance.root.querySelectorAll('input');
+  assert.equal(shown.readOnly, true, 'shown read-only: an edit could not land');
+  assert.equal(shown.value, 'Ada Lovelace');
+  base.value = 'Grace';
+  assert.equal(shown.value, 'Grace Lovelace', 'and it follows the path');
+  assert.ok(!edited.readOnly, 'a writable path stays editable');
+  instance.dispose();
+});
+
 spec('a binding cycle marks its members broken, naming the loop', () => {
   const reg = new Registry();
   registerEcho(reg);
@@ -907,7 +929,7 @@ spec('a binding cycle marks its members broken, naming the loop', () => {
       {tag: 'u2-fake-echo', name: 'c'},
     ]},
   }, new SpecContext(), reg);
-  const errors = instance.root.querySelectorAll('.u2-spec-error').map((el) => el.textContent);
+  const errors = [...instance.root.querySelectorAll('.u2-spec-error')].map((el) => el.textContent);
   assert.equal(errors.length, 2);
   assert.match(errors[0], /binding cycle: a → b → a/);
   assert.match(errors[1], /binding cycle: a → b → a/);

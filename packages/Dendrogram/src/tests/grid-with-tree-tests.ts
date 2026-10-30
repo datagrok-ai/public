@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {awaitCheck, category, delay, test, testViewer} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, test, testViewer} from '@datagrok-libraries/test/src/test';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {NodeType} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
@@ -26,14 +26,14 @@ category('GridWithTree', () => {
     const newickRoot: NodeType = parseNewick(newickStr);
 
     const tv: DG.TableView = grok.shell.addTableView(dataDf);
-    await awaitCheck(() => {
+    await waitUntil(() => {
       return $(tv.root).find('.d4-grid canvas').length > 0;
-    }, 'The view grid canvas not found', 200);
+    }, 'The view grid canvas not found');
     ;const neighborWidth = 250;
     injectTreeForGridUI2(tv.grid, newickRoot, leafColName, neighborWidth);
-    await awaitCheck(() => {
+    await waitUntil(() => {
       return $(tv.root).find('.ui-div canvas').length == 1;
-    }, 'Injected tree not found', 200);
+    }, 'Injected tree not found');
   });
 
   test('hover in another view after the tree view is closed', async () => {
@@ -48,7 +48,8 @@ category('GridWithTree', () => {
       treeTv.close();
       grok.shell.clearLastError();
       dataDf.mouseOverRowIdx = 1;
-      await delay(100);
+      // the tree takes the hover in a timer task and repaints on the next frame
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const error = await grok.shell.lastError;
       if (error)
         throw new Error(error);

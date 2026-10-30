@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {category, test, expect, expectArray, expectFloat, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, expectFloat, waitUntil} from '@datagrok-libraries/test/src/test';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
@@ -41,6 +41,20 @@ async function addStatisticColumn(df: DG.DataFrame, params: {[key: string]: stri
   await DG.Func.find({package: 'Curves', name: 'curveStatistic'})[0]
     .prepare({table: df, curveColumn: df.col('curve')!, ...params})
     .call(false, undefined, {processed: false});
+}
+
+/** The values-changed events [action] fired, by the column they name ('' for the whole table). Only an event
+ * naming a column starts recalculating the formula columns that read it, so none naming it means no refit. */
+function valuesChangedBy(df: DG.DataFrame, action: () => void): string[] {
+  const names: string[] = [];
+  const sub = df.onValuesChanged.subscribe((e) => names.push(e?.args?.column?.name ?? ''));
+  try {
+    action();
+  }
+  finally {
+    sub.unsubscribe();
+  }
+  return names;
 }
 
 category('panel and renderer', () => {
@@ -87,7 +101,7 @@ category('panel and renderer', () => {
     col.setTag(FitConstants.TAG_FIT, JSON.stringify({chartOptions: {logX: false}}));
     // pins the platform contract the panel relies on, not the call site in changeCurvesOptions
     col.fireValuesChanged();
-    await awaitCheck(() => df.col('curve 1 ic50')!.get(0) !== before,
+    await waitUntil(() => df.col('curve 1 ic50')!.get(0) !== before,
       'statistic column did not recalculate after the column-level option changed', 5000);
   });
 
@@ -103,15 +117,14 @@ category('panel and renderer', () => {
     df.name = 'panelNoRecalcOnCosmetic';
     await addStatisticColumn(df, {propName: 'ic50', seriesNumber: 0});
 
-    const stat = df.col('curve 1 ic50')!;
-    const before = stat.version;
-    for (let j = 0; j < col.length; j++) {
-      const data = JSON.parse(col.get(j));
-      delete data.series[0].pointColor;
-      col.set(j, JSON.stringify(data), false);
-    }
-    await delay(500);
-    expect(stat.version, before, 'a cosmetic rewrite recalculated the statistic column');
+    const changed = valuesChangedBy(df, () => {
+      for (let j = 0; j < col.length; j++) {
+        const data = JSON.parse(col.get(j));
+        delete data.series[0].pointColor;
+        col.set(j, JSON.stringify(data), false);
+      }
+    });
+    expect(changed.includes('curve'), false, 'a cosmetic rewrite recalculates the statistic column');
   });
 
   test('a column-level option overrides a cell-level one, without recalculating', async () => {
@@ -126,17 +139,14 @@ category('panel and renderer', () => {
     df.name = 'panelColumnOverridesCell';
     await addStatisticColumn(df, {propName: 'ic50', seriesNumber: 0});
 
-    const stat = df.col('curve 1 ic50')!;
-    const version = stat.version;
     const gridCell = DG.Viewer.grid(df).cell('curve', 0);
     const input = {property: {name: 'pointColor'}, value: '#00ff00'} as unknown as DG.InputBase;
 
-    changeCurvesOptions(gridCell, input, 'seriesOptions', 'Column');
-    await delay(500);
+    const changed = valuesChangedBy(df, () => changeCurvesOptions(gridCell, input, 'seriesOptions', 'Column'));
 
     expect(getOrCreateParsedChartData(df.cell(0, 'curve')).series![0].pointColor === '#ff0000', false,
       'the cell-level value still wins after the column-level change');
-    expect(stat.version, version, 'a cosmetic option change recalculated the statistic column');
+    expect(changed.includes('curve'), false, 'a cosmetic option change recalculates the statistic column');
   });
 
   test('clearing cell overrides marks the table changed without recalculating', async () => {
@@ -147,24 +157,17 @@ category('panel and renderer', () => {
     df.name = 'panelMarksTableChanged';
     await addStatisticColumn(df, {propName: 'ic50', seriesNumber: 0});
 
-    const stat = df.col('curve 1 ic50')!;
-    const version = stat.version;
     const gridCell = DG.Viewer.grid(df).cell('curve', 0);
-    let fired = 0;
-    const sub = df.onValuesChanged.subscribe(() => fired++);
-
-    changeCurvesOptions(gridCell,
+    const changed = valuesChangedBy(df, () => changeCurvesOptions(gridCell,
       {property: {name: 'showCurveConfidenceInterval'}, value: false} as unknown as DG.InputBase,
-      'seriesOptions', 'Column');
-    await delay(500);
-    sub.unsubscribe();
+      'seriesOptions', 'Column'));
 
     // the value the data declares is left alone - it just stops winning
     expect(JSON.parse(col.get(0)).series[0].showCurveConfidenceInterval, true, 'the cell data was mutated');
     expect(getOrCreateParsedChartData(df.cell(0, 'curve')).series![0].showCurveConfidenceInterval, false,
       'the column-level value did not outrank the value declared in the cell');
-    expect(fired > 0, true, 'nothing marked the table changed, so the option would not be saved');
-    expect(stat.version, version, 'a cosmetic option change recalculated the statistic column');
+    expect(changed.length > 0, true, 'nothing marked the table changed, so the option would not be saved');
+    expect(changed.includes('curve'), false, 'a cosmetic option change recalculates the statistic column');
   });
 
   test('a column-level change overrides a value set at cell level first', async () => {
@@ -234,7 +237,6 @@ category('panel and renderer', () => {
       const layout = sourceView.saveLayout();
 
       freshView.loadLayout(layout);
-      await delay(500);
 
       expect(getOrCreateParsedChartData(fresh.cell(0, 'curve')).series![0].showCurveConfidenceInterval, false,
         'the column-level option did not survive the layout');
@@ -425,7 +427,6 @@ category('panel and renderer', () => {
 
       changeCurvesOptions(gridCell, {property: {name: 'fitFunction'}, value: custom.name} as unknown as DG.InputBase,
         'seriesOptions', 'Cell');
-      await delay(300);
       const stored = JSON.parse(df.col('curve')!.get(0)!).series[0].fitFunction;
       expect(typeof stored, 'object', 'the name alone would not resolve in a session that never loaded it');
       expect(stored.name, custom.name);
@@ -433,7 +434,6 @@ category('panel and renderer', () => {
 
       changeCurvesOptions(gridCell, {property: {name: 'fitFunction'}, value: 'linear'} as unknown as DG.InputBase,
         'seriesOptions', 'Cell');
-      await delay(300);
       expect(JSON.parse(df.col('curve')!.get(0)!).series[0].fitFunction, 'linear',
         'a built-in one is always there, so it stays a name');
     } finally {

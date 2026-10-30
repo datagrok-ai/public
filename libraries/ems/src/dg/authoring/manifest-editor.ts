@@ -1,17 +1,11 @@
-/* The reusable manifest editor: the tree and the context panel side by side over one
-   `ManifestModel` and one `AccessModel`, the field offer decided by the editor context.
-   Platform-free — the dialog lane (PowerPack) drafts, dry-runs, creates and applies the access;
-   this control only edits and answers `plan()` (create) or `editPlan()` (edit: the apply body
-   and the change list). Diagnostics the dry run returns are set on `diagnostics` and land on the
-   row and the panel that own their manifest path. */
 import {Control, signal, Signal, ReadonlySignal, Splitter} from '@datagrok-libraries/u2';
 import type {EditorContext, FieldOffer} from './editor-context.js';
 import {AccessModel, ManifestModel} from './manifest-model.js';
-import type {AccessJson, AccessPrincipal, AccessSnapshot, DraftEnvelope, ManifestChange, ManifestDiagnostic,
-  ManifestJson, ManifestPatch, ManifestSelection, RebaseReport} from './manifest-model.js';
+import type {AccessJson, AccessPrincipal, AccessSnapshot, DraftEnvelope, ExtendPatch, ManifestChange,
+  ManifestDiagnostic, ManifestJson, ManifestPatch, ManifestSelection, RebaseReport} from './manifest-model.js';
 import {ManifestTree} from './manifest-tree.js';
 import {ManifestContextPanel} from './manifest-panel.js';
-import type {PrincipalPicker} from './manifest-panel.js';
+import type {ColumnOption, PrincipalPicker} from './manifest-panel.js';
 
 export interface ManifestEditorOptions {
   context: EditorContext;
@@ -37,6 +31,7 @@ export interface ManifestEditorOptions {
   /** Why the Writable switch cannot be turned on here (a DML right the author lacks); the switch
    * is then disabled with this hint. */
   writableDisabled?: string;
+  columnOptions?: ColumnOption[];
 }
 
 /** A grant to apply after Create, by the names the API takes: one per table and group, the
@@ -94,6 +89,8 @@ export interface EditPlan {
   blockers: ManifestDiagnostic[];
 }
 
+/** The tree and the context panel over one `ManifestModel` and one `AccessModel`. Platform-free: it only edits
+ * and answers `plan()` (create) or `editPlan()` (edit); the dialogs draft, dry-run, create and apply. */
 export class ManifestEditor extends Control {
   readonly model: ManifestModel;
   readonly access: AccessModel;
@@ -112,27 +109,30 @@ export class ManifestEditor extends Control {
   constructor(draft: DraftEnvelope | null, options: ManifestEditorOptions) {
     super();
     this.context = options.context;
-    const editing = options.context.mode === 'edit';
+    const extending = options.context.mode === 'extend';
+    const editing = options.context.mode === 'edit' || extending;
     if (editing && options.baseline === undefined)
       throw new Error('u2: the manifest editor\'s edit mode needs the registered manifest (options.baseline)');
     if (!editing && draft === null)
       throw new Error('u2: the manifest editor needs a draft');
     this._author = options.author;
     this.model = new ManifestModel(draft, {friendlyName: options.friendlyName, description: options.description,
-      baseline: editing ? options.baseline : undefined});
-    this.access = editing ? this._accessOf(options.snapshot ?? null, options.baseline!) : new AccessModel(options.access);
+      baseline: editing ? options.baseline : undefined, extend: extending});
+    this.access = editing && !extending ? this._accessOf(options.snapshot ?? null, options.baseline!) :
+      new AccessModel(options.access);
     this.diagnostics = signal<ManifestDiagnostic[]>(draft?.diagnostics ?? []);
     this.root.classList.add('u2-manifest-editor');
     this.root.dataset.u2 = 'manifest-editor';
     const editable = options.context.mode !== 'view';
-    this.tree = this.runInScope(() => new ManifestTree(this.model, {editable, diagnostics: this.diagnostics}));
+    this.tree = this.build(() => new ManifestTree(this.model, {editable, diagnostics: this.diagnostics}));
     this.selected = this.tree.selected;
-    this.panel = this.runInScope(() => new ManifestContextPanel(this.model, {selected: this.selected,
+    this.panel = this.build(() => new ManifestContextPanel(this.model, {selected: this.selected,
       access: this.access, context: options.context, groups: options.groups?.map((g) => AccessModel.principal(g)),
       principalPicker: options.principalPicker, diagnostics: this.diagnostics,
-      writableDisabled: options.writableDisabled}));
+      writableDisabled: options.writableDisabled, columnOptions: options.columnOptions,
+      onSelect: (selection) => void this.tree.select(selection)}));
     const share = options.treeShare ?? 0.42;
-    const splitter = this.runInScope(() => new Splitter([this.tree, this.panel],
+    const splitter = this.build(() => new Splitter([this.tree, this.panel],
       {direction: 'horizontal', sizes: [share, 1 - share], minSize: 200}));
     this.root.append(splitter.root);
   }
@@ -223,11 +223,17 @@ export class ManifestEditor extends Control {
     return {payload, changes, blockers: model.blockers.peek()};
   }
 
+  extendPlan(): {payload: {ifVersion: string, extend: ExtendPatch}, changes: ManifestChange[]} {
+    return {payload: {ifVersion: this.model.extVersion!, extend: this.model.extendPatch()}, changes: this.model.changes()};
+  }
+
   /** After a `version-conflict`: the user's edits replayed over the schema as it is now — the
    * registered manifest, its access snapshot and a fresh draft. Same-field conflicts and edits on
    * items that vanished are reported, never applied silently; the tree and the panel rebuild. */
   rebase(baseline: ManifestJson, snapshot: AccessSnapshot | null, draft: DraftEnvelope | null,
     options: {friendlyName: string, description: string}): RebaseReport {
+    if (this.model.extending)
+      return this.model.rebase(baseline, null, options);
     const manifest = this.model.rebase(baseline, draft, options);
     const access = this.access.rebase(snapshot, baseline, (table, column) => this._known(table, column));
     this.stale = ManifestEditor._stale(snapshot, baseline);
@@ -244,9 +250,7 @@ export class ManifestEditor extends Control {
     }});
   }
 
-  /** An access edit still has a target: a table (and its column) the apply will carry — registered,
-   * or a candidate this edit includes; a table unregistered on the server but still in the
-   * warehouse is a candidate again, and an edit on it has nowhere to go. */
+  // a table unregistered on the server but still in the warehouse is a candidate again: an edit on it has nowhere to go
   private _known(table: string, column?: string): boolean {
     const t = this.model.table(table);
     if (t === undefined || !t.drafted || !(t.registered || t.included))

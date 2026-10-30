@@ -20,8 +20,10 @@ interface Built<T> {
 
 function owner(fn: string): Scope {
   const scope = Scope.ambient;
-  if (!scope)
-    throw new Error(`u2: ${fn}() needs an owner — wrap the code in Control.build(...) or component.runInScope(...)`);
+  if (!scope) {
+    throw new Error(`u2: ${fn}() needs an owner — build under \`owner.build(…)\` or ` +
+      '`component((self) => …)`; after an `await`, inside `owner.task(async (t) => … t.build(…))`');
+  }
   return scope;
 }
 
@@ -32,7 +34,7 @@ function reader<T>(source: ReadonlySignal<T> | (() => T)): () => T {
 /** Builds `make` in a scope of its own under `parent`. */
 function built<T>(parent: Scope, label: string, item: T, make: () => HTMLElement): Built<T> {
   const scope = new Scope(parent, {label, lazy: true});
-  return {el: Scope.runWith(scope, make), scope, item};
+  return {el: scope.build(make), scope, item};
 }
 
 function drop(entry: Built<unknown>): void {
@@ -41,9 +43,9 @@ function drop(entry: Built<unknown>): void {
 }
 
 /** A keyed region: one element per key, built once in its own scope (a child of the ambient owner),
- * kept across changes (focus and caret survive), moved only when out of place, disposed when its key
- * leaves. Every element gets `data-u2-item = key` unless it carries one. A repeated key is warned
- * about once and suffixed `#<n>`. Throws without an owner. */
+ * kept across changes (focus and caret survive), moved only when out of place and never while it holds the
+ * focus (the others move around it), disposed when its key leaves. Every element gets `data-u2-item = key`
+ * unless it carries one. A repeated key is warned about once and suffixed `#<n>`. Throws without an owner. */
 export function each<T>(host: HTMLElement, items: ReadonlySignal<readonly T[]> | (() => readonly T[]),
   keyOf: (item: T, index: number) => string, build: (item: T, index: number) => HTMLElement,
   options: EachOptions<T> = {}): void {
@@ -72,7 +74,7 @@ export function each<T>(host: HTMLElement, items: ReadonlySignal<readonly T[]> |
       if (entry !== undefined && entry.item !== item) {
         const kept = entry;
         const patched = options.update !== undefined &&
-          Scope.runWith(kept.scope, () => options.update!(kept.el, item, i)) !== false;
+          kept.scope.build(() => options.update!(kept.el, item, i)) !== false;
         if (patched)
           kept.item = item;
         else {
@@ -96,11 +98,21 @@ export function each<T>(host: HTMLElement, items: ReadonlySignal<readonly T[]> |
       drop(empty);
       empty = undefined;
     }
+    const active = document.activeElement;
     let at: ChildNode | null = host.firstChild;
     for (const {el} of next.values()) {
       if (el === at)
         at = at.nextSibling;
-      else
+      else if (el.parentNode === host && el.contains(active)) {
+        // a moved node loses the focus in every browser: the nodes ahead of it move behind it instead
+        const after = el.nextSibling;
+        while (at !== el) {
+          const node = at!;
+          at = node.nextSibling;
+          host.insertBefore(node, after);
+        }
+        at = el.nextSibling;
+      } else
         host.insertBefore(el, at);
     }
     if (list.length === 0 && empty === undefined && options.empty !== undefined) {

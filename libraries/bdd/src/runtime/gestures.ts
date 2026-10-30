@@ -1,6 +1,3 @@
-/* The gestures steps are made of. Each one takes an element phrase and encodes the platform's
-   quirks once: real pointer clicks for canvases, key-by-key typing (Dart change listeners ignore
-   `fill`), native `<select>` first for choices, the editor part of a composite input. */
 import {resolve} from 'node:path';
 import {type Locator, type Page} from '@playwright/test';
 import {expect} from './patience.js';
@@ -244,6 +241,7 @@ export async function typeInto(page: Page, target: ElementRef, text: string, com
   // clicked: a click is what would blur it, and a blurred cell editor commits and closes
   if (!await hasFocus(editor))
     await editor.click();
+  // key by key unless the kind says `fill`: Dart change listeners ignore `fill`
   if (gestureOf(page, target).type === 'fill')
     await editor.fill(text);
   else
@@ -425,6 +423,16 @@ export function columnGridNames(grid: Locator): Promise<string[]> {
   });
 }
 
+/** Whether an open column picker hears Escape: it listens from the task after it opened, which puts the focus on
+ * its search box when it has one (over 20 columns) and on the selector otherwise (`column_combo_box.dart`). The
+ * check runs a task later than whatever the page has queued, so a picker's own task has run by then. */
+function pickerListens(selector: Locator): Promise<boolean> {
+  return selector.evaluate((sel) => new Promise<boolean>((resolve) => setTimeout(() => {
+    const active = document.activeElement;
+    resolve(active !== null && (sel.contains(active) || active.matches('.d4-column-selector-search-input')));
+  }, 0))).catch(() => false);
+}
+
 /** The columns a Dart column selector offers, in its order: the picker is opened, its column grid
  * read and the picker dismissed with Escape. */
 export async function columnSelectorChoices(page: Page, target: ElementRef): Promise<string[]> {
@@ -438,8 +446,8 @@ export async function columnSelectorChoices(page: Page, target: ElementRef): Pro
   const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').filter({visible: true}).last();
   await popup.waitFor({state: 'visible', timeout: 10000});
   const names = await columnGridNames(popup.locator('[name="viewer-Grid"]').first());
-  // the picker listens for Escape from the task that hands the focus back to the selector
-  await expect.poll(() => hasFocus(selector), {message: `the column selector of ${target.phrase} focused by its open picker`}).toBe(true);
+  await expect.poll(() => pickerListens(selector), {message: `the column picker of ${target.phrase} focused`})
+    .toBe(true);
   await page.keyboard.press('Escape');
   await popup.waitFor({state: 'detached', timeout: 5000}).catch(() => {
     throw new Error(`the column picker of ${target.phrase} is still open after Escape`);
@@ -512,7 +520,11 @@ async function selectNative(page: Page, select: Locator, option: string): Promis
   await page.keyboard.type(option);
   await page.waitForTimeout(300);
   await guide.hop(page, select);
-  await page.keyboard.press('Enter');
+  // a list that did not open takes the option on the typing itself, and an Enter then reaches the
+  // page: a dialog around the select takes it as its OK
+  const typed = await select.evaluate((e) => (e as HTMLSelectElement).selectedOptions[0]?.label ?? '');
+  if (typed !== option)
+    await page.keyboard.press('Enter');
   // a property grid closes its editor on Enter and shows the value as text again: nothing left to correct
   const taken = await select.evaluate((e) => (e as HTMLSelectElement).selectedOptions[0]?.label ?? '', undefined, {timeout: 1000})
     .catch(() => null);
@@ -585,8 +597,30 @@ export async function pressIn(page: Page, target: ElementRef, key: string): Prom
   await (await editorOf(page, target)).press(normalizeKey(key));
 }
 
+/** `dragTo` for a test. A guide pictures a drag from the page's mouse, which a locator's own gestures
+ * never pass through, so it presses the middle of what the source shows (a label is a full-width
+ * row) and moves in steps; the source is located last, so it is what the step lights. */
 export async function drag(page: Page, source: ElementRef, target: ElementRef): Promise<void> {
-  await (await locate(page, source)).dragTo(await locate(page, target));
+  if (!guide.guideDir()) {
+    await (await locate(page, source)).dragTo(await locate(page, target));
+    return;
+  }
+  const to = await locate(page, target);
+  const from = await locate(page, source);
+  await from.scrollIntoViewIfNeeded();
+  const a = await from.evaluate((e) => {
+    const range = document.createRange();
+    range.selectNodeContents(e);
+    const text = range.getBoundingClientRect();
+    const b = text.width > 0 ? text : e.getBoundingClientRect();
+    return {x: b.x + b.width / 2, y: b.y + b.height / 2};
+  });
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(a.x + 6, a.y + 6, {steps: 2});
+  const b = (await to.boundingBox())!;
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, {steps: 10});
+  await page.mouse.up();
 }
 
 /** Where an element says it is open: `aria-expanded` on itself or on its header/trigger inside;

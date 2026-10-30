@@ -43,6 +43,9 @@ function canon(smi: string, rdkit: RDModule): string {
   } finally { mol.delete(); }
 }
 
+/** Fully substituted alkene with R1 cis to R3, as drawn in the Markush Enumerator. */
+const STEREO_ALKENE = '[*:1]/C([*:2])=C(\\[*:3])[*:4]';
+
 /** Materializes a BitSet keep-mask into a plain boolean[] for element-wise comparison. */
 function maskBools(bs: DG.BitSet): boolean[] {
   return Array.from({length: bs.length}, (_, i) => bs.get(i));
@@ -103,6 +106,12 @@ category('PolyTool: ChemEnum: SMILES surgery', () => {
     expect(moveStartRLabelToBranch('[*:1]#C'), 'C(#[*:1])');
   });
 
+  test('moveStartRLabelToBranch: keeps double-bond and tetrahedral stereo', async () => {
+    expect(moveStartRLabelToBranch('[*:1]/C=C/C'), 'C(\\[*:1])=C/C');
+    expect(moveStartRLabelToBranch('[*:1][C@@H](C)N'), '[C@H]([*:1])(C)N');
+    expect(moveStartRLabelToBranch('[*:1][C@](F)(Cl)Br'), '[C@]([*:1])(F)(Cl)Br');
+  });
+
   test('moveStartRLabelToBranch: leaves interior unchanged', async () => {
     expect(moveStartRLabelToBranch('CC[*:1]'), 'CC[*:1]');
     expect(moveStartRLabelToBranch('CC([*:1])CC'), 'CC([*:1])CC');
@@ -111,6 +120,11 @@ category('PolyTool: ChemEnum: SMILES surgery', () => {
   test('substituteRLabelWithRingDigit collapses branch form', async () => {
     expect(substituteRLabelWithRingDigit('CC([*:1])CC', 1, '9'), 'CC9CC');
     expect(substituteRLabelWithRingDigit('CC([*:2])([*:1])CC', 1, '%50'), 'CC([*:2])%50CC');
+  });
+
+  test('substituteRLabelWithRingDigit collapses a branch that has a bond', async () => {
+    expect(substituteRLabelWithRingDigit('C(\\[*:1])=C', 1, '9'), 'C\\9=C');
+    expect(substituteRLabelWithRingDigit('CC(=[*:2])C', 2, '%42'), 'CC=%42C');
   });
 
   test('substituteRLabelWithRingDigit handles trailing form', async () => {
@@ -326,6 +340,38 @@ category('PolyTool: ChemEnum: assembly', () => {
     const res = assembleMolecule('C1CCCCC1[*:1]', new Map([[1, 'O[*:1]']]), rdkit);
     expect(res != null, true);
     expect(res, canon('OC1CCCCC1', rdkit));
+  });
+
+  test('stereo alkene core: an R-group on every position keeps the geometry', async () => {
+    const res = assembleMolecule(STEREO_ALKENE,
+      new Map([[1, 'C[*:1]'], [2, 'CC[*:2]'], [3, 'CCC[*:3]'], [4, 'CCCC[*:4]']]), rdkit);
+    expect(res, canon('C/C(CC)=C(\\CCC)CCCC', rdkit));
+  });
+
+  test('stereo alkene core: hydrogen and alkyl templates on every position all assemble', async () => {
+    const items = [{smiles: '[H][*:1]'}, ...BUILTIN_R_GROUP_TEMPLATES[0].items];
+    const rGroups = new Map([1, 2, 3, 4].map((n) => [n, items.map((it) => makeRGroup(it.smiles, n, '', rdkit))]));
+    const res = enumerate({cores: [makeCore(STEREO_ALKENE, 'c', rdkit)], rGroups, mode: ChemEnumModes.Cartesian}, rdkit);
+    expect(res?.length, items.length ** 4);
+  });
+
+  test('hydrogen R-groups keep the double-bond geometry', async () => {
+    const res = assembleMolecule(STEREO_ALKENE,
+      new Map([[1, '[H][*:1]'], [2, 'C[*:2]'], [3, 'CC[*:3]'], [4, 'Cl']]), rdkit);
+    expect(res, canon('[H]/C(C)=C(\\CC)Cl', rdkit));
+    expect(makeRGroup('[H]', 1, '', rdkit).isSingleAtom, true);
+  });
+
+  test('a stereo R-group on a stereo core keeps both double bonds', async () => {
+    const res = assembleMolecule(STEREO_ALKENE,
+      new Map([[1, 'C[*:1]'], [2, 'CC[*:2]'], [3, '[*:3]/C=C\\C'], [4, 'CCCC[*:4]']]), rdkit);
+    expect(res, canon('C/C(CC)=C(\\C=C/C)CCCC', rdkit));
+    expect(assembleMolecule('C/C=C/[*:1]', new Map([[1, '[*:1]/C=C/C']]), rdkit), canon('C/C=C/C=C/C', rdkit));
+  });
+
+  test('an R-group starting with its label keeps its chirality', async () => {
+    const res = assembleMolecule('C[*:1]', new Map([[1, '[*:1][C@@H](F)N']]), rdkit);
+    expect(res, canon('C[C@@H](F)N', rdkit));
   });
 
   test('multi-digit R numbers (R100, R101)', async () => {

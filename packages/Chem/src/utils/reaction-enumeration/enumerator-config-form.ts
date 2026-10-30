@@ -9,6 +9,7 @@ import {
 } from './config';
 import {buildCombinationLimitFields, buildProductFilterFields, fixNullableIntStepper} from './config-form';
 import {getRdKitModule} from '../chem-common-rdkit';
+import {byEngineModule} from '../../engine/chem-engine';
 import {tryGetRxn} from './enumerate';
 import {MountedViewerRegistry} from './viewer-mount';
 import {ChipEl, EnumeratorNav} from './enumerator-nav';
@@ -99,11 +100,14 @@ function cachedSampleValid(col: DG.Column, isValid: (s: string) => boolean): boo
   return result;
 }
 
+/** "Chemical engine": a reaction the engine's module reads (Crux's in Crux mode, which runs the enumeration; RDKit's
+ * where Crux reads none). */
 function isValidReactionSmarts(s: string): boolean {
-  const rxn = tryGetRxn(getRdKitModule(), s);
-  const ok = !!rxn;
-  rxn?.delete();
-  return ok;
+  return byEngineModule('reaction check', getRdKitModule(), (module) => {
+    const rxn = tryGetRxn(module, s);
+    rxn?.delete();
+    return rxn ? true : null;
+  }) ?? false;
 }
 
 // validateMolecule returns '' (not null) for a valid molecule — only a non-empty string is an error.

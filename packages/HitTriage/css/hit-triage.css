@@ -1,27 +1,10 @@
-.grok-hit-triage-view .d4-grid {
-    width: initial !important;
-    height: initial !important;
-}
-
-table.hit-triage-table {
-    margin: 10px;
-    width: calc(100% - 20px);
-}
-
-.hit-triage-table-container {
-    max-width: 600px;
-    max-height: 500px;
-    overflow-y: scroll;
-}
-
 .hit-triage-error-div {
     color: red;
     text-align: start;
 }
 
-.mx-5 {
-    margin-left: 5px;
-    margin-right: 5px;
+.hit-triage-input-error {
+    border-bottom: 1px solid var(--red-3);
 }
 
 .hit-triage-new-template-functions-input > .ui-box {
@@ -33,7 +16,6 @@ table.hit-triage-table {
     max-width: unset !important;
     overflow-y: scroll;
 }
-
 
 .hit-triage-new-template-functions-input > .d4-tab-host {
     width: 100% !important;
@@ -59,6 +41,28 @@ table.hit-triage-table {
     text-overflow: ellipsis;
 }
 
-.hit-triage-info-view-container .fa-trash-alt:hover {
-    color: #ff0000 !important;
+.hit-triage-home-header {
+    margin-left: 10px;
 }
+
+.hit-triage-home {
+    --u2-page-padding-x: 10px;
+    --u2-page-section-indent: 14px;
+}
+
+.hit-triage-template-editor {
+    height: 100%;
+    --u2-form-section-gap: 16px;
+}
+
+.hit-triage-compute-box {
+    --u2-master-detail-height: 322px;
+    max-width: 762px;
+}
+
+/* the progress tracker (tiles-view.ts): lanes scroll sideways; the Tile Viewer has no setting for a value's ellipsis */
+.hit-design-tracker-lanes {
+    height: 100%;
+    overflow: auto hidden;
+}
+.hit-design-tracker-lanes .d4-tile-viewer-form input.ui-input-editor {text-overflow: ellipsis;}

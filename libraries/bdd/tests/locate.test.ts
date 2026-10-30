@@ -403,6 +403,17 @@ test('a run suffix is stable within a feature and distinct across feature instan
   assert.equal(a.text('u{time}.{time}').split('.')[0], `u${a.text('{time}')}`);
   assert.match(a.text('{time}'), /^\d{13,}$/);
   assert.notEqual(a.text('{time}'), b.text('{time}'));
+  const was = process.env.DATAGROK_RUN_LOGIN;
+  process.env.DATAGROK_RUN_LOGIN = 'someone';
+  try {
+    assert.equal(a.text('type-{login}'), 'type-someone');
+  }
+  finally {
+    if (was === undefined)
+      delete process.env.DATAGROK_RUN_LOGIN;
+    else
+      process.env.DATAGROK_RUN_LOGIN = was;
+  }
 });
 
 test('the translated stack trace of a logged error is not a second error', () => {
@@ -429,4 +440,16 @@ scenario('a "name = value" status line is a readout by its label, and its value 
   const readout = await locate(page!, el('search readout'));
   assert.equal(await readout.count(), 1);
   assert.equal(await readout.evaluate((e) => e.getAttribute('role')), 'status');
+});
+
+scenario('a parent crumb is one link: the crumb itself, or the link an app\'s crumb holds', async () => {
+  await page!.setContent('<div class="d4-view-ribbon">' +
+    '<span class="d4-ribbon-name"><a class="ui-link">Hit Design</a></span>' +
+    '<span class="d4-ribbon-name grok-ns-entity-name">DMT1-1</span></div>' +
+    '<div class="d4-view-ribbon"><span class="d4-ribbon-name">Projects</span></div>');
+  assert.equal(await count('"Hit Design" link'), 1);
+  assert.equal(await text('"Hit Design" link'), 'Hit Design');
+  assert.equal(await (await locate(page!, el('"Hit Design" link'))).evaluate((e) => e.tagName), 'A');
+  assert.equal(await count('"Projects" link'), 1);
+  assert.equal(await count('"DMT1-1" link'), 0);
 });

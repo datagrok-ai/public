@@ -1,11 +1,3 @@
-/* Feature model → one Playwright spec. Deterministic: the output is a pure function of the feature
-   text and the loaded bindings; element phrases (`{element}`, `{widget}`) are emitted as `el('…')` and datasets as `ds('…')`
-   (names, never selectors), so a registry fix never forces a regeneration. A feature's scenarios
-   share one browser page through `feature(test, …)` (see runtime/harness.ts): Playwright still runs
-   one test per scenario. Every step is `session.step(line, title, …)` — its feature line is the
-   step's location in reports and traces, and the first line of its failure. A step declared with `enters` switches the vocabulary: the compiler
-   validates the following phrases against that context and emits `enter(page, '…')` so the
-   runtime resolves them the same way. */
 import {dirname, isAbsolute, join, relative, sep} from 'node:path';
 import type {Bindings} from './discover.js';
 import type {FeatureModel, ScenarioModel, StepModel} from './gherkin.js';
@@ -85,7 +77,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
   const diag = (line: number, level: DiagnosticLevel, message: string) =>
     diagnostics.push({file: relPath, line, level, message});
   const emitText = (value: unknown): string => Array.isArray(value) ? `[${value.map(emitText).join(',')}]` :
-    typeof value === 'string' && /\{(run|time)\}/.test(value) ? `session.text(${JSON.stringify(value)})` : JSON.stringify(value);
+    typeof value === 'string' && /\{(run|time|login)\}/.test(value) ? `session.text(${JSON.stringify(value)})` : JSON.stringify(value);
 
   const emitArg = (arg: MatchedArg, step: StepModel, context: ContextEntry | undefined): string => {
     switch (arg.type) {

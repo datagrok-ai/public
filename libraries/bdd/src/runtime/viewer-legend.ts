@@ -1,6 +1,3 @@
-/* The legend a viewer hosts — read from the `data-legend-*` attributes it publishes on every
-   commit, never from its render path — and the row tooltip, which is one element hidden between
-   hovers (so every read matches the visible one only). */
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
@@ -10,6 +7,7 @@ import {LegendState} from './viewer-runtime.js';
 import {near, parseHex} from './viewer-pixels.js';
 import {centerOf, dragDelta, dragFrom, onViewer, settle, snapshot, viewerLocator} from './viewers.js';
 
+// the row tooltip is one element hidden between hovers: every read matches the visible one only
 const TOOLTIP_ROWS = '.d4-tooltip:visible table.d4-row-tooltip-table tr';
 const TOOLTIP_COLUMNS = TOOLTIP_ROWS + ' td:first-child';
 const LEGEND_MODES: Record<string, string> = {docked: 'docked', corner: 'corner', 'mini icon': 'miniIcon', tooltip: 'tooltip', hidden: 'hidden'};

@@ -1,11 +1,3 @@
-/* The Dart top menu (the ribbon's menu bar: File, Edit, ..., a package's group) driven by path
-   the way the context menu is by `pickMenuPath`. The items carry the platform's names —
-   `div-Bio---Analyze---Sequence-Space...` for "Bio > Analyze > Sequence Space..." — so every
-   segment is found by name, never by scanning labels. A top-level group opens on the pointer
-   entering it (a click toggles it — a second click on an open one closes it); a vertical group
-   opens on a pointer move inside it, and a pointer that already rests on it moves nowhere, so
-   the entry is two moves within the item. A menu bar too narrow for its groups folds the rest
-   into a "more" group, where the folded items are vertical. */
 import {Locator, Page} from '@playwright/test';
 import {expect} from './patience.js';
 import {installViewerRuntime, baselineAll} from './viewers.js';

@@ -1,5 +1,9 @@
 # CDD Vault Link changelog
 
+## v.next
+
+* App: The landing header is u2's `AppHeader` (moved out of `@datagrok-libraries/utils`): the same icon, bullets and Learn more
+
 ## 1.1.1 (2026-07-12)
 
 * Tests: Added basic smoke tests covering app launch, opening Molecules/Batches tabs, and the main `getVaults` / `getMolecules` / `getBatches` / `getProtocolsAsync` / `getCollectionsAsync` / `getSavedSearches` / `cDDVaultSearch` functions.

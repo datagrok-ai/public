@@ -18,7 +18,7 @@ Feature: Box plot filter semantics
     And "Zoom Values By Filter" property of box plot viewer should be "true"
     And box plot viewer should show 100 rows
     When user filters rows where "Average Mass" is between 300 and 400
-    Then fewer than 100 rows should pass the filter
+    Then the filter should pass exactly the rows where "Average Mass" is between 300 and 400
     And box plot viewer should show fewer rows than before
     And box plot viewer should show a narrower value range than before
     When user resets the filter
@@ -28,7 +28,7 @@ Feature: Box plot filter semantics
   Scenario: Zoom Values By Filter off keeps the range
     When user sets "Zoom Values By Filter" property of box plot viewer to "false"
     And user filters rows where "Average Mass" is between 300 and 400
-    Then fewer than 100 rows should pass the filter
+    Then the filter should pass exactly the rows where "Average Mass" is between 300 and 400
     And box plot viewer should show the same value range as before
     When user sets "Zoom Values By Filter" property of box plot viewer to "true"
     Then box plot viewer should show a narrower value range than before
@@ -62,6 +62,8 @@ Feature: Box plot filter semantics
     And user sets "Marker Color Column" property of box plot viewer to "TPSA"
     Then "Marker Color Column" property of box plot viewer should be "TPSA"
     And box plot viewer should have a "color scale" area
+    And the "color scale" area of box plot viewer should lie outside the "y axis" area
+    And the "color scale" area of box plot viewer should lie outside the "x axis" area
     And no errors should have been logged
     When user resets the filter
     Then the color scale of box plot viewer should cover a wider range than before

@@ -3,10 +3,11 @@
    component-own-prop merge (R-a), the bound-appearance Bindings rows and the generalized
    "Add binding…". Pattern of tests/handler-edit.test.js; dg-stub.mjs serves the platform. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
 import {Registry} from '../src/spec/registry.js';
@@ -105,7 +106,7 @@ function picker() {
   const dialog = document.querySelector('.u2-bind-picker');
   const list = dialog?.querySelector('.u2-list');
   if (list) {
-    list.clientHeight = 400;
+    layout(list, {clientHeight: 400});
     fire(list, 'scroll');
   }
   return dialog;

@@ -1,8 +1,12 @@
+/**
+ * The reaction cell renderer and reaction drawing: RDKit's in both modes (Crux has no reaction drawing yet; engine/
+ * README.md, "What stays RDKit"). Its `rdKitModule` is RDKit's.
+ */
 import * as DG from 'datagrok-api/dg';
 import {RDModule, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {drawErrorCross, drawRdKitReactionToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {USE_RDKIT_REACTION_RENDERER} from '../utils/reactions/consts';
-import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {_convertMolNotationByRdKit} from '../utils/convert-notation-utils';
 import {MESSAGE_MALFORMED} from '../constants';
 import {prepareReactionDepiction} from './reaction-depiction';
 
@@ -117,7 +121,8 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
     return rxnString.split(/(?<!-)>/).map((part) => {
       if (!part || part.includes('#') || part.includes('$'))
         return part;
-      const res = _convertMolNotation(part, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, this.rdKitModule, false);
+      const res = _convertMolNotationByRdKit(part, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, this.rdKitModule,
+        false);
       return res && res !== MESSAGE_MALFORMED ? res : part;
     }).join('>');
   }

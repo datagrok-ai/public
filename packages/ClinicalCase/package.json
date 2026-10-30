@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",

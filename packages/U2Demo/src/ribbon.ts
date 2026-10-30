@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Scope, dropDownButton, iconButton, notify} from '@datagrok-libraries/u2';
-import {leakReport} from '@datagrok-libraries/u2/src/dg/index.js';
+import {leakReport} from '@datagrok-libraries/u2/dg';
 import type {DemoShell} from './demo';
 import {pageShown} from './nav';
 

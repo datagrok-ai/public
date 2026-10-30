@@ -80,11 +80,6 @@ export class MpoContextPanel {
       ...MpoContextPanel.HISTOGRAM_OPTIONS,
       valueColumnName: columnName,
     });
-
-    // Uncomment to disable interactivity
-    // ['mousedown', 'click', 'dblclick'].forEach((ev) =>
-    //   hist.root.addEventListener(ev, (e) => e.stopPropagation(), true),
-    // );
     return hist;
   }
 
@@ -138,7 +133,7 @@ export class MpoContextPanel {
       this.show();
 
     const scoreColumnNames =
-      await computeMpo(this.df, profile, columnMapping, aggregation, true, true, false, true, this.calculator,
+      await computeMpo(this.df, profile, columnMapping, aggregation, true, true, false, false, true, this.calculator,
         this.scoreColumnName?.(profile));
     if (!scoreColumnNames.length)
       return;

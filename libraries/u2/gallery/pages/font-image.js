@@ -74,12 +74,12 @@ export async function render(main) {
       value: 'normal italic 18px "Open Sans"',
       families: ['Open Sans', 'Roboto Mono', 'Georgia'],
       sizes: [12, 18, 24, 36]});
-    return [input, readout('value', computed(() => input.value.value))];
+    return [input, readout('value', computed(() => input.value))];
   });
 
   section('Font — a family the select does not offer', () => {
     const input = new FontInput({label: 'Legacy look', value: 'normal normal 11px "Comic Sans MS"'});
-    return [input, readout('value', computed(() => input.value.value)),
+    return [input, readout('value', computed(() => input.value)),
       el('p', 'u2-gallery-status',
         'The unknown family joins the select as a hidden option, so it survives the round-trip.')];
   });
@@ -95,7 +95,7 @@ export async function render(main) {
 
   section('Text — password', () => {
     const input = new TextInput({label: 'Password', password: true, value: 'hunter2'});
-    return [input, readout('value', computed(() => input.value.value)),
+    return [input, readout('value', computed(() => input.value)),
       el('p', 'u2-gallery-status',
         'The eye toggles masking. The platform PASSWORD_PLACEHOLDER dance is a credentials ' +
         'convention and stays out of the core input.')];

@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {updateDivInnerHTML} from '../utils/ui-utils';
@@ -108,22 +109,27 @@ export class SubstructureSearchDialog {
   }
 }
 
-export function linearSubstructureSearch(substructure: string, col: DG.Column<string>, separator?: string): DG.BitSet {
-  const re = separator ? prepareSubstructureRegex(substructure, separator) : substructure;
+/** The rows whose sequence holds [substructure]: the text itself, or with [asRegex] a regular expression. */
+export function linearSubstructureSearch(
+  substructure: string, col: DG.Column<string>, separator?: string, asRegex: boolean = false,
+): DG.BitSet {
+  const toPattern = (s: string) => asRegex ? s : StringUtils.escapeRegExp(s);
+  const re = new RegExp(separator ?
+    prepareSubstructureRegex(substructure, separator, toPattern) : toPattern(substructure));
   const resultArray = DG.BitSet.create(col.length);
   for (let i = 0; i < col.length; i++) {
     const macromolecule: string = col.get(i)!;
-    if (macromolecule.match(re) || macromolecule === substructure)
+    if (re.test(macromolecule) || macromolecule === substructure)
       resultArray.set(i, true, false);
   }
   return resultArray;
 }
 
-function prepareSubstructureRegex(substructure: string, separator: string) {
-  const char = `${separator}`.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
+function prepareSubstructureRegex(substructure: string, separator: string, toPattern: (s: string) => string) {
+  const char = StringUtils.escapeRegExp(separator);
   const startsWithSep = substructure.charAt(0) === separator;
   const endsWithSep = substructure.charAt(substructure.length - 1) === separator;
-  const substrWithoutSep = substructure.replace(new RegExp(`^${char}|${char}$`, 'g'), '');
+  const substrWithoutSep = toPattern(substructure.replace(new RegExp(`^${char}|${char}$`, 'g'), ''));
   const re = startsWithSep ?
     endsWithSep ? `${char}${substrWithoutSep}${char}` :
       `${char}${substrWithoutSep}${char}|${char}${substrWithoutSep}$` :

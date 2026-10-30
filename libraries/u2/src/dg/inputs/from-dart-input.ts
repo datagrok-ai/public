@@ -17,17 +17,26 @@ interface PlatformInputOptions<T> extends InputOptions<T> {
   dgInput: DartInputLike<T>;
 }
 
-/** A `DG.InputBase` seen by u2 as an `Input<T>`: the platform root is the whole input, so caption
- * and validation message stay the platform's and nothing renders twice. The platform value is
+/** A `DG.InputBase` seen by u2 as an `Input<T>`: the platform root is the whole input, so the caption
+ * and the platform validators' messages stay the platform's; u2's line shows only the verdicts the
+ * platform knows nothing of (required, an app's validator), and nothing renders twice. The platform value is
  * canonical — signal writes reach it through `dgInput.value`, echo-suppressed by comparison — and
  * Dart-side validators (regex, func-param, script) reach `Form.validity` through {@link validity}.
  * The bridge never owns the wrapped input: `dispose()` severs the subscriptions and nothing else. */
 export class PlatformInput<T> extends Input<T, PlatformInputOptions<T>> {
+  /** Why the input is off when the platform turned it off: the platform says no more. */
+  static readonly NOT_HERE = 'Not available here';
+
   private declare _messages: Signal<string | null>;
 
   constructor(dgInput: DartInputLike<T>, name?: string, options: InputOptions<T> = {}) {
     super({...options, dgInput, name: name ?? dgInput.caption}, dgInput.value);
     this.root.dataset.u2 = 'dart-input';
+    // the platform turns its input off on its root (`ui-input-disabled`, input_base.dart)
+    const watch = new MutationObserver(() => this._followPlatform());
+    watch.observe(dgInput.root, {attributes: true, attributeFilter: ['class']});
+    this.own(() => watch.disconnect());
+    this._followPlatform();
     // u2's editor skin (and the form's focus target) belongs on the platform's editor element, not
     // on its root, which is a whole input
     const editor = dgInput.root.querySelector<HTMLElement>('.ui-input-editor');
@@ -37,10 +46,10 @@ export class PlatformInput<T> extends Input<T, PlatformInputOptions<T>> {
       PlatformInput._makeTabbable(this, editor);
     }
 
-    const changed = dgInput.onChanged.subscribe((value) => this.value.value = value);
+    const changed = dgInput.onChanged.subscribe((value) => this.value = value);
     this.own(() => changed.unsubscribe());
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (!PlatformInput._same(value, dgInput.value))
         dgInput.value = value;
     });
@@ -54,11 +63,43 @@ export class PlatformInput<T> extends Input<T, PlatformInputOptions<T>> {
     const validated = onValidated(dgInput.dart)
       .subscribe((messages: string[]) => this._messages.value = PlatformInput._join(messages));
     this.own(() => validated.unsubscribe());
-    this.root.querySelector('.u2-input-error')?.remove();
+    // the platform shows its own validators' verdicts; u2's line carries the rest (required, an app's rule)
+    const line = this.root.querySelector<HTMLElement>('.u2-input-error')!;
+    this.effect(() => line.hidden = this._messages.value !== null);
   }
 
   get dgInput(): DartInputLike<T> {
     return this.options.dgInput;
+  }
+
+  get disabled(): string | null {
+    return super.disabled;
+  }
+
+  /** u2's reason, and the platform input turned off or on with it. */
+  set disabled(reason: string | null) {
+    super.disabled = reason;
+    // the platform's own switch (`DG.InputBase.enabled`); a headless double may have none
+    const dgInput = this.options.dgInput as {enabled?: boolean};
+    if (dgInput.enabled !== undefined && dgInput.enabled !== (super.disabled === null))
+      dgInput.enabled = super.disabled === null;
+  }
+
+  private _followPlatform(): void {
+    const off = this.options.dgInput.root.classList.contains('ui-input-disabled');
+    if (off && this.disabled === null)
+      this.disabled = PlatformInput.NOT_HERE;
+    else if (!off && this.disabled === PlatformInput.NOT_HERE)
+      this.disabled = null;
+  }
+
+  /** The platform's caption: the bridge renders no label of its own, yet a refusal names the field. */
+  get label(): string {
+    return super.label || this.options.dgInput.caption;
+  }
+
+  set label(x: string) {
+    super.label = x;
   }
 
   // registered before the base builds its validation effect, so that effect tracks _messages and

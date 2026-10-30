@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 import {SEMTYPE} from '../utils/proteomics-types';
 import {
@@ -229,9 +229,7 @@ category('Publishing', () => {
     async () => {
       const df = createSyntheticDeFixture();
       const tv = grok.shell.addTableView(df);
-      await delay(100);
       try { (tv as any).scatterPlot?.({x: 'log2FC', y: 'adj.p-value'}); } catch { /* swallow */ }
-      await delay(100);
 
       const projectName = `${DEFAULT_PROJECT_PREFIX}t1-${Date.now()}`;
       const group = await pickAnyGroup();
@@ -290,12 +288,9 @@ category('Publishing', () => {
     async () => {
       const {protein, enrichment} = createSpectronautCandidatesFixture();
       const proteinTv = grok.shell.addTableView(protein);
-      await delay(50);
       grok.shell.addTableView(enrichment);
-      await delay(100);
       try { grok.shell.v = proteinTv; } catch { /* swallow */ }
       try { (proteinTv as any).scatterPlot?.({x: 'log2FC', y: 'adj.p-value'}); } catch { /* swallow */ }
-      await delay(100);
 
       const projectName = `${DEFAULT_PROJECT_PREFIX}t2-${Date.now()}`;
       const group = await pickAnyGroup();
@@ -330,9 +325,6 @@ category('Publishing', () => {
         expect(!!reProteinDf, true);
         expect(!!reEnrichDf, true);
 
-        // Allow the autostart hook to wire the subscription.
-        await delay(300);
-
         // If the autostart hook hasn't run (timing / event-API variance across releases),
         // run recoverPublishedProject manually so the test stays deterministic.
         if (reEnrichDf!.getTag('proteomics.enrichment_wired') !== 'true') {
@@ -345,9 +337,8 @@ category('Publishing', () => {
         reProteinDf!.selection.setAll(false, false);
         const beforeCount = reProteinDf!.selection.trueCount;
         reEnrichDf!.currentRowIdx = 0;
-        await delay(150);
-        const afterCount = reProteinDf!.selection.trueCount;
-        expect(afterCount > beforeCount, true);
+        await waitUntil(() => reProteinDf!.selection.trueCount > beforeCount,
+          'Protein selection did not follow the current enrichment row');
       } finally {
         await cleanupProject(project);
         await cleanupChildSpace(projectName);
@@ -363,11 +354,8 @@ category('Publishing', () => {
       // user landed on the protein/volcano tab.
       const {protein, enrichment} = createSpectronautCandidatesFixture();
       const proteinTv = grok.shell.addTableView(protein);
-      await delay(50);
       grok.shell.addTableView(enrichment);
-      await delay(100);
       try { grok.shell.v = proteinTv; } catch { /* swallow */ }
-      await delay(50);
 
       const projectName = `${DEFAULT_PROJECT_PREFIX}restore-${Date.now()}`;
       const group = await pickAnyGroup();
@@ -381,7 +369,6 @@ category('Publishing', () => {
       try {
         project = await publishAnalysis(protein, opts);
         expect(!!project, true);
-        await delay(200);
 
         // The restored workspace must contain a view for BOTH original (by stable
         // .dart identity — toJs wrappers differ per access, so strict-equality misses).
@@ -412,7 +399,6 @@ category('Publishing', () => {
       const baselineProject = `${DEFAULT_PROJECT_PREFIX}t3-${Date.now()}`;
 
       grok.shell.addTableView(df);
-      await delay(100);
 
       const group = await pickAnyGroup();
       const opts: PublishOptions = {project: baselineProject, reviewerGroup: group, note: '', priorVersion: null};
@@ -425,10 +411,9 @@ category('Publishing', () => {
 
         // First reopen — baseline read
         grok.shell.closeAll();
-        await delay(100);
         const reopened1 = await grok.dapi.projects.find(projectId);
         await reopened1.open();
-        await awaitCheck(() => !!grok.shell.tv && !!grok.shell.tv.dataFrame,
+        await waitUntil(() => !!grok.shell.tv && !!grok.shell.tv.dataFrame,
           'reopened1 TableView never materialized', 5000);
         const clonedL2FC = grok.shell.tv!.dataFrame.col('log2FC')!.get(0);
         expect(clonedL2FC, baselineL2FC);
@@ -440,10 +425,9 @@ category('Publishing', () => {
 
         // Reopen the project AGAIN — clone must be unchanged
         grok.shell.closeAll();
-        await delay(100);
         const reopened2 = await grok.dapi.projects.find(projectId);
         await reopened2.open();
-        await awaitCheck(() => !!grok.shell.tv && !!grok.shell.tv.dataFrame,
+        await waitUntil(() => !!grok.shell.tv && !!grok.shell.tv.dataFrame,
           'reopened2 TableView never materialized', 5000);
         const reDf = grok.shell.tv!.dataFrame;
         const reL2FC = reDf.col('log2FC')!.get(0);
@@ -464,7 +448,6 @@ category('Publishing', () => {
       const projectName = `${DEFAULT_PROJECT_PREFIX}t4-${Date.now()}`;
 
       grok.shell.addTableView(df);
-      await delay(100);
 
       const group = await pickAnyGroup();
       const optsV1: PublishOptions = {project: projectName, reviewerGroup: group, note: 'v1', priorVersion: null};
@@ -478,9 +461,6 @@ category('Publishing', () => {
         const v1Name = (projectV1 as any).name as string;
         expect(/-v1-\d{4}-\d{2}-\d{2}$/.test(v1Name), true);
 
-        // Re-discover the source DF view (publishAnalysis opened the trimmed view)
-        await delay(200);
-
         const optsV2: PublishOptions = {project: projectName, reviewerGroup: group, note: 'v2', priorVersion: projectV1};
         projectV2 = await publishAnalysis(df, optsV2);
         expect(!!projectV2, true);
@@ -490,20 +470,18 @@ category('Publishing', () => {
 
         // Re-discover v2's options[SUPERSEDES]
         grok.shell.closeAll();
-        await delay(100);
         const v2Reopened = await grok.dapi.projects.find(v2Id);
         await v2Reopened.open();
-        await awaitCheck(() => !!grok.shell.tv && !!grok.shell.tv.dataFrame,
+        await waitUntil(() => !!grok.shell.tv && !!grok.shell.tv.dataFrame,
           'v2 reopen', 5000);
         const v2Opts: any = (v2Reopened as any).options ?? {};
         expect(v2Opts[PUBLISHED_TAGS.SUPERSEDES], v1Id);
 
         // Re-discover v1's bidirectional pointers (W-8 dual-write)
         grok.shell.closeAll();
-        await delay(100);
         const v1Reopened = await grok.dapi.projects.find(v1Id);
         await v1Reopened.open();
-        await awaitCheck(() => !!grok.shell.tv && !!grok.shell.tv.dataFrame,
+        await waitUntil(() => !!grok.shell.tv && !!grok.shell.tv.dataFrame,
           'v1 reopen', 5000);
         const v1Opts: any = (v1Reopened as any).options ?? {};
         expect(v1Opts[PUBLISHED_TAGS.SUPERSEDED_BY], v2Id);
@@ -544,7 +522,6 @@ category('Publishing', () => {
 
         const df = createSyntheticDeFixture();
         grok.shell.addTableView(df);
-        await delay(100);
 
         const projectName = `${DEFAULT_PROJECT_PREFIX}t5-${Date.now()}`;
         const opts: PublishOptions = {

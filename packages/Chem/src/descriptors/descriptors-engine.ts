@@ -6,20 +6,19 @@
  */
 import * as DG from 'datagrok-api/dg';
 import * as container from '../docker/api';
-import {isCruxRequested} from '../engine/chem-engine';
-import {cruxOrRdKitAsync, warnCruxFallback} from '../engine/fallback';
+import {byEngineAsync} from '../engine/chem-engine';
+import {warnCruxFallback} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
 import {loadCrux} from '../engine/crux-module';
 import {CruxWorkerApi, DescriptorTiming, INT_NONE, PackedDescriptorValues, isNoneValue} from '../crux/crux-api';
+import {cruxReadsCxExtension} from '../crux/crux-service';
 
 let cruxTree: object | null = null;
 
 /** The descriptors by group, as the container's `GET /chem/descriptors/tree` gives them. */
 export async function getDescriptorsTree(): Promise<object> {
-  if (!isCruxRequested())
-    return container.getDescriptorsTree();
   // the tree is the module's static data: the main thread's instance gives it without starting the workers
-  return cruxOrRdKitAsync('descriptorTree',
+  return byEngineAsync('descriptorTree',
     async () => cruxTree ??= JSON.parse((await loadCrux('descriptors') as unknown as CruxWorkerApi).descriptorTree()),
     () => container.getDescriptorsTree());
 }
@@ -31,9 +30,7 @@ export function forgetCruxTreeForTests(): void {
 
 /** A column per descriptor (group names expand to their members), named, typed and with nulls as the container's. */
 export async function calculateDescriptors(molecules: DG.Column, descriptors: string[]): Promise<DG.Column[]> {
-  if (!isCruxRequested())
-    return container.calculateDescriptors(molecules, descriptors);
-  return cruxOrRdKitAsync('calcDescriptors',
+  return byEngineAsync('calcDescriptors',
     () => cruxDescriptors(molecules, descriptors),
     () => container.calculateDescriptors(molecules, descriptors));
 }
@@ -62,12 +59,11 @@ async function cruxDescriptors(molecules: DG.Column, descriptors: string[]): Pro
   lap('pool');
   const result = await service.calcDescriptors(input, descriptors, timing ?? undefined);
   phase = performance.now();
-  if (unreadableForTests) {
-    input.forEach((m, i) => {
-      if (m && unreadableForTests!.has(m))
-        Object.values(result).forEach((values) => values.value[i] = values.type === 'int' ? INT_NONE : NaN);
-    });
-  }
+  // a CXSMILES whose query features Crux's reader skips gets the container's values, as a molecule Crux cannot read
+  input.forEach((m, i) => {
+    if (m && (unreadableForTests?.has(m) || !cruxReadsCxExtension(m)))
+      Object.values(result).forEach((values) => values.value[i] = values.type === 'int' ? INT_NONE : NaN);
+  });
   await fromContainerWhereUnread(input, descriptors, result);
   lap('unread rows');
   const columns = Object.entries(result).map(([name, values]) => descriptorColumn(name, values, rowCategories));

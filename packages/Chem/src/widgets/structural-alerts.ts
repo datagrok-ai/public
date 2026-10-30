@@ -8,49 +8,58 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {HIGHLIGHT_BY_SCAFFOLD_TAG} from '../constants';
 import {IColoredScaffold} from '../rendering/rdkit-cell-renderer';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
+import {byEngineModule} from '../engine/chem-engine';
 
 
 let alertsDf: DG.DataFrame | null = null;
-const _smartsMap: Map<string, RDMol> = new Map();
+/** The alerts' query molecules, one map per module (RDKit's, and Crux's in Crux mode: `byEngineModule`). */
+const _smartsMaps: Map<RDModule, Map<string, RDMol | null>> = new Map();
 let rdKitModule: RDModule | null = null;
 const NO_HIGHLIGHT = 0;
 
+/** The rows of the alerts `molecule` matches: on Crux in Crux mode, on RDKit for a molecule Crux cannot read. */
 export async function getStructuralAlerts(molecule: string): Promise<number[]> {
   if (alertsDf == null)
-    await loadSADataset();
-  rdKitModule ??= getRdKitModule();
-
-  const alerts: number[] = [];
-  let mol: RDMol | null = null;
-  try {
-    if (!grok.chem.isMolBlock(molecule) && molecule?.length > MAX_SMILES_LENGTH)
-      throw new Error(`SMILES string longer than ${MAX_SMILES_LENGTH} characters not supported`);
-    mol = rdKitModule.get_mol(molecule);
-    //TODO: Currently throws an error on rule id 221
-    const smartsCol = alertsDf!.getCol('smarts');
-    for (let i = 0; i < smartsCol.length; i++) {
-      const subMol = _smartsMap.get(smartsCol.get(i));
-      // lib.count_matches(subMol);
-      const matches = mol.get_substruct_matches(subMol!);
-      if (matches !== '{}')
-        alerts.push(i);
+    alertsDf = await grok.data.loadTable(getRdKitWebRoot() + 'files/alert-collection.csv');
+  if (!grok.chem.isMolBlock(molecule) && molecule?.length > MAX_SMILES_LENGTH)
+    throw new Error(`SMILES string longer than ${MAX_SMILES_LENGTH} characters not supported`);
+  return byEngineModule('structuralAlerts', getRdKitModule(), (module, crux) => {
+    const mol = module.get_mol(molecule);
+    if (!mol && crux)
+      return null;
+    try {
+      const queries = queryMols(module);
+      if (crux && [...queries.values()].includes(null))
+        throw new Error('not supported by Crux: an alert\'s SMARTS');
+      const smartsCol = alertsDf!.getCol('smarts');
+      const alerts: number[] = [];
+      for (let i = 0; i < smartsCol.length; i++) {
+        const subMol = queries.get(smartsCol.get(i));
+        if (subMol && mol!.get_substruct_matches(subMol) !== '{}')
+          alerts.push(i);
+      }
+      return alerts;
+    } finally {
+      mol?.delete();
     }
-  } finally {
-    mol?.delete();
-  }
-  return alerts;
+  })!;
 }
 
-async function loadSADataset(): Promise<void> {
-  const path = getRdKitWebRoot() + 'files/alert-collection.csv';
-  alertsDf = await grok.data.loadTable(path);
-  const smartsCol = alertsDf.getCol('smarts');
-  rdKitModule ??= getRdKitModule();
-
-  for (let i = 0; i < smartsCol.length; i++) {
-    const currentSmarts = smartsCol.get(i);
-    _smartsMap.set(currentSmarts, rdKitModule.get_qmol(currentSmarts));
+/** The alerts' query molecules on `module`, read once (a SMARTS it cannot read: none). */
+function queryMols(module: RDModule): Map<string, RDMol | null> {
+  let map = _smartsMaps.get(module);
+  if (!map) {
+    map = new Map();
+    for (const smarts of alertsDf!.getCol('smarts').toList()) {
+      try {
+        map.set(smarts, module.get_qmol(smarts));
+      } catch {
+        map.set(smarts, null);
+      }
+    }
+    _smartsMaps.set(module, map);
   }
+  return map;
 }
 
 export async function structuralAlertsWidget(molecule: string): Promise<DG.Widget> {

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {testData} from '@datagrok-libraries/test/src/dataframe-utils';
 import {BinaryImageCellRenderer} from '../cell-types/binary-image-cell-renderer';
 import {projectRoundTrip} from './utils';
@@ -65,7 +65,7 @@ category('Binary image', () => {
   test('draws a decoded image in the same paint', async () => {
     const bytes = await redPng();
     const gridCell = DG.Grid.create(DG.DataFrame.fromColumns([bytesColumn('image', [bytes])])).cell('image', 0);
-    await awaitCheck(() => BinaryImageCellRenderer.getImage(bytes).naturalWidth > 0, 'image not decoded', 3000);
+    await waitUntil(() => BinaryImageCellRenderer.getImage(bytes).naturalWidth > 0, 'image not decoded', 3000);
     const g = ui.canvas(100, 50).getContext('2d')!;
     new BinaryImageCellRenderer().render(g, 0, 0, 100, 50, gridCell, gridCell.style);
     expectArray(Array.from(g.getImageData(50, 25, 1, 1).data), [255, 0, 0, 255]);
@@ -77,7 +77,7 @@ category('Binary image', () => {
     const g = ui.canvas(100, 50).getContext('2d')!;
     new BinaryImageCellRenderer().render(g, 0, 0, 100, 50, gridCell, gridCell.style);
     expect(g.getImageData(50, 25, 1, 1).data[3], 0, 'drawn before the image was decoded');
-    await awaitCheck(() => g.getImageData(50, 25, 1, 1).data[0] === 255, 'the image was not drawn once loaded', 3000);
+    await waitUntil(() => g.getImageData(50, 25, 1, 1).data[0] === 255, 'the image was not drawn once loaded', 3000);
   });
 
   test('survives a project round trip', async () => {
@@ -86,10 +86,11 @@ category('Binary image', () => {
       DG.Column.fromStrings('name', ['red', 'none']), bytesColumn('image', [png, null])]));
     await projectRoundTrip(view, async (restored) => {
       const col = restored.dataFrame.col('image')!;
-      expect(col.semType, 'BinaryImage');
+      // the project brings the table back before its column types
+      await waitUntil(() => col.semType === 'BinaryImage', () => `the column came back as ${col.semType}`, 5000);
       expectArray(Array.from(col.get(0) as Uint8Array), Array.from(png));
       expect(col.isNone(1), true);
-      await awaitCheck(() => restored.grid.col('image')?.renderer?.cellType === 'BinaryImage',
+      await waitUntil(() => restored.grid.col('image')?.renderer?.cellType === 'BinaryImage',
         'the column is not drawn as images', 5000);
     });
   });

@@ -63,6 +63,25 @@ export async function StartWorkflow(nqName: string, version: string, instanceCon
   return await PackageFunctions.StartWorkflow(nqName, version, instanceConfig);
 }
 
+//description: Run a compute workflow without UI and return the state of every step.
+//input: string nqName { description: Qualified name of the workflow function to run }
+//input: string version { description: Workflow version to run }
+//input: object instanceConfig { description: Optional initial pipeline configuration }
+//output: object result
+export async function RunWorkflow(nqName: string, version: string, instanceConfig?: any) {
+  return await PackageFunctions.RunWorkflow(nqName, version, instanceConfig);
+}
+
+//description: Save the state returned by RunWorkflow as a new workflow run in history.
+//input: string nqName { description: Qualified name of the workflow function }
+//input: string version { description: Workflow version }
+//input: object state { description: The state of a RunWorkflow result }
+//input: object metadata { description: Optional title, description and tags }
+//output: funccall run
+export async function SaveWorkflowRun(nqName: string, version: string, state: any, metadata?: any) {
+  return await PackageFunctions.SaveWorkflowRun(nqName, version, state, metadata);
+}
+
 //description: Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
 //input: string id { description: Meta FuncCall id of the saved workflow run }
 export async function OpenWorkflowRun(id: string) : Promise<void> {

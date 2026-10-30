@@ -3,6 +3,8 @@
 import {Scope} from '../../core/scope.js';
 import {Control} from '../../core/component.js';
 import {div, span, button} from '../../core/elements.js';
+import {Format} from '../../core/format.js';
+import {Reason} from '../../core/reason.js';
 import type {Input} from '../../core/input-base.js';
 import {markSpan, resolveSpan, spanOf} from '../../core/span.js';
 import {iconButton} from '../actions/buttons.js';
@@ -29,6 +31,8 @@ export interface FilterRowHost {
   operators(prop: FilterProperty): FilterOperator[];
   /** The strongest lock on the node, its ancestors and their template counterparts. */
   lockOf(id: string): Lock;
+  /** Why the builder is off — every editor in a row reads and acts disabled — or null. */
+  disabled(): string | null;
   /** Advanced mode: handles, `not`, `+ group`. */
   advanced(): boolean;
   allowAdd: boolean;
@@ -37,11 +41,11 @@ export interface FilterRowHost {
   remove(id: string): void;
 }
 
-/** A mounted value editor: its element, a write of the condition's value (or a bound of it), the enabled switch. */
+/** A mounted value editor: its element, a write of the condition's value (or a bound of it), the off switch. */
 interface ValueEditor {
   root: HTMLElement;
   set(v: FilterValue | undefined): void;
-  setEnabled(x: boolean): void;
+  setDisabled(reason: string | null): void;
 }
 
 function scalarText(v: FilterScalar): string {
@@ -49,7 +53,7 @@ function scalarText(v: FilterScalar): string {
     return v.name ?? v.id;
   if (isSpan(v))
     return v.span;
-  return v instanceof Date ? v.toLocaleDateString() : String(v);
+  return Format.value(v);
 }
 
 function parseScalar(text: string, kind: FilterKind): FilterScalar {
@@ -59,20 +63,20 @@ function parseScalar(text: string, kind: FilterKind): FilterScalar {
 
 /** An editor of one scalar: a list (another operator's shape) reads as empty. */
 function scalarEditor(input: Input<any>, set: (v: FilterScalar | undefined) => void): ValueEditor {
-  return {root: input.root, set: (v) => set(Array.isArray(v) ? undefined : v), setEnabled: (x) => input.enabled = x};
+  return {root: input.root, set: (v) => set(Array.isArray(v) ? undefined : v), setDisabled: (x) => input.disabled = x};
 }
 
 /** An editor whose input holds model values as they are; a write of what it already holds is skipped. */
 function valueEditor(input: Input<any>, toInput: (v: FilterValue | undefined) => FilterValue | undefined): ValueEditor {
-  return {root: input.root, setEnabled: (x) => input.enabled = x, set: (v) => {
+  return {root: input.root, setDisabled: (x) => input.disabled = x, set: (v) => {
     const next = toInput(v);
-    if (!valueEquals(input.value.peek(), next))
-      input.value.value = next;
+    if (!valueEquals(input.peek(), next))
+      input.value = next;
   }};
 }
 
 function removeButton(onRemove: () => void, what: string = 'condition'): HTMLButtonElement {
-  const el = iconButton('minus', onRemove, {tooltip: `Remove ${what}`});
+  const el = iconButton('times', onRemove, {tooltip: `Remove ${what}`});
   el.classList.add('u2-fb-remove');
   el.dataset.u2Part = 'remove';
   return el;
@@ -96,8 +100,9 @@ function textPart(cls: string, part: string): HTMLElement {
   return el;
 }
 
-function markProblem(root: HTMLElement, line: HTMLElement, message: string | null): void {
-  root.classList.toggle('u2-fb-invalid', message !== null);
+function markProblem(root: HTMLElement, line: HTMLElement, message: string | null, missing = false): void {
+  root.classList.toggle('u2-fb-invalid', message !== null && !missing);
+  root.classList.toggle('u2-fb-missing', message !== null && missing);
   line.textContent = message ?? '';
   line.hidden = message === null;
   if (message === null)
@@ -107,6 +112,11 @@ function markProblem(root: HTMLElement, line: HTMLElement, message: string | nul
 }
 
 export class FilterRow extends Control {
+  /** Why a part of a condition or a group a template locked does not change. */
+  static readonly LOCKED = 'Locked by the template';
+  /** Why a group adds no condition. */
+  static readonly NOTHING_TO_ADD = 'The schema has no property to filter by';
+
   readonly id: string;
 
   private readonly _host: FilterRowHost;
@@ -131,7 +141,7 @@ export class FilterRow extends Control {
     this.root.classList.add('u2-fb-cond');
     this.root.dataset.u2 = 'filter-row';
     this.root.dataset.u2Node = cond.id;
-    this.runInScope(() => this._build(cond));
+    this.build(() => this._build(cond));
     this.update(cond);
   }
 
@@ -140,11 +150,11 @@ export class FilterRow extends Control {
     this._cond = cond;
     this._prop.setItems(FilterRow._items(this._host.properties().map((p) =>
       ({value: p.name, label: p.friendlyName ?? p.name})), cond.property));
-    this._prop.value.value = cond.property;
+    this._prop.value = cond.property;
     const prop = property(this._host.schema, cond.property);
     const ops = prop ? this._host.operators(prop) : [];
     this._op.setItems(FilterRow._items(ops.map((o) => ({value: o.id, label: o.label})), cond.operator));
-    this._op.value.value = cond.operator;
+    this._op.value = cond.operator;
     const op = ops.find((o) => o.id === cond.operator);
     this._propText.textContent = prop?.friendlyName ?? cond.property;
     this._opText.textContent = op?.label ?? cond.operator;
@@ -155,11 +165,11 @@ export class FilterRow extends Control {
       this._buildEditors(cond, prop, op);
     } else
       this._syncEditors(cond);
-    this._applyLock();
+    this.applyLock();
   }
 
-  setProblem(message: string | null): void {
-    markProblem(this.root, this._problem, message);
+  setProblem(message: string | null, missing = false): void {
+    markProblem(this.root, this._problem, message, missing);
   }
 
   focus(): void {
@@ -217,10 +227,12 @@ export class FilterRow extends Control {
       this._host.change(this.id, {value});
   }
 
-  // a locked property/operator reads as text: a disabled select says "broken", not "fixed"
-  private _applyLock(): void {
+  /** The lock and the builder's off state, applied: a locked property/operator reads as text — a
+   * disabled select says "broken", not "fixed" — and a disabled builder disables every editor. */
+  applyLock(): void {
     const lock = this._host.lockOf(this.id);
     const locked = lock !== 'none';
+    const off = this._host.disabled();
     this.root.classList.toggle('u2-fb-locked', locked);
     this._remove.hidden = locked;
     this._handle.hidden = locked || !this._host.advanced();
@@ -228,8 +240,13 @@ export class FilterRow extends Control {
     this._op.root.hidden = locked;
     this._propText.hidden = !locked;
     this._opText.hidden = !locked;
+    Reason.apply(this._remove, off);
+    for (const picker of [this._prop, this._op]) {
+      if (picker.disabled !== off)
+        picker.disabled = off;
+    }
     for (const editor of this._editors)
-      editor.setEnabled(lock !== 'all');
+      editor.setDisabled(off ?? (lock === 'all' ? FilterRow.LOCKED : null));
   }
 
   // the problem line stays the value column's last child: it reads under the value it is about
@@ -247,7 +264,7 @@ export class FilterRow extends Control {
       return;
     const scope = new Scope();
     this._editorScope = scope;
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       if (op.editor === 'list')
         this._mount(this._listEditor(cond, prop), 'value');
       else if (op.editor === 'range') {
@@ -318,33 +335,33 @@ export class FilterRow extends Control {
       const text = (v: FilterScalar | undefined) => v === undefined || v === null ? null : String(v);
       const input = new ChoiceInput({inline: true, items: prop.choices, value: text(initial),
         onChanged: (v) => onChange(v === null ? undefined : parseScalar(v, kind))});
-      return scalarEditor(input, (v) => input.value.value = text(v));
+      return scalarEditor(input, (v) => input.value = text(v));
     }
     const values = this._host.schema.values;
     if (kind === KIND.REF && values) {
       const input = new RefInput({inline: true, prop, schema: this._host.schema, operator,
         value: isRef(initial) ? initial : null, onChanged: (v) => onChange(v ?? undefined)});
-      return scalarEditor(input, (v) => input.value.value = isRef(v) ? v : null);
+      return scalarEditor(input, (v) => input.value = isRef(v) ? v : null);
     }
     switch (kind) {
       case KIND.INT: case KIND.FLOAT: {
         const input = new NumberInput({inline: true, mode: kind, min: prop.min, max: prop.max,
           value: typeof initial === 'number' ? initial : null,
           onChanged: (v) => onChange(v === null ? undefined : v)});
-        return scalarEditor(input, (v) => input.value.value = typeof v === 'number' ? v : null);
+        return scalarEditor(input, (v) => input.value = typeof v === 'number' ? v : null);
       }
       case KIND.BIG_INT: {
         const parse = (v: FilterScalar | undefined): bigint | null =>
           typeof v === 'number' || typeof v === 'string' && /^-?\d+$/.test(v) ? BigInt(v) : null;
         const input = new BigIntInput({inline: true, value: parse(initial),
           onChanged: (v) => onChange(v === null ? undefined : v.toString())});
-        return scalarEditor(input, (v) => input.value.value = parse(v));
+        return scalarEditor(input, (v) => input.value = parse(v));
       }
       case KIND.BOOL: {
         const text = (v: FilterScalar | undefined) => v === true ? 'true' : v === false ? 'false' : null;
         const input = new ChoiceInput({inline: true, items: ['true', 'false'], value: text(initial),
           onChanged: (v) => onChange(v === null ? undefined : v === 'true')});
-        return scalarEditor(input, (v) => input.value.value = text(v));
+        return scalarEditor(input, (v) => input.value = text(v));
       }
       case KIND.DATE_TIME: {
         // a span is a `Date` tagged with its text; two resolutions of one span are the same value
@@ -355,8 +372,8 @@ export class FilterRow extends Control {
         const input = new DateTimeInput({inline: true, relative: true, value: toDate(initial),
           onChanged: (v) => onChange(v === null ? undefined : spanOf(v) === undefined ? v : {span: spanOf(v)!})});
         return scalarEditor(input, (v) => {
-          if (!same(input.value.peek(), toDate(v)))
-            input.value.value = toDate(v);
+          if (!same(input.peek(), toDate(v)))
+            input.value = toDate(v);
         });
       }
       default: {
@@ -367,7 +384,7 @@ export class FilterRow extends Control {
           new SuggestInput({...options, openOnFocus: true, source: async (q, signal) =>
             (await values(prop, q, signal)).map((i) => scalarText(i.value))}) :
           new TextInput(options);
-        return scalarEditor(input, (v) => input.value.value = text(v));
+        return scalarEditor(input, (v) => input.value = text(v));
       }
     }
   }
@@ -391,7 +408,7 @@ export class FilterNestedRow extends Control {
     this.root.dataset.u2Node = group.id;
     this._text = span('', 'u2-fb-nested-text');
     this._text.dataset.u2Part = 'value';
-    this._remove = this.runInScope(() => removeButton(() => this._host.remove(this.id)));
+    this._remove = this.build(() => removeButton(() => this._host.remove(this.id)));
     this._problem = textPart('u2-fb-problem', 'problem');
     this.root.append(this._text, this._remove, this._problem);
     this.update(group);
@@ -399,9 +416,14 @@ export class FilterNestedRow extends Control {
 
   update(group: FilterGroup): void {
     this._text.textContent = `(${format(group) || '…'})`;
+    this.applyLock();
+  }
+
+  applyLock(): void {
     const lock = this._host.lockOf(this.id);
     this.root.classList.toggle('u2-fb-locked', lock !== 'none');
     this._remove.hidden = lock !== 'none';
+    Reason.apply(this._remove, this._host.disabled());
   }
 
   setProblem(message: string | null): void {
@@ -439,26 +461,26 @@ export class FilterGroupRow extends Control {
       this.root.dataset.u2 = 'filter-group';
       this.root.dataset.u2Node = group.id;
     }
-    this.connector = new ButtonGroup({toggle: 'single', density: 'toolbar',
-      items: [{id: 'and', label: 'and'}, {id: 'or', label: 'or'}]});
+    this.connector = this.build(() => new ButtonGroup({toggle: 'single', density: 'toolbar',
+      items: [{id: 'and', text: 'and'}, {id: 'or', text: 'or'}]}));
     this.connector.root.classList.add('u2-fb-connector');
     this.connector.root.dataset.u2Part = 'connector';
     this.not = button('not', () => this._host.change(this.id, {not: this._group.not === true ? undefined : true}));
     this.not.classList.add('u2-fb-not');
     this.not.dataset.u2Part = 'not';
     this.not.title = 'Negate the group';
-    this.add = this.runInScope(() => iconButton('plus', () => this._host.add(this.id, 'condition'),
+    this.add = this.build(() => iconButton('plus', () => this._host.add(this.id, 'condition'),
       {tooltip: 'Add condition'}));
     this.add.classList.add('u2-fb-add');
     this.add.dataset.u2Part = 'add';
-    this.addGroup = this.runInScope(() => iconButton('folder-plus', () => this._host.add(this.id, 'group'),
+    this.addGroup = this.build(() => iconButton('folder-plus', () => this._host.add(this.id, 'group'),
       {tooltip: 'Add group'}));
     this.addGroup.classList.add('u2-fb-add-group');
     this.addGroup.dataset.u2Part = 'add-group';
     const parts: HTMLElement[] = [this.connector.root, this.not, this.add, this.addGroup];
     if (!root) {
       this.handle = dragHandle();
-      this.remove = this.runInScope(() => removeButton(() => this._host.remove(this.id), 'group'));
+      this.remove = this.build(() => removeButton(() => this._host.remove(this.id), 'group'));
       parts.unshift(this.handle);
       parts.push(this.remove);
     }
@@ -478,22 +500,32 @@ export class FilterGroupRow extends Control {
     this._group = group;
     if (this.connector.selected.peek()[0] !== group.op)
       this.connector.selected.value = [group.op];
-    const advanced = this._host.advanced();
-    const lock = this._host.lockOf(this.id);
-    const locked = lock !== 'none';
-    this.root.classList.toggle('u2-fb-locked', locked);
     this.root.classList.toggle('u2-fb-negated', group.not === true);
     this.not.classList.toggle('u2-fb-not-on', group.not === true);
     this.not.setAttribute('aria-pressed', String(group.not === true));
+    this.applyLock();
+  }
+
+  /** The lock and the builder's off state on the header's controls: an off builder's reason wins over the lock's. */
+  applyLock(): void {
+    const advanced = this._host.advanced();
+    const locked = this._host.lockOf(this.id) !== 'none';
+    const off = this._host.disabled();
+    this.root.classList.toggle('u2-fb-locked', locked);
     this.not.hidden = !advanced;
-    this.not.disabled = locked;
-    this.connector.setEnabled('and', !locked);
-    this.connector.setEnabled('or', !locked);
+    const reason = off ?? (locked ? FilterRow.LOCKED : null);
+    Reason.apply(this.not, reason);
+    this.not.title = reason ?? 'Negate the group';
+    this.connector.setDisabled('and', reason);
+    this.connector.setDisabled('or', reason);
     this.add.hidden = locked || !this._host.allowAdd;
-    this.add.disabled = this._host.properties().length === 0;
+    Reason.apply(this.add, off ?? (this._host.properties().length === 0 ? FilterRow.NOTHING_TO_ADD : null));
     this.addGroup.hidden = !advanced || locked || !this._host.allowAdd;
-    if (this.remove)
+    Reason.apply(this.addGroup, off);
+    if (this.remove) {
       this.remove.hidden = locked;
+      Reason.apply(this.remove, off);
+    }
     if (this.handle)
       this.handle.hidden = locked;
   }

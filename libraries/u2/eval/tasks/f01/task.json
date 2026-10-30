@@ -1,0 +1,16 @@
+{
+  "name": "campaign-view-actions",
+  "entry": "campaign-actions.ts",
+  "title": "A campaign's ribbon, Submit and Merge dialogs in a TableView of a busy session",
+  "source": "HitTriage's Hit Design view: B-1 (dead rail icons, dialog keys) in Submit, B-2 (Files lost) and B-4 (~ column) in Merge, N-3 and C-7 on the ribbon, a dependent input built after an await, all inside a session with a nameless table and another view",
+  "hazards": ["t01", "t03", "t04", "t06", "t09"],
+  "bad": {
+    "bad-rail-edits": ["submit-escape", "submit-rename"],
+    "bad-files-input": ["merge-from-files", "merge-typed-path"],
+    "bad-semtype-default": ["merge-molecules"],
+    "bad-drops-promise": ["refresh-failure-handled"],
+    "bad-after-await": ["gone-with-view", "merge-from-files", "merge-local-file", "merge-molecules", "merge-typed-path"],
+    "bad-returns-row": ["typecheck"]
+  },
+  "notes": "N-3 (bad-returns-row) is a type error in u2 v1 (`run` returns a promise or nothing); at run time Scope.thenable contains it, see t09"
+}

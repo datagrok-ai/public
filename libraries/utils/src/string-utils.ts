@@ -26,6 +26,11 @@ export class StringUtils {
       initialName, existingNames, options?.auto, options?.idx, options?.render, options?.choices);
   }
 
+  /** [s] as a regular expression that matches the text itself. */
+  static escapeRegExp(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\\/-]/g, '\\$&');
+  }
+
   static isEmpty(s: string | null): boolean {
     return s == null || s == '';
   }

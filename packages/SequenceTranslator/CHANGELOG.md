@@ -1,7 +1,12 @@
 # Sequence Translator changelog
 
-## v.next
+## ## 1.11.6 (2026-10-30)
 
+* Markush Enumerator: Fixed every molecule failing for a core whose R-labels carry a bond, such as a stereo alkene `[*:1]/C([*:2])=C(\[*:3])[*:4]`, and hydrogen R-groups (the template's `[H][*:1]` or a drawn `[H]`) joining with the wrong double-bond geometry
+* Markush Enumerator: Fixed R-groups that start with their label (`[*:1][C@@H](C)N`) coming out as the other enantiomer, and a stereo R-group on a stereo double bond losing or flipping one of the two geometries
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): Enumerate: the placeholders validator no longer schedules a second warnings update 100 ms later; Chem enumeration settings fix their popup overflow once attached; the oligo demo fills its inputs as soon as they exist instead of after 500 ms each
+* Markush Enumerator: Edit and Duplicate on a core or an R-group open it in the sketcher (with Crux as the sketcher they opened it empty)
+* Markush Enumerator: Fixed Chem | Transform | Markush Enumeration... failing with a TypeError when the table has no current column yet, as right after it opens
 * [core#886](https://github.com/datagrok-ai/core/issues/886): Oligo Translator: Fixed Get SDF failing for HELM input and Copy SMILES copying an invalid value when the sequence has no structure
 * Tests: Added package tests for the Translator (bulk translation, the app's Axolabs sample, a plain RNA HELM, unreadable codes, GROK-20958), Combine Sequences and the oligo converters
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): PolyTool: Convert is disabled until the current table has a macromolecule column and Combine Sequences until an open table has one; fixed Enumerate HELM failing when the current view is not a table view

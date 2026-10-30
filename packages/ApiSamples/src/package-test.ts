@@ -1,7 +1,8 @@
 import { DataFrame, Script } from 'datagrok-api/dg';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import { runTests, tests, TestContext, category, test as _test, delay, initAutoTests as initCoreTests, before } from '@datagrok-libraries/test/src/test';
+import { runTests, tests, TestContext, category, test as _test, initAutoTests as initCoreTests, before, uiSettled,
+  waitUntil } from '@datagrok-libraries/test/src/test';
 import { categoryOwners } from './tests/owners';
 export const _package = new DG.Package();
 export { tests };
@@ -47,6 +48,9 @@ const skip = [
   'output-layouts',
   'file-browser'
 ];
+
+// show a loader on purpose, for as long as they run: there is nothing to wait for
+const keepsLoading = ['stock-broker', 'update-indicator'];
 
 const scriptViewer = [
   'parameter-validation',
@@ -113,49 +117,36 @@ export async function initTests() {
           await evaluateScript(script);
 
         async function runScriptViewer(script: Script) {
-          const scriptResult = new Promise<boolean>(async (resolve) => {
-            script.script = `${annotation}\n${script.script}`;
-            const scriptView = DG.ScriptView.create(script);
-            grok.shell.addView(scriptView);
-            let timeout: any;
-            const subscription = grok.functions.onAfterRunAction.subscribe((funcCall) => {
-              if ((funcCall.func as any).script === script.script.replaceAll('\r', '')) {
-                if (timeout)
-                  clearTimeout(timeout);
-                if (formInterval)
-                  clearInterval(formInterval);
-                subscription.unsubscribe();
-                scriptView.close();
-                resolve(true);
-              }
-            });
-            await delay(1000);
-            let formInterval = setInterval(() => {
-              //@ts-ignore
-              let buttonOk : HTMLElement= Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
-              .find((el) => el.textContent === 'OK') as HTMLElement;
-              if (buttonOk)
-                buttonOk.click();
-            }, 1000);
-            timeout = setTimeout(() => {
-              subscription.unsubscribe();
-              scriptView.close();
-              if (formInterval)
-                clearInterval(formInterval);
-              resolve(false);
-            }, 10000);
-            (document.getElementsByClassName("fa-play")[0] as any).click();
-            await delay(1000);
-
-          })
-
-          if (!(await scriptResult))
-            throw new Error(`Script ${'Scripts:' + script.options.path as string}.${script.friendlyName}`);
+          script.script = `${annotation}\n${script.script}`;
+          const scriptView = DG.ScriptView.create(script);
+          grok.shell.addView(scriptView);
+          let ran = false;
+          const subscription = grok.functions.onAfterRunAction.subscribe((funcCall) => {
+            if ((funcCall.func as any).script === script.script.replaceAll('\r', ''))
+              ran = true;
+          });
+          try {
+            await waitUntil(() => document.getElementsByClassName('fa-play').length > 0,
+              'the script view has no Run button');
+            (document.getElementsByClassName('fa-play')[0] as HTMLElement).click();
+            // the script asks for its inputs: confirm the form as a user would, until the run completes
+            const ok = () => Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
+              .find((el) => el.textContent === 'OK') as HTMLElement | undefined;
+            await waitUntil(() => {
+              if (!ran)
+                ok()?.click();
+              return ran;
+            }, `Script ${'Scripts:' + script.options.path as string}.${script.friendlyName}`);
+          } finally {
+            subscription.unsubscribe();
+            scriptView.close();
+          }
         }
 
         async function evaluateScript(script: Script) {
           await script.apply();
-          await delay(300);
+          if (!keepsLoading.includes(script.friendlyName))
+            await uiSettled(script.friendlyName);
         }
       }, skip.includes(script.friendlyName) ? { skipReason: 'skip', owner: owner } : { timeout: 60000, owner: owner });
     });

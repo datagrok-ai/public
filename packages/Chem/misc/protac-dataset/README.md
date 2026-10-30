@@ -1,9 +1,10 @@
 # PROTAC dataset
 
-Builds `data/demo/chem/protac_degraders.csv` — 2,792 PROTAC degraders split into warhead,
-linker and E3 ligand, used to demo the SAR Matrix "Use existing R-groups" mode (`Linker` is
-the core, `Warhead` and `E3 Ligand` are the R-group columns). The dataset's own
-documentation is `protac_degraders.README.md` next to the CSV.
+Builds the 2,792 PROTAC degraders split into warhead, linker and E3 ligand that the package
+ships as `files/demo_files/protac-degraders-2792.csv`, used to demo the SAR Matrix "Use existing
+R-groups" mode (`Linker` is the core, `Warhead` and `E3 Ligand` are the R-group columns). The
+dataset's own documentation and its CC BY 4.0 credit are `protac-degraders-2792.README.md` next
+to the CSV.
 
 ```
 pip install rdkit pandas openpyxl

@@ -3,7 +3,7 @@
    named keys over `look`, the renderer's signals peeked and never linked, the fluent factories'
    two-way links through `fromType`, and the settings form over the look. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from './dom-shim.js';
@@ -220,7 +220,7 @@ scoped('viewerOf links a signal option two-way where writable, one-way where not
 scoped('viewerOf takes a frame signal and the viewer is owned by the ambient scope', () => {
   const table = signal(undefined);
   const s = new Scope();
-  const v = Scope.runWith(s, () => viewerOf(Viewer.grid, table, {allowEdit: true}));
+  const v = s.build(() => viewerOf(Viewer.grid, table, {allowEdit: true}));
   assert.equal(v.dataFrame.rowCount, 0);
   assert.equal(v.props.allowEdit, true);
   table.value = demog();
@@ -272,9 +272,33 @@ scoped('viewerSettings builds a form whose fields read and write the look', () =
   const v = viewers.scatterPlot(demog(), {xColumnName: 'age'});
   const form = viewerSettings(v);
   assert.equal(form.target, globalThis.grok_Viewer_Get_Look(v.dart));
-  assert.equal(form.input('xColumnName').value.peek(), 'age');
-  form.input('xColumnName').value.value = 'weight';
+  assert.equal(form.input('xColumnName').peek(), 'age');
+  form.input('xColumnName').value = 'weight';
   assert.equal(v.props.xColumnName, 'weight');
   form.dispose();
   v.dispose();
+});
+
+scoped('viewerOf links a bound option a package viewer declares a tick late', async () => {
+  const late = new WidgetDescriptor('Band chart', []);
+  WidgetDescriptor.registry.push(late);
+  const axis = signal('logarithmic');
+  const v = viewerOf((t, options) => Viewer.fromType('Band chart', t, options), demog(), {yAxisType: axis});
+  // declared a tick late, as a package (JS) viewer declares its properties
+  const prop = new Property('yAxisType', 'string', {defaultValue: 'linear'});
+  WidgetDescriptor._overLook(prop);
+  late.properties.push(prop);
+  await new Promise((r) => setTimeout(r, 80));
+  assert.equal(v.props.yAxisType, 'logarithmic', 'linked once declared');
+  axis.value = 'linear';
+  assert.equal(v.props.yAxisType, 'linear', 'and follows');
+  v.dispose();
+});
+
+scoped('a viewer disposed before its late property appears leaves nothing running', async () => {
+  const late = new WidgetDescriptor('Band chart', []);
+  WidgetDescriptor.registry.push(late);
+  const v = viewerOf((t, options) => Viewer.fromType('Band chart', t, options), demog(), {yAxisType: signal('linear')});
+  v.dispose();
+  await new Promise((r) => setTimeout(r, 80));
 });

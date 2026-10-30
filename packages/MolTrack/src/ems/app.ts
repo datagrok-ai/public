@@ -1,122 +1,144 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DomainApp} from '@datagrok-libraries/ems/src/dg';
-import type {DomainAppViewOptions} from '@datagrok-libraries/ems/src/dg';
-import {Rows, isEmpty, span} from '@datagrok-libraries/u2';
+import {domains} from '@datagrok-libraries/ems/src/dg';
+import type {DomainApp, DomainViewEntry} from '@datagrok-libraries/ems/src/dg';
+import {moltrackDb} from '../generated/db';
+import {Compounds} from './compounds';
+import {MolTrackTables, SCHEMA} from './tables';
+import {AppHeader} from '@datagrok-libraries/u2';
 import type {RowView} from '@datagrok-libraries/u2';
-import type {CompoundBatchRow, CompoundRow} from '../generated/db';
-import {moltrackEmsDb} from '../generated/db';
-import {CompoundsApp} from './compounds';
-import {MolTrackTables} from './tables';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
+import {_package} from '../package';
 
 import '@datagrok-libraries/ems/src/dg/styles.js';
-import '../../css/moltrack-ems.css';
+import '../../css/moltrack.css';
 
-export const APP_PATH = '/apps/Moltrack/MolTrackEMS';
+export const APP_PATH = '/apps/Moltrack';
 
-interface ViewEntry {
-  table: string;
-  name: string;
-  sort: string;
-  options: DomainAppViewOptions;
-}
+const FILTERS = {filters: {mode: 'builder' as const, placement: 'left' as const}};
 
-const KEYS: Record<string, string> = {compound: 'molregno', compound_batch: 'batch_regno'};
+const BATCH_GRID = {open: 'batch_regno', columns: ['batch_regno', 'source', 'source_batch_code', 'acquired_date',
+  'synthesized_date', 'purity', 'project']};
 
-const VIEWS: ViewEntry[] = [
-  {table: 'compound', name: 'Compounds', sort: '!molregno', options: {app: CompoundsApp, mode: 'cards',
-    include: CompoundsApp.FIELDS, children: {tables: ['compound_batch'], mode: 'list'}}},
-  {table: 'compound_batch', name: 'Batches', sort: '!batch_regno',
-    options: {children: {tables: ['batch_addition', 'assay_result']}}},
-  {table: 'assay', name: 'Assays', sort: 'name', options: {children: {tables: ['assay_run']}}},
-  {table: 'assay_run', name: 'Assay Runs', sort: '!run_date,name', options: {children: {tables: ['assay_result']}}},
-  {table: 'assay_result', name: 'Assay Results', sort: '!created_on', options: {children: false}},
-  {table: 'addition', name: 'Additions', sort: 'name', options: {}},
+const STRUCTURE = (row: RowView) => row.structure ? grok.chem.drawMolecule(String(row.structure), 120, 56) : '';
+const COMPOUND_GRID = {rowHeight: 60, cells: {structure: STRUCTURE}};
+
+const KEYS: Record<string, string> = {[`${SCHEMA}.compound`]: 'molregno', [`${SCHEMA}.compound_batch`]: 'batch_regno'};
+
+const ENTRIES: DomainViewEntry[] = [
+  {table: `${SCHEMA}.compound`, name: 'Compounds', options: {...FILTERS, sort: '!molregno',
+    mode: 'cards', itemHeight: 88, exclude: Compounds.DERIVED, setup: Compounds.setup, menu: Compounds.menu,
+    grid: COMPOUND_GRID,
+    children: {tables: ['compound_batch'], grids: {compound_batch: BATCH_GRID}}}},
+  {table: `${SCHEMA}.compound_batch`, name: 'Batches', options: {...FILTERS, sort: '!batch_regno',
+    children: {tables: ['batch_addition', 'assay_result']}}},
+  {table: `${SCHEMA}.assay`, name: 'Assays', options: {...FILTERS, sort: 'name', children: {tables: ['assay_run']}}},
+  {table: `${SCHEMA}.assay_run`, name: 'Assay Runs', options: {...FILTERS, sort: '!run_date,name',
+    children: {tables: ['assay_result']}}},
+  {table: `${SCHEMA}.assay_result`, name: 'Assay Results',
+    options: {...FILTERS, sort: '!created_on', children: false}},
+  {table: `${SCHEMA}.addition`, name: 'Additions', options: {...FILTERS, sort: 'name'}},
 ];
 
+const VIEWS = domains.views({
+  path: APP_PATH,
+  handle: (address) => MolTrackTables.table(address.slice(SCHEMA.length + 1)),
+  ready: (app, table) => MolTrackEms.ready(app, table),
+  views: ENTRIES,
+});
+
 export class MolTrackEms {
-  // the router passes the path alone: a cold deep link's query is in the address bar, when it is this view's
-  static async open(address = ''): Promise<DG.ViewBase> {
-    const {entry, rest} = MolTrackEms._parse(await MolTrackEms._corporateLink(address) ?? address);
-    const {view, app} = await MolTrackEms._create(entry);
-    const own = window.location.pathname.toLowerCase().endsWith(MolTrackEms._base(entry).toLowerCase());
-    void app.open(rest || (own ? undefined : ''));
+  static async open(address = ''): Promise<DG.ViewBase | null> {
+    const target = await MolTrackEms._corporateLink(address) ?? address;
+    return target.replace(/^\//, '') === '' ? MolTrackEms.home() : VIEWS.open(target);
+  }
+
+  static home(): DG.View {
+    const rows = ENTRIES.map((entry) => {
+      const count = ui.link('', () => void MolTrackEms.show(entry.name.replace(/ /g, '')));
+      void grok.dapi.domains.table(entry.table).count()
+        .then((n) => count.textContent = String(n), () => count.textContent = '?');
+      return [entry.name, count];
+    });
+    const counts = ui.table(rows, (row) => row);
+    counts.classList.add('moltrack-home-counts');
+    const actions = MolTrackEms._quickActions([
+      {label: 'Register compound', run: () => void VIEWS.create(`${SCHEMA}.compound`)},
+      {label: 'Register batch', run: () => void VIEWS.create(`${SCHEMA}.compound_batch`)},
+      {label: 'Register assay', run: () => void VIEWS.create(`${SCHEMA}.assay`)},
+      {label: 'Register bulk', run: async () => void await domains.import(await MolTrackTables.compounds())},
+      {label: 'Search', run: () => void MolTrackEms.show('Compounds')},
+    ]);
+    void domains.extensible(SCHEMA).then((tables) => {
+      for (const [label, table] of [['Compound properties', 'compound'], ['Batch properties', 'compound_batch']]) {
+        if (tables.has(table)) {
+          actions.querySelector('.moltrack-quick-links')!.append(ui.link(label,
+            () => void domains.editProperties(SCHEMA, table).catch((e) => grok.shell.error(e.message))));
+        }
+      }
+    });
+    const content = ui.divH([counts, actions]);
+    content.classList.add('moltrack-home');
+    const page = ui.divV([content]);
+    const view = DG.View.fromRoot(page);
+    page.prepend(ViewHost.of(view).build(() => MolTrackEms._header()));
+    view.name = 'MolTrack';
+    view.path = APP_PATH;
     return view;
   }
 
-  static async show(address: string): Promise<DG.ViewBase> {
-    const {entry, rest} = MolTrackEms._parse(address);
-    const open = DomainApp.openAt(MolTrackEms._base(entry), rest);
-    if (open !== undefined)
-      return open;
-    const {view, app} = await MolTrackEms._create(entry);
-    grok.shell.addView(view);
-    void app.open(rest);
-    return view;
+  static show(address: string): Promise<DG.ViewBase> {
+    return VIEWS.show(address);
   }
 
   static treeBrowser(appNode: DG.TreeViewGroup): void {
-    for (const entry of VIEWS)
-      appNode.item(entry.name).onSelected.subscribe(() => void MolTrackEms.show(MolTrackEms._segment(entry)));
+    VIEWS.tree(appNode);
   }
 
-  static async compoundPanel(corporateId: string): Promise<DG.Widget> {
-    const molregno = MolTrackTables.keyNumber(await MolTrackTables.compounds(), 'molregno', corporateId);
-    const compound = molregno === null ? null :
-      await moltrackEmsDb.compounds.first({filter: DG.cond('molregno', '=', molregno)});
-    return DG.Widget.fromRoot(compound === null ? ui.divText(`${corporateId} is not registered`) :
-      await MolTrackEms.compoundCard(compound));
-  }
-
-  static async compoundCard(compound: CompoundRow): Promise<HTMLElement> {
-    const id = MolTrackTables.corporateId(await MolTrackTables.compounds(), 'molregno', compound.molregno);
-    const batches = span('');
-    void moltrackEmsDb.compoundBatches.count({filter: DG.cond('compound_id', '=', compound.id)})
-      .then((count) => batches.textContent = String(count), () => batches.textContent = '?');
-    return ui.divV([
-      grok.chem.drawMolecule(compound.structure, 200, 150),
-      ui.tableFromMap({'Grok ID': ui.link(id, () => void MolTrackEms.show(`Compounds?entity=${compound.id}`)),
-        'Name': compound.common_name ?? '', 'CAS': compound.cas ?? '', 'Formula': compound.formula ?? '',
-        'InChIKey': compound.inchikey ?? '', 'Batches': batches}),
-    ]);
-  }
-
-  private static async _create(entry: ViewEntry): Promise<{view: DG.ViewBase, app: DomainApp}> {
+  static ready(app: DomainApp, table: string): void {
     MolTrackTables.warmUp();
-    const view = (await MolTrackTables.table(entry.table)).app({filters: {mode: 'builder', placement: 'left'},
-      ...entry.options, name: entry.name, path: MolTrackEms._base(entry)});
-    const app = DomainApp.of(view)!;
-    app.listSource.sort.value = entry.sort;
-    const key = KEYS[entry.table];
+    const key = KEYS[table];
     if (key !== undefined)
       MolTrackEms._keySearch(app, key);
-    if (entry.table === 'compound' || entry.table === 'compound_batch')
-      MolTrackEms._context(app, entry.table);
-    return {view, app};
   }
 
-  // a new compound shows its identity under its form, not here
-  private static _context(app: DomainApp, table: string): void {
-    let shown: string | null = null;
-    app.effect(() => {
-      const source = app.page.value === 'entity' ? app.entitySource.value : app.listSource;
-      const row = source?.currentRow.value as RowView<CompoundRow | CompoundBatchRow> | null | undefined;
-      const id = row === null || row === undefined ? null : table === 'compound_batch' ?
-        (row as RowView<CompoundBatchRow>).compound_id : Rows.isDraft(row) ? null : row.id;
-      if (isEmpty(id) || id === shown)
-        return;
-      shown = id!;
-      grok.shell.o = ui.wait(async () => MolTrackEms.compoundCard(await moltrackEmsDb.compounds.get(id!)));
-    });
+  private static _header(): HTMLElement {
+    return new AppHeader({
+      icon: _package.webRoot + '/images/moltrack.png',
+      learnMore: 'https://github.com/datagrok-ai/public/blob/master/packages/MolTrack/README.md',
+      items: [
+        'Chemical compound registration system',
+        'Analyze assay data',
+        'Find contextual information on molecules.',
+      ],
+      title: 'MolTrack',
+      subtitle: 'Track, analyze, and manage chemical data',
+      bottomLine: true,
+    }).root;
   }
 
-  // the server cannot search a formatted key: a typed `DG-000060` becomes `molregno = 60`
+  private static _quickActions(links: {label: string; run: () => void}[]): HTMLElement {
+    const boltIcon = ui.iconFA('bolt');
+    boltIcon.classList.add('moltrack-bolt-icon');
+    const quickActionsLabel = ui.label('Quick Actions');
+    quickActionsLabel.classList.add('moltrack-quick-label');
+    const quickActionsTitle = ui.divH([boltIcon, quickActionsLabel]);
+    quickActionsTitle.classList.add('moltrack-quick-actions');
+    const quickLinks = ui.divV(links.map((link) => ui.link(link.label, link.run)));
+    quickLinks.classList.add('moltrack-quick-links');
+    const container = ui.divV([quickActionsTitle, quickLinks]);
+    container.classList.add('moltrack-quick-container');
+    return container;
+  }
+
+  // the server cannot search a formatted key: a typed `DG-000060` becomes `molregno = 60`, only once the key is whole
   private static _keySearch(app: DomainApp, column: string): void {
-    const {prefix} = MolTrackTables.keyFormat(app.table, column);
+    const {prefix, width} = MolTrackTables.keyFormat(app.table, column);
     app.effect(() => {
       const typed = app.listSource.search.value;
-      const n = typed.trim().toUpperCase().startsWith(prefix) ?
+      const key = typed.trim().toUpperCase();
+      const n = key.startsWith(prefix) && key.length >= prefix.length + width ?
         MolTrackTables.keyNumber(app.table, column, typed) : null;
       if (n === null)
         return;
@@ -133,29 +155,15 @@ export class MolTrackEms {
     if (compound !== null) {
       const n = MolTrackTables.keyNumber(await MolTrackTables.compounds(), 'molregno', compound);
       const row = n === null ? null :
-        await moltrackEmsDb.compounds.first({filter: DG.cond('molregno', '=', n), columns: ['molregno']});
+        await moltrackDb.compounds.first({filter: DG.cond('molregno', '=', n), columns: ['molregno']});
       return row === null ? 'Compounds' : `Compounds?entity=${row.id}`;
     }
     if (batch !== null) {
       const n = MolTrackTables.keyNumber(await MolTrackTables.table('compound_batch'), 'batch_regno', batch);
       const row = n === null ? null :
-        await moltrackEmsDb.compoundBatches.first({filter: DG.cond('batch_regno', '=', n), columns: ['batch_regno']});
+        await moltrackDb.compoundBatches.first({filter: DG.cond('batch_regno', '=', n), columns: ['batch_regno']});
       return row === null ? 'Batches' : `Batches?entity=${row.id}`;
     }
     return null;
-  }
-
-  private static _segment(entry: ViewEntry): string {
-    return entry.name.replace(/\s/g, '');
-  }
-
-  private static _base(entry: ViewEntry): string {
-    return `${APP_PATH}/${MolTrackEms._segment(entry)}`;
-  }
-
-  private static _parse(address: string): {entry: ViewEntry, rest: string} {
-    const [, segment = '', rest = ''] = /^\/?([^/?]*)(.*)$/.exec(address) ?? [];
-    const entry = VIEWS.find((e) => MolTrackEms._segment(e).toLowerCase() === segment.toLowerCase());
-    return entry === undefined ? {entry: VIEWS[0], rest: address.startsWith('?') ? address : ''} : {entry, rest};
   }
 }

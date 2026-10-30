@@ -17,7 +17,7 @@ import {bindValue} from '../../core/bind.js';
 import {each} from '../../core/region.js';
 import {AsyncSource, AsyncState} from '../../core/async-source.js';
 import {Overlay, OVERLAY_CLOSE_EVENT} from '../../core/overlay.js';
-import type {IItemsState} from '../../core/widget-like.js';
+import type {BindSource, IItemsState} from '../../core/widget-like.js';
 
 export interface ComboboxOptions {
   items: string[] | ((query: string, abort: AbortSignal) => Promise<string[]>);
@@ -42,7 +42,8 @@ type ComboboxEvent =
 export class Combobox extends Control {
   private static _seq = 0;
 
-  readonly value: Signal<string> = signal('');
+  /** The text's signal, for wiring. */
+  readonly signal: Signal<string> = signal('');
   readonly isOpen: ReadonlySignal<boolean>;
   readonly machineState: ReadonlySignal<ComboboxState>;
 
@@ -107,7 +108,7 @@ export class Combobox extends Control {
     } else {
       const items = options.items;
       this._view = computed<AsyncState<string>>(() => {
-        const q = this._all.value ? '' : this.value.value.toLowerCase();
+        const q = this._all.value ? '' : this.value.toLowerCase();
         const matched = q ? items.filter((i) => i.toLowerCase().includes(q)) : items;
         return matched.length > 0 ? {kind: 'ready', items: matched} : {kind: 'empty'};
       });
@@ -117,7 +118,7 @@ export class Combobox extends Control {
       return this._open.value && state.kind === 'ready' ? state.items : [];
     });
 
-    bindValue(this.scope, input, this.value);
+    bindValue(input, this.signal, {owner: this.scope});
     this.scope.listen(input, 'input', () => this._send({type: 'input'}));
     this.scope.listen(input, 'focus', () => this._send({type: 'focus'}));
     this.scope.listen(input, 'blur', () => this._send({type: 'blur'}));
@@ -126,17 +127,35 @@ export class Combobox extends Control {
     this.scope.listen(this._popup, OVERLAY_CLOSE_EVENT, () => this._send({type: 'dismiss'}));
 
     this.effect(() => input.setAttribute('aria-expanded', String(this._open.value)));
-    this.runInScope(() => each(this._list, this._shown, (item) => item, (item) => this._option(item)));
+    this.build(() => each(this._list, this._shown, (item) => item, (item) => this._option(item)));
     this.effect(() => this._renderStatus());
     this.effect(() => this._applyActive());
     let initial = true;
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (initial)
         initial = false;
       else
         untracked(() => this.fireEvent('change', value));
     });
+  }
+
+  /** The text: followed when read inside an `effect` or a `computed`; set it to change it. */
+  get value(): string {
+    return this.signal.value;
+  }
+
+  set value(x: string) {
+    this.signal.value = x;
+  }
+
+  /** The text, not followed. */
+  peek(): string {
+    return this.signal.peek();
+  }
+
+  bindStep(name: string): Signal<unknown> | BindSource | null {
+    return name === '' ? this.signal as Signal<unknown> : super.bindStep(name);
   }
 
   /** Focuses the editor. */
@@ -147,7 +166,7 @@ export class Combobox extends Control {
   /** The value, the typed text, whether the popup is open, whether an async source is loading. */
   getState(): ReturnType<Control['getState']> {
     const placeholder = this._input.placeholder;
-    return {...super.getState(), value: this.value.peek(), text: this._input.value, open: this._open.peek(),
+    return {...super.getState(), value: this.peek(), text: this._input.value, open: this._open.peek(),
       busy: this._view.peek().kind === 'loading', ...placeholder ? {placeholder} : {}};
   }
 
@@ -156,7 +175,7 @@ export class Combobox extends Control {
     const items = typeof this._options.items === 'function' ? this._lastItems() : this._options.items;
     const rendered = new Set(this._shown.peek());
     return Input.itemsState(items.map((item, index) => ({key: item, label: item, index,
-      selected: item === this.value.peek(), rendered: rendered.has(item)})), opts?.all);
+      selected: item === this.peek(), rendered: rendered.has(item)})), opts?.all);
   }
 
   /** Opens the popup over the whole list (an async source is asked for the empty query) and
@@ -217,7 +236,7 @@ export class Combobox extends Control {
         if (state === 'open')
           this._dismiss();
         else
-          this.value.value = '';
+          this.value = '';
         break;
       case 'tab':
       case 'dismiss':
@@ -234,7 +253,7 @@ export class Combobox extends Control {
       return;
     this._machine.value = 'open';
     this._open.value = true;
-    this._closeOverlay = Overlay.show(this._input, this._popup, this.scope);
+    this._closeOverlay = Overlay.show(this._input, this._popup, {owner: this.scope});
   }
 
   private _dismiss(): void {
@@ -253,7 +272,7 @@ export class Combobox extends Control {
 
   private _refresh(): void {
     if (this._source)
-      this._source.query(this.value.peek());
+      this._source.query(this.peek());
   }
 
   private _move(delta: number): void {
@@ -267,7 +286,7 @@ export class Combobox extends Control {
     const items = this._shown.peek();
     if (index < 0 || index >= items.length)
       return;
-    this.value.value = items[index];
+    this.value = items[index];
     this._dismiss();
     this._input.focus();
   }

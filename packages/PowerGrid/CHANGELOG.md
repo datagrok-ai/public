@@ -2,6 +2,11 @@
 
 ## v.next
 
+* VlaaiVis: Fixed the settings growing wider than the Context Panel when Columns lists many columns, which hid the columns' gear icons and scrolled the panel sideways
+* [public#4378](https://github.com/datagrok-ai/public/issues/4378): Summary columns: Fixed a source column brought back by Ctrl+Z not returning to its summary column (a Tags column stayed blank)
+* [public#4431](https://github.com/datagrok-ai/public/issues/4431): PowerGrid: Pie Chart summary column throws an error on hover when all its source columns are removed
+* [public#4411](https://github.com/datagrok-ai/public/issues/4411): PowerGrid: Radar summary column throws errors when all its source columns are removed
+* Tests: Added BDD claims for Ctrl+Z bringing a removed source column back to its place (GROK-19942) and a known-failure scenario for the Tags column left blank after that Ctrl+Z ([#4378](https://github.com/datagrok-ai/public/issues/4378))
 * Tags: Made a Tags column as wide as its widest cell when the renderer takes over, instead of 80 px that shortened the tags
 * [core#644](https://github.com/datagrok-ai/core/issues/644): Skip rendering the Forms viewer while it has no table
 * [core#656](https://github.com/datagrok-ai/core/issues/656): Migrate legacy pie chart subsectors without functionType when reading settings

@@ -14,13 +14,17 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
 import {dfToViewerMapping, getStartedOrNull, replaceForWindowsPath, richFunctionViewReport, ValidationResult} from '@datagrok-libraries/compute-utils';
-import type {ValidationItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import type ExcelJS from 'exceljs';
 import {getCustomExports} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/webcomponents-vue';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import type Dayjs from 'dayjs';
-import {ExportCbInput, ExportSummaryItem, ExportSummaryRollup, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {ExportCbInput, ExportSummaryItem, ViewersHook} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {
+  anyInput, getRunSummary, inputHasError, inputHasWarning, inputsWhere, isChange, isFixableInconsistency,
+  isInconsistent, RunStates, statesToStatus, textTitle,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
 import type {AugmentedStat, Status} from './components/TreeWizard/types';
 import {BehaviorSubject} from 'rxjs';
 import type * as Vue from 'vue';
@@ -203,20 +207,6 @@ export function getRelevantGlobalActions(data: PipelineState, currentStepUuid: s
   return globalActions;
 }
 
-// per-input conditions behind a step status, shared by statesToStatus and statusInputs
-const inputHasWarning = (val: ValidationResult) => !!val.warnings?.length;
-const inputHasError = (val: ValidationResult) => !!val.errors?.length;
-const isFixableInconsistency = (val: ConsistencyInfo) =>
-  !!val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted');
-const isChange = (val: ConsistencyInfo) => !!val.inconsistent && val.restriction === 'info';
-const isInconsistent = (val: ConsistencyInfo) => !!val.inconsistent;
-
-const anyInput = <T>(states: Record<string, T> | undefined, cond: (state: T) => boolean) =>
-  Object.values(states ?? {}).some(cond);
-
-const inputsWhere = <T>(states: Record<string, T> | undefined, cond: (state: T) => boolean) =>
-  Object.entries(states ?? {}).filter(([, state]) => cond(state)).map(([name]) => name);
-
 export const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) =>
   anyInput(consistencyStates, isFixableInconsistency);
 
@@ -255,38 +245,6 @@ export const statusToTooltip: Record<Status, string> = {
   ['failed']: 'Run failed',
 };
 
-const hasWarnings = (validationsState?: Record<string, ValidationResult>) =>
-  anyInput(validationsState, inputHasWarning);
-const hasChanges = (consistencyStates?: Record<string, ConsistencyInfo>) => anyInput(consistencyStates, isChange);
-const hasErrors = (validationsState?: Record<string, ValidationResult>) => anyInput(validationsState, inputHasError);
-
-export const statesToStatus = (
-  callState: FuncCallStateInfo,
-  validationsState?: Record<string, ValidationResult>,
-  consistencyStates?: Record<string, ConsistencyInfo>,
-): Status => {
-  if (callState.isRunning) return 'running';
-  if (callState.runError)
-    return 'failed';
-  if (callState.pendingDependencies?.length)
-    return callState.isOutputOutdated ? 'pending' : 'pending executed';
-  if (!callState.isOutputOutdated) {
-    if (hasInconsistencies(consistencyStates))
-      return 'succeeded inconsistent';
-    if (hasWarnings(validationsState) || hasErrors(validationsState))
-      return 'succeeded warn';
-    if (hasChanges(consistencyStates))
-      return 'succeeded info';
-    return 'succeeded';
-  }
-  if (hasErrors(validationsState))
-    return 'next error';
-  if (hasWarnings(validationsState) || hasInconsistencies(consistencyStates))
-    return 'next warn';
-
-  return 'next';
-};
-
 /** The inputs behind a step status. */
 export const statusInputs = (
   status: Status,
@@ -309,13 +267,6 @@ export const statusInputs = (
   default:
     return [];
   }
-};
-
-export const friendlyIoName = (funcCall: DG.FuncCall | undefined, ioName: string): string => {
-  const prop =
-    funcCall?.func?.inputs?.find((p: DG.Property) => p.name === ioName) ??
-    funcCall?.func?.outputs?.find((p: DG.Property) => p.name === ioName);
-  return prop?.friendlyName ?? prop?.caption ?? ioName;
 };
 
 // export-time viewers are created ad hoc and never mounted; detach releases their dart side
@@ -341,14 +292,6 @@ export async function getViewers(call: DG.FuncCall, viewersHook?: ViewersHook, m
   return mappings;
 }
 
-type ExportStates = {
-  callInfoStates?: Record<string, FuncCallStateInfo | undefined>,
-  validationStates?: Record<string, Record<string, ValidationResult> | undefined>,
-  consistencyStates?: Record<string, Record<string, ConsistencyInfo> | undefined>,
-  pipelineValidations?: Record<string, ValidationResult | undefined>,
-  descriptions?: Record<string, Record<string, string | string[]> | undefined>,
-};
-
 export const SUMMARY_FILE_NAME = '000_summary.xlsx';
 
 const XLSX_BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
@@ -361,92 +304,29 @@ const stepFileName = (state: StepFunCallState, idx: number, callInfo: FuncCallSt
   return `${exportIndex(idx)}_${replaceForWindowsPath(rawFileName)}.xlsx`;
 };
 
-// as in the tree, a title given as a list is not used
-const textTitle = (description?: Record<string, string | string[]>) =>
-  typeof description?.title === 'string' ? description.title : undefined;
-
 const workflowDirName = (state: Exclude<PipelineState, StepFunCallState>, idx: number) =>
   `${exportIndex(idx)}_${replaceForWindowsPath(state.friendlyName ?? state.nqName ?? '')}`;
 
-const resultMessages = (result: ValidationResult | undefined, prefix = '') => {
-  const texts = (items?: ValidationItem[]) =>
-    (items ?? []).map((item) => prefix + (typeof item === 'string' ? item : item.description));
-  return {
-    errors: texts(result?.errors),
-    warnings: texts(result?.warnings),
-    notifications: texts(result?.notifications),
-  };
-};
-
-const stepSummary = (
-  state: StepFunCallState, idx: number, path: string[], states: ExportStates,
-): ExportSummaryItem => {
-  const name = state.friendlyName ?? state.configId;
-  const title = textTitle(states.descriptions?.[state.uuid]);
-  const callInfo = states.callInfoStates?.[state.uuid];
-  const funcCall = state.funcCall;
-  if (!funcCall || !callInfo)
-    return {kind: 'step', path, name, title, errors: [], warnings: [], notifications: [], inconsistentInputs: []};
-  const validation = states.validationStates?.[state.uuid];
-  const consistency = states.consistencyStates?.[state.uuid];
-  const ios = Object.entries(validation ?? {})
-    .map(([io, result]) => resultMessages(result, `${friendlyIoName(funcCall, io)}: `));
-  return {
-    kind: 'step',
-    path,
-    name,
-    title,
-    fileName: stepFileName(state, idx, callInfo, title),
-    status: statesToStatus(callInfo, validation, consistency),
-    runError: callInfo.runError,
-    errors: ios.flatMap((m) => m.errors),
-    warnings: ios.flatMap((m) => m.warnings),
-    notifications: ios.flatMap((m) => m.notifications),
-    inconsistentInputs: Object.entries(consistency ?? {})
-      .filter(([, info]) => info.inconsistent)
-      .map(([io]) => friendlyIoName(funcCall, io)),
-  };
-};
-
-const OUTDATED_STATUSES: Status[] = ['next', 'next warn', 'next error', 'pending'];
-
-const summaryRollup = (steps: ExportSummaryItem[]): ExportSummaryRollup => {
-  const count = (pred: (item: ExportSummaryItem) => boolean) => steps.filter(pred).length;
-  return {
-    steps: steps.length,
-    notLoaded: count((item) => !item.fileName),
-    failed: count((item) => item.status === 'failed'),
-    outdated: count((item) => !!item.status && OUTDATED_STATUSES.includes(item.status)),
-    withErrors: count((item) => item.errors.length > 0),
-    withWarnings: count((item) => item.warnings.length > 0),
-    inconsistent: count((item) => item.inconsistentInputs.length > 0),
-  };
-};
-
-export function getExportSummary(treeState: PipelineState, states: ExportStates): ExportSummaryItem[] {
-  const items: ExportSummaryItem[] = [];
-  const visit = (state: PipelineState, idx: number, path: string[]): ExportSummaryItem[] => {
+export function getExportSummary(treeState: PipelineState, states: RunStates): ExportSummaryItem[] {
+  const files = new Map<string, Pick<ExportSummaryItem, 'path' | 'fileName'>>();
+  // a step whose run failed to load has a call state but no call
+  const callInfoStates = {...states.callInfoStates};
+  const visit = (state: PipelineState, idx: number, path: string[]) => {
     if (isFuncCallState(state)) {
-      const item = stepSummary(state, idx, path, states);
-      items.push(item);
-      return [item];
+      const callInfo = callInfoStates[state.uuid];
+      if (!state.funcCall)
+        delete callInfoStates[state.uuid];
+      const fileName = state.funcCall && callInfo ?
+        stepFileName(state, idx, callInfo, textTitle(states.descriptions?.[state.uuid])) : undefined;
+      files.set(state.uuid, {path, fileName});
+      return;
     }
     const nPath = state === treeState ? [] : [...path, workflowDirName(state, idx)];
-    const workflow: ExportSummaryItem = {
-      kind: 'workflow',
-      path: nPath,
-      name: state.friendlyName ?? state.configId,
-      title: textTitle(states.descriptions?.[state.uuid]),
-      ...resultMessages(states.pipelineValidations?.[state.uuid]),
-      inconsistentInputs: [],
-    };
-    items.push(workflow);
-    const steps = state.steps.flatMap((step, stepIdx) => visit(step, stepIdx, nPath));
-    workflow.rollup = summaryRollup(steps);
-    return steps;
+    files.set(state.uuid, {path: nPath});
+    state.steps.forEach((step, stepIdx) => visit(step, stepIdx, nPath));
   };
   visit(treeState, 0, []);
-  return items;
+  return getRunSummary(treeState, {...states, callInfoStates}).map((item) => ({...item, ...files.get(item.uuid)!}));
 }
 
 const SUMMARY_COLUMNS = [
@@ -513,7 +393,7 @@ export async function reportTree(
     metaStates?: Record<string, Record<string, BehaviorSubject<any>> | undefined>,
     hasNotSavedEdits?: boolean;
     cb?: (input: ExportCbInput) => Promise<void>,
-  } & ExportStates) {
+  } & RunStates) {
   const zipConfig: Zippable = {};
 
   const q = [{ state: treeState, idx: 0, path: [] as string[] }];

@@ -5,16 +5,18 @@ import * as DG from 'datagrok-api/dg';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {tryParseJson} from '@datagrok-libraries/utils/src/string-utils';
+import {readOutputOutdated} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {
-  readInstanceState, readOutputOutdated,
-} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
+  StateSnapshot, loadStateSnapshot, saveStateSnapshot, snapshotCall,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/state-snapshot';
 import {
-  PipelineState, PipelineStateRec, StepFunCallSerializedState, StepFunCallStateBase, isFuncCallState,
+  PipelineStateRec, StepFunCallStateBase, isFuncCallState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {buildTraverseD} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/graph-traverse-utils';
-import {copyDataFrame} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
+import type {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
+import {STEP_HISTORY_OPTION} from '../History/History';
 import {
-  ComparisonEntry, EntrySourceKind, ScalarNodeInfo, TableNodeInfo, AxisMode, TimeUnit, TIME_UNITS,
+  ComparisonEntry, EntrySnapshot, EntrySourceKind, ScalarNodeInfo, TableNodeInfo, AxisMode, TimeUnit, TIME_UNITS,
 } from './types';
 
 const SCALAR_PROPERTY_TYPES = new Set<string>([DG.TYPE.INT, DG.TYPE.FLOAT, DG.TYPE.BIG_INT]);
@@ -169,7 +171,7 @@ const callModelName = (call: DG.FuncCall) => call.func?.friendlyName ?? call.fun
 
 function makeEntry(
   id: string, name: string, sourceKind: EntrySourceKind, modelName: string, nodes: CallNodes,
-  lists: {failedSteps?: string[], outdatedSteps?: string[]} = {}, unsaved = false,
+  lists: {failedSteps?: string[], outdatedSteps?: string[]} = {}, snapshot?: EntrySnapshot,
 ): ComparisonEntry {
   return {
     id,
@@ -180,50 +182,48 @@ function makeEntry(
     dataFrames: nodes.dataFrames,
     ...lists.failedSteps?.length ? {failedSteps: lists.failedSteps} : {},
     ...lists.outdatedSteps?.length ? {outdatedSteps: lists.outdatedSteps} : {},
-    ...unsaved ? {unsaved} : {},
+    ...snapshot ? {snapshot} : {},
   };
+}
+
+function callEntry(id: string, name: string, call: DG.FuncCall, isOutputOutdated: boolean, snapshot?: EntrySnapshot) {
+  const modelName = callModelName(call);
+  return makeEntry(id, name, 'function', modelName, extractCallNodes(call, '', '', isOutputOutdated),
+    {outdatedSteps: isOutputOutdated ? [modelName] : []}, snapshot);
+}
+
+// steps without a loaded call are left out, the ones that failed to load are listed
+function workflowEntry(id: string, name: string, modelName: string, state: StateSnapshot, snapshot?: EntrySnapshot) {
+  const steps = collectWorkflowSteps(state);
+  const loaded = steps.filter(({step}) => step.funcCall);
+  const failed = steps.filter(({step}) => step.loadError);
+  for (const {step} of failed)
+    console.warn(`Run comparison: failed to load step run ${step.funcCallId}`, step.loadError);
+  const nodes = mergeNodes(loaded.map(({path, friendlyPath, step}) =>
+    extractCallNodes(step.funcCall!, path, friendlyPath, step.isOutputOutdated)));
+  const outdatedSteps = loaded.filter(({step}) => step.isOutputOutdated).map(({friendlyPath}) => friendlyPath);
+  return makeEntry(id, name, 'workflow', modelName, nodes,
+    {failedSteps: failed.map(({friendlyPath}) => friendlyPath), outdatedSteps}, snapshot);
 }
 
 /** Builds a comparison entry from a loaded run: a workflow meta-call is flattened into its steps. */
 export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEntry> {
   const name = getRunTitle(call);
   const modelName = callModelName(call);
+  let state: StateSnapshot | undefined;
   let isWorkflow = true;
-  let steps: WorkflowStep<StepFunCallSerializedState>[] = [];
   try {
-    const state = readInstanceState(call);
+    state = await loadStateSnapshot(call);
     isWorkflow = !!state;
-    steps = state ? collectWorkflowSteps(state).filter(({step}) => step.funcCallId) : [];
   } catch (e) {
     // legacy or malformed serialized configs degrade to an entry with no steps
     console.warn('Run comparison: failed to parse workflow config', e);
   }
-  if (!isWorkflow) {
-    const outdated = readOutputOutdated(call);
-    return makeEntry(call.id, name, 'function', modelName, extractCallNodes(call, '', '', outdated),
-      {outdatedSteps: outdated ? [modelName] : []});
-  }
-
-  const failedSteps: string[] = [];
-  const outdatedSteps: string[] = [];
-  const parts: CallNodes[] = [];
-  const results = await Promise.allSettled(steps.map(async ({path, friendlyPath, step}) => {
-    const run = await historyUtils.loadRun(step.funcCallId!);
-    const outdated = readOutputOutdated(run);
-    return {outdated, nodes: extractCallNodes(run, path, friendlyPath, outdated)};
-  }));
-  results.forEach((result, i) => {
-    const {friendlyPath, step} = steps[i];
-    if (result.status === 'rejected') {
-      console.warn(`Run comparison: failed to load step run ${step.funcCallId}`, result.reason);
-      failedSteps.push(friendlyPath);
-      return;
-    }
-    if (result.value.outdated)
-      outdatedSteps.push(friendlyPath);
-    parts.push(result.value.nodes);
-  });
-  return makeEntry(call.id, name, 'workflow', modelName, mergeNodes(parts), {failedSteps, outdatedSteps});
+  if (!isWorkflow)
+    return callEntry(call.id, name, call, readOutputOutdated(call));
+  return state ?
+    workflowEntry(call.id, name, modelName, state) :
+    makeEntry(call.id, name, 'workflow', modelName, mergeNodes([]));
 }
 
 /** Loads runs by id; runs that fail to load are reported by id instead of thrown. */
@@ -244,41 +244,32 @@ export async function loadRunEntries(ids: string[]) {
 
 let snapshotCounter = 0;
 
-// copies the tables, so later edits of the source don't leak into the comparison
-function snapshotEntry(
-  name: string, sourceKind: EntrySourceKind, modelName: string, nodes: CallNodes, outdatedSteps: string[],
-): ComparisonEntry {
-  const dataFrames = new Map([...nodes.dataFrames].map(([path, df]) => [path, copyDataFrame(df)] as const));
-  return makeEntry(`snapshot:${++snapshotCounter}`, name, sourceKind, modelName, {...nodes, dataFrames},
-    {outdatedSteps}, true);
-}
-
-/** Snapshot of a live function call, with the same paths as its saved run. */
-export function entryFromLiveCall(call: DG.FuncCall, isOutputOutdated: boolean, name: string): ComparisonEntry {
-  const modelName = callModelName(call);
-  return snapshotEntry(name, 'function', modelName, extractCallNodes(call, '', '', isOutputOutdated),
-    isOutputOutdated ? [modelName] : []);
-}
-
-/** Snapshot of a live workflow subtree, with the same paths as its saved run. */
-export function entryFromState(
-  state: PipelineState,
-  callStates: Record<string, {isOutputOutdated: boolean} | undefined>,
-  name: string,
-): ComparisonEntry {
-  const isOutdated = (uuid: string) => !!callStates[uuid]?.isOutputOutdated;
-  // an edited step is based on a plain function run, so it takes the function paths
+/** An unsaved entry of a snapshot, with the same paths as its saved run: an edited step takes the paths of the plain
+ * run it is based on. A step saves to the step history. */
+export function entryFromSnapshot(state: StateSnapshot, name: string, {
+  metadata = {}, stepHistory = false, saveable = true,
+}: {metadata?: ItemMetadata, stepHistory?: boolean, saveable?: boolean} = {}): ComparisonEntry {
+  const id = `snapshot:${++snapshotCounter}`;
+  const save = async (edited: ItemMetadata) => {
+    if (stepHistory && isFuncCallState(state))
+      state.funcCall!.options[STEP_HISTORY_OPTION] = 'true';
+    return saveStateSnapshot(state, edited);
+  };
   if (isFuncCallState(state)) {
     return state.funcCall ?
-      entryFromLiveCall(state.funcCall, isOutdated(state.uuid), name) :
-      snapshotEntry(name, 'function', '', mergeNodes([]), []);
+      callEntry(id, name, state.funcCall, state.isOutputOutdated, {metadata, save: saveable ? save : undefined}) :
+      makeEntry(id, name, 'function', '', mergeNodes([]), {}, {metadata});
   }
-  const steps = collectWorkflowSteps(state).filter(({step}) => step.funcCall);
-  const nodes = mergeNodes(steps.map(({path, friendlyPath, step}) =>
-    extractCallNodes(step.funcCall!, path, friendlyPath, isOutdated(step.uuid))));
-  const outdatedSteps = steps.filter(({step}) => isOutdated(step.uuid)).map(({friendlyPath}) => friendlyPath);
-  return snapshotEntry(name, 'workflow', state.friendlyName ?? state.nqName ?? '', nodes, outdatedSteps);
+  return workflowEntry(id, name, state.friendlyName ?? state.nqName ?? '', state,
+    {metadata, save: state.nqName ? save : undefined});
 }
+
+/** Snapshot of a standalone call; like the RFV's own save, outdated or failed results can't be saved. */
+export const entryFromLiveCall = (
+  call: DG.FuncCall, {isOutputOutdated, runError}: {isOutputOutdated: boolean, runError?: string}, name: string,
+  metadata?: ItemMetadata,
+) => entryFromSnapshot(snapshotCall(call, {isOutputOutdated, runError}), name,
+  {metadata, saveable: !isOutputOutdated && !runError});
 
 // same underlying table -> same entry id (so re-adding dedupes); keyed by the Dart
 // handle because names and row counts alone can collide across distinct tables

@@ -31,26 +31,13 @@
       "name": "ChemicalEngine",
       "friendlyName": "Chemical Engine",
       "category": "Engine",
-      "description": "Engine behind Chem's own chemistry. With Crux, molecules are drawn, descriptors, fingerprints and structural alerts calculated and the scaffold tree built by Crux; RDKit does the rest, and any molecule or call Crux cannot handle. Other packages get RDKit objects from Chem in both modes (getRdKitModule, getRdKitService); in Crux mode the pictures and values of the moved functions come from Crux.",
+      "description": "Engine behind Chem's own chemistry, Contains / Not contains substructure searches included. With Crux, molecules are drawn and searched, descriptors, fingerprints and structural alerts calculated and the scaffold tree built by Crux; RDKit does the rest, and any molecule or call Crux cannot handle. Other packages get RDKit objects from Chem in both modes (getRdKitModule, getRdKitService); in Crux mode the pictures and values of the moved functions come from Crux.",
       "propertyType": "string",
       "choices": [
         "RDKit",
         "Crux"
       ],
       "defaultValue": "RDKit",
-      "nullable": false
-    },
-    {
-      "name": "SubstructureSearchEngine",
-      "friendlyName": "Substructure Search Engine",
-      "category": "Search",
-      "description": "Engine for Contains / Not contains substructure searches. Crux falls back to RDKit for queries it cannot express (radicals, isotopes, some SMARTS primitives)",
-      "propertyType": "string",
-      "choices": [
-        "RDKit",
-        "Crux"
-      ],
-      "defaultValue": "Crux",
       "nullable": false
     },
     {
@@ -89,6 +76,7 @@
     "@datagrok-libraries/statistics": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/tutorials": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@types/pako": "^2.0.3",
     "@webgpu/types": "^0.1.40",
@@ -124,7 +112,8 @@
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
-    "test": "grok test"
+    "test": "grok test",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"

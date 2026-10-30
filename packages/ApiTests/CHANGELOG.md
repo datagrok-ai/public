@@ -2,8 +2,13 @@
 
 ## v.next
 
+* U2: Added `Usage` (report once per site with a count, throw a `U2UsageError`, off), the owner verbs (`Scope.root`, `build`, `task` with a serial queue and a skip after dispose, `subscribe`), `lens` and `afterFlush`, `operability` (the six rules on a real layout, with the old read-only rail rule), `component` (a handle, a name, the owner verbs on the control, the `Control.build` alias) and `disabledReason`, and `reserved-key` (a field taking a control member is reported, a subclass of a library class is not); `version` checks 1.2
+* U2: Added `version` (`DG.U2.version` is 1.1 or newer), `Scope.thenable` (a promise and a thenable are, a `DG.Row` and a proxy throwing on every name are not, and `Scope.bind` reports nothing for either) and "a static control holds no live scope"
+* UI: Added `Widgets: Table pickers` tests for `ui.pickFileFromFiles` with `multiple` (Ctrl+click) and `connection` (one share alone; folder mode lists folders and resolves the share's root), and `Shell: ViewLayout` tests for `boundColumnNames` (a scatter plot and a Filters viewer, a stored layout with no open view, a grid alone, a name in two cases, a viewer type nothing registered)
+* TableView: Added `TableView: Ribbon` tests for `showParentCrumb` (the crumb is a link as in `ui.breadcrumbs`) and `showSaveButton`, and for closing a table view: its open parent becomes current, a parent closed before is not brought back
 * [core#1050](https://github.com/datagrok-ai/core/issues/1050): Replaced fixed delays and short `awaitCheck` polls with event and state waits, unskipped the kml/kmz format tests, and added an `exclude` input to `test`
 * Chats: Added tests for `grok.dapi.chats`, `DG.ChatWidget` and `grok.dapi.users.notifications.send`
+* Permissions: Added `Dapi: permissions` checks that the owner keeps every privilege once every grant is revoked, that a space shared for viewing cannot be changed, deleted or shared further by the grantee, and that a connection shared on its own shares none of its queries
 * Permissions: Extended `Dapi: permissions` with View-and-use / Full-access coverage for database connections, queries, tables, layouts and models (the grantee reads but cannot edit, delete or re-share), and a check that a share with notifications reaches the grantee while a silent one does not
 * Grid: Color Coding: Added checks that a layout keeps a coloring applied to the text (GROK-13668) and that a text coloring switched off leaves no `.color-coding-text` tag behind
 * [core#857](https://github.com/datagrok-ai/core/issues/857): Fixed `View.createByType` failing for the packages view type

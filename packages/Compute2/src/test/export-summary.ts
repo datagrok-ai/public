@@ -9,7 +9,8 @@ import type {
 import type {
   FuncCallStateInfo,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {friendlyIoName, getExportSummary, reportSummary, reportTree, SUMMARY_FILE_NAME} from '../utils';
+import {getExportSummary, reportSummary, reportTree, SUMMARY_FILE_NAME} from '../utils';
+import {friendlyIoName} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
 
 const callState = (isOutputOutdated: boolean, runError?: string): FuncCallStateInfo =>
   ({isRunning: false, isRunnable: true, isOutputOutdated, runError, pendingDependencies: []});
@@ -114,6 +115,13 @@ category('Export: workflow summary', () => {
     const item = getExportSummary(treeState, states).find((item) => item.name === 'notLoaded')!;
     expect(item.fileName === undefined, true, 'no file name');
     expect(item.status === undefined, true, 'no status');
+  });
+
+  test('A step with a call state but no call is not loaded', async () => {
+    const withCallState = {...states, callInfoStates: {...states.callInfoStates, notLoaded: callState(true)}};
+    const items = getExportSummary(treeState, withCallState);
+    expect(items.find((item) => item.name === 'notLoaded')!.status === undefined, true, 'no status');
+    expectDeepEqual(items.find((item) => item.name === 'nested')!.rollup?.notLoaded, 1);
   });
 
   test('Workflow items carry their validations and a rollup of their steps', async () => {

@@ -7,7 +7,7 @@ import {VirtualTree} from '../../components/collections/tree.js';
 import type {TreeNode} from '../../components/collections/tree.js';
 import {TextInput} from '../../components/inputs/text-input.js';
 import {iconButton} from '../../components/actions/buttons.js';
-import {div, divV, span} from '../../core/elements.js';
+import {divV, span} from '../../core/elements.js';
 import type {Input} from '../../core/input-base.js';
 import {parsePath} from '../../spec/path.js';
 import type {SpecInstance} from '../../spec/spec.js';
@@ -102,13 +102,13 @@ export function bindPicker(instance: SpecInstance, onPick: (path: string) => boo
   const dialog = new Dialog(options.prop === undefined ? 'Bind to' : `${options.prop} — bind to`);
   dialog.root.classList.add('u2-bind-picker');
   const groups = bindGroups(instance, bindTree(instance));
-  const search = dialog.runInScope(() =>
+  const search = dialog.build(() =>
     new TextInput({search: true, inline: true, placeholder: 'Search bindings'}));
-  const tree = dialog.runInScope(() => new VirtualTree<BindTreeNode>());
+  const tree = dialog.build(() => new VirtualTree<BindTreeNode>());
   const empty = span('', 'u2-picker-empty');
   tree.expanded.value = new Set(groups.map((group) => group.title));
   dialog.effect(() => {
-    const query = search.value.value;
+    const query = search.value;
     const rows: TreeNode<BindTreeNode>[] = [];
     const expand: string[] = [];
     for (const group of groups) {
@@ -174,16 +174,10 @@ function idsOf(groups: BindGroup[], path: string): string[] {
   return ids;
 }
 
-/** The `…` affordance beside a path field, on the input's options rail. `Input.addOptions` is
- * protected, so the rail is materialized the way the platform pickers materialize it. */
+/** The `…` affordance beside a path field, on the input's options rail. */
 export function bindPickerButton(input: Input<any>, name: string, open: () => void,
   tooltip = 'Pick a binding'): void {
-  let rail = input.box.querySelector('.u2-input-options') as HTMLElement | null;
-  if (rail === null) {
-    rail = div([], 'u2-input-options');
-    input.box.append(rail);
-  }
   const button = iconButton('ellipsis-h', open, {tooltip});
   button.dataset.u2BindPick = name;
-  rail.append(button);
+  input.addOptions(button, {edits: true});
 }

@@ -46,14 +46,14 @@ export class PepTriageApp extends HitTriageApp {
       const configuredMolColName = ptTemplate.moleculeColumnName;
       let molCol = configuredMolColName ? this.dataFrame.col(configuredMolColName) : null;
       if (!molCol)
-        molCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+        molCol = HitTriageApp.moleculeColumn(this.dataFrame);
 
       if (!molCol) {
         // 4. Convert sequences to molecules via Bio:toAtomicLevel
         pg.update(50, 'Converting sequences to molecules...');
         await grok.functions.call('Bio:toAtomicLevel', {table: this.dataFrame, seqCol: seqCol, nonlinear: true});
         await this.dataFrame.meta.detectSemanticTypes();
-        molCol = this.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).find((a) => a.name.toLowerCase().includes(seqCol.name.toLowerCase())) ?? null;
+        molCol = HitTriageApp.moleculeColumns(this.dataFrame).find((a) => a.name.toLowerCase().includes(seqCol.name.toLowerCase())) ?? null;
         if (!molCol) {
           grok.shell.warning('Failed to convert sequences to molecules. Calculations may not work.');
           return;

@@ -14,12 +14,14 @@ import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {_package, PackageFunctions} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {SCAFFOLD_TREE_HIGHLIGHT, SubstructureSearchType} from '../constants';
+import {MESSAGE_MALFORMED, SCAFFOLD_TREE_HIGHLIGHT, SubstructureSearchType} from '../constants';
 import {Fingerprint} from '../utils/chem-common';
 import {IColoredScaffold, _addColorsToBondsAndAtoms} from '../rendering/rdkit-cell-renderer';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {attachScaffoldTreeAi, scaffoldTreeBriefing, scaffoldTreeFunctions} from '../ai-tools/scaffold-tree';
+import {byEngineModule, isCruxRequested} from '../engine/chem-engine';
+import {convertMolNotationByEngine} from '../engine/worker-jobs';
 
 let attached = false;
 let scaffoldTreeId = 0;
@@ -79,11 +81,6 @@ interface SizesMap {
   [key: string]: Size;
 }
 
-interface ScaffoldLayout {
-  viewState: string;
-  scaffoldJson: string;
-}
-
 /** The most molecules a tree is generated from: a column with more is sampled to this many (see
  * {@link scaffoldTreeSampleRows}), and Generate's tooltip says so. */
 export const SCAFFOLD_TREE_MAX_MOLECULES = 750;
@@ -111,19 +108,55 @@ export function scaffoldTreeSampleRows(values: (string | null)[], max: number,
   return rows;
 }
 
-/** A molecule RDKit reads (the sample takes no molecule the tree would drop). */
+/** A molecule the engine reads (the sample takes no molecule the tree would drop): "Chemical engine", the main thread's
+ * module (Crux's in Crux mode, which builds the tree; RDKit's where Crux reads none). */
 function readableMolecule(molecule: string): boolean {
-  const mol = getMolSafe(molecule, {}, _rdKitModule).mol;
-  mol?.delete();
-  return !!mol;
+  return byEngineModule('scaffold tree sample', _rdKitModule, (module) => {
+    const mol = getMolSafe(molecule, {}, module).mol;
+    mol?.delete();
+    return mol ? true : null;
+  }) ?? false;
+}
+
+/** In Crux mode ("Chemical engine": Crux builds the tree) the SMILES of the V3000 molecules by the Crux workers, by
+ * index; none for a molecule they convert none from, and none in RDKit mode ({@link v3000SmilesByRdKit} does those). */
+async function v3000SmilesByCrux(molecules: string[]): Promise<Map<number, string>> {
+  const smiles = new Map<number, string>();
+  const v3000 = !isCruxRequested() ? [] : molecules.flatMap((m, n) => m?.includes('V3000') ? [n] : []);
+  if (v3000.length) {
+    const converted = await convertMolNotationByEngine(v3000.map((n) => molecules[n]), DG.chem.Notation.Smiles, false);
+    v3000.forEach((n, k) => converted[k] && converted[k] !== MESSAGE_MALFORMED && smiles.set(n, converted[k]));
+  }
+  return smiles;
+}
+
+/** A V3000 molecule's SMILES by RDKit's module (the molecule's, else the query's; the block itself where both throw). */
+function v3000SmilesByRdKit(molStr: string): string | undefined {
+  let mTmp = null;
+  try {
+    mTmp = _rdKitModule.get_mol(molStr);
+  } catch {
+    try {
+      mTmp = _rdKitModule.get_qmol(molStr);
+    } catch {
+      return molStr;
+    }
+  }
+  if (mTmp === null)
+    return undefined;
+  const smiles = mTmp.get_smiles();
+  mTmp.delete();
+  return smiles;
 }
 
 export function value(node: TreeViewNode): ITreeNode {
   return node.value as ITreeNode;
 }
 
+/** The molecule by the main thread's module ("Chemical engine": Crux's in Crux mode, RDKit's where Crux reads none). */
 export function getMol(molString : string) : RDMol | null {
-  return getMolSafe(molString, {kekulize: true}, _rdKitModule, true).mol;
+  return byEngineModule('scaffold tree molecule', _rdKitModule,
+    (module) => getMolSafe(molString, {kekulize: true}, module, true).mol);
 }
 
 function processUnits(molPBlok : string): string {
@@ -184,6 +217,12 @@ function enableColorIcon(colorIcon: HTMLElement, colorIsSet: boolean) {
 
 function disablePaletteIcon(paletteIcon: HTMLElement) {
   paletteIcon.classList.toggle('color-is-not-set', true);
+}
+
+/** Keeps clicks and presses on a node's control from reaching the tree (which would select or drag the node). */
+function keepClicksInside(element: HTMLElement): void {
+  element.onclick = (e) => e.stopImmediatePropagation();
+  element.onmousedown = (e) => e.stopImmediatePropagation();
 }
 
 function removeElementByMolecule(array: IColoredScaffold[], moleculeToRemove: string) {
@@ -364,8 +403,7 @@ function updateLabel(thisViewer: ScaffoldTreeViewer, group: TreeViewGroup, updat
 
           if (bitset !== null)
             await updateLabelContent(labelDiv, bitset, thisViewer);
-        } catch (_) {
-
+        } catch {
         } finally {
           loader?.remove();
         }
@@ -652,27 +690,37 @@ function renderMolecule(node: DG.TreeViewGroup, width: number, height: number, s
     context.fillText(text, x, y);
   } else {
     const molStr = value(node).smiles;
-    const mol = getQueryMolSafe(molStr, '', _rdKitModule);
     const substr = substructure ?? molStr;
-    const substrMol = getQueryMolSafe(substr, '', _rdKitModule);
+    // "Chemical engine": the highlight matched by the main thread's module (Crux's in Crux mode, which draws it; RDKit's
+    // where Crux reads either none)
+    const read = byEngineModule('scaffold tree highlight', _rdKitModule, (module, crux) => {
+      const mol = getQueryMolSafe(molStr, '', module);
+      const substrMol = getQueryMolSafe(substr, '', module);
+      try {
+        if (!mol || !substrMol)
+          return null;
+        let highlights: ISubstruct | null = null;
 
-    if (mol && substrMol) {
-      let highlights: ISubstruct | null = null;
-
-      if (color) {
-        try {
-          const matches: ISubstruct[] = JSON.parse(mol.get_substruct_matches(substrMol));
-          highlights = matches[0];
-          _addColorsToBondsAndAtoms(highlights, color);
-        } catch (e) {
-          console.warn('Highlighting failed:', e);
+        if (color) {
+          try {
+            const matches: ISubstruct[] = JSON.parse(mol.get_substruct_matches(substrMol));
+            highlights = matches[0];
+            _addColorsToBondsAndAtoms(highlights, color);
+          } catch (e) {
+            if (crux)
+              throw e;
+            console.warn('Highlighting failed:', e);
+          }
         }
+        return {highlights};
+      } finally {
+        mol?.delete();
+        substrMol?.delete();
       }
+    });
 
-      drawMoleculeToCanvas(0, 0, canvasW, canvasH, moleculeHost, molStr, '', {normalizeDepiction: true, straightenDepiction: true}, highlights);
-      mol.delete();
-      substrMol.delete();
-    }
+    if (read)
+      drawMoleculeToCanvas(0, 0, canvasW, canvasH, moleculeHost, molStr, '', {normalizeDepiction: true, straightenDepiction: true}, read.highlights);
   }
 
   $(moleculeHost).addClass('chem-canvas');
@@ -750,7 +798,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   molColumns: DG.Column[] = [];
   colorCodedScaffolds: IColoredScaffold[] = [];
   checkedScaffolds: IColoredScaffold[] = [];
-  scaffoldLayouts: ScaffoldLayout[] = [];
   paletteColors: string[] = [];
   threshold: number;
   bitOperation: string;
@@ -761,10 +808,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   checkBoxesUpdateInProgress: boolean = false;
   treeEncodeUpdateInProgress: boolean = false;
   dataFrameSwitchgInProgress: boolean = false;
-  bitsetUpdateInProgress: boolean = false;
   addOrphanFolders: boolean = true;
   resizable: boolean = false;
-  smartsExist: boolean = false;
   current?: DG.TreeViewNode;
   closeAll?: boolean = false;
   setHighlightTag = true;
@@ -781,7 +826,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   fpWarmPromise: Promise<void> | null = null;
   progressBar: DG.TaskBarProgressIndicator | null = null;
   moleculeColumnName: string;
-  molColPropObserver: MutationObserver | null = null;
   draggedNode: TreeViewGroup | null = null;
   Table: string;
   treeEncode: string;
@@ -813,7 +857,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.tree = ui.tree();
     // @ts-ignore
     this.enableNodeRearangement = typeof this.tree['addNode'] === 'function';
-    // this.tree.root.classList.add('d4-tree-view-lines');
 
     this.title = this.string('title', 'Scaffold Tree');
     this.showLabels = this.bool('showLabels', false, {description: 'Show editable labels'});
@@ -1037,7 +1080,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.clear();
     let currentCancelled = false;
 
-    //this.root.style.visibility = 'hidden';
     ui.setUpdateIndicator(this.root, true);
     this.progressBar = DG.TaskBarProgressIndicator.create('Generating Scaffold Tree...');
     this.progressBar?.update(0, 'Installing ScaffoldGraph..: 0% completed');
@@ -1080,28 +1122,17 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (sample && c.length > 0)
       c[0].append(ui.divText(`From ${sample}`, 'chem-scaffold-tree-sample-hint'));
 
-    let molStr = null;
-    let mTmp = null;
+    // the sampled column's molecules (this.molColumn may change while the Crux workers convert); V3000 rows as SMILES
+    const column = this.molColumn;
+    const molecules = rows.map((row) => column.get(row));
+    const cruxSmiles = await v3000SmilesByCrux(molecules);
+    if (currentCancelled)
+      return;
+
     const ar = new Array(rows.length);
     for (let n = 0; n < rows.length; ++n) {
-      molStr = this.molColumn.get(rows[n]);
-      if (molStr.includes('V3000')) {
-        mTmp = null;
-        try {
-          mTmp = _rdKitModule.get_mol(molStr);
-        } catch (e) {
-          try {
-            mTmp = _rdKitModule.get_qmol(molStr);
-          } catch (e) {
-            ar[n] = molStr;
-          }
-        }
-        if (mTmp !== null) {
-          ar[n] = mTmp.get_smiles();
-          mTmp.delete();
-        }
-        continue;
-      } else ar[n] = molStr;
+      const molStr = molecules[n];
+      ar[n] = !molStr.includes('V3000') ? molStr : cruxSmiles.get(n) ?? v3000SmilesByRdKit(molStr);
     }
 
     if (currentCancelled)
@@ -1147,7 +1178,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    //this.root.style.visibility = 'visible';
     this.treeEncodeUpdateInProgress = true;
     this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
     this.treeEncodeUpdateInProgress = false;
@@ -1177,15 +1207,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.progressBar !== null)
       this.progressBar.update(100, 'Tree is ready');
 
-    setTimeout(async () => {
-      // Perform heavy updates after the layout is applied
-      await updateVisibleMols(thisViewer);
-      this.updateUI();
-      await updateVisibleNodes(thisViewer, {updateBitset: false, includeExpanded: true, includeChecked: true});
-      this.appendOrphanFolders(this.tree);
-      this.updateFilters();
-      this.updateTag();
-    }, 0);
+    // the heavy updates run after the layout is applied; the load is done when they are
+    await new Promise((resolve) => setTimeout(resolve));
+    await updateVisibleMols(thisViewer);
+    this.updateUI();
+    await updateVisibleNodes(thisViewer, {updateBitset: false, includeExpanded: true, includeChecked: true});
+    this.appendOrphanFolders(this.tree);
+    this.updateFilters();
+    this.updateTag();
   }
 
   get molColumn(): DG.Column | null {
@@ -1366,10 +1395,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }
     }
 
-    //orphans
-    //buildOrphans(thisViewer.tree);
-    //thisViewer.clearOrphanFolders(thisViewer.tree);
-    //thisViewer.appendOrphanFolders(thisViewer.tree);
     this.updateSizes();
     this.updateUI();
     this.updateFilters();
@@ -1379,7 +1404,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   removeColorCoding(node: TreeViewGroup) {
-    // a node that only inherits its color owns no entry: the entry is its colored ancestor's, which stays
+    // a node that only inherits its color owns no entry (the entry is its colored ancestor's, which stays)
     const processGroup = (group: DG.TreeViewGroup) => {
       const groupValue = value(group);
       if (groupValue.chosenColor && groupValue.colorOn)
@@ -1411,7 +1436,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     node.remove();
-    //orphans
     this.filterTree(this.threshold);
     this.updateUI();
     this.updateSizes();
@@ -1653,7 +1677,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       const isParentColorOn = nodeData.parentColor && !nodeData.colorOn;
 
       try {
-        molArom = _rdKitModule.get_qmol(processUnits(molStr));
+        // "Chemical engine": the node's query read by the main thread's module (Crux's in Crux mode); a throw skips it
+        molArom = byEngineModule('scaffold tree node', _rdKitModule, (module) => module.get_qmol(processUnits(molStr)));
         if (isChosenColorOn) {
           removeElementByMolecule(this.colorCodedScaffolds, molStr);
           this.colorCodedScaffolds.push({
@@ -1674,8 +1699,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
             color: nodeData.parentColor,
           });
         }
-      } catch (e) {
-
+      } catch {
       } finally {
         molArom?.delete();
       }
@@ -2115,10 +2139,61 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   addIcons(molHost: HTMLDivElement, group: TreeViewGroup): void {
-    const thisViewer = this;
+    const notIcon = this.createNotIcon(group);
+    const {colorIcon, paletteIcon} = this.createColorIcons(group);
+    const zoomIcon = ui.iconFA('search-plus');
+    keepClicksInside(zoomIcon);
+    zoomIcon.onmouseenter = (e) => ui.tooltip.show(renderMolecule(group, 300, 200, undefined, this, true), e.clientX, e.clientY);
+    zoomIcon.onmouseleave = () => ui.tooltip.hide();
+
+    const iconsDivLeft = ui.divV([notIcon, colorIcon, paletteIcon, zoomIcon], 'chem-mol-box-info-buttons');
+
+    const iconsDiv = ui.divV([
+      ui.iconFA('plus', () => this.openAddSketcher(group), 'Add new scaffold'),
+      ui.iconFA('trash-alt', () => this.removeNode(group), 'Remove scaffold'),
+      ui.iconFA('pencil', () => this.openEditSketcher(group), 'Edit scaffold'),
+      ui.divText(''),
+      ui.iconFA('check-square', () => this.selectTableRows(group, true), 'Select rows'),
+      ui.iconFA('square', () => this.selectTableRows(group, false), 'Deselect rows'),
+    ], 'chem-mol-box-info-buttons');
+    keepClicksInside(iconsDiv);
+
+    const flagIcon = ui.iconFA('circle', () => this.openEditSketcher(group), 'The scaffold was edited');
+    flagIcon.style.fontSize = '8px';
+    flagIcon.style.visibility = 'hidden';
+    flagIcon.classList.remove('fal');
+    flagIcon.classList.add('fas', 'icon-fill');
+    flagIcon.onmouseenter = () => {
+      const c = document.getElementsByClassName('d4-tooltip');
+      if (c.length > 0) {
+        const text = flagIcon.getAttribute('tooltip');
+        if (text !== null && text !== undefined)
+          c[0].setAttribute('data', text);
+      }
+    };
+
+    const labelDiv = ui.divText('');
+    const iconsInfo = ui.divH([flagIcon, labelDiv]);
+
+    value(group).labelDiv = labelDiv;
+
+    const c = molHost.getElementsByTagName('CANVAS');
+    if (c.length > 0)
+      value(group).canvas = c[0];
+
+    keepClicksInside(iconsInfo);
+
+    const labelInput = this.createLabelInput(group);
+    const infoDiv = ui.divV([labelInput, iconsInfo, iconsDiv], 'chem-mol-box-info');
+    molHost.children[0].appendChild(infoDiv);
+    molHost.children[0].insertBefore(ui.divV([iconsDivLeft], 'chem-mol-box-info'), c[0]);
+  }
+
+  /** The node's toggle between containing and excluding its scaffold. */
+  private createNotIcon(group: TreeViewGroup): HTMLElement {
     const groupValue = group.value as ITreeNode;
     const notIcon = ui.iconFA('equals',
-      () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot), 'Toggle');
+      () => this.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot), 'Toggle');
 
     notIcon.onmouseenter = (e) => {
       const text = groupValue.bitwiseNot ?
@@ -2128,7 +2203,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     };
 
     notIcon.onmouseleave = () => ui.tooltip.hide();
+    keepClicksInside(notIcon);
+    return notIcon;
+  }
 
+  /** The node's color toggle and its palette (the next color of the viewer's palette, a picker to change it). */
+  private createColorIcons(group: TreeViewGroup): {colorIcon: HTMLElement, paletteIcon: HTMLElement} {
+    const groupValue = group.value as ITreeNode;
     let chosenColor = this.paletteColors[0];
     const first = this.paletteColors.shift();
     this.paletteColors[this.paletteColors.length] = first!;
@@ -2205,61 +2286,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     colorIcon.onmouseleave = () => ui.tooltip.hide();
 
     this.updateColorIcon(colorIcon, chosenColor);
-
-    colorIcon.onclick = (e) => {
-      e.stopImmediatePropagation();
-    };
+    keepClicksInside(colorIcon);
     colorIcon.ondblclick = (e) => e.stopImmediatePropagation();
-    colorIcon.onmousedown = (e) => e.stopImmediatePropagation();
-    notIcon.onclick = (e) => e.stopImmediatePropagation();
-    notIcon.onmousedown = (e) => e.stopImmediatePropagation();
+    return {colorIcon, paletteIcon};
+  }
 
-    const zoomIcon = ui.iconFA('search-plus');
-    zoomIcon.onclick = (e) => e.stopImmediatePropagation();
-    zoomIcon.onmousedown = (e) => e.stopImmediatePropagation();
-    zoomIcon.onmouseenter = (e) => ui.tooltip.show(renderMolecule(group, 300, 200, undefined, thisViewer, true), e.clientX, e.clientY);
-    zoomIcon.onmouseleave = () => ui.tooltip.hide();
-
-    const iconsDivLeft = ui.divV([notIcon, colorIcon, paletteIcon, zoomIcon], 'chem-mol-box-info-buttons');
-
-    const iconsDiv = ui.divV([
-      ui.iconFA('plus', () => this.openAddSketcher(group), 'Add new scaffold'),
-      ui.iconFA('trash-alt', () => this.removeNode(group), 'Remove scaffold'),
-      ui.iconFA('pencil', () => this.openEditSketcher(group), 'Edit scaffold'),
-      ui.divText(''),
-      ui.iconFA('check-square', () => this.selectTableRows(group, true), 'Select rows'),
-      ui.iconFA('square', () => this.selectTableRows(group, false), 'Deselect rows'),
-    ], 'chem-mol-box-info-buttons');
-    iconsDiv.onclick = (e) => e.stopImmediatePropagation();
-    iconsDiv.onmousedown = (e) => e.stopImmediatePropagation();
-
-    const flagIcon = ui.iconFA('circle', () => this.openEditSketcher(group), 'The scaffold was edited');
-    flagIcon.style.fontSize = '8px';
-    //flagIcon.style.color = 'hotpink !important';
-    flagIcon.style.visibility = 'hidden';
-    flagIcon.classList.remove('fal');
-    flagIcon.classList.add('fas', 'icon-fill');
-    flagIcon.onmouseenter = () => {
-      const c = document.getElementsByClassName('d4-tooltip');
-      if (c.length > 0) {
-        const text = flagIcon.getAttribute('tooltip');
-        if (text !== null && text !== undefined)
-          c[0].setAttribute('data', text);
-      }
-    };
-
-    const labelDiv = ui.divText('');
-    const iconsInfo = ui.divH([flagIcon, labelDiv]);
-
-    value(group).labelDiv = labelDiv;
-
-    const c = molHost.getElementsByTagName('CANVAS');
-    if (c.length > 0)
-      value(group).canvas = c[0];
-
-    iconsInfo.onclick = (e) => e.stopImmediatePropagation();
-    iconsInfo.onmousedown = (e) => e.stopImmediatePropagation();
-
+  /** The node's label editor: committed (saved with the tree and written to the labels column) on Enter or blur. */
+  private createLabelInput(group: TreeViewGroup): HTMLElement {
+    const groupValue = group.value as ITreeNode;
     const labelInput = ui.input.string('', {value: groupValue.label ?? ''});
     labelInput.root.classList.add('chem-scaffold-tree-label-input');
     (labelInput.input as HTMLInputElement).placeholder = 'Label';
@@ -2284,13 +2318,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }
     };
     inputEl.onblur = () => commitLabel();
-    labelInput.root.onclick = (e) => e.stopImmediatePropagation();
-    labelInput.root.onmousedown = (e) => e.stopImmediatePropagation();
+    keepClicksInside(labelInput.root);
     groupValue.labelElement = labelInput.root as HTMLDivElement;
-
-    const infoDiv = ui.divV([labelInput.root, iconsInfo, iconsDiv], 'chem-mol-box-info');
-    molHost.children[0].appendChild(infoDiv);
-    molHost.children[0].insertBefore(ui.divV([iconsDivLeft], 'chem-mol-box-info'), c[0]);
+    return labelInput.root;
   }
 
   public createGroup(molStr: string, rootGroup: TreeViewGroup, chosenColor: string | null = null, parentColor: string | null = null, colorOn: boolean | null = null, checked: boolean = false, isNot: boolean = false, expanded: boolean = true, orphansBitset: DG.BitSet | null = null) : TreeViewGroup | null {
@@ -2434,17 +2464,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateFilters();
   }
 
-  waitForLoaderToRemove(node: DG.TreeViewNode): Promise<void> {
-    return new Promise((resolve) => {
-      const interval = setInterval(() => {
-        if (!value(node).labelDiv?.querySelector('.chem-scaffold-tree-loader') && !this.isBitsetStale(node)) {
-          clearInterval(interval);
-          resolve();
-        }
-      }, 50);
-    });
-  }
-
   updateIcons() {
     const setIconState = (icon?: HTMLElement | null, disabled = false) => {
       if (!icon) return;
@@ -2562,10 +2581,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     attachScaffoldTreeAi(this);
     ui.empty(this.root);
 
-    if (this.dataFrameSwitchgInProgress) {
-      this.dataFrameSwitchgInProgress = true;
+    if (this.dataFrameSwitchgInProgress)
       return;
-    }
 
     const thisViewer = this;
     this.tree.onNodeContextMenu.subscribe((args: any) => {
@@ -2644,7 +2661,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
       const stale = this.isBitsetStale(this.tree.currentItem ?? this.tree.items[0]);
       await updateVisibleNodes(thisViewer, {updateBitset: stale, includeExpanded: true, includeChecked: true});
-      this.bitsetUpdateInProgress = false;
       this.updateFilters(false);
     }));
 
@@ -2861,15 +2877,21 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   static validateNodes(childSmiles: string, parentSmiles: string): boolean {
-    const parentMol = getMol(parentSmiles);
-    const parentCld = getMol(childSmiles);
-    if (parentMol === null || parentCld === null)
-      return false;
-
-    const match: string = parentCld.get_substruct_match(parentMol);
-    parentMol.delete();
-    parentCld.delete();
-    return match.length > 2;
+    // "Chemical engine": both read and matched by the main thread's module (Crux's in Crux mode; RDKit's where Crux
+    // reads either none)
+    return byEngineModule('scaffold tree node check', _rdKitModule, (module) => {
+      const parentMol = getMolSafe(parentSmiles, {kekulize: true}, module, true).mol;
+      const parentCld = getMolSafe(childSmiles, {kekulize: true}, module, true).mol;
+      try {
+        if (parentMol === null || parentCld === null)
+          return null;
+        const match: string = parentCld.get_substruct_match(parentMol);
+        return match.length > 2;
+      } finally {
+        parentMol?.delete();
+        parentCld?.delete();
+      }
+    }) ?? false;
   }
 
   serializeTrees(treeRoot: TreeViewGroup): Array<any> {
@@ -3039,22 +3061,27 @@ class SketcherDialogWrapper {
   }
 
   normalizeMolStr(molStr: string): string {
-    let mol;
-    try {
-      if (!grok.chem.isMolBlock(molStr) && molStr?.length > MAX_SMILES_LENGTH)
-        throw new Error(`SMILES string longer than ${MAX_SMILES_LENGTH} characters not supported`);
-      mol = _rdKitModule.get_mol(molStr);
-      if (mol.has_coords() === 2) {
+    if (!grok.chem.isMolBlock(molStr) && molStr?.length > MAX_SMILES_LENGTH)
+      return molStr; // SMILES longer than MAX_SMILES_LENGTH characters are not read
+    // "Chemical engine": normalized by the main thread's module (Crux's in Crux mode: RDKit 2026.03's MOL block)
+    return byEngineModule('scaffold tree sketcher', _rdKitModule, (module, crux) => {
+      let mol: RDMol | null = null;
+      try {
+        mol = module.get_mol(molStr);
+        if (!mol)
+          return null;
+        if (mol.has_coords() !== 2)
+          return molStr;
         mol.normalize_depiction(0);
-        molStr = mol.get_molblock();
+        return mol.get_molblock();
+      } catch (e) {
+        if (crux)
+          throw e;
+        return null;
+      } finally {
+        mol?.delete();
       }
-    } catch {
-      // do nothing
-    } finally {
-      if (mol)
-        mol.delete();
-    }
-    return molStr;
+    }) ?? molStr;
   }
 
   set node(node: DG.TreeViewGroup) {

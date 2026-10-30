@@ -1,9 +1,10 @@
-/* VirtualGrid on the DOM shim: the shim lays nothing out, so each test gives the root a viewport
+/* VirtualGrid: the test DOM lays nothing out, so each test gives the root a viewport
    (clientWidth → columns, clientHeight → rows) and fires `scroll` to re-render. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope, signal} from '../src/index.js';
 import {VirtualGrid} from '../src/components/collections/grid.js';
 
@@ -30,14 +31,13 @@ function make(options = {}, width = 200, height = 100) {
     return s;
   }, ...options});
   document.body.append(g.root);
-  g.root.clientWidth = width;
-  g.root.clientHeight = height;
+  layout(g.root, {clientWidth: width, clientHeight: height});
   fire(g.root, 'scroll');
   return g;
 }
 
 function cells(g) {
-  return g.root.querySelectorAll('.u2-grid-cell');
+  return [...g.root.querySelectorAll('.u2-grid-cell')];
 }
 
 function rendered(g) {
@@ -78,7 +78,7 @@ grid('scrolling moves the window and recycles cells through the pool', () => {
 grid('a narrower width re-flows the same items into more rows', () => {
   const g = make();
   g.setItems(NUMBERS);
-  g.root.clientWidth = 100;
+  layout(g.root, {clientWidth: 100});
   fire(g.root, 'scroll');
   assert.equal(g.columns.value, 5);
   assert.equal(g.root.querySelector('.u2-grid-content').style.height, '4000px');
@@ -165,8 +165,7 @@ grid('a grid with no size yet renders nothing; its first measure lays out the re
   g.setItems(NUMBERS);
   assert.equal(g.renderedCount, 0, 'no single-column cells to re-flow and hand to other items later');
   document.body.append(g.root);
-  g.root.clientWidth = 200;
-  g.root.clientHeight = 100;
+  layout(g.root, {clientWidth: 200, clientHeight: 100});
   const observer = ResizeObserver.instances.find((o) => o.targets.includes(g.root));
   observer.callback([]);
   assert.equal(g.columns.value, 10);
@@ -179,7 +178,7 @@ grid('a taller grid renders the rows that came into view', () => {
   const g = make();
   g.setItems(NUMBERS);
   assert.equal(g.renderedCount, 70);
-  g.root.clientHeight = 200;
+  layout(g.root, {clientHeight: 200});
   ResizeObserver.instances.find((o) => o.targets.includes(g.root)).callback([]);
   assert.equal(g.renderedCount, 120, '10 visible rows + 2 overscan, 10 per row');
   g.dispose();

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import type ExcelJS from 'exceljs';
-import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {richFunctionViewReport} from '@datagrok-libraries/compute-utils';
 import {closeViewsAfter, awaitWebComponents} from './utils';
 
@@ -12,12 +12,12 @@ const plotValue = (call: DG.FuncCall) => String(call.outputs.get('plot') ?? '');
 async function openEditor(call: DG.FuncCall): Promise<DG.ViewBase> {
   await awaitWebComponents();
   const view = await grok.functions.call('Compute2:RichFunctionViewEditor', {call}) as unknown as DG.ViewBase;
-  await awaitCheck(() => view.root.querySelector('dg-input-form') !== null, 'RFV form not rendered', 15000);
+  await waitUntil(() => view.root.querySelector('dg-input-form') !== null, 'RFV form not rendered', 15000);
   return view;
 }
 
 async function run(view: DG.ViewBase) {
-  await awaitCheck(() => Array.from(view.root.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Run'),
+  await waitUntil(() => Array.from(view.root.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Run'),
     'Run button not found', 10000);
   Array.from(view.root.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Run')!.click();
 }
@@ -35,8 +35,8 @@ category('RFV: graphics outputs', () => {
       'empty plot should be hidden before the run');
 
     await run(view);
-    await awaitCheck(() => plotValue(call).startsWith(PNG_PREFIX), 'run produced no plot', 15000);
-    await awaitCheck(() => plotImg(view!) !== null, 'plot image not rendered', 15000);
+    await waitUntil(() => plotValue(call).startsWith(PNG_PREFIX), 'run produced no plot', 15000);
+    await waitUntil(() => plotImg(view!) !== null, 'plot image not rendered', 15000);
     expect(plotImg(view)!.src.startsWith(`data:image/png;base64,${PNG_PREFIX}`), true, 'PNG data URL expected');
     expect((view.root.textContent ?? '').includes(PNG_PREFIX), false, 'base64 text must not be shown');
   });
@@ -45,8 +45,8 @@ category('RFV: graphics outputs', () => {
     const call = DG.Func.byName('Compute2:GraphicsSvgOutputTest').prepare({a: 1});
     const view = track(await openEditor(call));
     await run(view);
-    await awaitCheck(() => plotValue(call).startsWith('<svg'), 'run produced no plot', 15000);
-    await awaitCheck(() => plotImg(view!) !== null, 'plot image not rendered', 15000);
+    await waitUntil(() => plotValue(call).startsWith('<svg'), 'run produced no plot', 15000);
+    await waitUntil(() => plotImg(view!) !== null, 'plot image not rendered', 15000);
     expect(plotImg(view)!.src.startsWith('data:image/svg+xml'), true, 'SVG data URL expected');
     expect((view.root.textContent ?? '').includes('<svg'), false, 'SVG markup must not be shown as text');
   });
@@ -59,7 +59,7 @@ category('RFV: hidden outputs', () => {
     const call = DG.Func.byName('Compute2:HiddenOutputsTest').prepare({a: 1});
     const view = track(await openEditor(call));
     await run(view);
-    await awaitCheck(() => view.root.querySelector('[dock-spawn-title="shown"]') !== null,
+    await waitUntil(() => view.root.querySelector('[dock-spawn-title="shown"]') !== null,
       'shown output tab not rendered', 15000);
     expect(view.root.querySelector('[dock-spawn-title="secret"]') === null, true, 'hidden output tab rendered');
   });

@@ -7,7 +7,7 @@
    Fixture: `apitests.item`, rows prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Rows} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
@@ -25,14 +25,13 @@ category('U2: domain trash', () => {
   let goneId: string;
 
   async function ready(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
+      () => `source is ${src.state.value}: ${String(src.error.value)}`);
     if (src.state.value !== 'ready')
       throw new Error(`source is ${src.state.value}: ${String(src.error.value)}`);
   }
 
   async function reloaded(): Promise<void> {
-    await delay(100);
     await ready(app.listSource);
   }
 
@@ -58,11 +57,11 @@ category('U2: domain trash', () => {
     await items().deleteWhere(query);
   });
 
-  test('a deleted row leaves the list; the ⋯ menu offers Trash', async () => {
+  test('a deleted row leaves the list; the ⋯ menu offers Show deleted', async () => {
     expect(names(), 'Alpha,Beta');
-    expect(app.menuActions().map((a) => a.name).join(), 'Import…,Bulk edit…,Trash');
+    expect(app.menuActions().map((a) => a.text).join(), 'Import…,Bulk edit…,Show deleted');
     const row = app.listSource.rows.byKey(goneId)!;
-    const del = app.list.actionsFor(row).find((a) => a.name === 'Delete')!;
+    const del = app.list.actionsFor(row).find((a) => a.text === 'Delete')!;
     expect(del !== undefined, true, 'Delete is the row action on a live row');
     del.run();
     expect(app.session.isDirty.value, true);
@@ -82,15 +81,15 @@ category('U2: domain trash', () => {
     expect(Rows.isDeleted(row), true, 'the row carries ~is_deleted');
     expect(app.listSource.access.value.can('edit'), false, 'the trash is read-only');
     expect(app.listSource.access.value.row(row).can('edit'), false, 'and no row can lift that');
-    expect(app.list.actionsFor(row).map((a) => a.name).join(), 'Restore');
+    expect(app.list.actionsFor(row).map((a) => a.text).join(), 'Restore');
     expect(app.list.root.querySelector(`[data-u2-row="${goneId}"]`)!
       .classList.contains('u2-domain-list-deleted'), true);
-    expect(app.menuActions().map((a) => a.name).join(), 'Exit trash');
+    expect(app.menuActions().length, 0);
   });
 
   const restore = (): void => {
     const row = app.listSource.rows.byKey(goneId)!;
-    app.list.actionsFor(row).find((a) => a.name === 'Restore')!.run();
+    app.list.actionsFor(row).find((a) => a.text === 'Restore')!.run();
   };
 
   test('Restore stages into the session, and Discard takes it back', async () => {
@@ -99,12 +98,12 @@ category('U2: domain trash', () => {
     expect(app.session.changeCount.value, 1);
     expect(app.listSource.summary.value, '1 restore pending');
     const row = app.listSource.rows.byKey(goneId)!;
-    expect(app.list.actionsFor(row).map((a) => a.name).join(), 'Undo restore');
+    expect(app.list.actionsFor(row).map((a) => a.text).join(), 'Undo restore');
     expect(app.list.root.querySelector(`[data-u2-row="${goneId}"]`)!
       .classList.contains('u2-domain-list-restored'), true);
     expect((await items().get(goneId, {deleted: 'only'}))['~is_deleted'], true, 'nothing was written');
     app.session.discard();
-    await delay(200);
+    await waitUntil(() => !app.session.isDirty.value, 'the discard to land', 5000);
     expect(app.session.isDirty.value, false);
     expect(names(), 'Alpha', 'the row is still in the trash');
   });

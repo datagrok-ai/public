@@ -13,8 +13,8 @@ Feature: A project built from a file, shared and renamed
   of the sharing user's row in the Share dialog and its privilege tree, and with it the recipient's
   save of the original. Kept without: the Save dialog's radio choices for the View and use
   recipient (Save original project disabled, Save a copy selected), which need a reading of one
-  option of the dialog's radio group. The words of the recipient's line in the Sharing pane ("has
-  special permissions") are claimed on the pane as a whole.
+  option of the dialog's radio group. The words of the recipient's line in the Sharing pane ("can
+  view and use") are claimed on the pane as a whole.
 
   The recipient of the share is the library's sharing user. Names are letters and digits only (the
   Dashboards search misses "-" and "_") and carry the run's time. The project, under both names, is
@@ -66,7 +66,7 @@ Feature: A project built from a file, shared and renamed
     When user clicks on BDDLifeFiles{time} gallery card
     Then the context panel should show "BDDLifeFiles{time}"
     And the sharing pane should list the sharing user
-    And Sharing pane in context panel should contain text "has special permissions"
+    And Sharing pane in context panel should contain text "can view and use"
 
   Scenario: With View and use the second account opens the project
     When user signs in as the sharing user

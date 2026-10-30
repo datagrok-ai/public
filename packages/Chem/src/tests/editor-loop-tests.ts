@@ -132,6 +132,12 @@ category('Editors: no infinite loop', () => {
     expect(editor.root.contains(editor.fromSourceInput.root), true, 'from-source input not attached');
   });
 
+  test('Map Identifiers editor defaults', async () => {
+    const editor: any = await buildEditor('getMapIdentifiers', 'mapIdentifiersEditor', {table: view.dataFrame});
+    expect(editor.fromSourceInput.value, 'smiles');
+    expect(editor.toSourceInput.value, 'chembl');
+  });
+
   test('MMP editor history restore', async () => {
     console.log('[mmp-history] building editor');
     const editor: any = await buildEditor('mmpAnalysis', 'MMPEditor', {table: view.dataFrame});

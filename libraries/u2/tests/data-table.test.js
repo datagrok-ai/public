@@ -5,9 +5,10 @@
    the `u2-cell-*` classes and the title, the row context menu, and a dispose that leaves
    nothing listening. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {signal} from '../src/core/signals.js';
 import {DataTable} from '../src/components/collections/data-table.js';
@@ -34,16 +35,16 @@ const items = (n) => Array.from({length: n}, (_, i) => ({id: `r${i}`, name: `Row
 function table(options = {}, count = 100) {
   const t = new DataTable({columns: COLUMNS, rowHeight: 20, keyOf: (item) => item.id, ...options});
   document.body.append(t.root);
-  t.root.clientHeight = 220;
+  layout(t.root, {clientHeight: 220});
   if (options.items === undefined)
     t.setItems(items(count));
   return t;
 }
 
 const row = (t, i) => t.root.querySelector(`.u2-data-table-row[data-index="${i}"]`);
-const rendered = (t) => t.root.querySelectorAll('.u2-data-table-row')
+const rendered = (t) => [...t.root.querySelectorAll('.u2-data-table-row')]
   .map((r) => Number(r.dataset.index)).sort((a, b) => a - b);
-const cells = (t, i) => row(t, i).children;
+const cells = (t, i) => [...row(t, i).children];
 const scrollTo = (t, top) => {
   t.root.scrollTop = top;
   fire(t.root, 'scroll');
@@ -53,13 +54,23 @@ scoped('the header is a sticky row of columnheaders; the spacer carries the full
   const t = table();
   const header = t.root.querySelector('.u2-data-table-header');
   assert.equal(header.getAttribute('role'), 'row');
-  assert.deepEqual(header.children.map((c) => c.textContent), ['Name', 'amount'],
+  assert.deepEqual([...header.children].map((c) => c.textContent), ['Name', 'amount'],
     'a column without a header falls back to its name');
   assert.equal(header.children[0].getAttribute('role'), 'columnheader');
-  assert.equal(header.style.gridTemplateColumns, 'minmax(0, 1fr) 80px');
+  assert.equal(header.style.gridTemplateColumns, 'minmax(80px, 1fr) 80px');
   assert.equal(t.root.getAttribute('role'), 'grid');
   assert.equal(t.root.getAttribute('data-u2'), 'data-table');
   assert.equal(t.root.querySelector('.u2-data-table-content').style.height, '2000px');
+  t.dispose();
+});
+
+scoped('a column without a width shares the row but never narrows past 80px: a narrow pane scrolls sideways', () => {
+  const t = table({columns: [{name: 'name'}, {name: 'cas'}, {name: 'amount', width: '60px'}]});
+  const template = 'minmax(80px, 1fr) minmax(80px, 1fr) 60px';
+  assert.equal(t.root.querySelector('.u2-data-table-header').style.gridTemplateColumns, template);
+  assert.equal(row(t, 0).style.gridTemplateColumns, template, 'the rows share the header\'s tracks');
+  t.columns = ['name'];
+  assert.equal(t.root.querySelector('.u2-data-table-header').style.gridTemplateColumns, 'minmax(80px, 1fr)');
   t.dispose();
 });
 
@@ -86,7 +97,7 @@ scoped('rows and their cells are recycled: scrolling creates no new elements', (
   scrollTo(t, 400);
   // every element the window has needed so far, and the cells they own
   const pooled = new Set(t.root.querySelectorAll('.u2-data-table-row'));
-  const ownCells = new Set([...pooled].flatMap((r) => r.children));
+  const ownCells = new Set([...pooled].flatMap((r) => [...r.children]));
   assert.equal(pooled.size, 16);
 
   for (const top of [0, 1000, 240, 1980]) {
@@ -222,7 +233,7 @@ scoped('a custom render owns the cell; scrolling never carries a cell\'s classes
 });
 
 scoped('the row context menu: inside the selection it keeps the set, outside it collapses', () => {
-  const t = table({contextActions: (item) => [{name: `Act on ${item.id}`, run: () => {}}]});
+  const t = table({contextActions: (item) => [{text: `Act on ${item.id}`, run: () => {}}]});
   fire(row(t, 2), 'click');
   fire(row(t, 5), 'click', {ctrlKey: true});
   fire(cells(t, 2)[0], 'contextmenu');

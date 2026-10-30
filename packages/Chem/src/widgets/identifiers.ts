@@ -2,11 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Observable, Subject} from 'rxjs';
-import {checkMoleculeValid, getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
+import {getRdKitModule, getRdKitWebRoot, readsAsMolecule} from '../utils/chem-common-rdkit';
+import {byEngineModule} from '../engine/chem-engine';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {checkPackage} from '../utils/elemental-analysis-utils';
-import {inchiToInchiKey, inchiToSmiles, smilesToCanonical, smilesToInchi, smilesToInchiKey} from '../docker/api';
+// the chem-chem container's conversions, by Crux in Crux mode ("Chemical Engine")
+import {inchiToInchiKey, inchiToSmiles, smilesToCanonical, smilesToInchi, smilesToInchiKey} from '../python-free';
+import {cruxInchi} from '../crux/crux-inchi';
 
 const CHEMBL = 'Chembl';
 const PUBCHEM = 'PubChem';
@@ -143,14 +146,34 @@ export async function identifiersWidget(molfile: string): Promise<DG.Widget> {
 
 export async function getIdentifiersSingle(molfile: string): Promise<object | null> {
   const rdKitModule = getRdKitModule();
-  const mol = getMolSafe(molfile, {}, rdKitModule);
+  const crux = await cruxInchi(molfile); // "Chemical Engine" (engine/README.md): Crux's in Crux mode
   let fullIdentifiersPanel = true;
-  if (!mol.mol) return null;
-  const inchi = mol.mol.get_inchi();
-  const inchiKey = rdKitModule.get_inchikey_for_inchi(inchi);
-  if (JSON.parse(mol.mol.get_descriptors())[MW_DESC] > MAX_MW_FOR_IDENTIFIERS)
-    fullIdentifiersPanel = false;
-  mol.mol.delete();
+  let inchi: string;
+  let inchiKey: string;
+  if (crux) {
+    // Crux read the molecule (RDKit may not: the panel said "Malformed molecule"); the MW gate by the main thread's
+    // module, Crux's
+    inchi = crux.inchi;
+    inchiKey = crux.inchiKey;
+    const mw = byEngineModule('identifiers', rdKitModule, (module) => {
+      const mol = getMolSafe(molfile, {}, module).mol;
+      try {
+        return mol ? JSON.parse(mol.get_descriptors())[MW_DESC] as number : null;
+      } finally {
+        mol?.delete();
+      }
+    });
+    if (mw !== null && mw > MAX_MW_FOR_IDENTIFIERS)
+      fullIdentifiersPanel = false;
+  } else {
+    const mol = getMolSafe(molfile, {}, rdKitModule);
+    if (!mol.mol) return null;
+    inchi = mol.mol.get_inchi();
+    inchiKey = rdKitModule.get_inchikey_for_inchi(inchi);
+    if (JSON.parse(mol.mol.get_descriptors())[MW_DESC] > MAX_MW_FOR_IDENTIFIERS)
+      fullIdentifiersPanel = false;
+    mol.mol.delete();
+  }
 
   let idMap: {[k: string]: any} | null = null;
   try {
@@ -218,7 +241,7 @@ export class MapIdentifiersEditor extends DG.FuncCallEditor {
     this.fromSourceInput = ui.input.choice('From Source', {value: funcCall.inputs['fromSource'] ?? SMILES,
       items: UniChemSource.idNamesChoices, nullable: false, onValueChanged: () => this.syncCall()});
     this.toSourceInput = ui.input.choice('To Source',
-      {value: funcCall.inputs['toSource'] ?? UniChemSource.idNamesChoices[0],
+      {value: funcCall.inputs['toSource'] ?? CHEMBL.toLowerCase(),
         items: UniChemSource.idNamesChoices, nullable: false, onValueChanged: () => this.syncCall()});
     root.appendChild(this.tableInput.root);
     root.appendChild(this.fromSourceInput.root);
@@ -452,7 +475,7 @@ function isInchiKey(s: string): boolean {
 }
 
 export async function textToSmiles(molfile: string): Promise<string | null> {
-  if (checkMoleculeValid(molfile)) return molfile;
+  if (readsAsMolecule(molfile)) return molfile; // "Chemical engine": by Crux in Crux mode
 
   async function mapIdentifier(source: string) {
     const column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'name', [molfile]);

@@ -29,14 +29,15 @@ export class RdKitServiceWorkerBase {
    * molecules *processed* — cache hits included — so the budget reflects "the first N
    * molecules of the dataset" even when the dataset overlaps a previously cached one.
    * Reset on dataset switch via invalidateCache().
-   * Returns true if the cache owns `rdMol` (the caller must NOT delete it).
+   * Returns true if the cache owns `rdMol` (the caller must NOT delete it): it stored it, or holds that very molecule
+   * (another molecule under its key is the caller's to delete).
    */
   addToCache(rdMol: RDMol): boolean {
     const key = rdMol.get_smiles(); // throws for invalid input -> empty rows don't consume budget
     if (this._molsCache?.has(key)) {
       if (this._cacheCounter < MAX_MOL_CACHE_SIZE)
         this._cacheCounter++; // a cache hit is still a processed dataset molecule
-      return true;
+      return this._molsCache.get(key) === rdMol;
     }
     if (this._cacheCounter < MAX_MOL_CACHE_SIZE) {
       this._molsCache?.set(key, rdMol);

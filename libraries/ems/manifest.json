@@ -380,45 +380,6 @@
       ]
     },
     {
-      "kind": "pick-input",
-      "noun": "pick input",
-      "family": "input",
-      "focusRole": "combobox",
-      "nameFrom": [
-        "label",
-        "aria",
-        "placeholder"
-      ],
-      "parts": {
-        "label": "[data-u2-part=\"label\"]",
-        "editor": "[data-u2-part=\"editor\"]",
-        "options": "[data-u2-part=\"options\"]",
-        "error": "[data-u2-part=\"error\"]"
-      },
-      "state": [
-        "label",
-        "value",
-        "text",
-        "valid",
-        "error",
-        "open",
-        "placeholder"
-      ],
-      "props": [],
-      "items": {
-        "role": "option",
-        "noun": "item",
-        "gestures": [
-          "pick"
-        ]
-      },
-      "gestures": [
-        "type",
-        "open",
-        "pick"
-      ]
-    },
-    {
       "kind": "save-button",
       "noun": "button",
       "family": "action",
@@ -505,6 +466,30 @@
     {
       "kind": "actions-menu",
       "noun": "dropdown button",
+      "family": "action",
+      "role": "button",
+      "nameFrom": [
+        "aria",
+        "title"
+      ],
+      "parts": {},
+      "state": [
+        "label",
+        "open"
+      ],
+      "props": [],
+      "gestures": [
+        "press",
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "sort-menu",
+      "noun": "dropdown button",
+      "aliases": [
+        "sort"
+      ],
       "family": "action",
       "role": "button",
       "nameFrom": [

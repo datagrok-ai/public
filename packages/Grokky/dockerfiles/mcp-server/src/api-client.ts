@@ -101,8 +101,16 @@ export function getSpace(id: string): Promise<unknown> {
   return request('GET', `/spaces/${id}`);
 }
 
+// A space is a project the platform marks as one; without these fields the server stores a plain project
+// (core SpacesClient.createRootSpace / SpaceClient.addSubspace).
+function space(friendlyName: string, isRoot: boolean): Record<string, unknown> {
+  const name = friendlyName.trim().replace(/^[^A-Za-z]+/, '').split(/[^A-Za-z0-9]+/).filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1)).join('');
+  return {name, friendlyName, isRoot, isDashboard: false};
+}
+
 export function createRootSpace(name: string): Promise<unknown> {
-  return request('POST', '/spaces', {name});
+  return request('POST', '/spaces', space(name, true));
 }
 
 export function deleteSpace(id: string): Promise<unknown> {
@@ -111,7 +119,7 @@ export function deleteSpace(id: string): Promise<unknown> {
 
 export function createSubspace(spaceId: string, name: string, link?: boolean): Promise<unknown> {
   const qs = link ? '?link=true' : '';
-  return request('POST', `/spaces/${spaceId}/subspaces${qs}`, {name});
+  return request('POST', `/spaces/${spaceId}/subspaces${qs}`, space(name, false));
 }
 
 export function listSpaceChildren(

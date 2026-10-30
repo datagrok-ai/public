@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {filter} from 'rxjs/operators';
+import {filter, tap} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {interval} from 'rxjs';
+import {merge, of, timer} from 'rxjs';
 import {elementClick} from './utils';
 
 export class DashboardTutorial extends Tutorial {
@@ -85,7 +85,7 @@ export class DashboardTutorial extends Tutorial {
     const editorText = (): string => ($(dqv.root).find('.CodeMirror')[0] as any)?.CodeMirror?.getValue() ??
       Tutorial.codeMirrorView(dqv.root)?.state.doc.toString() ?? '';
     await this.action('Enter the query with its parameter annotation',
-      interval(1000).pipe(filter(() => {
+      timer(0, 200).pipe(filter(() => {
         const lines = editorText().split('\n').map((line) => line.trim());
         return lines[0] === paramAnnotation && lines.slice(1).includes(query);
       })), () => $(dqv.root).find('.CodeMirror, .cm-editor')[0] ?? null, queryDescription,
@@ -129,32 +129,31 @@ export class DashboardTutorial extends Tutorial {
     // every run of this tutorial leaves a dashboard with this name behind, so on a shared server
     // matching by name alone lets the last steps pick up somebody else's project
     let savedProjectId = '';
-    const savedProjectSub = grok.events.onProjectUploaded.subscribe((p: DG.Project) => {
-      if (p?.friendlyName === projectName)
-        savedProjectId = p.id;
-    });
-    this.onClose.subscribe(() => savedProjectSub.unsubscribe());
-    const isSavedProject = (p: DG.Project) => savedProjectId ? p.id === savedProjectId : p.friendlyName === projectName;
+    const projectSaved = grok.events.onProjectUploaded.pipe(
+      filter((p: DG.Project) => p?.friendlyName === projectName), tap((p: DG.Project) => savedProjectId = p.id));
+    const isSavedProject = (p: DG.Project) => p.id === savedProjectId;
 
-    const projectDlg = await this.openDialog('Save a project', 'Save project', projectPaneHints, uploadProjectInfo,
+    await this.openDialog('Save a project', 'Save project', projectPaneHints, uploadProjectInfo,
       () => projectPaneHints[0].click());
-    await DG.delay(1000);
-    const projectNameHint = $(projectDlg.root).find('.ui-input-editor#name')[0];
 
-    await this.action(`Set the project name to "${projectName}"`, interval(2000).pipe(filter(() => projectName ===
-      (<HTMLInputElement>$(projectDlg.root).find('.ui-input-editor#name')[0])?.value)),
-    projectNameHint, '', () => Tutorial.setInputValue(projectNameHint as HTMLInputElement, projectName));
+    const findDialog = (title: string) => DG.Dialog.getOpenDialogs().find((dlg) => dlg.title === title);
+    const nameInput = () =>
+      findDialog('Save project')?.root.querySelector<HTMLInputElement>('.ui-input-editor#name') ?? null;
+    const okButton = () => findDialog('Save project')?.getButton('OK') ?? null;
 
-    // await this.action('Enable Data sync', new Observable((subscriber: any) => {
-    //   $(projectDlg.root).find('.ui-input-switch').one('click', () => subscriber.next(true));
-    // }), $(projectDlg.root).find('.ui-input-switch')[1]);
+    await this.action(`Set the project name to "${projectName}"`,
+      merge(timer(0, 200).pipe(filter(() => nameInput()?.value === projectName)), projectSaved),
+      nameInput, 'Set the name before you click "OK".',
+      () => nameInput() ? Tutorial.setInputValue(nameInput()!, projectName) : projectPaneHints[0].click());
+
+    await this.action('Click "OK"', savedProjectId ? of(true) : projectSaved, okButton, '',
+      () => okButton()?.click());
 
     const sharingDescription = 'You can share a newly created project with other users of the platform. Also, ' +
       'there is a link your project will be available at. Copy it, if you prefer this way of sharing.';
-    const shareDlg = await this.openDialog('Click "OK"', `Share ${projectName}`,
-      $(projectDlg.root).find('button.ui-btn.ui-btn-ok')[2], '',
-      () => $(projectDlg.root).find('button.ui-btn.ui-btn-ok')[2]!.click());
-    await this.action('Skip the sharing step', shareDlg.onClose, null, sharingDescription, () => shareDlg.close());
+    const shareDlg = findDialog(`Share ${projectName}`);
+    await this.action('Skip the sharing step', shareDlg?.onClose ?? of(true), null, sharingDescription,
+      () => shareDlg?.close());
 
     const closeProjectDescription =
       'You can close the project by right-clicking on the sidebar and clicking "Close all"';
@@ -162,7 +161,6 @@ export class DashboardTutorial extends Tutorial {
       closeProjectDescription,
       () => grok.shell.closeAll());
 
-    await DG.delay(1000);
     // the tree is rebuilt after Close all, so the row is looked up on every poll; a click anywhere in it counts
     const dashboardsNode = () => ($('div.d4-tree-view-item-label')
       .filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]
@@ -176,12 +174,11 @@ export class DashboardTutorial extends Tutorial {
       'If the list holds more than one dashboard with this name, open the one you have just saved — ' +
       'the others belong to different runs of this tutorial and query connections you might not have access to.',
       async () => (await grok.dapi.projects.find(savedProjectId)).open());
-    savedProjectSub.unsubscribe();
     this.showToolbox();
-    await DG.delay(1000);
+    const toolbox = await Tutorial.waitFor(() => $('.d4-toolbox')[1]);
 
-    await this.textInpAction($('.d4-toolbox')[1]!, 'Set State to LA', 'State', 'LA');
+    await this.textInpAction(toolbox!, 'Set State to LA', 'State', 'LA');
 
-    await this.buttonClickAction($('.d4-toolbox')[1]!, 'Click REFRESH button', 'REFRESH');
+    await this.buttonClickAction(toolbox!, 'Click REFRESH button', 'REFRESH');
   }
 }

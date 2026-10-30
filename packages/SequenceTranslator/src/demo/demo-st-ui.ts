@@ -22,9 +22,18 @@ export async function demoOligoPatternUI() {
 export async function demoOligoStructureUI() {
   await tryCatch(async () => {
     async function setInputValue(idx: number, sequence: string): Promise<void> {
-      await DG.delay(500);
-      const textInputs: NodeListOf<HTMLTextAreaElement> = document.querySelectorAll('.st-colored-text-input > textarea');
-      const textarea = textInputs[idx];
+      // the app builds its inputs after its view is added
+      const find = () => document.querySelectorAll<HTMLTextAreaElement>('.st-colored-text-input > textarea')[idx];
+      const textarea = find() ?? await new Promise<HTMLTextAreaElement>((resolve) => {
+        const observer = new MutationObserver(() => {
+          const found = find();
+          if (found) {
+            observer.disconnect();
+            resolve(found);
+          }
+        });
+        observer.observe(document.body, {childList: true, subtree: true});
+      });
       textarea.value = sequence;
       const event = new Event('input');
       textarea.dispatchEvent(event);

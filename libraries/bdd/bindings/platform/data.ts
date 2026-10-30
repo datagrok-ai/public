@@ -1,10 +1,3 @@
-/* The current table's rows and columns through the JS API: selection, filter, the current row,
-   deleting rows, calculated columns, column colors, and the tables the workspace holds. A step
-   that changes rows or colors takes every open viewer's baseline first, so the viewer checks that
-   follow ("should have repainted", "a narrower value range than before") read against the state
-   before the change, and returns once every viewer has drawn the change, so the next step's
-   baseline is the state after it. The in-page runtime's `table`, `col`, `rowFacts` and `setRows`
-   do the lookups and the row scans, and say which column or category is missing. */
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';

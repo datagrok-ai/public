@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, test, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
+import {category, test, waitUntil, delay} from '@datagrok-libraries/test/src/test';
 import {awaitWebComponents, closeView} from './utils';
 
 const HOST_WIDTH = 1000;
@@ -16,7 +16,7 @@ function hiddenHost() {
 const widthRatio = (el: Element | null) =>
   el ? el.getBoundingClientRect().width / HOST_WIDTH : NaN;
 
-const awaitNarrowForm = (form: () => Element | null) => awaitCheck(() => Math.abs(widthRatio(form()) - 0.2) < 0.03,
+const awaitNarrowForm = (form: () => Element | null) => waitUntil(() => Math.abs(widthRatio(form()) - 0.2) < 0.03,
   'form should take ~20% of the width', 5000);
 
 category('Dock: layout of hidden mounts', () => {
@@ -53,7 +53,7 @@ category('Dock: layout of hidden mounts', () => {
       view.root.style.height = '100%';
       host.append(view.root);
       const inputs = () => view.root.querySelector('[dock-spawn-title="Inputs"]');
-      await awaitCheck(() => inputs()?.querySelector('dg-input-form') != null, 'RFV form not rendered', 15000);
+      await waitUntil(() => inputs()?.querySelector('dg-input-form') != null, 'RFV form not rendered', 15000);
       host.style.display = 'block';
       await awaitNarrowForm(inputs);
     } finally {

@@ -3,7 +3,7 @@
    signal, two controls on one signal, and the registration. Every mounted control is disposed
    in `finally` — an overlay left open loops the animation-frame updater and OOMs node --test. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope, signal, Filters, FilterBuilder, FilterQueryInput, Control} from '../src/index.js';
@@ -52,6 +52,10 @@ function box(q) {
   return q.root.querySelector('input');
 }
 
+function skin(q) {
+  return q.root.querySelector('[data-u2-part="editor"]');
+}
+
 /** Types the whole text — the shim has no caret, so completion runs at the end. */
 async function type(q, text) {
   const input = box(q);
@@ -69,13 +73,30 @@ function key(q, name) {
   fire(box(q), 'keydown', {key: name});
 }
 
+/** A browser's caret on a shim input, which has none: a changed value puts it at the end, and setSelectionRange
+ * clamps it to the text the box holds at that moment. */
+function browserCaret(input) {
+  if (input.setSelectionRange)
+    return;
+  let value = input.value;
+  Object.defineProperty(input, 'value', {configurable: true, get: () => value, set: (v) => {
+    if (String(v) !== value)
+      input.selectionStart = input.selectionEnd = (value = String(v)).length;
+  }});
+  input.selectionStart = input.selectionEnd = value.length;
+  input.setSelectionRange = (start, end) => {
+    input.selectionStart = Math.min(start, value.length);
+    input.selectionEnd = Math.min(end, value.length);
+  };
+}
+
 smoke('renders as a combobox editor showing the formatted tree', () => {
   const q = mount(new FilterQueryInput({label: 'Query', schema: SCHEMA, name: 'q',
     value: Filters.group('and', [Filters.cond('age', '>', 30), Filters.cond('sex', '=', 'F')])}));
   assert.equal(q.root.dataset.u2, 'filter-query-input');
   assert.equal(q.root.dataset.u2Name, 'q');
   const input = box(q);
-  assert.equal(input.dataset.u2Part, 'editor');
+  assert.equal(input.parentElement, skin(q));
   assert.equal(input.getAttribute('role'), 'combobox');
   assert.equal(input.value, 'age > 30 and sex = "F"');
   assert.equal(q.text.value, 'age > 30 and sex = "F"');
@@ -83,7 +104,7 @@ smoke('renders as a combobox editor showing the formatted tree', () => {
   assert.equal(q.isOpen.value, false);
   const status = q.getWidgetStatus();
   assert.deepEqual([status.mode, status.query, status.problems], ['text', 'age > 30 and sex = "F"', []]);
-  assert.equal(status.tree, q.value.peek());
+  assert.equal(status.tree, q.peek());
 });
 
 smoke('completion: properties with kind icons, then operators, then values, then connectors', async () => {
@@ -145,7 +166,7 @@ smoke('completion: properties with kind icons, then operators, then values, then
   key(q, 'Enter');
   await flush();
   assert.equal(box(q).value, 'age > 3', 'the commit re-formats with the schema spelling');
-  assert.equal(q.value.value.nodes[0].property, 'age');
+  assert.equal(q.value.nodes[0].property, 'age');
 });
 
 smoke('a pick replaces the token, quotes strings, appends a space and re-opens for the next expectation', async () => {
@@ -174,7 +195,7 @@ smoke('a pick replaces the token, quotes strings, appends a space and re-opens f
   key(q, 'Enter');
   assert.equal(q.isOpen.value, false, 'Enter with no active row commits');
   assert.equal(q.query.value, 'name like "Naproxen"', 'the committed text is re-formatted');
-  assert.deepEqual(q.value.peek().nodes.map((n) => [n.property, n.operator, n.value]),
+  assert.deepEqual(q.peek().nodes.map((n) => [n.property, n.operator, n.value]),
     [['name', 'like', 'Naproxen']]);
 
   await type(q, 'name like "Naproxen" and act');
@@ -186,12 +207,23 @@ smoke('a pick replaces the token, quotes strings, appends a space and re-opens f
   assert.equal(q.isOpen.value, false, 'Escape closes');
 });
 
+smoke('a pick puts the caret after what it inserted, so the list re-opens on the next expectation', async () => {
+  const q = mount(new FilterQueryInput({schema: SCHEMA}));
+  browserCaret(box(q));
+  await type(q, 'na');
+  key(q, 'Enter');
+  await flush();
+  assert.equal(box(q).value, 'name ');
+  assert.equal(box(q).selectionStart, 5);
+  assert.equal(rows()[0], '=' + 'equals', 'the operators, not the property just picked');
+});
+
 smoke('commit parses the text into the tree; a problem keeps the old tree and surfaces the message', async () => {
   const q = mount(new FilterQueryInput({schema: SCHEMA, value: Filters.group('and', [Filters.cond('age', '>', 30)])}));
-  const before = q.value.peek();
+  const before = q.peek();
   q.text.value = 'age > 5 and (sex = "F" or name like "an")';
   assert.equal(q.commit(), true);
-  const root = q.value.peek();
+  const root = q.peek();
   assert.notEqual(root, before);
   assert.equal(Filters.format(root), 'age > 5 and (sex = "F" or name like "an")');
   assert.equal(root.nodes.length, 2);
@@ -200,19 +232,19 @@ smoke('commit parses the text into the tree; a problem keeps the old tree and su
 
   q.text.value = 'age >';
   assert.equal(q.commit(), false);
-  assert.equal(q.value.peek(), root, 'the tree is untouched');
+  assert.equal(q.peek(), root, 'the tree is untouched');
   assert.equal(q.problems.value[0].code, 'syntax');
   assert.match(q.validity.value, /^Expected /);
-  assert.equal(box(q).classList.contains('u2-invalid'), true);
+  assert.equal(skin(q).classList.contains('u2-invalid'), true);
 
   q.text.value = 'height > 5';
   assert.equal(q.commit(), false);
   assert.equal(q.problems.value[0].code, 'unknown-property');
-  assert.equal(q.value.peek(), root);
+  assert.equal(q.peek(), root);
 
   q.text.value = '';
   assert.equal(q.commit(), true);
-  assert.deepEqual(q.value.peek().nodes, [], 'blank text is the empty tree');
+  assert.deepEqual(q.peek().nodes, [], 'blank text is the empty tree');
   assert.equal(q.validity.value, null);
 });
 
@@ -327,7 +359,7 @@ smoke('a value picked under a like-family operator is spelled as a literal patte
   assert.equal(box(q).value, spelled('like', '50%'), 'escaped the way the formatter spells it');
   key(q, 'Escape');
   key(q, 'Enter');
-  const [cond] = q.value.peek().nodes;
+  const [cond] = q.peek().nodes;
   assert.deepEqual([cond.operator, cond.value, cond.options], ['like', '50%', undefined], 'a literal, not a wildcard');
   assert.equal(q.query.value, spelled('like', '50%'));
   await type(q, 'name starts in');
@@ -353,8 +385,8 @@ smoke('a builder and a query input on one signal stay in sync both ways', async 
   assert.equal(q.commit(), true);
   assert.equal(fb.root.querySelectorAll('[data-u2-node]').length, 2, 'text commit → builder rows');
   assert.equal(fb.query.value, 'age < 30 and sex = "F"');
-  assert.equal(fb.value, tree, 'both adopted the signal');
-  assert.equal(q.value, tree);
+  assert.equal(fb.signal, tree, 'both adopted the signal');
+  assert.equal(q.signal, tree);
 });
 
 smoke('a rejected value provider shows the error row; an aborted one is ignored', async () => {
@@ -428,7 +460,7 @@ spec('registration: value binds two-way as the context signal itself; query read
   document.body.append(instance.root);
   assert.equal(instance.root.querySelectorAll('.u2-spec-error').length, 0);
   const q = Control.forElement(instance.root.querySelector('[data-u2="filter-query-input"]'));
-  assert.equal(q.value === ctx.data.criteria, true, 'the context signal itself');
+  assert.equal(q.signal === ctx.data.criteria, true, 'the context signal itself');
   const echo = instance.root.querySelector('h3');
   assert.equal(echo.textContent, 'age > 30');
   q.text.value = 'age > 30 and sex = "M"';
@@ -442,13 +474,30 @@ spec('registration: value binds two-way as the context signal itself; query read
   instance.dispose();
 });
 
+smoke('a regex that does not compile is refused like any bad value; the builder over the same tree says so on its row', async () => {
+  const tree = signal(Filters.group('and', [Filters.cond('age', '>', 30)]));
+  const q = mount(new FilterQueryInput({schema: SCHEMA, bind: tree}));
+  const fb = mount(new FilterBuilder({schema: SCHEMA, bind: tree}));
+  const root = tree.peek();
+  q.text.value = 'name matches "("';
+  assert.equal(q.commit(), false, 'refused, nothing thrown');
+  assert.equal(tree.peek(), root, 'the tree in force stays');
+  assert.match(q.validity.value, /is not a regular expression/);
+  assert.equal(skin(q).classList.contains('u2-invalid'), true, 'shown at once: the commit was the user\'s');
+  tree.value = Filters.group('and', [Filters.cond('name', 'matches', '(')]);
+  assert.match(fb.validity.value, /is not a regular expression/, 'what keeps an Apply or OK off');
+  const problem = fb.root.querySelector('[data-u2-part="problem"]');
+  assert.equal(problem.hidden, false);
+  assert.match(problem.textContent, /Unterminated group/);
+});
+
 smoke('a validation failure shows exactly like a parse failure: the red editor, the tooltip, no new tree', async () => {
   const schema = Filters.schema([{name: 'priority_id', type: TYPE.STRING, ref: 'grit.priority'},
     {name: 'number', type: TYPE.INT}, {name: 'title', type: TYPE.STRING}]);
   const q = mount(new FilterQueryInput({schema, target: 'domain', inline: true,
     value: Filters.group('and', [Filters.cond('number', '=', 1)])}));
-  const root = q.value.peek();
-  const editor = box(q);
+  const root = q.peek();
+  const editor = skin(q);
   for (const [text, message] of [
     ['priority =', 'Expected a value'],
     ['priority = High', 'Unknown property "priority" — did you mean `priority_id.name`?'],
@@ -458,7 +507,7 @@ smoke('a validation failure shows exactly like a parse failure: the red editor, 
   ]) {
     q.text.value = text;
     assert.equal(q.commit(), false, `${text} is refused`);
-    assert.equal(q.value.peek(), root, 'the query in force is untouched');
+    assert.equal(q.peek(), root, 'the query in force is untouched');
     assert.equal(q.validity.value, message);
     assert.equal(editor.title, message, 'the message rides the editor, the ribbon having no room for a line');
     assert.equal(editor.classList.contains('u2-invalid'), true);
@@ -478,19 +527,19 @@ smoke('Enter commits when the highlighted row spells what is already typed', asy
   await flush();
   assert.equal(box(q).value, 'age = 4', 'no second insertion of the same token, and no trailing space');
   assert.equal(q.isOpen.value, false);
-  assert.deepEqual(q.value.peek().nodes.map((n) => [n.property, n.operator, n.value]), [['age', '=', 4]]);
+  assert.deepEqual(q.peek().nodes.map((n) => [n.property, n.operator, n.value]), [['age', '=', 4]]);
 });
 
 smoke('`display` spells the bound tree the way a preset wrote it, and Enter on it commits nothing new', async () => {
   const bound = Filters.group('and', [Filters.cond('name', '=', 'Naproxen')]);
   const q = mount(new FilterQueryInput({schema: SCHEMA, display: (tree) =>
     Filters.format(tree) === 'name = "Naproxen"' ? 'name = $me' : null}));
-  q.value.value = bound;
+  q.value = bound;
   await flush();
   assert.equal(box(q).value, 'name = $me');
   key(q, 'Enter');
   await flush();
-  assert.equal(q.value.peek(), bound, 'the displayed form is not parsed into a query of its own');
+  assert.equal(q.peek(), bound, 'the displayed form is not parsed into a query of its own');
   assert.equal(box(q).value, 'name = $me');
 });
 
@@ -560,16 +609,16 @@ smoke('a picked value applies in the same action, by keyboard and by mouse', asy
   key(q, 'Enter');
   await flush();
   // a ref column's value is the row it names, which is what the query carries
-  assert.deepEqual(q.value.peek().nodes.map((n) => [n.property, n.operator, n.value?.id]),
+  assert.deepEqual(q.peek().nodes.map((n) => [n.property, n.operator, n.value?.id]),
     [['location_id', 'under', 'Lab 101']], 'one keystroke, one filter');
   assert.equal(q.query.value, 'location_id under "Lab 101"');
   assert.deepEqual(q.problems.value, []);
 
-  const mouse = mount(new FilterQueryInput({schema: PLACES, name: 'm'}));
+  const mouse = mount(testOwner().build(() => new FilterQueryInput({schema: PLACES, name: 'm'})));
   await type(mouse, 'location_id under Buil');
   fire(document.body.querySelector('.u2-fq-option'), 'pointerdown');
   await flush();
-  assert.deepEqual(mouse.value.peek().nodes.map((n) => [n.property, n.operator, n.value?.id]),
+  assert.deepEqual(mouse.peek().nodes.map((n) => [n.property, n.operator, n.value?.id]),
     [['location_id', 'under', 'Building A']], 'a click is the same answer');
 });
 
@@ -585,7 +634,7 @@ smoke('picking clears the refusal the previous text earned', async () => {
   key(q, 'Enter');
   await flush();
   assert.deepEqual(q.problems.value, [], 'the guidance is not about this text any more');
-  assert.deepEqual(q.value.peek().nodes.map((n) => [n.property, n.operator, n.value?.id]),
+  assert.deepEqual(q.peek().nodes.map((n) => [n.property, n.operator, n.value?.id]),
     [['location_id', 'under', 'Lab 101']]);
 });
 
@@ -608,7 +657,7 @@ smoke('an applied pick leaves the popup closed over the result; ArrowDown re-ope
   assert.deepEqual(rows(), ['and', 'or'], 'the continuation is one keystroke away');
   key(q, 'Escape');
 
-  const mouse = mount(new FilterQueryInput({schema: PLACES, name: 'm'}));
+  const mouse = mount(testOwner().build(() => new FilterQueryInput({schema: PLACES, name: 'm'})));
   await type(mouse, 'location_id under Buil');
   fire(document.body.querySelector('.u2-fq-option'), 'pointerdown');
   await flush();
@@ -624,7 +673,7 @@ smoke('a pick that does not make a filter yet applies nothing, and still clears 
   key(q, 'Enter');
   await flush();
   assert.equal(q.problems.value.length > 0, true, 'an unknown column is refused');
-  const applied = q.value.peek();
+  const applied = q.peek();
 
   // a property with no operator yet is not a filter: nothing is applied, and the refusal that was
   // about `zzz` is not about this text
@@ -633,13 +682,13 @@ smoke('a pick that does not make a filter yet applies nothing, and still clears 
   key(q, 'Enter');
   await flush();
   assert.equal(box(q).value, 'age ');
-  assert.equal(q.value.peek(), applied, 'the tree in force is untouched');
+  assert.equal(q.peek(), applied, 'the tree in force is untouched');
   assert.deepEqual(q.problems.value, []);
 });
 
 smoke('required: an empty query is invalid; a committed condition makes it valid', () => {
   const q = mount(new FilterQueryInput({schema: SCHEMA, required: true}));
   assert.equal(q.getState().valid, false);
-  q.value.value = Filters.group('and', [Filters.cond('age', '>', 30)]);
+  q.value = Filters.group('and', [Filters.cond('age', '>', 30)]);
   assert.equal(q.getState().valid, true);
 });

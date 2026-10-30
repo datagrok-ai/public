@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {Observable, combineLatest, fromEvent, interval} from 'rxjs';
+import {Observable, combineLatest, fromEvent, interval, timer} from 'rxjs';
 import $ from 'cash-dom';
 import {_package} from '../../../package';
 
@@ -191,7 +191,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     const trellis = Array.from(grok.shell.tv.viewers)
       .find((v) => v.type === DG.VIEWER.TRELLIS_PLOT)! as DG.Viewer<DG.ITrellisPlotSettings>;
     await this.action('Set the value for the X axis to R4',
-      interval(1000).pipe(filter(() => {
+      timer(0, 200).pipe(filter(() => {
         return trellis.props.xColumnNames[0] === 'R4';
       })), undefined, '', () => trellis.setOptions({xColumnNames: ['R4']}));
   }

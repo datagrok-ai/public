@@ -59,16 +59,16 @@ export class SliderInput extends Input<number | null, SliderInputOptions> {
     // set by a drag that changed the value, consumed by the effect run it causes
     let echo = false;
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (echo)
         echo = false;
       else
         range.value = String(value ?? this.options.min ?? 0);
     });
     const commit = () => {
-      const before = this.value.peek();
-      this.value.value = Number(range.value);
-      echo = !Object.is(this.value.peek(), before);
+      const before = this.peek();
+      this.value = Number(range.value);
+      echo = !Object.is(this.peek(), before);
     };
     // `commitOn: 'change'` writes on release; the tooltip follows the thumb either way
     this.scope.listen(range, 'input', () => {
@@ -78,7 +78,7 @@ export class SliderInput extends Input<number | null, SliderInputOptions> {
     });
     if (this.options.commitOn === 'change')
       this.scope.listen(range, 'change', commit);
-    Tooltip.bind(range, () => this.text, this.scope);
+    Tooltip.bind(range, () => this.text, {owner: this.scope});
 
     const editor = document.createElement('div');
     editor.className = 'u2-slider';
@@ -93,12 +93,12 @@ export class SliderInput extends Input<number | null, SliderInputOptions> {
     range.min = String(min);
     range.max = String(max);
     range.step = String(this.options.step ?? (max > min ? (max - min) / 100 : 1));
-    range.value = String(this.value.peek() ?? min);
+    range.value = String(this.peek() ?? min);
   }
 
   /** What the tooltip shows — the formatted value, empty while there is none. */
   get text(): string {
-    const value = this.value.peek();
+    const value = this.peek();
     return value == null ? '' : this._format(value);
   }
 

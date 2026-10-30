@@ -3,7 +3,7 @@
    popups, and the registry walk (every visual tag stamps `data-u2`, every input example is named).
    Contract: core/docs/features/ui2/CONTRACT.md §1–§2. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {state, status, control, items, revealItem, props, setProp} from 'datagrok-api/u2core';
@@ -64,7 +64,7 @@ for (const [kind, make, editorTag] of INPUTS) {
     assert.equal(s.focused, false);
     assert.equal(s.valid, true);
     assert.equal(s.error, null);
-    assert.deepEqual(s.value, Control.jsonValue(input.value.peek()));
+    assert.deepEqual(s.value, Control.jsonValue(input.peek()));
     assert.equal(typeof s.text, 'string');
     assert.deepEqual(JSON.parse(JSON.stringify(s)), s, 'JSON-safe');
     assert.deepEqual(status(input.root).state, s, 'the status carries the same block');
@@ -75,7 +75,7 @@ for (const [kind, make, editorTag] of INPUTS) {
 smoke('text: value as displayed; choice: the caption; bool: true/false', async () => {
   const text = mounted(new TextInput({label: 'Name', value: 'Ada'}));
   assert.equal(state(text.root).text, 'Ada');
-  text.value.value = 'Grace';
+  text.value = 'Grace';
   assert.equal(state(text.root).text, 'Grace');
   const choice = mounted(new ChoiceInput({label: 'Stage', items: [{value: 'p1', label: 'Phase I'}], value: 'p1'}));
   assert.equal(state(choice.root).value, 'p1');
@@ -93,13 +93,17 @@ smoke('invalid: aria-invalid and aria-describedby point at the error the user re
   input.addValidator((v) => v ? null : 'Code is required');
   const editor = input.root.querySelector('input');
   const error = input.root.querySelector('[data-u2-part="error"]');
+  assert.equal(state(input.root).valid, false, 'the verdict is there from the start');
+  assert.equal(editor.hasAttribute('aria-invalid'), false, 'and shows once the input is touched');
+  assert.equal(state(input.root).error, null);
+  input.touch();
   assert.equal(editor.getAttribute('aria-invalid'), 'true');
   assert.equal(editor.getAttribute('aria-describedby'), error.id);
   assert.equal(error.textContent, 'Code is required');
   assert.equal(state(input.root).valid, false);
   assert.equal(state(input.root).error, 'Code is required');
 
-  input.value.value = 'X1';
+  input.value = 'X1';
   assert.equal(editor.hasAttribute('aria-invalid'), false);
   assert.equal(editor.hasAttribute('aria-describedby'), false);
   assert.equal(state(input.root).valid, true);
@@ -109,11 +113,11 @@ smoke('invalid: aria-invalid and aria-describedby point at the error the user re
 
 smoke('disabled: aria-disabled on the root, state.enabled false', async () => {
   const input = mounted(new TextInput({label: 'Name'}));
-  input.enabled = false;
+  input.disabled = 'Not editable in this test';
   assert.equal(input.root.getAttribute('aria-disabled'), 'true');
   assert.equal(input.root.querySelector('input').disabled, true);
   assert.equal(state(input.root).enabled, false);
-  input.enabled = true;
+  input.disabled = null;
   assert.equal(input.root.hasAttribute('aria-disabled'), false);
   assert.equal(state(input.root).enabled, true);
   input.dispose();
@@ -147,7 +151,7 @@ smoke('focused: focus on the editor or inside a popup the control owns', async (
   const content = document.createElement('div');
   const option = document.createElement('button');
   content.append(option);
-  Overlay.show(input.box, content, input.scope);
+  Overlay.show(input.box, content, {owner: input.scope});
   assert.equal(content.dataset.u2OwnerId, input.rootId);
   option.focus();
   assert.equal(state(input.root).focused, true, 'focus in the owned popup');
@@ -176,7 +180,7 @@ smoke('forElement resolves a node in a portaled popup to the popup owner', async
   const content = document.createElement('div');
   const row = document.createElement('span');
   content.append(row);
-  Overlay.show(input.box, content, input.scope);
+  Overlay.show(input.box, content, {owner: input.scope});
   assert.equal(content.parentElement.classList.contains('u2-overlay'), true, 'portaled to the body host');
   assert.equal(Control.forElement(row), input);
   assert.equal(control(row), input);
@@ -193,11 +197,11 @@ smoke('onChanged runs owned by the builder, not by the effect run, and gets the 
   const owner = new Scope();
   const calls = [];
   let opened;
-  const input = Scope.runWith(owner, () => new TextInput({label: 'Name', onChanged: (v, source) => {
+  const input = owner.build(() => new TextInput({label: 'Name', onChanged: (v, source) => {
     calls.push([v, source]);
     opened = Scope.ambient;
   }}));
-  input.value.value = 'a';
+  input.value = 'a';
   assert.deepEqual(calls, [['a', input]]);
   assert.equal(opened, owner, 'what onChanged builds belongs to the builder');
   owner.dispose();

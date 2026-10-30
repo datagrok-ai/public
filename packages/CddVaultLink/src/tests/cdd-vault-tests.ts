@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {funcs} from '../package-api';
 import {Vault} from '../cdd-vault-api';
 import {BATCHES_TAB, CDDVaultSearchType, MOLECULES_TAB, PROTOCOLS_TAB} from '../constants';
@@ -24,7 +24,7 @@ category('CDDVaultLink: app', () => {
     const view = await funcs.cddVaultApp();
     expect(view != null, true, 'cddVaultApp returned no view');
     // initial stats are rendered as a table inside the app view
-    await awaitCheck(() => view.root.getElementsByTagName('table').length > 0,
+    await waitUntil(() => view.root.getElementsByTagName('table').length > 0,
       'Initial statistics have not been rendered', 30000);
   }, {timeout: 60000});
 
@@ -32,28 +32,26 @@ category('CDDVaultLink: app', () => {
     const node = getCddNode();
     node.expanded = true;
     // wait for the vaults to be loaded into the tree
-    await awaitCheck(() => node.items.length > 0,
-      'CDD Vault tree has not been populated', 30000);
+    await waitUntil(() => node.items.length > 0, 'CDD Vault tree has not been populated', 30000);
     const vaultNode = node.items[0] as DG.TreeViewGroup;
     vaultNode.expanded = true;
-    await awaitCheck(() => vaultNode.items.find((it) => it.text === MOLECULES_TAB) !== undefined,
+    await waitUntil(() => vaultNode.items.find((it) => it.text === MOLECULES_TAB) !== undefined,
       `${MOLECULES_TAB} node has not been created`, 10000);
     vaultNode.items.find((it) => it.text === MOLECULES_TAB)!.root.click();
-    await awaitCheck(() => (grok.shell.tv?.dataFrame?.rowCount ?? 0) > 0,
+    await waitUntil(() => (grok.shell.tv?.dataFrame?.rowCount ?? 0) > 0,
       'Molecules dataframe has not been loaded', 30000);
   }, {timeout: 60000});
 
   test('open Batches tab', async () => {
     const node = getCddNode();
     node.expanded = true;
-    await awaitCheck(() => node.items.length > 0,
-      'CDD Vault tree has not been populated', 30000);
+    await waitUntil(() => node.items.length > 0, 'CDD Vault tree has not been populated', 30000);
     const vaultNode = node.items[0] as DG.TreeViewGroup;
     vaultNode.expanded = true;
-    await awaitCheck(() => vaultNode.items.find((it) => it.text === BATCHES_TAB) !== undefined,
+    await waitUntil(() => vaultNode.items.find((it) => it.text === BATCHES_TAB) !== undefined,
       `${BATCHES_TAB} node has not been created`, 10000);
     vaultNode.items.find((it) => it.text === BATCHES_TAB)!.root.click();
-    await awaitCheck(() => (grok.shell.tv?.dataFrame?.rowCount ?? 0) > 0,
+    await waitUntil(() => (grok.shell.tv?.dataFrame?.rowCount ?? 0) > 0,
       'Batches dataframe has not been loaded', 30000);
   }, {timeout: 60000});
 });

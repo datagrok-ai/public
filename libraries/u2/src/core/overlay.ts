@@ -1,6 +1,8 @@
 import {autoUpdate, computePosition, flip, offset, size} from '@floating-ui/dom';
 import {Scope, debug} from './scope.js';
 import {Control} from './component.js';
+import {Ownership} from './owner.js';
+import type {Owner} from './owner.js';
 
 /** Fired on the content element when the overlay closes for any reason (outside pointerdown,
  * Esc, anchor removal, scope disposal) — lets the owning control resync its own open state. */
@@ -14,6 +16,8 @@ export interface OverlayOptions {
   /** At least as wide as the anchor (default) — a dropdown list; `false` for a popup with a size of its
    * own (a calendar), which a wide field would otherwise stretch. */
   matchWidth?: boolean;
+  /** Closes the overlay when it is disposed: whoever is building by default. */
+  owner?: Owner;
 }
 
 /** A dialog as the overlay stack sees it. */
@@ -93,10 +97,10 @@ export class Overlay {
   }
 
   /** Shows `content` under `anchor` in the shared layer. The returned close is idempotent and
-   * also registered on `scope`, so disposing the owner tears the overlay down; closing drops that
+   * also registered on the owner, so disposing it tears the overlay down; closing drops that
    * registration again, so an input reopened all day never piles dead closures up on its scope. */
-  static show(anchor: HTMLElement, content: HTMLElement, scope: Scope,
-    options: OverlayOptions = {}): () => void {
+  static show(anchor: HTMLElement, content: HTMLElement, options: OverlayOptions = {}): () => void {
+    const scope = Ownership.scopeOf(options.owner, 'Overlay.show()');
     // nothing to anchor to — and autoUpdate's first, synchronous update would close through
     // `position()` before the stop it returns is held, leaving its observers on for good
     if (!anchor.isConnected)

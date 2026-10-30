@@ -3,11 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {CampaignGrouping, CampaignGroupingType, CampaignJsonName, CampaignTableColumns, DefaultCampaignTableInfoGetters,
-  HDCampaignsGroupingLSKey, HDCampaignsTableSortingLSKey, HDCampaignTableColumnsLSKey,
-  HTCampaignTableColumns, HTCampaignsGroupingLSKey, HTCampaignsTableSortingLSKey, HTCampaignTableColumnsLSKey, HTDefaultCampaignTableInfoGetters,
-  HTFunctionOrderingLSKey, i18n} from './consts';
-import {AppName, CampaignsType, HitDesignCampaign, HitTriageCampaign, TriagePermissions} from './types';
+import {CampaignJsonName, HTFunctionOrderingLSKey} from './consts';
+import {AppName, CampaignsType, TriagePermissions} from './types';
 import {_package} from '../package';
 
 // Re-export shared compute-function utilities from the statistics library
@@ -82,18 +79,6 @@ export function modifyUrl(key: string, value: string) {
   }
 }
 
-export function hideComponents(styles: CSSStyleDeclaration[]) {
-  styles.forEach((style) => {
-    style.display = 'none';
-  });
-}
-
-export function showComponents(styles: CSSStyleDeclaration[]) {
-  styles.forEach((style) => {
-    style.display = 'flex';
-  });
-}
-
 export function addBreadCrumbsToRibbons(view: DG.ViewBase, firstPath: string, secondPath: string, handler: Function):
   {breadcrumbs: DG.Breadcrumbs, sub: Subscription} {
   const breadcrumbs = ui.breadcrumbs([firstPath, secondPath]);
@@ -162,12 +147,13 @@ export async function loadCampaigns<T extends AppName>(
   const campaignFolders = (await _package.files.list(`${appName}/campaigns`))
     .filter((f) => deletedCampaigns.indexOf(f.name) === -1);
   const campaignNamesMap: {[name: string]: CampaignsType[T]} = {};
+  const membership: MembershipCache = new Map();
   const campaignPromises = campaignFolders.map(async (folder) => {
     try {
       const campaignJson: CampaignsType[T] = JSON.parse(await _package.files
         .readAsText(`${appName}/campaigns/${folder.name}/${CampaignJsonName}`));
       if (campaignJson.authorUserId && campaignJson.permissions &&
-        !await checkViewPermissions(campaignJson.authorUserId, campaignJson.permissions)
+        !await checkViewPermissions(campaignJson.authorUserId, campaignJson.permissions, membership)
       )
         return null;
       if (campaignJson.authorUserId && !campaignJson.authorUserFriendlyName) {
@@ -177,7 +163,7 @@ export async function loadCampaigns<T extends AppName>(
       }
       campaignNamesMap[campaignJson.name] = campaignJson;
     } catch (e) {
-      console.error(e);
+      console.warn(`Skipped campaign ${appName}/${folder.name}:`, e);
     }
     return null;
   });
@@ -185,26 +171,33 @@ export async function loadCampaigns<T extends AppName>(
   return campaignNamesMap;
 }
 
-async function checkPermissions(authorId: string, groupIdList: string[]): Promise<boolean> {
+/** The groups the current user was looked up in, each once: the campaigns of one list share it. */
+export type MembershipCache = Map<string, Promise<boolean>>;
+
+async function isMember(groupId: string): Promise<boolean> {
+  const user = DG.User.current();
+  const group = await grok.dapi.groups.find(groupId);
+  if (!group)
+    return false;
+  if (group.personal)
+    return (await grok.dapi.groups.getUser(group))?.id === user.id;
+  const own = user.group?.id;
+  return !!own && [...group.members ?? [], ...group.adminMembers ?? []].some((member) => member?.id === own);
+}
+
+async function checkPermissions(authorId: string, groupIdList: string[], cache?: MembershipCache): Promise<boolean> {
   try {
-    const userId = DG.User.current().id;
-    const userGroupId = DG.User.current().group?.id;
-    if (authorId === userId)
+    // the server does not list the members of All users, so the lookup below would never find the user there
+    if (authorId === DG.User.current().id || groupIdList.includes(DG.Group.defaultGroupsIds['All users']))
       return true;
     for (const groupId of groupIdList) {
-      const group = await grok.dapi.groups.find(groupId);
-      if (!group)
-        continue;
-      if (group.personal) {
-        const user = await grok.dapi.groups.getUser(group);
-        if (user?.id === userId)
-          return true;
-      } else if (userGroupId) {
-        if ((group.members?.length ?? 0) > 0 && group.members.some((memberGroup) => memberGroup?.id === userGroupId))
-          return true;
-        if ((group.adminMembers?.length ?? 0) > 0 && group.adminMembers.some((memberGroup) => memberGroup?.id === userGroupId))
-          return true;
+      let member = cache?.get(groupId);
+      if (member === undefined) {
+        member = isMember(groupId);
+        cache?.set(groupId, member);
       }
+      if (await member)
+        return true;
     }
   } catch (e) {
     _package.logger.error(e);
@@ -212,294 +205,14 @@ async function checkPermissions(authorId: string, groupIdList: string[]): Promis
   return false;
 }
 
-export async function checkEditPermissions(authorId: string, permissions: TriagePermissions): Promise<boolean> {
-  return checkPermissions(authorId, permissions.edit);
+export async function checkEditPermissions(authorId: string, permissions: TriagePermissions,
+  cache?: MembershipCache): Promise<boolean> {
+  return checkPermissions(authorId, permissions.edit, cache);
 }
 
-export async function checkViewPermissions(authorId: string, permissions: TriagePermissions): Promise<boolean> {
-  return checkPermissions(authorId, Array.from(new Set([...permissions.view, ...permissions.edit])));
-}
-
-export function getLocalStorageValue<T = string>(key: string): T | null {
-  return localStorage.getItem(key) as unknown as T;
-}
-
-export function setLocalStorageValue(key: string, value: string) {
-  localStorage.setItem(key, value as unknown as string);
-}
-
-export function getSavedCampaignsGrouping(): CampaignGroupingType {
-  return getLocalStorageValue<CampaignGroupingType>(HDCampaignsGroupingLSKey) ?? CampaignGrouping.None;
-}
-
-export function setSavedCampaignsGrouping(value: CampaignGroupingType) {
-  setLocalStorageValue(HDCampaignsGroupingLSKey, value);
-}
-
-export type SavedCampaignsTableSorting = {
-  columnName: CampaignTableColumns,
-  ascending: boolean,
-}
-
-export function getSavedCampaignsSorting(): SavedCampaignsTableSorting | null {
-  const sortingString = getLocalStorageValue<string>(HDCampaignsTableSortingLSKey);
-  if (!sortingString)
-    return null;
-  return JSON.parse(sortingString) as SavedCampaignsTableSorting;
-}
-
-export function setSavedCampaignsSorting(value: SavedCampaignsTableSorting | null) {
-  value ? setLocalStorageValue(HDCampaignsTableSortingLSKey, JSON.stringify(value)) :
-    localStorage.removeItem(HDCampaignsTableSortingLSKey);
-}
-
-export function sortCampaigns<T extends HitDesignCampaign | HitTriageCampaign>(
-  campaigns: T[], sorting: {columnName: string, ascending: boolean} | null,
-  getters?: {[key: string]: (a: T) => string},
-) {
-  if (!sorting)
-    return;
-  const defaultGetters = (getters ?? DefaultCampaignTableInfoGetters) as {[key: string]: (a: T) => string};
-  const getter = sorting.columnName in defaultGetters ?
-    defaultGetters[sorting.columnName] : (campaign: T) =>
-      campaign.campaignFields?.[sorting.columnName.replace('campaignFields.', '') ?? ''] ?? '';
-  const vs: Map<HitDesignCampaign, any> = new Map();
-  campaigns.forEach((c) => {
-    vs.set(c, getter(c));
-  });
-
-  // probe for numbers or dates
-  const allNumbers = Array.from(vs.values()).every((v) => isNil(v) || !isNaN(Number(v?.toString() ?? '')));
-  const allDates = !allNumbers && Array.from(vs.values()).every((v) => isNil(v) || !isNaN(Date.parse(v?.toString() ?? '')));
-  if (allNumbers) {
-    campaigns.forEach((c) => {
-      vs.set(c, isNil(vs.get(c)) ? (sorting.ascending ? Infinity : -Infinity) : Number(vs.get(c)));
-    });
-  } else if (allDates) {
-    campaigns.forEach((c) => {
-      vs.set(c, isNil(vs.get(c)) ? (sorting.ascending ? Infinity : -Infinity) : Date.parse(vs.get(c)?.toString() ?? ''));
-    });
-  }
-
-  campaigns.sort((a, b) => {
-    const aVal = vs.get(a);
-    const bVal = vs.get(b);
-    if (allNumbers || allDates)
-      return sorting.ascending ? aVal - bVal : bVal - aVal;
-    const aa = isNil(aVal) ? '' : aVal.toString();
-    const bb = isNil(bVal) ? '' : bVal.toString();
-    return sorting.ascending ? aa.localeCompare(bb) : bb.localeCompare(aa);
-  });
-  vs.clear();
-}
-
-export function getSavedCampaignTableColumns(): CampaignTableColumns[] {
-  const columnsString = getLocalStorageValue<string>(HDCampaignTableColumnsLSKey);
-  const defaultCols: CampaignTableColumns[] = ['Code', 'Created', 'Author', 'Last Modified by', 'Molecules', 'Status'];
-  if (!columnsString)
-    return defaultCols;
-  try {
-    const columnsP = JSON.parse(columnsString);
-    if (Array.isArray(columnsP) && columnsP.every((c) => typeof c === 'string'))
-      return columnsP as CampaignTableColumns[];
-    return defaultCols;
-  } catch (e) {
-    console.error('error parsing campaign table columns', e);
-    return defaultCols;
-  }
-}
-
-export function setSavedCampaignTableColumns(columns: CampaignTableColumns[]) {
-  setLocalStorageValue(HDCampaignTableColumnsLSKey, JSON.stringify(columns));
-}
-
-// ---- Hit Triage-specific localStorage wrappers ----
-
-export function getHTSavedCampaignsGrouping(): CampaignGroupingType {
-  return getLocalStorageValue<CampaignGroupingType>(HTCampaignsGroupingLSKey) ?? CampaignGrouping.None;
-}
-
-export function setHTSavedCampaignsGrouping(value: CampaignGroupingType) {
-  setLocalStorageValue(HTCampaignsGroupingLSKey, value);
-}
-
-export type HTSavedCampaignsTableSorting = {
-  columnName: HTCampaignTableColumns,
-  ascending: boolean,
-}
-
-export function getHTSavedCampaignsSorting(): HTSavedCampaignsTableSorting | null {
-  const sortingString = getLocalStorageValue<string>(HTCampaignsTableSortingLSKey);
-  if (!sortingString)
-    return null;
-  return JSON.parse(sortingString) as HTSavedCampaignsTableSorting;
-}
-
-export function setHTSavedCampaignsSorting(value: HTSavedCampaignsTableSorting | null) {
-  value ? setLocalStorageValue(HTCampaignsTableSortingLSKey, JSON.stringify(value)) :
-    localStorage.removeItem(HTCampaignsTableSortingLSKey);
-}
-
-export function getHTSavedCampaignTableColumns(): HTCampaignTableColumns[] {
-  const columnsString = getLocalStorageValue<string>(HTCampaignTableColumnsLSKey);
-  const defaultCols: HTCampaignTableColumns[] = ['Created', 'Author', 'Total', 'Selected', 'Status'];
-  if (!columnsString)
-    return defaultCols;
-  try {
-    const columnsP = JSON.parse(columnsString);
-    if (Array.isArray(columnsP) && columnsP.every((c) => typeof c === 'string'))
-      return columnsP as HTCampaignTableColumns[];
-    return defaultCols;
-  } catch (e) {
-    console.error('error parsing HT campaign table columns', e);
-    return defaultCols;
-  }
-}
-
-export function setHTSavedCampaignTableColumns(columns: HTCampaignTableColumns[]) {
-  setLocalStorageValue(HTCampaignTableColumnsLSKey, JSON.stringify(columns));
-}
-
-
-export const getGroupingKey = <T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(grouping: CampaignGroupingType, campaign: T): string => {
-  switch (grouping) {
-  case CampaignGrouping.Template:
-    return campaign.template?.key ?? campaign.templateName;
-  case CampaignGrouping.Status:
-    return campaign.status;
-  case CampaignGrouping.Author:
-    return campaign.authorUserFriendlyName ?? i18n.noInformation;
-  case CampaignGrouping.LastModifiedUser:
-    return campaign.lastModifiedUserName ?? i18n.noInformation;
-  default:
-    if (grouping.startsWith('campaignFields.')) {
-      const fieldName = grouping.replace('campaignFields.', '');
-      return campaign.campaignFields?.[fieldName] ?? i18n.noInformation;
-    }
-    return '';
-  }
-};
-
-export function getGroupedCampaigns<T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(campaigns: T[], grouping: CampaignGroupingType):
-  {[key: string]: T[]} {
-  if (grouping === CampaignGrouping.None)
-    return {'': campaigns};
-  const groupedCampaigns: {[key: string]: T[]} = {};
-  for (const campaign of campaigns) {
-    const key = getGroupingKey(grouping, campaign);
-    if (!groupedCampaigns[key])
-      groupedCampaigns[key] = [];
-    groupedCampaigns[key].push(campaign);
-  }
-  return groupedCampaigns;
-}
-
-export function processGroupingTable<T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(table: HTMLTableElement, groupedCampaigns: {[key: string]: T[]}, numCols = 9) {
-  table.classList.add('hit-design-groupped-campaigns-table');
-  const keys = Object.keys(groupedCampaigns);
-  if (keys.length < 2)
-    return table;
-  const body = table.getElementsByTagName('tbody')[0];
-  const rows = Array.from(table.getElementsByTagName('tr')).filter((row) => !row.classList.contains('header'));
-  let curRow = 0;
-
-  const setState = (expanded: boolean, start: number, end: number) => {
-    for (let i = start; i < end; i++)
-      rows[i]?.style && (rows[i].style.display = expanded ? 'table-row' : 'none');
-  };
-
-
-  for (const key of keys) {
-    const row = rows[curRow];
-    if (!row)
-      break;
-    const l = groupedCampaigns[key].length;
-    const startRow = curRow;
-    const endRow = curRow + l;
-    const acc = ui.accordion(`Hit-Design-campaigns-group-${key}`);
-    const pane = acc.addPane(key, () => {return ui.div();}, undefined, undefined, false);
-    pane.root.style.marginLeft = '-24px';
-    pane.root.onclick = () => {
-      setState(pane.expanded, startRow, endRow);
-    };
-    setState(pane.expanded, startRow, endRow);
-    const newRow = body.insertRow(0);
-    const newCell = newRow.insertCell(0);
-    newCell.appendChild(pane.root);
-    newCell.colSpan = numCols;
-    body.insertBefore(newRow, row);
-    curRow += l;
-  }
-}
-
-export type EditableFieldOptions = {
-  onChange?: (val?: string | null) => void,
-  onOk?: (val?: string | null) => Promise<void>,
-  validator?: (val?: string | null) => Promise<string | null>,
-  onCancel?: () => void,
-  afterEditTextContent?: (val: string) => string,
-  beforeEditTextContent?: (val: string) => string,
-  nullable?: boolean,
-  tooltip?: string,
-}
-
-export function editableTableField(field: HTMLElement, options?: EditableFieldOptions) {
-  const editIcon = ui.icons.edit(() => {
-    let tooltipMsg = options?.tooltip ?? field.textContent ?? '';
-    const beforeEditTextContent = options?.beforeEditTextContent ?? ((val) => val);
-    const afterEditTextContent = options?.afterEditTextContent ?? ((val) => val);
-    const input = ui.input.string('smth', {value: beforeEditTextContent(field.textContent ?? ''), onValueChanged: async () => {
-      const vr = await internalValidator();
-      setTimeout(() => {
-        if (vr) {
-          input.input.classList.add('d4-invalid');
-          tooltipMsg = vr;
-          return;
-        } else {
-          input.input.classList.remove('d4-invalid');
-          tooltipMsg = options?.tooltip ?? field.textContent ?? '';
-        }
-      }, 100);
-      options?.onChange?.(input.value);
-    }});
-    ui.tooltip.bind(input.input, () => tooltipMsg);
-    const labelElement = input.root.getElementsByTagName('label').item(0);
-    if (labelElement)
-      labelElement.remove();
-    input.root.style.width = '100%';
-    const internalValidator = async () => {
-      const initialRes = !!input.value?.trim() ? null : !!options?.nullable ? null :'Field cannot be empty';
-      return initialRes ?? (options?.validator ? await options.validator(input.value) : null);
-    };
-
-    const saveButton = ui.button('Save', async () => {
-      const vr = await internalValidator();
-      if (vr) {
-        grok.shell.error(vr);
-        return;
-      }
-      await options?.onOk?.(input.value);
-      field.textContent = afterEditTextContent(input.value) ?? '';
-      ui.empty(container);
-      container.appendChild(field);
-      container.appendChild(editIcon);
-    });
-    const cancelButton = ui.button('Cancel', () => {
-      ui.empty(container);
-      container.appendChild(field);
-      container.appendChild(editIcon);
-      options?.onCancel?.();
-    });
-
-    ui.empty(container);
-    input.addOptions(cancelButton);
-    input.addOptions(saveButton);
-    container.appendChild(input.root);
-    input.input.focus();
-  }, options?.tooltip ?? 'Edit');
-  const container = ui.divH([field, editIcon], {style: {display: 'flex', alignItems: 'center'}});
-  editIcon.style.marginLeft = '5px';
-  return container;
+export async function checkViewPermissions(authorId: string, permissions: TriagePermissions,
+  cache?: MembershipCache): Promise<boolean> {
+  return checkPermissions(authorId, Array.from(new Set([...permissions.view, ...permissions.edit])), cache);
 }
 
 export async function checkFileExists(path: string) {
@@ -535,10 +248,6 @@ export function timeoutOneTimeEventListener(element: HTMLElement, eventName: str
 //   df.name = 'Reinvent Design';
 //   return df;
 // }
-
-export function isNil(something: any) {
-  return something === '' || something === null || something === undefined || (typeof something == 'number' && isNaN(something));
-}
 
 export async function loadTemplate<T extends {compute: TemplateCompute}>(path: string): Promise<T> {
   return JSON.parse(await _package.files.readAsText(path)) as T;

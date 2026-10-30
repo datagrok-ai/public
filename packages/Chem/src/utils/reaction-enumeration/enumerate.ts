@@ -4,7 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import {RDModule, RDMol, RDReaction, MolList} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {BRANCH_DELIMITER} from '../../rendering/rdkit-reaction-renderer';
 import {EnumeratorConfig} from './config';
-import {applyProductFilters, buildExclusionQmols, computeMolStats, MolStats, stripIsotopesFromSmiles} from './filters';
+import {applyProductFilters, buildExclusionQmols, computeMolStats, hasSubstructMatch, MolStats,
+  stripIsotopesFromSmiles} from './filters';
+import {onReactionEngine} from '../reactions/reaction-engine';
 
 export interface TemplateInput {
   smarts: string;
@@ -75,6 +77,7 @@ export interface PerRoundOverride {
 }
 
 export interface EnumerateOptions {
+  /** RDKit's module: the run's in RDKit mode, and behind Crux's in Crux mode ({@link enumerate}). */
   rdkit: RDModule;
   config: EnumeratorConfig;
   templates: TemplateInput[];
@@ -89,6 +92,8 @@ export interface EnumerateOptions {
   perRoundOverrides?: PerRoundOverride[];
   onProgress?: (p: EnumerationProgress) => void;
   isCancelled?: () => boolean;
+  /** A capped sample run: warns about the setup, inputs and failures, not about what its sample met. */
+  preview?: boolean;
 }
 
 export function splitSmartsByReactants(lhs: string): string[] {
@@ -122,9 +127,9 @@ export function stripOuterParens(s: string): string {
   return s.slice(1, -1).trim();
 }
 
-function tryGetMol(rdkit: RDModule, smiles: string): RDMol | null {
+function tryGetMol(module: RDModule, smiles: string): RDMol | null {
   try {
-    const m = rdkit.get_mol(smiles);
+    const m = module.get_mol(smiles);
     if (!m) return null;
     if (!m.is_valid()) {m.delete(); return null;}
     return m;
@@ -133,9 +138,9 @@ function tryGetMol(rdkit: RDModule, smiles: string): RDMol | null {
   }
 }
 
-function tryGetQmol(rdkit: RDModule, smarts: string): RDMol | null {
+function tryGetQmol(module: RDModule, smarts: string): RDMol | null {
   try {
-    const q = rdkit.get_qmol(smarts);
+    const q = module.get_qmol(smarts);
     if (!q) return null;
     if (!q.is_valid()) {q.delete(); return null;}
     return q;
@@ -144,9 +149,9 @@ function tryGetQmol(rdkit: RDModule, smarts: string): RDMol | null {
   }
 }
 
-export function tryGetRxn(rdkit: RDModule, smarts: string): RDReaction | null {
+export function tryGetRxn(module: RDModule, smarts: string): RDReaction | null {
   try {
-    const r = rdkit.get_rxn(smarts);
+    const r = module.get_rxn(smarts);
     return r ?? null;
   } catch {
     return null;
@@ -166,6 +171,7 @@ interface ParsedTemplate {
   blockingSmartsList: string[];
   propagated?: string;
   numReactants: number;
+  disposed?: boolean;
 }
 
 function getSlotFragments(rs: string): string[] {
@@ -173,7 +179,7 @@ function getSlotFragments(rs: string): string[] {
   return splitSmartsByReactants(stripped);
 }
 
-function parseTemplate(rdkit: RDModule, t: TemplateInput, idx: number, warnings: string[]): ParsedTemplate | null {
+function parseTemplate(module: RDModule, t: TemplateInput, idx: number, warnings: string[]): ParsedTemplate | null {
   const arrowIdx = t.smarts.indexOf('>>');
   if (arrowIdx < 0) {
     warnings.push(`Template ${idx + 1} (${t.reactionName || 'unnamed'}) has no '>>' separator; skipping.`);
@@ -181,7 +187,7 @@ function parseTemplate(rdkit: RDModule, t: TemplateInput, idx: number, warnings:
   }
   const lhs = t.smarts.slice(0, arrowIdx);
   const slotSmarts = splitSmartsByReactants(lhs);
-  const rxn = tryGetRxn(rdkit, t.smarts);
+  const rxn = tryGetRxn(module, t.smarts);
   if (!rxn) {
     warnings.push(`Template ${idx + 1} (${t.reactionName || 'unnamed'}): get_rxn failed; skipping.`);
     return null;
@@ -193,7 +199,7 @@ function parseTemplate(rdkit: RDModule, t: TemplateInput, idx: number, warnings:
     const fragQmols: RDMol[] = [];
     let ok = true;
     for (const frag of fragments) {
-      const q = tryGetQmol(rdkit, frag);
+      const q = tryGetQmol(module, frag);
       if (!q) {
         warnings.push(`Template ${idx + 1} (${t.reactionName || 'unnamed'}): invalid reactant SMARTS fragment '${frag}'; skipping template.`);
         ok = false;
@@ -212,7 +218,7 @@ function parseTemplate(rdkit: RDModule, t: TemplateInput, idx: number, warnings:
   for (const bs of t.blockingSmartsList) {
     const trimmed = (bs ?? '').trim();
     if (!trimmed) continue;
-    const q = tryGetQmol(rdkit, trimmed);
+    const q = tryGetQmol(module, trimmed);
     if (q) blockingQmols.push(q);
   }
   return {
@@ -222,8 +228,8 @@ function parseTemplate(rdkit: RDModule, t: TemplateInput, idx: number, warnings:
 }
 
 function disposeTemplate(t: ParsedTemplate): void {
-  if ((t as any)._disposed) return;
-  (t as any)._disposed = true;
+  if (t.disposed) return;
+  t.disposed = true;
   try {t.rxn.delete();} catch (e) {
     console.warn(`Template ${t.index + 1} rxn delete failed: ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -246,33 +252,17 @@ function disposeTemplate(t: ParsedTemplate): void {
 }
 
 function bbMatchesSlot(mol: RDMol, fragQmols: RDMol[]): boolean {
-  for (const q of fragQmols) if (!hasMatch(mol, q)) return false;
+  for (const q of fragQmols) if (!hasSubstructMatch(mol, q)) return false;
   return true;
-}
-
-function hasMatch(mol: RDMol, qmol: RDMol): boolean {
-  let raw: string;
-  try {
-    raw = mol.get_substruct_match(qmol);
-  } catch {
-    return false;
-  }
-  if (!raw || raw === '' || raw === '{}') return false;
-  try {
-    const obj = JSON.parse(raw);
-    return Array.isArray(obj.atoms) && obj.atoms.length > 0;
-  } catch {
-    return raw.length > 2;
-  }
 }
 
 class MolCache {
   private map = new Map<string, RDMol>();
-  constructor(private rdkit: RDModule) {}
+  constructor(private module: RDModule) {}
   get(smiles: string): RDMol | null {
     const cached = this.map.get(smiles);
     if (cached) return cached;
-    const m = tryGetMol(this.rdkit, smiles);
+    const m = tryGetMol(this.module, smiles);
     if (!m) return null;
     this.map.set(smiles, m);
     return m;
@@ -285,8 +275,8 @@ class MolCache {
   }
 }
 
-function canonicalize(rdkit: RDModule, smiles: string): string | null {
-  const mol = tryGetMol(rdkit, smiles);
+function canonicalize(module: RDModule, smiles: string): string | null {
+  const mol = tryGetMol(module, smiles);
   if (!mol) return null;
   try {
     return mol.get_smiles();
@@ -355,10 +345,10 @@ export interface OutputRow {
   n_routes: number;
 }
 
-/** Distinct SMILES of one firing, as RDKit writes them; null when run_reactants threw. Frees every
+/** Distinct SMILES of one firing, as the module writes them; null when run_reactants threw. Frees every
  * WASM handle before returning, so a cascade can await between firings. */
 function fireTemplateOn(
-  rdkit: RDModule, config: EnumeratorConfig, t: ParsedTemplate, reactants: string[],
+  module: RDModule, config: EnumeratorConfig, t: ParsedTemplate, reactants: string[],
   warnings: string[],
 ): string[] | null {
   let molList: MolList | null = null;
@@ -368,9 +358,9 @@ function fireTemplateOn(
   // the heap.
   const inputMols: RDMol[] = [];
   try {
-    molList = new rdkit.MolList();
+    molList = new module.MolList();
     for (const smi of reactants) {
-      const fresh = tryGetMol(rdkit, smi);
+      const fresh = tryGetMol(module, smi);
       if (!fresh) return [];
       inputMols.push(fresh);
       molList.append(fresh);
@@ -400,7 +390,7 @@ function fireTemplateOn(
           try {productSmiles = productMol.get_smiles();} catch {continue;}
           if (config.products_specs.remove_isotope_information && /\[\d+[A-Za-z]/.test(productSmiles)) {
             const stripped = stripIsotopesFromSmiles(productSmiles);
-            const re = canonicalize(rdkit, stripped);
+            const re = canonicalize(module, stripped);
             if (!re) continue;
             productSmiles = re;
           }
@@ -486,23 +476,188 @@ async function runCascade(
   return {products: terminal, outOfCycles, outOfRoom: capped};
 }
 
+/** Whether `module` reads the molecule. */
+function readsMol(module: RDModule, smiles: string): boolean {
+  const mol = tryGetMol(module, smiles);
+  mol?.delete();
+  return !!mol;
+}
+
+/** Whether `module` reads the query. */
+function readsQmol(module: RDModule, smarts: string): boolean {
+  const query = tryGetQmol(module, smarts.trim());
+  query?.delete();
+  return !!query;
+}
+
+/** How a template reads on `module`: -1 when it is skipped, else the number of its blocking SMARTS read. */
+function templateReading(module: RDModule, t: TemplateInput, i: number): number {
+  const parsed = parseTemplate(module, t, i, []);
+  if (!parsed)
+    return -1;
+  const blocking = parsed.blockingQmols.length;
+  disposeTemplate(parsed);
+  return blocking;
+}
+
+/**
+ * The first input of the run Crux reads otherwise than RDKit (a template, its reactant or blocking SMARTS, an
+ * exclusion SMARTS, a building block or reagent RDKit reads and Crux does not), or null: Crux would skip what RDKit
+ * mode runs.
+ */
+function readOtherwise(crux: RDModule, rdkit: RDModule, opts: EnumerateOptions): string | null {
+  const overrides = opts.perRoundOverrides ?? [];
+  const templates = [...opts.templates, ...overrides.flatMap((o) => o.templates ?? [])];
+  for (let i = 0; i < templates.length; i++) {
+    if (templateReading(crux, templates[i], i) !== templateReading(rdkit, templates[i], i))
+      return `template ${templates[i].smarts}`;
+  }
+  const molecules = [...opts.buildingBlocks, ...(opts.reagents ?? []),
+    ...overrides.flatMap((o) => [...(o.buildingBlocks ?? []), ...(o.reagents ?? [])])];
+  const molecule = molecules.find((s) => !readsMol(crux, s) && readsMol(rdkit, s));
+  if (molecule !== undefined)
+    return `molecule ${molecule}`;
+  const exclusion = opts.exclusionSmarts.find((s) => s.trim() && !readsQmol(crux, s) && readsQmol(rdkit, s));
+  return exclusion !== undefined ? `exclusion SMARTS ${exclusion}` : null;
+}
+
+/** Whether any of `qmols` matches `mol` (a template's blocking SMARTS). */
+function matchesAny(mol: RDMol, qmols: RDMol[]): boolean {
+  for (const q of qmols) if (hasSubstructMatch(mol, q)) return true;
+  return false;
+}
+
+/** Each round's narrowing of the global pools (index round - 1; null: the global pool). */
+interface RoundPools {
+  templateKeys: (Set<string> | null)[];
+  buildingBlocks: (string[] | null)[];
+  reagents: (string[] | null)[];
+}
+
+/** The rounds' pools from the per-round overrides, with a warning for each override that narrows to nothing. */
+function roundPools(numRounds: number, overrides: PerRoundOverride[] | undefined, parsedTemplates: ParsedTemplate[],
+  canonUnique: (list: string[], label: string) => string[], warnings: string[]): RoundPools {
+  const pools: RoundPools = {templateKeys: [], buildingBlocks: [], reagents: []};
+  for (let r = 0; r < numRounds; r++) {
+    const o = overrides?.[r];
+    if (o?.templates && o.templates.length > 0) {
+      const allowed = new Set(o.templates.map(templateOverrideKey));
+      const intersects = parsedTemplates.some((t) => allowed.has(templateOverrideKey(t)));
+      if (intersects)
+        pools.templateKeys.push(allowed);
+      else {
+        warnings.push(`Step ${r + 1}: template override matches none of the global reaction templates; ` +
+          `using the global template set instead.`);
+        pools.templateKeys.push(null);
+      }
+    } else {
+      if (o?.templates) warnings.push(`Step ${r + 1}: empty template override; using the global template set instead.`);
+      pools.templateKeys.push(null);
+    }
+    const bbs = o?.buildingBlocks ? canonUnique(o.buildingBlocks, 'step BB') : null;
+    if (o?.buildingBlocks && (!bbs || bbs.length === 0)) {
+      warnings.push(`Step ${r + 1}: building-block override has no valid SMILES after ` +
+        `canonicalization; using the global building-block pool instead.`);
+    }
+    pools.buildingBlocks.push(bbs && bbs.length > 0 ? bbs : null);
+    const rgs = o?.reagents ? canonUnique(o.reagents, 'step reagent') : null;
+    if (o?.reagents && (!rgs || rgs.length === 0)) {
+      warnings.push(`Step ${r + 1}: reagent override has no valid SMILES after canonicalization; ` +
+        `using the global reagent pool instead.`);
+    }
+    pools.reagents.push(rgs && rgs.length > 0 ? rgs : null);
+  }
+  return pools;
+}
+
+type SlotConfig = {slots: string[][]; mainSlot: number};
+
+/**
+ * The combos' slots of template `t`: slots[i] are the SMILES that can fill reactant slot i, cartesian(slots) the
+ * combos. Standard mode (`reagents` null): one configuration, every slot from `eligible` (mainSlot -1). Reagents mode:
+ * one per main slot, which draws from `eligible` while every other slot draws from `reagents`; symmetric templates
+ * can repeat a combo across main slots, which the product pool's dedup absorbs.
+ */
+async function slotConfigsOf(t: ParsedTemplate, eligible: string[], reagents: string[] | null, molCache: MolCache,
+  yieldIfNeeded: () => Promise<void>, isCancelled?: () => boolean): Promise<SlotConfig[]> {
+  const slotConfigs: SlotConfig[] = [];
+  if (reagents) {
+    // The SMILES of `pool` that read, are not blocked and match slot `slot`.
+    const fitting = async (pool: string[], slot: number): Promise<string[]> => {
+      const fit: string[] = [];
+      for (const smi of pool) {
+        if (isCancelled?.()) break;
+        await yieldIfNeeded();
+        const mol = molCache.get(smi);
+        if (mol && !matchesAny(mol, t.blockingQmols) && bbMatchesSlot(mol, t.reactantQmols[slot])) fit.push(smi);
+      }
+      return fit;
+    };
+    for (let mainSlot = 0; mainSlot < t.numReactants; mainSlot++) {
+      if (isCancelled?.()) break;
+      const slots: string[][] = Array.from({length: t.numReactants}, () => []);
+      slots[mainSlot] = await fitting(eligible, mainSlot);
+      if (slots[mainSlot].length === 0) continue;
+      let otherSlotsOk = true;
+      for (let i = 0; i < t.numReactants && otherSlotsOk; i++) {
+        if (i === mainSlot) continue;
+        slots[i] = await fitting(reagents, i);
+        otherSlotsOk = slots[i].length > 0;
+      }
+      if (otherSlotsOk) slotConfigs.push({slots, mainSlot});
+    }
+  } else {
+    const slots: string[][] = [];
+    for (let i = 0; i < t.numReactants; i++) slots.push([]);
+    for (const smi of eligible) {
+      if (isCancelled?.()) break;
+      await yieldIfNeeded();
+      const mol = molCache.get(smi);
+      if (!mol) continue;
+      if (matchesAny(mol, t.blockingQmols)) continue;
+      for (let i = 0; i < t.numReactants; i++)
+        if (bbMatchesSlot(mol, t.reactantQmols[i])) slots[i].push(smi);
+    }
+    if (!slots.some((s) => s.length === 0)) slotConfigs.push({slots, mainSlot: -1});
+  }
+  return slotConfigs;
+}
+
+/**
+ * The enumeration's rows and warnings. `opts.rdkit` is RDKit's module: in Crux mode the run is on the Crux module
+ * (utils/reactions/reaction-engine.ts: the same rows on Chem's enumeration demo), on RDKit's when Crux fails or reads
+ * one of the inputs otherwise than RDKit (it would skip what RDKit mode runs).
+ */
 export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRow[]; warnings: string[]}> {
-  const {rdkit, config, templates, buildingBlocks, exclusionSmarts, reagents,
-    perRoundOverrides, onProgress, isCancelled} = opts;
+  return onReactionEngine('reaction enumeration', opts.rdkit, async (module) => {
+    const otherwise = module === opts.rdkit ? null : readOtherwise(module, opts.rdkit, opts);
+    if (otherwise)
+      throw new Error(`Crux reads an input otherwise than RDKit: ${otherwise}`);
+    return enumerateOn(module, opts);
+  });
+}
+
+/** The enumeration on one engine's `module`. */
+async function enumerateOn(module: RDModule, opts: EnumerateOptions): Promise<{rows: OutputRow[]; warnings: string[]}> {
+  const {config, templates, buildingBlocks, exclusionSmarts, reagents,
+    perRoundOverrides, onProgress, isCancelled, preview} = opts;
   const warnings: string[] = [];
 
   // Shared canonicalize + dedup for the global BB/reagent pools and every per-round override, so an
   // override list matches the canonical SMILES in the product pools. Cached across calls: a
   // per-round override typically re-lists most of the global pool, and re-parsing it once per round
-  // is a synchronous RDKit cost paid before the first yield. Warnings are deduped per SMILES for
+  // is a synchronous WASM cost paid before the first yield. Warnings are deduped per SMILES for
   // the same reason.
   const canonCache = new DG.LruCache<string, string | null>(1000);
   const warnedInvalid = new Set<string>();
+  const invalidByLabel = new Map<string, string[]>();
   const canonOne = (s: string, label: string): string | null => {
-    const c = canonCache.getOrCreate(s, (k) => canonicalize(rdkit, k));
+    const c = canonCache.getOrCreate(s, (k) => canonicalize(module, k));
     if (!c && !warnedInvalid.has(s)) {
       warnedInvalid.add(s);
-      warnings.push(`Skipped invalid ${label} SMILES: ${s}`);
+      let invalid = invalidByLabel.get(label);
+      if (!invalid) invalidByLabel.set(label, invalid = []);
+      invalid.push(s);
     }
     return c || null;
   };
@@ -519,7 +674,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
 
   const parsedTemplates: ParsedTemplate[] = [];
   for (let i = 0; i < templates.length; i++) {
-    const p = parseTemplate(rdkit, templates[i], i, warnings);
+    const p = parseTemplate(module, templates[i], i, warnings);
     if (p) parsedTemplates.push(p);
   }
   if (parsedTemplates.length === 0) {
@@ -542,7 +697,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       'reactant, and every template here takes more than one.');
   }
 
-  const exclusion = buildExclusionQmols(rdkit, exclusionSmarts);
+  const exclusion = buildExclusionQmols(module, exclusionSmarts);
 
   const bbPosition = positions(buildingBlocks, 'BB');
   const uniqueBBs = Array.from(bbPosition.keys());
@@ -554,40 +709,16 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
     warnings.push('Reagents mode: no valid reagents after canonicalization; falling back to BB-only mode.');
   const useReagents = reagentsMode && uniqueReagents.length > 0;
 
-  const roundAllowedTemplateKeys: (Set<string> | null)[] = [];
-  const roundBBs: (string[] | null)[] = [];
-  const roundReagents: (string[] | null)[] = [];
-  for (let r = 0; r < config.enumeration.num_rounds; r++) {
-    const o = perRoundOverrides?.[r];
-    if (o?.templates && o.templates.length > 0) {
-      const allowed = new Set(o.templates.map(templateOverrideKey));
-      const intersects = parsedTemplates.some((t) => allowed.has(templateOverrideKey(t)));
-      if (intersects)
-        roundAllowedTemplateKeys.push(allowed);
-      else {
-        warnings.push(`Step ${r + 1}: template override matches none of the global reaction templates; ` +
-          `using the global template set instead.`);
-        roundAllowedTemplateKeys.push(null);
-      }
-    } else {
-      if (o?.templates) warnings.push(`Step ${r + 1}: empty template override; using the global template set instead.`);
-      roundAllowedTemplateKeys.push(null);
-    }
-    const bbs = o?.buildingBlocks ? canonUnique(o.buildingBlocks, 'step BB') : null;
-    if (o?.buildingBlocks && (!bbs || bbs.length === 0)) {
-      warnings.push(`Step ${r + 1}: building-block override has no valid SMILES after ` +
-        `canonicalization; using the global building-block pool instead.`);
-    }
-    roundBBs.push(bbs && bbs.length > 0 ? bbs : null);
-    const rgs = o?.reagents ? canonUnique(o.reagents, 'step reagent') : null;
-    if (o?.reagents && (!rgs || rgs.length === 0)) {
-      warnings.push(`Step ${r + 1}: reagent override has no valid SMILES after canonicalization; ` +
-        `using the global reagent pool instead.`);
-    }
-    roundReagents.push(rgs && rgs.length > 0 ? rgs : null);
+  const {templateKeys: roundAllowedTemplateKeys, buildingBlocks: roundBBs, reagents: roundReagents} =
+    roundPools(config.enumeration.num_rounds, perRoundOverrides, parsedTemplates, canonUnique, warnings);
+  // One line per list: a file with many unreadable rows would otherwise bury every other warning.
+  for (const [label, invalid] of invalidByLabel) {
+    console.warn(`Skipped invalid ${label} SMILES:`, invalid);
+    warnings.push(`Skipped ${invalid.length} invalid ${label} SMILES: ` +
+      `${invalid.slice(0, 3).join(', ')}${invalid.length > 3 ? ', …' : ''}`);
   }
 
-  const molCache = new MolCache(rdkit);
+  const molCache = new MolCache(module);
 
   // Round 0 ("keep building blocks") mirrors round 1's active BB pool, but only where a round-1
   // override actually narrows it. In breadth-first the override is a no-op, so seeding round 0 from
@@ -599,11 +730,6 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
 
   const {max_num_components, max_num_combinations_per_template, max_num_routes_per_compound,
     max_num_products_per_step} = config;
-
-  const buildBlockingFilter = (mol: RDMol, blocking: RDMol[]): boolean => {
-    for (const q of blocking) if (hasMatch(mol, q)) return true;
-    return false;
-  };
 
   // setTimeout(0), not requestAnimationFrame: RAF is fully suspended in a backgrounded tab, which
   // would hang the run and Cancel with it.
@@ -683,61 +809,8 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
           templateIndex: ti, numTemplates: parsedTemplates.length,
           productsSoFar: newPool.size});
 
-        // slots[i] = SMILES candidates for reactant slot i; cartesian(slots) generates the combos.
-        // Standard mode uses one configuration with every slot drawing from eligibleSmiles.
-        // Reagents mode builds one per "main slot" index: that slot draws from eligibleSmiles and
-        // every other from the reagents library. Symmetric templates can yield duplicate combos
-        // across main-slot choices, which the product-pool dedup absorbs. mainSlot is -1 when every
-        // slot draws from eligibleSmiles.
-        const slotConfigs: {slots: string[][]; mainSlot: number}[] = [];
-
-        if (useReagents) {
-          for (let mainSlot = 0; mainSlot < t.numReactants; mainSlot++) {
-            if (isCancelled?.()) break;
-            const slots: string[][] = [];
-            for (let i = 0; i < t.numReactants; i++) slots.push([]);
-
-            for (const smi of eligibleSmiles) {
-              if (isCancelled?.()) break;
-              await yieldIfNeeded();
-              const mol = molCache.get(smi);
-              if (!mol) continue;
-              if (buildBlockingFilter(mol, t.blockingQmols)) continue;
-              if (bbMatchesSlot(mol, t.reactantQmols[mainSlot])) slots[mainSlot].push(smi);
-            }
-
-            if (slots[mainSlot].length === 0) continue;
-
-            let otherSlotsOk = true;
-            for (let i = 0; i < t.numReactants; i++) {
-              if (i === mainSlot) continue;
-              for (const smi of activeReagents) {
-                if (isCancelled?.()) break;
-                await yieldIfNeeded();
-                const mol = molCache.get(smi);
-                if (!mol) continue;
-                if (buildBlockingFilter(mol, t.blockingQmols)) continue;
-                if (bbMatchesSlot(mol, t.reactantQmols[i])) slots[i].push(smi);
-              }
-              if (slots[i].length === 0) {otherSlotsOk = false; break;}
-            }
-            if (otherSlotsOk) slotConfigs.push({slots, mainSlot});
-          }
-        } else {
-          const slots: string[][] = [];
-          for (let i = 0; i < t.numReactants; i++) slots.push([]);
-          for (const smi of eligibleSmiles) {
-            if (isCancelled?.()) break;
-            await yieldIfNeeded();
-            const mol = molCache.get(smi);
-            if (!mol) continue;
-            if (buildBlockingFilter(mol, t.blockingQmols)) continue;
-            for (let i = 0; i < t.numReactants; i++)
-              if (bbMatchesSlot(mol, t.reactantQmols[i])) slots[i].push(smi);
-          }
-          if (!slots.some((s) => s.length === 0)) slotConfigs.push({slots, mainSlot: -1});
-        }
-
+        const slotConfigs = await slotConfigsOf(t, eligibleSmiles, useReagents ? activeReagents : null, molCache,
+          yieldIfNeeded, isCancelled);
         if (slotConfigs.length === 0) continue;
 
         let totalCombos = 0;
@@ -751,17 +824,17 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
         const cascade = applyUntilFails && t.numReactants === 1;
         const blockedInCascade = (smiles: string): boolean => {
           if (t.blockingQmols.length === 0) return false;
-          const mol = tryGetMol(rdkit, smiles);
+          const mol = tryGetMol(module, smiles);
           if (!mol) return false;
-          try {return buildBlockingFilter(mol, t.blockingQmols);} finally {
+          try {return matchesAny(mol, t.blockingQmols);} finally {
             try {mol.delete();} catch {/* ignore */}
           }
         };
         // Canonical SMILES, or an explicit [H] would hide molecules already reached; unreadable
         // products are dropped. Only the cascade does this, so the setting off is unchanged.
-        const canon = (s: string): string | null => canonCache.getOrCreate(s, (k) => canonicalize(rdkit, k));
+        const canon = (s: string): string | null => canonCache.getOrCreate(s, (k) => canonicalize(module, k));
         const fireCanonical = (reactants: string[]): string[] | null =>
-          fireTemplateOn(rdkit, config, t, reactants, warnings)?.flatMap((s) => canon(s) ?? []) ?? null;
+          fireTemplateOn(module, config, t, reactants, warnings)?.flatMap((s) => canon(s) ?? []) ?? null;
         let executed = 0;
         let truncated = false;
         let productCapped = 0;
@@ -798,7 +871,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
 
             const comboSteps: RouteStep[] = [];
             try {
-              const fired = fireTemplateOn(rdkit, config, t, combo, warnings);
+              const fired = fireTemplateOn(module, config, t, combo, warnings);
               if (!fired?.length) continue;
               let stepProducts: Iterable<string> = fired;
 
@@ -817,7 +890,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
               for (const productSmiles of stepProducts) {
                 // Evaluate a fresh mol parsed from the SMILES, never the one run_reactants returned:
                 // get_substruct_match on a post-reaction mol corrupts the WASM heap.
-                const evalMol = tryGetMol(rdkit, productSmiles);
+                const evalMol = tryGetMol(module, productSmiles);
                 if (!evalMol) continue;
                 nFormed++;
                 try {
@@ -887,6 +960,8 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
             }
           }
         }
+        // What a few sampled combinations met says little about the run, either way.
+        if (preview) continue;
         if (truncated)
           warnings.push(`Template ${t.index + 1} (${t.reactionName || ''}): truncated at ${executed}/${totalCombos} combinations (cap=${comboCap}).`);
         const where = `Step ${round}, template ${t.index + 1} (${t.reactionName || ''})`;
@@ -914,6 +989,12 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
     molCache.dispose();
   }
 
+  return {rows: outputRows(productPools, config, templates), warnings};
+}
+
+/** The run's rows: one per route of each product, and a route-less row for a product with no route or kept as a
+ * building block (round 0, at the end). */
+function outputRows(productPools: ProductRecord[][], config: EnumeratorConfig, templates: TemplateInput[]): OutputRow[] {
   // The route cap is re-applied here: each round capped its own routes, but a product's combined
   // total across rounds can still exceed it. Round 0 (raw BBs, no routes) merges LAST so a BB that
   // a reaction also produces keeps the firstRound that actually synthesized it.
@@ -928,7 +1009,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       else {
         if (r === 0) ex.isOriginalBB = true;
         for (const route of p.routes)
-          if (!addRouteIfNew(ex, route, max_num_routes_per_compound, templates)) break;
+          if (!addRouteIfNew(ex, route, config.max_num_routes_per_compound, templates)) break;
       }
     }
   }
@@ -958,5 +1039,5 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
   // group every round-0 row at the end. Stable, leaving all other relative order untouched.
   rows.sort((a, b) => (a.round === 0 ? 1 : 0) - (b.round === 0 ? 1 : 0));
 
-  return {rows, warnings};
+  return rows;
 }

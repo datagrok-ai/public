@@ -1,4 +1,3 @@
-/* A package function called through the platform (`bindings/platform/functions.ts`). */
 import type {Page} from '@playwright/test';
 
 declare const grok: any;

@@ -8,6 +8,7 @@ import {
 import {FunctionBrowser, TOOLBOX_TABS, TOOLBOX_TAB_ICONS} from '../panel/function-browser';
 import {getFavorites, isFavorite, toggleFavorite, clearFavorites, onFavoritesChanged} from '../panel/favorites';
 import {supportedUploadExtensions} from '../utils/uploaded-files';
+import {until} from './test-utils';
 
 async function waitFor<T>(probe: () => T | null | undefined, timeoutMs = 15000): Promise<T> {
   const start = Date.now();
@@ -160,9 +161,10 @@ category('Flow: toolbox tabs', () => {
     document.body.appendChild(browser.root);
     try {
       browser.render();
-      // The Queries badge counts from the server-loaded catalog — wait for the load to resolve.
+      // The Queries badge counts from the server-loaded catalog — wait for the browser to take it in.
       await loadQueryFuncs();
-      await new Promise((r) => setTimeout(r, 50));
+      expect(await until(() => (browser as unknown as {queryFuncs: unknown[] | null}).queryFuncs !== null), true,
+        'the browser loaded the query catalog');
       const input = browser.root.querySelector('[data-testid="ff-browser-search"]') as HTMLInputElement;
       const qHeader = browser.root.querySelector('[data-testid="ff-browser-tab-queries"]') as HTMLElement;
 

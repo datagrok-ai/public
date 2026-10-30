@@ -4,7 +4,7 @@
    inside an adopting form (P3), the promotion loop that can no longer happen (P4), malformed named
    nodes (P27) and the spec side of the wizard (P93). */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {signal} from '../src/core/signals.js';
@@ -125,7 +125,7 @@ spec('P3: button text, a tab title, a section title and a number max update in p
     editor.focus();
     const built = creates.n;
 
-    instance.node('amount').value.value = 15;
+    instance.node('amount').value = 15;
     assert.match(instance.node('amount').validity.peek(), /at most 10/);
     ctx.data.s.value = 'Save all';
     ctx.data.t.value = 'Details';
@@ -186,7 +186,7 @@ spec('P4: form + filter input + stat card + tray source settle in two flushes wi
   const label = () => instance.node('card').root.querySelector('[data-u2-part="label"]').textContent;
   assert.equal(label(), 'loaded ');
 
-  instance.node('q').value.value = 'open';
+  instance.node('q').value = 'open';
   await flush();
   await flush();
   assert.equal(label(), 'loaded open', 'the card follows the source');
@@ -253,7 +253,7 @@ spec('P93: a bound step title follows in place; a designer patch keeps the step 
     ]}}, ctx, reg);
     document.body.append(instance.root);
     const wiz = instance.node('wiz');
-    instance.node('file').value.value = 'typed.csv';
+    instance.node('file').value = 'typed.csv';
     wiz.next();
     wiz.next();
     wiz.back();
@@ -261,7 +261,7 @@ spec('P93: a bound step title follows in place; a designer patch keeps the step 
     assert.equal(instance.node('wiz'), wiz, 'never rebuilt by the bind');
     assert.equal(wiz.root.querySelector('.u2-wizard-title').textContent, 'Upload');
     assert.equal(wiz.currentStep.peek(), 'step-1', 'the user is still on step 2');
-    assert.equal(instance.node('file').value.peek(), 'typed.csv');
+    assert.equal(instance.node('file').peek(), 'typed.csv');
 
     new SpecEditor(instance).apply({op: 'set-prop', node: instance.spec.root.children[2], name: 'title', value: 'Check'});
     const rebuilt = instance.node('wiz');
@@ -341,7 +341,7 @@ spec('forward ref on a bindable prop the component holds no signal for: the prox
   ]}}, new SpecContext(), reg);
   const label = () => instance.node('card').root.querySelector('[data-u2-part="label"]').textContent;
   assert.equal(label(), 'first');
-  instance.node('later').value.value = 'second';
+  instance.node('later').value = 'second';
   assert.equal(label(), 'second');
   instance.dispose();
 });

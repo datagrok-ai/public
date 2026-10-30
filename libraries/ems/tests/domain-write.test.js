@@ -1,11 +1,5 @@
-/* The domain writes that do not go through a form: the order a draft becomes observable in
-   (`domains-editor.ts` `addRow`, STATE-CONTRACT §5), a create page reached cold from the address
-   bar, and the table's validators over a write a row action made straight on the row — including
-   the rows a form never showed: a pristine parent pulled into the batch, a row the frame's filter
-   hides. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
@@ -43,7 +37,7 @@ function scoped(name, body) {
 const BASE = '/apps/T/Issues';
 
 /** Records every row of the frame at every event it fires, so the order a draft becomes
- * observable in can be asserted (STATE-CONTRACT §5: stamped, then ONE notification). */
+ * observable in can be asserted: stamped, then ONE notification. */
 function watched(domain, seen) {
   const table = domain.table.bind(domain);
   domain.table = async (address) => {
@@ -70,7 +64,7 @@ function watched(domain, seen) {
 
 async function app(options = {}) {
   const table = await domains.table('grit.issue');
-  const a = domains.app({table, base: BASE, pageSize: 10, ...options});
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10, ...options}));
   document.body.append(a.root);
   await flush();
   return a;
@@ -116,7 +110,7 @@ scoped('the table validators refuse a save no form ever saw', async () => {
   const table = await domains.table('grit.issue');
   const off = table.validators.add('priority',
     (value, row) => value === 'high' && !row.reporter ? 'Assign before escalating' : null);
-  const source = table.source({});
+  const source = testOwner().build(() => table.source({}));
   await flush();
   const row = source.rows.byKey('i2');
   row.priority = 'high';
@@ -131,10 +125,11 @@ scoped('the table validators refuse a save no form ever saw', async () => {
   assert.equal(balloons.length, 1, 'one balloon for a refusal no form ever saw');
   assert.match(balloons[0].textContent, /Assign before escalating/);
   assert.equal(await source.save(), false, 'refused again');
-  assert.equal(document.body.querySelectorAll('.u2-notify-error').length, 2, 'one balloon per attempt');
+  assert.equal(document.body.querySelectorAll('.u2-notify-error').length, 1, 'the new refusal replaces the balloon');
   row.reporter = 'u1';
   await flush();
   assert.equal(source.error.value, undefined, 'the next edit takes the refusal back');
+  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'and its balloon');
   assert.match(source.summary.value, /unsaved change/);
   assert.equal(await source.save(), true);
   assert.equal(emsBackends.domain.tableSync('grit.issue').rows.find((r) => r.id === 'i2').priority, 'high');
@@ -145,7 +140,7 @@ scoped('the table validators refuse a save no form ever saw', async () => {
 scoped('the writer\'s own cell refusal names the row and the field, and marks the row', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
-  const source = table.source({});
+  const source = testOwner().build(() => table.source({}));
   await flush();
   const draft = source.newRow({project_id: 'p1', number: 7});
   await flush();
@@ -165,7 +160,7 @@ scoped('the validators run over a row the frame filter hides — the writer send
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
   const off = table.validators.add('priority', (value) => value === 'high' ? 'Escalation needs a reviewer' : null);
-  const source = table.source({});
+  const source = testOwner().build(() => table.source({}));
   await flush();
   source.rows.byKey('i2').priority = 'high';
   const at = source.rows.items.value.findIndex((r) => r.id === 'i2');
@@ -188,8 +183,8 @@ scoped('a pristine parent the batch inserts is checked too: its validator refuse
   const projects = await domains.table('grit.project');
   const issues = await domains.table('grit.issue');
   const off = projects.validators.add('name', (value) => value === 'Pristine' ? 'Pick another name' : null);
-  const parentSource = projects.source({session});
-  const childSource = issues.source({session});
+  const parentSource = testOwner().build(() => projects.source({session}));
+  const childSource = testOwner().build(() => issues.source({session}));
   await flush();
   const parent = parentSource.newRow({key: 'NEW', name: 'Pristine'}, {pristine: true});
   childSource.newRow({project_id: parent.id, title: 'Child'});

@@ -1,11 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
-import {awaitGrid} from './utils';
-import {DebounceIntervals, MolstarViewer, PROPS as msvPROPS} from '../viewers/molstar-viewer/molstar-viewer';
+import {awaitGrid, awaitViewerUpdated} from './utils';
+import {MolstarViewer, PROPS as msvPROPS} from '../viewers/molstar-viewer/molstar-viewer';
 
 import {_package} from '../package-test';
 
@@ -47,9 +47,8 @@ async function createPathAViewerFromSample(sampleRelPath: string,
 
 async function toggleBindingSite(viewer: MolstarViewer, on: boolean): Promise<void> {
   viewer.setOptions({[msvPROPS.showBindingSite]: on});
-  // Path A synchronously schedules via viewSyncer; Path B goes through
-  // onRebuildViewLigandsRequest (ligands debounce). Wait long enough for both.
-  await delay(DebounceIntervals.ligands * 2.5);
+  // Path A schedules through viewSyncer, Path B through the ligands debounce: both count as pending
+  await awaitViewerUpdated(viewer);
   await viewer.awaitRendered();
 }
 
@@ -71,7 +70,7 @@ category('BindingSite', () => {
     const {viewer} = await createPathAViewerFromSample('samples/1bdq.pdb');
 
     await toggleBindingSite(viewer, true);
-    await awaitCheck(() => asInternals(viewer).bindingSiteRefs.length >= 2,
+    await waitUntil(() => asInternals(viewer).bindingSiteRefs.length >= 2,
       'Path A binding site refs not created', 10000);
   }, {timeout: 45000});
 
@@ -108,14 +107,14 @@ category('BindingSite', () => {
     view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
 
     df.currentRowIdx = 0;
-    await delay(DebounceIntervals.ligands * 2.5);
+    await awaitViewerUpdated(viewer);
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     expect(viewer.ligands.current != null, true, 'Path B requires a current ligand');
 
     expect(asInternals(viewer)._isLigandAvailable(), true, 'Ligand column should be reported as available');
 
     await toggleBindingSite(viewer, true);
-    await awaitCheck(() => asInternals(viewer).bindingSiteRefs.length >= 2,
+    await waitUntil(() => asInternals(viewer).bindingSiteRefs.length >= 2,
       'Path B binding site refs not created', 10000);
   }, {timeout: 50000});
 
@@ -123,7 +122,7 @@ category('BindingSite', () => {
     const {viewer} = await createPathAViewerFromSample('samples/1bdq.pdb');
 
     await toggleBindingSite(viewer, true);
-    await awaitCheck(() => asInternals(viewer).bindingSiteRefs.length >= 2,
+    await waitUntil(() => asInternals(viewer).bindingSiteRefs.length >= 2,
       'binding site refs not created on enable', 10000);
 
     await toggleBindingSite(viewer, false);
@@ -135,10 +134,10 @@ category('BindingSite', () => {
     const v = asInternals(viewer);
 
     await toggleBindingSite(viewer, true);
-    await awaitCheck(() => v.bindingSiteRefs.length >= 2, 'binding site refs not created on enable', 10000);
+    await waitUntil(() => v.bindingSiteRefs.length >= 2, 'binding site refs not created on enable', 10000);
 
     viewer.setOptions({[msvPROPS.bindingSiteRadius]: 8});
-    await delay(DebounceIntervals.ligands * 2.5);
+    await awaitViewerUpdated(viewer);
     await viewer.awaitRendered();
 
     // Radius identity change is flaky to assert cross-platform; at minimum

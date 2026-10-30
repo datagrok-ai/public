@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, expectArray, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, waitUntil} from '@datagrok-libraries/test/src/test';
 import {
   addToComparison, compareWithOriginal, confirmOutdated, openComparisonViews, openRunComparison,
 } from '../components/RunComparison/comparison-views';
@@ -7,12 +7,13 @@ import {ComparisonAddition, ComparisonService} from '../components/RunComparison
 import {entryFromLiveCall} from '../components/RunComparison/entry-extraction';
 
 const snapshot = (name: string) => entryFromLiveCall(
-  DG.Script.create('//name: rcViewsProbe\n//language: javascript\n//output: int x\nx = 1;').prepare(), false, name);
+  DG.Script.create('//name: rcViewsProbe\n//language: javascript\n//output: int x\nx = 1;').prepare(),
+  {isOutputOutdated: false}, name);
 
 // picks an option of the Add to comparison dialog and confirms it
 async function pickInDialog(option: (value: string) => boolean) {
   const radios = () => Array.from(document.querySelectorAll<HTMLInputElement>('.d4-dialog input[type="radio"]'));
-  await awaitCheck(() => radios().length > 0, 'Add to comparison dialog not shown', 3000);
+  await waitUntil(() => radios().length > 0, 'Add to comparison dialog not shown', 3000);
   radios().find((radio) => option(radio.dataset.value ?? ''))!.click();
   Array.from(document.querySelectorAll<HTMLElement>('.d4-dialog button'))
     .find((b) => b.textContent?.trim() === 'OK')!.click();
@@ -51,7 +52,7 @@ category('RunComparison: service', () => {
     const other = DG.Func.byName('Compute2:ObjectCooling2');
     const handle = openRunComparison({entries: [snapshot('First')], model});
     try {
-      await awaitCheck(() => handle.service.entryNames.length === 1, 'start-up entries not added', 3000);
+      await waitUntil(() => handle.service.entryNames.length === 1, 'start-up entries not added', 3000);
       const picker = modelPicker(handle.view.root);
       expect(picker.selected(), modelLabel(model));
 
@@ -60,7 +61,7 @@ category('RunComparison: service', () => {
       expectArray(handle.service.entryNames, ['First', 'Second']);
       expect(picker.selected(), modelLabel(model));
       picker.open();
-      await awaitCheck(() => picker.items().includes(modelLabel(other)), 'added model not in the list', 3000);
+      await waitUntil(() => picker.items().includes(modelLabel(other)), 'added model not in the list', 3000);
       expect(picker.items().includes(modelLabel(model)), true);
     } finally {
       handle.view.close();
@@ -77,23 +78,23 @@ category('RunComparison: views', () => {
 
   test('adding opens a view when none is open, then adds to the picked one or a new one', async () => {
     openComparisonViews.value.forEach((item) => item.view.close());
-    await awaitCheck(() => openComparisonViews.value.length === 0, 'views from earlier tests are still open', 3000);
+    await waitUntil(() => openComparisonViews.value.length === 0, 'views from earlier tests are still open', 3000);
     try {
       addToComparison(snapshot('First'));
       expect(openComparisonViews.value.length, 1);
       const [first] = openComparisonViews.value;
-      await awaitCheck(() => first.service.entryNames.length === 1, 'the snapshot did not reach the new view', 3000);
+      await waitUntil(() => first.service.entryNames.length === 1, 'the snapshot did not reach the new view', 3000);
 
       addToComparison(snapshot('Second'));
       await pickInDialog((value) => value.startsWith('1. '));
-      await awaitCheck(() => first.service.entryNames.length === 2, 'the snapshot did not reach the picked view', 3000);
+      await waitUntil(() => first.service.entryNames.length === 2, 'the snapshot did not reach the picked view', 3000);
       expectArray(first.service.entryNames, ['First', 'Second']);
 
       addToComparison(snapshot('Third'));
       await pickInDialog((value) => value === 'New comparison');
       expect(openComparisonViews.value.length, 2);
       const second = openComparisonViews.value[1];
-      await awaitCheck(() => second.service.entryNames.length === 1, 'the snapshot did not reach the new view', 3000);
+      await waitUntil(() => second.service.entryNames.length === 1, 'the snapshot did not reach the new view', 3000);
       expectArray(second.service.entryNames, ['Third']);
       expectArray(first.service.entryNames, ['First', 'Second']);
 
@@ -101,13 +102,13 @@ category('RunComparison: views', () => {
       compareWithOriginal(snapshot('Edited'), 'rc-run-that-does-not-exist');
       expect(openComparisonViews.value.length, 3);
       const third = openComparisonViews.value[2];
-      await awaitCheck(() => third.service.entryNames.length === 1,
+      await waitUntil(() => third.service.entryNames.length === 1,
         'the snapshot did not reach the original view', 3000);
       expectArray(third.service.entryNames, ['Edited']);
     } finally {
       document.querySelectorAll('.d4-dialog').forEach((el) => el.remove());
       openComparisonViews.value.forEach((item) => item.view.close());
     }
-    await awaitCheck(() => openComparisonViews.value.length === 0, 'closed views are still tracked', 3000);
+    await waitUntil(() => openComparisonViews.value.length === 0, 'closed views are still tracked', 3000);
   });
 });

@@ -1,11 +1,9 @@
-#name: Calculate logP
-#description: Calculates the octanol-water partition coefficient (logP) using RDKit's Crippen method.
+#name: CalculateLogPPython
+#description: Calculates the octanol-water partition coefficient (logP) using RDKit's Crippen method (Calculate logP's RDKit side: Chem:CalculateLogP calls this script, or Crux in Crux mode)
 #language: python
-#meta.function_family: biochem-calculator
 #input: dataframe table
 #input: column molecules {semType: Molecule}
 #meta.timeout: 900000
-#meta.role: transform
 #meta.method_info.author: RDKit Team
 #meta.method_info.year: 2024
 #meta.method_info.package: rdkit-base

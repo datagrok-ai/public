@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {interval} from 'rxjs';
+import {timer} from 'rxjs';
 
 
 export class ScriptingTutorial extends Tutorial {
@@ -49,8 +49,7 @@ export class ScriptingTutorial extends Tutorial {
       'In the Browse Panel, click Platform > Functions > Scripts > New > Python Script. This opens a script editor.',
       'ScriptView', providerRoot, editorIntro, () => grok.shell.route('/script/python'));
 
-    // UI generation delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const sampleIcon = await Tutorial.waitFor(() => $('div.d4-ribbon-item').has('i.grok-icon.fa-asterisk')[0]);
 
     const sampleDfName = 'cars';
     const sampleScriptName = 'Template';
@@ -58,7 +57,7 @@ export class ScriptingTutorial extends Tutorial {
 
     await this.action('Open a sample table for the script', grok.events.onTableAdded.pipe(
       filter((data) => data.args.dataFrame.name === sampleDfName)),
-    $('div.d4-ribbon-item').has('i.grok-icon.fa-asterisk')[0],
+    sampleIcon,
     'In front of you is a valid script. The commented out section on top defines script parameters. ' +
       'This simple script calculates the number of cells in a dataframe. ' +
       'The <i class="grok-icon fal fa-asterisk"></i> ' +
@@ -90,7 +89,7 @@ export class ScriptingTutorial extends Tutorial {
     grok.shell.windows.showConsole = false;
 
     await this.action('Find the results in the console',
-      interval(1000).pipe(filter(() => grok.shell.windows.showConsole)),
+      timer(0, 200).pipe(filter(() => grok.shell.windows.showConsole)),
       [], //this.getSidebarHints('Windows', 'Console'),
       scriptOutputInfo, () => grok.shell.windows.showConsole = true);
 
@@ -107,7 +106,7 @@ export class ScriptingTutorial extends Tutorial {
     `quite straightforward: put the initial dataframe into a new variable (paste <b>${newOutputParamDef} ` +
     `</b> to line ${lastLineIndex + 1}).`;
 
-    await this.action('Add the second output value to the script', interval(1000).pipe(
+    await this.action('Add the second output value to the script', timer(0, 200).pipe(
       filter(() => doc.getLine(scriptBodyIndex).trim() === newOutputParam &&
         doc.getLine(lastLineIndex).trim() === newOutputParamDef)),
     null, dfCloneTip, () => {

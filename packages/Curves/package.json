@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "workspace:^",
-    "@datagrok-libraries/test": "1.4.1",
+    "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@types/wu": "catalog:",
     "cash-dom": "catalog:",

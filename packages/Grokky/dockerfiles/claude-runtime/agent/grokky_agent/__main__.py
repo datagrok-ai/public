@@ -14,7 +14,7 @@ ctypes.CDLL(None).prctl(PR_SET_DUMPABLE, 0, 0, 0, 0)
 
 from pathlib import Path  # noqa: E402
 
-from . import config, hermes, providers, session  # noqa: E402
+from . import config, hermes, providers, session, skills  # noqa: E402
 from .protocol import Command, ContinueCommand, Event, InitCommand, TurnCommand  # noqa: E402
 
 TurnQueue = queue.Queue[tuple[TurnCommand | ContinueCommand, session.Turn]]
@@ -56,7 +56,10 @@ def main() -> int:
         emit({'type': 'fatal', 'message': 'the Grokky plugin did not load'})
         return 1
     hermes.send_keys_by_type()
-    hermes.refuse_aws_sdk()
+    s.skills = skills.index(settings['skillsDir'])
+    hermes.describe_skills(s.skills)
+    if provider.format.mode == 'bedrock_converse':
+        hermes.use_bedrock_key(provider.key)
     if '--check' in sys.argv:
         try:
             error = s.check()

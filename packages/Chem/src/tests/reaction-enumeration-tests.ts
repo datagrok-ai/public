@@ -3,7 +3,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck, before, category, test, expect} from '@datagrok-libraries/test/src/test';
+import {waitUntil, before, category, test, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {cloneConfig, DEFAULT_CONFIG, EnumeratorConfig} from '../utils/reaction-enumeration/config';
 import {
@@ -17,6 +17,10 @@ import {MountedViewerRegistry} from '../utils/reaction-enumeration/viewer-mount'
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {parseMultiStepReaction} from '../rendering/rdkit-reaction-renderer';
+import {ChemicalEngine} from '../engine/chem-engine';
+import {inBothEngines, inEngine} from './engine-utils';
+import {lastReactionEngine, setCruxUnreadableReactantsForTests} from '../utils/reactions/reaction-engine';
+import {cruxFallbackCount} from '../engine/fallback';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
@@ -275,14 +279,19 @@ category('Reaction Enumeration', () => {
       // The panel's serialized order, top to bottom — the only view of what actually got added.
       const read = () => (tv.getFiltersGroup().getOptions(true).look.filters ?? []) as
         {type: string; column?: string; colNames?: string[]}[];
-      await awaitCheck(() => read().length >= 11, 'filters never reached the panel', 5000);
-      const states = read();
-      const keys = states.map((s) => s.column ?? s.colNames?.join('|') ?? s.type);
-      expect(keys.join(','), [
+      const keysOf = (states: {type: string; column?: string; colNames?: string[]}[]) =>
+        states.map((s) => s.column ?? s.colNames?.join('|') ?? s.type);
+      const order = [
         '~reaction_name_1|~reaction_name_2|~reaction_name_3', 'product',
         '~step_products_1', '~step_products_2', '~step_products_3',
         'template_1', 'template_2', 'template_3', 'round', 'n_routes', 'n_products',
-      ].join(','), 'tree, product, then the count histograms in the summary cell\'s slot');
+      ].join(',');
+      // the cards arrive in the panel first, and are put in their order after
+      await waitUntil(() => keysOf(read()).join(',') === order,
+        () => `tree, product, then the count histograms in the summary cell's slot: ${keysOf(read()).join(',')}`,
+        5000);
+      const states = read();
+      const keys = keysOf(states);
       expect(states[keys.indexOf('~step_products_2')].type, 'histogram',
         'a step whose count varies across routes gets a range, not categories');
       // A friendlyName tag makes the filter group drop the column silently; a description must not.
@@ -456,7 +465,7 @@ category('Reaction Enumeration', () => {
       });
       expect(widths(), '600,200,140,70,70', 'reaction, molecule, text, number and bool widths');
       // The first paint resolves the reaction renderer, which used to swap in its own width.
-      await awaitCheck(() => grid.col('reaction')!.cellType === DG.SEMTYPE.CHEMICAL_REACTION,
+      await waitUntil(() => grid.col('reaction')!.cellType === DG.SEMTYPE.CHEMICAL_REACTION,
         'the reaction renderer never resolved', 15000);
       await nextDraw();
       expect(widths(), '600,200,140,70,70', 'the first paint leaves every width as it was');
@@ -790,6 +799,39 @@ category('Reaction Enumeration', () => {
   });
 
   // ── end-to-end ──────────────────────────────────────────────────────────
+  test('Crux mode: the demo enumeration gives RDKit mode\'s rows, from Crux', async () => {
+    // the whole run on the Crux module in Crux mode (utils/reactions/reaction-engine.ts): the same products, rounds,
+    // steps and routes as RDKit mode's (510 rows of the demo's 115 templates and 26 building blocks)
+    const setup = await runFullSetup();
+    const {rdkit: rdkitMode, crux: cruxMode} = await inBothEngines(async (engine) => {
+      const result = await enumerate({...setup, config: cloneConfig(setup.config)});
+      expect(lastReactionEngine(), engine, 'the enumeration\'s engine');
+      return result;
+    });
+    expect(rdkitMode.rows.length > 100, true, `RDKit mode: ${rdkitMode.rows.length} rows`);
+    expectSameRows(cruxMode.rows, rdkitMode.rows, 'Crux mode vs RDKit mode');
+    expect(cruxMode.warnings.join('\n'), rdkitMode.warnings.join('\n'), 'the warnings');
+  }, {timeout: 120000});
+
+  test('Crux mode: a building block only RDKit reads gives RDKit mode\'s rows, by RDKit', async () => {
+    // Crux would skip a building block it cannot read that RDKit mode uses (fewer rows, nothing logged): enumerate
+    // checks the inputs on both modules first and runs on RDKit, the fallback counted
+    const setup = await runFullSetup();
+    const run = () => enumerate({...setup, config: cloneConfig(setup.config)});
+    const rdkitMode = await inEngine(ChemicalEngine.RDKit, run);
+    await inEngine(ChemicalEngine.Crux, async () => {
+      setCruxUnreadableReactantsForTests([setup.buildingBlocks[0]]);
+      try {
+        const fallbacks = cruxFallbackCount('reaction enumeration');
+        const cruxMode = await run();
+        expectSameRows(cruxMode.rows, rdkitMode.rows, `Crux mode, ${setup.buildingBlocks[0]} unreadable by Crux`);
+        expect(cruxFallbackCount('reaction enumeration'), fallbacks + 1, 'the run went to RDKit');
+      } finally {
+        setCruxUnreadableReactantsForTests(null);
+      }
+    });
+  }, {timeout: 120000});
+
   test('end-to-end: one-round depth-first over bundled demo data produces rows', async () => {
     const rdkit = getRdKitModule();
     const templatesDf = await loadCsv('enumerations/reactions.csv');

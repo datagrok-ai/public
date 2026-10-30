@@ -27,7 +27,7 @@ For a handful of items rendered in place (chips, access rows, a popup's options)
 items, keyOf, build, {update?, empty?})` keeps one element per key: built once in its own scope,
 patched or moved in place, disposed when its key leaves — focus and caret survive an edit.
 `show(host, when, build, otherwise?)` is the conditional sibling. Both need an owner (call them
-inside a control's `runInScope`). Cards in a grid take `onClick(e, card)` — the event and the
+inside a `component((self) => …)` builder or `owner.build(…)`). Cards in a grid take `onClick(e, card)` — the event and the
 card — and `selectMode: 'toggle' | 'select'`.
 
 ## Actions: one list, two surfaces
@@ -36,10 +36,12 @@ Declare the item's actions once (`Action[]`), then:
 
 ```ts
 const actionsOf = (r: Report): Action[] => [
-  {name: 'Copy description', icon: 'copy', run: () => copy(r.description)},
-  ...(r.jiraTicket ? [{name: `Open ${r.jiraTicket}`, icon: 'external-link-alt',
-    run: () => window.open(ticketUrl(r))}] : []),
-  {name: 'Copy id', run: () => copy(r.id)},          // no icon — menu only
+  {text: 'Copy description', icon: 'copy', run: () => copy(r.description)},
+  ...(r.jiraTicket ? [{text: `Open ${r.jiraTicket}`, icon: 'external-link-alt',
+    run: () => {
+      window.open(ticketUrl(r));                     // a run returns a promise or nothing, not the window
+    }}] : []),
+  {text: 'Copy id', run: () => copy(r.id)},          // no icon — menu only
 ];
 
 const list = new VirtualList<Report>({
@@ -55,7 +57,9 @@ const list = new VirtualList<Report>({
 - **`rowActions(actions)`** renders the icon-bearing subset as a hover-revealed block
   (`.u2-row-actions`, css/list.css). It hides by opacity, not display, so the buttons keep
   their space (no layout shift) and stay tabbable — tabbing into one reveals the block for
-  keyboard users. Each button carries the action name as tooltip and `aria-label`.
+  keyboard users. Each button carries the action's `text` as tooltip and `aria-label`. While hidden the block
+  takes no pointer, so a test reaches its buttons the way the keyboard does (`user.press(button, 'Enter')`): no
+  script can hover. Any element carrying `u2-row` reveals a block inside it on hover too.
 - **`contextActions`** on `VirtualList` wires right-click: the row is selected and the full
   list opens as a `Menu` at the cursor (`actionsMenu(actions)` does the same standalone).
   Hover shortcuts are never the only path.
@@ -65,10 +69,12 @@ const list = new VirtualList<Report>({
 
 ## Timestamps: `timestamp(date)`
 
-Compact visual, full truth on hover: `timestamp(r.createdOn)` renders the locale short date
-(`Aug 11`; the year appears only when not current) with the full date-time in the tooltip,
+Compact visual, full truth on hover: `timestamp(r.createdOn)` spells the date out in the locale
+(`Aug 11, 2026`, with the time of day where the value carries one) and the full date-time in the tooltip,
 styled small and light (`.u2-timestamp`). It accepts `Date`, epoch numbers, strings, or
-anything with `toDate()` — dayjs included; invalid dates render empty.
+anything with `toDate()` — dayjs included; invalid dates render empty. It reads the date in the browser's zone; a
+day stored as midnight UTC reads in UTC with `timestamp(day, undefined, {utcDates: true})` (see
+[forms-and-details](forms-and-details.md#dates-and-the-text-of-a-value)).
 
 ## Adaptive rendering: `u2-adaptive` + `u2-p*`
 

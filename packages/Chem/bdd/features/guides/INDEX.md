@@ -24,3 +24,4 @@ skill is the recipe.
 | How do I set a biaryl's axis (an atropisomer) to P or M in Crux? | crux/atropisomers.feature | 2026-10-08 | |
 | How do I show and hide explicit hydrogens in Crux? | crux/explicit-hydrogens.feature | 2026-10-08 | |
 | How do I draw a dative bond in Crux? | crux/dative-bonds.feature | 2026-10-08 | |
+| If I have a smiles column that is not detected as smiles, how do I set its semtype to smiles so that molecules are drawn in grid? | set-semantic-type-molecule.feature | 2026-10-29 | govern/catalog |

@@ -1,7 +1,4 @@
-/* The `u2-domain-*` tags (ruling 8: every domain control is spec-registered from day one). A
-   control binds to its source as a whole — `bind: {source: "$.issues.source"}` — and inherits the
-   source's access; a host registers them with `installEms()`. */
-import {Signal, Registry, registry as globalRegistry} from '@datagrok-libraries/u2';
+import {Input, Signal, Registry, registry as globalRegistry} from '@datagrok-libraries/u2';
 import type {LiveOption, ComponentMeta, FormLayout, U2Plugin} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
 import {emsSourcesPlugin} from '../core/registrations.js';
@@ -106,7 +103,7 @@ const METAS: ComponentMeta[] = [
       SOURCE,
       {name: 'mode', type: 'string', choices: ['brief', 'cards'], structural: true,
         description: 'One line per row, or a card.'},
-      {name: 'itemHeight', type: 'int', structural: true, description: 'Row height in pixels (28 brief, 96 cards).'},
+      {name: 'itemHeight', type: 'int', structural: true, description: 'Row height in pixels (28 brief, 64 cards).'},
       {name: 'empty', type: 'string', structural: true, description: 'What an empty result says.'},
     ],
     defaults: {mode: 'brief'},
@@ -116,18 +113,15 @@ const METAS: ComponentMeta[] = [
     tag: 'u2-domain-pick',
     category: 'Inputs',
     create: (props: Props) => {
-      const value = props.value;
-      const bound = value instanceof Signal;
       return new DomainPick(String(props.table ?? ''), {
         label: props.label as LiveOption<string> | undefined,
         name: props.name as string | undefined,
         tooltipText: props.tooltipText as LiveOption<string> | undefined,
-        enabled: props.enabled as LiveOption<boolean> | undefined,
+        disabled: props.disabled as LiveOption<string | null> | undefined,
         nullable: props.nullable as boolean | undefined,
         placeholder: props.placeholder as string | undefined,
         filter: props.filter as string | undefined,
-        value: bound ? undefined : value as string | null | undefined,
-        bind: bound ? value as Signal<string | null> : undefined,
+        ...Input.specValue<string | null>(props.value),
       });
     },
     description: 'Picks a row of a domain table by typing its name; the value is the row id — what a ' +
@@ -144,7 +138,8 @@ const METAS: ComponentMeta[] = [
       {name: 'filter', type: 'string', structural: true, description: 'A smart filter the candidates must match.'},
       {name: 'nullable', type: 'bool', structural: true},
       {name: 'tooltipText', type: 'string', bindable: true},
-      {name: 'enabled', type: 'bool', bindable: true},
+      {name: 'disabled', type: 'string', bindable: true,
+        description: 'Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on.'},
     ],
     example: {tag: 'u2-domain-pick', props: {label: 'Project', table: 'grit.project'}},
   },

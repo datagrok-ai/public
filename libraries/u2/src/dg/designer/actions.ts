@@ -2,6 +2,7 @@
    context menu, each enabled exactly where the engine would take it. */
 import * as grok from 'datagrok-api/grok';
 import {Component} from '../../core/component.js';
+import {Reason} from '../../core/reason.js';
 import type {ReadonlySignal} from '../../core/signals.js';
 import {actionsMenu} from '../../components/actions/actions.js';
 import type {Action} from '../../components/actions/actions.js';
@@ -32,6 +33,11 @@ export interface ActionsHost {
 }
 
 export class DesignerActions {
+  /** Why a reorder or a duplicate waits for a single selection. */
+  static readonly ONE_AT_A_TIME = 'Select one component for this';
+  /** Why the form's root or a data source on the tray is not reordered or duplicated. */
+  static readonly NO_PARENT = 'It has no parent to move or copy it within';
+
   /** The verbs that may ask the user first: they refocus when they are done, not when they start. */
   private readonly _deferred = new WeakSet<Action>();
 
@@ -47,12 +53,13 @@ export class DesignerActions {
     if (this._host.multi().length > 1) {
       const cover = this.cover();
       return [
-        {name: DELETE, icon: ACTION_ICONS[DELETE],
-          enabled: cover.every((member) => editor.canApply({op: 'remove', node: member}) === null),
+        {text: DELETE, icon: ACTION_ICONS[DELETE],
+          disabled: cover.map((member) => editor.canApply({op: 'remove', node: member}))
+            .find((r) => r !== null) ?? null,
           run: () => this._deleteMulti(cover)},
-        {name: MOVE_UP, icon: ACTION_ICONS[MOVE_UP], enabled: false, run: () => {}},
-        {name: MOVE_DOWN, icon: ACTION_ICONS[MOVE_DOWN], enabled: false, run: () => {}},
-        {name: DUPLICATE, icon: ACTION_ICONS[DUPLICATE], enabled: false, run: () => {}},
+        {text: MOVE_UP, icon: ACTION_ICONS[MOVE_UP], disabled: DesignerActions.ONE_AT_A_TIME, run: () => {}},
+        {text: MOVE_DOWN, icon: ACTION_ICONS[MOVE_DOWN], disabled: DesignerActions.ONE_AT_A_TIME, run: () => {}},
+        {text: DUPLICATE, icon: ACTION_ICONS[DUPLICATE], disabled: DesignerActions.ONE_AT_A_TIME, run: () => {}},
       ];
     }
     const parent = instance.parentOf(node);
@@ -61,19 +68,20 @@ export class DesignerActions {
     // a tray component has no parent, so the reorder verbs disable themselves; only Delete needs
     // to know which of the two removals it is
     return [
-      {name: DELETE, icon: ACTION_ICONS[DELETE],
-        enabled: editor.canApply(this._removalOf(node)) === null,
+      {text: DELETE, icon: ACTION_ICONS[DELETE], disabled: editor.canApply(this._removalOf(node)),
         run: () => this._delete(node)},
-      {name: MOVE_UP, icon: ACTION_ICONS[MOVE_UP], enabled: index > 0,
-        run: () => this._host.apply({op: 'move', node, parent: parent!, index: index - 1})},
-      {name: MOVE_DOWN, icon: ACTION_ICONS[MOVE_DOWN], enabled: index >= 0 && index < siblings.length - 1,
-        run: () => this._host.apply({op: 'move', node, parent: parent!, index: index + 1})},
-      {name: DUPLICATE, icon: ACTION_ICONS[DUPLICATE], enabled: parent !== null,
+      {text: MOVE_UP, icon: ACTION_ICONS[MOVE_UP],
+        disabled: parent === null ? DesignerActions.NO_PARENT : index > 0 ? null : 'Already the first',
+        run: () => void this._host.apply({op: 'move', node, parent: parent!, index: index - 1})},
+      {text: MOVE_DOWN, icon: ACTION_ICONS[MOVE_DOWN],
+        disabled: parent === null ? DesignerActions.NO_PARENT : index < siblings.length - 1 ? null : 'Already the last',
+        run: () => void this._host.apply({op: 'move', node, parent: parent!, index: index + 1})},
+      {text: DUPLICATE, icon: ACTION_ICONS[DUPLICATE], disabled: parent === null ? DesignerActions.NO_PARENT : null,
         run: () => this._duplicate(node)},
       // after the fixed four: the ribbon reads only those by position, so these are menu-only
       ...this._refreshAction(node),
       ...(instance.registry.get(node.tag)?.designerActions ?? []).map((action): Action => {
-        const verb: Action = {name: action.name, icon: action.icon,
+        const verb: Action = {text: action.text, icon: action.icon,
           run: () => void this._designerAction(node, action)};
         this._deferred.add(verb);
         return verb;
@@ -85,7 +93,7 @@ export class DesignerActions {
    * itself (DD9). Offered on every component that declares the function. */
   private _refreshAction(node: SpecNode): Action[] {
     return this._source(node) === undefined ? [] :
-      [{name: 'Refresh', icon: 'sync', run: () => this.refresh(node)}];
+      [{text: 'Refresh', icon: 'sync', run: () => this.refresh(node)}];
   }
 
   /** The run design time makes only when asked (DD9): the chip's Refresh, and a dropped file —
@@ -136,15 +144,15 @@ export class DesignerActions {
       this._host.pending(child);
       this._host.apply({op: 'add', parent: node, index: (node.children ?? []).length, node: child});
     } catch (e) {
-      grok.shell.warning(`${action.name}: ${e instanceof Error ? e.message : String(e)}`);
+      grok.shell.warning(`${action.text}: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       this._host.refocus();
     }
   }
 
   run(name: string): void {
-    const action = this.actions().find((a) => a.name === name);
-    if (action && action.enabled !== false) {
+    const action = this.actions().find((a) => a.text === name);
+    if (action && Reason.now(action.disabled) === null) {
       action.run();
       if (!this._deferred.has(action))
         this._host.refocus();

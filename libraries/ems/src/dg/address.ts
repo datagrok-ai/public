@@ -1,10 +1,8 @@
-/* Everything about how a domain row is spelled in an address and read back out of one (GOAL R2):
-   `/domains/<schema>/<table>[/<keyOrId>]` addresses a row by a path segment, an app mounted at
-   `/apps/…` by `?entity=<id>`. One module, so `app.ts` and `routes.ts` cannot disagree about a link,
-   and an external binding that addresses rows differently has ONE place to say so. */
 import {Filters} from '@datagrok-libraries/u2';
 import type {FilterGroup, FilterSchema, RowView} from '@datagrok-libraries/u2';
 
+/** How a domain row is spelled in an address and read back out of one: the one place, so `app.ts` and
+ * `routes.ts` cannot disagree about a link. */
 export class DomainAddress {
   /** A row id as the platform spells one — what tells an id from a business key in an address. */
   static readonly ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -39,8 +37,7 @@ export class DomainAddress {
   }
 
   /** Whether `base` addresses rows by a path segment (`${base}/${key}`) rather than by
-   * `?entity=`: the platform's own `/domains/…` routes are, an app mounted at `/apps/…` is not
-   * (ruling R2). */
+   * `?entity=`: the platform's own `/domains/…` routes are, an app mounted at `/apps/…` is not. */
   static entityPath(base: string): boolean {
     return base.startsWith('/domains/');
   }

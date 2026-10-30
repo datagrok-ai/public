@@ -2,6 +2,7 @@
    editing verbs and the bounds toggle — and every finished action hands focus back to the canvas. */
 import * as grok from 'datagrok-api/grok';
 import {Scope} from '../../core/scope.js';
+import {Reason} from '../../core/reason.js';
 import type {ReadonlySignal, Signal} from '../../core/signals.js';
 import type {Action} from '../../components/actions/actions.js';
 import {dropDownButton, iconButton} from '../../components/actions/buttons.js';
@@ -43,8 +44,8 @@ export class Ribbon {
       host.editor.peek()?.redo();
       host.refocus();
     }, {tooltip: 'Redo'});
-    host.effect(() => undo.disabled = host.editor.value?.canUndo.value !== true);
-    host.effect(() => redo.disabled = host.editor.value?.canRedo.value !== true);
+    host.effect(() => Reason.apply(undo, host.editor.value?.canUndo.value === true ? null : 'Nothing to undo'));
+    host.effect(() => Reason.apply(redo, host.editor.value?.canRedo.value === true ? null : 'Nothing to redo'));
     // `actions()` answers these verbs in this order, or nothing at all when there is no
     // selection to act on — so the buttons read their enablement back by position
     const actions = ACTIONS.map((name) =>
@@ -52,7 +53,8 @@ export class Ribbon {
     host.effect(() => {
       const current = host.revision() >= 0 ? host.actions() : [];
       for (let i = 0; i < actions.length; i++)
-        actions[i].disabled = current[i] === undefined || current[i].enabled === false;
+        Reason.apply(actions[i],
+          current[i] === undefined ? 'Select a component first' : Reason.now(current[i].disabled));
     });
     return [
       // first, not last: the platform ribbon never reflows, and a narrow view container clips
@@ -86,7 +88,7 @@ export class Ribbon {
       return;
     }
     const scope = new Scope();
-    Scope.runWith(scope, () => new Dialog('Discard changes?'))
+    scope.build(() => new Dialog('Discard changes?'))
       .add('The form has been modified. Discard the changes?')
       .onOK(() => {
         scope.dispose();
@@ -130,12 +132,12 @@ export class Ribbon {
       return;
     }
     const scope = new Scope();
-    const name = Scope.runWith(scope, () => new TextInput({label: 'Name', placeholder: 'My form'}));
-    Scope.runWith(scope, () => new Dialog('Save to gallery'))
+    const name = scope.build(() => new TextInput({label: 'Name', placeholder: 'My form'}));
+    scope.build(() => new Dialog('Save to gallery'))
       .add(name)
       .add('An entry that already carries this name is overwritten.')
       .onOK(() => {
-        const trimmed = name.value.peek().trim();
+        const trimmed = name.peek().trim();
         scope.dispose();
         if (trimmed === '') {
           grok.shell.warning('A gallery entry needs a name.');
@@ -160,16 +162,16 @@ export class Ribbon {
   private _openDialog(): void {
     const scope = new Scope();
     const spec = this._host.dump();
-    const area = Scope.runWith(scope, () => new TextArea({
+    const area = scope.build(() => new TextArea({
       label: 'Spec',
       value: spec ? JSON.stringify(spec, null, 2) : '',
       placeholder: 'Paste a dg-ui/1 spec',
     }));
     area.root.classList.add('u2-designer-spec-editor');
-    Scope.runWith(scope, () => new Dialog('Open spec'))
+    scope.build(() => new Dialog('Open spec'))
       .add(area)
       .onOK(() => {
-        this._host.open(area.value.peek());
+        this._host.open(area.peek());
         scope.dispose();
         this._host.refocus();
       })

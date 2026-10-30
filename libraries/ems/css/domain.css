@@ -1,36 +1,87 @@
 /* u2 domain controls (src/dg/domain): the form host, the list rows and their status area, the
-   default card, the picker box. Tokens only — css/tokens.css must be loaded alongside. */
+   default card. Tokens only — css/tokens.css must be loaded alongside. */
 .u2-domain-form {
   padding: var(--dg-space-m);
 }
 
-/* a pristine draft is not wrong yet: a field's verdict shows once it was edited or left */
-.u2-input-untouched .u2-input-error {
+/* drawn over the editor's left padding, so the value does not move */
+.u2-input-changed > .u2-input-box {
+  position: relative;
+}
+
+.u2-input-changed > .u2-input-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  width: 3px;
+  pointer-events: none;
+  background: var(--dg-orange-2);
+}
+
+/* a bridged platform input's box holds its caption too */
+.u2-input-changed[data-u2='dart-input'] > .u2-input-box::before {
+  content: none;
+}
+
+.u2-input-changed[data-u2='dart-input'] .u2-input-editor {
+  box-shadow: -5px 0 0 -2px var(--dg-orange-2);
+}
+
+.u2-domain-form-system {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: var(--dg-space-s);
+  padding-top: var(--dg-space-s);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
+  font-size: var(--dg-font-size-small);
+  line-height: 22px;
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-form-system[hidden] {
   display: none;
 }
 
-.u2-input-untouched .u2-input-editor.u2-invalid,
-.u2-input-untouched .u2-input-editor.u2-invalid:focus {
-  border-bottom-color: var(--dg-border);
+.u2-domain-form-system-item {
+  white-space: nowrap;
 }
 
-/* the amber edge of a pending change, the grid's dirty cell in form terms */
-.u2-input-changed > .u2-input-box {
-  border-left: 3px solid var(--dg-orange-2);
-  padding-left: var(--dg-space-xs);
+.u2-domain-form-system-item + .u2-domain-form-system-item::before {
+  content: '·';
+  padding: 0 var(--dg-space-s);
 }
 
-/* the system columns as a footer: compact, muted */
-.u2-domain-form-system {
-  margin-top: var(--dg-space-m);
-  padding-top: var(--dg-space-s);
-  border-top: var(--dg-border-width) solid var(--dg-border);
-  color: var(--dg-text-color-light);
+.u2-domain-form-system-value {
+  color: var(--dg-grey-5);
+}
+
+.u2-btn.u2-icon-btn.u2-domain-form-system-copy {
+  vertical-align: middle;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  font-size: var(--dg-font-size-xs);
+}
+
+.u2-domain-app-form :is(.u2-form, .u2-domain-form-system) {
+  max-width: 560px;
+}
+
+.u2-domain-pick-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.u2-domain-pick-detail {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: var(--dg-font-size-small);
-}
-
-.u2-domain-form-system .u2-form-readonly-value {
-  min-height: 0;
   color: var(--dg-text-color-light);
 }
 
@@ -86,8 +137,7 @@
   display: none;
 }
 
-/* nothing to show: the message takes the rows' own area, centred, and the empty scroller with its
-   border goes — a caption hanging under a 400px empty box is not an empty state */
+/* the empty or error message takes the rows' area inside the same frame, so the page does not jump */
 .u2-domain-list-blank > .u2-domain-list-rows {
   display: none;
 }
@@ -98,16 +148,6 @@
   align-items: center;
   justify-content: center;
   min-height: 0;
-}
-
-.u2-domain-list-nothing {
-  align-items: center;
-  gap: var(--dg-space-s);
-}
-
-.u2-domain-list-error {
-  align-items: center;
-  gap: var(--dg-space-m);
 }
 
 .u2-domain-card {
@@ -126,35 +166,33 @@
   white-space: nowrap;
 }
 
-/* the rows answer the filter that was applied, not the one being typed: dimmed while the two differ */
-.u2-domain-list-stale .u2-domain-list-rows {
-  opacity: 0.5;
-}
-
-/* a row marked deleted stays until the save: struck through, faded, Restore on it */
-.u2-domain-list-deleted .u2-domain-list-content {
-  text-decoration: line-through;
-  opacity: 0.55;
-}
-
-/* a staged restore is the other direction: the strike is gone, and the amber edge of a pending
-   change says it has not landed yet */
-.u2-domain-list-restored .u2-domain-list-content {
-  text-decoration: none;
-  opacity: 1;
-}
-
-.u2-domain-list-restored,
-.u2-domain-list-pending {
+.u2-list-row.u2-domain-list-restored,
+.u2-list-row.u2-domain-list-pending {
   box-shadow: inset 3px 0 0 0 var(--dg-orange-2);
 }
 
-/* the status bar's slots are four panels the shell places side by side with nothing between
-   them: each one after the count leads with a separator, or "1,006" and "1 unsaved change" read
-   as one number */
-.u2-domain-status-selected::before,
-.u2-domain-status-notice::before,
-.u2-domain-status-problem::before {
+.u2-list-row.u2-domain-list-deleted.u2-domain-list-pending {
+  --u2-list-row-state: var(--dg-red-1);
+}
+
+.u2-domain-list-deleted.u2-domain-list-pending .u2-domain-list-content {
+  text-decoration: line-through;
+  color: var(--dg-grey-5);
+}
+
+.u2-domain-list-undo {
+  flex: none;
+  padding-left: var(--dg-space-m);
+}
+
+.u2-domain-list-when {
+  flex: none;
+  margin-left: auto;
+  color: var(--dg-text-color-light);
+}
+
+/* the shell places the status slots side by side with nothing between them */
+.u2-domain-status-after::before {
   content: '·';
   margin: 0 var(--dg-space-m);
   color: var(--dg-text-color-light);
@@ -168,15 +206,23 @@
   color: var(--dg-error);
 }
 
-/* trash mode: the list shows what was deleted, and says so before a row is read */
-.u2-domain-app-trash .u2-domain-app-list {
-  box-shadow: inset 0 2px 0 0 var(--dg-warm-grey-2);
-  background: var(--dg-warm-grey-1);
+.u2-domain-app-trash-banner {
+  flex: none;
+  align-items: center;
+  gap: var(--dg-space-s);
+  margin: var(--dg-space-l) var(--dg-space-m);
+  padding: var(--dg-space-m) var(--dg-space-l);
+  color: var(--dg-text-color);
+  background: var(--dg-steel-1);
+  border-radius: var(--dg-radius);
 }
 
-/* the row a refusal names, marked while the refusal stands */
-.u2-domain-list-invalid {
-  box-shadow: inset 2px 0 0 0 var(--dg-error);
+.u2-domain-app-trash-banner > .u2-icon {
+  color: var(--dg-accent);
+}
+
+.u2-list-row.u2-domain-list-invalid {
+  box-shadow: inset 3px 0 0 0 var(--dg-error);
 }
 
 .u2-domain-list-invalid .u2-domain-list-content {
@@ -198,45 +244,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--dg-text-color-light);
-}
-
-/* the picker box: a magnifier on the left (the platform look-up's), a clear on the right */
-.u2-pick-box {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
-}
-
-.u2-pick-box::before {
-  content: '';
-  position: absolute;
-  left: var(--dg-space-xs);
-  width: 12px;
-  height: 12px;
-  pointer-events: none;
-  background-color: var(--dg-text-color-light);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E") no-repeat center / 12px;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E") no-repeat center / 12px;
-}
-
-.u2-pick-box > .u2-typeahead {
-  flex: 1;
-  min-width: 0;
-}
-
-.u2-pick-box .u2-typeahead-input {
-  padding-left: 20px;
-  padding-right: 20px;
-}
-
-/* a blur that put the held pick's name back says so, on the verdict line, until the next focus */
-.u2-pick-hint {
-  flex: 1 0 100%;
-  min-width: 0;
-  font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
 }
 
@@ -269,28 +276,24 @@
   min-height: 0;
 }
 
-/* history: one line per audit entry — when, who, what, the changed columns trailing off */
+/* as tall as its rows (set by the grid), never taller than the pane */
+.u2-domain-children-pane > .u2-domain-grid {
+  flex: 0 1 auto;
+  height: var(--u2-domain-grid-height, auto);
+}
+
 .u2-domain-history {
   display: flex;
   flex-direction: column;
-  min-height: 0;
   font-family: var(--dg-font-family);
   font-size: var(--dg-font-size);
-}
-
-.u2-domain-history > .u2-section,
-.u2-domain-history .u2-section-body {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
 }
 
 .u2-domain-history-hint,
 .u2-domain-children-hint,
 .u2-domain-children-empty,
 .u2-domain-children-status {
-  padding: var(--dg-space-m);
+  padding: var(--dg-space-m) 0;
   color: var(--dg-text-color-light);
 }
 
@@ -299,23 +302,23 @@
   display: none;
 }
 
-.u2-domain-history-trail,
-.u2-domain-history-lines {
-  flex: 1;
-  min-height: 0;
-}
-
 .u2-domain-history-more {
   align-self: flex-start;
-  margin: var(--dg-space-s);
+  margin: var(--dg-space-s) 0;
 }
 
 .u2-domain-history-line {
-  align-items: baseline;
+  gap: var(--dg-space-xs);
+  padding: var(--dg-space-s) 0;
+}
+
+.u2-domain-history-head {
+  align-items: center;
   gap: var(--dg-space-s);
-  height: 100%;
-  padding: var(--dg-space-s);
-  overflow: hidden;
+}
+
+.u2-domain-history-head > .u2-badge {
+  font-size: var(--dg-font-size-small);
 }
 
 .u2-domain-history-time {
@@ -327,23 +330,37 @@
   flex: none;
 }
 
-/* two lines before it trails off — a change line names columns, ids and names */
 .u2-domain-history-changes {
-  flex: 1;
+  gap: 2px;
+}
+
+.u2-domain-history-change {
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--dg-space-s);
   min-width: 0;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  line-height: var(--dg-line-height);
+}
+
+.u2-domain-history-field,
+.u2-domain-history-arrow {
   color: var(--dg-text-color-light);
 }
 
 .u2-domain-history-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--dg-text-color);
 }
 
-/* children: the tab strip, each pane a toolbar over the child collection */
+.u2-domain-history-empty {
+  color: var(--dg-text-color-light);
+  font-style: italic;
+}
+
+.u2-domain-history-expand {
+  align-self: flex-start;
+}
+
 .u2-domain-children {
   display: flex;
   flex: 1 1 auto;
@@ -356,11 +373,6 @@
   min-height: 0;
 }
 
-/* the panel is shown by an inline `display`, so the pane takes its height instead */
-.u2-domain-children-tabs > .u2-tabs-content > .u2-tabs-panel {
-  height: 100%;
-}
-
 .u2-domain-children-pane {
   display: flex;
   flex-direction: column;
@@ -371,7 +383,11 @@
 .u2-domain-children-toolbar {
   flex: none;
   gap: var(--dg-space-s);
-  padding: var(--dg-space-xs) var(--dg-space-s);
+  padding: var(--dg-space-xs) 0;
+}
+
+.u2-domain-children-toolbar > .u2-btn:first-child {
+  margin-left: calc(-1 * var(--dg-space-m));
 }
 
 .u2-domain-children-split {
@@ -380,29 +396,84 @@
   gap: var(--dg-space-m);
 }
 
+/* list mode: the page scrolls to reach the form; the list scrolls itself past the form's height */
+.u2-domain-children-list > .u2-domain-children-tabs,
+.u2-domain-children-list > .u2-domain-children-tabs > .u2-tabs-content,
+.u2-domain-children-pane > .u2-domain-children-split {
+  flex: 1 0 auto;
+}
+
+.u2-domain-children-list > .u2-domain-children-tabs > .u2-tabs-content {
+  overflow: visible;
+}
+
+.u2-domain-children-pane > .u2-domain-children-split {
+  align-items: stretch;
+}
+
 .u2-domain-children-split > * {
   flex: 1;
   min-width: 0;
+}
+
+/* sized by its rows, the list would never scroll and never load its next page */
+.u2-domain-children-split > .u2-domain-list {
+  flex: 0 0 260px;
+  height: 0;
+  min-height: 100%;
 }
 
 .u2-domain-children-error {
   color: var(--dg-error);
 }
 
-/* the ribbon controls: a search box and a query box side by side, the query box the wider */
-/* the search box and the filter share whatever the ribbon has left and shrink before the VIEW
-   does: a floor wide enough to read is a floor the toolbox and the context panel push the ribbon
-   past, and the whole view scrolls sideways instead (the filter ends up under the panel) */
+/* the search box shrinks before the view does, or the whole view scrolls sideways */
 .u2-domain-search {
   flex: 1 1 auto;
-  min-width: 90px;
+  min-width: 72px;
 }
 
-/* the query box is a row of the list page, full width under the ribbon — the shell's ribbon is one
-   fixed 32px line with `overflow: hidden`, which clipped it to a 4px sliver */
+.d4-ribbon-panel:has(> .d4-ribbon-item > .u2-domain-search) {
+  flex: 1 1 auto;
+  min-width: 104px;
+  max-width: 340px;
+}
+
+.d4-ribbon-item:has(> .u2-domain-search) {
+  flex: 1 1 160px;
+  min-width: 72px;
+}
+
+.d4-ribbon-item > .u2-domain-search {
+  width: 100%;
+}
+
+.u2-domain-search > .u2-input-box,
+.u2-domain-search > .u2-input-box > .u2-input-editor {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* the shell pins every panel's flex-shrink inline, so the buttons' floor is a min-width */
+.d4-ribbon:has(> .d4-ribbon-panel > .d4-ribbon-item > .u2-domain-search) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.d4-ribbon:has(> .d4-ribbon-panel > .d4-ribbon-item > .u2-domain-search) > .d4-ribbon-panel:not(:has(.u2-domain-search)) {
+  min-width: max-content;
+}
+
+.u2-domain-presets-label {
+  margin-right: var(--dg-space-s);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+/* the query box is a list-page row: the shell's 32px ribbon clips it */
 .u2-domain-app-list > .u2-domain-filters {
   flex: none;
-  padding: var(--dg-space-s) var(--dg-space-m);
+  padding: var(--dg-space-s) 0;
 }
 
 .u2-domain-filters {
@@ -414,13 +485,28 @@
   display: none;
 }
 
-/* a ribbon row has no room for a second line: a filter that does not parse says so with the red
-   editor and its tooltip, never by pushing the buttons beside it off the bar */
-.u2-domain-filters .u2-input-error {
+.u2-domain-filters-note {
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-filters-row {
+  align-items: center;
+  gap: var(--dg-space-m);
+}
+
+.u2-domain-filters-row > :first-child {
+  flex: 1;
+}
+
+.u2-domain-filters-tools {
+  gap: var(--dg-space-s);
+}
+
+.u2-domain-filters-note[hidden] {
   display: none;
 }
 
-/* the condition builder in a pane on the list's left */
 .u2-domain-app-list > .u2-splitter {
   flex: 1;
   min-height: 0;
@@ -441,15 +527,26 @@
   height: 100%;
   overflow: auto;
   gap: var(--dg-space-s);
-  padding: var(--dg-space-s) var(--dg-space-m);
+  padding: 0 var(--dg-space-m) var(--dg-space-s);
+}
+
+.u2-domain-app-filters-head {
+  flex: none;
+  align-items: center;
+  gap: var(--dg-space-m);
+  min-height: var(--dg-control-height);
 }
 
 .u2-domain-app-filters-title {
+  flex: 1;
   font-weight: 600;
-  color: var(--dg-text-color-light);
+  color: var(--dg-text-color);
 }
 
-/* the app: the list page and the entity page under one root, one shown at a time */
+.u2-domain-app-filters-head > .u2-fb-mode {
+  margin-left: 0;
+}
+
 .u2-domain-app {
   display: flex;
   flex-direction: column;
@@ -480,15 +577,47 @@
   padding: var(--dg-space-s) var(--dg-space-m) 0;
 }
 
+.u2-domain-app > .u2-breadcrumbs > :first-child {
+  padding-left: 0;
+}
+
 .u2-domain-app-panes {
   display: flex;
-  flex: 1 1 auto;
+  flex: 1 0 auto;
   flex-direction: column;
-  min-height: 0;
   gap: var(--dg-space-s);
+  padding: 0 var(--dg-space-m);
+}
+
+/* up to about 8 rows: the entity page scrolls, not the children */
+.u2-domain-app-panes > .u2-domain-children {
+  flex: none;
+  min-height: 0;
+}
+
+.u2-domain-app-panes > .u2-domain-children:not(.u2-domain-children-list) > .u2-domain-children-tabs {
+  flex: none;
+}
+
+.u2-domain-app-panes .u2-domain-children-pane > .u2-domain-grid {
+  max-height: 320px;
+}
+
+.u2-domain-app-panes > .u2-domain-children-list {
+  flex-basis: auto;
+  min-height: 360px;
 }
 
 .u2-domain-app-panes > .u2-domain-history {
+  flex: none;
+}
+
+.u2-domain-app-panes > .u2-domain-children.u2-domain-children-blank {
+  flex: none;
+  min-height: 0;
+}
+
+.u2-domain-children-blank > .u2-domain-children-tabs {
   flex: none;
 }
 
@@ -496,62 +625,100 @@
   display: none;
 }
 
-/* bulk edit: the include checkbox sits in front of the column's whole input — OUTSIDE it, since a
-   disabled input kills pointer events on its own children. The row carries the field's pitch, so
-   the two class selectors plus the dialog's own beat form.css's own non-input-row padding. */
-.u2-dialog.u2-domain-bulk .u2-form-rows > .u2-domain-bulk-row {
-  display: flex;
-  align-items: center;
-  padding: 0;
+.u2-domain-bulk-header > .u2-form-readonly {
+  padding: var(--dg-space-s) 0;
 }
 
-.u2-domain-bulk-row > .u2-input-root {
-  flex: 1;
-  min-width: 0;
+.u2-domain-bulk-current {
+  box-sizing: border-box;
+  flex: 1 0 100%;
 }
 
-.u2-domain-bulk-include {
-  margin: 0 var(--dg-space-s) 0 0;
-  flex: none;
-}
-
-/* the hint under "Apply to", and whatever blocks OK — a line above the buttons, never a balloon
-   on the far edge of the screen */
-.u2-domain-bulk-hint {
-  display: block;
-  padding: 0 0 var(--dg-space-s);
-  color: var(--dg-text-color-light);
-  font-size: var(--dg-font-size-small);
-}
-
-.u2-domain-bulk-reason {
-  display: block;
-  padding-top: var(--dg-space-s);
-  color: var(--dg-error);
-}
-
-.u2-domain-bulk-reason:empty {
+.u2-domain-bulk-current:empty {
   display: none;
 }
 
-/* import: the wizard's steps stack, and only the mapping table scrolls */
-.u2-domain-import-mapping {
-  height: 260px;
+.u2-domain-import .u2-wizard-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.u2-domain-import .u2-wizard-panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.u2-domain-import-mapping-step {
+  flex: 1 1 auto;
+  gap: var(--dg-space-s);
+  min-height: 0;
+}
+
+.u2-domain-import-mapping,
+.u2-domain-import-rows {
+  flex: 1 1 auto;
+  min-height: 120px;
   overflow: auto;
 }
 
-/* the preview draws the first rows as they would land: a fixed window, its own scroller */
-.u2-domain-import-rows {
-  height: 220px;
-  overflow: auto;
+.u2-domain-import-picked:empty {
+  display: none;
+}
+
+.u2-domain-import-mapping .u2-data-table-row:has(.u2-domain-import-skipped),
+.u2-domain-import-skipped .u2-input-editor {
+  color: var(--dg-text-color-light);
+}
+
+/* so a refused empty cell still shows its tint */
+.u2-domain-import-rows .u2-data-table-row {
+  align-items: stretch;
+}
+
+.u2-domain-import-rows .u2-data-table-row > .u2-data-table-cell {
+  display: flex;
+  align-items: center;
+}
+
+.u2-domain-import-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .u2-domain-import-preview,
 .u2-domain-import-report {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: var(--dg-space-s);
   min-height: 0;
+}
+
+.u2-domain-import-outcome {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dg-space-l);
+  font-size: var(--dg-font-size-h1);
+}
+
+.u2-domain-import-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+}
+
+.u2-domain-import-aborted .u2-domain-import-outcome {
+  color: var(--dg-error);
+}
+
+.u2-domain-import-result {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
 }
 
 .u2-domain-import-problem {
@@ -560,17 +727,6 @@
 
 .u2-domain-import-summary {
   color: var(--dg-text-color-light);
-}
-
-.u2-domain-import-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: var(--dg-space-m);
-}
-
-.u2-domain-import-issues {
-  max-height: 200px;
-  overflow: auto;
 }
 
 /* the HTML data table host: the table is the scroller, so it takes the height the page gives */
@@ -610,4 +766,17 @@
 
 .u2-domain-tree-error {
   color: var(--dg-error);
+}
+
+.u2-domain-tree-all {
+  font-style: italic;
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-tree .u2-list-row:has(.u2-domain-tree-all) {
+  border-bottom: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-domain-app-invisible {
+  visibility: hidden;
 }

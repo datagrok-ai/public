@@ -10,13 +10,16 @@ import type {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {
-  CONFIG_PATH, OUTPUT_OUTDATED_PATH,
+  CONFIG_PATH, OUTPUT_OUTDATED_PATH, readOutputOutdated,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
+import {snapshotState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/state-snapshot';
+import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {
-  parseComparisonDefaults, entryFromDataFrame, collectWorkflowSteps, entryFromFuncCall, entryFromState,
+  parseComparisonDefaults, entryFromDataFrame, collectWorkflowSteps, entryFromFuncCall, entryFromSnapshot,
   entryFromLiveCall, loadRunEntries,
 } from '../components/RunComparison/entry-extraction';
-import {deleteSavedRun} from './utils';
+import {deleteSavedRun, deleteSavedWorkflow} from './utils';
+import {STEP_HISTORY_OPTION} from '../components/History/History';
 
 category('RunComparison: annotation defaults', () => {
   test('parses the comparison JSON annotation', async () => {
@@ -208,6 +211,9 @@ const snapshotProbe = () => {
   return call;
 };
 
+const callState = (isOutputOutdated: boolean) =>
+  ({isOutputOutdated, isRunning: false, isRunnable: true, runError: undefined, pendingDependencies: []});
+
 const nodePaths = (entry: {nodes: {scalars: {path: string}[], tables: {path: string}[]}}) =>
   [...entry.nodes.scalars, ...entry.nodes.tables].map((node) => node.path);
 
@@ -239,16 +245,16 @@ category('RunComparison: snapshots', () => {
     const call = snapshotProbe();
     const saved = await entryFromFuncCall(call);
     const step = {type: 'funccall', uuid: 'u', configId: 'step', funcCall: call} as unknown as PipelineState;
-    const snapshot = entryFromState(step, {u: {isOutputOutdated: false}}, 'Current');
+    const snapshot = entryFromSnapshot(snapshotState(step, {u: callState(false)}, {}), 'Current');
     expectArray(nodePaths(snapshot), nodePaths(saved));
     expect(snapshot.sourceKind, 'function');
-    expect(snapshot.unsaved, true);
-    expect(saved.unsaved === undefined, true);
+    expect(snapshot.snapshot !== undefined, true);
+    expect(saved.snapshot === undefined, true);
   });
 
   test('a snapshot keeps its tables when the source changes', async () => {
     const call = snapshotProbe();
-    const snapshot = entryFromLiveCall(call, false, 'Current');
+    const snapshot = entryFromLiveCall(call, {isOutputOutdated: false}, 'Current');
     const source = call.outputs['result'] as DG.DataFrame;
     source.col('time')!.set(0, 100);
     const copy = snapshot.dataFrames.get('result')!;
@@ -264,7 +270,7 @@ category('RunComparison: snapshots', () => {
         {type: 'funccall', configId: 'loading', friendlyName: 'Loading', uuid: 'l'},
       ],
     } as unknown as PipelineState;
-    const entry = entryFromState(state, {f: {isOutputOutdated: false}, s: {isOutputOutdated: true}}, 'Current');
+    const entry = entryFromSnapshot(snapshotState(state, {f: callState(false), s: callState(true)}, {}), 'Current');
     expect(entry.sourceKind, 'workflow');
     expectArray(outdatedPaths(entry), ['wf/stale/b', 'wf/stale/result']);
     expectArray(entry.outdatedSteps ?? [], ['Stale']);
@@ -319,12 +325,99 @@ category('RunComparison: saved original', () => {
       const {entries, failed} = await loadRunEntries([saved.id, missing]);
       expectArray(failed, [missing]);
       expect(entries.length, 1);
-      const snapshot = entryFromLiveCall(call, true, 'Current');
+      const snapshot = entryFromLiveCall(call, {isOutputOutdated: true}, 'Current');
       expectArray(nodePaths(entries[0]), nodePaths(snapshot));
       expectArray(outdatedPaths(entries[0]), ['aout', 'bout']);
       expectArray(outdatedPaths(snapshot), ['aout', 'bout']);
     } finally {
       await deleteSavedRun(saved.id);
+    }
+  });
+});
+
+// MockPipeline1 with a run first step and a never run second one, snapshotted like TreeWizard does
+const liveSnapshot = async () => {
+  const config = await callHandler<PipelineConfiguration>('Compute2:MockPipeline1', {}).toPromise();
+  const tree = StateTree.fromInstanceConfig({
+    config: await getProcessedConfig(config),
+    instanceConfig: {steps: [{id: 'step1', initialValues: {a: 1, b: 2, res: 3}}, {id: 'step2', initialValues: {b: 4}}]},
+  });
+  await tree.init().toPromise();
+  const values = <T, >(states: Record<string, {value: T}>) =>
+    Object.fromEntries(Object.entries(states).map(([uuid, state$]) => [uuid, state$.value]));
+  const snapshotOf = (state: PipelineState) =>
+    snapshotState(state, values(tree.getFuncCallStates()), values(tree.getConsistency()));
+  return {tree, snapshot: snapshotOf(tree.toState()), snapshotOf};
+};
+
+category('RunComparison: saving snapshots', () => {
+  test('a workflow snapshot keeps its values when the source changes', async () => {
+    const {tree, snapshot} = await liveSnapshot();
+    const entry = entryFromSnapshot(snapshot, 'Current');
+    const live = (tree.toState() as PipelineState & {steps: {funcCall?: DG.FuncCall}[]}).steps[0].funcCall!;
+    live.inputs['a'] = 100;
+    tree.close();
+    expect(entry.nodes.scalars.find((node) => node.path === 'pipeline1/step1/a')!.value, 1);
+    expectArray(entry.outdatedSteps ?? [], ['step2']);
+  });
+
+  test('a workflow snapshot saves and loads with its values and paths', async () => {
+    const {tree, snapshot} = await liveSnapshot();
+    tree.close();
+    const entry = entryFromSnapshot(snapshot, 'Current');
+    const runId = (await entry.snapshot!.save!({title: 'rc saved snapshot'})).id;
+    try {
+      const {entries, failed} = await loadRunEntries([runId]);
+      expectArray(failed, []);
+      expect(entries[0].name, 'rc saved snapshot');
+      expectArray(nodePaths(entries[0]), nodePaths(entry));
+      expectArray(entries[0].nodes.scalars.map((node) => node.value), entry.nodes.scalars.map((node) => node.value));
+      expectArray(entries[0].outdatedSteps ?? [], ['step2']);
+    } finally {
+      await deleteSavedWorkflow(runId);
+    }
+  });
+
+  test('a workflow step snapshot saves to the step history with the paths of its saved run', async () => {
+    const {tree, snapshotOf} = await liveSnapshot();
+    const step = (tree.toState() as PipelineState & {steps: PipelineState[]}).steps[0];
+    const entry = entryFromSnapshot(snapshotOf(step), 'Current', {stepHistory: true});
+    tree.close();
+    const runId = (await entry.snapshot!.save!({title: 'rc saved step'})).id;
+    try {
+      const saved = await historyUtils.loadRun(runId);
+      expect(saved.options[STEP_HISTORY_OPTION], 'true');
+      expect(saved.options['title'], 'rc saved step');
+      const reloaded = await entryFromFuncCall(saved);
+      expect(reloaded.sourceKind, 'function');
+      expectArray(nodePaths(reloaded), nodePaths(entry));
+      expectArray(reloaded.nodes.scalars.map((node) => node.value), entry.nodes.scalars.map((node) => node.value));
+    } finally {
+      await deleteSavedRun(runId);
+    }
+  });
+
+  test('a function snapshot RFV would not save has no save', async () => {
+    const save = (state: {isOutputOutdated: boolean, runError?: string}) =>
+      entryFromLiveCall(snapshotProbe(), state, 'Current').snapshot!.save;
+    expect(save({isOutputOutdated: true}) === undefined, true);
+    expect(save({isOutputOutdated: false, runError: 'Failed'}) === undefined, true);
+    expect(save({isOutputOutdated: false}) !== undefined, true);
+  });
+
+  test('a function snapshot saves as a run of its own', async () => {
+    const call = snapshotProbe();
+    const snapshot = entryFromLiveCall(call, {isOutputOutdated: false}, 'Current');
+    call.inputs['a'] = 100;
+    const runId = (await snapshot.snapshot!.save!({title: 'rc saved call'})).id;
+    try {
+      expect(runId === call.id, false);
+      const saved = await historyUtils.loadRun(runId);
+      expect(saved.options['title'], 'rc saved call');
+      expect(saved.inputs['a'], 1);
+      expect(readOutputOutdated(saved), false);
+    } finally {
+      await deleteSavedRun(runId);
     }
   });
 });

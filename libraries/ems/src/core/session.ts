@@ -1,10 +1,5 @@
-/* The unit of work a Save button drives (GOAL "Unit of work"): what is pending across the sources
-   it covers, one `save` for all of it — every writer's batch as ONE transaction through
-   `DomainBackend.saveAll` — one `discard`, and the events a paired form follows. A source alone
-   is a session of one; the sources built for one spec instance or one app share the ambient
-   session (`SharedSession.runWith`), and a hand-built page passes `{session}` explicitly. */
-import {emsBackends} from './domain-backend.js';
-import {signal, computed, ReadonlySignal, Emitter, plural, notify, Dialog, Rows} from '@datagrok-libraries/u2';
+import {emsBackends, capital, nounOf} from './domain-backend.js';
+import {signal, computed, ReadonlySignal, Emitter, plural, notify, Dialog, Rows, div} from '@datagrok-libraries/u2';
 import type {ObservableLike, SpecInstance, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from './domain-source.js';
 
@@ -29,6 +24,9 @@ export interface DomainSession {
 
 const specSessions = new WeakMap<SpecInstance, SharedSession>();
 
+/** The unit of work a Save button drives: every writer's batch as ONE transaction through `DomainBackend.saveAll`.
+ * A source alone is a session of one; the sources of one spec instance or one app share the ambient session
+ * (`SharedSession.runWith`), and a hand-built page passes `{session}` explicitly. */
 export class SharedSession implements DomainSession {
   /** The session every source built while {@link runWith} runs joins — set per spec instance
    * and per app; a source built outside any gets a session of its own. */
@@ -58,7 +56,7 @@ export class SharedSession implements DomainSession {
     this.sources = this._sources;
     this.isDirty = computed(() => this._sources.value.some((s) => s.isDirty.value));
     this.changeCount = computed(() => this._sources.value.reduce((n, s) => n + s.changeCount.value, 0));
-    this.validity = computed(() => this._sources.value.map((s) => s.validity.value).find((v) => v !== null) ?? null);
+    this.validity = computed(() => this._sources.value.map((s) => s.blocked.value).find((v) => v !== null) ?? null);
     this.isSaving = computed(() => this._saving.value || this._sources.value.some((s) => s.isSaving.value));
     this.summary = computed(() => {
       const changes = this.changeCount.value;
@@ -165,16 +163,13 @@ export class SharedSession implements DomainSession {
     this.onDiscarded.fire();
   }
 
-  /** Closes (or re-opens) the writer each source holds now — after a re-base that is the frame
-   * the batch landed in, which is open for editing again. */
+  // the writer each source holds now: after a re-base, the frame the batch landed in
   private static _hold(batch: readonly DomainSource[], saving: boolean): void {
     for (const source of batch)
       source.edit.peek()?.setSaving(saving);
   }
 
-  /** A backend that refused without throwing (the platform editor reports the server's error
-   * itself and answers false): the summary still has to say the changes are stuck, and the
-   * column errors the editor mapped onto the cells name why. */
+  // the platform editor reports the server's error itself and answers false: the summary still says they are stuck
   private static _refused(batch: readonly DomainSource[]): void {
     // a refusal naming a column reaches that cell and is the source's validity; one about a whole
     // row (a delete a child's reference vetoes) reaches nothing, and the writer kept the sentence
@@ -184,21 +179,18 @@ export class SharedSession implements DomainSession {
       source.refuse(problem);
   }
 
-  /** What one table's landed batch says: the table's own words, and what was done to it. */
   private static _landed(source: DomainSource, changes: number, verb: string): string {
     const info = source.schema.info;
     const one = changes === 1;
-    const what = (one ? info.singularName || 'row' : info.pluralName || 'rows').replace(/_/g, ' ');
+    const what = nounOf(info, one);
     if (verb === 'saved' && !one)
       return `${changes} changes saved`;
-    const subject = one ? `${what.charAt(0).toUpperCase()}${what.slice(1)}` : `${changes} ${what.toLowerCase()}`;
+    const subject = one ? capital(what) : `${changes} ${what}`;
     return `${subject} ${verb}`;
   }
 
-  /** The save set: the dirty sources, plus every source holding a draft one of them refers to — a
-   * pristine parent created with defaults only is not dirty, yet its child's `$~new:` needs it.
-   * Over the pending rows, not the visible ones: what the writer sends is the frame, and a parent
-   * the frame's filter hides is still the row the child points at. */
+  // a pristine parent draft is not dirty, yet its child's `$~new:` needs it; over the pending rows, not the
+  // visible ones: a parent the frame's filter hides is still the row the child points at
   private _withReferenced(dirty: readonly DomainSource[]): DomainSource[] {
     const batch = [...dirty];
     const referenced = new Set<string>();
@@ -219,10 +211,7 @@ export class SharedSession implements DomainSession {
     return batch;
   }
 
-  /** The same persisted row pending in two sources of the batch: they would send two ops for it,
-   * the second losing to the first's version check, and the whole transaction would roll back.
-   * Refused before anything is sent, naming the row on both sources — never merged, however
-   * disjoint the columns are. */
+  // two ops for one row: the second loses to the first's version check and the whole transaction rolls back
   private static _overlapping(batch: readonly DomainSource[]): boolean {
     const seen = new Map<string, {source: DomainSource, row: RowView}>();
     for (const source of batch) {
@@ -245,23 +234,51 @@ export class SharedSession implements DomainSession {
     return false;
   }
 
-  /** How a refusal names a row without a renderer: the table's singular name and the row's own
-   * name column (its business key, else its id). */
+  /** The unsaved-changes dialog's title and body: one record by its caption and edited fields, a new
+   * one by its noun, several by the summary. */
+  static atStake(session: DomainSession, action: string): {title: string, body: string} {
+    const pending = session instanceof SharedSession ?
+      session._sources.peek().flatMap((source) => source.pending().map((row) => ({source, row}))) : [];
+    const lost = `will be lost if you ${action}.`;
+    if (pending.length !== 1) {
+      const summary = session instanceof SharedSession ? session.summary.peek() : '';
+      return {title: 'Save changes?', body: `${summary === '' ? 'The changes' : capital(summary)} ${lost}`};
+    }
+    const [{source, row}] = pending;
+    const info = source.schema.info;
+    if (Rows.isDraft(row)) {
+      const noun = nounOf(info, true);
+      return {title: `Save the new ${noun}?`, body: `The new ${noun} ${lost}`};
+    }
+    const caption = source.caption?.(row) ?? SharedSession._rowName(source, row);
+    const edit = source.edit.peek();
+    const fields = source.schema.properties.filter((p) => edit?.isChanged(row.id, p.name!))
+      .map((p) => p.friendlyName ?? p.name!);
+    const named = fields.length > 3 ? [...fields.slice(0, 2), `${fields.length - 2} more fields`] : fields;
+    const list = named.length < 2 ? named.join('') : `${named.slice(0, -1).join(', ')} and ${named.at(-1)}`;
+    return {title: `Save changes to "${caption}"?`,
+      body: fields.length === 0 ? `Your changes ${lost}` :
+        `Your ${fields.length === 1 ? 'change' : 'changes'} to ${list} ${lost}`};
+  }
+
   private static _nameOf(source: DomainSource, row: RowView): string {
+    const what = (source.schema.info.singularName || source.table).replace(/_/g, ' ');
+    return `${capital(what)} "${SharedSession._rowName(source, row)}"`;
+  }
+
+  private static _rowName(source: DomainSource, row: RowView): string {
     const info = source.schema.info;
     const column = info.nameColumn ?? info.businessKey[0];
     const name = column === undefined ? undefined : row[column];
-    const what = info.singularName || source.table;
-    return `${what.charAt(0).toUpperCase()}${what.slice(1)} "${name ?? row.id}"`;
+    return String(name ?? row.id);
   }
 }
 
 /** THE gate in front of whatever would drop pending changes — a navigation, a filter change, a
  * view close: resolves to whether the caller may proceed. Clean → true without a dialog; a save
- * in flight → a warning and false; else the user saves (false when the save is refused),
- * discards, or cancels. */
-export function confirmDiscard(session: DomainSession, options: {action?: string, subject?: string} = {}):
-  Promise<boolean> {
+ * in flight → a warning and false; else the user saves (false when the save is refused; SAVE is
+ * off while the session's validity says why), discards, or cancels. */
+export function confirmDiscard(session: DomainSession, options: {action?: string} = {}): Promise<boolean> {
   // saving first: a batch in flight is clean for a while before its write-back lands, and the
   // caller must not be let through that window either
   if (session.isSaving.peek()) {
@@ -270,20 +287,10 @@ export function confirmDiscard(session: DomainSession, options: {action?: string
   }
   if (!session.isDirty.peek())
     return Promise.resolve(true);
-  const changes = session.changeCount.peek();
-  const action = options.action ?? 'continue';
-  const subject = options.subject ?? 'this view';
+  const {title, body} = SharedSession.atStake(session, options.action ?? 'continue');
   return new Promise((resolve) => {
-    const text = document.createElement('div');
-    const them = changes === 1 ? 'it' : 'them';
-    for (const line of [`${plural(changes, 'unsaved change', 'unsaved changes')} in ${subject}.`,
-      `Save ${them}, discard ${them}, or cancel and do not ${action}.`]) {
-      const p = document.createElement('p');
-      p.textContent = line;
-      text.append(p);
-    }
     let decided = false;
-    const dialog = Dialog.create('Unsaved changes', {name: 'unsaved-changes'});
+    const dialog = Dialog.create(title, {name: 'unsaved-changes'});
     const decide = (answer: boolean | Promise<boolean>) => {
       if (decided)
         return;
@@ -291,12 +298,12 @@ export function confirmDiscard(session: DomainSession, options: {action?: string
       dialog.close();
       resolve(answer);
     };
-    dialog.add(text)
-      .addButton('SAVE', () => decide(session.save()), {primary: true})
+    dialog.add(div([body]))
       .addButton('DISCARD', () => {
         session.discard();
         decide(true);
       })
+      .addButton('SAVE', () => decide(session.save()), {primary: true, disabled: session.validity})
       .onCancel(() => decide(false))
       .show({modal: true});
   });

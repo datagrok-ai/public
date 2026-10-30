@@ -1,7 +1,7 @@
 /* FontInput: the strict format round-trip, the controls that compose it, the size preset popup,
    and the hidden option that keeps an unknown family alive. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
@@ -69,18 +69,18 @@ smoke('the value reaches the controls, and every control writes it back', async 
   assert.equal(italic(input).getAttribute('aria-pressed'), 'true');
 
   fire(bold(input), 'click');
-  assert.equal(input.value.value, 'normal italic 14px "Roboto"');
+  assert.equal(input.value, 'normal italic 14px "Roboto"');
   assert.equal(bold(input).classList.contains('u2-font-toggle-active'), false);
 
   size(input).value = '24';
   fire(size(input), 'input');
-  assert.equal(input.value.value, 'normal italic 24px "Roboto"');
+  assert.equal(input.value, 'normal italic 24px "Roboto"');
 
   family(input).value = 'Arial';
   fire(family(input), 'change');
-  assert.equal(input.value.value, 'normal italic 24px "Arial"');
+  assert.equal(input.value, 'normal italic 24px "Arial"');
 
-  input.value.value = 'bold normal 9px "Open Sans"';
+  input.value = 'bold normal 9px "Open Sans"';
   assert.equal(size(input).value, '9', 'a programmatic write reaches the controls');
   assert.equal(family(input).value, 'Open Sans');
   assert.equal(bold(input).classList.contains('u2-font-toggle-active'), true);
@@ -91,14 +91,14 @@ smoke('the value reaches the controls, and every control writes it back', async 
 smoke('an unknown family joins the select as a hidden option and survives the round-trip',
   async () => {
     const input = mount(new FontInput({label: 'Font', value: 'normal normal 11px "Comic Sans MS"'}));
-    const options = family(input).querySelectorAll('option');
+    const options = [...family(input).querySelectorAll('option')];
     const unknown = options.find((o) => o.value === 'Comic Sans MS');
     assert.ok(unknown, 'the family the select does not offer is added');
     assert.equal(unknown.hidden, true);
     assert.equal(family(input).value, 'Comic Sans MS');
 
     fire(italic(input), 'click');
-    assert.equal(input.value.value, 'normal italic 11px "Comic Sans MS"', 'and stays the family');
+    assert.equal(input.value, 'normal italic 11px "Comic Sans MS"', 'and stays the family');
     input.dispose();
   });
 
@@ -109,7 +109,7 @@ smoke('unparseable text leaves the defaults; the next edit normalizes the value'
   assert.equal(bold(input).classList.contains('u2-font-toggle-active'), false);
 
   fire(bold(input), 'click');
-  assert.equal(input.value.value, 'bold normal 10px "Roboto"');
+  assert.equal(input.value, 'bold normal 10px "Roboto"');
   input.dispose();
 });
 
@@ -120,11 +120,11 @@ smoke('the size popup opens under the box, picks a size, and closes with it', as
 
   fire(size(input), 'mousedown');
   await flush();
-  assert.deepEqual(popup().querySelectorAll('.u2-font-size-option').map((o) => o.textContent),
+  assert.deepEqual([...popup().querySelectorAll('.u2-font-size-option')].map((o) => o.textContent),
     ['10', '12', '14']);
 
   fire(popup().querySelectorAll('.u2-font-size-option')[2], 'pointerdown');
-  assert.equal(input.value.value, 'normal normal 14px "Roboto"');
+  assert.equal(input.value, 'normal normal 14px "Roboto"');
   assert.equal(size(input).value, '14');
   assert.equal(popup(), null, 'picking closes the popup');
 
@@ -154,7 +154,7 @@ smoke('clicking the open box closes the popup, and the next click reopens it', a
 smoke('dispose closes the popup and kills the listeners', async () => {
   const before = Scope.liveCount;
   const input = mount(new FontInput({label: 'Font'}));
-  assert.equal(input.value.value, 'normal normal 10px "Roboto"', 'the default value is the format');
+  assert.equal(input.value, 'normal normal 10px "Roboto"', 'the default value is the format');
   fire(size(input), 'mousedown');
   await flush();
   const open = popup();
@@ -164,7 +164,7 @@ smoke('dispose closes the popup and kills the listeners', async () => {
   assert.equal(Scope.liveCount, before);
 
   fire(bold(input), 'click');
-  assert.equal(input.value.value, 'normal normal 10px "Roboto"', 'listeners died with the scope');
+  assert.equal(input.value, 'normal normal 10px "Roboto"', 'listeners died with the scope');
 });
 
 smoke('required: the default font is a value; an empty one is invalid', async () => {

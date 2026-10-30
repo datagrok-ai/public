@@ -4,21 +4,30 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
 import {AppName, ComputeFunctions, HitDesignCampaign, HitTriageCampaign} from './types';
-import {HitTriageComputeFunctionTag, ViDColName} from './consts';
+import {CampaignJsonName, HitTriageComputeFunctionTag} from './consts';
 import {discoverComputeFunctions} from '@datagrok-libraries/statistics/src/compute-functions/discovery';
 import {checkEditPermissions} from './utils';
 import * as api from '../package-api';
+
+/** How many codes a first save tries before it gives up: each one taken by another session meanwhile. */
+const MaxNewCodeAttempts = 20;
+
+/** The campaign's lock stayed with another session for the whole wait: what "someone else might be editing" means. */
+export class CampaignLockHeldError extends Error {}
 
 export abstract class HitAppBase<T> {
   public dataFrame?: DG.DataFrame;
   public template?: T;
   public baseUrl!: string;
   public computeFunctions: ComputeFunctions;
-  public isJoining = false;
   protected hasEditPermission = false;
   public get canEdit(): boolean {return this.hasEditPermission;}
   private _appName: AppName;
   public get appName(): AppName {return this._appName;}
+  /** Who holds the campaign locks this app takes: the user, and this app's instance — a lock is dropped only by the
+   * session that took it, not by another tab of the same user. */
+  protected readonly lockHolder =
+    `${DG.User.current()?.friendlyName || DG.User.current()?.name || 'unknown'} · ${DG.Utils.randomString(6)}`;
   public static molFileExtReaders: { ext: string; handlerFunc: DG.Func }[] = ['sdf', 'mol', 'smi', 'mol2']
     .map((ext) => {
       const handlerFunc =
@@ -42,11 +51,22 @@ export abstract class HitAppBase<T> {
   }
 
   protected async setCanEdit(campaign: HitTriageCampaign | HitDesignCampaign) {
-    if (!campaign.authorUserId || !campaign.permissions) {
-      this.hasEditPermission = true; // if there is no author, then it is a new campaign
-      return;
-    }
-    this.hasEditPermission = await checkEditPermissions(campaign.authorUserId, campaign.permissions);
+    this.hasEditPermission = await this.canEditCampaign(campaign);
+  }
+
+  /** Whether the user may edit `campaign`: always a new one (none, or no author yet). */
+  protected async canEditCampaign(campaign?: HitTriageCampaign | HitDesignCampaign): Promise<boolean> {
+    return !campaign?.authorUserId || !campaign.permissions ||
+      await checkEditPermissions(campaign.authorUserId, campaign.permissions);
+  }
+
+  /** The table's molecule columns, never a hidden `~` one (Chem's `~<column>.canonicalSmiles` cache, say). */
+  static moleculeColumns(df: DG.DataFrame): DG.Column[] {
+    return df.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).filter((col) => !col.name.startsWith('~'));
+  }
+
+  static moleculeColumn(df: DG.DataFrame): DG.Column | null {
+    return HitAppBase.moleculeColumns(df)[0] ?? null;
   }
 
   protected getFilterType(colName: string): DG.FILTER_TYPE {
@@ -82,6 +102,31 @@ export abstract class HitAppBase<T> {
     return templateKey + '-' + ((postFixes[postFixes.length - 1] + 1).toString());
   }
 
+  /** The code a campaign's first save writes under, its lock held: when another session saved a campaign under
+   * `campaignId` meanwhile, the next free code of the template's `key` is locked instead — the check is made under
+   * the lock, which every writer of a campaign holds, so two sessions never share a code. Throws, holding no lock,
+   * when no code could be locked; the caller reports it. */
+  protected async lockNewCampaignCode(campaignId: string, key: string): Promise<string> {
+    const numberOf = (code: string) => parseInt(code.substring(key.length + 1), 10) || 0;
+    for (let attempt = 0; attempt < MaxNewCodeAttempts; attempt++) {
+      const lock = await this.aquireAndWaitCampaignLock(campaignId);
+      if (!lock.aquired)
+        throw new CampaignLockHeldError(`Could not lock campaign ${campaignId} within 30 seconds`);
+      let free = false;
+      try {
+        free = !await _package.files.exists(`${this.appName}/campaigns/${campaignId}/${CampaignJsonName}`);
+      } finally {
+        if (!free)
+          await this.dropCampaignLock(campaignId);
+      }
+      if (free)
+        return campaignId;
+      const listed = await this.getNewCampaignName(`${this.appName}/campaigns`, key);
+      campaignId = `${key}-${Math.max(numberOf(campaignId) + 1, numberOf(listed))}`;
+    }
+    throw new Error(`No free campaign code of ${key} after ${MaxNewCodeAttempts} attempts`);
+  }
+
   public setBaseUrl() {
     const title = document.title;
     if (history.replaceState) {
@@ -93,94 +138,13 @@ export abstract class HitAppBase<T> {
     }
   }
 
-  /// creates a union of two dataframes based on a molecule column and adds to second dataframe
-  protected unionDataframes(df1: DG.DataFrame, df2: DG.DataFrame, molColName1: string, molColName2: string) {
-    const prevCol1Name = molColName1;
-    df1.col(molColName1)!.name = molColName2;
-    molColName1 = molColName2;
-    const df1MolCol: string[] | undefined = df1.col(molColName1)?.toList()
-      ?.map((it) => _package.convertToSmiles(it));
-    const df2MolCol: string[] | undefined = df2.col(molColName2)?.toList()
-      ?.map((it) => _package.convertToSmiles(it)); // here we do not filter out invalid molecules, because we need original indexes
-    if (!df1MolCol || !df2MolCol)
-      throw new Error('Molecule column not found'); // should not happen, but just in case
-    const df2MolMap = new Map<string, number>();
-    df2MolCol.forEach((it, i) => {
-      if (!!it && it !== 'MALFORMED_INPUT_VALUE')
-        df2MolMap.set(it, i);
-    });
-
-    // there might be cases where the columns do match but have different types (e.g. string vs int)
-    const setCorrectedColValue = (setWhereCol: DG.Column, fromCol: DG.Column, setRow: number, fromRow: number) => {
-      try {
-        if (setWhereCol.type === fromCol.type)
-          setWhereCol.set(setRow, fromCol.get(fromRow), false);
-        else if (setWhereCol.type === DG.COLUMN_TYPE.STRING)
-          setWhereCol.set(setRow, fromCol.getString(fromRow), false);
-        else if (setWhereCol.type === DG.COLUMN_TYPE.INT) {
-          const val = fromCol.get(fromRow);
-          if (typeof val === 'number')
-            setWhereCol.set(setRow, Math.round(val), false);
-          else if (typeof val === 'string' && val.length > 0 && !isNaN(Number(val)))
-            setWhereCol.set(setRow, Math.round(Number(val)), false);
-        } else if (setWhereCol.type === DG.COLUMN_TYPE.FLOAT) {
-          const val = fromCol.get(fromRow);
-          if (typeof val === 'number')
-            setWhereCol.set(setRow, val, false);
-          else if (typeof val === 'string' && val.length > 0 && !isNaN(Number(val)))
-            setWhereCol.set(setRow, Number(val), false);
-        } else // direct setting as fallback
-          setWhereCol.set(setRow, fromCol.get(fromRow), false);
-      } catch (e) {
-        _package.logger.error(`Error setting column value for column ${setWhereCol.name} at row ${setRow} from column ${fromCol.name} at row ${fromRow}: ${e}`);
-      }
-    };
-
-    this.isJoining = true;
-    try {
-    // first check that all columns are there
-      const addedColNames: string[] = [];
-      for (const col of df1.columns) {
-        if (!df2.columns.contains(col.name)) {
-          const addedCol = df2.columns.addNew(col.name, col.type);
-          if (col.semType)
-            addedCol.semType = col.semType;
-          addedColNames.push(col.name);
-        }
-      }
-      for (let i = 0; i < df1MolCol.length; i++) {
-        if (!df1MolCol[i] || df1MolCol[i] === 'MALFORMED_INPUT_VALUE')
-          continue; // skip invalid molecules
-        if (!df2MolMap.has(df1MolCol[i])) {
-          df2.rows.addNew(null, true);
-          for (const col of df1.columns)
-            setCorrectedColValue(df2.col(col.name)!, col, df2.rowCount - 1, i);
-        } else {
-          if (addedColNames.length > 0) {
-            const row = df2MolMap.get(df1MolCol[i])!;
-            for (const colName of addedColNames)
-              setCorrectedColValue(df2.col(colName)!, df1.col(colName)!, row, i);
-          }
-        }
-      }
-    } finally {
-      setTimeout(() => {
-        this.isJoining = false;
-      }, 500);
-      df1.col(molColName1)!.name = prevCol1Name;
-    }
-    return df2;
-  }
-
   protected async aquireAndWaitCampaignLock(campaignId: string, maxWaitMs = 30_000): Promise<{aquired: boolean, expires_at?: null | string}> {
     const startTime = Date.now();
     let errorCount = 0;
     let lastError: any = null;
-    const curUser = DG.User.current();
-    const curUserName = curUser ? curUser.friendlyName || curUser.name || 'unknown' : 'unknown';
     while (Date.now() - startTime < maxWaitMs && errorCount < 5) {
       try {
-        const result = await api.queries.acquireCampaignLock(this.appName, campaignId, curUserName);
+        const result = await api.queries.acquireCampaignLock(this.appName, campaignId, this.lockHolder);
         if (result && result.rowCount > 0) {
           const res = {aquired: true, expires_at: result?.col('expires_at')?.getString(0)};
           return res;
@@ -196,6 +160,12 @@ export abstract class HitAppBase<T> {
     if (lastError)
       throw lastError;
     return {aquired: false, expires_at: null};
+  }
+
+  /** Lets this session's lock go without logging a save (nothing was written under it); a failure is only logged. */
+  protected async dropCampaignLock(campaignId: string): Promise<void> {
+    await api.queries.dropCampaignLock(this.appName, campaignId, this.lockHolder)
+      .catch((e) => _package.logger.error(e));
   }
 
   protected async releaseCampaignLock(campaignId: string): Promise<string | null> {

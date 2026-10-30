@@ -52,7 +52,8 @@ export class ViewSync {
   /** Set while a burst of typing is rewriting the entry it opened ({@link _arm}). */
   private _typing: ReturnType<typeof setTimeout> | undefined;
 
-  constructor(private readonly _host: ViewSyncHost, owner: Control) {
+  constructor(private readonly _host: ViewSyncHost, options: {owner: Control}) {
+    const owner = options.owner;
     // Back restores the app itself: the platform router re-parses the URL on `popstate` but never
     // asks a JS-hosted view (`handlePath` is not called on the stand — probed 2026-09-15), so the
     // address the entry carries would only move the URL. A router that does call `handlePath`
@@ -64,7 +65,7 @@ export class ViewSync {
     // `replaceState` (`routing.dart` onViewUrlChanged, a synchronous stream), so a move costs no
     // entry of its own — the app pushes it, and the shell's replace then rewrites that same entry.
     // The effect reads `path` and nothing else: a dependency on the state signals themselves would
-    // put it behind `appView`'s mirror in the flush order, too late to push.
+    // put it behind the view host's path mirror in the flush order, too late to push.
     // Typing is not navigating: five keystrokes in the search box were five entries and five
     // Backs. A move that only changed the text rewrites the entry in place and arms a timer; the
     // entry is pushed once the text has settled (or when the next real move needs one).
@@ -162,7 +163,7 @@ export interface ViewMountOptions {
 
 /** Ties an app to the view the shell docked it in: find-or-activate, the route the shell really
  * mounted it at, a cold deep link replayed once, the pane's ✕ gate and the browser's unload gate.
- * Everything `DomainTable.app()` did around `appView`, in one place. */
+ * Everything `DomainTable.app()` did around its view, in one place. */
 export function mountView(options: ViewMountOptions): void {
   const {view, base, pinned, session} = options;
   // The shell mounts a package app at its own route and prepends it to every path the view

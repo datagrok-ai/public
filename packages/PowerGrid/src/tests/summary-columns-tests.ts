@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, category, expect, expectArray, expectObject, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, expect, expectArray, expectObject, test} from '@datagrok-libraries/test/src/test';
 import {TagsCellRenderer} from '../cell-types/tags-cell-renderer';
 import {BarCellRenderer} from '../cell-types/bar-cell-renderer';
 import {layoutRoundTrip, projectRoundTrip} from './utils';
@@ -44,13 +44,13 @@ function summaryColumnsView(): DG.TableView {
 async function expectSummaryColumns(view: DG.TableView): Promise<void> {
   const grid = view.grid;
   const names = () => Array.from({length: grid.columns.length - 1}, (_, i) => grid.columns.byIndex(i + 1)!.name);
-  await awaitCheck(() => grid.columns.byName(SUMMARY_COLUMNS[SUMMARY_COLUMNS.length - 1].name) != null,
+  await waitUntil(() => grid.columns.byName(SUMMARY_COLUMNS[SUMMARY_COLUMNS.length - 1].name) != null,
     'the summary columns did not come back', 5000);
   expectArray(names(), [...view.dataFrame.columns.names(), ...SUMMARY_COLUMNS.map((c) => c.name)]);
   for (const c of SUMMARY_COLUMNS) {
     const gc = grid.columns.byName(c.name)!;
     expect(gc.cellType, c.cellType.toLowerCase(), c.name);
-    await awaitCheck(() => gc.renderer?.cellType === c.cellType,
+    await waitUntil(() => gc.renderer?.cellType === c.cellType,
       `${c.name} is not drawn by the ${c.cellType} renderer`, 5000);
     expectObject(gc.settings, {[c.cellType]: c.settings});
   }
@@ -100,9 +100,9 @@ category('Summary columns', () => {
     const df = flagsTable();
     const grid = grok.shell.addTableView(df).grid;
     const tags = grid.columns.add({gridColumnName: 'Tags', cellType: 'Tags'});
-    await awaitCheck(() => tags.renderer?.cellType === 'Tags', 'the Tags renderer did not load', 5000);
+    await waitUntil(() => tags.renderer?.cellType === 'Tags', 'the Tags renderer did not load', 5000);
     grid.invalidate();
-    await awaitCheck(() => chipPixels(grid, 'Tags', 1) > 0, 'the flagged row shows no chip', 5000);
+    await waitUntil(() => chipPixels(grid, 'Tags', 1) > 0, 'the flagged row shows no chip', 5000);
     const bounds = grid.cell('Tags', 1).bounds;
     const area = bounds.width * bounds.height * window.devicePixelRatio ** 2;
     for (let row = 0; row < df.rowCount; row++) {
@@ -114,6 +114,21 @@ category('Summary columns', () => {
           expect(n, 0, `chip-colored pixels in ${column} of row ${row}`);
       }
     }
+  });
+
+  test('A removed source column brought back rejoins its Tags column (#4378)', async () => {
+    const df = flagsTable();
+    const grid = grok.shell.addTableView(df).grid;
+    const tags = grid.columns.add({gridColumnName: 'Tags', cellType: 'Tags'});
+    tags.settings = {Tags: {columnNames: ['flag']}};
+    await waitUntil(() => tags.renderer?.cellType === 'Tags', 'the Tags renderer did not load', 5000);
+    const flag = df.col('flag')!.clone();
+    df.columns.remove('flag');
+    expectArray(tags.settings['Tags'].columnNames, []);
+    df.columns.insert(flag, 1);
+    expectArray(tags.settings['Tags'].columnNames, ['flag']);
+    grid.invalidate();
+    await waitUntil(() => chipPixels(grid, 'Tags', 1) > 0, 'the flagged row shows no chip after the column came back', 5000);
   });
 
   test('Tags and Bar fill only their own shapes (GROK-20888)', async () => {
@@ -147,8 +162,8 @@ category('Summary columns', () => {
     col.setTag(DG.TAGS.CELL_RENDERER, 'Tags');
     const grid = grok.shell.addTableView(df).grid;
     const gc = grid.col('violated')!;
-    await awaitCheck(() => gc.renderer?.cellType === 'Tags', 'the Tags renderer did not load', 5000);
-    await awaitCheck(() => !grid.isRenderPending, 'the grid did not settle', 5000);
+    await waitUntil(() => gc.renderer?.cellType === 'Tags', 'the Tags renderer did not load', 5000);
+    await waitUntil(() => !grid.isRenderPending, 'the grid did not settle', 5000);
     const g = grid.canvas.getContext('2d')!;
     g.font = gc.contentCellStyle.font ?? grid.props.defaultCellFont;
     const layout = new TagsCellRenderer().calculateLayout(g, gc.width, grid.props.rowHeight, values[0].split(','));
@@ -163,12 +178,12 @@ category('Summary columns', () => {
     ]);
     df.col('color')!.setTag(DG.TAGS.CELL_RENDERER, 'Color');
     const view = grok.shell.addTableView(df);
-    await awaitCheck(() => view.grid.col('color')?.renderer?.cellType === 'Color',
+    await waitUntil(() => view.grid.col('color')?.renderer?.cellType === 'Color',
       'the Color renderer did not load', 5000);
     const sp = view.addViewer(DG.VIEWER.SCATTER_PLOT, {x: 'value', y: 'value', colorColumnName: 'color'});
     const centers = () => Array.from(sp.root.querySelectorAll<HTMLCanvasElement>('canvas.d4-legend-value'), (c) =>
       Array.from(c.getContext('2d')!.getImageData(c.width >> 1, c.height >> 1, 1, 1).data.slice(0, 3)).join(','));
-    await awaitCheck(() => centers().length === 3, 'the legend shows no Color items', 5000);
+    await waitUntil(() => centers().length === 3, 'the legend shows no Color items', 5000);
     expectArray(centers().sort(), ['0,0,255', '0,255,0', '255,0,0']);
   });
 });

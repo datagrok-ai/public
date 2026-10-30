@@ -1,6 +1,6 @@
-#name: SynthonSearch
-#friendlyName: Synthon Space Search
-#description: Search in synthon chemical space using RDKit SynthonSpaceSearch
+#name: SynthonSearchPython
+#friendlyName: Synthon Space Search (Python)
+#description: Search in synthon chemical space using RDKit SynthonSpaceSearch (Chem:SynthonSearch runs it; with the Chemical Engine Crux, Crux's port of it)
 #language: python
 #environment: channels: [conda-forge], dependencies: [python=3.10, rdkit=2025.09.3]
 #meta.cache: all

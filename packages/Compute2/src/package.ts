@@ -20,9 +20,17 @@ import {HistoryApp} from './apps/HistoryApp';
 import {setVueAppOptions} from './utils';
 import {openRunComparison} from './components/RunComparison/comparison-views';
 import {Subject} from 'rxjs';
-import type {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {normalizePipelineInstanceConfig} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import type {
+  PipelineInstanceConfig, PipelineInstanceConfigInput,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
+import {runWorkflow, saveWorkflowRun} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
+import type {RunState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
+import type {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
 import {runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import type {OptimizerParams} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
@@ -86,6 +94,8 @@ const modelCatalogOptions = {
   getStartUriLoaded: () => startUriLoaded,
   roleOnlyFilter: false,
 };
+
+const providerOf = (nqName: string) => DG.Func.byName(nqName)?.options.provider ?? nqName;
 
 export class PackageFunctions {
 
@@ -270,6 +280,40 @@ export class PackageFunctions {
     call.aux.resolve = resolve;
     call.edit();
     return promise;
+  }
+
+
+  @grok.decorators.func({
+    name: 'RunWorkflow',
+    description: 'Run a compute workflow without UI and return the state of every step.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async RunWorkflow(
+    @grok.decorators.param({options: {description: 'Qualified name of the workflow function to run'}})
+      nqName: string,
+    @grok.decorators.param({options: {description: 'Workflow version to run'}})
+      version: string,
+    @grok.decorators.param({type: 'object', options: {description: 'Optional initial pipeline configuration'}})
+      instanceConfig?: PipelineInstanceConfigInput) {
+    return runWorkflow(providerOf(nqName), version, instanceConfig && normalizePipelineInstanceConfig(instanceConfig));
+  }
+
+
+  @grok.decorators.func({
+    name: 'SaveWorkflowRun',
+    description: 'Save the state returned by RunWorkflow as a new workflow run in history.',
+    outputs: [{type: 'funccall', name: 'run'}],
+  })
+  static async SaveWorkflowRun(
+    @grok.decorators.param({options: {description: 'Qualified name of the workflow function'}})
+      nqName: string,
+    @grok.decorators.param({options: {description: 'Workflow version'}})
+      version: string,
+    @grok.decorators.param({type: 'object', options: {description: 'The state of a RunWorkflow result'}})
+      state: RunState,
+    @grok.decorators.param({type: 'object', options: {description: 'Optional title, description and tags'}})
+      metadata?: ItemMetadata) {
+    return saveWorkflowRun(providerOf(nqName), version, state, metadata);
   }
 
 

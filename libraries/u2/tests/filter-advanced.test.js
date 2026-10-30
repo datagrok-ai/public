@@ -2,9 +2,10 @@
    ways, the drag gesture over the pure drop model, and what a template locks. Every builder is
    disposed in `finally` — an overlay or a drag left open would keep the shim's loop alive. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout as size} from './layout.mjs';
 import {Scope, signal, Filters, FilterBuilder} from '../src/index.js';
 import {TYPE} from 'datagrok-api/u2core';
 
@@ -48,7 +49,7 @@ function nested() {
 }
 
 function nodes(fb) {
-  return fb.root.querySelectorAll('[data-u2-node]');
+  return [...fb.root.querySelectorAll('[data-u2-node]')];
 }
 
 function node(fb, id) {
@@ -66,7 +67,7 @@ function own(el, name) {
 
 function layout(fb, rects) {
   for (const [id, [x, y, w, h]] of Object.entries(rects))
-    (id === 'rows' ? fb.root.querySelector('[data-u2-part="rows"]') : node(fb, id)).rect = new DOMRect(x, y, w, h);
+    size(id === 'rows' ? fb.root.querySelector('[data-u2-part="rows"]') : node(fb, id), {rect: new DOMRect(x, y, w, h)});
 }
 
 function drag(handle, steps, commit = true) {
@@ -86,7 +87,7 @@ smoke('advanced mode renders the group hierarchy: data-u2-node on groups, a head
   assert.equal(group.classList.contains('u2-fb-group'), true);
   for (const name of ['handle', 'connector', 'not', 'add', 'add-group', 'remove'])
     assert.notEqual(own(group, name), null, name);
-  assert.deepEqual(part(group, 'rows').children.map((r) => r.dataset.u2Node), ['f2', 'f3']);
+  assert.deepEqual([...part(group, 'rows').children].map((r) => r.dataset.u2Node), ['f2', 'f3']);
   assert.equal(node(fb, 'f2').parentElement, part(group, 'rows'), 'a child row lives in its group host');
   assert.equal(own(group, 'connector').querySelector('[data-id="or"]').classList.contains('u2-btn-group-selected'),
     true);
@@ -106,17 +107,17 @@ smoke('not toggles group.not on a sub-group and on the root; the query shows it'
   const fb = mount(new FilterBuilder({schema: SCHEMA, mode: 'advanced', value: nested()}));
   const not = own(node(fb, 'f4'), 'not');
   fire(not, 'click');
-  assert.equal(Filters.find(fb.value.peek(), 'f4').not, true);
+  assert.equal(Filters.find(fb.peek(), 'f4').not, true);
   assert.equal(not.classList.contains('u2-fb-not-on'), true);
   assert.equal(not.getAttribute('aria-pressed'), 'true');
   assert.equal(node(fb, 'f4').classList.contains('u2-fb-negated'), true);
   assert.equal(fb.query.peek(), 'age > 30 and not (sex = "F" or name like "a")');
   fire(not, 'click');
-  assert.equal('not' in Filters.find(fb.value.peek(), 'f4'), false, 'off is the key gone, not false');
+  assert.equal('not' in Filters.find(fb.peek(), 'f4'), false, 'off is the key gone, not false');
   assert.equal(fb.query.peek(), 'age > 30 and (sex = "F" or name like "a")');
   fire(part(fb.root.querySelector('.u2-fb-header'), 'not'), 'click');
-  assert.equal(fb.value.peek().not, true);
-  assert.equal(fb.query.peek(), Filters.format(fb.value.peek()));
+  assert.equal(fb.peek().not, true);
+  assert.equal(fb.query.peek(), Filters.format(fb.peek()));
   assert.equal(fb.query.peek().startsWith('not ('), true);
 });
 
@@ -124,15 +125,15 @@ smoke('a group header edits its own group: and|or, + condition, + group, − rem
   const fb = mount(new FilterBuilder({schema: SCHEMA, mode: 'advanced', value: nested()}));
   const group = node(fb, 'f4');
   fire(own(group, 'connector').querySelector('[data-id="and"]'), 'click');
-  assert.equal(Filters.find(fb.value.peek(), 'f4').op, 'and');
-  assert.equal(fb.value.peek().op, 'and', 'the root op is untouched');
+  assert.equal(Filters.find(fb.peek(), 'f4').op, 'and');
+  assert.equal(fb.peek().op, 'and', 'the root op is untouched');
   fire(own(group, 'add'), 'click');
-  let sub = Filters.find(fb.value.peek(), 'f4');
+  let sub = Filters.find(fb.peek(), 'f4');
   assert.equal(sub.nodes.length, 3);
   assert.equal(sub.nodes[2].property, 'name', 'the first offered property');
   assert.equal(part(group, 'rows').children.length, 3, 'rendered inside the group');
   fire(own(group, 'add-group'), 'click');
-  sub = Filters.find(fb.value.peek(), 'f4');
+  sub = Filters.find(fb.peek(), 'f4');
   assert.equal(Filters.isGroup(sub.nodes[3]), true);
   assert.equal(sub.nodes[3].op, 'or', 'the other connector than the parent');
   assert.equal(part(group, 'rows').children[3].dataset.u2, 'filter-group', 'nested two levels');
@@ -151,13 +152,13 @@ smoke('rows keep their elements across edits inside a group, and a group keeps i
   const input = editor.querySelector('input');
   input.value = 'ab';
   fire(input, 'input');
-  assert.equal(Filters.find(fb.value.peek(), 'f3').value, 'ab');
+  assert.equal(Filters.find(fb.peek(), 'f3').value, 'ab');
   assert.equal(node(fb, 'f4'), group);
   assert.equal(node(fb, 'f3'), row);
   assert.equal(part(node(fb, 'f3'), 'value'), editor);
-  fb.value.value = Filters.insert(fb.value.peek(), 'f4', 0, Filters.cond('mw', '<', 500));
+  fb.value = Filters.insert(fb.peek(), 'f4', 0, Filters.cond('mw', '<', 500));
   // f6 went to the builder's own default group; the inserted condition is f7
-  assert.deepEqual(part(group, 'rows').children.map((r) => r.dataset.u2Node), ['f7', 'f2', 'f3']);
+  assert.deepEqual([...part(group, 'rows').children].map((r) => r.dataset.u2Node), ['f7', 'f2', 'f3']);
   assert.equal(node(fb, 'f3'), row, 'the reorder moved only the new element');
 });
 
@@ -243,9 +244,9 @@ smoke('drag: the handle moves a row into a group after its last child; the indic
   assert.equal(indicator.classList.contains('u2-fb-drop-into'), false);
   assert.equal(indicator.style.top, '140px');
   assert.equal(indicator.style.height, '2px');
-  const before = fb.value.peek();
+  const before = fb.peek();
   fire(handle, 'pointerup', {});
-  const after = fb.value.peek();
+  const after = fb.peek();
   assert.notEqual(after, before);
   assert.deepEqual(after.nodes.map((n) => n.id), ['f4']);
   assert.deepEqual(Filters.find(after, 'f4').nodes.map((n) => n.id), ['f2', 'f3', 'f1']);
@@ -267,7 +268,7 @@ smoke('drag: Escape cancels, a refused target shows nothing, a locked group take
   assert.equal(own(node(fb, 'f4'), 'handle').hidden, true, 'nor has the locked group');
   const handle = part(node(fb, 'f1'), 'handle');
   assert.equal(handle.hidden, false);
-  const before = fb.value.peek();
+  const before = fb.peek();
   drag(handle, [[100, 45]], false);
   assert.equal(indicator.hidden, true, 'the locked group is refused as a target');
   fire(handle, 'pointermove', {clientX: 100, clientY: 10});
@@ -277,10 +278,10 @@ smoke('drag: Escape cancels, a refused target shows nothing, a locked group take
   fire(document, 'keydown', {key: 'Escape'});
   assert.equal(node(fb, 'f1').classList.contains('u2-fb-dragging'), false);
   fire(handle, 'pointerup', {});
-  assert.equal(fb.value.peek(), before, 'nothing moved');
+  assert.equal(fb.peek(), before, 'nothing moved');
   fire(handle, 'pointerdown', {button: 0, clientX: 5, clientY: 20});
   fire(handle, 'pointerup', {});
-  assert.equal(fb.value.peek(), before);
+  assert.equal(fb.peek(), before);
   fire(handle, 'pointerdown', {button: 2, clientX: 5, clientY: 20});
   fire(handle, 'pointermove', {clientX: 100, clientY: 125});
   assert.equal(indicator.hidden, true, 'a secondary button never drags');
@@ -295,7 +296,7 @@ smoke('drag: a group moves with its subtree, and can leave a root it then emptie
   layout(fb, {rows: [0, 0, 200, 160], f2: [0, 0, 200, 80], f1: [10, 20, 190, 40], f4: [0, 80, 200, 80],
     f3: [10, 100, 190, 40]});
   drag(own(node(fb, 'f2'), 'handle'), [[100, 30], [100, 85]]);
-  const after = fb.value.peek();
+  const after = fb.peek();
   assert.deepEqual(after.nodes.map((n) => n.id), ['f4']);
   assert.deepEqual(Filters.find(after, 'f4').nodes.map((n) => n.id), ['f3', 'f2']);
   assert.deepEqual(Filters.find(after, 'f2').nodes.map((n) => n.id), ['f1'], 'the subtree came along');
@@ -341,11 +342,11 @@ smoke('templates: a group lock is inherited by its rows, allowAdd hides both add
   assert.equal(own(free, 'add').hidden, true, 'allowAdd covers every group');
   assert.equal(own(free, 'remove').hidden, false);
   const mw = node(fb, 'f5');
-  assert.deepEqual(part(mw, 'prop').querySelectorAll('option').map((o) => o.value), ['age', 'mw', 'sex'],
+  assert.deepEqual([...part(mw, 'prop').querySelectorAll('option')].map((o) => o.value), ['age', 'mw', 'sex'],
     'allowedProperties narrows the nested picker, schema order kept');
-  assert.deepEqual(part(mw, 'op').querySelectorAll('option').map((o) => o.value), ['>', '<'], 'registry order');
-  assert.deepEqual(Filters.validate(fb.value.peek(), SCHEMA, undefined, template), []);
-  const diff = Filters.diff(template.root, fb.value.peek());
+  assert.deepEqual([...part(mw, 'op').querySelectorAll('option')].map((o) => o.value), ['>', '<'], 'registry order');
+  assert.deepEqual(Filters.validate(fb.peek(), SCHEMA, undefined, template), []);
+  const diff = Filters.diff(template.root, fb.peek());
   assert.deepEqual(diff, {changed: [], added: [], removed: [], moved: []});
 });
 
@@ -356,13 +357,13 @@ smoke('drag: allowAdd false keeps a row under its parent (a reorder stays), a lo
     value: Filters.applyTemplate(template)}));
   layoutNested(fb);
   const indicator = fb.root.querySelector('.u2-fb-drop');
-  const before = fb.value.peek();
+  const before = fb.peek();
   drag(part(node(fb, 'f1'), 'handle'), [[100, 125]]);
-  assert.equal(fb.value.peek(), before, 'into the sub-group: refused');
+  assert.equal(fb.peek(), before, 'into the sub-group: refused');
   assert.equal(indicator.hidden, true);
   drag(part(node(fb, 'f3'), 'handle'), [[100, 65]]);
-  assert.deepEqual(Filters.find(fb.value.peek(), 'f4').nodes.map((n) => n.id), ['f3', 'f2'], 'a reorder is a drop');
-  assert.deepEqual(Filters.validate(fb.value.peek(), SCHEMA, undefined, template), [], 'and the template agrees');
+  assert.deepEqual(Filters.find(fb.peek(), 'f4').nodes.map((n) => n.id), ['f3', 'f2'], 'a reorder is a drop');
+  assert.deepEqual(Filters.validate(fb.peek(), SCHEMA, undefined, template), [], 'and the template agrees');
 
   Filters.resetIds('');
   const locked = {root: nested()};
@@ -370,13 +371,22 @@ smoke('drag: allowAdd false keeps a row under its parent (a reorder stays), a lo
   const fb2 = mount(new FilterBuilder({schema: SCHEMA, mode: 'advanced', template: locked,
     value: Filters.applyTemplate(locked)}));
   layoutNested(fb2);
-  const frozen = fb2.value.peek();
+  const frozen = fb2.peek();
   drag(part(node(fb2, 'f2'), 'handle'), [[100, 10]]);
-  assert.equal(fb2.value.peek(), frozen, 'a row of the locked group stays, even pressed through its hidden handle');
+  assert.equal(fb2.peek(), frozen, 'a row of the locked group stays, even pressed through its hidden handle');
 });
 
+const onDocument = new Map();
+for (const [verb, delta] of [['addEventListener', 1], ['removeEventListener', -1]]) {
+  const original = document[verb];
+  document[verb] = function(type, ...rest) {
+    onDocument.set(type, (onDocument.get(type) ?? 0) + delta);
+    return original.call(this, type, ...rest);
+  };
+}
+
 function documentListeners(type) {
-  return document._listeners.get(type)?.length ?? 0;
+  return onDocument.get(type) ?? 0;
 }
 
 smoke('disposing mid-drag releases the gesture, every row scope, the indicator and the document listeners', () => {
@@ -384,7 +394,7 @@ smoke('disposing mid-drag releases the gesture, every row scope, the indicator a
   const listeners = ['pointermove', 'pointerup', 'pointercancel', 'keydown'].map(documentListeners);
   const fb = mount(new FilterBuilder({schema: SCHEMA, mode: 'advanced', value: nested()}));
   layoutNested(fb);
-  const before = fb.value.peek();
+  const before = fb.peek();
   const handle = part(node(fb, 'f1'), 'handle');
   drag(handle, [[100, 125]], false);
   assert.equal(fb.root.querySelector('.u2-fb-drop').hidden, false);
@@ -393,7 +403,7 @@ smoke('disposing mid-drag releases the gesture, every row scope, the indicator a
   assert.equal(Scope.liveCount, base);
   fire(document, 'pointerup', {});
   fire(document, 'keydown', {key: 'Escape'});
-  assert.equal(fb.value.peek(), before, 'nothing dropped');
+  assert.equal(fb.peek(), before, 'nothing dropped');
   assert.equal(document.body.querySelector('.u2-fb-drop'), null, 'the indicator went with the builder');
   assert.deepEqual(['pointermove', 'pointerup', 'pointercancel', 'keydown'].map(documentListeners), listeners);
 });

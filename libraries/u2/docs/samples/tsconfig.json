@@ -1,0 +1,16 @@
+{
+  "extends": "../../../../build-config/tsconfig.base.json",
+  "compilerOptions": {
+    "types": [],
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "paths": {
+      "@datagrok-libraries/u2": ["../../src/index.ts"],
+      "@datagrok-libraries/u2/dg": ["../../src/dg/index.ts"],
+      "@datagrok-libraries/u2/filter": ["../../src/core/filter/index.ts"],
+      "@datagrok-libraries/u2/dg/filter": ["../../src/dg/filter/index.ts"],
+      "@datagrok-libraries/u2/testing": ["../../src/testing/index.ts"]
+    }
+  },
+  "include": ["./*.ts"]
+}

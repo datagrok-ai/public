@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Added `runWorkflow`, which runs a workflow without UI, and `saveWorkflowRun`, which saves its result to history
 * Exported the `isFuncCallState`, `isStaticPipelineState` and `isDynamicPipelineState` guards; the newly exported workflow types come through with the type re-export
 
 ## 0.8.0 (2026-09-23)

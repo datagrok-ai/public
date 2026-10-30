@@ -1,0 +1,10 @@
+{
+  "name": "molecule-row",
+  "entry": "compound-summary.ts",
+  "title": "A form row whose value is a molecule drawing",
+  "source": "N-1: a 160x100 structure put on the 28px options rail of a read-only TextInput instead of a DynamicInput",
+  "notes": "in u2 v1 the rail takes buttons and links only (`addOptions(HTMLButtonElement | HTMLAnchorElement)`): the drawing on the rail is a type error as well",
+  "bad": {
+    "bad-rail-drawing": ["structure-has-room", "structure-in-value", "typecheck"]
+  }
+}

@@ -8,4 +8,8 @@ ENV DB_NAME=chembl
 ENV DB_USER=datagrok
 ENV DB_PASSWORD=datagrok
 
+# The base's check connects to `hostname -i`, which lists every address of a container on
+# more than one network (the spawner attaches two), so it never passes.
+HEALTHCHECK CMD pg_isready -h 127.0.0.1 -p 5432
+
 EXPOSE 5432

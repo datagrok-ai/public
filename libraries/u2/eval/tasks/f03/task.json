@@ -1,0 +1,15 @@
+{
+  "name": "campaigns-home",
+  "entry": "campaigns-home.ts",
+  "title": "An app home: a loading, grouped campaign catalog with a details pane",
+  "source": "HitTriage's landing and campaign catalog: B-6 (hover = group header, here through package CSS), N-5 (group headers in another spelling than the cells, [object Object] groups), N-1 (the structure on the options rail), and the catalog built after an await by nobody",
+  "hazards": ["t02", "t06", "t08", "t10", "t11"],
+  "bad": {
+    "bad-hover-css": ["hover-distinct", "package-css-clean"],
+    "bad-date-key": ["kickoff-headers"],
+    "bad-object-key": ["owner-headers"],
+    "bad-rail-drawing": ["structure-has-room", "structure-in-value", "typecheck"],
+    "bad-after-await": ["cells-format", "details", "dispose-releases", "dispose-while-loading", "groups", "hover-distinct",
+      "kickoff-headers", "loads", "owner-headers", "package-css-clean", "structure-has-room", "structure-in-value"]
+  }
+}

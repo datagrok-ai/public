@@ -31,6 +31,21 @@ function orders() {
       {'name': 'ibuprofen', 'total': 20, 'Mol Weight': 206.29}]);
 }
 
+smoke('rowCount follows rows added and removed, which fire their own events (the grid\'s "Add new row")', () => {
+  const scope = new Scope();
+  const df = orders();
+  const rowCount = dfBindings(signal(df), scope).bindStep('rowCount');
+  assert.equal(rowCount.value, 2);
+  df.dart.rows.push({'name': 'naproxen', 'total': 30, 'Mol Weight': 230.26});
+  df.onRowsAdded.fire({});
+  assert.equal(rowCount.value, 3);
+  df.dart.rows.splice(0, 2);
+  df.onRowsRemoved.fire({});
+  assert.equal(rowCount.value, 1);
+  scope.dispose();
+  assert.equal(df.liveSubscriptions(), 0, 'nothing left subscribed');
+});
+
 smoke('fixed steps: df identity, rowCount, columns, and "" defaults to df', async () => {
   const scope = new Scope();
   const df = orders();
@@ -205,12 +220,12 @@ smoke('repoint: resubscribes, refreshes every cached signal, drops the old subsc
   const total = source.bindStep('currentRow').bindStep('total');
   const idx = source.bindStep('currentRowIdx');
   const sel = source.bindStep('selection');
-  assert.equal(df1.liveSubscriptions(), 5);
+  assert.equal(df1.liveSubscriptions(), 7, 'current row, values, rows added and removed, selection, filter, columns');
   assert.equal(df2.liveSubscriptions(), 0);
 
   dfSig.value = df2;
   assert.equal(df1.liveSubscriptions(), 0, 'the old frame is fully unsubscribed');
-  assert.equal(df2.liveSubscriptions(), 5);
+  assert.equal(df2.liveSubscriptions(), 7);
   assert.equal(idx.value, 2);
   assert.equal(name.value, 'bob');
   assert.equal(total.value, undefined, 'a column the new frame lacks reads undefined');

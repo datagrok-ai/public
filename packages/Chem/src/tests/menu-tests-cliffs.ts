@@ -3,15 +3,16 @@ import * as grok from 'datagrok-api/grok';
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {before, after, expect, category, test, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
+import {before, after, expect, category, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {ActivityCliffsEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
 import {cliffMcs, createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
 import {MALFORMED_DATA_WARNING_CLASS} from '../constants';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import { PackageFunctions } from '../package';
-import {ChemicalEngine, cruxReady, setChemicalEngine} from '../engine/chem-engine';
-import {cruxFallbackCount} from '../engine/fallback';
+import {ChemicalEngine} from '../engine/chem-engine';
+import {expectNoFallback, inEngine, rdkitPoolAsks} from './engine-utils';
 import {getCruxService} from '../crux/crux-searches';
 import {getMCS} from '../utils/most-common-subs';
 import {getUncommonAtomsAndBonds} from '../utils/chem-common';
@@ -75,8 +76,6 @@ function similarPairs(molecules: string[], cutoff: number): [number, number][] {
   return pairs;
 }
 
-const rdkitPoolAsks = () => chemCommonRdKit._rdKitService?.timesInitialized ?? 0;
-
 /** Median, 95th percentile and maximum of `ms`. */
 function timings(ms: number[]): string {
   const sorted = [...ms].sort((a, b) => a - b);
@@ -117,6 +116,17 @@ category('top menu activity cliffs', async () => {
     await _testActivityCliffsOpen(await readDataframe('v3000_sample.csv'), 'molecule', 'Activity', 80, 185);
   });
 
+  test('activityCliffsEditor.defaultActivity', async () => {
+    const defaultOf = (csv: string) =>
+      ActivityCliffsEditor.getDefaultActivityColumn(DG.DataFrame.fromCsv(csv).columns.toList())?.name;
+    expect(defaultOf('ID,Mol Wt.,Plate #,In-vivo Activity,Assay #1(IC50)\n1,242.3,1,60,1.5\n2,256.4,1,50,1.2'),
+      'In-vivo Activity');
+    expect(defaultOf('ID,Kd #1\n1,1.7\n2,1.9'), 'Kd #1');
+    expect(defaultOf('activity_id,pIC50\n31863,6.2\n31864,7.1'), 'pIC50');
+    expect(defaultOf('ID,Row,Mol Wt.\n1,1,242.3\n2,2,256.4'), 'Mol Wt.');
+    expect(defaultOf('ID,Row\n1,1\n2,2'), 'ID');
+  });
+
   test('activityCliffs.emptyValues', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/activity_cliffs_empty_rows.csv'),
       'smiles', 'Activity', 80, 1);
@@ -127,7 +137,7 @@ category('top menu activity cliffs', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/Test_smiles_malformed.csv'),
       'canonical_smiles', 'FractionCSP3', 80, 24);
     try {
-      await awaitCheck(() => {
+      await waitUntil(() => {
         console.log(document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML);
         return document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
         '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis';
@@ -165,27 +175,23 @@ category('top menu activity cliffs', async () => {
 
   test('cliffMcs.crux', async () => {
     // Crux mode: what the tooltip highlights is what Rascal's MCES (the Crux workers) leaves out; no RDKit worker asked
-    setChemicalEngine(ChemicalEngine.Crux);
-    try {
-      expect(await cruxReady(), true, 'the Crux module loads');
+    await inEngine(ChemicalEngine.Crux, async () => {
       await getCruxService();
-      const [asks, fallbacks] = [rdkitPoolAsks(), cruxFallbackCount('activity cliffs MCS')];
-      for (const [file, column, i, j, uncommon] of [...RASCAL_PAIRS, PEPTIDE_PAIR]) {
-        const mcs = await cliffMcs(await pairOf(file, column, i, j));
-        const got = Array.isArray(mcs) ? mcs.map((s) => [s.atoms, s.bonds]) : mcs;
-        expect(JSON.stringify(got), JSON.stringify(uncommon), `${file} rows ${i}, ${j}`);
-      }
-      expect(cruxFallbackCount('activity cliffs MCS'), fallbacks, 'RDKit found an MCS for Crux');
+      const asks = rdkitPoolAsks();
+      await expectNoFallback(['activity cliffs MCS'], async () => {
+        for (const [file, column, i, j, uncommon] of [...RASCAL_PAIRS, PEPTIDE_PAIR]) {
+          const mcs = await cliffMcs(await pairOf(file, column, i, j));
+          const got = Array.isArray(mcs) ? mcs.map((s) => [s.atoms, s.bonds]) : mcs;
+          expect(JSON.stringify(got), JSON.stringify(uncommon), `${file} rows ${i}, ${j}`);
+        }
+      });
       expect(rdkitPoolAsks(), asks, 'the RDKit workers were asked for');
-    } finally {
-      setChemicalEngine(null);
-    }
+    });
   }, {timeout: 60000});
 
   test('cliffMcs.rdkit', async () => {
     // RDKit mode: FMCS's SMARTS from the RDKit workers, as before; its highlight is not Rascal's on the last pair
-    setChemicalEngine(ChemicalEngine.RDKit);
-    try {
+    await inEngine(ChemicalEngine.RDKit, async () => {
       for (const [file, column, i, j] of RASCAL_PAIRS) {
         const pair = await pairOf(file, column, i, j);
         expect(await cliffMcs(pair), await getMCS(DG.Column.fromStrings('smiles', pair), true, true),
@@ -201,9 +207,7 @@ category('top menu activity cliffs', async () => {
       } finally {
         fmcs.delete();
       }
-    } finally {
-      setChemicalEngine(null);
-    }
+    });
   });
 
   test('cliffMcs.everyPair', async () => {
@@ -243,33 +247,37 @@ async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activit
   numberCliffs: number, layout?: boolean) {
   await grok.data.detectSemanticTypes(df);
   const actCliffsTableView = grok.shell.addTableView(df);
-  await awaitCheck(() => actCliffsTableView.name?.toLowerCase() === df.name?.toLowerCase(),
+  await waitUntil(() => actCliffsTableView.name?.toLowerCase() === df.name?.toLowerCase(),
     'Activity cliffs table view hasn\'t been created', 1000);
   if (molCol === 'molecule') actCliffsTableView.dataFrame.rows.removeAt(51, 489);
   const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
   await PackageFunctions.activityCliffs(df, df.col(molCol)!, actCliffsTableView.dataFrame.getCol(activityCol), simCutOff,
     DimReductionMethods.UMAP, BitArrayMetricsNames.Tanimoto, encodingFunc, undefined, undefined, true);
-  let scatterPlot: DG.Viewer | null = null;
-  for (const i of actCliffsTableView.viewers) {
-    if (i.type == DG.VIEWER.SCATTER_PLOT)
-      scatterPlot = i;
-  }
+  const findScatterPlot = () => {
+    let found: DG.Viewer | null = null;
+    for (const i of actCliffsTableView.viewers) {
+      if (i.type == DG.VIEWER.SCATTER_PLOT)
+        found = i;
+    }
+    return found;
+  };
+  let scatterPlot = findScatterPlot();
   expect(scatterPlot != null, true);
   const checkScatterPlotInitialized = () => {
     const cliffsLink = scatterPlot!.root.getElementsByClassName('scatter_plot_link');
     return cliffsLink.length > 0 && ((cliffsLink[0] as HTMLElement).innerText.toLowerCase() === `${numberCliffs} cliffs`)
   }
-  await awaitCheck(() => {
+  await waitUntil(() => {
     return checkScatterPlotInitialized();
   }, 'activity cliffs failed', layout ? 2000 : 60000);
   if (layout) {
     const layout = actCliffsTableView.saveLayout();
     scatterPlot?.close();
-    await delay(100);
+    await waitUntil(() => findScatterPlot() === null, 'scatter plot hasn\'t been closed');
     actCliffsTableView.loadLayout(layout);
-    await delay(100); //to add GridViewer
+    await waitUntil(() => (scatterPlot = findScatterPlot()) !== null, 'layout hasn\'t added the scatter plot');
     //waiting for layout to be applied
-    await awaitCheck(() => {
+    await waitUntil(() => {
       return checkScatterPlotInitialized();
     }, 'activity cliffs failed', 5000);
   }

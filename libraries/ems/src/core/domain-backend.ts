@@ -1,9 +1,3 @@
-/* The platform seam of `DomainSource` (GOAL "What it looks like"): one table handle answering
-   its shape, its access, its rows and its writes, and one `saveAll` for every writer's batch as
-   a single transaction. dg fills `emsBackends.domain` over `grok.dapi.domains`; `MemoryDomainBackend`
-   answers it from a schema.json in memory, so the gallery, the headless tests and an agent
-   iterating on an app need no server. What both must agree on is written down in
-   docs/domain-backend-contract.md. */
 import type {IProperty, AccessData, DomainCondition, DomainConditionTree, DataFrameLike} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
 
@@ -227,7 +221,7 @@ export interface AuditEntryLike {
 
 /** A frame the backend fetched together with its single writer: the frame is the collection,
  * `edit` tracks every change made to it, `append` adds the next page into the same frame.
- * Replaced whole on a re-query, so `dispose` is where the writer detaches (STATE-CONTRACT H8). */
+ * Replaced whole on a re-query, so `dispose` is where the writer detaches. */
 export interface DomainFrameLike {
   df: DataFrameLike;
   edit: EditState;
@@ -285,6 +279,7 @@ export interface DomainTableLike {
     Promise<DomainBatchValidationLike>;
 }
 
+/** What the platform and the memory backend must both agree on: docs/domain-backend-contract.md. */
 export interface DomainBackend {
   table(address: string): Promise<DomainTableLike>;
   /** The backend's batched display-name resolver for ref ids — the platform registry's, which
@@ -298,14 +293,43 @@ export interface DomainBackend {
   saveAll(edits: EditState[]): Promise<boolean>;
 }
 
-/** What a backend throws: the server's error family by `code` (`'version-conflict'`,
- * `'validation'`, `'not-found'`, `'bad-ref'`), the message for the user. */
 /** Filled by `DgDomainBackend` at dg import, by `MemoryDomainBackend` in tests. */
 export const emsBackends: {domain?: DomainBackend} = {};
 
+/** What a backend throws: the server's error family by `code` (`'version-conflict'`,
+ * `'validation'`, `'not-found'`, `'bad-ref'`), the message for the user. */
 export class DomainBackendError extends Error {
   constructor(readonly code: string, message: string) {
     super(message);
     this.name = 'DomainBackendError';
   }
+}
+
+/** The table's noun in lower case, singular for one row. */
+export function nounOf(info: {singularName?: string, pluralName?: string}, one = false): string {
+  return (one ? info.singularName || 'row' : info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
+}
+
+export function capital(text: string): string {
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+}
+
+/** The platform's `StringUtils.toSingular` (ddt utils.dart). */
+export function toSingular(s: string): string {
+  if (s.length <= 2 || !s.endsWith('s') || s.endsWith('ss') || s.endsWith('is') || s.endsWith('us'))
+    return s;
+  if (s.endsWith('ies') && s.length > 3)
+    return s.slice(0, -3) + 'y';
+  return /(xes|zzes|ches|shes|sses|tuses)$/.test(s) ? s.slice(0, -2) : s.slice(0, -1);
+}
+
+/** The platform's `StringUtils.toPlural` (ddt utils.dart). */
+export function toPlural(s: string): string {
+  if (s.length === 0)
+    return s;
+  if (s.endsWith('is'))
+    return s.slice(0, -2) + 'es';
+  if (/(s|x|z|ch|sh)$/.test(s))
+    return s + 'es';
+  return s.length > 1 && s.endsWith('y') && !'aeiou'.includes(s[s.length - 2]) ? s.slice(0, -1) + 'ies' : s + 's';
 }

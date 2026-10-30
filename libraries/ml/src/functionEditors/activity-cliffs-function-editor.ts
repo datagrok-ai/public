@@ -5,6 +5,9 @@ import {DimReductionBaseEditor, DimReductionEditorOptions, DimReductionParams} f
 import {IDimReductionParam} from '../multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {MCLMethodName} from '../MCL';
 
+const ACTIVITY_COLUMN_NAME = /activ|potency|inhib|affinity|ic50|ec50|\bp?k[id]\b/i;
+const ID_COLUMN_NAME = /(^|[\s_-])id$/i;
+
 export type ActivityCliffsParams = DimReductionParams & {
     activities: DG.Column;
     similarityThreshold: number;
@@ -31,7 +34,7 @@ export class ActivityCliffsEditor extends DimReductionBaseEditor {
       super({...editorSettings, enableMCL: true});
       const numericalColumns = Array.from(this.tableInput.value!.columns.numericalNoDateTime);
       this.activitiesInput = ui.input.column('Activities', {table: this.tableInput.value!,
-        value: numericalColumns.length ? numericalColumns[0] : null,
+        value: ActivityCliffsEditor.getDefaultActivityColumn(numericalColumns),
         filter: (col: DG.Column) => numericalColumns.includes(col)} as ColumnInputOptions);
       this.activitiesInputRoot = this.activitiesInput.root;
       this.similarityInput = ui.input.int('Similarity cutoff', {value: 80});
@@ -44,10 +47,18 @@ export class ActivityCliffsEditor extends DimReductionBaseEditor {
         ui.empty(this.activitiesInputRoot);
         const numericalColumns = Array.from(this.tableInput.value!.columns.numerical);
         this.activitiesInput = ui.input.column('Activities', {table: this.tableInput.value!,
-          value: numericalColumns.length ? numericalColumns[0] : null,
+          value: ActivityCliffsEditor.getDefaultActivityColumn(numericalColumns),
           filter: (col: DG.Column) => numericalColumns.includes(col)} as ColumnInputOptions);
         Array.from(this.activitiesInput.root.children).forEach((it) => this.activitiesInputRoot.append(it));
       }
+    }
+
+    /** A column named like an activity or potency (not an id, such as ChEMBL's `activity_id`), else the first float
+     * one: integer columns are mostly ids, plate positions and counts. */
+    static getDefaultActivityColumn(columns: DG.Column[]): DG.Column | null {
+      return columns.find((col) => ACTIVITY_COLUMN_NAME.test(col.name) && !ID_COLUMN_NAME.test(col.name)) ??
+        columns.find((col) => col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.QNUM) ??
+        columns[0] ?? null;
     }
 
     public getEditor(): HTMLElement {

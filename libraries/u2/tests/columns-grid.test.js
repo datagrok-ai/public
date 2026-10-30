@@ -4,7 +4,7 @@
    shared FakeColumnGrid through the dg stub's live binding; the native popup stays the
    feature-absent backend (columns.test.js pins it under the ColumnGrid-less platform stub). */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -62,13 +62,13 @@ function open(input) {
 }
 
 function press(text) {
-  fire(host().querySelectorAll('button').find((b) => b.textContent === text), 'click');
+  fire([...host().querySelectorAll('button')].find((b) => b.textContent === text), 'click');
 }
 
 /** Every value write and who spoke it — `[value, isSystemWrite]`, the pickers convention. */
 function track(input) {
   const writes = [];
-  input.effect(() => writes.push([input.value.value, Input.isSystemWrite]));
+  input.effect(() => writes.push([input.value, Input.isSystemWrite]));
   writes.length = 0;
   return writes;
 }
@@ -89,7 +89,7 @@ selector('the platform grid is the popup: hosted with OK/CANCEL, no native list,
   assert.equal(cg.showSearch, true, 'search visible from open');
   assert.equal(document.activeElement, cg.search, 'and focused');
   assert.equal(host().querySelector('.u2-columns-list'), null, 'no native list rides along');
-  assert.deepEqual(host().querySelectorAll('.u2-columns-buttons button').map((b) => b.textContent),
+  assert.deepEqual([...host().querySelectorAll('.u2-columns-buttons button')].map((b) => b.textContent),
     ['OK', 'CANCEL'], 'the dialog buttons are the u2 row');
   input.dispose();
   assert.ok(cg.closed > 0, 'disposal closes the grid (the scope-owned teardown)');
@@ -140,7 +140,7 @@ selector('CANCEL discards the toggles — zero writes', () => {
   press('CANCEL');
   assert.equal(host(), null, 'CANCEL closes');
   assert.deepEqual(writes, [], 'and commits nothing');
-  assert.deepEqual(input.value.value, ['sex']);
+  assert.deepEqual(input.value, ['sex']);
   input.dispose();
 });
 
@@ -154,7 +154,7 @@ selector('Esc from the search box cancels even though the Dart box swallows it',
   assert.equal(host(), null, 'the capture-phase listener closes before the swallow');
   assert.ok(cg.closed > 0);
   assert.deepEqual(writes, [], 'no write');
-  assert.deepEqual(input.value.value, ['sex']);
+  assert.deepEqual(input.value, ['sex']);
   assert.equal(document.activeElement, control(input), 'focus returns to the editor');
   input.dispose();
 });
@@ -173,7 +173,7 @@ selector('an outside pointerdown and a second control click both cancel', () => 
   fire(control(input), 'click');
   assert.equal(host(), null, 'the second click closes it');
   assert.deepEqual(writes, [], 'both dismissals discard the pending checks');
-  assert.deepEqual(input.value.value, ['sex']);
+  assert.deepEqual(input.value, ['sex']);
   input.dispose();
 });
 

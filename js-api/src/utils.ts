@@ -7,7 +7,6 @@ import {IDartApi} from './api/grok_api.g';
 import * as rxjs from 'rxjs';
 import {StreamSubscription} from './events';
 import {Column, DataFrame} from './dataframe';
-import {TableView} from './views/view';
 import wu from 'wu';
 import { MapProxy } from './proxies';
 import {uuid4} from './u2core/uuid.js';
@@ -716,14 +715,6 @@ export namespace Test {
 
   export function getInputTestDataGeneratorByType(inputType: string) {
     return api.grok_Test_GetInputTestDataGeneratorByType(inputType);
-  }
-
-  export async function testViewerProperties(df: DataFrame, viewerType: ViewerType, properties: { [key: string]: any}): Promise<TableView> {
-    const tv = TableView.create(df, true);
-    const viewer = tv.addViewer(viewerType);
-    viewer.setOptions(properties);
-    await delay(1000);
-    return tv;
   }
 
   export async function testViewer(viewerType: ViewerType) {

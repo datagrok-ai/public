@@ -52,7 +52,7 @@ export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase>
     cddNode.expanded = true;
     handleInitialURL(cddNode, path);
   } else {
-    createInitialSatistics(initViewDiv).then((stats: HTMLDivElement) => {
+    createInitialSatistics(view, initViewDiv).then((stats: HTMLDivElement) => {
       const refreshButton = ui.button('Refresh', async () => {
         const func = DG.Func.find({ package: 'RevvitySignalsLink', name: "getLibraries" });
         if (func.length)

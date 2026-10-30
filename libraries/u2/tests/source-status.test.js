@@ -3,7 +3,7 @@
    becomes, the balloon an explicit Refresh answers with, and the panel's Status section, which is
    the one LIVE part of a panel whose form fields must keep refreshing in place. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from './dom-shim.js';

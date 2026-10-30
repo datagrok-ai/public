@@ -288,7 +288,7 @@ category('Flow: execution preview', () => {
       expect(view.outputPreview.panelState, 'hidden', 'no outputs yet → hidden');
       expect(view.outputPreview.isEnabled, true, 'the real editor view has the panel on');
     } finally {
-      await new Promise((r) => setTimeout(r, 120)); // let the deferred initEditor run before teardown
+      await (view as unknown as {editorReady: Promise<void>}).editorReady;
       ((view as any).flow)?.destroy?.();
       view.root.remove();
     }
@@ -301,7 +301,7 @@ category('Flow: execution preview', () => {
       embedded.enableOutputPanel();
       expect(embedded.outputPreview.isEnabled, true, 'Open In Editor re-enables it');
     } finally {
-      await new Promise((r) => setTimeout(r, 120));
+      await (embedded as unknown as {editorReady: Promise<void>}).editorReady;
       ((embedded as any).flow)?.destroy?.();
       embedded.root.remove();
     }
@@ -342,7 +342,7 @@ category('Flow: execution preview', () => {
     }});
     document.body.appendChild(host);
     try {
-      await new Promise((r) => setTimeout(r, 150)); // let the deferred initEditor build the canvas
+      await (view as unknown as {editorReady: Promise<void>}).editorReady;
       const canvas = view.root.querySelector('.funcflow-canvas-container') as HTMLElement;
       expect(!!canvas, true, 'canvas container exists');
       const style = getComputedStyle(canvas);

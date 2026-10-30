@@ -1,18 +1,18 @@
 import * as grok from 'datagrok-api/grok';
-import {test, category, awaitCheck, expect} from '@datagrok-libraries/test/src/test';
+import {test, category, waitUntil, expect} from '@datagrok-libraries/test/src/test';
 
 category('Chemspace', () => {
   const mol = 'Oc1ccccc1';
 
   async function expectMolCount(pane: HTMLElement, expected: number): Promise<void> {
     const count = (): number => pane.getElementsByClassName('chem-mol-box').length;
-    await awaitCheck(() => count() >= expected, `Molecules haven't been rendered`, 30000);
+    await waitUntil(() => count() >= expected, `Molecules haven't been rendered`, 30000);
     expect(count(), expected);
   }
 
   test('Prices panel', async () => {
     const widget = await grok.functions.call('Chemspace:pricesPanel', {'id': 'CSSS00102643788'});
-    await awaitCheck(() => widget.root.getElementsByClassName('chemspace-prices-grid').length > 0,
+    await waitUntil(() => widget.root.getElementsByClassName('chemspace-prices-grid').length > 0,
       'prices panel hasn\'t been created', 30000);
   });
 
@@ -29,7 +29,6 @@ category('Chemspace', () => {
 
   test('App', async () => {
     await grok.functions.call('Chemspace:app');
-    await awaitCheck(() => grok.shell.tv.dataFrame.rowCount > 0,
-      `Search hasn't been completed`, 30000);
+    await waitUntil(() => grok.shell.tv.dataFrame.rowCount > 0, `Search hasn't been completed`, 30000);
   }, {timeout: 60000});
 });

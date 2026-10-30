@@ -6,9 +6,12 @@ import {delay, map, mapTo, startWith, switchMap, tap} from 'rxjs/operators';
 import {RestrictionType} from '../data/common-types';
 import dayjs from 'dayjs';
 
+/** Mock run outputs, or a function of the step's io values returning them */
+export type MockResults = Record<string, any> | ((state: Record<string, any>) => Record<string, any>);
+
 export interface IRunnableWrapper {
   id?: string;
-  run(mockResults?: Record<string, any>, mockDelay?: number): Observable<any>;
+  run(mockResults?: MockResults, mockDelay?: number): Observable<any>;
 }
 
 export interface IFuncCallWrapper {
@@ -149,11 +152,13 @@ export class FuncCallMockAdapter extends MemoryStore implements IFuncCallAdapter
     super(statesDescriptions, isReadonly);
   }
 
-  run(outputs?: Record<string, any>, delayTime = 0) {
+  run(outputs?: MockResults, delayTime = 0) {
     return of(null).pipe(
       delay(delayTime),
       tap(() => {
-        for (const [k, v] of Object.entries(outputs ?? {}))
+        const results = typeof outputs === 'function' ?
+          outputs(Object.fromEntries(this.getStateNames().map((name) => [name, this.getState(name)]))) : outputs;
+        for (const [k, v] of Object.entries(results ?? {}))
           this.setState(k, v);
       }),
     );
