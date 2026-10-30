@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1121](https://github.com/datagrok-ai/core/issues/1121): MPO: Fixed data-driven training failing with "missing a grid in the table view" after the Training Data panel was closed
 * [core#411](https://github.com/datagrok-ai/core/issues/411): MMP and SAR Matrix: Accept the activities and R-group columns as a column list, which is what the platform passes for `column_list`
 * Gasteiger Partial Charges: Fixed the panel showing no picture in RDKit mode: the script's graphics came as the element the platform shows them in and were read as the PNG's base64
 * Chemical Engine: Fixed Crux mode dropping a column's empty cells: To InChI and To InChI Keys failed on a column with empty molecules ("Row counts don't match"), and RDKit's InChIs of the malformed molecules landed on other rows. Every column job on the Crux workers now keeps a row for every cell, an empty one empty, with no RDKit fallback for it
