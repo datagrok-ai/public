@@ -90,6 +90,14 @@ Features: `undo-redo.feature`, `change-type.feature`, `column-properties.feature
   General and Actions; Actions has Rename... and Clone). Is there meant to be a Table Properties editor? Not
   claimed.
 
+- **Ctrl+Z after closing another view reopens that view, ahead of this view's own change: current behaviour,
+  not a bug** ([core#1234](https://github.com/datagrok-ai/core/issues/1234)). In table view "undo" remove a column,
+  open and close a second table's view, then Ctrl+Z in "undo": the closed view comes back first, and a second
+  Ctrl+Z restores the column. Davit Rizhinashvili, 30 Oct: undo is global, and table views and view commands are
+  not scoped yet; this is the expected behaviour today, scoping to the table view is planned. The help's "never one
+  you performed somewhere else" (`datagrok/navigation/undo.md`) overstates it. Not claimed either way until the
+  scoping lands; `undo-redo.feature` switches views without closing one, so it does not depend on it.
+
 ### Findings 30 Oct 2026 (column operations)
 
 - **Edit > Add New Column: Ctrl+Z does not remove the added column** ([public#4461](https://github.com/datagrok-ai/public/issues/4461)). Steps: open a table with columns
@@ -133,14 +141,6 @@ Features: `undo-redo.feature`, `change-type.feature`, `column-properties.feature
     Then 1 row should be selected
     And all rows where "name" is "d" should be selected
   ```
-- **Ctrl+Z after closing another view reopens that view, ahead of this view's own change** ([core#1234](https://github.com/datagrok-ai/core/issues/1234)). Measured: in table
-  view "undo" remove column city (header menu > Remove); open a second table "other"; close the "other" view;
-  switch to "undo", click a cell, press Ctrl+Z → the "other" view is reopened and becomes current
-  (`grok.shell.onUndo` reports "Close other"); city is still missing until a second Ctrl+Z from "undo". The
-  help (`datagrok/navigation/undo.md`) says both "Ctrl+Z reverses the last operation on the current table or
-  view, never one you performed somewhere else" and that closing a view can be undone — which can only happen
-  from another view. Which wins when the current view has its own record? `undo-redo.feature` switches views
-  without closing one, so it does not depend on the answer.
 
 ## Shortcuts, Column Manager, Files, Plugins
 
