@@ -1,0 +1,56 @@
+{
+ "version": "tumour_density_v0",
+ "unit": "mg per mm3 of caliper volume",
+ "definition": "an excised tumour's mass over its last caliper volume (V = L W^2 / 2 mostly), tumours of 200 mm3 or more; per line the median over papers of each paper's median",
+ "lines": {
+  "MC38": {
+   "density": 0.749,
+   "papers": 8,
+   "animals": 472,
+   "range": [
+    0.44,
+    1.15
+   ]
+  },
+  "CT26": {
+   "density": 0.916,
+   "papers": 5,
+   "animals": 99,
+   "range": [
+    0.6,
+    1.02
+   ]
+  },
+  "B16F10": {
+   "density": 1.074,
+   "papers": 5,
+   "animals": 119,
+   "range": [
+    0.88,
+    1.7
+   ]
+  }
+ },
+ "all": {
+  "density": 0.934,
+  "papers": 24,
+  "animals": 873,
+  "range": [
+   0.44,
+   1.7
+  ]
+ },
+ "spread_log": {
+  "between_labs": 0.327,
+  "between_groups": 0.166,
+  "between_animals": 0.245,
+  "caliper": 0.133,
+  "note": "sd of log(mass / volume): between papers (paper medians), between groups of one experiment and between animals of one group (net of the caliper error); the within-group size slope 0.69 varies between papers and is not used"
+ },
+ "provenance": {
+  "pairs": 873,
+  "papers": 18,
+  "tier": "A",
+  "data": "preclinical bundle data/curated/tumour_mass (not distributed)"
+ }
+}
