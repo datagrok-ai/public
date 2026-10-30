@@ -65,7 +65,7 @@ Feature: Pie chart edge cases — empty and one-row tables, a click under a Filt
     Then all rows should pass the filter
     And no errors should have been logged
 
-  Scenario Outline: An angle column holding <value> is refused with a message, as negative values are
+  Scenario Outline: An angle column holding <value> leaves that value out, as an empty one
     Given user opens demog-1000 dataset
     When user adds a pie chart viewer with:
       | Category                | RACE   |
@@ -74,13 +74,12 @@ Feature: Pie chart edge cases — empty and one-row tables, a click under a Filt
     Then the "slices" reading of pie chart viewer should be 4
     And the "error" reading of pie chart viewer should be ""
     When user sets "WEIGHT" column in row 1 to "<value>"
-    Then the "error" reading of pie chart viewer should not be ""
-    And the "slices" reading of pie chart viewer should be 0
-    And pie chart viewer should not have a "pie" area
+    Then the "error" reading of pie chart viewer should be ""
+    And the "slices" reading of pie chart viewer should be 4
+    And pie chart viewer should have a "pie" area
     And no errors should have been logged
 
-    @known-failure:77 @ticket-pending
-    Examples: The pie draws with no message (`_aggregate` checks only for negative and all-zero values)
+    Examples:
       | value     |
       | NaN       |
       | Infinity  |
@@ -96,7 +95,7 @@ Feature: Pie chart edge cases — empty and one-row tables, a click under a Filt
     Then "Start Angle" property of pie chart viewer should be "0"
     And no errors should have been logged
 
-    @known-failure:96 @realizes:core#1200
+    @known-failure:95 @realizes:core#1200
     Examples: The value is written into the property although the input marks it invalid
       | typed |
       | -30   |

@@ -5,9 +5,9 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
   rows, none with AGE between 500 and 600. The Charts viewers' rows are in packages/Charts/bdd.
   - No rows: with every row filtered out a viewer shows no row, draws nothing, reports no error and
     shows no message; the rows come back with the filter.
-  - A column removed: a column a viewer uses for an encoding (color, size, lanes, stack, category)
-    leaves the viewer's settings and nothing is logged. A viewer may pick another column in its place
-    (the box plot picks another category).
+  - A column removed: a column a viewer uses for an encoding (color, size, lanes, category) leaves
+    the viewer's settings and nothing is logged. A viewer may pick another column in its place (the
+    box plot picks another category). The bar chart's Stack is in bar-chart-edge-cases.feature.
   - A column renamed: every setting that named the column follows the new name, a Filter formula
     included.
   - A layout naming a missing column: the rest of the layout is applied, the viewer draws without
@@ -71,11 +71,6 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
       | tree map     | sizeColumnName      | WEIGHT |
       | box plot     | category1ColumnName | SEX    |
 
-    @known-failure:62 @ticket-pending
-    Examples: The bar chart stops stacking but keeps the removed column's name in Stack
-      | viewer    | property        | column |
-      | bar chart | stackColumnName | SEX    |
-
   Scenario Outline: The <column> column renamed is followed by the <property> setting of the <viewer>
     When user adds a <viewer> viewer with:
       | <property> | <value> |
@@ -94,7 +89,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
       | tree map     | splitByColumnNames   | RACE, SEX           | SEX    | GENDER    | RACE, GENDER         |
       | trellis plot | yColumnNames         | RACE                | RACE   | ORIGIN    | ORIGIN               |
 
-    @known-failure:83 @realizes:core#1213
+    @known-failure:78 @realizes:core#1213
     Examples: A Filter formula keeps the old name: the rename handler renames column settings only (`DataFrameViewer._renameColumnInLook`)
       | viewer       | property | value       | column | new name | renamed       |
       | scatter plot | filter   | ${AGE} > 44 | AGE    | YEARS    | ${YEARS} > 44 |
@@ -116,7 +111,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
       | pc plot      | columnNames          | AGE, HEIGHT, WEIGHT | HEIGHT | AGE, HEIGHT, WEIGHT |
       | tree map     | splitByColumnNames   | RACE, SEX           | SEX    | RACE, SEX           |
 
-    @known-failure:111 @realizes:public#4452
+    @known-failure:106 @realizes:public#4452
     Examples: The forms viewer takes the removed column's name back into its fields and throws a TypeError on every render
       | viewer       | property             | value               | column | left                |
       | forms        | fields               | AGE, HEIGHT, SEX    | HEIGHT | AGE, HEIGHT, SEX    |
@@ -136,7 +131,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
       | viewer    | property        | value | area      |
       | bar chart | splitColumnName | RACE  | bar Asian |
 
-    @known-failure:132 @realizes:core#233
+    @known-failure:127 @realizes:core#233
     Examples: The calendar leaves the table filtered until something else asks for a refilter
       | viewer   | property | value  | area           |
       | calendar | onClick  | Filter | month 1990-01  |
@@ -151,7 +146,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     Then all rows should pass the filter
     And no errors should have been logged
 
-    @known-failure:151 @realizes:core#1174
+    @known-failure:146 @realizes:core#1174
     Examples: The removal does not refilter the table; the rows come back on the next refilter
       | viewer    | property             | value              | area                            | column |
       | bar chart | splitColumnName      | RACE               | bar Asian                       | RACE   |
@@ -165,7 +160,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     Then "<caption>" property of <viewer> viewer should be "<kept>"
     And no errors should have been logged
 
-    @known-failure:165 @realizes:core#1200
+    @known-failure:160 @realizes:core#1200
     Examples: The value is written into the property although the input marks it invalid
       | viewer       | category | caption            | typed | kept |
       | histogram    | X Axis   | Bins               | 201   | 20   |
@@ -178,7 +173,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     Then "<property>" property of <viewer> viewer should be "<kept>"
     And no errors should have been logged
 
-    @known-failure:178 @realizes:core#1200
+    @known-failure:173 @realizes:core#1200
     Examples: The value is written into the property
       | viewer       | property         | set | kept |
       | histogram    | bins             | 201 | 20   |
@@ -199,7 +194,7 @@ Feature: Viewer edge cases shared by every viewer: no rows, a column removed or 
     And the "<shown>" reading of <viewer> viewer should be 3
     And the "<reading>" reading of <viewer> viewer should contain "(empty)"
 
-    @known-failure:200 @ticket-pending
+    @known-failure:195 @realizes:core#1217
     Examples: The tile viewer shows the empty value as a lane with no name ("x, y, ")
       | viewer      | property        | shown | reading    |
       | tile viewer | lanesColumnName | tiles | lane names |

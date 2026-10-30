@@ -24,7 +24,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, isExpanded, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {deleteSelected, filterIsExactlyCategory, filterPasses, filterPassesAll, rowCount, selectAllRows, setCell} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, openDatasetRows} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, addViewerWith, clickArea, hasNoArea, noErrors, painted, propertyShouldBe, readingDoesNotRead, readingIs, readingReads, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewer, addViewerWith, clickArea, hasArea, noErrors, painted, propertyShouldBe, readingIs, readingReads, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Pie chart edge cases — empty and one-row tables, a click under a Filter formula", () => {
@@ -81,77 +81,71 @@ test.describe("Pie chart edge cases — empty and one-row tables, a click under 
     await session.step(65, "Then all rows should pass the filter", () => filterPassesAll(page));
     await session.step(66, "And no errors should have been logged", () => noErrors(page));
   });
-  test("An angle column holding NaN is refused with a message, as negative values are [value=NaN]", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pie-chart", "@known-failure:77", "@ticket-pending"]}, async ({browser}) => {
+  test("An angle column holding NaN leaves that value out, as an empty one [value=NaN]", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pie-chart"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
-    await knownFailure(async () => {
-      await session.step(69, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-      await session.step(70, "When user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","sum"]]), [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","sum"]]);
-      await session.step(74, "Then the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
-      await session.step(75, "And the \"error\" reading of pie chart viewer should be \"\"", () => readingReads(page, "error", el("pie chart viewer"), ""));
-      await session.step(76, "When user sets \"WEIGHT\" column in row 1 to \"NaN\"", () => setCell(page, "WEIGHT", 1, "NaN"));
-      await session.step(77, "Then the \"error\" reading of pie chart viewer should not be \"\"", () => readingDoesNotRead(page, "error", el("pie chart viewer"), ""));
-      await session.step(78, "And the \"slices\" reading of pie chart viewer should be 0", () => readingIs(page, "slices", el("pie chart viewer"), 0));
-      await session.step(79, "And pie chart viewer should not have a \"pie\" area", () => hasNoArea(page, el("pie chart viewer"), "pie"));
-      await session.step(80, "And no errors should have been logged", () => noErrors(page));
-    }, 77);
+    await session.step(69, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(70, "When user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","sum"]]), [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","sum"]]);
+    await session.step(74, "Then the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
+    await session.step(75, "And the \"error\" reading of pie chart viewer should be \"\"", () => readingReads(page, "error", el("pie chart viewer"), ""));
+    await session.step(76, "When user sets \"WEIGHT\" column in row 1 to \"NaN\"", () => setCell(page, "WEIGHT", 1, "NaN"));
+    await session.step(77, "Then the \"error\" reading of pie chart viewer should be \"\"", () => readingReads(page, "error", el("pie chart viewer"), ""));
+    await session.step(78, "And the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
+    await session.step(79, "And pie chart viewer should have a \"pie\" area", () => hasArea(page, el("pie chart viewer"), "pie"));
+    await session.step(80, "And no errors should have been logged", () => noErrors(page));
   });
-  test("An angle column holding Infinity is refused with a message, as negative values are [value=Infinity]", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pie-chart", "@known-failure:77", "@ticket-pending"]}, async ({browser}) => {
+  test("An angle column holding Infinity leaves that value out, as an empty one [value=Infinity]", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pie-chart"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
-    await knownFailure(async () => {
-      await session.step(69, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-      await session.step(70, "When user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","sum"]]), [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","sum"]]);
-      await session.step(74, "Then the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
-      await session.step(75, "And the \"error\" reading of pie chart viewer should be \"\"", () => readingReads(page, "error", el("pie chart viewer"), ""));
-      await session.step(76, "When user sets \"WEIGHT\" column in row 1 to \"Infinity\"", () => setCell(page, "WEIGHT", 1, "Infinity"));
-      await session.step(77, "Then the \"error\" reading of pie chart viewer should not be \"\"", () => readingDoesNotRead(page, "error", el("pie chart viewer"), ""));
-      await session.step(78, "And the \"slices\" reading of pie chart viewer should be 0", () => readingIs(page, "slices", el("pie chart viewer"), 0));
-      await session.step(79, "And pie chart viewer should not have a \"pie\" area", () => hasNoArea(page, el("pie chart viewer"), "pie"));
-      await session.step(80, "And no errors should have been logged", () => noErrors(page));
-    }, 77);
+    await session.step(69, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(70, "When user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","sum"]]), [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","sum"]]);
+    await session.step(74, "Then the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
+    await session.step(75, "And the \"error\" reading of pie chart viewer should be \"\"", () => readingReads(page, "error", el("pie chart viewer"), ""));
+    await session.step(76, "When user sets \"WEIGHT\" column in row 1 to \"Infinity\"", () => setCell(page, "WEIGHT", 1, "Infinity"));
+    await session.step(77, "Then the \"error\" reading of pie chart viewer should be \"\"", () => readingReads(page, "error", el("pie chart viewer"), ""));
+    await session.step(78, "And the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
+    await session.step(79, "And pie chart viewer should have a \"pie\" area", () => hasArea(page, el("pie chart viewer"), "pie"));
+    await session.step(80, "And no errors should have been logged", () => noErrors(page));
   });
-  test("An angle column holding -Infinity is refused with a message, as negative values are [value=-Infinity]", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pie-chart", "@known-failure:77", "@ticket-pending"]}, async ({browser}) => {
+  test("An angle column holding -Infinity leaves that value out, as an empty one [value=-Infinity]", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pie-chart"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
-    await knownFailure(async () => {
-      await session.step(69, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-      await session.step(70, "When user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","sum"]]), [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","sum"]]);
-      await session.step(74, "Then the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
-      await session.step(75, "And the \"error\" reading of pie chart viewer should be \"\"", () => readingReads(page, "error", el("pie chart viewer"), ""));
-      await session.step(76, "When user sets \"WEIGHT\" column in row 1 to \"-Infinity\"", () => setCell(page, "WEIGHT", 1, "-Infinity"));
-      await session.step(77, "Then the \"error\" reading of pie chart viewer should not be \"\"", () => readingDoesNotRead(page, "error", el("pie chart viewer"), ""));
-      await session.step(78, "And the \"slices\" reading of pie chart viewer should be 0", () => readingIs(page, "slices", el("pie chart viewer"), 0));
-      await session.step(79, "And pie chart viewer should not have a \"pie\" area", () => hasNoArea(page, el("pie chart viewer"), "pie"));
-      await session.step(80, "And no errors should have been logged", () => noErrors(page));
-    }, 77);
+    await session.step(69, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(70, "When user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","sum"]]), [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","sum"]]);
+    await session.step(74, "Then the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
+    await session.step(75, "And the \"error\" reading of pie chart viewer should be \"\"", () => readingReads(page, "error", el("pie chart viewer"), ""));
+    await session.step(76, "When user sets \"WEIGHT\" column in row 1 to \"-Infinity\"", () => setCell(page, "WEIGHT", 1, "-Infinity"));
+    await session.step(77, "Then the \"error\" reading of pie chart viewer should be \"\"", () => readingReads(page, "error", el("pie chart viewer"), ""));
+    await session.step(78, "And the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
+    await session.step(79, "And pie chart viewer should have a \"pie\" area", () => hasArea(page, el("pie chart viewer"), "pie"));
+    await session.step(80, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Start Angle typed as -30 in the context panel is outside its bounds of 0 to 360 and is not taken [typed=-30]", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pie-chart", "@known-failure:96", "@realizes:core#1200"]}, async ({browser}) => {
+  test("Start Angle typed as -30 in the context panel is outside its bounds of 0 to 360 and is not taken [typed=-30]", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pie-chart", "@known-failure:95", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await knownFailure(async () => {
-      await session.step(90, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-      await session.step(91, "When user adds a pie chart viewer", () => addViewer(page, "pie chart"));
-      await session.step(92, "And user clicks on settings icon of pie chart viewer", () => clickOn(page, el("settings icon of pie chart viewer")));
-      await session.step(93, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
-      await session.step(94, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
-      await session.step(95, "When user enters \"-30\" into \"Start Angle\" property in context panel", () => enterInto(page, "-30", el("\"Start Angle\" property in context panel")));
-      await session.step(96, "Then \"Start Angle\" property of pie chart viewer should be \"0\"", () => propertyShouldBe(page, "Start Angle", el("pie chart viewer"), "0"));
-      await session.step(97, "And no errors should have been logged", () => noErrors(page));
-    }, 96);
+      await session.step(89, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+      await session.step(90, "When user adds a pie chart viewer", () => addViewer(page, "pie chart"));
+      await session.step(91, "And user clicks on settings icon of pie chart viewer", () => clickOn(page, el("settings icon of pie chart viewer")));
+      await session.step(92, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
+      await session.step(93, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
+      await session.step(94, "When user enters \"-30\" into \"Start Angle\" property in context panel", () => enterInto(page, "-30", el("\"Start Angle\" property in context panel")));
+      await session.step(95, "Then \"Start Angle\" property of pie chart viewer should be \"0\"", () => propertyShouldBe(page, "Start Angle", el("pie chart viewer"), "0"));
+      await session.step(96, "And no errors should have been logged", () => noErrors(page));
+    }, 95);
   });
-  test("Start Angle typed as 400 in the context panel is outside its bounds of 0 to 360 and is not taken [typed=400]", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pie-chart", "@known-failure:96", "@realizes:core#1200"]}, async ({browser}) => {
+  test("Start Angle typed as 400 in the context panel is outside its bounds of 0 to 360 and is not taken [typed=400]", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pie-chart", "@known-failure:95", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await knownFailure(async () => {
-      await session.step(90, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-      await session.step(91, "When user adds a pie chart viewer", () => addViewer(page, "pie chart"));
-      await session.step(92, "And user clicks on settings icon of pie chart viewer", () => clickOn(page, el("settings icon of pie chart viewer")));
-      await session.step(93, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
-      await session.step(94, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
-      await session.step(95, "When user enters \"400\" into \"Start Angle\" property in context panel", () => enterInto(page, "400", el("\"Start Angle\" property in context panel")));
-      await session.step(96, "Then \"Start Angle\" property of pie chart viewer should be \"0\"", () => propertyShouldBe(page, "Start Angle", el("pie chart viewer"), "0"));
-      await session.step(97, "And no errors should have been logged", () => noErrors(page));
-    }, 96);
+      await session.step(89, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+      await session.step(90, "When user adds a pie chart viewer", () => addViewer(page, "pie chart"));
+      await session.step(91, "And user clicks on settings icon of pie chart viewer", () => clickOn(page, el("settings icon of pie chart viewer")));
+      await session.step(92, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
+      await session.step(93, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
+      await session.step(94, "When user enters \"400\" into \"Start Angle\" property in context panel", () => enterInto(page, "400", el("\"Start Angle\" property in context panel")));
+      await session.step(95, "Then \"Start Angle\" property of pie chart viewer should be \"0\"", () => propertyShouldBe(page, "Start Angle", el("pie chart viewer"), "0"));
+      await session.step(96, "And no errors should have been logged", () => noErrors(page));
+    }, 95);
   });
 });

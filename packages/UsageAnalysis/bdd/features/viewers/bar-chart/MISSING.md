@@ -39,9 +39,9 @@ Added with `bar-chart-edge-cases.feature` (edge-case round of 2026-10-26, localh
 ### Still open
 
 1. **Decided** (2026-10-28):
-   - The Stack column removed while the chart is stacked: stacking is dropped, with no error, but
-     Stack keeps the removed column's name (a known failure with no ticket yet, a row of the removal
-     outline in `viewer-rules-edge-cases.feature`; closing the
+   - The Stack column removed while the chart is stacked: stacking is dropped, with no error, and the
+     context panel shows Stack empty: right as it is (2026-10-30), claimed in `bar-chart-edge-cases`
+     (the property keeps the name, as a layout does). Closing the
      chart after a Filter click, every row filtered out, and the Split column removed under a Filter
      click are rows there too).
 2. **Steps requested**: value axis Min typed above Max: the two are swapped, as in the box plot

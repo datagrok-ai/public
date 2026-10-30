@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/filter-panel/filter-panel-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.filters, core#1134, core#1174]
+sub_features_covered: [viewers.filters, core#1134, core#1174, core#1223, core#1224]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -23,10 +23,10 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {expandHierarchicalRow, hierarchicalListsRow, linkTables} from '../../../bindings/filter-panel.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, hoverOver, pressKey, selectIn, shouldBe, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {configureHierarchical, filterIsExactlyCategory, filterPanelCount, filterPasses, filterPassesAll, filterPassesFewer, openEmptyFilterPanel, removeColumn, tableFilterCount} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {addCalculated, configureHierarchical, filterIsExactlyCategory, filterPanelCount, filterPasses, filterPassesAll, filterPassesFewer, openEmptyFilterPanel, removeColumn, tableFilterCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {closeCurrentView, openDataset, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addCardFor, enterCardBound, forgetSavedState, panelHasNoCardOfType, pickCardIndicatorMenu, pickPanelMenu, typeIntoCardSearch} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
-import {clickArea, closeContextMenu, loadLayout, menuListsDisabled, noErrors, pickFromAreaContextMenu, readingReads, saveLayout} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {clickArea, closeContextMenu, loadLayout, menuListsEnabled, noErrors, pickFromAreaContextMenu, readingReads, saveLayout} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {openViewerMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
@@ -233,7 +233,7 @@ test.describe("Filter panel edge cases", () => {
     await session.step(151, "And the filter should pass exactly the rows where \"Name\" is \"a[b\"", () => filterIsExactlyCategory(page, "Name", "a[b"));
     await session.step(152, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Removing the column of a hierarchical card's middle level drops that level", {tag: ["@viewers", "@realizes:viewers.filters", "@edge-cases", "@known-failure:168", "@ticket-pending"]}, async ({browser}) => {
+  test("Removing the column of a hierarchical card's middle level drops that level", {tag: ["@viewers", "@realizes:viewers.filters", "@edge-cases", "@known-failure:168", "@realizes:core#1223"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
     await session.step(18, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -251,7 +251,7 @@ test.describe("Filter panel edge cases", () => {
       await session.step(173, "And no errors should have been logged", () => noErrors(page));
     }, 168);
   });
-  test("A layout naming a removed level column brings the hierarchical card back without that level", {tag: ["@viewers", "@realizes:viewers.filters", "@edge-cases", "@known-failure:184", "@ticket-pending"]}, async ({browser}) => {
+  test("A layout naming a removed level column brings the hierarchical card back without that level", {tag: ["@viewers", "@realizes:viewers.filters", "@edge-cases", "@known-failure:184", "@realizes:core#1223"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
     await session.step(18, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -270,7 +270,7 @@ test.describe("Filter panel edge cases", () => {
       await session.step(188, "And no errors should have been logged", () => noErrors(page));
     }, 184);
   });
-  test("Saving a filter state under a name already taken asks before overwriting it", {tag: ["@viewers", "@realizes:viewers.filters", "@edge-cases", "@known-failure:206", "@ticket-pending"]}, async ({browser}) => {
+  test("Saving a filter state under a name already taken asks before overwriting it", {tag: ["@viewers", "@realizes:viewers.filters", "@edge-cases", "@known-failure:206", "@realizes:core#1224"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
     await session.step(18, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -297,34 +297,38 @@ test.describe("Filter panel edge cases", () => {
       await session.step(211, "And no errors should have been logged", () => noErrors(page));
     }, 206);
   });
-  test("Combined Boolean is disabled in the Add Filter menu of a table with no boolean column", {tag: ["@viewers", "@realizes:viewers.filters", "@edge-cases", "@known-failure:222", "@ticket-pending"]}, async ({browser}) => {
+  test("A Combined Boolean card added to a table with no boolean column picks up a boolean column added later", {tag: ["@viewers", "@realizes:viewers.filters", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
     await session.step(18, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(19, "And user opens an empty filter panel", () => openEmptyFilterPanel(page));
-    await knownFailure(async () => {
-      await session.step(216, "Given user opens a table \"no-flags\" with:", () => openTableOf(page, "no-flags", [["Name","Value"],["a","1"],["b","2"]]), [["Name","Value"],["a","1"],["b","2"]]);
-      await session.step(220, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
-      await session.step(221, "And user opens the viewer menu of filter panel", () => openViewerMenu(page, el("filter panel")));
-      await session.step(222, "Then the open menu should list \"Add Filter > Combined Boolean\" as disabled", () => menuListsDisabled(page, "Add Filter > Combined Boolean"));
-      await session.step(223, "When user closes the context menu", () => closeContextMenu(page));
-      await session.step(224, "Then no errors should have been logged", () => noErrors(page));
-    }, 222);
+    await session.step(215, "Given user opens a table \"no-flags\" with:", () => openTableOf(page, "no-flags", [["Name","Value"],["a","1"],["b","2"]]), [["Name","Value"],["a","1"],["b","2"]]);
+    await session.step(219, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
+    await session.step(220, "And user opens the viewer menu of filter panel", () => openViewerMenu(page, el("filter panel")));
+    await session.step(221, "Then the open menu should list \"Add Filter > Combined Boolean\" as enabled", () => menuListsEnabled(page, "Add Filter > Combined Boolean"));
+    await session.step(222, "When user closes the context menu", () => closeContextMenu(page));
+    await session.step(223, "And user picks \"Add Filter | Combined Boolean\" from the filter panel menu", () => pickPanelMenu(page, "Add Filter | Combined Boolean"));
+    await session.step(224, "Then \"Flags\" filter card should be visible", () => shouldBe(page, el("\"Flags\" filter card"), "visible"));
+    await session.step(225, "And the filter panel should have 1 filter", () => filterPanelCount(page, 1));
+    await session.step(226, "When user adds a calculated column \"BIG\" with formula \"${Value} > 1\"", () => addCalculated(page, "BIG", "${Value} > 1"));
+    await session.step(227, "And user clicks on the \"category BIG of Flags\" area of filter panel", () => clickArea(page, "category BIG of Flags", el("filter panel")));
+    await session.step(228, "Then 1 row should pass the filter", () => filterPasses(page, 1));
+    await session.step(229, "And no errors should have been logged", () => noErrors(page));
   });
   test("Closing the view of a table whose filter narrows a linked table releases the linked table's filter", {tag: ["@viewers", "@realizes:viewers.filters", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
     await session.step(18, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(19, "And user opens an empty filter panel", () => openEmptyFilterPanel(page));
-    await session.step(228, "Given user opens a table \"races\" with:", () => openTableOf(page, "races", [["RACE"],["Asian"],["Black"],["Caucasian"],["Other"]]), [["RACE"],["Asian"],["Black"],["Caucasian"],["Other"]]);
-    await session.step(234, "And the \"races\" table is linked to the \"demog-1000\" table by \"RACE\" to \"RACE\" as \"filter to filter\"", () => linkTables(page, "races", "demog-1000", "RACE", "RACE", "filter to filter"));
-    await session.step(235, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
-    await session.step(236, "And user adds a card for \"RACE\" to the filter panel", () => addCardFor(page, "RACE"));
-    await session.step(237, "And user clicks on the \"category Asian of RACE\" area of filter panel", () => clickArea(page, "category Asian of RACE", el("filter panel")));
-    await session.step(238, "Then 1 row should pass the filter", () => filterPasses(page, 1));
-    await session.step(239, "And 15 rows of table \"demog-1000\" should pass the filter", () => tableFilterCount(page, 15, "demog-1000"));
-    await session.step(240, "When user closes the current view", () => closeCurrentView(page));
-    await session.step(241, "Then 1000 rows of table \"demog-1000\" should pass the filter", () => tableFilterCount(page, 1000, "demog-1000"));
-    await session.step(242, "And no errors should have been logged", () => noErrors(page));
+    await session.step(233, "Given user opens a table \"races\" with:", () => openTableOf(page, "races", [["RACE"],["Asian"],["Black"],["Caucasian"],["Other"]]), [["RACE"],["Asian"],["Black"],["Caucasian"],["Other"]]);
+    await session.step(239, "And the \"races\" table is linked to the \"demog-1000\" table by \"RACE\" to \"RACE\" as \"filter to filter\"", () => linkTables(page, "races", "demog-1000", "RACE", "RACE", "filter to filter"));
+    await session.step(240, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
+    await session.step(241, "And user adds a card for \"RACE\" to the filter panel", () => addCardFor(page, "RACE"));
+    await session.step(242, "And user clicks on the \"category Asian of RACE\" area of filter panel", () => clickArea(page, "category Asian of RACE", el("filter panel")));
+    await session.step(243, "Then 1 row should pass the filter", () => filterPasses(page, 1));
+    await session.step(244, "And 15 rows of table \"demog-1000\" should pass the filter", () => tableFilterCount(page, 15, "demog-1000"));
+    await session.step(245, "When user closes the current view", () => closeCurrentView(page));
+    await session.step(246, "Then 1000 rows of table \"demog-1000\" should pass the filter", () => tableFilterCount(page, 1000, "demog-1000"));
+    await session.step(247, "And no errors should have been logged", () => noErrors(page));
   });
 });

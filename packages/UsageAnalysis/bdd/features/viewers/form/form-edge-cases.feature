@@ -62,7 +62,7 @@ Feature: Form viewer edge cases
     And form viewer should report no error
     And no errors should have been logged
 
-  @edge-cases @known-failure:70 @ticket-pending
+  @edge-cases @known-failure:70 @realizes:core#1214
   Scenario: A column removed from the table takes its field off a form built from chosen columns
     Given user sets "columnNames" property of form viewer to "AGE, HEIGHT, WEIGHT"
     Then the "fields shown" reading of form viewer should be 3

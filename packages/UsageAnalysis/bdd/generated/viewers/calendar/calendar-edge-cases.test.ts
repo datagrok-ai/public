@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/calendar/calendar-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.calendar]
+sub_features_covered: [viewers.calendar, core#1221, core#1222]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -43,7 +43,7 @@ test.describe("Calendar edge cases", () => {
     await session.step(20, "And calendar viewer should not have a \"busiest day\" area", () => hasNoArea(page, el("calendar viewer"), "busiest day"));
     await session.step(21, "And no errors should have been logged", () => noErrors(page));
   });
-  test("The calendar's click filter stays when a category is toggled in the filter panel, and goes when On Click is switched to Select", {tag: ["@viewers", "@realizes:viewers.calendar", "@edge-cases", "@known-failure:33", "@ticket-pending"]}, async ({browser}) => {
+  test("The calendar's click filter stays when a category is toggled in the filter panel, and goes when On Click is switched to Select", {tag: ["@viewers", "@realizes:viewers.calendar", "@edge-cases", "@known-failure:33", "@realizes:core#1221"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(9, "Given user is logged in", () => loggedIn(page));
     await session.step(10, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -62,7 +62,7 @@ test.describe("Calendar edge cases", () => {
       await session.step(36, "And no errors should have been logged", () => noErrors(page));
     }, 33);
   });
-  test("A calendar over a date column whose values are all empty shows a \"No data\" message instead of a grid", {tag: ["@viewers", "@realizes:viewers.calendar", "@edge-cases", "@known-failure:51", "@ticket-pending"]}, async ({browser}) => {
+  test("A calendar over a date column whose values are all empty shows a \"No data\" message instead of a grid", {tag: ["@viewers", "@realizes:viewers.calendar", "@edge-cases", "@known-failure:51", "@realizes:core#1222"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(9, "Given user is logged in", () => loggedIn(page));
     await session.step(10, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -81,7 +81,7 @@ test.describe("Calendar edge cases", () => {
       await session.step(53, "And no errors should have been logged", () => noErrors(page));
     }, 51);
   });
-  test("Removing the date column of an open calendar shows a \"No data\" message instead of a grid", {tag: ["@viewers", "@realizes:viewers.calendar", "@edge-cases", "@known-failure:59", "@ticket-pending"]}, async ({browser}) => {
+  test("Removing the date column of an open calendar shows a \"No data\" message instead of a grid", {tag: ["@viewers", "@realizes:viewers.calendar", "@edge-cases", "@known-failure:59", "@realizes:core#1222"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(9, "Given user is logged in", () => loggedIn(page));
     await session.step(10, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));

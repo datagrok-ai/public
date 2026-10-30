@@ -74,7 +74,7 @@ Feature: Statistics edge cases: no rows counted, one row, columns added, removed
     And statistics viewer should not have a "row AGE" area
     And no errors should have been logged
 
-  @known-failure:85 @ticket-pending
+  @known-failure:85 @realizes:core#1125
   Scenario: A numeric column with no values has empty numeric statistics, not 0
     Today avg is empty but stdev reads 0.00.
     When user adds a calculated column "EMPTY" with formula "if(${AGE} > 1000, ${AGE}, null)"

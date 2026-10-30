@@ -20,7 +20,7 @@ Feature: Calendar edge cases
     And calendar viewer should not have a "busiest day" area
     And no errors should have been logged
 
-  @edge-cases @known-failure:33 @ticket-pending
+  @edge-cases @known-failure:33 @realizes:core#1221
   Scenario: The calendar's click filter stays when a category is toggled in the filter panel, and goes when On Click is switched to Select
     The category click releases the calendar's filter: 553 rows pass (every F row), not the 19 F rows
     of January 1990.
@@ -35,7 +35,7 @@ Feature: Calendar edge cases
     Then 553 rows should pass the filter
     And no errors should have been logged
 
-  @edge-cases @known-failure:51 @ticket-pending
+  @edge-cases @known-failure:51 @realizes:core#1222
   Scenario: A calendar over a date column whose values are all empty shows a "No data" message instead of a grid
     The calendar reports no message.
     Given user opens a table "empty-dates" with:
@@ -52,7 +52,7 @@ Feature: Calendar edge cases
     And calendar viewer should not have a "days" area
     And no errors should have been logged
 
-  @edge-cases @known-failure:59 @ticket-pending
+  @edge-cases @known-failure:59 @realizes:core#1222
   Scenario: Removing the date column of an open calendar shows a "No data" message instead of a grid
     The calendar reports no message.
     When user removes "STARTED" column

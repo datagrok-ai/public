@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/row-source/row-source-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.scatter-plot, viewers.histogram, viewers.pie-chart]
+sub_features_covered: [viewers.scatter-plot, viewers.histogram, viewers.pie-chart, core#1227]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -81,7 +81,7 @@ test.describe("Row Source edge cases — a Filter formula that is not a conditio
     await session.step(42, "And the \"rows shown\" reading of scatter plot viewer should be 0", () => readingIs(page, "rows shown", el("scatter plot viewer"), 0));
     await session.step(43, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Under MouseOverGroup, closing the viewer whose group is hovered clears the group", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.scatter-plot", "@realizes:viewers.histogram", "@realizes:viewers.pie-chart", "@known-failure:60", "@ticket-pending"]}, async ({browser}) => {
+  test("Under MouseOverGroup, closing the viewer whose group is hovered clears the group", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.scatter-plot", "@realizes:viewers.histogram", "@realizes:viewers.pie-chart", "@known-failure:60", "@realizes:core#1227"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));

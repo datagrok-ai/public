@@ -10,7 +10,7 @@ Written for `pie-chart-edge-cases.feature`: the edge cases of this viewer that t
 2. Max Radius typed above 500 is not taken (a known failure in the out-of-bounds outline); Start Angle typed as −30 or 400 is the same, written in `pie-chart-edge-cases.feature`. Both are core#1200.
 3. The category column removed: no other column is picked, and the pie, which cannot draw without one, says so. No scenario: the pie has no such message, and `PieChartLook.auto`, run on every removal, picks another categorical column. Needs the message in the pie (`validateState`) before a row can claim it. A layout whose category column the table lacks is the same case.
 
-4. A Segment Angle Column holding NaN or ±Infinity is refused with a message, as the negative and all-zero cases are: written in `pie-chart-edge-cases.feature` (sum of WEIGHT with one value replaced; the wording is not decided, so the claim is a non-empty `error`), a known failure with no ticket yet (the pie draws its wedges with no message).
+4. A Segment Angle Column holding NaN or ±Infinity leaves that value out, as an empty one (viewers treat such values as empty): right as it is (2026-10-30), claimed in `pie-chart-edge-cases.feature` (sum of WEIGHT with one value replaced; 4 slices, no message).
 
 **API or Dart tests to write**
 

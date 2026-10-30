@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/sankey-chord/sankey-chord-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [charts.viewer.sankey, charts.viewer.chord, public#4420, public#4421]
+sub_features_covered: [charts.viewer.sankey, charts.viewer.chord, public#4420, public#4421, public#4462]
 --- */
 import {test} from '@playwright/test';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -77,7 +77,7 @@ test.describe("Sankey and Chord edge cases — Source equal to Target, too many 
     await session.step(61, "Then 494 rows should pass the filter", () => filterPasses(page, 494));
     await session.step(62, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A Sankey whose Value column holds negative values refuses to draw and says so, as the pie does", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sankey", "@realizes:charts.viewer.chord", "@known-failure:73", "@ticket-pending"]}, async ({browser}) => {
+  test("A Sankey whose Value column holds negative values refuses to draw and says so, as the pie does", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sankey", "@realizes:charts.viewer.chord", "@known-failure:73", "@realizes:public#4462"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -95,7 +95,7 @@ test.describe("Sankey and Chord edge cases — Source equal to Target, too many 
       await session.step(78, "And no errors should have been logged", () => noErrors(page));
     }, 73);
   });
-  test("A Sankey whose Value column holds only zeros refuses to draw and says so, as the pie does", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sankey", "@realizes:charts.viewer.chord", "@known-failure:88", "@ticket-pending"]}, async ({browser}) => {
+  test("A Sankey whose Value column holds only zeros refuses to draw and says so, as the pie does", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.sankey", "@realizes:charts.viewer.chord", "@known-failure:88", "@realizes:public#4462"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And the package autostarts have completed", () => autostartsCompleted(page));

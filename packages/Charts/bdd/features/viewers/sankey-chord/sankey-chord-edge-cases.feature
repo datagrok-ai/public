@@ -61,7 +61,7 @@ Feature: Sankey and Chord edge cases — Source equal to Target, too many catego
     Then 494 rows should pass the filter
     And no errors should have been logged
 
-  @known-failure:73 @ticket-pending
+  @known-failure:73 @realizes:public#4462
   Scenario: A Sankey whose Value column holds negative values refuses to draw and says so, as the pie does
     The pie chart refuses a negative angle column with "sum(NEG) contains negative values"
     (`pie_chart_core.dart`, `_aggregate`); the Sankey should refuse the same way. The claim reads
@@ -77,7 +77,7 @@ Feature: Sankey and Chord edge cases — Source equal to Target, too many catego
     And sankey viewer should not contain the text "contains negative values"
     And no errors should have been logged
 
-  @known-failure:88 @ticket-pending
+  @known-failure:88 @realizes:public#4462
   Scenario: A Sankey whose Value column holds only zeros refuses to draw and says so, as the pie does
     The pie chart refuses an angle column of zeros with "sum(ZERO): all values are 0"
     (`pie_chart_core.dart`, `_aggregate`); the Sankey should refuse the same way.

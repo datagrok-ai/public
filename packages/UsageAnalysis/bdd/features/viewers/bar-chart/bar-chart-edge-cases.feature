@@ -93,7 +93,7 @@ Feature: Bar chart edge cases
     And bar chart viewer should report no error
     And no errors should have been logged
 
-    @known-failure:92 @ticket-pending
+    @known-failure:92 @realizes:core#1200
     Examples: The typed value is written into the property; the declarations set no lower bound
       | caption              | typed | kept |
       | Max Bar Height       | 0     | 50   |
@@ -136,7 +136,7 @@ Feature: Bar chart edge cases
     And no errors should have been logged
 
   @edge-cases
-  Scenario Outline: Sorted by value in <order> order, the bar whose aggregate is empty comes last
+  Scenario Outline: Sorted by value in <order> order, the category whose aggregate is empty has a bar only with Show Empty Bars, as the lowest value
     Given user opens a table "empty-aggregate" with:
       | Category | Value |
       | A        | 1     |
@@ -152,13 +152,30 @@ Feature: Bar chart edge cases
       | Orientation     | horizontal |
       | Bar Sort Type   | by value   |
       | Bar Sort Order  | <order>    |
-    Then the bars of bar chart viewer should lie one under another
-    And the "bar C" area of bar chart viewer should lie below the "bar A" area
-    And the "bar C" area of bar chart viewer should lie below the "bar B" area
+    Then the "bars" reading of bar chart viewer should be 2
+    And bar chart viewer should not have a "bar C" area
+    When user sets "showEmptyBars" property of bar chart viewer to "true"
+    Then the "bars" reading of bar chart viewer should be 3
+    And bar chart viewer should have a "bar C" area
+    And the bars of bar chart viewer should lie one under another
+    And the "bar C" area of bar chart viewer should lie <where> the "bar A" area
+    And the "bar C" area of bar chart viewer should lie <where> the "bar B" area
     And no errors should have been logged
 
-    @known-failure:156 @ticket-pending
-    Examples: The category whose aggregate is empty gets no bar
-      | order |
-      | asc   |
-      | desc  |
+    Examples:
+      | order | where |
+      | asc   | above |
+      | desc  | below |
+
+  @edge-cases
+  Scenario: Removing the Stack column stops the stacking and logs no error
+    Given user opens demog-1000 dataset
+    And user adds a bar chart viewer with:
+      | Split | RACE |
+      | Stack | SEX  |
+    Then the "stack segments" reading of bar chart viewer should be at least 1
+    When user removes "SEX" column
+    Then the "stack segments" reading of bar chart viewer should be 0
+    And the "bars" reading of bar chart viewer should be 4
+    And bar chart viewer should report no error
+    And no errors should have been logged

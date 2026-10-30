@@ -55,7 +55,7 @@ tests, the known failures failing at their pinned steps.
 
 - **Min above Max is swapped** (bar chart and box plot value axis, line chart X and Y and the
   control limits, radar Min/Max map, word cloud text size and rotation; not the timelines, where an event
-  whose End is before its Start is skipped: `packages/Charts/bdd/features/viewers/timelines/`). No outline: no viewer reports the drawn range of its value axis. The
+  whose End is before its Start is drawn as a point: `packages/Charts/bdd/features/viewers/timelines/`). No outline: no viewer reports the drawn range of its value axis. The
   line chart's `x axis min` / `x axis max` are its range slider's bounds, and the box plot, the bar
   chart, the radar and the word cloud report no axis range at all. Wanted: `value axis min` /
   `value axis max` readings of the drawn window, then rows that set Min 60 and Max 20 on AGE and
@@ -84,7 +84,7 @@ tests, the known failures failing at their pinned steps.
 - A viewer that picks another column after its column is removed (the box plot's category) is
   correct: the removal outline claims only that the removed column leaves the setting.
 - **The tile viewer shows an empty value as a lane with no name** (lane names "x, y, "), not
-  `(empty)`.
+  `(empty)`: core#1217.
 - **A viewer's click filter stays after its column is removed** (bar chart, tree, sunburst): the
   removal does not refilter the table, and the rows come back on the next refilter (any filter
-  change). The root cause of core#1174; pinned on it.
+  change). Added to core#1174 (2026-10-30); pinned on it.

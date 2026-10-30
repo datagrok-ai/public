@@ -64,11 +64,11 @@ None.
    column is picked: a row of the removal outline (`TileViewerLook.auto` keeps only a lanes name the
    table has). No rows and a renamed lanes column are rows there too.
 2. **A lanes column with empty values** has an `(empty)` lane: a row of the empty-category outline.
-   A card dropped into it gets an empty value: written in `tile-viewer-edge-cases.feature`, a known
-   failure with no ticket yet (the lane has no name today, so there is no `(empty)` lane to drop on).
-3. **Leaving the form designer by Escape** after deleting a field works as Cancel (as the grid's
-   form designer): written in `tile-viewer-edge-cases.feature`, a known failure with no ticket yet
-   (Escape leaves the designer open).
+   A card dropped into it gets an empty value: written in `tile-viewer-edge-cases.feature`, core#1217,
+   a known failure (the lane has no name today, so there is no `(empty)` lane to drop on).
+3. **Escape in the form designer** after deleting a field does nothing: the designer is a view, not
+   a dialog. Right as it is (2026-10-30), claimed in `tile-viewer-edge-cases.feature`. Escape in the
+   Edit dialog (the EDIT icon of the ribbon) cancels it: not written.
 
 #### 3. Questions for owners
 

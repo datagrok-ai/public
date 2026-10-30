@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/tooltips/tooltips-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.tooltips]
+sub_features_covered: [viewers.tooltips, core#1215]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -120,7 +120,7 @@ test.describe("Tooltip edge cases: Edit Tooltip cancelled, every column unticked
     await session.step(70, "Then the tooltip should show columns in the order \"AGE, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, WEIGHT"));
     await session.step(71, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A tooltip column renamed is shown under its new name", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.tooltips", "@known-failure:79", "@ticket-pending"]}, async ({browser}) => {
+  test("A tooltip column renamed is shown under its new name", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.tooltips", "@known-failure:79", "@realizes:core#1215"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -144,7 +144,7 @@ test.describe("Tooltip edge cases: Edit Tooltip cancelled, every column unticked
       await session.step(80, "And no errors should have been logged", () => noErrors(page));
     }, 79);
   });
-  test("An aggregation row left without a column is not saved by Edit Aggregated Tooltip", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.tooltips", "@known-failure:95", "@ticket-pending"]}, async ({browser}) => {
+  test("An aggregation row added in Edit Aggregated Tooltip takes a column by default", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.tooltips"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -161,17 +161,15 @@ test.describe("Tooltip edge cases: Edit Tooltip cancelled, every column unticked
     await session.step(27, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
     await session.step(28, "Then the tooltip should show columns in the order \"AGE, SEX, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, SEX, WEIGHT"));
     await session.step(29, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
-    await knownFailure(async () => {
-      await session.step(85, "When user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","AGE"],["yColumnNames","WEIGHT"]]), [["xColumnName","AGE"],["yColumnNames","WEIGHT"]]);
-      await session.step(88, "Then the \"aggregated\" reading of line chart viewer should be \"true\"", () => readingReads(page, "aggregated", el("line chart viewer"), "true"));
-      await session.step(89, "And \"aggTooltipColumns\" property of line chart viewer should be \"\"", () => propertyShouldBe(page, "aggTooltipColumns", el("line chart viewer"), ""));
-      await session.step(90, "When user picks \"Tooltip > Edit...\" from the context menu of line chart viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("line chart viewer")));
-      await session.step(91, "Then \"Edit Aggregated Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Aggregated Tooltip\" dialog"), "visible"));
-      await session.step(92, "When user clicks on \"Add aggregation\" button in \"Edit Aggregated Tooltip\" dialog", () => clickOn(page, el("\"Add aggregation\" button in \"Edit Aggregated Tooltip\" dialog")));
-      await session.step(93, "And user clicks on OK button in \"Edit Aggregated Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Aggregated Tooltip\" dialog")));
-      await session.step(94, "Then the \"Edit Aggregated Tooltip\" dialog should close", () => dialogCloses(page, "Edit Aggregated Tooltip"));
-      await session.step(95, "And \"aggTooltipColumns\" property of line chart viewer should be \"\"", () => propertyShouldBe(page, "aggTooltipColumns", el("line chart viewer"), ""));
-      await session.step(96, "And no errors should have been logged", () => noErrors(page));
-    }, 95);
+    await session.step(83, "When user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","AGE"],["yColumnNames","WEIGHT"]]), [["xColumnName","AGE"],["yColumnNames","WEIGHT"]]);
+    await session.step(86, "Then the \"aggregated\" reading of line chart viewer should be \"true\"", () => readingReads(page, "aggregated", el("line chart viewer"), "true"));
+    await session.step(87, "And \"aggTooltipColumns\" property of line chart viewer should be \"\"", () => propertyShouldBe(page, "aggTooltipColumns", el("line chart viewer"), ""));
+    await session.step(88, "When user picks \"Tooltip > Edit...\" from the context menu of line chart viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("line chart viewer")));
+    await session.step(89, "Then \"Edit Aggregated Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Aggregated Tooltip\" dialog"), "visible"));
+    await session.step(90, "When user clicks on \"Add aggregation\" button in \"Edit Aggregated Tooltip\" dialog", () => clickOn(page, el("\"Add aggregation\" button in \"Edit Aggregated Tooltip\" dialog")));
+    await session.step(91, "And user clicks on OK button in \"Edit Aggregated Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Aggregated Tooltip\" dialog")));
+    await session.step(92, "Then the \"Edit Aggregated Tooltip\" dialog should close", () => dialogCloses(page, "Edit Aggregated Tooltip"));
+    await session.step(93, "And \"aggTooltipColumns\" property of line chart viewer should be \"avg(AGE)\"", () => propertyShouldBe(page, "aggTooltipColumns", el("line chart viewer"), "avg(AGE)"));
+    await session.step(94, "And no errors should have been logged", () => noErrors(page));
   });
 });

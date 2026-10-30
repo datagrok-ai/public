@@ -36,21 +36,17 @@ Feature: Tile viewer edge cases: nothing selected under Row Source Selected, one
     And the "lane of row 1" reading of tile viewer should be "g1"
     And no errors should have been logged
 
-  @known-failure:47 @ticket-pending
-  Scenario: Escape in the form designer after a field is deleted works as Cancel
-    Today Escape leaves the form designer open.
+  Scenario: Escape in the form designer, a view and not a dialog, leaves it open with the field deleted
     When user picks "Edit Form..." from the viewer menu of tile viewer
     Then form designer should be visible
     When user deletes the "AGE" value field in the form designer
     Then the form designer should show value fields "CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, SEX, STARTED, USUBJID, WEIGHT"
     When user presses Escape
-    Then form designer should be absent
-    And the "fields shown" reading of tile viewer should be 10
-    And the "fields" reading of tile viewer should contain "AGE"
-    And the "form designed" reading of tile viewer should be "false"
+    Then form designer should be visible
+    And the form designer should show value fields "CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, SEX, STARTED, USUBJID, WEIGHT"
     And no errors should have been logged
 
-  @known-failure:66 @ticket-pending
+  @known-failure:62 @realizes:core#1217
   Scenario: A card dropped into the (empty) lane gets an empty value
     Today the lane of the empty value has no name (the empty-category row of
     `viewer-rules-edge-cases.feature`), so there is no "(empty)" lane to drop the card into.

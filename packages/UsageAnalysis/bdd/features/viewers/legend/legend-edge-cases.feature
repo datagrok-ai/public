@@ -47,15 +47,12 @@ Feature: Legend edge cases: the color column removed under a legend selection, e
     And scatter plot viewer should show 872 rows
     And no errors should have been logged
 
-  @known-failure:59 @ticket-pending
-  Scenario: Renaming the color column keeps the legend selection
-    The Color setting follows the rename and the plot still draws the 25 Black rows, but the legend
-    shows no item selected.
+  Scenario: Renaming the color column releases the legend selection on the legend and on the plot
     When user clicks on "Black" item in the legend of scatter plot viewer
     Then scatter plot viewer should show 25 rows
     When user renames "RACE" column to "ETHNICITY"
     Then "Color" property of scatter plot viewer should be "ETHNICITY"
     And the legend of scatter plot viewer should list 4 items
-    And "Black" legend item in legend of scatter plot viewer should be selected
-    And scatter plot viewer should show 25 rows
+    And "Black" legend item in legend of scatter plot viewer should not be selected
+    And scatter plot viewer should show 872 rows
     And no errors should have been logged

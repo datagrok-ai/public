@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/statistics/statistics-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.stats-viewer]
+sub_features_covered: [viewers.stats-viewer, core#1125]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -129,7 +129,7 @@ test.describe("Statistics edge cases: no rows counted, one row, columns added, r
     await session.step(74, "And statistics viewer should not have a \"row AGE\" area", () => hasNoArea(page, el("statistics viewer"), "row AGE"));
     await session.step(75, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A numeric column with no values has empty numeric statistics, not 0", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.stats-viewer", "@known-failure:85", "@ticket-pending"]}, async ({browser}) => {
+  test("A numeric column with no values has empty numeric statistics, not 0", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.stats-viewer", "@known-failure:85", "@realizes:core#1125"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));

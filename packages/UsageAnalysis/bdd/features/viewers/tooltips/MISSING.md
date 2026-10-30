@@ -88,7 +88,7 @@ None.
 
 1. **A tooltip column renamed** is shown under its new name (the rename rule of
    `viewer-rules-edge-cases.feature`). The table tag keeps column names (`tooltip.dart:574-577`) and
-   nothing renames them, so the column drops out: a known failure with no ticket yet in
+   nothing renames them, so the column drops out: core#1215, a known failure in
    `tooltips-edge-cases.feature`.
 2. **Ten columns ticked, seven shown**: the cut stays, and the tooltip says that part of the
    columns was dropped (the silent-cut rule). Today an explicit selection is cut to `colAmount` = 7
@@ -96,9 +96,9 @@ None.
    reads the lines of a tooltip; then: tick ten columns, hover a row, claim seven value lines and the
    note.
 
-3. **Edit Aggregated Tooltip with an empty row** (Add aggregation, no column, OK): the empty row
-   is not saved. Written in `tooltips-edge-cases.feature` on a demog-1000 line chart (X = AGE), a
-   known failure with no ticket yet (`aggTooltipColumns` becomes `avg(AGE)`).
+3. **Edit Aggregated Tooltip with an added row** (Add aggregation, OK): the row takes a column by
+   default and is saved as `avg(AGE)`: right as it is (2026-10-30), claimed in
+   `tooltips-edge-cases.feature` on a demog-1000 line chart (X = AGE).
 
 #### 3. Questions for owners
 

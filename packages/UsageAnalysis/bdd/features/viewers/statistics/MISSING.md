@@ -62,7 +62,7 @@ None.
 
 1. **Numeric statistics over no values are empty, not 0.** `statistics-edge-cases.feature` claims
    `avg of AGE` empty with every row filtered out, and an all-empty numeric column with avg and
-   stdev empty: a known failure with no ticket yet (stdev reads 0.00). A constant column (min, max,
+   stdev empty: a known failure on core#1125 (stdev reads 0.00). A constant column (min, max,
    avg 5.00, stdev 0.00) is claimed green.
 2. **A Histograms > <column> column** is dropped when that column is removed: claimed green in
    `statistics-edge-cases.feature`. That it follows a rename (`[SEX]` is built once by name,

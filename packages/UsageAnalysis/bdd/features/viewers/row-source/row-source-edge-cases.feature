@@ -42,7 +42,7 @@ Feature: Row Source edge cases — a Filter formula that is not a condition, a r
     And the "rows shown" reading of scatter plot viewer should be 0
     And no errors should have been logged
 
-  @known-failure:60 @ticket-pending
+  @known-failure:60 @realizes:core#1227
   Scenario: Under MouseOverGroup, closing the viewer whose group is hovered clears the group
     Today the closed pie's hovered group stays on the table, and the scatter plot keeps drawing its
     15 Asian rows.

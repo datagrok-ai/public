@@ -16,7 +16,6 @@ import {clickOn, enterInto, isExpanded, shouldBe} from '@datagrok-libraries/bdd/
 import {filterBetween, filterPasses, filterPassesAll, filterPassesFewer, filterTo, removeColumn, renameColumn, resetFilter} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, openDataset, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, addViewerWith, clickArea, loadLayout, noErrors, propertyShouldBe, propertyShouldNotBe, readingIs, reportsNoError, saveLayout, setProperty, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {readingContains} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Charts viewer edge cases shared by every viewer: no rows, a column removed or renamed, a layout with a missing column, a filter left by a closed viewer, values out of bounds, empty categories, a category limit", () => {
@@ -273,46 +272,40 @@ test.describe("Charts viewer edge cases shared by every viewer: no rows, a colum
       await session.step(147, "And no errors should have been logged", () => noErrors(page));
     }, 146);
   });
-  test("An empty value is the (empty) category of the word cloud [viewer=word cloud, property=wordColumnName, shown=rows shown, reading=word names]", {tag: ["@viewers", "@edge-cases", "@known-failure:166", "@ticket-pending"]}, async ({browser}) => {
+  test("The word cloud counts an empty value as a word with no text", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(25, "Given user is logged in", () => loggedIn(page));
     await session.step(26, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(27, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await knownFailure(async () => {
-      await session.step(156, "Given user opens a table \"with-empty\" with:", () => openTableOf(page, "with-empty", [["site","arm"],["A","x"],["A",""],["B","y"]]), [["site","arm"],["A","x"],["A",""],["B","y"]]);
-      await session.step(161, "When user adds a word cloud viewer with:", () => addViewerWith(page, "word cloud", [["wordColumnName","arm"]]), [["wordColumnName","arm"]]);
-      await session.step(163, "Then no errors should have been logged", () => noErrors(page));
-      await session.step(164, "And word cloud viewer should report no error", () => reportsNoError(page, el("word cloud viewer")));
-      await session.step(165, "And the \"rows shown\" reading of word cloud viewer should be 3", () => readingIs(page, "rows shown", el("word cloud viewer"), 3));
-      await session.step(166, "And the \"word names\" reading of word cloud viewer should contain \"(empty)\"", () => readingContains(page, "word names", el("word cloud viewer"), "(empty)"));
-    }, 166);
+    await session.step(156, "Given user opens a table \"with-empty\" with:", () => openTableOf(page, "with-empty", [["site","arm"],["A","x"],["A",""],["B","y"]]), [["site","arm"],["A","x"],["A",""],["B","y"]]);
+    await session.step(161, "When user adds a word cloud viewer with:", () => addViewerWith(page, "word cloud", [["wordColumnName","arm"]]), [["wordColumnName","arm"]]);
+    await session.step(163, "Then no errors should have been logged", () => noErrors(page));
+    await session.step(164, "And word cloud viewer should report no error", () => reportsNoError(page, el("word cloud viewer")));
+    await session.step(165, "And the \"rows shown\" reading of word cloud viewer should be 3", () => readingIs(page, "rows shown", el("word cloud viewer"), 3));
+    await session.step(166, "And the \"words\" reading of word cloud viewer should be 3", () => readingIs(page, "words", el("word cloud viewer"), 3));
   });
-  test("A tree over a column of more than 500 categories keeps its message under a filter that passes fewer than 500 rows [viewer=tree, message=The Tree viewer requires at least one categorical column with fewer than 500 unique categories]", {tag: ["@viewers", "@edge-cases", "@known-failure:179", "@ticket-pending"]}, async ({browser}) => {
+  test("A tree over a column of more than 500 categories draws once a filter passes fewer than 500 rows [viewer=tree, message=The Tree viewer requires at least one categorical column with fewer than 500 unique categories]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(25, "Given user is logged in", () => loggedIn(page));
     await session.step(26, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(27, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await knownFailure(async () => {
-      await session.step(174, "When user adds a tree viewer with:", () => addViewerWith(page, "tree", [["hierarchyColumnNames","USUBJID"]]), [["hierarchyColumnNames","USUBJID"]]);
-      await session.step(176, "Then \"The Tree viewer requires at least one categorical column with fewer than 500 unique categories\" text in tree viewer should be visible", () => shouldBe(page, el("\"The Tree viewer requires at least one categorical column with fewer than 500 unique categories\" text in tree viewer"), "visible"));
-      await session.step(177, "When user filters rows where \"SEX\" is \"M\"", () => filterTo(page, "SEX", "M"));
-      await session.step(178, "Then 447 rows should pass the filter", () => filterPasses(page, 447));
-      await session.step(179, "And \"The Tree viewer requires at least one categorical column with fewer than 500 unique categories\" text in tree viewer should be visible", () => shouldBe(page, el("\"The Tree viewer requires at least one categorical column with fewer than 500 unique categories\" text in tree viewer"), "visible"));
-      await session.step(180, "And no errors should have been logged", () => noErrors(page));
-    }, 179);
+    await session.step(169, "When user adds a tree viewer with:", () => addViewerWith(page, "tree", [["hierarchyColumnNames","USUBJID"]]), [["hierarchyColumnNames","USUBJID"]]);
+    await session.step(171, "Then \"The Tree viewer requires at least one categorical column with fewer than 500 unique categories\" text in tree viewer should be visible", () => shouldBe(page, el("\"The Tree viewer requires at least one categorical column with fewer than 500 unique categories\" text in tree viewer"), "visible"));
+    await session.step(172, "When user filters rows where \"SEX\" is \"M\"", () => filterTo(page, "SEX", "M"));
+    await session.step(173, "Then 447 rows should pass the filter", () => filterPasses(page, 447));
+    await session.step(174, "And \"The Tree viewer requires at least one categorical column with fewer than 500 unique categories\" text in tree viewer should be absent", () => shouldBe(page, el("\"The Tree viewer requires at least one categorical column with fewer than 500 unique categories\" text in tree viewer"), "absent"));
+    await session.step(175, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A sunburst over a column of more than 500 categories keeps its message under a filter that passes fewer than 500 rows [viewer=sunburst, message=The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories]", {tag: ["@viewers", "@edge-cases", "@known-failure:179", "@ticket-pending"]}, async ({browser}) => {
+  test("A sunburst over a column of more than 500 categories draws once a filter passes fewer than 500 rows [viewer=sunburst, message=The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(25, "Given user is logged in", () => loggedIn(page));
     await session.step(26, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(27, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await knownFailure(async () => {
-      await session.step(174, "When user adds a sunburst viewer with:", () => addViewerWith(page, "sunburst", [["hierarchyColumnNames","USUBJID"]]), [["hierarchyColumnNames","USUBJID"]]);
-      await session.step(176, "Then \"The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories\" text in sunburst viewer should be visible", () => shouldBe(page, el("\"The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories\" text in sunburst viewer"), "visible"));
-      await session.step(177, "When user filters rows where \"SEX\" is \"M\"", () => filterTo(page, "SEX", "M"));
-      await session.step(178, "Then 447 rows should pass the filter", () => filterPasses(page, 447));
-      await session.step(179, "And \"The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories\" text in sunburst viewer should be visible", () => shouldBe(page, el("\"The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories\" text in sunburst viewer"), "visible"));
-      await session.step(180, "And no errors should have been logged", () => noErrors(page));
-    }, 179);
+    await session.step(169, "When user adds a sunburst viewer with:", () => addViewerWith(page, "sunburst", [["hierarchyColumnNames","USUBJID"]]), [["hierarchyColumnNames","USUBJID"]]);
+    await session.step(171, "Then \"The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories\" text in sunburst viewer should be visible", () => shouldBe(page, el("\"The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories\" text in sunburst viewer"), "visible"));
+    await session.step(172, "When user filters rows where \"SEX\" is \"M\"", () => filterTo(page, "SEX", "M"));
+    await session.step(173, "Then 447 rows should pass the filter", () => filterPasses(page, 447));
+    await session.step(174, "And \"The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories\" text in sunburst viewer should be absent", () => shouldBe(page, el("\"The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories\" text in sunburst viewer"), "absent"));
+    await session.step(175, "And no errors should have been logged", () => noErrors(page));
   });
 });

@@ -23,7 +23,7 @@ Added with `form-edge-cases.feature` (edge-case round of 2026-10-26, localhost).
    - Text typed into a numeric field of an editable form leaves the cell as it was: core#1192,
      fixed (the cell was emptied on the first keystroke).
    - A column removed from the table takes its field off the form. A default form does; a form built
-     from chosen columns (`columnNames`) keeps an empty field: a known failure with no ticket yet.
+     from chosen columns (`columnNames`) shows every other column of the table instead: core#1214.
      The scenario that claimed the empty field is gone from `form.feature`.
 2. **Fixture**: the reported case of core#1138 is a file holding `{}`; a dedicated
    `fixtures/form-not-a-form.json` would say it more plainly.

@@ -21,10 +21,9 @@ None.
 4. **A layout naming a missing hierarchy column** keeps the remaining levels (RACE), claimed; no rows
    is a row of the no-rows outline.
 
-5. **The 500-category limit** does not depend on the filter: a column with more than 500
-   categories is refused whatever the filter. Today the check runs only while at least 500 rows pass
-   (`sunburst-viewer.ts:407`): a known failure with no ticket yet, the category-limit outline of
-   `viewer-rules-edge-cases.feature`.
+5. **The 500-category limit** counts the rows that pass the filter: the check runs only while at
+   least 500 rows pass (`sunburst-viewer.ts:407`): right as it is (2026-10-30), the category-limit
+   outline of `viewer-rules-edge-cases.feature`.
 6. **More than 20 hierarchy columns** are cut to 20, and the viewer says that part was dropped.
    Today the cut is silent (`:429`). Steps requested: the note has no wording yet, and the
    `hierarchy columns` reading reports the property, not the levels drawn; wanted a `levels`

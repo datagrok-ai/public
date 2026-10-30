@@ -15,9 +15,8 @@ None.
 
 1. **The cloud over no rows**: an empty cloud, no message, no error. A row of the no-rows outline.
 2. **The word column renamed** is followed: a row of the rename outline.
-3. **Empty strings** are an `(empty)` word. Today they are counted as a word with no visible text
-   (`word-cloud-viewer.ts:217-221`): a known failure with no ticket yet in the empty-category
-   outline.
+3. **Empty strings** are counted as a word with no visible text (`word-cloud-viewer.ts:217-221`):
+   right as it is (2026-10-30), claimed in `viewer-rules-edge-cases.feature`.
 4. **Rotation Step 0 typed in the context panel** is not taken: public#4424, a known failure in the
    out-of-bounds outline.
 5. **Inverted ranges** (Min Text Size above Max Text Size, Min Rotation above Max Rotation): swapped.

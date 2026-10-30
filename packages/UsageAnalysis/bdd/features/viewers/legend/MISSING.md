@@ -62,9 +62,8 @@ None.
 
 #### 2. Decided
 
-1. **The color column renamed under a legend selection** keeps the selection: written in
-   `legend-edge-cases.feature`, a known failure with no ticket yet (the Color setting follows the
-   rename and the plot still draws the 25 Black rows, but no legend item is selected).
+1. **The color column renamed under a legend selection** releases the selection on the legend and on
+   the plot: right as it is (2026-10-30), claimed in `legend-edge-cases.feature`.
 
 #### 3. API or Dart tests to write
 

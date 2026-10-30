@@ -15,7 +15,7 @@ Written for `sankey-chord-edge-cases.feature`: the edge cases of this viewer tha
 
 3. Sankey Source set through the property to a column with more than 50 categories (demog USUBJID) is cut as on the table, and the viewer says so (the silent-cut rule). Today the 50-category rule is checked only when the viewer picks its columns. Steps requested: the note has no wording yet, and the Sankey reports no readings on the stand (Steps requested, 1).
 
-4. A Sankey Value column with negative values, or with only zeros, is refused with a message as the pie chart refuses them (`sum(NEG) contains negative values`, `sum(ZERO): all values are 0`). In the feature as two known failures: today the Sankey draws its node labels piled at the top with no links and no message. The Sankey's own wording is not fixed, so the claims read only the words the pie's messages use (`contains negative values`, `all values are 0`); with the wording fixed they can read the whole message.
+4. A Sankey Value column with negative values, or with only zeros, is refused with a message as the pie chart refuses them (`sum(NEG) contains negative values`, `sum(ZERO): all values are 0`). In the feature as two known failures, public#4462: today the Sankey draws its node labels piled at the top with no links and no message. The Sankey's own wording is not fixed, so the claims read only the words the pie's messages use (`contains negative values`, `all values are 0`); with the wording fixed they can read the whole message.
 
 ## Won't do
 

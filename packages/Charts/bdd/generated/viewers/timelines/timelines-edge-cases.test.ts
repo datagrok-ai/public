@@ -17,7 +17,7 @@ import {columnType} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {filterBetween, filterPasses, resetFilter} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, legendLists, noErrors, painted, readingIs, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Timelines edge cases: a cleared color, long lane names, no rows, End before Start", () => {
   const session = feature(test, "features/viewers/timelines/timelines-edge-cases.feature", import.meta.url);
@@ -67,7 +67,7 @@ test.describe("Timelines edge cases: a cleared color, long lane names, no rows, 
     await session.step(54, "And timelines viewer should be painted", () => painted(page, el("timelines viewer")));
     await session.step(55, "And no errors should have been logged", () => noErrors(page));
   });
-  test("An event whose End is earlier than its Start is skipped", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.timelines", "@known-failure:71", "@ticket-pending"]}, async ({browser}) => {
+  test("An event whose End is earlier than its Start is drawn as a point", {tag: ["@viewers", "@edge-cases", "@realizes:charts.viewer.timelines"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(9, "Given user is logged in", () => loggedIn(page));
     await session.step(10, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -75,12 +75,11 @@ test.describe("Timelines edge cases: a cleared color, long lane names, no rows, 
     await session.step(17, "And user adds a timelines viewer with:", () => addViewerWith(page, "timelines", [["splitByColumnName","subject"],["startColumnName","start"],["endColumnName","end"]]), [["splitByColumnName","subject"],["startColumnName","start"],["endColumnName","end"]]);
     await session.step(21, "Then \"start\" column should have type \"datetime\"", () => columnType(page, "start", "datetime"));
     await session.step(22, "And timelines viewer should be painted", () => painted(page, el("timelines viewer")));
-    await knownFailure(async () => {
-      await session.step(61, "Given user opens a table \"reversed\" with:", () => openTableOf(page, "reversed", [["subject","start","end"],["s1","2020-01-01","2020-01-10"],["s2","2020-01-20","2020-01-05"]]), [["subject","start","end"],["s1","2020-01-01","2020-01-10"],["s2","2020-01-20","2020-01-05"]]);
-      await session.step(65, "And user adds a timelines viewer with:", () => addViewerWith(page, "timelines", [["splitByColumnName","subject"],["startColumnName","start"],["endColumnName","end"]]), [["splitByColumnName","subject"],["startColumnName","start"],["endColumnName","end"]]);
-      await session.step(69, "Then timelines viewer should be painted", () => painted(page, el("timelines viewer")));
-      await session.step(70, "And no errors should have been logged", () => noErrors(page));
-      await session.step(71, "And the \"intervals\" reading of timelines viewer should be 1", () => readingIs(page, "intervals", el("timelines viewer"), 1));
-    }, 71);
+    await session.step(58, "Given user opens a table \"reversed\" with:", () => openTableOf(page, "reversed", [["subject","start","end"],["s1","2020-01-01","2020-01-10"],["s2","2020-01-20","2020-01-05"]]), [["subject","start","end"],["s1","2020-01-01","2020-01-10"],["s2","2020-01-20","2020-01-05"]]);
+    await session.step(62, "And user adds a timelines viewer with:", () => addViewerWith(page, "timelines", [["splitByColumnName","subject"],["startColumnName","start"],["endColumnName","end"]]), [["splitByColumnName","subject"],["startColumnName","start"],["endColumnName","end"]]);
+    await session.step(66, "Then timelines viewer should be painted", () => painted(page, el("timelines viewer")));
+    await session.step(67, "And no errors should have been logged", () => noErrors(page));
+    await session.step(68, "And the \"lanes\" reading of timelines viewer should be 2", () => readingIs(page, "lanes", el("timelines viewer"), 2));
+    await session.step(69, "And the \"intervals\" reading of timelines viewer should be 2", () => readingIs(page, "intervals", el("timelines viewer"), 2));
   });
 });

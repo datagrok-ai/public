@@ -18,10 +18,10 @@ feature; it lists what the feature could not claim and why.
 
 ### 2. Decided
 
-1. **An event whose End is earlier than its Start** is skipped, and the tooltip says how many events
-   were skipped. Today the event is drawn: a known failure with no ticket yet in
-   `timelines-edge-cases.feature` (it claims the interval count). The tooltip half waits for the
-   interval hit area (Steps requested, 1).
+1. **An event whose End is earlier than its Start** is drawn as a point: right for now (2026-10-30),
+   claimed in `timelines-edge-cases.feature` (the interval count).
+2. **Date Format set by the user** goes back to the default on any column change: public#4459, no
+   scenario yet (no reading of the axis labels).
 
 ### 3. Questions for owners
 

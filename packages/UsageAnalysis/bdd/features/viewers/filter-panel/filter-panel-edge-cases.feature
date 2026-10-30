@@ -158,7 +158,7 @@ Feature: Filter panel edge cases
       | a+b   |
       | a[b   |
 
-  @edge-cases @known-failure:168 @ticket-pending
+  @edge-cases @known-failure:168 @realizes:core#1223
   Scenario: Removing the column of a hierarchical card's middle level drops that level
     The card keeps its three levels: it is still "SEX / RACE / SEVERITY" after RACE is removed.
     When user picks "Add Filter | Hierarchical" from the filter panel menu
@@ -172,7 +172,7 @@ Feature: Filter panel edge cases
     And all rows should pass the filter
     And no errors should have been logged
 
-  @edge-cases @known-failure:184 @ticket-pending
+  @edge-cases @known-failure:184 @realizes:core#1223
   Scenario: A layout naming a removed level column brings the hierarchical card back without that level
     The layout brings no card back: the panel is left with 0 filters.
     When user picks "Add Filter | Hierarchical" from the filter panel menu
@@ -187,7 +187,7 @@ Feature: Filter panel edge cases
     Then the hierarchical filter card should list the "F / None" row
     And no errors should have been logged
 
-  @edge-cases @known-failure:206 @ticket-pending
+  @edge-cases @known-failure:206 @realizes:core#1224
   Scenario: Saving a filter state under a name already taken asks before overwriting it
     No dialog asks before the second save under the same name.
     Given no saved filter state "bdd edge filter state" is kept, now or when the feature ends
@@ -210,18 +210,23 @@ Feature: Filter panel edge cases
     And the "selected categories of RACE" reading of filter panel should be "Asian"
     And no errors should have been logged
 
-  @edge-cases @known-failure:222 @ticket-pending
-  Scenario: Combined Boolean is disabled in the Add Filter menu of a table with no boolean column
-    The menu item is enabled.
+  @edge-cases
+  Scenario: A Combined Boolean card added to a table with no boolean column picks up a boolean column added later
     Given user opens a table "no-flags" with:
       | Name | Value |
       | a    | 1     |
       | b    | 2     |
     When user opens an empty filter panel
     And user opens the viewer menu of filter panel
-    Then the open menu should list "Add Filter > Combined Boolean" as disabled
+    Then the open menu should list "Add Filter > Combined Boolean" as enabled
     When user closes the context menu
-    Then no errors should have been logged
+    And user picks "Add Filter | Combined Boolean" from the filter panel menu
+    Then "Flags" filter card should be visible
+    And the filter panel should have 1 filter
+    When user adds a calculated column "BIG" with formula "${Value} > 1"
+    And user clicks on the "category BIG of Flags" area of filter panel
+    Then 1 row should pass the filter
+    And no errors should have been logged
 
   @edge-cases
   Scenario: Closing the view of a table whose filter narrows a linked table releases the linked table's filter

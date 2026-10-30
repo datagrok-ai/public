@@ -7,7 +7,7 @@ Written for `row-source-edge-cases.feature`: the edge cases of this viewer that 
 **Decided** (the rules of `viewer-rules-edge-cases.feature`)
 
 1. A viewer Filter `${AGE} > 44` follows a rename of AGE: a row of the rename outline, a known failure (core#1213) (today the formula keeps the old name, is treated as empty and the viewer widens to every row, `validateColumnFormulaFields`).
-2. Under MouseOverGroup, closing the viewer whose group is hovered (a pie) clears the group (a filter left by a closed viewer goes with it): written in `row-source-edge-cases.feature` on the `rows shown` of a MouseOverGroup scatter plot, a known failure with no ticket yet (the scatter plot keeps drawing the closed pie's 15 Asian rows).
+2. Under MouseOverGroup, closing the viewer whose group is hovered (a pie) clears the group (a filter left by a closed viewer goes with it): written in `row-source-edge-cases.feature` on the `rows shown` of a MouseOverGroup scatter plot, core#1227, a known failure (the scatter plot keeps drawing the closed pie's 15 Asian rows).
 
 **Questions for owners**
 

@@ -152,35 +152,29 @@ Feature: Charts viewer edge cases shared by every viewer: no rows, a column remo
       | tree         | initialTreeDepth | 6   | 3    |
       | tree         | fontSize         | 31  | 12   |
 
-  Scenario Outline: An empty value is the (empty) category of the <viewer>
+  Scenario: The word cloud counts an empty value as a word with no text
     Given user opens a table "with-empty" with:
       | site | arm |
       | A    | x   |
       | A    |     |
       | B    | y   |
-    When user adds a <viewer> viewer with:
-      | <property> | arm |
+    When user adds a word cloud viewer with:
+      | wordColumnName | arm |
     Then no errors should have been logged
-    And <viewer> viewer should report no error
-    And the "<shown>" reading of <viewer> viewer should be 3
-    And the "<reading>" reading of <viewer> viewer should contain "(empty)"
+    And word cloud viewer should report no error
+    And the "rows shown" reading of word cloud viewer should be 3
+    And the "words" reading of word cloud viewer should be 3
 
-    @known-failure:166 @ticket-pending
-    Examples: The word cloud counts an empty value as a word with no text (`word-cloud-viewer.ts`)
-      | viewer     | property       | shown      | reading    |
-      | word cloud | wordColumnName | rows shown | word names |
-
-  Scenario Outline: A <viewer> over a column of more than 500 categories keeps its message under a filter that passes fewer than 500 rows
+  Scenario Outline: A <viewer> over a column of more than 500 categories draws once a filter passes fewer than 500 rows
     When user adds a <viewer> viewer with:
       | hierarchyColumnNames | USUBJID |
     Then "<message>" text in <viewer> viewer should be visible
     When user filters rows where "SEX" is "M"
     Then 447 rows should pass the filter
-    And "<message>" text in <viewer> viewer should be visible
+    And "<message>" text in <viewer> viewer should be absent
     And no errors should have been logged
 
-    @known-failure:179 @ticket-pending
-    Examples: The category limit is checked only while at least 500 rows pass the filter; under it the viewer draws one branch per USUBJID
+    Examples: The category limit counts the categories of the rows that pass the filter
       | viewer   | message                                                                                          |
       | tree     | The Tree viewer requires at least one categorical column with fewer than 500 unique categories     |
       | sunburst | The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories |

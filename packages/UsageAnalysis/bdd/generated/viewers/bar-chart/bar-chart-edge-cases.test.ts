@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/bar-chart/bar-chart-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.bar-chart, core#974]
+sub_features_covered: [viewers.bar-chart, core#974, core#1200]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -23,9 +23,9 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {barsStacked, zoomCategories} from '../../../bindings/bar-chart.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, isExpanded, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {deleteSelected, filterBetween, filterPasses, filterPassesAll, filterTo, resetFilter, rowCount, selectAllRows} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {deleteSelected, filterBetween, filterPasses, filterPassesAll, filterTo, removeColumn, resetFilter, rowCount, selectAllRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, areaPainted, clickArea, hasArea, hoverArea, noErrors, propertyShouldBe, readingIs, reportsNoError, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, areaPainted, clickArea, hasArea, hasNoArea, hoverArea, noErrors, propertyShouldBe, readingAtLeast, readingIs, reportsNoError, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {areaLies, clickEmptySpace} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
@@ -89,7 +89,7 @@ test.describe("Bar chart edge cases", () => {
     await session.step(80, "And the \"bars\" reading of bar chart viewer should be 4", () => readingIs(page, "bars", el("bar chart viewer"), 4));
     await session.step(81, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Max Bar Height typed as 0 in the context panel is not taken by the bar chart [caption=Max Bar Height, typed=0, kept=50]", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@known-failure:92", "@ticket-pending"]}, async ({browser}) => {
+  test("Max Bar Height typed as 0 in the context panel is not taken by the bar chart [caption=Max Bar Height, typed=0, kept=50]", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@known-failure:92", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await knownFailure(async () => {
@@ -104,7 +104,7 @@ test.describe("Bar chart edge cases", () => {
       await session.step(94, "And no errors should have been logged", () => noErrors(page));
     }, 92);
   });
-  test("Max Bar Height typed as -5 in the context panel is not taken by the bar chart [caption=Max Bar Height, typed=-5, kept=50]", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@known-failure:92", "@ticket-pending"]}, async ({browser}) => {
+  test("Max Bar Height typed as -5 in the context panel is not taken by the bar chart [caption=Max Bar Height, typed=-5, kept=50]", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@known-failure:92", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await knownFailure(async () => {
@@ -119,7 +119,7 @@ test.describe("Bar chart edge cases", () => {
       await session.step(94, "And no errors should have been logged", () => noErrors(page));
     }, 92);
   });
-  test("Max Category Width typed as 0 in the context panel is not taken by the bar chart [caption=Max Category Width, typed=0, kept=300]", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@known-failure:92", "@ticket-pending"]}, async ({browser}) => {
+  test("Max Category Width typed as 0 in the context panel is not taken by the bar chart [caption=Max Category Width, typed=0, kept=300]", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@known-failure:92", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await knownFailure(async () => {
@@ -134,7 +134,7 @@ test.describe("Bar chart edge cases", () => {
       await session.step(94, "And no errors should have been logged", () => noErrors(page));
     }, 92);
   });
-  test("Category Value Width typed as 0 in the context panel is not taken by the bar chart [caption=Category Value Width, typed=0, kept=50]", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@known-failure:92", "@ticket-pending"]}, async ({browser}) => {
+  test("Category Value Width typed as 0 in the context panel is not taken by the bar chart [caption=Category Value Width, typed=0, kept=50]", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@known-failure:92", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await knownFailure(async () => {
@@ -203,28 +203,46 @@ test.describe("Bar chart edge cases", () => {
     await session.step(135, "Then the \"bars\" reading of bar chart viewer should be 4", () => readingIs(page, "bars", el("bar chart viewer"), 4));
     await session.step(136, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Sorted by value in asc order, the bar whose aggregate is empty comes last [order=asc]", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@known-failure:156", "@ticket-pending"]}, async ({browser}) => {
+  test("Sorted by value in asc order, the category whose aggregate is empty has a bar only with Show Empty Bars, as the lowest value [order=asc, where=above]", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
-    await knownFailure(async () => {
-      await session.step(140, "Given user opens a table \"empty-aggregate\" with:", () => openTableOf(page, "empty-aggregate", [["Category","Value"],["A","1"],["A","3"],["B","5"],["B","7"],["C",""],["C",""]]), [["Category","Value"],["A","1"],["A","3"],["B","5"],["B","7"],["C",""],["C",""]]);
-      await session.step(148, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","Category"],["Value","Value"],["Value Aggr Type","avg"],["Orientation","horizontal"],["Bar Sort Type","by value"],["Bar Sort Order","asc"]]), [["Split","Category"],["Value","Value"],["Value Aggr Type","avg"],["Orientation","horizontal"],["Bar Sort Type","by value"],["Bar Sort Order","asc"]]);
-      await session.step(155, "Then the bars of bar chart viewer should lie one under another", () => barsStacked(page, el("bar chart viewer")));
-      await session.step(156, "And the \"bar C\" area of bar chart viewer should lie below the \"bar A\" area", () => areaLies(page, "bar C", el("bar chart viewer"), "below", "bar A"));
-      await session.step(157, "And the \"bar C\" area of bar chart viewer should lie below the \"bar B\" area", () => areaLies(page, "bar C", el("bar chart viewer"), "below", "bar B"));
-      await session.step(158, "And no errors should have been logged", () => noErrors(page));
-    }, 156);
+    await session.step(140, "Given user opens a table \"empty-aggregate\" with:", () => openTableOf(page, "empty-aggregate", [["Category","Value"],["A","1"],["A","3"],["B","5"],["B","7"],["C",""],["C",""]]), [["Category","Value"],["A","1"],["A","3"],["B","5"],["B","7"],["C",""],["C",""]]);
+    await session.step(148, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","Category"],["Value","Value"],["Value Aggr Type","avg"],["Orientation","horizontal"],["Bar Sort Type","by value"],["Bar Sort Order","asc"]]), [["Split","Category"],["Value","Value"],["Value Aggr Type","avg"],["Orientation","horizontal"],["Bar Sort Type","by value"],["Bar Sort Order","asc"]]);
+    await session.step(155, "Then the \"bars\" reading of bar chart viewer should be 2", () => readingIs(page, "bars", el("bar chart viewer"), 2));
+    await session.step(156, "And bar chart viewer should not have a \"bar C\" area", () => hasNoArea(page, el("bar chart viewer"), "bar C"));
+    await session.step(157, "When user sets \"showEmptyBars\" property of bar chart viewer to \"true\"", () => setProperty(page, "showEmptyBars", el("bar chart viewer"), "true"));
+    await session.step(158, "Then the \"bars\" reading of bar chart viewer should be 3", () => readingIs(page, "bars", el("bar chart viewer"), 3));
+    await session.step(159, "And bar chart viewer should have a \"bar C\" area", () => hasArea(page, el("bar chart viewer"), "bar C"));
+    await session.step(160, "And the bars of bar chart viewer should lie one under another", () => barsStacked(page, el("bar chart viewer")));
+    await session.step(161, "And the \"bar C\" area of bar chart viewer should lie above the \"bar A\" area", () => areaLies(page, "bar C", el("bar chart viewer"), "above", "bar A"));
+    await session.step(162, "And the \"bar C\" area of bar chart viewer should lie above the \"bar B\" area", () => areaLies(page, "bar C", el("bar chart viewer"), "above", "bar B"));
+    await session.step(163, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Sorted by value in desc order, the bar whose aggregate is empty comes last [order=desc]", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@known-failure:156", "@ticket-pending"]}, async ({browser}) => {
+  test("Sorted by value in desc order, the category whose aggregate is empty has a bar only with Show Empty Bars, as the lowest value [order=desc, where=below]", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
-    await knownFailure(async () => {
-      await session.step(140, "Given user opens a table \"empty-aggregate\" with:", () => openTableOf(page, "empty-aggregate", [["Category","Value"],["A","1"],["A","3"],["B","5"],["B","7"],["C",""],["C",""]]), [["Category","Value"],["A","1"],["A","3"],["B","5"],["B","7"],["C",""],["C",""]]);
-      await session.step(148, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","Category"],["Value","Value"],["Value Aggr Type","avg"],["Orientation","horizontal"],["Bar Sort Type","by value"],["Bar Sort Order","desc"]]), [["Split","Category"],["Value","Value"],["Value Aggr Type","avg"],["Orientation","horizontal"],["Bar Sort Type","by value"],["Bar Sort Order","desc"]]);
-      await session.step(155, "Then the bars of bar chart viewer should lie one under another", () => barsStacked(page, el("bar chart viewer")));
-      await session.step(156, "And the \"bar C\" area of bar chart viewer should lie below the \"bar A\" area", () => areaLies(page, "bar C", el("bar chart viewer"), "below", "bar A"));
-      await session.step(157, "And the \"bar C\" area of bar chart viewer should lie below the \"bar B\" area", () => areaLies(page, "bar C", el("bar chart viewer"), "below", "bar B"));
-      await session.step(158, "And no errors should have been logged", () => noErrors(page));
-    }, 156);
+    await session.step(140, "Given user opens a table \"empty-aggregate\" with:", () => openTableOf(page, "empty-aggregate", [["Category","Value"],["A","1"],["A","3"],["B","5"],["B","7"],["C",""],["C",""]]), [["Category","Value"],["A","1"],["A","3"],["B","5"],["B","7"],["C",""],["C",""]]);
+    await session.step(148, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","Category"],["Value","Value"],["Value Aggr Type","avg"],["Orientation","horizontal"],["Bar Sort Type","by value"],["Bar Sort Order","desc"]]), [["Split","Category"],["Value","Value"],["Value Aggr Type","avg"],["Orientation","horizontal"],["Bar Sort Type","by value"],["Bar Sort Order","desc"]]);
+    await session.step(155, "Then the \"bars\" reading of bar chart viewer should be 2", () => readingIs(page, "bars", el("bar chart viewer"), 2));
+    await session.step(156, "And bar chart viewer should not have a \"bar C\" area", () => hasNoArea(page, el("bar chart viewer"), "bar C"));
+    await session.step(157, "When user sets \"showEmptyBars\" property of bar chart viewer to \"true\"", () => setProperty(page, "showEmptyBars", el("bar chart viewer"), "true"));
+    await session.step(158, "Then the \"bars\" reading of bar chart viewer should be 3", () => readingIs(page, "bars", el("bar chart viewer"), 3));
+    await session.step(159, "And bar chart viewer should have a \"bar C\" area", () => hasArea(page, el("bar chart viewer"), "bar C"));
+    await session.step(160, "And the bars of bar chart viewer should lie one under another", () => barsStacked(page, el("bar chart viewer")));
+    await session.step(161, "And the \"bar C\" area of bar chart viewer should lie below the \"bar A\" area", () => areaLies(page, "bar C", el("bar chart viewer"), "below", "bar A"));
+    await session.step(162, "And the \"bar C\" area of bar chart viewer should lie below the \"bar B\" area", () => areaLies(page, "bar C", el("bar chart viewer"), "below", "bar B"));
+    await session.step(163, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("Removing the Stack column stops the stacking and logs no error", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(13, "Given user is logged in", () => loggedIn(page));
+    await session.step(172, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(173, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"],["Stack","SEX"]]), [["Split","RACE"],["Stack","SEX"]]);
+    await session.step(176, "Then the \"stack segments\" reading of bar chart viewer should be at least 1", () => readingAtLeast(page, "stack segments", el("bar chart viewer"), 1));
+    await session.step(177, "When user removes \"SEX\" column", () => removeColumn(page, "SEX"));
+    await session.step(178, "Then the \"stack segments\" reading of bar chart viewer should be 0", () => readingIs(page, "stack segments", el("bar chart viewer"), 0));
+    await session.step(179, "And the \"bars\" reading of bar chart viewer should be 4", () => readingIs(page, "bars", el("bar chart viewer"), 4));
+    await session.step(180, "And bar chart viewer should report no error", () => reportsNoError(page, el("bar chart viewer")));
+    await session.step(181, "And no errors should have been logged", () => noErrors(page));
   });
 });

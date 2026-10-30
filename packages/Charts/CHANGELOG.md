@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Pinned the Sankey negative and zero Value on [public#4462](https://github.com/datagrok-ai/public/issues/4462); claimed the word cloud empty word, the tree and sunburst category limit under a filter and the timelines event whose End is before its Start as they are; the timelines Date Format reset is [public#4459](https://github.com/datagrok-ai/public/issues/4459)
 * Tests: Added BDD edge-case features (`bdd/features/viewers/`, tag `@edge-cases`, moved from UsageAnalysis): the radar, Sankey/Chord, sunburst, timelines, tree and word cloud on empty, filtered and changed data, and `viewer-rules-edge-cases.feature`, the rules every viewer shares with the rows of these viewers; [public#4424](https://github.com/datagrok-ai/public/issues/4424) and [core#1174](https://github.com/datagrok-ai/core/issues/1174) as `@known-failure`s, and [public#4420](https://github.com/datagrok-ai/public/issues/4420), [public#4421](https://github.com/datagrok-ai/public/issues/4421), [public#4423](https://github.com/datagrok-ai/public/issues/4423), [public#4425](https://github.com/datagrok-ai/public/issues/4425) and [core#1136](https://github.com/datagrok-ai/core/issues/1136) claimed as fixed
 
 ## 1.8.2 (2026-10-29)

@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/viewer-rules-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [core#1213, public#4452, core#233, core#1174, core#1200]
+sub_features_covered: [core#1213, public#4452, core#233, core#1174, core#1200, core#1217]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -304,317 +304,304 @@ test.describe("Viewer edge cases shared by every viewer: no rows, a column remov
     await session.step(62, "And \"category1ColumnName\" property of box plot viewer should not be \"SEX\"", () => propertyShouldNotBe(page, "category1ColumnName", el("box plot viewer"), "SEX"));
     await session.step(63, "And box plot viewer should report no error", () => reportsNoError(page, el("box plot viewer")));
   });
-  test("The stackColumnName column removed from the table leaves the settings of the bar chart [viewer=bar chart, property=stackColumnName, column=SEX]", {tag: ["@viewers", "@edge-cases", "@known-failure:62", "@ticket-pending"]}, async ({browser}) => {
-    const page = await session.page(browser);
-    await session.step(24, "Given user is logged in", () => loggedIn(page));
-    await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
-    await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await knownFailure(async () => {
-      await session.step(58, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["stackColumnName","SEX"]]), [["stackColumnName","SEX"]]);
-      await session.step(60, "And user removes \"SEX\" column", () => removeColumn(page, "SEX"));
-      await session.step(61, "Then no errors should have been logged", () => noErrors(page));
-      await session.step(62, "And \"stackColumnName\" property of bar chart viewer should not be \"SEX\"", () => propertyShouldNotBe(page, "stackColumnName", el("bar chart viewer"), "SEX"));
-      await session.step(63, "And bar chart viewer should report no error", () => reportsNoError(page, el("bar chart viewer")));
-    }, 62);
-  });
   test("The AGE column renamed is followed by the xColumnName setting of the scatter plot [viewer=scatter plot, property=xColumnName, value=AGE, column=AGE, new name=AGE_YEARS, renamed=AGE_YEARS]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(80, "When user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["xColumnName","AGE"]]), [["xColumnName","AGE"]]);
-    await session.step(82, "And user renames \"AGE\" column to \"AGE_YEARS\"", () => renameColumn(page, "AGE", "AGE_YEARS"));
-    await session.step(83, "Then \"xColumnName\" property of scatter plot viewer should be \"AGE_YEARS\"", () => propertyShouldBe(page, "xColumnName", el("scatter plot viewer"), "AGE_YEARS"));
-    await session.step(84, "And scatter plot viewer should report no error", () => reportsNoError(page, el("scatter plot viewer")));
-    await session.step(85, "And no errors should have been logged", () => noErrors(page));
+    await session.step(75, "When user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["xColumnName","AGE"]]), [["xColumnName","AGE"]]);
+    await session.step(77, "And user renames \"AGE\" column to \"AGE_YEARS\"", () => renameColumn(page, "AGE", "AGE_YEARS"));
+    await session.step(78, "Then \"xColumnName\" property of scatter plot viewer should be \"AGE_YEARS\"", () => propertyShouldBe(page, "xColumnName", el("scatter plot viewer"), "AGE_YEARS"));
+    await session.step(79, "And scatter plot viewer should report no error", () => reportsNoError(page, el("scatter plot viewer")));
+    await session.step(80, "And no errors should have been logged", () => noErrors(page));
   });
   test("The RACE column renamed is followed by the colorColumnName setting of the scatter plot [viewer=scatter plot, property=colorColumnName, value=RACE, column=RACE, new name=ORIGIN, renamed=ORIGIN]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(80, "When user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["colorColumnName","RACE"]]), [["colorColumnName","RACE"]]);
-    await session.step(82, "And user renames \"RACE\" column to \"ORIGIN\"", () => renameColumn(page, "RACE", "ORIGIN"));
-    await session.step(83, "Then \"colorColumnName\" property of scatter plot viewer should be \"ORIGIN\"", () => propertyShouldBe(page, "colorColumnName", el("scatter plot viewer"), "ORIGIN"));
-    await session.step(84, "And scatter plot viewer should report no error", () => reportsNoError(page, el("scatter plot viewer")));
-    await session.step(85, "And no errors should have been logged", () => noErrors(page));
+    await session.step(75, "When user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["colorColumnName","RACE"]]), [["colorColumnName","RACE"]]);
+    await session.step(77, "And user renames \"RACE\" column to \"ORIGIN\"", () => renameColumn(page, "RACE", "ORIGIN"));
+    await session.step(78, "Then \"colorColumnName\" property of scatter plot viewer should be \"ORIGIN\"", () => propertyShouldBe(page, "colorColumnName", el("scatter plot viewer"), "ORIGIN"));
+    await session.step(79, "And scatter plot viewer should report no error", () => reportsNoError(page, el("scatter plot viewer")));
+    await session.step(80, "And no errors should have been logged", () => noErrors(page));
   });
   test("The RACE column renamed is followed by the categoryColumnName setting of the pie chart [viewer=pie chart, property=categoryColumnName, value=RACE, column=RACE, new name=ORIGIN, renamed=ORIGIN]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(80, "When user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["categoryColumnName","RACE"]]), [["categoryColumnName","RACE"]]);
-    await session.step(82, "And user renames \"RACE\" column to \"ORIGIN\"", () => renameColumn(page, "RACE", "ORIGIN"));
-    await session.step(83, "Then \"categoryColumnName\" property of pie chart viewer should be \"ORIGIN\"", () => propertyShouldBe(page, "categoryColumnName", el("pie chart viewer"), "ORIGIN"));
-    await session.step(84, "And pie chart viewer should report no error", () => reportsNoError(page, el("pie chart viewer")));
-    await session.step(85, "And no errors should have been logged", () => noErrors(page));
+    await session.step(75, "When user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["categoryColumnName","RACE"]]), [["categoryColumnName","RACE"]]);
+    await session.step(77, "And user renames \"RACE\" column to \"ORIGIN\"", () => renameColumn(page, "RACE", "ORIGIN"));
+    await session.step(78, "Then \"categoryColumnName\" property of pie chart viewer should be \"ORIGIN\"", () => propertyShouldBe(page, "categoryColumnName", el("pie chart viewer"), "ORIGIN"));
+    await session.step(79, "And pie chart viewer should report no error", () => reportsNoError(page, el("pie chart viewer")));
+    await session.step(80, "And no errors should have been logged", () => noErrors(page));
   });
   test("The HEIGHT column renamed is followed by the columnNames setting of the pc plot [viewer=pc plot, property=columnNames, value=AGE, HEIGHT, WEIGHT, column=HEIGHT, new name=TALL, renamed=AGE, TALL, WEIGHT]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(80, "When user adds a pc plot viewer with:", () => addViewerWith(page, "pc plot", [["columnNames","AGE, HEIGHT, WEIGHT"]]), [["columnNames","AGE, HEIGHT, WEIGHT"]]);
-    await session.step(82, "And user renames \"HEIGHT\" column to \"TALL\"", () => renameColumn(page, "HEIGHT", "TALL"));
-    await session.step(83, "Then \"columnNames\" property of pc plot viewer should be \"AGE, TALL, WEIGHT\"", () => propertyShouldBe(page, "columnNames", el("pc plot viewer"), "AGE, TALL, WEIGHT"));
-    await session.step(84, "And pc plot viewer should report no error", () => reportsNoError(page, el("pc plot viewer")));
-    await session.step(85, "And no errors should have been logged", () => noErrors(page));
+    await session.step(75, "When user adds a pc plot viewer with:", () => addViewerWith(page, "pc plot", [["columnNames","AGE, HEIGHT, WEIGHT"]]), [["columnNames","AGE, HEIGHT, WEIGHT"]]);
+    await session.step(77, "And user renames \"HEIGHT\" column to \"TALL\"", () => renameColumn(page, "HEIGHT", "TALL"));
+    await session.step(78, "Then \"columnNames\" property of pc plot viewer should be \"AGE, TALL, WEIGHT\"", () => propertyShouldBe(page, "columnNames", el("pc plot viewer"), "AGE, TALL, WEIGHT"));
+    await session.step(79, "And pc plot viewer should report no error", () => reportsNoError(page, el("pc plot viewer")));
+    await session.step(80, "And no errors should have been logged", () => noErrors(page));
   });
   test("The RACE column renamed is followed by the lanesColumnName setting of the tile viewer [viewer=tile viewer, property=lanesColumnName, value=RACE, column=RACE, new name=ORIGIN, renamed=ORIGIN]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(80, "When user adds a tile viewer viewer with:", () => addViewerWith(page, "tile viewer", [["lanesColumnName","RACE"]]), [["lanesColumnName","RACE"]]);
-    await session.step(82, "And user renames \"RACE\" column to \"ORIGIN\"", () => renameColumn(page, "RACE", "ORIGIN"));
-    await session.step(83, "Then \"lanesColumnName\" property of tile viewer viewer should be \"ORIGIN\"", () => propertyShouldBe(page, "lanesColumnName", el("tile viewer viewer"), "ORIGIN"));
-    await session.step(84, "And tile viewer viewer should report no error", () => reportsNoError(page, el("tile viewer viewer")));
-    await session.step(85, "And no errors should have been logged", () => noErrors(page));
+    await session.step(75, "When user adds a tile viewer viewer with:", () => addViewerWith(page, "tile viewer", [["lanesColumnName","RACE"]]), [["lanesColumnName","RACE"]]);
+    await session.step(77, "And user renames \"RACE\" column to \"ORIGIN\"", () => renameColumn(page, "RACE", "ORIGIN"));
+    await session.step(78, "Then \"lanesColumnName\" property of tile viewer viewer should be \"ORIGIN\"", () => propertyShouldBe(page, "lanesColumnName", el("tile viewer viewer"), "ORIGIN"));
+    await session.step(79, "And tile viewer viewer should report no error", () => reportsNoError(page, el("tile viewer viewer")));
+    await session.step(80, "And no errors should have been logged", () => noErrors(page));
   });
   test("The SEX column renamed is followed by the splitByColumnNames setting of the tree map [viewer=tree map, property=splitByColumnNames, value=RACE, SEX, column=SEX, new name=GENDER, renamed=RACE, GENDER]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(80, "When user adds a tree map viewer with:", () => addViewerWith(page, "tree map", [["splitByColumnNames","RACE, SEX"]]), [["splitByColumnNames","RACE, SEX"]]);
-    await session.step(82, "And user renames \"SEX\" column to \"GENDER\"", () => renameColumn(page, "SEX", "GENDER"));
-    await session.step(83, "Then \"splitByColumnNames\" property of tree map viewer should be \"RACE, GENDER\"", () => propertyShouldBe(page, "splitByColumnNames", el("tree map viewer"), "RACE, GENDER"));
-    await session.step(84, "And tree map viewer should report no error", () => reportsNoError(page, el("tree map viewer")));
-    await session.step(85, "And no errors should have been logged", () => noErrors(page));
+    await session.step(75, "When user adds a tree map viewer with:", () => addViewerWith(page, "tree map", [["splitByColumnNames","RACE, SEX"]]), [["splitByColumnNames","RACE, SEX"]]);
+    await session.step(77, "And user renames \"SEX\" column to \"GENDER\"", () => renameColumn(page, "SEX", "GENDER"));
+    await session.step(78, "Then \"splitByColumnNames\" property of tree map viewer should be \"RACE, GENDER\"", () => propertyShouldBe(page, "splitByColumnNames", el("tree map viewer"), "RACE, GENDER"));
+    await session.step(79, "And tree map viewer should report no error", () => reportsNoError(page, el("tree map viewer")));
+    await session.step(80, "And no errors should have been logged", () => noErrors(page));
   });
   test("The RACE column renamed is followed by the yColumnNames setting of the trellis plot [viewer=trellis plot, property=yColumnNames, value=RACE, column=RACE, new name=ORIGIN, renamed=ORIGIN]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(80, "When user adds a trellis plot viewer with:", () => addViewerWith(page, "trellis plot", [["yColumnNames","RACE"]]), [["yColumnNames","RACE"]]);
-    await session.step(82, "And user renames \"RACE\" column to \"ORIGIN\"", () => renameColumn(page, "RACE", "ORIGIN"));
-    await session.step(83, "Then \"yColumnNames\" property of trellis plot viewer should be \"ORIGIN\"", () => propertyShouldBe(page, "yColumnNames", el("trellis plot viewer"), "ORIGIN"));
-    await session.step(84, "And trellis plot viewer should report no error", () => reportsNoError(page, el("trellis plot viewer")));
-    await session.step(85, "And no errors should have been logged", () => noErrors(page));
+    await session.step(75, "When user adds a trellis plot viewer with:", () => addViewerWith(page, "trellis plot", [["yColumnNames","RACE"]]), [["yColumnNames","RACE"]]);
+    await session.step(77, "And user renames \"RACE\" column to \"ORIGIN\"", () => renameColumn(page, "RACE", "ORIGIN"));
+    await session.step(78, "Then \"yColumnNames\" property of trellis plot viewer should be \"ORIGIN\"", () => propertyShouldBe(page, "yColumnNames", el("trellis plot viewer"), "ORIGIN"));
+    await session.step(79, "And trellis plot viewer should report no error", () => reportsNoError(page, el("trellis plot viewer")));
+    await session.step(80, "And no errors should have been logged", () => noErrors(page));
   });
-  test("The AGE column renamed is followed by the filter setting of the scatter plot [viewer=scatter plot, property=filter, value=${AGE} > 44, column=AGE, new name=YEARS, renamed=${YEARS} > 44]", {tag: ["@viewers", "@edge-cases", "@known-failure:83", "@realizes:core#1213"]}, async ({browser}) => {
+  test("The AGE column renamed is followed by the filter setting of the scatter plot [viewer=scatter plot, property=filter, value=${AGE} > 44, column=AGE, new name=YEARS, renamed=${YEARS} > 44]", {tag: ["@viewers", "@edge-cases", "@known-failure:78", "@realizes:core#1213"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await knownFailure(async () => {
-      await session.step(80, "When user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["filter","${AGE} > 44"]]), [["filter","${AGE} > 44"]]);
-      await session.step(82, "And user renames \"AGE\" column to \"YEARS\"", () => renameColumn(page, "AGE", "YEARS"));
-      await session.step(83, "Then \"filter\" property of scatter plot viewer should be \"${YEARS} > 44\"", () => propertyShouldBe(page, "filter", el("scatter plot viewer"), "${YEARS} > 44"));
-      await session.step(84, "And scatter plot viewer should report no error", () => reportsNoError(page, el("scatter plot viewer")));
-      await session.step(85, "And no errors should have been logged", () => noErrors(page));
-    }, 83);
+      await session.step(75, "When user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["filter","${AGE} > 44"]]), [["filter","${AGE} > 44"]]);
+      await session.step(77, "And user renames \"AGE\" column to \"YEARS\"", () => renameColumn(page, "AGE", "YEARS"));
+      await session.step(78, "Then \"filter\" property of scatter plot viewer should be \"${YEARS} > 44\"", () => propertyShouldBe(page, "filter", el("scatter plot viewer"), "${YEARS} > 44"));
+      await session.step(79, "And scatter plot viewer should report no error", () => reportsNoError(page, el("scatter plot viewer")));
+      await session.step(80, "And no errors should have been logged", () => noErrors(page));
+    }, 78);
   });
   test("A layout naming a RACE column the table no longer has is applied to the scatter plot, which draws without it [viewer=scatter plot, property=colorColumnName, value=RACE, column=RACE, left=RACE]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(103, "When user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["colorColumnName","RACE"]]), [["colorColumnName","RACE"]]);
-    await session.step(105, "And user saves the layout of the current table view", () => saveLayout(page));
-    await session.step(106, "And user removes \"RACE\" column", () => removeColumn(page, "RACE"));
-    await session.step(107, "And user loads the saved layout", () => loadLayout(page));
-    await session.step(108, "Then scatter plot viewer should be visible", () => shouldBe(page, el("scatter plot viewer"), "visible"));
-    await session.step(109, "And \"colorColumnName\" property of scatter plot viewer should be \"RACE\"", () => propertyShouldBe(page, "colorColumnName", el("scatter plot viewer"), "RACE"));
-    await session.step(110, "And scatter plot viewer should report no error", () => reportsNoError(page, el("scatter plot viewer")));
-    await session.step(111, "And no errors should have been logged", () => noErrors(page));
+    await session.step(98, "When user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["colorColumnName","RACE"]]), [["colorColumnName","RACE"]]);
+    await session.step(100, "And user saves the layout of the current table view", () => saveLayout(page));
+    await session.step(101, "And user removes \"RACE\" column", () => removeColumn(page, "RACE"));
+    await session.step(102, "And user loads the saved layout", () => loadLayout(page));
+    await session.step(103, "Then scatter plot viewer should be visible", () => shouldBe(page, el("scatter plot viewer"), "visible"));
+    await session.step(104, "And \"colorColumnName\" property of scatter plot viewer should be \"RACE\"", () => propertyShouldBe(page, "colorColumnName", el("scatter plot viewer"), "RACE"));
+    await session.step(105, "And scatter plot viewer should report no error", () => reportsNoError(page, el("scatter plot viewer")));
+    await session.step(106, "And no errors should have been logged", () => noErrors(page));
   });
   test("A layout naming a HEIGHT column the table no longer has is applied to the pc plot, which draws without it [viewer=pc plot, property=columnNames, value=AGE, HEIGHT, WEIGHT, column=HEIGHT, left=AGE, HEIGHT, WEIGHT]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(103, "When user adds a pc plot viewer with:", () => addViewerWith(page, "pc plot", [["columnNames","AGE, HEIGHT, WEIGHT"]]), [["columnNames","AGE, HEIGHT, WEIGHT"]]);
-    await session.step(105, "And user saves the layout of the current table view", () => saveLayout(page));
-    await session.step(106, "And user removes \"HEIGHT\" column", () => removeColumn(page, "HEIGHT"));
-    await session.step(107, "And user loads the saved layout", () => loadLayout(page));
-    await session.step(108, "Then pc plot viewer should be visible", () => shouldBe(page, el("pc plot viewer"), "visible"));
-    await session.step(109, "And \"columnNames\" property of pc plot viewer should be \"AGE, HEIGHT, WEIGHT\"", () => propertyShouldBe(page, "columnNames", el("pc plot viewer"), "AGE, HEIGHT, WEIGHT"));
-    await session.step(110, "And pc plot viewer should report no error", () => reportsNoError(page, el("pc plot viewer")));
-    await session.step(111, "And no errors should have been logged", () => noErrors(page));
+    await session.step(98, "When user adds a pc plot viewer with:", () => addViewerWith(page, "pc plot", [["columnNames","AGE, HEIGHT, WEIGHT"]]), [["columnNames","AGE, HEIGHT, WEIGHT"]]);
+    await session.step(100, "And user saves the layout of the current table view", () => saveLayout(page));
+    await session.step(101, "And user removes \"HEIGHT\" column", () => removeColumn(page, "HEIGHT"));
+    await session.step(102, "And user loads the saved layout", () => loadLayout(page));
+    await session.step(103, "Then pc plot viewer should be visible", () => shouldBe(page, el("pc plot viewer"), "visible"));
+    await session.step(104, "And \"columnNames\" property of pc plot viewer should be \"AGE, HEIGHT, WEIGHT\"", () => propertyShouldBe(page, "columnNames", el("pc plot viewer"), "AGE, HEIGHT, WEIGHT"));
+    await session.step(105, "And pc plot viewer should report no error", () => reportsNoError(page, el("pc plot viewer")));
+    await session.step(106, "And no errors should have been logged", () => noErrors(page));
   });
   test("A layout naming a SEX column the table no longer has is applied to the tree map, which draws without it [viewer=tree map, property=splitByColumnNames, value=RACE, SEX, column=SEX, left=RACE, SEX]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(103, "When user adds a tree map viewer with:", () => addViewerWith(page, "tree map", [["splitByColumnNames","RACE, SEX"]]), [["splitByColumnNames","RACE, SEX"]]);
-    await session.step(105, "And user saves the layout of the current table view", () => saveLayout(page));
-    await session.step(106, "And user removes \"SEX\" column", () => removeColumn(page, "SEX"));
-    await session.step(107, "And user loads the saved layout", () => loadLayout(page));
-    await session.step(108, "Then tree map viewer should be visible", () => shouldBe(page, el("tree map viewer"), "visible"));
-    await session.step(109, "And \"splitByColumnNames\" property of tree map viewer should be \"RACE, SEX\"", () => propertyShouldBe(page, "splitByColumnNames", el("tree map viewer"), "RACE, SEX"));
-    await session.step(110, "And tree map viewer should report no error", () => reportsNoError(page, el("tree map viewer")));
-    await session.step(111, "And no errors should have been logged", () => noErrors(page));
+    await session.step(98, "When user adds a tree map viewer with:", () => addViewerWith(page, "tree map", [["splitByColumnNames","RACE, SEX"]]), [["splitByColumnNames","RACE, SEX"]]);
+    await session.step(100, "And user saves the layout of the current table view", () => saveLayout(page));
+    await session.step(101, "And user removes \"SEX\" column", () => removeColumn(page, "SEX"));
+    await session.step(102, "And user loads the saved layout", () => loadLayout(page));
+    await session.step(103, "Then tree map viewer should be visible", () => shouldBe(page, el("tree map viewer"), "visible"));
+    await session.step(104, "And \"splitByColumnNames\" property of tree map viewer should be \"RACE, SEX\"", () => propertyShouldBe(page, "splitByColumnNames", el("tree map viewer"), "RACE, SEX"));
+    await session.step(105, "And tree map viewer should report no error", () => reportsNoError(page, el("tree map viewer")));
+    await session.step(106, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A layout naming a HEIGHT column the table no longer has is applied to the forms, which draws without it [viewer=forms, property=fields, value=AGE, HEIGHT, SEX, column=HEIGHT, left=AGE, HEIGHT, SEX]", {tag: ["@viewers", "@edge-cases", "@known-failure:111", "@realizes:public#4452"]}, async ({browser}) => {
+  test("A layout naming a HEIGHT column the table no longer has is applied to the forms, which draws without it [viewer=forms, property=fields, value=AGE, HEIGHT, SEX, column=HEIGHT, left=AGE, HEIGHT, SEX]", {tag: ["@viewers", "@edge-cases", "@known-failure:106", "@realizes:public#4452"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await knownFailure(async () => {
-      await session.step(103, "When user adds a forms viewer with:", () => addViewerWith(page, "forms", [["fields","AGE, HEIGHT, SEX"]]), [["fields","AGE, HEIGHT, SEX"]]);
-      await session.step(105, "And user saves the layout of the current table view", () => saveLayout(page));
-      await session.step(106, "And user removes \"HEIGHT\" column", () => removeColumn(page, "HEIGHT"));
-      await session.step(107, "And user loads the saved layout", () => loadLayout(page));
-      await session.step(108, "Then forms viewer should be visible", () => shouldBe(page, el("forms viewer"), "visible"));
-      await session.step(109, "And \"fields\" property of forms viewer should be \"AGE, HEIGHT, SEX\"", () => propertyShouldBe(page, "fields", el("forms viewer"), "AGE, HEIGHT, SEX"));
-      await session.step(110, "And forms viewer should report no error", () => reportsNoError(page, el("forms viewer")));
-      await session.step(111, "And no errors should have been logged", () => noErrors(page));
-    }, 111);
+      await session.step(98, "When user adds a forms viewer with:", () => addViewerWith(page, "forms", [["fields","AGE, HEIGHT, SEX"]]), [["fields","AGE, HEIGHT, SEX"]]);
+      await session.step(100, "And user saves the layout of the current table view", () => saveLayout(page));
+      await session.step(101, "And user removes \"HEIGHT\" column", () => removeColumn(page, "HEIGHT"));
+      await session.step(102, "And user loads the saved layout", () => loadLayout(page));
+      await session.step(103, "Then forms viewer should be visible", () => shouldBe(page, el("forms viewer"), "visible"));
+      await session.step(104, "And \"fields\" property of forms viewer should be \"AGE, HEIGHT, SEX\"", () => propertyShouldBe(page, "fields", el("forms viewer"), "AGE, HEIGHT, SEX"));
+      await session.step(105, "And forms viewer should report no error", () => reportsNoError(page, el("forms viewer")));
+      await session.step(106, "And no errors should have been logged", () => noErrors(page));
+    }, 106);
   });
   test("Closing a bar chart gives back the rows its click filtered out [viewer=bar chart, property=splitColumnName, value=RACE, area=bar Asian]", {tag: ["@viewers", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(125, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["splitColumnName","RACE"]]), [["splitColumnName","RACE"]]);
-    await session.step(127, "And user sets \"onClick\" property of bar chart viewer to \"Filter\"", () => setProperty(page, "onClick", el("bar chart viewer"), "Filter"));
-    await session.step(128, "And user clicks on the \"bar Asian\" area of bar chart viewer", () => clickArea(page, "bar Asian", el("bar chart viewer")));
-    await session.step(129, "Then fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
-    await session.step(130, "When user clicks on close icon of bar chart viewer", () => clickOn(page, el("close icon of bar chart viewer")));
-    await session.step(131, "Then the open tableview should have 0 bar chart viewers", () => viewerCount(page, 0, "bar chart"));
-    await session.step(132, "And all rows should pass the filter", () => filterPassesAll(page));
-    await session.step(133, "And no errors should have been logged", () => noErrors(page));
+    await session.step(120, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["splitColumnName","RACE"]]), [["splitColumnName","RACE"]]);
+    await session.step(122, "And user sets \"onClick\" property of bar chart viewer to \"Filter\"", () => setProperty(page, "onClick", el("bar chart viewer"), "Filter"));
+    await session.step(123, "And user clicks on the \"bar Asian\" area of bar chart viewer", () => clickArea(page, "bar Asian", el("bar chart viewer")));
+    await session.step(124, "Then fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
+    await session.step(125, "When user clicks on close icon of bar chart viewer", () => clickOn(page, el("close icon of bar chart viewer")));
+    await session.step(126, "Then the open tableview should have 0 bar chart viewers", () => viewerCount(page, 0, "bar chart"));
+    await session.step(127, "And all rows should pass the filter", () => filterPassesAll(page));
+    await session.step(128, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Closing a calendar gives back the rows its click filtered out [viewer=calendar, property=onClick, value=Filter, area=month 1990-01]", {tag: ["@viewers", "@edge-cases", "@known-failure:132", "@realizes:core#233"]}, async ({browser}) => {
+  test("Closing a calendar gives back the rows its click filtered out [viewer=calendar, property=onClick, value=Filter, area=month 1990-01]", {tag: ["@viewers", "@edge-cases", "@known-failure:127", "@realizes:core#233"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await knownFailure(async () => {
-      await session.step(125, "When user adds a calendar viewer with:", () => addViewerWith(page, "calendar", [["onClick","Filter"]]), [["onClick","Filter"]]);
-      await session.step(127, "And user sets \"onClick\" property of calendar viewer to \"Filter\"", () => setProperty(page, "onClick", el("calendar viewer"), "Filter"));
-      await session.step(128, "And user clicks on the \"month 1990-01\" area of calendar viewer", () => clickArea(page, "month 1990-01", el("calendar viewer")));
-      await session.step(129, "Then fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
-      await session.step(130, "When user clicks on close icon of calendar viewer", () => clickOn(page, el("close icon of calendar viewer")));
-      await session.step(131, "Then the open tableview should have 0 calendar viewers", () => viewerCount(page, 0, "calendar"));
-      await session.step(132, "And all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(133, "And no errors should have been logged", () => noErrors(page));
-    }, 132);
+      await session.step(120, "When user adds a calendar viewer with:", () => addViewerWith(page, "calendar", [["onClick","Filter"]]), [["onClick","Filter"]]);
+      await session.step(122, "And user sets \"onClick\" property of calendar viewer to \"Filter\"", () => setProperty(page, "onClick", el("calendar viewer"), "Filter"));
+      await session.step(123, "And user clicks on the \"month 1990-01\" area of calendar viewer", () => clickArea(page, "month 1990-01", el("calendar viewer")));
+      await session.step(124, "Then fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
+      await session.step(125, "When user clicks on close icon of calendar viewer", () => clickOn(page, el("close icon of calendar viewer")));
+      await session.step(126, "Then the open tableview should have 0 calendar viewers", () => viewerCount(page, 0, "calendar"));
+      await session.step(127, "And all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(128, "And no errors should have been logged", () => noErrors(page));
+    }, 127);
   });
-  test("Removing the column of the category a bar chart click filtered by gives the rows back [viewer=bar chart, property=splitColumnName, value=RACE, area=bar Asian, column=RACE]", {tag: ["@viewers", "@edge-cases", "@known-failure:151", "@realizes:core#1174"]}, async ({browser}) => {
+  test("Removing the column of the category a bar chart click filtered by gives the rows back [viewer=bar chart, property=splitColumnName, value=RACE, area=bar Asian, column=RACE]", {tag: ["@viewers", "@edge-cases", "@known-failure:146", "@realizes:core#1174"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await knownFailure(async () => {
-      await session.step(145, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["splitColumnName","RACE"]]), [["splitColumnName","RACE"]]);
-      await session.step(147, "And user sets \"onClick\" property of bar chart viewer to \"Filter\"", () => setProperty(page, "onClick", el("bar chart viewer"), "Filter"));
-      await session.step(148, "And user clicks on the \"bar Asian\" area of bar chart viewer", () => clickArea(page, "bar Asian", el("bar chart viewer")));
-      await session.step(149, "Then fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
-      await session.step(150, "When user removes \"RACE\" column", () => removeColumn(page, "RACE"));
-      await session.step(151, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(152, "And no errors should have been logged", () => noErrors(page));
-    }, 151);
+      await session.step(140, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["splitColumnName","RACE"]]), [["splitColumnName","RACE"]]);
+      await session.step(142, "And user sets \"onClick\" property of bar chart viewer to \"Filter\"", () => setProperty(page, "onClick", el("bar chart viewer"), "Filter"));
+      await session.step(143, "And user clicks on the \"bar Asian\" area of bar chart viewer", () => clickArea(page, "bar Asian", el("bar chart viewer")));
+      await session.step(144, "Then fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
+      await session.step(145, "When user removes \"RACE\" column", () => removeColumn(page, "RACE"));
+      await session.step(146, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(147, "And no errors should have been logged", () => noErrors(page));
+    }, 146);
   });
-  test("Bins typed in the context panel outside its declared bounds is not taken by the histogram [viewer=histogram, category=X Axis, caption=Bins, typed=201, kept=20]", {tag: ["@viewers", "@edge-cases", "@known-failure:165", "@realizes:core#1200"]}, async ({browser}) => {
+  test("Bins typed in the context panel outside its declared bounds is not taken by the histogram [viewer=histogram, category=X Axis, caption=Bins, typed=201, kept=20]", {tag: ["@viewers", "@edge-cases", "@known-failure:160", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await knownFailure(async () => {
-      await session.step(160, "When user adds a histogram viewer", () => addViewer(page, "histogram"));
-      await session.step(161, "And user clicks on settings icon of histogram viewer", () => clickOn(page, el("settings icon of histogram viewer")));
-      await session.step(162, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
-      await session.step(163, "Given \"X Axis\" category in context panel is expanded", () => isExpanded(page, el("\"X Axis\" category in context panel")));
-      await session.step(164, "When user enters \"201\" into \"Bins\" property in context panel", () => enterInto(page, "201", el("\"Bins\" property in context panel")));
-      await session.step(165, "Then \"Bins\" property of histogram viewer should be \"20\"", () => propertyShouldBe(page, "Bins", el("histogram viewer"), "20"));
-      await session.step(166, "And no errors should have been logged", () => noErrors(page));
-    }, 165);
+      await session.step(155, "When user adds a histogram viewer", () => addViewer(page, "histogram"));
+      await session.step(156, "And user clicks on settings icon of histogram viewer", () => clickOn(page, el("settings icon of histogram viewer")));
+      await session.step(157, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
+      await session.step(158, "Given \"X Axis\" category in context panel is expanded", () => isExpanded(page, el("\"X Axis\" category in context panel")));
+      await session.step(159, "When user enters \"201\" into \"Bins\" property in context panel", () => enterInto(page, "201", el("\"Bins\" property in context panel")));
+      await session.step(160, "Then \"Bins\" property of histogram viewer should be \"20\"", () => propertyShouldBe(page, "Bins", el("histogram viewer"), "20"));
+      await session.step(161, "And no errors should have been logged", () => noErrors(page));
+    }, 160);
   });
-  test("Max Radius typed in the context panel outside its declared bounds is not taken by the pie chart [viewer=pie chart, category=Misc, caption=Max Radius, typed=600, kept=150]", {tag: ["@viewers", "@edge-cases", "@known-failure:165", "@realizes:core#1200"]}, async ({browser}) => {
+  test("Max Radius typed in the context panel outside its declared bounds is not taken by the pie chart [viewer=pie chart, category=Misc, caption=Max Radius, typed=600, kept=150]", {tag: ["@viewers", "@edge-cases", "@known-failure:160", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await knownFailure(async () => {
-      await session.step(160, "When user adds a pie chart viewer", () => addViewer(page, "pie chart"));
-      await session.step(161, "And user clicks on settings icon of pie chart viewer", () => clickOn(page, el("settings icon of pie chart viewer")));
-      await session.step(162, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
-      await session.step(163, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
-      await session.step(164, "When user enters \"600\" into \"Max Radius\" property in context panel", () => enterInto(page, "600", el("\"Max Radius\" property in context panel")));
-      await session.step(165, "Then \"Max Radius\" property of pie chart viewer should be \"150\"", () => propertyShouldBe(page, "Max Radius", el("pie chart viewer"), "150"));
-      await session.step(166, "And no errors should have been logged", () => noErrors(page));
-    }, 165);
+      await session.step(155, "When user adds a pie chart viewer", () => addViewer(page, "pie chart"));
+      await session.step(156, "And user clicks on settings icon of pie chart viewer", () => clickOn(page, el("settings icon of pie chart viewer")));
+      await session.step(157, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
+      await session.step(158, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
+      await session.step(159, "When user enters \"600\" into \"Max Radius\" property in context panel", () => enterInto(page, "600", el("\"Max Radius\" property in context panel")));
+      await session.step(160, "Then \"Max Radius\" property of pie chart viewer should be \"150\"", () => propertyShouldBe(page, "Max Radius", el("pie chart viewer"), "150"));
+      await session.step(161, "And no errors should have been logged", () => noErrors(page));
+    }, 160);
   });
-  test("Tiles Per Row typed in the context panel outside its declared bounds is not taken by the trellis plot [viewer=trellis plot, category=Misc, caption=Tiles Per Row, typed=11, kept=4]", {tag: ["@viewers", "@edge-cases", "@known-failure:165", "@realizes:core#1200"]}, async ({browser}) => {
+  test("Tiles Per Row typed in the context panel outside its declared bounds is not taken by the trellis plot [viewer=trellis plot, category=Misc, caption=Tiles Per Row, typed=11, kept=4]", {tag: ["@viewers", "@edge-cases", "@known-failure:160", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await knownFailure(async () => {
-      await session.step(160, "When user adds a trellis plot viewer", () => addViewer(page, "trellis plot"));
-      await session.step(161, "And user clicks on settings icon of trellis plot viewer", () => clickOn(page, el("settings icon of trellis plot viewer")));
-      await session.step(162, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
-      await session.step(163, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
-      await session.step(164, "When user enters \"11\" into \"Tiles Per Row\" property in context panel", () => enterInto(page, "11", el("\"Tiles Per Row\" property in context panel")));
-      await session.step(165, "Then \"Tiles Per Row\" property of trellis plot viewer should be \"4\"", () => propertyShouldBe(page, "Tiles Per Row", el("trellis plot viewer"), "4"));
-      await session.step(166, "And no errors should have been logged", () => noErrors(page));
-    }, 165);
+      await session.step(155, "When user adds a trellis plot viewer", () => addViewer(page, "trellis plot"));
+      await session.step(156, "And user clicks on settings icon of trellis plot viewer", () => clickOn(page, el("settings icon of trellis plot viewer")));
+      await session.step(157, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
+      await session.step(158, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
+      await session.step(159, "When user enters \"11\" into \"Tiles Per Row\" property in context panel", () => enterInto(page, "11", el("\"Tiles Per Row\" property in context panel")));
+      await session.step(160, "Then \"Tiles Per Row\" property of trellis plot viewer should be \"4\"", () => propertyShouldBe(page, "Tiles Per Row", el("trellis plot viewer"), "4"));
+      await session.step(161, "And no errors should have been logged", () => noErrors(page));
+    }, 160);
   });
-  test("bins set through the API outside its declared bounds is not taken by the histogram [viewer=histogram, property=bins, set=201, kept=20]", {tag: ["@viewers", "@edge-cases", "@known-failure:178", "@realizes:core#1200"]}, async ({browser}) => {
+  test("bins set through the API outside its declared bounds is not taken by the histogram [viewer=histogram, property=bins, set=201, kept=20]", {tag: ["@viewers", "@edge-cases", "@known-failure:173", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await knownFailure(async () => {
-      await session.step(176, "When user adds a histogram viewer", () => addViewer(page, "histogram"));
-      await session.step(177, "And user sets \"bins\" property of histogram viewer to \"201\"", () => setProperty(page, "bins", el("histogram viewer"), "201"));
-      await session.step(178, "Then \"bins\" property of histogram viewer should be \"20\"", () => propertyShouldBe(page, "bins", el("histogram viewer"), "20"));
-      await session.step(179, "And no errors should have been logged", () => noErrors(page));
-    }, 178);
+      await session.step(171, "When user adds a histogram viewer", () => addViewer(page, "histogram"));
+      await session.step(172, "And user sets \"bins\" property of histogram viewer to \"201\"", () => setProperty(page, "bins", el("histogram viewer"), "201"));
+      await session.step(173, "Then \"bins\" property of histogram viewer should be \"20\"", () => propertyShouldBe(page, "bins", el("histogram viewer"), "20"));
+      await session.step(174, "And no errors should have been logged", () => noErrors(page));
+    }, 173);
   });
-  test("bins set through the API outside its declared bounds is not taken by the histogram [viewer=histogram, property=bins, set=0, kept=20]", {tag: ["@viewers", "@edge-cases", "@known-failure:178", "@realizes:core#1200"]}, async ({browser}) => {
+  test("bins set through the API outside its declared bounds is not taken by the histogram [viewer=histogram, property=bins, set=0, kept=20]", {tag: ["@viewers", "@edge-cases", "@known-failure:173", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await knownFailure(async () => {
-      await session.step(176, "When user adds a histogram viewer", () => addViewer(page, "histogram"));
-      await session.step(177, "And user sets \"bins\" property of histogram viewer to \"0\"", () => setProperty(page, "bins", el("histogram viewer"), "0"));
-      await session.step(178, "Then \"bins\" property of histogram viewer should be \"20\"", () => propertyShouldBe(page, "bins", el("histogram viewer"), "20"));
-      await session.step(179, "And no errors should have been logged", () => noErrors(page));
-    }, 178);
+      await session.step(171, "When user adds a histogram viewer", () => addViewer(page, "histogram"));
+      await session.step(172, "And user sets \"bins\" property of histogram viewer to \"0\"", () => setProperty(page, "bins", el("histogram viewer"), "0"));
+      await session.step(173, "Then \"bins\" property of histogram viewer should be \"20\"", () => propertyShouldBe(page, "bins", el("histogram viewer"), "20"));
+      await session.step(174, "And no errors should have been logged", () => noErrors(page));
+    }, 173);
   });
-  test("maxRadius set through the API outside its declared bounds is not taken by the pie chart [viewer=pie chart, property=maxRadius, set=600, kept=150]", {tag: ["@viewers", "@edge-cases", "@known-failure:178", "@realizes:core#1200"]}, async ({browser}) => {
+  test("maxRadius set through the API outside its declared bounds is not taken by the pie chart [viewer=pie chart, property=maxRadius, set=600, kept=150]", {tag: ["@viewers", "@edge-cases", "@known-failure:173", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await knownFailure(async () => {
-      await session.step(176, "When user adds a pie chart viewer", () => addViewer(page, "pie chart"));
-      await session.step(177, "And user sets \"maxRadius\" property of pie chart viewer to \"600\"", () => setProperty(page, "maxRadius", el("pie chart viewer"), "600"));
-      await session.step(178, "Then \"maxRadius\" property of pie chart viewer should be \"150\"", () => propertyShouldBe(page, "maxRadius", el("pie chart viewer"), "150"));
-      await session.step(179, "And no errors should have been logged", () => noErrors(page));
-    }, 178);
+      await session.step(171, "When user adds a pie chart viewer", () => addViewer(page, "pie chart"));
+      await session.step(172, "And user sets \"maxRadius\" property of pie chart viewer to \"600\"", () => setProperty(page, "maxRadius", el("pie chart viewer"), "600"));
+      await session.step(173, "Then \"maxRadius\" property of pie chart viewer should be \"150\"", () => propertyShouldBe(page, "maxRadius", el("pie chart viewer"), "150"));
+      await session.step(174, "And no errors should have been logged", () => noErrors(page));
+    }, 173);
   });
-  test("tilesPerRow set through the API outside its declared bounds is not taken by the trellis plot [viewer=trellis plot, property=tilesPerRow, set=0, kept=4]", {tag: ["@viewers", "@edge-cases", "@known-failure:178", "@realizes:core#1200"]}, async ({browser}) => {
+  test("tilesPerRow set through the API outside its declared bounds is not taken by the trellis plot [viewer=trellis plot, property=tilesPerRow, set=0, kept=4]", {tag: ["@viewers", "@edge-cases", "@known-failure:173", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await knownFailure(async () => {
-      await session.step(176, "When user adds a trellis plot viewer", () => addViewer(page, "trellis plot"));
-      await session.step(177, "And user sets \"tilesPerRow\" property of trellis plot viewer to \"0\"", () => setProperty(page, "tilesPerRow", el("trellis plot viewer"), "0"));
-      await session.step(178, "Then \"tilesPerRow\" property of trellis plot viewer should be \"4\"", () => propertyShouldBe(page, "tilesPerRow", el("trellis plot viewer"), "4"));
-      await session.step(179, "And no errors should have been logged", () => noErrors(page));
-    }, 178);
+      await session.step(171, "When user adds a trellis plot viewer", () => addViewer(page, "trellis plot"));
+      await session.step(172, "And user sets \"tilesPerRow\" property of trellis plot viewer to \"0\"", () => setProperty(page, "tilesPerRow", el("trellis plot viewer"), "0"));
+      await session.step(173, "Then \"tilesPerRow\" property of trellis plot viewer should be \"4\"", () => propertyShouldBe(page, "tilesPerRow", el("trellis plot viewer"), "4"));
+      await session.step(174, "And no errors should have been logged", () => noErrors(page));
+    }, 173);
   });
-  test("An empty value is the (empty) category of the tile viewer [viewer=tile viewer, property=lanesColumnName, shown=tiles, reading=lane names]", {tag: ["@viewers", "@edge-cases", "@known-failure:200", "@ticket-pending"]}, async ({browser}) => {
+  test("An empty value is the (empty) category of the tile viewer [viewer=tile viewer, property=lanesColumnName, shown=tiles, reading=lane names]", {tag: ["@viewers", "@edge-cases", "@known-failure:195", "@realizes:core#1217"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(24, "Given user is logged in", () => loggedIn(page));
     await session.step(25, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(26, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await knownFailure(async () => {
-      await session.step(190, "Given user opens a table \"with-empty\" with:", () => openTableOf(page, "with-empty", [["site","arm"],["A","x"],["A",""],["B","y"]]), [["site","arm"],["A","x"],["A",""],["B","y"]]);
-      await session.step(195, "When user adds a tile viewer viewer with:", () => addViewerWith(page, "tile viewer", [["lanesColumnName","arm"]]), [["lanesColumnName","arm"]]);
-      await session.step(197, "Then no errors should have been logged", () => noErrors(page));
-      await session.step(198, "And tile viewer viewer should report no error", () => reportsNoError(page, el("tile viewer viewer")));
-      await session.step(199, "And the \"tiles\" reading of tile viewer viewer should be 3", () => readingIs(page, "tiles", el("tile viewer viewer"), 3));
-      await session.step(200, "And the \"lane names\" reading of tile viewer viewer should contain \"(empty)\"", () => readingContains(page, "lane names", el("tile viewer viewer"), "(empty)"));
-    }, 200);
+      await session.step(185, "Given user opens a table \"with-empty\" with:", () => openTableOf(page, "with-empty", [["site","arm"],["A","x"],["A",""],["B","y"]]), [["site","arm"],["A","x"],["A",""],["B","y"]]);
+      await session.step(190, "When user adds a tile viewer viewer with:", () => addViewerWith(page, "tile viewer", [["lanesColumnName","arm"]]), [["lanesColumnName","arm"]]);
+      await session.step(192, "Then no errors should have been logged", () => noErrors(page));
+      await session.step(193, "And tile viewer viewer should report no error", () => reportsNoError(page, el("tile viewer viewer")));
+      await session.step(194, "And the \"tiles\" reading of tile viewer viewer should be 3", () => readingIs(page, "tiles", el("tile viewer viewer"), 3));
+      await session.step(195, "And the \"lane names\" reading of tile viewer viewer should contain \"(empty)\"", () => readingContains(page, "lane names", el("tile viewer viewer"), "(empty)"));
+    }, 195);
   });
 });

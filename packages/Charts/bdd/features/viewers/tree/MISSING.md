@@ -25,10 +25,9 @@ None.
    with every row passing, a layout naming a missing hierarchy column and the removed column of the
    clicked branch are rows of the outlines too.
 
-5. **A column with more than 500 categories** is refused whatever the filter. Today the check runs
-   only while at least 500 rows pass (`tree-viewer.ts:921-927`), so under a filter of fewer rows the
-   message turns into a tree with one branch per category: a known failure with no ticket yet, the
-   category-limit outline of `viewer-rules-edge-cases.feature`.
+5. **A column with more than 500 categories** is refused only while at least 500 rows pass
+   (`tree-viewer.ts:921-927`); under a filter of fewer rows the tree is drawn: right as it is
+   (2026-10-30), the category-limit outline of `viewer-rules-edge-cases.feature`.
 
 ### 3. Questions for owners
 

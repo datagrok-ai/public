@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/form/form-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.form, core#1138, core#1192]
+sub_features_covered: [viewers.form, core#1138, core#1192, core#1214]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -97,7 +97,7 @@ test.describe("Form viewer edge cases", () => {
     await session.step(62, "And form viewer should report no error", () => reportsNoError(page, el("form viewer")));
     await session.step(63, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A column removed from the table takes its field off a form built from chosen columns", {tag: ["@viewers", "@realizes:viewers.form", "@edge-cases", "@known-failure:70", "@ticket-pending"]}, async ({browser}) => {
+  test("A column removed from the table takes its field off a form built from chosen columns", {tag: ["@viewers", "@realizes:viewers.form", "@edge-cases", "@known-failure:70", "@realizes:core#1214"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));

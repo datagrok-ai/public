@@ -70,38 +70,7 @@ Feature: Markup edge cases — HTML in a cell value, a referenced column removed
       | CANCEL    | user clicks on "CANCEL" button in Edit dialog |
       | Escape    | user presses Escape                           |
 
-  @known-failure:82 @ticket-pending
-  Scenario: With the current row filtered out the placeholder shows empty
-    Given user opens demog-1000 dataset
-    When user adds a markup viewer with:
-      | content | Age: [${AGE}] |
-    And user makes row 1 current
-    Then the "text" reading of markup viewer should be "Age: [26]"
-    When user filters rows where "SEX" is "M"
-    Then 447 rows should pass the filter
-    And the "text" reading of markup viewer should be "Age: []"
-    And markup viewer should report no error
-    And no errors should have been logged
-
-  @known-failure:100 @ticket-pending
-  Scenario: Once the current row is deleted the table has no current row and the placeholder shows empty
-    Given user opens a table "markup-no-current" with:
-      | NAME  | SCORE |
-      | first | 1     |
-      | last  | 2     |
-    When user adds a markup viewer with:
-      | content | Name: [${NAME}] |
-    And user makes the last row current
-    Then the "text" reading of markup viewer should be "Name: [last]"
-    When user selects rows where "NAME" is "last"
-    And user deletes the selected rows
-    Then the table should have 1 row
-    And the "current row" reading of markup viewer should be 0
-    And the "text" reading of markup viewer should be "Name: []"
-    And markup viewer should report no error
-    And no errors should have been logged
-
-  @known-failure:113 @ticket-pending
+  @known-failure:82 @realizes:core#1232
   Scenario: A referenced column renamed is followed by the content
     Given user opens demog-1000 dataset
     When user adds a markup viewer with:

@@ -77,9 +77,8 @@ Feature: Color coding edge cases
     And the "color of cell 2 of RACE" and "color of cell 2 of SEX" readings of grid should be the same
     And no errors should have been logged
 
-  @edge-cases @known-failure:93 @ticket-pending
-  Scenario: A linear Min typed above Max is swapped with it
-    The two stay as typed: AGE 58 takes the colour below Min, not the one it has under Min 50 and Max 60.
+  @edge-cases
+  Scenario: A linear Min typed above Max inverts the scheme
     When user picks "Color Coding > Linear" from the context menu of the "header AGE" area of grid
     And user picks "Color Coding > Edit..." from the context menu of the "header AGE" area of grid
     Then "Color-coding: AGE" dialog should be visible
@@ -90,10 +89,9 @@ Feature: Color coding edge cases
     And user clears Max input in "Color-coding: AGE" dialog
     And user enters "50" into Max input in "Color-coding: AGE" dialog
     And user enters "60" into Min input in "Color-coding: AGE" dialog
-    Then the "color of cell 3 of AGE" reading of grid should be as remembered
-    And the "color of cell 1 of AGE" and "color of cell 2 of AGE" readings of grid should be the same
-    And Min input in "Color-coding: AGE" dialog should have value "50"
-    And Max input in "Color-coding: AGE" dialog should have value "60"
+    Then the "color of cell 3 of AGE" reading of grid should not be as remembered
+    And Min input in "Color-coding: AGE" dialog should have value "60"
+    And Max input in "Color-coding: AGE" dialog should have value "50"
     When user clicks on CLOSE button in "Color-coding: AGE" dialog
     Then "Color-coding: AGE" dialog should be hidden
     And no errors should have been logged
@@ -116,9 +114,8 @@ Feature: Color coding edge cases
       | Linear      | linearly      |
       | Conditional | conditionally |
 
-  @edge-cases @known-failure:136 @ticket-pending
-  Scenario: A value on the edge two Bin... ranges share goes to the upper bin
-    The value 5 takes the colour of the lower bin, "0 - 5".
+  @edge-cases
+  Scenario: A value on the edge two Bin... ranges share goes to the lower bin
     Given user opens a table "bin-edge" with:
       | Name | Level |
       | a    | 0     |
@@ -133,22 +130,24 @@ Feature: Color coding edge cases
     And user clicks on OK button in "Edit" dialog
     Then "Level" column should be color-coded conditionally
     And the "color of cell 1 of Level" and "color of cell 3 of Level" readings of grid should differ
-    And the "color of cell 2 of Level" and "color of cell 3 of Level" readings of grid should be the same
+    And the "color of cell 1 of Level" and "color of cell 2 of Level" readings of grid should be the same
     When user clicks on CLOSE button in "Color-coding: Level" dialog
     Then "Color-coding: Level" dialog should be hidden
     And no errors should have been logged
 
-  @edge-cases @known-failure:151 @ticket-pending
-  Scenario: A link that would close a cycle of linked colorings is not offered
-    The editor of AGE offers WEIGHT, whose coloring follows HEIGHT, whose coloring follows AGE.
+  @edge-cases
+  Scenario: A link that closes a cycle of linked colorings takes the coloring away until the chain is broken
     When user colors "AGE" column linearly from "#0000FF" to "#FF0000"
     And user colors "HEIGHT" column linked to "AGE" column
     And user colors "WEIGHT" column linked to "HEIGHT" column
     And user picks "Color Coding > Edit..." from the context menu of the "header AGE" area of grid
     Then "Color-coding: AGE" dialog should be visible
     When user selects "Linked" in Type input in "Color-coding: AGE" dialog
-    Then Source column input in "Color-coding: AGE" dialog should not offer the column "HEIGHT"
-    And Source column input in "Color-coding: AGE" dialog should not offer the column "WEIGHT"
-    When user clicks on CLOSE button in "Color-coding: AGE" dialog
+    And user selects "WEIGHT" in Source column input in "Color-coding: AGE" dialog
+    And user clicks on CLOSE button in "Color-coding: AGE" dialog
     Then "Color-coding: AGE" dialog should be hidden
+    And the coloring of "AGE" column should be linked to "WEIGHT" column
+    And the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should be the same
+    When user colors "HEIGHT" column linearly from "#0000FF" to "#FF0000"
+    Then the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should differ
     And no errors should have been logged

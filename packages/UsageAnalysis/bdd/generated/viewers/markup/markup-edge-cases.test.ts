@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/markup/markup-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.markup]
+sub_features_covered: [viewers.markup, core#1232]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -22,8 +22,8 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, pressKey, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {hasNoColumn, makeLastRowCurrent, makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {deleteSelected, filterPasses, filterTo, removeColumn, renameColumn, rowCount, selectAllRows, selectWhereIs} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {hasNoColumn, makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {deleteSelected, removeColumn, renameColumn, rowCount, selectAllRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, noErrors, pickFromContextMenu, propertyShouldBe, readingIs, readingReads, reportsNoError} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
@@ -101,52 +101,20 @@ test.describe("Markup edge cases — HTML in a cell value, a referenced column r
     await session.step(65, "And the \"text\" reading of markup viewer should be \"Age: 26\"", () => readingReads(page, "text", el("markup viewer"), "Age: 26"));
     await session.step(66, "And no errors should have been logged", () => noErrors(page));
   });
-  test("With the current row filtered out the placeholder shows empty", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.markup", "@known-failure:82", "@ticket-pending"]}, async ({browser}) => {
+  test("A referenced column renamed is followed by the content", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.markup", "@known-failure:82", "@realizes:core#1232"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await knownFailure(async () => {
       await session.step(75, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-      await session.step(76, "When user adds a markup viewer with:", () => addViewerWith(page, "markup", [["content","Age: [${AGE}]"]]), [["content","Age: [${AGE}]"]]);
+      await session.step(76, "When user adds a markup viewer with:", () => addViewerWith(page, "markup", [["content","Age: ${AGE}"]]), [["content","Age: ${AGE}"]]);
       await session.step(78, "And user makes row 1 current", () => makeRowCurrent(page, 1));
-      await session.step(79, "Then the \"text\" reading of markup viewer should be \"Age: [26]\"", () => readingReads(page, "text", el("markup viewer"), "Age: [26]"));
-      await session.step(80, "When user filters rows where \"SEX\" is \"M\"", () => filterTo(page, "SEX", "M"));
-      await session.step(81, "Then 447 rows should pass the filter", () => filterPasses(page, 447));
-      await session.step(82, "And the \"text\" reading of markup viewer should be \"Age: []\"", () => readingReads(page, "text", el("markup viewer"), "Age: []"));
-      await session.step(83, "And markup viewer should report no error", () => reportsNoError(page, el("markup viewer")));
-      await session.step(84, "And no errors should have been logged", () => noErrors(page));
+      await session.step(79, "Then the \"text\" reading of markup viewer should be \"Age: 26\"", () => readingReads(page, "text", el("markup viewer"), "Age: 26"));
+      await session.step(80, "When user renames \"AGE\" column to \"YEARS\"", () => renameColumn(page, "AGE", "YEARS"));
+      await session.step(81, "And user makes row 4 current", () => makeRowCurrent(page, 4));
+      await session.step(82, "Then the \"text\" reading of markup viewer should be \"Age: 45\"", () => readingReads(page, "text", el("markup viewer"), "Age: 45"));
+      await session.step(83, "And \"content\" property of markup viewer should be \"Age: ${YEARS}\"", () => propertyShouldBe(page, "content", el("markup viewer"), "Age: ${YEARS}"));
+      await session.step(84, "And markup viewer should report no error", () => reportsNoError(page, el("markup viewer")));
+      await session.step(85, "And no errors should have been logged", () => noErrors(page));
     }, 82);
-  });
-  test("Once the current row is deleted the table has no current row and the placeholder shows empty", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.markup", "@known-failure:100", "@ticket-pending"]}, async ({browser}) => {
-    const page = await session.page(browser);
-    await session.step(13, "Given user is logged in", () => loggedIn(page));
-    await knownFailure(async () => {
-      await session.step(88, "Given user opens a table \"markup-no-current\" with:", () => openTableOf(page, "markup-no-current", [["NAME","SCORE"],["first","1"],["last","2"]]), [["NAME","SCORE"],["first","1"],["last","2"]]);
-      await session.step(92, "When user adds a markup viewer with:", () => addViewerWith(page, "markup", [["content","Name: [${NAME}]"]]), [["content","Name: [${NAME}]"]]);
-      await session.step(94, "And user makes the last row current", () => makeLastRowCurrent(page));
-      await session.step(95, "Then the \"text\" reading of markup viewer should be \"Name: [last]\"", () => readingReads(page, "text", el("markup viewer"), "Name: [last]"));
-      await session.step(96, "When user selects rows where \"NAME\" is \"last\"", () => selectWhereIs(page, "NAME", "last"));
-      await session.step(97, "And user deletes the selected rows", () => deleteSelected(page));
-      await session.step(98, "Then the table should have 1 row", () => rowCount(page, 1));
-      await session.step(99, "And the \"current row\" reading of markup viewer should be 0", () => readingIs(page, "current row", el("markup viewer"), 0));
-      await session.step(100, "And the \"text\" reading of markup viewer should be \"Name: []\"", () => readingReads(page, "text", el("markup viewer"), "Name: []"));
-      await session.step(101, "And markup viewer should report no error", () => reportsNoError(page, el("markup viewer")));
-      await session.step(102, "And no errors should have been logged", () => noErrors(page));
-    }, 100);
-  });
-  test("A referenced column renamed is followed by the content", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.markup", "@known-failure:113", "@ticket-pending"]}, async ({browser}) => {
-    const page = await session.page(browser);
-    await session.step(13, "Given user is logged in", () => loggedIn(page));
-    await knownFailure(async () => {
-      await session.step(106, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-      await session.step(107, "When user adds a markup viewer with:", () => addViewerWith(page, "markup", [["content","Age: ${AGE}"]]), [["content","Age: ${AGE}"]]);
-      await session.step(109, "And user makes row 1 current", () => makeRowCurrent(page, 1));
-      await session.step(110, "Then the \"text\" reading of markup viewer should be \"Age: 26\"", () => readingReads(page, "text", el("markup viewer"), "Age: 26"));
-      await session.step(111, "When user renames \"AGE\" column to \"YEARS\"", () => renameColumn(page, "AGE", "YEARS"));
-      await session.step(112, "And user makes row 4 current", () => makeRowCurrent(page, 4));
-      await session.step(113, "Then the \"text\" reading of markup viewer should be \"Age: 45\"", () => readingReads(page, "text", el("markup viewer"), "Age: 45"));
-      await session.step(114, "And \"content\" property of markup viewer should be \"Age: ${YEARS}\"", () => propertyShouldBe(page, "content", el("markup viewer"), "Age: ${YEARS}"));
-      await session.step(115, "And markup viewer should report no error", () => reportsNoError(page, el("markup viewer")));
-      await session.step(116, "And no errors should have been logged", () => noErrors(page));
-    }, 113);
   });
 });

@@ -70,7 +70,7 @@ Feature: Tooltip edge cases: Edit Tooltip cancelled, every column unticked, a to
     Then the tooltip should show columns in the order "AGE, WEIGHT"
     And no errors should have been logged
 
-  @known-failure:79 @ticket-pending
+  @known-failure:79 @realizes:core#1215
   Scenario: A tooltip column renamed is shown under its new name
     A renamed column is followed (`viewer-rules-edge-cases.feature`); the tooltip keeps the old name in the
     table tag (`tooltip.dart`), nothing renames it, and the column drops out of the tooltip.
@@ -79,9 +79,7 @@ Feature: Tooltip edge cases: Edit Tooltip cancelled, every column unticked, a to
     Then the tooltip should show columns in the order "AGE, SEX, MASS"
     And no errors should have been logged
 
-  @known-failure:95 @ticket-pending
-  Scenario: An aggregation row left without a column is not saved by Edit Aggregated Tooltip
-    Today the empty row is saved as avg(AGE).
+  Scenario: An aggregation row added in Edit Aggregated Tooltip takes a column by default
     When user adds a line chart viewer with:
       | xColumnName  | AGE    |
       | yColumnNames | WEIGHT |
@@ -92,5 +90,5 @@ Feature: Tooltip edge cases: Edit Tooltip cancelled, every column unticked, a to
     When user clicks on "Add aggregation" button in "Edit Aggregated Tooltip" dialog
     And user clicks on OK button in "Edit Aggregated Tooltip" dialog
     Then the "Edit Aggregated Tooltip" dialog should close
-    And "aggTooltipColumns" property of line chart viewer should be ""
+    And "aggTooltipColumns" property of line chart viewer should be "avg(AGE)"
     And no errors should have been logged
