@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Authoring: Create Domain Schema keeps only the semantic types drawn from the value alone, so a sequence column is no longer marked without the tags it needs, and samples eight tables at a time
 * Pages: A table page nothing configured heads a row with its name and picture, also one kept in a table extending it one to one (a compound's structure), and lays the fields out in columns; a configured table keeps its app's pages
 * Links: Fixed a page of links firing one query per cell, which held back the search: captions are read in one query per table
 * Cards: Molfiles, InChIs and other machine strings are left out of a card's description lines

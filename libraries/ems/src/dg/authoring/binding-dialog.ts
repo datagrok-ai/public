@@ -7,7 +7,7 @@ import type {WizardOptions} from '@datagrok-libraries/u2';
 import {DomainErrors} from '../errors.js';
 import {route} from '../routes.js';
 import {DomainTable} from '../facade.js';
-import {groupInput} from '@datagrok-libraries/u2/dg';
+import {Editors, groupInput} from '@datagrok-libraries/u2/dg';
 import {ManifestEditor} from './manifest-editor.js';
 import type {ManifestPlan} from './manifest-editor.js';
 import {ManifestModel} from './manifest-model.js';
@@ -570,17 +570,21 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       await grok.data.detectSemanticTypes(df);
       text.forEach(([, c], i) => {
         const semType = df.col(remote[i])?.semType;
-        if (semType)
+        // only a type drawn from the value alone: one that needs the column's tags (a sequence's units) is not kept
+        if (semType && Editors.displays({semType}))
           c.semType = semType;
       });
     };
     // a few tables at a time, and one the login cannot read stays as drafted
     const tables = Object.entries(manifest.tables);
-    for (let i = 0; i < tables.length; i += 4)
-      await Promise.all(tables.slice(i, i + 4).map(([logical, table]) => sample(logical, table).catch(() => {})));
+    for (let i = 0; i < tables.length; i += BindingDialog.SAMPLE_TABLES) {
+      await Promise.all(tables.slice(i, i + BindingDialog.SAMPLE_TABLES)
+        .map(([logical, table]) => sample(logical, table).catch(() => {})));
+    }
   }
 
   static readonly SAMPLE_ROWS = 50;
+  static readonly SAMPLE_TABLES = 8;
 
   private static _key(conn: DG.DataConnection, schema: string): string {
     return `${conn.id}\u0000${schema}`;

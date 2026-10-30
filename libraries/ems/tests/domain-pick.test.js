@@ -116,7 +116,7 @@ scoped('a backend that declares resolveNames answers an id there; one it names n
       .map((id) => DomainPick.resolve('chembl.molecule', id)));
     assert.deepEqual(named.map((item) => item.name), ['ASPIRIN', 'IBRUTINIB', 'ASPIRIN', 'gone'],
       'an id nobody names is shown as itself');
-    assert.deepEqual(queries, [{property: 'id', operator: 'in', value: ['CHEMBL1', 'CHEMBL2', 'gone']}],
+    assert.deepEqual(queries, [{property: 'id', operator: '=', value: ['CHEMBL1', 'CHEMBL2', 'gone']}],
       'the ids asked for together are read in one query');
   });
 
@@ -187,8 +187,6 @@ scoped('ergonomics: the candidates open on focus sorted by name with nothing hig
     emsBackends.domain = backend();
     const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p2'});
     const input = mount(pick);
-    // the caption is read with the batch of its tick
-    await flush();
     await flush();
     assert.equal(input.placeholder, '', 'no placeholder repeating the caption');
     assert.equal(input.value, 'Datagrok');

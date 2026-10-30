@@ -1253,13 +1253,13 @@ scoped('recognize: a sampled text column the detectors read as a structure is dr
   DG.TableQueryBuilder.answers = {
     'public.compound_structures': (fields, rows) => {
       asked.push([fields, rows]);
-      return {col: (name) => ({semType: name === 'canonical_smiles' ? 'Molecule' : null})};
+      return {col: (name) => ({semType: name === 'canonical_smiles' ? 'Molecule' : 'Macromolecule'})};
     },
     'public.secret': () => { throw new Error('permission denied'); },
   };
   await BindingDialog.recognize({nqName: 'Chembl'}, 'public', manifest);
   assert.deepEqual(asked, [[['canonical_smiles', 'standard_inchi'], BindingDialog.SAMPLE_ROWS]], 'text columns only');
   assert.equal(manifest.tables.compound.columns.smiles.semType, 'Molecule');
-  assert.equal('semType' in manifest.tables.compound.columns.inchi, false);
+  assert.equal('semType' in manifest.tables.compound.columns.inchi, false, 'a type nothing draws from the value alone is not kept');
   assert.equal('semType' in manifest.tables.secret.columns.code, false, 'a table it cannot sample stays as drafted');
 });

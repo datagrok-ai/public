@@ -164,7 +164,8 @@ export class DomainPick extends PickInput<PickItem> {
     if (ids === undefined) {
       const batch = ids = new Map();
       DomainPick._pending.set(address, batch);
-      setTimeout(() => {
+      // the cells waiting on the same lookups resume in one turn: they have all joined by the next microtask
+      queueMicrotask(() => {
         DomainPick._pending.delete(address);
         const keys = [...batch.keys()];
         const answer = (rows: Record<string, unknown>[]) => {
@@ -174,7 +175,9 @@ export class DomainPick extends PickInput<PickItem> {
               done(byId.get(key));
           }
         };
-        t.query({filter: {property: 'id', operator: 'in', value: keys}, limit: keys.length}).then(answer, () => answer([]));
+        // `=` over a list is the wire's IN
+        t.query({filter: {property: 'id', operator: '=', value: keys}, limit: keys.length})
+          .then(answer, () => answer([]));
       });
     }
     return new Promise((done) => ids!.set(id, [...ids!.get(id) ?? [], done]));
