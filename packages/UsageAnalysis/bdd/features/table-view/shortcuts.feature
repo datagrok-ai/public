@@ -16,7 +16,8 @@ Feature: The table view's keyboard shortcuts open, clear and save what the help 
   Ctrl+Shift+R shows is a top-right info label, not a balloon, and no step reads it (MISSING.md).
 
   One journey on a three-row table written here, named with the run's time so the layout Ctrl+S saves
-  is this run's; that layout is deleted when the feature ends. Every scenario puts back what it opened.
+  is this run's; that layout is deleted when the feature ends. Every scenario puts back what it opened,
+  except the two Ctrl+L panels, which no step closes (MISSING.md, needs a step).
 
   Background:
     Given user is logged in
@@ -90,6 +91,9 @@ Feature: The table view's keyboard shortcuts open, clear and save what the help 
     When user presses Control+Z
     Then the open tableview should have 1 histogram viewer
     And the open tableview should have 1 scatter plot viewer
+    When user presses Control+Shift+R
+    Then the open tableview should have 0 histogram viewers
+    And the open tableview should have 0 scatter plot viewers
     And no errors should have been logged
 
   Scenario: Ctrl+S saves the layout named after the table and shows it in the context panel

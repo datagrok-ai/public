@@ -14,7 +14,9 @@ Feature: Files: a folder and a file created, renamed and deleted from the Browse
 
   Everything happens inside a folder of the account's My files made for the run, "bdd-files-{time}", which
   holds one file written through the API; the folder and all it holds are deleted when the feature ends (and
-  an older run's folder of the same family when it starts). Every scenario deletes what it made.
+  an older run's folder of the same family when it starts). The scenarios are a chain over that one folder:
+  a scenario works on what the one before it created or renamed, and the two Delete... scenarios remove
+  the folder and the file the chain made.
 
   Background:
     Given user is logged in

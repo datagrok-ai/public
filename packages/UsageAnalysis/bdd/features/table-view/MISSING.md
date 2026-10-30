@@ -55,11 +55,15 @@ Features: `data-join-tables.feature`, `data-unpivot.feature`, `data-text-to-colu
   (`3rd input in Unpivot dialog`). A screen reader hears an unnamed combo box. Should each select take its
   column's name as its accessible name (the text shown next to it)? Then the feature reads
   `"math" input in Unpivot dialog`.
-- **Split Column: the default Split by is ";,"** and, without By chars, it is one two-character delimiter:
-  "a;b" is not split (measured: col1 = "a;b"). Is the default meant to split on either character? The help
-  does not say.
 - **Split Column and Unpivot: undo.** Neither help page (`text-to-columns.md`, `unpivot.md`) nor
   `datagrok/navigation/undo.md` says whether Ctrl+Z removes the columns Split Column adds. Not claimed.
+
+### Findings 30 Oct 2026
+
+- **Split Column: the default Split by is ";," and splits nothing** ([core#1236](https://github.com/datagrok-ai/core/issues/1236)). Steps: open a
+  table with a text column holding "a;b"; Data > Split Column...; leave Split by at its default
+  ";,", no By chars; OK. Measured: the default is taken as one two-character delimiter, so "a;b" is not split
+  (col1 = "a;b"). Expected: the default splits on either character. The help (`text-to-columns.md`) does not say.
 
 ## Column operations, undo, properties
 
@@ -85,18 +89,9 @@ Features: `undo-redo.feature`, `change-type.feature`, `column-properties.feature
   attributes", but no dialog or context-panel pane edits a table's tags or description (the context panel shows
   General and Actions; Actions has Rename... and Clone). Is there meant to be a Table Properties editor? Not
   claimed.
-- **Ctrl+Z after closing another view reopens that view, ahead of this view's own change.** Measured: in table
-  view "undo" remove column city (header menu > Remove); open a second table "other"; close the "other" view;
-  switch to "undo", click a cell, press Ctrl+Z → the "other" view is reopened and becomes current
-  (`grok.shell.onUndo` reports "Close other"); city is still missing until a second Ctrl+Z from "undo". The
-  help (`datagrok/navigation/undo.md`) says both "Ctrl+Z reverses the last operation on the current table or
-  view, never one you performed somewhere else" and that closing a view can be undone — which can only happen
-  from another view. Which wins when the current view has its own record? `undo-redo.feature` switches views
-  without closing one, so it does not depend on the answer.
-
 ### Findings 30 Oct 2026
 
-- **Edit > Add New Column: Ctrl+Z does not remove the added column.** Steps: open a table with columns
+- **Edit > Add New Column: Ctrl+Z does not remove the added column** ([public#4461](https://github.com/datagrok-ai/public/issues/4461)). Steps: open a table with columns
   name, city, weight; Edit > Add New Column...; formula `${weight} * 2`, name `double`; OK; click a grid cell;
   press Ctrl+Z (or Edit > Undo). Measured: the column stays (`name, city, weight, double`),
   `grok.shell.canUndo` is false right after OK. Expected: the column is removed, and Ctrl+Shift+Z adds it back.
@@ -123,7 +118,7 @@ Features: `undo-redo.feature`, `change-type.feature`, `column-properties.feature
     Then the table should not have a column "double"
     And no errors should have been logged
   ```
-- **Change column type: the "select" icon beside each count has no glyph.** Steps: open a table with a string
+- **Change column type: the "select" icon beside each count has no glyph** ([core#1220](https://github.com/datagrok-ai/core/issues/1220)). Steps: open a table with a string
   column code = 10, 20, n/a, (empty); right-click its header > Change Type...; New type int. Measured: each of
   the three rows (Convertible / Not convertible / Empty) shows Previous, Next and Filter icons, and a fourth
   button whose `<i aria-label="Select All">` has a 0×0 box — nothing is drawn, so there is nothing to see or
@@ -137,6 +132,14 @@ Features: `undo-redo.feature`, `change-type.feature`, `column-properties.feature
     Then 1 row should be selected
     And all rows where "name" is "d" should be selected
   ```
+- **Ctrl+Z after closing another view reopens that view, ahead of this view's own change** ([core#1234](https://github.com/datagrok-ai/core/issues/1234)). Measured: in table
+  view "undo" remove column city (header menu > Remove); open a second table "other"; close the "other" view;
+  switch to "undo", click a cell, press Ctrl+Z → the "other" view is reopened and becomes current
+  (`grok.shell.onUndo` reports "Close other"); city is still missing until a second Ctrl+Z from "undo". The
+  help (`datagrok/navigation/undo.md`) says both "Ctrl+Z reverses the last operation on the current table or
+  view, never one you performed somewhere else" and that closing a view can be undone — which can only happen
+  from another view. Which wins when the current view has its own record? `undo-redo.feature` switches views
+  without closing one, so it does not depend on the answer.
 
 ## Shortcuts, Column Manager, Files, Plugins
 
@@ -169,6 +172,17 @@ Features: `shortcuts.feature`, `column-manager.feature` (this folder), `../brows
   when multiple columns are selected, you can choose to apply commands to either the current table or all
   selected tables." That needs several tables selected in the Tables pane (Alt+T), which no step selects
   (`user selects the {string} table in the Tables pane` holding Control).
+- **Ctrl+L: closing the suggestion panels again.** Ctrl+L does not toggle: `cmdViewLayoutLoad` docks two new
+  panels on every press, into the shell's dock (not the view's), so they outlive the table view. Their title-bar
+  close button is `div.panel-titlebar-button-close[name="Close"]` (`panel_dock_container.dart`), which no kind
+  reaches: `user closes "Layout suggestions" dock panel` falls back to Escape and the panel stays (run rf1).
+  `shortcuts.feature` therefore leaves them open. The dock panel kind needs a `close icon` part, then:
+  ```gherkin
+    When user clicks on the close icon of "Layout suggestions" dock panel
+    And user clicks on the close icon of "Viewer suggestions" dock panel
+    Then "Layout suggestions" dock panel should be absent
+    And "Viewer suggestions" dock panel should be absent
+  ```
 
 ### Questions
 
@@ -248,21 +262,12 @@ local stand). All four dialogs are core (`xamgle`): `views/batch_edit_view.dart`
 
 - **Batch Edit: undo.** Neither `transform/batch-edit.md` nor `datagrok/navigation/undo.md` says whether Ctrl+Z
   takes back a value written by the batch editor (`Column.setAllValues`). Not claimed.
-- **Batch Edit: the editor has no title.** It docks as a view whose name is empty (measured
-  `grok.shell.views` → `""`), so its panel shows no caption, and a phrase can only reach its rows unscoped
-  (`"city" property`). Should it be titled "Batch Edit"?
-- **Compare Tables: which color is "added", which "removed"?** In the diff grid, per the source
-  (`compare_tables.dart`, `onTableCellPrepare`), a row only in the second table is painted `deletedRowColor`
-  (#FFB3B0, pink) under the comment `// new row`, and a row only in the first table `newRowColor` (#CFFFC5, green)
-  under `// deleted row`. Read as "table 1 = old, table 2 = new" (the changed cell's tooltip says "Old value:" with
-  table 1's value), the colors are swapped. The help says only "color-coded … added, removed, or changed". The
-  feature claims the two colors differ, not which is which.
 - **Categorize: undo.** The help and `undo.md` say nothing about Ctrl+Z after SAVE COLUMN / SAVE MATRIX /
   APPLY COLOR CODING. Not claimed.
 
 ### Findings 30 Oct 2026
 
-- **Anonymize: an invalid Number randomization factor throws instead of being refused.** Steps: open any table
+- **Anonymize: an invalid Number randomization factor throws instead of being refused** ([core#1225](https://github.com/datagrok-ai/core/issues/1225)). Steps: open any table
   with a number column (e.g. demog); Data > Anonymize...; check AGE in the column list; type `abc` into Number
   randomization factor; click OK. Measured: OK stays enabled and the input is not marked invalid; the click logs
   `FormatException: Invalid double abc` (console error, `double.parse` in `anonymize()`), the dialog stays open
@@ -280,3 +285,14 @@ local stand). All four dialogs are core (`xamgle`): `views/batch_edit_view.dart`
     Then OK button in Anonymize Data dialog should be disabled
     And no errors should have been logged
   ```
+- **Compare Tables: new and deleted rows are painted in each other's color** ([core#1231](https://github.com/datagrok-ai/core/issues/1231), confirmed on dev 30 Oct).
+  Steps: open t1 (name, city: Ann/Oslo, Bob/Rome, Cid/Kyiv) and t2 (Ann/Oslo, Bob/Paris, Dan/Lviv); Data >
+  Compare Tables, key name, OK. Measured: in the diff grid Cid (only in t1, deleted) is green (#CFFFC5) and Dan
+  (only in t2, new) is pink (#FFB3B0). Expected: the reverse — `compare_tables.dart:210-222` defines
+  `newRowColor` green and `deletedRowColor` pink but paints the `// new row` branch with `deletedRowColor` and the
+  `// deleted row` branch with `newRowColor`; table 1 is the old one (the changed cell's tooltip says "Old value:"
+  with t1's value). The help says only "color-coded … added, removed, or changed". `compare-tables.feature`
+  claims the two colors differ, not which is which.
+- **Batch Edit: the editor has no title** ([core#1235](https://github.com/datagrok-ai/core/issues/1235)). Steps: open any table; Data > Batch Edit....
+  Measured: the docked panel shows no caption, and `grok.shell.views` lists it with the name `""`, so a phrase
+  can only reach its rows unscoped (`"city" property`). Expected: a caption, "Batch Edit".

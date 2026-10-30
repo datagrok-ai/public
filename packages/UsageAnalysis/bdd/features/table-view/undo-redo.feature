@@ -6,8 +6,8 @@ Feature: Ctrl+Z undoes and Ctrl+Shift+Z or Ctrl+Y redoes the table view's column
   table. One scenario per operation the help lists as undoable that no feature claimed yet: a column
   removed from its header menu, a column renamed in Column Properties, color coding set from the header
   menu, and View > Layout > Clear. A formula column added through Edit > Add New Column is not undone
-  today (MISSING.md, Findings 30 Oct 2026), so it is not claimed here. Each scenario undoes,
-  redoes, and undoes again, so the next one starts from the table as written here.
+  today (MISSING.md, Findings 30 Oct 2026), so it is not claimed here. The scenarios of the four operations
+  each undo and redo; the Background opens the table afresh for every scenario.
 
   Left out on purpose: a grid cell edit, Shift+Delete rows (viewers/grid/grid-editing.feature) and Find and
   Replace (general/find-and-replace.feature) are claimed there; a viewer closed from its title bar coming
@@ -105,6 +105,7 @@ Feature: Ctrl+Z undoes and Ctrl+Shift+Z or Ctrl+Y redoes the table view's column
     And "weight" dialog should be visible
     When user presses Escape
     Then "weight" dialog should be hidden
+    And the table should not have a column "city"
     When user clicks on the "cell 1 of name" area of grid
     And user presses Control+Z
     Then the table should have a column "city"
@@ -122,7 +123,8 @@ Feature: Ctrl+Z undoes and Ctrl+Shift+Z or Ctrl+Y redoes the table view's column
     Then table "undo" should have columns "name, weight"
     And table "other" should have columns "id, score"
     When user switches to the "undo" table view
-    And user clicks on the "cell 1 of name" area of grid
+    Then the table should not have a column "city"
+    When user clicks on the "cell 1 of name" area of grid
     And user presses Control+Z
     Then the table should have a column "city"
     And table "other" should have columns "id, score"

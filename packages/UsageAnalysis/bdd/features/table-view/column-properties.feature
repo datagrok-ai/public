@@ -68,7 +68,8 @@ Feature: The Column Properties dialog edits a column's tags, and the grid shows 
     And tooltip should contain text "units: kg"
     When user moves the pointer away from grid
     And user hovers over the "header city" area of grid
-    Then tooltip should not contain text "Body weight"
+    Then tooltip should contain text "city"
+    And tooltip should not contain text "Body weight"
     When user moves the pointer away from grid
     And user clicks on the "cell 1 of name" area of grid
     And user presses Control+Z

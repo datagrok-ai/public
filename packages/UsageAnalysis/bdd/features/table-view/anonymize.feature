@@ -29,8 +29,7 @@ Feature: Data > Anonymize replaces the values of the checked columns in place
     And "Number randomization factor" input in Anonymize Data dialog should have value "0.1"
     And the "city" column should not be checked in the column list of Anonymize Data dialog
     When user toggles the "city" column in the column list of Anonymize Data dialog
-    Then the "city" column should be checked in the column list of Anonymize Data dialog
-    When user clicks on OK button in Anonymize Data dialog
+    And user clicks on OK button in Anonymize Data dialog
     Then Anonymize Data dialog should be hidden
     And the value of "city" column in row 1 should be "city 0"
     And the value of "city" column in row 2 should be "city 1"

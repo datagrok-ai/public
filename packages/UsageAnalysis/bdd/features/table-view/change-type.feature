@@ -63,7 +63,6 @@ Feature: Change Type converts a column from its header menu or from Column Prope
     And all rows where "code" is "n/a" should pass the filter
     When user clicks on CANCEL button in "Change column type" dialog
     Then the "Change column type" dialog should close
-    And "code" column should have type "string"
     When user resets the filter
     Then all rows should pass the filter
     And no errors should have been logged

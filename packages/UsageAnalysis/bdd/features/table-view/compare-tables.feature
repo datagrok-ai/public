@@ -12,7 +12,7 @@ Feature: Data > Compare Tables opens the rows two tables differ in as a new colo
   - the comparison matrix (composite keys, every column type, duplicates, columns added or removed) is the
     `TableComparison` code's job (ddt tests);
   - which color stands for "added" and which for "removed": the help does not say, and the code's comments
-    contradict its colors (MISSING.md, question) — the feature claims only that the two differ;
+    contradict its colors (MISSING.md, finding, core#1231) — the feature claims only that the two differ;
   - the History button, whose states belong to every dialog with history.
   Nothing is put on the server.
 

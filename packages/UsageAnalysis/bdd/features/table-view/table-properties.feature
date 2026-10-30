@@ -43,6 +43,13 @@ Feature: A table made current shows its properties in the context panel, and its
     And table "tp2" should be open
     And the "tp2" view should be current
     And the "text of cell 1 of name" reading of Grid viewer in "Tables" dock panel should be "tp2"
+    When user clicks on "Rename..." label in Actions pane in context panel
+    Then "New name:" input in "Rename table" dialog should have value "tp2"
+    When user enters "tp" into "New name:" input in "Rename table" dialog
+    And user clicks on OK button in "Rename table" dialog
+    Then the "Rename table" dialog should close
+    And table "tp" should be open
+    And the "text of cell 1 of name" reading of Grid viewer in "Tables" dock panel should be "tp"
     When user presses Alt+T
     Then "Tables" dock panel should be absent
     And no errors should have been logged

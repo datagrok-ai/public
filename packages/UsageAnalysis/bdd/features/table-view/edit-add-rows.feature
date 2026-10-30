@@ -33,7 +33,8 @@ Feature: Edit > Add Rows inserts empty rows at a position, and Ctrl+Z takes them
     And the value of "name" column in row 4 should be "two"
     And the value of "qty" column in row 4 should be "2"
     And the value of "name" column in row 5 should be "three"
-    When user presses Control+Z
+    When user clicks on the "cell 1 of name" area of grid
+    And user presses Control+Z
     Then the table should have 3 rows
     And the value of "name" column in row 2 should be "two"
     And the value of "name" column in row 3 should be "three"

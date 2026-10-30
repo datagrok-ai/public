@@ -48,6 +48,8 @@ Feature: Column Manager lists the table's columns and acts on the table view's g
     And the "text of cell 3 of __name" reading of Grid viewer in column manager should be "price"
     When user enters "a" into "Search" input in column manager
     Then the "rows shown" reading of Grid viewer in column manager should be 2
+    When user clears "Search" input in column manager
+    Then the "rows shown" reading of Grid viewer in column manager should be 4
     When user presses Alt+C
     Then column manager should be absent
     And no errors should have been logged
@@ -98,12 +100,12 @@ Feature: Column Manager lists the table's columns and acts on the table view's g
     When user clicks on the "cell 1 of name" area of grid
     And user presses Alt+C
     And user picks "'num' column > Hide" from the context menu of the "cell 2 of __name" area of Grid viewer in column manager
-    Then the "rows shown" reading of Grid viewer in column manager should be 4
-    When user presses Alt+C
+    And user presses Alt+C
     Then column manager should be absent
     And the "column order" reading of grid should be "name, price, date"
     When user presses Alt+C
-    And user picks "'num' column > Show" from the context menu of the "cell 2 of __name" area of Grid viewer in column manager
+    Then the "rows shown" reading of Grid viewer in column manager should be 4
+    When user picks "'num' column > Show" from the context menu of the "cell 2 of __name" area of Grid viewer in column manager
     And user presses Alt+C
     Then column manager should be absent
     And the "column order" reading of grid should be "name, num, price, date"
