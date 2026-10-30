@@ -1612,6 +1612,13 @@ importers:
       x2js:
         specifier: ^3.4.4
         version: 3.4.5
+    devDependencies:
+      '@datagrok-libraries/bdd':
+        specifier: workspace:^
+        version: link:../../libraries/bdd
+      '@playwright/test':
+        specifier: ^1.48.0
+        version: 1.63.0
 
   packages/Compute:
     dependencies:
@@ -1722,6 +1729,12 @@ importers:
       '@babel/preset-typescript':
         specifier: ^7.29.7
         version: 7.29.7(@babel/core@7.29.7)
+      '@datagrok-libraries/bdd':
+        specifier: workspace:^
+        version: link:../../libraries/bdd
+      '@playwright/test':
+        specifier: ^1.48.0
+        version: 1.63.0
       '@types/lodash.isequal':
         specifier: ^4.5.8
         version: 4.5.8
@@ -3116,6 +3129,13 @@ importers:
       rxjs:
         specifier: 'catalog:'
         version: 6.6.7
+    devDependencies:
+      '@datagrok-libraries/bdd':
+        specifier: workspace:^
+        version: link:../../libraries/bdd
+      '@playwright/test':
+        specifier: ^1.48.0
+        version: 1.63.0
 
   packages/PlatesFixture:
     dependencies:
@@ -3335,6 +3355,12 @@ importers:
         specifier: 'catalog:'
         version: 2.1.0
     devDependencies:
+      '@datagrok-libraries/bdd':
+        specifier: workspace:^
+        version: link:../../libraries/bdd
+      '@playwright/test':
+        specifier: ^1.48.0
+        version: 1.63.0
       '@types/wu':
         specifier: 'catalog:'
         version: 2.1.44

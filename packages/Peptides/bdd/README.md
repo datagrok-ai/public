@@ -49,6 +49,7 @@ publish the WebLogo glyphs it draws in the native grid's headers as hit areas.
 | `sar/manual-alignment` | Apply, adjacent/end positions, recomputed statistics, Reset, selection and panes against edited data |
 | `sar/project-round-trip` | Non-default scaling/data/layout/selection persistence and restored interactions and panes |
 | `sar/default-launch` | The dialog defaults (inflation 1.4, no scaling; the threshold raised from 70 to 90) run once end to end |
+| `sar/peptide-generation` | The Peptide Generation viewer from the Add Viewer dialog, its count and target following Peptide count and Activity target, the plus icon opening the generated peptides as a table |
 | `entry/demo-dashboard` | Registered dashboard function, transformed activities, WebLogo headers and rendered viewers |
 | `entry/landing` | Exactly three demo buttons, their exact datasets/notations and side-panel state |
 

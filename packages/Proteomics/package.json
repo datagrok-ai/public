@@ -26,13 +26,16 @@
     "dayjs": "catalog:"
   },
   "devDependencies": {
-    "@types/wu": "catalog:"
+    "@types/wu": "catalog:",
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.48.0"
   },
   "scripts": {
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
-    "test": "grok test"
+    "test": "grok test",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"
