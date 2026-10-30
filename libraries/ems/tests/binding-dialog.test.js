@@ -1055,13 +1055,12 @@ scoped('WO-A5.1 #7 (P1): a group gone since the pick refuses the create on Revie
   assert.equal(await done, null);
 });
 
-scoped('WO-A5.1 #8 (P1): OPEN on a registered schema no route opens says so', async () => {
+scoped('OPEN shows the registered schema\'s page: every table it registered', async () => {
   const calls = [];
   stub(calls, () => ({status: 'ok', issues: []}));
-  const table = domains.table;
-  domains.table = async () => {
-    throw new Error('Unknown domain table nw.orders');
-  };
+  const routed = [];
+  const route = grok.shell.route;
+  grok.shell.route = (url) => routed.push(url);
   try {
     const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
     const done = dialog.open();
@@ -1072,11 +1071,9 @@ scoped('WO-A5.1 #8 (P1): OPEN on a registered schema no route opens says so', as
     await flush();
     buttonNamed('OPEN').click();
     assert.equal((await done).name, 'nw');
-    await flush();
-    assert.equal(document.querySelector('.u2-notify-error .u2-notify-content').textContent,
-      'Domain schema nw is registered but could not be opened');
+    assert.deepEqual(routed, ['/domains/nw']);
   } finally {
-    domains.table = table;
+    grok.shell.route = route;
   }
 });
 

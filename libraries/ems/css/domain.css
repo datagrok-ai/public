@@ -831,3 +831,14 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
   column-gap: var(--dg-space-xxl);
 }
+
+/* every editor fills its cell, so the columns share both edges (a number's 150px included) */
+.u2-domain-generic .u2-domain-form .u2-form.u2-form .u2-form-rows > .u2-input-root:not(.u2-input-fill) > .u2-input-box {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+}
+
+.u2-domain-generic .u2-domain-form .u2-form.u2-form .u2-form-rows > .u2-input-root > .u2-input-box > .u2-input-editor {
+  max-width: none;
+}

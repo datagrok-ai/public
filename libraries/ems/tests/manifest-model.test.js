@@ -46,6 +46,18 @@ test('excluding a table flips the dependent relation to plain; including it back
   assert.equal(customer.relations[0].reason, 'customers is not in the draft');
 });
 
+test('a plural that only repeated the friendly name follows a new one; one of its own stays', () => {
+  const d = draft();
+  Object.assign(d.manifest.tables.orders, {friendlyName: 'Orders', pluralName: 'Orders'});
+  Object.assign(d.manifest.tables.order_details, {friendlyName: 'Order details', pluralName: 'Order lines'});
+  const model = new ManifestModel(d);
+  model.setFriendlyName('orders', 'Sales orders');
+  model.setFriendlyName('order_details', 'Lines');
+  const tables = model.toJSON().tables;
+  assert.deepEqual([tables.orders.friendlyName, tables.orders.pluralName], ['Sales orders', 'Sales orders']);
+  assert.deepEqual([tables.order_details.friendlyName, tables.order_details.pluralName], ['Lines', 'Order lines']);
+});
+
 test('a rename is checked with the mirrored rules; a refused name keeps the old one', () => {
   const model = new ManifestModel(draft());
   assert.match(model.renameTable('orders', 'Orders'), /lowercase/);

@@ -674,10 +674,14 @@ export class ManifestModel {
     if (decl === undefined || decl === null)
       return;
     this._mutate(() => {
+      // a plural that only repeated the friendly name follows it: the status bar counts "Compounds"
       if (name === '')
         delete decl.friendlyName;
-      else
+      else {
+        if (decl.pluralName !== undefined && decl.pluralName === decl.friendlyName)
+          decl.pluralName = name;
         decl.friendlyName = name;
+      }
     });
   }
 

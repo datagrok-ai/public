@@ -11,15 +11,20 @@ import type {DomainAppViewOptions} from './facade.js';
  * structure kept beside it). */
 export class GenericPage {
   static readonly HEADER_PICTURE = {width: 260, height: 170};
+  /** The columns a table of rows starts with; Output adds the rest. */
+  static readonly COLUMNS = 10;
 
   static options(handle: DomainTable): DomainAppViewOptions {
     const pictured = DomainTable.pictureOf(handle.properties) !== undefined;
-    return {filters: {mode: 'builder', placement: 'left'}, setup: (app, self) => GenericPage._header(app, self),
+    return {filters: {mode: 'builder', placement: 'left'}, setup: (app, self) => GenericPage._setup(app, self),
       ...pictured ? {mode: 'cards' as const, itemHeight: 96} : {view: 'table' as const}};
   }
 
-  private static _header(app: DomainApp, self: Scope): void {
+  private static _setup(app: DomainApp, self: Scope): void {
     app.root.classList.add('u2-domain-generic');
+    const columns = app.output.columns.peek();
+    if (columns.length > GenericPage.COLUMNS)
+      app.output.columns.value = columns.slice(0, GenericPage.COLUMNS);
     const picture = GenericPage._picture(app.table);
     self.effect(() => {
       const source = app.entitySource.value;

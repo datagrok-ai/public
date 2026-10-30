@@ -257,7 +257,6 @@ export class BindingDialog extends BindingWizard<BindingResult> {
   private _loaded: Promise<void> = Promise.resolve();
   private _described: Promise<void> = Promise.resolve();
   private _result: BindingResult | undefined;
-  private _firstTable = '';
   private _pending: AccessOp[] = [];
   private readonly _final: AccessFailure[] = [];
 
@@ -665,7 +664,6 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     }
     const ops = BindingDialog._accessOps(plan);
     this._result = {name: plan.name, access: {applied: [], failed: []}};
-    this._firstTable = Object.keys(plan.manifest.tables)[0];
     this._say('Applying access…');
     await this._applyAccess(ops);
     grok.dapi.domains.invalidateUiCaches();
@@ -714,7 +712,6 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     this._unknown.value = true;
     this._openable.value = tables.length > 0;
     this._result = {name: plan.name, access: {applied: [], failed: []}, unknown: true};
-    this._firstTable = tables[0] ?? '';
     const held = registered !== null ?
       `${plan.name} is registered at version ${registered.version}` +
         `${storage?.connection === undefined ? '' : ` over ${storage.connection} · ${storage.schema ?? ''}`}, ` +
@@ -751,11 +748,11 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     return ids.filter((id) => !known.has(id)).map((id) => labels.get(id)!);
   }
 
+  // the schema's page: every table it registered, under the names given them
   private async _openAndClose(): Promise<void> {
     const result = this._result!;
-    const first = this._firstTable;
     this._settle(result);
-    await BindingDialog._openApp(result.name, first);
+    grok.shell.route(`/domains/${result.name}`);
   }
 
   private async _retry(): Promise<void> {
