@@ -485,7 +485,7 @@ export class MpoProfileDialog {
     const gridColumn = grok.shell.tableView(this.dataFrame.name)?.grid.columns.byName(name);
     if (gridColumn) {
       gridColumn.visible = true;
-      gridColumn.setWidthType(DG.ColumnWidthType.Maximal);
+      gridColumn.width = name.length * 8;
     }
     return name;
   }

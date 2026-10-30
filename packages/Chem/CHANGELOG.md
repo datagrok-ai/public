@@ -1,5 +1,9 @@
 # Chem changelog
 
+## v.next
+
+* MPO: Fixed the score preview not appearing after picking a profile on platform 1.27.x
+
 ## 1.17.17 (2026-10-28)
 
 * [#4403](https://github.com/datagrok-ai/public/issues/4403): MPO: Add a "Coverage Score" option to count the number of profile parameters measured for each compound
