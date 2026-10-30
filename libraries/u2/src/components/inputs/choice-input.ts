@@ -5,7 +5,8 @@ import {Input, InputOptions} from '../../core/input-base.js';
 import {iconOf} from '../display/icon.js';
 import type {IItemsState} from '../../core/widget-like.js';
 
-export type ChoiceItem = string | {value: string, label: string};
+/** `group` puts the item under that heading; items of one group are listed together. */
+export type ChoiceItem = string | {value: string, label: string, group?: string};
 
 function itemValue(item: ChoiceItem): string {
   return typeof item === 'string' ? item : item.value;
@@ -103,8 +104,18 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
     }
     if (this.nullable)
       select.append(new Option('', ''));
-    for (const item of this._items)
-      select.append(new Option(itemLabel(item), itemValue(item)));
+    let parent: HTMLElement = select;
+    let heading: string | undefined;
+    for (const item of this._items) {
+      const name = typeof item === 'string' ? undefined : item.group;
+      if (name !== heading) {
+        heading = name;
+        parent = name === undefined ? select : Object.assign(document.createElement('optgroup'), {label: name});
+        if (parent !== select)
+          select.append(parent);
+      }
+      parent.append(new Option(itemLabel(item), itemValue(item)));
+    }
   }
 }
 

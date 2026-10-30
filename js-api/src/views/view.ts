@@ -120,9 +120,9 @@ export class ViewBase extends Widget {
   get parentCall(): FuncCall | undefined { return toJs(api.grok_View_Get_ParentCall(this.dart)); }
   set parentCall(s: FuncCall | undefined) { api.grok_View_Set_ParentCall(this.dart, toDart(s)); }
 
-  /** The view this one was opened from. The ribbon shows it as a crumb before this view's name (a
-   * {@link TableView} only with {@link TableView.showParentCrumb}), and closing this view while it is current makes
-   * the parent current if the parent is still open. */
+  /** The view this one was opened from. While it is open, the ribbon shows it before this view's name as a link that
+   * makes it current (a {@link TableView} only with {@link TableView.showParentCrumb}), and closing this view while it
+   * is current makes the parent current. */
   get parentView(): ViewBase { return toJs(api.grok_View_Get_ParentView(this.dart)); }
   set parentView(s: ViewBase) { api.grok_View_Set_ParentView(this.dart, toDart(s)); }
 

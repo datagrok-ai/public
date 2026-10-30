@@ -169,7 +169,8 @@ category('Compat: campaign.json', () => {
     try {
       const design = await sb.hitDesign();
       const triage = await sb.hitTriage();
-      for (const [app, readme] of [[design, 'README_HD.md'], [triage, 'README_HT.md']] as const) {
+      const pepti = await sb.peptiHit();
+      for (const [app, readme] of [[design, 'README_HD.md'], [triage, 'README_HT.md'], [pepti, 'README_PH.md']] as const) {
         expect(app.infoView.helpUrl, _package.webRoot + readme, `${readme}: the landing's help`);
         expect(app.multiView.helpUrl, _package.webRoot + readme, `${readme}: the help of the view the shell shows`);
       }

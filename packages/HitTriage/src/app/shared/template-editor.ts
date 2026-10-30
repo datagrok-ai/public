@@ -58,7 +58,7 @@ export async function openTemplateEditor<T extends HitDesignTemplate>(request: T
     }}).view;
     view.parentView = parent;
     view.parentCall = app.parentCall;
-    view.helpUrl = `${_package.webRoot}README_HD.md#templates`;
+    view.helpUrl = `${_package.webRoot}${app.appName === 'PeptiHit' ? 'README_PH.md' : 'README_HD.md'}#templates`;
     grok.shell.addView(view);
     const leave = async () => {
       if (!editor.dirty || await confirmDialog({title: 'Discard the new template?', name: 'discard-template',

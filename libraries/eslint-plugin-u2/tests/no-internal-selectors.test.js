@@ -13,6 +13,8 @@ tester.run('no-internal-selectors', rule, {
     `if (el.matches(':hover')) open();`,
     `const cls = 'u2-tree'; log(cls);`,
     `document.querySelectorAll(selector);`,
+    `list.root.classList.add('u2-adaptive'); meta.classList.add('u2-p2', 'u2-p1');`,
+    `root.querySelectorAll('.u2-adaptive .u2-p2');`,
   ],
   invalid: [
     internal(`await waitUntil(() =>
@@ -25,5 +27,7 @@ tester.run('no-internal-selectors', rule, {
     internal(`cell.classList.add('u2-input-fill');`),
     internal(`row.classList.toggle('hit-triage-row', on); row.classList.toggle('u2-list-row-current', on);`),
     internal(`const opts = form.getElementsByClassName('u2-input-options');`),
+    internal(`root.querySelector('.u2-adaptive .u2-tree-label');`),
+    internal(`el.classList.add('u2-p1-label');`),
   ],
 });

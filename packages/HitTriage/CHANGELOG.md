@@ -2,6 +2,17 @@
 
 ## v.next
 
+* PeptiHit: Added its own help page (README_PH.md): HELM designs converted to molecules, templates, campaigns, the Progress Tracker, custom functions and permissions; the landing, its Learn more and the template editor open it
+* Hit Design, PeptiHit: Fixed molecules and cards cut off in the Progress Tracker at 1366 px: lanes are as wide as their cards (the campaign's card layout, else the platform's) and scroll sideways when they do not fit; five lanes fit at 1920
+* Hit Design, PeptiHit: Added a note to the Progress Tracker's status line when more stages are off to the side
+* Hit Design, PeptiHit: Fixed a Progress Tracker value longer than its field being cut without an ellipsis
+* Hit Design, PeptiHit: Fixed Edit Permissions saving its list onto a campaign opened after it; Edit Permissions and Select Primary Molecule Column are now pinned to the campaign view and close with it
+* Hit Design, PeptiHit: Fixed a campaign opened earlier replacing one opened after it when its campaign.json or its table was slower to read
+* Hit Design, PeptiHit: Fixed Submit keeping a changed submit function when the submit function fails; the campaign's submit function is now restored
+* Hit Design, PeptiHit: Fixed a failed Modify Stages save resetting the tracker's count of moved rows, so closing the tracker no longer saved the moves
+* Hit Design, PeptiHit: Fixed the assistant's save, status and stage functions reporting success for a save that did not happen; a failed status change is now taken back
+* Hit Design, PeptiHit: Changed the assistant's Set stages to say the stages changed when their save failed
+* PeptiHit: Added its own help page (README_PH.md), which the landing, its Learn more and the template editor open
 * Hit Triage, PepTriage: A cloned template's name and key are free, as in Hit Design: "<name> (copy)" ("(copy 2)" and on when that is taken) and the key's next free number
 * Hit Triage: Fixed the grid and its filters not showing what "Calculate additional properties" wrote into columns the campaign already had
 * All apps: Fixed "Calculate additional properties" dropping the filter on an integer column (MW) it fills with fractions, rebinding the viewers that showed it and moving it to the end

@@ -56,11 +56,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
-}
-
-/* the platform grid's row colours, layered; --u2-row-bg (no stripe) paints the hover actions over the row's end;
-   a row state (--u2-list-row-state, a pending delete) is drawn over the current, selected and hover fills */
-.u2-list-row {
+  /* the platform grid's row colours, layered; --u2-row-bg (no stripe) paints the hover actions over the row's end;
+     a row state (--u2-list-row-state, a pending delete) is drawn over the current, selected and hover fills */
   --u2-list-row-base: var(--dg-bg);
   --u2-list-row-state: transparent;
   --u2-list-row-current: transparent;

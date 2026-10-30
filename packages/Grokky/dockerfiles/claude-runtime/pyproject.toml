@@ -6,7 +6,7 @@ files = ["agent/grokky_agent"]
 
 [[tool.mypy.overrides]]
 module = ["run_agent", "model_tools", "hermes_constants", "hermes_state", "hermes_state_registry", "hermes_cli.*",
-          "tools.*", "agent.*", "pm", "pm.*"]
+          "tools.*", "agent.*", "pm", "pm.*", "boto3", "botocore.*"]
 ignore_missing_imports = true
 
 [tool.ruff]

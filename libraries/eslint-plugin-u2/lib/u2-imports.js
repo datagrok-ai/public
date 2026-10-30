@@ -3,6 +3,13 @@
 const USES_U2 = /@datagrok-libraries\/u2|datagrok-api\/u2core|@datagrok-libraries\/ems|DG\.U2\b/;
 /** The control class names a rule assumes when it is not given u2's list (check-consumer reads it off the sources). */
 const DEFAULT_CONTROLS = /^(Component|Control)$|(Input|Dialog|Form|Menu|Table|List|Tree|Grid|Editor|Picker|Header)$/;
+/** u2's documented utility classes (README › Styling): a consumer puts them on its own elements and may style them. */
+const PUBLIC_CLASSES = ['u2-adaptive', 'u2-p1', 'u2-p2'];
+const PUBLIC_TAIL = `(?!(?:${PUBLIC_CLASSES.map((c) => c.slice(3)).join('|')})(?![\\w-]))`;
+/** A u2 class or data-u2 attribute in a selector, the utility classes left out. */
+const INTERNAL_SELECTOR = new RegExp(`\\.u2-${PUBLIC_TAIL}|\\[data-u2`);
+/** A u2 class name in a class list, the utility classes left out. */
+const INTERNAL_CLASS = new RegExp(`(^|\\s)u2-${PUBLIC_TAIL}`);
 
 function libraryOf(source) {
   if (/^@datagrok-libraries\/ems(\/|$)/.test(source))
@@ -91,4 +98,20 @@ function staticText(node) {
 
 const sourceOf = (context) => context.sourceCode ?? context.getSourceCode();
 
-module.exports = {DEFAULT_CONTROLS, U2Imports, calleeName, isFunction, sourceOf, staticText, walk};
+/** What the name `id` holds where it is read: the value of the last write to that variable before `id` — its
+ * declaration's initializer or an assignment — found through the scopes around `id`; null for a parameter, an
+ * import, a name declared nowhere or one not yet written. */
+function valueOf(context, id) {
+  const source = sourceOf(context);
+  for (let scope = source.getScope ? source.getScope(id) : context.getScope(); scope; scope = scope.upper) {
+    const variable = scope.set.get(id.name);
+    if (variable === undefined)
+      continue;
+    const writes = variable.references.filter((r) => r.writeExpr && r.writeExpr.range[1] <= id.range[0]);
+    return writes.length > 0 ? writes[writes.length - 1].writeExpr : null;
+  }
+  return null;
+}
+
+module.exports = {DEFAULT_CONTROLS, INTERNAL_CLASS, INTERNAL_SELECTOR, PUBLIC_TAIL, U2Imports, calleeName, isFunction,
+  sourceOf, staticText, valueOf, walk};

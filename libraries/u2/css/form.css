@@ -20,9 +20,13 @@
   gap: 0;
 }
 
+/* platform caption skin: grey, right-aligned in the label column (ui.css:1068-1075) —
+   bridged platform inputs (.ui-input-label) share it */
 .u2-form .u2-input-label,
 .u2-form .ui-input-label {
   min-width: var(--u2-form-label-width, 100px);
+  color: var(--dg-text-color-light);
+  text-align: right;
 }
 
 /* while a form measures its captions (form.ts _measureLabels): each at its own text's width, whatever
@@ -32,14 +36,6 @@
   flex-basis: auto !important;
   width: max-content !important;
   min-width: 0 !important;
-}
-
-/* platform caption skin: grey, right-aligned in the label column (ui.css:1068-1075) —
-   bridged platform inputs (.ui-input-label) share it */
-.u2-form .u2-input-label,
-.u2-form .ui-input-label {
-  color: var(--dg-text-color-light);
-  text-align: right;
 }
 
 .u2-form-captions-left .u2-input-label,
@@ -173,17 +169,18 @@
 /* the widths ui.form gives, in the plain caption-left layout and in the auto form's roomy wide
    state: a choice as wide as its longest option plus 30px (form.ts measures it into
    --u2-choice-width, as js-api ui.ts getInputsMinWidths does), a number 150px (ui.css:261-271
-   grown by the form's flex-grow); an explicit wide form stretches both, as ui-form-wide does */
+   grown by the form's flex-grow); an explicit wide form stretches both, as ui-form-wide does. Each width is a
+   cap: in a row with less room the editor shrinks with its box instead of overflowing it */
 .u2-form:not(.u2-form-wide):not(.u2-form-tall) .u2-input-root:not(.u2-input-fill)[data-u2='choice-input'] select.u2-input-editor,
 .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='choice-input'] select.u2-input-editor {
-  flex: none;
+  flex: 0 1 auto;
   width: var(--u2-choice-width, 200px);
   max-width: none;
 }
 
 .u2-form:not(.u2-form-wide):not(.u2-form-tall) .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-number,
 .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-number {
-  flex: none;
+  flex: 0 1 auto;
   width: 150px;
   max-width: 150px;
 }
@@ -191,7 +188,7 @@
 /* a date is a short value too: its own width, the calendar toggle beside it, never across the row */
 .u2-form:not(.u2-form-wide):not(.u2-form-tall) .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-date,
 .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-date {
-  flex: none;
+  flex: 0 1 auto;
   width: 140px;
   max-width: 140px;
 }

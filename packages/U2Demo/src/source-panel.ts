@@ -46,6 +46,16 @@ function sourceText(text: string, symbol?: string): HTMLElement {
   return pre;
 }
 
+/** A page's own code shown on the page: the bundled text of `file` (keyed as `nav.ts` names a `SourceRef`),
+ * sliced to `symbol`. */
+export function sourceOf(file: string, symbol?: string): HTMLElement {
+  if (SOURCES[file] == null)
+    return span(`Not bundled: ${file}`, 'u2demo-source-missing');
+  const pre = sourceText(SOURCES[file], symbol);
+  pre.classList.add('u2demo-source-lines');
+  return pre;
+}
+
 class DemoSourceHandler extends DG.ObjectHandler<DemoPage> {
   get type(): string {
     return 'u2demo-source';

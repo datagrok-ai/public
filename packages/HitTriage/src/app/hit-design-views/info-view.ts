@@ -15,8 +15,8 @@ import {hitInfoAiDescription} from '../ai/view-functions';
 export class HitDesignInfoView
   <T extends HitDesignTemplate = HitDesignTemplate, K extends HitDesignApp = HitDesignApp>
   extends HitLandingView<T, K> {
-  constructor(app: K) {
-    super(app, 'README_HD.md');
+  constructor(app: K, readme = 'README_HD.md') {
+    super(app, readme);
     this.name = 'Hit Design';
     // TODO: Remove before api release
     (this as any).aiDescription = hitInfoAiDescription(app.appName);
@@ -58,6 +58,8 @@ export class HitDesignInfoView
     if (!urlParams.has(HitDesignCampaignIdKey) && !campId)
       return;
     const campaignId = campId ?? urlParams.get(HitDesignCampaignIdKey);
+    // taken before the reads: a campaign asked for later wins, however long this one reads
+    const ticket = this.app.openTicket();
     // check if such campaign exists
     if (!await _package.files.exists(`${this.app.appName}/campaigns/${campaignId}/${CampaignJsonName}`))
       return;
@@ -79,7 +81,9 @@ export class HitDesignInfoView
     if (!await grok.dapi.files.exists(tablePath))
       throw new CampaignUnavailableError(`its table ${tablePath} is missing`);
     const template: T = (campaign.template as T) ?? await loadTemplate<T>(templatePath);
-    await this.app.setTemplate(template, campaignId!, campaign);
+    // a campaign opened after this one was asked for is the one shown, its address the address
+    if (!await this.app.setTemplate(template, campaignId!, campaign, ticket))
+      return;
 
     if (campId)
       modifyUrl(HitDesignCampaignIdKey, campId);

@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
 import {MonomerCollection, IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {PolymerType} from '@datagrok-libraries/bio/src/helm/types';
@@ -14,6 +15,13 @@ export interface CollectionRef {
   data: MonomerCollection;
 }
 
+/** Who changes collections: the user's login, and whether the user may edit the file share the collections are kept
+ * in (Edit on `System:AppData`), which lets them change anyone's collection. */
+export interface CollectionAccess {
+  user: string;
+  shareEditor: boolean;
+}
+
 const POLYMER_TYPES: PolymerType[] = ['PEPTIDE', 'RNA', 'CHEM'];
 
 /** The collection dialogs, shared by the Monomer Collections view and the context panel. Each takes
@@ -23,14 +31,32 @@ export class CollectionDialogs {
     return fileName.replace(/\.json$/i, '');
   }
 
-  /** The author, and anyone for a collection that names none, may change it. */
-  static canEdit(data: MonomerCollection, user: string): boolean {
-    return !data.updatedBy || data.updatedBy === user;
+  /** The current user's {@link CollectionAccess}, asked of the server: read when a view of the collections opens. */
+  static async access(): Promise<CollectionAccess> {
+    const user = DG.User.current().login;
+    try {
+      const share = await grok.dapi.connections.filter('namespace = "System:" and shortName = "AppData"').first();
+      return {user, shareEditor: share != null && await grok.dapi.permissions.check(share, 'Edit')};
+    }
+    catch (e) {
+      console.warn('Monomer collections: could not read the AppData share\'s permissions', e);
+      return {user, shareEditor: false};
+    }
   }
 
-  /** Why `user` may not change `data`, or null. */
-  static notEditable(data: MonomerCollection, user: string): string | null {
-    return CollectionDialogs.canEdit(data, user) ? null : `Only ${data.updatedBy} can change this collection`;
+  /** The author, anyone for a collection that names none, and an editor of the share may change it. */
+  static canEdit(data: MonomerCollection, access: CollectionAccess): boolean {
+    return !data.updatedBy || data.updatedBy === access.user || access.shareEditor;
+  }
+
+  /** Why the user may not change `data`, or null. */
+  static notEditable(data: MonomerCollection, access: CollectionAccess): string | null {
+    return CollectionDialogs.canEdit(data, access) ? null : CollectionDialogs.onlyAuthor(data, 'this collection');
+  }
+
+  /** "Only ann or an editor of the AppData share can change Foo". */
+  static onlyAuthor(data: MonomerCollection, what: string): string {
+    return `Only ${data.updatedBy} or an editor of the AppData share can change ${what}`;
   }
 
   static count(n: number, what: string): string {
@@ -67,7 +93,8 @@ export class CollectionDialogs {
       div([monomers.root], 'monomer-collection-dialog-monomers')], 'monomer-collection-dialog'))
       .okDisabled(computed(() => picked.value === 0 ? 'Select at least one monomer' : null))
       .onOK(async () => {
-        const newName = name.peek().trim();
+        // as the name check reads it: "Foo.json" names Foo's own file, which the rename would delete
+        const newName = CollectionDialogs.displayName(name.peek().trim());
         const symbols = monomers.getSelectedMonomers();
         const tagList = tags.peek();
         await libHelper.addOrUpdateMonomerCollection(newName, symbols, description.peek() || undefined,
@@ -116,7 +143,7 @@ export class CollectionDialogs {
       `${CollectionDialogs.displayName(ref.name)} (copy)`, taken));
     dialog.add(() => new Form({layout: 'normal'}).add(name))
       .onOK(async () => {
-        const newName = name.peek().trim();
+        const newName = CollectionDialogs.displayName(name.peek().trim());
         await libHelper.addOrUpdateMonomerCollection(newName, [...ref.data.monomerSymbols], ref.data.description,
           ref.data.tags ? [...ref.data.tags] : undefined);
         grok.shell.info(`Collection "${newName}" created`);
@@ -140,7 +167,7 @@ export class CollectionDialogs {
         new Form({layout: 'normal'}).addAll([name, description]).root,
       ], 'monomer-collection-dialog'))
       .onOK(async () => {
-        const newName = name.peek().trim();
+        const newName = CollectionDialogs.displayName(name.peek().trim());
         await libHelper.addOrUpdateMonomerCollection(newName, symbols, description.peek() || undefined,
           tags.length > 0 ? tags : undefined);
         grok.shell.info(`Merged collection "${newName}" created with ` +

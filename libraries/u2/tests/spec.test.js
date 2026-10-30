@@ -896,6 +896,28 @@ spec('twoWay to a read-only leaf: the one-way bridge still applies, with a singl
   instance.dispose();
 });
 
+spec('a real input bound to a read-only path renders read-only, following it, not an error', () => {
+  const reg = new Registry();
+  registerAll(reg);
+  const base = signal('Ada');
+  const ro = computed(() => `${base.value} Lovelace`);
+  let instance;
+  captureWarnings(() => {
+    instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'div', children: [
+      {tag: 'u2-text-input', name: 'shown', props: {label: 'Full name'}, bind: {value: '$.ro'}},
+      {tag: 'u2-text-input', name: 'edited', props: {label: 'Name'}, bind: {value: '$.name'}},
+    ]}}, new SpecContext({data: {ro, name: signal('Ada')}}), reg);
+  });
+  assert.equal(instance.root.querySelectorAll('.u2-spec-error').length, 0);
+  const [shown, edited] = instance.root.querySelectorAll('input');
+  assert.equal(shown.readOnly, true, 'shown read-only: an edit could not land');
+  assert.equal(shown.value, 'Ada Lovelace');
+  base.value = 'Grace';
+  assert.equal(shown.value, 'Grace Lovelace', 'and it follows the path');
+  assert.ok(!edited.readOnly, 'a writable path stays editable');
+  instance.dispose();
+});
+
 spec('a binding cycle marks its members broken, naming the loop', () => {
   const reg = new Registry();
   registerEcho(reg);

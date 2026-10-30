@@ -1,10 +1,9 @@
 'use strict';
 
-const {calleeName, staticText} = require('../lib/u2-imports');
+const {INTERNAL_CLASS, INTERNAL_SELECTOR, calleeName, staticText} = require('../lib/u2-imports');
 
 const SELECTOR_CALLS = new Set(['querySelector', 'querySelectorAll', 'closest', 'matches']);
 const CLASS_CALLS = new Set(['add', 'remove', 'toggle', 'contains', 'replace']);
-const INTERNAL = /\.u2-|\[data-u2/;
 
 const onClassList = (call) => call.callee.type === 'MemberExpression' &&
   call.callee.object.type === 'MemberExpression' && !call.callee.object.computed &&
@@ -28,13 +27,13 @@ module.exports = {
           return;
         if (SELECTOR_CALLS.has(name)) {
           const text = node.arguments[0] && staticText(node.arguments[0]);
-          if (text && INTERNAL.test(text))
+          if (text && INTERNAL_SELECTOR.test(text))
             context.report({node: node.arguments[0], messageId: 'internal', data: {text}});
         }
         else if (name === 'getElementsByClassName' || CLASS_CALLS.has(name) && onClassList(node)) {
           for (const arg of node.arguments) {
             const text = staticText(arg);
-            if (text && /(^|\s)u2-/.test(text))
+            if (text && INTERNAL_CLASS.test(text))
               context.report({node: arg, messageId: 'internal', data: {text}});
           }
         }

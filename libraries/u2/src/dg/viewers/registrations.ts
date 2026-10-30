@@ -6,6 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import {Scope} from '../../core/scope.js';
 import {computed, Signal} from '../../core/signals.js';
 import {Component} from '../../core/component.js';
+import {Input} from '../../core/input-base.js';
 import type {LiveOption} from '../../core/input-base.js';
 import {Dialog} from '../../components/containers/dialog.js';
 import {ChoiceInput} from '../../components/inputs/choice-input.js';
@@ -296,8 +297,6 @@ function functionInputMeta(): ComponentMeta {
     usage: 'The value is the nqName string (`Chem:SmilesToMw`) — the `FunctionName` semantic ' +
       'type. A row click, Enter or double-click in the popup commits and closes.',
     create: (props) => {
-      const value = props.value;
-      const bound = value instanceof Signal;
       return new FunctionInput({
         label: props.label as LiveOption<string> | undefined,
         name: lit<string>(props.name),
@@ -305,8 +304,7 @@ function functionInputMeta(): ComponentMeta {
         placeholder: lit<string>(props.placeholder),
         scalarOnly: lit<boolean>(props.scalarOnly),
         ignorePackages: lit<string[]>(props.ignorePackages),
-        value: bound ? undefined : value as string | undefined,
-        bind: bound ? value as Signal<string> : undefined,
+        ...Input.specValue<string>(props.value),
       });
     },
     props: [
@@ -371,16 +369,13 @@ function funcCallInputMeta(): ComponentMeta {
     usage: 'The value is the FuncCall id. Bind `functionName` to a FunctionsBrowser\'s ' +
       '`selected` step to scope the popup. A row click, Enter or double-click commits and closes.',
     create: (props) => {
-      const value = props.value;
-      const bound = value instanceof Signal;
       return new FuncCallInput({
         label: props.label as LiveOption<string> | undefined,
         name: lit<string>(props.name),
         nullable: lit<boolean>(props.nullable),
         placeholder: lit<string>(props.placeholder),
         functionName: props.functionName as LiveOption<string> | undefined,
-        value: bound ? undefined : value as string | undefined,
-        bind: bound ? value as Signal<string> : undefined,
+        ...Input.specValue<string>(props.value),
       });
     },
     props: [

@@ -1,8 +1,9 @@
 'use strict';
 
-const {calleeName, isFunction, sourceOf, staticText, walk} = require('../lib/u2-imports');
+const {U2Imports, calleeName, isFunction, sourceOf, staticText, valueOf, walk} = require('../lib/u2-imports');
 
-const EMPTY = /^(disabled|not available|unavailable|n\/a|not applicable)\.?$/i;
+const EMPTY = /^(disabled|not available|unavailable|n\/a|not applicable|not allowed|cannot save|\.\.\.|…)\.?$|^$/i;
+const COMPARISONS = new Set(['===', '!==', '==', '!=', '<', '>', '<=', '>=', 'instanceof', 'in']);
 const REASON_KEYS = new Set(['disabled', 'disabledReason', 'reason']);
 const REASON_CALLS = new Set(['okDisabled', 'setDisabled', 'disable']);
 const WRAPPERS = new Set(['computed', 'signal']);
@@ -17,6 +18,9 @@ module.exports = {
     messages: {
       empty: '"{{text}}" says the control is off, not why. Name what turns it on: "Pick a source file first", ' +
         '"Only the campaign\'s owner can edit it".',
+      boolean: '`{{what}}` turns a u2 control off with no reason: the user cannot tell what to do. Give the reason ' +
+        'the user reads, a signal of it, or `null` while on: `{disabled: \'Pick a source file first\'}` when it is ' +
+        'built, `input.disabled = reason` on an input.',
     },
     schema: [],
   },
@@ -54,28 +58,51 @@ module.exports = {
     };
     const check = (value) => {
       for (const node of results(value)) {
-        const text = staticText(node)?.trim();
-        if (text !== undefined && EMPTY.test(text))
-          context.report({node, messageId: 'empty', data: {text}});
+        const raw = staticText(node);
+        if (raw !== null && raw !== '' && EMPTY.test(raw.trim()))
+          context.report({node, messageId: 'empty', data: {text: raw}});
       }
     };
+    const source = sourceOf(context);
+    let imports;
+    const isBoolean = (node) => node.type === 'Literal' && typeof node.value === 'boolean' ||
+      node.type === 'UnaryExpression' && node.operator === '!' ||
+      node.type === 'BinaryExpression' && COMPARISONS.has(node.operator);
+    /** `x` holds a u2 control or button where it is used: `new X(…)` or `x(…)` of something imported from u2 or ems. */
+    const isU2 = (node) => {
+      const value = node.type === 'Identifier' ? valueOf(context, node) : node;
+      return value !== null && (value.type === 'NewExpression' || value.type === 'CallExpression') &&
+        imports.resolve(value.callee) !== null;
+    };
+    const off = (node, object) => {
+      if (isU2(object))
+        context.report({node, messageId: 'boolean', data: {what: source.getText(node)}});
+    };
     return {
+      Program(node) {
+        imports = new U2Imports(node);
+      },
       Property(node) {
         if (!node.computed && REASON_KEYS.has(keyName(node.key)) && node.parent.type === 'ObjectExpression')
           check(node.value);
       },
       AssignmentExpression(node) {
         const target = node.left;
-        if (target.type === 'MemberExpression' && !target.computed && REASON_KEYS.has(target.property.name))
-          check(node.right);
+        if (target.type !== 'MemberExpression' || target.computed || !REASON_KEYS.has(target.property.name))
+          return;
+        check(node.right);
+        if (target.property.name === 'disabled' && isBoolean(node.right))
+          off(node, target.object);
       },
       CallExpression(node) {
         const name = calleeName(node);
+        const attribute = node.arguments[0] ? staticText(node.arguments[0]) : null;
         if (REASON_CALLS.has(name) && node.arguments[0])
           check(node.arguments[0]);
-        else if (name === 'setAttribute' && staticText(node.arguments[0] ?? {type: 'none'}) === 'aria-description' &&
-          node.arguments[1])
+        else if (name === 'setAttribute' && attribute === 'aria-description' && node.arguments[1])
           check(node.arguments[1]);
+        else if (name === 'setAttribute' && attribute === 'disabled' && node.callee.type === 'MemberExpression')
+          off(node, node.callee.object);
       },
     };
   },

@@ -14,8 +14,8 @@ const INTRO = 'One FuncCall, two editors: the platform\'s `DG.InputForm.forFuncC
   'generated from one client-registered function decorated after registration. Editing either ' +
   'side writes the same FuncCall and the other side follows; the `inputs` line below is what the ' +
   'call itself holds. Each cross-edit bumps exactly one sync counter by exactly one — an echo ' +
-  'never counts, so any extra increment is ping-pong. The one red balloon at open is part of the ' +
-  'demo: the `seed` parameter further down carries a deliberately broken default (`nosuchvar + 1`).';
+  'never counts, so any extra increment is ping-pong. The `seed` parameter further down carries a ' +
+  'deliberately broken default (`nosuchvar + 1`), shown on its u2 field.';
 
 const DEFAULTS = 'Literal numeric defaults ride the js-api `defaultValue` setter into the ' +
   'property but never into the call: both func forms read defaults only from ' +
@@ -95,9 +95,10 @@ const DEFAULT_OK = '`options[\'default\'] = \'2 + 2\'` is a GrokScript command e
   'reference sibling params.';
 
 const DEFAULT_BROKEN = '`seed`\'s default is deliberately `nosuchvar + 1` — a command naming a ' +
-  'variable that does not exist. The red `Variable "nosuchvar" not found` balloon this page ' +
-  'raises at open IS that, on purpose: the platform balloons and moves on, while u2 keeps the ' +
-  'failure on the field — the message inline, with a Retry that re-runs just that one eval.';
+  'variable that does not exist. The platform form would raise a red `Variable "nosuchvar" not ' +
+  'found` balloon and move on (a balloon that stays after you leave), so only the u2 form is given ' +
+  'it: u2 keeps the failure on the field — the message inline, with a Retry that re-runs just ' +
+  'that one eval.';
 
 const LIST_DYN = 'The same provider through a multi-choice on both sides. Under ' +
   '`skipDefaultInit` the Dart guard (`func_param_editor.dart:622`) skips the ITEMS write too ' +
@@ -211,7 +212,8 @@ const W4_SLOW = '`validators: ["fceW4Async"]` where the func is registered `isAs
   '`Couldn\'t validate (validator \'fceW4Async\' is misconfigured)` inline after an edit, the ' +
   'full reason on the message\'s tooltip (divergence #21).';
 
-const W4_GATE = 'The u2 Run gate is the form\'s own `missingRequired` + `invalidFields`: ' +
+const W4_GATE = 'The u2 Run gate is the form\'s own `loadingFields` + `missingRequired` + `invalidFields`: ' +
+  'while a field\'s choices or computed default load, Run waits for them. ' +
   '`cylinders` is the one required field, so Run opens blocked with the tooltip naming it. ' +
   'Flip `type` to Electric and Run unblocks — a field hidden by an expression is exempt from ' +
   'validation and the gate while its value stays in the call (divergence #20). The Dart form ' +
@@ -403,6 +405,8 @@ export function ensureFuncs(): void {
       p.nullable = true;
       p.isOptional = true;
     }
+  // said, as fceGate says it: registered, `cylinders` comes out nullable, and no Run gate counts a nullable param
+  w4.get('cylinders')!.nullable = false;
   w4SlowFunc = grok.functions.register({
     signature: 'string fceW4Slow(string slow)',
     run: (s: string) => String(s ?? ''),
@@ -436,16 +440,16 @@ function inputsText(call: DG.FuncCall): string {
   return `{${parts.join(', ')}}`;
 }
 
-/** The blocked-Run tooltip both gate consumers share: empty fields first, invalid ones next,
- * either list truncated past three names (`Fill Name, Stage, Site and 9 more to run`). */
-export function gateTitle(blocked: boolean, empty: string[], invalid: string[]): string {
-  if (!blocked)
-    return '';
+/** Why `form` cannot run yet, the reason both Run buttons show: empty fields first, invalid ones next, either list
+ * cut past three names (`Fill Name, Stage, Site and 9 more to run`); null once it can. Reads the form's signals. */
+export function gateReason(form: FuncCallForm): string | null {
+  const loading = form.loadingFields.value;
+  const empty = form.missingRequired.value;
+  const invalid = form.invalidFields.value;
   const names = (list: string[]) => list.length <= 3 ? list.join(', ') :
     `${list.slice(0, 3).join(', ')} and ${list.length - 3} more`;
-  if (empty.length > 0)
-    return `Fill ${names(empty)} to run`;
-  return `Fix ${names(invalid)} to run`;
+  return loading.length > 0 ? `Wait for ${names(loading)} to load` :
+    empty.length > 0 ? `Fill ${names(empty)} to run` : invalid.length > 0 ? `Fix ${names(invalid)} to run` : null;
 }
 
 /** Page prose with `backticked` spans rendered as code rather than shown as backticks. */
@@ -465,9 +469,19 @@ export function funcConvergencePage(): HTMLElement {
   ensureTable('fceW3Alt', 'weight,label\n70,x\n80,y');
   const call = demoFunc!.prepare();
   const gateCall = gateFunc!.prepare();
-  // the deliberate broken default belongs to the page that demonstrates it, not to the shared
-  // registration: Function forms reads the same registry and must not balloon for it
-  dynFunc!.inputs.find((p) => p.name === 'seed')!.options['default'] = 'nosuchvar + 1';
+  // the deliberately broken default is given once the platform form is built, so only u2's form evaluates it: the
+  // platform would balloon it, and a balloon outlives the page; it goes with the page (Function forms shares the func)
+  const seed = dynFunc!.inputs.find((p) => p.name === 'seed')!;
+  const seedHadDefault = 'default' in seed.options;
+  const seedDefault = seed.options['default'];
+  const breakSeed = () => seed.options['default'] = 'nosuchvar + 1';
+  // a null default is evaluated as the command "null" by the next platform form: put back exactly what was there
+  scope.own(() => {
+    if (seedHadDefault)
+      seed.options['default'] = seedDefault;
+    else
+      delete seed.options['default'];
+  });
   // country preset so the dependent city source has something to ask with at open
   const dynCall = dynFunc!.prepare({country: 'FR'});
   const w3Call = w3Func!.prepare();
@@ -501,6 +515,7 @@ export function funcConvergencePage(): HTMLElement {
   const w4SlowGrid = div([], 'u2demo-ab u2demo-ab-func');
   const w4Whole = divH([], 'u2demo-funcs-ab u2demo-w4-whole');
   const plain = div([], 'u2demo-standalone');
+  const w4Built = signal<FuncCallForm | null>(null);
   const w4Run = button('Run', async () => {
     try {
       await w4Call.call();
@@ -509,16 +524,19 @@ export function funcConvergencePage(): HTMLElement {
     catch (e: any) {
       w4RunResult.value = 'Run failed: ' + String(e?.message ?? e);
     }
-  }, {primary: true});
-  w4Run.disabled = true;
+  }, {primary: true, disabled: computed(() => {
+    const form = w4Built.value;
+    return form === null ? 'The form is still building' : gateReason(form);
+  })});
 
   /** One A/B section: both editors over one shared call, re-parented into a grid row per param
    * with its notes, and a per-section honest counter pair. */
   async function buildAb(abCall: DG.FuncCall, abHost: HTMLElement,
     toDartCount: {value: number}, toU2Count: {value: number}, tickCount: {value: number},
-    rowNotes: Map<string, string[]>, catNotes?: Map<string, string>):
+    rowNotes: Map<string, string[]>, catNotes?: Map<string, string>, beforeU2?: () => void):
     Promise<{dart: DG.InputForm, form: FuncCallForm}> {
     const dartForm = await DG.InputForm.forFuncCall(abCall, {twoWayBinding: true});
+    beforeU2?.();
 
     // the honest Dart → u2 counter: subscribed BEFORE funcForm, so each handler still sees the
     // field value the form's own (later-subscribed) refresh is about to replace; the comparison
@@ -675,7 +693,7 @@ export function funcConvergencePage(): HTMLElement {
       ['cohort', [DEFAULT_OK]],
       ['seed', [DEFAULT_BROKEN]],
       ['regions', [LIST_DYN]],
-    ]));
+    ]), undefined, breakSeed);
 
     await buildAb(w3Call, w3Grid, toDartW3, toU2W3, tickW3, new Map<string, string[]>([
       ['df', [P_ICONS, W3_CLOSED, W3_EXTERNAL]],
@@ -693,15 +711,7 @@ export function funcConvergencePage(): HTMLElement {
         ['code', [W4_NAMED]],
         ['notes', [W4_NOTES]],
       ]));
-    scope.build(() => {
-      const blocked = computed(() =>
-        w4Form.missingRequired.value.length > 0 || w4Form.invalidFields.value.length > 0);
-      Scope.ambient!.effect(() => {
-        w4Run.disabled = blocked.value;
-        w4Run.title = gateTitle(blocked.value, w4Form.missingRequired.value,
-          w4Form.invalidFields.value);
-      });
-    });
+    w4Built.value = w4Form;
 
     // the slow row rides its OWN call: the async-validator fixture crashes the whole Dart
     // form build (ib:296-298), and per-row isolation keeps the crash in the left cell (#21)

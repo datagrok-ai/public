@@ -2,6 +2,34 @@
 
 ## v.next
 
+* Inputs: Fixed `disabled: false` (and `input.disabled = false`) from plain JS turning the input off with no reason and taking it out of its form's verdict; `false` now means on
+* Inputs: Added the `reason-boolean` usage report for `disabled: true`; where it is only reported, the reason reads "Unavailable" instead of "true"
+* Inputs: Added the `bind-readonly` usage report: an input bound to a signal it cannot write (`bind: computed(…)`) is shown read-only instead of throwing on every keystroke; `readOnly: true` says it is read-only on purpose
+* Inputs: Added `Input.specValue(value, readOnly?)`, which the spec registrations use to hand an input a spec's value, so an input bound to a read-only path (`bind: {value: '$.ro'}` over a computed) renders read-only instead of a spec error
+* Form: Fixed a required empty field the user cannot reach holding the form, and a dialog's OK, off: an input inside an `inert` region (a `Section` off with a reason) is no longer counted
+* Form: Fixed a form's verdict going stale when an input, or an element around one, becomes `hidden` or `inert` after the form is built; such a change re-judges the forms a microtask later
+* Dialog: Changed (behaviour change) a close-only dialog whose CLOSE is off (`okDisabled`, or a form in it not valid) to close as a cancel on Escape and ✕ without running `onOK`; before, they ran `onOK` past CLOSE's reason
+* Dialog: Fixed a footer button whose own reason turned on while an async OK ran coming back on when OK settled; the dialog now releases only the buttons still saying "Wait for OK to finish"
+* Dialog: Fixed `getButton('Close')` returning the title bar's ✕ instead of the footer's CLOSE in a close-only dialog
+* Dialog: Added the `close-only-cancel` usage report for `onCancel()` on a close-only dialog, which has no CANCEL
+* Buttons: Added the `reason-missing` usage report for `button.disabled = true` on a u2 button that gives no reason; use `Reason.apply(button, '<why>')`, or `{disabled: '<why>'}` when it is built
+* ChoiceChip: Fixed re-picking the value the chip holds firing `onInput`
+* Lint: Improved `u2/no-unowned-root` to follow a package's own builders (`const panel = () => component(…)`) and to flag a control's `.root` handed to `grok.shell.newView`/`addView`, `DG.View.fromRoot`, `DG.Widget.fromRoot`, `ui.dialog().add` or `dockManager.dock`, naming `ViewHost.create`, `host(control)` or `ViewHost.of(view).dock`
+* Lint: Fixed the `u2/no-unowned-root` message claiming that strict mode throws for a factory call
+* Lint: Improved `u2/reason-text` to flag `x.disabled = <boolean>` and `x.setAttribute('disabled', …)` on a u2 control
+* Lint: Added `...`, "Not allowed", "Cannot save" and a blank reason to the reasons `u2/reason-text` treats as empty
+* Lint: Fixed `u2/reason-text` and `u2/no-unowned-root` taking their verdict from a variable of the same name in another function; they now resolve a name through its own scopes
+* Ratchet: Fixed a new package's lint findings being recorded by its first `--update-baseline` instead of failing on growth: `check-consumer.mjs` counts a lint count that was never recorded as 0
+* Styling: Added `u2-adaptive`, `u2-p1` and `u2-p2` to README › Styling as the documented utility classes; the lint and the ratchet no longer count them as internal selectors
+* Styling: Removed `--u2-form-label-width` from the documented styling properties: Form sets it inline when it measures, so a package's value never applied
+* Styling: Added `css/motion.css`: under reduced motion the dialog's busy spinner, the notify countdown and the chevron and switch transitions stand still
+* Samples: Changed "A list with details" to a `MasterDetail` with `--u2-master-detail-height`, as the rule says, instead of a hand-built splitter
+* Docs: Changed AGENTS.md to write the owner verbs as `owner.build`, `owner.task`, `owner.subscribe` and `owner.own`
+* Docs: Added to AGENTS.md how to open an app (`grok.shell.addView(ViewHost.create({…}).view)`) and that a lint finding alone is a warning
+* Docs: Changed README to mark the rules that no check holds as docs only
+* Testing: Fixed `tests/dom-shim.js`'s `document` missing `contains`, which a browser's has, so an observer on the whole document failed under the shim
+* Testing: Fixed the DOM shim (`U2_DOM=shim`) not notifying attribute observers: `setAttribute` and `removeAttribute` now notify them, honouring `attributeFilter` and `subtree`, and observers get their records
+* MasterDetail: Documented that it renders every row, so it is for lists up to a few hundred items; a longer list is a `VirtualList` beside a detail of your own, in a `Splitter`
 * tableFromMap: Fixed an element value's cell (a molecule drawing) carrying a text row's 22px height and `overflow: hidden`: the value cell takes the element's height and clips nothing that reaches past it; a text row stays 22px
 * FilterBuilder: Fixed a disabled builder's own buttons (and/or, not, add, remove) saying no reason and its links (Advanced, Add condition, Flatten) still working from the keyboard: each carries the builder's reason and does nothing while it is off
 * Inputs: A read-only input's editing options (the colour swatch, the number clicker, the pickers) are off with the reason "Read-only" instead of a focusable button that does nothing; a read-only slider takes the pointer again, so its value shows on hover (a drag or a key still does not move it)
@@ -54,6 +82,10 @@
 * Format: Added `Format.value(v, {format, utcDates})`, the one text u2 shows for a value: booleans read `true`/`false`, a date reads in the platform's date format (the user's, else `M/d/yyyy`) with the time it carries, a record of no known shape is empty instead of "[object Object]"; a catalog cell without `render`, a group header, a filter's value, a stat card and `timestamp` all go through it, so a group header reads as its cells
 * DataTable, tableFromMap: A DataTable cell without `render` and a `tableFromMap` value that is no element read as `Format.value` gives it, as a CatalogTable cell does — a date in the platform's date format, a record empty — where they showed `String(value)` ("Tue Oct 27 2026 …", "[object Object]")
 * AccessGrid: With no `icon`, a row shows the platform's picture of its principal (a group's id or name): a user's picture, a group's icon (`backends.principalIcon`)
+* funcForm: Fixed dependent choices missing a value their parent got while they first loaded: a query's level 2 never saw level 1's default (Chembl's AtcClassification), and a parent pruned by its own choices left the child the old value's list. A result that read a param changed since is evaluated again, and a failed first load tries again once any param changes
+* funcForm: Added `loadingFields`, the fields whose choices or computed default are loading (a reload after a dependency's change included); the form's Run button waits for them ("Loading: Level3"), so a run never takes a pick a reload is about to clear
+* Inputs: Added `loading` (live): the input says it is loading — `aria-busy` at once, a spinner in its box once the load runs past `Input.loadingGraceMs` — and stays usable; funcForm's fields show their loads with it
+* Form: Fixed a choice, number or date overflowing a row narrower than the width the form gives it (a choice's longest option hid its arrow): that width is now a cap, and the editor shrinks with the row
 * funcForm: A param whose editor cannot be built is an error row in its place ("Could not show <param>: …") and a `problems` entry; the rest of the form is built and works. A table field writes back the frame the call holds, and a column field whose table lists no matching column (a hidden `~` one not counted) says so
 * LabelColumn: `report(member, width)` and `leave(member)` are public: a platform form laid out beside u2 forms reports its measured captions, so the u2 rows above it line up with it
 * u2/dg: Added `ViewHost` — a platform view as the owner of what code living in it builds: `ViewHost.of(view)` answers one host per view whichever wrapper the platform hands out, `ViewHost.create({name, content})` makes a new view (the builder answers the content, or `{root, ribbon, toolbox, status, path}`, all built under the host); `signals`, `ribbon(options)` (the `TableViewChrome` group), `show(dialog)` (pinned to the view), `dock(control, place, {title, ratio})` (disposed on its ✕, on `dockManager.close` from code and with the view; disposing it closes the panel) and the owner verbs `build`/`task`/`subscribe`; disposed when the shell removes the view or the platform kills a created view's content. `appView`, `ownView`, `viewSignals`, `showInView`, `tableViewChrome` (and `AppViewOptions`, `TableViewChromeOptions`) are removed (breaking): the codemod's W1 rewrites `tableViewChrome`, `showInView` and `viewSignals` and reports `ownView` and `appView`; `new TableViewChrome(host, options)` takes the view's host, which owns it

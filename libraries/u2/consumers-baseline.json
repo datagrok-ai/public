@@ -29,7 +29,7 @@
       "cssImportant": 0,
       "commentLines": 5457,
       "fileHeaders": 144,
-      "privateDocs": 389,
+      "privateDocs": 388,
       "classes": {
         "subclassU2": [],
         "subclassEms": [],
@@ -1078,12 +1078,12 @@
       "controlBuild": 3,
       "newAppHeader": 2,
       "rawSubscribe": 5,
-      "tsInternalSelectors": 44,
+      "tsInternalSelectors": 43,
       "subclassU2": 0,
       "subclassEms": 0,
       "classBuildsUi": 0,
       "cssFiles": 3,
-      "cssLines": 660,
+      "cssLines": 667,
       "cssInternalLines": 8,
       "cssImportant": 0,
       "commentLines": 536,
@@ -1221,6 +1221,13 @@
       "reason": "Upstream master (Add New Column, public#4404-4406) added three private doc blocks to PowerPack add-new-column.ts; not part of the u2 work",
       "grown": [
         "packages/PowerPack privateDocs: 43 → 46"
+      ]
+    },
+    {
+      "date": "2026-10-30",
+      "reason": "U2Demo's Chained choices page shows its own code on the page (source-panel.ts sourceOf): one rule keeps the lines whole and scrolls them sideways, where the context panel wraps them",
+      "grown": [
+        "packages/U2Demo cssLines: 660 → 667"
       ]
     }
   ]

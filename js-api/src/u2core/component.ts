@@ -1040,6 +1040,10 @@ export interface OwnerVerbs {
   subscribe<T>(source: ObservableLike<T>, handler: (value: T) => void): () => void;
 }
 
+/** `task` and `subscribe` are typed on every component, `DG.Widget`, viewers and views included; `build` only with
+ * u2, as compute-utils' function views (`DG.ViewBase` subclasses) declare a `build(): void` of their own. */
+export interface Component extends Pick<OwnerVerbs, 'task' | 'subscribe'> {}
+
 const OWNER_VERBS: {[K in keyof OwnerVerbs]: (this: Component, ...args: Parameters<OwnerVerbs[K]>) => unknown} = {
   build: function(fn) {
     return this.scope.build(fn);

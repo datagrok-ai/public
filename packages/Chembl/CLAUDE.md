@@ -38,7 +38,7 @@ The package version tracks the ChEMBL release it ships: the container's base ima
   `rdk.mols`/`rdk.fps` to `public.molecule_dictionary`, the column subset shown for
   `molecule_dictionary`, and the per-table "preview" column shown in `headerNames`.
 - **`src/demo.ts`** — `_demoDatabasesChembl()` builds a two-tab view (input form + raw SQL) that
-  reruns `FracClassificationWithSubstructure` whenever an input changes.
+  reruns `AtcClassificationWithSubstructure` whenever an input changes.
 - **`src/tests/`** — `cartridge.ts` (smoke-tests the three search queries) and `converters.ts`
   (golden values for every converter query). All marked `stressTest: true`.
 - **`queries/*.sql`** — where most of the product lives. See "Queries" below.
@@ -91,7 +91,7 @@ A few SQL conventions worth knowing:
 | **RDKit cartridge** | schema `rdk` (`rdk.mols`, `rdk.fps`), GUC `rdkit.tanimoto_threshold`, operators `@>` (substructure), `%` and `<%>` (Tanimoto), functions `morganbv_fp`, `mol_from_smiles`, `get_mfp2_neighbors` | Postgres extension that adds chemical types/operators. Substructure & similarity searches go through it. | `rdk.mols` / `rdk.fps` join back to `molecule_dictionary` on `molregno` (declared in `explicitReferences` in `explorer-config.ts`). |
 | **target / assay / activity** | tables `target_dictionary`, `assays`, `activities`, `target_components`, `component_sequences` | Bioactivity backbone. A target has assays; assays produce activities for compounds. | Used by `StructuresByOrganism`, `compound activity details for all targets containing @protein`, `bioactivityForBacterialTargets`, etc. |
 | **drug_mechanism / research_companies / molecule_synonyms** | tables of the same names | Used together (`molregno` → `res_stem_id` → `country/company`) in commercial-origin search queries. | See `QueryBySubstructure`, `MolregnoInfo`. |
-| **FRAC classification** | `frac_classification`, `molecule_frac_classification` | Fungicide Resistance Action Committee taxonomy. Four-level hierarchy (level1..level4_description). | Powers the `FracClassification*` queries. |
+| **ATC classification** | `atc_classification` (`level1..level4_description`, `level5` = ATC code, `who_name`), `molecule_atc_classification` | WHO Anatomical Therapeutic Chemical drug classification, four levels above the substance. A few level-3/4 descriptions repeat under different parents. | Powers the `AtcClassification*` queries, the showcase of chained dependent choices (level2 ← level1, level3 ← level2, level4 ← level3). They replaced the FRAC queries when ChEMBL 36 flattened FRAC into `pesticide_classification`. |
 | **Chembl vs ChemblSql connection** | `connections/chembl.json` (`dataSource: Postgres`) vs `connections/chemblsql.json` (`dataSource: PostgresDart`) | Same DB, two providers. The Postgres (Java) provider supports `Choices`, `Suggestions`, `batchMode`. The PostgresDart provider is faster for the high-volume dataframe-in/dataframe-out converter queries. | New `--input` queries with `Choices` or `batchMode` should use `Chembl`. New row-by-row converters that take/return a dataframe should use `ChemblSql`. |
 | **CHEMBL ID handler** | `DBExplorer` from `@datagrok-libraries/db-explorer`, configured by `explorerConfig` | Lets the user click a CHEMBL ID anywhere and explore the schema starting from that row. | Initialised once in `init`; the molecule renderer is added on top. |
 

@@ -28,7 +28,7 @@ test.describe("MolTrack: browse assays, their runs and results", () => {
     await session.step(12, "And user opens the \"Assays\" view of MolTrack", () => openEmsView(page, "Assays"));
     enter(page, "MolTrack");
     await session.step(14, "When user double-clicks on \"Hepatocyte Stability\" item in domain list", () => doubleClickOn(page, el("\"Hepatocyte Stability\" item in domain list")), undefined, "The assays");
-    await session.step(16, "Then \"Assay runs\" tab should be visible", () => shouldBe(page, el("\"Assay runs\" tab"), "visible"), undefined, "The assay, and its runs below it");
+    await session.step(16, "Then \"Assay Runs (9)\" tab should be visible", () => shouldBe(page, el("\"Assay Runs (9)\" tab"), "visible"), undefined, "The assay, and its runs below it");
     await session.step(17, "When user opens the \"Assay Results\" view of MolTrack", () => openEmsView(page, "Assay Results"));
     enter(page, "MolTrack");
     await session.step(19, "Then domain list should contain text \"uM\"", () => shouldContainText(page, el("domain list"), "uM"), undefined, "Every result: its batch, run, dose and CLint");

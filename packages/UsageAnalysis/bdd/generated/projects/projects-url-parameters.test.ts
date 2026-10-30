@@ -30,7 +30,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("A dashboard on a query with a parameter: Toolbox > Source, URL parameters and saved values", () => {
   const session = feature(test, "features/projects/projects-url-parameters.feature", import.meta.url);
-  test("A dashboard on a query with a parameter: Toolbox > Source, URL parameters and saved values", {tag: ["@journey", "@realizes:views.projects", "@realizes:views.functions", "@known-failure:84", "@realizes:core#569", "@realizes:core#566", "@realizes:core#630", "@realizes:core#568", "@realizes:GROK-20006", "@known-failure:239", "@realizes:core#1127"]}, async ({browser}) => {
+  test("A dashboard on a query with a parameter: Toolbox > Source, URL parameters and saved values", {tag: ["@journey", "@realizes:views.projects", "@realizes:views.functions", "@realizes:core#569", "@realizes:core#566", "@realizes:core#630", "@realizes:core#568", "@realizes:GROK-20006", "@realizes:core#1127"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 16, page);
     await session.step(41, "Given user is logged in", () => loggedIn(page));
@@ -71,7 +71,7 @@ test.describe("A dashboard on a query with a parameter: Toolbox > Source, URL pa
     });
     await run.scenario("The Share link line follows the name typed into the dialog", async () => {
       await session.step(84, "Then \"Save project\" dialog should contain text \".BDDUrlParamProj{time}?typeName=\"", () => shouldContainText(page, el("\"Save project\" dialog"), session.text(".BDDUrlParamProj{time}?typeName=")));
-    }, {knownFailure: true, line: 84});
+    });
     await run.scenario("The alias is changed to \"type\" and the dashboard is saved", async () => {
       await session.step(87, "When user enters \"type\" into \"URL alias\" text input in \"Save project\" dialog", () => enterInto(page, "type", el("\"URL alias\" text input in \"Save project\" dialog")));
       await session.step(88, "Then \"Save project\" dialog should contain text \"?type=Project\"", () => shouldContainText(page, el("\"Save project\" dialog"), "?type=Project"));
@@ -221,7 +221,7 @@ test.describe("A dashboard on a query with a parameter: Toolbox > Source, URL pa
       await session.step(237, "And user hovers over copy icon in Source pane in toolbox", () => hoverOver(page, el("copy icon in Source pane in toolbox")));
       await session.step(238, "Then tooltip should contain text \"/p/\"", () => shouldContainText(page, el("tooltip"), "/p/"));
       await session.step(239, "And tooltip should not contain text \"?type=\"", () => shouldNotContainText(page, el("tooltip"), "?type="));
-    }, {knownFailure: true, line: 239});
+    });
     await run.scenario("With the parameter taken out, the address no longer takes it", async () => {
       await session.step(242, "When user picks \"Close All\" from the context menu of browse tab", () => pickFromContextMenu(page, "Close All", el("browse tab")));
       await session.step(243, "Then the \"Home\" view should be current", () => viewIsCurrent(page, "Home"));

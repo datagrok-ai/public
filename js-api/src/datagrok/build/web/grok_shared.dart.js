@@ -61935,15 +61935,13 @@
       setRawData$2: function(newData, notify) {
         var t1, t2;
         this._data.set$_data(newData);
-        if (notify === true) {
-          this._version = J.$add$ns(this._version, 1);
-          t1 = this._parents;
-          t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
-          t1 = t1 == null ? t1 : t1.get$df();
-          if (!(t1 == null)) {
-            t2 = J.getInterceptor$x(t1);
-            t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
-          }
+        this._version = J.$add$ns(this._version, 1);
+        t1 = this._parents;
+        t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
+        t1 = t1 == null ? t1 : t1.get$df();
+        if (!(t1 == null)) {
+          t2 = J.getInterceptor$x(t1);
+          t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
         }
       },
       copyRangeFrom$3: function(src, dstStart, count) {
@@ -62922,15 +62920,13 @@
       setRawData$2: function(newData, notify) {
         var t1, t2;
         this._data = H.interceptedTypeCast(newData, "$isFloat64List");
-        if (notify === true) {
-          this._version = J.$add$ns(this._version, 1);
-          t1 = this._parents;
-          t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
-          t1 = t1 == null ? t1 : t1.get$df();
-          if (!(t1 == null)) {
-            t2 = J.getInterceptor$x(t1);
-            t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
-          }
+        this._version = J.$add$ns(this._version, 1);
+        t1 = this._parents;
+        t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
+        t1 = t1 == null ? t1 : t1.get$df();
+        if (!(t1 == null)) {
+          t2 = J.getInterceptor$x(t1);
+          t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
         }
       },
       copyRangeFrom$3: function(src, dstStart, count) {
@@ -63570,15 +63566,13 @@
       setRawData$2: function(newData, notify) {
         var t1, t2;
         this._data = H.subtypeCast(newData, "$isList", [P.double], "$asList");
-        if (notify === true) {
-          this._version = J.$add$ns(this._version, 1);
-          t1 = this._parents;
-          t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
-          t1 = t1 == null ? t1 : t1.get$df();
-          if (!(t1 == null)) {
-            t2 = J.getInterceptor$x(t1);
-            t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
-          }
+        this._version = J.$add$ns(this._version, 1);
+        t1 = this._parents;
+        t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
+        t1 = t1 == null ? t1 : t1.get$df();
+        if (!(t1 == null)) {
+          t2 = J.getInterceptor$x(t1);
+          t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
         }
       },
       copyRangeFrom$3: function(src, dstStart, count) {
@@ -64374,15 +64368,13 @@
       setRawData$2: function(newData, notify) {
         var t1, t2;
         this._data = H.interceptedTypeCast(newData, "$isInt32List");
-        if (notify === true) {
-          this._version = J.$add$ns(this._version, 1);
-          t1 = this._parents;
-          t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
-          t1 = t1 == null ? t1 : t1.get$df();
-          if (!(t1 == null)) {
-            t2 = J.getInterceptor$x(t1);
-            t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
-          }
+        this._version = J.$add$ns(this._version, 1);
+        t1 = this._parents;
+        t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
+        t1 = t1 == null ? t1 : t1.get$df();
+        if (!(t1 == null)) {
+          t2 = J.getInterceptor$x(t1);
+          t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
         }
       },
       copyRangeFrom$3: function(src, dstStart, count) {
@@ -65299,15 +65291,13 @@
       setRawData$2: function(newData, notify) {
         var t1, t2;
         this._data = newData;
-        if (notify === true) {
-          this._version = J.$add$ns(this._version, 1);
-          t1 = this._parents;
-          t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
-          t1 = t1 == null ? t1 : t1.get$df();
-          if (!(t1 == null)) {
-            t2 = J.getInterceptor$x(t1);
-            t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
-          }
+        this._version = J.$add$ns(this._version, 1);
+        t1 = this._parents;
+        t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
+        t1 = t1 == null ? t1 : t1.get$df();
+        if (!(t1 == null)) {
+          t2 = J.getInterceptor$x(t1);
+          t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
         }
       },
       copyRangeFrom$3: function(src, dstStart, count) {
@@ -65642,8 +65632,17 @@
         this._values = tmp;
       },
       endBatchEdit$0: function() {
+        var t1, t2;
         this._initFromList$1(this._values);
         this._values = null;
+        this._version = J.$add$ns(this._version, 1);
+        t1 = this._parents;
+        t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
+        t1 = t1 == null ? t1 : t1.get$df();
+        if (!(t1 == null)) {
+          t2 = J.getInterceptor$x(t1);
+          t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
+        }
       },
       set$valueComparer: function(cmp) {
         var t1, t2, t3;
@@ -65651,7 +65650,14 @@
           return;
         this.super$Column$valueComparer(cmp);
         this._initFromList$1(this.toList$0(0));
+        this._version = J.$add$ns(this._version, 1);
         t1 = this._parents;
+        t2 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
+        t2 = t2 == null ? t2 : t2.get$df();
+        if (!(t2 == null)) {
+          t3 = J.getInterceptor$x(t2);
+          t3.set$version(t2, J.$add$ns(t3.get$version(t2), 1));
+        }
         t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
         t1 = t1 == null ? t1 : t1.get$df();
         t1 = t1 == null ? t1 : t1.get$eventBus();
@@ -65886,6 +65892,13 @@
           t3 = J.getInterceptor$x(t2);
           t3.set$version(t2, J.$add$ns(t3.get$version(t2), 1));
         }
+        this._version = J.$add$ns(this._version, 1);
+        t2 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
+        t2 = t2 == null ? t2 : t2.get$df();
+        if (!(t2 == null)) {
+          t3 = J.getInterceptor$x(t2);
+          t3.set$version(t2, J.$add$ns(t3.get$version(t2), 1));
+        }
         if (notify) {
           t1 = H.setRuntimeTypeInfo(t1.slice(0), [H.getTypeArgumentByIndex(t1, 0)]);
           C.JSArray_methods.forEach$1(t1, new N.StringColumn_init_closure(this));
@@ -66039,15 +66052,13 @@
       setRawData$2: function(newData, notify) {
         var t1, t2;
         this._data = H.interceptedTypeCast(newData, "$isInt32List");
-        if (notify === true) {
-          this._version = J.$add$ns(this._version, 1);
-          t1 = this._parents;
-          t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
-          t1 = t1 == null ? t1 : t1.get$df();
-          if (!(t1 == null)) {
-            t2 = J.getInterceptor$x(t1);
-            t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
-          }
+        this._version = J.$add$ns(this._version, 1);
+        t1 = this._parents;
+        t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
+        t1 = t1 == null ? t1 : t1.get$df();
+        if (!(t1 == null)) {
+          t2 = J.getInterceptor$x(t1);
+          t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
         }
       },
       getItem$1: [function(_, pos) {
@@ -66176,6 +66187,14 @@
           ++i;
         }
         this._emptyCatIdx = J.indexOf$1$asx(this._categories, "");
+        this._version = J.$add$ns(this._version, 1);
+        t1 = this._parents;
+        t1 = C.JSArray_methods.get$isEmpty(t1) ? null : C.JSArray_methods.get$first(t1);
+        t1 = t1 == null ? t1 : t1.get$df();
+        if (!(t1 == null)) {
+          t2 = J.getInterceptor$x(t1);
+          t2.set$version(t1, J.$add$ns(t2.get$version(t1), 1));
+        }
       },
       extremeByLength$1$longest: function(longest) {
         var t1, lengths, c, t2, best, bestLength, i, l;
@@ -127449,7 +127468,7 @@
         }
       }
       if (param.isInput === true) {
-        match = P.RegExp_RegExp(t1.$add(commentStart, "( ?\\S+)[:]( ?)(\\S+)( )(\\S+)( ?)=( ?)([^\\{\\n]+)"), true, false).firstMatch$1(line);
+        match = P.RegExp_RegExp(t1.$add(commentStart, "( *\\S+) *[:]( *)(\\S+)( +)(\\S+)( *)=( *)([^\\{\\n]+)"), true, false).firstMatch$1(line);
         if (match != null) {
           t1 = match._match;
           if (8 >= t1.length)
@@ -127457,7 +127476,7 @@
           t1 = J.trim$0$s(t1[8]);
           J.$indexSet$ax(param.options, "default", t1);
         } else
-          match = P.RegExp_RegExp(t1.$add(commentStart, "( ?\\S+)[:]( ?)(\\S+)( )(\\w+)"), true, false).firstMatch$1(line);
+          match = P.RegExp_RegExp(t1.$add(commentStart, "( *\\S+) *[:]( *)(\\S+)( +)(\\w+)"), true, false).firstMatch$1(line);
         if (match == null)
           t1 = match;
         else {
@@ -127470,7 +127489,7 @@
       } else {
         t2 = new O.ScriptParser_parseParamLine_getOutputName(commentStart);
         if (J.$eq$(param.propertyType, "graphics") === true) {
-          match = P.RegExp_RegExp(t1.$add(commentStart, "( ?\\S+)[:]( ?)(\\S+)( )(\\S+)( ?)=( ?)(\\S+)"), true, false).firstMatch$1(line);
+          match = P.RegExp_RegExp(t1.$add(commentStart, "( *\\S+) *[:]( *)(\\S+)( +)(\\S+)( *)=( *)(\\S+)"), true, false).firstMatch$1(line);
           if (match != null) {
             t1 = match._match;
             t2 = t1.length;
@@ -163049,7 +163068,7 @@
       "^": "Closure:75;commentStart",
       call$1: function(line) {
         var match, $name, t1;
-        match = P.RegExp_RegExp(J.$add$ns(this.commentStart, "( ?\\S+)[:]( ?)(\\S+)( )(\\w+)"), true, false).firstMatch$1(line);
+        match = P.RegExp_RegExp(J.$add$ns(this.commentStart, "( *\\S+) *[:]( *)(\\S+)( +)(\\w+)"), true, false).firstMatch$1(line);
         if (match == null)
           $name = match;
         else {
@@ -180551,8 +180570,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "3ef3ac2356452fd8b9f7da7cfeba979bd6d005cd");
-        t2.set$date(t1, "2026-10-28T23:47:55.075Z");
+        t2.set$commit(t1, "f47df4a437f704ce985a935a6ad3137ed91d985a");
+        t2.set$date(t1, "2026-10-29T23:46:17.799Z");
         t2.set$version(t1, "1.27.12");
         return t1;
       }, null, null, 0, 0, null, "call"]

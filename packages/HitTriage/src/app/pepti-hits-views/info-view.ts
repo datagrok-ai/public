@@ -6,14 +6,14 @@ import {PeptiHitApp} from '../pepti-hit-app';
 
 export class PeptiHitInfoView extends HitDesignInfoView<PeptiHitTemplate, PeptiHitApp> {
   constructor(app: PeptiHitApp) {
-    super(app);
+    super(app, 'README_PH.md');
     this.name = 'PeptiHit';
   }
 
   protected override header(): AppHeaderOptions {
     return {
       icon: _package.webRoot + '/images/icons/pepti-hit-icon.png',
-      learnMore: 'https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HD.md',
+      learnMore: 'https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_PH.md',
       items: [
         'Configure your own workflow using the template editor',
         'Sketch Helm sequences in the spreadsheet',

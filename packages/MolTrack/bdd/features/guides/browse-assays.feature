@@ -13,7 +13,7 @@ Feature: MolTrack: browse assays, their runs and results
     # caption: The assays
     When user double-clicks on "Hepatocyte Stability" item in domain list
     # caption: The assay, and its runs below it
-    Then "Assay runs" tab should be visible
+    Then "Assay Runs (9)" tab should be visible
     When user opens the "Assay Results" view of MolTrack
     # caption: Every result: its batch, run, dose and CLint
     Then domain list should contain text "uM"

@@ -55,9 +55,6 @@
 /* hover-only while expanded; a collapsed section keeps its chevron, or nothing says it folds */
 .u2-section-header[aria-expanded='false'] .u2-section-chevron {
   opacity: 1;
-}
-
-.u2-section-header[aria-expanded='false'] .u2-section-chevron {
   transform: rotate(-90deg);
 }
 

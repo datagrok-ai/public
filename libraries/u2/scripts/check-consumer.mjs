@@ -9,6 +9,7 @@ const publicRoot = join(u2Root, '..', '..');
 const pluginDir = join(publicRoot, 'libraries', 'eslint-plugin-u2');
 const auditScript = join(u2Root, 'scripts', 'audit-consumers.mjs');
 const baselineFile = join(u2Root, 'consumers-baseline.json');
+const {INTERNAL_SELECTOR} = createRequire(join(pluginDir, 'package.json'))('./lib/u2-imports.js');
 
 const USAGE = 'node scripts/check-consumer.mjs <package-dir>... | --all  [--json] [--verbose] ' +
   '[--update-baseline [--allow-growth "<why>"]]';
@@ -270,7 +271,7 @@ function cssFindings(key, dirs, baseline) {
   for (const f of [...new Set(dirs.flatMap((d) => walk(resolve(publicRoot, d), (p) => p.endsWith('.css'))))]) {
     const lines = readFileSync(f, 'utf8').split('\n');
     for (let i = 0; i < lines.length; i++) {
-      if (/\.u2-|\[data-u2/.test(lines[i]))
+      if (INTERNAL_SELECTOR.test(lines[i]))
         out.push({rule: 'css-internal-selectors', mode: 'report', file: rel(f), line: i + 1, column: 1,
           message: `\`${lines[i].trim()}\` styles u2 internals: style your own classes and set \`--u2-*\` ` +
             'properties.'});
@@ -317,10 +318,13 @@ function lintCounts(findings) {
   return Object.fromEntries(LINT_RATCHET.map((rule) => [rule, findings.filter((f) => f.rule === rule).length]));
 }
 
-/** A count never recorded is not growth: its first `--update-baseline` records it. */
+/** A package's count never recorded is 0, so a new package starts clean; elsewhere a count never recorded is not
+ * growth, and its first `--update-baseline` records it. */
 function lintGrowth(key, counts, baseline) {
+  const unrecorded = key.startsWith('packages/') ? 0 : undefined;
   return Object.entries(counts).map(([rule, now]) => ({tree: key, metric: rule,
-    baseline: baseline.trees[key]?.lint?.[rule], now})).filter((g) => g.baseline !== undefined && g.now > g.baseline);
+    baseline: baseline.trees[key]?.lint?.[rule] ?? unrecorded, now}))
+    .filter((g) => g.baseline !== undefined && g.now > g.baseline);
 }
 
 function check(baseline) {

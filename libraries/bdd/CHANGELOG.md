@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Vocabulary: Added `user drags the {string} area of {widget} to the first|last position` — a grid column header onto the ⇤ or ⇥ drop zone a grid wider than its view shows beside itself during the drag
+* Guides: A drag from one element to another is filmed through the page's mouse, pressed on the source's text, so the video shows it; a native select whose list did not open takes the option on the typing, and no Enter follows it into the dialog around the select, which took it as OK
 * Audits: The layout, errors, balloons and operability audits fail a scenario by default (`report` and `off` stay a project's or `BDD_AUDIT`'s choice; leaks stay `off`); the library accepts the platform's grid ribbon icons "Remove selected rows/columns", off with no reason
 * Runtime: Every page runs u2 strict: `__U2_STRICT__` is set before the platform loads, so a u2 misuse (a control built with no owner, a field that takes a control's own member) throws a `U2UsageError` naming the fix; `U2_STRICT=report` logs each one instead
 * Audits: Added the `operability` audit — the engine's `DG.U2.operability` with hit-testing over the view's u2 controls and every u2 dialog, popup and menu, at the scenario's end and after the step that opened each overlay, so a dialog opened and closed again is checked (a control covered, taking no pointer, inert or off without a reason, an icon button named unlike its tooltip, an oversized rail option); `report` by default

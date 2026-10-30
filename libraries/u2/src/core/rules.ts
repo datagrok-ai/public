@@ -34,7 +34,7 @@ export interface U2Rule {
   kinds?: Record<string, U2KindNote>;
 }
 
-export const U2_RULES: readonly U2Rule[] = [
+const RULES: readonly U2Rule[] = [
   {
     id: 'entry-points',
     rule: 'Import from the entry points only.',
@@ -80,7 +80,8 @@ export const U2_RULES: readonly U2Rule[] = [
       'change.',
     wrong: 'span(nameInput.value)',
     right: 'span(nameInput.signal)',
-    guards: ['lint:u2/no-snapshot-in-live-slot', 'api:value-signal', 'ratchet:valueValue', 'ratchet:valuePeek'],
+    guards: ['lint:u2/no-snapshot-in-live-slot', 'api:value-signal', 'ratchet:valueValue', 'ratchet:valuePeek',
+      'usage:bind-readonly'],
   },
   {
     id: 'register-where-it-lives',
@@ -151,7 +152,8 @@ export const U2_RULES: readonly U2Rule[] = [
     wrong: 'button(\'Save\', save, {disabled: true})',
     right: 'button(\'Save\', save, {disabled: \'Pick a file first\'})',
     guards: ['type:ButtonOptions.disabled', 'type:InputOptions.disabled', 'api:no-enabled', 'api:disabled-reason',
-      'lint:u2/reason-text', 'probe:disabled-without-reason', 'ratchet:enabledOpt', 'ratchet:okEnabled'],
+      'lint:u2/reason-text', 'probe:disabled-without-reason', 'ratchet:enabledOpt', 'ratchet:okEnabled',
+      'usage:reason-boolean', 'usage:reason-missing'],
   },
   {
     id: 'run-returns',
@@ -196,24 +198,29 @@ export const U2_RULES: readonly U2Rule[] = [
   },
   {
     id: 'page-layout',
-    rule: 'Lay a view out with `Page`; a list beside its details is a `MasterDetail`.',
+    rule: 'Lay a view out with `Page`; a list beside its details is a `MasterDetail`, past a few hundred items a ' +
+      '`VirtualList`.',
     why: 'A layout written in package CSS breaks as the view narrows, and drifts from every other view\'s.',
     detail: '`new Page({header, sections, footer, maxWidth})`: the header stays put, the body alone scrolls and the ' +
       'action row stays pinned under it, its buttons on the right and a `statusLine` on their left; the forms ' +
       'on the page share one label column. A section is a heading with its actions over its content ' +
       '(`{title, actions, content, maxWidth}`). `new MasterDetail({items, keyOf, row, detail, disabled})` puts ' +
       'the rows — a check, a hint — beside the current one\'s detail, built when first shown and kept, off with ' +
-      'its reason; the arrow keys move the current row and Space checks it. Spacing and heights are the ' +
-      '`--u2-page-*` and `--u2-master-detail-height` properties, set on an element of your own.',
+      'its reason; the arrow keys move the current row and Space checks it. It renders every row, so it is for ' +
+      'lists up to a few hundred items; a longer one is a `VirtualList` (`new VirtualList({keyOf, render})`, ' +
+      '`setItems(items)`, its `selectedIndex` the current row) beside a detail of your own, in a `Splitter`. ' +
+      'Spacing and heights are the `--u2-page-*` and `--u2-master-detail-height` properties, set on an element ' +
+      'of your own.',
     wrong: '.my-editor { display: flex; flex-direction: column; height: 100%; }  /* and a pinned footer by hand */',
     right: 'new Page({content: form, footer: [statusLine(form.shownProblem), saveButton], maxWidth: 820})',
     guards: ['ratchet:cssLines', 'ratchet:cssInternalLines'],
     kinds: {
       'page': {whenToUse: 'the content of a view or a dialog-sized editor: a header, a body that alone scrolls, ' +
         'a pinned action row, sections with their actions'},
-      'master-detail': {whenToUse: 'a short list beside the detail of its current item, each item with a check ' +
-        'and a hint, its detail kept while it is not shown',
-      notFor: 'many records to sort and group: `CatalogTable`, its details in the context panel'},
+      'master-detail': {whenToUse: 'a short list (up to a few hundred items: it renders every row) beside the ' +
+        'detail of its current item, each item with a check and a hint, its detail kept while it is not shown',
+      notFor: 'many records to sort and group: `CatalogTable`, its details in the context panel; a longer list ' +
+        'beside a detail: `VirtualList` and a detail of your own in a `Splitter`'},
       'splitter': {notFor: 'a list beside the details of its current item: `MasterDetail`'},
     },
   },
@@ -322,7 +329,7 @@ export const U2_RULES: readonly U2Rule[] = [
       'never a CANCEL; ✕ and Escape close it the same way.',
     wrong: 'dialog.getButton(\'CANCEL\')?.remove();',
     right: 'new Dialog(\'Progress\', {closeOnly: true})',
-    guards: [],
+    guards: ['usage:close-only-cancel'],
   },
   {
     id: 'settings-scope',
@@ -505,3 +512,7 @@ export const U2_RULES: readonly U2Rule[] = [
     guards: ['lint:u2/comments', 'ratchet:fileHeaders', 'ratchet:privateDocs'],
   },
 ];
+
+/** The rules, each one nothing checks yet saying so after its detail. */
+export const U2_RULES: readonly U2Rule[] = RULES.map((r) => r.guards.length > 0 ? r :
+  {...r, detail: `${r.detail} Docs only: no check catches a slip yet.`});

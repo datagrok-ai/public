@@ -323,7 +323,7 @@ smoke('getButton finds OK by its caption, CANCEL, custom buttons and ✕; addBut
   press(dialog, 'APPLY');
   assert.deepEqual(pressed, [['click', dialog]]);
   assert.equal(dialog.isOpen.value, true, 'a footer button does not close by itself');
-  dialog.getButton('save').disabled = true;
+  dialog.okDisabled('Nothing to save');
   fire(dialog.root, 'keydown', {key: 'Enter'});
   assert.equal(dialog.isOpen.value, true, 'a disabled OK takes no Enter');
   dialog.dispose();

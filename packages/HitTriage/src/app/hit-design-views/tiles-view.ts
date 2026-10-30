@@ -10,8 +10,11 @@ import type {ViewHost} from '@datagrok-libraries/u2/dg';
 import type {HitDesignApp} from '../hit-design-app';
 import {TileCategoriesColName} from '../consts';
 
-/** Room for a card's picture and values: below it the lanes scroll sideways. */
-const LANE_WIDTH = 244;
+/** A lane as wide as its card, the lanes scrolling sideways when they do not fit: the platform's own card (no
+ * layout kept with the campaign) needs 368 px, so five lanes fit at 1920; a kept layout reaches its rightmost element,
+ * plus the card's frame. */
+const LANE_WIDTH = 368;
+const CARD_FRAME = 40;
 
 /** The progress tracker over the campaign of `host`'s view, shown pinned to the view; answers its dialog. */
 export function showProgressTracker(app: HitDesignApp, host: ViewHost): Dialog {
@@ -23,12 +26,20 @@ export function showProgressTracker(app: HitDesignApp, host: ViewHost): Dialog {
   // the stages when the tracker opened, or since Modify Stages saved them: closing saves when they differ
   let stagesBefore = stages();
   const moved = signal(0);
+  const needed = signal(0);
+  const room = signal(0);
 
   dialog.build(() => {
     dialog.add(lanes);
     dialog.addButton('Modify Stages', () => modifyStages(), {start: true});
-    dialog.status(computed(() => moved.value === 0 ? 'Drag a card to another lane to change its stage' :
-      `${moved.value} ${moved.value === 1 ? 'molecule' : 'molecules'} moved · saved when the tracker closes`));
+    // a scrollbar the system may hide (macOS) is no sign that more lanes are there: the line says so
+    const fit = new ResizeObserver(() => room.value = lanes.clientWidth);
+    fit.observe(lanes);
+    dialog.own(() => fit.disconnect());
+    const more = computed(() => room.value > 0 && needed.value > room.value ? ' · scroll sideways for more stages' : '');
+    dialog.status(computed(() => (moved.value === 0 ? 'Drag a card to another lane to change its stage' :
+      `${moved.value} ${moved.value === 1 ? 'molecule' : 'molecules'} moved · saved when the tracker closes`) +
+      more.value));
     dialog.onClose(() => closed());
     subscribe(df.onValuesChanged, () => moved.value = countMoved());
   });
@@ -70,6 +81,12 @@ export function showProgressTracker(app: HitDesignApp, host: ViewHost): Dialog {
     return state.elementStates.length > 0 ? state : null;
   }
 
+  function laneWidth(sketch: any | null): number {
+    const right = Math.max(0, ...(sketch?.elementStates ?? [])
+      .map((s: any) => (Number(s?.left) || 0) + (Number(s?.width) || 0)));
+    return right > 0 ? right + CARD_FRAME : LANE_WIDTH;
+  }
+
   /** The template's stages, then any other stage a row holds (a typo typed into the grid): no row is left out. */
   function laneNames(): string[] {
     const known = new Set(app.stages);
@@ -95,7 +112,8 @@ export function showProgressTracker(app: HitDesignApp, host: ViewHost): Dialog {
       console.error('Failed to create tiles viewer', e);
       tiles = view.addViewer(DG.VIEWER.TILE_VIEWER, {lanesColumnName: TileCategoriesColName, lanes: names});
     }
-    Object.assign(tiles.root.style, {minWidth: `${names.length * LANE_WIDTH}px`, height: '100%'});
+    needed.value = names.length * laneWidth(sketch);
+    Object.assign(tiles.root.style, {minWidth: `${needed.value}px`, height: '100%'});
     lanes.replaceChildren(tiles.root);
     viewer = tiles;
   }
@@ -162,9 +180,11 @@ export function showProgressTracker(app: HitDesignApp, host: ViewHost): Dialog {
         // off the view while the campaign saves its layout
         unmount();
         try {
-          await app.setStages(kept.peek());
-          stagesBefore = stages();
-          moved.value = 0;
+          // unsaved, the moves stay counted: closing the tracker saves them
+          if (await app.setStages(kept.peek())) {
+            stagesBefore = stages();
+            moved.value = 0;
+          }
         } finally {
           mount();
         }

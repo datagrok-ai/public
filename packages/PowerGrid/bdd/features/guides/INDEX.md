@@ -7,3 +7,4 @@ skill is the recipe.
 | Question | Feature | Date | Help page |
 |---|---|---|---|
 | How do I show a small bar chart of each compound's key properties right in its row of the grid? | bar-chart-summary-column.feature | 2026-09-24 | visualize/viewers |
+| How do I add a VlaaiVis column to the grid and set it up (columns, sectors, colors, score functions, weights)? | vlaaivis-summary-column.feature | 2026-10-29 | |

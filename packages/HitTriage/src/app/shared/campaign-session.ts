@@ -372,11 +372,14 @@ export function openCampaignSession(app: HitDesignApp, view: DG.TableView,
       });
     }
 
+    // pinned to the view: opening another campaign closes the view, and the dialog with it
     function editPermissions(): Promise<void> {
-      const name = app.campaign?.friendlyName;
-      return PermissionsEditor.show(app.campaign?.permissions, {
-        subject: name && name !== app.campaignId ? `${app.campaignId} (${name})` : app.campaignId!,
-        author: app.campaign?.authorUserFriendlyName,
+      const opened = app.campaign;
+      const code = app.campaignId!;
+      const name = opened?.friendlyName;
+      return PermissionsEditor.show(opened?.permissions, {
+        subject: name && name !== code ? `${code} (${name})` : code,
+        author: opened?.authorUserFriendlyName, host,
         save: async (permissions) => {
           const campaign = app.campaign;
           if (!campaign)
@@ -475,8 +478,11 @@ export function openCampaignSession(app: HitDesignApp, view: DG.TableView,
   });
 }
 
-/** The Primary Molecule Column of a joined table with several: answers null when the user cancels. */
-export async function pickMoleculeColumn(names: string[], likely: string): Promise<string | null> {
+/** The Primary Molecule Column of a joined table with several: answers null when the user cancels, or when the
+ * campaign view of `host`, which the dialog is pinned to, closes. */
+export async function pickMoleculeColumn(names: string[], likely: string, host?: ViewHost): Promise<string | null> {
+  if (host?.scope.isDisposed)
+    return null;
   let chosen: string | null = null;
   const dialog = new Dialog('Select Primary Molecule Column', {name: 'primary-molecule-column'});
   dialog.build(() => {
@@ -489,7 +495,7 @@ export async function pickMoleculeColumn(names: string[], likely: string): Promi
   });
   await new Promise<void>((resolve) => {
     dialog.onClose(() => resolve());
-    dialog.show();
+    host ? host.show(dialog) : dialog.show();
   });
   return chosen;
 }

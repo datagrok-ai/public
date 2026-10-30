@@ -2,6 +2,8 @@
 
 ## v.next
 
+* [#4437](https://github.com/datagrok-ai/public/issues/4437): Tutorials: Show both Windows and Mac keyboard shortcuts in step instructions
+* [#4444](https://github.com/datagrok-ai/public/issues/4444): Tutorials: Dashboards: saving the project before renaming it gets the project name step stuck, and skipping the next step throws NullError
 * [#4438](https://github.com/datagrok-ai/public/issues/4438): Tutorials: Filters: Esc disables the filter panel instead of resetting, steps 6, 13 and 17 get stuck
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Sticky Meta waits for the type dialog on its shown event instead of polling every 50 ms with no deadline; Dashboards, Scripting and Virtual Screening wait for the element a step needs instead of a fixed second and a single lookup that skipped the step on a slow page
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Tutorials: Removed fixed 0.5-2 s waits before steps whose actions already wait for their inputs, and checked completion at once instead of after 1-3 s

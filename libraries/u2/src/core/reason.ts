@@ -1,13 +1,23 @@
 import {Signal, ReadonlySignal} from './signals.js';
 import {Ownership} from './owner.js';
 import type {Owner} from './owner.js';
+import {Usage} from './scope.js';
 
 /** Why something is off — the text the user reads ("Pick a source file first") — or `null` (or `''`) while it is
  * on; a signal of either is followed. Never a boolean: a control that is off says why. */
 export type Reason = string | null | ReadonlySignal<string | null>;
 
+// what a pre-v1 `disabled: true` reads, once reported
+const UNSAID = 'Unavailable';
+
 const isSignal = (x: unknown): x is ReadonlySignal<string | null> => x instanceof Signal;
-const text = (x: string | null | undefined): string | null => x === undefined || x === '' ? null : x;
+// plain JS hands in the pre-v1 boolean: `false` is on, `true` is off with nothing said, which is reported
+const text = (x: string | boolean | null | undefined): string | null => {
+  if (x === true)
+    Usage.report('reason-boolean', '`disabled: true` says nothing to the user — pass the reason instead ' +
+      '(`disabled: \'Pick a source file first\'`), `null` while it is on.');
+  return x === true ? UNSAID : x === false || x === undefined || x === '' ? null : x;
+};
 
 export const Reason = {
   /** What `reason` says now, not followed: `null` while on. */
@@ -73,6 +83,10 @@ export const Reason = {
       configurable: true,
       get: () => el.getAttribute('aria-disabled') === 'true' || el.hasAttribute('disabled'),
       set: (x: boolean) => {
+        if (x && el.getAttribute('aria-description') === null) {
+          Usage.report('reason-missing', '`button.disabled = true` turns a u2 button off without saying why — ' +
+            '`Reason.apply(button, \'<why>\')`, or build it with `{disabled: \'<why>\'}`.');
+        }
         if (x)
           el.setAttribute('aria-disabled', 'true');
         else
