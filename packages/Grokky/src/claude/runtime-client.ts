@@ -12,6 +12,7 @@ export type ToolActivityEvent = {sessionId: string, summary: string, name: strin
 export type RevisionStartEvent = {sessionId: string};
 /** Per-turn token, cost and timing metrics the runtime reports on `final` (see docs/BENCHMARK.md). */
 export type TurnServerMetrics = {
+  model?: string,
   inputTokens: number | null, outputTokens: number | null,
   cacheReadTokens: number | null, cacheCreationTokens: number | null,
   costUsd: number | null, numTurns: number | null,
@@ -281,6 +282,8 @@ export class ClaudeRuntimeClient {
     if (!metrics)
       return;
     const params: {[key: string]: string | number} = {turnId: crypto.randomUUID(), chatId: sessionId, feature: featureOf(sessionId)};
+    if (metrics.model)
+      params.model = metrics.model;
     const values: {[key: string]: number | null} = {
       inputCount: metrics.inputTokens, outputCount: metrics.outputTokens,
       cacheReadCount: metrics.cacheReadTokens, cacheCreationCount: metrics.cacheCreationTokens,

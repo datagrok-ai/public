@@ -75,6 +75,7 @@ Command = TurnCommand | ContinueCommand | CancelCommand | BrowserResultCommand
 
 
 class Metrics(TypedDict):
+    model: str
     inputTokens: int
     outputTokens: int
     cacheReadTokens: int

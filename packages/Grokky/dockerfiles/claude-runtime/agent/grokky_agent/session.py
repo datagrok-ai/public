@@ -82,8 +82,8 @@ class Turn:
         self.approvals = guard.Approvals()
         self.redirected = False
 
-    def metrics(self) -> Metrics:
-        return {'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
+    def metrics(self, model: str) -> Metrics:
+        return {'model': model, 'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
                 'cacheReadTokens': self.tokens.cache_read, 'cacheCreationTokens': self.tokens.cache_write,
                 'costUsd': self.cost, 'numTurns': self.api_calls,
                 'durationMs': round((time.time() - self.started) * 1000),
@@ -421,13 +421,13 @@ class Session:
             text = result.get('final_response') or ''
             if t.schema is None:
                 if text:
-                    self.emit({'type': 'stopped', 'text': text, 'metrics': t.metrics()})
+                    self.emit({'type': 'stopped', 'text': text, 'metrics': t.metrics(self.provider.model)})
                 else:
                     self.emit({'type': 'error', 'message': 'The assistant stopped without an answer.'})
                 return
             value, error = structured.check(t.schema, text)
             if error is None:
-                self.emit({'type': 'stopped', 'text': text, 'structuredOutput': value, 'metrics': t.metrics()})
+                self.emit({'type': 'stopped', 'text': text, 'structuredOutput': value, 'metrics': t.metrics(self.provider.model)})
                 return
             problem = error
             content = RETRY_STRUCTURED.format(problem)

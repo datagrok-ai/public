@@ -49,6 +49,7 @@ export interface InputResponseMessage {
 }
 
 export interface TurnMetrics {
+  model?: string;
   inputTokens: number | null;
   outputTokens: number | null;
   cacheReadTokens: number | null;
