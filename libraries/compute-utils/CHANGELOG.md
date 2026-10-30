@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RTD: Requires platform 1.28.0 or later: annotation validators, evaluated choices, computed defaults and GrokScript expressions no longer check for the platform API
 * History utils: `saveRun` takes a run name, description and tags (saved as `friendlyName`; a description or tags left out stay as they are) and a target space with the runs it replaces; added `listMyRuns`, `listSpace`, `listSpaceRuns`, `findNameConflict`, `isNamedSpaceItem`, `isRunOf`, `linkRun`, `unlinkRun`, `canEditRunDetails`, `getRunMetadata` and `getRunName`; a save with options fires `RUN_SAVED_EVENT` on the platform's event bus
 * History utils: Saves record the run's author and save time in `options.createdById` and `options.createdAt`; Edit details and delete keep them, and My runs lists runs by that author; workflow saves mark their step runs with `options.nestedEntity` (`saveRun`'s `nested` option), and My runs leaves them out
 * RTD: `ItemMetadata` saves the title as the run name and takes a save `target`; `isFavorite` was removed from it and from `MetaCallInfo`, and the driver no longer reads or writes the old favorites

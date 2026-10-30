@@ -1,31 +1,21 @@
-# Compute2 stack: gating on the js-api version and on package options
+# Compute2 stack: platform requirement and package options
 
 Scope: `packages/Compute2`, `libraries/compute-utils`, `libraries/webcomponents`, `libraries/webcomponents-vue`.
 
-## Gating on the js-api version
+## Platform requirement
 
-| Where | API | What is gated |
-|---|---|---|
-| `libraries/utils/src/format-version-utils.ts:16-18` | `semver.coerce(grok.shell.build.client.version)`, `semver.gte(v, '1.27.7')` | Default float format: `G7` on js-api >= 1.27.7, `#0.###` otherwise; cached per session |
-| `libraries/utils/src/format-version-utils.ts` (`isClientAtLeast`) | same `semver` compare, parameterised | Shared helper for the rule-expressions gate below |
-| `libraries/webcomponents-vue/src/InputForm/utils.ts:6,107` | `getDefaultFloatFormat()` | Consumes the gate above for input-form number formatting |
+The stack requires platform 1.28.0 or later and doesn't branch on the platform version. The docs describe no way to
+block installing a package on an older platform: the `datagrok-api` constraint in `package.json` states the
+requirement, and nothing on the client enforces it. A package on an older platform fails on the first missing API.
 
-No other code in scope reads `grok.shell.build.client.version` or `grok.shell.build.server` to branch on it.
+## Fallbacks kept for Compute v1
 
-## Gating on js-api methods (feature detection)
+`libraries/compute-utils/shared-utils/utils.ts` is shared with Compute v1's Model Hub, so these stay:
 
 | Where | Check | What is gated |
 |---|---|---|
-| `packages/Compute2/src/utils.ts:405-414` | `typeof window.grok_View_Get_IsPinned / grok_View_Set_IsPinned / grok_View_Pin === 'function'`, then `typeof view.pin === 'function'` | `pinView()`: js-api 1.27.5 replaced `grok_View_Pin` with `grok_View_Set_IsPinned`; probes which interop the platform provides, falls back to `view.pin()` |
-| `packages/Compute2/src/project-export.ts:9-21` | `typeof DG.Project.showSaveDialog === 'function' \|\| typeof window.grok_Project_OpenSaveDialog === 'function'` | `canSaveProject()` / `showProjectSaveDialog()`: prefers the js-api method, falls back to the raw Dart binding; the export action is hidden when neither exists |
-| `libraries/compute-utils/shared-utils/utils.ts:197-201` | `typeof grok.dapi.groups.currentUserGroups === 'function'` | `getCurrentUserGroups()`: falls back to raw `fetch('/api/groups/all_parents')` on older js-api |
-| `libraries/compute-utils/shared-utils/utils.ts:205-210` | `typeof grok.dapi.groups.requestMembership === 'function'` | `requestGroupMembership()`: falls back to a raw `fetch` POST on older js-api |
-| `libraries/compute-utils/reactive-tree-driver/src/runtime/rule-expressions.ts` (`hasScriptSupport`) | `typeof grok.functions.scriptSync === 'function' && isClientAtLeast('1.28.0')` | `script`/`scriptVerdict` rule operations behind `visible` and GrokScript `validator` checks: the method exists on older clients but ignores the variables map, so the version decides; unsupported clients skip these checks with one console warning |
-| `libraries/compute-utils/reactive-tree-driver/src/runtime/rule-sources.ts` | `typeof call.evalParamValidators === 'function'` on the step's `DG.FuncCall` | Annotation-derived `validators` checks (the script's own validators run by the platform): resolve to no verdicts with one console warning on clients before 1.28.0; `check` links and rules that name their validators call them directly and are not gated |
-| `libraries/compute-utils/reactive-tree-driver/src/config/rule-expansion.ts` (`annotationRules`) | `typeof DG.FuncCall.prototype.evalParamChoices === 'function'` | Generated `::<io>:choices` and `::<io>:lookup` rules for evaluated choices and `propagateChoice: all`: not generated at all on clients before 1.28.0 |
-| `libraries/compute-utils/reactive-tree-driver/src/runtime/rule-sources.ts` (`resolveChoices`) | `typeof call.evalParamChoices === 'function'` on the step's `DG.FuncCall` | The `choices` rule source: absent, with one console warning, on clients before 1.28.0 |
-| `libraries/webcomponents-vue/src/InputForm/utils.ts` (`setInputVisible`) | `input.visible != null` | Showing and hiding form inputs (`hidden` meta, input toggles): `InputBase.visible` (js-api, 2026-04) also hides a category header left without visible inputs; older clients fall back to `style.display` on the input root, and the header stays |
-| `libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils.ts` (`annotationDefault`) | `typeof fc.evalParamDefault === 'function'` | Computed annotation defaults on new steps: evaluated by the platform on 1.28.0+; older clients fall back to `JSON.parse` of the default text, or the text itself |
+| `getCurrentUserGroups()` | `typeof grok.dapi.groups.currentUserGroups === 'function'` | Falls back to a raw `fetch('/api/groups/all_parents')` on older js-api |
+| `requestGroupMembership()` | `typeof grok.dapi.groups.requestMembership === 'function'` | Falls back to a raw `fetch` POST on older js-api |
 
 ## Gating on package options
 

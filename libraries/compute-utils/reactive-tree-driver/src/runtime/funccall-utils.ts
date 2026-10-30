@@ -61,16 +61,14 @@ export async function deserializeRestrictions(str: string): Promise<Record<strin
   return restrictions;
 }
 
-// the platform evaluates the annotation's default as GrokScript (1.28+); a bare word such as
+// the platform evaluates the annotation's default as GrokScript; a bare word such as
 // `= high` is not an expression and falls back to its literal text, as annotation authors intend
 async function annotationDefault(fc: DG.FuncCall, prop: DG.Property) {
   const text = prop.options.default;
-  if (typeof (fc as any).evalParamDefault === 'function') {
-    try {
-      return await fc.evalParamDefault(prop.name);
-    } catch {
-      // not an expression: use the literal text
-    }
+  try {
+    return await fc.evalParamDefault(prop.name);
+  } catch {
+    // not an expression: use the literal text
   }
   try {
     return JSON.parse(text);

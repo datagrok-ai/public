@@ -15,7 +15,7 @@ import {
 import {
   TargetSelection, EMPTY_TARGET_SELECTION, isCharted, clickTarget, setMultiMode, reconcileTargets, chartedTargets,
 } from './target-selection';
-import {canSaveProject, captureTableLayout, showProjectSaveDialog} from '../../project-export';
+import {captureTableLayout, showProjectSaveDialog} from '../../project-export';
 import {buildComparison} from './comparison-builders';
 import {ScalarChartType, chartSpec} from './chart-spec';
 
@@ -182,19 +182,13 @@ export const ComparisonTab = Vue.defineComponent({
       const nameInput = ui.input.string('Name', {value: currentComparison.chartDf.name || 'Comparison'});
       const dlg = ui.dialog('Export comparison').add(nameInput.root);
       const openLabel = 'OPEN IN WORKSPACE';
-      if (canSaveProject()) {
-        dlg.addButton(openLabel, () => {
-          dlg.close();
-          snapshotView(nameInput.value || 'Comparison');
-        });
-        dlg.onOK(() => saveAndShare(nameInput.value || 'Comparison'));
-        dlg.show({center: true});
-        dlg.getButton('OK').innerText = 'SAVE & SHARE';
-      } else {
-        dlg.onOK(() => snapshotView(nameInput.value || 'Comparison'));
-        dlg.show({center: true});
-        dlg.getButton('OK').innerText = openLabel;
-      }
+      dlg.addButton(openLabel, () => {
+        dlg.close();
+        snapshotView(nameInput.value || 'Comparison');
+      });
+      dlg.onOK(() => saveAndShare(nameInput.value || 'Comparison'));
+      dlg.show({center: true});
+      dlg.getButton('OK').innerText = 'SAVE & SHARE';
     };
 
     // DG inputs fire onChanged on programmatic sets too, so rendering a new mode value

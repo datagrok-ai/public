@@ -735,16 +735,10 @@ importers:
       rxjs:
         specifier: 'catalog:'
         version: 6.6.7
-      semver:
-        specifier: ^7.7.4
-        version: 7.8.5
       wu:
         specifier: 'catalog:'
         version: 2.1.0
     devDependencies:
-      '@types/semver':
-        specifier: ^7.7.0
-        version: 7.8.0
       '@types/wu':
         specifier: 'catalog:'
         version: 2.1.44

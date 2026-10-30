@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Requires platform 1.28.0 or later: removed the fallbacks for older platforms
 * Help: Fixed the help panel staying empty for every later step after one help file failed to load
 * Runs: Added the Save run dialog: saves to My runs or a space with a name, description and tags; names are unique in a space, where a taken run name asks to replace it (the space link moves to the new run) and a name taken by another item is refused; its spaces open like folders, and clicking a run of a space offers to overwrite it. My runs lists all of the user's runs, including those saved to spaces but not the step runs saved as part of a workflow, and names can repeat there
 * Runs: The Runs panel, Model Hub's Tools > Browse Runs... and the Compare Runs run picker browse runs of all models or one in My runs and spaces like a file browser: subspaces as folders with `..` and a path, tree counts of the runs in a space and all its subspaces, linked subspaces under each parent, and filters that search a space and its subspaces and show where each run is; they offer tag, author and favorites filters, platform favorites for runs and spaces (the Save dialog too), a tree filter that shows only favorite spaces and the spaces above them, Edit details, Add to space for one or several runs and Delete with a confirmation for one or several runs (a run that fails to delete is named and stays selected, and the others are still deleted); they replace the history panel

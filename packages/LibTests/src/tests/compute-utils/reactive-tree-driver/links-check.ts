@@ -391,7 +391,6 @@ category('ComputeUtils: Driver links check', async () => {
     const unknown: any = await resolvedSources(controllerFor(1), named('LibTests:NoSuchValidator'));
     expect(unknown.verdicts[0].isError, false);
     expectDeepEqual(await resolvedSources(controllerFor(20, undefined), annotation), {verdicts: []});
-    expectDeepEqual(await resolvedSources(controllerFor(20, {}), annotation), {verdicts: []});
     expectDeepEqual(syncResult(resolveSources(controllerFor(20), undefined)), {});
   });
 
@@ -415,7 +414,6 @@ category('ComputeUtils: Driver links check', async () => {
     expectDeepEqual(syncResult(resolveSources(controllerFor(20), named())), {v: []});
     expectDeepEqual(syncResult(resolveSources(controllerFor(20), annotation)), {v: []});
     expectDeepEqual(syncResult(resolveSources(controllerFor(20, null), annotation)), {v: []});
-    expectDeepEqual(syncResult(resolveSources(controllerFor(20, {}), annotation)), {v: []});
   });
 
   test('Validator source reports a failed annotation evaluation as a warning', async () => {

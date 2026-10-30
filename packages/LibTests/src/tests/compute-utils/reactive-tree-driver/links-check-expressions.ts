@@ -14,7 +14,6 @@ import {createTestScheduler, expectThrowsAsync, twoSteps, errors} from '../../..
 const EXPRESSIONS = 'LibTests:TestExpressionInputs';
 
 
-// GrokScript expression checks need platform 1.28.0 or later
 category('ComputeUtils: Driver links check expressions', async () => {
   let testScheduler: TestScheduler;
 

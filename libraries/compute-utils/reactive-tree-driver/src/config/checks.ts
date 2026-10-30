@@ -13,7 +13,7 @@ export type CheckOptions = {
   validator?: string;
   /** GrokScript expression; the input is hidden while it is `false`. */
   visible?: string;
-  /** Named validator functions, evaluated by the platform (1.28+). */
+  /** Named validator functions, evaluated by the platform. */
   validators?: string[];
   choices?: any[];
   /** Column kind, column type or semantic type. */
