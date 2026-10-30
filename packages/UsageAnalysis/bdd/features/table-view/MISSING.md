@@ -89,6 +89,7 @@ Features: `undo-redo.feature`, `change-type.feature`, `column-properties.feature
   attributes", but no dialog or context-panel pane edits a table's tags or description (the context panel shows
   General and Actions; Actions has Rename... and Clone). Is there meant to be a Table Properties editor? Not
   claimed.
+
 ### Findings 30 Oct 2026 (column operations)
 
 - **Edit > Add New Column: Ctrl+Z does not remove the added column** ([public#4461](https://github.com/datagrok-ai/public/issues/4461)). Steps: open a table with columns
