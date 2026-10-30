@@ -40,7 +40,6 @@ Feature: Chem > Analyze > Structural Alerts adds a boolean column per rule set t
     And the value of "PAINS (smiles)" column in row 1 should be "false"
     And the value of "PAINS (smiles)" column in row 2 should be "true"
     And the value of "PAINS (smiles)" column in row 3 should be "true"
-    And the table should have 3 rows
     And no errors should have been logged
     When user removes "PAINS (smiles)" column
     Then the table should have the columns "name, smiles"

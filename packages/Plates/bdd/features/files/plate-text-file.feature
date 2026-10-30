@@ -37,6 +37,8 @@ Feature: A plate reader's text file opens as a plate, from the computer and from
     Then the "text of cell 1 of 1" reading of grid should be "2000.00"
     And the "text of cell 8 of 12" reading of grid should be "2300.00"
     And no errors should have been logged
+    When user closes the current view
+    Then "bdd-bmg-plate.txt" view tab should be absent
 
   Scenario: The same file in Browse > Files previews as a plate
     Given the "fixtures/bdd-bmg-plate.txt" file of the project is in the user's files as "bdd-plate-{time}.txt"

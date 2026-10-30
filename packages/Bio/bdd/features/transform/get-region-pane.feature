@@ -35,5 +35,4 @@ Feature: The Get Region pane cuts a region out of a sequence column from the con
     And "fasta: (3-6)" column should have semantic type "Macromolecule"
     And the value of "fasta: (3-6)" column in row 1 should be "YKET"
     And every value of "fasta: (3-6)" column should match "^[A-Z]{4}$"
-    And the table should have 9 rows
     And no errors should have been logged

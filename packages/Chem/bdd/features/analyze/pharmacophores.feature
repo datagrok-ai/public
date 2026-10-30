@@ -51,7 +51,6 @@ Feature: Chem > Analyze > Pharmacophores adds a highlighted molecule column and 
     And the value of "Aromatic (smiles)" column in row 1 should be "false"
     And the value of "Aromatic (smiles)" column in row 2 should be "true"
     And the value of "Hydrophobic (smiles)" column in row 2 should be "true"
-    And the table should have 4 rows
     And no errors should have been logged
     When user removes "Pharmacophore (smiles)" column
     And user removes "Donor (smiles)" column

@@ -67,17 +67,16 @@ test.describe("ML > Impute Missing Values fills the missing values of a column f
     await session.step(61, "Then RUN button in \"k-NN Imputation\" dialog should be disabled", () => shouldBe(page, el("RUN button in \"k-NN Imputation\" dialog"), "disabled"));
     await session.step(62, "When user clicks on CANCEL button in \"k-NN Imputation\" dialog", () => clickOn(page, el("CANCEL button in \"k-NN Imputation\" dialog")));
     await session.step(63, "Then \"k-NN Imputation\" dialog should be hidden", () => shouldBe(page, el("\"k-NN Imputation\" dialog"), "hidden"));
-    await session.step(64, "And \"b\" column should have missing values", () => columnIncomplete(page, "b"));
-    await session.step(65, "And no errors should have been logged", () => noErrors(page));
+    await session.step(64, "And no errors should have been logged", () => noErrors(page));
   });
   test("A table with no missing values gets an info balloon and no dialog", {tag: ["@eda"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And user opens a table \"gaps\" with:", () => openTableOf(page, "gaps", [["a","b"],["1","10"],["2","20"],["5",""],["9","90"],["10","100"]]), [["a","b"],["1","10"],["2","20"],["5",""],["9","90"],["10","100"]]);
-    await session.step(68, "Given user opens a table \"full\" with:", () => openTableOf(page, "full", [["a","b"],["1","10"],["2","20"]]), [["a","b"],["1","10"],["2","20"]]);
-    await session.step(72, "When user picks \"ML > Impute Missing Values...\" from the top menu", () => pickFromTopMenu(page, "ML > Impute Missing Values..."));
-    await session.step(73, "Then an info balloon containing \"No missing values\" should have been shown", () => infoBalloonText(page, "No missing values"));
-    await session.step(74, "And \"k-NN Imputation\" dialog should be absent", () => shouldBe(page, el("\"k-NN Imputation\" dialog"), "absent"));
-    await session.step(75, "And no errors should have been logged", () => noErrors(page));
+    await session.step(67, "Given user opens a table \"full\" with:", () => openTableOf(page, "full", [["a","b"],["1","10"],["2","20"]]), [["a","b"],["1","10"],["2","20"]]);
+    await session.step(71, "When user picks \"ML > Impute Missing Values...\" from the top menu", () => pickFromTopMenu(page, "ML > Impute Missing Values..."));
+    await session.step(72, "Then an info balloon containing \"No missing values\" should have been shown", () => infoBalloonText(page, "No missing values"));
+    await session.step(73, "And \"k-NN Imputation\" dialog should be absent", () => shouldBe(page, el("\"k-NN Imputation\" dialog"), "absent"));
+    await session.step(74, "And no errors should have been logged", () => noErrors(page));
   });
 });

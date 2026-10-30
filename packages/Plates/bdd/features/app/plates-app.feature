@@ -5,7 +5,9 @@ Feature: Apps > Plates: the plate list, the searches, Templates and Create Plate
   plates, Search wells, Search analyses and Templates. There is no help page for Plates; what is
   claimed is the package's own behaviour. The plates are the demo set the package seeds into its own
   database on first use (`plates-demo.ts`): 20 plates of the "Cell counting" template and 20 of
-  "Dose-response", 40 in all — the counts below are that set's, measured on the local stand.
+  "Dose-response", 40 in all — the counts below are that set's, measured on the local stand, and hold
+  only while the demo set is the only data in the package database (a plate created by hand or by
+  another test changes them).
 
   Left out on purpose:
   - Search Plates and Search Analyses opening with their inputs: `UsageAnalysis` browse-apps-matrix
@@ -16,8 +18,10 @@ Feature: Apps > Plates: the plate list, the searches, Templates and Create Plate
     count exists; the matchers are `src/plates/matchers.ts`'s job (package tests);
   - the Assay Plates demo: its Excel plates (`System:DemoFiles/hts/xlsx_plates`) are not on the local
     stand (MISSING.md).
-  Nothing is put on the server. Each scenario opens its view from the tree again: the app's own view
-  hides the Browse panel, and a click on the node already selected opens nothing.
+  The scenarios save nothing themselves, but the first open of the app seeds the two demo templates and
+  their 40 plates into the package database when they are not there yet (`seedDemoPlateData`). Each
+  scenario opens its view from the tree again: the app's own view hides the Browse panel, and a click on
+  the node already selected opens nothing.
 
   Background:
     Given user is logged in

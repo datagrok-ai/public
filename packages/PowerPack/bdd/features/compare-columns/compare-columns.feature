@@ -62,6 +62,8 @@ Feature: Data > Compare Columns counts the rows where two columns agree, selects
     And the value of "a == b" column in row 4 should be "false"
     And "Compare Columns" dialog should be visible
     And no errors should have been logged
+    When user clears the row selection
+    Then 0 rows should be selected
     When user clicks on CANCEL button in "Compare Columns" dialog
     And user removes "a == b" column
     Then the table should have the columns "a, b"
@@ -94,7 +96,7 @@ Feature: Data > Compare Columns counts the rows where two columns agree, selects
     When user clicks on CANCEL button in "Compare Columns" dialog
     Then "Compare Columns" dialog should be hidden
 
-  @known-failure:109
+  @known-failure:111
   Scenario: A column of another table of the same length is compared, and ADD COLUMN adds the match column to the first table
     When user calls "PowerPack:_compareColumns" function
     And user selects "cmp" in Tables input in "Compare Columns" dialog

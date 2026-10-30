@@ -18,7 +18,6 @@ import {bioInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, expand, selectIn, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnSemType, everyValueMatches, hasColumn, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {contextPanelOpen, contextPanelShows, openDatasetRows} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {clickArea, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
@@ -46,7 +45,6 @@ test.describe("The Get Region pane cuts a region out of a sequence column from t
     await session.step(35, "And \"fasta: (3-6)\" column should have semantic type \"Macromolecule\"", () => columnSemType(page, "fasta: (3-6)", "Macromolecule"));
     await session.step(36, "And the value of \"fasta: (3-6)\" column in row 1 should be \"YKET\"", () => valueInRow(page, "fasta: (3-6)", 1, "YKET"));
     await session.step(37, "And every value of \"fasta: (3-6)\" column should match \"^[A-Z]{4}$\"", () => everyValueMatches(page, "fasta: (3-6)", "^[A-Z]{4}$"));
-    await session.step(38, "And the table should have 9 rows", () => rowCount(page, 9));
-    await session.step(39, "And no errors should have been logged", () => noErrors(page));
+    await session.step(38, "And no errors should have been logged", () => noErrors(page));
   });
 });

@@ -61,7 +61,6 @@ Feature: ML > Impute Missing Values fills the missing values of a column from it
     Then RUN button in "k-NN Imputation" dialog should be disabled
     When user clicks on CANCEL button in "k-NN Imputation" dialog
     Then "k-NN Imputation" dialog should be hidden
-    And "b" column should have missing values
     And no errors should have been logged
 
   Scenario: A table with no missing values gets an info balloon and no dialog

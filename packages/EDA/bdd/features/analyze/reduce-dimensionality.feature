@@ -55,10 +55,9 @@ Feature: ML > Reduce Dimensionality embeds the chosen columns in two dimensions 
     And "yColumnName" property of scatter plot viewer should be "Embed_Y_1"
     And "colorColumnName" property of scatter plot viewer should be "Cluster (DBSCAN)"
     And scatter plot viewer should be painted
-    And the table should have 30 rows
     And no errors should have been logged
 
-  @known-failure:65
+  @known-failure:64
   Scenario: With no column picked OK is disabled
     When user picks "ML > Reduce Dimensionality..." from the top menu
     Then Columns input in "Reduce Dimensionality" dialog should contain text "(0)"

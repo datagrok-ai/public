@@ -18,7 +18,7 @@ import {columnsExactly, everyValueMatches} from '@datagrok-libraries/bdd/binding
 import {tableRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, openDataset, simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {tableViewOpened} from '@datagrok-libraries/bdd/bindings/platform/workspace';
-import {noErrors, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {noErrors, setProperty, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {pickFromViewerMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -51,15 +51,22 @@ test.describe("The Peptide Generation viewer designs new peptides and opens them
       await session.step(42, "Then Peptide Generation viewer should contain text \"50 peptides generated for lowest activity\"", () => shouldContainText(page, el("Peptide Generation viewer"), "50 peptides generated for lowest activity"));
       await session.step(43, "When user enters \"10\" into \"Peptide Count\" property in context panel", () => enterInto(page, "10", el("\"Peptide Count\" property in context panel")));
       await session.step(44, "Then Peptide Generation viewer should contain text \"10 peptides generated for lowest activity\"", () => shouldContainText(page, el("Peptide Generation viewer"), "10 peptides generated for lowest activity"));
-      await session.step(45, "And no errors should have been logged", () => noErrors(page));
+      await session.step(45, "When user selects \"ID\" in \"Activity\" property in context panel", () => selectIn(page, "ID", el("\"Activity\" property in context panel")));
+      await session.step(46, "And user selects \"High\" in \"Activity Target\" property in context panel", () => selectIn(page, "High", el("\"Activity Target\" property in context panel")));
+      await session.step(47, "And user enters \"50\" into \"Peptide Count\" property in context panel", () => enterInto(page, "50", el("\"Peptide Count\" property in context panel")));
+      await session.step(48, "Then Peptide Generation viewer should contain text \"50 peptides generated for highest activity\"", () => shouldContainText(page, el("Peptide Generation viewer"), "50 peptides generated for highest activity"));
+      await session.step(49, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The plus icon opens the generated peptides as a new table", async () => {
-      await session.step(48, "When user clicks on \"Open the generated peptides as a new table\" icon in Peptide Generation viewer", () => clickOn(page, el("\"Open the generated peptides as a new table\" icon in Peptide Generation viewer")));
-      await session.step(49, "Then the \"Generated Peptides\" table view should open with 10 rows", () => tableViewOpened(page, "Generated Peptides", 10));
-      await session.step(50, "And the table should have the columns \"Peptide, Predicted activity, Confidence, Min support, Mean p-value, Significant positions, Novel, Basis, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17\"", () => columnsExactly(page, "Peptide, Predicted activity, Confidence, Min support, Mean p-value, Significant positions, Novel, Basis, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17"));
-      await session.step(51, "And every value of \"Novel\" column should match \"^true$\"", () => everyValueMatches(page, "Novel", "^true$"));
-      await session.step(52, "And table \"peptides\" should have 647 rows", () => tableRows(page, "peptides", 647));
-      await session.step(53, "And no errors should have been logged", () => noErrors(page));
+      await session.step(52, "When user sets \"activityColumnName\" property of Peptide Generation viewer to \"IC50\"", () => setProperty(page, "activityColumnName", el("Peptide Generation viewer"), "IC50"));
+      await session.step(53, "And user sets \"peptideCount\" property of Peptide Generation viewer to \"10\"", () => setProperty(page, "peptideCount", el("Peptide Generation viewer"), "10"));
+      await session.step(54, "Then Peptide Generation viewer should contain text \"10 peptides generated for highest activity\"", () => shouldContainText(page, el("Peptide Generation viewer"), "10 peptides generated for highest activity"));
+      await session.step(55, "When user clicks on \"Open the generated peptides as a new table\" icon in Peptide Generation viewer", () => clickOn(page, el("\"Open the generated peptides as a new table\" icon in Peptide Generation viewer")));
+      await session.step(56, "Then the \"Generated Peptides\" table view should open with 10 rows", () => tableViewOpened(page, "Generated Peptides", 10));
+      await session.step(57, "And the table should have the columns \"Peptide, Predicted activity, Confidence, Min support, Mean p-value, Significant positions, Novel, Basis, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17\"", () => columnsExactly(page, "Peptide, Predicted activity, Confidence, Min support, Mean p-value, Significant positions, Novel, Basis, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17"));
+      await session.step(58, "And every value of \"Novel\" column should match \"^true$\"", () => everyValueMatches(page, "Novel", "^true$"));
+      await session.step(59, "And table \"peptides\" should have 647 rows", () => tableRows(page, "peptides", 647));
+      await session.step(60, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

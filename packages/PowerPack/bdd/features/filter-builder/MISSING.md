@@ -1,6 +1,6 @@
 # Filter Builder feature — what is still missing
 
-## Compare Columns, Filter Builder
+## Filter Builder
 
 Feature: `filter-builder.feature` (30 Oct 2026, local stand).
 

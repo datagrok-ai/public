@@ -16,8 +16,10 @@ Feature: Proteomics > Import opens a MaxQuant proteinGroups.txt as a table of pr
   - the log2 transform of the intensities and the gene-label resolution: numbers the parser tests check.
   Nothing is put on the server.
 
-  Scenario: MaxQuant... opens the chosen proteinGroups.txt without its contaminant and reverse hits
+  Background:
     Given user is logged in
+
+  Scenario: MaxQuant... opens the chosen proteinGroups.txt without its contaminant and reverse hits
     When user clicks on Menu tab
     And user picks "Proteomics > Import > MaxQuant..." from the open menu and chooses the "../files/demo/proteinGroups.txt" file of the project
     Then the "proteinGroups" table view should open with 24 rows
@@ -28,7 +30,6 @@ Feature: Proteomics > Import opens a MaxQuant proteinGroups.txt as a table of pr
     And no errors should have been logged
 
   Scenario: Generic Matrix... maps the chosen file's columns in a dialog, and OK opens every row
-    Given user is logged in
     When user clicks on Menu tab
     And user picks "Proteomics > Import > Generic Matrix..." from the open menu and chooses the "../files/demo/proteinGroups.txt" file of the project
     Then "Import Generic Matrix" dialog should be visible

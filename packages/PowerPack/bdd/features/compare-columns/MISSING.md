@@ -1,6 +1,6 @@
 # Compare Columns feature — what is still missing
 
-## Compare Columns, Filter Builder
+## Compare Columns
 
 Feature: `compare-columns.feature` (30 Oct 2026, local stand).
 

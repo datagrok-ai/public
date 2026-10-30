@@ -42,9 +42,16 @@ Feature: The Peptide Generation viewer designs new peptides and opens them as a 
     Then Peptide Generation viewer should contain text "50 peptides generated for lowest activity"
     When user enters "10" into "Peptide Count" property in context panel
     Then Peptide Generation viewer should contain text "10 peptides generated for lowest activity"
+    When user selects "ID" in "Activity" property in context panel
+    And user selects "High" in "Activity Target" property in context panel
+    And user enters "50" into "Peptide Count" property in context panel
+    Then Peptide Generation viewer should contain text "50 peptides generated for highest activity"
     And no errors should have been logged
 
   Scenario: The plus icon opens the generated peptides as a new table
+    When user sets "activityColumnName" property of Peptide Generation viewer to "IC50"
+    And user sets "peptideCount" property of Peptide Generation viewer to "10"
+    Then Peptide Generation viewer should contain text "10 peptides generated for highest activity"
     When user clicks on "Open the generated peptides as a new table" icon in Peptide Generation viewer
     Then the "Generated Peptides" table view should open with 10 rows
     And the table should have the columns "Peptide, Predicted activity, Confidence, Min support, Mean p-value, Significant positions, Novel, Basis, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17"

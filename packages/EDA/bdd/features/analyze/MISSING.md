@@ -69,4 +69,7 @@ Features: `reduce-dimensionality.feature`, `clustering.feature`, `hypothesis-tes
   still maps the empty editor list into empty metrics, weights and preprocessing functions, and
   `markovCluster` (`libraries/ml/src/MCL/clustering-view.ts:50`) hands the worker no column at all.
   `clustering.feature`, scenario "MCL on four number columns adds the cluster columns", `@known-failure` on
-  the Cluster (MCL) step.
+  the Cluster (MCL) step. The stuck run does not outlive the scenario: closing the MCL viewer, its view or every view
+  (`closeAll`, the shell reset after each scenario) terminates its worker within 3 s (probe 30 Oct: live
+  MCL workers 1 → 0; `onViewerClosed` in `clustering-view.ts:71`), and the next feature on the same page
+  started clean (run rf-mcl2, one worker).
