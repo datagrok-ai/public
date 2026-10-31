@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {Observable} from 'rxjs';
-import {getDefaultFloatFormat} from '@datagrok-libraries/utils/src/format-version-utils';
+import {G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
 import type {ValidationIcon} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
 
 //
@@ -92,13 +92,10 @@ export const isInputEnabled = (prop: DG.Property, consistency?: ConsistencyInfo,
   !(prop.propertyType === DG.TYPE.DATA_FRAME && prop.options['mutateOnly'] === 'true' &&
     (consistency?.restriction === 'restricted' || consistency?.restriction === 'info'));
 
-export type VisibilityTarget = Pick<DG.InputBase, 'visible' | 'root'>;
+export type VisibilityTarget = Pick<DG.InputBase, 'visible'>;
 
-// InputBase.visible also hides an emptied category header; older clients lack it
 export function setInputVisible(input: VisibilityTarget, visible: boolean) {
-  if ((input as any).visible == null)
-    input.root.style.display = visible ? 'flex' : 'none';
-  else if (input.visible !== visible)
+  if (input.visible !== visible)
     input.visible = visible;
 }
 
@@ -133,11 +130,10 @@ export function isInputInjected(arg: any): arg is FuncCallInputStatusable {
 export {DEFAULT_FLOAT_FORMAT, G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
 
 export function applyDefaultFloatFormats(call: DG.FuncCall): void {
-  const format = getDefaultFloatFormat();
   for (const param of call.inputParams.values()) {
     const prop = param.property as any;
     if (prop?.propertyType === DG.TYPE.FLOAT && !prop.format)
-      prop.format = format;
+      prop.format = G7_FLOAT_FORMAT;
   }
 }
 

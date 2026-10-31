@@ -1,6 +1,7 @@
 import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
 import {
   TargetSelection, EMPTY_TARGET_SELECTION, isCharted, clickTarget, setMultiMode, reconcileTargets, pruneOverrides,
+  chartedTargets, withCandidateEnabled, withoutTargetOverrides,
 } from '../components/RunComparison/target-selection';
 import {ColumnTarget, ScalarTarget, ComparisonTarget, ColumnBinding} from '../components/RunComparison/types';
 
@@ -165,5 +166,62 @@ category('RunComparison: candidate override pruning', () => {
   test('valid overrides return the same object', async () => {
     const overrides = {'column:x': {'r1|t|x': false, 'r2|t|x2': true}};
     expect(pruneOverrides(overrides, targets) === overrides, true);
+  });
+});
+
+category('RunComparison: charted targets', () => {
+  const targets: ComparisonTarget[] = [
+    scalarTarget('s1'), scalarTarget('s2'), scalarTarget('s3'), columnTarget('c1', [binding('r1', 'x')]),
+  ];
+  const keys = (list: ComparisonTarget[]) => list.map((target) => target.key);
+
+  test('single mode charts the selection only', async () => {
+    expectArray(keys(chartedTargets(single('s2'), targets)), ['s2']);
+    expectArray(keys(chartedTargets(single(''), targets)), []);
+    expectArray(keys(chartedTargets(single('gone'), targets)), []);
+  });
+
+  test('multi mode charts the anchor first, then list order', async () => {
+    expectArray(keys(chartedTargets(multi('s3', ['s1', 's3', 's2']), targets)), ['s3', 's1', 's2']);
+  });
+
+  test('targets of another kind than the anchor are left out', async () => {
+    expectArray(keys(chartedTargets(multi('s1', ['s1', 'c1']), targets)), ['s1']);
+  });
+
+  test('a vanished anchor charts nothing', async () => {
+    expectArray(keys(chartedTargets(multi('gone', ['s1']), targets)), []);
+  });
+});
+
+category('RunComparison: candidate toggles', () => {
+  const target = columnTarget('column:x', [binding('r1', 'x'), binding('r2', 'x'), binding('r2', 'x2')]);
+  target.candidates[2].enabled = false;
+  const [r1x, r2x, r2x2] = target.candidates;
+
+  test('enabling a candidate disables the run\'s enabled one only', async () => {
+    const next = withCandidateEnabled({}, target, r2x2, true);
+    expectArray(Object.keys(next['column:x']).sort(), ['r2|t|x', 'r2|t|x2']);
+    expect(next['column:x']['r2|t|x2'], true);
+    expect(next['column:x']['r2|t|x'], false);
+  });
+
+  test('disabling a candidate leaves the other runs alone', async () => {
+    const next = withCandidateEnabled({}, target, r1x, false);
+    expectArray(Object.keys(next['column:x']), ['r1|t|x']);
+    expect(next['column:x']['r1|t|x'], false);
+  });
+
+  test('toggles keep the overrides of other targets and earlier toggles', async () => {
+    const next = withCandidateEnabled({'column:y': {'r1|t|y': false}, 'column:x': {'r1|t|x': false}},
+      target, r2x, false);
+    expect(next['column:y']['r1|t|y'], false);
+    expect(next['column:x']['r1|t|x'], false);
+    expect(next['column:x']['r2|t|x'], false);
+  });
+
+  test('reset drops the target\'s overrides only', async () => {
+    const next = withoutTargetOverrides({'column:x': {'r1|t|x': false}, 'column:y': {'r1|t|y': false}}, 'column:x');
+    expectArray(Object.keys(next), ['column:y']);
   });
 });

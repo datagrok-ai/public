@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/histogram/histogram-range-filter.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.histogram]
+sub_features_covered: [viewers.histogram, public#2301]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -25,12 +25,12 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterIsExactly, filterPasses, filterPassesAll} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, areasDiffer, doubleClickArea, dragAreaToArea, enterIntoArea, hasArea, hasNoArea, hoverArea, loadLayout, noErrors, propertyShouldBe, readingHigher, readingIs, readingLower, readingReads, repaintedBy, resizeTo, saveLayoutToServer, setProperties, setProperty, showsFewerRows, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, areasDiffer, doubleClickArea, dragAreaBy, dragAreaToArea, enterIntoArea, hasArea, hasNoArea, hoverArea, loadLayout, noErrors, pointerAway, propertyShouldBe, readingHigher, readingIs, readingLower, readingReads, repaintedBy, resizeTo, saveLayoutToServer, setProperties, setProperty, showsFewerRows, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Histogram range filter", () => {
   const session = feature(test, "features/viewers/histogram/histogram-range-filter.feature", import.meta.url);
-  test("Histogram range filter", {tag: ["@journey", "@viewers", "@realizes:viewers.histogram"]}, async ({browser}) => {
+  test("Histogram range filter", {tag: ["@journey", "@viewers", "@realizes:viewers.histogram", "@realizes:public#2301"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 9, page);
     await session.step(11, "Given user is logged in", () => loggedIn(page));
@@ -152,52 +152,63 @@ test.describe("Histogram range filter", () => {
       await session.step(135, "And the range min input of histogram viewer should read \"18\"", () => rangeInputReads(page, "min", "18"));
       await session.step(136, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("A handle dragged with the pointer moves the range, a double click resets it", async () => {
-      await session.step(139, "When user hovers over the \"view\" area of histogram viewer", () => hoverArea(page, "view", el("histogram viewer")));
-      await session.step(140, "Then histogram viewer should have a \"range min handle\" area", () => hasArea(page, el("histogram viewer"), "range min handle"));
-      await session.step(141, "And histogram viewer should have a \"range max handle\" area", () => hasArea(page, el("histogram viewer"), "range max handle"));
-      await session.step(142, "When user drags the \"range max handle\" area of histogram viewer to the \"bin 12\" area", () => dragAreaToArea(page, "range max handle", el("histogram viewer"), "bin 12"));
-      await session.step(143, "Then 809 rows should pass the filter", () => filterPasses(page, 809));
-      await session.step(144, "And the \"range max\" reading of histogram viewer should be lower than before", () => readingLower(page, "range max", el("histogram viewer")));
-      await session.step(145, "And histogram viewer should show fewer rows than before", () => showsFewerRows(page, el("histogram viewer")));
-      await session.step(146, "And histogram viewer should have a \"range bar\" area", () => hasArea(page, el("histogram viewer"), "range bar"));
-      await session.step(147, "When user double-clicks on the \"range slider\" area of histogram viewer", () => doubleClickArea(page, "range slider", el("histogram viewer")));
-      await session.step(148, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(149, "And the \"range max\" reading of histogram viewer should be 89", () => readingIs(page, "range max", el("histogram viewer"), 89));
-      await session.step(150, "And the \"bins shown\" reading of histogram viewer should be 20", () => readingIs(page, "bins shown", el("histogram viewer"), 20));
-      await session.step(151, "And no errors should have been logged", () => noErrors(page));
+    await run.scenario("A handle dragged with the pointer moves the range, a double click resets it, and the min handle dragged past the max leaves a valid range (public#2301)", async () => {
+      await session.step(140, "When user hovers over the \"view\" area of histogram viewer", () => hoverArea(page, "view", el("histogram viewer")));
+      await session.step(141, "Then histogram viewer should have a \"range min handle\" area", () => hasArea(page, el("histogram viewer"), "range min handle"));
+      await session.step(142, "And histogram viewer should have a \"range max handle\" area", () => hasArea(page, el("histogram viewer"), "range max handle"));
+      await session.step(143, "When user drags the \"range max handle\" area of histogram viewer to the \"bin 12\" area", () => dragAreaToArea(page, "range max handle", el("histogram viewer"), "bin 12"));
+      await session.step(144, "Then 809 rows should pass the filter", () => filterPasses(page, 809));
+      await session.step(145, "And the \"range max\" reading of histogram viewer should be lower than before", () => readingLower(page, "range max", el("histogram viewer")));
+      await session.step(146, "And histogram viewer should show fewer rows than before", () => showsFewerRows(page, el("histogram viewer")));
+      await session.step(147, "And histogram viewer should have a \"range bar\" area", () => hasArea(page, el("histogram viewer"), "range bar"));
+      await session.step(148, "When user double-clicks on the \"range slider\" area of histogram viewer", () => doubleClickArea(page, "range slider", el("histogram viewer")));
+      await session.step(149, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(150, "And the \"range max\" reading of histogram viewer should be 89", () => readingIs(page, "range max", el("histogram viewer"), 89));
+      await session.step(151, "And the \"bins shown\" reading of histogram viewer should be 20", () => readingIs(page, "bins shown", el("histogram viewer"), 20));
+      await session.step(152, "When user moves the pointer away from histogram viewer", () => pointerAway(page, el("histogram viewer")));
+      await session.step(153, "And user hovers over the \"view\" area of histogram viewer", () => hoverArea(page, "view", el("histogram viewer")));
+      await session.step(154, "Then histogram viewer should have a \"range min handle\" area", () => hasArea(page, el("histogram viewer"), "range min handle"));
+      await session.step(155, "When user drags the \"range min handle\" area of histogram viewer by 450 pixels to the right", () => dragAreaBy(page, "range min handle", el("histogram viewer"), 450, "right"));
+      await session.step(156, "Then the \"range min\" reading of histogram viewer should be 89", () => readingIs(page, "range min", el("histogram viewer"), 89));
+      await session.step(157, "And the \"range max\" reading of histogram viewer should be 89", () => readingIs(page, "range max", el("histogram viewer"), 89));
+      await session.step(158, "And 1 row should pass the filter", () => filterPasses(page, 1));
+      await session.step(159, "And the \"error\" reading of histogram viewer should be \"\"", () => readingReads(page, "error", el("histogram viewer"), ""));
+      await session.step(160, "When user double-clicks on the \"range slider\" area of histogram viewer", () => doubleClickArea(page, "range slider", el("histogram viewer")));
+      await session.step(161, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(162, "And the \"range min\" reading of histogram viewer should be 18", () => readingIs(page, "range min", el("histogram viewer"), 18));
+      await session.step(163, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Filtering Enabled off releases the table and keeps the zoom", async () => {
-      await session.step(154, "When user enters \"40\" into the \"range min input\" area of histogram viewer", () => enterIntoArea(page, "40", "range min input", el("histogram viewer")));
-      await session.step(155, "Then 665 rows should pass the filter", () => filterPasses(page, 665));
-      await session.step(156, "And the \"bins shown\" reading of histogram viewer should be 14", () => readingIs(page, "bins shown", el("histogram viewer"), 14));
-      await session.step(157, "When user sets \"Filtering Enabled\" property of histogram viewer to \"false\"", () => setProperty(page, "Filtering Enabled", el("histogram viewer"), "false"));
-      await session.step(158, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(159, "And the \"range min\" reading of histogram viewer should be 40", () => readingIs(page, "range min", el("histogram viewer"), 40));
-      await session.step(160, "And the \"bins shown\" reading of histogram viewer should be 14", () => readingIs(page, "bins shown", el("histogram viewer"), 14));
-      await session.step(161, "When user sets \"Filtering Enabled\" property of histogram viewer to \"true\"", () => setProperty(page, "Filtering Enabled", el("histogram viewer"), "true"));
-      await session.step(162, "Then 665 rows should pass the filter", () => filterPasses(page, 665));
-      await session.step(163, "When user enters \"18\" into the \"range min input\" area of histogram viewer", () => enterIntoArea(page, "18", "range min input", el("histogram viewer")));
-      await session.step(164, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(165, "And no errors should have been logged", () => noErrors(page));
+      await session.step(166, "When user enters \"40\" into the \"range min input\" area of histogram viewer", () => enterIntoArea(page, "40", "range min input", el("histogram viewer")));
+      await session.step(167, "Then 665 rows should pass the filter", () => filterPasses(page, 665));
+      await session.step(168, "And the \"bins shown\" reading of histogram viewer should be 14", () => readingIs(page, "bins shown", el("histogram viewer"), 14));
+      await session.step(169, "When user sets \"Filtering Enabled\" property of histogram viewer to \"false\"", () => setProperty(page, "Filtering Enabled", el("histogram viewer"), "false"));
+      await session.step(170, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(171, "And the \"range min\" reading of histogram viewer should be 40", () => readingIs(page, "range min", el("histogram viewer"), 40));
+      await session.step(172, "And the \"bins shown\" reading of histogram viewer should be 14", () => readingIs(page, "bins shown", el("histogram viewer"), 14));
+      await session.step(173, "When user sets \"Filtering Enabled\" property of histogram viewer to \"true\"", () => setProperty(page, "Filtering Enabled", el("histogram viewer"), "true"));
+      await session.step(174, "Then 665 rows should pass the filter", () => filterPasses(page, 665));
+      await session.step(175, "When user enters \"18\" into the \"range min input\" area of histogram viewer", () => enterIntoArea(page, "18", "range min input", el("histogram viewer")));
+      await session.step(176, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(177, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A saved layout brings the histogram back at the full range", async () => {
-      await session.step(168, "When user enters \"40\" into the \"range min input\" area of histogram viewer", () => enterIntoArea(page, "40", "range min input", el("histogram viewer")));
-      await session.step(169, "And user enters \"60\" into the \"range max input\" area of histogram viewer", () => enterIntoArea(page, "60", "range max input", el("histogram viewer")));
-      await session.step(170, "Then 512 rows should pass the filter", () => filterPasses(page, 512));
-      await session.step(171, "When user saves the layout of the current table view to the server", () => saveLayoutToServer(page));
-      await session.step(172, "And user clicks on close icon of histogram viewer", () => clickOn(page, el("close icon of histogram viewer")));
-      await session.step(173, "Then histogram viewer should be absent", () => shouldBe(page, el("histogram viewer"), "absent"));
-      await session.step(174, "And all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(175, "When user loads the saved layout", () => loadLayout(page));
-      await session.step(176, "Then histogram viewer should be visible", () => shouldBe(page, el("histogram viewer"), "visible"));
-      await session.step(177, "And \"Value\" property of histogram viewer should be \"AGE\"", () => propertyShouldBe(page, "Value", el("histogram viewer"), "AGE"));
-      await session.step(178, "And histogram viewer should have a \"range min input\" area", () => hasArea(page, el("histogram viewer"), "range min input"));
-      await session.step(179, "And the \"range min\" reading of histogram viewer should be 18", () => readingIs(page, "range min", el("histogram viewer"), 18));
-      await session.step(180, "And the \"range max\" reading of histogram viewer should be 89", () => readingIs(page, "range max", el("histogram viewer"), 89));
-      await session.step(181, "And the \"bins shown\" reading of histogram viewer should be 20", () => readingIs(page, "bins shown", el("histogram viewer"), 20));
-      await session.step(182, "And all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(183, "And no errors should have been logged", () => noErrors(page));
+      await session.step(180, "When user enters \"40\" into the \"range min input\" area of histogram viewer", () => enterIntoArea(page, "40", "range min input", el("histogram viewer")));
+      await session.step(181, "And user enters \"60\" into the \"range max input\" area of histogram viewer", () => enterIntoArea(page, "60", "range max input", el("histogram viewer")));
+      await session.step(182, "Then 512 rows should pass the filter", () => filterPasses(page, 512));
+      await session.step(183, "When user saves the layout of the current table view to the server", () => saveLayoutToServer(page));
+      await session.step(184, "And user clicks on close icon of histogram viewer", () => clickOn(page, el("close icon of histogram viewer")));
+      await session.step(185, "Then histogram viewer should be absent", () => shouldBe(page, el("histogram viewer"), "absent"));
+      await session.step(186, "And all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(187, "When user loads the saved layout", () => loadLayout(page));
+      await session.step(188, "Then histogram viewer should be visible", () => shouldBe(page, el("histogram viewer"), "visible"));
+      await session.step(189, "And \"Value\" property of histogram viewer should be \"AGE\"", () => propertyShouldBe(page, "Value", el("histogram viewer"), "AGE"));
+      await session.step(190, "And histogram viewer should have a \"range min input\" area", () => hasArea(page, el("histogram viewer"), "range min input"));
+      await session.step(191, "And the \"range min\" reading of histogram viewer should be 18", () => readingIs(page, "range min", el("histogram viewer"), 18));
+      await session.step(192, "And the \"range max\" reading of histogram viewer should be 89", () => readingIs(page, "range max", el("histogram viewer"), 89));
+      await session.step(193, "And the \"bins shown\" reading of histogram viewer should be 20", () => readingIs(page, "bins shown", el("histogram viewer"), 20));
+      await session.step(194, "And all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(195, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

@@ -1,6 +1,6 @@
 @journey @realizes:powerpack.dialogs.add-new-column @realizes:GROK-17004
-Feature: The formula editor of Add New Column on demog: autocomplete, hints and column highlighting
-  The CodeMirror editor of the Add New Column dialog, opened once on demog. Typing a letter offers
+Feature: The formula editor of Add New Column on demog-1000: autocomplete, hints and column highlighting
+  The CodeMirror editor of the Add New Column dialog, opened once on demog-1000. Typing a letter offers
   the functions that start with it; Enter or a click inserts the function with its parameter names
   and selects the first one; Ctrl+Space offers the list on an empty editor; "$" offers the table's
   columns instead of functions. The pointer over an inserted function name shows its signature, and
@@ -9,6 +9,10 @@ Feature: The formula editor of Add New Column on demog: autocomplete, hints and 
   from the grid's header — a span per reference in the editor, drawn in the platform's --blue-2.
   Translated from TestTrack PowerPack/autocomplete.md, hints.md and the demog scenarios of
   highlight.md (the SPGI paste of GROK-17004 is in functions-panel.feature).
+  With cars open too, a table parameter (Lookup) offers the open tables and the column parameter after it
+  the named table's columns (GROK-20931). The other argument selectors, the hints, the completion info and
+  what the table-level functions compute are PowerPack package tests ('table and column argument selectors',
+  'hints', 'function at caret becomes current object', 'functions without errors', 'validation').
 
   Ctrl+Space is the physical Control key on every platform — CodeMirror's binding, which the hint line
   names; on macOS Command+Space is the system's own — so the step presses ControlLeft, not Control
@@ -19,7 +23,9 @@ Feature: The formula editor of Add New Column on demog: autocomplete, hints and 
 
   Background:
     Given user is logged in
-    And user opens demog dataset
+    And user opens cars dataset
+    And user opens demog-1000 dataset
+    And user switches to the "demog-1000" table view
     When user clicks on "Add New Column..." icon
     Then "Add New Column" dialog should be visible
 
@@ -108,6 +114,24 @@ Feature: The formula editor of Add New Column on demog: autocomplete, hints and 
     And every column reference of formula editor should be drawn in the color of "--blue-2"
     And every column reference of formula editor should differ in color from the plain text of its line
     And no errors should have been logged
+
+  @realizes:GROK-20931
+  Scenario: A table parameter offers the open tables, and the column parameter after it that table's columns
+    When user presses Escape in formula editor
+    And user clears formula editor
+    And user types "Lookup(" into formula editor
+    Then completion list should be visible
+    And "cars" completion should be visible
+    And "demog-1000" completion should be visible
+    When user accepts the highlighted completion with Enter
+    Then formula editor should hold the code "Lookup(\"cars\""
+    When user types ", " at the caret
+    Then completion list should be visible
+    And "price" completion should be visible
+    And "model" completion should be visible
+    And "AGE" completion should not be visible
+    When user presses Escape in formula editor
+    Then no errors should have been logged
 
   Scenario: A column dropped from the grid's header is highlighted
     When user clears formula editor

@@ -3,7 +3,7 @@
 // User documentation lives in help/compute/run-comparison.md
 
 import {
-  ColumnInfo, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, isNumericType,
+  ColumnInfo, ComparisonEntry, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, ColumnCandidate, isNumericType,
   TimeUnit, TIME_UNIT_MS, TIME_UNITS, AxisMode, AxisModeConfig, AxisModeSelection, AxisConfigMap, toTargetUnits,
   isTimeIndexType, isIndexCandidateType, TableNodeInfo,
 } from './types';
@@ -11,6 +11,9 @@ import {
   normalizeName, nameSimilarity, nameMatchConfidence, normalizeUnits, unitsCompatibility, UnitConverter,
   FUZZY_NAME_THRESHOLD,
 } from './matching';
+
+export const withEntryName = (entry: ComparisonEntry, name: string): ComparisonEntry =>
+  name === entry.name ? entry : {...entry, name, nodes: {...entry.nodes, entryName: name}};
 
 /** The name, or with the first free ` (n)` suffix when another entry has it: charts split by run name. */
 export function uniqueEntryName(name: string, taken: string[]): string {
@@ -61,6 +64,31 @@ export function compatibleTargetsFor(
   if (!lineIndexed(anchor))
     return [];
   return targets.filter((target) => target.kind === 'column' && lineIndexed(target));
+}
+
+export interface TargetListOptions {
+  multiMode: boolean;
+  isCharted: (key: string) => boolean;
+  compatible: ComparisonTarget[];
+  equalKeys: Set<string>;
+  filter: string;
+  contexts: Map<string, string>;
+}
+
+/**
+ * The Compare list. Multi mode lists the suggestions plus everything charted, so a charted
+ * target that became incompatible can still be unchecked; a charted target stays listed
+ * even when equal. The filter also matches the step context.
+ */
+export function listedTargets(
+  targets: ComparisonTarget[],
+  {multiMode, isCharted, compatible, equalKeys, filter, contexts}: TargetListOptions,
+): ComparisonTarget[] {
+  const compatibleKeys = new Set(compatible.map((target) => target.key));
+  return targets.filter((target) =>
+    (!multiMode || isCharted(target.key) || compatibleKeys.has(target.key)) &&
+    (!equalKeys.has(target.key) || isCharted(target.key)) &&
+    matchesFilter(filter, `${target.displayName} ${contexts.get(target.key) ?? ''}`));
 }
 
 /**
@@ -141,6 +169,24 @@ export function isTargetEqualAcrossRuns(
   return rest.every((s) => sameValues(s.value, first.value) &&
     sameValues(s.index, first.index, indexCompare) &&
     (s.split === first.split || sameValues(s.split, first.split)));
+}
+
+/** Keys of the targets equal across runs; each column's values are fetched once. */
+export function equalTargetKeys(
+  targets: ComparisonTarget[],
+  getColumnValues: ColumnValuesGetter,
+  getColumnType?: (entryId: string, tablePath: string, columnName: string) => string | undefined,
+): Set<string> {
+  const cache = new Map<string, ArrayLike<unknown> | undefined>();
+  const cached: ColumnValuesGetter = (entryId, tablePath, columnName) => {
+    const key = `${entryId}|${tablePath}|${columnName}`;
+    if (!cache.has(key))
+      cache.set(key, getColumnValues(entryId, tablePath, columnName));
+    return cache.get(key);
+  };
+  return new Set(targets
+    .filter((target) => isTargetEqualAcrossRuns(target, cached, getColumnType))
+    .map((target) => target.key));
 }
 
 // bare 'm' is deliberately not recognized — ambiguous with meters
@@ -535,6 +581,47 @@ export function getEntryStatuses(
       return {entryId: entry.entryId, matched: false, reason: 'units differ', units};
     return {entryId: entry.entryId, matched: false, reason: 'no similar data'};
   });
+}
+
+export interface StatusChip {
+  entryId: string;
+  text: string;
+  // set on amber chips: the axis mode the run's table lacks
+  warningMode?: string;
+}
+
+const WARNING_MODES: Record<NonNullable<EntryStatus['warning']>, string> = {
+  'relative timeseries not set': 'relative timeseries',
+  'independent points not set': 'independent points',
+};
+
+/** Red chips for excluded runs, amber ones for matched runs that chart as a plain series. */
+export function statusChips(statuses: EntryStatus[]): StatusChip[] {
+  return statuses.flatMap((status): StatusChip[] => {
+    if (!status.matched)
+      return [{entryId: status.entryId, text: status.units ? `${status.reason} (${status.units})` : status.reason!}];
+    if (status.warning)
+      return [{entryId: status.entryId, text: status.warning, warningMode: WARNING_MODES[status.warning]}];
+    return [];
+  });
+}
+
+export interface CandidateGroup {
+  entryId: string;
+  candidates: ColumnCandidate[];
+}
+
+/** A column target's candidates in runs of consecutive same-entry items, as listed. */
+export function groupCandidatesByEntry(candidates: ColumnCandidate[]): CandidateGroup[] {
+  const groups: CandidateGroup[] = [];
+  for (const candidate of candidates) {
+    const last = groups[groups.length - 1];
+    if (last && last.entryId === candidate.binding.entryId)
+      last.candidates.push(candidate);
+    else
+      groups.push({entryId: candidate.binding.entryId, candidates: [candidate]});
+  }
+  return groups;
 }
 
 /**

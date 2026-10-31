@@ -99561,11 +99561,11 @@
         if (this._ready$2(this._extColVer, this._extBitsetVer))
           return this;
         this._basic$0();
-        this._lowerAdjacentValue = 0;
-        this._upperAdjacentValue = 0;
-        this._q3 = 0;
-        this._q2 = 0;
-        this._q1 = 0;
+        this._lowerAdjacentValue = 26789344063684636e-50;
+        this._upperAdjacentValue = 26789344063684636e-50;
+        this._q3 = 26789344063684636e-50;
+        this._q2 = 26789344063684636e-50;
+        this._q1 = 26789344063684636e-50;
         if (this._basic$0()._totalCount - this._basic$0()._missingValueCount === 0)
           return this;
         t1 = H._checkLength(this._basic$0()._totalCount - this._basic$0()._missingValueCount);
@@ -180570,8 +180570,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "f47df4a437f704ce985a935a6ad3137ed91d985a");
-        t2.set$date(t1, "2026-10-29T23:46:17.799Z");
+        t2.set$commit(t1, "04bcfef8d38c8a2ee1b40fe10ff73756131668ee");
+        t2.set$date(t1, "2026-10-30T23:46:25.066Z");
         t2.set$version(t1, "1.27.12");
         return t1;
       }, null, null, 0, 0, null, "call"]

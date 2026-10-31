@@ -1,5 +1,9 @@
 # Charts changelog
 
+## v.next
+
+* [public#4459](https://github.com/datagrok-ai/public/issues/4459): Timelines: Date Format resets to the default on any column change
+
 ## 1.8.2 (2026-10-29)
 
 * Word cloud: Fixed errors logged after the viewer is closed while a render waits for its size

@@ -4,13 +4,13 @@ Feature: Reorder columns by dragging and hide the ones you do not need
   columns?". A column moves when its header is dragged onto another header: it lands right after
   the column it was dropped on. A column is hidden from the header's context menu (Hide), or from
   the Order or Hide Columns... dialog of the same menu, where every column has a checkbox and the
-  names can be dragged into a new order. Demo: demog, whose HEIGHT column is dragged onto AGE, then
+  names can be dragged into a new order. Demo: demog-1000, whose HEIGHT column is dragged onto AGE, then
   WEIGHT is hidden from the header menu and STARTED from the dialog.
 
   Scenario: Drag a column header to a new place, then hide two columns
     Given user is logged in
     And simple mode is off
-    And user opens demog dataset
+    And user opens demog-1000 dataset
     When user drags the "header HEIGHT" area of grid to the "header AGE" area
     Then the "column order" reading of grid should include the text "AGE, HEIGHT, SEX"
     When user picks "Hide" from the context menu of the "header WEIGHT" area of grid

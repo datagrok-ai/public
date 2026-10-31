@@ -43,8 +43,8 @@ Feature: Dataset tabs reordered by drag and drop keep their order through a proj
   Scenario: A dataset opened later goes to the end and leaves the new order alone
     When user drags "smiles" view tab to "browse-import" view tab
     Then the view tabs should be in the order "browse-import, smiles, cars-small, curves"
-    When user opens demog dataset
-    Then the view tabs should be in the order "browse-import, smiles, cars-small, curves, demog"
+    When user opens demog-1000 dataset
+    Then the view tabs should be in the order "browse-import, smiles, cars-small, curves, demog-1000"
     When user closes the current view
     Then the open table views should be exactly "browse-import, cars-small, smiles, curves"
     And the view tabs should be in the order "browse-import, smiles, cars-small, curves"

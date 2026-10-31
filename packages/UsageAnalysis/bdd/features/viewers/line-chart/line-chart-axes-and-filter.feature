@@ -14,6 +14,8 @@ Feature: Line chart axes, date bucketing and following the filter
   20 blanks and ~50 distinct dates over 2017-03…2019-06, which bucket to 3 years, 12 months and 11
   year-quarters; `Chemical Space X` starts at −4.25, so a logarithmic X axis over it is the
   non-positive path.
+  Closed issue: a logarithmic Y axis fits the data instead of leaving an empty band above it
+  (public#2485; Whole blood assay 1 runs from 0.04 to 31.5, two zeros, which a log axis drops).
 
   Background:
     Given user is logged in
@@ -178,4 +180,20 @@ Feature: Line chart axes, date bucketing and following the filter
       | xAxisTickmarksMode | Auto |
       | yAxisTickmarksMode | Auto |
     Then the "x axis" area of line chart viewer should have more ink than before
+    And no errors should have been logged
+
+  @realizes:public#2485
+  Scenario: A logarithmic Y axis fits the data instead of leaving an empty band above it (public#2485)
+    When user sets properties of line chart viewer:
+      | xColumnName  | Num Heavy Atoms     |
+      | yColumnNames | Whole blood assay 1 |
+      | yAxisType    | logarithmic         |
+    Then the "y axis max of \"Whole blood assay 1\"" reading of line chart viewer should be between 31.5 and 37.8
+    And the "y axis min of \"Whole blood assay 1\"" reading of line chart viewer should be between 0.04 and 0.14
+    And line chart viewer should report no error
+    When user sets properties of line chart viewer:
+      | yAxisType    | linear           |
+      | xColumnName  | CAST Idea ID     |
+      | yColumnNames | Chemical Space X |
+    Then the "markers drawn" reading of line chart viewer should be 100
     And no errors should have been logged

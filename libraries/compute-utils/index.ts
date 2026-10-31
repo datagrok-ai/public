@@ -9,6 +9,8 @@ export {
 export type {ValidationInfo} from './old-views/src/shared-utils/validation';
 export * from './reactive-tree-driver/index';
 export * from './shared-utils/consts';
+export * from './old-components/src/consts';
 export * from './shared-utils/export';
-export * from './shared-utils/history';
+export * from './old-components/src/history';
+export * from './old-components/src/history-runs';
 export * from './shared-utils/utils';

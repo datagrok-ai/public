@@ -9,9 +9,8 @@ import {evaluate, RuleContext, usedAliases} from './rule-expressions';
 
 export type ValidatorVerdict = {message: string, isError: boolean, isHelper: boolean};
 
-let warnedNoEval = false;
 
-// the annotation's own validators, resolved and run by the platform (1.28+)
+// the annotation's own validators, resolved and run by the platform
 function annotationVerdicts(
   controller: IControllerBase, spec: {input: string, call?: string},
 ): Observable<ValidatorVerdict[]> {
@@ -20,13 +19,6 @@ function annotationVerdicts(
   const call = controller.getFirst<DG.FuncCall | undefined>(spec.call);
   if (!call)
     return of([]);
-  if (typeof (call as any).evalParamValidators !== 'function') {
-    if (!warnedNoEval) {
-      warnedNoEval = true;
-      console.warn('RTD: FuncCall.evalParamValidators is not available on this platform, named validators are skipped');
-    }
-    return of([]);
-  }
   const io = controller.getMatchedPositions(spec.input)[0]?.ioName;
   if (!io)
     return of([]);
@@ -54,7 +46,7 @@ function callValidator(name: string, value: any): Observable<ValidatorVerdict | 
   );
 }
 
-// synchronous whenever nothing is called (absent value, no names, mock mode, old platform), so those
+// synchronous whenever nothing is called (absent value, no names, mock mode), so those
 // links stay batchable and virtual-time tests see their results immediately
 function resolveValidators(controller: IControllerBase, spec: ValidatorsSource): Observable<ValidatorVerdict[]> {
   if (!spec.names)
@@ -76,7 +68,6 @@ type ChoicesEntry = {deps: string[], values: any[], result: Promise<ChoicesResul
 // one evaluation per call and io, shared by the links reading it and redone only when a param
 // named in its `dependsOn` changes, as the function form does
 const choicesCache = new WeakMap<DG.FuncCall, Map<string, ChoicesEntry>>();
-let warnedNoChoices = false;
 
 const notConverted = Symbol('notConverted');
 
@@ -145,13 +136,6 @@ function resolveChoices(
   const io = controller.getMatchedPositions(spec.input)[0]?.ioName;
   if (!call || !io)
     return undefined;
-  if (typeof (call as any).evalParamChoices !== 'function') {
-    if (!warnedNoChoices) {
-      warnedNoChoices = true;
-      console.warn('RTD: FuncCall.evalParamChoices is not available on this platform, annotation choices are skipped');
-    }
-    return undefined;
-  }
   const value = controller.getFirst(spec.input);
   const choices = evalChoices(call, io);
   return choices instanceof Promise ?

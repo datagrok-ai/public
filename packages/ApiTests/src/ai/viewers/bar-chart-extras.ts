@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectChoices, expectPropAndLook, expectRoundTrip} from '../helpers';
+import {category, expect, settled, test} from '@datagrok-libraries/test/src/test';
+import {demog, expectChoices, expectLook, expectPropAndLook, expectRoundTrip, until, withTableView} from '../helpers';
 
 // BarChart JS API extras: friendly-key aliases, sort pair round-trip, choices, includeNulls, onClick enum.
 category('AI: Viewers: BarChart extras', () => {
@@ -37,5 +37,19 @@ category('AI: Viewers: BarChart extras', () => {
     const c = v();
     expectRoundTrip(c, {onClick: 'Filter'});
     expectRoundTrip(c, {onClick: 'Select'});
+  });
+
+  test('splitMap month on a datetime split comes back from a layout (public#2562)', async () => {
+    await withTableView(demog(1000), async (tv) => {
+      const bc = DG.Viewer.barChart(tv.dataFrame, {splitColumnName: 'started', splitMap: 'month'});
+      tv.addViewer(bc);
+      await settled(bc);
+      const layout = tv.saveLayout();
+      bc.close();
+      tv.loadLayout(layout);
+      let restored: DG.Viewer | undefined;
+      await until(() => (restored = Array.from(tv.viewers).find((v) => v.type === DG.VIEWER.BAR_CHART)) != null);
+      expectLook(restored!, {splitColumnName: 'started', splitMap: 'month'});
+    });
   });
 });

@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, settled, test} from '@datagrok-libraries/test/src/test';
 import {
   demog, expectChoices, expectPropAndLook, expectRoundTripPropAndLook, findProp, subscribeAll, withAttachedViewer,
+  withTableView,
 } from '../helpers';
 
 // PieChart JS API: factory, category alias, look round-trip, events, addViewer.
@@ -48,5 +49,19 @@ category('AI: Viewers: PieChart JS API', () => {
   test('view.addViewer attaches a typed PieChartViewer', async () => {
     await withAttachedViewer<DG.PieChartViewer>(demog(20), DG.VIEWER.PIE_CHART, {category: 'race'},
       (v) => expect(v instanceof DG.PieChartViewer, true));
+  });
+
+  test('a table switch to a table with the same columns keeps the category and the angle aggregation (core#982)', async () => {
+    const other = demog(50);
+    await withTableView(demog(100), async (tv) => {
+      const v = DG.Viewer.pieChart(tv.dataFrame,
+        {category: 'race', segmentAngleColumnName: 'weight', segmentAngleAggrType: 'avg'});
+      tv.addViewer(v);
+      await settled(v);
+      v.dataFrame = other;
+      await settled(v);
+      expect(v.dataFrame === other, true);
+      expectPropAndLook(v, {categoryColumnName: 'race', segmentAngleColumnName: 'weight', segmentAngleAggrType: 'avg'});
+    });
   });
 });

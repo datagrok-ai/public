@@ -5,7 +5,8 @@ Feature: Edit Column Formula: a calculated column renamed and given a new formul
   them is add-new-column.feature's subject). The Formula pane of a column's context panel opens the
   Edit Column Formula dialog with the column's name and formula. A new name and a new formula there
   rename and recalculate the column, and the column over it follows both. A value edited in the grid
-  recalculates the running total (GROK-21113). Translated from the QA round of 13 Oct 2026 on
+  recalculates the running total (GROK-21113). A scatter plot on the column redraws with the values a
+  new formula gives, and plots them again when Y is picked anew (public#434). Translated from the QA round of 13 Oct 2026 on
   calculated columns; the Formula pane's own Apply is formula-refreshing.feature.
 
   The first scenario picks dbl by its header; the later ones make the column current through the
@@ -90,6 +91,29 @@ Feature: Edit Column Formula: a calculated column renamed and given a new formul
     And the value of "run" column in row 3 should be "16"
     And the value of "triple" column in row 1 should be "30"
     And the value of "next" column in row 1 should be "31"
+    And no errors should have been logged
+
+  @realizes:public#434
+  Scenario: A scatter plot on a calculated column redraws after its formula is changed in the dialog, and keeps the new values (public#434)
+    Given user adds a scatter plot viewer with:
+      | X | x      |
+      | Y | triple |
+    When user remembers the "y axis max" reading of scatter plot viewer
+    Given the "triple" column is the current object
+    Then the context panel should show "triple"
+    Given Formula pane in context panel is expanded
+    Then formula pane editor in Formula pane in context panel should hold the code "${x} * 3"
+    When user clicks on "Edit in dialog" button in context panel
+    Then "Edit Column Formula" dialog should be visible
+    When user replaces the code of formula editor with "${x} * 30"
+    And user clicks on OK button in "Edit Column Formula" dialog
+    Then "Edit Column Formula" dialog should be hidden
+    And the "y axis max" reading of scatter plot viewer should not be as remembered
+    When user remembers the "y axis max" reading of scatter plot viewer
+    And user sets "Y" property of scatter plot viewer to "x"
+    Then the "y axis max" reading of scatter plot viewer should not be as remembered
+    When user sets "Y" property of scatter plot viewer to "triple"
+    Then the "y axis max" reading of scatter plot viewer should be as remembered
     And no errors should have been logged
 
   Scenario: The preview of a column made in the dialog shows it under its own name

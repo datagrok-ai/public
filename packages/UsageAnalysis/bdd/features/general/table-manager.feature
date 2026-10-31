@@ -2,8 +2,9 @@
 Feature: The Table Manager lists the open tables and moves between them
   Alt+T docks the Table Manager, a grid of the open tables in a panel titled Tables: it lists every
   open table in the order they opened, a click on a row brings that table's view to front and makes
-  the table the current object, Open as table makes a table of the list, a closed table leaves it, and
-  Alt+T closes the manager again. Translated from TestTrack General/table-manager.md,
+  the table the current object, Rename... in the current table's Actions pane renames the table, its
+  view and its row, Open as table makes a table of the list, a closed table leaves it, and Alt+T closes
+  the manager again. Translated from TestTrack General/table-manager.md,
   table-manager-spec.ts and the manual-only table-manager-ui.md; the manager's grid reports the rows
   and cells of its inner grid.
 
@@ -36,6 +37,23 @@ Feature: The Table Manager lists the open tables and moves between them
     When user clicks on the "cell 2 of name" area of Grid viewer in "Tables" dock panel
     Then the "iris" view should be current
     And the context panel should show "iris"
+    And no errors should have been logged
+
+  Scenario: Rename... in the current table's Actions pane renames the table, its view and its row in the manager
+    When user expands Actions pane in context panel
+    And user clicks on "Rename..." label in Actions pane in context panel
+    Then "Rename table" dialog should be visible
+    And "New name:" input in "Rename table" dialog should have value "iris"
+    When user enters "iris2" into "New name:" input in "Rename table" dialog
+    And user clicks on OK button in "Rename table" dialog
+    Then the "Rename table" dialog should close
+    And the "iris2" view should be current
+    And the "text of cell 2 of name" reading of Grid viewer in "Tables" dock panel should be "iris2"
+    When user clicks on "Rename..." label in Actions pane in context panel
+    And user enters "iris" into "New name:" input in "Rename table" dialog
+    And user clicks on OK button in "Rename table" dialog
+    Then the "Rename table" dialog should close
+    And the "text of cell 2 of name" reading of Grid viewer in "Tables" dock panel should be "iris"
     And no errors should have been logged
 
   Scenario: Open as table makes a table of the manager's list, and a closed table leaves the list

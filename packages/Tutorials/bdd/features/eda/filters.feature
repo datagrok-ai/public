@@ -53,7 +53,7 @@ Feature: The Filters tutorial
     And 2550 rows should pass the filter
 
     When user picks "Invert all" from the indicator menu of the "DIS_POP" filter card
-    Then the tutorial step "Invert the category set for the \"DIS_POP\" filter" should be done
+    Then the tutorial step "Invert the \"RA\" selection in the \"DIS_POP\" filter" should be done
     And the filter should pass exactly the rows where "DIS_POP" is one of "AS, Indigestion, PsA, Psoriasis, UC"
 
     When user clicks on the "count AS of DIS_POP" area of filter panel
@@ -110,7 +110,7 @@ Feature: The Filters tutorial
     And the table should have a column "AGE: [40,60]"
 
     When user picks "Save or Apply > Save..." from the filter panel menu
-    Then the tutorial step "Save the filter configuration as \"AGE: [40,60]\"" should be done
+    Then the tutorial step "Save the filter configuration" should be done
     When user clicks on OK button in dialog
 
     When user hovers over filter panel

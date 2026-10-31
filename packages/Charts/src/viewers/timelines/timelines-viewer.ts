@@ -31,6 +31,7 @@ export class TimelinesViewer extends EChartViewer {
   lineWidth: number;
   autoSize: boolean;
   dateFormat: string;
+  pickedDateFormat: string | null = null;
   axisPointer: string;
   showZoomSliders: boolean;
   legendVisibility: VisibilityMode;
@@ -217,12 +218,10 @@ export class TimelinesViewer extends EChartViewer {
           this.colorMap = null;
         }
       }
-      const timeColumns = [this.columnData.startColumnName?.column, this.columnData.endColumnName?.column,
-        ...(this.columnData.eventsColumnNames ? Object.keys(this.columnData.eventsColumnNames).map((columnName) =>
-        this.columnData.eventsColumnNames![columnName]!.column) : [])].filter((col) => col) as DG.Column[];
-      if (this.timeOptionsApplicable(timeColumns))
-        this.dateFormat = this.selectDateFormat(timeColumns);
-    } else if (property.name === 'legendVisibility' && this.colorColumnName)
+      this.pickDateFormat();
+    } else if (property.name === 'dateFormat')
+      this.pickDateFormat();
+    else if (property.name === 'legendVisibility' && this.colorColumnName)
       this.switchLegendVisibility(property.get(this));
 
     this.render();
@@ -336,11 +335,7 @@ export class TimelinesViewer extends EChartViewer {
     this.legendHelper.update(this.columnData.colorColumnName!.column);
     this.switchLegendVisibility(this.legendVisibility);
 
-    const timeColumns = [this.columnData.startColumnName?.column, this.columnData.endColumnName?.column,
-      ...(this.columnData.eventsColumnNames ? Object.keys(this.columnData.eventsColumnNames).map((columnName) =>
-      this.columnData.eventsColumnNames![columnName]!.column) : [])].filter((col) => col) as DG.Column[];
-    if (this.timeOptionsApplicable(timeColumns))
-      this.dateFormat = this.selectDateFormat(timeColumns);
+    this.pickDateFormat();
 
     let prevSubj: string | null = null;
 
@@ -638,6 +633,16 @@ export class TimelinesViewer extends EChartViewer {
       min: 'dataMin',
       max: (value: { min: number; max: number; }) => this.dataMax = value.max,
     };
+  }
+
+  pickDateFormat(): void {
+    if (this.dateFormat && this.dateFormat !== this.pickedDateFormat)
+      return;
+    const timeColumns = [this.columnData.startColumnName?.column, this.columnData.endColumnName?.column,
+      ...(this.columnData.eventsColumnNames ? Object.keys(this.columnData.eventsColumnNames).map((columnName) =>
+      this.columnData.eventsColumnNames![columnName]!.column) : [])].filter((col) => col) as DG.Column[];
+    if (this.timeOptionsApplicable(timeColumns))
+      this.dateFormat = this.pickedDateFormat = this.selectDateFormat(timeColumns);
   }
 
   selectDateFormat(columns: DG.DateTimeColumn[]): string {

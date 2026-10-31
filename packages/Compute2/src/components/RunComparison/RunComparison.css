@@ -120,3 +120,14 @@
 .c2-comparison-expand:hover {
     background-color: color-mix(in srgb, var(--blue-1) 12%, transparent);
 }
+
+.c2-comparison-add-names {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.c2-comparison-add-outdated {
+  color: var(--red-3);
+  max-width: 400px;
+  margin-bottom: 6px;
+}

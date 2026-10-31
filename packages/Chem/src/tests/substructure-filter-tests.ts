@@ -601,6 +601,42 @@ M  END
     DG.chem.currentSketcherType = 'OpenChemLib';
   });
 
+  // #2628: with a second view of the table whose Structure card was removed, Use as filter in the first view
+  // (an updateOrAdd of its card) highlighted the value and filtered nothing
+  test('Use as filter filters after a second view removed its Structure card', async () => {
+    const df = await readDataframe('tests/spgi-100.csv');
+    await grok.data.detectSemanticTypes(df);
+    const tv = grok.shell.addTableView(df);
+    let tv2: DG.TableView | undefined;
+    const card = async (view: DG.TableView): Promise<SubstructureFilter> => {
+      const fg = view.getFiltersGroup({createDefaultFilters: false});
+      let found: SubstructureFilter | undefined;
+      await waitUntil(() => (found = fg.filters.find((f: any) => f?.columnName === 'Structure') as SubstructureFilter) !== undefined,
+        'the substructure card was not added', 10000);
+      return found!;
+    };
+    const useAsFilter = (molBlock: string) => tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd(
+      {type: DG.FILTER_TYPE.SUBSTRUCTURE, column: 'Structure', columnName: 'Structure', molBlock: molBlock}, false);
+    try {
+      useAsFilter('c1ccncc1');
+      const first = await card(tv);
+      await waitUntil(() => !first.calculating && df.filter.trueCount === 17,
+        () => `pyridine: ${df.filter.trueCount} rows pass`, 15000);
+      tv2 = grok.shell.addTableView(df);
+      tv2.loadLayout(tv.saveLayout());
+      const second = await card(tv2);
+      tv2.getFiltersGroup({createDefaultFilters: false}).remove(second);
+      grok.shell.v = tv;
+      useAsFilter(df.col('Structure')!.get(0));
+      await waitUntil(() => df.filter.trueCount === 1,
+        () => `the molecule of row 1: ${df.filter.trueCount} rows pass`, 15000);
+    }
+    finally {
+      tv2?.close();
+      tv.close();
+    }
+  });
+
 });
 
 

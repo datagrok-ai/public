@@ -38,7 +38,6 @@ export type MetaCallInfo = {
   id?: string,
   title?: string,
   description?: string,
-  isFavorite?: boolean,
   tags?: string[],
   started?: dayjs.Dayjs
 }

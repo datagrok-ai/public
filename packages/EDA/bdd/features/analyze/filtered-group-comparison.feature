@@ -4,24 +4,24 @@ Feature: Group comparison of a filtered table
   Translated from the GROK-20795 test of the package's playwright/control-comparisons.test.ts,
   which asserted the opposite on purpose so that the fix would break it.
 
-  demog has 3243 women. Fixed on 2026-09-21: the dialog clones the category and feature columns
+  demog-1000 has 553 women (7 Asian, 18 Black, 480 Caucasian, 48 Other). Fixed on 2026-09-21: the dialog clones the category and feature columns
   through the table's filter before factorization. The group sizes it compares (the women only) are
   the EDA test "Control comparisons: dialog | A filtered table compares only the rows that pass the filter".
 
   Background:
     Given user is logged in
-    And user opens demog dataset
+    And user opens demog-1000 dataset
 
   Scenario: Running control comparisons preserves the filter and produces the comparison table
     When user filters rows where "SEX" is "F"
-    Then 3243 rows should pass the filter
+    Then 553 rows should pass the filter
     When user picks "ML > Analyze > Group Comparison > Control Comparisons..." from the top menu
     Then "Control comparisons" dialog should be visible
-    And 3243 rows should pass the filter
+    And 553 rows should pass the filter
     When user clicks on Run button in "Control comparisons" dialog
     Then table "Control comparisons result" should be open
     And "Control comparisons" dialog should be hidden
-    And 3243 rows should pass the filter
+    And 553 rows should pass the filter
     And table "Control comparisons result" should have 3 rows
     And table "Control comparisons result" should have no missing values in "n" column
     And second grid viewer should be bound to table "Control comparisons result"

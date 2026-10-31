@@ -4,12 +4,12 @@ Feature: Sharing a predictive model
   playwright-public/Sharing/share-model-permissions.md and the package's
   playwright/share-model-permissions.test.ts: the owner's side through the Share dialog, claimed in the
   Sharing pane of the context panel, and the second account's side (blocks D.2 and D.3) — it finds
-  the model under My stuff > Shared with me and applies it to its own demog. The old spec's
+  the model under My stuff > Shared with me and applies it to its own demog-1000. The old spec's
   second-account steps were API reads.
 
-  The model is the case's own example, SEX predicted by HEIGHT and WEIGHT on demog. Both columns have
-  missing values, so the view offers an engine only once Ignore missing is on. The picker lists demog
-  in its column order, HEIGHT sixth and WEIGHT seventh.
+  The model is the case's own example, SEX predicted by HEIGHT and WEIGHT, trained on demog-1000. HEIGHT
+  has missing values, so the view offers an engine only once Ignore missing is on. The picker lists the
+  table in its column order, HEIGHT sixth and WEIGHT seventh.
 
   Not translated, and why: that the second account is refused edit, delete and re-share (block F) and
   loses the model after the revoke (block G) is the server's answer (ApiTests, Dapi: permissions,
@@ -31,7 +31,7 @@ Feature: Sharing a predictive model
     And no predictive model named "BDD-Share-Model-{run}" is on the server
 
   Scenario: The owner trains a model and saves it
-    Given user opens demog dataset
+    Given user opens demog-1000 dataset
     When user picks "ML > Models > Train Model..." from the top menu
     And user selects "SEX" in Predict input
     And user clicks on editor of Features input
@@ -96,7 +96,7 @@ Feature: Sharing a predictive model
     And "My stuff > Shared with me" tree node inside browse tree is expanded
     When user expands "." shared by the running account
     Then "BDD-Share-Model-{run}" shared by the running account should be visible
-    Given user opens demog dataset
+    Given user opens demog-1000 dataset
     When user picks "ML > Models > Apply Model..." from the top menu
     Then "Apply predictive model" dialog should be visible
     When user selects the predictive model "BDD-Share-Model-{run}" in Model input in "Apply predictive model" dialog

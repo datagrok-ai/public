@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, expect, expectArray, test, waitUntil} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectArray, settled, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 /** A view state with a scatter plot and a Filters viewer over demog, read once the filters reached it. */
 async function scatterAndFilters(): Promise<string> {
@@ -84,6 +84,28 @@ category('Shell: ViewLayout', () => {
     const tv = grok.shell.addTableView(df);
     try {
       expectArray(DG.ViewLayout.fromViewState(tv.saveLayout().viewState).boundColumnNames, []);
+    } finally {
+      tv.close();
+      grok.shell.closeTable(df);
+    }
+  });
+
+  test('a layout with a logarithmic scatter plot saves and loads after its X column is removed (public#2867)', async () => {
+    const df = grok.data.demo.demog(100);
+    grok.shell.clearLastError();
+    const tv = grok.shell.addTableView(df);
+    try {
+      tv.scatterPlot({x: 'weight', y: 'height', xAxisType: 'logarithmic', yAxisType: 'logarithmic'});
+      const layout = tv.saveLayout();
+      df.columns.remove('weight');
+      tv.loadLayout(layout);
+      tv.loadLayout(tv.saveLayout());
+      const sp = Array.from(tv.viewers).find((v) => v.type === DG.VIEWER.SCATTER_PLOT);
+      expect(sp != null, true);
+      await settled(sp!);
+      expect(await grok.shell.lastError ?? '', '');
+      expect(sp!.props.xColumnName, 'weight');
+      expect(sp!.props.xAxisType, 'logarithmic');
     } finally {
       tv.close();
       grok.shell.closeTable(df);

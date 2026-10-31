@@ -7,10 +7,10 @@ import {
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
   parseTimeUnit, resolveAxisModes, targetAxisMode, resolveDisplayUnit, pickAutoUnit, targetContexts,
   selectionGaps, withDefaultPicks, PickerSelections, unmatchedItems, withoutOutdatedOutputs, uniqueEntryName,
-  sameFuncPeers, agreedPick,
+  sameFuncPeers, agreedPick, listedTargets, TargetListOptions, equalTargetKeys, statusChips, groupCandidatesByEntry,
 } from '../components/RunComparison/selection';
 import {
-  ColumnBinding, ColumnTarget, AxisConfigMap, AxisModeConfig, TimeUnit, TableNodeInfo,
+  ColumnBinding, ColumnTarget, AxisConfigMap, AxisModeConfig, TimeUnit, TableNodeInfo, ScalarTarget,
 } from '../components/RunComparison/types';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
 
@@ -957,5 +957,94 @@ category('RunComparison: outdated outputs', () => {
     stale.scalars[0].outdated = true;
     expect(matchScalarTargets([fresh, stale]).length, 1);
     expect(matchScalarTargets([fresh, stale].map(withoutOutdatedOutputs)).length, 0);
+  });
+});
+
+category('RunComparison: compare list', () => {
+  const target = (key: string, displayName = key): ScalarTarget => ({
+    kind: 'scalar', key, displayName, confidence: 'exact', unitsWarning: false, coverage: 2, total: 2, bindings: [],
+  });
+  const targets = [target('a', 'Biomass'), target('b', 'Glucose'), target('c', 'Biomass'), target('d', 'Oxygen')];
+  const list = (options: Partial<TargetListOptions>) => listedTargets(targets, {
+    multiMode: false, isCharted: () => false, compatible: [], equalKeys: new Set(), filter: '', contexts: new Map(),
+    ...options,
+  }).map((item) => item.key);
+
+  test('single mode lists every target', async () => {
+    expectArray(list({}), ['a', 'b', 'c', 'd']);
+  });
+
+  test('multi mode lists the suggestions and the charted targets', async () => {
+    expectArray(list({multiMode: true, compatible: [targets[0], targets[1]], isCharted: (key) => key === 'd'}),
+      ['a', 'b', 'd']);
+  });
+
+  test('equal targets are hidden unless charted', async () => {
+    expectArray(list({equalKeys: new Set(['a', 'b']), isCharted: (key) => key === 'b'}), ['b', 'c', 'd']);
+  });
+
+  test('the filter matches the name and the step context', async () => {
+    expectArray(list({filter: 'biomass'}), ['a', 'c']);
+    expectArray(list({filter: 'day 2', contexts: new Map([['c', 'Day 2']])}), ['c']);
+  });
+});
+
+category('RunComparison: equal target keys', () => {
+  const binding = (entryId: string, columnName: string): ColumnBinding => ({
+    entryId, tablePath: 't', tableName: 't', columnName, indexColumnName: 'time',
+  });
+  const columnTarget = (key: string, columnName: string): ColumnTarget => {
+    const bindings = [binding('a', columnName), binding('b', columnName)];
+    return {
+      kind: 'column', key, displayName: columnName, confidence: 'exact', unitsWarning: false,
+      coverage: 2, total: 2, candidates: [], bindings,
+    };
+  };
+  const data: Record<string, Record<string, unknown[]>> = {
+    a: {time: [0, 1], same: [1, 2], other: [1, 2]},
+    b: {time: [0, 1], same: [1, 2], other: [1, 3]},
+  };
+
+  test('lists the equal targets and fetches each column once', async () => {
+    const fetched: string[] = [];
+    const keys = equalTargetKeys([columnTarget('k1', 'same'), columnTarget('k2', 'other')],
+      (entryId, _tablePath, columnName) => {
+        fetched.push(`${entryId}|${columnName}`);
+        return data[entryId]?.[columnName];
+      });
+    expectArray([...keys], ['k1']);
+    expect(fetched.length, new Set(fetched).size);
+    expect(fetched.filter((key) => key === 'a|time').length, 1);
+  });
+});
+
+category('RunComparison: status chips', () => {
+  test('excluded runs get red chips, partially configured ones amber chips, matched none', async () => {
+    const chips = statusChips([
+      {entryId: 'a', matched: true},
+      {entryId: 'b', matched: false, reason: 'index not set'},
+      {entryId: 'c', matched: false, reason: 'units differ', units: 'mg/L'},
+      {entryId: 'd', matched: true, warning: 'relative timeseries not set'},
+      {entryId: 'e', matched: true, warning: 'independent points not set'},
+    ]);
+    expectArray(chips.map((chip) => chip.entryId), ['b', 'c', 'd', 'e']);
+    expect(chips[0].text, 'index not set');
+    expect(chips[0].warningMode == null, true);
+    expect(chips[1].text, 'units differ (mg/L)');
+    expect(chips[2].warningMode, 'relative timeseries');
+    expect(chips[3].warningMode, 'independent points');
+  });
+});
+
+category('RunComparison: candidate groups', () => {
+  test('consecutive candidates of one run form a group, in list order', async () => {
+    const candidate = (entryId: string, columnName: string) => ({
+      binding: {entryId, tablePath: 't', tableName: 't', columnName, indexColumnName: 'time'},
+      confidence: 'exact' as const, unitsWarn: false, auto: false, enabled: false,
+    });
+    const groups = groupCandidatesByEntry([candidate('a', 'x'), candidate('a', 'y'), candidate('b', 'x')]);
+    expectArray(groups.map((group) => group.entryId), ['a', 'b']);
+    expectArray(groups[0].candidates.map((item) => item.binding.columnName), ['x', 'y']);
+    expectArray(groups[1].candidates.map((item) => item.binding.columnName), ['x']);
   });
 });

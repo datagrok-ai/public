@@ -21,7 +21,8 @@ Feature: A viewer's own tooltip properties
   scatter plot its axis columns (HEIGHT and WEIGHT, from Data Values = Merge), the box plot nothing,
   so the box plot is then given its own Row Tooltip (AGE, SEX). The grid, whose custom tooltip with
   an empty Row Tooltip shows nothing by design (claimed in grid-visible-columns-tooltip), is given
-  its own Row Tooltip too (RACE, SEX) and shows exactly those columns.
+  its own Row Tooltip too (RACE, SEX) and shows exactly those columns. A viewer's own Row Tooltip
+  lists every column it was given, past the seven the table's tooltip stops at (public#2297).
 
   Background:
     Given user is logged in
@@ -45,7 +46,8 @@ Feature: A viewer's own tooltip properties
     And "Row Tooltip" property of scatter plot viewer should be ""
     And no errors should have been logged
 
-  Scenario: A custom tooltip with no columns of its own lists the viewer's own data columns
+  @realizes:public#2297
+  Scenario: A custom tooltip with no columns of its own lists the viewer's own data columns, and one given columns lists all of them (public#2297)
     When user selects "show custom tooltip" in "Show Tooltip" property in context panel
     Then "Show Tooltip" property of scatter plot viewer should be "show custom tooltip"
     And "Row Tooltip" property in context panel should be enabled
@@ -79,6 +81,11 @@ Feature: A viewer's own tooltip properties
     When user hovers over the "marker" area of box plot viewer
     Then the tooltip should show columns "AGE, SEX"
     When user moves the pointer away from grid
+    And user sets "Row Tooltip" property of scatter plot viewer to "USUBJID\nAGE\nSEX\nRACE\nDIS_POP\nDEMOG\nCONTROL\nSTARTED\nSEVERITY"
+    And user hovers over the "marker of row 11" area of scatter plot viewer
+    Then the tooltip should show columns in the order "HEIGHT, WEIGHT, USUBJID, AGE, SEX, RACE, DIS_POP, DEMOG, CONTROL, STARTED, SEVERITY"
+    When user moves the pointer away from grid
+    And user sets "Row Tooltip" property of scatter plot viewer to ""
     Then no errors should have been logged
 
   Scenario: Tooltip > Hide on a viewer with a custom tooltip hides that tooltip alone

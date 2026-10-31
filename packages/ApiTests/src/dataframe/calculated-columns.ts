@@ -142,6 +142,17 @@ category('DataFrame: Calculated columns', () => {
     await waitUntil(() => removed, 'Failed to delete a calculated column');
   });
 
+  test('A formula naming its column as a string recalculates after an edit', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.FLOAT, 'x', [1, 2, 3])]);
+    await t.columns.addNewCalculated('ctrl', 'Avg($[x])');
+    await t.columns.addNewCalculated('byName', 'Avg(Column("x"))');
+    await t.columns.addNewCalculated('first', 'Value("x", 0)');
+    t.col('x')!.set(0, 10);
+    await waitUntil(() => t.col('ctrl')!.get(0) === 5 && t.col('byName')!.get(0) === 5 && t.col('first')!.get(0) === 10,
+      () => `after x[0] = 10: Avg($[x]) ${t.col('ctrl')!.get(0)}, Avg(Column("x")) ${t.col('byName')!.get(0)}, ` +
+        `Value("x", 0) ${t.col('first')!.get(0)}`);
+  });
+
   after(async () => {
     subs.forEach((sub) => sub.unsubscribe());
     dialogs.forEach((d) => d.close());

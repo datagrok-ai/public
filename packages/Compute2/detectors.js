@@ -44,10 +44,10 @@ class ComputeRunHandler extends DG.ObjectHandler {
     async refresh(x) {
         return this.getById(DG.toJs(x).id);
     }
-    // The run name is its title; a run saved without one falls back to the model name.
+    // The run name: the legacy title when set, otherwise the friendly name, else the model name.
     getCaption(x) {
         const call = DG.toJs(x);
-        return call.options['title'] || this.modelName(call);
+        return call.options['title'] || call.friendlyName || this.modelName(call);
     }
     modelName(call) {
         return (call.func && (call.func.friendlyName || call.func.name)) || 'Run';
@@ -77,58 +77,8 @@ class ComputeRunHandler extends DG.ObjectHandler {
             return '';
         }
     }
-    renderIcon(x) {
-        const call = DG.toJs(x);
-        const icon = ui.iconFA('play-circle');
-        // The gallery and the Browse tree consult only renderIcon on JS handlers (caption/markup/card
-        // go through the unbridged Dart meta, whose fallback caption is the raw call signature), so
-        // the item is reworked from inside the returned icon: run title as the name, plus
-        // model/date/author/tags as the gallery subtitle. Unrecognized hosts are left untouched.
-        void this.patchHostItem(icon, call);
-        return icon;
-    }
-    // The icon is returned detached and inserted later, so poll until it lands in a known host;
-    // re-assert once afterwards in case the host rewrites the caption on a late render pass.
-    async patchHostItem(icon, call) {
-        const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-        for (let attempt = 0; attempt < 20; attempt++) {
-            await sleep(attempt === 0 ? 0 : 100);
-            if (!icon.isConnected)
-                continue;
-            if (this.tryPatchOnce(icon, call))
-                setTimeout(() => this.tryPatchOnce(icon, call), 1000);
-            return;
-        }
-    }
-    tryPatchOnce(icon, call) {
-        const treeItem = icon.closest('.d4-tree-view-item');
-        if (treeItem) {
-            const label = treeItem.querySelector('.d4-tree-view-item-label');
-            if (!label)
-                return false;
-            for (const n of Array.from(label.childNodes)) {
-                if (n.nodeType === Node.TEXT_NODE)
-                    n.remove();
-            }
-            const started = this.startedText(call);
-            label.appendChild(document.createTextNode(this.getCaption(call) + (started ? ' (' + started + ')' : '')));
-            return true;
-        }
-        const linkLabel = icon.closest('.d4-link-label');
-        if (!linkLabel || !linkLabel.closest('.grok-gallery-grid'))
-            return false;
-        const label = linkLabel.querySelector('label');
-        if (label)
-            label.textContent = this.getCaption(call);
-        const subtitle = Array.from(linkLabel.children)
-            .find((el) => el.tagName === 'SPAN' && el !== icon.parentElement);
-        if (subtitle) {
-            subtitle.textContent = ' ' + this.subtitleText(call, (call.author && call.author.friendlyName) || '');
-            void this.authorOf(call).then((author) => {
-                subtitle.textContent = ' ' + this.subtitleText(call, author);
-            });
-        }
-        return true;
+    renderIcon(_x) {
+        return ui.iconFA('play-circle');
     }
     renderMarkup(x) {
         const call = DG.toJs(x);

@@ -4,7 +4,9 @@ Feature: Editing the table's tooltip from a viewer
   a searchable list of the table's columns with a box each, the Reset group tooltip and Design
   custom tooltip... actions under it, and OK, CANCEL and the history icon in its footer. The search
   ignores case. The columns picked there and confirmed with OK become the tooltip every viewer that
-  inherits the table's tooltip shows, the grid included. Translated from the TestTrack case
+  inherits the table's tooltip shows, the grid included, and stay the same in a cloned view and in
+  the original (public#1208). Edit Tooltip on a viewer bound to another table lists that table's
+  columns (public#373). Translated from the TestTrack case
   Tooltips/edit-tooltip, on demog-1000 rather than SPGI: the dialog and the tooltip do not depend on the
   table, and demog-1000 has no molecules to render.
 
@@ -66,7 +68,8 @@ Feature: Editing the table's tooltip from a viewer
     Then the column list of "Edit Tooltip" dialog should be exactly "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"
     And no errors should have been logged
 
-  Scenario: The columns picked with OK become the tooltip of the plots and the grid
+  @realizes:public#1208
+  Scenario: The columns picked with OK become the tooltip of the plots and the grid, in a cloned view too (public#1208)
     When user unchecks checkbox in "Edit Tooltip" dialog
     Then the "AGE" column should not be checked in the column list of "Edit Tooltip" dialog
     And the "RACE" column should not be checked in the column list of "Edit Tooltip" dialog
@@ -89,4 +92,29 @@ Feature: Editing the table's tooltip from a viewer
     When user hovers over the "cell 11 of AGE" area of grid
     Then the tooltip should show columns in the order "AGE, SEX, WEIGHT"
     When user moves the pointer away from grid
+    And user picks "View > Layout > Clone View" from the top menu
+    Then the "demog-1000 copy" view should be current
+    When user hovers over the "marker of row 11" area of scatter plot viewer
+    Then the tooltip should show columns in the order "HEIGHT, WEIGHT, AGE, SEX"
+    When user moves the pointer away from grid
+    And user closes the current view
+    And user switches to the "demog-1000" view
+    And user hovers over the "marker of row 11" area of scatter plot viewer
+    Then the tooltip should show columns in the order "HEIGHT, WEIGHT, AGE, SEX"
+    When user moves the pointer away from grid
     Then no errors should have been logged
+
+  @realizes:public#373
+  Scenario: Edit Tooltip on a viewer bound to another table lists that table's columns (public#373)
+    Given user opens spgi dataset
+    And user switches to the "demog-1000" table view
+    When user sets "table" property of scatter plot viewer to "spgi-100"
+    Then scatter plot viewer should be bound to table "spgi-100"
+    When user picks "Tooltip > Edit..." from the context menu of scatter plot viewer
+    Then "Edit Tooltip" dialog should be visible
+    And the column list of "Edit Tooltip" dialog should start with "Id"
+    And the column list of "Edit Tooltip" dialog should not list "USUBJID"
+    And the column list of "Edit Tooltip" dialog should not list "AGE"
+    When user clicks on CANCEL button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    And no errors should have been logged

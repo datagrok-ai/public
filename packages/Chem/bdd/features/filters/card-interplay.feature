@@ -9,7 +9,10 @@ Feature: The substructure card with the sketcher, other cards and a reopened pan
   same 17 rows pass (TestTrack Chem/chem-filters.md, step 9, claim 1). Pyridine and the Pyrrolidines category together keep the
   5 rows that satisfy both; switching the substructure card off leaves the 21 Pyrrolidines rows and
   switching it on brings the 5 back. A switched-off card survives closing and reopening the panel:
-  still off, still holding pyridine, and on again it keeps the 5 rows.
+  still off, still holding pyridine, and on again it keeps the 5 rows. Cancel in the sketcher with
+  Filter as you draw on gives back what the card held: nothing for a new structure, pyridine for an
+  edit (public#697). The panel's master switch off lets every row through and keeps the card's
+  structure, and on again brings the 5 rows back (public#3328).
   Serial (`@serial`): Filter as you draw is the account's setting (`chem-filter` user settings), and this feature clears
   it; the features that filter while the sketcher is open take turns with it.
 
@@ -29,6 +32,20 @@ Feature: The substructure card with the sketcher, other cards and a reopened pan
     And the "type of Structure" reading of filter panel should be "Chem:substructureFilter"
     And the "structure of Structure" reading of filter panel should be ""
     And all rows should pass the filter
+    And no errors should have been logged
+
+  @realizes:public#697
+  Scenario: Cancel on a new structure drawn with Filter as you draw gives every row back (public#697)
+    When user clicks on "Sketch" text in "Structure" filter card
+    And user checks "Filter as you draw" input in sketcher dialog
+    And user types "c1ccncc1" into molecule input of sketcher dialog
+    And user presses Enter in molecule input of sketcher dialog
+    Then 17 rows should pass the filter
+    When user clicks on CANCEL button in sketcher dialog
+    Then sketcher dialog should be hidden
+    And all rows should pass the filter
+    And the "structure of Structure" reading of filter panel should be ""
+    And the "filtering of Structure" reading of filter panel should be "false"
     And no errors should have been logged
 
   Scenario: With Filter as you draw cleared the sketch reaches the card on OK
@@ -70,6 +87,21 @@ Feature: The substructure card with the sketcher, other cards and a reopened pan
     And sketcher dialog should be visible
     When user clicks on OK button in sketcher dialog
     Then 17 rows should pass the filter
+    And no errors should have been logged
+
+  @realizes:public#697
+  Scenario: Cancel on an edited structure drawn with Filter as you draw gives the old structure back (public#697)
+    When user clicks on the "card Structure" area of filter panel
+    Then sketcher dialog should be visible
+    And "Filter as you draw" input in sketcher dialog should be checked
+    When user clears molecule input of sketcher dialog
+    And user types "C1CCNCC1" into molecule input of sketcher dialog
+    And user presses Enter in molecule input of sketcher dialog
+    Then 15 rows should pass the filter
+    When user clicks on CANCEL button in sketcher dialog
+    Then sketcher dialog should be hidden
+    And 17 rows should pass the filter
+    And the "structure of Structure" reading of filter panel should be "c1ccncc1"
     And no errors should have been logged
 
   Scenario: Align and Highlight turned on with the sketcher open repaint the grid and keep the rows
@@ -117,4 +149,18 @@ Feature: The substructure card with the sketcher, other cards and a reopened pan
     When user hovers over "Structure" filter card
     And user clicks on checkbox of "Structure" filter card
     Then 5 rows should pass the filter
+    And no errors should have been logged
+
+  @realizes:public#3328
+  Scenario: The panel switched off and on again filters by the structure the card holds (public#3328)
+    When user hovers over filter panel
+    And user unchecks master of filter panel
+    Then the "active" reading of filter panel should be "false"
+    And all rows should pass the filter
+    And the "structure of Structure" reading of filter panel should be "c1ccncc1"
+    When user hovers over filter panel
+    And user checks master of filter panel
+    Then the "active" reading of filter panel should be "true"
+    And 5 rows should pass the filter
+    And the "filtering of Structure" reading of filter panel should be "true"
     And no errors should have been logged

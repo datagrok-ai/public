@@ -6,6 +6,7 @@ import wu from 'wu';
 import {VIEWER_PATH, viewerTypesMapping} from './consts';
 import {tryParseJson} from '@datagrok-libraries/utils/src/string-utils';
 import {readOutputOutdated} from '../reactive-tree-driver/src/runtime/funccall-utils';
+import dayjs from 'dayjs';
 
 export const replaceForWindowsPath = (rawName: string, stringToInsert?: string) => {
   const regExpForWindowsPath = /(\/|\\|\:|\*|\?|\"|\<|\>|\|)/g;
@@ -213,11 +214,42 @@ export const getStarted = (call: DG.FuncCall) => {
   }
 };
 
-/** Display title of a run: the user-given title, or the function name with the start time. */
+// who first saved an entity and when (user id, ISO time): an edit keeps them, while the platform's author becomes
+// the editor; server filters never match options.createdBy, hence the id suffix
+export const CREATED_BY_OPTION = 'createdById';
+export const CREATED_AT_OPTION = 'createdAt';
+// the function whose custom view saved the run, so the run lists under it and opens in that view again
+export const CUSTOM_VIEW_OPTION = 'customView';
+// "true" on a run saved as part of another one, such as a workflow step; other runs don't have it
+export const NESTED_ENTITY_OPTION = 'nestedEntity';
+
+/** The id of the user who saved the run; runs saved before the option existed fall back to the platform author. */
+export const getRunAuthorId = (call: DG.FuncCall): string | undefined => {
+  if (call.options?.[CREATED_BY_OPTION])
+    return call.options[CREATED_BY_OPTION];
+  try {
+    return call.author?.id;
+  } catch {
+    // space listings come without the author
+    return;
+  }
+};
+
+/** When the run was saved; runs saved before the option existed fall back to their start time. */
+export const getRunCreated = (call: DG.FuncCall): dayjs.Dayjs | undefined => {
+  const saved = call.options?.[CREATED_BY_OPTION] ? call.options?.[CREATED_AT_OPTION] : undefined;
+  const created = saved ? dayjs(saved) : getStartedOrNull(call);
+  return created?.isValid() ? created : undefined;
+};
+
+/** A run's name: the legacy options.title when set, otherwise friendlyName. */
+export const getRunName = (call: DG.FuncCall): string => call.options?.['title'] || call.friendlyName || '';
+
+/** Display title of a run: its name, or the function name with the start time. */
 export const getRunTitle = (call: DG.FuncCall) => {
-  const title = call.options?.['title'];
-  if (title)
-    return title;
+  const name = getRunName(call);
+  if (name)
+    return name;
   const funcName = call.func?.friendlyName ?? call.func?.name ?? 'Run';
   return `${funcName} — ${getStarted(call)}`;
 };

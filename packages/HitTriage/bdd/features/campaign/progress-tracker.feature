@@ -57,14 +57,14 @@ Feature: The progress tracker of a Hit Design campaign
     Then cell editor should offer "Idea, Design, Make, Test"
 
   Scenario: The tracker hides while another view is current and comes back with the campaign view
-    Given user opens demog dataset keeping the first 10 rows
+    Given user opens demog-1000 dataset keeping the first 10 rows
     Then "Progress Tracker" dialog should be hidden
     When user switches to the "BDD Tracker" view
     Then "Progress Tracker" dialog should be visible
     And the "lane names" reading of "Tile Viewer" viewer should be "Idea, Design, Make"
 
   Scenario: Closing the campaign view while its tracker is hidden takes the tracker away
-    Given user opens demog dataset keeping the first 10 rows
+    Given user opens demog-1000 dataset keeping the first 10 rows
     Then "Progress Tracker" dialog should be hidden
     When user closes the "BDD Tracker" view
     Then "Progress Tracker" dialog should be absent

@@ -2,7 +2,7 @@
 Feature: The table view's Search box filters the rows its text matches
   Ctrl+F focuses the Search box of the table view, and Enter filters the rows its text matches: a
   condition on a numeric column, one on a text column, and an empty box gives every row back.
-  Translated from TestTrack General/toolbox-search-spec.ts (GROK-20229); the counts are demog's,
+  Translated from TestTrack General/toolbox-search-spec.ts (GROK-20229); the counts are demog-1000's,
   checked against the data file.
 
   How the box reads what is typed is the matchers' claim, tested in ddt
@@ -12,30 +12,30 @@ Feature: The table view's Search box filters the rows its text matches
   parses its whole text with one matcher per column type (xamgle features/search.dart), so a compound
   matches nothing; the ticket holds the cases.
 
-  Where two searches in a row could keep the same count, a cleared search (all 5,850 rows) goes between
+  Where two searches in a row could keep the same count, a cleared search (all 1,000 rows) goes between
   them. The filter is applied in Enter's own handler, which clears the previous result first, and the
   count is polled. Nothing is put on the server.
 
   Background:
     Given user is logged in
     And the toolbox pane is shown
-    And user opens demog dataset
+    And user opens demog-1000 dataset
     When user presses Control+f in grid overlay
     Then table search should be focused
 
   Scenario: A condition on a numeric column filters the rows it names
     When user types "AGE > 50" into table search
     And user presses Enter in table search
-    Then 2176 rows should pass the filter
+    Then 367 rows should pass the filter
     And no errors should have been logged
 
   Scenario: A condition on a text column filters the rows it names
     When user types "SEX = M" into table search
     And user presses Enter in table search
-    Then 2607 rows should pass the filter
+    Then 447 rows should pass the filter
     When user types "RACE = Asian" into table search
     And user presses Enter in table search
-    Then 72 rows should pass the filter
+    Then 15 rows should pass the filter
     And no errors should have been logged
 
   Scenario: An empty Search box gives every row back

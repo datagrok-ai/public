@@ -22,8 +22,10 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     private initialized = false;
     private elementContainerMap: Map<HTMLElement, PanelContainer> = new Map();
     private destroy$ = new Subject<true>();
-    // Docking turns ratios into pixels, so a 0x0 (hidden) dock would lose them; such panels dock once it has a size
+    // Docking turns ratios into pixels, so a 0x0 (hidden) dock would lose them; such panels dock once it has a size.
+    // Closing a panel there would shrink its neighbours to nothing too, so removals wait as well.
     private pendingElements: HTMLElement[] = [];
+    private pendingRemovals: HTMLElement[] = [];
 
     constructor() {
         super();
@@ -94,7 +96,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         this.observer.observe(this, {childList: true});
 
         elementResized(this).pipe(
-            debounce(() => timer(this.pendingElements.length ? 0 : 50)),
+            debounce(() => timer(this.pendingElements.length || this.pendingRemovals.length ? 0 : 50)),
             takeUntil(this.destroy$)
         ).subscribe(() => this.resize());
         this.dispatchEvent(new CustomEvent('manager-init-finished', {detail: this.dockManager}));
@@ -201,9 +203,17 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
     private handleRemovedChildNode(element: HTMLElement) {
         this.pendingElements = this.pendingElements.filter((pending) => pending !== element);
-        let panel = this.elementContainerMap.get(element);
-        if (panel)
-            panel.close();
+        if (!this.elementContainerMap.has(element))
+            return;
+        if (!this.hasSize()) {
+            this.pendingRemovals.push(element);
+            return;
+        }
+        this.closePanelOf(element);
+    }
+
+    private closePanelOf(element: HTMLElement) {
+        this.elementContainerMap.get(element)?.close();
         this.elementContainerMap.delete(element);
     }
 
@@ -226,6 +236,10 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         if (!this.hasSize())
             return;
         this.dockManager.resize(this.clientWidth, this.clientHeight);
+        const removals = this.pendingRemovals;
+        this.pendingRemovals = [];
+        for (const element of removals)
+            this.closePanelOf(element);
         const pending = this.pendingElements;
         this.pendingElements = [];
         for (const element of pending) {

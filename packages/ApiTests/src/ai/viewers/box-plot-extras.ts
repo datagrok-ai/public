@@ -1,6 +1,7 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectChoices, expectRoundTrip} from '../helpers';
+import {category, expect, settled, test} from '@datagrok-libraries/test/src/test';
+import {demog, expectChoices, expectRoundTrip, withTableView} from '../helpers';
 
 // BoxPlot look-prop round-trips: plotStyle, violin bins, per-statistic togglers, binColorAggrType, axisType, opacity.
 category('AI: Viewers: BoxPlot extras', () => {
@@ -59,6 +60,26 @@ category('AI: Viewers: BoxPlot extras', () => {
     });
     expectRoundTrip(c, {
       showInsideValues: true, showOutsideValues: true, showPValue: true, showEmptyCategories: true,
+    });
+  });
+
+  test('violin over a double column holding NaN draws and takes a hover without an error (core#960)', async () => {
+    const t = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, NaN, 3, 4, 5, 6, 7, 8]),
+      DG.Column.fromStrings('c', ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b']),
+    ]);
+    expect(t.col('x')!.isNone(1), false);
+    grok.shell.clearLastError();
+    await withTableView(t, async (tv) => {
+      const v = DG.Viewer.boxPlot(t, {valueColumnName: 'x', category1ColumnName: 'c', plotStyle: 'violin'});
+      tv.addViewer(v);
+      await settled(v);
+      const overlay = v.root.querySelector('canvas[name="overlay"]')!;
+      const r = overlay.getBoundingClientRect();
+      overlay.dispatchEvent(new MouseEvent('mousemove',
+        {bubbles: true, clientX: r.left + r.width / 4, clientY: r.top + r.height / 2}));
+      await settled(v);
+      expect(await grok.shell.lastError ?? '', '');
     });
   });
 }, {owner: 'agolovko@datagrok.ai'});

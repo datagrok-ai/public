@@ -24,10 +24,12 @@ Feature: Filter panel core ladder
     And all rows should pass the filter
     And counter of filter panel should be hidden
 
-  Scenario: A card dragged from a grid header filters nothing
+  @realizes:public#1986
+  Scenario: A card dragged from a grid header filters nothing and leaves the grid's column order alone (public#1986)
     When user drags the "header RACE" area of grid onto the "view" area of filter panel
     Then "RACE" filter card should be visible
     And the "cards" reading of filter panel should be "RACE"
+    And the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"
     And the "type of RACE" reading of filter panel should be "categorical"
     And the "categories of RACE" reading of filter panel should be "Asian, Black, Caucasian, Other"
     And all rows should pass the filter

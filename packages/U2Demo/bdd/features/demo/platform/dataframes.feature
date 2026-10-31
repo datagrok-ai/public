@@ -5,21 +5,21 @@ Feature: Dataframe pickers
 
   Scenario: Table, column and columns pickers over an open table
     Given user is logged in
-    And user opens demog dataset
+    And user opens demog-1000 dataset
     And user opens the "Dataframes" demo page
     Then editor of Column input should be left-aligned with editor of "Open table" input
     And editor of Columns input should be as wide as editor of Column input
     And editor of Aggregations input should be as wide as editor of Columns input
-    When user selects "demog" in "Open table" input
-    Then value of table readout should have text "demog"
+    When user selects "demog-1000" in "Open table" input
+    Then value of table readout should have text "demog-1000"
     And editor of Columns input should be at least 100 px wide
     When user selects "age" in "Demog column" input
     Then value of "demog column" readout should have text "age"
     When user types "hei" into Column input
     And user selects "height" in Column input
     Then value of column readout should have text "height"
-    When user checks demog checkbox in Tables input
-    Then value of tables readout should have text "demog"
+    When user checks demog-1000 checkbox in Tables input
+    Then value of tables readout should have text "demog-1000"
     When user clicks on editor of Columns input
     Then OK button should not be clipped
     When user clicks on All link

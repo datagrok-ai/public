@@ -1,17 +1,17 @@
 @eda @realizes:ml.menu.analyze.group-comparison.control-comparisons
 Feature: Control comparisons
-  ML | Analyze | Group Comparison | Control Comparisons... over demog: AGE of every RACE against the
+  ML | Analyze | Group Comparison | Control Comparisons... over demog-1000: AGE of every RACE against the
   Asian control, Dunnett by default. Translated from the package's
   playwright/control-comparisons.test.ts; there is no Test Track case for it.
 
   The comparison's statistics are tested in EDA src/tests/control-comparisons-tests.ts
-  ('Control comparisons: demog.csv references'). The group sizes count nonmissing AGE values: 157
-  Black, 5266 Caucasian and 354 Other. What a filtered run should count is
+  ('Control comparisons: demog.csv references'). The group sizes count nonmissing AGE values: 27
+  Black, 896 Caucasian and 62 Other, against 15 Asian. What a filtered run should count is
   filtered-group-comparison.feature.
 
   Background:
     Given user is logged in
-    And user opens demog dataset
+    And user opens demog-1000 dataset
 
   Scenario: Running the default comparison docks a box plot and the comparison statistics
     When user picks "ML > Analyze > Group Comparison > Control Comparisons..." from the top menu
@@ -34,8 +34,8 @@ Feature: Control comparisons
     And the "text of cell 1 of Group" reading of second grid viewer should be "Black"
     And the "text of cell 2 of Group" reading of second grid viewer should be "Caucasian"
     And the "text of cell 3 of Group" reading of second grid viewer should be "Other"
-    And the "text of cell 1 of n" reading of second grid viewer should be "157"
-    And the "text of cell 2 of n" reading of second grid viewer should be "5266"
-    And the "text of cell 3 of n" reading of second grid viewer should be "354"
+    And the "text of cell 1 of n" reading of second grid viewer should be "27"
+    And the "text of cell 2 of n" reading of second grid viewer should be "896"
+    And the "text of cell 3 of n" reading of second grid viewer should be "62"
     And no error or warning balloon should have been shown
     And no errors should have been logged
