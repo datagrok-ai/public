@@ -22,6 +22,10 @@ Feature: Network diagram graph shape, node columns, filtering and chrome
   Node 1 Color colors the first column's nodes by an aggregate of the column it names (the count
   of SEX by default, 553 against 447), so F and M part ways while the second column's nodes keep
   one color; Node 1 Size grows the larger node; Edge Color repaints the edges.
+  Closed issues: Node Shape = icon draws all four nodes, each with ink in its box, and logs nothing
+  (core#869: vis's icon shape needed a glyph the viewer did not give); under Auto Layout a viewer
+  smaller than 200 by 200 px drops its two on-canvas column selectors, and Auto Layout off keeps them
+  at the same size (public#2129).
   Fixture: demog-1000 with Node 1 = SEX and Node 2 = CONTROL picked automatically — 4 nodes
   (F, M, false, true) and 4 edges, one per distinct pair.
 
@@ -132,6 +136,35 @@ Feature: Network diagram graph shape, node columns, filtering and chrome
       | node1SizeColumnName  |  |
       | edgeColorColumnName  |  |
     Then the "node \"F\"" and "node \"M\"" areas of network diagram viewer should be painted in the same colors
+    And no errors should have been logged
+
+  @realizes:core#869
+  Scenario: The icon node shape draws every node and logs nothing per node (core#869)
+    When user sets "nodeShape" property of network diagram viewer to "icon"
+    Then network diagram viewer should have repainted
+    And the "nodes" reading of network diagram viewer should be 4
+    And the "node names" reading of network diagram viewer should contain "F"
+    And the "node \"F\"" area of network diagram viewer should be painted
+    And the "node \"true\"" area of network diagram viewer should be painted
+    And network diagram viewer should report no error
+    When user sets "nodeShape" property of network diagram viewer to "dot"
+    Then the "nodes" reading of network diagram viewer should be 4
+    And no errors should have been logged
+
+  @realizes:public#2129
+  Scenario: Auto Layout drops the column selectors on a small diagram, and Auto Layout off keeps them (public#2129)
+    Then network diagram viewer should have a "node 1 selector" area
+    And network diagram viewer should have a "node 2 selector" area
+    When user resizes network diagram viewer to 180 by 180
+    Then network diagram viewer should not have a "node 1 selector" area
+    And network diagram viewer should not have a "node 2 selector" area
+    When user sets "autoLayout" property of network diagram viewer to "false"
+    Then network diagram viewer should have a "node 1 selector" area
+    And network diagram viewer should have a "node 2 selector" area
+    When user sets "autoLayout" property of network diagram viewer to "true"
+    Then network diagram viewer should not have a "node 1 selector" area
+    When user restores the size of network diagram viewer
+    Then network diagram viewer should have a "node 1 selector" area
     And no errors should have been logged
 
   Scenario: The title bar closes the network diagram

@@ -2,7 +2,8 @@
 Feature: A column popup's substructure filter moved to the filter panel
   On spgi-100 with an empty filter panel, the Column options icon of the Structure header opens a
   popup titled Structure with a substructure filter of its own. Pyridine typed there keeps 17 rows
-  while the panel still has no Structure card. Add filter moves the criterion to the panel: the
+  while the panel still has no Structure card; dismissed and opened again, the popup still holds pyridine
+  and its 17 rows (public#1239). Add filter moves the criterion to the panel: the
   popup's filter goes, the panel gets a Structure card holding pyridine, and the 17 rows stay. With
   the popup dismissed, switching the panel card off lets every row through, so no filter is left
   behind in the popup, and switching it on brings the 17 rows back (GROK-14952).
@@ -25,6 +26,18 @@ Feature: A column popup's substructure filter moved to the filter panel
     Then 17 rows should pass the filter
     And the filter should pass exactly the molecules of "Structure" column containing "c1ccncc1"
     And "Structure" filter card should be absent
+    And no errors should have been logged
+
+  @realizes:public#1239
+  Scenario: The popup opened again still holds its molecule (public#1239)
+    When user presses Escape
+    Then column popup should be absent
+    And 17 rows should pass the filter
+    When user hovers over the "header Structure" area of grid
+    And user clicks on "Column options" icon in grid
+    Then column popup should be visible
+    And the sketcher in column popup should hold the molecule "c1ccncc1"
+    And 17 rows should pass the filter
     And no errors should have been logged
 
   Scenario: Add filter moves the criterion to the panel

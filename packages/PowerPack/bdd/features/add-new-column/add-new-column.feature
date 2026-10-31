@@ -1,6 +1,6 @@
 @journey @realizes:powerpack.dialogs.add-new-column @realizes:powerpack.cp.add-new-column-persists
-Feature: Add New Column on demog: the dialog, a formula built by hand, and the input history
-  The Add New Column dialog opened from the table view's toolbar on demog: its controls explain
+Feature: Add New Column on demog-1000: the dialog, a formula built by hand, and the input history
+  The Add New Column dialog opened from the table view's toolbar on demog-1000: its controls explain
   themselves in tooltips, its corner resizes it with the editor and the lists staying inside it, a
   formula is built from an autocompleted function and two columns dragged in (one from the grid's
   header, one from the dialog's own column list), OK adds the column, and the history icon of a
@@ -24,7 +24,7 @@ Feature: Add New Column on demog: the dialog, a formula built by hand, and the i
 
   Background:
     Given user is logged in
-    And user opens demog dataset
+    And user opens demog-1000 dataset
 
   Scenario: The toolbar icon opens the dialog, and its controls carry tooltips
     When user clicks on "Add New Column..." icon

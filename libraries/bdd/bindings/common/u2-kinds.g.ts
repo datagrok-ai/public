@@ -2160,7 +2160,6 @@ export const U2_KINDS: (U2KindSpec & {interactive?: string[], styling?: Record<s
     "gestures": [],
     "styling": {
       "--u2-form-max-width": "the widest a form gets (a CSS length); 700px, or as wide as the page in a Page",
-      "--u2-form-label-width": "the label column's width, set by the form as it measures (labelWidth fixes it)",
       "--u2-form-section-gap": "the space between two sections of the form; 0"
     },
     "source": "u2"
@@ -2710,7 +2709,7 @@ export const U2_KINDS: (U2KindSpec & {interactive?: string[], styling?: Record<s
       "--u2-master-detail-height": "its height (a CSS length); it fills its host by default",
       "--u2-row-selected-bg": "the current row"
     },
-    "whenToUse": "a short list beside the detail of its current item, each item with a check and a hint, its detail kept while it is not shown",
+    "whenToUse": "a short list (up to a few hundred items: it renders every row) beside the detail of its current item, each item with a check and a hint, its detail kept while it is not shown",
     "source": "u2"
   },
   {

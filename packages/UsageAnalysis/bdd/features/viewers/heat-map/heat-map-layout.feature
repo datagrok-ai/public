@@ -13,6 +13,9 @@ Feature: Heat map layouts that used to load broken
   a killed run left is swept on the first save (`user saves the layout of the current table view
   to the server`). The scroll window a layout restores (public#2926) is not claimed on its own:
   it is what the layout stores, and public#2927's claim covers what a person sees of it.
+  core#931: the layout brings the stacked heat map back on the tab that was active at the save, the
+  Heat map tab, with no switch, and the histogram of the other tab is not on the page. The grid's
+  status publishes no viewer error, so no scenario claims "should report no error" here (MISSING.md).
 
   Background:
     Given user is logged in
@@ -22,7 +25,8 @@ Feature: Heat map layouts that used to load broken
     And the "columns shown" reading of heat map viewer should be 11
     And heat map viewer should be painted
 
-  Scenario: A zoomed heat map stacked as a tab is not collapsed after the layout loads (public#2927)
+  @realizes:core#931
+  Scenario: A zoomed heat map stacked as a tab is not collapsed after the layout loads, on the tab it was saved on (public#2927, core#931)
     Given user adds a histogram viewer
     When user stacks heat map viewer onto histogram viewer as a tab
     And user switches the tabbed panel to the "Heat map" tab
@@ -35,12 +39,11 @@ Feature: Heat map layouts that used to load broken
     And user opens demog-1000 dataset
     And user loads the saved layout
     Then the viewers "Histogram, Heat map" should be the tabs of one panel
-    When user switches the tabbed panel to the "Heat map" tab
-    Then the "columns shown" reading of heat map viewer should be as remembered
+    And histogram viewer should be absent
+    And the "columns shown" reading of heat map viewer should be as remembered
     And the "x scroll span" reading of heat map viewer should be between 0.4 and 0.9
     And heat map viewer should have a "column AGE" area
     And heat map viewer should be painted
-    And heat map viewer should report no error
     And no errors should have been logged
 
   Scenario: A layout saved after Is Heatmap off and on loads as the whole heat map (public#2901)
@@ -56,7 +59,6 @@ Feature: Heat map layouts that used to load broken
     And the "row height" reading of heat map viewer should be between 0 and 8
     And the "y scroll span" reading of heat map viewer should be 1
     And heat map viewer should be painted
-    And heat map viewer should report no error
     And no errors should have been logged
 
   Scenario: A layout saved in grid mode with Max Heatmap Columns 200 turns back into the heat map (public#2901)
@@ -75,7 +77,6 @@ Feature: Heat map layouts that used to load broken
     And the "row height" reading of heat map viewer should be between 0 and 8
     And the "y scroll span" reading of heat map viewer should be 1
     And heat map viewer should have a "column AGE" area
-    And heat map viewer should report no error
     And no errors should have been logged
 
   Scenario: A layout saved on 1000 rows loads on a 100-row table with all 100 rows shown (GROK-16239)
@@ -91,5 +92,4 @@ Feature: Heat map layouts that used to load broken
     And heat map viewer should have a "cell 1 of AGE" area
     And heat map viewer should have a "cell 100 of AGE" area
     And heat map viewer should be painted
-    And heat map viewer should report no error
     And no errors should have been logged

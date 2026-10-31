@@ -10,7 +10,9 @@ Feature: Scatter plot tooltip and marker labels
   keeps one category (Caucasian, 896 rows: the md keeps the first one listed, but a box over the inner
   80% of the plot selects none of the 15 Asian rows, which sit at the axis's edge) and a box selection over what is left (GROK-17251; the md's
   spgi-100 date column and Stereo Category become demog-1000's STARTED and RACE). One journey on
-  demog-1000, X = WEIGHT, Y = HEIGHT; row 11 is AGE 46, SEX F, WEIGHT 118.9, HEIGHT 168.974; every
+  demog-1000, X = WEIGHT, Y = HEIGHT. Closed issues: labels for selected rows the filter took out
+  are not drawn (public#3189), and every label of the selected rows comes back after a wheel zoom in
+  and out (public#3176). Row 11 is AGE 46, SEX F, WEIGHT 118.9, HEIGHT 168.974; every
   scenario puts back what it changed.
 
   Background:
@@ -108,4 +110,49 @@ Feature: Scatter plot tooltip and marker labels
       | Label Columns   |        |
       | Show Labels For | All    |
     Then scatter plot viewer should show 872 rows
+    And no errors should have been logged
+
+  @realizes:public#3189
+  Scenario: Labels for selected rows are not drawn for the rows the filter took out (public#3189)
+    When user sets properties of scatter plot viewer:
+      | Label Columns   | AGE      |
+      | Show Labels For | Selected |
+    And user adds a categorical filter on "SEX" keeping "M"
+    Then 447 rows should pass the filter
+    When user selects rows where "SEX" is "M"
+    Then the "labels shown" reading of scatter plot viewer should be 373
+    When user selects rows where "SEX" is "F"
+    Then 553 rows should be selected
+    And 0 selected rows should pass the filter
+    And the "labels shown" reading of scatter plot viewer should be 0
+    When user clears the row selection
+    And user adds a categorical filter on "SEX" keeping "F, M"
+    And user sets properties of scatter plot viewer:
+      | Label Columns   |     |
+      | Show Labels For | All |
+    Then all rows should pass the filter
+    And scatter plot viewer should show 872 rows
+    And no errors should have been logged
+
+  @realizes:public#3176
+  Scenario: Every label of the selected rows comes back after a zoom in and out (public#3176)
+    When user sets properties of scatter plot viewer:
+      | Zoom and Filter | no action |
+      | Label Columns   | AGE       |
+      | Show Labels For | Selected  |
+    And user selects the first 5 rows
+    Then the "labels shown" reading of scatter plot viewer should be 5
+    When user remembers the value range of scatter plot viewer
+    And user scrolls the mouse wheel up 4 times over the "view" area of scatter plot viewer
+    Then scatter plot viewer should show a narrower value range than before
+    When user scrolls the mouse wheel down 4 times over the "view" area of scatter plot viewer
+    Then the "labels shown" reading of scatter plot viewer should be 5
+    When user clears the row selection
+    And user picks "Reset View" from the context menu of scatter plot viewer
+    And user sets properties of scatter plot viewer:
+      | Label Columns   |                |
+      | Show Labels For | All            |
+      | Zoom and Filter | filter by zoom |
+    Then the "labels shown" reading of scatter plot viewer should be 0
+    And all rows should pass the filter
     And no errors should have been logged

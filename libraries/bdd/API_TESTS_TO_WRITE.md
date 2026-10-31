@@ -9,6 +9,24 @@ then remove the scenario or lines named, with one line in the feature's descript
 | Behaviour | Where the test goes | What it lets go |
 |---|---|---|
 | The toolbox Search box with "and" / "or" (GROK-20229) | with the fix, beside xamgle `features/search.dart` | — (the cases left the feature already); the fix is deferred |
+| MPO: Score as on rising and falling curves and inside a flat part; a log10 curve with <-1 (empty) and >-1 (whole curve), >0 with Limit value gives 0; MPO Score by Profile on a qnum column uses the profile's qualifiers; the coverage count on a log10 curve at 0 or below, after a compute without coverage (no cached desirability reused), and in Chem:mpoCalculate's result table | Chem src/tests/mpo-tests.ts ('MPO: qnum scoring', 'MPO: coverage') | — (Chem bdd/features/mpo/MISSING.md items 6–7) |
+
+## Written on 2026-10-30
+
+| Behaviour | Test | What went |
+|---|---|---|
+| A layout with a logarithmic scatter plot saves and loads after its X column is removed (public#2867) | ApiTests `Shell: ViewLayout` | PR 4414 scatter-plot regression scenario (dropped before merge) |
+| A histogram on a table with no rows renders (core#998) | ApiTests `AI: Viewers: Histogram extras` | PR 4414 histogram regression scenario |
+| A datetime Split with Split Map month comes back from a layout (public#2562) | ApiTests `AI: Viewers: BarChart extras` | PR 4414 bar-chart regression scenario |
+| A pie chart moved to a table with the same columns keeps its Category and angle aggregation (core#982) | ApiTests `AI: Viewers: PieChart JS API` | PR 4414 pie-chart regression scenario |
+| A violin over a double column holding a raw NaN draws and takes a hover (core#960) | ApiTests `AI: Viewers: BoxPlot extras` | box-plot MISSING.md entry |
+| The trellis plot's inner box plot look survives the view's table being replaced (public#3692) | ApiTests `AI: Viewers: Trellis Plot` | trellis-plot MISSING.md entry |
+| A grid viewer bound to a second table keeps its table and sort through a project (public#2718) | ApiTests `Dapi: projects: viewers` | PR 4414 grid regression scenario |
+| Compare Tables: the rows the diff holds and its counters | ApiTests `DataFrame: Methods` `compareTables`; ddt `table_comparison_test.dart` | PR 4464 compare-tables "With no value columns…" |
+| Select > Duplicates with Superfluous rows only | ddt `data_utils_test.dart` `selectDuplicates (superfluousOnly)` | PR 4464 select-menu "Superfluous rows only…" |
+| A formula naming its column as a string recalculates after an edit (core#1128) | ApiTests `DataFrame: Calculated columns` (unskipped) | — |
+| A child of a scaffold drawn with an explicit H opens with no warning (public#2626) | Chem `scaffold tree` | PR 4414 scaffold-tree regression scenario |
+| Use as filter after a second view removed its Structure card (public#2628) | Chem `substructure filters` | PR 4414 substructure-filter regression scenario |
 
 ## Written on 2026-10-18
 

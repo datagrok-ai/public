@@ -1,7 +1,8 @@
 @eda @realizes:ml.menu.analyze.group-comparison.anova
 Feature: One-way ANOVA
-  ML | Analyze | Group Comparison | ANOVA... over demog with the dialog's own choices: AGE across
-  RACE at alpha 0.05. Translated from files/TestTrack/EDA/anova.md and the package's
+  ML | Analyze | Group Comparison | ANOVA... over demog-1000 with the dialog's own choices: AGE across
+  RACE at alpha 0.05 (F is 1.89 on 3 and 996 degrees of freedom, under the critical 2.61, so RACE
+  does not affect AGE, as on the full demog). Translated from files/TestTrack/EDA/anova.md and the package's
   playwright/anova.test.ts.
 
   The case still names an Analysis and an F-test tab; the platform replaced them (GROK-20194) with
@@ -11,7 +12,7 @@ Feature: One-way ANOVA
 
   Background:
     Given user is logged in
-    And user opens demog dataset
+    And user opens demog-1000 dataset
 
   Scenario: Running the default comparison docks a box plot with the conclusion and test statistics
     When user picks "ML > Analyze > Group Comparison > ANOVA..." from the top menu

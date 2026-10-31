@@ -15,7 +15,9 @@ Feature: Grid pinned rows and pinned columns
   demog-1000, because Unpin All Columns only moves the freeze line back and leaves a pinned column
   where pinning put it, so one scenario's pinning would decide the next one's column order. USUBJID
   is unique, SEX is not; rows 990, 995 and 998 are X0273T51070200002, X0273T51080100021 and
-  X0273T51080200011.
+  X0273T51080200011. A pinned column sorts from its header and takes a resize (public#1159); after
+  a layout with a viewer stacked over the grid as a tab, the pinned columns stay side by side
+  (public#1625) and a row-number click still makes its row current (public#679).
 
   Not claimed: which row is current after Control+End or ArrowDown once rows are pinned. With N
   rows pinned the keyboard stops at table row 1000 - N (998 with two pinned) although rows 999 and
@@ -142,7 +144,8 @@ Feature: Grid pinned rows and pinned columns
     And the "column order" reading of grid should be "SEX, DEMOG, RACE, USUBJID, AGE, HEIGHT, DIS_POP, WEIGHT, CONTROL, STARTED, SEVERITY"
     And no errors should have been logged
 
-  Scenario: The arrow keys cross the pinned-column boundary both ways
+  @realizes:public#1159
+  Scenario: The arrow keys cross the pinned-column boundary both ways, and the pinned column sorts and resizes from its header (public#1159)
     When user picks "Pin > Pin Column" from the context menu of the "header SEX" area of grid
     Then "Frozen Columns" property of grid should be "2"
     When user clicks on the "cell 3 of SEX" area of grid
@@ -155,4 +158,34 @@ Feature: Grid pinned rows and pinned columns
     And user presses ArrowLeft
     Then the "current column" reading of grid should be "SEX"
     And row 3 should be current
+    When user double-clicks on the "header SEX" area of grid
+    Then the "sort column" reading of grid should be "SEX"
+    And the "sort direction" reading of grid should be "descending"
+    When user double-clicks on the "header SEX" area of grid
+    Then the "sort direction" reading of grid should be "ascending"
+    When user double-clicks on the "header SEX" area of grid
+    Then the "sort column" reading of grid should be ""
+    When user drags the "column resizer SEX" area of grid by 40 pixels to the right
+    Then the "column width of SEX" reading of grid should be higher than before
+    And no errors should have been logged
+
+  @realizes:public#1625 @realizes:public#679
+  Scenario: After a layout with a viewer stacked over the grid the pinned columns stay side by side and a row-number click still makes the row current (public#1625, public#679)
+    When user picks "Pin > Pin Column" from the context menu of the "header USUBJID" area of grid
+    And user picks "Pin > Pin Column" from the context menu of the "header AGE" area of grid
+    Then the grid should pin the columns "USUBJID, AGE"
+    And the "header AGE" area of grid should lie to the right of the "header USUBJID" area
+    Given user adds a scatter plot viewer
+    When user stacks scatter plot viewer onto grid as a tab
+    Then the viewers "demog-1000, Scatter plot" should be the tabs of one panel
+    When user saves the layout of the current table view to the server
+    And user loads the saved layout
+    And user switches the tabbed panel to the "demog-1000" tab
+    Then the grid should pin the columns "USUBJID, AGE"
+    And the "header AGE" area of grid should lie to the right of the "header USUBJID" area
+    When user clicks on the "row header 5" area of grid
+    Then row 5 should be current
+    When user clicks on the "row header 7" area of grid holding Shift
+    Then rows 5 to 7 should be selected
+    And 3 rows should be selected
     And no errors should have been logged

@@ -16,10 +16,8 @@ Feature: A layout saved from the toolbox gets a name and tags
 
   Background:
     Given user is logged in
-    And the layouts named "bdd-layout-{time}" are deleted when the feature ends
-    And the layouts named "BDD height vs weight-{time}" are deleted when the feature ends
-    And the layouts named "BDD tags-{time}" are deleted when the feature ends
-    And user opens demog dataset keeping the first 100 rows as "bdd-layout-{time}"
+    And the layouts named "bdd-layout-{time}, BDD height vs weight-{time}, BDD tags-{time}" are deleted when the feature ends
+    And user opens demog-1000 dataset keeping the first 100 rows as "bdd-layout-{time}"
     And user adds a scatter plot viewer with:
       | xColumnName | HEIGHT |
       | yColumnName | WEIGHT |
@@ -73,7 +71,7 @@ Feature: A layout saved from the toolbox gets a name and tags
 
   Scenario: The table opened again lists the renamed, tagged layout, and a click on its card applies it
     When user closes all views
-    And user opens demog dataset keeping the first 100 rows as "bdd-layout-{time}"
+    And user opens demog-1000 dataset keeping the first 100 rows as "bdd-layout-{time}"
     And the toolbox pane is shown
     And Layouts accordion header in toolbox is expanded
     Then "BDD height vs weight-{time}" layout card should be visible

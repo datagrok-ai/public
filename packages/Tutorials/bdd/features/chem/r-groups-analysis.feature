@@ -21,7 +21,9 @@ Feature: The R-Groups Analysis tutorial
   SMILES, which no phrase can spell.
   The context panel drops a new current object within 2 s of a property edit (by design, GROK-21024),
   which a feature is faster than: a grid cell click, which releases that guard, comes before the
-  Shift+Drag and before the gear that follows the Histogram pick.
+  segment click (and so before the Shift+Drag) and before the gear that follows the Histogram pick.
+  The cell click is not made right after Escape: the table the selection's sync makes current 100 ms
+  after Escape (debounced since core#1085) would take the panel from a cell clicked within that time.
 
   Serial, because a finished tutorial writes its completion record into the account's settings,
   which every page syncs whole.
@@ -64,14 +66,14 @@ Feature: The R-Groups Analysis tutorial
     Then the tutorial step "Under Pie chart tab > Data, set Category to LC/MS" should be done
     And "categoryColumnName" inner property of trellis plot viewer should be "LC/MS"
 
+    When user clicks on the "cell 1 of R1" area of grid
+    Then the context panel should show the current cell
     When user clicks on the "cell body 1,1" area of trellis plot viewer
     Then the tutorial step "Click any segment on a pie chart" should be done
     And some rows should be selected
     When user presses Escape
     Then the tutorial step "Press Escape" should be done
 
-    When user clicks on the "cell 1 of R1" area of grid
-    Then the context panel should show the current cell
     When user drags from the "row header 1" area to the "row header 7" area of grid holding Shift
     Then the tutorial step "In the grid, press Shift+Drag Mouse Down" should be done
     And 7 rows should be selected

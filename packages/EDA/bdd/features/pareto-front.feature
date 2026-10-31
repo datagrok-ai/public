@@ -21,8 +21,8 @@ Feature: Pareto front viewer
     And "Minimize" property of pareto front viewer should be "highway.mpg, price"
     And no errors should have been logged
 
-  Scenario: On demog the unique subject id is the label
-    Given user opens demog dataset
+  Scenario: On demog-1000 the unique subject id is the label
+    Given user opens demog-1000 dataset
     When user picks "ML > Pareto Front..." from the top menu
     Then pareto front viewer should be visible
     And scatter plot viewer in pareto front viewer should be painted

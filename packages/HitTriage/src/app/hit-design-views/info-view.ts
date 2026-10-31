@@ -52,12 +52,7 @@ export class HitDesignInfoView
     };
   }
 
-  protected async checkCampaign(campId?: string) {
-    const url = location.search;
-    const urlParams = new URLSearchParams(url);
-    if (!urlParams.has(HitDesignCampaignIdKey) && !campId)
-      return;
-    const campaignId = campId ?? urlParams.get(HitDesignCampaignIdKey);
+  protected async checkCampaign(campaignId: string) {
     // taken before the reads: a campaign asked for later wins, however long this one reads
     const ticket = this.app.openTicket();
     // check if such campaign exists
@@ -82,11 +77,10 @@ export class HitDesignInfoView
       throw new CampaignUnavailableError(`its table ${tablePath} is missing`);
     const template: T = (campaign.template as T) ?? await loadTemplate<T>(templatePath);
     // a campaign opened after this one was asked for is the one shown, its address the address
-    if (!await this.app.setTemplate(template, campaignId!, campaign, ticket))
+    if (!await this.app.setTemplate(template, campaignId, campaign, ticket))
       return;
 
-    if (campId)
-      modifyUrl(HitDesignCampaignIdKey, campId);
+    modifyUrl(HitDesignCampaignIdKey, campaignId);
 
     campaign.template = template;
     return campaign;

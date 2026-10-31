@@ -14,7 +14,10 @@ Feature: Matrix plot — the viewport over a long column list, and the 250-cell 
   min == max, which lays out a viewport of no cells at all and leaves `isRenderPending` true for
   ever — every step after it fails with "a repaint has been pending for 10000 ms". The 0-cell
   viewport is a state a user can reach with the mouse, so the getter has to survive it.
-  Twelve calculated columns make up the sixteen; the last scenario removes them.
+  Twelve calculated columns make up the sixteen; the scenario that ends at the cap removes them.
+  Switched in the context panel to a table of two numerical columns, the plot re-tiles to its four
+  cells with no scroll slider left on either axis, and back on demog-1000 gets its columns and
+  sliders again (core#321, GROK-19105: the sliders collapsed to stray dots).
 
   Background:
     Given user is logged in
@@ -108,4 +111,35 @@ Feature: Matrix plot — the viewport over a long column list, and the 250-cell 
     And user removes "MP_FX_12" column
     Then the table should have 11 columns
     And the "cells" reading of matrix plot viewer should be 16
+    And no errors should have been logged
+
+  @realizes:core#321
+  Scenario: The Table property re-tiles the matrix to a two-column table without slider dots, and back (core#321)
+    Given user opens a table "two-numbers" with:
+      | a | b  |
+      | 1 | 10 |
+      | 2 | 30 |
+      | 3 | 20 |
+      | 4 | 40 |
+    And user switches to the "demog-1000" table view
+    Then the "cells drawn" reading of matrix plot viewer should be 16
+    And the "x scroll shown" reading of matrix plot viewer should be "true"
+    And matrix plot viewer should have a "x scroll slider" area
+    When user remembers the "x columns" reading of matrix plot viewer
+    And user clicks on settings icon of matrix plot viewer
+    And user selects "two-numbers" in "Table" property in context panel
+    Then matrix plot viewer should be bound to table "two-numbers"
+    And the "x columns" reading of matrix plot viewer should be 2
+    And the "cells drawn" reading of matrix plot viewer should be 4
+    And the "blank cells" reading of matrix plot viewer should be 0
+    And the "x scroll shown" reading of matrix plot viewer should be "false"
+    And the "y scroll shown" reading of matrix plot viewer should be "false"
+    And matrix plot viewer should not have a "x scroll slider" area
+    And matrix plot viewer should not have a "y scroll slider" area
+    And matrix plot viewer should report no error
+    When user selects "demog-1000" in "Table" property in context panel
+    Then matrix plot viewer should be bound to table "demog-1000"
+    And the "x columns" reading of matrix plot viewer should be as remembered
+    And the "cells drawn" reading of matrix plot viewer should be 16
+    And matrix plot viewer should have a "x scroll slider" area
     And no errors should have been logged

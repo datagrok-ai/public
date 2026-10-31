@@ -33,22 +33,22 @@ test.describe("The table view's Search box filters the rows its text matches", (
     const run = journey(test, 3, page);
     await session.step(20, "Given user is logged in", () => loggedIn(page));
     await session.step(21, "And the toolbox pane is shown", () => toolboxPaneShown(page));
-    await session.step(22, "And user opens demog dataset", () => openDataset(page, ds("demog")));
+    await session.step(22, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(23, "When user presses Control+f in grid overlay", () => pressKeyIn(page, "Control+f", el("grid overlay")));
     await session.step(24, "Then table search should be focused", () => shouldBe(page, el("table search"), "focused"));
     await run.scenario("A condition on a numeric column filters the rows it names", async () => {
       await session.step(27, "When user types \"AGE > 50\" into table search", () => typeInto(page, "AGE > 50", el("table search")));
       await session.step(28, "And user presses Enter in table search", () => pressKeyIn(page, "Enter", el("table search")));
-      await session.step(29, "Then 2176 rows should pass the filter", () => filterPasses(page, 2176));
+      await session.step(29, "Then 367 rows should pass the filter", () => filterPasses(page, 367));
       await session.step(30, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A condition on a text column filters the rows it names", async () => {
       await session.step(33, "When user types \"SEX = M\" into table search", () => typeInto(page, "SEX = M", el("table search")));
       await session.step(34, "And user presses Enter in table search", () => pressKeyIn(page, "Enter", el("table search")));
-      await session.step(35, "Then 2607 rows should pass the filter", () => filterPasses(page, 2607));
+      await session.step(35, "Then 447 rows should pass the filter", () => filterPasses(page, 447));
       await session.step(36, "When user types \"RACE = Asian\" into table search", () => typeInto(page, "RACE = Asian", el("table search")));
       await session.step(37, "And user presses Enter in table search", () => pressKeyIn(page, "Enter", el("table search")));
-      await session.step(38, "Then 72 rows should pass the filter", () => filterPasses(page, 72));
+      await session.step(38, "Then 15 rows should pass the filter", () => filterPasses(page, 15));
       await session.step(39, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("An empty Search box gives every row back", async () => {

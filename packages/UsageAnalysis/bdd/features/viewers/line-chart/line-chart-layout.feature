@@ -14,6 +14,8 @@ Feature: Line chart through a saved layout and a saved project
   end.
   Not translated: the md's right-click paths to Split Columns and Multi Axis — the same properties,
   set directly; the gesture is not what these scenarios are about.
+  Closed issue: a layout with a categorical X and Row Source = Selected, applied with nothing
+  selected, loads without an error and then draws the rows selected (public#2350).
 
   Background:
     Given user is logged in
@@ -112,6 +114,31 @@ Feature: Line chart through a saved layout and a saved project
       | packCategories | true   |
       | multiAxis      | false  |
       | yColumnNames   | HEIGHT |
+    Then no errors should have been logged
+
+  @realizes:public#2350
+  Scenario: A layout with a categorical X and Row Source Selected loads with nothing selected (public#2350)
+    When user sets properties of line chart viewer:
+      | xColumnName  | RACE     |
+      | yColumnNames | AGE      |
+      | rowSource    | Selected |
+    And user selects rows where "RACE" is "Asian"
+    Then the "rows shown" reading of line chart viewer should be 15
+    When user saves the layout of the current table view
+    And user clears the row selection
+    Then the "rows shown" reading of line chart viewer should be 0
+    When user loads the saved layout
+    Then line chart viewer should report no error
+    And "rowSource" property of line chart viewer should be "Selected"
+    And the "rows shown" reading of line chart viewer should be 0
+    When user selects rows where "RACE" is "Black"
+    Then the "rows shown" reading of line chart viewer should be 27
+    And the "x categories" reading of line chart viewer should be 1
+    When user clears the row selection
+    And user sets properties of line chart viewer:
+      | xColumnName  | AGE      |
+      | yColumnNames | HEIGHT   |
+      | rowSource    | Filtered |
     Then no errors should have been logged
 
   Scenario: A colour picked in the legend comes back from a layout and from a project

@@ -45,6 +45,12 @@ Feature: Scatter plot legend
   legend/legend-structures.feature (spgi-100); the PC plot of the color-coding case (this feature
   claims the scatter plot and the box plot); modifying a few of the categorical colors after the
   switch — the Conditional coding is written with its two bins' colors at once.
+  Closed issues: a Color column of a thousand categories leaves the Markers section on the screen
+  (public#3289); a viewer Filter that empties the plot and lets rows back brings the legend back with
+  the categories left (public#1209); Color Min / Max and the grid's linear coloring set the color
+  scale, and taking them off gives the column's range back (public#2658, public#1434). The colors
+  picked with Color and Markers on one column (public#2965) and a Filter set after Markers
+  (public#2505) are the scenarios tagged with them.
 
   Background:
     Given user is logged in
@@ -171,6 +177,7 @@ Feature: Scatter plot legend
     And scatter plot viewer should show 872 rows
     And no errors should have been logged
 
+  @realizes:public#2965
   Scenario: Colors picked in the legend reach the column and come back from a layout and a project
     When user hovers over filter panel
     And user clicks on reset icon of filter panel
@@ -226,7 +233,8 @@ Feature: Scatter plot legend
     Then legend of scatter plot viewer should be hidden
     And no errors should have been logged
 
-  Scenario: A categorical Color formula with empty values lists them as an item of their own
+  @realizes:public#3289
+  Scenario: A categorical Color formula with empty values lists them as an item of their own, and a Color of a thousand categories leaves the Markers section on the screen (public#3289)
     When user adds a calculated column "DIS_POP but Other" with formula "if(${RACE}=='Other', null, ${DIS_POP})"
     And user sets "Color" property of scatter plot viewer to "DIS_POP but Other"
     Then the legend of scatter plot viewer should list 6 items
@@ -236,7 +244,12 @@ Feature: Scatter plot legend
     When user sets "Color" property of scatter plot viewer to "USUBJID"
     Then the legend of scatter plot viewer should list 872 items
     And the legend of scatter plot viewer should be docked
-    When user sets "Color" property of scatter plot viewer to ""
+    When user sets "Markers" property of scatter plot viewer to "SEX"
+    Then "F" legend item in legend of scatter plot viewer should be visible
+    And "M" legend item in legend of scatter plot viewer should be visible
+    When user sets properties of scatter plot viewer:
+      | Color   |  |
+      | Markers |  |
     And user removes "DIS_POP but Other" column
     Then legend of scatter plot viewer should be hidden
     And no errors should have been logged
@@ -253,6 +266,47 @@ Feature: Scatter plot legend
     And user removes "WEIGHT but Other" column
     Then scatter plot viewer should not have a "color scale" area
     And no errors should have been logged
+
+  @realizes:public#1209
+  Scenario: A viewer Filter that empties the plot and lets rows back brings the legend back with the categories left (public#1209)
+    When user sets properties of scatter plot viewer:
+      | Color             | RACE |
+      | Legend Visibility | Auto |
+    Then the legend of scatter plot viewer should list 4 items
+    When user sets "Filter" property of scatter plot viewer to '${RACE} == "none"'
+    Then scatter plot viewer should show 0 rows
+    When user sets "Filter" property of scatter plot viewer to '${RACE} in ["Asian", "Black"]'
+    Then scatter plot viewer should show 38 rows
+    And the legend of scatter plot viewer should list 2 items
+    And "Asian" legend item in legend of scatter plot viewer should be visible
+    And "Caucasian" legend item in legend of scatter plot viewer should be absent
+    When user sets properties of scatter plot viewer:
+      | Filter |  |
+      | Color  |  |
+    Then scatter plot viewer should show 872 rows
+    And legend of scatter plot viewer should be hidden
+    And no errors should have been logged
+
+  @realizes:public#2658 @realizes:public#1434
+  Scenario: Color Min / Max and the grid's linear coloring set the color scale, and taking them off gives the column's range back (public#2658, public#1434)
+    When user sets "Color" property of scatter plot viewer to "AGE"
+    Then the "color scale min" reading of scatter plot viewer should be 18
+    When user sets properties of scatter plot viewer:
+      | colorMin | 30 |
+      | colorMax | 50 |
+    Then scatter plot viewer should have repainted
+    And the "color scale min" reading of scatter plot viewer should be 30
+    When user sets properties of scatter plot viewer:
+      | colorMin |  |
+      | colorMax |  |
+    Then the "color scale min" reading of scatter plot viewer should be 18
+    When user colors "AGE" column linearly from "#0000FF" to "#FF0000" over 30 to 40
+    Then the "color scale min" reading of scatter plot viewer should be 30
+    When user removes the coloring of "AGE" column
+    Then "AGE" column should have no color coding
+    And the "color scale min" reading of scatter plot viewer should be 18
+    When user sets "Color" property of scatter plot viewer to ""
+    Then no errors should have been logged
 
   Scenario: The legend follows an X column that empties other races, and a zoom-filter on it
     When user adds a calculated column "WEIGHT of Caucasians" with formula "if(${RACE}!='Caucasian', null, ${WEIGHT})"
@@ -285,6 +339,7 @@ Feature: Scatter plot legend
     Then scatter plot viewer should show 872 rows
     And no errors should have been logged
 
+  @realizes:public#2505
   Scenario: Two scatter plots with the same viewer filter both narrow their legends, and a layout brings the first back
     When user sets properties of scatter plot viewer:
       | Markers           | RACE                          |

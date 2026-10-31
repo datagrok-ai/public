@@ -19,6 +19,10 @@ Feature: Categorical filter card
   the table's API — the md's own grid-selection gesture is not the subject; Ctrl+Z is pressed for real.
   The panel is opened, and the one-value column made and removed, through the API; the card's own
   count of matching categories under the search is not read, the rows the search keeps are.
+  Closed issues claimed on the way: Control+C in a card's search copies its text, not a picture of
+  the panel (public#3027); a text column holding one value is a compact row after the cards, not a
+  card (core#479); the card's sort menu orders the categories by count, and a layout keeps that
+  order (public#1889, last, as it ends on a layout).
 
   Background:
     Given user is logged in
@@ -89,7 +93,8 @@ Feature: Categorical filter card
     When user closes the context menu
     Then no errors should have been logged
 
-  Scenario: The in-card search narrows the table to the categories that match
+  @realizes:public#3027
+  Scenario: The in-card search narrows the table to the categories that match, and Control+C copies its text (public#3027)
     When user picks "Select all" from the indicator menu of the "DIS_POP" filter card
     Then all rows should pass the filter
     When user clicks on search icon of "DIS_POP" filter card
@@ -97,6 +102,9 @@ Feature: Categorical filter card
     Then 242 rows should pass the filter
     And the filter should pass exactly the rows where "DIS_POP" contains "Ps"
     And counter of filter panel should have text "1"
+    When user presses Control+A in search of "DIS_POP" filter card
+    And user presses Control+C
+    Then the clipboard should have text "Ps"
     When user clears the search of the "DIS_POP" filter card
     Then all rows should pass the filter
     When user types "ori" into the search of the "DIS_POP" filter card
@@ -189,4 +197,32 @@ Feature: Categorical filter card
     When user removes "AGE_BAND" column
     Then "AGE_BAND" filter card should be absent
     And all rows should pass the filter
+    And no errors should have been logged
+
+  @realizes:core#479
+  Scenario: A text column holding one value is listed as a row after the cards (core#479)
+    When user adds a calculated column "probe_class" with formula '"low"'
+    And user drags the "header probe_class" area of grid onto the "view" area of filter panel
+    Then the filter panel should have a filter on "probe_class" column
+    And filter panel should have a "card probe_class" area
+    And "probe_class" filter card should be hidden
+    And the "card probe_class" area of filter panel should lie below the "card DIS_POP" area
+    And all rows should pass the filter
+    When user removes "probe_class" column
+    Then all rows should pass the filter
+    And no errors should have been logged
+
+  @realizes:public#1889
+  Scenario: The card's sort menu orders the categories by count, and the layout keeps the order (public#1889)
+    Then the "category RA of DIS_POP" area of filter panel should lie below the "category Psoriasis of DIS_POP" area
+    When user hovers over "DIS_POP" filter card
+    And user clicks on "sort-amount-down" icon in "DIS_POP" filter card
+    And user picks "Count (high to low)" from the open menu
+    Then the "category RA of DIS_POP" area of filter panel should lie above the "category Psoriasis of DIS_POP" area
+    When user saves the layout of the current table view to the server
+    And user picks "Remove All" from the filter panel menu
+    Then the filter panel should have 0 filters
+    When user loads the saved layout
+    Then "DIS_POP" filter card should be visible
+    And the "category RA of DIS_POP" area of filter panel should lie above the "category Psoriasis of DIS_POP" area
     And no errors should have been logged

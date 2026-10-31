@@ -3,7 +3,8 @@ Feature: Box plot selection and highlight
   Pointer selection on the box plot and how it is shown: a marker click sets the current row,
   a Shift-drag selects a band and paints it in the selection color under any coloring, category
   labels select whole categories (plain, with Control, and a click on empty space clears),
-  a filtered-out category never leaks into a selection, Show Selected Rows and Row Source gate
+  a filtered-out category never leaks into a selection, a Shift-drag over a category picks that
+  category when the categories to its left are filtered out (public#2764), Show Selected Rows and Row Source gate
   the highlight, hover tooltips and Show Mouse Over Point, a hover on another viewer leaves the
   box plot alone, and a categorical coloring survives deleting the selected rows.
   One journey on demog-1000 with a box plot of AGE by RACE and 10-pixel markers.
@@ -60,6 +61,25 @@ Feature: Box plot selection and highlight
     And no rows where "RACE" is "Asian" should be selected
     When user resets the filter
     And user clears the row selection
+
+  @realizes:public#2764
+  Scenario: A Shift-drag picks its category when the categories to its left are filtered out (public#2764)
+    When user clears the row selection
+    And user adds a categorical filter on "RACE" keeping "Caucasian, Other"
+    Then 958 rows should pass the filter
+    And box plot viewer should not have a "category Asian" area
+    When user drags a selection box over the "Other values" area of box plot viewer
+    Then some rows where "RACE" is "Other" should be selected
+    And no rows where "RACE" is "Caucasian" should be selected
+    And 51 rows should be selected
+    When user clears the row selection
+    And user drags a selection box over the "Caucasian values" area of box plot viewer
+    Then some rows where "RACE" is "Caucasian" should be selected
+    And no rows where "RACE" is "Other" should be selected
+    And 768 rows should be selected
+    When user adds a categorical filter on "RACE" keeping "Asian, Black, Caucasian, Other"
+    Then all rows should pass the filter
+    When user clears the row selection
 
   Scenario: Show Selected Rows and Row Source gate the highlight
     When user sets "Marker Color Column" property of box plot viewer to "RACE"

@@ -17,7 +17,7 @@ Feature: Scaffold Tree colors, blocked generation, large tables and two tables
     And user picks "Chem > Analyze > Scaffold Tree" from the top menu
 
   Scenario: The magic wand is blocked on a table with no molecule column
-    Given user opens demog dataset
+    Given user opens demog-1000 dataset
     And user adds Scaffold Tree viewer
     Then Scaffold Tree viewer should be visible
     And the "generate blocked reason" reading of Scaffold Tree viewer should be "There is no molecule column in the table"

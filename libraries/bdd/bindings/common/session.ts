@@ -50,8 +50,14 @@ export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSi
       grok.shell.windows.showContextPanel = false;
     }
   }, [simpleMode, !!guide.guideDir(), guide.helpMode()] as [boolean, boolean, boolean]);
-  // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
-  await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});
+  // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it, and the view a
+  // reloaded address opens (a script, a project) can land after it: that one is closed in turn
+  await page.waitForFunction(() => {
+    const v = grok.shell.v;
+    if (v != null && v.type !== 'datagrok')
+      v.close();
+    return grok.shell.v?.type === 'datagrok';
+  }, null, {timeout: 60000, polling: 100});
   await homeWidgetsSettled(page);
   await installViewerRuntime(page);
   // a cold load or a reload starts the scenario's leak baseline here, before any app view opens

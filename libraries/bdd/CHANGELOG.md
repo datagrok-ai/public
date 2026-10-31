@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Gestures: Fixed `user drags {element} to {element}` dropping nothing when the source moved under the press (a gallery reflowing as a panel opens): Playwright's `dragTo` pressed again with the first press still down, which a Dart drag never drops; the press is now aimed by a hover, and one that lands off the source is kept from the page and released before the next try
+* Session: Fixed a reload timing out at "Home is current" when the address reopens a view (a script, a project) after the shell is cleared: the reset closes a view that turns up late
 * Vocabulary: Added `user drags the {string} area of {widget} to the first|last position` — a grid column header onto the ⇤ or ⇥ drop zone a grid wider than its view shows beside itself during the drag
 * Guides: A drag from one element to another is filmed through the page's mouse, pressed on the source's text, so the video shows it; a native select whose list did not open takes the option on the typing, and no Enter follows it into the dialog around the select, which took it as OK
 * Audits: The layout, errors, balloons and operability audits fail a scenario by default (`report` and `off` stay a project's or `BDD_AUDIT`'s choice; leaks stay `off`); the library accepts the platform's grid ribbon icons "Remove selected rows/columns", off with no reason

@@ -6,6 +6,8 @@ Feature: Histogram split, stacking and color coding
   one per category, and Normalize Values decides what the vertical axis is scaled to. A range
   narrowed under a split still leaves the table filter valid. One journey on demog-1000 with a
   histogram of AGE; every scenario puts back what it changed.
+  Closed issues: a split with a single bin can be hovered without an error (core#998); the split
+  lines take the split column's category colours (public#130).
 
   Background:
     Given user is logged in
@@ -146,3 +148,32 @@ Feature: Histogram split, stacking and color coding
       | Split             |       |
     Then histogram viewer should have a "bin 8" area
     And no errors should have been logged
+
+  @realizes:core#998
+  Scenario: A split with a single bin can be hovered without errors (core#998)
+    When user sets "Split" property of histogram viewer to "SEX"
+    Then histogram viewer should have a "line F" area
+    When user sets "Bins" property of histogram viewer to "1"
+    Then the "bins shown" reading of histogram viewer should be 1
+    And histogram viewer should not have a "line F" area
+    When user hovers over the "view" area of histogram viewer
+    And user moves the pointer away from histogram viewer
+    Then the "error" reading of histogram viewer should be ""
+    When user sets properties of histogram viewer:
+      | Bins  | 20 |
+      | Split |    |
+    Then the "bins shown" reading of histogram viewer should be 20
+    And no errors should have been logged
+
+  @realizes:public#130
+  Scenario: Split lines take the split column's category colours (public#130)
+    When user colors "SEX" column categorically:
+      | F | #00FF00 |
+      | M | #FF00FF |
+    And user sets "Split" property of histogram viewer to "SEX"
+    Then histogram viewer should have a "line F" area
+    And the "line F" area of histogram viewer should contain the color "#00FF00"
+    And the "line M" area of histogram viewer should contain the color "#FF00FF"
+    When user sets "Split" property of histogram viewer to ""
+    And user removes the coloring of "SEX" column
+    Then no errors should have been logged

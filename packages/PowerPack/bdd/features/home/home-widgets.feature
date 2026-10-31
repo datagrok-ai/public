@@ -120,9 +120,9 @@ Feature: The widgets of the Home page
     And no errors should have been logged
 
   Scenario: The Home icon brings back the same widgets
-    Given user opens demog dataset
+    Given user opens demog-1000 dataset
     And the browse panel is open
-    Then the "demog" view should be current
+    Then the "demog-1000" view should be current
     When user clicks on "Home" icon in browse toolbar
     Then the "Home" view should be current
     And the Home page should show the widgets "Spotlight, Reports, Usage, Community"

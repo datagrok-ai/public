@@ -26,31 +26,34 @@ export async function peptiHitAppTreeBrowser(treeNode: any) : Promise<void> {
 
 //name: Hit Triage
 //tags: app
+//input: string campaignId { optional: true }
 //output: view result
 //meta.role: app
 //meta.browsePath: Chem
-export async function hitTriageApp() : Promise<any> {
-  return await PackageFunctions.hitTriageApp();
+export async function hitTriageApp(_campaignId?: string) : Promise<any> {
+  return await PackageFunctions.hitTriageApp(_campaignId);
 }
 
 //name: Hit Design
 //tags: app
+//input: string campaignId { optional: true }
 //output: view result
 //meta.role: app
 //meta.icon: images/icons/hit-design-icon.png
 //meta.browsePath: Chem
-export async function hitDesignApp() : Promise<any> {
-  return await PackageFunctions.hitDesignApp();
+export async function hitDesignApp(_campaignId?: string) : Promise<any> {
+  return await PackageFunctions.hitDesignApp(_campaignId);
 }
 
 //name: PeptiHit
 //tags: app
+//input: string campaignId { optional: true }
 //output: view result
 //meta.role: app
 //meta.icon: images/icons/pepti-hit-icon.png
 //meta.browsePath: Peptides
-export async function peptiHitApp() : Promise<any> {
-  return await PackageFunctions.peptiHitApp();
+export async function peptiHitApp(_campaignId?: string) : Promise<any> {
+  return await PackageFunctions.peptiHitApp(_campaignId);
 }
 
 //input: dynamic treeNode 
@@ -61,12 +64,13 @@ export async function pepTriageAppTreeBrowser(treeNode: any) : Promise<void> {
 
 //name: PepTriage
 //tags: app
+//input: string campaignId { optional: true }
 //output: view result
 //meta.role: app
 //meta.icon: images/icons/hit-triage-icon.png
 //meta.browsePath: Peptides
-export async function pepTriageApp() : Promise<any> {
-  return await PackageFunctions.pepTriageApp();
+export async function pepTriageApp(_campaignId?: string) : Promise<any> {
+  return await PackageFunctions.pepTriageApp(_campaignId);
 }
 
 //name: Demo Molecules 100

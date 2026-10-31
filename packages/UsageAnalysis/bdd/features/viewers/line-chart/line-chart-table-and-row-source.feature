@@ -17,6 +17,8 @@ Feature: Line chart table binding, Row Source and the viewer's own filter
   Fixtures: spgi-100 (100 rows) and demog-1000 (1000 rows, the stratified demog subset); the
   chart's own expression `${CAST Idea ID} < 634834` keeps 49 of the 100, and `Average Mass` between
   200 and 400 keeps 51.
+  A split chart switched to Row Source = Selected logs nothing and then draws exactly the selected
+  rows (public#1650, public#1628): Series Pyrrolidines holds 21 rows, with Aminopiperidines 25.
 
   Background:
     Given user is logged in
@@ -44,7 +46,8 @@ Feature: Line chart table binding, Row Source and the viewer's own filter
     When user clears the row selection
     Then no errors should have been logged
 
-  Scenario: Row Source Selected with nothing selected leaves the chart empty
+  @realizes:public#1650 @realizes:public#1628
+  Scenario: Row Source Selected with nothing selected leaves the chart empty, split or not, then draws exactly the selected rows (public#1650)
     Given user clears the row selection
     When user sets "rowSource" property of line chart viewer to "Selected"
     Then the "rows shown" reading of line chart viewer should be 0
@@ -52,6 +55,22 @@ Feature: Line chart table binding, Row Source and the viewer's own filter
     And the "lines" reading of line chart viewer should be 0
     And line chart viewer should report no error
     When user sets "rowSource" property of line chart viewer to "Filtered"
+    And user sets "splitColumnNames" property of line chart viewer to "Series"
+    Then the "lines" reading of line chart viewer should be 5
+    When user sets "rowSource" property of line chart viewer to "Selected"
+    Then the "rows shown" reading of line chart viewer should be 0
+    And line chart viewer should report no error
+    And no errors should have been logged
+    When user selects rows where "Series" is "Pyrrolidines"
+    Then the "rows shown" reading of line chart viewer should be 21
+    And the "lines" reading of line chart viewer should be 1
+    When user selects rows where "Series" is one of "Pyrrolidines, Aminopiperidines"
+    Then the "rows shown" reading of line chart viewer should be 25
+    And the "lines" reading of line chart viewer should be 2
+    When user clears the row selection
+    And user sets properties of line chart viewer:
+      | splitColumnNames |          |
+      | rowSource        | Filtered |
     Then the "rows shown" reading of line chart viewer should be 100
     And no errors should have been logged
 

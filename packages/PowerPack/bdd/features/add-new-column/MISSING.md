@@ -53,3 +53,5 @@ Nothing planned.
   adding the formula columns in one batch (GROK-21114); UnixTimestamp/DateDiff precision (core#789,
   public#3851); data sync of `addNewCalculated` (core#788)**: what a function or a layout computes and stores.
 - **Benchmarks** (calculated columns and layouts): the ApiTests benchmark category.
+- **GROK-20931: the function at the caret as the current object, and the completion info beside the highlighted
+  completion**: PowerPack package test "Add new column: function at caret becomes current object".

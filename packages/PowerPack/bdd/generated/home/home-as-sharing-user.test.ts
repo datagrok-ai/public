@@ -29,7 +29,7 @@ test.describe("The Home page of a user who is neither a developer nor an adminis
     await session.step(30, "And every widget of the Home page is stored as shown, now and when the feature ends", () => widgetsAllShown(page));
     await run.scenario("A project shared with the sharing user, with notifications on", async () => {
       await session.step(33, "Given the sharing user has no notifications, now and when the feature ends", () => sharingUserNoNotifications(page));
-      await session.step(34, "And user opens demog dataset", () => openDataset(page, ds("demog")));
+      await session.step(34, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
       await session.step(35, "And no project named \"bdd-home-shared-{time}\" is on the server", () => noProjectOnServer(page, session.text("bdd-home-shared-{time}")));
       await session.step(36, "And user saves the current view as project \"bdd-home-shared-{time}\"", () => saveAsProject(page, session.text("bdd-home-shared-{time}")));
       await session.step(37, "And the browse panel is open", () => browsePanelOpen(page));
