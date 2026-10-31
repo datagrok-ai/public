@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Session: The shell is reset only after its preloader is gone, so a reload with a start-up URL (a script, a project) no longer has its view replace the Home view a step expects
+
 * Gestures: Fixed `user drags {element} to {element}` dropping nothing when the source moved under the press (a gallery reflowing as a panel opens): Playwright's `dragTo` pressed again with the first press still down, which a Dart drag never drops; the press is now aimed by a hover, and one that lands off the source is kept from the page and released before the next try
 * Session: Fixed a reload timing out at "Home is current" when the address reopens a view (a script, a project) after the shell is cleared: the reset closes a view that turns up late
 * Vocabulary: Added `user drags the {string} area of {widget} to the first|last position` — a grid column header onto the ⇤ or ⇥ drop zone a grid wider than its view shows beside itself during the drag
