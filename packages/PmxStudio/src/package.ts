@@ -112,8 +112,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Body weight', type: 'numerical', optional: true, nullable: true, description: 'Body weight (g), weighed with the tumor (empty: no tolerability).'}}) bodyWeight: DG.Column | null,
     @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Tumor weight', type: 'numerical', optional: true, nullable: true, description: 'The excised tumor’s weight (g), on the row of the animal’s last measurement.'}}) tumorWeight: DG.Column | null,
     @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Removal reason', optional: true, nullable: true, description: 'Why an animal left the study (found dead, moribund, weight, tumor, ulceration, other), on any of its rows.'}}) removalReason: DG.Column | null,
-    // the plan's text, not a file: a saved run then carries its plan (u2 funcForm saves every run, and a file
-    // param keeps it from saving); the Analyze view reads the file into it
+    // the plan's text, not a file: the Analyze view reads the file into it
     // @ts-expect-error (the platform's `visible` rule, as above)
     @grok.decorators.param({type: 'string', options: {category: 'Study', caption: 'Plan', optional: true, nullable: true, visible: 'false', description: 'The plan saved in Plan (its .pmxplan file’s contents), to compare the study with.'}}) plan: string | null,
     @grok.decorators.param({options: {category: 'Analysis', caption: 'Cell line', choices: ['MC38', 'CT26', 'B16F10'], initialValue: 'MC38', description: 'The tumor model: its growth model from the atlas of historical controls predicts each treated animal untreated.'}}) line: string,

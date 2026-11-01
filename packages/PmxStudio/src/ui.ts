@@ -4,9 +4,10 @@
    results. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {buttonWithIcon, computed, div, divH, divV, dot, icon, loader, RadioInput, Section, signal, span, StatCard,
-  TabStrip, Tooltip} from '@datagrok-libraries/u2';
+import {button, buttonWithIcon, computed, div, divH, divV, dot, icon, loader, RadioInput, Section, span,
+  StatCard, TabStrip, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
+import type {FuncCallForm} from '@datagrok-libraries/u2/src/dg/index.js';
 
 /** A fraction as a whole percent: 0.734 → "73%". */
 export const pct = (x: unknown) => typeof x === 'number' && Number.isFinite(x) ? `${Math.round(x * 100)}%` : '—';
@@ -68,13 +69,18 @@ export function copyRow(text: () => string, what: string): HTMLElement {
   return row;
 }
 
-/** Whether a u2 funcForm is running its function (it says so in aria-busy), as a signal the form owns. */
-export function formRunning(form: {root: HTMLElement, own: (f: () => void) => unknown}): ReadonlySignal<boolean> {
-  const running = signal(false);
-  const watch = new MutationObserver(() => running.value = form.root.getAttribute('aria-busy') === 'true');
-  watch.observe(form.root, {attributes: true, attributeFilter: ['aria-busy']});
-  form.own(() => watch.disconnect());
-  return running;
+/** The form's Run, which only computes: u2's showRun also saves the call, uploading its tables (the user's study) to
+ *  the server. Blocked while a field is missing or invalid, and while `busy`. */
+export function addRunButton(form: FuncCallForm, run: () => unknown, busy: ReadonlySignal<boolean>): void {
+  const b = form.runInScope(() => button('Run', () => void run(), {primary: true}));
+  form.addButtons((row) => row.append(b));
+  form.effect(() => {
+    const missing = form.missingRequired.value;
+    const invalid = form.invalidFields.value;
+    b.disabled = missing.length > 0 || invalid.length > 0 || busy.value;
+    b.title = missing.length > 0 ? `Missing: ${missing.join(', ')}` :
+      invalid.length > 0 ? `Invalid: ${invalid.join(', ')}` : '';
+  });
 }
 
 /** A finished call's outputs by name. */

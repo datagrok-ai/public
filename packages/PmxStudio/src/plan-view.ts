@@ -14,7 +14,7 @@ import {appView, funcForm, viewers} from '@datagrok-libraries/u2/src/dg/index.js
 import {PlanFrames, WEEKDAY_NAMES, armColors, weekdaysOf, weekdaysText} from './frames';
 import {ArmsInput, CorrectionInput, armsFrame} from './arms-input';
 import {MIN_GROUP, finite} from './engine';
-import {block, busyOverlay, cardGrid, copyRow, declarationPane, DECLARATION_MIN, formRunning, infoNote, notes,
+import {addRunButton, block, busyOverlay, cardGrid, copyRow, declarationPane, DECLARATION_MIN, infoNote, notes,
   notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, resultTabs, settleForm, sized, staleNote, stageStrip,
   statCard, swatch, volumeAxis} from './ui';
 import {openStage} from './stages';
@@ -195,8 +195,8 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
   const call = DG.Func.byName('PmxStudio:pmxPlanStudy').prepare();
   const read = (c: DG.FuncCall) => outputsOf<PlanFrames>(c);
   const result = signal<PlanFrames | undefined>(undefined);
-  // the newest run: the form's Run and the view's own replans share the call, and a run that finishes after a newer
-  // one started is dropped
+  // the newest run: Run and the calendar's replans share the call, and a run that finishes after a newer one started
+  // is dropped
   let latest = 0;
   const error = signal<string | null>(null);
   const armsInput = new ArmsInput({label: 'Arms'});
@@ -204,26 +204,17 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
   // a plan that no longer matches the form is dimmed until the next run
   const stale = signal(false);
   // captions above every field: the panel reads top to bottom, left-aligned, at any width
-  const form = funcForm(call, {showRun: true, layout: 'tall',
+  const form = funcForm(call, {layout: 'tall',
     overrides: {arms: {input: armsInput}, correction: {input: correction}},
-    onInputChanged: () => stale.value = result.peek() !== undefined,
-    onRun: (c) => {
-      latest++;
-      error.value = null;
-      stale.value = false;
-      result.value = read(c as DG.FuncCall);
-    }});
+    onInputChanged: () => stale.value = result.peek() !== undefined});
   settleForm(form, {n: 'Auto (target power)', lastDay: 'Auto (endpoint reached)'});
 
-  // busy while the view plans (the first plan, a change of randomization day: not saved as runs) and while the
-  // form runs one (funcForm says so in aria-busy)
+  // busy while the view plans (the first plan, Run, a change of randomization day)
   const planning = signal(true);
-  const running = formRunning(form);
   // a change made on the calendar replans the study too (the measurement days set the power and the animals), but
   // under a loader of the calendar's own, the page left in view
   const refreshing = signal(false);
-  const blocking = computed(() => planning.value || running.value);
-  const busy = computed(() => blocking.value || refreshing.value);
+  const busy = computed(() => planning.value || refreshing.value);
   const replan = (fromCalendar = false) => {
     (fromCalendar ? refreshing : planning).value = true;
     const mine = ++latest;
@@ -236,6 +227,7 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
     }).catch((e) => error.value = String(e?.message ?? e))
       .finally(() => (fromCalendar ? refreshing : planning).value = false);
   };
+  addRunButton(form, () => replan(), busy);
 
   const plan = computed(() => result.value?.plan);
   const cell = <T = number>(name: string) => computed(() => (plan.value?.get(name, 0) ?? undefined) as T | undefined);
@@ -578,12 +570,12 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
   const overlay = busyOverlay('Designing the study…');
   const failure = div([], 'pmx-plan-error');
   Object.assign(failure.style, {color: 'var(--dg-error-color, #c62828)'});
-  form.effect(() => overlay.hidden = !blocking.value);
+  form.effect(() => overlay.hidden = !planning.value);
   // a calendar change: its own loader, the calendar dimmed, the page in view; a plan from the form clears its note
   form.effect(() => {
     calendarLoader.hidden = !refreshing.value;
     calendarBox.style.opacity = refreshing.value ? '0.5' : '';
-    if (blocking.value)
+    if (planning.value)
       calendarStatus.replaceChildren();
   });
   form.effect(() => {

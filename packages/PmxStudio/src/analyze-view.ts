@@ -16,7 +16,7 @@ import {appView, funcForm, viewers} from '@datagrok-libraries/u2/src/dg/index.js
 import {AnalysisFrames, exampleStudy, median} from './analyze';
 import {armColors} from './frames';
 import {CorrectionInput} from './arms-input';
-import {axisAt, block, busyOverlay, cardGrid, copyRow, dayText, declarationPane, DECLARATION_MIN, formRunning, guide,
+import {addRunButton, axisAt, block, busyOverlay, cardGrid, copyRow, dayText, declarationPane, DECLARATION_MIN, guide,
   infoNote, noteLine, notesBox, num, outputsOf, resultTabs, pct, pValue, RESULTS_MIN, resultsFrame, settleForm, signed,
   sized, staleNote, stageStrip, statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {openStage} from './stages';
@@ -161,7 +161,7 @@ export async function analyzeView(): Promise<DG.ViewBase> {
   const call = DG.Func.byName('PmxStudio:pmxAnalyzeStudy').prepare();
   const read = (c: DG.FuncCall) => outputsOf<AnalysisFrames>(c);
   const result = signal<AnalysisFrames | undefined>(undefined);
-  // the newest run: the form's Run and the example share the call, and a run that finishes after a newer one started
+  // the newest run: Run and the example share the call, and a run that finishes after a newer one started
   // is dropped
   let latest = 0;
   const error = signal<string | null>(null);
@@ -170,14 +170,8 @@ export async function analyzeView(): Promise<DG.ViewBase> {
   // the multiple comparisons as Plan asks for them, over the treated groups of the last analysis (two until then)
   const treatedGroups = signal(2);
   const correction = new CorrectionInput({label: 'Multiple comparisons', arms: treatedGroups});
-  const form = funcForm(call, {showRun: true, layout: 'tall', overrides: {correction: {input: correction}},
-    onInputChanged: () => stale.value = result.peek() !== undefined,
-    onRun: (c) => {
-      latest++;
-      error.value = null;
-      stale.value = false;
-      result.value = read(c as DG.FuncCall);
-    }});
+  const form = funcForm(call, {layout: 'tall', overrides: {correction: {input: correction}},
+    onInputChanged: () => stale.value = result.peek() !== undefined});
   settleForm(form, {control: 'Auto (the vehicle group)', evaluationDay: 'Auto (endpoint reached)',
     density: 'Auto (the cell line’s in the atlas)'});
   // u2 auto-picks a column for every column param, the optional ones too (the nearest name): an optional column keeps
@@ -198,31 +192,13 @@ export async function analyzeView(): Promise<DG.ViewBase> {
       }
     });
   });
-  // busy while the form runs (funcForm says so in aria-busy) and while the example study is prepared
-  const running = formRunning(form);
-  const preparing = signal(false);
-  const busy = computed(() => running.value || preparing.value);
-
-  // the example: Plan's study opened in the workspace like any table (the form's table picker then offers it), this
-  // view brought back and the study analyzed at once
-  const openExample = async () => {
-    preparing.value = true;
+  // busy while the study is analyzed, and before that while the example study is prepared
+  const busy = signal(false);
+  const analyze = async (prepare?: () => Promise<void>) => {
+    busy.value = true;
     const mine = ++latest;
     try {
-      const df = await exampleStudy();
-      grok.shell.addTableView(df);
-      grok.shell.v = view;
-      const study = form.getInput('study');
-      if (study)
-        study.value.value = df.name;
-      await form.settled;
-      // the optional body and tumor weights: the example's own columns
-      for (const [input, column] of [['bodyWeight', 'body_weight'], ['tumorWeight', 'tumor_weight']]) {
-        const w = form.getInput(input);
-        if (w)
-          w.value.value = column;
-      }
-      await form.settled;
+      await prepare?.();
       const c = await call.call();
       if (mine !== latest)
         return;
@@ -232,9 +208,29 @@ export async function analyzeView(): Promise<DG.ViewBase> {
     } catch (e: any) {
       error.value = String(e?.message ?? e);
     } finally {
-      preparing.value = false;
+      busy.value = false;
     }
   };
+  addRunButton(form, () => analyze(), busy);
+
+  // the example: Plan's study opened in the workspace like any table (the form's table picker then offers it), this
+  // view brought back and the study analyzed at once
+  const openExample = () => analyze(async () => {
+    const df = await exampleStudy();
+    grok.shell.addTableView(df);
+    grok.shell.v = view;
+    const study = form.getInput('study');
+    if (study)
+      study.value.value = df.name;
+    await form.settled;
+    // the optional body and tumor weights: the example's own columns
+    for (const [input, column] of [['bodyWeight', 'body_weight'], ['tumorWeight', 'tumor_weight']]) {
+      const w = form.getInput(input);
+      if (w)
+        w.value.value = column;
+    }
+    await form.settled;
+  });
   // the example also among the Study field's own actions (beside open file, Files, database), within reach once a
   // study is open
   void form.settled.then(() => {
@@ -251,8 +247,8 @@ export async function analyzeView(): Promise<DG.ViewBase> {
     span('Open your study table (one row per animal and measurement day, day 0 the randomization), check its ' +
       'columns and run.'),
     divH([button('Analyze an example study', () => void openExample()),
-      span('An MC38 study as Plan predicts it: a vehicle and two treated groups at TGI 40% and 70%, 8 animals ' +
-        'each.')]),
+      span('An MC38 study as Plan predicts it: a vehicle and two treated groups at TGI 40% and 70%, with the ' +
+        'animals Plan asks for.')]),
     infoNote('<b>Analyzed as planned.</b> Analyze applies the analysis Plan pre-specifies: the study is evaluated ' +
       'when the median control reaches the endpoint, each treated group is compared with the control on tumor ' +
       'growth, and each treated animal with its untreated twin: what it would measure without treatment, predicted ' +

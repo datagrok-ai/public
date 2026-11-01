@@ -141,7 +141,7 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
     }
   };
   // the Plan field: u2's FileInput (a path in Datagrok's files, a file from the computer, or a drop) under the Study
-  // fields; the file's text goes into the call's hidden `plan` param, so a saved run carries its plan (ponytail:
+  // fields; the file's text goes into the call's hidden `plan` param (ponytail:
   // placed by hand, u2 funcForm has no file field yet)
   const planField = form.runInScope(() => new FileInput({label: 'Plan', nullable: true,
     placeholder: PLACEHOLDER, tooltipText: 'The plan saved in Plan (.pmxplan), to compare the ' +

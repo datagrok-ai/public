@@ -14,4 +14,5 @@ PMX Studio Preclinical, Plan and Analyze, on Crux (crate tgi) and the atlas of h
   the study against its plan, and tolerability from body weight (weight-loss grades, removals, NCI limits).
 * The predicted and observed growth and the body weight are drawn by the package's own band chart (`band-chart.ts`,
   echarts): the area between a lower and an upper column, a line through it, one band per group.
+* Run computes in the browser and saves nothing: the study's tables are not uploaded to the server.
 * `pmxPriors`, `pmxMapPrior`: the atlas's control-growth priors and the MAP prior through Crux.
