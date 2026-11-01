@@ -114,7 +114,7 @@ export function tolerabilityTab(form: FuncCallForm, result: ReadonlySignal<Analy
   colorsOf: (r: AnalysisFrames) => {[group: string]: string}): {content: HTMLElement[], own: {dispose(): void}[]} {
   const corrected = new BoolInput({label: 'Tumor-corrected', switch: true, value: false,
     tooltipText: 'Take the tumor’s mass off each weighing'});
-  const basis = computed(() => corrected.value.value ? BASES.tumor_corrected : BASES.measured);
+  const basis = computed(() => corrected.value ? BASES.tumor_corrected : BASES.measured);
   const has = computed(() => (result.value?.tolerability.rowCount ?? 0) > 0);
   // the control first, then the treated groups in their order, in the chosen reading
   const groups = computed((): Row[] => {
@@ -176,7 +176,7 @@ export function tolerabilityTab(form: FuncCallForm, result: ReadonlySignal<Analy
     lineHeight: '1.45'});
   form.effect(() => {
     const r = result.value;
-    const on = corrected.value.value;
+    const on = corrected.value;
     if (!r || !has.value)
       return;
     const control = r.analysis.get('control', 0);

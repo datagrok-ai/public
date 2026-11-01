@@ -159,7 +159,7 @@ export function volumeAxis(): {input: RadioInput, row: HTMLElement, log: Readonl
     itemTooltips: {Linear: 'Linear volume axis', Log: 'Logarithmic volume axis'}});
   const row = divH([span('Volume axis'), input.root]);
   Object.assign(row.style, {justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--dg-space-m)'});
-  return {input, row, log: computed(() => input.value.value === 'Log')};
+  return {input, row, log: computed(() => input.value === 'Log')};
 }
 
 export type Stage = 'plan' | 'monitor' | 'analyze';
@@ -212,7 +212,7 @@ export function resultTabs(view: string, tabs: ResultTab[]): TabStrip {
     const body = t.soon !== undefined ? [infoNote(`<b>Coming soon.</b> ${t.soon}`)] : t.content ?? [];
     const panel = divV([intro, ...body], `pmx-${view}-tab-${t.id}`);
     Object.assign(panel.style, {gap: 'var(--dg-space-l)', paddingTop: 'var(--dg-space-m)'});
-    return {id: t.id, label: t.label, content: panel, tooltip: t.soon !== undefined ? `${t.label}: coming soon` :
+    return {id: t.id, title: t.label, content: panel, tooltip: t.soon !== undefined ? `${t.label}: coming soon` :
       t.label};
   })});
   return strip;

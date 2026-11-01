@@ -66,9 +66,9 @@ class ArmCard extends Control {
       // a form of its own, captions above: the card keeps its look whatever layout the outer form takes
       const fields = new Form({layout: 'tall'}).add(name).add(therapy).add(metric).add(effect);
       this.root.append(head, fields.root);
-      this.effect(() => onChange({name: name.value.value.trim() || `Treatment ${index + 1}`,
-        therapy: (therapy.value.value ?? 'small_molecule') as Therapy,
-        metric: metric.value.value === 'T/C' ? 'TC' : 'TGI', effect: effect.value.value ?? arm.effect}));
+      this.effect(() => onChange({name: name.value.trim() || `Treatment ${index + 1}`,
+        therapy: (therapy.value ?? 'small_molecule') as Therapy,
+        metric: metric.value === 'T/C' ? 'TC' : 'TGI', effect: effect.value ?? arm.effect}));
     });
   }
 }
@@ -97,11 +97,11 @@ export class ArmsInput extends Input<DG.DataFrame | null> {
     this._add = buttonWithIcon('Add treatment arm', 'plus',
       () => this._set([...this._arms, newArm(this._arms.length + 1)]));
     this._add.dataset.u2 = 'pmx-add-arm';
-    this._set(armsOf(this.value.peek()), false);
+    this._set(armsOf(this.peek()), false);
     // a table written from outside (a run from the history, a script) rebuilds the cards; anything else is
     // u2 funcForm following the call's param back, which reads a table param as its text: ignored
     this.effect(() => {
-      const df = this.value.value as unknown;
+      const df = this.value as unknown;
       if (df instanceof DG.DataFrame && !sameArms(armsOf(df), this._arms))
         this._set(armsOf(df), false);
     });
@@ -130,9 +130,9 @@ export class ArmsInput extends Input<DG.DataFrame | null> {
   }
 
   private _commit(): void {
-    const v = this.value.peek() as unknown;
+    const v = this.peek() as unknown;
     if (!(v instanceof DG.DataFrame) || !sameArms(armsOf(v), this._arms))
-      this.value.value = armsFrame(this._arms);
+      this.value = armsFrame(this._arms);
   }
 }
 
@@ -155,7 +155,7 @@ export class CorrectionInput extends Input<string | null, CorrectionInputOptions
 
   protected createEditor(): HTMLElement {
     const box = new BoolInput({label: 'Correct for multiple comparisons', captionAfter: true,
-      value: this.value.peek() !== 'none'});
+      value: this.peek() !== 'none'});
     // ponytail: u2's caption-after row tops its caption against a 28px editor, 5px above the box's centre;
     // centred here until u2 centres it
     box.root.style.alignItems = 'center';
@@ -163,22 +163,21 @@ export class CorrectionInput extends Input<string | null, CorrectionInputOptions
     Object.assign(note.style, {color: 'var(--dg-text-color-muted, #68727f)', fontSize: '11.5px', lineHeight: '1.4'});
     this.runInScope(() => {
       this.effect(() => {
-        const v = box.value.value ? (this.value.peek() === 'bonferroni' ? 'bonferroni' : 'dunnett') : 'none';
-        if (this.value.peek() !== v)
-          this.value.value = v;
+        const v = box.value ? (this.peek() === 'bonferroni' ? 'bonferroni' : 'dunnett') : 'none';
+        if (this.peek() !== v)
+          this.value = v;
       });
       this.effect(() => {
-        const on = this.value.value !== 'none';
-        if (box.value.peek() !== on)
-          box.value.value = on;
+        const on = this.value !== 'none';
+        if (box.peek() !== on)
+          box.value = on;
       });
       // with one treated arm there is nothing to correct: the box is off limits, the reason in its tooltip
       this.effect(() => {
         const k = this.options.arms.value;
-        box.enabled = k >= 2;
-        box.tooltipText = k < 2 ? 'Applies when two or more treated arms are compared with the control' : '';
+        box.disabled = k >= 2 ? null : 'Applies when two or more treated arms are compared with the control';
         note.hidden = k < 2;
-        note.textContent = k < 2 ? '' : this.value.value !== 'none' ?
+        note.textContent = k < 2 ? '' : this.value !== 'none' ?
           `Recommended. Dunnett's test keeps the chance of any false positive over the ${k} comparisons at α; it ` +
           'needs a few more animals.' :
           `Each of the ${k} comparisons is tested at α: fine for an exploratory study, but the chance of at least ` +

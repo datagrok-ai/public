@@ -136,7 +136,7 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
         continue;
       const field = form.getInput(name);
       if (field)
-        field.value.value = value;
+        field.value = value;
       call.setParamValue(name, value);
     }
   };
@@ -152,25 +152,25 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
       return;
     }
     DG.Menu.popup().items(files.map((f) => f.name), (name: string) =>
-      planField.value.value = files.find((f) => f.name === name) ?? null).show();
+      planField.value = files.find((f) => f.name === name) ?? null).show();
   }), {tooltip: 'Choose one of your saved plans'})));
   // ponytail: u2's FileInput keeps its last file when the box is emptied (it reports the empty path as missing), so
   // the plan is taken off with a button of its own
-  planField.addOptions(form.runInScope(() => iconButton('times', () => planField.value.value = null,
+  planField.addOptions(form.runInScope(() => iconButton('times', () => planField.value = null,
     {tooltip: 'No plan: compare with the plan the study table carries, if any, else the atlas'})));
   // with the box empty, the plan in use says where it comes from: the study table's own, or none
   const box = planField.root.querySelector('input');
   form.effect(() => {
     const used = result.value?.analysis.get('plan', 0);
     if (box)
-      box.placeholder = used && !planField.value.value ? `The study's own: ${used}` : PLACEHOLDER;
+      box.placeholder = used && !planField.value ? `The study's own: ${used}` : PLACEHOLDER;
   });
   // the newest file picked: a slower read of an older one is dropped
   let latest = 0;
   void form.settled.then(() => {
     form.getInput('volume')?.root.after(planField.root);
     form.effect(() => {
-      const file = planField.value.value;
+      const file = planField.value;
       const mine = ++latest;
       stale.value = result.peek() !== undefined;
       if (!file) {

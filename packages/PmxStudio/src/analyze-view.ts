@@ -11,7 +11,7 @@ import * as grok from 'datagrok-api/grok';
 import {badge, BasicTable, button, computed, div, divH, divV, dot, signal, span, Splitter, tableFromMap,
   Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
-import {appView, funcForm, viewers} from '@datagrok-libraries/u2/dg';
+import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 
 import {AnalysisFrames, exampleStudy, median} from './analyze';
 import {armColors} from './frames';
@@ -182,13 +182,13 @@ export async function analyzeView(): Promise<DG.ViewBase> {
     removalReason: (c) => /reason|removal|fate|cause|status/i.test(c),
   };
   form.effect(() => {
-    void form.getInput('study')?.value.value;
+    void form.getInput('study')?.value;
     void form.settled.then(() => {
       for (const [name, named] of Object.entries(optional)) {
         const input = form.getInput(name);
-        const column = input?.value.peek();
+        const column = input?.peek();
         if (input && typeof column === 'string' && !named(column))
-          input.value.value = null;
+          input.value = null;
       }
     });
   });
@@ -221,13 +221,13 @@ export async function analyzeView(): Promise<DG.ViewBase> {
     grok.shell.v = view;
     const study = form.getInput('study');
     if (study)
-      study.value.value = df.name;
+      study.value = df.name;
     await form.settled;
     // the optional body and tumor weights: the example's own columns
     for (const [input, column] of [['bodyWeight', 'body_weight'], ['tumorWeight', 'tumor_weight']]) {
       const w = form.getInput(input);
       if (w)
-        w.value.value = column;
+        w.value = column;
     }
     await form.settled;
   });
@@ -627,14 +627,14 @@ export async function analyzeView(): Promise<DG.ViewBase> {
   const panes = new Splitter([declarationPane(form.root),
     resultsFrame([failure, outdated, start, content], overlay)],
   {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
-  const view: DG.ViewBase = appView({
-    name: 'PMX Studio · Analyze',
-    content: panes,
+  const host = ViewHost.create({name: 'PMX Studio · Analyze', content: () => ({
+    root: panes,
     ribbon: [[stageStrip('analyze', (s) => void openStage(s))]],
     path: '/analyze',
-    own: [form, correction, planField, growthAxis.input, twinAxis.input, growth, animalTwin, ...versus.own,
-      ...tolerability.own, tabs],
     status: computed(() => busy.value ? 'Analyzing the study…' : result.value ? result.value.analysis.name : ''),
-  });
+  })});
+  [form, correction, planField, growthAxis.input, twinAxis.input, growth, animalTwin, ...versus.own,
+    ...tolerability.own, tabs].forEach((c) => host.own(() => c.dispose()));
+  const view: DG.ViewBase = host.view;
   return view;
 }

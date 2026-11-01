@@ -9,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
 import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, loader, signal, span,
   Splitter, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
-import {appView, funcForm, viewers} from '@datagrok-libraries/u2/dg';
+import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 
 import {PlanFrames, WEEKDAY_NAMES, armColors, weekdaysOf, weekdaysText} from './frames';
 import {ArmsInput, CorrectionInput, armsFrame} from './arms-input';
@@ -308,7 +308,7 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
   const setField = (name: string, value: string) => {
     const field = form.getInput(name);
     if (field)
-      field.value.value = value;
+      field.value = value;
     call.setParamValue(name, value);
     const before = result.peek();
     void replan(true).then(() => {
@@ -322,10 +322,10 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
   form.effect(() => {
     const s = cell('start_weekday').value;
     if (s !== undefined)
-      startDay.value.value = WEEKDAY_NAMES[s];
+      startDay.value = WEEKDAY_NAMES[s];
   });
   form.effect(() => {
-    const chosen = startDay.value.value;
+    const chosen = startDay.value;
     if (chosen && chosen !== WEEKDAY_NAMES[plan.peek()?.get('start_weekday', 0) ?? 0] && !busy.peek())
       setField('startWeekday', chosen);
   });
@@ -619,7 +619,7 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
       const v = name === 'arms' ? armsFrame(value as SavedPlan['inputs']['arms']) : value;
       const field = form.getInput(name);
       if (field)
-        field.value.value = v;
+        field.value = v;
       call.setParamValue(name, v);
     }
     return replan();
@@ -646,7 +646,7 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
     // a plan of the same name is replaced only when Save is pressed again for it (the dialog says so and stays open)
     let replacing: string | null = null;
     new Dialog('Save plan').add(name).add(where).onOK(async () => {
-      const chosen = name.value.value.trim() || defaultName(r);
+      const chosen = name.value.trim() || defaultName(r);
       if (chosen !== replacing && await planSaved(chosen)) {
         replacing = chosen;
         throw new Error(`A plan named "${chosen}" is already saved: press Save again to replace it, or rename it`);
@@ -672,12 +672,12 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
 
   const panes = new Splitter([declaration, results], {direction: 'horizontal', sizes: [0.3, 0.7],
     minSize: DECLARATION_MIN});
-  return appView({
-    name: 'PMX Studio · Plan',
-    content: panes,
+  const host = ViewHost.create({name: 'PMX Studio · Plan', content: () => ({
+    root: panes,
     ribbon: [[stageStrip('plan', (s) => void openStage(s))], [saveButton, downloadButton]],
     path: '/plan',
-    own: [form, armsInput, correction, scale, growth, startDay, tabs],
     status: computed(() => busy.value ? 'Designing the study…' : result.value ? result.value.plan.name : ''),
-  });
+  })});
+  [form, armsInput, correction, scale, growth, startDay, tabs].forEach((c) => host.own(() => c.dispose()));
+  return host.view;
 }
