@@ -3,7 +3,7 @@
    `userInput` (src/dg/inputs/user-input.ts) is not covered here — it imports datagrok-api, which does
    not load headless; it is exercised in the platform gallery instead. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope, Combobox} from '../src/index.js';
@@ -34,7 +34,7 @@ function mount(component) {
 }
 
 function texts(root, selector) {
-  return root.querySelectorAll(selector).map((el) => el.textContent);
+  return [...root.querySelectorAll(selector)].map((el) => el.textContent);
 }
 
 function userRow(user) {
@@ -305,17 +305,17 @@ smoke('Combobox: typed text that matches nothing IS the value', async () => {
   input.value = 'ester';
   fire(input, 'input');
   await flush();
-  assert.equal(combobox.value.value, 'ester', 'free text is the value, no item needed');
+  assert.equal(combobox.value, 'ester', 'free text is the value, no item needed');
   assert.equal(document.body.querySelector('.u2-combobox-empty').textContent, 'No matches');
 
   fire(input, 'keydown', {key: 'Enter'});
-  assert.equal(combobox.value.value, 'ester', 'Enter with nothing highlighted leaves it alone');
+  assert.equal(combobox.value, 'ester', 'Enter with nothing highlighted leaves it alone');
 
   input.value = 'aci';
   fire(input, 'input');
   await flush();
   fire(input, 'keydown', {key: 'ArrowDown'});
   fire(input, 'keydown', {key: 'Enter'});
-  assert.equal(combobox.value.value, 'acid', 'and picking an item still commits the item');
+  assert.equal(combobox.value, 'acid', 'and picking an item still commits the item');
   combobox.dispose();
 });

@@ -24,6 +24,24 @@ events. This recipe is the composition-level rule set a spec author (or an LLM) 
   document (resolved when the render pass ends, still without a rebuild).
 - A malformed node — a `bind` value that is not a `$.` path string, `children` that is not an
   array of nodes — becomes a visible placeholder naming the mistake; the rest renders.
+- `renderSpec` builds from a registry: call `registerAll()` first (a u2 tag in an empty registry
+  renders a placeholder that says so).
+
+## A form with its buttons
+
+```json
+{"tag": "u2-form", "children": [
+  {"tag": "u2-text-input", "name": "name", "props": {"label": "Name", "required": true}},
+  {"tag": "u2-form-buttons", "children": [
+    {"tag": "u2-button", "props": {"text": "Save", "primary": true}, "bind": {"disabled": "$.saveProblem"},
+      "on": {"click": "cmd:save"}}]}]}
+```
+
+- `u2-form-buttons` is the form's button row, under the rows wherever it sits among them (`align`:
+  `end`, `editors` or `start`); a bare `u2-button` child is a row of its own.
+- `disabled` takes **why** the button is off — bind it to a context value that is null while the
+  button can run; the reason is its tooltip and is said on keyboard focus.
+- `u2-div-h`, `u2-div-v` and `u2-panel` take `gap` on the token scale (`xs` … `xxl`).
 
 ## Events
 

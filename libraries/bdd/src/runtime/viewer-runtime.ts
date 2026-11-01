@@ -1116,8 +1116,13 @@ function install(): void {
     delete armed[token];
     return result !== undefined;
   };
-  /** Closes the open popup menu the platform's way (a click outside) and waits for it to be gone. */
+  /** Closes the open popup menu the platform's way (a click outside) and waits for it to be gone; a u2 menu
+   * closes on Escape on its panel. */
   const closeMenu = async (): Promise<void> => {
+    for (const panel of Array.from(document.querySelectorAll('.u2-menu'))) {
+      if (!panel.parentElement?.closest('.u2-menu'))
+        panel.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    }
     if (!document.querySelector('.d4-menu-popup'))
       return;
     const closed = armEvent('onContextMenuClosed', 1500);

@@ -67,7 +67,6 @@ export async function _demoChemOverview(): Promise<void> {
       tv = await openMoleculeDataset('demo_files/demo_smiles.csv');
       const layoutString = await _package.files.readAsText('demo_files/Overview_demo.layout');
       const layout = DG.ViewLayout.fromJson(layoutString);
-      await DG.delay(100);
       tv.loadLayout(layout);
       grok.shell.windows.showHelp = false;
       grok.shell.windows.context.visible = true;
@@ -183,7 +182,6 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
   const tv = await openMoleculeDataset('demo_files/smiles.csv');
   await _package.files.readAsText('demo_files/similarity_diversity.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
-    await DG.delay(100);
     tv.loadLayout(layout);
     grok.shell.windows.showHelp = true;
     setTimeout(() => grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#similarity-and-diversity-search'), 1000);
@@ -708,7 +706,7 @@ export async function _demoMMPA(): Promise<void> {
       await awaitCheck(() => {
         for (const v of tv.viewers) {
           if (v.type === 'Matched Molecular Pairs Analysis') {
-            v.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
+            v.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/help/refs/heads/master/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
             return true;
           }
         }
@@ -794,7 +792,7 @@ export async function _demoActivityCliffs(): Promise<void> {
       await PackageFunctions.activityCliffs(table, molecules, table.col('In-vivo Activity')!,
         78, DimReductionMethods.T_SNE, BitArrayMetricsNames.Tanimoto,
         preprocessing, {}, true);
-      awaitCheck(() => {
+      await awaitCheck(() => {
         for (const v of tv.viewers) {
           if (v.type === DG.VIEWER.SCATTER_PLOT) {
             scatterPlot = v;

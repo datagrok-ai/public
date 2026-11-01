@@ -74,7 +74,6 @@ export async function antibodyDemo() {
       Object.entries(c.tags).forEach(([k, v]) => col.setTag(k, v));
   });
   const tv = grok.shell.addTableView(df);
-  await DG.delay(100);
   tv.loadLayout(layout, true);
 }
 
@@ -82,7 +81,6 @@ export async function atomicLevelDemo() {
   const df = await _package.files.readCsv('demo-files/Atomic_Level.csv');
   await df.meta.detectSemanticTypes();
   const tv = grok.shell.addTableView(df);
-  await DG.delay(100);
   await buildMonomerHoverLink(df.col('helm')!, df.col('molfile(helm)')!, _package.monomerLib, _package.seqHelper, _package.rdKitModule, true);
   adjustGridcolAfterRender(tv.grid, 'molfile(HELM)', 500, 300, true);
   adjustGridcolAfterRender(tv.grid, 'HELM', 500, undefined, true);
@@ -97,10 +95,10 @@ export async function sirnaDemo() {
   const layout = DG.ViewLayout.fromJson(layoutTXT);
   df.col('sense_seq')!.setTag('aligned', 'SEQ.MSA');
   df.col('antisense_seq')!.setTag('aligned', 'SEQ.MSA');
-  const tv = grok.shell.addTableView(df);
-  await DG.delay(100);
-  tv.loadLayout(layout, true);
+  // the layout binds its columns by semantic type
   await df.meta.detectSemanticTypes();
+  const tv = grok.shell.addTableView(df);
+  tv.loadLayout(layout, true);
   grok.shell.info('Hover over the oligo structrues to see modifications to different sugars, linkers and residues.', {timeout: 10});
   setTimeout(() => {
     df.currentCell = df.cell(0, 'oligo_helm');

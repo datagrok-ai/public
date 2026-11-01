@@ -441,3 +441,15 @@ scenario('a "name = value" status line is a readout by its label, and its value 
   assert.equal(await readout.count(), 1);
   assert.equal(await readout.evaluate((e) => e.getAttribute('role')), 'status');
 });
+
+scenario('a parent crumb is one link: the crumb itself, or the link an app\'s crumb holds', async () => {
+  await page!.setContent('<div class="d4-view-ribbon">' +
+    '<span class="d4-ribbon-name"><a class="ui-link">Hit Design</a></span>' +
+    '<span class="d4-ribbon-name grok-ns-entity-name">DMT1-1</span></div>' +
+    '<div class="d4-view-ribbon"><span class="d4-ribbon-name">Projects</span></div>');
+  assert.equal(await count('"Hit Design" link'), 1);
+  assert.equal(await text('"Hit Design" link'), 'Hit Design');
+  assert.equal(await (await locate(page!, el('"Hit Design" link'))).evaluate((e) => e.tagName), 'A');
+  assert.equal(await count('"Projects" link'), 1);
+  assert.equal(await count('"DMT1-1" link'), 0);
+});

@@ -3,7 +3,9 @@ Feature: Pie chart persistence
   A configured pie chart survives a layout saved on the server and a project saved and reopened:
   the properties come back, the disc is drawn from them again, the saved layout restores the viewer
   set it was saved with (a viewer added afterwards is gone), and the custom category colour the
-  legend dialog wrote into the column travels with both. One journey on demog-1000 with a pie of
+  legend dialog wrote into the column travels with both. Before the project is saved the pie is
+  stacked as the second tab over a bar chart (the tab carries its title, Race mix), and back from
+  the project it still shows its legend when that tab is picked (public#482, item 7). One journey on demog-1000 with a pie of
   RACE by sum(AGE), started at 45 degrees, shifted 5 pixels, showing values, titled, with Asian
   recoloured — sum(AGE) makes Caucasian 89.59 % of the disc against 89.6 % under count, so the
   restored chart is the configured one and not a default. The coloring is put back by naming
@@ -66,11 +68,20 @@ Feature: Pie chart persistence
     And the "pie" area of pie chart viewer should contain the color "#9467BD"
     And no errors should have been logged
 
-  Scenario: A project saved, closed and reopened brings all of it back
+  @realizes:public#482
+  Scenario: A project saved, closed and reopened brings all of it back, the legend of a pie stacked as the second tab included (public#482)
+    Given user adds a bar chart viewer
+    When user stacks pie chart viewer onto bar chart viewer as a tab
+    Then the viewers "Bar chart, Race mix" should be the tabs of one panel
+    When user switches the tabbed panel to the "Race mix" tab
+    Then the legend of pie chart viewer should list 4 items
     When user saves the current view as project "bdd pie chart round trip"
     And user closes all views
     And user opens the "bdd pie chart round trip" project
+    Then the viewers "Bar chart, Race mix" should be the tabs of one panel
+    When user switches the tabbed panel to the "Race mix" tab
     Then pie chart viewer should be visible
+    And the legend of pie chart viewer should list 4 items
     And properties of pie chart viewer should be:
       | Category                | RACE     |
       | Segment Angle Aggr Type | sum      |

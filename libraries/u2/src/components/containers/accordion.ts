@@ -193,7 +193,7 @@ export class Accordion extends Control {
       return;
     const build = pane.builder;
     pane.builder = undefined;
-    untracked(() => pane.content.append(Scope.runWith(pane.scope, build)));
+    untracked(() => pane.content.append(pane.scope.build(build)));
   }
 
   private _toggle(index: number): void {

@@ -6,7 +6,7 @@ import {
   TextInput, BoolInput, NumberInput, ChoiceInput,
   Form, PropertyGrid,
 } from '@datagrok-libraries/u2';
-import {propertyForm, IProperty} from '@datagrok-libraries/u2/src/dg/index.js';
+import {propertyForm, IProperty} from '@datagrok-libraries/u2/dg';
 import {readout} from './common';
 
 export function formPage(): HTMLElement {

@@ -73,7 +73,9 @@ function followTable(tableInput: DG.InputBase<DG.DataFrame | null>, container: H
   tableInput.onChanged.subscribe(async () => {
     const t = tableInput.value;
     await t?.meta?.detectSemanticTypes();
-    await DG.delay(100); // wait for semantic type detection to finish and UI to update
+    // a table chosen meanwhile has its own detection
+    if (tableInput.value !== t)
+      return;
     const molCol = t?.columns?.bySemType(DG.SEMTYPE.MOLECULE) ?? null;
     const input = createColumnInput(label, t, molCol, tooltip);
     setInput(input);

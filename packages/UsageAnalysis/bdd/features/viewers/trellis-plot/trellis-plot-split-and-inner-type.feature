@@ -6,8 +6,9 @@ Feature: Trellis plot split columns and the inner viewer
   setting — Summary's Visualization is bars by default, so circles is the one set; the Points viewer
   is listed as Heatmap and takes its Columns), an excursion through a no-data state that must leave
   no stale frame, the control panel that hides without touching the type, gridlines under the three
-  modes and two inner types, and an inner-viewer setting that redraws every cell. One journey on
-  demog-1000; every scenario puts back what it changed.
+  modes and two inner types, and an inner-viewer setting that redraws every cell; an inner bar
+  chart's own setting survives a switch to a pie chart and back, with the very picture it had
+  (public#2144). One journey on demog-1000; every scenario puts back what it changed.
 
   A second X column (CONTROL, GROK-19673) makes the grid 4 by 4 and dropping it returns to 2 by 4.
   Not translated here: the (+) column picker itself — its hover preview that Escape must undo, the
@@ -178,3 +179,21 @@ Feature: Trellis plot split columns and the inner viewer
     When user sets "xColumnName" inner property of trellis plot viewer to "HEIGHT"
     Then the "cell signature F | Caucasian" reading of trellis plot viewer should be as remembered
     And no errors should have been logged
+
+  @realizes:public#2144
+  Scenario: An inner bar chart keeps its own setting through a pie chart and back (public#2144)
+    When user picks "Bar chart" in the viewer selector of trellis plot viewer
+    Then the "inner viewer type" reading of trellis plot viewer should be "Bar chart"
+    When user remembers the "cell signature F | Caucasian" reading of trellis plot viewer
+    And user sets "valueAggrType" inner property of trellis plot viewer to "avg"
+    Then the "cell signature F | Caucasian" reading of trellis plot viewer should not be as remembered
+    When user remembers the "cell signature F | Caucasian" reading of trellis plot viewer
+    And user picks "Pie chart" in the viewer selector of trellis plot viewer
+    Then the "inner viewer type" reading of trellis plot viewer should be "Pie chart"
+    And the "cell signature F | Caucasian" reading of trellis plot viewer should not be as remembered
+    When user picks "Bar chart" in the viewer selector of trellis plot viewer
+    Then the "inner viewer type" reading of trellis plot viewer should be "Bar chart"
+    And "valueAggrType" inner property of trellis plot viewer should be "avg"
+    And the "cell signature F | Caucasian" reading of trellis plot viewer should be as remembered
+    When user picks "Scatter plot" in the viewer selector of trellis plot viewer
+    Then no errors should have been logged

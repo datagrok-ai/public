@@ -1,8 +1,3 @@
-/* The Datagrok shell by name. Loaded for every profile, so these names are reserved: an app
-   registering "toolbox" for a bar of its own is refused — it registers "toolbar"-like names on its
-   context instead, and "toolbox" keeps meaning the platform's. Selector sources: toolbox.dart
-   (.d4-toolbox[caption]), console.dart, the shell's `name=` annotations (Browse, Toolbox), the selectors.ts
-   files under playwright-public. */
 import {element, kind} from '../../src/registry.js';
 
 // simple_mode.dart also uses d4-toolbox on an empty sliding host. Only Toolbox.root has caption.

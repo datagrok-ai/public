@@ -1,0 +1,90 @@
+/* Page (src/components/containers/page.ts): a header, a body that alone scrolls, and an action row pinned under it.
+   A package tunes it with the --u2-page-* properties on its own element, never with rules over these classes.
+   Tokens only; css/tokens.css must be loaded alongside. */
+.u2-page {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+}
+
+.u2-page-header {
+  flex: none;
+  padding: var(--u2-page-padding-y, var(--dg-space-l)) var(--u2-page-padding-x, var(--dg-space-xxl)) 0;
+}
+
+.u2-page-body {
+  --u2-form-max-width: var(--u2-page-max-width, 700px);
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--u2-page-gap, var(--dg-space-xxl));
+  box-sizing: border-box;
+  min-height: 0;
+  padding: var(--u2-page-padding-y, var(--dg-space-l)) var(--u2-page-padding-x, var(--dg-space-xxl));
+  overflow: auto;
+}
+
+.u2-page-body > * {
+  flex: none;
+  max-width: var(--u2-page-max-width, none);
+}
+
+.u2-page-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-m);
+  min-width: 0;
+}
+
+.u2-page-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  min-width: 0;
+}
+
+.u2-page-section-title {
+  margin: 0 6px 0 0;
+}
+
+.u2-page-section-content {
+  min-width: 0;
+  padding-left: var(--u2-page-section-indent, 0);
+}
+
+/* the action row: its buttons on the right, a status line taking the room on their left */
+.u2-page-footer {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-l) var(--u2-page-padding-x, var(--dg-space-xxl));
+  border-top: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-page-footer:empty {
+  display: none;
+}
+
+.u2-page-footer > .u2-status-line {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* a form's button row placed here (`form.addButtons(build, {host: page.footer})`) is the row itself */
+.u2-page-footer > .u2-form-buttons {
+  flex: 1 1 auto;
+  margin-top: 0;
+}
+
+.u2-page-footer > .u2-form-buttons > .u2-status-line {
+  flex: 1 1 auto;
+  min-width: 0;
+}

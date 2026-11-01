@@ -7,19 +7,27 @@
 import {autoUpdate, computePosition, flip, offset, shift} from '@floating-ui/dom';
 import {signal, batch, ReadonlySignal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
+import {Ownership} from '../../core/owner.js';
+import type {Owner} from '../../core/owner.js';
 import {Control} from '../../core/component.js';
 import {Overlay, OVERLAY_CLOSE_EVENT} from '../../core/overlay.js';
+import {Reason} from '../../core/reason.js';
+import {Tooltip} from '../../core/tooltip.js';
 import {icon as iconElement} from '../display/icon.js';
 import type {IItemsState} from '../../core/widget-like.js';
 
 export interface MenuItemOptions {
   icon?: string;
   shortcut?: string;
-  enabled?: boolean;
+  /** Why the item does nothing now — shown greyed, the reason as its tooltip; read when the menu opens. */
+  disabled?: Reason;
   check?: boolean;
   /** Grey text after the label — what the item stands for ("hydroxyl · O[*:2]"); the details of one
    * menu start in one column. */
   detail?: string;
+  /** A pick leaves the menu open and turns the check mark over, as the platform's checkable items do: a
+   * chooser toggling several things in one visit (the columns of a table). */
+  keepOpen?: boolean;
 }
 
 export type MenuState = 'closed' | 'open' | 'submenu-open';
@@ -27,7 +35,7 @@ export type MenuState = 'closed' | 'open' | 'submenu-open';
 interface MenuNode {
   kind: 'item' | 'separator' | 'group';
   label: string;
-  onClick?: () => void;
+  onClick?: () => unknown;
   options?: MenuItemOptions;
   children?: MenuNode[];
 }
@@ -62,7 +70,7 @@ class MenuPanel extends Control {
   getItems(): IItemsState {
     const level = this._level;
     const list = level.entries.filter((e) => e.node.kind !== 'separator').map((e, index) => ({
-      key: e.path, label: e.node.label, index, disabled: e.node.options?.enabled === false,
+      key: e.path, label: e.node.label, index, disabled: Reason.now(e.node.options?.disabled) !== null,
       ...e.node.options?.check === undefined ? {} : {checked: e.node.options.check},
       ...e.node.kind === 'group' ? {expanded: level.entries[level.openIndex] === e} : {},
       rendered: true}));
@@ -96,8 +104,9 @@ export class Menu {
     return new Menu();
   }
 
-  /** `onClick` runs owned by whoever added the item (none once that owner is gone), after the menu closed. */
-  item(label: string, onClick: () => void, options?: MenuItemOptions): Menu {
+  /** `onClick` runs owned by whoever added the item (none once that owner is gone), after the menu closed; a
+   * promise it answers that rejects is reported there. */
+  item(label: string, onClick: () => unknown, options?: MenuItemOptions): Menu {
     this._current.push({kind: 'item', label, onClick: Menu._owned(onClick), options});
     return this;
   }
@@ -132,7 +141,7 @@ export class Menu {
     this._open.value = true;
     this._machine.value = 'open';
     const anchor = 'anchor' in options ? options.anchor : Menu._point(level.panel, options.x, options.y, scope);
-    Overlay.show(anchor, level.panel, scope);
+    Overlay.show(anchor, level.panel, {owner: scope});
     level.scope.listen(level.panel, OVERLAY_CLOSE_EVENT, () => this.close());
     level.panel.focus({preventScroll: true});
   }
@@ -154,12 +163,20 @@ export class Menu {
       restore.focus();
   }
 
-  /** Right-click on `el` opens the menu at the cursor; the listener is released with `scope`. */
-  bindContext(el: HTMLElement, scope: Scope): void {
+  /** Right-click on `el` opens the menu at the cursor. The listener goes with `owner` — whoever is building by
+   * default — and so does a menu it opened, still on screen when the owner goes (the row it was opened on). */
+  bindContext(el: HTMLElement, options?: {owner?: Owner}): void {
+    const scope = Ownership.scopeOf(options?.owner, 'Menu.bindContext()');
+    let opened: Scope | undefined;
     scope.listen(el, 'contextmenu', (e) => {
       e.preventDefault();
       const me = e as MouseEvent;
       this.show({x: me.clientX, y: me.clientY});
+      opened = this._scope;
+    });
+    scope.own(() => {
+      if (opened !== undefined && this._scope === opened)
+        this.close();
     });
   }
 
@@ -196,7 +213,7 @@ export class Menu {
     panel.classList.toggle('u2-menu-detailed', detailed);
     for (const node of nodes) {
       const itemPath = path === '' ? node.label : `${path} > ${node.label}`;
-      const el = this._renderNode(node, depth, level.entries.length, itemPath, detailed);
+      const el = this._renderNode(node, depth, level.entries.length, itemPath, detailed, level.scope);
       level.entries.push({node, el, path: itemPath});
       panel.append(el);
     }
@@ -209,7 +226,8 @@ export class Menu {
     return level;
   }
 
-  private _renderNode(node: MenuNode, depth: number, index: number, path: string, detailed: boolean): HTMLElement {
+  private _renderNode(node: MenuNode, depth: number, index: number, path: string, detailed: boolean,
+    scope: Scope): HTMLElement {
     if (node.kind === 'separator') {
       const sep = document.createElement('div');
       sep.className = 'u2-menu-separator';
@@ -224,7 +242,12 @@ export class Menu {
     el.dataset.index = String(index);
     el.dataset.u2Item = path;
     el.setAttribute('role', options.check === undefined ? 'menuitem' : 'menuitemcheckbox');
-    el.setAttribute('aria-disabled', String(options.enabled === false));
+    const off = Reason.now(options.disabled);
+    Reason.apply(el, off);
+    if (off === null)
+      el.setAttribute('aria-disabled', 'false');
+    else
+      Tooltip.bind(el, off, {owner: scope});
     if (options.check !== undefined)
       el.setAttribute('aria-checked', String(options.check));
     if (isGroup) {
@@ -233,6 +256,7 @@ export class Menu {
     }
     const icon = document.createElement('span');
     icon.className = 'u2-menu-icon';
+    icon.setAttribute('aria-hidden', 'true');
     if (options.check)
       icon.textContent = '✓';
     else if (options.icon)
@@ -241,6 +265,9 @@ export class Menu {
     label.className = 'u2-menu-label';
     label.dataset.u2Part = 'item-label';
     label.textContent = node.label;
+    // the item is called by its label; its check mark is aria-checked and its detail its description
+    label.id = `${el.id}-label`;
+    el.setAttribute('aria-labelledby', label.id);
     const accel = document.createElement('span');
     accel.className = isGroup ? 'u2-menu-arrow' : 'u2-menu-shortcut';
     accel.textContent = isGroup ? '' : (options.shortcut ?? '');
@@ -253,6 +280,9 @@ export class Menu {
       detail.className = 'u2-menu-detail';
       detail.dataset.u2Part = 'item-detail';
       detail.textContent = options.detail;
+      detail.id = `${el.id}-detail`;
+      if (off === null)
+        el.setAttribute('aria-describedby', detail.id);
       el.append(detail);
     }
     el.append(accel);
@@ -322,9 +352,26 @@ export class Menu {
       return;
     }
     const onClick = entry.node.onClick;
+    const options = entry.node.options;
+    if (options?.keepOpen) {
+      if (options.check !== undefined)
+        Menu._check(entry.el, options, !options.check);
+      onClick?.();
+      return;
+    }
     this.close();
     if (onClick)
       onClick();
+  }
+
+  /** A kept-open item's check mark, turned over in place. */
+  private static _check(el: HTMLElement, options: MenuItemOptions, check: boolean): void {
+    options.check = check;
+    el.setAttribute('aria-checked', String(check));
+    const mark = el.querySelector<HTMLElement>('.u2-menu-icon')!;
+    mark.textContent = check ? '✓' : '';
+    if (!check && options.icon)
+      mark.append(iconElement(options.icon));
   }
 
   private _onClick(level: MenuLevel, e: Event): void {
@@ -409,11 +456,11 @@ export class Menu {
     }
   }
 
-  /** A handler run the way its registrant would run it: with the scope ambient where it was
-   * registered (none once that scope is gone), in one batch. */
-  private static _owned(fn: () => void): () => void {
+  /** A handler run the way its registrant would run it: with the scope ambient where it was registered, in one
+   * batch, a throw or a rejection reported to that scope (none once it is gone). */
+  private static _owned(fn: () => unknown): () => unknown {
     const owner = Scope.ambient;
-    return () => batch(() => Scope.runWith(owner?.isDisposed ? undefined : owner, fn));
+    return () => owner !== undefined && !owner.isDisposed ? owner.run(fn) : batch(() => Scope.runWith(undefined, fn));
   }
 
   private static _disposeLevel(level: MenuLevel): void {
@@ -422,7 +469,7 @@ export class Menu {
   }
 
   private static _navigable(node: MenuNode): boolean {
-    return node.kind !== 'separator' && (!node.options || node.options.enabled !== false);
+    return node.kind !== 'separator' && Reason.now(node.options?.disabled) === null;
   }
 
   private static _indexAt(level: MenuLevel, e: Event): number {

@@ -1,6 +1,6 @@
 /* RadioInput: the native group (one name, checked ⇄ signal), setItems, and the button variant. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
@@ -27,7 +27,7 @@ function mount(component) {
 }
 
 function radios(input) {
-  return input.root.querySelectorAll('.u2-radio-item input');
+  return [...input.root.querySelectorAll('.u2-radio-item input')];
 }
 
 function checked(input) {
@@ -47,9 +47,9 @@ smoke('one group name, labels, and no selection until something is picked', asyn
   assert.equal(input.root.dataset.u2, 'radio-input');
   assert.equal(input.root.querySelector('.u2-radio').getAttribute('role'), 'radiogroup');
   assert.deepEqual(radios(input).map((r) => r.value), STAGES);
-  assert.deepEqual(input.root.querySelectorAll('.u2-radio-item span').map((s) => s.textContent), STAGES);
+  assert.deepEqual([...input.root.querySelectorAll('.u2-radio-item span')].map((s) => s.textContent), STAGES);
   assert.equal(new Set(radios(input).map((r) => r.name)).size, 1, 'one shared name makes it one group');
-  assert.equal(input.value.value, null);
+  assert.equal(input.value, null);
   assert.deepEqual(checked(input), []);
 
   const other = mount(new RadioInput({label: 'Also stage', items: STAGES}));
@@ -65,13 +65,13 @@ smoke('picking writes the value, and a programmatic write checks the button', as
   assert.deepEqual(checked(input), ['Discovery'], 'the initial value reaches the buttons');
 
   pick(input, 'Clinical');
-  assert.equal(input.value.value, 'Clinical');
+  assert.equal(input.value, 'Clinical');
   assert.deepEqual(changes, ['Clinical']);
 
-  input.value.value = 'Preclinical';
+  input.value = 'Preclinical';
   assert.deepEqual(checked(input), ['Preclinical'], 'a programmatic write checks the button');
 
-  input.value.value = null;
+  input.value = null;
   assert.deepEqual(checked(input), [], 'and null clears the group');
   input.dispose();
 });
@@ -80,15 +80,15 @@ smoke('setItems keeps the value while the item survives, drops it otherwise', as
   const input = mount(new RadioInput({label: 'Stage', items: STAGES, value: 'Preclinical'}));
 
   input.setItems(['Preclinical', 'Clinical']);
-  assert.equal(input.value.value, 'Preclinical');
+  assert.equal(input.value, 'Preclinical');
   assert.deepEqual(checked(input), ['Preclinical'], 'the rebuilt buttons carry the selection');
 
   input.setItems(['Discovery', 'Clinical']);
-  assert.equal(input.value.value, null, 'a vanished item cannot stay selected');
+  assert.equal(input.value, null, 'a vanished item cannot stay selected');
   assert.deepEqual(checked(input), []);
 
   pick(input, 'Clinical');
-  assert.equal(input.value.value, 'Clinical', 'the group listener survives a rebuild');
+  assert.equal(input.value, 'Clinical', 'the group listener survives a rebuild');
   input.dispose();
 });
 
@@ -122,12 +122,12 @@ smoke('validators come from the input base; dispose kills the listeners', async 
   input.dispose();
   assert.equal(Scope.liveCount, before);
   pick(input, 'Clinical');
-  assert.equal(input.value.value, 'Discovery', 'listeners died with the scope');
+  assert.equal(input.value, 'Discovery', 'listeners died with the scope');
 });
 
 smoke('a disabled group stays disabled through setItems', () => {
   const input = mount(new RadioInput({items: STAGES}));
-  input.enabled = false;
+  input.disabled = 'Not editable in this test';
   input.setItems(['Phase I', 'Phase II']);
   const radios = input.root.querySelectorAll('input');
   assert.equal(radios.length, 2);

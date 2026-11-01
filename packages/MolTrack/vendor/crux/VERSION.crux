@@ -1,4 +1,4 @@
-MolTrack's Crux engine: registration chemistry for the moltrack_ems app
+MolTrack's Crux engine: registration chemistry for the MolTrack app
 
 crux_core_rev: 772f6efb3653 (datagrok-ai/crux-core main, 2026-10-21)
 rdkit parity target: 2026.03.6 (crux-core RDKIT_VERSION)

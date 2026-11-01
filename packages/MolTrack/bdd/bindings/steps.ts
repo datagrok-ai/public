@@ -6,7 +6,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 
 declare const grok: any;
 
-const SCHEMA = 'moltrack_ems';
+const SCHEMA = 'moltrack';
 const remembered = new WeakMap<Page, string>();
 
 const BULK_EXAMPLE = new URL('../fixtures/bulk-registration.csv', import.meta.url);
@@ -16,26 +16,26 @@ async function openView(page: Page, view: string): Promise<void> {
   if (!await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false))
     await loggedIn(page);
   await page.evaluate(async (path) => {
-    grok.shell.addView(await grok.functions.call('Moltrack:molTrackEmsApp', {path}));
+    grok.shell.addView(await grok.functions.call('Moltrack:molTrackApp', {path}));
   }, view);
-  // loaded: the first row, or the empty state a table with no rows shows
-  await page.locator('[data-u2="domain-list"] :is([data-u2-row], .u2-domain-list-empty)').filter({visible: true})
-    .first().waitFor({timeout: 60000});
+  // loaded: the first row, the empty state a table with no rows shows, or the record a deep link opens
+  await page.locator('[data-u2="domain-list"] :is([data-u2-row], .u2-domain-list-empty), [data-u2="domain-form"]')
+    .filter({visible: true}).first().waitFor({timeout: 60000});
 }
 
-export const openEms = Given('user opens the MolTrack EMS app', (page: Page) => openView(page, 'Compounds'),
-  {tier: 'api', enters: 'MolTrack EMS',
+export const openEms = Given('user opens the MolTrack app', (page: Page) => openView(page, 'Compounds'),
+  {tier: 'api', enters: 'MolTrack',
     description: 'runs the app function on Compounds and waits for its list to load ' +
       '(its first row, or its empty state); ' +
       'needs this package published'});
 
-export const openEmsView = Given('user opens the {string} view of MolTrack EMS',
+export const openEmsView = Given('user opens the {string} view of MolTrack',
   (page: Page, view: string) => openView(page, view.replace(/ /g, '')),
-  {tier: 'api', enters: 'MolTrack EMS',
+  {tier: 'api', enters: 'MolTrack',
     description: 'runs the app function on that view (Compounds, Batches, Additions, Assays, Assay Runs, Assay Results) ' +
       'and waits for its list to load'});
 
-export const demoData = Given('the MolTrack EMS demo data is on the server', async (page: Page) => {
+export const demoData = Given('the MolTrack demo data is on the server', async (page: Page) => {
   silent(page);
   const missing = await page.evaluate(async (schema) => {
     const count = () => Promise.all(['compound', 'assay_result']
@@ -46,7 +46,7 @@ export const demoData = Given('the MolTrack EMS demo data is on the server', asy
     return (await count()).every((n) => n > 0) ? '' : loaded;
   }, SCHEMA);
   if (missing !== '')
-    throw new Error(`the MolTrack EMS demo data did not load: ${missing}`);
+    throw new Error(`the MolTrack demo data did not load: ${missing}`);
 }, {tier: 'api', description: 'loads the package\'s demo set (Moltrack:loadEmsDemoData: the compounds and batches of ' +
   'files/ems-demo, the additions, the hepatocyte stability assay, its runs and results) where the schema has no ' +
   'compounds or no results; a fixture loaded once and kept, as a dataset is'});
@@ -132,33 +132,33 @@ export const lostRememberedText = Then('{element} should not have the remembered
     await expect((await locate(page, target)).filter({visible: true}).first()).not.toHaveText(rememberedText(page, target));
   }, {description: 'the visible text has moved off the one remembered for the same phrase'});
 
-/** Soft-deletes the live batches of that EPA Batch ID; throws if any is left. */
-async function sweepBatch(page: Page, epaBatchId: string): Promise<void> {
+/** Soft-deletes the live batches of that Source Batch Code; throws if any is left. */
+async function sweepBatch(page: Page, batchCode: string): Promise<void> {
   const left = await page.evaluate(async ([schema, id]) => {
     const batches = grok.dapi.domains.table(`${schema}.compound_batch`);
-    const filter = {property: 'epa_batch_id', operator: '=', value: id};
+    const filter = {property: 'source_batch_code', operator: '=', value: id};
     if (await batches.count({filter}) > 0)
       await batches.deleteWhere(filter);
     return batches.count({filter});
-  }, [SCHEMA, epaBatchId] as const);
+  }, [SCHEMA, batchCode] as const);
   if (left !== 0)
-    throw new Error(`${left} batch(es) with the EPA Batch ID ${epaBatchId} are still registered after the delete`);
+    throw new Error(`${left} batch(es) with the Source Batch Code ${batchCode} are still registered after the delete`);
 }
 
-export const noBatch = Given('no batch with the EPA Batch ID {string} is registered, now and at feature end',
-  async (page: Page, epaBatchId: string) => {
+export const noBatch = Given('no batch with the Source Batch Code {string} is registered, now and at feature end',
+  async (page: Page, batchCode: string) => {
     silent(page);
-    await sweepBatch(page, epaBatchId);
-    atFeatureEnd(page, () => sweepBatch(page, epaBatchId));
-  }, {tier: 'api', description: 'deletes the live batches of that EPA Batch ID (EMS deletes are soft) and proves none is ' +
+    await sweepBatch(page, batchCode);
+    atFeatureEnd(page, () => sweepBatch(page, batchCode));
+  }, {tier: 'api', description: 'deletes the live batches of that Source Batch Code (EMS deletes are soft) and proves none is ' +
     'left, now and again when the feature ends'});
 
-export const batchCount = Then('{int} batch(es) with the EPA Batch ID {string} should be on the server',
-  async (page: Page, n: number, epaBatchId: string) => {
+export const batchCount = Then('{int} batch(es) with the Source Batch Code {string} should be on the server',
+  async (page: Page, n: number, batchCode: string) => {
     await expect.poll(() => page.evaluate(([schema, id]) => grok.dapi.domains.table(`${schema}.compound_batch`)
-      .count({filter: {property: 'epa_batch_id', operator: '=', value: id}}), [SCHEMA, epaBatchId] as const),
-    {message: `live batches with the EPA Batch ID ${epaBatchId}`}).toBe(n);
-  }, {tier: 'api', description: 'reads the batch table on the server: the live batches of that EPA Batch ID'});
+      .count({filter: {property: 'source_batch_code', operator: '=', value: id}}), [SCHEMA, batchCode] as const),
+    {message: `live batches with the Source Batch Code ${batchCode}`}).toBe(n);
+  }, {tier: 'api', description: 'reads the batch table on the server: the live batches of that Source Batch Code'});
 
 /** Soft-deletes the compounds the bulk example registers, by name. */
 async function sweepBulk(page: Page): Promise<void> {

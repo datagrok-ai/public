@@ -131,9 +131,10 @@
 }
 
 /* absolute, full field width, hanging 9px under the field — the platform's own geometry
-   (d4.css:81-89) — over room the editor keeps below itself, so it never covers the row underneath */
-.u2-input-editor.u2-number:has(> .u2-number-slider) {
-  margin-bottom: 9px;
+   (d4.css:81-89) — over room the box keeps below the field and its rail, so it never covers the row
+   underneath and the unit stays on the field's line */
+.u2-input-box:has(> .u2-input-editor.u2-number > .u2-number-slider) {
+  padding-bottom: 9px;
 }
 
 .u2-number-slider {

@@ -56,17 +56,6 @@
       "defaultValue": false,
       "nullable": false,
       "description": "Use the faster role-only model filter (drops the legacy #model tag branch)"
-    },
-    {
-      "name": "sharingMethod",
-      "propertyType": "string",
-      "choices": [
-        "none",
-        "workspaces"
-      ],
-      "defaultValue": "none",
-      "nullable": false,
-      "description": "Share action for runs: none — hidden; workspaces — link the run into an existing space"
     }
   ],
   "canEdit": [
@@ -86,7 +75,8 @@
   "category": "Compute",
   "grok": {
     "testDependencies": [
-      "@datagrok/webcomponents"
+      "@datagrok/webcomponents",
+      "@datagrok/bioreactorworkflowdemo"
     ]
   },
   "meta": {

@@ -1,13 +1,3 @@
-/* The `viewers` tier, part two: steps that were written for one viewer and turned out to say
-   nothing about it. A phrase belongs here as soon as a second viewer wants it — the tile viewer's
-   description placement is every viewer's Description Position, the pie chart's category selector
-   is the scatter plot's X selector under another name, the trellis plot's cells are the matrix
-   plot's. Each one reads a hit area or a reading the viewer reports, so a viewer joins simply by
-   reporting the same key; where a name is a convention rather than a rectangle, the convention is
-   written next to the step.
-   What stays in a package binding is a gesture that only that viewer's DOM has (the tile viewer's
-   sketch designer, the pc plot's axis-label drag) or an arithmetic only it can check (the pivot's
-   aggregation against a groupBy). */
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Then, When} from '../../../src/registry.js';
@@ -446,6 +436,30 @@ export const rightClickRowSpace = When('user right-clicks on empty space of row 
     throw new Error(`row ${row} of ${target.phrase} has no empty space past its last column`);
   await openContextMenuAt(page, (right + canvas.x + canvas.width) / 2, cells[0].y + cells[0].height / 2);
 }, {tier: 'ui', description: 'the space past the last column of a grid narrower than its view, in that row; leaves the menu open'});
+
+/** A header dragged on a grid wider than its view brings up drop zones beside the grid
+ * (`grid_column_reordering.dart`): ⇤ puts the column first and scrolls to it, ⇥ last. They exist only
+ * while the drag is on, so the header is pressed and moved before the zone is looked for. */
+export const dragColumnToEdge = When('user drags the {string} area of {widget} to the {word} position',
+  async (page: Page, area: string, target: ElementRef, edge: string) => {
+    const icon = {first: 'fa-arrow-to-left', last: 'fa-arrow-to-right'}[edge.toLowerCase()];
+    if (!icon)
+      throw new Error(`a column is dragged to the first or the last position, not the "${edge}" one`);
+    const a = v.centerOf(await v.hitArea(page, target, area, true));
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    try {
+      await page.mouse.move(a.x - 12, a.y, {steps: 2});
+      const zone = page.locator(`.d4-grid-scroll-drop-zone:has(.${icon})`).first();
+      await zone.waitFor({timeout: pollMs(3000)});
+      const box = (await zone.boundingBox())!;
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, {steps: 8});
+    }
+    finally {
+      await page.mouse.up();
+    }
+    await settle(page, target);
+  }, {tier: 'ui', description: 'a column header onto the ⇤ or ⇥ drop zone a grid wider than its view shows beside itself during the drag'});
 
 export const gridPins = Then('the grid should pin the columns {string}', async (page: Page, list: string) => {
   const want = list.split(/\s*,\s*/).filter(Boolean);

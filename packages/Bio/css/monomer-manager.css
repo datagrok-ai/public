@@ -93,7 +93,7 @@
 
 /* in a wide dock the rows stop at 640px, so a name stays near its symbol and a + by its value */
 .monomer-manager-library,
-.monomer-manager-fields > .u2-form-rows,
+.monomer-manager-scroller > .monomer-manager-fields,
 .monomer-manager-save {
     max-width: 640px;
 }
@@ -125,13 +125,12 @@
 .monomer-manager-fields {
     container: monomer-fields / inline-size;
     flex: none;
-    max-width: none;
     padding: 8px 0 4px;
 }
 
 /* air between the groups — the identity, the R groups and Details — over the 8px between rows */
-.monomer-manager-fields > .u2-form-rows > .monomer-manager-rgroups {
-    padding: 8px 0 4px;
+.monomer-manager-rgroups {
+    margin-top: 4px;
 }
 
 /* Save, what it does or why it cannot yet, and the Details toggle: the form's button row, pinned at the bottom */
@@ -143,15 +142,11 @@
     padding: 8px 0 12px;
 }
 
-.monomer-manager-save > .u2-btn {
-    flex: none;
-}
-
-.monomer-manager-save > .u2-status-line {
+.monomer-manager-save > .monomer-manager-status {
     flex: 1 1 0;
 }
 
-.monomer-manager-save > .u2-section-header {
+.monomer-manager-save > .monomer-manager-details-toggle {
     flex: none;
     height: 28px;
     margin-left: auto;
@@ -161,7 +156,7 @@
     color: var(--grey-6);
 }
 
-.monomer-manager-save > .u2-section-header:hover {
+.monomer-manager-save > .monomer-manager-details-toggle:hover {
     background: var(--dg-hover-subtle);
 }
 
@@ -176,7 +171,7 @@
 
 /* a narrow dock: the line takes a row of its own under Save and Details */
 @container monomer-editor (max-width: 364px) {
-    .monomer-manager-save > .u2-status-line {
+    .monomer-manager-save > .monomer-manager-status {
         order: 3;
         flex-basis: 100%;
     }
@@ -211,7 +206,7 @@
     color: var(--grey-5);
 }
 
-.monomer-manager-details > .u2-section-body {
+.monomer-manager-details > .monomer-manager-details-body {
     padding-top: 4px;
 }
 
@@ -223,71 +218,6 @@
     align-items: center;
     gap: 6px;
     min-height: 24px;
-}
-
-.monomer-rgroup-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    box-sizing: border-box;
-    min-width: 64px;
-    height: 24px;
-    padding: 0 8px 0 10px;
-    font: inherit;
-    color: var(--grey-6);
-    background: var(--grey-1);
-    border: 1px solid transparent;
-    border-radius: 12px;
-    cursor: pointer;
-}
-
-.monomer-rgroup-chip:hover {
-    background: var(--grey-2);
-}
-
-.monomer-rgroup-chip:focus-visible {
-    outline: 1px solid var(--blue-1);
-}
-
-.monomer-rgroup-chip[aria-expanded='true'],
-.monomer-rgroup-chip-editing {
-    background: var(--dg-bg);
-    border-color: var(--blue-1);
-}
-
-.monomer-rgroup-chip-label {
-    font-size: var(--dg-font-size-small);
-    color: var(--grey-4);
-}
-
-.monomer-rgroup-chip-cap {
-    font-weight: 500;
-}
-
-/* the caret says the chip opens a menu, and turns while it is open */
-.monomer-rgroup-chip-caret.u2-icon {
-    margin-left: auto;
-    font-size: 9px;
-    color: var(--grey-4);
-    transition: transform 100ms ease;
-}
-
-.monomer-rgroup-chip[aria-expanded='true'] > .monomer-rgroup-chip-caret {
-    transform: rotate(180deg);
-}
-
-.monomer-rgroup-chip-invalid,
-.monomer-rgroup-chip-invalid:hover {
-    background: var(--red-1);
-}
-
-.monomer-rgroup-chip-invalid[aria-expanded='true'],
-.monomer-rgroup-chip-invalid.monomer-rgroup-chip-editing {
-    border-color: var(--red-3);
-}
-
-.monomer-rgroup-chip-invalid .monomer-rgroup-chip-cap {
-    color: var(--red-3);
 }
 
 .monomer-rgroups-empty {

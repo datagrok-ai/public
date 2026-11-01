@@ -18,15 +18,15 @@ import {clickOn, pressKeyIn, selectIn, shouldContainText, shouldNotContainText, 
 import {simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
-test.describe("MolTrack EMS: filter compounds by structure and properties", () => {
+test.describe("MolTrack: filter compounds by structure and properties", () => {
   const session = feature(test, "features/guides/filter-compounds.feature", import.meta.url);
   test("Phenols or anilines, without chlorine", {tag: ["@guide"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(10, "Given user is logged in", () => loggedIn(page));
     await session.step(11, "And simple mode is off", () => simpleModeOff(page));
-    await session.step(12, "And the MolTrack EMS demo data is on the server", () => demoData(page));
-    await session.step(13, "And user opens the \"Compounds\" view of MolTrack EMS", () => openEmsView(page, "Compounds"));
-    enter(page, "MolTrack EMS");
+    await session.step(12, "And the MolTrack demo data is on the server", () => demoData(page));
+    await session.step(13, "And user opens the \"Compounds\" view of MolTrack", () => openEmsView(page, "Compounds"));
+    enter(page, "MolTrack");
     await session.step(14, "When user remembers the text of compound count", () => rememberText(page, el("compound count")));
     await session.step(16, "And user clicks on advanced mode in filters pane", () => clickOn(page, el("advanced mode in filters pane")), undefined, "The filters are on the left; Advanced nests groups of conditions");
     await session.step(18, "And user clicks on add group in filters pane", () => clickOn(page, el("add group in filters pane")), undefined, "A group inside: either of two substructures");

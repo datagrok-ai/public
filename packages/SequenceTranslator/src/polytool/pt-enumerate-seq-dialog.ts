@@ -368,7 +368,6 @@ async function getPolyToolEnumerateDialog(
     inputs.placeholders.addValidator((value: string): string | null => {
       placeholdersValidity = null;
       const errors: string[] = [];
-      setTimeout(() => { updateWarnings(); }, 100);
       try {
         // Parallel mode: all placeholders must have the same monomer count
         if (inputs.enumeratorType.value === PolyToolEnumeratorTypes.Parallel) {

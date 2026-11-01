@@ -2,7 +2,8 @@
 Feature: Bar chart stack aggregation and datetime split
   Stacking needs an additive aggregation: with avg a Stack column draws no segments and no legend,
   sum and count build the stack, removing the Stack collapses it. A datetime Split column enables
-  the Split Map, whose year and month re-categorize the bars. One journey on demog-1000 with a bar
+  the Split Map, whose year and month re-categorize the bars. A vertical chart with every row
+  filtered out draws no bar and logs nothing (core#974). One journey on demog-1000 with a bar
   chart of AGE by RACE.
 
   Background:
@@ -59,3 +60,17 @@ Feature: Bar chart stack aggregation and datetime split
       | Split           | RACE |
       | Value Aggr Type | avg  |
     Then the "bars" reading of bar chart viewer should be 4
+
+  @realizes:core#974
+  Scenario: A vertical bar chart with every row filtered out draws no bar and logs nothing (core#974)
+    When user sets "Orientation" property of bar chart viewer to "vertical"
+    And user filters rows where "AGE" is between 200 and 300
+    Then 0 rows should pass the filter
+    And bar chart viewer should show 0 rows
+    And the "bars" reading of bar chart viewer should be 0
+    When user hovers over the "view" area of bar chart viewer
+    Then no errors should have been logged
+    When user resets the filter
+    Then the "bars" reading of bar chart viewer should be 4
+    And bar chart viewer should show 1000 rows
+    And no errors should have been logged

@@ -1,7 +1,7 @@
 # Peptides → bdd survey B (specs: collaborative-selection, monomer-position-hover-tooltip, mutation-cliffs-compute-pipeline, sar-similarity-threshold-matrix)
 
 Read-only survey by an agent, 2026-09-11. Repo paths below are under
-`C:/Users/rizhi/Desktop/GROK-CORE/reddata/` (`public/` = the submodule; `P/` =
+the repository root (`public/` = the submodule; `P/` =
 `public/packages/Peptides/src/`; `bdd/` = `public/libraries/bdd/`).
 
 ## 0. Where the brief is wrong or under-specified

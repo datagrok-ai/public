@@ -102,7 +102,7 @@ test('fromDomainTree with a schema: ref ids become FilterRef, ISO strings become
   assert.equal(root.nodes[1].operator, 'in');
 });
 
-test('toDomainTree: the inverse of every fold, groups nested, single-node groups inlined, empties dropped', () => {
+test('toDomainTree: the inverse of every fold, groups nested, a one-condition group kept, empties dropped', () => {
   const root = Filters.group('and', [
     Filters.cond('a', 'in', [1, 2]), Filters.cond('b', 'not in', ['x']), Filters.cond('d', 'is null'),
     Filters.cond('e', 'is not null'), Filters.cond('h', 'like', 'x'), Filters.cond('i', 'starts', 'x'),
@@ -122,7 +122,7 @@ test('toDomainTree: the inverse of every fold, groups nested, single-node groups
     [{property: 'q', operator: 'fuzzy', threshold: 0.6, value: 'z'}, 'or', c('q', 'like', '%z%')], 'and',
     [{property: 'q2', operator: 'fuzzy', threshold: null, value: 'z'}, 'or', c('q2', 'like', '%z%')], 'and',
     [c('r', '>=', 1), 'and', c('r', '<=', 5)], 'and', c('Mol Weight', '>', 1), 'and',
-    [c('s', '=', 1), 'or', c('t', '=', 2)], 'and', c('u', '=', 1), 'and', c('w', '=', 'u1'), 'and', c('x', '=', '@current'),
+    [c('s', '=', 1), 'or', c('t', '=', 2)], 'and', [c('u', '=', 1)], 'and', c('w', '=', 'u1'), 'and', c('x', '=', '@current'),
     'and', c('y', '=', '2026-01-02T00:00:00.000Z'),
   ]);
   assert.deepEqual(Filters.toDomainTree(Filters.group('or')), []);

@@ -3,9 +3,10 @@
    the selection or flipping the box itself (P104), and Space toggles the selected row. Every test
    leaves the live-scope count where it found it. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/index.js';
 import {VirtualTree} from '../src/components/collections/tree.js';
 
@@ -25,11 +26,11 @@ function ui(name, body) {
 function mount(checks) {
   const tree = new VirtualTree({onCheck: (node, checked) => checks.push([node.id, checked])});
   document.body.append(tree.root);
-  tree.root.querySelector('.u2-list').clientHeight = 220;
+  layout(tree.root.querySelector('.u2-list'), {clientHeight: 220});
   tree.setRoots([
     {id: 'a', label: 'Alpha', checked: true, children: [
       {id: 'a1', label: 'Alpha one', checked: true, locked: true},
-      {id: 'a2', label: 'Alpha two', checked: false, disabled: true},
+      {id: 'a2', label: 'Alpha two', checked: false, disabled: 'Archived'},
     ]},
     {id: 'b', label: 'Beta'},
   ]);

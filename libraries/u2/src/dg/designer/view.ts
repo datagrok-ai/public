@@ -7,6 +7,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {Control} from '../../core/component.js';
+import {Reason} from '../../core/reason.js';
 import {signal, ReadonlySignal} from '../../core/signals.js';
 import {div, divV, h3} from '../../core/elements.js';
 import type {Action} from '../../components/actions/actions.js';
@@ -19,7 +20,7 @@ import {registry as globalRegistry} from '../../spec/registry.js';
 import type {Registry} from '../../spec/registry.js';
 import {SpecEditor} from '../../spec/editor.js';
 import type {AppliedPatch, SpecPatch} from '../../spec/editor.js';
-import {appView} from '../shell/app-view.js';
+import {ViewHost} from '../shell/view-host.js';
 import {disposePanel} from './handler.js';
 import {accepts} from './dnd.js';
 import {makeDesignerDroppable} from './drop.js';
@@ -43,6 +44,9 @@ export interface DesignerViewOptions {
 
 /** The canvas: a rendered spec plus the design-mode chrome over it. */
 export class SpecDesigner extends Control {
+  /** Why the canvas controls do not work in Design mode, where a click selects what is under the glass pane. */
+  static readonly DESIGNING = 'Switch to Run to use the controls';
+
   readonly status: ReadonlySignal<string>;
   readonly toolbox: HTMLElement;
 
@@ -78,7 +82,7 @@ export class SpecDesigner extends Control {
     this.root.dataset.u2 = 'designer';
     // the shortcuts below are the view's own: the root has to be able to hold focus for them
     this.root.tabIndex = 0;
-    this._tray = this.runInScope(() => new Tray({
+    this._tray = this.build(() => new Tray({
       onSelect: (node) => this._select(node),
       onContext: (node, x, y) => {
         this._select(node);
@@ -86,12 +90,12 @@ export class SpecDesigner extends Control {
       },
       onAdd: (base, seed) => this._dragLayer.addComponent(base, seed),
     }));
-    this._tree = this.runInScope(() => new VirtualTree<SpecNode>({
+    this._tree = this.build(() => new VirtualTree<SpecNode>({
       onRename: (node, label) => this._rename(node, label),
       contextActions: (node) => this._rowActions(node),
     }));
-    this._mode = this.runInScope(() => new ButtonGroup({
-      items: [{id: 'design', label: 'Design'}, {id: 'run', label: 'Run'}],
+    this._mode = this.build(() => new ButtonGroup({
+      items: [{id: 'design', text: 'Design'}, {id: 'run', text: 'Run'}],
       toggle: 'single',
       density: 'ribbon',
     }));
@@ -197,7 +201,7 @@ export class SpecDesigner extends Control {
 
     this.open(spec);
 
-    this._palette = this.runInScope(() => new Palette(this._instance?.registry ?? this._registry));
+    this._palette = this.build(() => new Palette(this._instance?.registry ?? this._registry));
     this.toolbox = divV([h3('Palette'), this._palette.root, h3('Structure'), this._tree.root],
       'u2-designer-toolbox');
     this.scope.listen(this._palette.root, 'mousedown', (e) => this._dragLayer.onPaletteDown(e as MouseEvent));
@@ -231,7 +235,7 @@ export class SpecDesigner extends Control {
   }
 
   ribbon(): HTMLElement[] {
-    return this.runInScope(() => this._ribbon.build());
+    return this.build(() => this._ribbon.build());
   }
 
   /** Renders `spec` in place of what the canvas holds, with a fresh editor — an instance and its
@@ -255,7 +259,7 @@ export class SpecDesigner extends Control {
     this._selection.multi = [];
     this._hovered = null;
     this._pendingSelect = null;
-    this._instance = this.runInScope(() => renderSpec(parsed, this._ctx, this._registry,
+    this._instance = this.build(() => renderSpec(parsed, this._ctx, this._registry,
       {designTime: this._mode.selected.peek()[0] !== 'run'}));
     this._surface.append(this._instance.root);
     this._editor.value = new SpecEditor(this._instance);
@@ -395,6 +399,7 @@ export class SpecDesigner extends Control {
       this._pane.remove();
       this._hovered = null;
     }
+    Reason.apply(this._surface, design ? SpecDesigner.DESIGNING : null);
     this.root.classList.toggle('u2-designer-running', !design);
     // the sources build for the mode they are in (DD9) — and everything bound to one is rendered
     // again with it, so the toggle really does swap in the live context
@@ -430,12 +435,8 @@ export class SpecDesigner extends Control {
 /** The designer as a platform view: canvas as content, palette and structure tree in the toolbox,
  * actions and the Design/Run toggle in the ribbon, selection path in the status bar. */
 export function designerView(spec: string | object, options: DesignerViewOptions = {}): DG.ViewBase {
-  const designer = new SpecDesigner(spec, options.ctx, options.registry);
-  return appView({
-    name: options.name ?? 'Designer',
-    content: designer,
-    toolbox: designer.toolbox,
-    ribbon: [designer.ribbon()],
-    status: designer.status,
-  });
+  return ViewHost.create({name: options.name ?? 'Designer', content: () => {
+    const designer = new SpecDesigner(spec, options.ctx, options.registry);
+    return {root: designer, toolbox: designer.toolbox, ribbon: [designer.ribbon()], status: designer.status};
+  }}).view;
 }

@@ -3,7 +3,8 @@ Feature: Activity Cliffs over molecules and their activity
   Chem | Analyze | Activity Cliffs... opens on the molecule column of activity-cliffs (29 molecules in
   smiles with an Activity column) with UMAP, Tanimoto and a similarity cutoff of 80. OK embeds the
   molecules, plots them, and reports the cliffs it found on the plot; the cliff link opens the
-  Activity cliffs panel. Show only cliffs keeps the rows that take part in one and switching it off
+  Activity cliffs panel, which belongs to the view of its analysis: another table's view does not show
+  it, and back on the analysed view it is there again (public#1512). Show only cliffs keeps the rows that take part in one and switching it off
   lets every row through again. The similarity cutoff the dialog takes decides how many pairs count
   as cliffs: two at the default 80 and one at 95, on a fresh table, since a second run plots itself
   beside the first. The command ends once the plot is added; the plot's initialization then finds
@@ -42,6 +43,16 @@ Feature: Activity Cliffs over molecules and their activity
   Scenario: The cliff link opens the panel that lists the cliffs
     When user clicks on "cliffs" button
     Then "Activity cliffs" dock panel should be visible
+    And no errors should have been logged
+
+  @realizes:public#1512
+  Scenario: The Activity cliffs panel stays with the view of its analysis (public#1512)
+    Given user opens cars dataset
+    Then the "cars" view should be current
+    And "Activity cliffs" dock panel should not be visible
+    Given user switches to the "activity_cliffs_test" table view
+    Then the "activity_cliffs_test" view should be current
+    And "Activity cliffs" dock panel should be visible
     And no errors should have been logged
 
   Scenario: Show only cliffs keeps the rows that take part in one

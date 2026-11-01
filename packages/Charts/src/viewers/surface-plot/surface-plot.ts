@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {EChartViewer} from '../echart/echart-viewer';
+import {subscribeToColumnRemoval} from '../../utils/utils';
 import 'echarts-gl';
 
 type AxisArray = {data: number[], min: number, max: number, type: string}
@@ -151,6 +152,15 @@ export class SurfacePlot extends EChartViewer {
     }
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(() => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe(() => this.render()));
+    const column = () => {
+      const names = Object.keys(this.colsDict).filter((name) => this.dataFrame.col(name));
+      return names.find((name) => ![this.XColumnName, this.YColumnName, this.ZColumnName].includes(name)) ?? names[0];
+    };
+    this.subs.push(subscribeToColumnRemoval(this, {
+      XColumnName: column,
+      YColumnName: column,
+      ZColumnName: column,
+    }));
     this.colsDict = {};
     const num = Array.from(this.dataFrame.columns);
     num.forEach((c) => {

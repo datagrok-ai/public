@@ -1,9 +1,8 @@
 /* MessageInput core: the markup serialization walk, token → chip restore, the @ accelerator over a
-   stubbed caret, the keyboard matrix and the draft. The shim has neither a selection nor a Range,
-   so this file installs its own `window.getSelection` (settable position, no ranges to hand back —
-   real caret behavior is e2e's job) and a `localStorage` map; dom-shim.js is never edited. */
+   stubbed caret, the keyboard matrix and the draft. This file installs its own `window.getSelection`
+   (settable position, ranges ignored — real caret behavior is e2e's job) and a `localStorage` map. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
@@ -13,16 +12,16 @@ let selection = null;
 window.getSelection = () => selection;
 
 const store = new Map();
-window.localStorage = {
+Object.defineProperty(window, 'localStorage', {configurable: true, value: {
   getItem: (key) => store.has(key) ? store.get(key) : null,
   setItem: (key, value) => store.set(key, String(value)),
   removeItem: (key) => store.delete(key),
-};
+}});
 
 /** Puts the stubbed caret at `offset` inside `node`; `null` means "the host offers no selection". */
 function caret(node, offset) {
   selection = node === null ? null :
-    {anchorNode: node, anchorOffset: offset, isCollapsed: true, rangeCount: 1};
+    {anchorNode: node, anchorOffset: offset, isCollapsed: true, rangeCount: 1, removeAllRanges() {}, addRange() {}};
 }
 
 function smoke(name, body) {
@@ -70,7 +69,7 @@ function people(options = {}) {
 }
 
 function compose(options = {}) {
-  const control = new MessageInput({mentions: [people()], ...options});
+  const control = testOwner().build(() => new MessageInput({mentions: [people()], ...options}));
   document.body.append(control.root);
   return control;
 }

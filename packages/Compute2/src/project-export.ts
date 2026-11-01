@@ -1,24 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {DfExportEntry, prepareExportEntries} from './project-export-data';
+import {getRunName} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {modelLabel} from './components/RunStorage/run-storage';
 
 export type {DfExportEntry};
 
-// Project.showSaveDialog is newer than the last released js-api, so it is reached via a
-// cast and feature-detected at runtime; older platforms may still have the Dart binding
-export const canSaveProject = () =>
-  typeof (DG.Project as any).showSaveDialog === 'function' ||
-  typeof (window as any).grok_Project_OpenSaveDialog === 'function';
-
 export const showProjectSaveDialog = (
   tables: DG.DataFrame[], layouts: string[], name: string, description = '',
-): Promise<DG.Project | null> => {
-  const jsApiShowSaveDialog = (DG.Project as any).showSaveDialog;
-  if (typeof jsApiShowSaveDialog === 'function')
-    return jsApiShowSaveDialog.call(DG.Project, {tables, layouts, name, description});
-  return (window as any).grok_Project_OpenSaveDialog(
-    tables.map((t) => t.dart), [], layouts, name, description, '');
-};
+): Promise<DG.Project | null> => DG.Project.showSaveDialog({tables, layouts, name, description});
 
 // The save dialog gets serialized layouts, not live views: detached view roots are not in
 // the document, so the dialog's thumbnail capture fails on them (zero-height canvas). The
@@ -53,7 +43,7 @@ export async function saveCallToProject(call: DG.FuncCall, entries: DfExportEntr
   }
   const cloned = prepareExportEntries(call, entries);
   const layouts = cloned.map((entry) => captureTableLayout(entry.df, entry.viewers));
-  const name = call.options['title'] ?? call.func.friendlyName ?? call.func.name;
+  const name = getRunName(call) || modelLabel(call.func);
   try {
     const saved = await showProjectSaveDialog(cloned.map((e) => e.df), layouts, name, call.func.description ?? '');
     if (saved?.id)

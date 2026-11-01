@@ -174,6 +174,18 @@ function picture(url: string): HTMLElement {
   return div;
 }
 
+/** A script's graphics output as the picture's URL, null where the script drew nothing. The platform hands the output
+ * over as the element it shows the picture in (`div.grok-scripting-image-container`, the picture its background image),
+ * not as the PNG's base64; a base64 string is taken too. */
+function graphicsUrl(output: unknown): string | null {
+  if (typeof output === 'string')
+    return output ? `data:image/png;base64,${output}` : null;
+  if (!(output instanceof HTMLElement))
+    return null;
+  const url = /url\(["']?(.*?)["']?\)/.exec(output.style.backgroundImage)?.[1];
+  return url && !/,(null)?$/.test(url) ? url : null; // no picture: the platform's URL of a null value
+}
+
 /** gasteiger_charges.py's picture of `mol`'s Gasteiger charges (a similarity map, 400 x 400; a PNG, Crux's drawn from
  * its SVG), as an element; an empty one where the script draws nothing (the molecule does not read). */
 export function gasteigerPicture(mol: string, contours: number): Promise<HTMLElement> {
@@ -187,8 +199,8 @@ export function gasteigerPicture(mol: string, contours: number): Promise<HTMLEle
       return ui.div();
     return picture(await svgToPng(map.svg, 400, 400));
   }, async () => {
-    const png = await scriptOutput<string | null>(PYTHON_SCRIPTS.gasteiger, {mol, contours});
-    return png ? picture(`data:image/png;base64,${png}`) : ui.div();
+    const url = graphicsUrl(await scriptOutput<unknown>(PYTHON_SCRIPTS.gasteiger, {mol, contours}));
+    return url ? picture(url) : ui.div();
   });
 }
 

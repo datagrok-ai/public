@@ -135,8 +135,6 @@ export class FittingTutorial extends Tutorial {
       return;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     const modelRoot = await getElement(modelView.root, 'div.d4-line-chart');
     if (modelRoot === null) {
       grok.shell.warning('Fitting run timeout exceeded');

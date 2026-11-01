@@ -26,7 +26,7 @@ import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
 import {getPropertiesAsColumns} from '../widgets/properties';
 import {cruxQed} from '../widgets/drug-likeness';
 import {readDataframe} from './utils';
-import {inBothEngines, inEngine, withCruxUnreadable} from './engine-utils';
+import {expectNoFallback, inBothEngines, inEngine, withCruxUnreadable} from './engine-utils';
 import {_package} from '../package-test';
 
 /** Element counts as comparable text: each element with an atom, its counts; the invalid rows. */
@@ -218,5 +218,24 @@ category('chemical engine: column jobs', () => {
     } finally {
       setFallbackReporterForTests(previous);
     }
+  });
+
+  test('InChIs and InChI keys: a row for every molecule, the empty and malformed ones empty', async () => {
+    // reported: in Crux mode Chem | Calculate | To InChI on a column with empty cells failed (row counts don't match),
+    // and RDKit's InChIs for the malformed rows landed on other rows
+    const molecules = ['CCO', '', 'C1CC(', 'CC(=O)O', ''];
+    const inchis = async () => {
+      const col = DG.Column.fromStrings('smiles', molecules);
+      return [await PackageFunctions.getInchis(col), await PackageFunctions.getInchiKeys(col)]
+        .map((c) => JSON.stringify(c.toList()));
+    };
+    const {rdkit, crux} = await inBothEngines(inchis);
+    expect(crux.join('\n'), rdkit.join('\n'), 'Crux mode gives RDKit mode\'s column');
+    expect(JSON.parse(crux[0]).length, molecules.length, 'one InChI per row');
+    // an empty cell is no molecule for RDKit to try: no fallback
+    await inEngine(ChemicalEngine.Crux, () => expectNoFallback(['InChI'], async () => {
+      const col = DG.Column.fromStrings('smiles', ['CCO', '', 'CC(=O)O']);
+      expect(JSON.stringify(Array.from((await PackageFunctions.getInchis(col)).toList(), (v) => !!v)), '[true,false,true]');
+    }));
   });
 });

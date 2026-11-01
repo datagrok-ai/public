@@ -20,9 +20,10 @@
     "@datagrok-libraries/compute-utils": "workspace:^",
     "@datagrok-libraries/statistics": "workspace:^",
     "@datagrok-libraries/test": "^1.4.1",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "cash-dom": "catalog:",
-    "datagrok-api": "^1.27.0",
+    "datagrok-api": "workspace:^",
     "rxjs": "catalog:",
     "typeahead-standalone": "4.14.1",
     "uuid": "^11.1.1"

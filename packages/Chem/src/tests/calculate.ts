@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {category, before, after, expect, expectArray, expectFloat, test, delay, awaitCheck}
+import {category, before, after, expect, expectArray, expectFloat, test, uiSettled, waitUntil}
   from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {CONTAINER_TIMEOUT, readDataframe} from './utils';
@@ -263,10 +263,10 @@ async function testGroup(groupName: string, funcName: string, colName: string, d
   const smiles = grok.data.demo.molecules(20);
   const v = grok.shell.addTableView(smiles);
   await grok.data.detectSemanticTypes(smiles);
-  await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+  await waitUntil(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
   grok.shell.topMenu.find('Chem').group(groupName).find(funcName).click();
   await getDlgAndClickOK(`cannot load ${funcName} dialog`, dlgName);
-  await awaitCheck(() => v.dataFrame.columns.names().includes(colName), `${colName} column has not been added`, 10000);
+  await waitUntil(() => v.dataFrame.columns.names().includes(colName), `${colName} column has not been added`, 10000);
   v.close();
   grok.shell.o = ui.div();
 }
@@ -278,9 +278,9 @@ async function getDlgAndClickOK(error: string, header: string) {
       .filter((dlg) => dlg.getElementsByClassName('d4-dialog-header')[0]
         .children[0].textContent?.toLocaleLowerCase() === header.toLocaleLowerCase());
   };
-  await awaitCheck(() => {
+  await waitUntil(() => {
     return dlg().length > 0;
   }, error, 5000);
-  await delay(1000);
+  await uiSettled(`the ${header} dialog`);
   Array.from(dlg()[0].getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
 }

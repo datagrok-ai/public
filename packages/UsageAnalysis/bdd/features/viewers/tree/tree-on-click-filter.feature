@@ -1,7 +1,9 @@
 @viewers @realizes:charts.viewer.tree
-Feature: Tree with On Click = Filter filters the table to the clicked branch
+Feature: Tree clicks: On Click = Filter and Select, Shift and Control, and the grid's selection drawn on the tree
   With On Click set to Filter, a click on a branch of the Tree filters the table to the rows under it,
-  a Shift+click adds another branch's rows, and a plain click starts over from the new branch.
+  a Shift+click or a Control+click adds another branch's rows, and a plain click starts over from the
+  new branch; switched back to Select, the clicks select again (public#3298). Rows selected in the
+  grid are drawn on the tree, and clearing the selection takes the highlight away (public#3249).
   tree.feature claims that the property switches Row Source; here the clicks themselves are claimed.
   The viewer is added from the ribbon's Add viewer gallery on demog-1000 and its hierarchy is
   CONTROL, SEX, RACE, picked in the Select columns dialog. Counts on demog-1000: false | F | Asian 7,
@@ -34,7 +36,16 @@ Feature: Tree with On Click = Filter filters the table to the clicked branch
     And "Hierarchy" property of tree viewer should be "CONTROL, SEX, RACE"
     And tree viewer should have a "branch All | false | F | Asian" area
 
-  Scenario: A click filters to the branch, Shift+click adds a branch, a plain click starts over
+  @realizes:public#3249 @realizes:public#3298
+  Scenario: The grid's selection is drawn on the tree; a click filters to the branch, Shift or Control adds a branch, a plain click starts over, and Select selects again (public#3249, public#3298)
+    When user takes a snapshot of tree viewer
+    And user selects rows where "RACE" is "Asian"
+    Then 15 rows should be selected
+    And tree viewer should show more selection highlight than before
+    When user takes a snapshot of tree viewer
+    And user clears the row selection
+    Then no rows should be selected
+    And tree viewer should show less selection highlight than before
     Given "Misc" category in context panel is expanded
     When user selects "Filter" in "On Click" property in context panel
     Then "On Click" property of tree viewer should be "Filter"
@@ -52,6 +63,21 @@ Feature: Tree with On Click = Filter filters the table to the clicked branch
     And no rows where "CONTROL" is "false" should pass the filter
     And no rows where "RACE" is "Asian" should pass the filter
     And no rows should be selected
+    When user clicks on the "branch All | false | F | Asian" area of tree viewer
+    Then 7 rows should pass the filter
+    When user clicks on the "branch All | false | M | Asian" area of tree viewer holding Control
+    Then 15 rows should pass the filter
+    And the filter should pass exactly the rows where "RACE" is "Asian"
+    And no rows should be selected
+    When user selects "Select" in "On Click" property in context panel
+    Then "On Click" property of tree viewer should be "Select"
+    When user resets the filter
+    Then 1000 rows should pass the filter
+    When user clicks on the "branch All | false | F | Asian" area of tree viewer
+    Then 7 rows should be selected
+    And no rows where "SEX" is "M" should be selected
+    When user clicks on the "branch All | false | M | Asian" area of tree viewer holding Control
+    Then 15 rows should be selected
     And no errors should have been logged
 
   Scenario: A first click made with Shift filters to the branch as a plain click does

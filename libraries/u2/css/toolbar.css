@@ -93,6 +93,5 @@
 .u2-toolbar-overflow {
   margin-left: auto;
   padding: 0 var(--dg-space-xs);
-  font-size: var(--dg-font-size-h1);
   color: var(--dg-text-color-light);
 }

@@ -64,8 +64,8 @@ export async function render(main) {
     keyOf: (item) => item.id,
     onActivate: (item, index) => log.value = `${item.name} (row ${index})`,
     contextActions: (item) => [
-      {name: 'Copy name', icon: 'copy', run: () => log.value = `copied “${item.name}”`},
-      {name: 'Open', run: () => log.value = `opened ${item.name}`},
+      {text: 'Copy name', icon: 'copy', run: () => log.value = `copied “${item.name}”`},
+      {text: 'Open', run: () => log.value = `opened ${item.name}`},
     ],
   });
   table.root.style.height = '360px';

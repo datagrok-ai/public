@@ -5,6 +5,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Overlay, Scope, signal} from '../src/index.js';
 import {Tour} from '../src/components/display/tour.js';
 
@@ -33,17 +34,17 @@ function start(options) {
   return running;
 }
 
-/** A visible element the tour can spotlight: the shim answers rects from `.rect`. */
+/** A visible element the tour can spotlight, its box given by layout.mjs. */
 function target(name, x = 10, y = 20, width = 100, height = 30, parent = document.body) {
   const el = document.createElement('div');
   el.dataset.u2Name = name;
-  el.rect = new DOMRect(x, y, width, height);
+  layout(el, {rect: new DOMRect(x, y, width, height)});
   parent.append(el);
   return el;
 }
 
 const box = (rect) => ['x', 'y', 'width', 'height'].map((a) => Number(rect.getAttribute(a)));
-const holes = (tour) => tour.overlay.querySelectorAll('.u2-tour-hole');
+const holes = (tour) => [...tour.overlay.querySelectorAll('.u2-tour-hole')];
 const counter = (tour) => tour.popup.querySelector('.u2-tour-counter').textContent;
 const nextButton = (tour) => tour.popup.querySelector('.u2-tour-next');
 const skipButton = (tour) => tour.popup.querySelector('.u2-tour-skip');

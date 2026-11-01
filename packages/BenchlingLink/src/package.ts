@@ -6,7 +6,8 @@ import { queryDNASequences, postDNASequence } from './dnaSequencesApi';
 import { queryAssayResults, queryAssayRuns, postAssayResults, postAssayRuns } from './assayApi';
 import { queryMolecules, postMolecule } from './moleculesApi';
 import { dataFrameFromObjects } from './utils';
-import {u2} from "@datagrok-libraries/utils/src/u2";
+import {AppHeader} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 import { queryPlates, postPlate } from './platesApi';
 import { queryMixtures, postMixture } from './mixturesApi';
 import { queryDnaOligos, postDnaOligo } from './dnaOligosApi';
@@ -28,18 +29,20 @@ export class PackageFunctions {
     name: 'Benchling'
   })
   static async benchlingLinkApp(): Promise<DG.ViewBase> {
+    const view = DG.View.create();
+    const appHeader = ViewHost.of(view).build(() => new AppHeader({
+      icon: _package.webRoot + '/images/benchling.png',
+      learnMore: 'https://github.com/datagrok-ai/public/blob/master/packages/BenchlingLink/README.md',
+      items: [
+        'Integrate with your Benchling account.',
+        'Analyze assay data.',
+        'Find contextual information on molecules and sequences.',
+        'Create entities and post them to the registry.',
+        'Browse the tenant content.',
+      ],
+    }));
 
-    const appHeader = u2.appHeader({
-      iconPath: _package.webRoot + '/images/benchling.png',
-      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/BenchlingLink/README.md',
-      description: '- Integrate with your Benchling account.\n' +
-        '- Analyze assay data.\n' +
-        '- Find contextual information on molecules and sequences.\n' +
-        '- Create entities and post them to the registry.\n' +
-        '- Browse the tenant content.\n'
-    });
-
-    const view = DG.View.fromRoot(appHeader);
+    view.root.append(appHeader.root);
     view.name = 'Benchling';
     return view;
   }

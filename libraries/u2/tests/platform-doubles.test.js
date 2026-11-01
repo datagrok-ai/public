@@ -9,8 +9,9 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import './dom-shim.js';
 import {BitSet, Column, DartWidget, DataFrame, DataQuery, Entity, EventType, FileInfo, FilterGroup, Func,
-  FuncCall, FuncCallParam, FuncParam, Grid, JsViewer, Package, Property, PropertyGrid, Script, Shell, TableQuery,
-  UnreadableFileInfo, User, Viewer, ViewerMetaHelper, Widget, WidgetDescriptor, platform} from './platform-doubles.mjs';
+  FuncCall, FuncCallParam, FuncParam, Grid, JsViewer, Package, Property, PropertyGrid, Row, Script, Shell, TableQuery,
+  UnreadableFileInfo, User, Viewer, ViewerMetaHelper, Widget, WidgetDescriptor, platform, strayTables}
+  from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
 const DG = await import('datagrok-api/dg');
@@ -232,13 +233,50 @@ test('the shell records every assignment of the current object, and names tables
 
   const added = [];
   shell.dart.tableAdded.subscribe(() => added.push(shell.tableNames));
+  assert.deepEqual(shell.tableNames, [undefined, ''], 'a new shell holds a table renamed to null and one named \'\'');
   assert.equal(shell.addTable(demog()).name, 'demog');
   assert.equal(shell.addTable(demog()).name, 'demog (2)');
-  assert.deepEqual(added, [['demog'], ['demog', 'demog (2)']]);
+  assert.deepEqual(added, [[undefined, '', 'demog'], [undefined, '', 'demog', 'demog (2)']]);
   shell.closeTable('demog');
-  assert.deepEqual(shell.tableNames, ['demog (2)']);
+  assert.deepEqual(shell.tableNames, [undefined, '', 'demog (2)']);
+  shell.dart.tables = strayTables();
+  assert.deepEqual(shell.tableNames, [undefined, ''], 'a reset puts the stray tables back');
   assert.doesNotThrow(() => shell.info('x') ?? shell.warning('x') ?? shell.error('x'));
 });
+
+test('a frame with a molecule column carries Chem\'s hidden canonical SMILES, appended, unless given', () => {
+  const frame = new DataFrame([{name: 'ID'}, {name: 'Molecule', semType: 'Molecule'}, {name: 'MW', type: 'double'}],
+    [{ID: 'V1', Molecule: 'CCO', MW: 46}]);
+  assert.deepEqual(frame.columns.names(), ['ID', 'Molecule', 'MW', '~Molecule.canonicalSmiles']);
+  const hidden = frame.columns.byName('~Molecule.canonicalSmiles');
+  assert.deepEqual([hidden.type, hidden.semType, hidden.get(0)], ['string', 'Molecule', 'CCO']);
+  const given = new DataFrame([{name: '~Core.canonicalSmiles', semType: 'Molecule'},
+    {name: 'Core', semType: 'Molecule'}]);
+  assert.deepEqual(given.columns.names(), ['~Core.canonicalSmiles', 'Core'], 'one the test gave is the only one');
+});
+
+test('a row reads its columns by name; an unknown name throws, as DG.Row does; then and symbols are no column',
+  async () => {
+    const frame = demog();
+    const row = frame.row(1);
+    assert.deepEqual([row.age, row.sex, row.get('age'), row.idx], [55, 'M', 55, 1]);
+    assert.ok(row.table === frame);
+    assert.throws(() => row.label, /No such column: label/);
+    assert.throws(() => row.get('then'), /No such column: then/);
+    assert.equal(row.then, undefined);
+    assert.equal(row[Symbol.iterator], undefined);
+    assert.ok(await Promise.resolve(row) === row, 'a row can be awaited');
+    row.age = 56;
+    assert.equal(frame.get('age', 1), 56, 'a write goes to the cell');
+    assert.throws(() => {
+      row.nope = 1;
+    }, /No such column: nope/);
+    assert.deepEqual(row.toMap(), {age: 56, sex: 'M'});
+
+    const added = frame.rows.addNew([60, 'F']);
+    assert.deepEqual([frame.rowCount, added.age, added.idx], [3, 60, 2]);
+    assert.deepEqual([...frame.rows].map((r) => r.sex), ['F', 'M', 'F']);
+  });
 
 test('a descriptor answers its declaration; its properties are defined over the look (P2, P4)', () => {
   WidgetDescriptor.registry = descriptors();
@@ -477,6 +515,7 @@ test('the loader hook serves the same classes, not a second copy', () => {
   assert.equal(DG.TableQuery, TableQuery);
   assert.equal(DG.FileInfo, FileInfo);
   assert.equal(DG.DataFrame, DataFrame);
+  assert.equal(DG.Row, Row);
   assert.equal(DG.Widget, Widget);
   assert.equal(DG.DartWidget, DartWidget);
   assert.equal(DG.Viewer, Viewer);

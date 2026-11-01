@@ -49,12 +49,14 @@ function specifiers(text) {
 }
 
 const FILES = sources();
-const platformFree = (path) => PLATFORM_FREE.includes(path.split('/')[0]);
+// the top-level files (the index, the styles) are platform-free too
+const platformFree = (path) => !path.includes('/') || PLATFORM_FREE.includes(path.split('/')[0]);
 const platform = FILES.flatMap((f) =>
   specifiers(f.text).filter((s) => s.startsWith('datagrok-api')).map((s) => ({file: f.path, s})));
 
 test('the scanner still reads the tree', () => {
   assert.ok(FILES.length > 150, `only ${FILES.length} sources found`);
+  assert.ok(FILES.some((f) => f.path === 'index.ts'), 'the top-level files are read');
   assert.ok(platform.length >= MIN_SPECIFIERS,
     `only ${platform.length} platform specifiers found — the import regex stopped matching`);
 });

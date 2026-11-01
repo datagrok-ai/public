@@ -67,8 +67,9 @@ smoke('on a platform page every type goes into the platform stack, a string as t
     assert.deepEqual(calls.map((c) => c.type), ['info', 'warning', 'error']);
     assert.equal(calls[0].content.textContent, 'Saved <b>3</b> rows', 'never markup');
     assert.equal(calls[0].content.querySelector?.('b') ?? null, null);
-    assert.deepEqual(calls[0].options, {autoHide: true, copyText: 'details', timeout: 5});
-    assert.deepEqual(calls[1].options, {autoHide: false, copyText: undefined, timeout: 3}, 'a warning stays, seconds');
+    assert.deepEqual(calls[0].options, {autoHide: true, copyText: 'details', timeout: 10});
+    assert.deepEqual(calls[1].options, {autoHide: true, copyText: undefined, timeout: 3}, 'a warning hides, seconds');
+    assert.deepEqual(calls[2].options, {autoHide: false, copyText: undefined, timeout: 10}, 'an error stays');
     assert.equal(calls[2].content, 'Refused', 'an error string the platform shows as text already');
     assert.equal(info.root.classList.contains('d4-balloon'), true, 'the handle is the platform balloon');
     info.close();

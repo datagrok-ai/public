@@ -2,7 +2,7 @@
    real HttpDataSource mutates itself), the default filter is the sanitized free-text query, and
    options pass through. Structural — no datagrok-api involved. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {dapiSource, dapiPager, sanitizeFilterValue} from '../src/dg/entities/dapi-source.js';
 

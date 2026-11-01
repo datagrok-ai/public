@@ -88,9 +88,9 @@ export async function render(main) {
     created: new Date(Date.now() - i * 11 * day),
   }));
   const actionsOf = (issue) => [
-    {name: 'Resolve', icon: 'check', run: () => log.textContent = `Resolved #${issue.id + 1}`},
-    {name: 'Copy title', icon: 'copy', run: () => log.textContent = `Copied "${issue.title}"`},
-    {name: 'Assign to me', run: () => log.textContent = `Assigned #${issue.id + 1} to you`},
+    {text: 'Resolve', icon: 'check', run: () => log.textContent = `Resolved #${issue.id + 1}`},
+    {text: 'Copy title', icon: 'copy', run: () => log.textContent = `Copied "${issue.title}"`},
+    {text: 'Assign to me', run: () => log.textContent = `Assigned #${issue.id + 1} to you`},
   ];
   const rich = new VirtualList({
     itemHeight: 42,

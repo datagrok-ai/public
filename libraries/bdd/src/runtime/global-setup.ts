@@ -1,7 +1,3 @@
-/* Playwright global setup: the same storage-state login every Datagrok suite uses
-   (@datagrok-libraries/test), with one convenience for local runs — when `grok test` has not
-   provided DATAGROK_AUTH_TOKEN, the token is minted from the dev key in ~/.grok/config.yaml
-   (server DATAGROK_SERVER, `localhost` by default). */
 import {randomUUID} from 'node:crypto';
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {homedir} from 'node:os';

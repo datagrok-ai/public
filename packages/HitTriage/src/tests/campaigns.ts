@@ -4,7 +4,7 @@ import {_package} from '../package';
 import {loadCampaigns} from '../app/utils';
 import {AppName} from '../app/types';
 import {CampaignJsonName} from '../app/consts';
-import {defaultPermissions} from '../app/dialogs/permissions-dialog';
+import {defaultPermissions} from '../app/shared/permissions-editor';
 
 category('Campaigns', () => {
   test('List skips unreadable campaigns and shows those shared with All users', async () => {

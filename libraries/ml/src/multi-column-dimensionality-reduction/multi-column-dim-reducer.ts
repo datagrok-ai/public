@@ -219,12 +219,8 @@ class UMAPReducer extends MultiColumnReducer {
         this.reducer.setPrecomputedKNN(knnGraph.knnIndexes, knnGraph.knnDistances);
       }
 
-      // needed so that garbage collector can free memory from distance matrix
-      await new Promise<void>((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 300);
-      });
+      // yields once, so that the progress shown so far paints before the fit
+      await new Promise<void>((resolve) => setTimeout(resolve));
 
       let embedding: number[][] | Float32Array[] | undefined |null = null;
       console.time('fit');

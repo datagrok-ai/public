@@ -2,7 +2,7 @@
    signal itself, `mode` binds two-way, `query` is readable through a bind path, and the manifest
    entry carries the grammar for the LLM surface. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
@@ -84,7 +84,7 @@ spec('value binds two-way: the builder adopts the context signal; DOM edits reac
   }, ctx, reg);
   document.body.append(instance.root);
   const fb = Control.forElement(instance.root.querySelector('[data-u2="filter-builder"]'));
-  assert.equal(fb.value === ctx.data.criteria, true, 'the context signal itself');
+  assert.equal(fb.signal === ctx.data.criteria, true, 'the context signal itself');
 
   pick(instance.root.querySelector('[data-u2-part="op"] select'), '<');
   assert.equal(ctx.data.criteria.peek().nodes[0].operator, '<');

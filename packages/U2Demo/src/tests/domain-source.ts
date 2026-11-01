@@ -19,6 +19,8 @@ category('U2: domain source', () => {
   const query = `sku starts "${prefix}"`;
   const ids: string[] = [];
   let table: DomainTable;
+  /** What the tests build after an await is the category's. */
+  let owner: Scope;
 
   /** The first load settled, or the reason it did not. */
   async function ready(src: DomainSource): Promise<void> {
@@ -29,12 +31,13 @@ category('U2: domain source', () => {
   }
 
   async function source(options: {pageSize?: number} = {}): Promise<DomainSource> {
-    const src = table.source({query, pageSize: options.pageSize ?? 10});
+    const src = owner.build(() => table.source({query, pageSize: options.pageSize ?? 10}));
     await ready(src);
     return src;
   }
 
   before(async () => {
+    owner = Scope.root('u2 domain source tests');
     const inserted = await items().insert([
       {sku: `${prefix}-1`, name: 'Alpha', quantity: 1},
       {sku: `${prefix}-2`, name: 'Beta', quantity: 2},
@@ -44,6 +47,7 @@ category('U2: domain source', () => {
   });
 
   after(async () => {
+    owner.dispose();
     await items().deleteWhere(query);
   });
 
@@ -109,7 +113,7 @@ category('U2: domain source', () => {
   });
 
   test('draft: a pristine draft, inserted by save', async () => {
-    const draft = table.draft({sku: `${prefix}-3`, name: 'Gamma'});
+    const draft = owner.build(() => table.draft({sku: `${prefix}-3`, name: 'Gamma'}));
     try {
       await ready(draft);
       const row = draft.currentRow.value;
@@ -146,7 +150,7 @@ category('U2: domain source', () => {
   test('form: an input per editable column, text for the rest, writes through the source', async () => {
     const src = await source();
     src.currentRow.value = src.rows.byKey(ids[0]) ?? null;
-    const form = domains.form(src);
+    const form = owner.build(() => domains.form(src));
     try {
       expect(form.form !== null, true);
       expect(form.input('name') !== undefined, true);
@@ -154,13 +158,13 @@ category('U2: domain source', () => {
       const status: IFieldStatus[] = form.form!.getWidgetStatus().inputs;
       expect(status.find((f) => f.name === 'id') === undefined, true);
       expect(status.find((f) => f.name === 'name')?.access, 'editable');
-      form.input('name')!.value.value = 'Alpha 3';
+      form.input('name')!.value = 'Alpha 3';
       await waitUntil(() => src.isDirty.value, 'the input to write through', 5000);
       expect(src.isDirty.value, true);
       expect(src.rows.byKey(ids[0])!.name, 'Alpha 3');
       src.discard();
-      await waitUntil(() => form.input('name')!.value.value === 'Alpha', 'the form to re-read the row', 5000);
-      expect(form.input('name')!.value.value, 'Alpha', 'the form re-read the row');
+      await waitUntil(() => form.input('name')!.value === 'Alpha', 'the form to re-read the row', 5000);
+      expect(form.input('name')!.value, 'Alpha', 'the form re-read the row');
       expect(src.isDirty.value, false);
     } finally {
       form.dispose();
@@ -170,9 +174,9 @@ category('U2: domain source', () => {
 
   test('list: rows through the handler with Open and Delete; selection is the current row', async () => {
     const src = await source();
-    const list = domains.list(src);
+    const list = owner.build(() => domains.list(src));
     try {
-      const names = list.actionsFor(src.rows.byKey(ids[0])!).map((a) => a.name);
+      const names = list.actionsFor(src.rows.byKey(ids[0])!).map((a) => a.text);
       expect(names.includes('Open') && names.includes('Delete'), true, names.join(', '));
       list.list.selectedIndex.value = 1;
       await waitUntil(() => src.currentRow.value?.id === src.rows.items.value[1].id, 'the current row', 5000);
@@ -180,11 +184,11 @@ category('U2: domain source', () => {
       src.currentRow.value = null;
       await waitUntil(() => list.list.selectedIndex.value === -1, 'the selection to clear', 5000);
       expect(list.list.selectedIndex.value, -1);
-      list.actionsFor(src.rows.byKey(ids[1])!).find((a) => a.name === 'Delete')!.run();
+      list.actionsFor(src.rows.byKey(ids[1])!).find((a) => a.text === 'Delete')!.run();
       await waitUntil(() => src.isDirty.value, 'the delete to be staged', 5000);
       expect(src.rows.byKey(ids[1])!['~state'], 'deleted', 'marked deleted: kept in the rows, struck through');
       expect(src.summary.value, '1 deletion pending');
-      expect(list.actionsFor(src.rows.byKey(ids[1])!).map((a) => a.name).join(), 'Restore');
+      expect(list.actionsFor(src.rows.byKey(ids[1])!).map((a) => a.text).join(), 'Restore');
       src.discard();
       await waitUntil(() => !src.isDirty.value, 'the discard to land', 5000);
       expect(src.rows.byKey(ids[1])!['~state'] ?? '', '', 'discard restores it (an empty state cell reads null)');
@@ -205,8 +209,8 @@ category('U2: domain source', () => {
 
   test('Save and Discard buttons follow the session', async () => {
     const src = await source();
-    const save = domains.saveButton(src);
-    const discard = domains.discardButton(src);
+    const save = owner.build(() => domains.saveButton(src));
+    const discard = owner.build(() => domains.discardButton(src));
     try {
       expect(save.session === src.session, true, 'the source\'s own session');
       expect(save.button.disabled, true);

@@ -34,7 +34,7 @@ test.describe("The Add viewer gallery for Charts viewers, Surface plot, Globe an
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await session.step(14, "And the package autostarts have completed", () => autostartsCompleted(page));
-    await session.step(17, "Given user opens demog dataset", () => openDataset(page, ds("demog")));
+    await session.step(17, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(18, "When user clicks on \"Add viewer\" icon", () => clickOn(page, el("\"Add viewer\" icon")));
     await session.step(19, "Then \"Add Viewer\" dialog should be visible", () => shouldBe(page, el("\"Add Viewer\" dialog"), "visible"));
     await session.step(20, "And the following elements should be enabled:", () => followingShouldBe(page, "enabled", [["first \"Sankey\" card in \"Add Viewer\" dialog"],["first \"Chord\" card in \"Add Viewer\" dialog"],["first \"Timelines\" card in \"Add Viewer\" dialog"],["first \"Radar\" card in \"Add Viewer\" dialog"],["first \"Sunburst\" card in \"Add Viewer\" dialog"],["first \"Tree\" card in \"Add Viewer\" dialog"],["first \"Surface plot\" card in \"Add Viewer\" dialog"],["first \"Globe\" card in \"Add Viewer\" dialog"],["first \"Group Analysis\" card in \"Add Viewer\" dialog"],["first \"Word cloud\" card in \"Add Viewer\" dialog"]]), [["first \"Sankey\" card in \"Add Viewer\" dialog"],["first \"Chord\" card in \"Add Viewer\" dialog"],["first \"Timelines\" card in \"Add Viewer\" dialog"],["first \"Radar\" card in \"Add Viewer\" dialog"],["first \"Sunburst\" card in \"Add Viewer\" dialog"],["first \"Tree\" card in \"Add Viewer\" dialog"],["first \"Surface plot\" card in \"Add Viewer\" dialog"],["first \"Globe\" card in \"Add Viewer\" dialog"],["first \"Group Analysis\" card in \"Add Viewer\" dialog"],["first \"Word cloud\" card in \"Add Viewer\" dialog"]]);
@@ -75,11 +75,11 @@ test.describe("The Add viewer gallery for Charts viewers, Surface plot, Globe an
     await session.step(62, "Then globe viewer should be absent", () => shouldBe(page, el("globe viewer"), "absent"));
     await session.step(63, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Surface plot on demog takes its columns, Projection and Wireframe", {tag: ["@viewers", "@realizes:charts.viewer.surface-plot", "@realizes:charts.viewer.globe", "@realizes:charts.viewer.group-analysis"]}, async ({browser}) => {
+  test("Surface plot on demog-1000 takes its columns, Projection and Wireframe", {tag: ["@viewers", "@realizes:charts.viewer.surface-plot", "@realizes:charts.viewer.globe", "@realizes:charts.viewer.group-analysis"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await session.step(14, "And the package autostarts have completed", () => autostartsCompleted(page));
-    await session.step(66, "Given user opens demog dataset", () => openDataset(page, ds("demog")));
+    await session.step(66, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(67, "When user clicks on \"Add viewer\" icon", () => clickOn(page, el("\"Add viewer\" icon")));
     await session.step(68, "And user clicks on first \"Surface plot\" card in \"Add Viewer\" dialog", () => clickOn(page, el("first \"Surface plot\" card in \"Add Viewer\" dialog")));
     await session.step(69, "Then surface plot viewer should be visible", () => shouldBe(page, el("surface plot viewer"), "visible"));
@@ -102,7 +102,7 @@ test.describe("The Add viewer gallery for Charts viewers, Surface plot, Globe an
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await session.step(14, "And the package autostarts have completed", () => autostartsCompleted(page));
-    await session.step(86, "Given user opens demog dataset keeping the first 5850 rows as \"GroupAnalysis-{time}\"", () => openDatasetRowsAs(page, ds("demog"), 5850, session.text("GroupAnalysis-{time}")));
+    await session.step(86, "Given user opens demog-1000 dataset keeping the first 1000 rows as \"GroupAnalysis-{time}\"", () => openDatasetRowsAs(page, ds("demog-1000"), 1000, session.text("GroupAnalysis-{time}")));
     await session.step(87, "And the layouts named \"GroupAnalysis-{time}\" are deleted when the feature ends", () => layoutsDeleted(page, session.text("GroupAnalysis-{time}")));
     await session.step(88, "When user clicks on \"Add viewer\" icon", () => clickOn(page, el("\"Add viewer\" icon")));
     await session.step(89, "And user clicks on first \"Group Analysis\" card in \"Add Viewer\" dialog", () => clickOn(page, el("first \"Group Analysis\" card in \"Add Viewer\" dialog")));

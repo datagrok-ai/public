@@ -3,7 +3,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck, before, category, test, expect} from '@datagrok-libraries/test/src/test';
+import {waitUntil, before, category, test, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {cloneConfig, DEFAULT_CONFIG, EnumeratorConfig} from '../utils/reaction-enumeration/config';
 import {
@@ -279,14 +279,19 @@ category('Reaction Enumeration', () => {
       // The panel's serialized order, top to bottom — the only view of what actually got added.
       const read = () => (tv.getFiltersGroup().getOptions(true).look.filters ?? []) as
         {type: string; column?: string; colNames?: string[]}[];
-      await awaitCheck(() => read().length >= 11, 'filters never reached the panel', 5000);
-      const states = read();
-      const keys = states.map((s) => s.column ?? s.colNames?.join('|') ?? s.type);
-      expect(keys.join(','), [
+      const keysOf = (states: {type: string; column?: string; colNames?: string[]}[]) =>
+        states.map((s) => s.column ?? s.colNames?.join('|') ?? s.type);
+      const order = [
         '~reaction_name_1|~reaction_name_2|~reaction_name_3', 'product',
         '~step_products_1', '~step_products_2', '~step_products_3',
         'template_1', 'template_2', 'template_3', 'round', 'n_routes', 'n_products',
-      ].join(','), 'tree, product, then the count histograms in the summary cell\'s slot');
+      ].join(',');
+      // the cards arrive in the panel first, and are put in their order after
+      await waitUntil(() => keysOf(read()).join(',') === order,
+        () => `tree, product, then the count histograms in the summary cell's slot: ${keysOf(read()).join(',')}`,
+        5000);
+      const states = read();
+      const keys = keysOf(states);
       expect(states[keys.indexOf('~step_products_2')].type, 'histogram',
         'a step whose count varies across routes gets a range, not categories');
       // A friendlyName tag makes the filter group drop the column silently; a description must not.
@@ -460,7 +465,7 @@ category('Reaction Enumeration', () => {
       });
       expect(widths(), '600,200,140,70,70', 'reaction, molecule, text, number and bool widths');
       // The first paint resolves the reaction renderer, which used to swap in its own width.
-      await awaitCheck(() => grid.col('reaction')!.cellType === DG.SEMTYPE.CHEMICAL_REACTION,
+      await waitUntil(() => grid.col('reaction')!.cellType === DG.SEMTYPE.CHEMICAL_REACTION,
         'the reaction renderer never resolved', 15000);
       await nextDraw();
       expect(widths(), '600,200,140,70,70', 'the first paint leaves every width as it was');

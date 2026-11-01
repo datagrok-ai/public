@@ -1227,7 +1227,7 @@ export function MMPEditor(call: DG.FuncCall) : any {
 //editor: Chem:MMPEditor
 //top-menu: Chem | Analyze | Matched Molecular Pairs...
 //meta.requiresTableView: true
-export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column[], diffTypes: any, scalings: any, fragmentCutoff: number, runOnFilteredData: boolean) : Promise<void> {
+export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.ColumnList, diffTypes: any, scalings: any, fragmentCutoff: number, runOnFilteredData: boolean) : Promise<void> {
   await PackageFunctions.mmpAnalysis(table, molecules, activities, diffTypes, scalings, fragmentCutoff, runOnFilteredData);
 }
 
@@ -1272,7 +1272,7 @@ export function sarMatrixEditor(call: DG.FuncCall) : any {
 //top-menu: Chem | Analyze | SAR Matrix...
 //meta.requiresTableView: true
 //editor: Chem:SarMatrixEditor
-export async function sarMatrixAnalysis(table: DG.DataFrame, molecules: DG.Column, activity: DG.Column, scaling: string, activityDirection: string, fragmentCutoff: number, fragmentationLevels: number, predictVirtual: boolean, useMcsAnchors: boolean, seriesColumn: string, coreColumn: any, rGroupColumns: DG.Column[], matrixColumns: string) : Promise<void> {
+export async function sarMatrixAnalysis(table: DG.DataFrame, molecules: DG.Column, activity: DG.Column, scaling: string, activityDirection: string, fragmentCutoff: number, fragmentationLevels: number, predictVirtual: boolean, useMcsAnchors: boolean, seriesColumn: string, coreColumn: any, rGroupColumns: any, matrixColumns: string) : Promise<void> {
   await PackageFunctions.sarMatrixAnalysis(table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors, seriesColumn, coreColumn, rGroupColumns, matrixColumns);
 }
 

@@ -11,14 +11,16 @@ import type {FieldAccess} from '../../core/access.js';
 import type {IFieldStatus, IWidgetStatus} from '../../core/widget-like.js';
 import {div, span} from '../../core/elements.js';
 import {Form} from '../../components/forms/form.js';
-import type {FormLayout} from '../../components/forms/form.js';
+import type {FormLayout, LabelColumn} from '../../components/forms/form.js';
 import {TextInput} from '../../components/inputs/text-input.js';
 import {NumberInput, NumberInputOptions} from '../../components/inputs/number-input.js';
 import {BigIntInput} from '../../components/inputs/bigint-input.js';
 import {QNumInput} from '../../components/inputs/qnum-input.js';
 import {BoolInput} from '../../components/inputs/bool-input.js';
 import {ChoiceInput, MultiChoiceInput} from '../../components/inputs/choice-input.js';
-import {DateTimeInput} from '../../components/inputs/date-input.js';
+import {DateInput, DateTimeInput} from '../../components/inputs/date-input.js';
+import {Dates} from '../../core/dates.js';
+import {Format} from '../../core/format.js';
 import {TextArea} from '../../components/inputs/text-input.js';
 import {RadioInput} from '../../components/inputs/radio-input.js';
 import {ColorInput} from '../../components/inputs/color-input.js';
@@ -38,6 +40,8 @@ export interface FieldOverride extends Partial<InputOptions<any>> {
   /** Replaces the generated input entirely — a semType-specific editor, say. The form wires it to
    * the property and lays it out, but never owns it: dispose it with whatever created it. */
   input?: Input<any>;
+  /** A readonly field's text while its value is empty, muted ("assigned on save"). */
+  emptyText?: string;
 }
 
 export interface ObjectFormOptions {
@@ -50,6 +54,8 @@ export interface ObjectFormOptions {
    * color…), generating one only where it has none; `generated` (the default) never asks. */
   editors?: 'auto' | 'generated';
   layout?: FormLayout;
+  /** Shared with other forms, or read (`width`) by content that lines up with this one. */
+  labelColumn?: LabelColumn;
   /** The DG.InputForm-contract flag; in the platform condensed IS the tall view, so it maps to
    * `layout: 'tall'` where {@link layout} is not given. */
   condensed?: boolean;
@@ -80,6 +86,7 @@ interface Field {
   input: Input<any> | null;
   access: FieldAccess;
   text?: HTMLElement;
+  emptyText?: string;
   /** What the target held when the field last read or wrote it. */
   synced?: unknown;
 }
@@ -163,7 +170,7 @@ export function kindOf(prop: IProperty, assumeWritable = false): Kind {
   if (!prop.set && !assumeWritable)
     return 'readonly';
   const type = prop.propertyType ?? prop.type;
-  if (type === 'list')
+  if (type === 'list' || type === 'string_list')
     return 'list';
   if (type === 'map')
     return 'map';
@@ -219,7 +226,7 @@ function fileInputFor(prop: IProperty, options: InputOptions<any>): Input<any> {
 
 function readonlyText(options: InputOptions<any>): Input<any> {
   const input = new TextInput(options);
-  input.enabled = false;
+  input.disabled = 'A file is picked with the platform\'s file input, which is not here';
   return input;
 }
 
@@ -235,6 +242,13 @@ function formatter(prop: IProperty): ((value: number) => string) | undefined {
   if (format == null || format === '' || typeof dgFormat !== 'function')
     return undefined;
   return (value) => dgFormat(value, format);
+}
+
+/** A `datetime` whose display format names no time of day (`yyyy-MM-dd`) holds a calendar day,
+ * stored as its UTC midnight: it edits and reads as that day in every time zone. */
+function dateOnly(prop: IProperty): boolean {
+  const format = prop.format;
+  return (prop.propertyType ?? prop.type) === 'datetime' && format != null && format !== '' && !/[Hhms]/.test(format);
 }
 
 /** What `NumberInput.bindProperty` applies Dart-side (`number_input.dart`): bounds, step
@@ -292,7 +306,7 @@ export function inputForProperty(prop: IProperty | null,
     case 'qnum':
       return new QNumInput({...merged, format: formatter(prop)});
     case 'datetime':
-      return new DateTimeInput(merged);
+      return dateOnly(prop) ? new DateInput({...merged, utcDates: true}) : new DateTimeInput(merged);
     case 'list':
       return prop.choices != null && prop.choices.length > 0 ?
         new MultiChoiceInput({...merged, items: prop.choices}) : new ListInput(merged);
@@ -314,6 +328,8 @@ export class ObjectForm extends Form {
   /** How many fields hold an edit the target has not taken — an invalid one, which is never written:
    * what a caller counts as unsaved, and drops with {@link reset}. */
   readonly unwritten: ReadonlySignal<number>;
+  /** What those fields hold, by property name: the target as the user sees it is these over its own values. */
+  readonly unwrittenValues: ReadonlySignal<Readonly<Record<string, unknown>>>;
 
   private readonly _fields: Field[] = [];
   private readonly _onChanged: ((name: string, value: unknown) => void) | undefined;
@@ -324,13 +340,18 @@ export class ObjectForm extends Form {
   private readonly _synced = signal(0);
 
   constructor(props: IProperty[], target: object, options: ObjectFormOptions = {}) {
-    super({layout: options.layout ?? (options.condensed ? 'tall' : undefined)});
+    super({layout: options.layout ?? (options.condensed ? 'tall' : undefined), labelColumn: options.labelColumn});
     this.target = target;
-    this.unwritten = computed(() => {
+    this.unwrittenValues = computed(() => {
       this._synced.value;
-      return this._fields.filter((f) => f.input !== null && f.kind !== null &&
-        !ObjectForm.same(f.input.value.value, f.synced)).length;
+      const values: Record<string, unknown> = {};
+      for (const f of this._fields) {
+        if (f.input !== null && f.kind !== null && (f.input.unreadable || !ObjectForm.same(f.input.value, f.synced)))
+          values[f.prop.name!] = f.input.value;
+      }
+      return values;
     });
+    this.unwritten = computed(() => Object.keys(this.unwrittenValues.value).length);
     this._onChanged = options.onChanged;
     this._auto = options.editors === 'auto';
     this._access = options.access ?? Access.full;
@@ -372,7 +393,7 @@ export class ObjectForm extends Form {
       batch(() => {
         for (const field of this._fields) {
           if (field.input === null) {
-            field.text!.textContent = text(this._read(field.prop, 'readonly'));
+            this._showText(field);
             continue;
           }
           const value = this._read(field.prop, field.kind);
@@ -382,7 +403,7 @@ export class ObjectForm extends Form {
           if (fresh)
             field.input.reset(value);
           else
-            field.input.value.value = value;
+            field.input.value = value;
           field.synced = value;
         }
         this._synced.value = this._synced.peek() + 1;
@@ -404,7 +425,7 @@ export class ObjectForm extends Form {
         caption: input?.label ?? ObjectForm._caption(field.prop),
         type: field.prop.propertyType ?? field.prop.type ?? 'string',
         semType: field.prop.semType ?? undefined,
-        value: input !== null ? input.value.peek() : this._read(field.prop, 'readonly'),
+        value: input !== null ? input.peek() : this._read(field.prop, 'readonly'),
         choices: field.prop.choices ?? undefined,
         required: field.prop.nullable === false,
         valid: error === undefined || error === null,
@@ -419,12 +440,14 @@ export class ObjectForm extends Form {
     const access = this._access.field(prop.name!);
     if (access === 'readonly') {
       const {row, value} = ObjectForm.readonlyField(labelText(override.label) ?? ObjectForm._caption(prop),
-        prop.name!, text(this._read(prop, 'readonly')));
+        prop.name!, '');
       const tooltip = labelText(override.tooltipText) ?? prop.description;
       if (tooltip)
         row.title = tooltip;
       this.addElement(row);
-      this._fields.push({prop, kind: 'readonly', input: null, access, text: value});
+      const field: Field = {prop, kind: 'readonly', input: null, access, text: value, emptyText: override.emptyText};
+      this._showText(field);
+      this._fields.push(field);
       return;
     }
     const kind = kindOf(prop);
@@ -436,15 +459,15 @@ export class ObjectForm extends Form {
       nullable: prop.nullable,
       ...rest,
     };
-    const registered = custom ? null : this.runInScope(() => Editors.resolve(prop, options));
+    const registered = custom ? null : this.build(() => Editors.resolve(prop, options));
     const platform = (custom ?? registered) != null ? null :
       ObjectForm.platformInput(this, prop, this.target, this._auto);
     const input = custom ?? registered ?? platform ??
-      this.runInScope(() => inputForProperty(prop, options));
+      this.build(() => inputForProperty(prop, options));
     const native = input === platform;
     const field: Field = {prop, kind: native ? null : kind, input, access};
     if (!native) {
-      input.value.value = field.synced = this._read(prop, kind);
+      input.value = field.synced = this._read(prop, kind);
       if (prop.nullable === false)
         input.addValidator((value) => isEmpty(value) ? EMPTY : null);
     }
@@ -455,7 +478,7 @@ export class ObjectForm extends Form {
     if (native) {
       let initial = true;
       this.effect(() => {
-        const value = input.value.value;
+        const value = input.value;
         if (initial)
           initial = false;
         else if (!this._refreshing)
@@ -472,7 +495,7 @@ export class ObjectForm extends Form {
     // inside an effect is flushed after that effect returns, so a transient flag would already be
     // down (as in PropertyGrid)
     this.effect(() => {
-      const value = input.value.value;
+      const value = input.value;
       if (input.validity.value !== null || ObjectForm.same(value, this._read(prop, kind)))
         return;
       set(this.target, value);
@@ -480,6 +503,30 @@ export class ObjectForm extends Form {
       this._synced.value = this._synced.peek() + 1;
       this._onChanged?.(prop.name!, value);
     });
+  }
+
+  private _showText(field: Field): void {
+    const shown = ObjectForm._display(field.prop, this._read(field.prop, null));
+    field.text!.textContent = shown || (field.emptyText ?? '');
+    field.text!.classList.toggle('u2-form-readonly-empty', shown === '' && field.emptyText !== undefined);
+  }
+
+  /** A value as its property's `format` shows it. */
+  private static _display(prop: IProperty, value: unknown): string {
+    if (value === null || value === undefined || value === '')
+      return '';
+    const format = formatter(prop);
+    if (typeof value === 'number' && format !== undefined)
+      return format(value);
+    if (dateOnly(prop)) {
+      const date = ObjectForm.coerce('datetime', value) as Date | null;
+      if (date !== null) {
+        // the calendar day it holds is its UTC one: handed on as that day's UTC midnight, it reads as a date
+        const {year, month, day} = Dates.utcParts(date);
+        return Format.date(new Date(Date.UTC(year, month - 1, day)), {format: prop.format!, utcDates: true});
+      }
+    }
+    return text(value);
   }
 
   /** The caption + value line a field renders as where it is text rather than an editor —
@@ -505,7 +552,7 @@ export class ObjectForm extends Form {
       return null;
     try {
       const input = dg.InputBase.forProperty(prop as any, target);
-      return input == null ? null : form.runInScope(() => fromDartInput(input, prop.name));
+      return input == null ? null : form.build(() => fromDartInput(input, prop.name));
     } catch {
       return null;
     }

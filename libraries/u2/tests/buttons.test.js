@@ -2,7 +2,8 @@
    signal round trip, radio vs multi vs action semantics, roving focus, auto-tooltips and enabling.
    Same contract as smoke.test.js — every test leaves the live-scope count where it found it. */
 
-import {test} from 'node:test';
+import {test as nodeTest} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, Scope, Control, SpecContext, renderSpec, registerAll, button, Tooltip} from '../src/index.js';
@@ -11,8 +12,8 @@ import {ButtonGroup} from '../src/components/actions/button-group.js';
 
 registerAll();
 
-function ui(name, body) {
-  test(name, async () => {
+function ui(name, body, run = test) {
+  run(name, async () => {
     const live = Scope.liveCount;
     try {
       await body();
@@ -24,8 +25,13 @@ function ui(name, body) {
   });
 }
 
+/** A test with no owner around its body: what a button does with none, or a press made as a user's is. */
+function unowned(name, body) {
+  ui(name, body, nodeTest);
+}
+
 function cells(group) {
-  return group.root.querySelectorAll('.u2-btn-group-item');
+  return [...group.root.querySelectorAll('.u2-btn-group-item')];
 }
 
 function cell(group, id) {
@@ -39,9 +45,9 @@ function tabStops(group) {
 ui('button: disabled with a reason — the reason is the tooltip; a signal drives it live', async () => {
   const c = new Control();
   const reason = signal('Only the author can delete');
-  const [del, edit, plain] = c.runInScope(() => [
+  const [del, edit, plain] = c.build(() => [
     button('Delete', () => {}, {disabled: reason}),
-    button('Edit', () => {}, {disabled: true, tooltip: 'Edit the collection'}),
+    button('Edit', () => {}, {disabled: 'Only its owner edits it', tooltip: 'Edit the collection'}),
     button('Open', () => {}, {tooltip: 'Open it'}),
   ]);
   document.body.append(del, edit, plain);
@@ -55,7 +61,7 @@ ui('button: disabled with a reason — the reason is the tooltip; a signal drive
   assert.equal(del.disabled, false);
   assert.equal(del.hasAttribute('aria-description'), false);
   assert.equal(edit.disabled, true);
-  assert.equal(edit.hasAttribute('aria-description'), false, 'no reason given, none described');
+  assert.equal(edit.getAttribute('aria-description'), 'Only its owner edits it', 'a literal reason is described too');
   assert.equal(plain.disabled, false);
   c.dispose();
 });
@@ -65,7 +71,7 @@ ui('button: disabled is aria-disabled, never native — it keeps its tab stop an
   const pressed = [];
   const heard = [];
   const reason = signal('Pick a file first');
-  const save = c.runInScope(() => button('Save', () => pressed.push('save'), {disabled: reason}));
+  const save = c.build(() => button('Save', () => pressed.push('save'), {disabled: reason}));
   const host = document.createElement('div');
   host.addEventListener('click', () => heard.push('host'));
   host.append(save);
@@ -107,7 +113,7 @@ ui('buttonWithIcon: icon then label, primary skin, and iconRight flips the order
   assert.equal(right.children[1].dataset.u2, 'icon');
 });
 
-ui('buttonWithIcon and iconButton: a tooltip without an owner falls back to title', () => {
+unowned('buttonWithIcon and iconButton: a tooltip without an owner falls back to title', () => {
   const el = buttonWithIcon('Delete', 'trash-alt', () => {}, {tooltip: 'Delete the selected rows'});
   assert.equal(el.title, 'Delete the selected rows');
 
@@ -153,15 +159,15 @@ ui('iconButton: the toggle signal drives aria-pressed, and the button drives the
   assert.equal(el.getAttribute('aria-pressed'), 'true', 'the effect died with its owner');
 });
 
-ui('iconButton: a toggling button needs an ambient owner', () => {
+unowned('iconButton: a toggling button needs an ambient owner', () => {
   assert.throws(() => iconButton('star', () => {}, {toggle: signal(false)}), /needs an owner/);
 });
 
 ui('ButtonGroup single: radio semantics — selects, never deselects, one tab stop', () => {
   const group = new ButtonGroup({items: [
-    {id: 'left', label: 'Left', icon: 'align-left'},
-    {id: 'center', label: 'Center', icon: 'align-center'},
-    {id: 'right', label: 'Right', icon: 'align-right'},
+    {id: 'left', text: 'Left', icon: 'align-left'},
+    {id: 'center', text: 'Center', icon: 'align-center'},
+    {id: 'right', text: 'Right', icon: 'align-right'},
   ], toggle: 'single'});
   assert.equal(group.root.dataset.u2, 'button-group');
   assert.equal(group.root.getAttribute('role'), 'radiogroup');
@@ -187,7 +193,7 @@ ui('ButtonGroup single: radio semantics — selects, never deselects, one tab st
 
 ui('ButtonGroup: ←/→ rove the single tab stop and move focus', () => {
   const group = new ButtonGroup({items: [
-    {id: 'a', label: 'A'}, {id: 'b', label: 'B'}, {id: 'c', label: 'C'},
+    {id: 'a', text: 'A'}, {id: 'b', text: 'B'}, {id: 'c', text: 'C'},
   ], toggle: 'single'});
   document.body.append(group.root);
 
@@ -210,7 +216,7 @@ ui('ButtonGroup: ←/→ rove the single tab stop and move focus', () => {
 
 ui('ButtonGroup multi: independent toggles, aria-pressed, fresh arrays on every write', () => {
   const group = new ButtonGroup({items: [
-    {id: 'grid', label: 'Grid'}, {id: 'cards', label: 'Cards'}, {id: 'chart', label: 'Chart'},
+    {id: 'grid', text: 'Grid'}, {id: 'cards', text: 'Cards'}, {id: 'chart', text: 'Chart'},
   ], toggle: 'multi'});
   assert.equal(group.root.getAttribute('role'), 'group');
   assert.equal(cell(group, 'grid').hasAttribute('role'), false, 'multi stays plain buttons');
@@ -237,8 +243,8 @@ ui('ButtonGroup multi: independent toggles, aria-pressed, fresh arrays on every 
 ui('ButtonGroup none: fires onClick and selects nothing', () => {
   const fired = [];
   const group = new ButtonGroup({items: [
-    {id: 'add', label: 'Add row', icon: 'plus', onClick: () => fired.push('add')},
-    {id: 'copy', label: 'Copy', icon: 'copy', onClick: () => fired.push('copy')},
+    {id: 'add', text: 'Add row', icon: 'plus', onClick: () => fired.push('add')},
+    {id: 'copy', text: 'Copy', icon: 'copy', onClick: () => fired.push('copy')},
   ]});
   fire(cell(group, 'add'), 'click');
   fire(cell(group, 'add'), 'click');
@@ -252,8 +258,8 @@ ui('ButtonGroup none: fires onClick and selects nothing', () => {
 
 ui('ButtonGroup iconOnly: labels become the tooltip and the accessible name', () => {
   const group = new ButtonGroup({items: [
-    {id: 'add', label: 'Add row', icon: 'plus'},
-    {id: 'delete', label: 'Delete', icon: 'trash-alt', tooltip: 'Delete the selected rows'},
+    {id: 'add', text: 'Add row', icon: 'plus'},
+    {id: 'delete', text: 'Delete', icon: 'trash-alt', tooltip: 'Delete the selected rows'},
   ], iconOnly: true});
   assert.equal(group.root.classList.contains('u2-btn-group-icons'), true);
   assert.equal(cell(group, 'add').querySelector('.u2-btn-group-label'), null, 'no visible label');
@@ -264,7 +270,7 @@ ui('ButtonGroup iconOnly: labels become the tooltip and the accessible name', ()
   assert.equal(cell(group, 'add').children[0].classList.contains('fa-plus'), true);
   group.dispose();
 
-  const labelled = new ButtonGroup({items: [{id: 'add', label: 'Add row', icon: 'plus'}]});
+  const labelled = new ButtonGroup({items: [{id: 'add', text: 'Add row', icon: 'plus'}]});
   assert.equal(cell(labelled, 'add').querySelector('.u2-btn-group-label').textContent, 'Add row');
   assert.equal(cell(labelled, 'add').hasAttribute('aria-label'), false, 'a visible label is the name');
   labelled.dispose();
@@ -272,16 +278,16 @@ ui('ButtonGroup iconOnly: labels become the tooltip and the accessible name', ()
 
 ui('ButtonGroup: densities are class-driven; a disabled cell is aria-disabled, reachable and inert', () => {
   for (const density of ['form', 'toolbar', 'ribbon']) {
-    const group = new ButtonGroup({items: [{id: 'a', label: 'A'}], density});
+    const group = new ButtonGroup({items: [{id: 'a', text: 'A'}], density});
     assert.equal(group.root.classList.contains(`u2-btn-group-${density}`), true);
     group.dispose();
   }
 
   const clicked = [];
   const group = new ButtonGroup({items: [
-    {id: 'run', label: 'Run'},
-    {id: 'stop', label: 'Stop', enabled: false, onClick: () => clicked.push('stop')},
-    {id: 'reset', label: 'Reset'},
+    {id: 'run', text: 'Run'},
+    {id: 'stop', text: 'Stop', disabled: 'Nothing is running', onClick: () => clicked.push('stop')},
+    {id: 'reset', text: 'Reset'},
   ], toggle: 'single', density: 'toolbar'});
   const stop = cell(group, 'stop');
   assert.equal(stop.disabled, true);
@@ -295,21 +301,22 @@ ui('ButtonGroup: densities are class-driven; a disabled cell is aria-disabled, r
   assert.deepEqual(clicked, [], 'a press on it does nothing');
   assert.deepEqual(group.selected.value, [], 'and selects nothing');
 
-  group.setEnabled('stop', true);
+  group.setDisabled('stop', null);
   assert.equal(stop.disabled, false);
   assert.equal(stop.hasAttribute('aria-disabled'), false);
   stop.click();
   assert.deepEqual(clicked, ['stop']);
 
-  group.setEnabled('run', false);
+  group.setDisabled('run', 'Already running');
   assert.equal(cell(group, 'run').disabled, true);
+  assert.equal(cell(group, 'run').getAttribute('aria-description'), 'Already running');
   group.dispose();
 });
 
 ui('ButtonGroup: dispose releases the selection effect and the click listeners', () => {
   const fired = [];
   const group = new ButtonGroup({items: [
-    {id: 'a', label: 'A', onClick: () => fired.push('a')},
+    {id: 'a', text: 'A', onClick: () => fired.push('a')},
   ], toggle: 'multi'});
   const el = cell(group, 'a');
   group.dispose();
@@ -330,14 +337,14 @@ function menuPanel() {
 }
 
 function menuLabels() {
-  return menuPanel().querySelectorAll('.u2-menu-label').map((el) => el.textContent);
+  return [...menuPanel().querySelectorAll('.u2-menu-label')].map((el) => el.textContent);
 }
 
 function items() {
-  return menuPanel().querySelectorAll('.u2-menu-item');
+  return [...menuPanel().querySelectorAll('.u2-menu-item')];
 }
 
-ui('dropDownButton: click opens the menu, an item closes it, and it reopens', async () => {
+unowned('dropDownButton: click opens the menu, an item closes it, and it reopens', async () => {
   const fired = [];
   const el = mount(dropDownButton('Export', (m) => m
     .item('CSV', () => fired.push('CSV'))
@@ -370,7 +377,7 @@ ui('dropDownButton: click opens the menu, an item closes it, and it reopens', as
   await flush();
 });
 
-ui('dropDownButton: clicking the open button closes the menu instead of reopening it', async () => {
+unowned('dropDownButton: clicking the open button closes the menu instead of reopening it', async () => {
   const el = mount(dropDownButton('Export', (m) => m.item('CSV', () => {})));
   fire(el, 'click');
   const opened = menuPanel();
@@ -385,7 +392,7 @@ ui('dropDownButton: clicking the open button closes the menu instead of reopenin
   await flush();
 });
 
-ui('dropDownButton split: the main part fires its action, only the arrow opens the menu', async () => {
+unowned('dropDownButton split: the main part fires its action, only the arrow opens the menu', async () => {
   const fired = [];
   const el = mount(dropDownButton('Run', (m) => m.item('Run with parameters', () => fired.push('params')),
     {icon: 'play', primary: true, split: () => fired.push('run')}));
@@ -413,7 +420,7 @@ ui('dropDownButton split: the main part fires its action, only the arrow opens t
   await flush();
 });
 
-ui('dropDownButton: ArrowDown opens the menu, from the button and from either split segment', async () => {
+unowned('dropDownButton: ArrowDown opens the menu, from the button and from either split segment', async () => {
   const plain = mount(dropDownButton('View', (m) => m.item('Grid', () => {})));
   fire(plain, 'keydown', {key: 'ArrowDown'});
   assert.equal(plain.getAttribute('aria-expanded'), 'true');
@@ -429,7 +436,7 @@ ui('dropDownButton: ArrowDown opens the menu, from the button and from either sp
   await flush();
 });
 
-ui('dropDownButton: the menu is rebuilt on every open, so checked state is never stale', async () => {
+unowned('dropDownButton: the menu is rebuilt on every open, so checked state is never stale', async () => {
   const wrap = signal(false);
   const el = mount(dropDownButton('Options', (m) => m
     .item('Word wrap', () => wrap.value = !wrap.peek(), {check: wrap.peek()})));
@@ -477,7 +484,7 @@ ui('a control whose root is a button is named by its own text, as the spec-built
   instance.dispose();
 });
 
-ui('button: with no owner, the reason and the tooltip fall back to the title, and nothing is held', () => {
+unowned('button: with no owner, the reason and the tooltip fall back to the title, and nothing is held', () => {
   const live = Scope.liveCount;
   const del = button('Delete', () => {}, {disabled: 'Only the author can delete'});
   const open = button('Open', () => {}, {tooltip: 'Open it'});
@@ -489,7 +496,7 @@ ui('button: with no owner, the reason and the tooltip fall back to the title, an
 
 ui('tooltip: role tooltip, and the anchor is described by it only while it shows (keeping its own ids)', async () => {
   const c = new Control();
-  const el = c.runInScope(() => button('Delete', () => {}, {tooltip: 'Delete the selected rows'}));
+  const el = c.build(() => button('Delete', () => {}, {tooltip: 'Delete the selected rows'}));
   el.setAttribute('aria-describedby', 'own-hint');
   document.body.append(el);
   fire(el, 'pointerenter');
@@ -504,9 +511,9 @@ ui('tooltip: role tooltip, and the anchor is described by it only while it shows
 ui('iconButton, buttonWithIcon: disabled with a reason, as button() takes it; without one, as before', async () => {
   const c = new Control();
   const reason = signal('Run the plan first');
-  const [save, remove, plain] = c.runInScope(() => [
+  const [save, remove, plain] = c.build(() => [
     buttonWithIcon('Save', 'save', () => {}, {disabled: reason, tooltip: 'Save the plan'}),
-    iconButton('times', () => {}, {disabled: true, tooltip: 'Remove'}),
+    iconButton('times', () => {}, {disabled: 'Kept by the template', tooltip: 'Remove'}),
     iconButton('list', () => {}, {tooltip: 'Choose'}),
   ]);
   document.body.append(save, remove, plain);
@@ -521,5 +528,51 @@ ui('iconButton, buttonWithIcon: disabled with a reason, as button() takes it; wi
   fire(save, 'pointerleave');
   reason.value = null;
   assert.equal(save.disabled, false);
+  c.dispose();
+});
+
+ui('iconButton: a tooltip signal is the hover text and the accessible name, both live, disabled or not', async () => {
+  const c = new Control();
+  const tip = signal('Group by. Current: None');
+  const [group, off] = c.build(() => [iconButton('layer-group', () => {}, {tooltip: tip}),
+    iconButton('eye', () => {}, {tooltip: tip, disabled: 'Loading…'})]);
+  document.body.append(group, off);
+  assert.equal(group.getAttribute('aria-label'), 'Group by. Current: None');
+  tip.value = 'Group by. Current: Status';
+  assert.equal(group.getAttribute('aria-label'), 'Group by. Current: Status', 'the name follows');
+  assert.equal(off.getAttribute('aria-label'), 'Group by. Current: Status');
+  const delay = Tooltip.delay;
+  Tooltip.delay = 0;
+  try {
+    fire(group, 'pointerenter');
+    assert.equal(Tooltip.root.textContent, 'Group by. Current: Status');
+    fire(group, 'pointerleave');
+  }
+  finally {
+    Tooltip.delay = delay;
+  }
+  c.dispose();
+});
+
+ui('iconButton: a click answering an object that throws on any property it lacks (a DG.Row) reports nothing', async () => {
+  const reported = [];
+  const c = new Control();
+  c.scope.onError = (e) => reported.push(e.message);
+  const row = new Proxy({}, {get: (_, name) => { throw new Error(`No such column: ${String(name)}`); }});
+  const el = c.build(() => iconButton('plus', () => row, {tooltip: 'Add new row'}));
+  fire(el, 'click');
+  await flush();
+  assert.deepEqual(reported, []);
+  c.dispose();
+});
+
+ui('iconButton: the click\'s promise reaches the owner, a rejection reported there', async () => {
+  const reported = [];
+  const c = new Control();
+  c.scope.onError = (e) => reported.push(e.message);
+  const el = c.build(() => iconButton('sync', async () => { throw new Error('Offline'); }, {tooltip: 'Refresh'}));
+  fire(el, 'click');
+  await flush();
+  assert.deepEqual(reported, ['Offline']);
   c.dispose();
 });

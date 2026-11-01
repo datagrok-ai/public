@@ -4,7 +4,7 @@
    through the `sample` policy (VP-15/16). The core registry stays platform-free: the global one
    after `registerAll()` alone carries no viewer tag, which is what keeps the manifest gate green. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from './dom-shim.js';
@@ -151,7 +151,7 @@ scoped('every descriptor becomes a u2-viewer-* tag with table, look and its user
   assert.deepEqual(plot.props.find((p) => p.name === 'markerType').choices, ['circle', 'square']);
   assert.deepEqual(plot.events, ['d4-data-event']);
   assert.ok(plot.props.slice(2).every((p) => p.bindable), 'every property bindable; look is the literal escape hatch');
-  assert.equal(reg.get('u2-viewer-filters').designerActions[0].name, 'Add filter for column…');
+  assert.equal(reg.get('u2-viewer-filters').designerActions[0].text, 'Add filter for column…');
   assert.equal(reg.get('u2-viewer-filters').designerActions[0].icon, 'filter');
   assert.equal(reg.get('u2-viewer-form').props.length, 2);
 
@@ -303,7 +303,7 @@ scoped('the viewer sample renders zero-broken at design time over real sample ro
   assert.equal(grid.props.allowEdit, false);
   assert.deepEqual(instance.node('filters').props.columnNames, ['city', 'total']);
   assert.equal(instance.node('form').dataFrame, grid.dataFrame);
-  assert.equal(instance.node('customerField').value.peek(), 'Aspirin Labs');
+  assert.equal(instance.node('customerField').peek(), 'Aspirin Labs');
   assert.equal(runner.calls.length, 0, 'DD9: nothing ran');
   instance.dispose();
   assert.equal(platform.kills.length, 3);

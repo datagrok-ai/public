@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {after, awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {first} from 'rxjs/operators';
@@ -251,7 +251,7 @@ category('crux substructure search', () => {
     try {
       const result = await chemSubstructureSearchLibrary(col, 'c1ccccc1', 'c1ccccc1', FILTER_TYPES.substructure,
         false, false);
-      await awaitCheck(() => ended, 'search has not ended', 60000);
+      await waitUntil(() => ended, 'search has not ended', 60000);
       expect(result.equals(rdkit), true, `crux ${result}, RDKit ${rdkit}`);
     } finally {
       subs.forEach((s) => s.unsubscribe());
@@ -371,7 +371,7 @@ category('crux substructure search', () => {
       // the second search replaces the first one before it gets to the workers
       await Promise.all(['C1CC1', 'c1ccccc1'].map((q) =>
         chemSubstructureSearchLibrary(col, q, q, FILTER_TYPES.substructure, false, false)));
-      await awaitCheck(() => keys.every((k) => terminated.has(k)), 'searches have not ended', 30000);
+      await waitUntil(() => keys.every((k) => terminated.has(k)), 'searches have not ended', 30000);
     } finally {
       subs.forEach((s) => s.unsubscribe());
     }
@@ -393,7 +393,7 @@ category('crux substructure search', () => {
     try {
       // not awaited to the end: the bit array fills in as the (cold, index building) search goes
       await chemSubstructureSearchLibrary(col, 'c1ccccc1', 'c1ccccc1', FILTER_TYPES.substructure, false, false);
-      await awaitCheck(() => done, 'search has not finished', 60000);
+      await waitUntil(() => done, 'search has not finished', 60000);
     } finally {
       subs.forEach((s) => s.unsubscribe());
     }
@@ -412,10 +412,10 @@ category('crux substructure search', () => {
     try {
       tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
         type: DG.FILTER_TYPE.SUBSTRUCTURE, column: 'smiles', columnName: 'smiles', molBlock: query}, false);
-      await awaitCheck(() => df.filter.trueCount === expected, `df hasn't been filtered to ${expected} rows`, 15000);
+      await waitUntil(() => df.filter.trueCount === expected, `df hasn't been filtered to ${expected} rows`, 15000);
       const row = df.filter.findNext(-1, false);
       df.col('smiles')!.set(row, 'NCCc1ccccc1Cl');
-      await awaitCheck(() => df.filter.get(row) && df.filter.trueCount === expected + 1,
+      await waitUntil(() => df.filter.get(row) && df.filter.trueCount === expected + 1,
         'the edited molecule has not been re-checked', 15000);
     } finally {
       tv.close();

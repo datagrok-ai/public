@@ -73,8 +73,8 @@ export async function render(main) {
   host.append(plain.root);
 
   const state = el('code');
-  bindText(study.scope, state, computed(() =>
-    `Study: ${study.expanded.value}   Starts collapsed: ${collapsed.expanded.value}`));
+  bindText(state, computed(() =>
+    `Study: ${study.expanded.value}   Starts collapsed: ${collapsed.expanded.value}`), {owner: study.scope});
   const readout = el('p', 'u2-gallery-status');
   readout.append(state);
   main.append(readout);

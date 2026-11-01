@@ -2,7 +2,7 @@
    re-targeting. The control mirrors `DG.Property.propertyOptions` rather than reading it, so the
    whole suite runs off-platform, like the object-form one. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';

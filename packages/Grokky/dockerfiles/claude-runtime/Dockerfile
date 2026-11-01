@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
     python3 -c 'from pm import ensure; ensure("python", explicit=True)' && \
     python3 -m pm.build_env --source /opt/hermes \
       --python "$(python3 -c 'from pm import installed_package; print(installed_package("python").binary)')" \
-      --out /opt/hermes/.venv --sealed --extra anthropic --extra mcp && \
+      --out /opt/hermes/.venv --sealed --extra anthropic --extra mcp --extra bedrock && \
     echo /opt/hermes > "$(/opt/hermes/.venv/bin/python -c 'import site; print(site.getsitepackages()[0])')/hermes_project.pth" && \
     rm -rf "$HERMES_RUNTIME_DIR"/uv-* && \
     strip --strip-debug "$HERMES_RUNTIME_DIR"/python-*/lib/libpython3.*.so.1.0 && \

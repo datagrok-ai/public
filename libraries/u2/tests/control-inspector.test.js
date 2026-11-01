@@ -3,7 +3,7 @@
    property has no setter, and each render replaces the previous panel's scope. `DG.ObjectHandler`
    comes from tests/dg-stub.mjs. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -86,7 +86,7 @@ inspector('a grid edit writes through to the control', async () => {
   value.value = 'Ibuprofen';
   fire(value, 'input');
   await flush();
-  assert.equal(input.value.peek(), 'Ibuprofen', 'the value edit reached the signal');
+  assert.equal(input.peek(), 'Ibuprofen', 'the value edit reached the signal');
 
   const label = field('label');
   label.value = 'Renamed';

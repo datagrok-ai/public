@@ -11,7 +11,7 @@ import {
   TabStrip, TextInput, AsyncView, FilterBuilder, FilterQueryInput, Filters,
 } from '@datagrok-libraries/u2';
 import type {Signal, ReadonlySignal, FilterGroup, FilterSchema} from '@datagrok-libraries/u2';
-import {FilterSchemas, toBitSet, chip, EntityChip, viewers} from '@datagrok-libraries/u2/src/dg/index.js';
+import {FilterSchemas, toBitSet, chip, EntityChip, viewers} from '@datagrok-libraries/u2/dg';
 import {demoOrders} from '../demo-orders';
 import {readout} from './common';
 
@@ -178,7 +178,7 @@ function domainTablePane(): HTMLElement {
   let pane: AsyncView<FilterSchema> | undefined;
   scope.own(() => pane?.dispose());
   const open = (): void => {
-    const a = address.value.peek();
+    const a = address.peek();
     pane?.dispose();
     pane = asyncPane(() => domainFilterSchema(a), (schema) => {
       const {tree} = restored(Scope.ambient!, 'domain', schema, 'domain');
@@ -208,9 +208,9 @@ function domainTablePane(): HTMLElement {
     host.replaceChildren(pane.root);
   };
   grok.meta.coreLocationOf('User').then((at) => {
-    if (at == null || address.value.peek() !== '')
+    if (at == null || address.peek() !== '')
       return;
-    address.value.value = `${at.schema}.${at.table}`;
+    address.value = `${at.schema}.${at.table}`;
     // a link into this tab names its rows: open the table it was made over
     if (queries.domain.peek() !== '')
       open();
@@ -226,10 +226,10 @@ function domainTablePane(): HTMLElement {
 export function filtersPage(): HTMLElement {
   const scope = Scope.ambient!;
   const tabs = new TabStrip({tabs: [
-    {id: 'dataframe', label: 'DataFrame', content: dataFramePane(scope)},
+    {id: 'dataframe', title: 'DataFrame', content: dataFramePane(scope)},
     // a lazy pane builds on the first click, outside any ambient scope: run it under the page's
-    {id: 'entity', label: 'Entity type', content: () => Scope.runWith(scope, entityTypePane)},
-    {id: 'domain', label: 'Domain table', content: () => Scope.runWith(scope, domainTablePane)},
+    {id: 'entity', title: 'Entity type', content: () => scope.build(entityTypePane)},
+    {id: 'domain', title: 'Domain table', content: () => scope.build(domainTablePane)},
   ]});
   tabs.name = 'filterTabs';
   tabs.activeTab.value = activeTab.peek();

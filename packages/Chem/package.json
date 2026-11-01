@@ -76,6 +76,7 @@
     "@datagrok-libraries/statistics": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/tutorials": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@types/pako": "^2.0.3",
     "@webgpu/types": "^0.1.40",

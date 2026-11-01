@@ -297,9 +297,6 @@ export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
     this.substructureInput = ui.input.string('', {
       value: '', onValueChanged: (value) => {
         this.props = new BioFilterProps(value, undefined, _package.logger);
-        window.setTimeout(() => {
-          if (!this._propsChanging) this.onChanged.next();
-        }, 0 /* next event cycle */);
       }, placeholder: 'Substructure'
     });
   }
@@ -341,18 +338,12 @@ export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
     this.substructureInput = ui.input.string('', {
       value: '', onValueChanged: (value) => {
         this.props = new SeparatorFilterProps(value, this.props.separator, _package.logger);
-        setTimeout(() => {
-          if (!this._propsChanging) this.onChanged.next();
-        });
       }, placeholder: 'Substructure'
     });
     this.separatorInput = ui.input.string('', {
       value: this.colSeparator = colSeparator, onValueChanged: (value) => {
         const separator: string | undefined = !!value ? value : '';
         this.props = new SeparatorFilterProps(this.props.substructure, separator, _package.logger);
-        setTimeout(() => {
-          if (!this._propsChanging) this.onChanged.next();
-        });
       }, placeholder: 'Separator'
     });
   }

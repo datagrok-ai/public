@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Container: Fixed script environments failing to build when a conda package has a non-PEP 440 version (tzdata 2026e)
 * GROK-20991: Fixed the package failing to load since the rspack migration (CodeMirror is not defined, process is not defined), so no notebook could be opened
 * Notebooks: Read the session token from `grok.dapi.token` instead of the `auth` cookie, which is now HttpOnly
 * GROK-20477: Guard mountNotebook against a null iframe browsing context and defer to the 'load' handler

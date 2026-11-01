@@ -4,9 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {signal, computed, Scope, div, divV, divH, span, h3, link, iconButton, BoolInput, QNum}
   from '@datagrok-libraries/u2';
-import {propertyForm, propertyEditor} from '@datagrok-libraries/u2/src/dg/index.js';
+import {propertyForm, propertyEditor} from '@datagrok-libraries/u2/dg';
 import {EDITOR_TYPES, enabledEditorTypes, registeredEditorTypes, setEditorTypes} from './editors';
-import {AbGrid, readout} from './pages/common';
+import {abGrid, readout} from './pages/common';
 
 const HOVER = 'Number rows keep the platform\'s hover chrome, ported as it is: the slider and the ' +
   '− + clicker are invisible at rest and appear the moment the pointer enters the input. Each ' +
@@ -372,8 +372,8 @@ export function convergencePage(): HTMLElement {
     gridScope = generation;
     ui.empty(grid);
 
-    Scope.runWith(generation, () => {
-      const ab = new AbGrid(grid, 'ui.input.forProperty', 'propertyForm');
+    generation.build(() => {
+      const ab = abGrid(grid, 'ui.input.forProperty', 'propertyForm');
       const shown = Object.values(records).filter((r) =>
         (hasChem || r.semType !== 'Molecule') && DEAD[r.name!] == null);
       const props = shown.map((r) => DG.Property.fromOptions(r));

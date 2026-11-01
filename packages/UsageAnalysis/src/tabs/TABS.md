@@ -31,6 +31,8 @@ const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, Clic
 `SystemActivityView` (tab `System Activity`) lists the platform-level audit records datlas writes —
 `server-started`, `user-logged-in`, `user-logged-out`, `user-login-failed`, `user-impersonated`,
 `impersonation-failed`, `admin-session-started`, `admin-session-ended`, `dev-key-generated`,
+`email-confirmation-requested`, `email-confirmed`, `email-confirmation-failed`, `password-reset-requested`,
+`password-changed`, `password-change-failed`,
 `settings-changed`, `log-settings-changed` (`LogAudit` in `grok_shared/lib/src/log_entities.dart`).
 `SystemActivitySummary` feeds a per-type timeline and `SystemActivity` the filterable grid; the grid
 resolves the record's user from its `user` parameter first (a failed login or a server start has no

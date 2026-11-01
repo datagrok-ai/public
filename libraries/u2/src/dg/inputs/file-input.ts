@@ -2,6 +2,7 @@
    `grok.dapi.files`, a remote one is namespaced by its connection, and the value is a platform
    `FileInfo` (port of `file_input.dart`). */
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Input, InputOptions} from '../../core/input-base.js';
 import {signal, Signal} from '../../core/signals.js';
@@ -13,14 +14,19 @@ export type FileInputMode = 'file' | 'folder' | 'any';
 export interface FileInputOptions extends InputOptions<DG.FileInfo | null> {
   /** What the path must resolve to; `file` by default (Dart `FileInputMode`). */
   mode?: FileInputMode;
-  /** Share the path is relative to: its `nqName` prefixes the path before the check, and the
-   * local-file affordance goes away (`file_input.dart:54,136-137`). */
+  /** Share the path is relative to: its `nqName` prefixes the path before the check, the
+   * local-file affordance goes away (`file_input.dart:54,136-137`), and the platform's dialog browses
+   * this share alone ("Choose directory or file"). */
   connection?: DG.DataConnection;
   placeholder?: string;
 }
 
-/** Path box with a local-file picker and a drop zone, validated against the file share as it is
- * typed. The platform's three validator states are kept (`file_input.dart:34-40`): empty, still
+/** Path box with a local-file picker, a drop zone and, where the platform has it
+ * (`ui.pickFileFromFiles`), its "Select a file" dialog ("Add file from Files" over the shares, "Choose
+ * directory or file" over the input's connection, as `inputs.dart` `_initInputCustomizations` adds them),
+ * validated against the file share as it is typed. A share's file has its `fullPath` (`<namespace>:<share>/<path>`);
+ * a local one is in memory, its path its name. The platform's three validator states are kept
+ * (`file_input.dart:34-40`): empty, still
  * checking, and does-not-exist; the check itself runs through {@link AsyncSource}, so a keystroke
  * cancels the pending one and a late answer to an old path is dropped instead of overwriting a
  * newer verdict.
@@ -91,22 +97,19 @@ export class FileInput extends Input<DG.FileInfo | null, FileInputOptions> {
     field.autocomplete = 'off';
     field.className = 'u2-file-path';
     field.placeholder = this.options.placeholder ?? '';
-    this.effect(() => this._show(this.value.value));
-    this.scope.listen(field, 'input', () => {
-      this._queried = ++this._turn;
-      this._text.value = field.value;
-      // an emptied box is no file (a path query for '' never answers, so it would keep the last one)
-      if (field.value === '')
-        this.value.value = null;
-      else
-        this._source.query(field.value);
-    });
+    this.effect(() => this._show(this.value));
+    this.scope.listen(field, 'input', () => this._query(field.value));
 
     const editor = document.createElement('div');
     editor.className = 'u2-file';
     editor.append(field);
-    if (this.options.connection === undefined && this.options.mode !== 'folder')
+    const connection = this.options.connection;
+    if (connection === undefined && this.options.mode !== 'folder')
       this._addPicker(editor);
+    if (typeof ui.pickFileFromFiles === 'function') {
+      this.addOptions(iconButton('folder-tree', () => this._pickFromFiles().catch((e) => grok.shell.error(String(e))),
+        {tooltip: connection === undefined ? 'Add file from Files' : 'Choose directory or file'}), {edits: true});
+    }
     this.own(dropZone(editor, (files) => this._drop(files)));
 
     this.effect(() => this._onState(this._source.state.value));
@@ -118,10 +121,19 @@ export class FileInput extends Input<DG.FileInfo | null, FileInputOptions> {
     return this.options.mode === 'folder' ? 'Folder' : 'File';
   }
 
+  // the box, not the value: a typed path still being looked up is not nothing
+  protected isEmptyValue(): boolean {
+    return this._text.value === '';
+  }
+
+  protected get emptyMessage(): string {
+    return 'Can\'t be empty.';
+  }
+
   private _check(): string | null {
     const text = this._text.value;
     if (text === '')
-      return this.nullable ? null : 'Can\'t be empty.';
+      return null;
     if (this._busy.value)
       return `${this._noun} ${text} is loading.`;
     return this._problem.value;
@@ -172,7 +184,7 @@ export class FileInput extends Input<DG.FileInfo | null, FileInputOptions> {
   private _publish(file: DG.FileInfo | null): void {
     this._echo = true;
     try {
-      this.value.value = file;
+      this.value = file;
     } finally {
       this._echo = false;
     }
@@ -185,10 +197,37 @@ export class FileInput extends Input<DG.FileInfo | null, FileInputOptions> {
     const found = await this._find(path);
     if (found === null)
       return this._isConnectionRoot(path) ? [null] : [];
+    return this._fits(found) ? [found] : [];
+  }
+
+  private _fits(file: DG.FileInfo): boolean {
     const mode = this.options.mode ?? 'file';
-    if (mode === 'file' && !found.isFile || mode === 'folder' && !found.isDirectory)
-      return [];
-    return [found];
+    return !(mode === 'file' && !file.isFile || mode === 'folder' && !file.isDirectory);
+  }
+
+  private _query(text: string): void {
+    this._queried = ++this._turn;
+    if (this._field.value !== text)
+      this._field.value = text;
+    this._text.value = text;
+    // an emptied box is no file (a path query for '' never answers, so it would keep the last one)
+    if (text === '')
+      this.value = null;
+    else
+      this._source.query(text);
+  }
+
+  /** A pick the mode does not take (a folder in file mode) is judged as its typed path would be. */
+  private async _pickFromFiles(): Promise<void> {
+    const connection = this.options.connection;
+    const mode = this.options.mode ?? 'file';
+    const file = await ui.pickFileFromFiles({connection, mode: mode === 'any' ? 'all' : mode});
+    if (file == null || this.scope.isDisposed)
+      return;
+    if (this._fits(file))
+      this.value = file;
+    else
+      this._query(connection === undefined ? file.fullPath : file.path || '/');
   }
 
   /** The one path that resolves with no `FileInfo` to show for it (`file_input.dart:141-143`).
@@ -225,7 +264,7 @@ export class FileInput extends Input<DG.FileInfo | null, FileInputOptions> {
         this._accept(file);
     });
     editor.append(picker);
-    this.addOptions(iconButton('folder-open', () => picker.click(), {tooltip: 'Open file'}));
+    this.addOptions(iconButton('folder-open', () => picker.click(), {tooltip: 'Open file'}), {edits: true});
   }
 
   private _drop(files: FileList): void {

@@ -81,7 +81,7 @@
         "name": {"type": "string", "required": true, "isName": true, "searchable": true},
         "kind": {"type": "string", "required": true, "choices": ["site", "building", "room", "cabinet"]},
         "parent_id": {"type": "ref", "ref": "location", "onDelete": "setnull", "friendlyName": "Parent"},
-        "site": {"type": "string", "required": true, "description": "The site this location belongs to; what a container's location picker is narrowed by"}
+        "site": {"type": "string", "required": true, "semType": "Stockroom site", "description": "The site this location belongs to; what a container's location picker is narrowed by"}
       },
       "filters": [{"column": "site"}, {"column": "kind"}]
     },
@@ -110,7 +110,7 @@
         "received": {"type": "datetime"},
         "expires": {"type": "datetime"},
         "owner": {"type": "user"},
-        "site": {"type": "string", "required": true, "description": "Narrows the location picker to this site"},
+        "site": {"type": "string", "required": true, "semType": "Stockroom site", "description": "Narrows the location picker to this site"},
         "location_id": {"type": "ref", "ref": "location", "onDelete": "setnull", "filter": "site = $site", "friendlyName": "Location"}
       },
       "constraints": {

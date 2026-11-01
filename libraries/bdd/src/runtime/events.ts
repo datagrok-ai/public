@@ -1,6 +1,3 @@
-/* Custom platform events (`grok.events.fireCustomEvent` / `onCustomEvent`) — the word a package
-   gives about work it finished off-screen (Bio's `bio-monomer-lib-loaded`): listened for by id
-   from a step, read by the one that claims it. */
 import {type Page} from '@playwright/test';
 import {expect} from './patience.js';
 import {installViewerRuntime} from './viewers.js';

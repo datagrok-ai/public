@@ -1,6 +1,3 @@
-/* `domains.authoring` — the reusable manifest editor (tree + context panel) and its models, built
-   against fixture drafts headlessly. Platform-free: nothing here imports `grok`; the dialog lane
-   adds `createBinding` (draft → dry run → create → grants) to this namespace. */
 import {ManifestEditor} from './manifest-editor.js';
 import {ManifestModel, AccessModel} from './manifest-model.js';
 import {ManifestTree} from './manifest-tree.js';
@@ -22,7 +19,7 @@ export type {ManifestTreeOptions, ManifestNode} from './manifest-tree.js';
 export type {ManifestContextPanelOptions, PrincipalPicker} from './manifest-panel.js';
 export type {EditorContext, EditorMode, EditorStorage, FieldOffer} from './editor-context.js';
 
-/** The namespace `domains.authoring` exposes; a plain object, so the dialog lane extends it. */
+/** The namespace `domains.authoring` exposes; a plain object, so `domains` adds the binding dialogs to it. */
 export const authoring = {
   ManifestEditor, ManifestModel, AccessModel, ManifestTree, ManifestContextPanel, ManifestRules, fieldOffer,
 };

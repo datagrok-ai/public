@@ -271,10 +271,12 @@ M  END
     let bWorkRan = false;
     let aStarted!: () => void;
     const aStartedP = new Promise<void>((r) => aStarted = r);
+    let releaseA!: () => void;
+    const aReleased = new Promise<void>((r) => releaseA = r);
     // process 1 (A): grabs the section (called first → wins the lock), holds it, completes; never cancelled
     const aProm = runCancellableChemOp(opA, () => false, async () => {
       aStarted();   // A now holds the section (runningOpId === opA)
-      await new Promise((r) => setTimeout(r, 500));
+      await aReleased; // A keeps the section until B has been cancelled
       return 'A-done';
     });
     // process 2 (B): launched second, so it queues behind A on the section
@@ -286,6 +288,7 @@ M  END
     bCanceled = true;
     // no-op while B is only queued — cancelChemOp must not touch A (the running op)
     await chemCommonRdKit.cancelChemOp(opB, [0]);
+    releaseA();
     const [aRes, bRes] = await Promise.all([aProm, bProm]);
     expect(aRes, 'A-done', 'first (running) op completes — not collaterally cancelled');
     expect(bRes === undefined, true, 'second (queued) op is cancelled');

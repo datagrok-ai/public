@@ -1,7 +1,3 @@
-/* The columns of the current table, as facts: what the detectors set (semantic type, units and
-   the other tags), the storage type, and the cells — every filled value against a pattern, a
-   range, a length; one row's value; the maximum's row; distinct counts — and the current row.
-   A step that changes the current row baselines every viewer first (see data.ts). */
 import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';

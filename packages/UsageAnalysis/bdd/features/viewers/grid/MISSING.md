@@ -24,3 +24,8 @@ out of scope, as `grid-rows.feature` records.
   string column the popup holds a categorical filter widget whose rows have no hit areas of their own
   (the filter panel's `category <label> of <caption>` areas are the panel's, not the popup's). Needs
   the popup's filter to publish `category <label>` areas like the panel's card does.
+
+## Closed issues the regression round of 26 Oct 2026 could not claim
+
+- **A cut-off cell's whole value in its tooltip (public#989, public#996)** regressed: the tooltip is empty;
+  the steps and a video are on core#441. Claim it in `grid-viewer.feature` once fixed.

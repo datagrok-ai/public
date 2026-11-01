@@ -64,8 +64,61 @@ Important constants and their roles:
 
 **Hit Design views** (`src/app/hit-design-views/`):
 - `info-view.ts` — Landing page with campaign table, grouping, sorting, create/continue campaigns
-- `submit-view.ts` — Submit results
-- `tiles-view.ts` — Tile/Kanban viewer for stage-based molecule organization
+- `submit-view.ts` — `HitDesignSubmitView`: the Submit dialog (u2: read-only summary rows, Name and File Path edited in
+  place, Status suggestions, Submit function; SAVE / SUBMIT) and `submit()` / `submitWithStatus()` the AI calls
+- `tiles-view.ts` — `showProgressTracker(app, host)`: the platform Tile Viewer in a u2 dialog pinned to the campaign
+  view (`host.show`, modal; the session's `openTracker` keeps one open), one lane per stage (then one per other stage a
+  row holds); a move applies at once, and every close (CLOSE, ✕, Escape, the view closing) keeps the moves and saves
+  them — a close-only dialog (`closeOnly`: CLOSE, no CANCEL); Modify Stages (u2 `RecordsInput`, through
+  `host.show` too). The card layout kept with the campaign
+  (`tilesViewerFormSketch`) is pointed at the campaign's own table (`state.table`) before the viewer reads it
+
+### The campaign view (`src/app/shared/campaign-session.ts`, u2)
+
+A campaign opens as a platform `TableView`; `HitDesignApp.openView` adds it and opens its session with
+`openCampaignSession(app, view, options)`: a plain `CampaignSession` (`view`, `host`, `needsRefresh`, the save
+feedback, `openTracker`) built under the view's host (`ViewHost.of(view)`), so everything the app adds to the view ends
+when the view closes. Its dialogs (merge, compute, designer, a dropped file, the tracker, Submit) are shown through the
+host (`host.show`): hidden while another view is current, closed with the view.
+- Ribbon through the host (`host.ribbon`): the package's group (refresh with the "new changes" hint, add row, merge,
+  compute, designer, permissions, apply template layout, PROGRESS TRACKER, SUBMIT...) pinned to the ribbon's end and
+  folding into "…" when narrow; the crumb "Hit Design › <campaign>" is the shell's (`breadcrumbs`: `tv.parentView` +
+  `showParentCrumb`), a press on it also closes the view and rebuilds the landing; Save off (`hideSave`).
+- The grid's edits through `host.signals.grid` (a layout replaces the grid; an effect re-subscribes): a Stage edit
+  saves, an entry edit registers the V-iD and runs the single-cell calculation (`registerFirst`: Hit Design registers
+  first, PeptiHit converts the HELM first).
+- A Stage cell is a dropdown of the template's stages: the column's `.choices` (`DG.TAGS.CHOICES`), set on open
+  (`_prepareColumns`) and by `setStages`, never saved (left out of `columnTags`; the CSV and the layout hold no
+  tags). A row in another stage keeps it, in its dropdown too, until another is picked. The template editor's and
+  Modify Stages' stage names stay free text.
+- The check for other sessions' saves every 3 s while the view is current (a `host.task`: it starts once the last
+  save is read, also when that read failed, and never for a session closed meanwhile); save feedback (the grid's "Saving
+  Campaign...", the status bar while waiting for another session's lock, "View only — changes are not saved").
+- A layout's viewers bound to columns the table lacks (a new campaign's computed ones): the columns are added empty
+  and marked (`PlaceholderTag`, `utils/merge-table.ts`); a viewer's columns are read as the platform reads them
+  (`…ColumnName(s)`, the Filters viewer's filters); a merge gives one the incoming type, a calculation its own type
+  (a number placeholder keeps integers in place, so a filter on it stays), a save leaves it out until it holds values.
+- "Calculate additional properties": the compute editor (`computeEditor`, `shared/compute-editor.ts`) in a u2 dialog
+  (`HitDesignApp.editCompute`); what is new or changed is calculated over the table (statistics `calculateColumns`:
+  the functions get a copy of the table's listed columns, the canonical SMILES under the molecule column's own name;
+  what they add or change fills the columns of that name, and the table fires its values changed).
+- Hidden `~` columns (Chem's `~Molecule.canonicalSmiles` cache) are never the molecule column
+  (`HitAppBase.moleculeColumn(s)`), are dropped when a campaign's table opens and are never written to its CSV or
+  campaign.json; Merge with table neither offers nor picks one of the incoming table, and no merge copies one into
+  the campaign (`getSourceMappings` reads the incoming columns through u2/dg `Platform.listedColumns`, as the AI
+  functions' column lists and Hit Triage's save do).
+
+Hit Design and PeptiHit differ only by `CampaignSessionOptions` (`HitDesignApp.sessionOptions`, overridden by
+`PeptiHitApp`) and `prepareTable` (PeptiHit's HELM tags).
+
+Saving (`HitDesignApp.saveCampaign`): one save at a time, a save of a campaign asked for meanwhile folded into the next
+one of that campaign; a save writes the campaign open when it was asked for, also when another one opened since (the
+app keeps what a pending save needs of the campaign it switched away from; `setTemplate` reads everything first and
+takes the new campaign at once). Refused before the lock without edit rights; under the lock a save over another
+session's newer save merges that session's table (at the `savePath` its campaign.json names) in first
+(`mergeServerTable` in `utils/merge-table.ts`: new rows and columns added, a cell this session left as it read it
+takes the other session's value, a molecule several rows hold keeps ours); campaign.json keeps keys this version does
+not know; a failure lets the lock go (without logging a save when nothing was written).
 
 **PeptiHit views** (`src/app/pepti-hits-views/`):
 - `info-view.ts` — Extends Hit Design info view for peptide context
@@ -78,17 +131,37 @@ UI accordions for creating new campaigns and templates:
 |---|---|
 | `new-campaign-accordeon.ts` | Hit Triage new campaign form: file/query data source, campaign fields |
 | `new-template-accordeon.ts` | Hit Triage template creator: name, key, compute config, submit function, layout, campaign fields |
-| `new-hit-design-campaign-accordeon.ts` | Hit Design/PeptiHit new campaign: creates initial DataFrame with Molecule, Stage, V-iD columns |
-| `new-hit-design-template-accordeon.ts` | Hit Design/PeptiHit template creator with stages editor |
-| `layout-input.ts` | Reusable layout file input that parses `.layout` files into `DG.ViewLayout` |
+| `new-hit-design-campaign-accordeon.ts` | Hit Design/PeptiHit new campaign: the initial one-row DataFrame (Molecule, Stage, V-iD; Helm first for PeptiHit); Molecule's units are molblock (the sketcher writes the molecule as drawn, campaign.json keeps the units in `columnTags`); an existing campaign keeps its own |
+| `new-pep-triage-template-accordeon.ts` | PepTriage template creator: Hit Triage's plus the sequence and molecule columns |
+| `layout-input.ts` | The platform file input a template's layout is picked with; `readLayout` (a `.layout` file's view state and its share path), `layoutFile` (a template's layout as a file the input shows) |
+
+### Shared landing modules (`src/app/shared/`, u2)
+
+The four landings are one composition, configured per app by `HitLandingView` (`base-view.ts`; `init` builds the home
+under `Scope.root('hit-home')`: the landing is a `DG.MultiView` child, which no view host ends). Each piece is a u2
+function component (`component(…)`, its handle an interface of the same name), except the catalog, a builder run under
+the home's owner; their former statics are module functions:
+
+| File | Purpose |
+|---|---|
+| `hit-home.ts` | `hitHome(options)` → `HitHome` (`catalog`, `picker`): the app header, then a u2 `Page` (in a plain block, so the view scrolls the whole landing) of two sections: "Continue Campaign" with the table and its icons, "New Campaign" with the picker (720px, `PICKER_PX`) |
+| `campaign-catalog.ts` | `campaignCatalog(options)` → `CampaignCatalog` (`table`, `chrome()`, `reload(fresh)`): the u2 `CatalogTable` of the campaigns — columns, groupings, row actions, the last-save order, edit rights looked up once per group; `catalogColumns`, `catalogGroupings`, the HD*/HT* localStorage keys (`catalogPersistence`), Date-field values in every stored shape (`fieldValue`, `fieldText`, `dayText`) |
+| `template-picker.ts` | `templatePicker(options)` → `TemplatePicker` (`names`): the Template choice with New / Clone / Delete, the form of the picked template (stale picks dropped), the "no templates" state |
+| `new-campaign-form.ts` | `newCampaignForm(options)` → `NewCampaignForm` (`form`; Hit Design, PeptiHit): Campaign Name + the template's fields, START disabled with the reason |
+| `permissions-editor.ts` | `PermissionsEditor`: Edit Permissions as a u2 `AccessGrid` over the stored `{view, edit}` group ids; `defaultPermissions` |
+| `template-editor.ts` | `openTemplateEditor` + `templateEditor(options)` → `TemplateEditor` (`dirty`; Hit Design, PeptiHit): the "New Template" view (`ViewHost.create`; parent crumb, which closes it after a Discard? once something was typed; Templates help), a u2 `Page` (820px, its own label columns): Details / Additional fields / Stages (u2 `RecordsInput`) / Compute / Submit over the page's pinned footer, CREATE disabled with the reason; a clone's free name and key; writes `<app>/templates/<name>.json` in the keys' historical order |
+| `compute-editor.ts` | `computeEditor(options)` → `ComputeEditor` (`ready`, `edited`, `read()`): a template's compute as a u2 `MasterDetail` (functions with checkboxes; descriptors as a searchable tree with per-group counts; a function's `funcForm` and re-run flag, off with the reason while unchecked — every detail built at once, so `funcForm` writes its computed defaults as the compute dialog does; "Reorder…" over `HTFunctionOrderingLS`); `read()` answers what the compute dialog writes (`templateCompute`). `descriptors` is optional (no Descriptors row; the given ones kept). No HitTriage import but its CSS; for Chem MPO it still lacks the dialog's single choice (`singleSelect`) |
+
+Hit Triage and PepTriage keep their own new-campaign form (`accordeons/new-campaign-accordeon.ts`) and template editor
+(`accordeons/new-template-accordeon.ts`, `new-pep-triage-template-accordeon.ts`) under the picker.
 
 ### Dialogs (`src/app/dialogs/`)
 
 | File | Purpose |
 |---|---|
-| `functions-dialog.ts` | Compute configuration dialog: descriptor tree selection + tagged compute functions/scripts/queries with their parameter editors |
+| `functions-dialog.ts` | Compute configuration dialog (Hit Triage campaigns, the Hit Triage / PepTriage template editors): descriptor tree selection + tagged compute functions/scripts/queries with their parameter editors; `rerunOnOpenOption`, `descriptorsTree` |
 | `save-campaign-dialog.ts` | Simple dialog to name a campaign before saving |
-| `permissions-dialog.ts` | Edit view/edit group permissions for a campaign. Default: All Users |
+| `merge-table-dialog.ts` | Merge with table (u2): a file from the computer or a share (typed, or picked in the platform's "Select a file" through u2/dg `fileInput`'s "Add file from Files") merged by canonical SMILES or V-iD; a share file is kept in `mergeConfig.filePath` and, with Auto-merge, merged again on every open (`autoMergeOnCampaignOpen`, no save); the column choices are the incoming columns the platform lists (u2/dg `Platform.listedColumns`: no hidden `~` or nameless one) and the defaults are guessed among them (`guessMoleculeColumn`, `guessVidColumn`); each option off says why; OK off with the reason in the footer until the merge has what it needs |
 
 ### Utilities
 
@@ -98,7 +171,6 @@ UI accordions for creating new campaigns and templates:
 - `checkEditPermissions()` / `checkViewPermissions()` — group-based permission checks
 - `addBreadCrumbsToRibbons()` — navigation breadcrumbs in ribbon
 - `joinQueryResults()` — joins query result dataframe back into main dataframe by molecule column
-- Campaign grouping/sorting helpers for info view tables
 
 **`src/app/utils/calculate-single-cell.ts`** — Runs compute pipeline (descriptors, functions, scripts, queries) on molecule values. Used for both batch column calculations and single-cell recalculations in Hit Design.
 
@@ -137,7 +209,9 @@ PostgreSQL schema `hitdesign` with two migrations:
 **locks.sql** (connection: `HitTriage:hitdesign`):
 - `acquireCampaignLock` — acquire 30-second lock (auto-cleans expired)
 - `releaseCampaignLock` — release lock and log update timestamp
-- `getLastModified` — get last save timestamp for a campaign
+- `getLastModified` — get last save timestamp for a campaign; `getLastModifiedAll` — every campaign's of an app (the landing's order)
+- `dropCampaignLock` — drop the caller's lock (`lockedBy` = `HitAppBase.lockHolder`, user + app instance) without logging a save
+- `deleteCampaignRecords` — a deleted campaign's update_logs, campaign_locks and campaign_vids rows
 
 ## Files Storage (`files/`)
 
@@ -175,7 +249,10 @@ The package discovers external functions via tagged roles:
 ## Key Dependencies
 
 - `@datagrok-libraries/compute-utils` — compute pipeline utilities
-- `@datagrok-libraries/utils` — `u2.appHeader`, `ItemsGrid` UI components
+- `@datagrok-libraries/u2` — the landings (`src/app/shared/`): `AppHeader`, `Page`, `CatalogTable`, `Form`,
+  `MasterDetail`, `AccessGrid`, `confirmDialog`; the package's CSS styles only its own classes (u2's look through
+  `--u2-*` properties set on them)
+- `@datagrok-libraries/utils` — `ItemsGrid` UI components
 - `uuid` — campaign ID generation
 - `typeahead-standalone` — autocomplete UI
 

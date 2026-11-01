@@ -18,7 +18,6 @@ export async function macromoleculeSarFastaDemoUI(): Promise<void> {
   if (!simpleTable.id)
     simpleTable.id = `Simple-peptides-analysis-table-id-${Math.random()}-${Date.now()}`;
   const view = grok.shell.addTableView(simpleTable);
-  await DG.delay(50);
   const grid = view.grid;
   await new Promise((res) => {
     let timer: any = null;

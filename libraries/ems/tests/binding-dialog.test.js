@@ -1,19 +1,9 @@
-/* The "Create domain schema" dialog over stubbed dapi calls: the draft is read once the
-   connection and the schema are picked (both preset: the dialog opens on Design, the Connection
-   step a BACK away), the Design step is built over it (one table included when the caller named
-   one; the identifier proposed from the connection and the schema, clear of the registered
-   names; the platform group picker in the access grids), the review shows the manifest, VALIDATE is the dry run bound to the exact
-   payload it checked (a refusal lands on the rows and blocks CREATE; a payload changed since is
-   not validated), CREATE is the real one followed by the column restrictions and then the table
-   grants — a schema row is the same grant on every included table, never a schema grant — and
-   the dialog ends on Created with what went through and what did not, RETRY ACCESS over the
-   failed steps alone; the promise resolves to the name with the access outcome. */
-
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {Scope, notify} from '@datagrok-libraries/u2';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
@@ -172,8 +162,8 @@ scoped('connection › design › review › created: draft, dry run, create, re
   dialog.wizard.back();
   await flush();
   assert.equal(dialog.wizard.currentStep.value, 'connection', 'the Connection step is a BACK away, pre-filled');
-  assert.equal(dialog.connection.value.value, CONN.id);
-  assert.equal(dialog.schema.value.value, 'public');
+  assert.equal(dialog.connection.value, CONN.id);
+  assert.equal(dialog.schema.value, 'public');
   dialog.wizard.next();
   await flush();
   assert.equal(dialog.editor, editor, 'the same draft: the editor is kept');
@@ -195,7 +185,8 @@ scoped('connection › design › review › created: draft, dry run, create, re
   await pick(editor.panel.root.querySelector('[data-u2-name="visibleTo"] .u2-typeahead input'), 'sam');
   assert.deepEqual(editor.access.visibilityOf('orders', 'freight'), [SALES, {id: 'u-sam', label: 'Sam Sales'}],
     'a user through the personal group');
-  assert.deepEqual(editor.panel.root.querySelectorAll('.u2-chips-chip').map((c) => c.textContent), ['Sales', 'Sam Sales']);
+  assert.deepEqual([...editor.panel.root.querySelectorAll('.u2-chips-chip')].map((c) => c.textContent),
+    ['Sales', 'Sam Sales']);
   editor.access.setVisibility('orders', 'freight', [SALES]);
   assert.equal(buttonNamed('NEXT').disabled, false);
 
@@ -392,7 +383,7 @@ scoped('a connection alone opens on Connection; Design follows once the schema i
   assert.equal(dialog.wizard.currentStep.value, 'connection');
   assert.equal(buttonNamed('NEXT').disabled, true);
   assert.equal(reason(), 'Pick a connection and a schema');
-  dialog.schema.value.value = 'audit';
+  dialog.schema.value = 'audit';
   await flush();
   assert.equal(buttonNamed('NEXT').disabled, false);
   dialog.wizard.next();
@@ -437,7 +428,8 @@ scoped('the table preset matches the remote name whatever its case; an unmatched
   await flush();
   assert.equal(await first, null);
 
-  const unknown = new domains.authoring.BindingDialog({connection: CONN, schema: 'public', table: 'nope'});
+  const unknown = testOwner().build(() =>
+    new domains.authoring.BindingDialog({connection: CONN, schema: 'public', table: 'nope'}));
   const second = unknown.open();
   await flush();
   assert.deepEqual(unknown.editor.model.tables.value.filter((t) => t.included).map((t) => t.remote),
@@ -462,11 +454,11 @@ scoped('the catalog preset stays with the preset connection; the schemas are off
   const done = dialog.open();
   await flush();
   assert.deepEqual(dialog.schema.items.map((i) => i.value), ['archive', 'Audit', 'public']);
-  dialog.schema.value.value = 'public';
+  dialog.schema.value = 'public';
   await flush();
-  dialog.connection.value.value = OTHER.id;
+  dialog.connection.value = OTHER.id;
   await flush();
-  dialog.schema.value.value = 'public';
+  dialog.schema.value = 'public';
   await flush();
   assert.deepEqual(calls.filter((c) => c[0] === 'schemas'), [['schemas', 'c1', 'Northwind'], ['schemas', 'c2', null]],
     'the other connection is read whole');
@@ -523,14 +515,14 @@ scoped('a warehouse read that never answers fails by name after the timeout; the
     await flush();
     assert.equal(document.querySelector('.u2-binding-facts').textContent,
       'Postgres · The schemas could not be read: The connection did not answer within 0.02 s');
-    assert.equal(dialog.connection.enabled, true);
+    assert.equal(dialog.connection.disabled, null);
     grok.dapi.connections.getSchemas = async () => ['public'];
     grok.dapi.domains.draft = never;
-    dialog.connection.value.value = null;
+    dialog.connection.value = null;
     await flush();
-    dialog.connection.value.value = CONN.id;
+    dialog.connection.value = CONN.id;
     await flush();
-    dialog.schema.value.value = 'public';
+    dialog.schema.value = 'public';
     await new Promise((r) => setTimeout(r, 40));
     await flush();
     assert.equal(reason(), 'The draft did not answer within 0.02 s');
@@ -557,7 +549,7 @@ scoped('opened on Design over a preset whose reads never answer: the draft fails
     await new Promise((r) => setTimeout(r, 60));
     await flush();
     assert.equal(dialog.wizard.currentStep.value, 'design');
-    assert.equal(dialog.schema.value.value, 'public', 'the preset schema is still picked');
+    assert.equal(dialog.schema.value, 'public', 'the preset schema is still picked');
     assert.equal(status().textContent, 'The draft did not answer within 0.02 s');
     assert.equal(status().classList.contains('u2-wizard-status-error'), true);
     assert.equal(reason(), 'The draft did not answer within 0.02 s');
@@ -571,9 +563,9 @@ scoped('opened on Design over a preset whose reads never answer: the draft fails
       calls.push(['draft', body]);
       return JSON.parse(JSON.stringify(DRAFT));
     };
-    dialog.schema.value.value = null;
+    dialog.schema.value = null;
     await flush();
-    dialog.schema.value.value = 'public';
+    dialog.schema.value = 'public';
     await flush();
     assert.equal(status().textContent, '', 'a new read clears the failure');
     assert.equal(buttonNamed('NEXT').disabled, false);
@@ -629,7 +621,7 @@ scoped('WO-A5.1 #1 (P0): the validation and the editor belong to the draft picke
   const draft = grok.dapi.domains.draft;
   let release;
   grok.dapi.domains.draft = (body) => new Promise((r) => release = () => r(draft(body)));
-  dialog.schema.value.value = 'audit';
+  dialog.schema.value = 'audit';
   await flush();
   assert.equal(status().textContent, '', 'the Validated badge of the other draft is gone');
   await rail('design');
@@ -674,7 +666,7 @@ scoped('WO-A5.1 #2 (P1): findings belong to the payload they were found in; a tr
   await flush();
   assert.equal(document.querySelectorAll('.u2-binding-issue').length, 1);
   dialog.wizard.back();
-  dialog.editor.tree.tree.root.querySelector('.u2-list').clientHeight = 800;
+  layout(dialog.editor.tree.tree.root.querySelector('.u2-list'), {clientHeight: 800});
   await dialog.editor.select({kind: 'column', table: 'orders', column: 'shipcity'});
   await flush();
   assert.equal(document.querySelectorAll('.u2-manifest-node-problem').length, 1, 'the row is marked');
@@ -776,9 +768,9 @@ scoped('WO-A5.1 #5 (P2): the same connection and schema picked again keep the ed
   editor.model.includeColumn('orders', 'shipcity', false);
   dialog.wizard.back();
   await flush();
-  dialog.schema.value.value = 'audit';
+  dialog.schema.value = 'audit';
   await flush();
-  dialog.schema.value.value = 'public';
+  dialog.schema.value = 'public';
   await flush();
   dialog.wizard.next();
   await flush();
@@ -788,7 +780,7 @@ scoped('WO-A5.1 #5 (P2): the same connection and schema picked again keep the ed
 
   dialog.wizard.back();
   await flush();
-  dialog.schema.value.value = 'audit';
+  dialog.schema.value = 'audit';
   await flush();
   dialog.wizard.next();
   await flush();

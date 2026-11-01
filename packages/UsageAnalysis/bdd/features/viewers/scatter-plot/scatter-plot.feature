@@ -8,7 +8,10 @@ Feature: Scatter plot property surface
   the tooltip, the labels and the trend lines have features of their own. Last, `scatter-plot-ui.md`'s
   Data > Table: the plot rebound to spgi-100 re-picks its columns, rebound back it draws demog-1000
   again, and its own Filter formula (`${AGE} > 44`: 466 of the 872 rows with a HEIGHT) narrows the
-  markers and leaves the table's filter alone. One journey on
+  markers and leaves the table's filter alone; a molecule column set as Label Columns on spgi-100
+  draws its labels (public#3041), a calculated column added under the Filter keeps its rows
+  (public#1156), and a Filter that does not parse is ignored without an error (public#344, core#1141;
+  that it says nothing is core#1167). Marker Default Size changes the markers (public#2285). One journey on
   demog-1000, X = WEIGHT, Y = HEIGHT; every scenario puts back what it changed.
 
   Background:
@@ -144,7 +147,8 @@ Feature: Scatter plot property surface
     And scatter plot viewer should have less ink than before
     And no errors should have been logged
 
-  Scenario: Data > Table rebinds the plot to another table and back, and the Filter formula narrows it
+  @realizes:public#3041 @realizes:public#1156 @realizes:public#344 @realizes:core#1141
+  Scenario: Data > Table rebinds the plot to another table and back, and the Filter formula narrows it, survives a new column and an invalid one is ignored
     Given user opens spgi dataset
     And user switches to the "demog-1000" table view
     When user sets "table" property of scatter plot viewer to "spgi-100"
@@ -153,6 +157,12 @@ Feature: Scatter plot property surface
     And "X" property of scatter plot viewer should not be ""
     And "Y" property of scatter plot viewer should not be "HEIGHT"
     And the "rows shown" reading of scatter plot viewer should be at least 1
+    When user sets properties of scatter plot viewer:
+      | X             | Stereo Category |
+      | Y             | Chemist 521     |
+      | Label Columns | Core            |
+    Then the "labels shown" reading of scatter plot viewer should be 43
+    When user sets "Label Columns" property of scatter plot viewer to ""
     When user sets "table" property of scatter plot viewer to "demog-1000"
     Then scatter plot viewer should be bound to table "demog-1000"
     And "X" property of scatter plot viewer should not be ""
@@ -164,6 +174,25 @@ Feature: Scatter plot property surface
     When user sets "Filter" property of scatter plot viewer to "${AGE} > 44"
     Then scatter plot viewer should show 466 rows
     And all rows should pass the filter
+    When user adds a calculated column "AGE2" with formula "${AGE} * 2"
+    And user sets "Color" property of scatter plot viewer to "AGE2"
+    Then scatter plot viewer should show 466 rows
+    When user sets "Color" property of scatter plot viewer to ""
+    And user removes "AGE2" column
+    And user sets "Filter" property of scatter plot viewer to '${RACE} = "Black"'
+    Then scatter plot viewer should show 872 rows
+    And all rows should pass the filter
+    And no errors should have been logged
     When user sets "Filter" property of scatter plot viewer to ""
     Then scatter plot viewer should show 872 rows
+    And no errors should have been logged
+
+  @realizes:public#2285
+  Scenario: Marker Default Size changes the markers (public#2285)
+    When user sets "markerDefaultSize" property of scatter plot viewer to "12"
+    Then scatter plot viewer should have more ink than before
+    When user sets "markerDefaultSize" property of scatter plot viewer to "2"
+    Then scatter plot viewer should have less ink than before
+    When user sets "markerDefaultSize" property of scatter plot viewer to ""
+    Then scatter plot viewer should have more ink than before
     And no errors should have been logged

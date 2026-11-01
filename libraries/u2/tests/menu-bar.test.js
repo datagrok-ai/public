@@ -2,7 +2,7 @@
    signal, disabled items, and disposal. Same contract as smoke.test.js — every test leaves the
    live-scope count where it found it. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
@@ -26,15 +26,15 @@ function menuPanel() {
 }
 
 function menuItems() {
-  return menuPanel().querySelectorAll('.u2-menu-item');
+  return [...menuPanel().querySelectorAll('.u2-menu-item')];
 }
 
 function menuLabels() {
-  return menuPanel().querySelectorAll('.u2-menu-label').map((el) => el.textContent);
+  return [...menuPanel().querySelectorAll('.u2-menu-label')].map((el) => el.textContent);
 }
 
 function items(bar) {
-  return bar.root.querySelectorAll('.u2-menu-bar-item');
+  return [...bar.root.querySelectorAll('.u2-menu-bar-item')];
 }
 
 function tabStops(bar) {
@@ -184,7 +184,8 @@ ui('MenuBar: Esc closes the open menu and returns focus to the item', async () =
 });
 
 ui('MenuBar: a disabled item never opens, is skipped by roving and by hover switching', async () => {
-  const bar = mount([], {items: [{label: 'Tools', build: (m) => m.item('Options', () => {}), enabled: false}]});
+  const bar = mount([], {items: [{text: 'Tools', build: (m) => m.item('Options', () => {}),
+    disabled: 'Not for this document'}]});
   const [tools, file, edit] = items(bar);
   assert.equal(tools.getAttribute('aria-disabled'), 'true');
   assert.equal(file.getAttribute('aria-disabled'), 'false');
@@ -199,19 +200,19 @@ ui('MenuBar: a disabled item never opens, is skipped by roving and by hover swit
   fire(bar.root, 'keydown', {key: 'ArrowLeft'});
   assert.equal(bar.openMenu.value, 'View', '← from File wraps past Tools');
 
-  bar.setEnabled('Tools', true);
+  bar.setDisabled('Tools', null);
   assert.equal(tools.getAttribute('aria-disabled'), 'false');
   fire(tools, 'click');
   assert.equal(bar.openMenu.value, 'Tools');
   assert.deepEqual(tabStops(bar), ['Tools']);
 
-  bar.setEnabled('Tools', false);
+  bar.setDisabled('Tools', 'Not for this document');
   assert.equal(bar.openMenu.value, null, 'disabling the open item closes it');
   assert.equal(menuPanel(), null);
   fire(bar.root, 'keydown', {key: 'Home'});
   assert.deepEqual(tabStops(bar), ['File']);
 
-  bar.setEnabled('Missing', true);
+  bar.setDisabled('Missing', null);
   assert.equal(items(bar).length, 4, 'an unknown label is ignored');
   assert.equal(edit.getAttribute('aria-disabled'), 'false');
 

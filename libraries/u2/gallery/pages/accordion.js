@@ -81,7 +81,7 @@ export async function render(main) {
   const live = () => {
     const content = Control.build(() => {
       const value = el('b');
-      bindText(Scope.ambient, value, computed(() => String(ticks.value)));
+      bindText(value, computed(() => String(ticks.value)), {owner: Scope.ambient});
       const line = el('div');
       line.append('ticks = ', value);
       return [
@@ -104,9 +104,9 @@ export async function render(main) {
   main.append(acc.root);
 
   const state = el('code');
-  bindText(acc.scope, state, computed(() => TITLES
+  bindText(state, computed(() => TITLES
     .map((t) => `${t}: ${acc.getPane(t) ? acc.getPane(t).expanded.value : '(gone)'}`)
-    .join('   ')));
+    .join('   ')), {owner: acc.scope});
   const readout = el('p', 'u2-gallery-status');
   readout.append(state);
   main.append(readout);

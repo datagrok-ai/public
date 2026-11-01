@@ -14,18 +14,18 @@ export class PlatformBalloons {
     return typeof (globalThis as {grok_Balloon?: unknown}).grok_Balloon === 'function';
   }
 
-  /** u2's three types are the platform's; `autoHide` keeps u2's default (info hides, the rest stay),
-   * `timeout` goes over in seconds and `copyText` as it is. `oneTimeKey` and `singleKey` stay u2's.
+  /** u2's three types are the platform's; `autoHide` goes over as u2 resolved it (an error stays),
+   * `timeout` in seconds and `copyText` as it is. `oneTimeKey` and `singleKey` stay u2's.
    * The platform closes a balloon on any click, so `closeOnClick: false` is lost. */
-  static show(content: string | HTMLElement, type: NotifyType, options: NotifyOptions,
-    closed: () => void): NotifyHandle | undefined {
+  static show(content: string | HTMLElement, type: NotifyType,
+    options: NotifyOptions & {autoHide: boolean, timeout: number}, closed: () => void): NotifyHandle | undefined {
     if (!PlatformBalloons.available)
       return undefined;
     const before = document.querySelector(CONTAINER)?.lastElementChild ?? null;
     // the platform reads a string as markup (an error's as text); u2's string is always text
     const shown = typeof content === 'string' && type !== 'error' ? PlatformBalloons._text(content) : content;
-    const balloon = {autoHide: options.autoHide ?? type === 'info', copyText: options.copyText,
-      timeout: Math.max(1, Math.round((options.timeout ?? 5000) / 1000))};
+    const balloon = {autoHide: options.autoHide, copyText: options.copyText,
+      timeout: Math.max(1, Math.round(options.timeout / 1000))};
     if (type === 'error')
       grok.shell.error(shown, balloon);
     else if (type === 'warning')

@@ -139,3 +139,13 @@
 .u2-manifest-panel .u2-input-box > .u2-typeahead {
   margin-left: var(--dg-space-m);
 }
+
+.u2-manifest-properties {
+  height: 100%;
+  min-height: 0;
+}
+
+.u2-manifest-properties .u2-manifest-editor {
+  flex: 1;
+  min-height: 0;
+}
