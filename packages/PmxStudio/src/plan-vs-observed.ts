@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {badge, computed, div, divH, iconButton, span, Tooltip} from '@datagrok-libraries/u2';
 import type {BadgeVariant, ReadonlySignal, Signal} from '@datagrok-libraries/u2';
-import {FileInput, FuncCallForm} from '@datagrok-libraries/u2/src/dg/index.js';
+import {FileInput, FuncCallForm} from '@datagrok-libraries/u2/dg';
 
 import {AnalysisFrames} from './analyze';
 import {finite} from './engine';

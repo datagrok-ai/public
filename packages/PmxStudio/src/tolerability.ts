@@ -6,7 +6,7 @@
 import * as DG from 'datagrok-api/dg';
 import {badge, BasicTable, BoolInput, computed, div, divH, divV, dot, span, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
-import {FuncCallForm} from '@datagrok-libraries/u2/src/dg/index.js';
+import {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
 import {AnalysisFrames, BASES, DENSITY_TAG, DensityUsed, NCI} from './analyze';
 import {BandChart} from './band-chart';

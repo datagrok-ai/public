@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {button, buttonWithIcon, computed, div, divH, divV, dot, icon, loader, RadioInput, Section, span,
   StatCard, TabStrip, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
-import type {FuncCallForm} from '@datagrok-libraries/u2/src/dg/index.js';
+import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
 /** A fraction as a whole percent: 0.734 → "73%". */
 export const pct = (x: unknown) => typeof x === 'number' && Number.isFinite(x) ? `${Math.round(x * 100)}%` : '—';

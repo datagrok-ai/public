@@ -9,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
 import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, loader, signal, span,
   Splitter, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
-import {appView, funcForm, viewers} from '@datagrok-libraries/u2/src/dg/index.js';
+import {appView, funcForm, viewers} from '@datagrok-libraries/u2/dg';
 
 import {PlanFrames, WEEKDAY_NAMES, armColors, weekdaysOf, weekdaysText} from './frames';
 import {ArmsInput, CorrectionInput, armsFrame} from './arms-input';

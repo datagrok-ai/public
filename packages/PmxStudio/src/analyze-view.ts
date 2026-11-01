@@ -11,7 +11,7 @@ import * as grok from 'datagrok-api/grok';
 import {badge, BasicTable, button, computed, div, divH, divV, dot, signal, span, Splitter, tableFromMap,
   Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
-import {appView, funcForm, viewers} from '@datagrok-libraries/u2/src/dg/index.js';
+import {appView, funcForm, viewers} from '@datagrok-libraries/u2/dg';
 
 import {AnalysisFrames, exampleStudy, median} from './analyze';
 import {armColors} from './frames';
