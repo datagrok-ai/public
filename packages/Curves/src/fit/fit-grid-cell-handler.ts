@@ -20,6 +20,7 @@ import {fitChartDataProperties} from '@datagrok-libraries/statistics/src/fit/fit
 import {fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 import {
   changeCurvesOptions, chartPropertiesFor, normalizeStatisticNames, seriesPropertiesFor, ManipulationLevel,
+  MANIPULATION_LEVEL,
 } from './fit-options';
 
 type CurveStatisticParams = {propName: string, seriesNumber: number} | {propName: string, aggrType: string};
@@ -84,6 +85,9 @@ function showWholeList(input: DG.InputBase): DG.InputBase {
 }
 
 export class FitGridCellHandler extends DG.ObjectHandler {
+  private levelCellKey: string | null = null;
+  private manipulationLevel: ManipulationLevel = MANIPULATION_LEVEL.COLUMN;
+
   get type(): string {
     return 'GridCell';
   }
@@ -97,15 +101,29 @@ export class FitGridCellHandler extends DG.ObjectHandler {
   // TODO: add the table for the values on the cell or don't render it at all
   // TODO: fix the curves demo app
 
-  renderProperties(gridCell: DG.GridCell, _context: any = null): HTMLElement {
-    const acc = ui.accordion('Curves property panel');
+  /** The Context Panel rebuilds the panel of a cell it already shows once the current cell settles after a
+   * click, and only this input holds the level: starting over would send the next edit to the column. */
+  levelInput(gridCell: DG.GridCell): DG.InputBase {
+    const cell = gridCell.cell;
+    const cellKey = `${cell.dataFrame.id} || ${cell.dataFrame.name} || ${cell.column.name} || ${cell.rowIndex}`;
+    if (cellKey !== this.levelCellKey) {
+      this.levelCellKey = cellKey;
+      this.manipulationLevel = MANIPULATION_LEVEL.COLUMN;
+    }
     // TODO: make just the base ui.input.choice after nullable option is added
     const switchProperty = DG.Property.js('level', DG.TYPE.STRING, {description: 'Controls the level at which properties will be switched',
-      defaultValue: 'Column', choices: ['Dataframe', 'Column', 'Cell'], nullable: false});
-    const switchLevelInput = ui.input.forProperty(switchProperty);
+      defaultValue: this.manipulationLevel, choices: ['Dataframe', 'Column', 'Cell'], nullable: false});
+    const switchLevelInput = ui.input.forProperty(switchProperty, null,
+      {onValueChanged: (v: ManipulationLevel) => this.manipulationLevel = v});
 
     // temporarily because input doesn't show the tooltip
     ui.tooltip.bind(switchLevelInput.captionLabel, 'Controls the level at which properties will be switched');
+    return switchLevelInput;
+  }
+
+  renderProperties(gridCell: DG.GridCell, _context: any = null): HTMLElement {
+    const acc = ui.accordion('Curves property panel');
+    const switchLevelInput = this.levelInput(gridCell);
 
     const chartData = getOrCreateParsedChartData(gridCell.cell);
     const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
