@@ -88,6 +88,26 @@ export const rememberCompound = When('user remembers the compound the breadcrumb
   remembered.set(page, (await current.textContent())!.trim());
 }, {tier: 'ui', description: 'the corporate ID (DG-…) the breadcrumbs show for the record the form holds'});
 
+export const openCompoundByGrokId = Given('user opens the compound {string} of MolTrack by its Grok ID',
+  async (page: Page, name: string) => {
+    const molregno: number | null = await page.evaluate(async ([schema, n]) => {
+      const rows = await grok.dapi.domains.table(`${schema}.compound`)
+        .query({filter: {property: 'common_name', operator: '=', value: n}, columns: ['molregno'], limit: 1});
+      return rows.length === 0 ? null : rows[0].molregno;
+    }, [SCHEMA, name] as const);
+    if (molregno === null)
+      throw new Error(`no compound named "${name}" is registered`);
+    const id = `DG-${String(molregno).padStart(6, '0')}`;
+    if (!remembered.has(page))
+      atFeatureEnd(page, async () => {
+        remembered.delete(page);
+      });
+    remembered.set(page, id);
+    await openView(page, `Compounds?corporate_compound_id=${id}`);
+  }, {tier: 'api', enters: 'MolTrack', description: 'looks up the Grok ID (DG-…) of the live compound with that common name, ' +
+    'remembers it, and opens the Compounds view at that ID, as a typed link does: the number a compound gets depends on ' +
+    'what the server registered before it'});
+
 export const namesRemembered = Then('{element} should name the remembered compound', async (page: Page, target: ElementRef) => {
   const id = remembered.get(page);
   if (id === undefined)
