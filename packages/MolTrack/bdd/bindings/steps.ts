@@ -9,7 +9,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 declare const grok: any;
 
 const SCHEMA = 'moltrack';
-const LOAD_TIMEOUT = 300000;
+const LOAD_TIMEOUT = 130000;
 const remembered = new WeakMap<Page, string>();
 
 const BULK_EXAMPLE = new URL('../fixtures/bulk-registration.csv', import.meta.url);
