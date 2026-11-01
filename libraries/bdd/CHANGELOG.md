@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Gates: Fixed `the stand has a reachable {string} connection` (and `the stand can reach the database of`) hanging a test to its timeout when the connection test never answers (a database host out of reach): with no answer in 30 s the rest of the test is skipped with that reason
 * Session: The shell is reset only after its preloader is gone, so a reload with a start-up URL (a script, a project) no longer has its view replace the Home view a step expects
 
 * Gestures: Fixed `user drags {element} to {element}` dropping nothing when the source moved under the press (a gallery reflowing as a panel opens): Playwright's `dragTo` pressed again with the first press still down, which a Dart drag never drops; the press is now aimed by a hover, and one that lands off the source is kept from the page and released before the next try

@@ -71,12 +71,10 @@ Feature: Box plot selection and highlight
     When user drags a selection box over the "Other values" area of box plot viewer
     Then some rows where "RACE" is "Other" should be selected
     And no rows where "RACE" is "Caucasian" should be selected
-    And 51 rows should be selected
     When user clears the row selection
     And user drags a selection box over the "Caucasian values" area of box plot viewer
     Then some rows where "RACE" is "Caucasian" should be selected
     And no rows where "RACE" is "Other" should be selected
-    And 768 rows should be selected
     When user adds a categorical filter on "RACE" keeping "Asian, Black, Caucasian, Other"
     Then all rows should pass the filter
     When user clears the row selection

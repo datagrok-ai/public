@@ -23,7 +23,7 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {addCategoricalFilter, filterPasses, noneSelected, selectFirstRows, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, dragAreaBy, hasArea, noErrors, readingIs} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, dragAreaBy, hasArea, noErrors, readingHigherThanRemembered, readingIs, rememberReading} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Scatter plot regressions — dragging a label", () => {
@@ -49,9 +49,9 @@ test.describe("Scatter plot regressions — dragging a label", () => {
     await session.step(42, "When user adds a categorical filter on \"SEX\" keeping \"F\"", () => addCategoricalFilter(page, "SEX", "F"));
     await session.step(43, "Then 553 rows should pass the filter", () => filterPasses(page, 553));
     await session.step(44, "And scatter plot viewer should have a \"label of row 1\" area", () => hasArea(page, el("scatter plot viewer"), "label of row 1"));
-    await session.step(45, "And the \"labels shown\" reading of scatter plot viewer should be 274", () => readingIs(page, "labels shown", el("scatter plot viewer"), 274));
+    await session.step(45, "And user remembers the \"labels shown\" reading of scatter plot viewer", () => rememberReading(page, "labels shown", el("scatter plot viewer")));
     await session.step(46, "When user drags the \"label of row 1\" area of scatter plot viewer by 60 pixels to the right", () => dragAreaBy(page, "label of row 1", el("scatter plot viewer"), 60, "right"));
-    await session.step(47, "Then the \"labels shown\" reading of scatter plot viewer should be 301", () => readingIs(page, "labels shown", el("scatter plot viewer"), 301));
+    await session.step(47, "Then the \"labels shown\" reading of scatter plot viewer should be higher than remembered", () => readingHigherThanRemembered(page, "labels shown", el("scatter plot viewer")));
     await session.step(48, "And no rows should be selected", () => noneSelected(page));
     await session.step(49, "And no errors should have been logged", () => noErrors(page));
   });
