@@ -527,6 +527,10 @@ category('panel and renderer', () => {
     expect(getOrCreateParsedChartData(grid.cell('curve', 1).cell).chartOptions?.title === 'Only this one', false,
       'a Cell level option reached another cell');
 
+    const sameName = DG.Viewer.grid(curveTable('levelRebuilt', true));
+    expect(handler.levelInput(sameName.cell('curve', 0)).value, 'Column', 'a table of the same name starts from the default');
+
+    levelOf(0).stringValue = 'Cell';
     expect(levelOf(1).value, 'Column', 'another cell starts from the default');
   });
 

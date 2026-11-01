@@ -85,7 +85,8 @@ function showWholeList(input: DG.InputBase): DG.InputBase {
 }
 
 export class FitGridCellHandler extends DG.ObjectHandler {
-  private levelCellKey: string | null = null;
+  private levelColumn: WeakRef<any> | null = null;
+  private levelRow = -1;
   private manipulationLevel: ManipulationLevel = MANIPULATION_LEVEL.COLUMN;
 
   get type(): string {
@@ -105,16 +106,22 @@ export class FitGridCellHandler extends DG.ObjectHandler {
    * click, and only this input holds the level: starting over would send the next edit to the column. */
   levelInput(gridCell: DG.GridCell): DG.InputBase {
     const cell = gridCell.cell;
-    const cellKey = `${cell.dataFrame.id} || ${cell.dataFrame.name} || ${cell.column.name} || ${cell.rowIndex}`;
-    if (cellKey !== this.levelCellKey) {
-      this.levelCellKey = cellKey;
+    const column = cell.column.dart;
+    const row = cell.rowIndex;
+    const isLevelCell = () => this.levelColumn?.deref() === column && this.levelRow === row;
+    if (!isLevelCell()) {
+      this.levelColumn = new WeakRef(column);
+      this.levelRow = row;
       this.manipulationLevel = MANIPULATION_LEVEL.COLUMN;
     }
     // TODO: make just the base ui.input.choice after nullable option is added
     const switchProperty = DG.Property.js('level', DG.TYPE.STRING, {description: 'Controls the level at which properties will be switched',
       defaultValue: this.manipulationLevel, choices: ['Dataframe', 'Column', 'Cell'], nullable: false});
     const switchLevelInput = ui.input.forProperty(switchProperty, null,
-      {onValueChanged: (v: ManipulationLevel) => this.manipulationLevel = v});
+      {onValueChanged: (v: ManipulationLevel) => {
+        if (isLevelCell())
+          this.manipulationLevel = v;
+      }});
 
     // temporarily because input doesn't show the tooltip
     ui.tooltip.bind(switchLevelInput.captionLabel, 'Controls the level at which properties will be switched');
