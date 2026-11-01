@@ -108,10 +108,15 @@ category('Viewers: Monomer-Position', () => {
     root.style.width = '200px';
     try {
       const rootRect = root.getBoundingClientRect();
-      for (const radio of Array.from(root.querySelectorAll<HTMLElement>('#pep-viewer-title input'))) {
+      const radios = Array.from(root.querySelectorAll<HTMLElement>('#pep-viewer-title input'));
+      expect(radios.length, 2, 'the mode switch has two radios');
+      for (const radio of radios) {
         const rect = radio.getBoundingClientRect();
         expect(rect.left >= rootRect.left && rect.right <= rootRect.right, true,
           `the ${radio.getAttribute('name')} radio is cut off by the viewer edge`);
+        const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        expect(radio.closest('#pep-viewer-title')!.contains(hit), true,
+          `the ${radio.getAttribute('name')} radio is covered`);
       }
     } finally {
       root.style.width = width;
