@@ -1,4 +1,6 @@
-import {readFileSync} from 'node:fs';
+import {mkdirSync, readFileSync, rmSync, statSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import type {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
 import {type ElementRef, atFeatureEnd, el, expect, locate, silent} from '@datagrok-libraries/bdd/runtime';
@@ -7,6 +9,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 declare const grok: any;
 
 const SCHEMA = 'moltrack';
+const LOAD_TIMEOUT = 300000;
 const remembered = new WeakMap<Page, string>();
 
 const BULK_EXAMPLE = new URL('../fixtures/bulk-registration.csv', import.meta.url);
@@ -35,21 +38,47 @@ export const openEmsView = Given('user opens the {string} view of MolTrack',
     description: 'runs the app function on that view (Compounds, Batches, Additions, Assays, Assay Runs, Assay Results) ' +
       'and waits for its list to load'});
 
+/** Runs `body` holding a lock the workers on this machine share per server: the demo load fills a table only
+ * when it finds it empty, so two workers loading at once fill it twice. A lock a killed worker left is taken
+ * over once it is older than the longest load. */
+async function demoLoadLock<T>(page: Page, body: () => Promise<T>): Promise<T> {
+  const lock = join(tmpdir(), `moltrack-demo-${new URL(page.url()).host.replace(/[^\w.-]/g, '_')}.lock`);
+  const take = () => {
+    try {
+      mkdirSync(lock);
+      return true;
+    }
+    catch {
+      const since = statSync(lock, {throwIfNoEntry: false})?.mtimeMs;
+      if (since !== undefined && Date.now() - since > LOAD_TIMEOUT)
+        rmSync(lock, {recursive: true, force: true});
+      return false;
+    }
+  };
+  await expect.poll(take, {message: `the MolTrack demo load lock ${lock}`, timeout: LOAD_TIMEOUT}).toBe(true);
+  try {
+    return await body();
+  }
+  finally {
+    rmSync(lock, {recursive: true, force: true});
+  }
+}
+
 export const demoData = Given('the MolTrack demo data is on the server', async (page: Page) => {
   silent(page);
-  const missing = await page.evaluate(async (schema) => {
+  const missing = await demoLoadLock(page, () => page.evaluate(async (schema) => {
     const count = () => Promise.all(['compound', 'assay_result']
       .map((table) => grok.dapi.domains.table(`${schema}.${table}`).count() as Promise<number>));
     if ((await count()).every((n) => n > 0))
       return '';
     const loaded: string = await grok.functions.call('Moltrack:loadEmsDemoData');
     return (await count()).every((n) => n > 0) ? '' : loaded;
-  }, SCHEMA);
+  }, SCHEMA));
   if (missing !== '')
     throw new Error(`the MolTrack demo data did not load: ${missing}`);
 }, {tier: 'api', description: 'loads the package\'s demo set (Moltrack:loadEmsDemoData: the compounds and batches of ' +
   'files/ems-demo, the additions, the hepatocyte stability assay, its runs and results) where the schema has no ' +
-  'compounds or no results; a fixture loaded once and kept, as a dataset is'});
+  'compounds or no results, one worker at a time; a fixture loaded once and kept, as a dataset is'});
 
 /** Soft-deletes the live compounds of that structure and their batches; throws if any is left. */
 async function sweep(page: Page, structure: string): Promise<void> {
