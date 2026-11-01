@@ -102,6 +102,22 @@ category('Viewers: Monomer-Position', () => {
       `Monomer-Position mode is not ${SELECTION_MODE.MUTATION_CLIFFS} after switching`);
   });
 
+  test('Mode switch stays inside a narrow viewer', async () => {
+    const root = mpViewer.root;
+    const width = root.style.width;
+    root.style.width = '200px';
+    try {
+      const rootRect = root.getBoundingClientRect();
+      for (const radio of Array.from(root.querySelectorAll<HTMLElement>('#pep-viewer-title input'))) {
+        const rect = radio.getBoundingClientRect();
+        expect(rect.left >= rootRect.left && rect.right <= rootRect.right, true,
+          `the ${radio.getAttribute('name')} radio is cut off by the viewer edge`);
+      }
+    } finally {
+      root.style.width = width;
+    }
+  });
+
   test('Highlighting after row removal', async () => {
     const monomerPosition = mpViewer.getMonomerPosition(mpViewer.viewerGrid.cell('9', 6));
     await testEvent(df.onRowsRemoved, () => {}, () => df.rows.removeAt(0, 2), 5000, 'Rows removal is not reported');
