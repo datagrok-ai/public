@@ -55,7 +55,7 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
                                        read them with timeline --session <id>
   logs capture stop <login|group>      Remove that expiring entry; one that holds other settings is left
                                        to logger set --remove
-  logs match ['<filter>'] [--level l1,l2] [--user <login>] [--package <p>] [--source <s>] [--type <t>] [--grep <text>]
+  logs match ['<filter>'] [--level l1,l2] [--user <login>] [--package <p>] [--source <s>] [--type <t>] [--grep <text>] [--space <path>]
              [--since 1h] [--limit 1000]
                                        Saved and in-memory records a log filter matches, newest first: the
                                        filter of a log group (Settings > Logger), e.g. 'level in (error, warning)
@@ -67,7 +67,7 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
   groups add --name <n> [--kind records|alerts|drop] [--levels error,warning] [--flags db,auth]
              [--filter '<filter>'] [--to db,console,<endpoint name>[:format]] [--who <group ids>]
              [--until 2h|<ISO> [--reason <text>]] [--when '<filter>' --scope session|user|global --for 15m --before 60s]
-             [--alert-kinds health,storage] [--min-severity warning]
+             [--alert-kinds health,storage] [--min-severity warning] [--audit-types t1,t2] [--usage-types t1,t2]
   groups set <name|id> [same flags] [--enabled false] [--always]
                                        Only the flags given change
   groups rm <name|id>
@@ -351,6 +351,8 @@ export function applyGroupFlags(g: any, argv: any): any {
   if (argv.who !== undefined) g.who = list(argv.who);
   if (argv.levels !== undefined) g.levels = list(argv.levels);
   if (argv.flags !== undefined) g.debugFlags = list(argv.flags);
+  if (argv['audit-types'] !== undefined) g.auditTypes = list(argv['audit-types']);
+  if (argv['usage-types'] !== undefined) g.usageTypes = list(argv['usage-types']);
   if (argv.filter !== undefined) g.filter = String(argv.filter) || null;
   if (argv['alert-kinds'] !== undefined) g.alertKinds = list(argv['alert-kinds']);
   if (argv['min-severity'] !== undefined) g.alertMinSeverity = String(argv['min-severity']);
@@ -485,6 +487,8 @@ export function matchFilter(rest: string[], argv: any): string {
   }
   if (argv.grep !== undefined)
     parts.push(`text ~ ${word(String(argv.grep))}`);
+  if (argv.space !== undefined)
+    parts.push(`space = ${word(String(argv.space))} or space startsWith ${word(`${argv.space}:`)}`);
   return parts.length > 1 ? parts.map((p) => `(${p})`).join(' and ') : parts[0] ?? '';
 }
 

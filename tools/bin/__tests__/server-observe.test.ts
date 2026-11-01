@@ -374,6 +374,8 @@ describe('logs match', () => {
       .toBe('(level in (error, warning)) and (package = Chembl) and (text ~ "Resize Observer")');
     expect(matchFilter(['not text ~ probe'], {user: 'alice'})).toBe('(not text ~ probe) and (user = alice)');
     expect(matchFilter([], {})).toBe('');
+    expect(matchFilter([], {type: 'query-edited', space: 'Chem'}))
+      .toBe('(type = query-edited) and (space = Chem or space startsWith Chem:)');
   });
 
   it('asks the server for what the filter matches', async () => {

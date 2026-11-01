@@ -544,6 +544,8 @@ grok s o logs container                                      # docker containers
 grok s o logs container scripting-python_1 --since 1h --grep 'Kernel (started|shutdown)'   # one container's log lines
 grok s o logs match 'level in (error, warning) and not text ~ ResizeObserver' --since 2h   # what a log filter matches
 grok s o logs match --level error --package Chembl --grep timeout   # flags add conditions joined by and
+grok s o logs match --level audit --space Chem   # audit of entities in the Chem space and its subspaces
+grok s o logs match 'space startsWith Chem: or space endsWith :Assays'   # space: the entity's space path; = ~ =~ startsWith endsWith
 grok s o groups                                             # log groups (Settings > Logger): name, kind, levels, filter, where to
 grok s o groups add --name Chembl --levels error,warning --filter 'package = Chembl' --to db,grafana:otlp
 grok s o groups set Chembl --when 'level = error and package = Chembl' --scope session --for 15m --before 60s --flags db
