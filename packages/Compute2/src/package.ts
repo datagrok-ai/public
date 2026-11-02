@@ -202,8 +202,6 @@ export class PackageFunctions {
       viewService.dispose();
     });
 
-    grok.shell.windows.showHelp = false;
-
     return view;
   }
 
@@ -245,8 +243,6 @@ export class PackageFunctions {
       if (resolve)
         resolve();
     });
-
-    grok.shell.windows.showHelp = false;
 
     return view;
   }
