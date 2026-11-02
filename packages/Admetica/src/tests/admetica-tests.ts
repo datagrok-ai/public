@@ -14,7 +14,7 @@ import {
   properties,
   setProperties,
 } from '../utils/admetica-utils';
-import { getAdmeProperties } from '../package';
+import {getAdmeProperties} from '../package';
 
 category('Admetica', () => {
   let v: DG.TableView;
@@ -127,7 +127,7 @@ category('Admetica', () => {
 
     const propertiesTable = admePanel?.parentElement?.querySelector('.d4-table.d4-item-table.d4-info-table') as HTMLElement;
     await awaitCheck(() => propertiesTable?.innerText.trim() !== '', 'Properties weren’t calculated', 8000);
-  }, { timeout: 100000 });
+  }, {timeout: 100000});
 
   test('Calculate.Benchmark column', async () => {
     const runAdmeticaBenchmark = async (moleculesCount: number) => {
@@ -136,7 +136,7 @@ category('Admetica', () => {
       return await getAdmeProperties(molecules, molecules.getCol('smiles'), await getQueryParams());
     };
     await DG.timeAsync('Admetica column', async () => await runAdmeticaBenchmark(5000));
-  }, {timeout: 3600000, benchmark: true });
+  }, {timeout: 3600000, benchmark: true});
 
   test('Calculate.Benchmark cell', async () => {
     const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === 'Distribution');

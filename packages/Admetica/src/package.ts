@@ -9,11 +9,11 @@ import {
   performChemicalPropertyPredictions,
   setProperties,
 } from './utils/admetica-utils';
-import { properties } from './utils/admetica-utils';
-import { admeticaFuncCallEditor } from './utils/admetica-editor';
-import { MessageFuncCallEditor } from '@datagrok-libraries/utils/src/func-call-params-editor';
-import { Model, Subgroup } from './utils/constants';
-import { AdmeticaViewApp } from './utils/admetica-app';
+import {properties} from './utils/admetica-utils';
+import {admeticaFuncCallEditor} from './utils/admetica-editor';
+import {MessageFuncCallEditor} from '@datagrok-libraries/utils/src/func-call-params-editor';
+import {Model, Subgroup} from './utils/constants';
+import {AdmeticaViewApp} from './utils/admetica-app';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -32,7 +32,7 @@ export class PackageFunctions {
   static async admeticaWidget(
     @grok.decorators.param({name: 'smiles', options: {semType: 'Molecule', description: 'Molecule to predict.'}}) semValue: DG.SemanticValue): Promise<DG.Widget<any>> {
     const smiles = await grok.functions.call('Chem:convertMolNotation',
-      { molecule: semValue.value, sourceNotation: DG.chem.Notation.Unknown, targetNotation: DG.chem.Notation.Smiles });
+      {molecule: semValue.value, sourceNotation: DG.chem.Notation.Unknown, targetNotation: DG.chem.Notation.Smiles});
     return await getModelsSingle(smiles, semValue);
   }
 

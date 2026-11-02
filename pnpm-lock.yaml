@@ -822,6 +822,9 @@ importers:
       '@datagrok-libraries/tutorials':
         specifier: workspace:^
         version: link:../../libraries/tutorials
+      '@datagrok-libraries/u2':
+        specifier: workspace:^
+        version: link:../../libraries/u2
       '@datagrok-libraries/utils':
         specifier: workspace:^
         version: link:../../libraries/utils
@@ -837,6 +840,9 @@ importers:
       punycode:
         specifier: ^2.3.1
         version: 2.3.1
+      rxjs:
+        specifier: 'catalog:'
+        version: 6.6.7
 
   packages/Alation:
     dependencies:
