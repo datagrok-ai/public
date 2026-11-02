@@ -17,13 +17,13 @@ Feature: Running a script with data from every source
   no file chooser opened at all; here the upload answers the chooser the icon opens, and the count
   proves the file's table was the one run.
 
-  With no table open, the dialog's Table input is empty and OK stays disabled: every input is required
-  unless it is nullable, and it is validated before the function runs (help
-  `datagrok/concepts/functions/func-params-annotation.md`, "Initial values and optional parameters";
-  core#1155).
-
   Serial: every scenario here works in the Scripts view, whose search text and view mode are the
   account's own settings — two features searching it at the same time would see each other's text.
+
+  Edge cases: with no table open, the dialog's Table input is empty and OK stays disabled: every input
+  is required unless it is nullable, and it is validated before the function runs (help
+  `datagrok/concepts/functions/func-params-annotation.md`, "Initial values and optional parameters";
+  core#1155).
 
   Background:
     Given user is logged in
@@ -110,8 +110,7 @@ Feature: Running a script with data from every source
     And the console should show "newParam: \"test\""
     And no errors should have been logged
 
-  @realizes:core#1155
-  Scenario: CANCEL runs nothing, and with no table open OK stays disabled
+  Scenario: CANCEL runs nothing
     Given user opens the Scripts view
     When user clears gallery search
     And user types "BddScriptRun{time}" into gallery search
@@ -130,7 +129,10 @@ Feature: Running a script with data from every source
     # the gallery keeps its search text for the next visit, and the open console is the account's setting too
     When user clears gallery search
     And user closes the console
-    And user closes all views
+
+  @edge-cases @realizes:core#1155
+  Scenario: With no table open, the Table input is empty and OK stays disabled
+    When user closes all views
     Then no table view is open
     And no table should be left in the workspace
     Given user opens the Scripts view

@@ -29,9 +29,9 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Running a script with data from every source", () => {
   const session = feature(test, "features/scripts/scripts-run.feature", import.meta.url);
-  test("Running a script with data from every source", {tag: ["@journey", "@serial", "@realizes:views.scripts", "@realizes:core#1155"]}, async ({browser}) => {
+  test("Running a script with data from every source", {tag: ["@journey", "@serial", "@realizes:views.scripts", "@edge-cases", "@realizes:core#1155"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 6, page);
+    const run = journey(test, 7, page);
     await session.step(29, "Given user is logged in", () => loggedIn(page));
     await session.step(30, "And a script \"BddScriptRun{time}\" is on the server:", () => scriptOnServer(page, session.text("BddScriptRun{time}"), "//language: javascript\n//input: dataframe table\n//output: int count\n//output: string newParam\ncount = table.rowCount * table.columns.length;\nnewParam = \"test\";"));
     await session.step(39, "And the context panel is open", () => contextPanelOpen(page));
@@ -107,37 +107,39 @@ test.describe("Running a script with data from every source", () => {
       await session.step(110, "And the console should show \"newParam: \\\"test\\\"\"", () => consoleShows(page, "newParam: \"test\""));
       await session.step(111, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("CANCEL runs nothing, and with no table open OK stays disabled", async () => {
-      await session.step(115, "Given user opens the Scripts view", () => scriptsView(page));
-      await session.step(116, "When user clears gallery search", () => clearField(page, el("gallery search")));
-      await session.step(117, "And user types \"BddScriptRun{time}\" into gallery search", () => typeInto(page, session.text("BddScriptRun{time}"), el("gallery search")));
-      await session.step(118, "And user notes the console output", () => noteConsole(page));
-      await session.step(119, "And user picks \"Run...\" from the context menu of \"BddScriptRun{time}\" link in gallery", () => pickFromContextMenu(page, "Run...", el(session.text("\"BddScriptRun{time}\" link in gallery"))));
-      await session.step(120, "Then \"BddScriptRun{time}\" dialog should be visible", () => shouldBe(page, el(session.text("\"BddScriptRun{time}\" dialog")), "visible"));
-      await session.step(121, "When user clicks on CANCEL button in \"BddScriptRun{time}\" dialog", () => clickOn(page, el(session.text("CANCEL button in \"BddScriptRun{time}\" dialog"))));
-      await session.step(122, "Then the \"BddScriptRun{time}\" dialog should close", () => dialogCloses(page, session.text("BddScriptRun{time}")));
-      await session.step(124, "When user picks \"Run...\" from the context menu of \"BddScriptRun{time}\" link in gallery", () => pickFromContextMenu(page, "Run...", el(session.text("\"BddScriptRun{time}\" link in gallery"))));
-      await session.step(125, "And user selects \"cars\" in Table input in \"BddScriptRun{time}\" dialog", () => selectIn(page, "cars", el(session.text("Table input in \"BddScriptRun{time}\" dialog"))));
-      await session.step(126, "And user clicks on OK button in \"BddScriptRun{time}\" dialog", () => clickOn(page, el(session.text("OK button in \"BddScriptRun{time}\" dialog"))));
-      await session.step(127, "Then the \"BddScriptRun{time}\" dialog should close", () => dialogCloses(page, session.text("BddScriptRun{time}")));
-      await session.step(128, "And the console should show \"count: 510\" 1 time", () => consoleShowsTimes(page, "count: 510", 1));
-      await session.step(129, "And no errors should have been logged", () => noErrors(page));
-      await session.step(131, "When user clears gallery search", () => clearField(page, el("gallery search")));
-      await session.step(132, "And user closes the console", () => closeConsole(page));
-      await session.step(133, "And user closes all views", () => closeAllViews(page));
-      await session.step(134, "Then no table view is open", () => noTableViewOpen(page));
-      await session.step(135, "And no table should be left in the workspace", () => noTableLeft(page));
-      await session.step(136, "Given user opens the Scripts view", () => scriptsView(page));
-      await session.step(137, "When user clears gallery search", () => clearField(page, el("gallery search")));
-      await session.step(138, "And user types \"BddScriptRun{time}\" into gallery search", () => typeInto(page, session.text("BddScriptRun{time}"), el("gallery search")));
-      await session.step(139, "And user picks \"Run...\" from the context menu of \"BddScriptRun{time}\" link in gallery", () => pickFromContextMenu(page, "Run...", el(session.text("\"BddScriptRun{time}\" link in gallery"))));
-      await session.step(140, "Then \"BddScriptRun{time}\" dialog should be visible", () => shouldBe(page, el(session.text("\"BddScriptRun{time}\" dialog")), "visible"));
-      await session.step(141, "And Table input in \"BddScriptRun{time}\" dialog should have value \"\"", () => shouldHaveValue(page, el(session.text("Table input in \"BddScriptRun{time}\" dialog")), ""));
-      await session.step(142, "And OK button in \"BddScriptRun{time}\" dialog should be disabled", () => shouldBe(page, el(session.text("OK button in \"BddScriptRun{time}\" dialog")), "disabled"));
-      await session.step(143, "When user clicks on CANCEL button in \"BddScriptRun{time}\" dialog", () => clickOn(page, el(session.text("CANCEL button in \"BddScriptRun{time}\" dialog"))));
-      await session.step(144, "Then the \"BddScriptRun{time}\" dialog should close", () => dialogCloses(page, session.text("BddScriptRun{time}")));
-      await session.step(145, "And no errors should have been logged", () => noErrors(page));
-      await session.step(146, "When user clears gallery search", () => clearField(page, el("gallery search")));
+    await run.scenario("CANCEL runs nothing", async () => {
+      await session.step(114, "Given user opens the Scripts view", () => scriptsView(page));
+      await session.step(115, "When user clears gallery search", () => clearField(page, el("gallery search")));
+      await session.step(116, "And user types \"BddScriptRun{time}\" into gallery search", () => typeInto(page, session.text("BddScriptRun{time}"), el("gallery search")));
+      await session.step(117, "And user notes the console output", () => noteConsole(page));
+      await session.step(118, "And user picks \"Run...\" from the context menu of \"BddScriptRun{time}\" link in gallery", () => pickFromContextMenu(page, "Run...", el(session.text("\"BddScriptRun{time}\" link in gallery"))));
+      await session.step(119, "Then \"BddScriptRun{time}\" dialog should be visible", () => shouldBe(page, el(session.text("\"BddScriptRun{time}\" dialog")), "visible"));
+      await session.step(120, "When user clicks on CANCEL button in \"BddScriptRun{time}\" dialog", () => clickOn(page, el(session.text("CANCEL button in \"BddScriptRun{time}\" dialog"))));
+      await session.step(121, "Then the \"BddScriptRun{time}\" dialog should close", () => dialogCloses(page, session.text("BddScriptRun{time}")));
+      await session.step(123, "When user picks \"Run...\" from the context menu of \"BddScriptRun{time}\" link in gallery", () => pickFromContextMenu(page, "Run...", el(session.text("\"BddScriptRun{time}\" link in gallery"))));
+      await session.step(124, "And user selects \"cars\" in Table input in \"BddScriptRun{time}\" dialog", () => selectIn(page, "cars", el(session.text("Table input in \"BddScriptRun{time}\" dialog"))));
+      await session.step(125, "And user clicks on OK button in \"BddScriptRun{time}\" dialog", () => clickOn(page, el(session.text("OK button in \"BddScriptRun{time}\" dialog"))));
+      await session.step(126, "Then the \"BddScriptRun{time}\" dialog should close", () => dialogCloses(page, session.text("BddScriptRun{time}")));
+      await session.step(127, "And the console should show \"count: 510\" 1 time", () => consoleShowsTimes(page, "count: 510", 1));
+      await session.step(128, "And no errors should have been logged", () => noErrors(page));
+      await session.step(130, "When user clears gallery search", () => clearField(page, el("gallery search")));
+      await session.step(131, "And user closes the console", () => closeConsole(page));
+    });
+    await run.scenario("With no table open, the Table input is empty and OK stays disabled", async () => {
+      await session.step(135, "When user closes all views", () => closeAllViews(page));
+      await session.step(136, "Then no table view is open", () => noTableViewOpen(page));
+      await session.step(137, "And no table should be left in the workspace", () => noTableLeft(page));
+      await session.step(138, "Given user opens the Scripts view", () => scriptsView(page));
+      await session.step(139, "When user clears gallery search", () => clearField(page, el("gallery search")));
+      await session.step(140, "And user types \"BddScriptRun{time}\" into gallery search", () => typeInto(page, session.text("BddScriptRun{time}"), el("gallery search")));
+      await session.step(141, "And user picks \"Run...\" from the context menu of \"BddScriptRun{time}\" link in gallery", () => pickFromContextMenu(page, "Run...", el(session.text("\"BddScriptRun{time}\" link in gallery"))));
+      await session.step(142, "Then \"BddScriptRun{time}\" dialog should be visible", () => shouldBe(page, el(session.text("\"BddScriptRun{time}\" dialog")), "visible"));
+      await session.step(143, "And Table input in \"BddScriptRun{time}\" dialog should have value \"\"", () => shouldHaveValue(page, el(session.text("Table input in \"BddScriptRun{time}\" dialog")), ""));
+      await session.step(144, "And OK button in \"BddScriptRun{time}\" dialog should be disabled", () => shouldBe(page, el(session.text("OK button in \"BddScriptRun{time}\" dialog")), "disabled"));
+      await session.step(145, "When user clicks on CANCEL button in \"BddScriptRun{time}\" dialog", () => clickOn(page, el(session.text("CANCEL button in \"BddScriptRun{time}\" dialog"))));
+      await session.step(146, "Then the \"BddScriptRun{time}\" dialog should close", () => dialogCloses(page, session.text("BddScriptRun{time}")));
+      await session.step(147, "And no errors should have been logged", () => noErrors(page));
+      await session.step(148, "When user clears gallery search", () => clearField(page, el("gallery search")));
     });
     run.finish();
   });

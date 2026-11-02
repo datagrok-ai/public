@@ -16,6 +16,12 @@ Feature: Tile viewer lanes
   is also the last scenario, because the first drag made after a context menu closes is swallowed
   by the platform and does nothing — a defect of its own, not something the drag scenarios claim.
 
+  Edge cases: on a table opened for it with lanes on a column holding an empty value, the lane of
+  that value should be offered as "(empty)", so that a card dropped into it gets an empty value
+  (core#1217). Today that lane has no name (the lane names read "x, y, "), so there is no "(empty)"
+  lane to drop a card into: a known failure, the last scenario, which ends there; the drop and the
+  empty value it writes are claimed once the lane exists.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -182,3 +188,15 @@ Feature: Tile viewer lanes
     Then "Show Empty Lanes" property of tile viewer should be "true"
     And the "lanes" reading of tile viewer should be 4
     And no errors should have been logged
+
+  @edge-cases @known-failure:202 @realizes:core#1217
+  Scenario: The lane of an empty value is offered as (empty) (core#1217)
+    Given user opens a table "with-empty" with:
+      | site | arm |
+      | A    | x   |
+      | A    |     |
+      | B    | y   |
+    And user adds a tile viewer with:
+      | Lanes Column Name | arm |
+    Then the "lane of row 1" reading of tile viewer should be "x"
+    And tile viewer should have a "lane (empty)" area

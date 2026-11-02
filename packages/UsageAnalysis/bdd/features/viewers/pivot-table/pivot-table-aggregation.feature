@@ -9,10 +9,12 @@ Feature: Pivot table — the aggregation it publishes and the parameters it reme
   published table, row to filter on DIS_POP, and logs no error (public#3470). One journey on demog-1000: DIS_POP has 6
   categories and USUBJID 1000, ADD publishes "demog-1000 aggregation", and avg(WEIGHT) by RACE reads
   70.52 for Asian, the first of the four alphabetical groups.
-  With every row filtered out, ADD still publishes the table, empty.
   Not translated: the old spec's raw `localStorage['grok-aggregation-history']` read — the history is
   claimed here through the entries the menu actually offers, which is the same store filtered the way
   the product filters it.
+
+  Edge cases: with every row filtered out, ADD still publishes the table, empty; on demog-1000
+  opened again, so that the tables the scenarios before published are gone.
 
   Background:
     Given user is logged in
@@ -65,17 +67,6 @@ Feature: Pivot table — the aggregation it publishes and the parameters it reme
     When user sets "Group By Column Names" property of pivot table viewer to "DIS_POP"
     And user sets "Pivot Column Names" property of pivot table viewer to "SEVERITY"
     Then the "aggregated rows" reading of pivot table viewer should be 6
-    When user filters rows where "AGE" is between 200 and 300
-    Then 0 rows should pass the filter
-    When user clicks on the "add to workspace" area of pivot table viewer
-    Then table "demog-1000 aggregation" should be open
-    And the "demog-1000 aggregation" view should be current
-    And the table should have 0 rows
-    When user closes the current view
-    And user switches to the "demog-1000" table view
-    And user resets the filter
-    Then all rows should pass the filter
-    And the "aggregated rows" reading of pivot table viewer should be 6
     And no errors should have been logged
 
   Scenario: Save parameters, and the history menu puts the configuration back
@@ -143,4 +134,22 @@ Feature: Pivot table — the aggregation it publishes and the parameters it reme
     And 1 rows of table "demog-1000 aggregation" should pass the filter
     When user clicks on CLOSE button in "Link Tables" dialog
     Then no error or warning balloon should have been shown
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: With every row filtered out, ADD still publishes the table, empty
+    When user closes all views
+    And user opens demog-1000 dataset
+    And user adds a pivot table viewer
+    Then the "aggregated rows" reading of pivot table viewer should be 6
+    When user filters rows where "AGE" is between 200 and 300
+    Then 0 rows should pass the filter
+    When user clicks on the "add to workspace" area of pivot table viewer
+    Then table "demog-1000 aggregation" should be open
+    And the "demog-1000 aggregation" view should be current
+    And the table should have 0 rows
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    And user resets the filter
+    Then all rows should pass the filter
     And no errors should have been logged

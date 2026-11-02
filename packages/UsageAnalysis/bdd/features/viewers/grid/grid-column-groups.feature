@@ -50,7 +50,10 @@ Feature: Grid column groups
   area only for a group, so the empty part of the band has no name to click. The Context Panel is
   checked by the column names it lists, not by the current object: a list of columns has no name
   for `the context panel should show`.
-  A group follows a renamed column: the renamed member keeps the group's name and the band stays.
+
+  Edge cases: a group follows a renamed column: the renamed member keeps the group's name and the
+  band stays. A column group named with spaces only should not be made (core#1195, a known failure,
+  the last scenario).
 
   Background:
     Given user is logged in
@@ -178,11 +181,6 @@ Feature: Grid column groups
     And the "group Measures" area of grid should contain the color "#d62728"
     And "SEX" column should have tag "group" equal to "Measures"
     And "AGE" column should have tag "group" equal to "Measures"
-    When user renames "AGE" column to "YEARS"
-    Then "YEARS" column should have tag "group" equal to "Measures"
-    And grid should have a "group Measures" area
-    When user renames "YEARS" column to "AGE"
-    Then "AGE" column should have tag "group" equal to "Measures"
     When user presses Escape
     Then no errors should have been logged
 
@@ -200,3 +198,25 @@ Feature: Grid column groups
     And grid should have a "group Body" area
     When user presses Escape
     Then no errors should have been logged
+
+  @edge-cases
+  Scenario: A group follows a renamed column
+    Then "HEIGHT" column should have tag "group" equal to "Body"
+    When user renames "HEIGHT" column to "TALL"
+    Then "TALL" column should have tag "group" equal to "Body"
+    And grid should have a "group Body" area
+    When user renames "TALL" column to "HEIGHT"
+    Then "HEIGHT" column should have tag "group" equal to "Body"
+    And no errors should have been logged
+
+  @edge-cases @known-failure:222 @realizes:core#1195
+  Scenario: A column group named with spaces only is not made
+    When user clicks on the "header AGE" area of grid holding Control
+    And user clicks on the "header SEX" area of grid holding Control
+    Given the context panel is open
+    And Actions accordion header in context panel is expanded
+    When user clicks on "Group columns..." text in context panel
+    Then Group input in dialog should be visible
+    When user types "   " into Group input in dialog
+    And user clicks on OK button in dialog
+    Then "AGE" column should have tag "group" equal to ""

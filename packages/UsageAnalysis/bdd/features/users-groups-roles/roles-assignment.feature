@@ -10,13 +10,16 @@ Feature: Who holds a role, and what it grants
   An assignment is claimed on the server, and an addition also in the pane; a removal on the server
   only, since the pane empties while it reloads. A global permission has no reading in the JS API,
   so it is claimed in the MANAGE dialog, reopened after SAVE; since GROK-20902 was fixed the pane
-  lists the role's own grants only, which the scenario on a new role claims, along with CANCEL in
-  the Global Permissions dialog granting nothing (the box ticked before it is unticked when the
-  dialog is opened again). The cleanup revokes the
+  lists the role's own grants only, which the scenario on a new role claims. The cleanup revokes the
   grant before it deletes the role.
 
   Deleting a role that holds a global permission (GROK-20904) is tested in datlas
   users_groups/groups_test.dart 'deleteGroupWithGlobalPermission'.
+
+  Edge cases: CANCEL in the Global Permissions dialog grants nothing (the box ticked before it is
+  unticked when the dialog is opened again, and the pane still says "No global permissions"); it is
+  claimed inside the new role's scenario, on its state as it is, since after the next scenario the role
+  holds that very permission.
 
   Background:
     Given user is logged in

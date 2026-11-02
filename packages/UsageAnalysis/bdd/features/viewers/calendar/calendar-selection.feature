@@ -11,9 +11,13 @@ Feature: Calendar selection, On Click and Show Filtered Only
   row and the counts of the filtered ones (calendar_core.dart:271), so turning it off under a
   filter puts `rows shown` back to 1000 while `dataFrame.filter` stands at 447 — the honest
   witness for GROK-20635, which the spec this replaces could only assert as "the canvas changed".
-  The calendar's click filter stays when a category is toggled in the filter panel (19 of the 32
-  rows of January 1990 are F); today the category click releases the calendar's filter, and 553 rows
-  pass at once (core#1221, a known failure, the last scenario). That the filter then goes when On
+
+  Edge cases: closing a calendar whose On Click = Filter click is filtering the table gives the rows
+  back: a filter that outlives its viewer is a defect. Today the calendar leaves the table filtered
+  until something else asks for a refilter (core#233, a known failure). The calendar's click filter
+  stays when a category is toggled in the filter panel (19 of the 32 rows of January 1990 are F);
+  today the category click releases the calendar's filter, and 553 rows pass at once (core#1221, a
+  known failure, the last scenario, on a calendar of its own). That the filter then goes when On
   Click is switched to Select (553 F rows) is claimed once the defect is fixed: today that count is
   already reached by the defect.
 
@@ -104,8 +108,20 @@ Feature: Calendar selection, On Click and Show Filtered Only
     And the "rows of weekday Sunday" reading of calendar viewer should be 153
     And no errors should have been logged
 
-  @known-failure:115 @realizes:core#1221
+  @edge-cases @known-failure:118 @realizes:core#233
+  Scenario: Closing a calendar whose Filter click filters the table gives the rows back (core#233)
+    When user sets "onClick" property of calendar viewer to "Filter"
+    And user clicks on the "month 1990-01" area of calendar viewer
+    Then 32 rows should pass the filter
+    When user clicks on close icon of calendar viewer
+    Then calendar viewer should be absent
+    And all rows should pass the filter
+
+  @edge-cases @known-failure:131 @realizes:core#1221
   Scenario: The calendar's click filter stays when a category is toggled in the filter panel (core#1221)
+    Given user adds a calendar viewer
+    When user resets the filter
+    Then all rows should pass the filter
     When user sets "onClick" property of calendar viewer to "Filter"
     And user clicks on the "month 1990-01" area of calendar viewer
     Then 32 rows should pass the filter

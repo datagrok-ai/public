@@ -24,20 +24,23 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
 
   Right after the first save the Source link carries the alias "type" set in the Save dialog and
   Source offers the sliders icon (core#630, core#568: both used to need a reopen of the project).
-  typeName unticked under the sliders icon and the dashboard saved (the "Save dashboard to apply
-  changes" hint gone), the Source link loses ?type=Script (core#1127: it used to need a reopen of
-  the project; the md checks the link right after unticking, but before the save the link keeps
-  ?type=Script, as the hint says, so the claim is made after the save). The Save dialog's "Share
-  link:" line follows the name typed into the dialog (core#569). Each is a scenario of its own.
-
-  A second query, with an integer "lim" and a string "typeName", is saved as a dashboard whose URL
-  Parameters list both; a value of the wrong type in its address (?lim=abc) is refused with a
-  balloon that names the parameter.
+  Known failures: core#1127 — typeName unticked under the
+  sliders icon and the dashboard saved (the "Save dashboard to apply changes" hint gone), the
+  Source link still ends with ?type=Script; it loses the parameter only after the project is
+  reopened (the md checks the link right after unticking; before the save the link keeps
+  ?type=Script, as the hint says, so the claim is made after the save). core#569 — the Save
+  dialog's "Share link:" line does not follow the name typed into the dialog. Each is a scenario
+  of its own claiming what the md expects.
 
   entity_types has no "Package" row on localhost (the md allows another value of its name column
   then), so "Script" stands for the md's "Package"; "Project" and "Script" are core entity types.
   Names are letters and digits only (the Dashboards search misses "-" and "_") and carry the run's
-  time. The queries and the projects are removed when the feature starts and ends.
+  time. The query and the two projects are removed when the feature starts and ends.
+
+  Edge cases: a second query, with an integer "lim" and a string "typeName", is saved as a dashboard
+  whose URL Parameters start with "lim"; a value of the wrong type in its address (?lim=abc) is refused with a
+  balloon that names the parameter. The query and its project carry the run's time and are removed when
+  the feature starts and ends.
 
   Background:
     Given user is logged in
@@ -247,6 +250,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     Then the "BDDUrlParamQuery{time}" view should be current
     And the "text of cell 1 of name" reading of grid should be "Script"
 
+  @edge-cases
   Scenario: A value of the wrong type in the address is refused with a balloon naming the parameter and the value
     Given no project named "BDDUrlEdgeP{time}" is on the server
     And a query "BDDUrlEdgeQ{time}" on "System:Datagrok" is on the server:

@@ -18,8 +18,10 @@ Feature: Line chart selection and the row markers
   zigzag's first and last x as proof that "the lasso selects the points inside a polygon". Measured
   here: the same Shift-drag selects the same 82 rows with `lassoTool` on and off, and the library's
   own lasso gesture — which returns to its starting point — selects 0, because its band is empty.
-  A table filtered down to nothing takes a Shift-drag that selects nothing and logs no error.
   Fixture: spgi-100 on `CAST Idea ID` × `Chemical Space X`, one marker per row.
+
+  Edge cases: a table filtered down to nothing takes a Shift-drag that selects nothing and logs no
+  error, and the same drag selects 82 rows again once the filter is reset.
 
   Background:
     Given user is logged in
@@ -77,24 +79,6 @@ Feature: Line chart selection and the row markers
     And line chart viewer should show no selection highlight
     And no errors should have been logged
 
-  Scenario: With every row filtered out a drag over the plot selects nothing, and the same drag selects again once the filter is reset
-    Given user clears the row selection
-    When user filters rows where "CAST Idea ID" is between 1 and 2
-    Then 0 rows should pass the filter
-    And the "rows shown" reading of line chart viewer should be 0
-    And the "markers drawn" reading of line chart viewer should be 0
-    When user drags a selection box over the "plot" area of line chart viewer
-    Then no rows should be selected
-    And the "rows selected" reading of line chart viewer should be 0
-    And no errors should have been logged
-    When user resets the filter
-    Then 100 rows should pass the filter
-    And the "markers drawn" reading of line chart viewer should be 100
-    When user drags a selection box over the "plot" area of line chart viewer
-    Then the "rows selected" reading of line chart viewer should be 82
-    When user clears the row selection
-    Then no rows should be selected
-
   Scenario: Show Selected Rows decides whether the selection is painted at all
     When user selects rows where "Stereo Category" is "R_ONE"
     Then the "rows selected" reading of line chart viewer should be 36
@@ -151,3 +135,22 @@ Feature: Line chart selection and the row markers
     When user clears the row selection
     And user sets "lassoTool" property of line chart viewer to "false"
     Then no errors should have been logged
+
+  @edge-cases
+  Scenario: With every row filtered out a drag over the plot selects nothing, and the same drag selects again once the filter is reset
+    Given user clears the row selection
+    When user filters rows where "CAST Idea ID" is between 1 and 2
+    Then 0 rows should pass the filter
+    And the "rows shown" reading of line chart viewer should be 0
+    And the "markers drawn" reading of line chart viewer should be 0
+    When user drags a selection box over the "plot" area of line chart viewer
+    Then no rows should be selected
+    And the "rows selected" reading of line chart viewer should be 0
+    And no errors should have been logged
+    When user resets the filter
+    Then 100 rows should pass the filter
+    And the "markers drawn" reading of line chart viewer should be 100
+    When user drags a selection box over the "plot" area of line chart viewer
+    Then the "rows selected" reading of line chart viewer should be 82
+    When user clears the row selection
+    Then no rows should be selected

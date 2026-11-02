@@ -45,10 +45,11 @@ Written during the viewer-gaps round of 23 Oct 2026, against
     And no errors should have been logged
   ```
 
-## Edge cases (now in `tile-viewer.feature` and `tile-viewer-form-editor.feature`)
+## Edge cases (now in `tile-viewer.feature`, `tile-viewer-form-editor.feature` and `tile-viewer-lanes.feature`)
 
-Written for the guard suite of edge cases of 26 Oct 2026 (its checks are now steps of
-`tile-viewer.feature` and `tile-viewer-form-editor.feature`): data
+Written for the guard suite of edge cases of 26 Oct 2026 (its checks are now in
+`tile-viewer.feature`, and `@edge-cases` scenarios of their own after the master scenarios of
+`tile-viewer-form-editor.feature` and `tile-viewer-lanes.feature`): data
 shapes, columns removed or renamed under the open viewer, layouts naming a missing column, property
 bounds, closing the viewer. Nothing here asks for a library, binding or code change made by that
 feature; it lists what the feature could not claim and why.
@@ -65,8 +66,9 @@ None.
    column is picked (`TileViewerLook.auto` keeps only a lanes name the table has). This check, with
    no rows and a renamed lanes column, is requested from ApiTests in `../MISSING.md`.
 2. **A lanes column with empty values** has an `(empty)` lane: core#1217, still open, requested
-   from ApiTests in `../MISSING.md`. A card dropped into it gets an empty value: written in `tile-viewer-lane-scroll.feature`, core#1217,
-   a known failure (the lane has no name today, so there is no `(empty)` lane to drop on).
+   from ApiTests in `../MISSING.md`. That lane offered as `(empty)` is written in `tile-viewer-lanes.feature`, core#1217, a known
+   failure, the last scenario (the lane has no name today, so there is no `(empty)` lane to drop on);
+   the drop and the empty value it writes are claimed once the lane exists.
 3. **Escape in the form designer** after deleting a field does nothing: the designer is a view, not
    a dialog. Right as it is (2026-10-30), claimed in `tile-viewer-form-editor.feature`. Escape in the
    Edit dialog (the EDIT icon of the ribbon) cancels it: not written.

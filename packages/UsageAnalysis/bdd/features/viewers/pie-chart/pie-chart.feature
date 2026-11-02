@@ -8,14 +8,16 @@ Feature: Pie chart property surface
   clicks, nulls and persistence have features of their own, and Row Source is the cross-viewer
   `viewers/row-source` journey. One journey on demog-1000 with a pie chart of RACE — Caucasian 896
   rows (89.6 %), Other 62, Black 27, Asian 15 (1.5 %) — and every scenario puts back what it
-  changed. A value typed in the context panel outside the property's declared bounds is not
-  taken; the property keeps its value: Max Radius 600 (150 stays), Start Angle -30 and 400 (0
-  stays). The panel's number input marks such a value invalid but writes it into the property
-  (core#1200).
+  changed.
   Not translated: Outline Line Width 0, because the canvas ignores a line width of 0 and keeps the
   previous one, so there is no honest paint claim for it; and the property echoes of the old
   pie-chart-spec (Appearance, Labels, Outline, Column selector, Legend, Title and description,
   Selection, Auto layout), which are folded into the geometric claims below.
+
+  Edge cases: a value typed in the context panel outside the property's declared bounds is not
+  taken; the property keeps its value: Max Radius 600 (150 stays), Start Angle -30 and 400 (0
+  stays). The panel's number input marks such a value invalid but writes it into the property
+  (core#1200, a known failure, the last scenario).
 
   Background:
     Given user is logged in
@@ -226,15 +228,16 @@ Feature: Pie chart property surface
     And pie chart viewer should have more ink than before
     And no errors should have been logged
 
-  @realizes:core#1200
+  @edge-cases @realizes:core#1200
   Scenario Outline: <caption> <typed> typed in the context panel outside its declared bounds is not taken (core#1200)
+    Given user sets "<caption>" property of pie chart viewer to "<kept>"
     When user clicks on settings icon of pie chart viewer
     Then context panel should be visible
     Given "Misc" category in context panel is expanded
     When user enters "<typed>" into "<caption>" property in context panel
     Then "<caption>" property of pie chart viewer should be "<kept>"
 
-    @known-failure:235 @realizes:core#1200
+    @known-failure:238 @realizes:core#1200
     Examples: The value is written into the property although the input marks it invalid
       | caption     | typed | kept |
       | Max Radius  | 600   | 150  |

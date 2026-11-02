@@ -113,9 +113,9 @@ ladder's master toggle. Chem's substructure-card candidates of the same bucket a
   unclaimed. Needs `close of "<caption>" single-value row` — a kind for the row
   (`_singleValueRow`, `filters_core.dart`) with its close and menu icons as parts.
 
-## Edge cases (now in the filter-panel journeys)
+## Edge cases (now `@edge-cases` scenarios of the filter-panel features)
 
-Added with the filter-panel edge cases (edge-case round of 2026-10-26, localhost), now steps of the filter-panel journeys; each known failure is a scenario of its own in `filter-panel-range-handles.feature` or `expression-filter-all-columns.feature`. Only the scenarios were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+Added with the filter-panel edge cases (edge-case round of 2026-10-26, localhost), now `@edge-cases` scenarios of their own, after the master scenarios of the filter-panel features whose topic they are; each known failure is a scenario of its own there: `combined-boolean-filter.feature`, `expression-filter-all-columns.feature`, `filter-panel-categorical.feature`, `filter-panel-entry-points.feature`, `filter-panel-expression-and-text.feature`, `filter-panel-linked-tables.feature`, `filter-panel-persistence.feature`, `filter-panel-regressions.feature`, `filter-panel-saved-states.feature` and `hierarchical-filter.feature`. Only the scenarios were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 
@@ -134,10 +134,10 @@ Added with the filter-panel edge cases (edge-case round of 2026-10-26, localhost
 
 3. **Expression and Combined Boolean cards, a column they use removed** while the panel has no card of
    that column (with the column's own card present, its removal refilters the table and the rows come
-   back): the table stays filtered. Four known failures: a Combined Boolean flag, an Expression rule
-   on one column and a Numeric Columns rule (884 rows, 131 once HEIGHT is gone) in
-   `filter-panel-range-handles.feature`, and an All Columns comparison in
-   `expression-filter-all-columns.feature`.
+   back): the table stays filtered. Four known failures: a Combined Boolean flag in
+   `combined-boolean-filter.feature`, and in `expression-filter-all-columns.feature` an Expression rule
+   on one column (HEIGHT is null, 128 rows), a Numeric Columns rule (884 rows, 131 once HEIGHT is gone)
+   and an All Columns comparison.
 
 #### Decided (2026-10-28)
 
@@ -156,9 +156,11 @@ Added with the filter-panel edge cases (edge-case round of 2026-10-26, localhost
 
 ### Won't do
 
-- **A layout naming a column the table no longer has** (`createFilter(null)`): not reproduced on
-  localhost (the other cards come back, no error), and a removed calculated column is recreated by the
-  layout itself.
+- **A layout naming a column the table no longer has** on a card of one column (`createFilter(null)`):
+  not reproduced on localhost (the other cards come back, no error), and a removed calculated column
+  is recreated by the layout itself. A hierarchical card naming a removed level column is another
+  matter: the card should come back without that level (core#1223), a known failure in
+  `filter-panel-persistence.feature` and `hierarchical-filter.feature`.
 - **Card summary at 19 / 20 categories**: a cosmetic threshold of the summary text.
 - **Already covered**: all rows filtered out (`filter-panel-categorical.feature`), Filter out missing
   values (`filter-panel-cloned-view.feature`), a column with one value (`filter-panel-categorical.feature`).

@@ -50,7 +50,7 @@ test.describe("A person edits their own name on their profile", () => {
     await session.step(39, "Then the running account should be signed in", () => runningAccountSignedIn(page));
     await session.step(40, "And no errors should have been logged", () => noErrors(page));
   });
-  test("An emptied first name keeps OK disabled", {tag: ["@serial", "@known-failure:51", "@realizes:core#1180"]}, async ({browser}) => {
+  test("An emptied first name keeps OK disabled", {tag: ["@serial", "@edge-cases", "@known-failure:51", "@realizes:core#1180"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(21, "Given user is logged in", () => loggedIn(page));
     await session.step(22, "And a user \"bddprofile\" is on the server", () => userOnServer(page, "bddprofile"));
@@ -64,7 +64,7 @@ test.describe("A person edits their own name on their profile", () => {
       await session.step(51, "Then OK button in \"Enter new name\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Enter new name\" dialog"), "disabled"));
     }, 51);
   });
-  test("A first name longer than 64 characters is refused, not saved", {tag: ["@serial", "@known-failure:65", "@realizes:core#1180"]}, async ({browser}) => {
+  test("A first name longer than 64 characters is refused with a message", {tag: ["@serial", "@edge-cases", "@known-failure:65", "@realizes:core#1180"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(21, "Given user is logged in", () => loggedIn(page));
     await session.step(22, "And a user \"bddprofile\" is on the server", () => userOnServer(page, "bddprofile"));

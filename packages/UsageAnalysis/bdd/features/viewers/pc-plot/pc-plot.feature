@@ -18,8 +18,9 @@ Feature: PC plot axes, vertical scale and chrome
   property this feature sets; and the manual checklist (hover colours, undock/dock, the General
   menu, the grid-to-plot column drag) — Undo is in `pc-plot-hover-and-layout.feature`. Selection, colour, the range filter, the density
   overlay, transformations, persistence and Row Source have features of their own.
-  An Axis Font the browser cannot parse (`bold`) leaves the plot painting every line without an
-  error (a crash of core#967).
+
+  Edge cases: an Axis Font the browser cannot parse (`bold`) leaves the plot painting every line
+  without an error (a crash of core#967); the last scenario, as it leaves that font.
 
   Background:
     Given user is logged in
@@ -149,12 +150,14 @@ Feature: PC plot axes, vertical scale and chrome
     Then pc plot viewer should have a "range slider \"AGE\"" area
     And no errors should have been logged
 
-  @realizes:core#967
   Scenario: To Script > To JavaScript prints the call that rebuilds the plot
     Given the package autostarts have completed
     When user picks "To Script > To JavaScript" from the context menu of pc plot viewer
     Then balloon should contain text "addViewer"
     And no errors should have been logged
+
+  @edge-cases @realizes:core#967
+  Scenario: An Axis Font the browser cannot parse leaves the plot painting every line (core#967)
     When user sets "Axis Font" property of pc plot viewer to "bold"
     And user hovers over the "view" area of pc plot viewer
     Then pc plot viewer should be painted

@@ -46,7 +46,7 @@ with no table open (an empty list, no error).
 
 ### Decided and written
 
-The answers of 2026-10-27 are checks of `profile` and `molecule-in-exported-csv`: an emptied first name keeps OK disabled, a
+The answers of 2026-10-27 are @edge-cases scenarios of `profile` and `molecule-in-exported-csv`: an emptied first name keeps OK disabled, a
 first name longer than the 64 characters the profile stores (`users.first_name` VARCHAR(64)) is refused with a
 message (both known failures, core#1180; decided 2026-10-28, a 200-character name is not to be allowed), and an empty
 molecule cell goes out of a CSV export as an empty field.

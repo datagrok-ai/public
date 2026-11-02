@@ -14,14 +14,13 @@ Feature: A table saved in a project, shared from its Sharing pane
   the table's share sends a notification. The view is closed before the Browse tree is refreshed: with the
   just-saved project's view open, the tree took 10 s to rebuild (1 s without it).
 
-  The Share dialog keeps OK disabled until a recipient is accepted (core#980): today OK is enabled on a
-  fresh dialog and says "Shared" while nothing is shared, a known failure. It is claimed on a query of
-  the scenario's own on System:Datagrok, made through the API with the run's time in its name and
-  deleted when the feature ends, its dialog opened from the Sharing pane.
-
   Not translated, and why: what the second account may then do with the table (read its data, not delete
   or share it further) and the per-privilege matrix of the PermissionsView are the server's answers, an API
   test (ApiTests, Dapi: permissions); the dialog has no Advanced editor link any more.
+
+  Edge cases: the Share dialog keeps OK disabled until a recipient is accepted (core#980): today OK is
+  enabled on a fresh dialog and says "Shared" while nothing is shared, a known failure. It is claimed
+  on the same BDD-ShareTable table the Background saves, its dialog opened from the table's Sharing pane.
 
   Background:
     Given user is logged in
@@ -62,7 +61,7 @@ Feature: A table saved in a project, shared from its Sharing pane
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  @known-failure:76 @realizes:core#980
+  @edge-cases @known-failure:75 @realizes:core#980
   Scenario: OK stays disabled until a recipient is accepted
     core#980: OK is enabled on a fresh dialog and with an email typed but not accepted with Enter, and
     says "Shared" while nothing is shared. Remove the tag when core#980 is fixed, and claim then that

@@ -10,14 +10,15 @@ Feature: Filter panel regressions
   Psoriasis or PsA in 242, RA in 434; RACE Black in 27; on AGE the column popup's histogram leaves 326
   rows from bin 10); every scenario but the last two empties the panel again, and the viewers the
   public#2501 scenario adds stay.
-  The card's missing-values menu also keeps only the blank rows (Show only missing value, 128) and
-  all of them again (help filters.md "Missing values").
   The round's other panel issues are in the panel's journeys: public#1986 (ladder), public#3027,
   core#479, public#1889 (categorical), public#1343 (range-handles), public#377 (persistence),
   public#1837/#1460 (cloned-view), public#344/core#1141/core#1167 (scatter-plot/scatter-plot).
   Not claimed: public#2364 (the min and max fields clamp a typed end to the column's span; the range
   itself is an ApiTests `FilterGroup` test), public#2359's focus half (MISSING.md), public#1103 (the
   per-card switches through a layout are filter-panel-cloned-view's, the master toggle the ladder's).
+
+  Edge cases: the card's missing-values menu also keeps only the blank rows (Show only missing value,
+  128) and all of them again (help filters.md "Missing values").
 
   Background:
     Given user is logged in
@@ -36,12 +37,6 @@ Feature: Filter panel regressions
     And user loads the saved layout
     Then "HEIGHT" filter card should be visible
     And 872 rows should pass the filter
-    When user picks "Missing values | Keep missing values" from the indicator menu of the "HEIGHT" filter card
-    And user closes the context menu
-    Then all rows should pass the filter
-    When user picks "Missing values | Show only missing value" from the indicator menu of the "HEIGHT" filter card
-    And user closes the context menu
-    Then 128 rows should pass the filter
     When user picks "Missing values | Keep missing values" from the indicator menu of the "HEIGHT" filter card
     And user closes the context menu
     Then all rows should pass the filter
@@ -151,4 +146,20 @@ Feature: Filter panel regressions
     When user presses Escape
     And user resets the filter
     Then all rows should pass the filter
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: Show only missing value keeps the blank rows alone, and Keep missing values gives every row back
+    When user hovers over filter panel
+    And user clicks on reset icon of filter panel
+    When user adds a card for "HEIGHT" to the filter panel
+    And user picks "Missing values | Show only missing value" from the indicator menu of the "HEIGHT" filter card
+    And user closes the context menu
+    Then 128 rows should pass the filter
+    When user picks "Missing values | Keep missing values" from the indicator menu of the "HEIGHT" filter card
+    And user closes the context menu
+    Then all rows should pass the filter
+    When user hovers over "HEIGHT" filter card
+    And user clicks on close of "HEIGHT" filter card
+    Then "HEIGHT" filter card should be absent
     And no errors should have been logged

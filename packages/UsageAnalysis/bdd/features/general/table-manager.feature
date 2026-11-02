@@ -7,12 +7,13 @@ Feature: The Table Manager lists the open tables and moves between them
   the manager again. Translated from TestTrack General/table-manager.md,
   table-manager-spec.ts and the manual-only table-manager-ui.md; the manager's grid reports the rows
   and cells of its inner grid.
-  With every table closed, Alt+T docks the manager with an empty list and no error.
 
   Not translated, and why: Show > All, whose second pick removes the name column along with the
   attributes (GROK-17558, reopened); the Shift multi-select, which the manager's grid (no row header)
   takes as a drag, not a click. Nothing is put on the server; the docked panel is the browser's state,
   and the journey closes it.
+
+  Edge cases: with every table closed, Alt+T docks the manager with an empty list and no error.
 
   Background:
     Given user is logged in
@@ -68,10 +69,13 @@ Feature: The Table Manager lists the open tables and moves between them
     And the "rows" reading of Grid viewer in "Tables" dock panel should be 3
     And no errors should have been logged
 
-  Scenario: Alt+T closes the manager again, and with no table open docks it with an empty list
+  Scenario: Alt+T closes the manager again
     When user presses Alt+T
     Then "Tables" dock panel should be absent
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: With no table open, Alt+T docks the manager with an empty list
     When user closes all views
     Then no table view is open
     And no table should be left in the workspace

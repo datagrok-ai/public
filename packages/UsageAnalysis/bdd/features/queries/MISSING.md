@@ -1,6 +1,6 @@
 # Queries edge cases — what the features cannot say yet
 
-What the query editor and run dialog guards (folded into `query-lifecycle.feature`, `query-post-process.feature` and
+What the query editor and run dialog guards (@edge-cases scenarios of `query-lifecycle.feature`, `query-post-process.feature` and
 `parameterized-queries.feature`) leave out, written for them: no library, binding or code change was made.
 Each item names the case, why it is not a scenario yet, and what would make it one. Reproductions are on
 localhost (core a6c9fcf85b), 2026-10-26.

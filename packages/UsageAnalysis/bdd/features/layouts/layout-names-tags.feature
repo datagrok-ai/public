@@ -14,19 +14,20 @@ Feature: A layout saved from the toolbox gets a name and tags
   that hides it. Edit tags... on a card acts on the layout as last saved: it is tried on a second
   layout, saved and renamed in the panel after the table was opened again, and keeps that name.
 
-  A layout is suggested for a table only when the table has the layout's columns of interest
-  (`help/visualize/view-layout.md`, "Layout suggestions"): the data columns its viewers use, or, for a
-  layout of a grid alone, the grid's columns (`TableView.getViewerColumns`, core#1179). A cars table
-  is suggested its own layout and neither the HEIGHT/WEIGHT layout nor a grid-only layout of a demog
-  table; each demog table opened again is suggested its own. The cars card shown in the same pane is
-  what makes a missing demog card a finished reading rather than a pane still loading. A layout
-  renamed to an empty name in the context panel keeps its name. The cars and grid-only tables are
-  named with the run's time, so each layout is named after its table and is deleted when the feature
-  ends.
+  Edge cases: a layout is suggested for a table only when the table has the layout's columns of
+  interest (`help/visualize/view-layout.md`, "Layout suggestions"): the data columns its viewers use,
+  or, for a layout of a grid alone, the grid's columns (`TableView.getViewerColumns`, core#1179). A cars
+  table is suggested its own layout and neither a HEIGHT/WEIGHT scatter plot layout nor a grid-only
+  layout of a demog table; each demog table opened again is suggested its own. The cars card shown in
+  the same pane is what makes a missing demog card a finished reading rather than a pane still loading.
+  A layout renamed to an empty name in the context panel is expected to keep its name, in the panel
+  and on its card once the table is opened again; today the panel keeps the name but the server
+  saves the layout with an empty one (core#1252, a known failure). These scenarios save layouts of their own, of tables named with the
+  run's time, so each layout is named after its table and is deleted when the feature ends.
 
   Background:
     Given user is logged in
-    And the layouts named "bdd-layout-{time}, BDD height vs weight-{time}, BDD tags-{time}, bdd-edge-cars-{time}, bdd-edge-grid-{time}, bdd-edge-carsb-{time}, bdd-edge-name-{time}" are deleted when the feature ends
+    And the layouts named "bdd-layout-{time}, BDD height vs weight-{time}, BDD tags-{time}" are deleted when the feature ends
     And user opens demog-1000 dataset keeping the first 100 rows as "bdd-layout-{time}"
     And user adds a scatter plot viewer with:
       | xColumnName | HEIGHT |
@@ -79,10 +80,7 @@ Feature: A layout saved from the toolbox gets a name and tags
     When user clears layouts filter
     Then "BDD height vs weight-{time}" layout card should be visible
 
-  @realizes:core#1179
-  Scenario: The table opened again lists the renamed, tagged layout, and a click on its card applies it; a table without the layout's columns is not suggested it
-    Before core#1179 the grid-only layout was suggested for the cars table too: `getViewerColumns`
-    looked the grid's columns up by `name` instead of `colName`.
+  Scenario: The table opened again lists the renamed, tagged layout, and a click on its card applies it
     When user closes all views
     And user opens demog-1000 dataset keeping the first 100 rows as "bdd-layout-{time}"
     And the toolbox pane is shown
@@ -94,54 +92,6 @@ Feature: A layout saved from the toolbox gets a name and tags
     When user clicks on "BDD height vs weight-{time}" layout card
     Then the open tableview should have 1 scatter plot viewer
     And "xColumnName" property of scatter plot viewer should be "HEIGHT"
-    And no errors should have been logged
-    When user closes all views
-    Given user opens cars dataset keeping the first 30 rows as "bdd-edge-cars-{time}"
-    And user adds a scatter plot viewer with:
-      | xColumnName | peak.rpm |
-      | yColumnName | city.mpg |
-    And the toolbox pane is shown
-    And Layouts accordion header in toolbox is expanded
-    When user clicks on the "header model" area of grid
-    Then the context panel should show "model"
-    When user clicks on Save button in layouts pane
-    Then "bdd-edge-cars-{time}" layout card should be visible
-    When user closes all views
-    Given user opens cars dataset keeping the first 30 rows as "bdd-edge-cars-{time}"
-    And the toolbox pane is shown
-    And Layouts accordion header in toolbox is expanded
-    Then "bdd-edge-cars-{time}" layout card should be visible
-    And "BDD height vs weight-{time}" layout card should be absent
-    When user closes all views
-    Given user opens demog-1000 dataset keeping the first 1000 rows as "bdd-edge-grid-{time}"
-    And the toolbox pane is shown
-    And Layouts accordion header in toolbox is expanded
-    When user clicks on the "header AGE" area of grid
-    Then the context panel should show "AGE"
-    When user clicks on Save button in layouts pane
-    Then "bdd-edge-grid-{time}" layout card should be visible
-    When user closes all views
-    Given user opens cars dataset keeping the first 30 rows as "bdd-edge-carsb-{time}"
-    And the toolbox pane is shown
-    And Layouts accordion header in toolbox is expanded
-    When user clicks on the "header model" area of grid
-    Then the context panel should show "model"
-    When user clicks on Save button in layouts pane
-    Then "bdd-edge-carsb-{time}" layout card should be visible
-    And "bdd-edge-grid-{time}" layout card should be absent
-    When user closes all views
-    Given user opens demog-1000 dataset keeping the first 1000 rows as "bdd-edge-grid-{time}"
-    And the toolbox pane is shown
-    And Layouts accordion header in toolbox is expanded
-    Then "bdd-edge-grid-{time}" layout card should be visible
-    When user closes all views
-    Given user opens demog-1000 dataset keeping the first 100 rows as "bdd-layout-{time}"
-    And the toolbox pane is shown
-    And Layouts accordion header in toolbox is expanded
-    Then "BDD height vs weight-{time}" layout card should be visible
-    And "bdd-edge-cars-{time}" layout card should be absent
-    When user clicks on "BDD height vs weight-{time}" layout card
-    Then the open tableview should have 1 scatter plot viewer
     And no errors should have been logged
 
   Scenario: A second layout saved and renamed takes a tag through Edit tags... on its card
@@ -182,7 +132,74 @@ Feature: A layout saved from the toolbox gets a name and tags
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  @edge-cases @realizes:core#1179
+  Scenario: A table without a layout's columns is not suggested that layout
+    Before core#1179 the grid-only layout was suggested for the cars table too: `getViewerColumns`
+    looked the grid's columns up by `name` instead of `colName`.
+    Given the layouts named "bdd-edge-hw-{time}, bdd-edge-cars-{time}, bdd-edge-grid-{time}, bdd-edge-carsb-{time}" are deleted when the feature ends
+    When user closes all views
+    Given user opens demog-1000 dataset keeping the first 100 rows as "bdd-edge-hw-{time}"
+    And user adds a scatter plot viewer with:
+      | xColumnName | HEIGHT |
+      | yColumnName | WEIGHT |
+    And the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
+    When user clicks on the "header AGE" area of grid
+    Then the context panel should show "AGE"
+    When user clicks on Save button in layouts pane
+    Then "bdd-edge-hw-{time}" layout card should be visible
+    When user closes all views
+    Given user opens cars dataset keeping the first 30 rows as "bdd-edge-cars-{time}"
+    And user adds a scatter plot viewer with:
+      | xColumnName | peak.rpm |
+      | yColumnName | city.mpg |
+    And the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
+    When user clicks on the "header model" area of grid
+    Then the context panel should show "model"
+    When user clicks on Save button in layouts pane
+    Then "bdd-edge-cars-{time}" layout card should be visible
+    When user closes all views
+    Given user opens cars dataset keeping the first 30 rows as "bdd-edge-cars-{time}"
+    And the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
+    Then "bdd-edge-cars-{time}" layout card should be visible
+    And "bdd-edge-hw-{time}" layout card should be absent
+    When user closes all views
+    Given user opens demog-1000 dataset keeping the first 1000 rows as "bdd-edge-grid-{time}"
+    And the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
+    When user clicks on the "header AGE" area of grid
+    Then the context panel should show "AGE"
+    When user clicks on Save button in layouts pane
+    Then "bdd-edge-grid-{time}" layout card should be visible
+    When user closes all views
+    Given user opens cars dataset keeping the first 30 rows as "bdd-edge-carsb-{time}"
+    And the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
+    When user clicks on the "header model" area of grid
+    Then the context panel should show "model"
+    When user clicks on Save button in layouts pane
+    Then "bdd-edge-carsb-{time}" layout card should be visible
+    And "bdd-edge-grid-{time}" layout card should be absent
+    When user closes all views
+    Given user opens demog-1000 dataset keeping the first 1000 rows as "bdd-edge-grid-{time}"
+    And the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
+    Then "bdd-edge-grid-{time}" layout card should be visible
+    When user closes all views
+    Given user opens demog-1000 dataset keeping the first 100 rows as "bdd-edge-hw-{time}"
+    And the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
+    Then "bdd-edge-hw-{time}" layout card should be visible
+    And "bdd-edge-cars-{time}" layout card should be absent
+    When user clicks on "bdd-edge-hw-{time}" layout card
+    Then the open tableview should have 1 scatter plot viewer
+    And no errors should have been logged
+
+  @edge-cases @known-failure:219 @realizes:core#1252
   Scenario: A layout renamed to an empty name in the context panel keeps its name
+    Given the layouts named "bdd-edge-name-{time}" are deleted when the feature ends
     When user closes all views
     Given user opens demog-1000 dataset keeping the first 1000 rows as "bdd-edge-name-{time}"
     And the toolbox pane is shown
@@ -194,6 +211,9 @@ Feature: A layout saved from the toolbox gets a name and tags
     And the context panel should show "bdd-edge-name-{time}"
     When user clears Name details field in context panel
     And user presses Enter
+    Then value of Name details field in context panel should have text "bdd-edge-name-{time}"
+    When user closes all views
+    Given user opens demog-1000 dataset keeping the first 1000 rows as "bdd-edge-name-{time}"
+    And the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
     Then "bdd-edge-name-{time}" layout card should be visible
-    And value of Name details field in context panel should have text "bdd-edge-name-{time}"
-    And no errors should have been logged

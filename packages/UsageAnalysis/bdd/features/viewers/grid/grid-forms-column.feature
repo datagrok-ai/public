@@ -13,19 +13,17 @@ Feature: Grid form columns
   `packages/PowerGrid/bdd/features/grid/summary-columns.feature`. Source: `grid-ui.md` "Summary
   Columns - Form Designer"; the two HTML items are beyond the TestTrack specs (operator decision D3:
   every item of the menu). Every scenario starts on a fresh demog-1000.
-  An HTML summary column keeps rendering after a column it shows is removed, and the grid scrolls to
-  its last row with no error (`grid.md` "Summary Column Surviving a Removed Source Column", the
-  GROK-19942 contract). The last three scenarios hold edges the grid does not meet yet, each a
-  known failure: Default HTML Form with no column ticked should not be confirmable
-  (core#1197), and Shift+Enter, which selects every row holding the current cell's value, should
-  select nothing while Allow Row Selection is off and only the rows that pass the filter otherwise
-  (core#1194).
 
   Not translated, and why: that Close and Apply keeps what the designer changed - nothing is changed
   in it here - and dragging a field box to an empty spot of the designer and finding it
   there after Edit - the designer reports no position for a field (no `getWidgetStatus` on the
   sketch view, and a field box is a DOM element whose place no step reads), so the claim is that
   Edit reopens the designer and Close and Apply leaves one form column, not where the field went.
+
+  Edge cases: an HTML summary column keeps rendering after a column it shows is removed, and the grid
+  scrolls to its last row with no error (`grid.md` "Summary Column Surviving a Removed Source
+  Column", the GROK-19942 contract). Default HTML Form with no column ticked should not be
+  confirmable (core#1197, a known failure).
 
   Background:
     Given user is logged in
@@ -54,19 +52,13 @@ Feature: Grid form columns
     And the "cell type of form" reading of grid should be "form"
     And no errors should have been logged
 
-  Scenario: Default HTML Form asks for the columns and adds an HTML column, which keeps rendering after a column it shows is removed
+  Scenario: Default HTML Form asks for the columns and adds an HTML column
     When user picks "Add > Summary Columns > Default HTML Form" from the context menu of the "cell 2 of USUBJID" area of grid
     Then "Select columns..." dialog should be visible
     When user clicks on All link in "Select columns..." dialog
     And user clicks on OK button in "Select columns..." dialog
     Then "Select columns..." dialog should be hidden
     And the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY, html"
-    And the "cell type of html" reading of grid should be "html"
-    When user picks "Remove" from the context menu of the "header CONTROL" area of grid
-    Then the table should not have a column "CONTROL"
-    When user clicks on the "cell 2 of AGE" area of grid
-    And user presses Control+End
-    Then grid should have a "cell 1000 of html" area
     And the "cell type of html" reading of grid should be "html"
     And no errors should have been logged
 
@@ -79,23 +71,24 @@ Feature: Grid form columns
     And the "cell type of html" reading of grid should be "html"
     And no errors should have been logged
 
-  @known-failure:86 @realizes:core#1197
+  @edge-cases
+  Scenario: An HTML summary column keeps rendering after a column it shows is removed
+    When user picks "Add > Summary Columns > Default HTML Form" from the context menu of the "cell 2 of USUBJID" area of grid
+    Then "Select columns..." dialog should be visible
+    When user clicks on All link in "Select columns..." dialog
+    And user clicks on OK button in "Select columns..." dialog
+    Then "Select columns..." dialog should be hidden
+    And the "cell type of html" reading of grid should be "html"
+    When user picks "Remove" from the context menu of the "header CONTROL" area of grid
+    Then the table should not have a column "CONTROL"
+    When user clicks on the "cell 2 of AGE" area of grid
+    And user presses Control+End
+    Then grid should have a "cell 1000 of html" area
+    And the "cell type of html" reading of grid should be "html"
+    And no errors should have been logged
+
+  @edge-cases @known-failure:94 @realizes:core#1197
   Scenario: Default HTML Form with no column ticked cannot be confirmed
     When user picks "Add > Summary Columns > Default HTML Form" from the context menu of the "cell 2 of USUBJID" area of grid
     Then "Select columns..." dialog should be visible
     And OK button in "Select columns..." dialog should be disabled
-
-  @known-failure:93 @realizes:core#1194
-  Scenario: Shift+Enter selects nothing while Allow Row Selection is off
-    When user sets "Allow Row Selection" property of grid to "false"
-    And user clicks on the "cell 1 of SEX" area of grid
-    And user presses Shift+Enter
-    Then no rows should be selected
-
-  @known-failure:100 @realizes:core#1194
-  Scenario: Shift+Enter selects only the same rows that pass the filter
-    When user filters rows where "AGE" is between 20 and 30
-    And user clicks on the "cell 1 of SEX" area of grid
-    And user presses Shift+Enter
-    Then 82 rows should be selected
-    And every selected row should pass the filter

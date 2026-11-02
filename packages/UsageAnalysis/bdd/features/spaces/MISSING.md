@@ -1,7 +1,7 @@
 # Spaces edge cases — what the features cannot say yet
 
-Written for the space edge cases, now checks of `spaces-rename`, `spaces-create`, `spaces-delete` and
-`spaces-drag-and-drop`, with no library, binding or code change. Each item below is a case those checks leave out: the expected behaviour is not decided yet, a
+Written for the space edge cases, now @edge-cases scenarios of `spaces-rename`, `spaces-create`, `spaces-delete`,
+`spaces-drag-and-drop` and `spaces-search`, with no library, binding or code change. Each item below is a case those scenarios leave out: the expected behaviour is not decided yet, a
 defect blocks the path, or the check belongs to another test layer.
 
 ## Still open
@@ -19,9 +19,9 @@ defect blocks the path, or the check belongs to another test layer.
 
 ```gherkin
 And no error or warning balloon should have been shown
-When user double-clicks on BDDEdgeDst{time} tree node inside browse tree
-Then the "BDDEdgeDst{time}" view should be current
-And "edgecars{time}.csv" link in gallery should be visible
+When user double-clicks on BDDEdgeFileDst{time} tree node inside browse tree
+Then the "BDDEdgeFileDst{time}" view should be current
+And "edgelinkcars{time}.csv" link in gallery should be visible
 ```
 
 2. **The same file linked twice into one space**: the second Link changes nothing, the space shows the file once
@@ -30,6 +30,13 @@ And "edgecars{time}.csv" link in gallery should be visible
    Link being the same entity (decided).
 4. **core#382 with a file**: a linked file whose original moved to another space. The project variant is claimed
    (green) in `spaces-drag-and-drop`.
+
+### Waiting for core#976 (a space deleted with what is linked into it)
+
+**A package script dropped on a space is linked with no "Move entity" dialog** (`ProjectMeta.doDropEx`; a function of
+a package, e.g. a BiostructureViewer script, can only be linked). No step removes a link from a space, and while
+core#976 lasts the space's delete at feature end would delete the linked package script with it. Written once
+core#976 is fixed (the space's cleanup then leaves the script), or once a step removes a link from a space.
 
 ### API or server tests to write
 

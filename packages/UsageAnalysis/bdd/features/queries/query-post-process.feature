@@ -5,15 +5,16 @@ Feature: A query's post-process runs on its result
   TestTrack Queries case query-postprocessing (playwright-public/queries query-postprocessing), on
   the feature's own query over NorthwindTest's products (77 rows).
 
-  A post-process script that throws (on a second query of the feature's, over System:Datagrok's
-  entity_types) shows an error balloon carrying the error and opens no table: post-processing is a
-  step of the data transformation, so the SQL's raw result is not the query's result.
-
-  The queries are named with the run's time and removed when the feature ends; @serial for the same
+  The query is named with the run's time and removed when the feature ends; @serial for the same
   reason as the other features that save into NorthwindTest.
 
   Not translated, and why: the case's layout half — two viewers on the Layout tab kept with the
   query — is query-layout.feature, which owns the layout and its cleanup.
+
+  Edge cases: a post-process script that throws (on a second query of the feature's, over
+  System:Datagrok's entity_types, named with the run's time and removed when the feature ends) shows an
+  error balloon carrying the error and opens no table: post-processing is a step of the data
+  transformation, so the SQL's raw result is not the query's result.
 
   Background:
     Given user is logged in
@@ -47,7 +48,7 @@ Feature: A query's post-process runs on its result
     And the query "BDD-Q-pp-{time}" on the server should have a post-process containing "grok.shell.info('PP' + result.rowCount);"
     And no errors should have been logged
 
-  Scenario: The saved query announces its row count when it is run from the tree, and a post-process that throws shows its error and opens no table
+  Scenario: The saved query announces its row count when it is run from the tree
     Given the toolbox pane is hidden
     And the browse panel is open
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
@@ -55,8 +56,11 @@ Feature: A query's post-process runs on its result
     And user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree
     Then the table should have 77 rows
     And an info balloon containing "PP77" should have been shown
-    Given the browse panel is open
-    And no query named "BDDQPostFail{time}" is on the server
+
+  @edge-cases
+  Scenario: A post-process that throws shows its error and opens no table
+    Given no query named "BDDQPostFail{time}" is on the server
+    And the browse panel is open
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     When user picks "New Query..." from the context menu of Databases---Postgres---Datagrok tree node inside browse tree

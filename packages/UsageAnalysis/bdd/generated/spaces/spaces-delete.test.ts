@@ -28,7 +28,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Deleting a space", () => {
   const session = feature(test, "features/spaces/spaces-delete.feature", import.meta.url);
-  test("Deleting a space", {tag: ["@journey", "@serial", "@spaces", "@realizes:views.space", "@known-failure:74", "@realizes:core#976"]}, async ({browser}) => {
+  test("Deleting a space", {tag: ["@journey", "@serial", "@spaces", "@realizes:views.space", "@edge-cases", "@known-failure:74", "@realizes:core#976"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 4, page);
     await session.step(22, "Given user is logged in", () => loggedIn(page));

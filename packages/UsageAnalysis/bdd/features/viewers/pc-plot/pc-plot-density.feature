@@ -11,8 +11,10 @@ Feature: PC plot density overlay
   demog-1000 has exactly 1000 rows and `autoStyle` sets `showDensity = rowCount > 1000`, so a fresh
   plot has NO density and `density style` reads "" — the old spec's claim that the plot opens with
   density on holds only on the larger demog.csv. The style default (circles) survives regardless.
-  Every scenario puts the density settings back. A layout saved with Line Width 0 and density on,
-  applied back to the view, renders and takes a hover without an error (a crash of core#967).
+  Every scenario puts the density settings back.
+
+  Edge cases: a layout saved with Line Width 0 and density on, applied back to the view, renders
+  and takes a hover without an error (a crash of core#967).
 
   Background:
     Given user is logged in
@@ -122,7 +124,7 @@ Feature: PC plot density overlay
     And the "lines drawn" reading of pc plot viewer should be 1000
     And no errors should have been logged
 
-  @realizes:core#967
+  @edge-cases @realizes:core#967
   Scenario: A layout saved with Line Width 0 and density on is applied and hovered without an error (core#967)
     When user sets properties of pc plot viewer:
       | Show Density | true |

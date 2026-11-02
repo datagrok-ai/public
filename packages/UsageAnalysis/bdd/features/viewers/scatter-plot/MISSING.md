@@ -16,9 +16,9 @@ PowerPack's `formula-lines-dialog.feature`.
 ## Edge cases
 
 The edge-case round of 26 Oct 2026: data shapes, columns removed or renamed under the open viewer,
-layouts naming a missing column, property bounds, closing the viewer. Its checks are now steps of
-`scatter-plot-zoom-filter.feature`, `scatter-plot-lines.feature` and
-`scatter-plot-conditional-legend.feature`. Nothing here asks for a
+layouts naming a missing column, property bounds, closing the viewer. Its checks are now `@edge-cases`
+scenarios of their own, after the master scenarios of `scatter-plot-zoom-filter.feature` and
+`scatter-plot-lines.feature`. Nothing here asks for a
 library, binding or code change; it lists what the features could not claim and why.
 
 ### Edge cases: Still open
@@ -48,7 +48,7 @@ library, binding or code change; it lists what the features could not claim and 
    Color or Size column is dropped with no other column picked. These checks, with no rows and
    renamed X and Color columns, are requested from ApiTests in `../MISSING.md`.
 2. Moving Average Window typed as 1 or 101 in the context panel is not taken (the out-of-bounds
-   rule): the last scenario outline of `scatter-plot-conditional-legend.feature`, one Examples row
+   rule): the last scenario outline of `scatter-plot-lines.feature`, one Examples row
    per value, with the moving average switched on first; a known failure of core#1200 (the value
    is written).
 

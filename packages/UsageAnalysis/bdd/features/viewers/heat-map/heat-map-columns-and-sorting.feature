@@ -14,8 +14,7 @@ Feature: Heat map columns, sorting and column widths
   division by a zero width: it now leaves no column on the map and logs no error, and 100 brings
   all eleven back. Since core#928 the empty map says why: "No columns to show: Max Heatmap Columns is 0",
   and 100 takes the hint away (core#928). The hint is read as text shown in the viewer: the grid's
-  status does not publish it as its `error` (see MISSING.md). A column hidden under the cap
-  coming back when the cap is raised (core#1202) is a known failure in heat-map-layout.feature.
+  status does not publish it as its `error` (see MISSING.md).
 
   Background:
     Given user is logged in

@@ -8,6 +8,9 @@ Feature: Bar chart setup and interaction
   through the server. One journey on spgi-100 with a bar chart counting CAST Idea ID by Primary
   Series Name.
 
+  Edge cases: closing a bar chart gives back the rows its Filter click filtered out; a filter that
+  outlives its viewer is a defect (core#233).
+
   Background:
     Given user is logged in
     And user opens spgi dataset
@@ -119,4 +122,14 @@ Feature: Bar chart setup and interaction
     Then "Primary Series Name" column should have no color coding
     And bar chart viewer should have repainted by at least 500 pixels
     And the "bar Triazoles" area of bar chart viewer should contain the color "#96D794"
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: Closing the bar chart gives back the rows its Filter click filtered out
+    When user sets "On Click" property of bar chart viewer to "Filter"
+    And user clicks on the "bar Triazoles" area of bar chart viewer
+    Then 64 rows should pass the filter
+    When user clicks on close icon of bar chart viewer
+    Then the open tableview should have 0 bar chart viewers
+    And all rows should pass the filter
     And no errors should have been logged

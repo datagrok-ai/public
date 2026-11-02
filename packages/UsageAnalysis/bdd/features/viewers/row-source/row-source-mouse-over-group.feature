@@ -9,8 +9,9 @@ Feature: Row Source MouseOverGroup on seven viewers
   (15 Asian, 896 Caucasian rows) and only the target's `${AGE} > 44` can bring it to 5 and 463.
   The pie chart is the source for the other six and the bar chart the source for the pie chart.
   demog-1000: 5 of the 15 Asian rows and 463 of the 896 Caucasian rows have AGE > 44.
-  Closing the viewer whose group is hovered should clear the group, so the viewer draws no row again
-  (core#1227); the last scenario, a known failure, ends on it.
+
+  Edge cases: closing the viewer whose group is hovered should clear the group, so the viewer draws
+  no row again (core#1227); the last scenario, a known failure, ends on it.
 
   Background:
     Given user is logged in
@@ -62,7 +63,7 @@ Feature: Row Source MouseOverGroup on seven viewers
       | pc plot      | pie chart | slice Asian | 5          | slice Caucasian | 463        |
       | pie chart    | bar chart | bar Asian   | 5          | bar Caucasian   | 463        |
 
-  @known-failure:76 @realizes:core#1227
+  @edge-cases @known-failure:77 @realizes:core#1227
   Scenario: Closing the pie chart whose group is hovered clears the group, and the scatter plot draws no row again
     Today the closed pie's hovered group stays on the table, and the scatter plot keeps drawing its
     5 Asian rows.

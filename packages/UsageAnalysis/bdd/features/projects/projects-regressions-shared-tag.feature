@@ -8,12 +8,13 @@ Feature: Projects regressions: a tag added to a project shared for viewing
   to save Project"), and the refusal should reach the user as an error balloon; today it goes to the
   console only. The scenario is a known failure until the balloon is shown.
 
-  core#1162: cars.csv saved and shared the same way, the second account finds the project's card in
-  Browse > Dashboards; with View and use it may not rename the project, so the card menu should show
-  Rename... disabled. Today it is enabled, a known failure.
+  The project carries the run's time and is removed with its table, view and grant when the feature
+  starts and ends.
 
-  The projects carry the run's time and are removed with their tables, views and grants when the
-  feature starts and ends.
+  Edge cases: core#1162: cars.csv saved and shared the same way, the second account finds the
+  project's card in Browse > Dashboards; with View and use it may not rename the project, so the card
+  menu should show Rename... disabled. Today it is enabled, a known failure. Its project carries the
+  run's time too and is removed with its table, view and grant when the feature starts and ends.
 
   Background:
     Given user is logged in
@@ -23,7 +24,7 @@ Feature: Projects regressions: a tag added to a project shared for viewing
     And no project named "BDDSharedTag{time}" is on the server
 
   # core#296: the refused save is logged to the console, with no balloon
-  @known-failure:58 @realizes:core#296
+  @known-failure:59 @realizes:core#296
   Scenario: The second account adding a tag to a project shared for viewing is told it cannot
     Given Files tree node inside browse tree is expanded
     And Files---Demo tree node inside browse tree is expanded
@@ -60,7 +61,7 @@ Feature: Projects regressions: a tag added to a project shared for viewing
     When user signs in as themselves again
     Then the running account should be signed in
 
-  @known-failure:92 @realizes:core#1162
+  @edge-cases @known-failure:93 @realizes:core#1162
   Scenario: A View and use recipient sees Rename disabled in the card menu
     core#1162: Rename... is enabled for a View and use recipient. Remove the tag when it is
     disabled.

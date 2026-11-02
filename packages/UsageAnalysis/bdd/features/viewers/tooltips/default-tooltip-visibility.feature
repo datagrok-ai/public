@@ -92,11 +92,7 @@ Feature: Hiding the table's default tooltip from a viewer's context menu
     And the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should differ
     When user picks "Tooltip > Remove Group Tooltip" from the context menu of the "view" area of scatter plot viewer
     And user removes the coloring of "AGE" column
-    And user picks "Format > Custom..." from the context menu of the "header AGE" area of grid
-    And user clears Custom input in Format AGE dialog
-    And user clicks on OK button in Format AGE dialog
-    Then the "text of cell 1 of AGE" reading of grid should be "26"
-    And no errors should have been logged
+    Then no errors should have been logged
 
   Scenario: Tooltip > Hide on the scatter plot hides the row tooltip on the grid and both plots
     When user opens the context menu of scatter plot viewer

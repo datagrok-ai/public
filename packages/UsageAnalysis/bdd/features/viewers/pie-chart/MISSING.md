@@ -1,6 +1,6 @@
 # Pie chart edge cases — what the features cannot say yet
 
-The edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today; the claimed ones are steps of `pie-chart.feature` and `pie-chart-filter-and-auto-legend.feature`. No library, binding or code change was made for them.
+The edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today; the claimed ones are `@edge-cases` scenarios of their own, after the master scenarios of `pie-chart.feature` and `pie-chart-filter-and-auto-legend.feature`. No library, binding or code change was made for them.
 
 ## Still open
 

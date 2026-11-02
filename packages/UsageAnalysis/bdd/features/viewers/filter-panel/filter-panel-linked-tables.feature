@@ -9,9 +9,6 @@ Feature: Filter panel over linked tables
   the filter-to-filter link is made) and SPGI-linked2 (224). The first five spgi-100 rows
   key 9 SPGI-linked1 rows; "v ii" in link column 3 keeps 148 SPGI-linked2 rows, which leave 5 of
   those 9; "inconclusive" PAMPA leaves 2, and 51 without the selection link.
-  Closing the view of a table whose filter narrows a linked table releases the linked table's
-  filter: a four-row races table linked filter to filter to demog-1000 by RACE, its card on Asian
-  leaving 15 demog rows, gives all 1000 back once its view is closed.
   Not translated: the four-key filter-to-filter link is made through the API — the dialog takes a
   key pair at a time, each through a column picker, and the scenarios are about what the link
   carries; the one-key selection-to-filter link is made in Link Tables itself (its keys, Id and
@@ -19,6 +16,10 @@ Feature: Filter panel over linked tables
   selected, and the selection cleared, through the table's API (the md allows it); the views are
   switched through the shell and each panel is opened empty through its API; the reads of the
   tables that must not move are single reads, not two a settle apart.
+
+  Edge cases: closing the view of a table whose filter narrows a linked table releases the linked
+  table's filter: a four-row races table linked filter to filter to demog-1000 by RACE, its card on
+  Asian leaving 15 demog rows, gives all 1000 back once its view is closed.
 
   Background:
     Given user is logged in
@@ -87,6 +88,9 @@ Feature: Filter panel over linked tables
     Then 9 rows should be selected
     And 51 rows should pass the filter
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: Closing the view of a table whose filter narrows a linked table releases the linked table's filter
     Given user opens demog-1000 dataset
     And user opens a table "races" with:
       | RACE      |

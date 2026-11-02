@@ -41,9 +41,9 @@ Nothing planned.
 - **The legend's own picker, its Cancel and a second pick (github-3132)**: `legend/legend-across-viewers.feature`;
   a conditional coloring's legend: `guides/scatter-plot-conditional-colors.feature`.
 
-## Edge cases (now in the color-coding journeys)
+## Edge cases (now `@edge-cases` scenarios of the color-coding journeys)
 
-Added with the color-coding edge cases (edge-case round of 2026-10-26, localhost), now steps of `color-coding.feature`, `color-coding-editor-linear.feature`, `color-coding-editor-conditional-and-categorical.feature` and `color-coding-pick-up-apply-and-viewers.feature`. Only the scenarios were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+Added with the color-coding edge cases (edge-case round of 2026-10-26, localhost), now `@edge-cases` scenarios of their own, after the master scenarios of `color-coding.feature`, `color-coding-editor-linear.feature`, `color-coding-editor-conditional-and-categorical.feature` and `color-coding-pick-up-apply-and-viewers.feature`. Only the scenarios were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 
@@ -55,9 +55,13 @@ Added with the color-coding edge cases (edge-case round of 2026-10-26, localhost
      runs it.
    - A coloring picked up from an uncoloured column and applied to a coloured one: the present
      behaviour is right, the coloring is applied as if the source had it on.
-2. **Steps requested**: the stop values typed in Edit scheme... (`abc`, stops out of order) have no
+2. **Needs a ruling**: a one-value column (Level = 5, 5, 5), colored linearly or conditionally: the
+   coloring paints nothing (the cells are as an uncoloured column, the colour of Name). "Every cell the
+   same colour" holds with no coloring at all, so the scenarios were dropped; what the coloring should
+   paint for one value has to be decided first.
+3. **Steps requested**: the stop values typed in Edit scheme... (`abc`, stops out of order) have no
    invalid state to read; the conditional editor's "Invalid pattern" mark is the model.
-3. **API or Dart tests to write** (demog-1000, AGE colored linearly, RACE linked to AGE):
+4. **API or Dart tests to write** (demog-1000, AGE colored linearly, RACE linked to AGE):
    - AGE renamed to AGE2: AGE2 stays linearly colored and RACE's cells keep AGE2's colors
      (core#1139).
    - AGE removed: RACE's cells paint as an uncolored column (as SEX) and no error is logged

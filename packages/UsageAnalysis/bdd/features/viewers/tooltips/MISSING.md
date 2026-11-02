@@ -77,7 +77,7 @@ Nothing planned.
 
 ## Edge cases (now in `edit-tooltip.feature` and `line-chart-aggregated-tooltip.feature`)
 
-Written for the tooltip edge cases (26 Oct 2026; their scenarios are now steps of `edit-tooltip.feature` and `line-chart-aggregated-tooltip.feature`), the guard suite of edge cases: data shapes,
+Written for the tooltip edge cases (26 Oct 2026; their checks are now `@edge-cases` scenarios of their own, after the master scenarios of `edit-tooltip.feature` and `line-chart-aggregated-tooltip.feature`), the guard suite of edge cases: data shapes,
 columns removed or renamed under the open viewer, layouts naming a missing column, property bounds,
 closing the viewer. Nothing here asks for a library, binding or code change made by that feature; it
 lists what the feature could not claim and why.

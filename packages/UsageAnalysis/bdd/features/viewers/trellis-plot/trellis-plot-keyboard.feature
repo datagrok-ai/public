@@ -4,9 +4,11 @@ Feature: Trellis plot keyboard navigation
   x from left to right, y from top to bottom — and a round trip of four arrows comes back where it
   started. Under On Click = Filter the arrow carries the filter to the cell it lands on, and Escape
   gives every row back. The keys go to the viewer's own root, which is focusable, so no click on
-  the charts grid is needed to make them work. After the trellis is set to another table (cars)
-  and back, the arrow keys still move the current cell: the key subscription was cancelled on the
-  first detach and never added again before core#1057. One journey on demog-1000 with SEX by RACE.
+  the charts grid is needed to make them work. One journey on demog-1000 with SEX by RACE.
+
+  Edge cases: after the trellis is set to another table (cars) and back, the arrow keys still move
+  the current cell: the key subscription was cancelled on the first detach and never added again
+  before core#1057.
 
   Background:
     Given user is logged in
@@ -53,7 +55,6 @@ Feature: Trellis plot keyboard navigation
     And no rows where "SEX" is "F" should pass the filter
     And no errors should have been logged
 
-  @realizes:core#1057
   Scenario: Escape gives every row back
     When user presses Escape in trellis plot viewer
     Then all rows should pass the filter
@@ -61,6 +62,9 @@ Feature: Trellis plot keyboard navigation
     When user sets "On Click" property of trellis plot viewer to "None"
     Then "On Click" property of trellis plot viewer should be "None"
     And no errors should have been logged
+
+  @edge-cases @realizes:core#1057
+  Scenario: After the trellis is set to another table and back, the arrow keys still move the current cell (core#1057)
     Given user opens cars dataset
     And user switches to the "demog-1000" table view
     When user sets "table" property of trellis plot viewer to "cars"

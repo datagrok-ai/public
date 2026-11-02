@@ -8,31 +8,31 @@ Feature: A project saved with and without Data sync
   How a reopened project brings the table back — rebuilt by its creation script, or loaded from the
   uploaded snapshot — is ApiTests `Dapi: projects: data sync` (src/dapi/projects.ts).
 
-  A table opened with Open local file has no creation script, so the Save dialog offers it no Data
-  sync switch and no Creation script button (`help/datagrok/concepts/project/dashboard.md`, "Data
-  sync"). What a dashboard saved with Data sync does when its source changes ("When the source
-  changes" there), each reopen following a page reload so the dashboard is read from the server:
-  its query deleted, it does not open and the Data loading error dialog names the query; a new query
-  saved under the deleted query's name repairs it, rebuilt by data sync; a query without the column
-  its bar chart is split by opens it, the chart saying the column does not exist; a query without
-  the column a calculated column reads opens it with a warning balloon naming both, the calculated
-  column empty; the file it was saved from deleted from its space, it shows the Data loading error.
-  These queries are made through the API on System:Datagrok.
+  Both projects are named with the run's time and removed, with their tables and views, when the
+  feature ends.
 
-  Every project is named with the run's time (the edge ones with letters and digits only: the
-  Dashboards search misses "-" and "_") and removed, with its tables and views, when the feature
-  starts and ends.
+  Not translated, and why: opening the projects from the Dashboards tiles (the tile gallery is
+  Browse's subject) and the Share dialog the first save
+  shows, which is cancelled (a copy of a saved project shows none).
+
+  Edge cases: a table opened with Open local file has no creation script, so the Save dialog offers it
+  no Data sync switch and no Creation script button (`help/datagrok/concepts/project/dashboard.md`,
+  "Data sync"). What a dashboard saved with Data sync does when its source changes ("When the source
+  changes" there), each reopen following a page reload so the dashboard is read from the server: its
+  query deleted, it does not open and the Data loading error dialog names the query; a new query saved
+  under the deleted query's name repairs it, rebuilt by data sync; its query replaced by one of the
+  same name without the column its bar chart is split by, it opens, the chart saying the column does
+  not exist; replaced by one without the column a calculated column reads, it opens with a warning
+  balloon naming both, the calculated column empty; the file it was saved from deleted from its space,
+  it shows the Data loading error. These queries are made through the API on System:Datagrok. Their
+  projects are named with the run's time in letters and digits only (the Dashboards search misses "-"
+  and "_") and removed, with their tables and views, when the feature starts and ends.
 
   Background:
     Given user is logged in
     And the browse panel is open
     And no project named "BDD-Sync-Orig-{time}" is on the server
     And no project named "BDD-Sync-Copy-{time}" is on the server
-    And no project named "BDDEdgeSyncDel{time}" is on the server
-    And no project named "BDDEdgeSyncRep{time}" is on the server
-    And no project named "BDDEdgeSyncCol{time}" is on the server
-    And no project named "BDDEdgeSyncCalc{time}" is on the server
-    And no project named "BDDEdgeSyncFile{time}" is on the server
 
   Scenario: A file opened from Browse is saved with Data sync on
     Given Files tree node inside browse tree is expanded
@@ -91,6 +91,7 @@ Feature: A project saved with and without Data sync
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  @edge-cases
   Scenario: A table opened from a local file is offered no Data sync
     Given the context panel is open
     And simple mode is off
@@ -108,8 +109,10 @@ Feature: A project saved with and without Data sync
     And no errors should have been logged
     When user closes all views
 
+  @edge-cases
   Scenario: With its query deleted, the dashboard does not open and names the query in the Data loading error
-    Given a query "BDDEdgeSyncQDel{time}" on "System:Datagrok" reads "select name, id from entity_types where name in ('Script', 'Project', 'User')"
+    Given no project named "BDDEdgeSyncDel{time}" is on the server
+    And a query "BDDEdgeSyncQDel{time}" on "System:Datagrok" reads "select name, id from entity_types where name in ('Script', 'Project', 'User')"
     And the browse panel is open
     When user clicks on "Refresh" icon inside browse toolbar
     Given Databases tree node inside browse tree is expanded
@@ -145,8 +148,10 @@ Feature: A project saved with and without Data sync
     Then the "Data loading error" dialog should close
     And no table should be left in the workspace
 
+  @edge-cases
   Scenario: A new query saved under the deleted query's name repairs the dashboard
-    Given a query "BDDEdgeSyncQRep{time}" on "System:Datagrok" reads "select name, id from entity_types where name in ('Script', 'Project', 'User')"
+    Given no project named "BDDEdgeSyncRep{time}" is on the server
+    And a query "BDDEdgeSyncQRep{time}" on "System:Datagrok" reads "select name, id from entity_types where name in ('Script', 'Project', 'User')"
     And the browse panel is open
     When user clicks on "Refresh" icon inside browse toolbar
     Given Databases tree node inside browse tree is expanded
@@ -183,8 +188,10 @@ Feature: A project saved with and without Data sync
     And no error or warning balloon should have been shown
     When user closes all views
 
-  Scenario: Without the column its bar chart is split by, the dashboard opens and the chart names the missing column
-    Given a query "BDDEdgeSyncQCol{time}" on "System:Datagrok" reads "select name, id from entity_types where name in ('Script', 'Project', 'User')"
+  @edge-cases
+  Scenario: With its query replaced by one of the same name without the bar chart's split column, the dashboard opens and the chart names that column
+    Given no project named "BDDEdgeSyncCol{time}" is on the server
+    And a query "BDDEdgeSyncQCol{time}" on "System:Datagrok" reads "select name, id from entity_types where name in ('Script', 'Project', 'User')"
     And the browse panel is open
     When user clicks on "Refresh" icon inside browse toolbar
     Given Databases tree node inside browse tree is expanded
@@ -221,8 +228,10 @@ Feature: A project saved with and without Data sync
     And "Data loading error" dialog should be absent
     When user closes all views
 
-  Scenario: Without a column its calculated column reads, the dashboard opens with a warning naming it
-    Given a query "BDDEdgeSyncQCalc{time}" on "System:Datagrok" reads "select name, length(name) as len from entity_types where name in ('Script', 'Project', 'User')"
+  @edge-cases
+  Scenario: With its query replaced by one of the same name without a column its calculated column reads, the dashboard opens with a warning naming it
+    Given no project named "BDDEdgeSyncCalc{time}" is on the server
+    And a query "BDDEdgeSyncQCalc{time}" on "System:Datagrok" reads "select name, length(name) as len from entity_types where name in ('Script', 'Project', 'User')"
     And the browse panel is open
     When user clicks on "Refresh" icon inside browse toolbar
     Given Databases tree node inside browse tree is expanded
@@ -263,8 +272,10 @@ Feature: A project saved with and without Data sync
     And "Data loading error" dialog should be absent
     When user closes all views
 
-  Scenario: With its file deleted, the dashboard does not open and shows the Data loading error
-    Given a space named "BDDEdgeSyncSpace{time}" is on the server
+  @edge-cases
+  Scenario: With its file deleted, the dashboard shows the Data loading error
+    Given no project named "BDDEdgeSyncFile{time}" is on the server
+    And a space named "BDDEdgeSyncSpace{time}" is on the server
     And the "fixtures/cars-small.csv" file of the project is in the space "BDDEdgeSyncSpace{time}" as "syncedcars{time}.csv"
     And the browse panel is open
     And Spaces tree node inside browse tree is expanded

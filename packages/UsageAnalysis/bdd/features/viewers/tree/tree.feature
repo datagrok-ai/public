@@ -11,9 +11,10 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
   Translated from the TestTrack cases Charts/tree and Charts/charts-ui (branch clicks with Shift). The
   hierarchy is checked in the order CONTROL, SEX, RACE; the dialog keeps the check order, so no row
   is dragged.
-  A value typed in the context panel above a property's declared maximum (Font Size 31, Initial
-  Tree Depth 6) should not be taken; today it is written into the property although the input
-  marks it invalid (core#1200, known failures).
+
+  Edge cases: a value typed in the context panel above a property's declared maximum (Font Size 31,
+  Initial Tree Depth 6) should not be taken; today it is written into the property although the input
+  marks it invalid (core#1200, known failures, the last scenario outline).
 
   Background:
     Given user is logged in
@@ -180,20 +181,6 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
     Then no rows should be selected
     And no errors should have been logged
 
-  @realizes:core#1200
-  Scenario Outline: <caption> <typed> typed in the context panel above its declared maximum is not taken (core#1200)
-    When user clicks on settings icon of tree viewer
-    Then context panel should be visible
-    Given "Style" category in context panel is expanded
-    When user enters "<typed>" into "<caption>" property in context panel
-    Then "<caption>" property of tree viewer should be "<kept>"
-
-    @known-failure:189 @realizes:core#1200
-    Examples: The value is written into the property although the input marks it invalid
-      | caption            | typed | kept |
-      | Initial Tree Depth | 6     | 3    |
-      | Font Size          | 31    | 12   |
-
   Scenario: Settings survive Clone View and a project save and reopen (GROK-18322, GROK-18265, GROK-18324)
     Given no project named "TreeRoundTrip{time}" is on the server
     And "Style" category in context panel is expanded
@@ -247,3 +234,17 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
       | Orient      | TB                 |
       | On Click    | Filter             |
     And no errors should have been logged
+
+  @edge-cases @realizes:core#1200
+  Scenario Outline: <caption> <typed> typed in the context panel above its declared maximum is not taken (core#1200)
+    When user clicks on settings icon of tree viewer
+    Then context panel should be visible
+    Given "Style" category in context panel is expanded
+    When user enters "<typed>" into "<caption>" property in context panel
+    Then "<caption>" property of tree viewer should be "<kept>"
+
+    @known-failure:244 @realizes:core#1200
+    Examples: The value is written into the property although the input marks it invalid
+      | caption            | typed | kept |
+      | Initial Tree Depth | 6     | 3    |
+      | Font Size          | 31    | 12   |

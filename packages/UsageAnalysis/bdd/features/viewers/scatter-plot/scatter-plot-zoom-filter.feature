@@ -13,10 +13,11 @@ Feature: Scatter plot zoom and filter synchronization
   filter is read after the zoom. Closed issues last: a window set with the range slider under
   Zoom and Filter = no action survives the filter panel opening, filtering and its reset
   (public#552); a plot shrunk to 40 by 40 adds no zoom filter of its own (public#1348); a
-  logarithmic axis on an all-empty column under filter by zoom filters no row (public#1744). A plot
-  that filters the table by its zoom gives the rows back when it is closed: a filter that outlives
-  its viewer is a defect (core#233). One journey on demog-1000, X = WEIGHT, Y = HEIGHT (872 of the
+  logarithmic axis on an all-empty column under filter by zoom filters no row (public#1744). One journey on demog-1000, X = WEIGHT, Y = HEIGHT (872 of the
   1000 rows have a HEIGHT); every scenario puts back what it changed.
+
+  Edge cases: a plot that filters the table by its zoom gives the rows back when it is closed: a
+  filter that outlives its viewer is a defect (core#233); the last scenario, as it closes the plot.
 
   Background:
     Given user is logged in
@@ -206,6 +207,10 @@ Feature: Scatter plot zoom and filter synchronization
     Then all rows should pass the filter
     And scatter plot viewer should show 872 rows
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: A plot that filters the table by its zoom gives the rows back when it is closed
+    Then "Zoom and Filter" property of scatter plot viewer should be "filter by zoom"
     When user scrolls the mouse wheel up over the "view" area of scatter plot viewer
     Then fewer than 1000 rows should pass the filter
     When user clicks on close icon of scatter plot viewer

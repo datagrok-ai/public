@@ -20,9 +20,14 @@ Feature: Expression filter over All Columns
   "equals" with a number reaches the numeric columns in All Columns mode, and 0.47 with "=" keeps
   the two rows that show it, in All Columns mode and on Score itself: the card compares a typed
   number in the 32-bit form Score stores (GROK-20977).
-  The last scenario is a known failure: with Mass removed under the "> 12" rule, the rule should be
-  worked out again over the columns left, so Delta, which passed through Mass alone, drops out and 3
-  rows pass; today the table stays filtered as it was (core#1174).
+
+  Edge cases: with Mass removed under the "> 12" rule, the rule should be worked out again over the
+  columns left, so Delta, which passed through Mass alone, drops out and 3 rows pass; today the table
+  stays filtered as it was (core#1174). The same holds for a Numeric Columns rule, on demog-1000 of
+  its own: "> 100" over the numeric columns keeps 884 rows, HEIGHT or WEIGHT above 100, and should
+  keep 131 with HEIGHT gone (core#1174). A rule on one column, HEIGHT is null (128 rows on
+  demog-1000), should release its rows once HEIGHT is removed (core#1174). All three are known
+  failures, the last scenarios.
 
   Background:
     Given user is logged in
@@ -159,7 +164,7 @@ Feature: Expression filter over All Columns
       | All Columns | *  = 0.47       |
       | Score       | ${Score} = 0.47 |
 
-  @known-failure:170 @realizes:core#1174
+  @edge-cases @known-failure:175 @realizes:core#1174
   Scenario: A comparison is worked out again over the numeric columns left when one is removed
     When user selects "All Columns" in Column input in "Expression" filter card
     And user selects ">" in Operation input in "Expression" filter card
@@ -168,3 +173,28 @@ Feature: Expression filter over All Columns
     Then 4 rows should pass the filter
     When user picks "Remove" from the context menu of the "header Mass" area of grid
     Then 3 rows should pass the filter
+
+  @edge-cases @known-failure:188 @realizes:core#1174
+  Scenario: Removing a column under a Numeric Columns rule works the rule out again over the rest
+    Given user opens demog-1000 dataset
+    And user opens an empty filter panel
+    When user picks "Add Filter | Expression" from the filter panel menu
+    And user selects "Numeric Columns" in Column input in "Expression" filter card
+    And user selects ">" in Operation input in "Expression" filter card
+    And user enters "100" into Value input in "Expression" filter card
+    And user clicks on "Add filter" button in "Expression" filter card
+    Then 884 rows should pass the filter
+    When user picks "Remove" from the context menu of the "header HEIGHT" area of grid
+    Then 131 rows should pass the filter
+
+  @edge-cases @known-failure:200 @realizes:core#1174
+  Scenario: Removing the column of a filtering Expression card rule releases its rows
+    Given user opens demog-1000 dataset
+    And user opens an empty filter panel
+    When user picks "Add Filter | Expression" from the filter panel menu
+    And user selects "HEIGHT" in Column input in "Expression" filter card
+    And user selects "is null" in Operation input in "Expression" filter card
+    And user clicks on "Add filter" button in "Expression" filter card
+    Then 128 rows should pass the filter
+    When user picks "Remove" from the context menu of the "header HEIGHT" area of grid
+    Then all rows should pass the filter

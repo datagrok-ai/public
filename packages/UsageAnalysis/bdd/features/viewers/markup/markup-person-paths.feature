@@ -6,12 +6,13 @@ Feature: Markup — the keyboard in the grid moves it, Show Title hides its titl
   `markup-row-binding.feature` moves the current row through the API; here the row moves because a
   grid cell was clicked and ArrowDown pressed. demog-1000: row 1 is AGE 26, SEX F, WEIGHT 74.10;
   row 2 is AGE 30, SEX F.
-  New text typed into Edit content and then dismissed with CANCEL or Escape leaves the content as
-  it was.
 
   The Edit dialog's OK is clicked here: `markup-chrome.feature` dismisses the dialog with Escape
   because on a stand with no internet the help pane's preloader covered OK; if the preloader comes
   back on a stand, this scenario is where it shows.
+
+  Edge cases: new text typed into Edit content and then dismissed with CANCEL or Escape leaves the
+  content as it was.
 
   Background:
     Given user is logged in
@@ -46,27 +47,34 @@ Feature: Markup — the keyboard in the grid moves it, Show Title hides its titl
       | Show Title | false |
     Then no errors should have been logged
 
-  Scenario: Edit content... dismissed with CANCEL or Escape keeps the content, and OK puts the new content on screen
+  Scenario: Edit content... and OK put the new content on screen
     Given user makes row 1 current
     Then the "text" reading of markup viewer should be "Age: 26 Sex: F"
     When user picks "Edit content..." from the context menu of markup viewer
     Then Edit dialog should be visible
     When user enters "Weight: ${WEIGHT}" into input in Edit dialog
+    And user clicks on "OK" button in Edit dialog
+    Then Edit dialog should be absent
+    And "content" property of markup viewer should be "Weight: ${WEIGHT}"
+    And the "text" reading of markup viewer should be "Weight: 74.10"
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: New text in Edit content... dismissed with CANCEL or Escape leaves the content as it was
+    Given user makes row 1 current
+    When user sets "content" property of markup viewer to "Weight: ${WEIGHT}"
+    Then the "text" reading of markup viewer should be "Weight: 74.10"
+    When user picks "Edit content..." from the context menu of markup viewer
+    Then Edit dialog should be visible
+    When user enters "Age: ${AGE}" into input in Edit dialog
     And user clicks on "CANCEL" button in Edit dialog
     Then Edit dialog should be absent
-    And "content" property of markup viewer should be "Age: ${AGE} Sex: ${SEX}"
-    And the "text" reading of markup viewer should be "Age: 26 Sex: F"
+    And "content" property of markup viewer should be "Weight: ${WEIGHT}"
+    And the "text" reading of markup viewer should be "Weight: 74.10"
     When user picks "Edit content..." from the context menu of markup viewer
     Then Edit dialog should be visible
-    When user enters "Weight: ${WEIGHT}" into input in Edit dialog
+    When user enters "Age: ${AGE}" into input in Edit dialog
     And user presses Escape
-    Then Edit dialog should be absent
-    And "content" property of markup viewer should be "Age: ${AGE} Sex: ${SEX}"
-    And the "text" reading of markup viewer should be "Age: 26 Sex: F"
-    When user picks "Edit content..." from the context menu of markup viewer
-    Then Edit dialog should be visible
-    When user enters "Weight: ${WEIGHT}" into input in Edit dialog
-    And user clicks on "OK" button in Edit dialog
     Then Edit dialog should be absent
     And "content" property of markup viewer should be "Weight: ${WEIGHT}"
     And the "text" reading of markup viewer should be "Weight: 74.10"

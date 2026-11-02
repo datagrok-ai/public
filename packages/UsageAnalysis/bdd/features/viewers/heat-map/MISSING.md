@@ -81,7 +81,7 @@ slider handles, a Shift-drag selection and Escape, the Table property).
 
 ## Edge cases
 
-The edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today; the claimed ones are steps of `heat-map-navigation.feature` and `heat-map-columns-and-sorting.feature`, and the core#1202 known failure is the last scenario of `heat-map-layout.feature`. No library, binding or code change was made for them.
+The edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today; the claimed ones are `@edge-cases` scenarios of their own, after the master scenarios of `heat-map-navigation.feature`, and the core#1202 known failure is the last scenario of `heat-map.feature`. No library, binding or code change was made for them.
 
 ### Still open
 
@@ -90,12 +90,10 @@ The edge cases of this viewer that the features could not state with the current
 1. Alt-drag zoom on a sorted map (TestTrack `Heatmap/heatmap-ui.md`: "view zooms into that area"): the zoom passes table row indexes to the grid-row scroll (`grid_core.dart`), so on a map sorted by AGE the window may land elsewhere. Needs a reading of the first and last grid rows in the vertical window (`first row shown`, `last row shown`) to claim that the zoomed window starts at the sorted top rows.
 2. Sort > Custom on a categorical column with the empty value moved to the top, then Ascending / Descending (heatmap-ui.md, "Custom sorting on categorical column"): needs steps for the custom sort dialog's order list (drag an item to the top).
 
-3. Max Heatmap Columns −1 typed in the context panel is not taken (the out-of-bounds rule, `../MISSING.md`). The heat map is a grid: its check needs the grid's settings opened (`user clicks on settings icon of heat map viewer` is to be checked) and the property's declared minimum confirmed.
-
 **Decided**
 
 1. An Alt-click without moving zooms the map to one row and an Alt-drag to the rows it spans (no row is selected): claimed green in `heat-map-navigation.feature` on `y scroll span`.
-2. Max Heatmap Columns counts only the visible columns, so a column hidden in the Columns dialog stays hidden when the cap is raised (core#1202, a defect): written as a known failure, the last scenario of `heat-map-layout.feature` (today raising the cap from 5 to 6 shows the hidden AGE again).
+2. Max Heatmap Columns counts only the visible columns, so a column hidden in the Columns dialog stays hidden when the cap is raised (core#1202, a defect): written as a known failure, the last scenario of `heat-map.feature` (today raising the cap from 5 to 6 shows the hidden AGE again).
 
 **API or Dart tests to write**
 

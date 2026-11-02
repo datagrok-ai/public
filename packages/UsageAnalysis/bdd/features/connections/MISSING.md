@@ -1,6 +1,6 @@
 # Connections edge cases — what the features cannot say yet
 
-What the connection guards (folded into `connections-add`, `connections-edit` and `connections-delete`) leave out,
+What the connection guards (@edge-cases scenarios of `connections-add`, `connections-edit` and `connections-delete`) leave out,
 written for them: no library, binding or code change was made.
 Each item names the case, why it is not a scenario yet, and what would make it one.
 

@@ -10,34 +10,32 @@ Feature: Running a query with parameters
   That a choice returns only its country's rows is the DBTests package's claim (src/expected-rows-test.ts,
   Queries: expected rows / PostgresByStringChoices filters by the chosen country).
 
-  The run dialog's guards are claimed on a query of the feature's own on System:Datagrok
-  (entity_types), saved through the API with the run's time in its name and deleted when the feature
-  ends, opened through Run in the Browse tree: a value outside a parameter's min-max, text in an
-  integer and a value its own `validator` rejects disable OK, and a valid value enables it again; a
-  choice parameter offers its choices only; a nullable parameter left empty keeps OK enabled and the
-  query runs. An empty value is valid by default, for a string as for an integer, unless the
-  parameter says otherwise (core#229): today an emptied string disables OK while an emptied integer
-  does not, a known failure in a scenario of its own.
-
-  A parameterized query typed in the editor and not saved (on System:Datagrok, named with the run's
-  time and never saved) asks for its parameters on the play icon, but Toolbox > Run query... skips
-  the dialog and fails with "column does not exist" (core#641, open: a known failure in a scenario
-  of its own).
-
-  Apart from these two queries of the feature's own, the queries are the stand's own, and nothing is
-  saved through the UI.
+  Read-only: the queries are the stand's own, nothing is saved.
 
   Not translated, and why: the case's CHEMBL queries — "preview and run every CHEMBL query" and the
   FRAC search it then works with. They are the Chembl package's queries, which differ between
   stands, and several are substructure searches the database computes; the parameter dialog and the
   Source pane they would exercise are the ones claimed here on NorthwindTest.
 
+  Edge cases: the run dialog's guards are claimed on a query of the feature's own on System:Datagrok
+  (entity_types), saved through the API with the run's time in its name and deleted when the feature
+  ends, opened through Run in the Browse tree: a value outside a parameter's min-max, text in an
+  integer and a value its own `validator` rejects disable OK, and a valid value enables it again; a
+  choice parameter offers its choices only; a nullable parameter left empty keeps OK enabled and the
+  query runs. An empty value is valid by default, for a string as for an integer, unless the parameter
+  says otherwise (core#229): today an emptied string disables OK while an emptied integer does not, a
+  known failure in a scenario of its own. A parameterized query typed in the editor and not saved (on
+  System:Datagrok, named with the run's time and never saved) asks for its parameters on the play icon,
+  but Toolbox > Run query... skips the dialog and fails with "column does not exist" (core#641, open: a
+  known failure in a scenario of its own). Apart from these two queries of the feature's own, the
+  queries are the stand's own, and nothing is saved through the UI.
+
   Background:
     Given user is logged in
     And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
 
-  Scenario: The Orders query asks for its eight typed parameters, and a choice parameter offers its choices only
+  Scenario: The Orders query asks for its eight typed parameters
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
@@ -56,26 +54,8 @@ Feature: Running a query with parameters
     Then the "Orders" dialog should close
     And no errors should have been logged
     And no error or warning balloon should have been shown
-    Given a query "BDDQParamEdge{time}" on "System:Datagrok" is on the server:
-      """
-      --input: string typeName = "Project"
-      --input: int lim = 5 {min: 1; max: 10}
-      --input: string kind = "a" {choices: ["a", "b"]}
-      --input: string code = "1234" {validator: startsWith(value, "12")}
-      --input: string note = "x" {nullable: true}
-      select name from entity_types where name = @typeName limit @lim
-      """
-    And Databases---Postgres---Datagrok tree node inside browse tree is expanded
-    When user picks "Run" from the context menu of Databases---Postgres---Datagrok---BDDQParamEdge{time} tree node inside browse tree
-    Then "BDDQParamEdge{time}" dialog should be visible
-    And OK button in "BDDQParamEdge{time}" dialog should be enabled
-    Then Kind input in "BDDQParamEdge{time}" dialog should offer the choice "b"
-    And Kind input in "BDDQParamEdge{time}" dialog should not offer the choice "c"
-    When user clicks on CANCEL button in "BDDQParamEdge{time}" dialog
-    Then the "BDDQParamEdge{time}" dialog should close
-    And no errors should have been logged
 
-  Scenario: A string choice runs the query, REFRESH runs it again with another, and a nullable parameter left empty runs it
+  Scenario: A string choice runs the query, and REFRESH runs it again with another
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
@@ -91,8 +71,10 @@ Feature: Running a query with parameters
     Then the table should have 122 rows
     And no errors should have been logged
     And no error or warning balloon should have been shown
-    Given the browse panel is open
-    And a query "BDDQParamEdge{time}" on "System:Datagrok" is on the server:
+
+  @edge-cases
+  Scenario: A choice parameter offers its choices only
+    Given a query "BDDQParamEdge{time}" on "System:Datagrok" is on the server:
       """
       --input: string typeName = "Project"
       --input: int lim = 5 {min: 1; max: 10}
@@ -101,6 +83,31 @@ Feature: Running a query with parameters
       --input: string note = "x" {nullable: true}
       select name from entity_types where name = @typeName limit @lim
       """
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    And Databases---Postgres---Datagrok tree node inside browse tree is expanded
+    When user picks "Run" from the context menu of Databases---Postgres---Datagrok---BDDQParamEdge{time} tree node inside browse tree
+    Then "BDDQParamEdge{time}" dialog should be visible
+    And OK button in "BDDQParamEdge{time}" dialog should be enabled
+    And Kind input in "BDDQParamEdge{time}" dialog should offer the choice "b"
+    And Kind input in "BDDQParamEdge{time}" dialog should not offer the choice "c"
+    When user clicks on CANCEL button in "BDDQParamEdge{time}" dialog
+    Then the "BDDQParamEdge{time}" dialog should close
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: A nullable parameter left empty keeps OK enabled, and the query runs
+    Given a query "BDDQParamEdge{time}" on "System:Datagrok" is on the server:
+      """
+      --input: string typeName = "Project"
+      --input: int lim = 5 {min: 1; max: 10}
+      --input: string kind = "a" {choices: ["a", "b"]}
+      --input: string code = "1234" {validator: startsWith(value, "12")}
+      --input: string note = "x" {nullable: true}
+      select name from entity_types where name = @typeName limit @lim
+      """
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---Datagrok tree node inside browse tree is expanded
     When user picks "Run" from the context menu of Databases---Postgres---Datagrok---BDDQParamEdge{time} tree node inside browse tree
     Then "BDDQParamEdge{time}" dialog should be visible
@@ -114,6 +121,7 @@ Feature: Running a query with parameters
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  @edge-cases
   Scenario Outline: <case> disables OK, and a valid value enables it again
     Given a query "BDDQParamEdge{time}" on "System:Datagrok" is on the server:
       """
@@ -145,7 +153,7 @@ Feature: Running a query with parameters
       | Text in an integer parameter            | Lim   | abc     | 3     |
       | A value its validator rejects           | Code  | 99      | 1299  |
 
-  @known-failure:171 @realizes:core#229
+  @edge-cases @known-failure:183 @realizes:core#229
   Scenario: An emptied integer and an emptied string both keep OK enabled
     core#229: an emptied string parameter disables OK, while an emptied integer keeps it enabled.
     Remove the tag when core#229 is fixed.
@@ -164,13 +172,17 @@ Feature: Running a query with parameters
     When user picks "Run" from the context menu of Databases---Postgres---Datagrok---BDDQParamEdge{time} tree node inside browse tree
     Then "BDDQParamEdge{time}" dialog should be visible
     And OK button in "BDDQParamEdge{time}" dialog should be enabled
+    When user enters "11" into Lim input in "BDDQParamEdge{time}" dialog
+    Then OK button in "BDDQParamEdge{time}" dialog should be disabled
     When user clears Lim input in "BDDQParamEdge{time}" dialog
     Then OK button in "BDDQParamEdge{time}" dialog should be enabled
-    When user enters "5" into Lim input in "BDDQParamEdge{time}" dialog
-    And user clears "Type Name" input in "BDDQParamEdge{time}" dialog
+    When user enters "11" into Lim input in "BDDQParamEdge{time}" dialog
+    Then OK button in "BDDQParamEdge{time}" dialog should be disabled
+    When user clears "Type Name" input in "BDDQParamEdge{time}" dialog
+    And user enters "5" into Lim input in "BDDQParamEdge{time}" dialog
     Then OK button in "BDDQParamEdge{time}" dialog should be enabled
 
-  @known-failure:194 @realizes:core#641
+  @edge-cases @known-failure:206 @realizes:core#641
   Scenario: Run query... on an unsaved parameterized query opens its parameter dialog
     core#641: Run query... on a parameterized query that is not saved runs it without the dialog, and
     the database answers "column does not exist". Remove the tag when core#641 is fixed and the

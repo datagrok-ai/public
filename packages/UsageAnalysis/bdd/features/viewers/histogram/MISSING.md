@@ -47,7 +47,7 @@ slider against the Bins property (github-2296) in `histogram.feature`, and exact
 
 ## Edge cases
 
-The edge-case round of 2026-10-26 (localhost). Its checks are now steps of the journeys: `histogram-range-filter.feature`. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+The edge-case round of 2026-10-26 (localhost). Its checks are now `@edge-cases` scenarios of their own, after the master scenarios of `histogram-range-filter.feature` and `histogram.feature`. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 
@@ -56,14 +56,17 @@ The edge-case round of 2026-10-26 (localhost). Its checks are now steps of the j
    `error` reading stays empty (measured on localhost; the viewer reports only max below min). No step
    reads the inputs' invalid state.
 2. **Decided**: Bins typed as 201 is not taken (the out-of-bounds rule): a known failure (core#1200)
-   in `histogram-range-filter.feature`, its last scenario.
+   in `histogram.feature`, its last scenario.
 3. **Decided (2026-10-30)**, claimed in `histogram-range-filter.feature`: `abc` in a range input is not
    taken and the filter stays; switching Value while a range filters releases the range. Bin labels
    dropped above 100 bins are right as they are (no scenario: no reading of the axis labels).
 4. **Not written yet**: the selectors hidden at 200 × 200 and shown at 201 × 201. The range checks
    for a date value column (`STARTED`, date inputs) are in `histogram-range-filter.feature`: a maximum
-   below the minimum is reported, a bound past the dates is clamped, a range normalized to the
-   filter logs no error with every row filtered out (green, 2026-10-29).
+   below the minimum is reported, a range normalized to the filter logs no error with every row
+   filtered out (green, 2026-10-29). Not claimed: a bound past the dates (1/1/1992 as the maximum,
+   the last STARTED is in November 1991). Clamped or taken, the filter keeps the same 483 rows and the input
+   shows the typed text; telling them apart needs the `range max` reading on a date column,
+   measured in a run.
 
 ### API or Dart tests to write
 

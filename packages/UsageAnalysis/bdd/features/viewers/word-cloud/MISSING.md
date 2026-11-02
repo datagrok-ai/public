@@ -18,7 +18,8 @@ None.
 3. **Empty strings** are counted as a word with no visible text (`word-cloud-viewer.ts:217-221`):
    right as it is (2026-10-30), API test 5.
 4. **Rotation Step 0 typed in the context panel** is taken, and the cloud still draws every word (public#4424, fixed; the render clamps the step to 1):
-   claimed in the rotation scenario of `word-cloud-appearance.feature`.
+   claimed in "Rotation Step 0 typed in the context panel still draws every word (public#4424)", the last
+   scenario of `word-cloud-appearance.feature`, under a rotation range of 0 to 90 so that the step is used.
 5. **Inverted ranges** (Min Text Size above Max Text Size, Min Rotation above Max Rotation): swapped.
    Steps requested: the cloud reports the font of its first laid-out word only (`font`), not the
    size of each word, so no row claims which word is drawn largest.

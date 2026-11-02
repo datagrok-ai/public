@@ -62,7 +62,7 @@ depend on the UI. Every case was reproduced on localhost, core master `d9ff84a96
 
 ## Edge cases — what the features cannot say yet
 
-What the Save dialog, data sync, gallery and URL parameter guards (folded into `projects-regressions-names`,
+What the Save dialog, data sync, gallery and URL parameter guards (@edge-cases scenarios of `projects-regressions-names`,
 `projects-ui-smoke`, `projects-data-sync`, `projects-regressions-shared-tag` and `projects-url-parameters`) leave out, written with no library, binding or code change.
 
 ### Still open

@@ -18,13 +18,14 @@ Feature: Filter panel entry points
   criterion, switched-off card and removed card alike. One journey on demog-1000 (RACE: Caucasian
   896, Black 27; DIS_POP RA 434; SEX F 553). TOKENS is a column the feature makes,
   "<SEX>;<DIS_POP>", to have one whose cells hold several values.
-  A card on a column that is removed goes with the column and releases its rows, a categorical card
-  (RACE on Asian, 15 rows) and a numeric one (AGE up to 40) alike (`filters_core.dart`
-  `onColumnsRemoved`).
   Not translated: the pin is proven by the grid's column order only (the grid reports no pinned
   columns); the unpinned header drag is in filter-panel-ladder.feature; the panel is first opened
   empty through its API; the GROK-12955 freeze is claimed only as "no errors" after the drags, the page staying responsive
   being what every later step already needs.
+
+  Edge cases: a card on a column that is removed goes with the column and releases its rows, a
+  categorical card (RACE on Asian, 15 rows) and a numeric one (AGE up to 40) alike
+  (`filters_core.dart` `onColumnsRemoved`); the last scenario, as it removes the two columns.
 
   Background:
     Given user is logged in
@@ -277,6 +278,10 @@ Feature: Filter panel entry points
     And the "cards" reading of filter panel should be "AGE, RACE"
     When user picks "Remove All" from the filter panel menu
     Then all rows should pass the filter
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: A card on a column that is removed goes with the column and releases its rows
     When user adds a card for "RACE" to the filter panel
     And user clicks on the "category Asian of RACE" area of filter panel
     Then 15 rows should pass the filter

@@ -1,4 +1,4 @@
-@journey @serial @spaces @realizes:views.space
+@journey @spaces @realizes:views.space
 Feature: Putting files into a space by dragging them
   A file dragged from the demo files onto a space's node in the Browse tree, and what the
   "Move entity" dialog does with it. Translated from
@@ -17,30 +17,21 @@ Feature: Putting files into a space by dragging them
   what the old spec's "add waitForTimeout(600) before clicking YES (let the dialog initialize)" was
   covering up.
 
-  A link follows its original: a project moved into one space, linked into a second and then moved
-  from the first into a third still shows its details when its link is clicked, with no error and no
-  refresh of the tree (core#382, claimed on a project: a file's Link is core#1042). A function of a
-  package (here a script of BiostructureViewer) can only be linked: dropped on a space it is linked at
-  once, with no "Move entity" dialog (`ProjectMeta.doDropEx`). A file linked from one space into
-  another is expected to show in the target space and the dialog to close; today the Link fails with
-  "FormatException: SyntaxError: Unexpected end of JSON input" and the dialog stays open (core#1042),
-  a known failure in the journey's last scenario, whose tag goes when core#1042 is fixed. These use
-  spaces, a file (the project's fixtures/cars-small.csv) and a project of their own, named with the
-  run's time and swept with what they hold when the feature starts and ends; the package script stays
-  where it is.
-
-  Serial: the package script is found by the Scripts view's search and the project by the Dashboards
-  search, both the account's own settings, and the feature drags onto the Spaces tree with the other
-  serial features of Spaces.
+  Edge cases: a link follows its original: a project moved into one space, linked into a second and
+  then moved from the first into a third still shows its details when its link is clicked, with no
+  error and no refresh of the tree (core#382, claimed on a project: a file's Link is core#1042). A file
+  linked from one space into another is expected to show in the target space and the dialog to close;
+  today the Link fails with "FormatException: SyntaxError: Unexpected end of JSON input" and the dialog
+  stays open (core#1042), a known failure whose tag goes when core#1042 is fixed; it is the last
+  scenario, since it leaves the dialog open. Each scenario uses spaces, a file (the project's
+  fixtures/cars-small.csv) and, for core#382, a project of its own, named with the run's time and
+  swept with what they hold when the feature starts and ends.
 
   Background:
     Given user is logged in
     And the browse panel is open
     And a space named "BDD-DnD" is on the server
     And a space named "BDD-DnD-Src" is on the server
-    And a space named "BDDEdgeSrc{time}" is on the server
-    And a space named "BDDEdgeDst{time}" is on the server
-    And the "fixtures/cars-small.csv" file of the project is in the space "BDDEdgeSrc{time}" as "edgecars{time}.csv"
     And Spaces tree node inside browse tree is expanded
 
   Scenario: The demo files
@@ -98,7 +89,7 @@ Feature: Putting files into a space by dragging them
     Then the "BDD-DnD-Src" view should be current
     And beer.csv link in gallery should be visible
 
-  Scenario: Moving takes the file out of the source space, and a linked project follows its original moved to a third space
+  Scenario: Moving takes the file out of the source space
     When user drags beer.csv link in gallery to Spaces---BDD-DnD tree node inside browse tree
     Then Move entity dialog should be visible
     And choice input in Move entity dialog should be visible
@@ -111,8 +102,21 @@ Feature: Putting files into a space by dragging them
     When user double-clicks on Spaces---BDD-DnD-Src tree node inside browse tree
     Then the "BDD-DnD-Src" view should be current
     And beer.csv link in gallery should be absent
-    Given no project named "BDDEdgeMoved{time}" is on the server
+
+  Scenario: The demo files kept their originals
+    When user clicks on "Files > Demo" tree node inside browse tree
+    Then the "Demo" view should be current
+    And demog.csv link in gallery should be visible
+    And TSLA.csv link in gallery should be visible
+    And beer.csv link in gallery should be visible
+
+  @edge-cases
+  Scenario: A linked project follows its original moved to a third space
+    Given a space named "BDDEdgeSrc{time}" is on the server
+    And a space named "BDDEdgeDst{time}" is on the server
     And a space named "BDDEdgeMoveTo{time}" is on the server
+    And the "fixtures/cars-small.csv" file of the project is in the space "BDDEdgeSrc{time}" as "edgecars{time}.csv"
+    And no project named "BDDEdgeMoved{time}" is on the server
     And user opens demog-1000 dataset
     When user saves the current view as project "BDDEdgeMoved{time}"
     And user closes all views
@@ -155,37 +159,19 @@ Feature: Putting files into a space by dragging them
     Then the context panel should show "BDDEdgeMoved{time}"
     And no errors should have been logged
     And no error or warning balloon should have been shown
-    Given Files tree node inside browse tree is expanded
 
-  Scenario: The demo files kept their originals, and a package script is linked with no dialog
-    When user clicks on "Files > Demo" tree node inside browse tree
-    Then the "Demo" view should be current
-    And demog.csv link in gallery should be visible
-    And TSLA.csv link in gallery should be visible
-    And beer.csv link in gallery should be visible
-    Given the "BiostructureViewer" package is installed
-    And Platform tree node inside browse tree is expanded
-    And Platform---Functions tree node inside browse tree is expanded
-    When user clicks on Platform---Functions---Scripts tree node inside browse tree
-    And user enters "Protein-Ligand" into gallery search
-    Then "Protein-Ligand Interaction Diagram" gallery card should be visible
-    When user drags "Protein-Ligand Interaction Diagram" gallery card to BDDEdgeDst{time} tree node inside browse tree
-    Then Move entity dialog should be absent
-    When user clears gallery search
-    And user double-clicks on BDDEdgeDst{time} tree node inside browse tree
-    Then the "BDDEdgeDst{time}" view should be current
-    And "Protein-Ligand Interaction Diagram" link in gallery should be visible
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-
-  @known-failure:192 @realizes:core#1042
+  @edge-cases @known-failure:178 @realizes:core#1042
   Scenario: A file linked from one space into another shows in the target space
     core#1042: the Link fails with "FormatException: SyntaxError: Unexpected end of JSON input" and the
     "Move entity" dialog stays open. Remove the tag when core#1042 is fixed.
-    When user double-clicks on BDDEdgeSrc{time} tree node inside browse tree
-    Then the "BDDEdgeSrc{time}" view should be current
-    And "edgecars{time}.csv" link in gallery should be visible
-    When user drags "edgecars{time}.csv" link in gallery to BDDEdgeDst{time} tree node inside browse tree
+    Given a space named "BDDEdgeFileSrc{time}" is on the server
+    And a space named "BDDEdgeFileDst{time}" is on the server
+    And the "fixtures/cars-small.csv" file of the project is in the space "BDDEdgeFileSrc{time}" as "edgelinkcars{time}.csv"
+    And Spaces tree node inside browse tree is expanded
+    When user double-clicks on BDDEdgeFileSrc{time} tree node inside browse tree
+    Then the "BDDEdgeFileSrc{time}" view should be current
+    And "edgelinkcars{time}.csv" link in gallery should be visible
+    When user drags "edgelinkcars{time}.csv" link in gallery to BDDEdgeFileDst{time} tree node inside browse tree
     Then Move entity dialog should be visible
     And choice input in Move entity dialog should have value "Link"
     When user clicks on YES button in Move entity dialog

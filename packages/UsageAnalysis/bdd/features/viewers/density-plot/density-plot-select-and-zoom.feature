@@ -10,8 +10,10 @@ Feature: Density plot selection, zoom and axis bounds
   Zoom and Reset View are read as the viewport, not as a direction of ink: the old spec asserted
   only that a reset moved the pixels *less far* from the baseline than the zoom had, which passes
   for any partial restoration.
-  With rectangular bins a change of Bins after a zoom bins the same rows while Bin To Range is off:
-  the column's range is binned unless Bin To Range is on (rows were dropped before core#1048).
+
+  Edge cases: with rectangular bins a change of Bins after a zoom bins the same rows while Bin To
+  Range is off: the column's range is binned unless Bin To Range is on (rows were dropped before
+  core#1048).
 
   Background:
     Given user is logged in
@@ -78,7 +80,6 @@ Feature: Density plot selection, zoom and axis bounds
     Then the "x axis span" reading of density plot viewer should be higher than before
     And no errors should have been logged
 
-  @realizes:core#1048
   Scenario: Bin To Range re-bins over the viewport rather than the column range
     When user drags a zoom box over the "view" area of density plot viewer
     And user remembers the "bins drawn" reading of density plot viewer
@@ -90,16 +91,6 @@ Feature: Density plot selection, zoom and axis bounds
     Then the "bin to range" reading of density plot viewer should be "false"
     And density plot viewer should have repainted
     And no errors should have been logged
-    When user sets "binShape" property of density plot viewer to "rectangle"
-    Then the "rows shown" reading of density plot viewer should be 1000
-    When user drags a zoom box over the "view" area of density plot viewer
-    And user sets "bins" property of density plot viewer to "30"
-    Then the "rows shown" reading of density plot viewer should be 1000
-    When user sets properties of density plot viewer:
-      | bins     | 50      |
-      | binShape | hexagon |
-    And user picks "Reset View" from the context menu of density plot viewer
-    Then no errors should have been logged
 
   Scenario: A logarithmic axis over a column with non-positive values shows the axis warning
     Given user adds a calculated column "BELOW_ZERO" with formula "${WEIGHT} - 200"
@@ -121,4 +112,20 @@ Feature: Density plot selection, zoom and axis bounds
     Then density plot viewer should have repainted
     And density plot viewer should show the remembered value range
     When user sets "invertYAxis" property of density plot viewer to "false"
+    Then no errors should have been logged
+
+  @edge-cases @realizes:core#1048
+  Scenario: With rectangular bins a change of Bins after a zoom bins the same rows while Bin To Range is off (core#1048)
+    When user sets "binShape" property of density plot viewer to "rectangle"
+    Then the "rows shown" reading of density plot viewer should be 1000
+    And the "bin to range" reading of density plot viewer should be "false"
+    When user drags a zoom box over the "view" area of density plot viewer
+    Then density plot viewer should show a narrower value range than before
+    When user sets "bins" property of density plot viewer to "30"
+    Then density plot viewer should have repainted
+    And the "rows shown" reading of density plot viewer should be 1000
+    When user sets properties of density plot viewer:
+      | bins     | 50      |
+      | binShape | hexagon |
+    And user picks "Reset View" from the context menu of density plot viewer
     Then no errors should have been logged

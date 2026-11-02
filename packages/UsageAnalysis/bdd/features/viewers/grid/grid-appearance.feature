@@ -19,6 +19,12 @@ Feature: Grid cell appearance
   fail - and the format shown in the HEIGHT column's panel - the tag is AGE's, and AGE's own Details
   show it.
 
+  Edge cases: each a known failure at the end. A malformed number format (0.0.0) should mark the
+  format field invalid and should not be taken, the old format staying (core#1198); Row Height typed
+  in the context panel as 0 or 501 should not be taken, since the property declares 1..500
+  (core#1200). The Row Height cases run before the malformed format: once it is taken, AGE draws
+  error cells and the grid's own status read throws, so no gesture on the grid can follow.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -157,3 +163,36 @@ Feature: Grid cell appearance
     When user removes the coloring of "SEVERITY" column
     Then the "color of cell 1 of SEVERITY" reading of grid should be "#ffa500"
     And no errors should have been logged
+
+  @edge-cases
+  Scenario Outline: Row Height typed in the context panel as <typed> is not taken
+    Given user sets "Row Height" property of grid to "28"
+    When user hovers over the "header AGE" area of grid
+    And user clicks on "Edit properties (F4)" icon in grid
+    Then context panel should be visible
+    Given "Rows" category in context panel is expanded
+    When user enters "<typed>" into "Row Height" property in context panel
+    Then "Row Height" property of grid should be "28"
+
+    @known-failure:175 @realizes:core#1200
+    Examples: The typed value is taken although the property declares 1..500
+      | typed |
+      | 0     |
+      | 501   |
+
+  @edge-cases @known-failure:188 @realizes:core#1198
+  Scenario: A malformed number format marks the format field invalid
+    When user picks "Format > Custom..." from the context menu of the "header AGE" area of grid
+    Then Format AGE dialog should be visible
+    When user enters "0.0.0" into Custom input in Format AGE dialog
+    Then Custom input in Format AGE dialog should be invalid
+
+  @edge-cases @known-failure:198 @realizes:core#1198
+  Scenario: A malformed number format is not taken and the old format stays
+    When user presses Escape
+    Then Format AGE dialog should be absent
+    When user picks "Format > Custom..." from the context menu of the "header AGE" area of grid
+    Then Format AGE dialog should be visible
+    When user enters "0.0.0" into Custom input in Format AGE dialog
+    And user clicks on OK button in Format AGE dialog
+    Then "AGE" column should have tag "format" equal to ""

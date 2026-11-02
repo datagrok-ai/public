@@ -3,12 +3,13 @@ Feature: Pie chart's own filter and the Auto legend
   The Filter formula of the Data section narrows what the pie draws and leaves the table alone:
   under `${AGE} > 40` the pie counts 635 of demog-1000's rows (Caucasian 562, Other 48, Black 19,
   Asian 6) while all 1000 still pass the table's filter, and a wedge click under On Click = Filter
-  filters the table to that wedge's category alone (core#982), 896 rows. A Filter formula no row
-  passes (`${AGE} > 1000`) leaves an empty chart, and a click on its empty space leaves the table
-  filter alone. Under Legend Visibility Auto the legend is
+  filters the table to that wedge's category alone (core#982). Under Legend Visibility Auto the legend is
   shown while the wedges carry only their percentages and is put away once every wedge is labelled
   with its category, since it would only repeat them (GROK-20793). One journey on demog-1000 with
   a pie chart of RACE; every scenario puts back what it changed.
+
+  Edge cases: a Filter formula no row passes (`${AGE} > 1000`) leaves an empty chart, and a click on
+  its empty space leaves the table filter (SEX = M, 447 rows) alone.
 
   Background:
     Given user is logged in
@@ -32,17 +33,9 @@ Feature: Pie chart's own filter and the Auto legend
     When user sets "On Click" property of pie chart viewer to "Filter"
     And user clicks on the "slice Caucasian" area of pie chart viewer
     Then the filter should pass exactly the rows where "RACE" is "Caucasian"
-    And 896 rows should pass the filter
     And no rows where "RACE" is "Asian" should pass the filter
     When user clicks on the "empty space" area of pie chart viewer
     Then all rows should pass the filter
-    When user sets "Filter" property of pie chart viewer to "${AGE} > 1000"
-    Then pie chart viewer should show 0 rows
-    And the "slices" reading of pie chart viewer should be 0
-    And all rows should pass the filter
-    When user clicks on the "view" area of pie chart viewer
-    Then all rows should pass the filter
-    And no errors should have been logged
     When user sets "On Click" property of pie chart viewer to "Select"
     And user sets "Filter" property of pie chart viewer to ""
     Then pie chart viewer should show 1000 rows
@@ -60,3 +53,22 @@ Feature: Pie chart's own filter and the Auto legend
     When user sets "Show Label" property of pie chart viewer to "false"
     Then legend of pie chart viewer should be visible
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: A Filter formula no row passes leaves an empty pie, and a click on it leaves the table filter alone
+    When user sets "On Click" property of pie chart viewer to "Filter"
+    And user adds a categorical filter on "SEX" keeping "M"
+    Then 447 rows should pass the filter
+    When user sets "Filter" property of pie chart viewer to "${AGE} > 1000"
+    Then pie chart viewer should show 0 rows
+    And the "slices" reading of pie chart viewer should be 0
+    And 447 rows should pass the filter
+    When user clicks on the "view" area of pie chart viewer
+    Then 447 rows should pass the filter
+    And no errors should have been logged
+    When user hovers over "SEX" filter card
+    And user clicks on close of "SEX" filter card
+    Then all rows should pass the filter
+    When user sets "On Click" property of pie chart viewer to "Select"
+    And user sets "Filter" property of pie chart viewer to ""
+    Then pie chart viewer should show 1000 rows

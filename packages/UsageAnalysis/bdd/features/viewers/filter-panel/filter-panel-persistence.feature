@@ -7,6 +7,10 @@ Feature: Filter panel persistence
   indicator, and Select all from it takes the categories back (public#377). One journey on demog-1000, where RACE is Caucasian in 896 rows and
   633 of those are aged 30 to 60.
 
+  Edge cases: a layout whose hierarchical card names a level column the table no longer has should
+  bring the card back without that level (core#1223: today the layout brings no card back; a known
+  failure, the last scenario).
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -73,3 +77,13 @@ Feature: Filter panel persistence
     And the "selected categories of RACE" reading of filter panel should be "Caucasian"
     And 896 rows should pass the filter
     And no errors should have been logged
+
+  @edge-cases @known-failure:89 @realizes:core#1223
+  Scenario: A layout naming a removed level column brings the hierarchical card back without that level
+    When user picks "Add Filter | Hierarchical" from the filter panel menu
+    And user configures the hierarchical filter with columns "SEX, RACE, SEVERITY"
+    Then "SEX / RACE / SEVERITY" filter card should be visible
+    When user saves the layout of the current table view
+    And user removes "RACE" column
+    And user loads the saved layout
+    Then "SEX / SEVERITY" filter card should be visible

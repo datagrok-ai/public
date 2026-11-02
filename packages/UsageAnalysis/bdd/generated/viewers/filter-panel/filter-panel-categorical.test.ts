@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/filter-panel/filter-panel-categorical.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.filters, public#3027, core#1134, core#479, public#1889]
+sub_features_covered: [viewers.filters, public#3027, core#479, public#1889, core#1134]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -32,7 +32,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Categorical filter card", () => {
   const session = feature(test, "features/viewers/filter-panel/filter-panel-categorical.feature", import.meta.url);
-  test("Categorical filter card", {tag: ["@journey", "@viewers", "@realizes:viewers.filters", "@realizes:public#3027", "@realizes:core#1134", "@realizes:core#479", "@realizes:public#1889"]}, async ({browser}) => {
+  test("Categorical filter card", {tag: ["@journey", "@viewers", "@realizes:viewers.filters", "@realizes:public#3027", "@realizes:core#479", "@realizes:public#1889", "@edge-cases", "@realizes:core#1134"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 15, page);
     await session.step(32, "Given user is logged in", () => loggedIn(page));
@@ -207,88 +207,87 @@ test.describe("Categorical filter card", () => {
       await session.step(203, "And all rows should pass the filter", () => filterPassesAll(page));
       await session.step(204, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("\"a(b\" typed into the in-card search finds the category with that literal text [typed=a(b]", async () => {
-      await session.step(208, "Given user opens a table \"special-categories\" with:", () => openTableOf(page, "special-categories", [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]), [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]);
-      await session.step(216, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
-      await session.step(217, "And user adds a card for \"Name\" to the filter panel", () => addCardFor(page, "Name"));
-      await session.step(218, "And user hovers over \"Name\" filter card", () => hoverOver(page, el("\"Name\" filter card")));
-      await session.step(219, "And user clicks on search icon of \"Name\" filter card", () => clickOn(page, el("search icon of \"Name\" filter card")));
-      await session.step(220, "And user types \"a(b\" into the search of the \"Name\" filter card", () => typeIntoCardSearch(page, "a(b", "Name"));
-      await session.step(221, "Then 1 row should pass the filter", () => filterPasses(page, 1));
-      await session.step(222, "And the filter should pass exactly the rows where \"Name\" is \"a(b\"", () => filterIsExactlyCategory(page, "Name", "a(b"));
-      await session.step(223, "When user closes the current view", () => closeCurrentView(page));
-      await session.step(224, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
-      await session.step(225, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(226, "And no errors should have been logged", () => noErrors(page));
-    });
-    await run.scenario("\"a.b\" typed into the in-card search finds the category with that literal text [typed=a.b]", async () => {
-      await session.step(208, "Given user opens a table \"special-categories\" with:", () => openTableOf(page, "special-categories", [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]), [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]);
-      await session.step(216, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
-      await session.step(217, "And user adds a card for \"Name\" to the filter panel", () => addCardFor(page, "Name"));
-      await session.step(218, "And user hovers over \"Name\" filter card", () => hoverOver(page, el("\"Name\" filter card")));
-      await session.step(219, "And user clicks on search icon of \"Name\" filter card", () => clickOn(page, el("search icon of \"Name\" filter card")));
-      await session.step(220, "And user types \"a.b\" into the search of the \"Name\" filter card", () => typeIntoCardSearch(page, "a.b", "Name"));
-      await session.step(221, "Then 1 row should pass the filter", () => filterPasses(page, 1));
-      await session.step(222, "And the filter should pass exactly the rows where \"Name\" is \"a.b\"", () => filterIsExactlyCategory(page, "Name", "a.b"));
-      await session.step(223, "When user closes the current view", () => closeCurrentView(page));
-      await session.step(224, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
-      await session.step(225, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(226, "And no errors should have been logged", () => noErrors(page));
-    });
-    await run.scenario("\"a+b\" typed into the in-card search finds the category with that literal text [typed=a+b]", async () => {
-      await session.step(208, "Given user opens a table \"special-categories\" with:", () => openTableOf(page, "special-categories", [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]), [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]);
-      await session.step(216, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
-      await session.step(217, "And user adds a card for \"Name\" to the filter panel", () => addCardFor(page, "Name"));
-      await session.step(218, "And user hovers over \"Name\" filter card", () => hoverOver(page, el("\"Name\" filter card")));
-      await session.step(219, "And user clicks on search icon of \"Name\" filter card", () => clickOn(page, el("search icon of \"Name\" filter card")));
-      await session.step(220, "And user types \"a+b\" into the search of the \"Name\" filter card", () => typeIntoCardSearch(page, "a+b", "Name"));
-      await session.step(221, "Then 1 row should pass the filter", () => filterPasses(page, 1));
-      await session.step(222, "And the filter should pass exactly the rows where \"Name\" is \"a+b\"", () => filterIsExactlyCategory(page, "Name", "a+b"));
-      await session.step(223, "When user closes the current view", () => closeCurrentView(page));
-      await session.step(224, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
-      await session.step(225, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(226, "And no errors should have been logged", () => noErrors(page));
-    });
-    await run.scenario("\"a[b\" typed into the in-card search finds the category with that literal text [typed=a[b]", async () => {
-      await session.step(208, "Given user opens a table \"special-categories\" with:", () => openTableOf(page, "special-categories", [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]), [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]);
-      await session.step(216, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
-      await session.step(217, "And user adds a card for \"Name\" to the filter panel", () => addCardFor(page, "Name"));
-      await session.step(218, "And user hovers over \"Name\" filter card", () => hoverOver(page, el("\"Name\" filter card")));
-      await session.step(219, "And user clicks on search icon of \"Name\" filter card", () => clickOn(page, el("search icon of \"Name\" filter card")));
-      await session.step(220, "And user types \"a[b\" into the search of the \"Name\" filter card", () => typeIntoCardSearch(page, "a[b", "Name"));
-      await session.step(221, "Then 1 row should pass the filter", () => filterPasses(page, 1));
-      await session.step(222, "And the filter should pass exactly the rows where \"Name\" is \"a[b\"", () => filterIsExactlyCategory(page, "Name", "a[b"));
-      await session.step(223, "When user closes the current view", () => closeCurrentView(page));
-      await session.step(224, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
-      await session.step(225, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(226, "And no errors should have been logged", () => noErrors(page));
-    });
     await run.scenario("A text column holding one value is listed as a row after the cards (core#479)", async () => {
-      await session.step(237, "When user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
-      await session.step(238, "And user adds a calculated column \"probe_class\" with formula '\"low\"'", () => addCalculated(page, "probe_class", "\"low\""));
-      await session.step(239, "And user drags the \"header probe_class\" area of grid onto the \"view\" area of filter panel", () => dragAreaOntoWidget(page, "header probe_class", el("grid"), "view", el("filter panel")));
-      await session.step(240, "Then the filter panel should have a filter on \"probe_class\" column", () => filterPanelHas(page, "probe_class"));
-      await session.step(241, "And filter panel should have a \"card probe_class\" area", () => hasArea(page, el("filter panel"), "card probe_class"));
-      await session.step(242, "And \"probe_class\" filter card should be hidden", () => shouldBe(page, el("\"probe_class\" filter card"), "hidden"));
-      await session.step(243, "And the \"card probe_class\" area of filter panel should lie below the \"card DIS_POP\" area", () => areaLies(page, "card probe_class", el("filter panel"), "below", "card DIS_POP"));
-      await session.step(244, "And all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(245, "When user removes \"probe_class\" column", () => removeColumn(page, "probe_class"));
-      await session.step(246, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(247, "And no errors should have been logged", () => noErrors(page));
+      await session.step(208, "When user adds a calculated column \"probe_class\" with formula '\"low\"'", () => addCalculated(page, "probe_class", "\"low\""));
+      await session.step(209, "And user drags the \"header probe_class\" area of grid onto the \"view\" area of filter panel", () => dragAreaOntoWidget(page, "header probe_class", el("grid"), "view", el("filter panel")));
+      await session.step(210, "Then the filter panel should have a filter on \"probe_class\" column", () => filterPanelHas(page, "probe_class"));
+      await session.step(211, "And filter panel should have a \"card probe_class\" area", () => hasArea(page, el("filter panel"), "card probe_class"));
+      await session.step(212, "And \"probe_class\" filter card should be hidden", () => shouldBe(page, el("\"probe_class\" filter card"), "hidden"));
+      await session.step(213, "And the \"card probe_class\" area of filter panel should lie below the \"card DIS_POP\" area", () => areaLies(page, "card probe_class", el("filter panel"), "below", "card DIS_POP"));
+      await session.step(214, "And all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(215, "When user removes \"probe_class\" column", () => removeColumn(page, "probe_class"));
+      await session.step(216, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(217, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The card's sort menu orders the categories by count, and the layout keeps the order (public#1889)", async () => {
-      await session.step(251, "Then the \"category RA of DIS_POP\" area of filter panel should lie below the \"category Psoriasis of DIS_POP\" area", () => areaLies(page, "category RA of DIS_POP", el("filter panel"), "below", "category Psoriasis of DIS_POP"));
-      await session.step(252, "When user hovers over \"DIS_POP\" filter card", () => hoverOver(page, el("\"DIS_POP\" filter card")));
-      await session.step(253, "And user clicks on \"sort-amount-down\" icon in \"DIS_POP\" filter card", () => clickOn(page, el("\"sort-amount-down\" icon in \"DIS_POP\" filter card")));
-      await session.step(254, "And user picks \"Count (high to low)\" from the open menu", () => pickFromOpenMenu(page, "Count (high to low)"));
-      await session.step(255, "Then the \"category RA of DIS_POP\" area of filter panel should lie above the \"category Psoriasis of DIS_POP\" area", () => areaLies(page, "category RA of DIS_POP", el("filter panel"), "above", "category Psoriasis of DIS_POP"));
-      await session.step(256, "When user saves the layout of the current table view to the server", () => saveLayoutToServer(page));
-      await session.step(257, "And user picks \"Remove All\" from the filter panel menu", () => pickPanelMenu(page, "Remove All"));
-      await session.step(258, "Then the filter panel should have 0 filters", () => filterPanelCount(page, 0));
-      await session.step(259, "When user loads the saved layout", () => loadLayout(page));
-      await session.step(260, "Then \"DIS_POP\" filter card should be visible", () => shouldBe(page, el("\"DIS_POP\" filter card"), "visible"));
-      await session.step(261, "And the \"category RA of DIS_POP\" area of filter panel should lie above the \"category Psoriasis of DIS_POP\" area", () => areaLies(page, "category RA of DIS_POP", el("filter panel"), "above", "category Psoriasis of DIS_POP"));
-      await session.step(262, "And no errors should have been logged", () => noErrors(page));
+      await session.step(221, "Then the \"category RA of DIS_POP\" area of filter panel should lie below the \"category Psoriasis of DIS_POP\" area", () => areaLies(page, "category RA of DIS_POP", el("filter panel"), "below", "category Psoriasis of DIS_POP"));
+      await session.step(222, "When user hovers over \"DIS_POP\" filter card", () => hoverOver(page, el("\"DIS_POP\" filter card")));
+      await session.step(223, "And user clicks on \"sort-amount-down\" icon in \"DIS_POP\" filter card", () => clickOn(page, el("\"sort-amount-down\" icon in \"DIS_POP\" filter card")));
+      await session.step(224, "And user picks \"Count (high to low)\" from the open menu", () => pickFromOpenMenu(page, "Count (high to low)"));
+      await session.step(225, "Then the \"category RA of DIS_POP\" area of filter panel should lie above the \"category Psoriasis of DIS_POP\" area", () => areaLies(page, "category RA of DIS_POP", el("filter panel"), "above", "category Psoriasis of DIS_POP"));
+      await session.step(226, "When user saves the layout of the current table view to the server", () => saveLayoutToServer(page));
+      await session.step(227, "And user picks \"Remove All\" from the filter panel menu", () => pickPanelMenu(page, "Remove All"));
+      await session.step(228, "Then the filter panel should have 0 filters", () => filterPanelCount(page, 0));
+      await session.step(229, "When user loads the saved layout", () => loadLayout(page));
+      await session.step(230, "Then \"DIS_POP\" filter card should be visible", () => shouldBe(page, el("\"DIS_POP\" filter card"), "visible"));
+      await session.step(231, "And the \"category RA of DIS_POP\" area of filter panel should lie above the \"category Psoriasis of DIS_POP\" area", () => areaLies(page, "category RA of DIS_POP", el("filter panel"), "above", "category Psoriasis of DIS_POP"));
+      await session.step(232, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("\"a(b\" typed into the in-card search finds the category with that literal text [typed=a(b]", async () => {
+      await session.step(236, "Given user opens a table \"special-categories\" with:", () => openTableOf(page, "special-categories", [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]), [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]);
+      await session.step(244, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
+      await session.step(245, "And user adds a card for \"Name\" to the filter panel", () => addCardFor(page, "Name"));
+      await session.step(246, "And user hovers over \"Name\" filter card", () => hoverOver(page, el("\"Name\" filter card")));
+      await session.step(247, "And user clicks on search icon of \"Name\" filter card", () => clickOn(page, el("search icon of \"Name\" filter card")));
+      await session.step(248, "And user types \"a(b\" into the search of the \"Name\" filter card", () => typeIntoCardSearch(page, "a(b", "Name"));
+      await session.step(249, "Then 1 row should pass the filter", () => filterPasses(page, 1));
+      await session.step(250, "And the filter should pass exactly the rows where \"Name\" is \"a(b\"", () => filterIsExactlyCategory(page, "Name", "a(b"));
+      await session.step(251, "When user closes the current view", () => closeCurrentView(page));
+      await session.step(252, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
+      await session.step(253, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(254, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("\"a.b\" typed into the in-card search finds the category with that literal text [typed=a.b]", async () => {
+      await session.step(236, "Given user opens a table \"special-categories\" with:", () => openTableOf(page, "special-categories", [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]), [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]);
+      await session.step(244, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
+      await session.step(245, "And user adds a card for \"Name\" to the filter panel", () => addCardFor(page, "Name"));
+      await session.step(246, "And user hovers over \"Name\" filter card", () => hoverOver(page, el("\"Name\" filter card")));
+      await session.step(247, "And user clicks on search icon of \"Name\" filter card", () => clickOn(page, el("search icon of \"Name\" filter card")));
+      await session.step(248, "And user types \"a.b\" into the search of the \"Name\" filter card", () => typeIntoCardSearch(page, "a.b", "Name"));
+      await session.step(249, "Then 1 row should pass the filter", () => filterPasses(page, 1));
+      await session.step(250, "And the filter should pass exactly the rows where \"Name\" is \"a.b\"", () => filterIsExactlyCategory(page, "Name", "a.b"));
+      await session.step(251, "When user closes the current view", () => closeCurrentView(page));
+      await session.step(252, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
+      await session.step(253, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(254, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("\"a+b\" typed into the in-card search finds the category with that literal text [typed=a+b]", async () => {
+      await session.step(236, "Given user opens a table \"special-categories\" with:", () => openTableOf(page, "special-categories", [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]), [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]);
+      await session.step(244, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
+      await session.step(245, "And user adds a card for \"Name\" to the filter panel", () => addCardFor(page, "Name"));
+      await session.step(246, "And user hovers over \"Name\" filter card", () => hoverOver(page, el("\"Name\" filter card")));
+      await session.step(247, "And user clicks on search icon of \"Name\" filter card", () => clickOn(page, el("search icon of \"Name\" filter card")));
+      await session.step(248, "And user types \"a+b\" into the search of the \"Name\" filter card", () => typeIntoCardSearch(page, "a+b", "Name"));
+      await session.step(249, "Then 1 row should pass the filter", () => filterPasses(page, 1));
+      await session.step(250, "And the filter should pass exactly the rows where \"Name\" is \"a+b\"", () => filterIsExactlyCategory(page, "Name", "a+b"));
+      await session.step(251, "When user closes the current view", () => closeCurrentView(page));
+      await session.step(252, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
+      await session.step(253, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(254, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("\"a[b\" typed into the in-card search finds the category with that literal text [typed=a[b]", async () => {
+      await session.step(236, "Given user opens a table \"special-categories\" with:", () => openTableOf(page, "special-categories", [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]), [["Name","Value"],["a(b","1"],["a.b","2"],["axb","3"],["a+b","4"],["aab","5"],["a[b","6"]]);
+      await session.step(244, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
+      await session.step(245, "And user adds a card for \"Name\" to the filter panel", () => addCardFor(page, "Name"));
+      await session.step(246, "And user hovers over \"Name\" filter card", () => hoverOver(page, el("\"Name\" filter card")));
+      await session.step(247, "And user clicks on search icon of \"Name\" filter card", () => clickOn(page, el("search icon of \"Name\" filter card")));
+      await session.step(248, "And user types \"a[b\" into the search of the \"Name\" filter card", () => typeIntoCardSearch(page, "a[b", "Name"));
+      await session.step(249, "Then 1 row should pass the filter", () => filterPasses(page, 1));
+      await session.step(250, "And the filter should pass exactly the rows where \"Name\" is \"a[b\"", () => filterIsExactlyCategory(page, "Name", "a[b"));
+      await session.step(251, "When user closes the current view", () => closeCurrentView(page));
+      await session.step(252, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
+      await session.step(253, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(254, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

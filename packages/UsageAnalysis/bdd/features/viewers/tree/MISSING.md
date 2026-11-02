@@ -3,7 +3,7 @@
 ## Edge cases
 
 The edge cases of the Tree (26 Oct 2026) that no scenario claims, and why. The claimed ones are
-steps of `tree-on-click-filter.feature` and `tree.feature`. Nothing here asks for a library,
+`@edge-cases` scenarios of their own, after the master scenarios of `tree-on-click-filter.feature` and `tree.feature`. Nothing here asks for a library,
 binding or code change.
 
 ### Still open

@@ -21,9 +21,6 @@ Feature: Calendar counting, chrome and tooltips
   header the year caption sits on), and the viewer's own Filter and Row Source, claimed by the
   counts they change. Step 3, the bold day number under the pointer, is not claimed: the calendar
   reports no reading for the hovered day.
-  Closing a calendar whose On Click = Filter click is filtering the table gives the rows back: a
-  filter that outlives its viewer is a defect. Today the calendar leaves the table filtered until
-  something else asks for a refilter (core#233).
 
   Background:
     Given user is logged in
@@ -157,13 +154,3 @@ Feature: Calendar counting, chrome and tooltips
     Then calendar viewer should be absent
     And the open tableview should have 0 calendar viewers
     And no errors should have been logged
-
-  @known-failure:169 @realizes:core#233
-  Scenario: Closing a calendar whose Filter click filters the table gives the rows back (core#233)
-    Given user adds a calendar viewer
-    When user sets "onClick" property of calendar viewer to "Filter"
-    And user clicks on the "month 1990-01" area of calendar viewer
-    Then 32 rows should pass the filter
-    When user clicks on close icon of calendar viewer
-    Then calendar viewer should be absent
-    And all rows should pass the filter

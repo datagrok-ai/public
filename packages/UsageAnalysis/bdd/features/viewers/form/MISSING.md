@@ -13,7 +13,7 @@ change was made.
 
 ## Edge cases (now in `form.feature`)
 
-Added in the edge-case round of 2026-10-26 (localhost); its scenarios are now steps of `form.feature`. Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+Added in the edge-case round of 2026-10-26 (localhost); its scenarios are now `@edge-cases` scenarios of their own, after the master scenarios of `form.feature`. Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 

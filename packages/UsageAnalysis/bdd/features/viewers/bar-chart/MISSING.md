@@ -34,15 +34,14 @@ and the Legend Position Bottom claim in `bar-chart.feature`.
 
 ## Edge cases
 
-The edge-case round of 2026-10-26 (localhost). Its checks are now steps of the journeys: `bar-chart.feature`, `bar-chart-tooltip.feature`, `bar-chart-stack-aggregation.feature` and `bar-chart-selection-overlays.feature`. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+The edge-case round of 2026-10-26 (localhost). Its checks are now `@edge-cases` scenarios of their own, after the master scenarios of `bar-chart.feature`, `bar-chart-tooltip.feature`, `bar-chart-interaction.feature`, `bar-chart-stack-aggregation.feature` and `bar-chart-selection-overlays.feature`. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 
 1. **Decided** (2026-10-28):
-   - The Stack column removed while the chart is stacked: stacking is dropped, with no error, and the
-     context panel shows Stack empty: right as it is (2026-10-30); the property keeps the name, as a
-     layout does. Closing the chart after a Filter click and the Split column removed under a Filter
-     click are steps of `bar-chart-tooltip.feature` and `bar-chart-selection-overlays.feature`.
+   - The Stack column removed while the chart is stacked: stacking is dropped, with no error: right as
+     it is (2026-10-30); the property keeps the name, as a layout does. Closing the chart after a Filter click and the Split column removed under a Filter
+     click are `@edge-cases` scenarios of `bar-chart-interaction.feature` and `bar-chart-selection-overlays.feature`.
 2. **Steps requested**: value axis Min typed above Max: the two are swapped, as in the box plot
    (decided 2026-10-28). The properties keep what was typed whether or not the chart swaps them, so
    the claim needs the range the value axis is drawn over: a `value axis min` / `value axis max`

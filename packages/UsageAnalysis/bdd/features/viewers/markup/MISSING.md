@@ -1,6 +1,6 @@
 # Markup edge cases — what the features cannot say yet
 
-Written for the markup edge cases, now steps of `markup-person-paths.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+Written for the markup edge cases, now an `@edge-cases` scenario of its own, after the master scenarios of `markup-person-paths.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
 
 ## Still open
 

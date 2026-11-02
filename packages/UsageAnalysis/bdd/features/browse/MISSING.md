@@ -1,6 +1,6 @@
 # Browse edge cases — what the features cannot say yet
 
-Written for the address, file-preview and gallery-search edge cases, now checks of `browse-routing`,
+Written for the address, file-preview and gallery-search edge cases, now @edge-cases scenarios of `browse-routing`,
 `browse-files` and `spaces/spaces-search`, with no library, binding or code change. Each item below is a case those
 checks leave out because the expected
 behaviour has no source yet or the setup needs what the stand cannot give.

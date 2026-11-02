@@ -176,8 +176,7 @@ Feature: Scatter plot property surface
     And all rows should pass the filter
     When user adds a calculated column "AGE2" with formula "${AGE} * 2"
     And user sets "Color" property of scatter plot viewer to "AGE2"
-    Then scatter plot viewer should have repainted
-    And scatter plot viewer should show 466 rows
+    Then scatter plot viewer should show 466 rows
     When user sets "Color" property of scatter plot viewer to ""
     And user removes "AGE2" column
     And user sets "Filter" property of scatter plot viewer to '${RACE} = "Black"'

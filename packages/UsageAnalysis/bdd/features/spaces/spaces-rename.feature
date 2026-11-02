@@ -11,8 +11,10 @@ Feature: Renaming a space
   worth anything once the parent is expanded — every claim about a child here is preceded by that
   gesture and paired with a node that must still be there.
 
-  The dialog refuses a name with no letter in it, an emptied one included (`DbEntityMeta.getRenameDialog`),
-  as the Create Space dialog does (spaces-create): OK is disabled until a name is typed again.
+  Edge cases: the dialog refuses an emptied name (`DbEntityMeta.getRenameDialog`), as the Create
+  Space dialog does (spaces-create): the Name box is marked invalid and OK is disabled
+  until a name is typed again. It is claimed on a space of its own, named with the run's time and
+  swept when the feature starts and ends.
 
   Background:
     Given user is logged in
@@ -20,21 +22,12 @@ Feature: Renaming a space
     And Spaces tree node inside browse tree is expanded
     And no space named "BDD-Ren, BDD-Ren-New, BDD-Ren-Parent, BDD-Ren-Child, BDD-Ren-ChildNew" is on the server
 
-  Scenario: The Rename dialog opens on the current name, and an emptied name disables OK
+  Scenario: The Rename dialog opens on the current name
     Given a space named "BDD-Ren" is on the server
     And Spaces tree node inside browse tree is expanded
     When user picks "Rename..." from the context menu of Spaces---BDD-Ren tree node inside browse tree
     Then Rename project dialog should be visible
     And Name input in Rename project dialog should have value "BDD-Ren"
-    And OK button in Rename project dialog should be enabled
-    When user clears Name input in Rename project dialog
-    Then Name input in Rename project dialog should be invalid
-    And OK button in Rename project dialog should be disabled
-    When user types "x" into Name input in Rename project dialog
-    Then OK button in Rename project dialog should be enabled
-    And no errors should have been logged
-    When user enters "BDD-Ren" into Name input in Rename project dialog
-    Then Name input in Rename project dialog should have value "BDD-Ren"
 
   Scenario: Cancelling the rename keeps the old name
     When user enters "BDD-Ren-New" into Name input in Rename project dialog
@@ -69,3 +62,21 @@ Feature: Renaming a space
     When user expands Spaces---BDD-Ren-Parent tree node inside browse tree
     Then BDD-Ren-ChildNew tree node inside browse tree should be visible
     And BDD-Ren-Child tree node inside browse tree should be absent
+
+  @edge-cases
+  Scenario: An emptied name disables OK until a name is typed again
+    Given a space named "BDDEdgeRen{time}" is on the server
+    And Spaces tree node inside browse tree is expanded
+    When user picks "Rename..." from the context menu of Spaces---BDDEdgeRen{time} tree node inside browse tree
+    Then Rename project dialog should be visible
+    And Name input in Rename project dialog should have value "BDDEdgeRen{time}"
+    And OK button in Rename project dialog should be enabled
+    When user clears Name input in Rename project dialog
+    Then Name input in Rename project dialog should be invalid
+    And OK button in Rename project dialog should be disabled
+    When user types "x" into Name input in Rename project dialog
+    Then OK button in Rename project dialog should be enabled
+    And no errors should have been logged
+    When user clicks on CANCEL button in Rename project dialog
+    Then Rename project dialog should be hidden
+    And 1 space named "BDDEdgeRen{time}" should be on the server

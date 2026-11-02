@@ -1,20 +1,17 @@
 @journey @serial @realizes:sharing.share-dialog
 Feature: The Share dialog and the Sharing pane
   What a user sees when about to share an entity: the Sharing pane of the context panel, the Share
-  dialog it opens, and the Resulting permissions dialog. One share is made here, to be removed in the
-  dialog and cancelled; the share itself and what the other user then gets are sharing-recipient.
-  Translated from the TestTrack case Sharing/sharing-dialog.
+  dialog it opens, and the Resulting permissions dialog. Nothing is shared here; the share itself
+  and what the other user then gets are sharing-recipient. Translated from the TestTrack case
+  Sharing/sharing-dialog.
 
   The entity is a query of this feature's own, ShareDialog1 on System:Datagrok, made through the API
   and deleted when the feature starts and ends; it is found in Browse > Platform > Functions >
-  Queries, whose search the feature clears at the end. A second query, ShareDialog2, is there mostly to
+  Queries, whose search the feature clears at the end. A second query, ShareDialog2, is there only to
   be made current in between: the context panel rebuilds the Sharing pane only when the current
   object changes, so each scenario that cancels makes ShareDialog2 current and then ShareDialog1
-  again before it reads the pane. The second account is the library's sharing user. Every dialog is
-  cancelled but one: ShareDialog2 is shared with the sharing user, with Send notifications off, and
-  that grant removed in the dialog and then cancelled stays. The grant goes with the query.
-
-  OK with no recipient accepted (core#980) is in `sharing-table.feature`.
+  again before it reads the pane. The second account is the library's sharing user. Nothing is
+  granted: every dialog here is cancelled.
 
   Send notifications is checked on its own only while the account setting
   sendNotificationOnShareCheckbox is on (permissions_browser.dart takes the default from it; unchecking
@@ -28,11 +25,15 @@ Feature: The Share dialog and the Sharing pane
   Serial: the Queries view's search text is the account's own setting, shared with every feature
   that searches it.
 
+  Edge cases: one share is made, to be removed in the dialog and cancelled: ShareDialog2 is shared with
+  the sharing user, with Send notifications off, and that grant, removed in the dialog and then
+  cancelled, stays. The grant goes with the query. OK with no recipient accepted (core#980) is in
+  `sharing-table.feature`.
+
   Background:
     Given user is logged in
     And a query "ShareDialog1" on "System:Datagrok" reads "select 1 as x"
     And a query "ShareDialog2" on "System:Datagrok" reads "select 2 as y"
-    And the sharing user has no notifications, now and when the feature ends
     And the context panel is open
     And the browse panel is open
     And Platform tree node inside browse tree is expanded
@@ -133,7 +134,7 @@ Feature: The Share dialog and the Sharing pane
     Then the "Share ShareDialog1" dialog should close
     And no errors should have been logged
 
-  Scenario: Resulting permissions shows what a user gets, and a grant removed in the dialog and then cancelled stays
+  Scenario: Resulting permissions shows what a user gets
     When user clicks on "ShareDialog1" gallery card
     Then the context panel should show "ShareDialog1"
     And the sharing pane should not list the sharing user
@@ -147,6 +148,16 @@ Feature: The Share dialog and the Sharing pane
     Then "Resulting permissions" dialog should contain text "No access"
     When user clicks on CANCEL button in "Resulting permissions" dialog
     Then the "Resulting permissions" dialog should close
+    When user clears gallery search
+    Then gallery search should have value ""
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  @edge-cases
+  Scenario: A grant removed in the Share dialog and then cancelled stays
+    Given the sharing user has no notifications, now and when the feature ends
+    When user enters "ShareDialog" into gallery search
+    Then "ShareDialog2" gallery card should be visible
     When user picks "Share..." from the context menu of "ShareDialog2" gallery card
     And user picks the sharing user in "User, group, or email" input in "Share ShareDialog2" dialog
     And user unchecks "Send notifications" input in "Share ShareDialog2" dialog

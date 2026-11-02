@@ -11,11 +11,12 @@ Feature: Trellis plot tiled view and auto layout
   whose every row is missing the HEIGHT or the WEIGHT the inner scatter plot draws. UC is the cell
   that is drawn and stays blank in the two rungs wide enough to show it.
 
-  Tiles Per Row 0 typed in the context panel on this one-column trellis logs no error: it threw a
-  truncating division by zero on every render before core#1057; the context panel is then hidden
-  again, so the auto layout rungs measure the viewer at the width they did before. A Tiles Per Row
-  typed outside its declared bounds (11) is a known failure (core#1200) in
-  trellis-plot-pick-up-color-and-scroll.feature.
+  Edge cases: on a trellis split by DIS_POP alone (six categories, which the scenario sets itself),
+  Tiles Per Row 0 lays the tiles out one a row and logs no error: it threw a truncating division by
+  zero on every render before core#1057. A Tiles Per Row typed in the context panel outside the
+  property's declared bounds (1 to 10; 11 here) is not taken; the property keeps its value. The
+  panel's number input marks such a value invalid but writes it into the property (core#1200, a
+  known failure, the last scenario).
 
   Background:
     Given user is logged in
@@ -57,7 +58,6 @@ Feature: Trellis plot tiled view and auto layout
     And trellis plot viewer should have a "cell UC" area
     And no errors should have been logged
 
-  @realizes:core#1057
   Scenario: Tiles off returns a single band
     When user sets "Tiles" property of trellis plot viewer to "false"
     Then the cells of trellis plot viewer should be 5 wide and 1 tall
@@ -70,17 +70,6 @@ Feature: Trellis plot tiled view and auto layout
       | Tiles Per Row | 4    |
     Then the cells of trellis plot viewer should be 4 wide and 2 tall
     And no errors should have been logged
-    And the "y categories" reading of trellis plot viewer should be 1
-    When user clicks on settings icon of trellis plot viewer
-    Then context panel should be visible
-    Given "Misc" category in context panel is expanded
-    When user enters "0" into "Tiles Per Row" property in context panel
-    Then no errors should have been logged
-    And trellis plot viewer should report no error
-    When user sets "Tiles Per Row" property of trellis plot viewer to "4"
-    Then the cells of trellis plot viewer should be 4 wide and 2 tall
-    When user presses F4
-    Then context panel should be hidden
 
   Scenario: Auto layout drops the control panel when the viewer gets short
     When user resizes trellis plot viewer to 900 by 700
@@ -180,3 +169,27 @@ Feature: Trellis plot tiled view and auto layout
     When user sets "Allow Viewer Full Screen" property of trellis plot viewer to "true"
     And user moves the pointer away from trellis plot viewer
     Then no errors should have been logged
+
+  @edge-cases @realizes:core#1057
+  Scenario: Tiles Per Row 0 on a one-column trellis lays the tiles out one a row and logs no error (core#1057)
+    When user sets properties of trellis plot viewer:
+      | X Column Names | DIS_POP |
+      | Y Column Names |         |
+      | Tiles Per Row  | 4       |
+    Then the "y categories" reading of trellis plot viewer should be 1
+    And the cells of trellis plot viewer should be 4 wide and 2 tall
+    When user sets "Tiles Per Row" property of trellis plot viewer to "0"
+    Then the cells of trellis plot viewer should be 1 wide and 5 tall
+    And trellis plot viewer should report no error
+    And no errors should have been logged
+    When user sets "Tiles Per Row" property of trellis plot viewer to "4"
+    Then the cells of trellis plot viewer should be 4 wide and 2 tall
+
+  @edge-cases @known-failure:195 @realizes:core#1200
+  Scenario: A Tiles Per Row of 11 typed in the context panel outside its declared bounds is not taken (core#1200)
+    Given user sets "Tiles Per Row" property of trellis plot viewer to "4"
+    When user clicks on settings icon of trellis plot viewer
+    Then context panel should be visible
+    Given "Misc" category in context panel is expanded
+    When user enters "11" into "Tiles Per Row" property in context panel
+    Then "Tiles Per Row" property of trellis plot viewer should be "4"

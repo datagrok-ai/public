@@ -16,10 +16,6 @@ Feature: Heat map layouts that used to load broken
   core#931: the layout brings the stacked heat map back on the tab that was active at the save, the
   Heat map tab, with no switch, and the histogram of the other tab is not on the page. The grid's
   status publishes no viewer error, so no scenario claims "should report no error" here (MISSING.md).
-  The last scenario is not a layout: Max Heatmap Columns counts only the visible columns, so a column
-  hidden in the Columns dialog under a cap of 5 stays hidden when the cap is raised to 6; today it
-  comes back (core#1202, a known failure). It sits here because this is the heat map's one feature
-  whose scenarios are tests of their own.
 
   Background:
     Given user is logged in
@@ -97,19 +93,3 @@ Feature: Heat map layouts that used to load broken
     And heat map viewer should have a "cell 100 of AGE" area
     And heat map viewer should be painted
     And no errors should have been logged
-
-  @known-failure:115 @realizes:core#1202
-  Scenario: A column hidden under Max Heatmap Columns stays hidden when the cap is raised (core#1202)
-    When user sets "maxHeatmapColumns" property of heat map viewer to "5"
-    Then the "columns shown" reading of heat map viewer should be 5
-    And heat map viewer should have a "column AGE" area
-    When user clicks on settings icon of heat map viewer
-    Given "Columns" category in context panel is expanded
-    When user clicks on first button in "Columns" property in context panel
-    Then Order or Hide Columns dialog should be visible
-    When user toggles the "AGE" column in the column list of Order or Hide Columns dialog
-    And user clicks on CLOSE button in Order or Hide Columns dialog
-    Then the "columns shown" reading of heat map viewer should be 4
-    And heat map viewer should not have a "column AGE" area
-    When user sets "maxHeatmapColumns" property of heat map viewer to "6"
-    Then heat map viewer should not have a "column AGE" area

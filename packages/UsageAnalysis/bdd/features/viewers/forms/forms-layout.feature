@@ -10,8 +10,6 @@ Feature: Forms viewer layout and project round-trips
   saved is not in it and must go.
   The pin is made by value on USUBJID, which is unique on demog-1000 — a non-unique pin warns that
   it will not survive, and that warning is the forms-core feature's business.
-  A pinned row that is deleted leaves the pinned pane: pinned rows are found again by their value
-  whenever rows are removed, and a value no row holds any more is dropped.
 
   Background:
     Given user is logged in
@@ -65,7 +63,7 @@ Feature: Forms viewer layout and project round-trips
     And the pinned cards of forms viewer should show rows "304"
     And no errors should have been logged
 
-  Scenario: A project round-trip brings the field set and the pinned row back across a session, and the pinned row deleted leaves the pane
+  Scenario: A project round-trip brings the field set and the pinned row back across a session
     When user saves the current view as project "bdd forms layout"
     And user closes all views
     And user opens the "bdd forms layout" project
@@ -78,12 +76,4 @@ Feature: Forms viewer layout and project round-trips
     And the "pinned values" reading of forms viewer should be "X0273T29012500105"
     And the "pinned pane shown" reading of forms viewer should be "true"
     And the pinned cards of forms viewer should show rows "304"
-    And no errors should have been logged
-    When user clears the row selection
-    And user selects rows where "USUBJID" is "X0273T29012500105"
-    And user deletes the selected rows
-    Then the table should have 999 rows
-    And the "pinned records" reading of forms viewer should be 0
-    And the "pinned pane shown" reading of forms viewer should be "false"
-    And the "pinned values" reading of forms viewer should be ""
     And no errors should have been logged

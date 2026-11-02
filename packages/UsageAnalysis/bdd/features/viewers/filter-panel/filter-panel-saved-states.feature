@@ -11,6 +11,9 @@ Feature: Saved filter panel states
   is set through the card's state; the second table's menu is the panel's title-bar menu, its
   default cards leaving no blank panel to right-click.
 
+  Edge cases: saving a filter state under a name already taken should ask before overwriting it
+  (core#1224: no dialog asks; a known failure, the last scenario, on a state of its own name).
+
   Background:
     Given user is logged in
     And no saved filter state "bdd filter state" is kept, now or when the feature ends
@@ -52,3 +55,21 @@ Feature: Saved filter panel states
     And the open menu should not list "Save or Apply > bdd filter state"
     When user closes the context menu
     Then no errors should have been logged
+
+  @edge-cases @known-failure:75 @realizes:core#1224
+  Scenario: Saving a filter state under a name already taken asks before overwriting it
+    Given no saved filter state "bdd edge filter state" is kept, now or when the feature ends
+    When user switches to the "demog-1000" table view
+    And user adds a categorical filter on "RACE" keeping "Asian"
+    And user adds a range filter on "AGE" from 30 to 60
+    Then 8 rows should pass the filter
+    When user picks "Save or Apply | Save..." from the filter panel menu
+    And user types "bdd edge filter state" into Name input in "Save filter preset" dialog
+    And user clicks on OK button in "Save filter preset" dialog
+    Then "Save filter preset" dialog should be absent
+    When user clicks on the "category Black of RACE" area of filter panel
+    Then the "selected categories of RACE" reading of filter panel should be "Black"
+    When user picks "Save or Apply | Save..." from the filter panel menu
+    And user types "bdd edge filter state" into Name input in "Save filter preset" dialog
+    And user clicks on OK button in "Save filter preset" dialog
+    Then "Are you sure?" dialog should be visible

@@ -6,11 +6,6 @@ Feature: Scatter plot legend of a conditionally coloured column
   into two ranges that both occur; the colour column is set as a property, not in the on-chart
   selector. A file of its own, next to `scatter-plot-legend.feature`, which
   another round owns.
-  The last scenario outline is not about the legend: it uses this feature's plot, the scatter
-  plot's one whose scenarios are tests of their own. A Moving Average Window typed in the context
-  panel outside the 2..100 the property declares (1, 101) is not taken; the property keeps its
-  value. The panel's number input marks such a value invalid but writes it into the property
-  (core#1200, a known failure).
 
   Background:
     Given user is logged in
@@ -36,18 +31,3 @@ Feature: Scatter plot legend of a conditionally coloured column
     And user removes the coloring of "AGE" column
     Then legend of scatter plot viewer should be hidden
     And no errors should have been logged
-
-  @realizes:core#1200
-  Scenario Outline: A Moving Average Window of <typed> typed in the context panel is not taken (core#1200)
-    When user sets "Show Moving Average Line" property of scatter plot viewer to "true"
-    And user clicks on settings icon of scatter plot viewer
-    Then context panel should be visible
-    Given "Statistics" category in context panel is expanded
-    When user enters "<typed>" into "Moving Average Window" property in context panel
-    Then "Moving Average Window" property of scatter plot viewer should be "10"
-
-    @known-failure:47 @realizes:core#1200
-    Examples: The typed value is taken although the property declares 2..100
-      | typed |
-      | 1     |
-      | 101   |

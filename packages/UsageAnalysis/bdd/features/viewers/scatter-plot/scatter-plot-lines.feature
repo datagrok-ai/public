@@ -8,9 +8,12 @@ Feature: Scatter plot trend lines
   plot reports: the `regression lines` and `formula lines` readings and the `regression line`,
   `regression stats` and `moving average` hit areas. One journey on demog-1000, X = WEIGHT,
   Y = HEIGHT (872 of the 1000 rows have a HEIGHT); every scenario puts back what it changed.
-  The Formula Lines dialog is PowerPack's and has no scenarios here. A Moving Average Window typed
-  in the context panel outside the 2..100 it declares is a known failure (core#1200) in
-  scatter-plot-conditional-legend.feature.
+  The Formula Lines dialog is PowerPack's and has no scenarios here.
+
+  Edge cases: a Moving Average Window typed in the context panel outside the 2..100 the property
+  declares (1, 101) is not taken; the property keeps its value. The panel's number input marks such
+  a value invalid but writes it into the property (core#1200, a known failure, the last scenario
+  outline, one Examples row per value).
 
   Background:
     Given user is logged in
@@ -114,3 +117,19 @@ Feature: Scatter plot trend lines
     And scatter plot viewer should have less ink than before
     And the "formula lines" reading of scatter plot viewer should be 0
     And no errors should have been logged
+
+  @edge-cases @realizes:core#1200
+  Scenario Outline: A Moving Average Window of <typed> typed in the context panel is not taken (core#1200)
+    Given user sets "Moving Average Window" property of scatter plot viewer to "10"
+    When user sets "Show Moving Average Line" property of scatter plot viewer to "true"
+    And user clicks on settings icon of scatter plot viewer
+    Then context panel should be visible
+    Given "Statistics" category in context panel is expanded
+    When user enters "<typed>" into "Moving Average Window" property in context panel
+    Then "Moving Average Window" property of scatter plot viewer should be "10"
+
+    @known-failure:129 @realizes:core#1200
+    Examples: The typed value is taken although the property declares 2..100
+      | typed |
+      | 1     |
+      | 101   |

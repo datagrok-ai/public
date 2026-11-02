@@ -44,7 +44,7 @@ and `pc-plot-ui.md`. What could be said is in `pc-plot-hover-and-layout.feature`
 
 ## Edge cases
 
-The edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today; the claimed ones are steps of `pc-plot.feature`, `pc-plot-density.feature` and `pc-plot-filter.feature`. No library, binding or code change was made for them.
+The edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today; the claimed ones are `@edge-cases` scenarios of their own, after the master scenarios of `pc-plot.feature`, `pc-plot-density.feature` and `pc-plot-filter.feature`. No library, binding or code change was made for them.
 
 ### Still open
 

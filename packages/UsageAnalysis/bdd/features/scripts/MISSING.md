@@ -1,7 +1,7 @@
 # Scripts edge cases — what the features cannot say yet
 
-What the script-run edge case, now a check of `scripts-run.feature` ("CANCEL runs nothing, and with no table open
-OK stays disabled"), leaves out, written for it: no library, binding or code change was made.
+What the script-run edge case, now an @edge-cases scenario of `scripts-run.feature` ("With no table open, the Table input is empty
+and OK stays disabled"), leaves out, written for it: no library, binding or code change was made.
 Each item names the case, why it is not a scenario yet, and what would make it one.
 
 ## Still open

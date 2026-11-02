@@ -12,11 +12,11 @@ Feature: Deleting a space
   landed on the Spaces root. The mechanism is not pinned down (no server push of spaces reaches the tree); the two
   do not overlap any more.
 
-  Deleting a space is to remove the space and the links it holds, not a project that was only linked
-  into it (core#976). Today the linked project is deleted with the space; that scenario, the last of
-  the journey, is a known failure, and the tag goes when core#976 is fixed. Its space and project are
-  named with the run's time, the project's letters and digits only (the Dashboards search misses "-"
-  and "_"), and swept when the feature starts and ends.
+  Edge cases: deleting a space is to remove the space and the links it holds, not a project that was
+  only linked into it (core#976). Today the linked project is deleted with the space; that scenario,
+  after the journey's own, is a known failure, and the tag goes when core#976 is fixed. Its space and
+  project are named with the run's time, the project's letters and digits only (the Dashboards search
+  misses "-" and "_"), and swept when the feature starts and ends.
 
   Background:
     Given user is logged in
@@ -43,7 +43,7 @@ Feature: Deleting a space
     And 0 spaces named "BDD-Del" should be on the server
     And Spaces---BDD-Del tree node inside browse tree should be absent
 
-  @known-failure:74 @realizes:core#976
+  @edge-cases @known-failure:74 @realizes:core#976
   Scenario: Deleting a space keeps a project that was only linked into it
     core#976: the project linked into the space is deleted with the space. Remove the tag when
     core#976 is fixed.

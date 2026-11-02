@@ -54,7 +54,7 @@ into claims added to `box-plot.feature` (category selector, the month and quarte
 
 ## Edge cases
 
-The edge-case round of 2026-10-26 (localhost). Its checks are now steps of the journeys: `box-plot.feature`. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+The edge-case round of 2026-10-26 (localhost). Its check is a step of the master scenario "Resize and auto layout" of `box-plot.feature`: it runs on that scenario's shrunk plot, leaves nothing behind and is on its topic. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 

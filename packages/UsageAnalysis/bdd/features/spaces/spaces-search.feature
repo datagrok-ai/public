@@ -8,9 +8,9 @@ Feature: Searching spaces
   search box that hides everything passes a one-sided check. The spaces are made through the API: the
   Create Space dialog is spaces-create's subject.
 
-  Characters of the search syntax typed as text (an opening parenthesis, a double quote, a condition
-  with no value: "name =") match no space here: each search empties the list with no error, and
-  clearing the box brings the spaces back.
+  Edge cases: characters of the search syntax typed as text (an opening parenthesis, a double quote, a
+  condition with no value: "name =") match no space here: each search empties the list with no error,
+  and clearing the box brings the spaces back.
 
   Background:
     Given user is logged in
@@ -37,12 +37,27 @@ Feature: Searching spaces
 
   Scenario: A name nothing carries empties the list
     When user enters "zzz-no-such-space" into gallery search
-    Then gallery should have finished updating
-    And BDD-Find link in gallery should be absent
+    Then BDD-Find link in gallery should be absent
     And BDD-Miss link in gallery should be absent
 
-  Scenario: Clearing the search brings both back, also after a search of characters of the search syntax
+  Scenario: Clearing the search brings both back
     When user clears gallery search
+    Then BDD-Find link in gallery should be visible
+    And BDD-Miss link in gallery should be visible
+
+  Scenario: A child space is searchable inside its parent
+    Given a space named "BDD-Find-Child" under "BDD-Find" is on the server
+    When user double-clicks on Spaces---BDD-Find tree node inside browse tree
+    Then BDD-Find-Child link in gallery should be visible
+    When user enters "zzz-no-such-space" into gallery search
+    Then BDD-Find-Child link in gallery should be absent
+    When user clears gallery search
+    Then BDD-Find-Child link in gallery should be visible
+
+  @edge-cases
+  Scenario: Characters of the search syntax match no space, and clearing the search brings both back
+    When user clicks on Spaces tree node inside browse tree
+    And user clicks on "Refresh" icon
     Then BDD-Find link in gallery should be visible
     And BDD-Miss link in gallery should be visible
     When user enters "(" into gallery search
@@ -66,12 +81,3 @@ Feature: Searching spaces
     And BDD-Miss link in gallery should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
-
-  Scenario: A child space is searchable inside its parent
-    Given a space named "BDD-Find-Child" under "BDD-Find" is on the server
-    When user double-clicks on Spaces---BDD-Find tree node inside browse tree
-    Then BDD-Find-Child link in gallery should be visible
-    When user enters "zzz-no-such-space" into gallery search
-    Then BDD-Find-Child link in gallery should be absent
-    When user clears gallery search
-    Then BDD-Find-Child link in gallery should be visible

@@ -28,12 +28,12 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Creating a space", () => {
   const session = feature(test, "features/spaces/spaces-create.feature", import.meta.url);
-  test("Creating a space", {tag: ["@journey", "@serial", "@spaces", "@realizes:views.space"]}, async ({browser}) => {
+  test("Creating a space", {tag: ["@journey", "@serial", "@spaces", "@realizes:views.space", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 5, page);
+    const run = journey(test, 7, page);
     await session.step(26, "Given user is logged in", () => loggedIn(page));
     await session.step(27, "And the browse panel is open", () => browsePanelOpen(page));
-    await session.step(28, "And no space named \"BDD-Root, BDD-Dup, BDD-Parent, BDD-Child, BDDEdgeTaken{time}, BDDEdgeParent{time}\" is on the server", () => noSpaceOnServer(page, session.text("BDD-Root, BDD-Dup, BDD-Parent, BDD-Child, BDDEdgeTaken{time}, BDDEdgeParent{time}")));
+    await session.step(28, "And no space named \"BDD-Root, BDD-Dup, BDD-Parent, BDD-Child\" is on the server", () => noSpaceOnServer(page, "BDD-Root, BDD-Dup, BDD-Parent, BDD-Child"));
     await run.scenario("A root space is created from the Spaces node", async () => {
       await session.step(31, "When user picks \"Create Space...\" from the context menu of Spaces tree node inside browse tree", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node inside browse tree")));
       await session.step(32, "Then Create Space dialog should be visible", () => shouldBe(page, el("Create Space dialog"), "visible"));
@@ -78,7 +78,7 @@ test.describe("Creating a space", () => {
       await session.step(71, "When user clicks on CANCEL button in Create Space dialog", () => clickOn(page, el("CANCEL button in Create Space dialog")));
       await session.step(72, "Then the \"Create Space\" dialog should close", () => dialogCloses(page, "Create Space"));
     });
-    await run.scenario("A child space is created under a root space and moved out to the root, and a child named like a root space is refused there", async () => {
+    await run.scenario("A child space is created under a root space", async () => {
       await session.step(75, "When user picks \"Create Space...\" from the context menu of Spaces tree node inside browse tree", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node inside browse tree")));
       await session.step(76, "And user enters \"BDD-Parent\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Parent", el("Name input in Create Space dialog")));
       await session.step(77, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
@@ -89,31 +89,36 @@ test.describe("Creating a space", () => {
       await session.step(82, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(83, "Then the \"Create Space\" dialog should close", () => dialogCloses(page, "Create Space"));
       await session.step(84, "And BDD-Child tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Child tree node inside browse tree"), "visible"));
-      await session.step(85, "Given Spaces---BDD-Parent tree node inside browse tree is expanded", () => isExpanded(page, el("Spaces---BDD-Parent tree node inside browse tree")));
-      await session.step(86, "When user drags Spaces---BDD-Parent---BDD-Child tree node inside browse tree to Spaces tree node inside browse tree", () => dragTo(page, el("Spaces---BDD-Parent---BDD-Child tree node inside browse tree"), el("Spaces tree node inside browse tree")));
-      await session.step(87, "Then \"Move space\" dialog should be visible", () => shouldBe(page, el("\"Move space\" dialog"), "visible"));
-      await session.step(88, "And \"Move space\" dialog should contain text \"Move BDD-Child out?\"", () => shouldContainText(page, el("\"Move space\" dialog"), "Move BDD-Child out?"));
-      await session.step(89, "When user clicks on MOVE button in \"Move space\" dialog", () => clickOn(page, el("MOVE button in \"Move space\" dialog")));
-      await session.step(90, "Then the \"Move space\" dialog should close", () => dialogCloses(page, "Move space"));
-      await session.step(91, "And Spaces---BDD-Child tree node inside browse tree should be visible", () => shouldBe(page, el("Spaces---BDD-Child tree node inside browse tree"), "visible"));
-      await session.step(92, "And no errors should have been logged", () => noErrors(page));
-      await session.step(93, "And no error or warning balloon should have been shown", () => noBalloons(page));
-      await session.step(94, "Given a space named \"BDDEdgeTaken{time}\" is on the server", () => spaceOnServer(page, session.text("BDDEdgeTaken{time}")));
-      await session.step(95, "And a space named \"BDDEdgeParent{time}\" is on the server", () => spaceOnServer(page, session.text("BDDEdgeParent{time}")));
-      await session.step(96, "And a space named \"BDDEdgeTaken{time}\" under \"BDDEdgeParent{time}\" is on the server", () => childSpaceOnServer(page, session.text("BDDEdgeTaken{time}"), session.text("BDDEdgeParent{time}")));
-      await session.step(97, "And Spaces tree node inside browse tree is expanded", () => isExpanded(page, el("Spaces tree node inside browse tree")));
-      await session.step(98, "And Spaces---BDDEdgeParent{time} tree node inside browse tree is expanded", () => isExpanded(page, el(session.text("Spaces---BDDEdgeParent{time} tree node inside browse tree"))));
-      await session.step(99, "Then Spaces---BDDEdgeTaken{time} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Spaces---BDDEdgeTaken{time} tree node inside browse tree")), "visible"));
-      await session.step(100, "And Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree")), "visible"));
-      await session.step(101, "When user drags Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree to Spaces tree node inside browse tree", () => dragTo(page, el(session.text("Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree")), el("Spaces tree node inside browse tree")));
-      await session.step(102, "Then \"Move space\" dialog should be visible", () => shouldBe(page, el("\"Move space\" dialog"), "visible"));
-      await session.step(103, "When user clicks on MOVE button in \"Move space\" dialog", () => clickOn(page, el("MOVE button in \"Move space\" dialog")));
-      await session.step(104, "Then an error balloon containing \"already exists\" should have been shown", () => errorBalloonText(page, "already exists"));
-      await session.step(105, "And \"Move space\" dialog should be visible", () => shouldBe(page, el("\"Move space\" dialog"), "visible"));
-      await session.step(106, "When user clicks on CANCEL button in \"Move space\" dialog", () => clickOn(page, el("CANCEL button in \"Move space\" dialog")));
-      await session.step(107, "Then the \"Move space\" dialog should close", () => dialogCloses(page, "Move space"));
-      await session.step(108, "And Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree")), "visible"));
-      await session.step(109, "And Spaces---BDDEdgeTaken{time} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Spaces---BDDEdgeTaken{time} tree node inside browse tree")), "visible"));
+    });
+    await run.scenario("A child space dropped on the Spaces node is moved out to the root", async () => {
+      await session.step(88, "Given Spaces---BDD-Parent tree node inside browse tree is expanded", () => isExpanded(page, el("Spaces---BDD-Parent tree node inside browse tree")));
+      await session.step(89, "When user drags Spaces---BDD-Parent---BDD-Child tree node inside browse tree to Spaces tree node inside browse tree", () => dragTo(page, el("Spaces---BDD-Parent---BDD-Child tree node inside browse tree"), el("Spaces tree node inside browse tree")));
+      await session.step(90, "Then \"Move space\" dialog should be visible", () => shouldBe(page, el("\"Move space\" dialog"), "visible"));
+      await session.step(91, "And \"Move space\" dialog should contain text \"Move BDD-Child out?\"", () => shouldContainText(page, el("\"Move space\" dialog"), "Move BDD-Child out?"));
+      await session.step(92, "When user clicks on MOVE button in \"Move space\" dialog", () => clickOn(page, el("MOVE button in \"Move space\" dialog")));
+      await session.step(93, "Then the \"Move space\" dialog should close", () => dialogCloses(page, "Move space"));
+      await session.step(94, "And Spaces---BDD-Child tree node inside browse tree should be visible", () => shouldBe(page, el("Spaces---BDD-Child tree node inside browse tree"), "visible"));
+      await session.step(95, "And no errors should have been logged", () => noErrors(page));
+      await session.step(96, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    });
+    await run.scenario("A child named like a root space is refused at the root and keeps its parent", async () => {
+      await session.step(100, "Given no space named \"BDDEdgeTaken{time}, BDDEdgeParent{time}\" is on the server", () => noSpaceOnServer(page, session.text("BDDEdgeTaken{time}, BDDEdgeParent{time}")));
+      await session.step(101, "And a space named \"BDDEdgeTaken{time}\" is on the server", () => spaceOnServer(page, session.text("BDDEdgeTaken{time}")));
+      await session.step(102, "And a space named \"BDDEdgeParent{time}\" is on the server", () => spaceOnServer(page, session.text("BDDEdgeParent{time}")));
+      await session.step(103, "And a space named \"BDDEdgeTaken{time}\" under \"BDDEdgeParent{time}\" is on the server", () => childSpaceOnServer(page, session.text("BDDEdgeTaken{time}"), session.text("BDDEdgeParent{time}")));
+      await session.step(104, "And Spaces tree node inside browse tree is expanded", () => isExpanded(page, el("Spaces tree node inside browse tree")));
+      await session.step(105, "And Spaces---BDDEdgeParent{time} tree node inside browse tree is expanded", () => isExpanded(page, el(session.text("Spaces---BDDEdgeParent{time} tree node inside browse tree"))));
+      await session.step(106, "Then Spaces---BDDEdgeTaken{time} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Spaces---BDDEdgeTaken{time} tree node inside browse tree")), "visible"));
+      await session.step(107, "And Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree")), "visible"));
+      await session.step(108, "When user drags Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree to Spaces tree node inside browse tree", () => dragTo(page, el(session.text("Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree")), el("Spaces tree node inside browse tree")));
+      await session.step(109, "Then \"Move space\" dialog should be visible", () => shouldBe(page, el("\"Move space\" dialog"), "visible"));
+      await session.step(110, "When user clicks on MOVE button in \"Move space\" dialog", () => clickOn(page, el("MOVE button in \"Move space\" dialog")));
+      await session.step(111, "Then an error balloon containing \"already exists\" should have been shown", () => errorBalloonText(page, "already exists"));
+      await session.step(112, "And \"Move space\" dialog should be visible", () => shouldBe(page, el("\"Move space\" dialog"), "visible"));
+      await session.step(113, "When user clicks on CANCEL button in \"Move space\" dialog", () => clickOn(page, el("CANCEL button in \"Move space\" dialog")));
+      await session.step(114, "Then the \"Move space\" dialog should close", () => dialogCloses(page, "Move space"));
+      await session.step(115, "And Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree")), "visible"));
+      await session.step(116, "And Spaces---BDDEdgeTaken{time} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Spaces---BDDEdgeTaken{time} tree node inside browse tree")), "visible"));
     });
     run.finish();
   });

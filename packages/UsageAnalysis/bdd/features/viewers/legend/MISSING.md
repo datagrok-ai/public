@@ -49,7 +49,7 @@ click is already driven (`user clicks on mini legend icon of <viewer>`).
 
 ## Edge cases (now in `legend-interaction.feature`)
 
-Written for the legend edge cases (26 Oct 2026; their scenarios are now steps of `legend-interaction.feature`), the guard suite of edge cases: data shapes,
+Written for the legend edge cases (26 Oct 2026; their checks are now `@edge-cases` scenarios of their own, after the master scenarios of `legend-interaction.feature` and `legend-keyboard-regressions.feature`), the guard suite of edge cases: data shapes,
 columns removed or renamed under the open viewer, layouts naming a missing column, property bounds,
 closing the viewer. Nothing here asks for a library, binding or code change made by that feature; it
 lists what the feature could not claim and why.

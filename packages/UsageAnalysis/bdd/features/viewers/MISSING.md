@@ -50,12 +50,12 @@ context panel outside the property's declared bounds is not taken; the property 
 The panel's number input marks such a value invalid (`number_input.dart`, `addMinMaxValidators`),
 but the input writes every change into the property (`InputBase.bind`).
 
-The checks of these rules for the sunburst, the tree and the word cloud are steps of their
-journeys: `sunburst/sunburst.feature`, `tree/tree-on-click-filter.feature`, `tree/tree.feature` and
+The checks of these rules for the sunburst, the tree and the word cloud are `@edge-cases`
+scenarios of their own, after the master scenarios of: `sunburst/sunburst.feature`, `tree/tree-on-click-filter.feature`, `tree/tree.feature` and
 `word-cloud/word-cloud-appearance.feature`. For the bar chart, calendar, histogram, pie chart and
-trellis plot: `bar-chart/bar-chart-tooltip.feature`, `bar-chart/bar-chart-selection-overlays.feature`,
-`bar-chart/bar-chart.feature`, `calendar/calendar.feature`, `histogram/histogram-range-filter.feature`,
-`pie-chart/pie-chart.feature` and `trellis-plot/trellis-plot-pick-up-color-and-scroll.feature`.
+trellis plot: `bar-chart/bar-chart-interaction.feature`, `bar-chart/bar-chart-selection-overlays.feature`,
+`bar-chart/bar-chart.feature`, `calendar/calendar-selection.feature`, `histogram/histogram.feature`,
+`pie-chart/pie-chart.feature` and `trellis-plot/trellis-plot-tiles-and-layout.feature`.
 
 A viewer that breaks a rule carries the check as the known failure of its ticket. Run on localhost
 2026-10-29 (core master 575f6ae603): the known failures fail at their pinned steps.
@@ -85,7 +85,8 @@ A viewer that breaks a rule carries the check as the known failure of its ticket
 ### Found on the run, no ticket yet
 
 - **The bar chart's Stack keeps the name of a removed column.** Stacking is dropped and nothing is
-  logged; the context panel shows the missing name. No ticket yet.
+  logged. Not a defect (2026-10-30, `bar-chart/MISSING.md`): the property keeps the name, as a
+  layout does.
 - A layout naming a removed column puts that name back into the viewer's setting (scatter plot
   Color, PC plot columns, tree map split, sunburst and tree hierarchies); the viewers draw without
   the column and report no error. Not a defect (2026-10-30): the name is kept. The forms viewer

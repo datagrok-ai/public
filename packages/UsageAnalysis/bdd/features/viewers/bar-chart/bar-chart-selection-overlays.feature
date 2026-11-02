@@ -5,9 +5,11 @@ Feature: Bar chart selected and filtered rows overlays
   outlines the filtered share; under min or avg neither overlay is drawn, while the selection and
   the filter themselves stay. The shares are the chart's own `selected <category>` and
   `filtered <category>` hit areas. The filtered share needs Row Source All (a chart of the
-  filtered rows has nothing to outline). Removing the column of the category a click filtered by
-  gives the rows back; the removal does not refilter the table, and the rows come back only on the
-  next refilter (core#1174). One journey on demog-1000 with a bar chart of AGE by RACE (Asian 15 rows).
+  filtered rows has nothing to outline). One journey on demog-1000 with a bar chart of AGE by RACE.
+
+  Edge cases: removing the column of the category a click filtered by gives the rows back (Asian
+  keeps 15 rows); the removal does not refilter the table, and the rows come back only on the next
+  refilter (core#1174).
 
   Background:
     Given user is logged in
@@ -101,7 +103,7 @@ Feature: Bar chart selected and filtered rows overlays
     And no rows should be selected
     And no errors should have been logged
 
-  @known-failure:110 @realizes:core#1174
+  @edge-cases @known-failure:112 @realizes:core#1174
   Scenario: Removing the column of the category a click filtered by gives the rows back (core#1174)
     When user sets "onClick" property of bar chart viewer to "Filter"
     And user clicks on the "bar Asian" area of bar chart viewer

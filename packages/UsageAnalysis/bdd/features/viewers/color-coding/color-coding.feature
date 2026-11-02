@@ -18,8 +18,9 @@ Feature: Colour coding across columns
   never the tag alone — a tag a renderer ignores would otherwise pass.
   One journey on demog-1000 (row 1: AGE 26, SEX F, RACE Caucasian; row 2: AGE 30, SEX F, RACE Other;
   row 3: AGE 58, SEX F; row 4: AGE 45, SEX M). Each scenario puts back what it changed.
-  A link that closes a cycle of linked colourings (AGE linked to WEIGHT, linked to HEIGHT, linked to
-  AGE) takes the colouring away until the chain is broken.
+
+  Edge cases: a link that closes a cycle of linked colourings (AGE linked to WEIGHT, linked to
+  HEIGHT, linked to AGE) takes the colouring away until the chain is broken.
 
   Background:
     Given user is logged in
@@ -118,24 +119,6 @@ Feature: Colour coding across columns
     And user removes the coloring of "DIS_POP" column
     And user removes the coloring of "CONTROL" column
     And user removes the coloring of "STARTED" column
-    When user colors "AGE" column linearly from "#0000FF" to "#FF0000"
-    And user colors "HEIGHT" column linked to "AGE" column
-    And user colors "WEIGHT" column linked to "HEIGHT" column
-    And user picks "Color Coding > Edit..." from the context menu of the "header AGE" area of grid
-    Then "Color-coding: AGE" dialog should be visible
-    When user selects "Linked" in Type input in "Color-coding: AGE" dialog
-    And user selects "WEIGHT" in Source column input in "Color-coding: AGE" dialog
-    And user clicks on CLOSE button in "Color-coding: AGE" dialog
-    Then "Color-coding: AGE" dialog should be hidden
-    And the coloring of "AGE" column should be linked to "WEIGHT" column
-    And the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should be the same
-    When user colors "HEIGHT" column linearly from "#0000FF" to "#FF0000"
-    Then the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should differ
-    When user removes the coloring of "AGE" column
-    And user removes the coloring of "HEIGHT" column
-    And user removes the coloring of "WEIGHT" column
-    Then "AGE" column should have no color coding
-    And "HEIGHT" column should have no color coding
     Then no errors should have been logged
 
   Scenario: Inverting a linear scheme swaps the ends of the gradient
@@ -265,4 +248,26 @@ Feature: Colour coding across columns
     And user removes the coloring of "RACE" column
     And user removes the coloring of "AGE" column
     Then "RACE" column should have no color coding
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: A link that closes a cycle of linked colourings takes the colouring away until the chain is broken
+    When user colors "AGE" column linearly from "#0000FF" to "#FF0000"
+    And user colors "HEIGHT" column linked to "AGE" column
+    And user colors "WEIGHT" column linked to "HEIGHT" column
+    And user picks "Color Coding > Edit..." from the context menu of the "header AGE" area of grid
+    Then "Color-coding: AGE" dialog should be visible
+    When user selects "Linked" in Type input in "Color-coding: AGE" dialog
+    And user selects "WEIGHT" in Source column input in "Color-coding: AGE" dialog
+    And user clicks on CLOSE button in "Color-coding: AGE" dialog
+    Then "Color-coding: AGE" dialog should be hidden
+    And the coloring of "AGE" column should be linked to "WEIGHT" column
+    And the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should be the same
+    When user colors "HEIGHT" column linearly from "#0000FF" to "#FF0000"
+    Then the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should differ
+    When user removes the coloring of "AGE" column
+    And user removes the coloring of "HEIGHT" column
+    And user removes the coloring of "WEIGHT" column
+    Then "AGE" column should have no color coding
+    And "HEIGHT" column should have no color coding
     And no errors should have been logged

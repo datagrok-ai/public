@@ -4,10 +4,11 @@ Feature: Density plot bin selector, Escape and the bin tooltip
   layout resolved it (the reading is the layout's flag, not a check that the selector is on screen —
   see MISSING.md); Escape clears a selection made by clicking a bin; and the densest bin's tooltip
   gives its range of both binned columns (AGE 47..47, WEIGHT 62.20..64.40) and the 5 rows it holds.
-  A column name with markup characters (`<b>X</b>`, AGE renamed) is shown in the bin tooltip as
-  typed: the caption was built as HTML from the raw column names before core#1048.
   One journey on demog-1000 with a density plot of AGE against WEIGHT, as in
   density-plot-select-and-zoom.feature; every scenario puts back what it changed.
+
+  Edge cases: a column name with markup characters (`<b>X</b>`, AGE renamed) is shown in the bin
+  tooltip as typed: the caption was built as HTML from the raw column names before core#1048.
 
   Background:
     Given user is logged in
@@ -47,7 +48,7 @@ Feature: Density plot bin selector, Escape and the bin tooltip
     When user moves the pointer away from density plot viewer
     Then no errors should have been logged
 
-  @realizes:core#1048
+  @edge-cases @realizes:core#1048
   Scenario: A column name with markup characters is shown in the bin tooltip as typed (core#1048)
     When user renames "AGE" column to "<b>X</b>"
     And user sets "xColumnName" property of density plot viewer to "<b>X</b>"

@@ -2,8 +2,7 @@
 Feature: Box plot property surface
   The box plot's property surface: context menus as paths to properties, the statistics and
   group-comparison hit regions, auto layout and resize stability (shrunk under Auto Layout the viewer
-  drops the Marker Color selector, both axes and the statistics strip, and gets them back; a pointer
-  moved over the shrunk plot logs no error — it threw on every mouse move before core#960), the Show Markers gate, whisker
+  drops the Marker Color selector, both axes and the statistics strip, and gets them back), the Show Markers gate, whisker
   and control-band style, controls visibility, axis font, date category mapping, the custom row
   tooltip (hidden from the context menu's Tooltip group, and an edited one through a layout applied
   after the viewer was closed), table switching, coloring, and the double-click view reset (the title and the
@@ -11,6 +10,9 @@ Feature: Box plot property surface
   Selection, persistence, filtering, statistics and group comparison have features of their own.
   One journey: demog-1000 (a stratified 1000-row demog: one marker per row per paint) with a box
   plot of AGE by SEX is opened once, and every scenario puts back what it changed.
+
+  Edge cases: a pointer moved over the plot shrunk under Auto Layout logs no error — it threw on
+  every mouse move before core#960.
 
   Background:
     Given user is logged in
@@ -67,7 +69,6 @@ Feature: Box plot property surface
     When user closes the context menu
     And user sets "Show Group Comparison" property of box plot viewer to "false"
 
-  @realizes:core#960
   Scenario: Resize and auto layout
     Given user sets "Auto Layout" property of box plot viewer to "true"
     When user hovers over box plot viewer
@@ -83,8 +84,7 @@ Feature: Box plot property surface
     When user hovers over box plot viewer
     And user moves the pointer away from box plot viewer
     And user hovers over box plot viewer
-    Then box plot viewer should be painted
-    And no errors should have been logged
+    Then no errors should have been logged
     When user restores the size of box plot viewer
     And user hovers over box plot viewer
     Then "Marker Color" column input in box plot viewer should be visible

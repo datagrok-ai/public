@@ -11,7 +11,6 @@ Feature: Tile viewer form designer
   slot, while a designed card keeps exactly the fields it was given — the departed column's field
   stays on it, empty. In both states the column leaves through the same gesture, a right-click on
   its field and Remove (GROK-19983).
-  Escape in the designer, a view and not a dialog, leaves it open with the edits it holds.
   One journey on demog-1000 — 11 columns, a card of ten fields, SEVERITY the column the relevance
   score leaves over.
 
@@ -23,6 +22,9 @@ Feature: Tile viewer form designer
   spare). A caption whose value field was deleted stays on the card but the viewer stops reporting
   a `label` region for it, so the caption channel is claimed on the designer, where both host sets
   are visible, and not on the card.
+
+  Edge cases: Escape in the designer, a view and not a dialog, leaves it open with the edits it
+  holds: a value field deleted before Escape is gone from the card CLOSE AND APPLY then gives.
 
   Background:
     Given user is logged in
@@ -100,9 +102,6 @@ Feature: Tile viewer form designer
     And the form designer should show label fields "AGE, CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, STARTED, USUBJID, WEIGHT"
     When user deletes the "AGE" value field in the form designer
     Then the form designer should show value fields "CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, SEX, STARTED, USUBJID, WEIGHT"
-    When user presses Escape
-    Then form designer should be visible
-    And the form designer should show value fields "CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, SEX, STARTED, USUBJID, WEIGHT"
     When user clicks on "RESET" button
     Then the form designer should show value fields "AGE, CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, SEX, STARTED, USUBJID, WEIGHT"
     And the form designer should show label fields "AGE, CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, STARTED, USUBJID, WEIGHT"
@@ -160,3 +159,16 @@ Feature: Tile viewer form designer
     And no errors should have been logged
     When user adds a calculated column "AGE" with formula "${HEIGHT}"
     Then the table should have 11 columns
+
+  @edge-cases
+  Scenario: Escape in the designer leaves it open with the edits it holds
+    When user picks "Edit Form..." from the viewer menu of tile viewer
+    Then form designer should be visible
+    When user deletes the "WEIGHT" value field in the form designer
+    And user presses Escape
+    Then form designer should be visible
+    When user clicks on "CLOSE AND APPLY" button
+    Then form designer should be absent
+    And the "fields" reading of tile viewer should not contain "WEIGHT"
+    And the "form designed" reading of tile viewer should be "true"
+    And no errors should have been logged

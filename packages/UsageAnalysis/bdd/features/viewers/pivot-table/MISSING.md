@@ -44,7 +44,7 @@ surface" and `pivot-table.md`. The Table switch is in `pivot-table-table-switch.
 
 ## Edge cases (now in `pivot-table-aggregation.feature`)
 
-Written for the pivot table edge cases, now steps of `pivot-table-aggregation.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+Written for the pivot table edge cases, now an `@edge-cases` scenario of its own, after the master scenarios of `pivot-table-aggregation.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
 
 ### Still open
 

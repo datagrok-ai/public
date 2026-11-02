@@ -11,8 +11,11 @@ Feature: Combined boolean filter card
   A click on a flag's name replaces the flag kept, while a tick in its "true" checkbox adds it: two
   flags ticked keep the rows holding either (OR, CONTROL or F: 554) until the word in the card's
   header is clicked to AND (CONTROL and F: 5), and a second tick takes the flag off again.
-  A Combined Boolean card can be added to a table with no boolean column, and a boolean column
-  added later joins it (a two-row table of its own, closed again).
+
+  Edge cases: a Combined Boolean card can be added to a table with no boolean column, and a boolean
+  column added later joins it (a two-row table of its own, closed again). Removing the column of a
+  flag the card filters by should release its rows (core#1174, a known failure, the last
+  scenario).
 
   Background:
     Given user is logged in
@@ -32,23 +35,6 @@ Feature: Combined boolean filter card
     And the "cards" reading of filter panel should be "Flags"
     And the filter panel should have 1 filter
     And all rows should pass the filter
-    Given user opens a table "no-flags" with:
-      | Name | Value |
-      | a    | 1     |
-      | b    | 2     |
-    When user opens an empty filter panel
-    And user opens the viewer menu of filter panel
-    Then the open menu should list "Add Filter > Combined Boolean" as enabled
-    When user closes the context menu
-    And user picks "Add Filter | Combined Boolean" from the filter panel menu
-    Then "Flags" filter card should be visible
-    And the filter panel should have 1 filter
-    When user adds a calculated column "BIG" with formula "${Value} > 1"
-    And user clicks on the "category BIG of Flags" area of filter panel
-    Then 1 row should pass the filter
-    When user closes the current view
-    And user switches to the "demog-1000" table view
-    Then all rows should pass the filter
     And no errors should have been logged
 
   Scenario: A click on a flag keeps its true rows
@@ -150,3 +136,31 @@ Feature: Combined boolean filter card
     Then the "cards" reading of filter panel should be "Flags, SEX, RACE, SEVERITY, DIS_POP, AGE, HEIGHT, WEIGHT, STARTED"
     And all rows should pass the filter
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: A Combined Boolean card can be added to a table with no boolean column, and a boolean column added later joins it
+    Given user opens a table "no-flags" with:
+      | Name | Value |
+      | a    | 1     |
+      | b    | 2     |
+    When user opens an empty filter panel
+    And user opens the viewer menu of filter panel
+    Then the open menu should list "Add Filter > Combined Boolean" as enabled
+    When user closes the context menu
+    And user picks "Add Filter | Combined Boolean" from the filter panel menu
+    Then "Flags" filter card should be visible
+    And the filter panel should have 1 filter
+    When user adds a calculated column "BIG" with formula "${Value} > 1"
+    And user clicks on the "category BIG of Flags" area of filter panel
+    Then 1 row should pass the filter
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    Then all rows should pass the filter
+    And no errors should have been logged
+
+  @edge-cases @known-failure:166 @realizes:core#1174
+  Scenario: Removing the column of a filtering flag in the Combined Boolean card releases its rows
+    When user clicks on the "category CONTROL of Flags" area of filter panel
+    Then 6 rows should pass the filter
+    When user picks "Remove" from the context menu of the "header CONTROL" area of grid
+    Then all rows should pass the filter

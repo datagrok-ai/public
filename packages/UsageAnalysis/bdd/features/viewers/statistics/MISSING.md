@@ -47,8 +47,8 @@ surface" and `statistics-ui.md` / `statistics.md`. Back Color is in `statistics-
 
 ## Edge cases (now in `statistics-menu.feature`)
 
-Written for the guard suite of edge cases of 26 Oct 2026 (its check now ends a scenario of
-`statistics-menu.feature`): data
+Written for the guard suite of edge cases of 26 Oct 2026 (its check is now an `@edge-cases`
+scenario of its own, after the master scenarios of `statistics-menu.feature`): data
 shapes, columns removed or renamed under the open viewer, layouts naming a missing column, property
 bounds, closing the viewer. Nothing here asks for a library, binding or code change made by that
 feature; it lists what the feature could not claim and why.

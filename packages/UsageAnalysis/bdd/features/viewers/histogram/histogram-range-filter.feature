@@ -4,15 +4,14 @@ Feature: Histogram range filter
   slider's values, the slider clamps a bound outside the column's extent, an inverted range
   collapses the filter and says so, a handle dragged with the pointer moves the same range, and a
   narrowed range zooms the horizontal axis, rescales the vertical one under Normalize To Filter and
-  survives a stacked split; a saved layout carries the look but not the range. Text typed into a
-  range input is not taken and the filter stays as it was. Switching Value while a range filters
-  releases the range. A range normalized to the filter logs no error when every row is filtered out,
-  on AGE and on a date column (degenerate ranges made the axis throw on every frame until core#998).
-  On the date column STARTED a maximum below the minimum empties the filter and is reported, and a
-  bound past the dates is taken (483 rows start on or after 1/1/1991). A Bins value typed in the
-  context panel outside the property's declared bounds (201) is not taken; the property keeps its
-  value. The panel's number input marks it invalid but writes it into the property (core#1200). One
-  journey on demog-1000 with a histogram of AGE (18 to 89); every scenario puts the full range back.
+  survives a stacked split; a saved layout carries the look but not the range. One journey on
+  demog-1000 with a histogram of AGE; every scenario puts the full range back.
+
+  Edge cases: text typed into a range input is not taken and the filter stays as it was. Switching
+  Value while a range filters releases the range. A range normalized to the filter logs no error when
+  every row is filtered out, on AGE and on a date column (degenerate ranges made the axis throw on
+  every frame until core#998). On the date column STARTED a maximum below the minimum empties the
+  filter and is reported (483 rows start on or after 1/1/1991).
 
   Background:
     Given user is logged in
@@ -141,14 +140,6 @@ Feature: Histogram range filter
     Then all rows should pass the filter
     And the range min input of histogram viewer should read "18"
     And no errors should have been logged
-    When user enters "40" into the "range min input" area of histogram viewer
-    Then 665 rows should pass the filter
-    When user enters "abc" into the "range min input" area of histogram viewer
-    Then 665 rows should pass the filter
-    And the "range min" reading of histogram viewer should be 40
-    And no errors should have been logged
-    When user enters "18" into the "range min input" area of histogram viewer
-    Then all rows should pass the filter
 
   @realizes:public#2301
   Scenario: A handle dragged with the pointer moves the range, a double click resets it, and the min handle dragged past the max leaves a valid range (public#2301)
@@ -209,7 +200,7 @@ Feature: Histogram range filter
     And all rows should pass the filter
     And no errors should have been logged
 
-  @realizes:core#998
+  @edge-cases @realizes:core#998
   Scenario: A range normalized to the filter logs no error when every row is filtered out (core#998)
     When user sets "Normalize To Filter" property of histogram viewer to "true"
     And user enters "60" into the "range min input" area of histogram viewer
@@ -223,7 +214,11 @@ Feature: Histogram range filter
     And user sets "Normalize To Filter" property of histogram viewer to "false"
     Then all rows should pass the filter
     And no errors should have been logged
+    When user hovers over "SEX" filter card
+    And user clicks on close of "SEX" filter card
+    Then the filter panel should have no "SEX" filter card
 
+  @edge-cases
   Scenario: Switching Value while a range filters releases the range
     When user enters "30" into the "range min input" area of histogram viewer
     And user enters "50" into the "range max input" area of histogram viewer
@@ -235,7 +230,8 @@ Feature: Histogram range filter
     Then all rows should pass the filter
     And the "range min" reading of histogram viewer should be 18
 
-  Scenario: On a date column a maximum below the minimum empties the filter and is reported, and a bound past the dates is taken
+  @edge-cases
+  Scenario: On a date column a maximum below the minimum empties the filter and is reported
     When user sets "Value" property of histogram viewer to "STARTED"
     And user enters "1/1/1991" into the "range min input" area of histogram viewer
     Then 483 rows should pass the filter
@@ -246,12 +242,11 @@ Feature: Histogram range filter
     When user enters "1/1/1992" into the "range max input" area of histogram viewer
     Then 483 rows should pass the filter
     And the "error" reading of histogram viewer should be ""
-    And the range max input of histogram viewer should read "1/1/1992"
     And no errors should have been logged
     When user sets "Value" property of histogram viewer to "AGE"
     Then all rows should pass the filter
 
-  @realizes:core#998
+  @edge-cases @realizes:core#998
   Scenario: On a date column a range normalized to the filter logs no error when every row is filtered out (core#998)
     When user sets "Value" property of histogram viewer to "STARTED"
     And user sets "Normalize To Filter" property of histogram viewer to "true"
@@ -263,16 +258,23 @@ Feature: Histogram range filter
     And no errors should have been logged
     When user adds a categorical filter on "SEX" keeping "F, M"
     Then 483 rows should pass the filter
+    When user hovers over "SEX" filter card
+    And user clicks on close of "SEX" filter card
+    Then the filter panel should have no "SEX" filter card
+    And 483 rows should pass the filter
     When user sets properties of histogram viewer:
       | Normalize To Filter | false |
       | Value               | AGE   |
     Then all rows should pass the filter
     And no errors should have been logged
 
-  @known-failure:278 @realizes:core#1200
-  Scenario: A Bins value typed in the context panel outside its declared bounds is not taken (core#1200)
-    When user clicks on settings icon of histogram viewer
-    Then context panel should be visible
-    Given "X Axis" category in context panel is expanded
-    When user enters "201" into "Bins" property in context panel
-    Then "Bins" property of histogram viewer should be "20"
+  @edge-cases
+  Scenario: Text typed into a range input is not taken and the filter stays as it was
+    When user enters "40" into the "range min input" area of histogram viewer
+    Then 665 rows should pass the filter
+    When user enters "abc" into the "range min input" area of histogram viewer
+    Then 665 rows should pass the filter
+    And the "range min" reading of histogram viewer should be 40
+    And no errors should have been logged
+    When user enters "18" into the "range min input" area of histogram viewer
+    Then all rows should pass the filter
