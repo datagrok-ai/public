@@ -3,6 +3,7 @@
 ## v.next
 
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Chem | Admetica | Calculate is disabled unless the current table view has a molecule column, instead of showing a message
+* Calculate dialog: Moved to u2 components
 
 ## 1.3.2 (2026-09-16)
 

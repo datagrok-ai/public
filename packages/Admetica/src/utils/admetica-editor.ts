@@ -1,369 +1,302 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {Observable, Subject} from 'rxjs';
 
-import { DEFAULT_TEMPLATE_FILE, Model, ModelColoring, Subgroup, Template, TEMPLATES_FOLDER } from './constants';
-import { getTemplates } from './admetica-utils';
+import {BoolInput, ChoiceInput, ColorInput, Dialog, Form, LabelColumn, RecordsInput, Scope, Splitter, TextArea,
+  TextInput, VirtualTree, component, computed, div, divV, each, h3, iconButton, notify, signal, statusLine,
+  tableFromMap, untracked} from '@datagrok-libraries/u2';
+import type {TreeNode} from '@datagrok-libraries/u2';
+import {columnInput, inputForProperty, tableInput} from '@datagrok-libraries/u2/dg';
+import {MpoDesirabilityLineEditor} from '@datagrok-libraries/statistics/src/mpo/editors/mpo-line-editor';
+
+import {DEFAULT_TEMPLATE_FILE, Model, ModelColoring, ModelProperty, Subgroup, Template, TEMPLATES_FOLDER}
+  from './constants';
+import {getTemplates} from './admetica-utils';
 import '../css/admetica.css';
 
-import { MpoDesirabilityLineEditor } from '@datagrok-libraries/statistics/src/mpo/editors/mpo-line-editor';
+type Item = Subgroup | Model;
 
-export class AdmeticaBaseEditor {
-  tableInput: DG.InputBase<DG.DataFrame | null>;
-  colInput!: DG.InputBase<DG.Column | null>;
-  colInputRoot: HTMLElement;
-  templatesInput: DG.ChoiceInput<string>;
-  folderIcon: HTMLElement;
-  saveButton: HTMLElement;
-  addPiechartInput = ui.input.bool('Add piechart', {value: true});
-  addFormInput = ui.input.bool('Add form', {value: true});
-  modelsSettingsDiv = ui.inputs([]);
-  tree: DG.TreeViewGroup = ui.tree();
-  properties: Template | null = null;
-  updatedProperties: Template | null = null;
-  currentItem: DG.TreeViewNode | null = null;
+const isGroup = (item: Item): item is Subgroup => 'models' in item;
+const isMolecule = (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE;
 
-  constructor() {
-    this.tableInput = ui.input.table('Table', {value: grok.shell.tv.dataFrame, onValueChanged: () => this.onTableInputChanged()});
-    this.colInput = ui.input.column('Molecules', {
-      table: grok.shell.tv.dataFrame,
-      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE,
-      value: grok.shell.tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)!,
-      nullable: false,
+export function admeticaFuncCallEditor(call: DG.FuncCall, table: DG.DataFrame): DG.FuncCallEditor {
+  const scope = Scope.root('admetica-editor');
+  const changes = new Subject<void>();
+  const editor = scope.build(() => component((self) => {
+    self.onError = (e) => notify.error(`Admetica templates: ${e instanceof Error ? e.message : String(e)}`);
+    const template = signal<Template | null>(null);
+    const saved = signal('');
+    const edits = signal(0);
+    const changed = () => edits.value++;
+    const dirty = computed(() => {
+      edits.value;
+      const t = template.value;
+      return t !== null && JSON.stringify(t) !== saved.value;
     });
-    this.colInputRoot = this.colInput.root;
-    this.saveButton = ui.button('Save...', () => {
-      this.dialogForTemplateSave();
+    const invalidColors = signal(false);
+
+    const tableIn = tableInput('Table', {value: table.name});
+    const molecules = columnInput('Molecules', table, {grid: true, filter: isMolecule});
+    self.effect(() => {
+      const t = tableIn.table;
+      untracked(() => {
+        if (t !== molecules.table)
+          molecules.changeTable(t, isMolecule);
+        if (molecules.peek() === null)
+          molecules.value = molecules.names()[0] ?? null;
+      });
     });
-    this.saveButton.classList.add('admetica-save-button');
 
-    this.templatesInput = ui.input.choice('Profile', {
-      onValueChanged: async () => await this.createModelsSettingsDiv(this.modelsSettingsDiv),
-      nullable: false,
-    }) as DG.ChoiceInput<string>;
+    const templates = signal<string[]>([]);
+    const profile = new ChoiceInput({label: 'Profile', items: templates, nullable: false});
+    profile.addOptions(iconButton('save', () => saveTemplate(), {tooltip: 'Save as a new template',
+      disabled: computed(() => dirty.value ? null : 'The template has no changes to save')}));
+    profile.addOptions(iconButton('folder', () => manageTemplates(), {tooltip: 'Manage templates (rename/delete)'}));
+    loadTemplates();
 
-    this.folderIcon = ui.iconFA('folder', () => {
+    self.effect(() => {
+      const name = profile.value;
+      if (name === null)
+        return;
+      untracked(() => {
+        template.value = null;
+        self.task(async () => {
+          const loaded: Template = JSON.parse(await grok.dapi.files.readAsText(`${TEMPLATES_FOLDER}/${name}.json`));
+          if (profile.peek() !== name)
+            return;
+          saved.value = JSON.stringify(loaded);
+          template.value = loaded;
+        });
+      });
+    });
+
+    const tree = new VirtualTree<Item>({onCheck: (node, checked) => check(node.data!, checked)});
+    tree.name = 'properties';
+    tree.root.classList.add('admetica-editor-tree');
+    self.effect(() => {
+      edits.value;
+      tree.setRoots(template.value?.subgroup.map(groupNode) ?? []);
+    });
+    self.effect(() => {
+      const t = template.value;
+      const selected = tree.selectedNode.peek()?.id;
+      if (t === null)
+        return;
+      untracked(() => {
+        tree.expanded.value = new Set(t.subgroup.filter((s) => s.expanded).map((s) => s.name));
+        const group = t.subgroup.find((s) => s.name === selected || s.models.some((m) => m.name === selected)) ??
+          t.subgroup[0];
+        void tree.expandPath(group.name === selected ? [group.name] : [group.name, selected ?? group.models[0].name]);
+      });
+    });
+
+    const detail = div([], 'admetica-editor-detail');
+    each(detail, () => {
+      const node = tree.selectedNode.value;
+      return node?.data === undefined ? [] : [node.data];
+    }, (item) => item.name, (item) => isGroup(item) ? groupDetail(item) : modelDetail(item));
+
+    const addPiechart = new BoolInput({label: 'Add piechart', value: true});
+    const addForm = new BoolInput({label: 'Add form', value: true});
+    const labelColumn = new LabelColumn();
+
+    const models = computed(() => {
+      edits.value;
+      return template.value?.subgroup.flatMap((s) => s.models).filter((m) => m.checked).map((m) => m.name) ?? [];
+    });
+    const problem = computed(() => {
+      if (tableIn.table === null)
+        return 'Pick a table';
+      if (molecules.value === null)
+        return 'The table has no molecule column';
+      if (template.value === null)
+        return 'The template is not loaded';
+      if (invalidColors.value)
+        return 'Fix the color ranges';
+      return models.value.length === 0 ? 'Check the properties to calculate' : null;
+    });
+
+    self.effect(() => {
+      const t = tableIn.table;
+      const col = molecules.value;
+      const checked = models.value;
+      const piechart = addPiechart.value;
+      const form = addForm.value;
+      edits.value;
+      untracked(() => {
+        call.inputs['table'] = t;
+        call.inputs['molecules'] = t === null || col === null ? null : t.col(col);
+        call.inputs['template'] = JSON.stringify(template.value);
+        call.inputs['models'] = checked;
+        call.inputs['addPiechart'] = piechart;
+        call.inputs['addForm'] = form;
+        changes.next();
+      });
+    });
+
+    const split = new Splitter([tree, detail], {direction: 'horizontal', sizes: [0.36, 0.64]});
+    split.root.classList.add('admetica-editor-models');
+    return {
+      root: div([
+        new Form({labelColumn}).addAll([tableIn, molecules, profile]),
+        split,
+        statusLine(problem),
+        new Form({labelColumn}).addAll([addPiechart, addForm]),
+      ], 'admetica-editor'),
+      valid: computed(() => problem.value === null),
+    };
+
+    function groupNode(group: Subgroup): TreeNode<Item> {
+      return {id: group.name, label: group.name, data: group, checked: group.checked,
+        children: group.models.map((m) => ({id: m.name, label: m.name, tooltip: m.units, data: m,
+          checked: m.checked}))};
+    }
+
+    function check(item: Item, checked: boolean): void {
+      const group = isGroup(item) ? item : template.peek()!.subgroup.find((s) => s.models.includes(item))!;
+      for (const m of isGroup(item) ? group.models : [item])
+        m.checked = checked;
+      group.checked = group.models.every((m) => m.checked);
+      changed();
+    }
+
+    function groupDetail(group: Subgroup): HTMLElement {
+      return divV([h3(group.name), div([group.description])], {gap: 'm'});
+    }
+
+    function modelDetail(model: Model): HTMLElement {
+      return component((detailScope) => {
+        const parts: HTMLElement[] = [h3(model.name)];
+        for (const p of model.properties) {
+          const part = propertyPart(p, model);
+          if (part)
+            parts.push(part);
+        }
+        if (model.line) {
+          const line = new MpoDesirabilityLineEditor(model, 360, 120);
+          detailScope.subscribe(line.onChanged, () => changed());
+          parts.push(line.root);
+        }
+        if (model.coloring?.type === 'Conditional')
+          parts.push(conditionalColors(model).root);
+        else if (model.coloring?.type === DG.COLOR_CODING_TYPE.LINEAR)
+          parts.push(colorScheme(model.coloring));
+        return [divV(parts, {gap: 'm'})];
+      }, {name: 'admetica-model'}).root;
+    }
+
+    function propertyPart(p: ModelProperty, model: Model): HTMLElement | null {
+      const {name, inputType, enable, skip} = p.property;
+      if (skip)
+        return null;
+      if (inputType === DG.InputType.Map)
+        return tableFromMap(p.object[name]);
+      if (!enable)
+        return div([String(p.object[name] ?? '')]);
+      const options = {value: p.object[name], onInput: (value: any) => {
+        p.object[name] = value;
+        if (name === 'direction' && model.coloring.type === DG.COLOR_CODING_TYPE.LINEAR)
+          [model.coloring.min, model.coloring.max] = [model.coloring.max, model.coloring.min];
+        changed();
+      }};
+      return (inputType === DG.InputType.TextArea ? new TextArea({...options, autoGrow: true, fill: true}) :
+        inputForProperty(DG.Property.fromOptions(p.property), options)).root;
+    }
+
+    function colorScheme(coloring: ModelColoring): HTMLElement {
+      const canvas = ui.schemeInput(JSON.parse(coloring.colors!)).querySelector('canvas')!;
+      canvas.classList.add('admetica-color-scheme');
+      return canvas;
+    }
+
+    function conditionalColors(model: Model): RecordsInput<{range: string, color: string}> {
+      const {type, ...colors} = model.coloring as unknown as Record<string, string>;
+      const ranges = model.properties.find((p) => p.property.name === 'ranges')?.object.ranges;
+      let keys = Object.keys(colors);
+      invalidColors.value = false;
+      const problemOf = (rules: {range: string}[]) => rules.some((r) => r.range.trim() === '') ?
+        'A range cannot be empty' :
+        new Set(rules.map((r) => r.range.trim())).size < rules.length ? 'Each range must be different' : null;
+      const records = new RecordsInput({name: 'Colors', allowAdd: false, allowRemove: false,
+        value: keys.map((range) => ({range, color: colors[range]})),
+        columns: [
+          {name: 'range', header: 'Range', input: (range: string) => new TextInput({value: range, inline: true,
+            commitOn: 'change', tooltipText: ranges?.[range] ?? ''})},
+          {name: 'color', header: 'Color', input: (color: string) => new ColorInput({value: color, inline: true,
+            swatchOnly: true})},
+        ],
+        onInput: (rules) => {
+          invalidColors.value = problemOf(rules) !== null;
+          if (invalidColors.value)
+            return;
+          const coloring: Record<string, string> = {type};
+          rules.forEach((rule, i) => {
+            const range = rule.range.trim();
+            coloring[range] = rule.color;
+            if (ranges && range !== keys[i]) {
+              ranges[range] = ranges[keys[i]];
+              delete ranges[keys[i]];
+            }
+          });
+          model.coloring = coloring as unknown as ModelColoring;
+          keys = rules.map((rule) => rule.range.trim());
+          changed();
+        }});
+      records.addValidator(problemOf);
+      return records;
+    }
+
+    function loadTemplates(select?: string): void {
+      self.task(async () => {
+        const names = await getTemplates();
+        templates.value = names;
+        const builtIn = DEFAULT_TEMPLATE_FILE.replace(/\.json$/, '');
+        profile.value = [select, profile.peek(), builtIn].find((n) => n != null && names.includes(n)) ??
+          names[0] ?? null;
+      });
+    }
+
+    function saveTemplate(): void {
+      self.build(() => {
+        const name = new TextInput({label: 'Name', required: true});
+        name.addValidator((value) => {
+          const n = value.trim();
+          if (/[./\\]/.test(n))
+            return 'A template name cannot contain ".", "/" or "\\"';
+          if (`${n}.json` === DEFAULT_TEMPLATE_FILE)
+            return 'The built-in default template cannot be overwritten';
+          return templates.value.includes(n) ? 'Template with this name already exists' : null;
+        });
+        new Dialog('Save template')
+          .add(new Form().add(name))
+          .onOK(async () => {
+            const t = template.peek()!;
+            for (const group of t.subgroup)
+              group.expanded = tree.expanded.peek().has(group.name);
+            await grok.dapi.files.writeAsText(`${TEMPLATES_FOLDER}/${name.peek().trim()}.json`, JSON.stringify(t));
+            notify.info(`Template "${name.peek().trim()}" has been saved`);
+            loadTemplates(name.peek().trim());
+          }, {text: 'Save', primary: true})
+          .show();
+      });
+    }
+
+    function manageTemplates(): void {
       ui.dialog({title: 'Manage files'})
         .add(ui.fileBrowser({path: TEMPLATES_FOLDER}).root)
-        .onOK(async () => await this.initTemplates())
+        .onOK(() => loadTemplates())
         .show();
-    }, 'Manage templates (rename/delete)');
-    this.folderIcon.style.marginLeft = '10px';
-    this.templatesInput.root.append(this.folderIcon);
-
-    this.initTemplates();
-  }
-
-  private async initTemplates(template?: string) {
-    const templates = await getTemplates();
-    this.templatesInput.items = templates;
-    if (template)
-      this.templatesInput.value = template;
-  }
-
-  private async getPropertiesFromTemplate() {
-    const fileName = `${this.templatesInput.value}.json`;
-    const propertiesJson = await grok.dapi.files.readAsText(`${TEMPLATES_FOLDER}/${fileName}`);
-    return JSON.parse(propertiesJson);
-  }
-
-  private async dialogForTemplateSave(): Promise<void> {
-    const templateNameInput = ui.input.string('Name', {nullable: false});
-    templateNameInput.addValidator((value: string) => {
-      const name = value.trim();
-      if (!name)
-        return 'Enter a template name';
-      if (`${name}.json` === DEFAULT_TEMPLATE_FILE)
-        return 'The built-in default template cannot be overwritten';
-      return this.templatesInput.items.includes(name) ? 'Template with this name already exists' : null;
-    });
-    ui.dialog({ title: 'Save template' })
-      .add(templateNameInput)
-      .onOK(async () => {
-        const templateName = templateNameInput.value.trim();
-        await grok.dapi.files.writeAsText(`${TEMPLATES_FOLDER}/${templateName}.json`, JSON.stringify(this.updatedProperties));
-        grok.shell.info(`Template "${templateName}" has been successfully saved!`);
-        await this.initTemplates(templateName);
-      })
-      .show();
-  }
-
-  private async createModelsSettingsDiv(paramsForm: HTMLElement): Promise<HTMLElement> {
-    this.properties = await this.getPropertiesFromTemplate();
-    this.updatedProperties = JSON.parse(JSON.stringify(this.properties));
-    ui.empty(paramsForm);
-    this.tree = ui.tree();
-    const treeControl = this.createTreeControl(this.updatedProperties!);
-    paramsForm.appendChild(treeControl);
-    this.tree.currentItem = this.currentItem ?? this.tree.items.find((item) => item instanceof DG.TreeViewNode)!;
-    paramsForm.dispatchEvent(new Event('change'));
-    return paramsForm;
-  }
-
-  private createInputForProperty(property: any, model: Model) {
-    if (property.property.skip)
-      return;
-
-    const object = property.property.inputType === DG.InputType.Map ? {} : property.object;
-    const prop = DG.Property.fromOptions(property.property);
-    const input = DG.InputBase.forProperty(prop, object);
-    const isLinear = model.coloring.type === DG.COLOR_CODING_TYPE.LINEAR;
-
-    if (!property.property.enable)
-      input.root.style.pointerEvents = 'none';
-
-    const key = property.property.name as keyof typeof property.object;
-    input.value = property.object[key];
-
-    if (input.inputType === DG.InputType.TextArea)
-      input.root.style.height = `${this.getTextHeight(property.object[key])}px`;
-
-    input.addCaption('');
-    input.onChanged.subscribe(() => {
-      property.object[key] = input.value;
-      if (key === 'direction' && isLinear)
-        [model.coloring.min, model.coloring.max] = [model.coloring.max, model.coloring.min];
-      const areEqual = JSON.stringify(this.properties) === JSON.stringify(this.updatedProperties);
-      this.saveButton.style.visibility = areEqual ? 'hidden' : 'visible';
-    });
-
-    if (input.inputType === DG.InputType.Map) {
-      const table = input.root.querySelector('.d4-item-table') as HTMLTableElement;
-      Array.from(table!.rows).forEach((row) => row.lastElementChild?.remove());
-      table.style.pointerEvents = 'none';
-      return table;
+    }
+  }, {name: 'admetica-editor'}));
+  DG.Widget.registerCleanup(editor.root, () => scope.dispose());
+  return new class extends DG.FuncCallEditor {
+    get isValid(): boolean {
+      return editor.valid.peek();
     }
 
-    return input.root;
-  }
-
-  private createConditionalInput(coloring: ModelColoring, model: Model) {
-    const conditionalColors = Object.entries(coloring).slice(1);
-    const conditionalColoring = `{${conditionalColors.map(([range, color]) => `"${range}":"${color}"`).join(',')}}`;
-    const patternsInp = ui.patternsInput(JSON.parse(conditionalColoring));
-    const inputs = patternsInp.querySelectorAll('.ui-input-editor');
-    const colorBars = patternsInp.querySelectorAll('.d4-color-bar');
-
-    const rangesProperty = model.properties.find((prop: any) => prop.property.name === 'ranges');
-    const coloringProperty = model.coloring as any;
-
-    inputs.forEach((input, index) => {
-      let key = conditionalColors[index][0];
-      const inputElement = input as HTMLInputElement;
-
-      inputElement.addEventListener('mousemove', (event) => {
-        const mouseEvent = event as MouseEvent;
-        const value = rangesProperty?.object.ranges[key] || '';
-        ui.tooltip.show(value, mouseEvent.x, mouseEvent.y);
-      });
-
-      inputElement.addEventListener('input', () => {
-        const newValue = inputElement.value;
-
-        if (rangesProperty) {
-          const ranges = rangesProperty.object.ranges;
-          const oldValue = ranges[key];
-          delete ranges[key];
-          ranges[newValue] = oldValue;
-        }
-
-        if (coloringProperty) {
-          const oldColorValue = coloringProperty[key];
-          delete coloringProperty[key];
-          coloringProperty[newValue] = oldColorValue;
-        }
-
-        conditionalColors[index][0] = newValue;
-        key = newValue;
-
-        const areEqual = JSON.stringify(this.properties) === JSON.stringify(this.updatedProperties);
-        this.saveButton.style.visibility = areEqual ? 'hidden' : 'visible';
-      });
-    });
-
-    colorBars.forEach((colorBar, index) => {
-      const handleColorChange = () => {
-        const key = conditionalColors[index][0];
-        const newColor = window.getComputedStyle(colorBar).backgroundColor;
-        const hexColor = this.rgbToHex(newColor);
-
-        if (coloringProperty)
-          coloringProperty[key] = hexColor;
-
-        const areEqual = JSON.stringify(this.properties) === JSON.stringify(this.updatedProperties);
-        this.saveButton.style.visibility = areEqual ? 'hidden' : 'visible';
-      };
-
-      const observer = new MutationObserver(() => {
-        handleColorChange();
-      });
-
-      observer.observe(colorBar, { attributes: true, attributeFilter: ['style'] });
-    });
-
-    return patternsInp;
-  }
-
-  private rgbToHex(rgb: string): string {
-    const result = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)$/);
-    if (!result) return '#000000';
-
-    const r = parseInt(result[1]).toString(16).padStart(2, '0');
-    const g = parseInt(result[2]).toString(16).padStart(2, '0');
-    const b = parseInt(result[3]).toString(16).padStart(2, '0');
-
-    return `#${r}${g}${b}`;
-  }
-
-  private createLinearInput(coloring: ModelColoring) {
-    const linearInput = ui.schemeInput(JSON.parse(coloring.colors!) as number[]);
-    const canvas = linearInput.querySelector('canvas');
-    canvas!.style.width = '100px';
-    canvas!.style.height = '20px';
-    const div = ui.divV([canvas]);
-    linearInput.style.pointerEvents = 'none';
-    return div;
-  }
-
-  private createInputsForCategories(group: Subgroup, inputs: HTMLElement): void {
-    ui.empty(inputs);
-    inputs.classList.add('admetica-input-form');
-    inputs.appendChild(ui.divText(group.name, 'admetica-descriptor-name'));
-    inputs.appendChild(ui.input.textArea('', {size: {width: 100, height: 150}, value: group.description}).root);
-  }
-
-  private createInputsForModels(model: Model, inputs: HTMLElement): void {
-    ui.empty(inputs);
-    inputs.classList.add('admetica-input-form');
-    inputs.appendChild(ui.divText(model.name, 'admetica-descriptor-name'));
-    model.properties.forEach((p) => {
-      const input = this.createInputForProperty(p, model);
-      if (input) inputs.appendChild(input);
-    });
-
-    if (model.line) {
-      const lineEditor = new MpoDesirabilityLineEditor(model, 300, 80);
-      lineEditor.onChanged.subscribe((_) => {
-        const areEqual = JSON.stringify(this.properties) === JSON.stringify(this.updatedProperties);
-        this.saveButton.style.visibility = areEqual ? 'hidden' : 'visible';
-      });
-      inputs.appendChild(lineEditor.root);
+    get onInputChanged(): Observable<void> {
+      return changes;
     }
-
-    const coloring = model.coloring;
-    if (coloring.type === 'Conditional')
-      inputs.appendChild(this.createConditionalInput(coloring, model));
-    else if (coloring.type === DG.COLOR_CODING_TYPE.LINEAR)
-      inputs.appendChild(this.createLinearInput(coloring));
-  }
-
-  private createTreeGroup(template: Template): void {
-    template.subgroup.forEach((subgroup: Subgroup) => {
-      const groupNode = this.tree.group(subgroup.name);
-      groupNode.expanded = subgroup.expanded;
-      groupNode.enableCheckBox(subgroup.checked);
-
-      subgroup.models.forEach((model: Model) => {
-        const modelNode = groupNode.item(model.name);
-        modelNode.checked = model.checked;
-      });
-    });
-  }
-
-  private getModel(template: Template, nodeName: string): Model | null {
-    const model = template.subgroup
-      .flatMap((subgroup) => subgroup.models)
-      .find((model) => nodeName === model.name);
-    if (model) return model;
-    return null;
-  }
-
-  private createTreeControl(template: Template): HTMLDivElement {
-    this.createTreeGroup(template);
-    this.tree.root.classList.add('admetica-tree');
-    const inputs = ui.divV([]);
-
-    this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
-      this.currentItem = node;
-      const subgroup = template.subgroup.find((subgroup) => subgroup.name === node.text);
-      const model = this.getModel(template, node.text);
-      if (subgroup)
-        this.createInputsForCategories(subgroup, inputs);
-      else if (model)
-        this.createInputsForModels(model, inputs);
-    });
-
-    this.tree.onNodeMouseEnter.subscribe((node: DG.TreeViewNode) => {
-      const model = this.getModel(template, node.text);
-      if (!model) return;
-      node.root.onmouseenter = (e) => ui.tooltip.show(model.units, e.x, e.y);
-      node.root.onmouseleave = (e) => ui.tooltip.hide();
-    });
-
-    this.tree.onChildNodeExpandedChanged.subscribe((node: DG.TreeViewGroup) => {
-      const subgroup = template.subgroup.find((subgroup) => subgroup?.name === node.text);
-      if (subgroup)
-        subgroup.expanded = node.expanded;
-    });
-
-    this.tree.onNodeCheckBoxToggled.subscribe((node) => {
-      if (node instanceof DG.TreeViewGroup) {
-        const subgroup = template.subgroup.find((subgroup) => subgroup?.name === node.text);
-        subgroup!.checked = node.checked;
-        subgroup!.models.forEach((model: Model) => {
-          model.checked = node.checked;
-        });
-      } else {
-        const model = this.getModel(template, node.text);
-        model!.checked = node.checked;
-      }
-    });
-
-    const tabContent = ui.divH([this.tree.root, inputs]);
-    tabContent.classList.add('admetica-tab-content');
-    return tabContent;
-  }
-
-  public getEditor(): HTMLElement {
-    return ui.div([
-      this.tableInput,
-      this.colInputRoot,
-      ui.divH([this.templatesInput.root, this.saveButton]),
-      this.modelsSettingsDiv,
-      this.addPiechartInput.root,
-      this.addFormInput.root,
-    ], { style: { minWidth: '450px' }, classes: 'ui-form' });
-  }
-
-  public getParams() {
-    return {
-      table: this.tableInput.value!,
-      col: this.colInput ? this.colInput.value! : null,
-      templateContent: JSON.stringify(this.updatedProperties),
-      models: this.tree?.items.filter((item) => !(item instanceof DG.TreeViewGroup) && item.checked).map((item) => item.text),
-      addPiechart: this.addPiechartInput.value,
-      addForm: this.addFormInput.value,
-    };
-  }
-
-  private getTextHeight(text: string) {
-    const div = ui.div();
-    div.classList.add('admetica-div');
-    div.textContent = text;
-    document.body.appendChild(div);
-    const textHeight = div.clientHeight;
-    document.body.removeChild(div);
-
-    return textHeight;
-  }
-
-  onTableInputChanged(): void {
-    this.colInput = ui.input.column('Molecules', {
-      table: this.tableInput.value!,
-      value: this.tableInput.value!.columns.bySemType(DG.SEMTYPE.MOLECULE)!,
-      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE,
-    });
-    ui.empty(this.colInputRoot);
-    Array.from(this.colInput.root.children).forEach((it) => this.colInputRoot.append(it));
-  }
+  }(editor.root);
 }
