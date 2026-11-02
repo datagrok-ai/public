@@ -297,6 +297,8 @@ type LookupData = {
 export type UiOptions = {
   inputsTabDockRatio: number,
   graphsDockRatio: number,
+  /** Skip prefetching user models and library entries (not needed by demos, slows their start) */
+  skipPrefetch?: boolean,
 };
 
 /** Metadata attached to a tree item; consumed by the centralized selection handler and the
@@ -814,10 +816,12 @@ export class DiffStudio {
 
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
     browsing?: Browsing, dockOptions?: UiOptions) {
-    prefetchRecentModelsTable();
-    prefetchMyModelFiles();
-    prefetchMyModelFilesContent();
-    prefetchExternalLibraryEntries(_package.webRoot);
+    if (!dockOptions?.skipPrefetch) {
+      prefetchRecentModelsTable();
+      prefetchMyModelFiles();
+      prefetchMyModelFilesContent();
+      prefetchExternalLibraryEntries(_package.webRoot);
+    }
     this.solverView = DG.TableView.create(this.solutionTable, false);
     if (toAddTableView) {
       grok.shell.windows.showToolbox = false;
