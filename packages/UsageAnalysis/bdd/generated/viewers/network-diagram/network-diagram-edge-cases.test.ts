@@ -40,7 +40,8 @@ test.describe("Network diagram edge cases — one column for both nodes, more th
     await session.step(19, "When user sets \"node2ColumnName\" property of network diagram viewer to \"SEX\"", () => setProperty(page, "node2ColumnName", el("network diagram viewer"), "SEX"));
     await session.step(20, "Then the \"node 2 column\" reading of network diagram viewer should be \"SEX\"", () => readingReads(page, "node 2 column", el("network diagram viewer"), "SEX"));
     await session.step(21, "When user filters rows where \"SEX\" is \"F\"", () => filterTo(page, "SEX", "F"));
-    await session.step(22, "Then no errors should have been logged", () => noErrors(page));
+    await session.step(22, "Then the \"rows shown\" reading of network diagram viewer should be 553", () => readingIs(page, "rows shown", el("network diagram viewer"), 553));
+    await session.step(23, "And no errors should have been logged", () => noErrors(page));
   });
   test("More than 10000 nodes are not drawn and the diagram says so", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.network-diagram"]}, async ({browser}) => {
     const page = await session.page(browser);
@@ -49,13 +50,13 @@ test.describe("Network diagram edge cases — one column for both nodes, more th
     await session.step(11, "And user adds a network diagram viewer", () => addViewer(page, "network diagram"));
     await session.step(12, "Then the \"nodes\" reading of network diagram viewer should be 4", () => readingIs(page, "nodes", el("network diagram viewer"), 4));
     await session.step(13, "And the \"edges\" reading of network diagram viewer should be 4", () => readingIs(page, "edges", el("network diagram viewer"), 4));
-    await session.step(28, "Given user opens demog dataset", () => openDataset(page, ds("demog")));
-    await session.step(29, "Then the table should have 5850 rows", () => rowCount(page, 5850));
-    await session.step(30, "When user adds a calculated column \"PARTNER\" with formula \"${USUBJID} + '-b'\"", () => addCalculated(page, "PARTNER", "${USUBJID} + '-b'"));
-    await session.step(31, "Then every value of \"PARTNER\" column should contain \"-b\"", () => everyValueContains(page, "PARTNER", "-b"));
-    await session.step(32, "When user adds a network diagram viewer with:", () => addViewerWith(page, "network diagram", [["node1ColumnName","USUBJID"],["node2ColumnName","PARTNER"]]), [["node1ColumnName","USUBJID"],["node2ColumnName","PARTNER"]]);
-    await session.step(35, "Then network diagram viewer should contain the text \"Too many nodes to display, max 10000\"", () => shouldContainText(page, el("network diagram viewer"), "Too many nodes to display, max 10000"));
-    await session.step(36, "And the \"nodes\" reading of network diagram viewer should be 0", () => readingIs(page, "nodes", el("network diagram viewer"), 0));
-    await session.step(37, "And no errors should have been logged", () => noErrors(page));
+    await session.step(29, "Given user opens demog dataset", () => openDataset(page, ds("demog")));
+    await session.step(30, "Then the table should have 5850 rows", () => rowCount(page, 5850));
+    await session.step(31, "When user adds a calculated column \"PARTNER\" with formula \"${USUBJID} + '-b'\"", () => addCalculated(page, "PARTNER", "${USUBJID} + '-b'"));
+    await session.step(32, "Then every value of \"PARTNER\" column should contain \"-b\"", () => everyValueContains(page, "PARTNER", "-b"));
+    await session.step(33, "When user adds a network diagram viewer with:", () => addViewerWith(page, "network diagram", [["node1ColumnName","USUBJID"],["node2ColumnName","PARTNER"]]), [["node1ColumnName","USUBJID"],["node2ColumnName","PARTNER"]]);
+    await session.step(36, "Then network diagram viewer should contain the text \"Too many nodes to display, max 10000\"", () => shouldContainText(page, el("network diagram viewer"), "Too many nodes to display, max 10000"));
+    await session.step(37, "And the \"nodes\" reading of network diagram viewer should be 0", () => readingIs(page, "nodes", el("network diagram viewer"), 0));
+    await session.step(38, "And no errors should have been logged", () => noErrors(page));
   });
 });

@@ -1,5 +1,5 @@
 @realizes:views.projects
-Feature: Project gallery edge cases: Rename with no letter, CANCEL on Rename and Delete, the address of a deleted project, a recipient's card menu
+Feature: Project gallery edge cases: Rename with no letter and CANCEL, CANCEL on Delete, a recipient's card menu
   Guards for a project's card in Browse > Dashboards. cars.csv from Browse > Files > Demo is saved
   through the ribbon's Save dialog, the address the page shows after the save is remembered, and the
   card is found by the gallery search.
@@ -10,9 +10,7 @@ Feature: Project gallery edge cases: Rename with no letter, CANCEL on Rename and
     the dialog's text, so it is not claimed.
   - CANCEL on Rename and on the "Are you sure?" dialog of Delete Project changes nothing: the server
     keeps the project under its name, and the gallery still shows its card.
-  - The address of a deleted project names nothing, and opening it says so and leaves the shell as it
-    was: an error balloon "Unable to get project asset", the current view kept (the contract
-    `browse/browse-routing.feature` states for an address that names nothing).
+  - The address of a deleted project: `browse/address-edge-cases.feature`.
   - A recipient with View and use may not rename or delete the project, so its card menu shows
     Rename... and Delete Project disabled (core#1162: today both are enabled, a known failure).
 
@@ -48,26 +46,17 @@ Feature: Project gallery edge cases: Rename with no letter, CANCEL on Rename and
     Then BDDEdgeGal{time} gallery card should be visible
 
   @edge-cases
-  Scenario: Rename with the name emptied says a letter is needed and disables OK
+  Scenario: Rename marks an emptied name invalid with OK disabled, and CANCEL keeps the project's name
     When user picks "Rename..." from the context menu of BDDEdgeGal{time} gallery card
     Then Rename project dialog should be visible
     And OK button in Rename project dialog should be enabled
     When user clears Name input in Rename project dialog
     Then Name input in Rename project dialog should be invalid
     And OK button in Rename project dialog should be disabled
-    When user types "x" into Name input in Rename project dialog
+    When user types "BDDEdgeGalNew{time}" into Name input in Rename project dialog
     Then Name input in Rename project dialog should be valid
     And OK button in Rename project dialog should be enabled
     When user clicks on CANCEL button in Rename project dialog
-    Then the "Rename project" dialog should close
-    And 1 project named "BDDEdgeGal{time}" should be on the server
-
-  @edge-cases
-  Scenario: CANCEL on Rename keeps the project's name
-    When user picks "Rename..." from the context menu of BDDEdgeGal{time} gallery card
-    Then Rename project dialog should be visible
-    When user enters "BDDEdgeGalNew{time}" into Name input in Rename project dialog
-    And user clicks on CANCEL button in Rename project dialog
     Then the "Rename project" dialog should close
     And 0 projects named "BDDEdgeGalNew{time}" should be on the server
     And 1 project named "BDDEdgeGal{time}" should be on the server
@@ -84,21 +73,7 @@ Feature: Project gallery edge cases: Rename with no letter, CANCEL on Rename and
     When user clicks on "Refresh" icon inside gallery toolbar
     Then BDDEdgeGal{time} gallery card should be visible
 
-  @edge-cases
-  Scenario: The address of a deleted project says it names nothing and keeps the current view
-    When user picks "Delete Project" from the context menu of BDDEdgeGal{time} gallery card
-    Then "Are you sure?" dialog should be visible
-    When user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    And 0 projects named "BDDEdgeGal{time}" should be on the server
-    Given user opens demog-1000 dataset
-    Then the "demog-1000" view should be current
-    When user opens the remembered address
-    Then an error balloon containing "Unable to get project asset" should have been shown
-    And the "demog-1000" view should be current
-    And no errors should have been logged
-
-  @edge-cases @realizes:sharing.share-dialog @known-failure:119 @realizes:core#1162
+  @edge-cases @realizes:sharing.share-dialog @known-failure:94 @realizes:core#1162
   Scenario: A View and use recipient sees Rename and Delete Project disabled in the card menu
     core#1162: both items are enabled for a View and use recipient. Remove the tag when they are
     disabled.

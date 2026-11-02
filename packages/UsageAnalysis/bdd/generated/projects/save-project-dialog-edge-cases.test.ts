@@ -73,7 +73,7 @@ test.describe("Save project dialog edge cases: CANCEL, names without a letter, a
     await session.step(65, "When user clicks on CANCEL button in \"Save project\" dialog", () => clickOn(page, el("CANCEL button in \"Save project\" dialog")));
     await session.step(66, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
   });
-  test("A name without a letter (\"123\") is marked invalid and OK is disabled [name=123]", {tag: ["@realizes:views.projects", "@edge-cases"]}, async ({browser}) => {
+  test("A name without a letter (digits only) is marked invalid and OK is disabled until a letter is added [case=digits only, name=123]", {tag: ["@realizes:views.projects", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(29, "Given user is logged in", () => loggedIn(page));
     await session.step(30, "And the context panel is open", () => contextPanelOpen(page));
@@ -86,16 +86,16 @@ test.describe("Save project dialog edge cases: CANCEL, names without a letter, a
     await session.step(73, "Then the \"cars\" view should be current", () => viewIsCurrent(page, "cars"));
     await session.step(74, "When user clicks on Save ribbon item", () => clickOn(page, el("Save ribbon item")));
     await session.step(75, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
-    await session.step(76, "When user types \"123\" into Name text input in \"Save project\" dialog", () => typeInto(page, "123", el("Name text input in \"Save project\" dialog")));
+    await session.step(76, "When user enters \"123\" into Name text input in \"Save project\" dialog", () => enterInto(page, "123", el("Name text input in \"Save project\" dialog")));
     await session.step(77, "Then Name text input in \"Save project\" dialog should be invalid", () => shouldBe(page, el("Name text input in \"Save project\" dialog"), "invalid"));
     await session.step(78, "And OK button in \"Save project\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "disabled"));
-    await session.step(79, "When user types \"123x\" into Name text input in \"Save project\" dialog", () => typeInto(page, "123x", el("Name text input in \"Save project\" dialog")));
+    await session.step(79, "When user enters \"123x\" into Name text input in \"Save project\" dialog", () => enterInto(page, "123x", el("Name text input in \"Save project\" dialog")));
     await session.step(80, "Then Name text input in \"Save project\" dialog should be valid", () => shouldBe(page, el("Name text input in \"Save project\" dialog"), "valid"));
     await session.step(81, "And OK button in \"Save project\" dialog should be enabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "enabled"));
     await session.step(82, "When user clicks on CANCEL button in \"Save project\" dialog", () => clickOn(page, el("CANCEL button in \"Save project\" dialog")));
     await session.step(83, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
   });
-  test("A name without a letter (\"/\") is marked invalid and OK is disabled [name=/]", {tag: ["@realizes:views.projects", "@edge-cases"]}, async ({browser}) => {
+  test("A name without a letter (a \"/\" alone) is marked invalid and OK is disabled until a letter is added [case=a \"/\" alone, name=/]", {tag: ["@realizes:views.projects", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(29, "Given user is logged in", () => loggedIn(page));
     await session.step(30, "And the context panel is open", () => contextPanelOpen(page));
@@ -108,16 +108,16 @@ test.describe("Save project dialog edge cases: CANCEL, names without a letter, a
     await session.step(73, "Then the \"cars\" view should be current", () => viewIsCurrent(page, "cars"));
     await session.step(74, "When user clicks on Save ribbon item", () => clickOn(page, el("Save ribbon item")));
     await session.step(75, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
-    await session.step(76, "When user types \"/\" into Name text input in \"Save project\" dialog", () => typeInto(page, "/", el("Name text input in \"Save project\" dialog")));
+    await session.step(76, "When user enters \"/\" into Name text input in \"Save project\" dialog", () => enterInto(page, "/", el("Name text input in \"Save project\" dialog")));
     await session.step(77, "Then Name text input in \"Save project\" dialog should be invalid", () => shouldBe(page, el("Name text input in \"Save project\" dialog"), "invalid"));
     await session.step(78, "And OK button in \"Save project\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "disabled"));
-    await session.step(79, "When user types \"/x\" into Name text input in \"Save project\" dialog", () => typeInto(page, "/x", el("Name text input in \"Save project\" dialog")));
+    await session.step(79, "When user enters \"/x\" into Name text input in \"Save project\" dialog", () => enterInto(page, "/x", el("Name text input in \"Save project\" dialog")));
     await session.step(80, "Then Name text input in \"Save project\" dialog should be valid", () => shouldBe(page, el("Name text input in \"Save project\" dialog"), "valid"));
     await session.step(81, "And OK button in \"Save project\" dialog should be enabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "enabled"));
     await session.step(82, "When user clicks on CANCEL button in \"Save project\" dialog", () => clickOn(page, el("CANCEL button in \"Save project\" dialog")));
     await session.step(83, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
   });
-  test("A name without a letter (\"1/2\") is marked invalid and OK is disabled [name=1/2]", {tag: ["@realizes:views.projects", "@edge-cases"]}, async ({browser}) => {
+  test("A name without a letter (digits, \"/\") is marked invalid and OK is disabled until a letter is added [case=digits, \"/\", name=1/2]", {tag: ["@realizes:views.projects", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(29, "Given user is logged in", () => loggedIn(page));
     await session.step(30, "And the context panel is open", () => contextPanelOpen(page));
@@ -130,10 +130,10 @@ test.describe("Save project dialog edge cases: CANCEL, names without a letter, a
     await session.step(73, "Then the \"cars\" view should be current", () => viewIsCurrent(page, "cars"));
     await session.step(74, "When user clicks on Save ribbon item", () => clickOn(page, el("Save ribbon item")));
     await session.step(75, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
-    await session.step(76, "When user types \"1/2\" into Name text input in \"Save project\" dialog", () => typeInto(page, "1/2", el("Name text input in \"Save project\" dialog")));
+    await session.step(76, "When user enters \"1/2\" into Name text input in \"Save project\" dialog", () => enterInto(page, "1/2", el("Name text input in \"Save project\" dialog")));
     await session.step(77, "Then Name text input in \"Save project\" dialog should be invalid", () => shouldBe(page, el("Name text input in \"Save project\" dialog"), "invalid"));
     await session.step(78, "And OK button in \"Save project\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "disabled"));
-    await session.step(79, "When user types \"1/2x\" into Name text input in \"Save project\" dialog", () => typeInto(page, "1/2x", el("Name text input in \"Save project\" dialog")));
+    await session.step(79, "When user enters \"1/2x\" into Name text input in \"Save project\" dialog", () => enterInto(page, "1/2x", el("Name text input in \"Save project\" dialog")));
     await session.step(80, "Then Name text input in \"Save project\" dialog should be valid", () => shouldBe(page, el("Name text input in \"Save project\" dialog"), "valid"));
     await session.step(81, "And OK button in \"Save project\" dialog should be enabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "enabled"));
     await session.step(82, "When user clicks on CANCEL button in \"Save project\" dialog", () => clickOn(page, el("CANCEL button in \"Save project\" dialog")));

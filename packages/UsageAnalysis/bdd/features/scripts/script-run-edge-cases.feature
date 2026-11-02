@@ -37,4 +37,3 @@ Feature: Script run edge cases: Run... with no table to give
     When user clicks on CANCEL button in "BddScriptNoTable{time}" dialog
     Then the "BddScriptNoTable{time}" dialog should close
     And no errors should have been logged
-    When user clears gallery search

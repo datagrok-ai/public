@@ -10,23 +10,13 @@ Feature: Filter panel edge cases
   only the blank rows (help filters.md "Missing values"). The expression card's `is null` and
   `is not null` operations of a numeric column keep the blank and the filled rows (help filters.md,
   "numerical columns"). A free-text rule that does not parse is refused on Enter: no rule is added
-  and the rows stay (`text_filter.dart`). A bracket typed into a categorical card's search logs
-  no error (core#1134).
+  and the rows stay (`text_filter.dart`). A bracket or another special character typed into a
+  categorical card's search finds the category with that literal text (core#1134).
 
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
     And user opens an empty filter panel
-
-  @edge-cases @realizes:core#1134
-  Scenario: An opening bracket typed into a categorical card's search logs no error
-    When user adds a card for "DIS_POP" to the filter panel
-    And user hovers over "DIS_POP" filter card
-    And user clicks on search icon of "DIS_POP" filter card
-    And user types "Ps" into the search of the "DIS_POP" filter card
-    Then 242 rows should pass the filter
-    When user types "Ps(" into the search of the "DIS_POP" filter card
-    Then no errors should have been logged
 
   @edge-cases
   Scenario: Removing the column of a filtering card removes the card and releases its rows
@@ -94,7 +84,7 @@ Feature: Filter panel edge cases
     And all rows should pass the filter
     And no errors should have been logged
 
-  @edge-cases @known-failure:105 @realizes:core#1174
+  @edge-cases @known-failure:95 @realizes:core#1174
   Scenario: Removing the column of a filtering flag in the Combined Boolean card releases its rows
     core#1174: the flag goes from the card, but the table stays filtered to its true rows. Remove the
     tag when the removal releases the rows.
@@ -105,7 +95,7 @@ Feature: Filter panel edge cases
     Then all rows should pass the filter
     And no errors should have been logged
 
-  @edge-cases @known-failure:118 @realizes:core#1174
+  @edge-cases @known-failure:108 @realizes:core#1174
   Scenario: Removing the column of a filtering Expression card rule releases its rows
     core#1174: the table stays filtered by a rule on a column that is gone. Remove the tag when the
     removal releases the rows.
@@ -118,7 +108,7 @@ Feature: Filter panel edge cases
     Then all rows should pass the filter
     And no errors should have been logged
 
-  @edge-cases @known-failure:132 @realizes:core#1174
+  @edge-cases @known-failure:122 @realizes:core#1174
   Scenario: Removing a column under a Numeric Columns rule recalculates the rule over the rest
     core#1174: "> 100" over the numeric columns keeps 884 rows (HEIGHT or WEIGHT above 100); with
     HEIGHT gone only WEIGHT counts, 131 rows, but the table stays at 884. Remove the tag when it is 131.
@@ -158,7 +148,7 @@ Feature: Filter panel edge cases
       | a+b   |
       | a[b   |
 
-  @edge-cases @known-failure:168 @realizes:core#1223
+  @edge-cases @known-failure:158 @realizes:core#1223
   Scenario: Removing the column of a hierarchical card's middle level drops that level
     The card keeps its three levels: it is still "SEX / RACE / SEVERITY" after RACE is removed.
     When user picks "Add Filter | Hierarchical" from the filter panel menu
@@ -172,7 +162,7 @@ Feature: Filter panel edge cases
     And all rows should pass the filter
     And no errors should have been logged
 
-  @edge-cases @known-failure:184 @realizes:core#1223
+  @edge-cases @known-failure:174 @realizes:core#1223
   Scenario: A layout naming a removed level column brings the hierarchical card back without that level
     The layout brings no card back: the panel is left with 0 filters.
     When user picks "Add Filter | Hierarchical" from the filter panel menu
@@ -187,7 +177,7 @@ Feature: Filter panel edge cases
     Then the hierarchical filter card should list the "F / None" row
     And no errors should have been logged
 
-  @edge-cases @known-failure:206 @realizes:core#1224
+  @edge-cases @known-failure:196 @realizes:core#1224
   Scenario: Saving a filter state under a name already taken asks before overwriting it
     No dialog asks before the second save under the same name.
     Given no saved filter state "bdd edge filter state" is kept, now or when the feature ends

@@ -66,27 +66,27 @@ Feature: Save project dialog edge cases: CANCEL, names without a letter, a local
     Then the "Save project" dialog should close
 
   @edge-cases
-  Scenario Outline: A name without a letter ("<name>") is marked invalid and OK is disabled
+  Scenario Outline: A name without a letter (<case>) is marked invalid and OK is disabled until a letter is added
     Given Files tree node inside browse tree is expanded
     And Files---Demo tree node inside browse tree is expanded
     When user double-clicks Files---Demo---cars.csv tree node inside browse tree
     Then the "cars" view should be current
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
-    When user types "<name>" into Name text input in "Save project" dialog
+    When user enters "<name>" into Name text input in "Save project" dialog
     Then Name text input in "Save project" dialog should be invalid
     And OK button in "Save project" dialog should be disabled
-    When user types "<name>x" into Name text input in "Save project" dialog
+    When user enters "<name>x" into Name text input in "Save project" dialog
     Then Name text input in "Save project" dialog should be valid
     And OK button in "Save project" dialog should be enabled
     When user clicks on CANCEL button in "Save project" dialog
     Then the "Save project" dialog should close
 
     Examples:
-      | name |
-      | 123  |
-      | /    |
-      | 1/2  |
+      | case        | name |
+      | digits only | 123  |
+      | a "/" alone | /    |
+      | digits, "/" | 1/2  |
 
   @edge-cases
   Scenario: A name of spaces only is marked invalid and OK is disabled

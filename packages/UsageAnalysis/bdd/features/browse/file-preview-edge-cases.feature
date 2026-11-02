@@ -23,12 +23,6 @@ Feature: File preview edge cases: a file of a format the platform does not read,
     And Files---App-Data---UsageAnalysis tree node inside browse tree is expanded
     Then Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree should be visible
 
-  Scenario: A file of an unsupported format is clicked with no error and shows its details
-    When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree
-    Then the context panel should show "bdd-edge-odd-{time}.qqq"
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-
   Scenario: A file of an unsupported format is downloaded from its menu
     Given user watches downloads
     When user opens the context menu of Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree
@@ -38,13 +32,14 @@ Feature: File preview edge cases: a file of a format the platform does not read,
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario Outline: An empty <ext> file is previewed with no error
-    When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-empty-{time}.<ext> tree node inside browse tree
-    Then the context panel should show "bdd-edge-empty-{time}.<ext>"
+  Scenario Outline: <kind> is clicked with no error and shows its details
+    When user clicks on Files---App-Data---UsageAnalysis---<file> tree node inside browse tree
+    Then the context panel should show "<file>"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
     Examples:
-      | ext |
-      | csv |
-      | txt |
+      | kind                            | file                        |
+      | A file of an unsupported format | bdd-edge-odd-{time}.qqq     |
+      | An empty csv file               | bdd-edge-empty-{time}.csv   |
+      | An empty txt file               | bdd-edge-empty-{time}.txt   |

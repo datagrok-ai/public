@@ -44,6 +44,5 @@ test.describe("Script run edge cases: Run... with no table to give", () => {
     await session.step(37, "When user clicks on CANCEL button in \"BddScriptNoTable{time}\" dialog", () => clickOn(page, el(session.text("CANCEL button in \"BddScriptNoTable{time}\" dialog"))));
     await session.step(38, "Then the \"BddScriptNoTable{time}\" dialog should close", () => dialogCloses(page, session.text("BddScriptNoTable{time}")));
     await session.step(39, "And no errors should have been logged", () => noErrors(page));
-    await session.step(40, "When user clears gallery search", () => clearField(page, el("gallery search")));
   });
 });

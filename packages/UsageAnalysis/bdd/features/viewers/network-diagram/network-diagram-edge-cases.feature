@@ -19,7 +19,8 @@ Feature: Network diagram edge cases — one column for both nodes, more than 100
     When user sets "node2ColumnName" property of network diagram viewer to "SEX"
     Then the "node 2 column" reading of network diagram viewer should be "SEX"
     When user filters rows where "SEX" is "F"
-    Then no errors should have been logged
+    Then the "rows shown" reading of network diagram viewer should be 553
+    And no errors should have been logged
 
   Scenario: More than 10000 nodes are not drawn and the diagram says so
     demog (5850 rows) with USUBJID as Node 1 and a distinct PARTNER per row as Node 2 makes 11700

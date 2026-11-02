@@ -44,34 +44,21 @@ Feature: Query parameters edge cases: the run dialog refuses what it cannot run
     Then the "BDDQParamEdge{time}" dialog should close
     And no errors should have been logged
 
-  Scenario: An integer above its maximum disables OK, and one inside the bounds enables it
-    When user enters "11" into Lim input in "BDDQParamEdge{time}" dialog
+  Scenario Outline: <case> disables OK, and a valid value enables it again
+    When user enters "<invalid>" into <input> input in "BDDQParamEdge{time}" dialog
     Then OK button in "BDDQParamEdge{time}" dialog should be disabled
-    When user enters "10" into Lim input in "BDDQParamEdge{time}" dialog
-    Then OK button in "BDDQParamEdge{time}" dialog should be enabled
-    When user enters "0" into Lim input in "BDDQParamEdge{time}" dialog
-    Then OK button in "BDDQParamEdge{time}" dialog should be disabled
-    When user clicks on CANCEL button in "BDDQParamEdge{time}" dialog
-    Then the "BDDQParamEdge{time}" dialog should close
-    And no errors should have been logged
-
-  Scenario: Text in an integer parameter disables OK
-    When user enters "abc" into Lim input in "BDDQParamEdge{time}" dialog
-    Then OK button in "BDDQParamEdge{time}" dialog should be disabled
-    When user enters "3" into Lim input in "BDDQParamEdge{time}" dialog
+    When user enters "<valid>" into <input> input in "BDDQParamEdge{time}" dialog
     Then OK button in "BDDQParamEdge{time}" dialog should be enabled
     When user clicks on CANCEL button in "BDDQParamEdge{time}" dialog
     Then the "BDDQParamEdge{time}" dialog should close
     And no errors should have been logged
 
-  Scenario: A value its validator rejects disables OK
-    When user enters "99" into Code input in "BDDQParamEdge{time}" dialog
-    Then OK button in "BDDQParamEdge{time}" dialog should be disabled
-    When user enters "1299" into Code input in "BDDQParamEdge{time}" dialog
-    Then OK button in "BDDQParamEdge{time}" dialog should be enabled
-    When user clicks on CANCEL button in "BDDQParamEdge{time}" dialog
-    Then the "BDDQParamEdge{time}" dialog should close
-    And no errors should have been logged
+    Examples:
+      | case                                    | input | invalid | valid |
+      | An integer above its maximum            | Lim   | 11      | 10    |
+      | An integer below its minimum            | Lim   | 0       | 1     |
+      | Text in an integer parameter            | Lim   | abc     | 3     |
+      | A value its validator rejects           | Code  | 99      | 1299  |
 
   Scenario: A choice parameter offers its choices only
     Then Kind input in "BDDQParamEdge{time}" dialog should offer the choice "b"

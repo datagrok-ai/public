@@ -29,24 +29,6 @@ import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("File preview edge cases: a file of a format the platform does not read, an empty file", () => {
   const session = feature(test, "features/browse/file-preview-edge-cases.feature", import.meta.url);
-  test("A file of an unsupported format is clicked with no error and shows its details", {tag: ["@browse", "@edge-cases", "@realizes:views.browse"]}, async ({browser}) => {
-    const page = await session.page(browser);
-    await session.step(14, "Given user is logged in", () => loggedIn(page));
-    await session.step(15, "And the browse panel is open", () => browsePanelOpen(page));
-    await session.step(16, "And the context panel is open", () => contextPanelOpen(page));
-    await session.step(17, "And a file \"System:AppData/UsageAnalysis/bdd-edge-odd-{time}.qqq\" with text \"an unreadable format\" is on the server", () => fileOnServer(page, session.text("System:AppData/UsageAnalysis/bdd-edge-odd-{time}.qqq"), "an unreadable format"));
-    await session.step(18, "And a file \"System:AppData/UsageAnalysis/bdd-edge-empty-{time}.csv\" with text \"\" is on the server", () => fileOnServer(page, session.text("System:AppData/UsageAnalysis/bdd-edge-empty-{time}.csv"), ""));
-    await session.step(19, "And a file \"System:AppData/UsageAnalysis/bdd-edge-empty-{time}.txt\" with text \"\" is on the server", () => fileOnServer(page, session.text("System:AppData/UsageAnalysis/bdd-edge-empty-{time}.txt"), ""));
-    await session.step(20, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
-    await session.step(21, "When user refreshes the browse tree", () => refreshBrowse(page));
-    await session.step(22, "Given Files---App-Data tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data tree node inside browse tree")));
-    await session.step(23, "And Files---App-Data---UsageAnalysis tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---UsageAnalysis tree node inside browse tree")));
-    await session.step(24, "Then Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree")), "visible"));
-    await session.step(27, "When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree", () => clickOn(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree"))));
-    await session.step(28, "Then the context panel should show \"bdd-edge-odd-{time}.qqq\"", () => contextPanelShows(page, session.text("bdd-edge-odd-{time}.qqq")));
-    await session.step(29, "And no errors should have been logged", () => noErrors(page));
-    await session.step(30, "And no error or warning balloon should have been shown", () => noBalloons(page));
-  });
   test("A file of an unsupported format is downloaded from its menu", {tag: ["@browse", "@edge-cases", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
@@ -60,15 +42,33 @@ test.describe("File preview edge cases: a file of a format the platform does not
     await session.step(22, "Given Files---App-Data tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data tree node inside browse tree")));
     await session.step(23, "And Files---App-Data---UsageAnalysis tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---UsageAnalysis tree node inside browse tree")));
     await session.step(24, "Then Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree")), "visible"));
-    await session.step(33, "Given user watches downloads", () => watchDownloads(page));
-    await session.step(34, "When user opens the context menu of Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree", () => openContextMenu(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree"))));
-    await session.step(35, "And user downloads a file through \"Download\" menu item in context menu", () => downloadThrough(page, el("\"Download\" menu item in context menu")));
-    await session.step(36, "Then a file \"bdd-edge-odd-{time}.qqq\" should have been downloaded", () => fileDownloaded(page, session.text("bdd-edge-odd-{time}.qqq")));
-    await session.step(37, "And the downloaded file \"bdd-edge-odd-{time}.qqq\" should contain text \"an unreadable format\"", () => downloadContains(page, session.text("bdd-edge-odd-{time}.qqq"), "an unreadable format"));
+    await session.step(27, "Given user watches downloads", () => watchDownloads(page));
+    await session.step(28, "When user opens the context menu of Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree", () => openContextMenu(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree"))));
+    await session.step(29, "And user downloads a file through \"Download\" menu item in context menu", () => downloadThrough(page, el("\"Download\" menu item in context menu")));
+    await session.step(30, "Then a file \"bdd-edge-odd-{time}.qqq\" should have been downloaded", () => fileDownloaded(page, session.text("bdd-edge-odd-{time}.qqq")));
+    await session.step(31, "And the downloaded file \"bdd-edge-odd-{time}.qqq\" should contain text \"an unreadable format\"", () => downloadContains(page, session.text("bdd-edge-odd-{time}.qqq"), "an unreadable format"));
+    await session.step(32, "And no errors should have been logged", () => noErrors(page));
+    await session.step(33, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("A file of an unsupported format is clicked with no error and shows its details [kind=A file of an unsupported format, file=bdd-edge-odd-{time}.qqq]", {tag: ["@browse", "@edge-cases", "@realizes:views.browse"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(14, "Given user is logged in", () => loggedIn(page));
+    await session.step(15, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(16, "And the context panel is open", () => contextPanelOpen(page));
+    await session.step(17, "And a file \"System:AppData/UsageAnalysis/bdd-edge-odd-{time}.qqq\" with text \"an unreadable format\" is on the server", () => fileOnServer(page, session.text("System:AppData/UsageAnalysis/bdd-edge-odd-{time}.qqq"), "an unreadable format"));
+    await session.step(18, "And a file \"System:AppData/UsageAnalysis/bdd-edge-empty-{time}.csv\" with text \"\" is on the server", () => fileOnServer(page, session.text("System:AppData/UsageAnalysis/bdd-edge-empty-{time}.csv"), ""));
+    await session.step(19, "And a file \"System:AppData/UsageAnalysis/bdd-edge-empty-{time}.txt\" with text \"\" is on the server", () => fileOnServer(page, session.text("System:AppData/UsageAnalysis/bdd-edge-empty-{time}.txt"), ""));
+    await session.step(20, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
+    await session.step(21, "When user refreshes the browse tree", () => refreshBrowse(page));
+    await session.step(22, "Given Files---App-Data tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data tree node inside browse tree")));
+    await session.step(23, "And Files---App-Data---UsageAnalysis tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---UsageAnalysis tree node inside browse tree")));
+    await session.step(24, "Then Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree")), "visible"));
+    await session.step(36, "When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree", () => clickOn(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree"))));
+    await session.step(37, "Then the context panel should show \"bdd-edge-odd-{time}.qqq\"", () => contextPanelShows(page, session.text("bdd-edge-odd-{time}.qqq")));
     await session.step(38, "And no errors should have been logged", () => noErrors(page));
     await session.step(39, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
-  test("An empty csv file is previewed with no error [ext=csv]", {tag: ["@browse", "@edge-cases", "@realizes:views.browse"]}, async ({browser}) => {
+  test("An empty csv file is clicked with no error and shows its details [kind=An empty csv file, file=bdd-edge-empty-{time}.csv]", {tag: ["@browse", "@edge-cases", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And the browse panel is open", () => browsePanelOpen(page));
@@ -81,12 +81,12 @@ test.describe("File preview edge cases: a file of a format the platform does not
     await session.step(22, "Given Files---App-Data tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data tree node inside browse tree")));
     await session.step(23, "And Files---App-Data---UsageAnalysis tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---UsageAnalysis tree node inside browse tree")));
     await session.step(24, "Then Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree")), "visible"));
-    await session.step(42, "When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-empty-{time}.csv tree node inside browse tree", () => clickOn(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-empty-{time}.csv tree node inside browse tree"))));
-    await session.step(43, "Then the context panel should show \"bdd-edge-empty-{time}.csv\"", () => contextPanelShows(page, session.text("bdd-edge-empty-{time}.csv")));
-    await session.step(44, "And no errors should have been logged", () => noErrors(page));
-    await session.step(45, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(36, "When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-empty-{time}.csv tree node inside browse tree", () => clickOn(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-empty-{time}.csv tree node inside browse tree"))));
+    await session.step(37, "Then the context panel should show \"bdd-edge-empty-{time}.csv\"", () => contextPanelShows(page, session.text("bdd-edge-empty-{time}.csv")));
+    await session.step(38, "And no errors should have been logged", () => noErrors(page));
+    await session.step(39, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
-  test("An empty txt file is previewed with no error [ext=txt]", {tag: ["@browse", "@edge-cases", "@realizes:views.browse"]}, async ({browser}) => {
+  test("An empty txt file is clicked with no error and shows its details [kind=An empty txt file, file=bdd-edge-empty-{time}.txt]", {tag: ["@browse", "@edge-cases", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And the browse panel is open", () => browsePanelOpen(page));
@@ -99,9 +99,9 @@ test.describe("File preview edge cases: a file of a format the platform does not
     await session.step(22, "Given Files---App-Data tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data tree node inside browse tree")));
     await session.step(23, "And Files---App-Data---UsageAnalysis tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---UsageAnalysis tree node inside browse tree")));
     await session.step(24, "Then Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree")), "visible"));
-    await session.step(42, "When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-empty-{time}.txt tree node inside browse tree", () => clickOn(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-empty-{time}.txt tree node inside browse tree"))));
-    await session.step(43, "Then the context panel should show \"bdd-edge-empty-{time}.txt\"", () => contextPanelShows(page, session.text("bdd-edge-empty-{time}.txt")));
-    await session.step(44, "And no errors should have been logged", () => noErrors(page));
-    await session.step(45, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(36, "When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-empty-{time}.txt tree node inside browse tree", () => clickOn(page, el(session.text("Files---App-Data---UsageAnalysis---bdd-edge-empty-{time}.txt tree node inside browse tree"))));
+    await session.step(37, "Then the context panel should show \"bdd-edge-empty-{time}.txt\"", () => contextPanelShows(page, session.text("bdd-edge-empty-{time}.txt")));
+    await session.step(38, "And no errors should have been logged", () => noErrors(page));
+    await session.step(39, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
 });

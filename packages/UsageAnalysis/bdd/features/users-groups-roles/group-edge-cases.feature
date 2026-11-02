@@ -5,11 +5,10 @@ Feature: Group edge cases: the only admin, a group nested into its own member, a
   they can't leave the group or revoke their admin privileges" (help
   govern/access-control/users-and-groups.md): MANAGE keeps its dialog open with the server's message
   in an error balloon (`grok_group_meta.dart` `_editMembers`) and nothing changes. A group added as a
-  member of its own member is refused as a circular reference, and a second group made in the New
-  Group dialog under a name already made there is refused (`groups_repository.dart`: "A group or role
+  member of its own member is refused as a circular reference, and a group made in the New Group
+  dialog under the name of a group made through the API is refused (`groups_repository.dart`: "A group or role
   with the same name already exists"; the guard compares the internal names, which the dialog derives
-  from the name typed; the visible name is to be unique whatever made the first group, and a group made
-  through the API under the name typed is refused as well). The Properties dialog refuses a name of
+  from the name typed; the visible name is to be unique whatever made the first group). The Properties dialog refuses a name of
   spaces only ("Name must be at least 1 character", `grok_group_meta.dart` `propertiesDialog`).
   CANCEL in MANAGE and in Properties leaves the group as it was on the server.
 
@@ -22,7 +21,6 @@ Feature: Group edge cases: the only admin, a group nested into its own member, a
     Given user is logged in
     And a group named "BDD-GE-Group-{time}" is on the server
     And a group named "BDD-GE-Child-{time}" is on the server
-    And no group named "BDD-GE-Twice-{time}" is on the server
     And no group named "BDDGEApi{time}" is on the server
     And the browse panel is open
     And the context panel is open
@@ -34,12 +32,11 @@ Feature: Group edge cases: the only admin, a group nested into its own member, a
     When user clicks on "BDD-GE-Group-{time}" link in gallery
     Then the context panel should show "BDD-GE-Group-{time}"
 
-  Scenario: The only admin unticking their Admin box is refused and stays the admin
+  Scenario Outline: The only admin <change> is refused and stays the admin
     Then "{login}" should be an admin member of "BDD-GE-Group-{time}" on the server
     When user clicks on MANAGE button in "Members" section in context panel
     Then "BDD-GE-Group-{time} members" dialog should be visible
-    And checkbox of "{login}" membership row should be checked
-    When user unchecks checkbox of "{login}" membership row
+    When user <gesture> of "{login}" membership row
     And user clicks on SAVE button in "BDD-GE-Group-{time} members" dialog
     Then an error balloon containing "should have at least one admin user" should have been shown
     And "BDD-GE-Group-{time} members" dialog should be visible
@@ -47,17 +44,10 @@ Feature: Group edge cases: the only admin, a group nested into its own member, a
     When user clicks on CANCEL button in "BDD-GE-Group-{time} members" dialog
     Then the "BDD-GE-Group-{time} members" dialog should close
 
-  Scenario: The only admin removing themselves is refused and stays the admin
-    When user clicks on MANAGE button in "Members" section in context panel
-    Then "BDD-GE-Group-{time} members" dialog should be visible
-    When user clicks on remove button of "{login}" membership row
-    Then "{login}" membership row should be absent
-    When user clicks on SAVE button in "BDD-GE-Group-{time} members" dialog
-    Then an error balloon containing "should have at least one admin user" should have been shown
-    And "BDD-GE-Group-{time} members" dialog should be visible
-    And "{login}" should be an admin member of "BDD-GE-Group-{time}" on the server
-    When user clicks on CANCEL button in "BDD-GE-Group-{time} members" dialog
-    Then the "BDD-GE-Group-{time} members" dialog should close
+    Examples:
+      | change                        | gesture                      |
+      | unticking their Admin box     | unchecks checkbox            |
+      | removing themselves           | clicks on remove button      |
 
   Scenario: A group added as a member of its own member is refused as a circular reference
     When user clicks on MANAGE button in "Members" section in context panel
@@ -93,21 +83,6 @@ Feature: Group edge cases: the only admin, a group nested into its own member, a
     And "BDD-GE-Child-{time}" should not be a member of "BDD-GE-Group-{time}" on the server
     And no errors should have been logged
     And no error or warning balloon should have been shown
-
-  Scenario: A second group made in the New Group dialog under the same name is refused
-    When user clicks on "New Group..." button
-    And user types "BDD-GE-Twice-{time}" into Name input in "Create New Group" dialog
-    And user clicks on OK button in "Create New Group" dialog
-    Then the "Create New Group" dialog should close
-    And 1 group named "BDD-GE-Twice-{time}" should be on the server
-    When user clicks on "New Group..." button
-    And user types "BDD-GE-Twice-{time}" into Name input in "Create New Group" dialog
-    And user clicks on OK button in "Create New Group" dialog
-    Then an error balloon containing "A group or role with the same name already exists" should have been shown
-    And "Create New Group" dialog should be visible
-    And 1 group named "BDD-GE-Twice-{time}" should be on the server
-    When user clicks on CANCEL button in "Create New Group" dialog
-    Then the "Create New Group" dialog should close
 
   Scenario: Properties refuses a name of spaces only
     When user picks "Properties..." from the context menu of "BDD-GE-Group-{time}" link in gallery

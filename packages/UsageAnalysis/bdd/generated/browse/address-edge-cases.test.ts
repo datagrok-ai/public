@@ -83,7 +83,7 @@ test.describe("Address edge cases: a space, a folder, a function, a script and a
     await session.step(68, "And the \"demog-1000\" view should be current", () => viewIsCurrent(page, "demog-1000"));
     await session.step(69, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A folder address that names nothing says the folder is not there", {tag: ["@browse", "@edge-cases", "@realizes:views.browse", "@known-failure:79", "@realizes:core#1152"]}, async ({browser}) => {
+  test("A folder address that names nothing says the folder is not there [kind=folder, address=/files/System.AppData/UsageAnalysis/bdd-edge-no-folder-{time}]", {tag: ["@browse", "@edge-cases", "@realizes:views.browse", "@known-failure:79", "@realizes:core#1152"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(23, "Given user is logged in", () => loggedIn(page));
     await knownFailure(async () => {
@@ -93,14 +93,14 @@ test.describe("Address edge cases: a space, a folder, a function, a script and a
       await session.step(80, "And no errors should have been logged", () => noErrors(page));
     }, 79);
   });
-  test("A script address that names nothing says the script is not there", {tag: ["@browse", "@edge-cases", "@realizes:views.browse", "@known-failure:91", "@realizes:core#1152"]}, async ({browser}) => {
+  test("A script address that names nothing says the script is not there [kind=script, address=/script/BddNoSuchScript{time}]", {tag: ["@browse", "@edge-cases", "@realizes:views.browse", "@known-failure:79", "@realizes:core#1152"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(23, "Given user is logged in", () => loggedIn(page));
     await knownFailure(async () => {
-      await session.step(89, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-      await session.step(90, "When user opens the address \"/script/BddNoSuchScript{time}\"", () => openAddress(page, session.text("/script/BddNoSuchScript{time}")));
-      await session.step(91, "Then an error or warning balloon matching \"not found|not exist|n't exist\" should have been shown", () => errorOrWarningBalloonMatching(page, "not found|not exist|n't exist"));
-      await session.step(92, "And no errors should have been logged", () => noErrors(page));
-    }, 91);
+      await session.step(77, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+      await session.step(78, "When user opens the address \"/script/BddNoSuchScript{time}\"", () => openAddress(page, session.text("/script/BddNoSuchScript{time}")));
+      await session.step(79, "Then an error or warning balloon matching \"not found|not exist|n't exist\" should have been shown", () => errorOrWarningBalloonMatching(page, "not found|not exist|n't exist"));
+      await session.step(80, "And no errors should have been logged", () => noErrors(page));
+    }, 79);
   });
 });

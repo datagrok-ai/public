@@ -13,7 +13,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {hasNoColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {removeColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {filterBetween, filterPasses, removeColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, noErrors, readingIs} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
@@ -30,6 +30,8 @@ test.describe("Word cloud edge cases: the word column removed", () => {
     await session.step(16, "And the \"rows shown\" reading of word cloud viewer should be 1000", () => readingIs(page, "rows shown", el("word cloud viewer"), 1000));
     await session.step(22, "When user removes \"RACE\" column", () => removeColumn(page, "RACE"));
     await session.step(23, "Then the table should not have a column \"RACE\"", () => hasNoColumn(page, "RACE"));
-    await session.step(24, "And no errors should have been logged", () => noErrors(page));
+    await session.step(24, "When user filters rows where \"AGE\" is between 30 and 50", () => filterBetween(page, "AGE", 30, 50));
+    await session.step(25, "Then 494 rows should pass the filter", () => filterPasses(page, 494));
+    await session.step(26, "And no errors should have been logged", () => noErrors(page));
   });
 });

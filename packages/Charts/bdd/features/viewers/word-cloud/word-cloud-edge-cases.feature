@@ -21,4 +21,6 @@ Feature: Word cloud edge cases: the word column removed
     every later filter change and resize.
     When user removes "RACE" column
     Then the table should not have a column "RACE"
+    When user filters rows where "AGE" is between 30 and 50
+    Then 494 rows should pass the filter
     And no errors should have been logged
