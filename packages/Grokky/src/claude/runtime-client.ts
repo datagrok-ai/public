@@ -201,7 +201,6 @@ export class ClaudeRuntimeClient {
     images?: ImageAttachment[]; logPrompt?: string}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
-    this._turnLog.start(sessionId, options?.logPrompt);
     this.ws.send(JSON.stringify({
       type: 'user_message', sessionId, message,
       apiKey: grok.dapi.token,
@@ -213,6 +212,7 @@ export class ClaudeRuntimeClient {
       ...(options?.clientTools?.length ? {clientTools: options.clientTools} : {}),
       ...(options?.images?.length ? {images: options.images} : {}),
     }));
+    this._turnLog.start(sessionId, options?.logPrompt);
   }
 
   async syncUserFiles(
@@ -283,7 +283,7 @@ export class ClaudeRuntimeClient {
       this.send(sid, message, {
         ...(options.outputSchema ? {outputSchema: options.outputSchema} : {}),
         ...(options.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
-        ...(options.logPrompt ? {logPrompt: options.logPrompt} : {}),
+        logPrompt: options.logPrompt,
       });
     });
   }

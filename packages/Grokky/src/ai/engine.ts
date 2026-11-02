@@ -52,7 +52,7 @@ class ClaudeChat extends DG.AIChat {
       if (options.signal?.aborted)
         throw options.signal.reason;
       client.send(sessionId, this.started || !systemPrompt ? prompt : `${systemPrompt}\n\n${prompt}`, {
-        systemPromptMode: 'none', outputSchema: options.schema, images, logPrompt: prompt,
+        systemPromptMode: 'none', outputSchema: options.schema, images,
       });
       while (!final || chunks.length) {
         if (chunks.length)

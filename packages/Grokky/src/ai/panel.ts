@@ -188,6 +188,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
+  private _loggingNotice: HTMLElement | null = null;
   private _feature: AiFeature;
   /** Guards async {@link renderEmptyState} against out-of-order completion on rapid view switches. */
   private _emptyStateSeq = 0;
@@ -307,9 +308,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     });
     this.inputArea.appendChild(this.textAreaDiv);
     this.inputArea.appendChild(controlsDiv);
-    const notice = contentLoggingNotice();
-    if (notice)
-      this.inputArea.appendChild(notice);
+    this.refreshLoggingNotice();
     this.root.appendChild(this.header);
     this.root.appendChild(this.outputArea);
     this.root.appendChild(this.inputArea);
@@ -740,6 +739,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return `[The user previously asked:]\n${items}\n\n`;
   }
 
+  private refreshLoggingNotice(): void {
+    this._loggingNotice?.remove();
+    this._loggingNotice = contentLoggingNotice();
+    if (this._loggingNotice)
+      this.inputArea.appendChild(this._loggingNotice);
+  }
+
   resetSession(): void {
     this._sessionId = `${this._feature}-${crypto.randomUUID()}`;
     this._streamingContainer = null;
@@ -908,6 +914,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       return;
     const inputs = this.getCurrentInputs();
     inputs.prompt = 'Please try again. ';
+    this.refreshLoggingNotice();
     this._onRunRequest.next({
       prevMessages: [...this._messages],
       currentPrompt: inputs,
@@ -964,6 +971,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._pendingAttachmentsForRender = [...this.attachedEntities];
     this.clearAttachments();
     this._promptHistoryIndex = null;
+    this.refreshLoggingNotice();
     this._onRunRequest.next({
       prevMessages: this._messages,
       currentPrompt: inputs,

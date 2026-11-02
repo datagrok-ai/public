@@ -3,11 +3,13 @@ import {_package} from '../package';
 import {featureOf} from './ai-feature';
 import type {FinalEvent} from './runtime-client';
 
-const MAX_TEXT_LENGTH = 60000;
+// A longer value fails the btree index on event_parameter_values, and the log batch with it.
+const MAX_TEXT_BYTES = 2500;
 
-type Turn = {prompt?: string, logResponses: boolean, logToolCalls: boolean, chunks: string[], visibleText: string, toolCalls: string[]};
+type Turn = {turnId: string, logResponses: boolean, logToolCalls: boolean, chunks: string[], visibleText: string,
+  toolCalls: string[]};
 
-export function contentLogging(): {prompts: boolean, responses: boolean, toolCalls: boolean} {
+function contentLogging(): {prompts: boolean, responses: boolean, toolCalls: boolean} {
   const settings = _package.settings ?? {};
   return {
     prompts: String(settings.logPrompts) === 'true',
@@ -16,10 +18,16 @@ export function contentLogging(): {prompts: boolean, responses: boolean, toolCal
   };
 }
 
+function capped(text: string): string {
+  return new TextDecoder().decode(new TextEncoder().encode(text).slice(0, MAX_TEXT_BYTES));
+}
+
 export function contentLoggingNotice(): HTMLElement | null {
   const logging = contentLogging();
-  return logging.prompts || logging.responses || logging.toolCalls ?
-    ui.divText('Your administrators log the text of your AI requests.', 'grokky-content-log-notice') : null;
+  const logged = [logging.prompts && 'prompts', logging.responses && 'responses', logging.toolCalls && 'tool calls']
+    .filter((name) => name);
+  return logged.length ? ui.divText(`Your administrators log your AI ${logged.join(', ')}.`,
+    'grokky-content-log-notice') : null;
 }
 
 export class TurnLog {
@@ -27,13 +35,16 @@ export class TurnLog {
 
   start(sessionId: string, prompt?: string): void {
     const logging = contentLogging();
-    const turn: Turn = {prompt: logging.prompts ? prompt : undefined, logResponses: logging.responses,
-      logToolCalls: logging.toolCalls, chunks: [], visibleText: '', toolCalls: []};
+    const logsText = prompt != null;
+    const turn: Turn = {turnId: crypto.randomUUID(), logResponses: logsText && logging.responses,
+      logToolCalls: logsText && logging.toolCalls, chunks: [], visibleText: '', toolCalls: []};
     const queue = this.turns.get(sessionId);
     if (queue)
       queue.push(turn);
     else
       this.turns.set(sessionId, [turn]);
+    if (prompt && logging.prompts)
+      this.logContent(sessionId, turn.turnId, {prompt: capped(prompt)});
   }
 
   chunk(sessionId: string, content: string): void {
@@ -73,8 +84,9 @@ export class TurnLog {
       return;
     const turn = this.drop(final.sessionId);
     const metrics = final.metrics;
-    const ids = {turnId: crypto.randomUUID(), chatId: final.sessionId, feature: featureOf(final.sessionId)};
-    const usage: {[key: string]: string | number} = {...ids, status};
+    const turnId = turn?.turnId ?? crypto.randomUUID();
+    const usage: {[key: string]: string | number} = {turnId, chatId: final.sessionId,
+      feature: featureOf(final.sessionId), status};
     // Names avoid `token`: the log redactor blanks such parameters.
     const values: {[key: string]: string | number | null | undefined} = {
       model: metrics?.model,
@@ -88,23 +100,24 @@ export class TurnLog {
         usage[name] = value;
     }
     _package.logger.usage('ai-turn', usage, 'ai-turn');
-    if (turn)
-      this.logContent(ids, turn, final);
-  }
-
-  private logContent(ids: {[key: string]: string}, turn: Turn, final: FinalEvent): void {
+    if (!turn)
+      return;
     const content: {[key: string]: string} = {};
-    if (turn.prompt)
-      content.prompt = turn.prompt.slice(0, MAX_TEXT_LENGTH);
     if (turn.logResponses) {
       const structured = final.structured_output ? JSON.stringify(final.structured_output) : '';
-      const response = final.content || turn.visibleText || structured || turn.chunks.join('');
+      const response = final.revision === 'replaced' ? final.content :
+        turn.visibleText || turn.chunks.join('') || final.content || structured;
       if (response)
-        content.response = response.slice(0, MAX_TEXT_LENGTH);
+        content.response = capped(response);
     }
     if (turn.toolCalls.length)
-      content.toolCalls = turn.toolCalls.join('\n').slice(0, MAX_TEXT_LENGTH);
+      content.toolCalls = capped(turn.toolCalls.join('\n'));
     if (Object.keys(content).length)
-      _package.logger.usage('ai-turn-content', {...ids, ...content}, 'ai-turn-content');
+      this.logContent(final.sessionId, turnId, content);
+  }
+
+  private logContent(sessionId: string, turnId: string, content: {[key: string]: string}): void {
+    _package.logger.usage('ai-turn-content', {turnId, chatId: sessionId, feature: featureOf(sessionId), ...content},
+      'ai-turn-content');
   }
 }
