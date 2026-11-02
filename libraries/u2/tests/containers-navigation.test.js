@@ -110,6 +110,36 @@ ui('TabStrip: setInvalid marks a tab whose content needs fixing, in the header a
   strip.dispose();
 });
 
+ui('TabStrip: a disabled tab says why, opens on no press, and hands over when turned off while open', () => {
+  const off = signal('Enter the TGIs first');
+  const strip = new TabStrip({tabs: [
+    {id: 'first', title: 'First', content: content('f'), disabled: 'Never on'},
+    {id: 'main', title: 'Main', content: content('m')},
+    {id: 'explore', title: 'Explore', content: content('e'), disabled: off},
+  ]});
+  document.body.append(strip.root);
+  const header = strip.root.querySelector('[data-u2-item="explore"]');
+  const press = (el) => el.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, button: 0}));
+  assert.equal(strip.activeTab.value, 'main', 'a tab that is off does not open first');
+  assert.equal(header.getAttribute('aria-disabled'), 'true');
+  assert.equal(header.title, 'Enter the TGIs first');
+  assert.deepEqual(state(strip.root).items.list.map((i) => [i.key, i.disabled ?? false]),
+    [['first', true], ['main', false], ['explore', true]]);
+  press(header);
+  assert.equal(strip.activeTab.value, 'main');
+  off.value = null;
+  assert.equal(header.hasAttribute('aria-disabled'), false);
+  assert.equal(header.title, 'Explore');
+  press(header);
+  assert.equal(strip.activeTab.value, 'explore');
+  off.value = 'Enter the TGIs first';
+  assert.equal(strip.activeTab.value, 'main', 'to the first tab that is on');
+  strip.addTab({id: 'last', title: 'Last', content: content('l')});
+  strip.closeTab('main');
+  assert.equal(strip.activeTab.value, 'last', 'closing skips the tabs that are off');
+  strip.dispose();
+});
+
 ui('TabStrip: a tab\'s validity marks it live; a Form as content answers for itself, a fresh one marks nothing', () => {
   const problem = signal(null);
   const form = new Form();
