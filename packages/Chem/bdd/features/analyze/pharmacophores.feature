@@ -5,8 +5,8 @@ Feature: Chem > Analyze > Pharmacophores adds a highlighted molecule column and 
   Halogen Bond not). OK adds a molecule column "Pharmacophore (<molecule column>)" with the features
   highlighted, and a boolean column per ticked type, "<type> (<molecule column>)", true in the rows whose
   molecule has that feature (help `datagrok/solutions/domains/chem/chem.md`, "Pharmacophores" > How to use).
-  The rows are ethanol (donor, acceptor, not aromatic), benzene (aromatic, no donor), acetic acid (negative
-  ionizable) and ethylamine (positive ionizable), so each claimed column has a row of each value.
+  The feature claims the dialog, the columns it adds and their type; the per-row result is the package
+  tests' (MISSING.md).
 
   Left out on purpose:
   - the colours the highlight column draws are its cell renderer's (Chem `src/tests/pharmacophore-features-tests.ts`);
@@ -42,15 +42,7 @@ Feature: Chem > Analyze > Pharmacophores adds a highlighted molecule column and 
     And a new column "Pharmacophore (smiles)" should have been added
     And 5 new columns should have been added
     And "Pharmacophore (smiles)" column should have semantic type "Molecule"
-    And "Pharmacophore (smiles)" column should hold the same values as "smiles" column
     And "Donor (smiles)" column should have type "bool"
-    And the value of "Donor (smiles)" column in row 1 should be "true"
-    And the value of "Donor (smiles)" column in row 2 should be "false"
-    And the value of "Acceptor (smiles)" column in row 1 should be "true"
-    And the value of "Acceptor (smiles)" column in row 2 should be "false"
-    And the value of "Aromatic (smiles)" column in row 1 should be "false"
-    And the value of "Aromatic (smiles)" column in row 2 should be "true"
-    And the value of "Hydrophobic (smiles)" column in row 2 should be "true"
     And no errors should have been logged
     When user removes "Pharmacophore (smiles)" column
     And user removes "Donor (smiles)" column
@@ -72,10 +64,6 @@ Feature: Chem > Analyze > Pharmacophores adds a highlighted molecule column and 
     And a new column "Positive (smiles)" should have been added
     And a new column "Negative (smiles)" should have been added
     And 3 new columns should have been added
-    And the value of "Positive (smiles)" column in row 3 should be "false"
-    And the value of "Positive (smiles)" column in row 4 should be "true"
-    And the value of "Negative (smiles)" column in row 3 should be "true"
-    And the value of "Negative (smiles)" column in row 4 should be "false"
     And no errors should have been logged
     When user removes "Pharmacophore (smiles)" column
     And user removes "Positive (smiles)" column

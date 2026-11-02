@@ -1,4 +1,5 @@
 @eda
+@journey
 Feature: ML > Cluster runs DBSCAN on two columns and Markov clustering on several
   ML | Cluster | DBSCAN... opens the DBSCAN dialog on the current table: the table, the X and Y columns,
   Epsilon (0.02) and Minimum points (4). OK adds a "Cluster (DBSCAN)" column with one label per dense group
@@ -11,8 +12,8 @@ Feature: ML > Cluster runs DBSCAN on two columns and Markov clustering on severa
   DBSCAN runs on a nine-row table written here: two tight groups of four points and one point far from
   both. MCL runs on iris (150 rows), over Species with Petal.Length and over the four measurements; with
   number columns only it never finishes (the viewer stays at "Updating..."), so that scenario is
-  `@known-failure` (public#4473). Not a journey: each run adds columns the
-  next one's claims would read. Left out on purpose:
+  `@known-failure` (public#4473). One journey: each MCL scenario closes the views and opens iris again, so
+  its column claims read a fresh table. Left out on purpose:
   - how many clusters MCL finds and which row goes where: EDA and the ml library's tests;
   - DBSCAN as the postprocessing of Reduce Dimensionality (`reduce-dimensionality.feature`), of Chemical
     Space and Sequence Space (Chem, Bio), and MCL inside the Peptides SAR viewer: their own features;
@@ -53,7 +54,8 @@ Feature: ML > Cluster runs DBSCAN on two columns and Markov clustering on severa
     And no errors should have been logged
 
   Scenario: MCL on a text and a number column docks its viewer and adds the cluster columns
-    Given user opens iris dataset
+    When user closes all views
+    And user opens iris dataset
     When user picks "ML > Cluster > MCL..." from the top menu
     Then "Markov clustering" dialog should be visible
     And Columns input in "Markov clustering" dialog should contain text "(0)"
@@ -80,9 +82,10 @@ Feature: ML > Cluster runs DBSCAN on two columns and Markov clustering on severa
     And the table should have 150 rows
     And no errors should have been logged
 
-  @known-failure:97 @realizes:public#4473
+  @known-failure:100 @realizes:public#4473
   Scenario: MCL on four number columns adds the cluster columns
-    Given user opens iris dataset
+    When user closes all views
+    And user opens iris dataset
     When user picks "ML > Cluster > MCL..." from the top menu
     And user clicks on Columns input in "Markov clustering" dialog
     And user toggles the "Sepal.Length" column in the column list of "Select columns..." dialog

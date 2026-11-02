@@ -14,3 +14,10 @@ Features: `structural-alerts.feature`, `pharmacophores.feature` (30 Oct 2026, lo
 - **Run twice.** By the code (`runStructuralAlerts`, `getUnusedName`; not measured), a second OK with the same
   rule set adds a second column under a new name rather than refreshing the first. Neither help page says which
   is intended; not claimed.
+
+### Belongs in package tests (2 Nov 2026)
+
+- Which molecules raise a PAINS / BMS / Glaxo alert and which carry a donor, acceptor, aromatic or hydrophobic
+  feature (the per-row true/false of the added columns) is the alert and pharmacophore logic, not the dialog:
+  it belongs in Chem's package tests. `structural-alerts.feature` and `pharmacophores.feature` claim the dialog,
+  the columns it adds and their type.

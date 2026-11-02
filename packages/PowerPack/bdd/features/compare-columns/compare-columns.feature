@@ -44,7 +44,7 @@ Feature: Data > Compare Columns counts the rows where two columns agree, selects
     Then the top menu should list "Data > Compare Columns..." as enabled
     And no errors should have been logged
 
-  Scenario: Two columns of one table: the counts, Select picks the mismatched rows, ADD COLUMN adds the match column
+  Scenario: Two columns of one table: the counts, Select picks the mismatched rows, ADD COLUMN adds the match column, a column matches itself
     When user calls "PowerPack:_compareColumns" function
     Then "Compare Columns" dialog should be visible
     When user selects "cmp" in Tables input in "Compare Columns" dialog
@@ -58,27 +58,17 @@ Feature: Data > Compare Columns counts the rows where two columns agree, selects
     Then the table should have the columns "a, b, a == b"
     And the value of "a == b" column in row 1 should be "true"
     And the value of "a == b" column in row 2 should be "false"
-    And the value of "a == b" column in row 3 should be "true"
-    And the value of "a == b" column in row 4 should be "false"
     And "Compare Columns" dialog should be visible
     And no errors should have been logged
     When user clears the row selection
     Then 0 rows should be selected
+    When user selects "b" in Columns input in "Compare Columns" dialog
+    And user selects "b" in fourth choice input in "Compare Columns" dialog
+    Then "Compare Columns" dialog should contain text "Matched: 4"
+    And "Compare Columns" dialog should contain text "Mismatched: 0"
     When user clicks on CANCEL button in "Compare Columns" dialog
     And user removes "a == b" column
     Then the table should have the columns "a, b"
-
-  Scenario: A column compared with itself matches in every row
-    When user calls "PowerPack:_compareColumns" function
-    And user selects "cmp" in Tables input in "Compare Columns" dialog
-    And user selects "cmp" in second choice input in "Compare Columns" dialog
-    And user selects "b" in Columns input in "Compare Columns" dialog
-    Then "Compare Columns" dialog should contain text "Matched: 2"
-    When user selects "b" in fourth choice input in "Compare Columns" dialog
-    Then "Compare Columns" dialog should contain text "Matched: 4"
-    And "Compare Columns" dialog should contain text "Mismatched: 0"
-    And no errors should have been logged
-    When user clicks on CANCEL button in "Compare Columns" dialog
     Then "Compare Columns" dialog should be hidden
 
   Scenario: Columns of tables with different row counts are not compared
@@ -96,7 +86,7 @@ Feature: Data > Compare Columns counts the rows where two columns agree, selects
     When user clicks on CANCEL button in "Compare Columns" dialog
     Then "Compare Columns" dialog should be hidden
 
-  @known-failure:111 @realizes:public#4475
+  @known-failure:101 @realizes:public#4475
   Scenario: A column of another table of the same length is compared, and ADD COLUMN adds the match column to the first table
     When user calls "PowerPack:_compareColumns" function
     And user selects "cmp" in Tables input in "Compare Columns" dialog

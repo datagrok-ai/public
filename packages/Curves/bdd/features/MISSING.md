@@ -28,6 +28,12 @@ Feature: `data/data-to-curves.feature` (30 Oct 2026, local stand).
   column input publishes no value), and `contain text "concentration"` would match the label itself; the
   feature names the column `concentration_uM` so that the text claim cannot pass on the label.
 
+### Belongs in package tests (2 Nov 2026)
+
+- What each Fitted Curves row holds (Compound|Assay|Target, Run ID, Max Percent Inhibition per curve) is the
+  grouping and fitting of `data-to-curves.ts`, not the dialog: it belongs in Curves' package tests. The feature
+  claims the prefilled roles, the new view, its row count, the fit column and the viewers.
+
 ### Findings 30 Oct 2026 (Data to Curves)
 
 - **Data > Curves > Data to Curves is missing from the table view's Data menu** — filed as core#1246 (2 Nov 2026). Steps: open any table; open

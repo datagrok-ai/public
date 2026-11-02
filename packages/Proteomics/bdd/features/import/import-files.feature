@@ -1,3 +1,4 @@
+@journey
 Feature: Proteomics > Import opens a MaxQuant proteinGroups.txt as a table of protein groups, directly or through the column mapping
   The Proteomics menu's Import group reads a search engine's output from a file the user chooses
   (package README, "Supported inputs" and "Import": MaxQuant `proteinGroups.txt`, "contaminant &
@@ -10,7 +11,8 @@ Feature: Proteomics > Import opens a MaxQuant proteinGroups.txt as a table of pr
 
   The file is the package's own `files/demo/proteinGroups.txt` (27 protein groups, of which P04264 and
   CON__P02768 are marked "Potential contaminant" and REV__Q9Y6K1 "Reverse"), chosen in the browser's file
-  chooser the menu opens. Left out on purpose:
+  chooser the menu opens. One journey: the Generic Matrix scenario closes the MaxQuant table first, so its
+  view opens under the same name. Left out on purpose:
   - the other file importers (Spectronaut Report and Candidates, FragPipe): the same file chooser path,
     their parsing is the package's parser tests (`src/tests`);
   - the log2 transform of the intensities and the gene-label resolution: numbers the parser tests check.
@@ -30,7 +32,8 @@ Feature: Proteomics > Import opens a MaxQuant proteinGroups.txt as a table of pr
     And no errors should have been logged
 
   Scenario: Generic Matrix... maps the chosen file's columns in a dialog, and OK opens every row
-    When user clicks on Menu tab
+    When user closes all views
+    And user clicks on Menu tab
     And user picks "Proteomics > Import > Generic Matrix..." from the open menu and chooses the "../files/demo/proteinGroups.txt" file of the project
     Then "Import Generic Matrix" dialog should be visible
     And editor of "Protein ID" input in "Import Generic Matrix" dialog should have text "Protein IDs"

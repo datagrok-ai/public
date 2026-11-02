@@ -1,4 +1,5 @@
 @eda
+@journey
 Feature: Two-sample t-test compares a feature between the two groups of a category
   ML | Analyze | Group Comparison | T-test... opens the Two-sample t-test dialog on the current table
   (help `explore/group-comparison.md#t-test`): Category is the first column with exactly two groups,
@@ -7,8 +8,8 @@ Feature: Two-sample t-test compares a feature between the two groups of a catego
   on, a one-row "T-test result" table under it. A category with three groups disables Run.
 
   Every scenario runs on a six-row table written here: group a holds v = 1, 2, 3 and group b 11, 12, 13
-  (clearly different), w overlaps between the groups, site has three groups. Not a journey: every Run
-  docks a box plot and a grid that the next scenario's viewer claims would resolve to. Left out on purpose:
+  (clearly different), w overlaps between the groups, site has three groups. One journey: every Run docks a
+  box plot and a grid, so each later scenario closes the views and writes the table again. Left out on purpose:
   - the numbers of the test (t, df, p, CI, effect sizes) for Welch and Student: EDA src/tests
     (ttest-tests) are their place; Student is run once, without claiming its numbers;
   - ANOVA and Control Comparisons, the other items of the menu, have their own features
@@ -27,7 +28,7 @@ Feature: Two-sample t-test compares a feature between the two groups of a catego
       | b   | y    | 12 | 5 |
       | b   | z    | 13 | 7 |
 
-  Scenario: The dialog opens on the two-group column, and Run docks the box plot and the result table
+  Scenario: The dialog opens on the two-group column, a three-group one disables Run, and Run docks the box plot and the result table
     When user picks "ML > Analyze > Group Comparison > T-test..." from the top menu
     Then "Two-sample t-test" dialog should be visible
     And editor of Category input in "Two-sample t-test" dialog should have text "grp"
@@ -35,6 +36,10 @@ Feature: Two-sample t-test compares a feature between the two groups of a catego
     And Alpha input in "Two-sample t-test" dialog should have value "0.05"
     And "Full report" input in "Two-sample t-test" dialog should be checked
     And Run button in "Two-sample t-test" dialog should be enabled
+    When user selects "site" in Category input in "Two-sample t-test" dialog
+    Then Run button in "Two-sample t-test" dialog should be disabled
+    When user selects "grp" in Category input in "Two-sample t-test" dialog
+    Then Run button in "Two-sample t-test" dialog should be enabled
     When user clicks on Run button in "Two-sample t-test" dialog
     Then "Two-sample t-test" dialog should be hidden
     And box plot viewer should be visible
@@ -50,6 +55,15 @@ Feature: Two-sample t-test compares a feature between the two groups of a catego
     And no errors should have been logged
 
   Scenario: Overlapping groups are reported as not differing
+    When user closes all views
+    And user opens a table "groups" with:
+      | grp | site | v  | w |
+      | a   | x    | 1  | 5 |
+      | a   | y    | 2  | 7 |
+      | a   | z    | 3  | 6 |
+      | b   | x    | 11 | 6 |
+      | b   | y    | 12 | 5 |
+      | b   | z    | 13 | 7 |
     When user picks "ML > Analyze > Group Comparison > T-test..." from the top menu
     And user selects "w" in Feature input in "Two-sample t-test" dialog
     And user clicks on Run button in "Two-sample t-test" dialog
@@ -58,17 +72,16 @@ Feature: Two-sample t-test compares a feature between the two groups of a catego
     And the "text of cell 1 of Conclusion" reading of second grid viewer should be "Not significant"
     And no errors should have been logged
 
-  Scenario: A category with three groups disables Run, and a two-group one enables it again
-    When user picks "ML > Analyze > Group Comparison > T-test..." from the top menu
-    And user selects "site" in Category input in "Two-sample t-test" dialog
-    Then Run button in "Two-sample t-test" dialog should be disabled
-    When user selects "grp" in Category input in "Two-sample t-test" dialog
-    Then Run button in "Two-sample t-test" dialog should be enabled
-    When user clicks on CANCEL button in "Two-sample t-test" dialog
-    Then "Two-sample t-test" dialog should be hidden
-    And no errors should have been logged
-
   Scenario: Student with Full report off docks only the box plot
+    When user closes all views
+    And user opens a table "groups" with:
+      | grp | site | v  | w |
+      | a   | x    | 1  | 5 |
+      | a   | y    | 2  | 7 |
+      | a   | z    | 3  | 6 |
+      | b   | x    | 11 | 6 |
+      | b   | y    | 12 | 5 |
+      | b   | z    | 13 | 7 |
     When user picks "ML > Analyze > Group Comparison > T-test..." from the top menu
     And user selects "Student" in Method input in "Two-sample t-test" dialog
     And user unchecks "Full report" input in "Two-sample t-test" dialog

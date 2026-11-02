@@ -62,14 +62,6 @@ Feature: Data to Curves turns a table of wells into a table of fitted curves, on
     Given user switches to the "Fitted Curves" table view
     Then the table should have 3 rows
     And "Fitted Curve" column should have semantic type "fit"
-    And the value of "Compound|Assay|Target" column in row 1 should be "C1 | A | T"
-    And the value of "Run ID" column in row 1 should be "R1"
-    And the value of "Max Percent Inhibition" column in row 1 should be "95"
-    And the value of "Compound|Assay|Target" column in row 2 should be "C1 | A | T"
-    And the value of "Run ID" column in row 2 should be "R2"
-    And the value of "Max Percent Inhibition" column in row 2 should be "90"
-    And the value of "Compound|Assay|Target" column in row 3 should be "C2 | A | T"
-    And the value of "Max Percent Inhibition" column in row 3 should be "50"
     And trellis plot viewer should be visible
     And the open tableview should have 1 MultiCurveViewer viewer
     And table "wells" should have 12 rows

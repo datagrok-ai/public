@@ -1,4 +1,5 @@
 @eda
+@journey
 Feature: ML > Reduce Dimensionality embeds the chosen columns in two dimensions and plots them
   ML | Reduce Dimensionality... opens the Reduce Dimensionality dialog on the current table (help
   `explore/dim-reduction.md`): no column picked and OK disabled, Method UMAP (or t-SNE), Plot Embeddings on,
@@ -6,8 +7,8 @@ Feature: ML > Reduce Dimensionality embeds the chosen columns in two dimensions 
   docks a scatter plot of them titled after the method and the columns, and the DBSCAN postprocessing adds
   a Cluster (DBSCAN) column that colours the plot. Without Plot Embeddings only the columns are added.
 
-  Every scenario runs on cars (30 rows) with three number columns. Not a journey: every run adds columns
-  and a scatter plot that the next run's claims would read. Left out on purpose:
+  Every scenario runs on cars (30 rows) with three number columns. One journey: every run adds columns and
+  a scatter plot, so each later scenario closes the views and opens cars again. Left out on purpose:
   - the embeddings themselves, the method and DBSCAN settings behind the gear icons, the per-column encoding
     and the aggregation of mixed column types: EDA src/tests/dim-reduction-tests.ts and the ml library;
   - Radial Coloring, which the help lists under Postprocessing: it comes from the NLP package, not EDA;
@@ -57,6 +58,8 @@ Feature: ML > Reduce Dimensionality embeds the chosen columns in two dimensions 
     And no errors should have been logged
 
   Scenario: t-SNE with no postprocessing adds only the embedding and plots it under the method's name
+    When user closes all views
+    And user opens cars dataset
     When user picks "ML > Reduce Dimensionality..." from the top menu
     And user clicks on Columns input in "Reduce Dimensionality" dialog
     And user toggles the "wheel.base" column in the column list of "Select columns..." dialog
@@ -76,6 +79,8 @@ Feature: ML > Reduce Dimensionality embeds the chosen columns in two dimensions 
     And no errors should have been logged
 
   Scenario: Without Plot Embeddings the columns are added and no scatter plot is docked
+    When user closes all views
+    And user opens cars dataset
     When user picks "ML > Reduce Dimensionality..." from the top menu
     And user clicks on Columns input in "Reduce Dimensionality" dialog
     And user toggles the "wheel.base" column in the column list of "Select columns..." dialog
