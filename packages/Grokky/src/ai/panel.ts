@@ -11,6 +11,7 @@ import {buildWorkspaceContext, executeSingleBlock} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
 import {resolveScopes, showSuggestionsMenu, runSuggestionAction, Suggestion, Block, ChoiceOption} from './prompt-suggestions';
+import {AiFeature} from '../claude/ai-feature';
 
 export type MessageType = {role: string; content: any};
 
@@ -199,7 +200,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private currentConversationId: string | null = null;
   constructor(private _contextID: string = 'global-ai-panel', view: DG.View | DG.ViewBase, opts: {inline?: boolean} = {}) {
     this.view = view;
-    this._sessionId = `claude-${_contextID}-${crypto.randomUUID()}`;
+    this._sessionId = `${AiFeature.Chat}-${_contextID}-${crypto.randomUUID()}`;
     this._inline = !!opts.inline;
     this.root = ui.divV([], 'd4-ai-generation-panel');
     this.inputArea = ui.divV([], 'd4-ai-panel-input-area');
@@ -734,7 +735,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   resetSession(): void {
-    this._sessionId = `claude-${crypto.randomUUID()}`;
+    this._sessionId = `${AiFeature.Chat}-${crypto.randomUUID()}`;
     this._streamingContainer = null;
     this._streamingMarkdownEl = null;
   }

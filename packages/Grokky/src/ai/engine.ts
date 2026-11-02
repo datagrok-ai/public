@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {ClaudeRuntimeClient, FinalEvent, ImageAttachment} from '../claude/runtime-client';
+import {AiFeature} from '../claude/ai-feature';
 
 export class ClaudeEngine extends DG.AIEngine {
   id = 'claude';
@@ -20,7 +21,7 @@ export class ClaudeEngine extends DG.AIEngine {
 /** The runtime keeps the transcript under the session id; it has no system prompt field, so
  * `systemPrompt` goes in front of the first message. */
 class ClaudeChat extends DG.AIChat {
-  private sessionId = `grok-ai-${crypto.randomUUID()}`;
+  private sessionId = `${AiFeature.Engine}-${crypto.randomUUID()}`;
   private started = false;
 
   constructor(private client: ClaudeRuntimeClient, private options: DG.AIChatOptions) {
@@ -51,7 +52,7 @@ class ClaudeChat extends DG.AIChat {
       if (options.signal?.aborted)
         throw options.signal.reason;
       client.send(sessionId, this.started || !systemPrompt ? prompt : `${systemPrompt}\n\n${prompt}`, {
-        systemPromptMode: 'none', outputSchema: options.schema, images, feature: 'engine',
+        systemPromptMode: 'none', outputSchema: options.schema, images,
       });
       while (!final || chunks.length) {
         if (chunks.length)

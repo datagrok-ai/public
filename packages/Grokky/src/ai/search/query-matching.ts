@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../../package';
 import {ClaudeRuntimeClient} from '../../claude/runtime-client';
 import {RENDERED_EVENT} from '../ui';
+import {AiFeature} from '../../claude/ai-feature';
 
 export interface QueryMatchResult {
   searchPattern: string;
@@ -149,7 +150,7 @@ Analyze the user request and return a JSON object with:
 
   try {
     const rawResult = await ClaudeRuntimeClient.getInstance().query(`${systemPrompt}\n\n${userPrompt}`,
-      {outputSchema: schema, feature: 'query-match'});
+      {outputSchema: schema, feature: AiFeature.QueryMatch});
     if (rawResult.searchPattern === NO_MATCH)
       return null;
     const parametersRecord: Record<string, string> = {};
@@ -164,7 +165,7 @@ Analyze the user request and return a JSON object with:
       reasoning: rawResult.reasoning ?? 'No reasoning provided',
     };
 
-    _package.logger.info(`Match found with confidence ${result.confidence}. Reasoning: ${result.reasoning}`);
+    _package.logger.info(`Match found with confidence ${result.confidence}`);
     if (result.suggestedConnection)
       _package.logger.info(`Suggested connection: ${result.suggestedConnection}`);
 
@@ -195,7 +196,7 @@ async function buildQueryWidget(s: string): Promise<DG.Widget> {
     if (!matches)
       return DG.Widget.fromRoot(ui.divText('Unable to process query. Please try rephrasing.'));
 
-    _package.logger.info(`Match result - Confidence: ${matches.confidence}, Reasoning: ${matches.reasoning || 'N/A'}`);
+    _package.logger.info(`Match result - Confidence: ${matches.confidence}`);
 
     if (matches.confidence > 0.7 && matches.searchPattern && matches.parameters) {
       console.log(`Function matched with high confidence ${matches.confidence}`);

@@ -64,7 +64,6 @@ async function taskRoute(): Promise<DG.Func | null> {
 export interface ChatTurnOptions {
   systemPromptMode?: string;
   clientTools?: {name: string; description: string; inputSchema?: object}[];
-  feature?: string;
 }
 
 /** Sends one chat turn, admitted through a queued task when `aiChatTurnTask` is deployed,

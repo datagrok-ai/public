@@ -8,6 +8,7 @@ import {ClaudeRuntimeClient} from '../../claude/runtime-client';
 import {UsageLimiter} from '../usage-limiter';
 import {AIPanel} from '../panel';
 import {runPromptWithLifecycle, RENDERED_EVENT} from '../ui';
+import {AiFeature} from '../../claude/ai-feature';
 
 interface AISearchFuncInfo {
   func: DG.Func;
@@ -222,7 +223,7 @@ User query: ${prompt}`;
       const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt, {
         systemPromptMode: 'none',
         outputSchema: orderSchema,
-        feature: 'search',
+        feature: AiFeature.Search,
       });
       const parsed = (res as {order?: unknown})?.order;
       if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string' && this.functions[s]) && parsed.length > 0)
