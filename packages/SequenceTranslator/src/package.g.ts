@@ -106,12 +106,11 @@ export async function getPolyToolConvertEditor(call: DG.FuncCall) : Promise<any>
 //input: dataframe table 
 //input: column seqCol { caption: Sequence }
 //input: bool generateHelm = true { description: Also produce a HELM column alongside the molfiles }
-//input: bool chiralityEngine = true { description: Use the chirality engine when building structures }
 //input: object rules 
 //output: column result
 //editor: SequenceTranslator:getPolyToolConvertEditor
-export async function polyToolConvert2(table: DG.DataFrame, seqCol: DG.Column, generateHelm: boolean, chiralityEngine: boolean, rules: string[]) : Promise<any> {
-  return await PackageFunctions.polyToolConvert2(table, seqCol, generateHelm, chiralityEngine, rules);
+export async function polyToolConvert2(table: DG.DataFrame, seqCol: DG.Column, generateHelm: boolean, rules: string[]) : Promise<any> {
+  return await PackageFunctions.polyToolConvert2(table, seqCol, generateHelm, rules);
 }
 
 //name: polyToolEnumerateHelm

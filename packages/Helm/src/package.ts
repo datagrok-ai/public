@@ -16,7 +16,7 @@ import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-lib
 
 import {getPropertiesWidget} from './widgets/properties-widget';
 import {getWrapWidthWidget} from './widgets/wrap-width-widget';
-import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
+import {HelmGridCellRenderer} from './utils/helm-grid-cell-renderer';
 import {HelmPackage} from './package-utils';
 import {HelmHelper} from './helm-helper';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
@@ -98,8 +98,7 @@ function openWebEditor(cell: DG.GridCell, value?: string, units?: string) {
   const dlg = ui.dialog({showHeader: false, showFooter: true});
   dlg.add(view)
     .onOK(() => {
-      const helmValue: string = app.canvas!.getHelm(true).replace(/<\/span>/g, '')
-        .replace(/<span style='background:#bbf;'>/g, '');
+      const helmValue: string = app.canvas!.getHelm(true);
       if (!!cell) {
         if (units === undefined)
           cell.setValue(helmValue);
@@ -112,10 +111,6 @@ function openWebEditor(cell: DG.GridCell, value?: string, units?: string) {
 
   const dlgCntDiv = $(dlg.root).find('div').get()[0] as HTMLDivElement;
   dlgCntDiv.className = dlgCntDiv.className.replace('dlg- ui-form', 'dlg-ui-form');
-}
-
-function checkMonomersAndOpenWebEditor(cell: DG.GridCell, value?: string, units?: string) {
-  openWebEditor(cell, value, units);
 }
 
 export class PackageFunctions {
@@ -139,8 +134,7 @@ export class PackageFunctions {
   static helmCellRenderer(): DG.GridCellRenderer {
     const logPrefix = `Helm: _package.getHelmCellRenderer()`;
     _package.logger.debug(`${logPrefix}, start`);
-    // return new HelmCellRenderer(); // old
-    return new HelmGridCellRenderer(); // new
+    return new HelmGridCellRenderer();
   }
 
 
@@ -154,7 +148,7 @@ export class PackageFunctions {
   })
   static editMoleculeCell(
     @grok.decorators.param({'type': 'grid_cell'}) cell: DG.GridCell): void {
-    checkMonomersAndOpenWebEditor(cell, undefined, undefined);
+    openWebEditor(cell, undefined, undefined);
   }
 
   @grok.decorators.panel({
@@ -189,11 +183,11 @@ export class PackageFunctions {
       return;
     const gCell = mol.gridCell ?? DG.GridCell.fromColumnRow(grok.shell.tv.grid, col.name, rowIdx);
     if (colUnits === NOTATION.HELM)
-      checkMonomersAndOpenWebEditor(gCell, undefined, undefined);
+      openWebEditor(gCell, undefined, undefined);
     else {
       const convert = colSh.getConverter(NOTATION.HELM);
       const helmMol = convert(mol.value);
-      checkMonomersAndOpenWebEditor(gCell, helmMol, col.meta.units!);
+      openWebEditor(gCell, helmMol, col.meta.units!);
     }
   }
 
@@ -246,30 +240,20 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static async measureCellRenderer(): Promise<void> {
+    // hwe paints synchronously, so one grid redraw is one render pass of the visible HELM cells
     const grid = grok.shell.tv.grid;
-    const gridCol = grid.columns.byName('sequence')!;
-    const back = gridCol.temp.rendererBack as HelmGridCellRendererBack;
 
     let etSum: number = 0;
     let etCount: number = 0;
     for (let i = 0; i < 20; ++i) {
       const t1 = window.performance.now();
       let t2: number;
-      if (!back.cacheEnabled) {
-        await testEvent(back.onRendered, () => {
-          t2 = window.performance.now();
-          _package.logger.info(`measureCellRenderer() cache disabled , ET: ${t2 - t1} ms`);
-        }, () => {
-          back.invalidate(); // grid.invalidate();
-        }, 5000);
-      } else {
-        await testEvent(grid.onAfterDrawContent, () => {
-          t2 = window.performance.now();
-          _package.logger.info(`measureCellRenderer() cache enabled, ET: ${t2! - t1} ms`);
-        }, () => {
-          grid.invalidate();
-        }, 5000);
-      }
+      await testEvent(grid.onAfterDrawContent, () => {
+        t2 = window.performance.now();
+        _package.logger.info(`measureCellRenderer(), ET: ${t2! - t1} ms`);
+      }, () => {
+        grid.invalidate();
+      }, 5000);
 
       etSum += (t2! - t1);
       etCount++;

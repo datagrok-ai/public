@@ -17,7 +17,7 @@
   "dependencies": {
     "@datagrok-libraries/chem-meta": "workspace:^",
     "@datagrok-libraries/gridext": "workspace:^",
-    "@datagrok-libraries/hwe": "^1.0.5",
+    "@datagrok-libraries/hwe": "^1.1.0",
     "@datagrok-libraries/ml": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@deck.gl/core": "8.8.12",

@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Molecular Structure pane: Bio's panel, now linear by default with the assembler's per-row non-linear fallback
+* Removed dead code: HelmHelper's `parse`, `removeGaps` and monomer-funcs override (gone from `IHelmHelper`), the old `parseHelm` / `findMonomers` utils, unused constants, renderer shims and the unused dayjs, lru-cache and wu dependencies, with their tests and Playwright steps
+* Tests: The non-linear To Atomic Level test counts the heavy atoms and bonds of the molblock instead of calling RDKit
 * Tests: Added the package test 'Bio functions: HELM showcase' — Composition, Sequence Space, Hierarchical Clustering, Convert Sequence Notation, Extract Region, Similarity, Diversity and Subsequence Search and Split to Monomers run on the HELM showcase through their functions, each result and the HELM column checked; the `integration/bio-menu` feature now keeps only Scan Liabilities and the column check
 * Tests: Added the BDD feature `integration/bio-menu` — every Bio command that takes a standalone HELM column run on the HELM showcase, and the column still painted by Helm afterwards (from TestTrack General/helm-bio-menu-integration)
 * Edit Helm...: Fixed the action opening the current cell's peptide instead of the right-clicked one; the current cell stays the fallback for a value that comes without a cell

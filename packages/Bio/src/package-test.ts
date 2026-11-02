@@ -34,6 +34,8 @@ import './tests/seq-handler-get-helm-tests';
 import './tests/helm-tests';
 import './tests/to-atomic-level-tests';
 import './tests/to-atomic-level-ui-tests';
+import './tests/to-atomic-level-crux-tests';
+import './tests/assembly-input-tests';
 import './tests/mm-distance-tests';
 import './tests/activity-cliffs-tests';
 import './tests/sequence-space-test';

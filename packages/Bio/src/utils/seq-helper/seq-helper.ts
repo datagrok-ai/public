@@ -1,33 +1,23 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import wu from 'wu';
-
 import {ISeqHelper, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {MolfileWithMap} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getMolColName} from '@datagrok-libraries/bio/src/monomer-works/utils';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {IMonomerLibBase, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 
-import {HelmToMolfileConverter} from '../helm-to-molfile/converter';
+import {
+  assembleSeqColumn, getMacromoleculeAssembler, readyAssemblerLibrary,
+} from '@datagrok-libraries/bio/src/monomer-works/assembler';
+
+import {asHelmColumn, HelmToMolfileConverter} from '../helm-to-molfile/converter/converter';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {SeqHandler} from './seq-handler';
 import {Column} from 'datagrok-api/dg';
 import {NOTATION, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {_package} from '../../package';
-
-type SeqHelperWindowType = Window & { $seqHelperPromise?: Promise<SeqHelper> };
-declare const window: SeqHelperWindowType;
 
 export class SeqHelper implements ISeqHelper {
-  constructor(
-    private readonly libHelper: IMonomerLibHelper,
-    private readonly rdKitModule: RDModule
-  ) {}
+  constructor(private readonly libHelper: IMonomerLibHelper) {}
 
   getSeqHandler(seqCol: DG.Column<string>): ISeqHandler {
     return SeqHandler.forColumn(seqCol, this);
@@ -38,92 +28,39 @@ export class SeqHelper implements ISeqHelper {
     return Object.keys(sh.stats.freq);
   }
 
-  // TODO: Move to the Helm package
+  /** A converter for {@link monomerLib} as it is now: the assembler's main-thread module and the library are readied
+   * here, so the converter's methods (and {@link helmToAtomicLevelSingle}) can be synchronous. */
   async getHelmToMolfileConverter(monomerLib: IMonomerLibBase): Promise<HelmToMolfileConverter> {
-    const helmHelper: IHelmHelper = await getHelmHelper();
-    return new HelmToMolfileConverter(helmHelper, this.rdKitModule, monomerLib);
+    const assembler = await getMacromoleculeAssembler();
+    const libKey = await readyAssemblerLibrary(assembler, monomerLib);
+    return new HelmToMolfileConverter(monomerLib, this, assembler, libKey);
   }
 
+  /** One HELM to a molecule with its monomer map, non-linear layout, synchronously through a converter of
+   * {@link getHelmToMolfileConverter}. chiralityEngine and beautifyMol have no effect: stereo is always absolute,
+   * and the layout is the assembler's depiction. */
   helmToAtomicLevelSingle(
-    helm: string, converter: HelmToMolfileConverter, chiralityEngine?: boolean, beautifyMol: boolean = true) {
+    helm: string, converter: HelmToMolfileConverter, _chiralityEngine?: boolean, _beautifyMol: boolean = true,
+  ): MolfileWithMap {
     if (!helm)
       return MolfileWithMap.createEmpty();
-    const molfileV3k = converter.convertToMolfileV3K([helm])[0];
-    if (!molfileV3k || !molfileV3k.molfile)
-      return MolfileWithMap.createEmpty();
-    let mol: RDMol | null = null;
-    try {
-      let v3k = molfileV3k.molfile;
-      if (beautifyMol) {
-        mol = this.rdKitModule.get_mol(v3k);
-        if (!mol)
-          return MolfileWithMap.createEmpty();
-        mol.set_new_coords();
-        mol.normalize_depiction(1);
-        mol.straighten_depiction(true);
-        v3k = mol.get_v3Kmolblock();
-      }
-      if (chiralityEngine)
-        v3k = converter.molV3KtoMolV3KOCL(v3k);
-      return new MolfileWithMap(v3k, molfileV3k.monomers);
-    } catch (err) {
-      const [errMsg, errStack] = errInfo(err);
-      _package.logger.error(errMsg, undefined, errStack);
-      return MolfileWithMap.createEmpty();
-    } finally {
-      mol?.delete();
-    }
+    return converter.convertToMolfileV3K([helm])[0] ?? MolfileWithMap.createEmpty();
   }
 
+  /** HELM column to molecules with the non-linear layout, in the assembler's workers. Rows that cannot be built
+   * give '' and a warning each. chiralityEngine has no effect (stereo is always absolute); highlight sets the
+   * `.sequence-src-highlight-monomers` tag of the result. */
   async helmToAtomicLevel(
     helmCol: DG.Column<string>, chiralityEngine?: boolean, highlight?: boolean, overrideMonomerLib?: IMonomerLibBase
   ): Promise<ToAtomicLevelRes> {
     const monomerLib: IMonomerLibBase = overrideMonomerLib ?? this.libHelper.getMonomerLib();
-
-    const df: DG.DataFrame = helmCol.dataFrame;
-    const molColName: string = getMolColName(df, helmCol.name);
-
-    const converter = await this.getHelmToMolfileConverter(monomerLib);
-
-    //#endregion From HelmToMolfileConverter
-    const helmList = helmCol.toList();
-    const molList = new Array<string>(helmCol.length);
-    // this function is paralelized and in threads, so will not block the UI. OFC, we prefer to use it.
-    // if not found, we will use the default one running in main thread...
-    const beautifyMolsChemFunc = DG.Func.find({package: 'Chem', name: 'beautifyMols'})[0];
-    // similarly, OCL Function is also paralelized and in threads, so will not block the UI.
-    const OCLFunc = DG.Func.find({package: 'Chem', name: 'convertToV3KViaOCL'})[0];
-
-    // depending on the function found, we will use it or not. if not, use internal OCL and beautification
-    for (let i = 0; i < helmCol.length; i++) {
-      molList[i] = (this.helmToAtomicLevelSingle(helmList[i], converter,
-        chiralityEngine && !OCLFunc, !beautifyMolsChemFunc)).molfile;
+    const res = await assembleSeqColumn(asHelmColumn(helmCol), monomerLib, this, 'nonlinear');
+    if (res.molCol) {
+      res.molCol.name = getMolColName(helmCol.dataFrame, helmCol.name);
+      res.molCol.setTag(ChemTags.SEQUENCE_SRC_COL, helmCol.name);
+      res.molCol.setTag(ChemTags.SEQUENCE_SRC_HL_MONOMERS, String(!!highlight));
     }
-    // need to beautify the molfiles
-    if (beautifyMolsChemFunc) {
-      const beautifiedMols = await beautifyMolsChemFunc.apply({mols: molList});
-      if (beautifiedMols && Array.isArray(beautifiedMols) && beautifiedMols.length === helmCol.length) {
-        for (let i = 0; i < helmCol.length; i++)
-          beautifiedMols[i] && (molList[i] = beautifiedMols[i]);
-      }
-    }
-    // handle OCL
-    if (chiralityEngine && OCLFunc) {
-      const oclMols = await OCLFunc.apply({mols: molList});
-      if (oclMols && Array.isArray(oclMols) && oclMols.length === helmCol.length) {
-        for (let i = 0; i < helmCol.length; i++)
-          oclMols[i] && (molList[i] = oclMols[i]);
-      } else
-        grok.shell.warning('OCL function returned an unexpected result');
-    }
-    //const molHlList = molfilesV3K.map((item: MolfileWithMap) => getMolHighlight(item.monomers.values(), monomerLib));
-
-    const molCol = DG.Column.fromStrings(molColName, molList);
-    molCol.semType = DG.SEMTYPE.MOLECULE;
-    molCol.meta.units = DG.UNITS.Molecule.MOLBLOCK;
-    molCol.setTag(ChemTags.SEQUENCE_SRC_COL, helmCol.name);
-
-    return {molCol: molCol, warnings: []};
+    return res;
   }
 
   public setUnitsToFastaColumn(uh: SeqHandler) {

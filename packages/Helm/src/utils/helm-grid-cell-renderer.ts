@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {HelmType, IHelmBio, ISeqMonomer, HelmMol, Mol} from '@datagrok-libraries/bio/src/helm/types';
+import {ISeqMonomer, HelmMol} from '@datagrok-libraries/bio/src/helm/types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {CellRendererBackBase, getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -41,13 +41,6 @@ type HelmCellAux = {
 };
 
 export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
-  /**
-   * Compat shim for the `measureCellRenderer` benchmark: hwe renders
-   * synchronously with an internal LRU parse/layout cache, so this is always
-   * `true` (the benchmark then waits on `grid.onAfterDrawContent`).
-   */
-  public readonly cacheEnabled: boolean = true;
-
   private sysMonomerLib: IMonomerLibBase | null = null;
   private helmHelper: IHelmHelper | null = null;
 
@@ -76,14 +69,12 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
       for (const svc of this.serviceByLib.values()) svc.destroy();
       this.serviceByLib.clear();
       this.auxList.clear();
-      this.dirty = true;
       this.invalidateGrid();
     }));
 
     this.subs.push(grok.events.onCustomEvent(MACROMOLECULE_HIGHLIGHT_EVENT_ID)
       .subscribe((args: MacromoleculeHighlightEventArgs) => this.handleHighlightEvent(args)));
 
-    this.dirty = true;
     this.invalidateGrid();
   }
 
@@ -135,12 +126,6 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
       this.serviceByLib.set(key, svc);
     }
     return svc;
-  }
-
-  protected override reset(): void {
-    super.reset();
-    this.auxList = new Map<string, HelmCellAux>();
-    this.invalidateGrid();
   }
 
   /** Synchronous paint straight into the grid canvas via hwe `renderToCanvas`. */
@@ -267,7 +252,6 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
     const aux = this.auxList.get(gridCell.cell.value);
     if (!aux) return;
 
-    const logPrefix = `${this.toLog()}.onMouseMove()`;
     const dpr = window.devicePixelRatio;
 
     /** {@link gridCell}.bounds */ const gcb = gridCell.bounds;
@@ -283,11 +267,6 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
     // Single-atom hover threshold (0.35·cellHeight in the legacy) mapped to model space.
     const cellHModel = aux.cellHDev * aux.bBox.height / aux.dBox.height;
 
-    const editorMol: Mol<HelmType, IHelmBio> | null = aux.molView as unknown as Mol<HelmType, IHelmBio>;
-    if (!editorMol) {
-      this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
-      return;
-    }
     const hoveredAtom = getHoveredMonomerFromEditorMol(mX, mY, aux.molView, cellHModel);
 
     let seqMonomer: ISeqMonomer | null = null;

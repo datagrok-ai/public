@@ -2,8 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import wu from 'wu';
-
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';

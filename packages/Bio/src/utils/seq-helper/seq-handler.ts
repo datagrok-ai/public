@@ -8,9 +8,7 @@ import wu from 'wu';
 import {ALIGNMENT, ALPHABET, candidateAlphabets, getSplitterWithSeparator, NOTATION, positionSeparator, splitterAsFasta, splitterAsHelm, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/index';
 import {CandidateType, INotationProvider, ISeqConnection, ISeqSplitted, SeqColStats, SplitterFunc,} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {detectAlphabet, detectHelmAlphabet, splitterAsFastaSimple, StringListSeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {mmDistanceFunctions, MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
-import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {DEOXYRIBOSE_SYMBOL, HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL, RIBOSE_SYMBOL} from '@datagrok-libraries/bio/src/utils/const';
 import {GAP_SYMBOL, GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {CellRendererBackBase, GridCellRendererTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
@@ -361,21 +359,6 @@ export class SeqHandler implements ISeqHandler {
     }
   }
 
-  /// Faster method to get monomers at certain position.
-  /// for canonical sequences in fasta (large proteins/nucleotides)
-  /// will be faster than getSplitted(rowIdx).getCanonical(posIdx)
-  getMonomerAtPosition(rowIdx: number, posIdx: number, canonical: boolean): string {
-    if (this.isCanonicalAlphabet && this.isFasta() && !this.getAlphabetIsMultichar()) {
-      const seq = this.column.get(rowIdx) ?? '';
-      const res = seq[posIdx];
-      return canonical ? (res === GapOriginals[NOTATION.FASTA] ? GAP_SYMBOL : (res ?? GAP_SYMBOL)) : (res ?? '');
-    }
-    const mSeq: ISeqSplitted = this.getSplitted(rowIdx);
-    if (posIdx < 0 || posIdx >= mSeq.length)
-      return this.defaultGapOriginal;
-    return canonical ? mSeq.getCanonical(posIdx) : mSeq.getOriginal(posIdx);
-  }
-
   getMonomersAtPosition(position: number, canonical: boolean): string[] {
     const length = this.column.length;
     const res: string[] = new Array(length).fill(GAP_SYMBOL);
@@ -475,8 +458,6 @@ export class SeqHandler implements ISeqHandler {
 
   public isSeparator(): boolean { return this.notation === NOTATION.SEPARATOR || !!this.separator; }
 
-  public isFastaOrSeparator(): boolean { return this.isFasta() || this.isSeparator(); }
-
   public isHelm(): boolean { return this.notation === NOTATION.HELM; }
 
   public isCustom(): boolean { return this.notation === NOTATION.CUSTOM; }
@@ -486,8 +467,6 @@ export class SeqHandler implements ISeqHandler {
   public isRna(): boolean { return this.alphabet === ALPHABET.RNA; }
 
   public isDna(): boolean { return this.alphabet === ALPHABET.DNA; }
-
-  public isPeptide(): boolean { return this.alphabet === ALPHABET.PT; }
 
   public isMsa(): boolean { return this.aligned ? this.aligned.toUpperCase().includes('MSA') : false; }
 
@@ -597,46 +576,6 @@ export class SeqHandler implements ISeqHandler {
     return this.getNewColumn(this.notation, this.separator, name, seqList);
   }
 
-  /**
-   * A helper function checking the validity of the 'units' string
-   *
-   * @param {string} units  the string to be validated
-   * @return {boolean}
-   */
-  public static unitsStringIsValid(units: string): boolean {
-    units = units.toLowerCase();
-    const prefixes = [NOTATION.FASTA, NOTATION.SEPARATOR, NOTATION.HELM];
-    const postfixes = ['rna', 'dna', 'pt'];
-
-    const prefixCriterion = prefixes.some((p) => units.startsWith(p.toLowerCase()));
-    return prefixCriterion;
-  }
-
-  /**
-   * Construct a new column of semantic type MACROMOLECULE from the list of
-   * specified parameters
-   *
-   * @param {number}    len  the length of the new column
-   * @param {string}    name  the name of the new column
-   * @param {string}    units  the units of the new column
-   * @return {DG.Column}
-   */
-  public static getNewColumnFromParams(
-    len: number,
-    name: string,
-    units: string
-  ): DG.Column {
-    // WARNING: in this implementation is is impossible to verify the uniqueness
-    // of the new column's name
-    // TODO: verify the validity of units parameter
-    if (!SeqHandler.unitsStringIsValid(units))
-      throw new Error('Invalid format of \'units\' parameter');
-    const newColumn = DG.Column.fromList('string', name, new Array(len).fill(''));
-    newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
-    newColumn.meta.units = units;
-    return newColumn;
-  }
-
   get splitter(): SplitterFunc {
     if (this._splitter == null)
       this._splitter = this.getSplitter();
@@ -689,55 +628,9 @@ export class SeqHandler implements ISeqHandler {
     }
   }
 
-  public getDistanceFunction(): mmDistanceFunctionType {
-    return mmDistanceFunctions[this.getDistanceFunctionName()]();
-  }
-
-  // checks if the separator notation is compatible with helm library
-  public async checkHelmCompatibility(): Promise<boolean> {
-    // check first for the column tag to avoid extra processing
-    if (this.column.tags.has(TAGS.isHelmCompatible))
-      return this.column.getTag(TAGS.isHelmCompatible) === 'true';
-
-    // get the monomer lib and check against the column
-    const monomerLibHelper: IMonomerLibHelper = await getMonomerLibHelper();
-    const bioLib = monomerLibHelper.getMonomerLib();
-    // retrieve peptides
-    const peptides = bioLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE);
-    // convert the peptides list to a set for faster lookup
-    const peptidesSet = new Set(peptides);
-    // get splitter for given separator and check if all monomers are in the lib
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const splitterFunc = getSplitterWithSeparator(this.separator!);
-    // iterate over the columns, split them and check if all monomers are in the lib
-    //TODO maybe add missing threshold so that if there are not too many missing monomers
-    // the column is still considered helm compatible
-    const catIdxSet: Set<number> = new Set();
-    const rowCount = this.column.length;
-    const colRawData = this.column.getRawData();
-    for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
-      const catI = colRawData[rowIdx];
-      if (!(catI in catIdxSet)) {
-        catIdxSet.add(catI);
-        const seqSS = this.getSplitted(rowIdx);
-        for (let posIdx = 0; posIdx < seqSS.length; ++posIdx) {
-          const cm = seqSS.getCanonical(posIdx);
-          if (!peptidesSet.has(cm)) {
-            this.column.setTag(TAGS.isHelmCompatible, 'false');
-            return false;
-          }
-        }
-      }
-    }
-    this.column.setTag(TAGS.isHelmCompatible, 'true');
-    return true;
-  }
-
   // -- Notation Converter --
 
   public toFasta(targetNotation: NOTATION): boolean { return targetNotation === NOTATION.FASTA; }
-
-  public toSeparator(targetNotation: NOTATION): boolean { return targetNotation === NOTATION.SEPARATOR; }
 
   public toHelm(targetNotation: NOTATION): boolean { return targetNotation === NOTATION.HELM; }
 

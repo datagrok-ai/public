@@ -1,5 +1,13 @@
 # Sequence Translator changelog
 
+## v.next
+
+* PolyTool: Enumerate: Fixed Highlight monomers applying unseen: the box was hidden for macromolecules, where its value (restored from the dialog's history) was used, and ignored for templates, where it showed; it now shows whenever To atomic level is on and applies to both
+* PolyTool: Convert, Convert Notation and Enumerate: Removed the Chirality engine option, which no longer did anything (stereo is always absolute). `polyToolConvert2` no longer declares `chiralityEngine`: a caller that passes it is not refused
+* PolyTool: Convert and Enumerate: Added tooltips to the column, Highlight monomers, Keep original, To atomic level, Get HELM, Trivial name and Append to table inputs; Linearize's tooltip says what it does now
+* PolyTool: Convert and Enumerate convert on Chem's macromolecule assembler through Bio, and the cyclized column's hover maps come from the assembler per row (they came from the linear builder even for molecules the non-linear converter built, so they could highlight the wrong atoms); Highlight monomers now takes effect; Convert, Enumerate and the rule previews no longer load RDKit for the conversion
+* PolyTool: `parseHelm` on Bio's hwe splitter: fixed HELM ending in `$$$` failing, a connection resolving its chain by the number of its polymer id (PEPTIDE1 and CHEM1 were the same chain), polymer types other than PEPTIDE, and a `}` inside brackets cutting the chain
+
 ## ## 1.11.6 (2026-10-30)
 
 * Markush Enumerator: Fixed every molecule failing for a core whose R-labels carry a bond, such as a stereo alkene `[*:1]/C([*:2])=C(\[*:3])[*:4]`, and hydrogen R-groups (the template's `[H][*:1]` or a drawn `[H]`) joining with the wrong double-bond geometry

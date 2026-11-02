@@ -45,4 +45,3 @@ export type ImmunumWorkerResponse =
  *  dropdown lists all schemes globally so the immunum path falls back for the
  *  unsupported ones by returning empty rows with errors. */
 export const IMMUNUM_SCHEMES = ['imgt', 'kabat'] as const;
-export type ImmunumScheme = typeof IMMUNUM_SCHEMES[number];

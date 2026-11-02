@@ -383,8 +383,8 @@ export async function moleculeToHelmSingle(molecule: string) : Promise<string> {
 //description: Converts sequences to molblocks
 //input: dataframe table { description: Input data table }
 //input: column seqCol { semType: Macromolecule; caption: Sequence }
-//input: bool nonlinear = true { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
-//input: bool highlight = false { caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }
+//input: bool nonlinear = true { caption: Non-linear; description: Draw every molecule as a 2D depiction. When off, plain chains are drawn straight and sequences with cycles or branches as a depiction }
+//input: bool highlight = false { caption: Highlight monomers; description: Color each molecule's atoms by the monomer they come from (the monomer's color in the library) }
 //top-menu: Bio | Transform | To Atomic Level...
 export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean, highlight: boolean) : Promise<void> {
   await PackageFunctions.toAtomicLevel(table, seqCol, nonlinear, highlight);
@@ -564,8 +564,8 @@ export async function extractRegion(table: DG.DataFrame, sequence: DG.Column<any
 //description: Converts sequences to molblocks, returning the molecule column.
 //input: dataframe table { caption: Table; nullable: false }
 //input: column sequence { semType: Macromolecule; caption: Sequence; nullable: false }
-//input: bool nonlinear = true { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
-//input: bool highlight = false { caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }
+//input: bool nonlinear = true { caption: Non-linear; description: Draw every molecule as a 2D depiction. When off, plain chains are drawn straight and sequences with cycles or branches as a depiction }
+//input: bool highlight = false { caption: Highlight monomers; description: Color each molecule's atoms by the monomer they come from (the monomer's color in the library) }
 //output: column result
 //meta.role: transform
 export async function toAtomicLevelColumn(table: DG.DataFrame, sequence: DG.Column<any>, nonlinear: boolean, highlight: boolean) : Promise<any> {
@@ -911,8 +911,7 @@ export async function getSeqHelper() : Promise<any> {
 //description: Converts a column of HELM sequences to atomic-level molecules (V3000 molblocks)
 //input: dataframe df 
 //input: column helmCol { semType: Macromolecule; description: Column of HELM sequences to convert }
-//input: bool chiralityEngine = true { description: Preserve monomer stereochemistry using the chirality engine }
 //output: column result
-export async function getMolFromHelm(df: DG.DataFrame, helmCol: DG.Column<any>, chiralityEngine: boolean) : Promise<any> {
-  return await PackageFunctions.getMolFromHelm(df, helmCol, chiralityEngine);
+export async function getMolFromHelm(df: DG.DataFrame, helmCol: DG.Column<any>) : Promise<any> {
+  return await PackageFunctions.getMolFromHelm(df, helmCol);
 }

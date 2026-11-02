@@ -2,6 +2,11 @@
 
 ## v.next
 
+* Chemical Engine: Crux is the default. RDKit is used only where the setting says RDKit; an unset setting means Crux
+* Macromolecule assembler: Added `Chem:getMacromoleculeAssembler` (chem-meta's `IMacromoleculeAssembler`): Bio's sequences built by Crux from a monomer library's templates, in both chemical engines, as `molzip` is. A column runs on the Crux workers (the library sent to each worker once, and again after a restart; a long row alone on an idle worker); one row, `markStereoAbsolute`, `toV2000` and the synchronous twins after `ready` (`assembleOneSync`, `assembleSync`, `markStereoAbsoluteSync`, `toV2000Sync`, for Bio's legacy synchronous APIs) on the main thread's module. Speed: Bio's To Atomic Level 7–14× faster in linear mode and 6–9× in non-linear mode on 3–6k-row columns (with crux-core's depictor speed round, which also lays out ChEMBL molecules about 2× faster with identical coordinates); one row with its monomer map takes 0.4 ms (linear) to 2.5 ms (non-linear) for a 16-mer peptide
+* Tests: Added the category `crux: biopolymer`
+* `Chem:drawMolecule`: Added the optional `cache` parameter (true by default): false keeps no picture or canvas in the renderer afterwards, for very large one-off drawings (Bio's full-screen molecule dialog, Chem's Enlarge dialog)
+* Rendering: One molecule renderer for every drawing (the grid, `Chem:rdKitCellRenderer`, so `drawMolecule` and the panels, the SAR Matrix): one set of caches and one subscription. `Chem:rdKitCellRenderer` made a new renderer per call, and each stayed alive through its event subscription with its canvas and pictures
 * [#2628](https://github.com/datagrok-ai/public/issues/2628): Substructure filter: Fixed Use as filter keeping the previous query's rows when the table was re-filtered within a second of it (e.g. after another view removed its Structure card)
 * [#2626](https://github.com/datagrok-ai/public/issues/2626): Scaffold Tree: Added a package test: the child dialog of a scaffold drawn with an explicit H opens with no warning
 * [#2628](https://github.com/datagrok-ai/public/issues/2628): Substructure filter: Added a package test: Use as filter filters after a second view removed its Structure card

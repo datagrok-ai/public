@@ -58,6 +58,9 @@ interface RendererInternals {
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, alignByFirstSubstructure: boolean,
     details?: object): ImageData;
   cachedMoleculeCount: number;
+  canvasReused: OffscreenCanvas;
+  rendersCache: unknown;
+  renderUncached(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, molString: string): void;
   _molToSvg(molString: string, w: number, h: number): string | null;
 }
 
@@ -515,6 +518,32 @@ category('chemical engine', () => {
     expect(info.engine, ChemicalEngine.Crux);
     expect(renderer.cachedMoleculeCount, 1);
     expect(rdkitInfos.every((i) => i.molCtx.mol === null), true, 'the RDKit molecules are freed');
+  });
+
+  // Chem:drawMolecule's `cache: false` (Bio's full-screen molecule dialog, twice the screen's resolution)
+  test('an uncached drawing keeps no picture', async () => {
+    await inBothEngines(async (engine) => {
+      const renderer = newRenderer();
+      const canvasSize = [renderer.canvasReused.width, renderer.canvasReused.height].join('x');
+      const pictures = () => (renderer.rendersCache as unknown as {size: number}).size;
+      const picturesBefore = pictures();
+      const r = window.devicePixelRatio;
+      const canvas = ui.canvas(Math.round(1600 * r), Math.round(1200 * r));
+      const g = canvas.getContext('2d')!;
+      renderer.renderUncached(g, 0, 0, 1600, 1200, 'CC(C)CC(NC(=O)C(N)Cc1ccccc1)C(=O)NC(Cc1ccc(O)cc1)C(=O)O');
+      expect(inked(g.getImageData(0, 0, canvas.width, canvas.height)) > 0, true, `${engine}: nothing drawn`);
+      expect(pictures(), picturesBefore, `${engine}: the picture was cached`);
+      expect([renderer.canvasReused.width, renderer.canvasReused.height].join('x'), canvasSize,
+        `${engine}: the reused canvas grew`);
+    });
+  });
+
+  // drawMolecule, the panels and the grid share one renderer: one set of caches, one subscription (a renderer per
+  // call stayed alive through its subscription, with its canvas and pictures)
+  test('one molecule renderer', async () => {
+    const a = await grok.functions.call('Chem:rdKitCellRenderer');
+    const b = await grok.functions.call('Chem:rdKitCellRenderer');
+    expect(a === b, true, 'Chem:rdKitCellRenderer made a new renderer');
   });
 
   test('evicted molecules are freed and drawn again', async () => {

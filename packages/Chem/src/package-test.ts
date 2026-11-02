@@ -45,6 +45,7 @@ import './tests/clone-layout-tests';
 import './tests/mmpa-tests';
 import './tests/sar-matrix-tests';
 import './tests/crux-analyses-tests';
+import './tests/crux-biopolymer-tests';
 import './tests/python-free-tests';
 import './tests/editor-loop-tests';
 import './tests/chemprop-tests';

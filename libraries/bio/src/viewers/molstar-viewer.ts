@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 
 import {BiostructureData, BiostructureDataJson} from '../pdb/types';
 import {IViewer} from './viewer';
-import {PdbResDataFrameType} from '../pdb/pdb-helper';
 import {TAGS as pdbTAGS} from '../pdb/index';
 
 export enum RepresentationType {
@@ -106,11 +105,6 @@ export type BiostructureProps = typeof BiostructurePropsDefault;
 export interface IBiostructureViewer extends IViewer {
   get dataEff(): BiostructureData | null;
   setOptions(options: Partial<BiostructureProps>): void;
-}
-
-
-export interface ISaguaroViewer extends IViewer {
-  setData(df: PdbResDataFrameType | DG.DataFrame): void;
 }
 
 declare module 'datagrok-api/dg' {

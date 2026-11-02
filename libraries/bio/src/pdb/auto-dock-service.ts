@@ -43,10 +43,6 @@ export class GridSize {
   }
 }
 
-export type AutoDockRunResult = {
-  posesDf: DG.DataFrame
-};
-
 export interface IAutoDockService {
   get ready(): boolean;
 

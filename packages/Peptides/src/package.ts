@@ -10,7 +10,6 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {LogoSummaryTable} from './viewers/logo-summary';
-import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {PeptidesModel} from './model';
 import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 import {AppHeader} from '@datagrok-libraries/u2';
@@ -22,7 +21,6 @@ import {SequencePositionStatsViewer} from './viewers/position-statistics-viewer'
 import {MutationCliffsViewer} from './viewers/mutation-cliffs-viewer';
 import {PeptideGenerationViewer} from './viewers/peptide-generation-viewer';
 
-let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper;
 export const _package = new DG.Package();
 export * from './package.g';
@@ -58,11 +56,6 @@ decorators.forEach((decorator) => {
 
 /** End temporary polyfill */
 
-export function getMonomerWorksInstance(): MonomerWorks | null {
-  return monomerWorks;
-}
-
-
 export function getTreeHelperInstance(): ITreeHelper {
   return treeHelper;
 }
@@ -84,7 +77,6 @@ export class PackageFunctions {
   @grok.decorators.init({tags: ['init']})
   static async initPeptides(): Promise<void> {
     try {
-      monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
       treeHelper ??= await getTreeHelper();
       await PeptideUtils.loadComponents();
     } catch (e) {

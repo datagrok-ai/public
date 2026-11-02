@@ -13,6 +13,7 @@ import {MAX_MOL_CACHE_SIZE} from '../rdkit-service/rdkit-service-worker-base';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {ANALYSIS_JOBS} from './crux-analysis-jobs';
 import {BATCH_JOBS} from './jobs/batch';
+import {BIOPOLYMER_JOBS} from './jobs/biopolymer';
 import {CALCULATION_JOBS} from './jobs/calculations';
 import {MOLECULE_JOBS} from './jobs/molecule-jobs';
 import {SEARCH_TYPE_JOBS, dropSearchTypeKeys} from './jobs/search-types';
@@ -49,7 +50,7 @@ function jobTable(...tables: {[op: string]: WorkerJob}[]): {[op: string]: Worker
 }
 
 const JOBS = jobTable(CALCULATION_JOBS, BATCH_JOBS, MOLECULE_JOBS, ANALYSIS_JOBS, SEARCH_TYPE_JOBS, SCRIPT_JOBS,
-  SYNTHON_JOBS);
+  SYNTHON_JOBS, BIOPOLYMER_JOBS);
 
 /**
  * Builds the collection of one index segment from its SMILES and MOL blocks (a MOL block read as Chem's getMolSafe
