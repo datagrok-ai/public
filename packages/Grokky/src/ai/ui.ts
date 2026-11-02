@@ -18,6 +18,7 @@ import {UsageLimiter} from './usage-limiter';
 import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
 import {AiFeature} from '../claude/ai-feature';
+import {contentLoggingNotice} from '../claude/turn-log';
 
 interface ExecutionPlan {
   plan: string[];
@@ -60,7 +61,8 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
 
   const activityHost = ui.divV([], 'grokky-stream-activity');
   const contentHost = ui.div([], 'grokky-stream-content');
-  const container = ui.divV([activityHost, contentHost], 'grokky-stream');
+  const notice = opts.sessionId ? null : contentLoggingNotice();
+  const container = ui.divV([activityHost, contentHost, ...(notice ? [notice] : [])], 'grokky-stream');
 
   let onFirstEvent: () => void = () => {};
   const firstEvent = new Promise<void>((res) => { onFirstEvent = res; });
@@ -111,7 +113,7 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     stopListening();
   });
 
-  client.send(sessionId, prompt, opts.outputSchema ? {outputSchema: opts.outputSchema} : undefined);
+  client.send(sessionId, prompt, {logPrompt: prompt, outputSchema: opts.outputSchema});
   return widget;
 }
 
@@ -542,6 +544,7 @@ async function streamOnce(
         const options = {
           ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
           ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
+          logPrompt: userPrompt,
         };
         // Queued-task admission (queue-task.ts): the queued call only holds the turn's
         // admission slot; the turn itself streams over this socket as usual.
