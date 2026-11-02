@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/tooltips/edit-tooltip.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.tooltips, public#1208, public#373]
+sub_features_covered: [viewers.tooltips, public#1208, public#373, core#474]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -30,9 +30,9 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Editing the table's tooltip from a viewer", () => {
   const session = feature(test, "features/viewers/tooltips/edit-tooltip.feature", import.meta.url);
-  test("Editing the table's tooltip from a viewer", {tag: ["@journey", "@viewers", "@realizes:viewers.tooltips", "@realizes:public#1208", "@realizes:public#373"]}, async ({browser}) => {
+  test("Editing the table's tooltip from a viewer", {tag: ["@journey", "@viewers", "@realizes:viewers.tooltips", "@realizes:public#1208", "@realizes:public#373", "@realizes:core#474"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 4, page);
+    const run = journey(test, 5, page);
     await session.step(28, "Given user is logged in", () => loggedIn(page));
     await session.step(29, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(30, "And user sets properties of grid:", () => setProperties(page, el("grid"), [["Show Tooltip","inherit from table"],["Show Column Names","Always"],["Show Visible Columns In Tooltip","true"]]), [["Show Tooltip","inherit from table"],["Show Column Names","Always"],["Show Visible Columns In Tooltip","true"]]);
@@ -116,6 +116,18 @@ test.describe("Editing the table's tooltip from a viewer", () => {
       await session.step(118, "When user clicks on CANCEL button in \"Edit Tooltip\" dialog", () => clickOn(page, el("CANCEL button in \"Edit Tooltip\" dialog")));
       await session.step(119, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
       await session.step(120, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("View > Edit Tooltip keeps setting the table's tooltip for the plots (core#474)", async () => {
+      await session.step(124, "When user picks \"View > Edit Tooltip...\" from the top menu", () => pickFromTopMenu(page, "View > Edit Tooltip..."));
+      await session.step(125, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
+      await session.step(126, "And \"Use tooltip\" input in \"Edit Tooltip\" dialog should have value \"Table\"", () => shouldHaveValue(page, el("\"Use tooltip\" input in \"Edit Tooltip\" dialog"), "Table"));
+      await session.step(127, "When user toggles the \"WEIGHT\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
+      await session.step(128, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
+      await session.step(129, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
+      await session.step(130, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+      await session.step(131, "Then the tooltip should show columns in the order \"AGE, SEX\"", () => tooltipColumnsInOrder(page, "AGE, SEX"));
+      await session.step(132, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+      await session.step(133, "Then no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });
