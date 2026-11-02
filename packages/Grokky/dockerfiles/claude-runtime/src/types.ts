@@ -70,7 +70,7 @@ export type OutgoingMessage =
   | {type: 'revision_start'; sessionId: string}
   | {type: 'final'; sessionId: string; content: string; structured_output?: unknown; unverified?: boolean;
       metrics?: TurnMetrics; revision?: 'kept' | 'replaced'}
-  | {type: 'error'; sessionId: string; message: string}
+  | {type: 'error'; sessionId: string; message: string; metrics?: TurnMetrics}
   | {type: 'session_reset'; sessionId: string}
   | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}
@@ -114,10 +114,10 @@ export type AgentEvent =
   | {type: 'tool_activity'; name: string; summary: string}
   | {type: 'activity'}
   | {type: 'result'; text: string; structuredOutput?: unknown; metrics: TurnMetrics}
-  | {type: 'limit'; kind: 'turns' | 'budget'}
+  | {type: 'limit'; kind: 'turns' | 'budget'; metrics?: TurnMetrics}
   /** The session's stored history could not be restored; the browser replays its transcript. */
   | {type: 'session_reset'}
-  | {type: 'error'; message: string};
+  | {type: 'error'; message: string; metrics?: TurnMetrics};
 
 // Runtime ↔ agent process protocol (agent/grokky_agent), one JSON object per line
 
@@ -143,7 +143,7 @@ export type AgentProcessEvent =
   | {type: 'tool_end'; name: string; args: Record<string, unknown>; result: string}
   | {type: 'browser_call'; id: string; name: string; input: unknown; timeoutMs: number}
   | {type: 'stopped'; text: string; structuredOutput?: unknown; metrics: TurnMetrics}
-  | {type: 'limit'; kind: 'turns' | 'budget'}
-  | {type: 'error'; message: string}
+  | {type: 'limit'; kind: 'turns' | 'budget'; metrics?: TurnMetrics}
+  | {type: 'error'; message: string; metrics?: TurnMetrics}
   | {type: 'cancelled'}
   | {type: 'session_lost'};

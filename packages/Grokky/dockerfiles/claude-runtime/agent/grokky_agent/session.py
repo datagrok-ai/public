@@ -412,18 +412,19 @@ class Session:
                 self.emit({'type': 'cancelled'})
                 return
             if t.limit or str(result.get('turn_exit_reason') or '').startswith('max_iterations'):
-                self.emit({'type': 'limit', 'kind': t.limit or 'turns'})
+                self.emit({'type': 'limit', 'kind': t.limit or 'turns', 'metrics': t.metrics(self.provider.model)})
                 return
             if t.api_error or result.get('failed'):
                 self.emit({'type': 'error',
-                           'message': t.api_error or result.get('error') or 'The model request failed.'})
+                           'message': t.api_error or result.get('error') or 'The model request failed.',
+                           'metrics': t.metrics(self.provider.model)})
                 return
             text = result.get('final_response') or ''
             if t.schema is None:
                 if text:
                     self.emit({'type': 'stopped', 'text': text, 'metrics': t.metrics(self.provider.model)})
                 else:
-                    self.emit({'type': 'error', 'message': 'The assistant stopped without an answer.'})
+                    self.emit({'type': 'error', 'message': 'The assistant stopped without an answer.', 'metrics': t.metrics(self.provider.model)})
                 return
             value, error = structured.check(t.schema, text)
             if error is None:
@@ -432,7 +433,8 @@ class Session:
             problem = error
             content = RETRY_STRUCTURED.format(problem)
         self.emit({'type': 'error', 'message': 'The model did not return valid structured output after '
-                                               f'{MAX_STRUCTURED_ATTEMPTS} attempts: {problem}'})
+                                               f'{MAX_STRUCTURED_ATTEMPTS} attempts: {problem}',
+                   'metrics': t.metrics(self.provider.model)})
 
     def _account(self, t: Turn, usage: Usage, api_duration: float | None) -> None:
         t.tokens.add(usage)

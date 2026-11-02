@@ -146,11 +146,13 @@ class StoppedEvent(TypedDict):
 class LimitEvent(TypedDict):
     type: Literal['limit']
     kind: Literal['turns', 'budget']
+    metrics: NotRequired[Metrics]
 
 
 class ErrorEvent(TypedDict):
     type: Literal['error']
     message: str
+    metrics: NotRequired[Metrics]
 
 
 class CancelledEvent(TypedDict):

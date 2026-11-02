@@ -148,6 +148,7 @@ export class ClaudeRuntimeClient {
       case 'error':
         this._resumable.add(data.sessionId);
         this.onError.next({sessionId: data.sessionId, message: data.message});
+        this.logTurn(data.sessionId, data.metrics);
         break;
       case 'session_reset':
         this._resumable.delete(data.sessionId);

@@ -56,11 +56,11 @@ function forwardEvent(ws: WsSender, sid: string, event: AgentEvent, verifier?: V
     case 'limit':
       return emit(ws, {type: 'error', sessionId: sid,
         message: `This request hit its ${event.kind === 'turns' ? 'turn' : 'cost'} limit and was stopped. ` +
-          'Try a narrower request.'});
+          'Try a narrower request.', metrics: event.metrics});
     case 'session_reset':
       return emit(ws, {type: 'session_reset', sessionId: sid});
     case 'error':
-      return emit(ws, {type: 'error', sessionId: sid, message: event.message});
+      return emit(ws, {type: 'error', sessionId: sid, message: event.message, metrics: event.metrics});
   }
 }
 
