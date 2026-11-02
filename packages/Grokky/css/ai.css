@@ -1,3 +1,9 @@
+.grokky-content-log-notice {
+  color: var(--grey-5);
+  font-size: 11px;
+  margin-top: 4px;
+}
+
 .ai-panel-question {
   font-style: italic;
 }

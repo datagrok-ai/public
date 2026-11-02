@@ -10,6 +10,7 @@ import {dartLike, fireAIAbortEvent, createStyledMarkdown, normalizeMarkdownTable
 import {buildWorkspaceContext, executeSingleBlock} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
+import {contentLogging} from '../claude/turn-log';
 import {resolveScopes, showSuggestionsMenu, runSuggestionAction, Suggestion, Block, ChoiceOption} from './prompt-suggestions';
 import {AiFeature} from '../claude/ai-feature';
 
@@ -306,6 +307,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     });
     this.inputArea.appendChild(this.textAreaDiv);
     this.inputArea.appendChild(controlsDiv);
+    const logging = contentLogging();
+    if (logging.prompts || logging.responses || logging.toolCalls)
+      this.inputArea.appendChild(ui.divText('Your administrators log the content of AI chats.', 'grokky-content-log-notice'));
     this.root.appendChild(this.header);
     this.root.appendChild(this.outputArea);
     this.root.appendChild(this.inputArea);

@@ -150,7 +150,7 @@ Analyze the user request and return a JSON object with:
 
   try {
     const rawResult = await ClaudeRuntimeClient.getInstance().query(`${systemPrompt}\n\n${userPrompt}`,
-      {outputSchema: schema, feature: AiFeature.QueryMatch});
+      {outputSchema: schema, feature: AiFeature.QueryMatch, logPrompt: userPrompt});
     if (rawResult.searchPattern === NO_MATCH)
       return null;
     const parametersRecord: Record<string, string> = {};

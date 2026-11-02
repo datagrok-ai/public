@@ -226,6 +226,7 @@ User query: ${prompt}`;
         systemPromptMode: 'none',
         outputSchema: orderSchema,
         feature: AiFeature.Search,
+        logPrompt: prompt,
       });
       const parsed = (res as {order?: unknown})?.order;
       if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string' && this.functions[s]) && parsed.length > 0)
