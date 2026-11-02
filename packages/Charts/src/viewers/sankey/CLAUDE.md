@@ -13,7 +13,9 @@ its source to its target. Registered by Charts as `Sankey`, so a feature reaches
 
 `prepareData` walks the viewer's filter; every row becomes its own link, so a pair carried by
 several rows draws several ribbons side by side. A graph with a cycle, or a table without two
-string columns of at most 50 categories and a numeric one, shows a message instead. A row whose
+string columns of at most 50 categories and a numeric one, shows a message instead, and so does a
+Value with a negative value or with only zeros among the links (d3-sankey has no meaningful layout
+for either; only zeros gives NaN coordinates). A row whose
 Value is missing weighs nothing (read raw, the int null would sink both of its nodes). A graph with
 no links — no rows, or none with both a source and a target — draws nothing: d3-sankey sizes the
 nodes by their links.
