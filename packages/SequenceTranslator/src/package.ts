@@ -243,7 +243,8 @@ export class PackageFunctions {
     'description': 'Dialog for configuring enumeration of a HELM sequence'
   })
   static async polyToolEnumerateHelmTopMenu(): Promise<void> {
-    await polyToolEnumerateHelmUI(grok.shell.currentTableView?.dataFrame.currentCell);
+    const view = grok.shell.v;
+    await polyToolEnumerateHelmUI(view instanceof DG.TableView ? view.dataFrame.currentCell : undefined);
   }
 
 

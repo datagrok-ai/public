@@ -9,6 +9,9 @@ Feature: Filter panel over linked tables
   the filter-to-filter link is made) and SPGI-linked2 (224). The first five spgi-100 rows
   key 9 SPGI-linked1 rows; "v ii" in link column 3 keeps 148 SPGI-linked2 rows, which leave 5 of
   those 9; "inconclusive" PAMPA leaves 2, and 51 without the selection link.
+  Closing the view of a table whose filter narrows a linked table releases the linked table's
+  filter: a four-row races table linked filter to filter to demog-1000 by RACE, its card on Asian
+  leaving 15 demog rows, gives all 1000 back once its view is closed.
   Not translated: the four-key filter-to-filter link is made through the API — the dialog takes a
   key pair at a time, each through a column picker, and the scenarios are about what the link
   carries; the one-key selection-to-filter link is made in Link Tables itself (its keys, Id and
@@ -83,4 +86,20 @@ Feature: Filter panel over linked tables
     When user switches to the "SPGI-linked1" table view
     Then 9 rows should be selected
     And 51 rows should pass the filter
+    And no errors should have been logged
+    Given user opens demog-1000 dataset
+    And user opens a table "races" with:
+      | RACE      |
+      | Asian     |
+      | Black     |
+      | Caucasian |
+      | Other     |
+    And the "races" table is linked to the "demog-1000" table by "RACE" to "RACE" as "filter to filter"
+    When user opens an empty filter panel
+    And user adds a card for "RACE" to the filter panel
+    And user clicks on the "category Asian of RACE" area of filter panel
+    Then 1 row should pass the filter
+    And 15 rows of table "demog-1000" should pass the filter
+    When user closes the current view
+    Then 1000 rows of table "demog-1000" should pass the filter
     And no errors should have been logged

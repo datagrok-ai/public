@@ -12,6 +12,10 @@ Feature: Trellis plot Pick Up / Apply, inner color coding and category scrolling
   and trellis-plot-split-and-pick-inner.md section 2 step 6. Each scenario starts on a fresh
   demog-1000 view: a scenario holds two trellises or a trellis of another inner type, and closing
   them would cost what reopening the clone does.
+  The last scenario is not about Pick Up or scrolling: it needs a trellis of its own, as these do. A
+  Tiles Per Row typed in the context panel outside the property's declared bounds (11) is not
+  taken; the property keeps its value. The panel's number input marks such a value invalid but
+  writes it into the property (core#1200, a known failure).
 
   Background:
     Given user is logged in
@@ -98,3 +102,12 @@ Feature: Trellis plot Pick Up / Apply, inner color coding and category scrolling
     When user scrolls the mouse wheel down 3 times over the "view" area of trellis plot viewer
     Then trellis plot viewer should have a "y label PsA" area
     And no errors should have been logged
+
+  @known-failure:113 @realizes:core#1200
+  Scenario: A Tiles Per Row of 11 typed in the context panel outside its declared bounds is not taken (core#1200)
+    Given user adds a trellis plot viewer
+    When user clicks on settings icon of trellis plot viewer
+    Then context panel should be visible
+    Given "Misc" category in context panel is expanded
+    When user enters "11" into "Tiles Per Row" property in context panel
+    Then "Tiles Per Row" property of trellis plot viewer should be "4"

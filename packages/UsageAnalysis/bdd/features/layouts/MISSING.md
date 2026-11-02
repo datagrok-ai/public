@@ -1,13 +1,13 @@
 # Layout edge cases — what the features cannot say yet
 
-What `layout-edge-cases.feature` leaves out, written for the edge-case features with no library, binding or code
+What the layout edge cases, now checks of `layout-names-tags.feature`, leave out, written for them with no library, binding or code
 change.
 
 ## Still open
 
 **Decided and written**
 
-The answers of 2026-10-27 are scenarios of `layout-edge-cases`: a layout of a grid alone is suggested only for a
+The answers of 2026-10-27 are checks of `layout-names-tags`: a layout of a grid alone is suggested only for a
 table that has the grid's columns (`TableView.getViewerColumns`, fixed in core#1179: the lookup read
 `dataFrame[name]` instead of `dataFrame[colName]`); a layout renamed to an empty name keeps its name. View > Layout > Open Gallery opens the same Layout
 suggestions panel, under the same rule, so a layout missing a column of the table is offered nowhere.

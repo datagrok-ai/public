@@ -1,7 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {historyUtils} from '../../../history-utils';
 import {deepCopy} from '../../../shared-utils/utils';
-import {saveIsFavorite} from '../../../shared-utils/history';
 import {
   PipelineSerializedState, PipelineState, PipelineStateRec, StepFunCallSerializedState,
   isFuncCallSerializedState, isFuncCallState,
@@ -10,7 +9,7 @@ import {ItemMetadata} from '../view/ViewCommunication';
 import {RestrictionState} from './FuncCallInstancesBridge';
 import {ConsistencyInfo, FuncCallStateInfo} from './StateTreeNodes';
 import {
-  RUN_ERROR_PATH, readInstanceState, readOutputOutdated, saveCallState, saveInstanceState, setRunMetadata,
+  RUN_ERROR_PATH, readInstanceState, readOutputOutdated, saveCallState, saveInstanceState,
 } from './funccall-utils';
 import {copyDataFrame} from '../utils';
 
@@ -87,18 +86,18 @@ export async function loadStateSnapshot(metaCall: DG.FuncCall): Promise<StateSna
   return state ? loadSnapshotRec(state) : undefined;
 }
 
-async function saveStep(step: StepSnapshot, metadata?: ItemMetadata): Promise<StepFunCallSerializedState> {
+async function saveStep(step: StepSnapshot, metadata?: ItemMetadata, nested = false):
+  Promise<StepFunCallSerializedState> {
   const {funcCall, isOutputOutdated, runError, restrictions, loadError: _loadError, ...state} = step;
   if (!funcCall)
     throw new Error(`Step ${step.configId} has no call to save`);
-  setRunMetadata(funcCall, metadata);
-  const saved = await saveCallState(funcCall, restrictions ?? {}, isOutputOutdated, runError);
+  const saved = await saveCallState(funcCall, restrictions ?? {}, isOutputOutdated, runError, metadata, nested);
   return {...state, uuid: '', funcCallId: saved.id};
 }
 
 async function saveSnapshotRec(state: StateSnapshot): Promise<PipelineSerializedState> {
   if (isFuncCallState(state))
-    return saveStep(state);
+    return saveStep(state, undefined, true);
   const steps: PipelineSerializedState[] = [];
   for (const step of state.steps)
     steps.push(await saveSnapshotRec(step));
@@ -110,9 +109,7 @@ async function saveSnapshotRec(state: StateSnapshot): Promise<PipelineSerialized
 export async function saveStateSnapshot(snapshot: StateSnapshot, metadata: ItemMetadata = {}): Promise<DG.FuncCall> {
   if (isFuncCallState(snapshot)) {
     await saveStep(snapshot, metadata);
-    const call = snapshot.funcCall!;
-    await saveIsFavorite(call, !!metadata.isFavorite);
-    return call;
+    return snapshot.funcCall!;
   }
   if (!snapshot.nqName)
     throw new Error(`Attempting to save pipeline with no nqName`);

@@ -62,12 +62,7 @@ export class InfoView extends HitLandingView<HitTriageTemplate, HitTriageApp> {
     };
   }
 
-  protected async checkCampaign(campId?: string) {
-    const url = location.search;
-    const urlParams = new URLSearchParams(url);
-    if (!urlParams.has(CampaignIdKey) && !campId)
-      return;
-    const campaignId = campId ?? urlParams.get(CampaignIdKey);
+  protected async checkCampaign(campaignId: string) {
     // check if such campaign exists
     if (!await _package.files.exists(`${this.app.appName}/campaigns/${campaignId}/${CampaignJsonName}`))
       return;
@@ -89,10 +84,9 @@ export class InfoView extends HitLandingView<HitTriageTemplate, HitTriageApp> {
     const template: HitTriageTemplate = await loadTemplate<HitTriageTemplate>(templatePath);
     this.app.campaign = campaign;
     // modify the template with path to the campaign's precalculated table
-    await this.app.setTemplate(template, campaign.filters, campaignId!, campaign.ingest);
+    await this.app.setTemplate(template, campaign.filters, campaignId, campaign.ingest);
 
-    if (campId)
-      modifyUrl(CampaignIdKey, campId);
+    modifyUrl(CampaignIdKey, campaignId);
 
     return campaign;
   }

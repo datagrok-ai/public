@@ -11,11 +11,11 @@ import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
   DESC_COLUMN_NAME, EXP_COLUMN_NAME,
   FAVORITE_COLUMN_NAME, HistoryOptions, ID_COLUMN_NAME,
   STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME,
-} from '../../shared-utils/consts';
+} from './consts';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import {EditRunMetadataDialog, HistoricalRunsDelete} from '../../shared-components/src/history-dialogs';
-import {getRunsDfFromList, getVisibleProps, saveIsFavorite, setGridCellRendering} from '../../shared-utils/history';
+import {EditRunMetadataDialog, HistoricalRunsDelete} from './history-dialogs';
+import {getRunsDfFromList, getVisibleProps, saveIsFavorite, setGridCellRendering} from './history';
 import {styleHistoryFilters, styleHistoryGrid} from '../../old-views/src/shared-utils/utils';
 
 dayjs.extend(utc);

@@ -12,6 +12,12 @@ Feature: Deleting a space
   landed on the Spaces root. The mechanism is not pinned down (no server push of spaces reaches the tree); the two
   do not overlap any more.
 
+  Deleting a space is to remove the space and the links it holds, not a project that was only linked
+  into it (core#976). Today the linked project is deleted with the space; that scenario, the last of
+  the journey, is a known failure, and the tag goes when core#976 is fixed. Its space and project are
+  named with the run's time, the project's letters and digits only (the Dashboards search misses "-"
+  and "_"), and swept when the feature starts and ends.
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -36,3 +42,33 @@ Feature: Deleting a space
     Then the "Are you sure?" dialog should close
     And 0 spaces named "BDD-Del" should be on the server
     And Spaces---BDD-Del tree node inside browse tree should be absent
+
+  @known-failure:74 @realizes:core#976
+  Scenario: Deleting a space keeps a project that was only linked into it
+    core#976: the project linked into the space is deleted with the space. Remove the tag when
+    core#976 is fixed.
+    Given no project named "bddedgelinkproj{time}" is on the server
+    And a space named "BDDEdgeLink{time}" is on the server
+    And user opens demog-1000 dataset
+    When user saves the current view as project "bddedgelinkproj{time}"
+    And user closes all views
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "bddedgelinkproj{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then bddedgelinkproj{time} gallery card should be visible
+    Given Spaces tree node inside browse tree is expanded
+    When user drags bddedgelinkproj{time} gallery card to BDDEdgeLink{time} tree node inside browse tree
+    Then Move entity dialog should be visible
+    And choice input in Move entity dialog should have value "Link"
+    When user clicks on YES button in Move entity dialog
+    Then Move entity dialog should be hidden
+    When user double-clicks on BDDEdgeLink{time} tree node inside browse tree
+    Then the "BDDEdgeLink{time}" view should be current
+    And "bddedgelinkproj{time}" link in gallery should be visible
+    And 1 project named "bddedgelinkproj{time}" should be on the server
+    When user picks "Delete Space" from the context menu of BDDEdgeLink{time} tree node inside browse tree
+    And user clicks on DELETE button in "Are you sure?" dialog
+    Then the "Are you sure?" dialog should close
+    And 0 spaces named "BDDEdgeLink{time}" should be on the server
+    And 1 project named "bddedgelinkproj{time}" should be on the server

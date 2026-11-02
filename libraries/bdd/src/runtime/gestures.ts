@@ -139,9 +139,10 @@ export async function readClipboard(page: Page): Promise<string> {
 
 /** Leaves the element first, to its left on the same line — a pointer already resting on it (the
  * previous click) produces no pointerenter, and tooltips listen for that; leaving upwards would
- * cross a neighbouring menu row and close the submenu the element sits in — then lands on its
- * centre in one move and checks that the element is still where it was: a shift under the
- * pointer right after the move (a view still docking) leaves it again, unseen. The browser
+ * cross a neighbouring menu row and close the submenu the element sits in — then lands on the
+ * centre of its part the panels around it do not clip (a tree row as wide as its longest name) in
+ * one move and checks that the element is still where it was: a shift under the pointer right
+ * after the move (a view still docking) leaves it again, unseen. The browser
  * coalesces mouse moves queued while its main thread is busy, so the pair can collapse into the
  * last move alone — one that enters nothing when the pointer already rested inside; the gesture
  * therefore waits, in the page and for a few frames at most, for the element's own `mouseenter`,
@@ -160,12 +161,23 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
       return;
     }
     const cy = before.y + before.height / 2;
-    await loc.evaluate((el) => {
+    const cx = await loc.evaluate((el) => {
       (el as any).__bddEntered = false;
       el.addEventListener('mouseenter', () => { (el as any).__bddEntered = true; }, {once: true});
+      const r = el.getBoundingClientRect();
+      let left = r.left;
+      let right = r.right;
+      for (let p = el.parentElement; p; p = p.parentElement) {
+        if (getComputedStyle(p).overflowX === 'visible')
+          continue;
+        const c = p.getBoundingClientRect();
+        left = Math.max(left, c.left);
+        right = Math.min(right, c.right);
+      }
+      return right > left ? (left + right) / 2 : r.left + r.width / 2;
     });
     await page.mouse.move(Math.max(0, before.x - 8), cy);
-    await page.mouse.move(before.x + before.width / 2, cy);
+    await page.mouse.move(cx, cy);
     const entered = await loc.evaluate((el) => new Promise<boolean>((resolve) => {
       let frames = 0;
       const tick = () => (el as any).__bddEntered || frames++ > 4 ? resolve((el as any).__bddEntered === true) : requestAnimationFrame(tick);
@@ -597,12 +609,86 @@ export async function pressIn(page: Page, target: ElementRef, key: string): Prom
   await (await editorOf(page, target)).press(normalizeKey(key));
 }
 
-/** `dragTo` for a test. A guide pictures a drag from the page's mouse, which a locator's own gestures
- * never pass through, so it presses the middle of what the source shows (a label is a full-width
- * row) and moves in steps; the source is located last, so it is what the step lights. */
+const PRESS_EVENTS = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click', 'dblclick'];
+
+/** The mouse pressed on [from] and nowhere else. Playwright's `dragTo`, when the source moves between its check
+ * and its press (a gallery reflowing as a panel opens), presses again with the first press still down, and a
+ * Dart drag begun that way never drops. Here a hover aims the press (it retries until the source is under the
+ * pointer), and a press that still lands off the source is kept from the page and released before the next try. */
+async function pressOn(page: Page, from: Locator, phrase: string): Promise<void> {
+  // a press that hit takes its guard down at once; one that missed keeps it through the release it is kept from
+  const unguard = (onlyIfHit: boolean): Promise<true | string> => page.evaluate(([types, onlyIfHit]) => {
+    const w = window as any;
+    const guard = w.__bddPressGuard;
+    const hit = guard.hit ?? 'nothing';
+    if (onlyIfHit && hit !== true)
+      return hit;
+    for (const type of types)
+      window.removeEventListener(type, guard.listener, true);
+    delete w.__bddPressGuard;
+    return hit;
+  }, [PRESS_EVENTS, onlyIfHit] as [string[], boolean]);
+  for (let attempt = 1; ; attempt++) {
+    await approach(page, from);
+    await from.hover();
+    await from.evaluate((source, types) => {
+      const guard: {hit?: true | string; listener?: (e: Event) => void} = {};
+      guard.listener = (e: Event) => {
+        if (guard.hit === undefined) {
+          const t = e.target as Element;
+          const named = t.closest?.('[name]');
+          const what = named ? `[name="${named.getAttribute('name')}"]` : t.tagName?.toLowerCase();
+          guard.hit = e.composedPath().includes(source) || `${what} "${(t.textContent ?? '').trim().slice(0, 40)}"`;
+        }
+        if (guard.hit !== true) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      };
+      for (const type of types)
+        window.addEventListener(type, guard.listener, true);
+      (window as any).__bddPressGuard = guard;
+    }, PRESS_EVENTS);
+    await page.mouse.down();
+    const hit = await unguard(true);
+    if (hit === true)
+      return;
+    await page.mouse.up();
+    await unguard(false);
+    if (attempt === 5)
+      throw new Error(`the press that starts the drag of ${phrase} reached ${hit} instead, five times`);
+  }
+}
+
+/** `dragTo` for a test, with the press guarded (`pressOn`) and the drop where `dragTo` drops: one move to the
+ * middle of the target's visible part once nothing covers it there (the drag has not begun, so no drop zone
+ * does yet), then the release; a drop that cannot be made releases the press before it fails. A guide pictures
+ * a drag from the page's mouse, which a locator's own gestures never pass through, so it presses the middle of
+ * what the source shows (a label is a full-width row) and moves in steps; the source is located last, so it is
+ * what the step lights. */
 export async function drag(page: Page, source: ElementRef, target: ElementRef): Promise<void> {
   if (!guide.guideDir()) {
-    await (await locate(page, source)).dragTo(await locate(page, target));
+    const from = await locate(page, source);
+    const to = await locate(page, target);
+    await pressOn(page, from, source.phrase);
+    try {
+      await to.scrollIntoViewIfNeeded();
+      const b = await to.boundingBox();
+      const view = page.viewportSize() ?? {width: Infinity, height: Infinity};
+      const [left, right] = b == null ? [0, 0] : [Math.max(b.x, 0), Math.min(b.x + b.width, view.width)];
+      const [top, bottom] = b == null ? [0, 0] : [Math.max(b.y, 0), Math.min(b.y + b.height, view.height)];
+      if (left >= right || top >= bottom)
+        throw new Error(`${target.phrase} is outside the viewport: nothing to drop on`);
+      const point = {x: (left + right) / 2, y: (top + bottom) / 2};
+      await expect.poll(() => to.evaluate((el, p) => el.contains(document.elementFromPoint(p.x, p.y)), point),
+        {message: `${target.phrase} under the drop point, with nothing over it`}).toBe(true);
+      await page.mouse.move(point.x, point.y);
+      await page.mouse.up();
+    }
+    catch (e) {
+      await page.mouse.up();
+      throw e;
+    }
     return;
   }
   const to = await locate(page, target);

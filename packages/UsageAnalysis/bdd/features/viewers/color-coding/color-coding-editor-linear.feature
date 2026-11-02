@@ -14,6 +14,9 @@ Feature: The color coding editor of a numeric column: type, Apply to, Min and Ma
   GROK-8282, GROK-17736. The claims are the colour the grid's renderer resolved for a cell, paired
   with the scheme or the type the column holds. Each scenario opens the editor itself and puts back
   what it changed.
+  A Min typed above Max inverts the scheme, and the editor keeps the two as typed; a linear coloring
+  of a column holding one value gives every cell the same colour (a three-row table of its own,
+  closed again).
 
   Background:
     Given user is logged in
@@ -41,6 +44,17 @@ Feature: The color coding editor of a numeric column: type, Apply to, Min and Ma
     And user picks "Color Coding > Off" from the context menu of the "header AGE" area of grid
     Then "AGE" column should have no color coding
     And the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should be the same
+    Given user opens a table "constant" with:
+      | Name | Level |
+      | a    | 5     |
+      | b    | 5     |
+      | c    | 5     |
+    When user picks "Color Coding > Linear" from the context menu of the "header Level" area of grid
+    Then "Level" column should be color-coded linearly
+    And the "color of cell 1 of Level" and "color of cell 2 of Level" readings of grid should be the same
+    And the "color of cell 1 of Level" and "color of cell 3 of Level" readings of grid should be the same
+    When user closes the current view
+    And user switches to the "demog-1000" table view
     And no errors should have been logged
 
   Scenario: The Type choice of the editor switches the column's coding
@@ -87,6 +101,14 @@ Feature: The color coding editor of a numeric column: type, Apply to, Min and Ma
     And user enters "60" into Max input in "Color-coding: AGE" dialog
     Then the "color of cell 1 of AGE" and "color of cell 2 of AGE" readings of grid should be the same
     And the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should differ
+    When user remembers the "color of cell 3 of AGE" reading of grid
+    And user clears Min input in "Color-coding: AGE" dialog
+    And user clears Max input in "Color-coding: AGE" dialog
+    And user enters "50" into Max input in "Color-coding: AGE" dialog
+    And user enters "60" into Min input in "Color-coding: AGE" dialog
+    Then the "color of cell 3 of AGE" reading of grid should not be as remembered
+    And Min input in "Color-coding: AGE" dialog should have value "60"
+    And Max input in "Color-coding: AGE" dialog should have value "50"
     When user clears Min input in "Color-coding: AGE" dialog
     And user clears Max input in "Color-coding: AGE" dialog
     Then the "color of cell 1 of AGE" and "color of cell 2 of AGE" readings of grid should differ

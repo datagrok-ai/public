@@ -25,34 +25,34 @@ out of scope, as `grid-rows.feature` records.
   (the filter panel's `category <label> of <caption>` areas are the panel's, not the popup's). Needs
   the popup's filter to publish `category <label>` areas like the panel's card does.
 
-## Edge cases (`grid-edge-cases.feature`)
+## Edge cases (now in the grid features named below)
 
-Added with `grid-edge-cases.feature` (edge-case round of 2026-10-26, localhost). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+Added in the edge-case round of 2026-10-26 (localhost); its green checks are now steps of the grid features named below, and each known failure is a scenario of its own there. Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 
-1. **Decided and claimed** in `grid-edge-cases.feature` (localhost 2026-10-29, core master 575f6ae603).
+1. **Decided and claimed** (localhost 2026-10-29, core master 575f6ae603), each known failure a scenario of its own in the feature named with it.
    Known failures, each with its ticket and what the grid does today:
-   - Frozen Columns typed in the context panel as 20 or -1 is not taken (the value is written), and is
-     brought down to the column count when columns are removed (it stays at 6 with three data columns
-     left): core#1137.
-   - Allow Edit off: Shift+Delete keeps the rows (the selected row is deleted): core#1193.
+   - Frozen Columns typed in the context panel as 20 or -1 is not taken (the value is written):
+     core#1137 (`grid-pinning.feature`, which also claims Unpin Column under Frozen Columns 20).
+   - Allow Edit off: Shift+Delete keeps the rows (the selected row is deleted): core#1193 (`grid-context-menu.feature`).
    - Shift+Enter ("select same") selects nothing while Allow Row Selection is off (553 rows are
      selected), and only rows that pass the filter otherwise (471 selected rows are filtered out):
-     core#1194 (`grid_row_selection.dart` selects over the whole table and does not check the setting).
-   - A column group named with spaces only is not made (the group tag is set to the spaces): core#1195.
+     core#1194 (`grid_row_selection.dart` selects over the whole table and does not check the setting; `grid-forms-column.feature`).
+   - A column group named with spaces only is not made (the group tag is set to the spaces): core#1195 (`grid-context-menu.feature`).
    - Twelve rows pinned show ten and the grid says that pinned rows are hidden (claimed as a warning
      balloon naming 10; the message's form is not decided), and Unpin All Rows also unpins the rows
-     pinned beyond the ten shown (after Unpin All a layout pins 2 rows back): core#1191.
+     pinned beyond the ten shown (after Unpin All a layout pins 2 rows back): core#1191 (`grid-pinning.feature`).
    - A pinned row deleted and brought back by Control+Z is pinned again (it comes back unpinned):
-     core#1196.
-   - Default HTML Form with no column ticked cannot be confirmed (OK is enabled): core#1197.
+     core#1196 (`grid-pinning.feature`).
+   - Default HTML Form with no column ticked cannot be confirmed (OK is enabled): core#1197 (`grid-forms-column.feature`).
    - A malformed format (`0.0.0`) marks the Custom field invalid and is not taken (the field is not
-     marked and the column's format tag becomes `0.0.0`): core#1198.
+     marked and the column's format tag becomes `0.0.0`): core#1198 (`grid-context-menu.feature`).
    - Row Height typed in the context panel as 0 or 501 is not taken (the property declares 1..500;
-     the value is written): core#1200.
+     the value is written): core#1200 (`grid-context-menu.feature`).
 
-   Green: a value refused in the last row (`abc` in AGE under Add New Row On Last Row Edit) keeps the
+   Green (`grid-editing.feature`, `grid-columns.feature`, `grid-pinning.feature`,
+   `grid-column-groups.feature`, `grid-forms-column.feature`): a value refused in the last row (`abc` in AGE under Add New Row On Last Row Edit) keeps the
    cell as it was and keeps the added row; a paste into a read-only grid changes nothing and shows no
    notice (a paste needs the cell in edit mode, and the double-click that opens it already says the
    grid is read-only); empty values go last in a sort both ways; the sort, a pinned row (through a
@@ -67,8 +67,17 @@ Added with `grid-edge-cases.feature` (edge-case round of 2026-10-26, localhost).
 4. **API or Dart tests to write**: a layout applied to a table missing its sort, pinned and frozen
    columns (ApiTests); a multi-line external text pasted into the last row (Dart regTest dispatching a
    `ClipboardEvent`).
+   - Frozen Columns 6, then every column but USUBJID, AGE and SEX removed: Frozen Columns is brought
+     down to 4. core#1137, still open: it stays at 6.
+
+   Moved out of BDD (no user gesture); requested from ApiTests.
 
 ### Won't do
 
 - **Header height dragged to 0 and a row resizer dragged past 500 px**: no source says what the drag
   may reach.
+
+## Closed issues the regression round of 26 Oct 2026 could not claim
+
+- **A cut-off cell's whole value in its tooltip (public#989, public#996)** regressed: the tooltip is empty;
+  the steps and a video are on core#441. Claim it in `grid-viewer.feature` once fixed.

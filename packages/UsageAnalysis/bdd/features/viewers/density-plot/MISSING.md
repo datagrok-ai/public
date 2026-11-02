@@ -28,14 +28,18 @@ surface". What could be said is in `density-plot-bin-selector-escape-tooltip.fea
     Then no errors should have been logged
   ```
 
-## Edge cases (`density-plot-edge-cases.feature`)
+## Edge cases
 
-Added with `density-plot-edge-cases.feature` (edge-case round of 2026-10-26, localhost). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+The edge-case round of 2026-10-26 (localhost). Its checks are now steps of the journeys: `density-plot-binning-and-color.feature`, `density-plot-select-and-zoom.feature` and `density-plot-bin-selector-escape-tooltip.feature`. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 
 1. **ApiTests to write (core#1048)**: Bins set to 0, -5 or null through `setOptions` (the slider
    cannot produce them) and a viewer root of 0 × 0 must not throw on every frame.
+   - A logarithmic X axis over X = -5, -1, 0, 2, 10, 100 shows 3 rows (6 on a linear axis): only
+     the positive values are binned (core#1048 "Wrong 5", fixed).
+
+   Moved out of BDD (no user gesture); requested from ApiTests.
 2. **Steps requested**: the bin tooltip's range on a logarithmic axis (core#1048 "Wrong 4") needs the
    tooltip's range as numbers, not text.
 3. **Dart test to write**: listener count across table swaps (core#1048 "Leaks").

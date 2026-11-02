@@ -47,9 +47,9 @@ click is already driven (`user clicks on mini legend icon of <viewer>`).
   cannot reach an item that is not in the page yet. Needs the first rendered item key published
   (`data-legend-first-item`) and a step that scrolls the legend list by a page.
 
-## Edge cases (`legend-edge-cases.feature`)
+## Edge cases (now in `legend-interaction.feature`)
 
-Written for `legend-edge-cases.feature` (26 Oct 2026), the guard suite of edge cases: data shapes,
+Written for the legend edge cases (26 Oct 2026; their scenarios are now steps of `legend-interaction.feature`), the guard suite of edge cases: data shapes,
 columns removed or renamed under the open viewer, layouts naming a missing column, property bounds,
 closing the viewer. Nothing here asks for a library, binding or code change made by that feature; it
 lists what the feature could not claim and why.
@@ -63,7 +63,7 @@ None.
 #### 2. Decided
 
 1. **The color column renamed under a legend selection** releases the selection on the legend and on
-   the plot: right as it is (2026-10-30), claimed in `legend-edge-cases.feature`.
+   the plot: right as it is (2026-10-30), claimed in `legend-interaction.feature`.
 
 #### 3. API or Dart tests to write
 
@@ -71,6 +71,10 @@ None.
    in the tooltip (`legend.dart:335-339`, `:421-427`).
 2. ApiTests: a 20001-row table with Position Auto gets no corner placement
    (`legend_mixin.dart:237-240`).
+3. ApiTests: a color column holding one value (a calculated column `'same'`) gives a legend of one
+   item, and the plot still shows its 872 rows without an error.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
 
 ### Edge cases: Won't do
 

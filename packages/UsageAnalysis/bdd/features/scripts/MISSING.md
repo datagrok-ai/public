@@ -1,6 +1,7 @@
 # Scripts edge cases — what the features cannot say yet
 
-What `script-run-edge-cases.feature` leaves out, written for it: no library, binding or code change was made.
+What the script-run edge case, now a check of `scripts-run.feature` ("CANCEL runs nothing, and with no table open
+OK stays disabled"), leaves out, written for it: no library, binding or code change was made.
 Each item names the case, why it is not a scenario yet, and what would make it one.
 
 ## Still open
@@ -31,4 +32,4 @@ Each item names the case, why it is not a scenario yet, and what would make it o
 - **Interrupting a running script.** JavaScript scripts finish at once, and server-language scripts are not run
   in features (the bdd library's CLAUDE.md, "What never becomes a feature").
 - **Empty, out-of-bounds and wrong-type scalar inputs of a script.** The run dialog of a script and of a query
-  is the same input form; the cases are claimed once, in `queries/query-parameters-edge-cases.feature`.
+  is the same input form; the cases are claimed once, in `queries/parameterized-queries.feature`.

@@ -16,10 +16,16 @@ Feature: Creating a space
   Serial with spaces-delete, whose tree lost its fixture space while this feature made root spaces (twice in four
   full runs; see spaces-delete.feature).
 
+  A child space dropped onto the Spaces node asks "Move <name> out?" in the "Move space" dialog; MOVE
+  saves it as a root space (`_initSpacesDragDrop` in browse_panel_tree.dart). A root name must be
+  unique: a child named like an existing root space is refused with the server's message in an error
+  balloon, the dialog stays open, and the child keeps its parent. Those two spaces and their parent
+  are made through the API and named with the run's time.
+
   Background:
     Given user is logged in
     And the browse panel is open
-    And no space named "BDD-Root, BDD-Dup, BDD-Parent, BDD-Child" is on the server
+    And no space named "BDD-Root, BDD-Dup, BDD-Parent, BDD-Child, BDDEdgeTaken{time}, BDDEdgeParent{time}" is on the server
 
   Scenario: A root space is created from the Spaces node
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
@@ -65,7 +71,7 @@ Feature: Creating a space
     When user clicks on CANCEL button in Create Space dialog
     Then the "Create Space" dialog should close
 
-  Scenario: A child space is created under a root space
+  Scenario: A child space is created under a root space and moved out to the root, and a child named like a root space is refused there
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD-Parent" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
@@ -76,3 +82,28 @@ Feature: Creating a space
     And user clicks on OK button in Create Space dialog
     Then the "Create Space" dialog should close
     And BDD-Child tree node inside browse tree should be visible
+    Given Spaces---BDD-Parent tree node inside browse tree is expanded
+    When user drags Spaces---BDD-Parent---BDD-Child tree node inside browse tree to Spaces tree node inside browse tree
+    Then "Move space" dialog should be visible
+    And "Move space" dialog should contain text "Move BDD-Child out?"
+    When user clicks on MOVE button in "Move space" dialog
+    Then the "Move space" dialog should close
+    And Spaces---BDD-Child tree node inside browse tree should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+    Given a space named "BDDEdgeTaken{time}" is on the server
+    And a space named "BDDEdgeParent{time}" is on the server
+    And a space named "BDDEdgeTaken{time}" under "BDDEdgeParent{time}" is on the server
+    And Spaces tree node inside browse tree is expanded
+    And Spaces---BDDEdgeParent{time} tree node inside browse tree is expanded
+    Then Spaces---BDDEdgeTaken{time} tree node inside browse tree should be visible
+    And Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree should be visible
+    When user drags Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree to Spaces tree node inside browse tree
+    Then "Move space" dialog should be visible
+    When user clicks on MOVE button in "Move space" dialog
+    Then an error balloon containing "already exists" should have been shown
+    And "Move space" dialog should be visible
+    When user clicks on CANCEL button in "Move space" dialog
+    Then the "Move space" dialog should close
+    And Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree should be visible
+    And Spaces---BDDEdgeTaken{time} tree node inside browse tree should be visible

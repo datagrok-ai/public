@@ -510,6 +510,30 @@ category('panel and renderer', () => {
     expect(root instanceof HTMLElement, true, 'the property panel failed to render');
   });
 
+  test('a level survives the panel being rebuilt for the same cell', async () => {
+    const df = curveTable('levelRebuilt', true);
+    const grid = DG.Viewer.grid(df);
+    const handler = new FitGridCellHandler();
+    const levelOf = (row: number) => handler.levelInput(grid.cell('curve', row));
+
+    expect(levelOf(0).value, 'Column');
+    levelOf(0).stringValue = 'Cell';
+    // each read builds the input anew, as the Context Panel does once the current cell settles
+    await waitUntil(() => levelOf(0).value === 'Cell', 'a rebuilt panel fell back to the default level');
+
+    changeCurvesOptions(grid.cell('curve', 0), {property: {name: 'title'}, value: 'Only this one'} as unknown as DG.InputBase,
+      'chartOptions', levelOf(0).value);
+    expect(getOrCreateParsedChartData(grid.cell('curve', 0).cell).chartOptions?.title, 'Only this one');
+    expect(getOrCreateParsedChartData(grid.cell('curve', 1).cell).chartOptions?.title === 'Only this one', false,
+      'a Cell level option reached another cell');
+
+    const sameName = DG.Viewer.grid(curveTable('levelRebuilt', true));
+    expect(handler.levelInput(sameName.cell('curve', 0)).value, 'Column', 'a table of the same name starts from the default');
+
+    levelOf(0).stringValue = 'Cell';
+    expect(levelOf(1).value, 'Column', 'another cell starts from the default');
+  });
+
   test('statistic names stored under a legacy name map onto the current ones', async () => {
     const chartData = JSON.parse(JSON.stringify({
       chartOptions: {logX: true},

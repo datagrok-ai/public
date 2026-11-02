@@ -102,6 +102,12 @@ export async function CompareRuns() : Promise<void> {
   await PackageFunctions.CompareRuns();
 }
 
+//name: Browse Runs
+//description: Browse saved runs of any model in My runs and in spaces, and open or compare them
+export async function BrowseRuns() : Promise<void> {
+  await PackageFunctions.BrowseRuns();
+}
+
 //name: ViewerTestApp
 export async function ViewerTestApp() : Promise<void> {
   await PackageFunctions.ViewerTestApp();
@@ -110,11 +116,6 @@ export async function ViewerTestApp() : Promise<void> {
 //name: FormTestApp
 export async function FormTestApp() : Promise<void> {
   await PackageFunctions.FormTestApp();
-}
-
-//name: HistoryTestApp
-export async function HistoryTestApp() : Promise<void> {
-  await PackageFunctions.HistoryTestApp();
 }
 
 //name: Mock Pipeline 1

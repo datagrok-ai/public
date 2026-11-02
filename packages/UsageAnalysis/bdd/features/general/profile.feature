@@ -7,6 +7,10 @@ Feature: A person edits their own name on their profile
   profile writes the new name on the page before it saves it, so the save is claimed on the server.
   Translated from TestTrack General/profile-settings.md.
 
+  An emptied first name is to keep OK disabled, and a first name longer than the 64 characters the
+  profile stores is to be refused with a message, not saved, with no error logged. Neither holds today
+  (core#1180): both are known failures.
+
   Not translated, and why: profile-settings-spec.ts saved the name through the JS API and read it back,
   which no person does (an ApiTests matter). The picture upload of profile-settings-ui.md has no image
   fixture and no reading of the avatar; Change password, on an account without a password, mails a
@@ -34,3 +38,28 @@ Feature: A person edits their own name on their profile
     When user signs in as themselves again
     Then the running account should be signed in
     And no errors should have been logged
+
+  @known-failure:51 @realizes:core#1180
+  Scenario: An emptied first name keeps OK disabled
+    core#1180: OK stays enabled with the first name emptied. Remove the tag when OK is disabled.
+    When user signs in as "bddprofile"
+    And user opens the address "/u"
+    Then "Logout" link should be visible
+    When user clicks on second "Edit" icon
+    Then "Enter new name" dialog should be visible
+    When user clears "First name" input in "Enter new name" dialog
+    Then OK button in "Enter new name" dialog should be disabled
+
+  @known-failure:65 @realizes:core#1180
+  Scenario: A first name longer than 64 characters is refused, not saved
+    core#1180: the profile stores 64 characters of a first name (`users.first_name` is VARCHAR(64)).
+    Today the page shows the long name, the name is not saved, and the dialog stays open with no
+    message. Remove the tag when the dialog says the name is longer than 64 characters.
+    When user signs in as "bddprofile"
+    And user opens the address "/u"
+    Then "Logout" link should be visible
+    When user clicks on second "Edit" icon
+    Then "Enter new name" dialog should be visible
+    When user enters "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL" into "First name" input in "Enter new name" dialog
+    And user clicks on OK button in "Enter new name" dialog
+    Then "Enter new name" dialog should contain text "64"

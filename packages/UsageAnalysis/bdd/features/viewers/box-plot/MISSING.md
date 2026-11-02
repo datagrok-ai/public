@@ -52,9 +52,9 @@ into claims added to `box-plot.feature` (category selector, the month and quarte
     And no errors should have been logged
   ```
 
-## Edge cases (`box-plot-edge-cases.feature`)
+## Edge cases
 
-Added with `box-plot-edge-cases.feature` (edge-case round of 2026-10-26, localhost). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+The edge-case round of 2026-10-26 (localhost). Its checks are now steps of the journeys: `box-plot.feature`. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 
@@ -73,12 +73,43 @@ Added with `box-plot-edge-cases.feature` (edge-case round of 2026-10-26, localho
      tooltip contains "only 1 value".
 2. **Data**: the group comparison shown at 30 categories and hidden at 31 (help box-plot.md) needs a
    categorical column with exactly 30 and 31 categories; demog-1000 has none.
-3. **Decided, scenario to write** (2026-10-28): the Category column removed while in use drops the
-   grouping, with no error: a row of the removal outline in `viewer-rules-edge-cases.feature`, a
-   known failure with no ticket yet (`BoxPlotLook.auto`, run on every removal, picks another category
-   column). Every row filtered out is a row of the no-rows outline there.
-   The control group (picked on the chart) filtered out: the control moves to the next group, and the
+3. **Decided** (2026-10-28): the Category column removed while in use drops the grouping, with no
+   error; today `BoxPlotLook.auto`, run on every removal, picks another category column (no ticket
+   yet). The control group (picked on the chart) filtered out: the control moves to the next group, and the
    picked group is the control again once the filter is released (checked by hand 2026-10-28); a step
    reading the chart's control selector is needed to claim it.
-4. **Dart tests to write**: a value column holding NaN (not an empty value) with the violin style, and
-   retained listeners after ten add/close cycles and ten table swaps (core#960).
+4. **API or Dart tests to write**: a value column holding NaN (not an empty value) with the violin
+   style, and retained listeners after ten add/close cycles and ten table swaps (core#960). On
+   demog-1000, a box plot of AGE by SEX:
+   - Show Group Comparison on: the comparison goes when a filter leaves only SEX = F (553 rows) and
+     comes back when both SEX values pass.
+   - Category 1 (SEX) removed from the table: Category 1 no longer names SEX and no error is
+     reported or logged.
+   - Every row filtered out (AGE 500 to 600) shows 0 rows and no error; the filter reset gives the
+     1000 rows back.
+
+   Moved out of BDD (no user gesture); requested from ApiTests.
+
+## Closed issues the regression round of 26 Oct 2026 could not claim
+
+Written while folding the closed box plot issues into the box plot journeys.
+
+- **The violin style over a value column holding a real NaN (core#960)** is an ApiTests case, not a feature:
+  a raw NaN (not a missing value) only comes from the JS API (`DG.Column.fromList`).
+
+- **The statistics strip lines up under each box and uses the column's format (public#3693,
+  public#3773).** The status reports one `stats` area for the whole strip and no per-category cell or
+  text. Needs `stats <category>` areas (one per category column of the strip) and a `stats <category>`
+  reading of the text drawn there:
+
+  ```gherkin
+  Scenario: Each category's statistics sit under its own box in the column's format (public#3693)
+    Given user opens demog-1000 dataset
+    And user adds a box plot viewer with:
+      | Category 1      | RACE |
+      | Value           | AGE  |
+      | Show Statistics | true |
+    Then the "stats Caucasian" area of box plot viewer should lie below the "Caucasian values" area
+    And the "stats Caucasian" area of box plot viewer should lie to the right of the "stats Black" area
+    And no errors should have been logged
+  ```

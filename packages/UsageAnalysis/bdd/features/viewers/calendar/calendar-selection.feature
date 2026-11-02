@@ -11,6 +11,11 @@ Feature: Calendar selection, On Click and Show Filtered Only
   row and the counts of the filtered ones (calendar_core.dart:271), so turning it off under a
   filter puts `rows shown` back to 1000 while `dataFrame.filter` stands at 447 — the honest
   witness for GROK-20635, which the spec this replaces could only assert as "the canvas changed".
+  The calendar's click filter stays when a category is toggled in the filter panel (19 of the 32
+  rows of January 1990 are F); today the category click releases the calendar's filter, and 553 rows
+  pass at once (core#1221, a known failure, the last scenario). That the filter then goes when On
+  Click is switched to Select (553 F rows) is claimed once the defect is fixed: today that count is
+  already reached by the defect.
 
   Background:
     Given user is logged in
@@ -98,3 +103,13 @@ Feature: Calendar selection, On Click and Show Filtered Only
     And the "rows shown" reading of calendar viewer should be 1000
     And the "rows of weekday Sunday" reading of calendar viewer should be 153
     And no errors should have been logged
+
+  @known-failure:115 @realizes:core#1221
+  Scenario: The calendar's click filter stays when a category is toggled in the filter panel (core#1221)
+    When user sets "onClick" property of calendar viewer to "Filter"
+    And user clicks on the "month 1990-01" area of calendar viewer
+    Then 32 rows should pass the filter
+    When user opens an empty filter panel
+    And user adds a card for "SEX" to the filter panel
+    And user clicks on the "category F of SEX" area of filter panel
+    Then 19 rows should pass the filter

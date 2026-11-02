@@ -1,7 +1,7 @@
 # Users, groups and roles edge cases — what the features cannot say yet
 
-Written for `group-edge-cases.feature`, `role-edge-cases.feature` and `user-edge-cases.feature`, with no library,
-binding or code change. The features claim what the editors show: the only admin of a group refused in MANAGE, a
+Written for the group, role and user guards (folded into `groups-members`, `groups-lifecycle`, `roles-lifecycle`,
+`roles-assignment` and `users-view`), with no library, binding or code change. The features claim what the editors show: the only admin of a group refused in MANAGE, a
 group nested into its own member refused, a name taken in the New Group dialog refused for a group and for a role,
 a name of spaces only refused, CANCEL and Escape changing nothing, and no Disable... on the running account's own
 card. What follows has no source for its expected behaviour, belongs to another test layer, or cannot run safely on
@@ -12,15 +12,15 @@ a shared stand.
 ### Decided and written
 
 The answers of 2026-10-27 are scenarios: a group made in the New Group dialog under the name of a group made through
-the API is refused (`group-edge-cases`; it passes on localhost today, the 2026-10-26 silent duplicate is gone), and
+the API is refused (`groups-lifecycle`; it passes on localhost today, the 2026-10-26 silent duplicate is gone), and
 Invite a Friend... with the email of a registered user says "User is already registered", OK inviting that user
-again rather than making a new one (`user-edge-cases`, `cmdUsersInvite`).
+again rather than making a new one (`users-view`, `cmdUsersInvite`).
 
 ### API or server tests to write
 
 1. **A user disabling their own account through the API.** Help (govern/access-control/users-and-groups.md,
    Disabling accounts): "you can't disable your own account". The client hides Disable... for the running account
-   (`user-edge-cases.feature` claims that), but `UserManagementService.blockUser` checks only the Edit User
+   (`users-view.feature` claims that), but `UserManagementService.blockUser` checks only the Edit User
    permission: `POST /api/users/block` with the caller's own id answered 200 and ended the session on localhost. A
    datlas test in `users_groups/user_disable_test.dart`, beside a server guard.
 2. **The last-admin guard on every route.** The server refuses a group with no admin when the admin unticks Admin

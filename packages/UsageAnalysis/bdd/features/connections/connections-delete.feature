@@ -5,6 +5,9 @@ Feature: Deleting a database connection
   The subjects are Postgres connections saved through the API without credentials; whatever a
   scenario leaves is deleted at feature end and checked gone.
 
+  "Deleting a connection also deletes a query" (help `access/databases/databases.md`, the caution
+  under Query Editor): a query saved under a connection in the query editor goes with it.
+
   Not translated, and why: the md's "Browse > Platform > Connections" — the Platform section has no
   Connections node any more; the list of connections is the provider's "Browse connections" view,
   and deleting from its gallery is the third scenario. The md's YES button is DELETE now.
@@ -14,8 +17,10 @@ Feature: Deleting a database connection
     And the browse panel is open
     And Databases tree node inside browse tree is expanded
 
-  Scenario: DELETE removes the connection from the server and the tree
+  Scenario: DELETE removes the connection from the server and the tree, and a query saved under it goes too
     Given a "Postgres" connection named "BDD-Conn-Delete-{run}" is on the server
+    And no query named "BDDConnCascadeQ{time}" is on the server
+    And a "Postgres" connection named "BDDConnCascade{time}" is on the server
     And Databases---Postgres tree node inside browse tree is expanded
     When user picks "Delete..." from the context menu of Databases---Postgres---BDD-Conn-Delete-{run} tree node inside browse tree
     Then "Are you sure?" dialog should be visible
@@ -25,6 +30,21 @@ Feature: Deleting a database connection
     And 0 connections named "BDD-Conn-Delete-{run}" should be on the server
     And Databases---Postgres---BDD-Conn-Delete-{run} tree node inside browse tree should be absent
     And no error or warning balloon should have been shown
+    And no errors should have been logged
+    When user picks "New Query..." from the context menu of Databases---Postgres---BDDConnCascade{time} tree node inside browse tree
+    Then the current view should be a DataQueryView view
+    When user enters "BDDConnCascadeQ{time}" into Name input
+    And user replaces the code of code editor with "select * from products"
+    And user clicks on Save button
+    Then 1 query named "BDDConnCascadeQ{time}" should be on the server
+    When user closes all views
+    And user picks "Delete..." from the context menu of Databases---Postgres---BDDConnCascade{time} tree node inside browse tree
+    Then "Are you sure?" dialog should be visible
+    When user clicks on DELETE button in "Are you sure?" dialog
+    Then the "Are you sure?" dialog should close
+    And 0 connections named "BDDConnCascade{time}" should be on the server
+    And 0 queries named "BDDConnCascadeQ{time}" should be on the server
+    And Databases---Postgres---BDDConnCascade{time} tree node inside browse tree should be absent
     And no errors should have been logged
 
   Scenario: CANCEL keeps the connection

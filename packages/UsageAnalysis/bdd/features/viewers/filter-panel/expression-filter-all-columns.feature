@@ -20,6 +20,9 @@ Feature: Expression filter over All Columns
   "equals" with a number reaches the numeric columns in All Columns mode, and 0.47 with "=" keeps
   the two rows that show it, in All Columns mode and on Score itself: the card compares a typed
   number in the 32-bit form Score stores (GROK-20977).
+  The last scenario is a known failure: with Mass removed under the "> 12" rule, the rule should be
+  worked out again over the columns left, so Delta, which passed through Mass alone, drops out and 3
+  rows pass; today the table stays filtered as it was (core#1174).
 
   Background:
     Given user is logged in
@@ -155,3 +158,13 @@ Feature: Expression filter over All Columns
       | column mode | rule            |
       | All Columns | *  = 0.47       |
       | Score       | ${Score} = 0.47 |
+
+  @known-failure:170 @realizes:core#1174
+  Scenario: A comparison is worked out again over the numeric columns left when one is removed
+    When user selects "All Columns" in Column input in "Expression" filter card
+    And user selects ">" in Operation input in "Expression" filter card
+    And user types "12" into Value input in "Expression" filter card
+    And user clicks on "Add filter" button in "Expression" filter card
+    Then 4 rows should pass the filter
+    When user picks "Remove" from the context menu of the "header Mass" area of grid
+    Then 3 rows should pass the filter

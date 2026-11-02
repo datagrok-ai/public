@@ -1,10 +1,12 @@
 # Apps edge cases — what the features cannot say yet
 
-Written for `app-address-edge-cases.feature`, with no library, binding or code change.
+Written for the app-address edge case, now a check in `browse/browse-routing.feature`, with no library, binding or
+code change.
 
 ## Decided and written
 
-The answers of 2026-10-27 are scenarios of `app-address-edge-cases`: after "Application not found" the Apps view is
+The answers of 2026-10-27 are checks of `browse/browse-routing.feature` ("An address that names no project or
+function ..."): after "Application not found" the Apps view is
 current. A path naming no demo inside the Demo app is left out (2026-10-28): the Demo app opens after a while on
 dev, while a local stand kept an empty view for two minutes.
 

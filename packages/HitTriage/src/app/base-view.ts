@@ -66,9 +66,9 @@ export abstract class HitLandingView<Ttemplate extends HitDesignTemplate | HitTr
 
   protected abstract homeOptions(preset?: Ttemplate): HitHomeOptions<Ttemplate>;
 
-  /** Opens the campaign with this code, else the one the address names; answers nothing when there is none the user
-   * may view. Throws when it cannot be opened. */
-  protected abstract checkCampaign(campaignId?: string): Promise<unknown>;
+  /** Opens the campaign with this code; answers nothing when there is none the user may view. Throws when it cannot
+   * be opened. */
+  protected abstract checkCampaign(campaignId: string): Promise<unknown>;
 
   /** Builds the landing again: the table reads the page's campaign list, the picker starts on `preset`. */
   async init(preset?: Ttemplate): Promise<void> {
@@ -100,12 +100,14 @@ export abstract class HitLandingView<Ttemplate extends HitDesignTemplate | HitTr
     await this.open(() => this.checkCampaign(campaignId), campaignId);
   }
 
-  /** The campaign of the address (`?campaignId=`), opened over the landing; one that cannot open says why and leaves
-   * the landing in place. */
+  /** The campaign of the link the app was opened with (`?campaignId=`), opened over the landing; one that cannot open
+   * says why and leaves the landing in place. The router passes the link's id to the app's call: the address may have
+   * changed since. */
   protected async openLinked(): Promise<void> {
-    const linked = new URLSearchParams(location.search).get(CampaignIdKey);
-    if (linked !== null)
-      await this.open(() => this.checkCampaign(), linked);
+    const linked = this.app.parentCall.getParamValue(CampaignIdKey) ??
+      new URLSearchParams(location.search).get(CampaignIdKey);
+    if (linked)
+      await this.open(() => this.checkCampaign(linked), linked);
   }
 
   /** This app's campaigns table: whose settings it shares, what its balloons call a campaign. */

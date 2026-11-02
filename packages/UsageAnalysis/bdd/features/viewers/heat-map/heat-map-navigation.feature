@@ -9,6 +9,8 @@ Feature: Heat map navigation and grid mode
   which column it landed in, which is the half that could have been wrong. And "Is Heatmap off
   redraws as a plain grid" used to be a repaint of at least 1000 pixels; it is `row height` going
   from under a pixel to 28 and the per-cell areas replacing the column bands.
+  An Alt-click without moving zooms the map to one row (`y scroll span` 0), an Alt-drag to the
+  rows it spans; neither selects a row.
 
   Background:
     Given user is logged in
@@ -36,12 +38,22 @@ Feature: Heat map navigation and grid mode
     And the "y scroll span" reading of heat map viewer should be lower than before
     And the "row height" reading of heat map viewer should be higher than before
     And heat map viewer should have repainted
+    And no rows should be selected
     When user double-clicks on the "y scroll slider" area of heat map viewer
     Then the "y scroll span" reading of heat map viewer should be 1
     And the "x scroll span" reading of heat map viewer should be between 0 and 0.99
     When user double-clicks on the "x scroll slider" area of heat map viewer
     Then the "x scroll span" reading of heat map viewer should be 1
     And the "y scroll span" reading of heat map viewer should be 1
+    And no errors should have been logged
+    When user clicks on the "column AGE" area of heat map viewer holding Alt
+    Then the "y scroll span" reading of heat map viewer should be 0
+    And the "row height" reading of heat map viewer should be higher than before
+    And no rows should be selected
+    When user double-clicks on the "y scroll slider" area of heat map viewer
+    And user double-clicks on the "x scroll slider" area of heat map viewer
+    Then the "y scroll span" reading of heat map viewer should be 1
+    And the "x scroll span" reading of heat map viewer should be 1
     And no errors should have been logged
 
   Scenario: Is Heatmap off draws the same table as a spreadsheet

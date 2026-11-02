@@ -11,7 +11,8 @@ Feature: PC plot in-chart range filter
   and takes the handle's rectangle from the `range max handle <col>` area the plot then reports —
   no polling of a hidden SVG.
   demog-1000 with AGE, HEIGHT and WEIGHT: 1000 rows, AGE 18..89 with no blanks, and 494 rows with
-  AGE between 30 and 50. Every scenario ends with the table unfiltered.
+  AGE between 30 and 50. Every scenario ends with the table unfiltered. A transformation turned on
+  releases the filter of the axis sliders it replaces (core#967).
 
   Background:
     Given user is logged in
@@ -133,6 +134,7 @@ Feature: PC plot in-chart range filter
     And pc plot viewer should show 1000 rows
     And no errors should have been logged
 
+  @realizes:core#967
   Scenario: Closing the plot releases the filter it contributed
     When user drags the max handle of the "AGE" range slider of pc plot viewer by 120 pixels
     Then fewer than 1000 rows should pass the filter
@@ -143,4 +145,11 @@ Feature: PC plot in-chart range filter
       | Column Names | AGE, HEIGHT, WEIGHT |
     Then pc plot viewer should show 1000 rows
     And the "filtering" reading of pc plot viewer should be "false"
+    And no errors should have been logged
+    When user hovers over pc plot viewer
+    And user drags the max handle of the "AGE" range slider of pc plot viewer by 120 pixels
+    Then fewer than 1000 rows should pass the filter
+    When user sets "Transformation" property of pc plot viewer to '[{"#type":"GroupAggregation","aggType":"key","colName":"SEX"},{"#type":"GroupAggregation","aggType":"avg","colName":"AGE"},{"#type":"GroupAggregation","aggType":"avg","colName":"WEIGHT"}]'
+    Then the "transformed" reading of pc plot viewer should be "true"
+    And all rows should pass the filter
     And no errors should have been logged

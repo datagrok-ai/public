@@ -4,10 +4,15 @@ Feature: Bar chart property surface
   missing-values bar (Include Nulls), bar style, labels, the on-chart selectors and the axes
   (Controls), the value aggregation and the value column, the stack legend and its position, title
   and description, values in place of category names, the context menu as a path to properties,
-  and the Data panel — row source, table, filter and color column through a layout round-trip.
-  Selection overlays, sorting and orientation, stacking and the value axis have features of their
-  own. One journey on demog-1000 with a bar chart of average AGE by RACE; every scenario puts back
-  what it changed.
+  and the Data panel — row source, table, filter and color column through a layout round-trip;
+  after the Table is switched in the context panel, the column properties of the same panel offer
+  the new table's columns (public#405, cars as the second table). Selection overlays, sorting and orientation, stacking and the value axis have features of their
+  own. Text typed into a numeric property in the context panel (Min, Max Bar Height, Max Category
+  Width) is not taken and the old value stays. A value typed in the context panel outside the
+  property's declared bounds is not taken either; the property keeps its value: Max Bar Height 0 or
+  -5, Max Category Width 0, Category Value Width 0. The panel's number input marks such a value
+  invalid but writes it into the property (core#1200). One journey on demog-1000 with a bar chart of
+  average AGE by RACE; every scenario puts back what it changed.
 
   Background:
     Given user is logged in
@@ -78,6 +83,18 @@ Feature: Bar chart property surface
       | Max Bar Height              | 50   |
       | Show Category Zero Baseline | true |
     Then bar chart viewer should have repainted
+    And no errors should have been logged
+    When user clicks on settings icon of bar chart viewer
+    Then context panel should be visible
+    Given "Y Axis" category in context panel is expanded
+    When user enters "abc" into "Min" property in context panel
+    Then "Min" property of bar chart viewer should be ""
+    Given "Style" category in context panel is expanded
+    When user enters "abc" into "Max Bar Height" property in context panel
+    Then "Max Bar Height" property of bar chart viewer should be "50"
+    When user enters "abc" into "Max Category Width" property in context panel
+    Then "Max Category Width" property of bar chart viewer should be "300"
+    And the "bars" reading of bar chart viewer should be 4
     And no errors should have been logged
 
   Scenario: Labels
@@ -243,3 +260,35 @@ Feature: Bar chart property surface
       | Value Aggr Type | avg  |
     Then bar chart viewer should be bound to table "demog-1000"
     And bar chart viewer should show 1000 rows
+
+  @realizes:public#405
+  Scenario: After a Table switch in the context panel the column properties offer the new table's columns (public#405)
+    Given user opens cars dataset
+    And user switches to the "demog-1000" table view
+    And the context panel is open
+    When user clicks on settings icon of bar chart viewer
+    Then the context panel should show "Bar chart"
+    When user selects "cars" in "Table" property in context panel
+    Then bar chart viewer should be bound to table "cars"
+    Given "X Axis" category in context panel is expanded
+    Then "Split" property in context panel should offer the columns "model"
+    And "Split" property in context panel should not offer the column "RACE"
+    When user selects "demog-1000" in "Table" property in context panel
+    Then bar chart viewer should be bound to table "demog-1000"
+    And no errors should have been logged
+
+  @realizes:core#1200
+  Scenario Outline: <caption> <typed> typed in the context panel outside its declared bounds is not taken (core#1200)
+    When user clicks on settings icon of bar chart viewer
+    Then context panel should be visible
+    Given "Style" category in context panel is expanded
+    When user enters "<typed>" into "<caption>" property in context panel
+    Then "<caption>" property of bar chart viewer should be "<kept>"
+
+    @known-failure:286 @realizes:core#1200
+    Examples: The value is written into the property although the input marks it invalid
+      | caption              | typed | kept |
+      | Max Bar Height       | 0     | 50   |
+      | Max Bar Height       | -5    | 50   |
+      | Max Category Width   | 0     | 300  |
+      | Category Value Width | 0     | 50   |

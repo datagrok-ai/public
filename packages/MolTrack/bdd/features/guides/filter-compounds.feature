@@ -41,7 +41,7 @@ Feature: MolTrack: filter compounds by structure and properties
     And user types "Cl" into third condition value
     And user presses Tab in third condition value
     # caption: Phenols and anilines without chlorine: triclosan is gone
-    Then compound list should contain text "Bisphenol A"
+    Then compound list should contain text "Zearalenone"
     And compound list should not contain text "Triclosan"
     # caption: Remove the chlorine condition: triclosan is back
     When user clicks on third condition remove

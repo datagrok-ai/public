@@ -45,9 +45,10 @@ Written during the viewer-gaps round of 23 Oct 2026, against
     And no errors should have been logged
   ```
 
-## Edge cases (`tile-viewer-edge-cases.feature`)
+## Edge cases (now in `tile-viewer.feature` and `tile-viewer-form-editor.feature`)
 
-Written for `tile-viewer-edge-cases.feature` (26 Oct 2026), the guard suite of edge cases: data
+Written for the guard suite of edge cases of 26 Oct 2026 (its checks are now steps of
+`tile-viewer.feature` and `tile-viewer-form-editor.feature`): data
 shapes, columns removed or renamed under the open viewer, layouts naming a missing column, property
 bounds, closing the viewer. Nothing here asks for a library, binding or code change made by that
 feature; it lists what the feature could not claim and why.
@@ -58,16 +59,16 @@ feature; it lists what the feature could not claim and why.
 
 None.
 
-#### 2. Decided (the rules of `viewer-rules-edge-cases.feature`)
+#### 2. Decided
 
 1. **The lanes column removed** is dropped from the settings, as clearing it does, and no other
-   column is picked: a row of the removal outline (`TileViewerLook.auto` keeps only a lanes name the
-   table has). No rows and a renamed lanes column are rows there too.
-2. **A lanes column with empty values** has an `(empty)` lane: a row of the empty-category outline.
-   A card dropped into it gets an empty value: written in `tile-viewer-edge-cases.feature`, core#1217,
+   column is picked (`TileViewerLook.auto` keeps only a lanes name the table has). This check, with
+   no rows and a renamed lanes column, is requested from ApiTests in `../MISSING.md`.
+2. **A lanes column with empty values** has an `(empty)` lane: core#1217, still open, requested
+   from ApiTests in `../MISSING.md`. A card dropped into it gets an empty value: written in `tile-viewer-lane-scroll.feature`, core#1217,
    a known failure (the lane has no name today, so there is no `(empty)` lane to drop on).
 3. **Escape in the form designer** after deleting a field does nothing: the designer is a view, not
-   a dialog. Right as it is (2026-10-30), claimed in `tile-viewer-edge-cases.feature`. Escape in the
+   a dialog. Right as it is (2026-10-30), claimed in `tile-viewer-form-editor.feature`. Escape in the
    Edit dialog (the EDIT icon of the ribbon) cancels it: not written.
 
 #### 3. Questions for owners
@@ -84,8 +85,18 @@ closed as won't fix (2026-10-30), not tested.
 
 1. Dart regTest: the Data Manipulation loop (`viewers_test.dart:904-950`) runs for
    `ViewerDescriptor.all.take(30)` and skips the tile viewer (index 30); drop the `take(30)`.
+2. ApiTests: Row Source Selected with nothing selected shows 0 rows and 0 tiles; selecting the
+   Asian rows brings 15 rows, with row 10 in lane Asian; nothing logged.
+3. ApiTests: a one-row table with lanes on its group column shows 1 row and 1 tile, in lane g1.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
 
 ### Edge cases: Won't do
 
 - core#1088 (a designer edit reaches one lane only): already pinned in
   `tile-viewer-persistence.feature:71`.
+
+## Closed issues the regression round of 26 Oct 2026 could not claim
+
+- **A value the card cuts off shows whole in a tooltip (public#1593, the value half)** regressed: no tooltip
+  shows; filed as core#1151. The caption half is claimed in `tile-viewer-mirroring.feature`.

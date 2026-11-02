@@ -1,7 +1,7 @@
 # Queries edge cases — what the features cannot say yet
 
-What the edge-case features of this folder (`query-parameters-edge-cases.feature`,
-`query-editor-edge-cases.feature`) leave out, written for them: no library, binding or code change was made.
+What the query editor and run dialog guards (folded into `query-lifecycle.feature`, `query-post-process.feature` and
+`parameterized-queries.feature`) leave out, written for them: no library, binding or code change was made.
 Each item names the case, why it is not a scenario yet, and what would make it one. Reproductions are on
 localhost (core a6c9fcf85b), 2026-10-26.
 
@@ -15,8 +15,8 @@ localhost (core a6c9fcf85b), 2026-10-26.
 
 A post-process script that throws shows an error balloon carrying the error and opens no table (decided
 2026-10-28: post-processing is a step of the data transformation, so the SQL's raw result is not shown):
-`query-editor-edge-cases`.
-An empty value is valid by default, for a string as for an integer (core#229): `query-parameters-edge-cases`
+`query-post-process`.
+An empty value is valid by default, for a string as for an integer (core#229): `parameterized-queries`
 claims both, the string half a known failure.
 
 ### API or server tests to write

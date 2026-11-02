@@ -5,7 +5,9 @@ Feature: Trellis plot categories, labels and scrolling
   angle they are drawn at, the scroll handle that fills its whole track while everything fits and
   shortens when it does not, the (+)/(-) icons paging one category row in and out and going inert
   at the ends, and packing, which drops the categories a filter leaves empty. One journey on
-  demog-1000; every scenario puts back what it changed.
+  demog-1000; every scenario puts back what it changed. A click on a category label under a filter
+  selects only the rows that pass it, as a cell click does; it selected the filtered-out rows of
+  the category too before core#1057.
 
   Not translated here: "Reset X columns" from the axis selector's own context menu, and the drag of
   the category scroll slider and the wheel over the grid — the two gestures the old spec left as
@@ -51,6 +53,18 @@ Feature: Trellis plot categories, labels and scrolling
     Then the "x labels shown" reading of trellis plot viewer should be 2
     And the "y labels shown" reading of trellis plot viewer should be 4
     And trellis plot viewer should have an "x label F" area
+    And no errors should have been logged
+
+  @realizes:core#1057
+  Scenario: A category label clicked under a filter selects only the rows that pass it (core#1057)
+    Given user clears the row selection
+    When user filters rows where "AGE" is between 20 and 40
+    And user clicks on the "x label F" area of trellis plot viewer
+    Then 180 rows should be selected
+    And every selected row should pass the filter
+    When user clears the row selection
+    And user resets the filter
+    Then all rows should pass the filter
     And no errors should have been logged
 
   Scenario: Label orientation is horizontal, vertical, or one of each

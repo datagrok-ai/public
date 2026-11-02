@@ -147,4 +147,22 @@ category('Campaign view: opening', () => {
   test('of two campaigns opened in quick succession the one opened last is shown, though the first reads its ' +
     'campaign.json slower', () => openWhileFirstReads('readAsText',
     (sb) => `${sb.appName}/campaigns/ZZB3-1/${CampaignJsonName}`), {timeout: 120000});
+
+  test('a campaign link opens its campaign though the address no longer names it when the landing starts', async () => {
+    const sb = await Sandbox.create('link');
+    try {
+      const t = noComputeTemplate('ZZB3 Link', 'ZZB3');
+      await sb.writeTemplate(t);
+      await sb.writeCampaign(designCampaign(sb, 'ZZB3-1', t), designCsv);
+      // a view that took the address while the app started leaves no ?campaignId= in it
+      history.replaceState(history.state, '', location.pathname);
+      const app = await sb.hitDesign('ZZB3-1');
+      await waitUntil(() => app.campaignId === 'ZZB3-1' && app.designView != null,
+        'the campaign of the link did not open', 30000);
+      expect(app.designView?.name, 'Friendly ZZB3-1', 'the campaign view shown');
+      expect(new URLSearchParams(location.search).get('campaignId'), 'ZZB3-1', 'the campaign the address names again');
+    } finally {
+      await sb.dispose();
+    }
+  }, {timeout: 120000});
 });

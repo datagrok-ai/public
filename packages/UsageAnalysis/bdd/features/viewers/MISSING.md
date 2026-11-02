@@ -42,20 +42,29 @@ file; what it holds is the layout API's test) and `molecule-categories.feature`.
     And trellis plot viewer should report no error
   ```
 
-## Rules shared by every viewer (`viewer-rules-edge-cases.feature`)
+## Rules shared by every viewer
 
-The rows of the Charts viewers (sunburst, tree, word cloud) are in the Charts copy of the rules,
-`packages/Charts/bdd/features/viewers/viewer-rules-edge-cases.feature`.
+A filter left by a viewer: the rows a viewer's click filtered out come back when the viewer is
+closed, or when the column of the clicked category is removed. Out of bounds: a value typed in the
+context panel outside the property's declared bounds is not taken; the property keeps its value.
+The panel's number input marks such a value invalid (`number_input.dart`, `addMinMaxValidators`),
+but the input writes every change into the property (`InputBase.bind`).
 
-One scenario outline per rule, one Examples row per viewer; a row that breaks its rule is a known
-failure in an Examples block of its own. Run on localhost 2026-10-29 (core master 575f6ae603): 57
-tests, the known failures failing at their pinned steps.
+The checks of these rules for the sunburst, the tree and the word cloud are steps of their
+journeys: `sunburst/sunburst.feature`, `tree/tree-on-click-filter.feature`, `tree/tree.feature` and
+`word-cloud/word-cloud-appearance.feature`. For the bar chart, calendar, histogram, pie chart and
+trellis plot: `bar-chart/bar-chart-tooltip.feature`, `bar-chart/bar-chart-selection-overlays.feature`,
+`bar-chart/bar-chart.feature`, `calendar/calendar.feature`, `histogram/histogram-range-filter.feature`,
+`pie-chart/pie-chart.feature` and `trellis-plot/trellis-plot-pick-up-color-and-scroll.feature`.
+
+A viewer that breaks a rule carries the check as the known failure of its ticket. Run on localhost
+2026-10-29 (core master 575f6ae603): the known failures fail at their pinned steps.
 
 ### Steps requested
 
 - **Min above Max is swapped** (bar chart and box plot value axis, line chart X and Y and the
   control limits, radar Min/Max map, word cloud text size and rotation; not the timelines, where an event
-  whose End is before its Start is drawn as a point: `packages/Charts/bdd/features/viewers/timelines/`). No outline: no viewer reports the drawn range of its value axis. The
+  whose End is before its Start is drawn as a point, requested from ApiTests in `timelines/MISSING.md`). No outline: no viewer reports the drawn range of its value axis. The
   line chart's `x axis min` / `x axis max` are its range slider's bounds, and the box plot, the bar
   chart, the radar and the word cloud report no axis range at all. Wanted: `value axis min` /
   `value axis max` readings of the drawn window, then rows that set Min 60 and Max 20 on AGE and
@@ -76,15 +85,46 @@ tests, the known failures failing at their pinned steps.
 ### Found on the run, no ticket yet
 
 - **The bar chart's Stack keeps the name of a removed column.** Stacking is dropped and nothing is
-  logged; the context panel shows the missing name. A row of the removal outline, `@ticket-pending`.
+  logged; the context panel shows the missing name. No ticket yet.
 - A layout naming a removed column puts that name back into the viewer's setting (scatter plot
   Color, PC plot columns, tree map split, sunburst and tree hierarchies); the viewers draw without
-  the column and report no error. Not a defect (2026-10-30): the layout outline claims the name is
-  kept. The forms viewer throws a TypeError on every render instead: public#4452, its own block.
+  the column and report no error. Not a defect (2026-10-30): the name is kept. The forms viewer
+  throws a TypeError on every render instead: public#4452, still open.
 - A viewer that picks another column after its column is removed (the box plot's category) is
-  correct: the removal outline claims only that the removed column leaves the setting.
+  correct: the check is only that the removed column leaves the setting.
 - **The tile viewer shows an empty value as a lane with no name** (lane names "x, y, "), not
   `(empty)`: core#1217.
 - **A viewer's click filter stays after its column is removed** (bar chart, tree, sunburst): the
   removal does not refilter the table, and the rows come back on the next refilter (any filter
   change). Added to core#1174 (2026-10-30); pinned on it.
+
+### API or Dart tests to write
+
+demog-1000, readings and settings of the viewer as named; every check also asserts that nothing is
+logged and the viewer reports no error.
+
+- **No rows**: with every row filtered out (AGE between 500 and 600) the viewer shows 0 rows and
+  draws nothing; after the reset it shows 1000 rows and draws again. Bar chart (split RACE), box
+  plot (value AGE), correlation plot, heat map, histogram (value AGE), matrix plot, network diagram
+  (node 1 RACE), PC plot (AGE, HEIGHT, WEIGHT; lines drawn), pie chart (RACE; slices), pivot table
+  (aggregated rows), scatter plot (X AGE), tile viewer (lanes RACE; tiles), tree map (RACE, SEX;
+  leaves), trellis plot (Y RACE).
+- **Every row deleted**: what the viewer draws goes from at least 1 to 0. Bar chart (bars), box
+  plot, calendar, heat map, line chart (X AGE; markers drawn), matrix plot, network diagram, PC
+  plot, pie chart, pivot table.
+- **A column removed** leaves the setting that named it: scatter plot Color RACE and Size HEIGHT,
+  tile viewer lanes RACE, tree map Color AGE and Size WEIGHT, box plot Category 1 SEX.
+- **A column renamed** is followed by the setting: scatter plot X AGE → AGE_YEARS and Color RACE →
+  ORIGIN, pie chart category RACE → ORIGIN, PC plot columns HEIGHT → TALL (AGE, TALL, WEIGHT), tile
+  viewer lanes RACE → ORIGIN, tree map split SEX → GENDER (RACE, GENDER), trellis plot Y RACE → ORIGIN.
+- **A Filter formula renamed**: a scatter plot Filter `${AGE} > 44` reads `${YEARS} > 44` after AGE
+  is renamed to YEARS. core#1213, still open: the rename handler renames column settings only.
+- **A layout naming a removed column** is applied, the viewer is shown and the setting keeps the
+  name: scatter plot Color RACE, PC plot columns AGE, HEIGHT, WEIGHT without HEIGHT, tree map split
+  RACE, SEX without SEX.
+- **Out of bounds through the API**: histogram Bins 201 and 0 keep 20, pie chart Max Radius 600
+  keeps 150, trellis plot Tiles Per Row 0 keeps 4. core#1200, still open: the value is written.
+- **An empty value** is the `(empty)` category: a tile viewer with lanes on a column holding an
+  empty value shows 3 tiles and a lane named `(empty)`. core#1217, still open: the lane has no name.
+
+Moved out of BDD (no user gesture); requested from ApiTests.

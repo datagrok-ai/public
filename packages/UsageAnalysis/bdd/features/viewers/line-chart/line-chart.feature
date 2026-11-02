@@ -12,6 +12,9 @@ Feature: Line chart chrome, chart types and the empty chart
   `x selector shown` says what the chart decided rather than what it was asked.
   Fixture: spgi-100, 100 rows, one point per row on `CAST Idea ID` (100 distinct values, so no
   aggregation) — asserted in the Background so a wrong table fails there.
+  Closed issue: a molecule column on X (Core) draws a category per structure (public#1582).
+  The Y column removed from the table while the chart shows it raises no error (core#1100 lists it
+  among the cases that render without errors).
 
   Background:
     Given user is logged in
@@ -178,4 +181,19 @@ Feature: Line chart chrome, chart types and the empty chart
     And the open menu should list "Selection"
     And the open menu should list "Controls"
     When user closes the context menu
+    Then no errors should have been logged
+
+  @realizes:public#1582
+  Scenario: A molecule column on X draws a category per structure (public#1582)
+    When user sets "xColumnName" property of line chart viewer to "Core"
+    Then the "x categories" reading of line chart viewer should be 6
+    And line chart viewer should report no error
+    And line chart viewer should be painted
+    When user sets "xColumnName" property of line chart viewer to "CAST Idea ID"
+    Then the "markers drawn" reading of line chart viewer should be 100
+    And no errors should have been logged
+    When user removes "Chemical Space X" column
+    Then the table should not have a column "Chemical Space X"
+    When user hovers over the "view" area of line chart viewer
+    And user moves the pointer away from line chart viewer
     Then no errors should have been logged

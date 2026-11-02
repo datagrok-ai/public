@@ -19,6 +19,7 @@ Feature: Word cloud text size, rotation, shape and font
   the counts differ by platform (74, 123 and 31 on the author's machine; 86 at 8 on macOS). The md's
   20 is replaced by 40 because at 20 the cloud still draws about as many words as at the default. The context menu lists the viewer's commands, General > Save as PNG among them, and
   its Properties... makes the viewer the object the context panel shows.
+  Rotation Step 0 typed in the context panel still draws every word (public#4424).
 
   Background:
     Given user is logged in
@@ -51,6 +52,7 @@ Feature: Word cloud text size, rotation, shape and font
     And the "word \"Caucasian\"" area of word cloud viewer should be taller than the "word \"Black\"" area
     And no errors should have been logged
 
+  @realizes:public#4424
   Scenario: A rotation of 90 degrees turns every box on its side
     When user sets properties of word cloud viewer:
       | minTextSize | 20 |
@@ -69,7 +71,16 @@ Feature: Word cloud text size, rotation, shape and font
       | minTextSize       | 14  |
       | maxTextSize       | 100 |
     Then the "word \"Caucasian\"" area of word cloud viewer should be wider than the "word \"Black\"" area
+    When user clicks on settings icon of word cloud viewer
+    Then context panel should be visible
+    Given "Misc" category in context panel is expanded
+    When user enters "0" into "Rotation Step" property in context panel
+    Then the "words" reading of word cloud viewer should be 4
+    When user enters "5" into "Rotation Step" property in context panel
+    Then "Rotation Step" property of word cloud viewer should be "5"
     And no errors should have been logged
+    When user presses F4
+    Then context panel should be hidden
 
   Scenario: Every shape keeps all four words and their counts
     Then "shape" property of word cloud viewer should be "circle"

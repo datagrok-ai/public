@@ -57,13 +57,13 @@ depend on the UI. Every case was reproduced on localhost, core master `d9ff84a96
      should be signed in` refuses when the feature has not signed in as another account first.
 2. **A project not tagged on the server (core#296).** `the project named {string} should not be tagged
    {string} on the server` (added) is the negative of the positive step. `projects-regressions-shared-tag.feature`
-   now claims, before its error-balloon known failure, that the tag the second account added is not on the
-   server — the refused save — as well as the balloon.
+   has the step after its error-balloon known failure, whose pin ends the scenario today: that the tag the
+   second account added is not on the server — the refused save — is claimed once core#296 is fixed.
 
 ## Edge cases — what the features cannot say yet
 
-What `save-project-dialog-edge-cases`, `data-sync-edge-cases` and `project-gallery-edge-cases` leave out,
-written with no library, binding or code change.
+What the Save dialog, data sync, gallery and URL parameter guards (folded into `projects-regressions-names`,
+`projects-ui-smoke`, `projects-data-sync`, `projects-regressions-shared-tag` and `projects-url-parameters`) leave out, written with no library, binding or code change.
 
 ### Still open
 
@@ -81,16 +81,18 @@ written with no library, binding or code change.
 2. **The validation message of a Dart text input.** The Rename dialog's validator says "Name must contain at least
    one letter" (`DbEntityMeta.getRenameDialog`), but the text is not in the dialog's text and `… should have the
    error "…"` answers only for u2 controls. A reading of the message a Dart `InputBase` shows (or puts in its
-   tooltip) would let `project-gallery-edge-cases` claim the words as well as the invalid mark and the disabled OK.
+   tooltip) would let `projects-ui-smoke` claim the words as well as the invalid mark and the disabled OK.
 
 **Decided and written**
 
 The answers of 2026-10-27 are scenarios now: every table left out keeps OK disabled (core#1161, fixed,
-`save-project-dialog-edge-cases`); a deleted data-synced file gives the Data loading error, and a column a
+`projects-ui-smoke`); a deleted data-synced file gives the Data loading error, and a column a
 calculated column reads removed from the query gives the "Some calculated columns may not work" warning
-(`data-sync-edge-cases`); a View and use recipient's card menu shows Rename... and Delete Project disabled
-(core#1162, a known failure, `project-gallery-edge-cases`); a value of the wrong type in a dashboard address is
-refused with a balloon naming the parameter (`url-parameters-edge-cases`). An emptied alias falls back to the
+(`projects-data-sync`); a View and use recipient's card menu shows Rename... disabled (core#1162, a known
+failure, `projects-regressions-shared-tag`; Delete Project disabled is claimed once core#1162 is fixed: the
+pin on Rename... ends the scenario, and the step to add after it is `And the open menu should list "Delete
+Project" as disabled`); a value of the wrong type in a dashboard address is
+refused with a balloon naming the parameter (`projects-url-parameters`). An emptied alias falls back to the
 parameter's name, and one alias given to two parameters unchecks the first and goes to the second: both right as they
 are (2026-10-28).
 

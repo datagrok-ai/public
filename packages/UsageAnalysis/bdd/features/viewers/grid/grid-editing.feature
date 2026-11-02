@@ -18,6 +18,9 @@ Feature: Grid cell editing and the clipboard
   permissions scenarios run before the clipboard ones: placed after them, the grid drew no cells
   once the appended row was deleted (seen on dev in two runs, not reproduced outside the journey;
   reported to the operator).
+  A value the column refuses, typed into the last row, keeps that cell as it was and keeps the added
+  row; a read-only grid takes no paste and says nothing, since a paste needs the cell in edit mode
+  and a double-click on a read-only cell already says it is read-only.
 
   The refusal message is matched by its text, not by the login it names. The "Pin if editable" switch
   (`grid-ui.md` "Context Panel - Permissions") is in `grid-pin-if-editable.feature`.
@@ -112,6 +115,20 @@ Feature: Grid cell editing and the clipboard
     And user types "63" into cell editor
     And user presses Enter
     Then the value of "AGE" column in row 1000 should be "63"
+    When user sets "Add New Row On Last Row Edit" property of grid to "true"
+    And user presses Control+End
+    And user double-clicks on the "cell 1000 of AGE" area of grid
+    And user presses Control+A in cell editor
+    And user types "abc" into cell editor
+    And user presses Enter
+    Then the table should have 1001 rows
+    And the value of "AGE" column in row 1000 should be "63"
+    When user sets "Add New Row On Last Row Edit" property of grid to "false"
+    And user presses Control+End
+    And user clicks on the "row header 1001" area of grid holding Control
+    Then 1 row should be selected
+    When user presses Shift+Delete
+    Then the table should have 1000 rows
     When user clears the row selection
     And user presses Control+Home
     Then no errors should have been logged
@@ -197,6 +214,13 @@ Feature: Grid cell editing and the clipboard
     And user types "46" into cell editor
     And user presses Enter
     Then the value of "AGE" column in row 11 should be "46"
+    When user sets "Allow Edit" property of grid to "false"
+    And user clicks on the "cell 2 of AGE" area of grid
+    And user presses Control+C
+    And user clicks on the "cell 11 of AGE" area of grid
+    And user presses Control+V
+    Then the value of "AGE" column in row 11 should be "46"
+    When user sets "Allow Edit" property of grid to "true"
     And no errors should have been logged
 
   Scenario: Shift+Delete removes the selected rows and Control+Z brings them back

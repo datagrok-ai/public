@@ -167,7 +167,9 @@ export class PackageFunctions {
     name: 'Hit Triage',
     tags: ['app'],
   })
-  static async hitTriageApp(): Promise<DG.ViewBase> {
+  static async hitTriageApp(
+    @grok.decorators.param({name: 'campaignId', options: {optional: true}}) _campaignId?: string,
+  ): Promise<DG.ViewBase> {
     const c = grok.functions.getCurrentCall();
     return new HitTriageApp(c).multiView;
   }
@@ -179,7 +181,9 @@ export class PackageFunctions {
     name: 'Hit Design',
     tags: ['app'],
   })
-  static async hitDesignApp(): Promise<DG.ViewBase> {
+  static async hitDesignApp(
+    @grok.decorators.param({name: 'campaignId', options: {optional: true}}) _campaignId?: string,
+  ): Promise<DG.ViewBase> {
     const c = grok.functions.getCurrentCall();
     return new HitDesignApp(c).multiView;
   }
@@ -191,7 +195,9 @@ export class PackageFunctions {
     name: 'PeptiHit',
     tags: ['app'],
   })
-  static async peptiHitApp(): Promise<DG.ViewBase> {
+  static async peptiHitApp(
+    @grok.decorators.param({name: 'campaignId', options: {optional: true}}) _campaignId?: string,
+  ): Promise<DG.ViewBase> {
     const c = grok.functions.getCurrentCall();
     await grok.functions.call('Bio:initBio', {});
     return new PeptiHitApp(c).multiView;
@@ -210,7 +216,9 @@ export class PackageFunctions {
     name: 'PepTriage',
     tags: ['app'],
   })
-  static async pepTriageApp(): Promise<DG.ViewBase> {
+  static async pepTriageApp(
+    @grok.decorators.param({name: 'campaignId', options: {optional: true}}) _campaignId?: string,
+  ): Promise<DG.ViewBase> {
     const c = grok.functions.getCurrentCall();
     await grok.functions.call('Bio:initBio', {});
     return new PepTriageApp(c).multiView;

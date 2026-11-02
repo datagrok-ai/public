@@ -5,9 +5,11 @@ Feature: Pivot table — the aggregation it publishes and the parameters it reme
   key column keeps the type and the semantic type of the column it came from — GROK-16074; demog-1000
   has no semantic types, so DIS_POP is given "Text" first), an identifier column that makes
   one group per row (GROK-16201), and the configurations the command bar's history saves, offers
-  again and drops once a column they name is gone. One journey on demog-1000: DIS_POP has 6
+  again and drops once a column they name is gone. After ADD, Link Tables links the source with the
+  published table, row to filter on DIS_POP, and logs no error (public#3470). One journey on demog-1000: DIS_POP has 6
   categories and USUBJID 1000, ADD publishes "demog-1000 aggregation", and avg(WEIGHT) by RACE reads
   70.52 for Asian, the first of the four alphabetical groups.
+  With every row filtered out, ADD still publishes the table, empty.
   Not translated: the old spec's raw `localStorage['grok-aggregation-history']` read — the history is
   claimed here through the entries the menu actually offers, which is the same store filtered the way
   the product filters it.
@@ -63,6 +65,17 @@ Feature: Pivot table — the aggregation it publishes and the parameters it reme
     When user sets "Group By Column Names" property of pivot table viewer to "DIS_POP"
     And user sets "Pivot Column Names" property of pivot table viewer to "SEVERITY"
     Then the "aggregated rows" reading of pivot table viewer should be 6
+    When user filters rows where "AGE" is between 200 and 300
+    Then 0 rows should pass the filter
+    When user clicks on the "add to workspace" area of pivot table viewer
+    Then table "demog-1000 aggregation" should be open
+    And the "demog-1000 aggregation" view should be current
+    And the table should have 0 rows
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    And user resets the filter
+    Then all rows should pass the filter
+    And the "aggregated rows" reading of pivot table viewer should be 6
     And no errors should have been logged
 
   Scenario: Save parameters, and the history menu puts the configuration back
@@ -117,3 +130,17 @@ Feature: Pivot table — the aggregation it publishes and the parameters it reme
     And the "aggregated rows" reading of pivot table viewer should be 6
     When user clears the saved pivot table parameters
     Then no errors should have been logged
+
+  @realizes:public#3470
+  Scenario: Link Tables links the source with the table the pivot published (public#3470)
+    When user clicks on the "add to workspace" area of pivot table viewer
+    Then table "demog-1000 aggregation" should be open
+    When user picks "Data > Link Tables..." from the top menu
+    And user sets the tables of the Link Tables dialog to "demog-1000" and "demog-1000 aggregation"
+    And user sets key columns 1 of the Link Tables dialog to "DIS_POP" and "DIS_POP"
+    And user clicks on LINK button in "Link Tables" dialog
+    Then UNLINK button in "Link Tables" dialog should be visible
+    And 1 rows of table "demog-1000 aggregation" should pass the filter
+    When user clicks on CLOSE button in "Link Tables" dialog
+    Then no error or warning balloon should have been shown
+    And no errors should have been logged

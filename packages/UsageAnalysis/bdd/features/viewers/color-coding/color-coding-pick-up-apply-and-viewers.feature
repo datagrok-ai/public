@@ -4,10 +4,16 @@ Feature: Pick Up / Apply Coloring from the header menu, and a column's coloring 
   Pick Up Coloring on RACE, coloured with colours of its own, and Apply Coloring on a copy of it give
   the copy those colours, not the default palette. A heat map added to the view leaves the grid's
   coloring as it was (public#3043). Categorical colours set on the grid column are the colours a
-  scatter plot's legend paints its categories in (public#1929). Translated from the closed tickets
+  scatter plot's legend paints its categories in (public#1929). A style picked up from RACE with
+  Pick Up / Apply > Pick Up is applied, colouring included, to RACE of another table, demog-1000's
+  first 100 rows (public#1887). Translated from the closed tickets
   public#3043, public#1929, GROK-17058 and the help's "Pick Up / Apply Coloring";
   `color-coding.feature` copies a coloring by its tags, this feature does it through the menu a
   person uses.
+  Apply Coloring offers a picked-up coloring only to a column of a type it applies to
+  (`grid_popup_menu.dart`, "<type> type is not applicable" and the selected-columns branch): a
+  categorical coloring leaves the item disabled on the numeric AGE, and a linear one applied to a
+  selection of columns (SEX and HEIGHT, on demog-100) colours HEIGHT and leaves SEX.
 
   Not translated: the legend's own picker, its Cancel and a second pick (github-3132) are
   `legend/legend-across-viewers.feature`; a conditional coloring's legend is
@@ -38,7 +44,12 @@ Feature: Pick Up / Apply Coloring from the header menu, and a column's coloring 
     And user hovers over "Color Coding" menu item
     Then "Color-Coding---Apply-Coloring" menu item should be enabled
     When user closes the context menu
-    And user picks "Color Coding > Apply Coloring" from the context menu of the "header Race_copy" area of grid
+    And user right-clicks on the "header AGE" area of grid
+    And user hovers over "Color Coding" menu item
+    Then "Color-Coding---Apply-Coloring" menu item should be disabled
+    When user closes the context menu
+    Then "AGE" column should have no color coding
+    When user picks "Color Coding > Apply Coloring" from the context menu of the "header Race_copy" area of grid
     Then "Race_copy" column should be color-coded categorically
     And the categorical color of "Caucasian" in "Race_copy" column should be "3366CC"
     And the categorical color of "Other" in "Race_copy" column should be "CC6699"
@@ -86,4 +97,34 @@ Feature: Pick Up / Apply Coloring from the header menu, and a column's coloring 
     When user clicks on close icon of scatter plot viewer
     And user removes the coloring of "SEX" column
     Then "SEX" column should have no color coding
+    And no errors should have been logged
+
+  @realizes:public#1887
+  Scenario: A colouring picked up in one table applies to a column of another table (public#1887)
+    Given user opens demog-1000 dataset keeping the first 100 rows as "demog-100"
+    And user switches to the "demog-1000" table view
+    When user colors "RACE" column categorically:
+      | Caucasian | #3366CC |
+      | Other     | #CC6699 |
+    And user picks "Pick Up / Apply > Pick Up" from the context menu of the "header RACE" area of grid
+    And user switches to the "demog-100" table view
+    Then "RACE" column should have no color coding
+    When user picks "Pick Up / Apply > Apply" from the context menu of the "header RACE" area of grid
+    Then "RACE" column should be color-coded categorically
+    And the categorical color of "Caucasian" in "RACE" column should be "3366CC"
+    And the categorical color of "Other" in "RACE" column should be "CC6699"
+    When user picks "Color Coding > Linear" from the context menu of the "header AGE" area of grid
+    Then "AGE" column should be color-coded linearly
+    When user picks "Color Coding > Pick Up Coloring" from the context menu of the "header AGE" area of grid
+    And user clicks on the "header SEX" area of grid holding Control
+    And user clicks on the "header HEIGHT" area of grid holding Control
+    Then columns "SEX, HEIGHT" should be selected
+    When user picks "Color Coding > Apply Coloring" from the context menu of the "header HEIGHT" area of grid
+    Then "HEIGHT" column should be color-coded linearly
+    And "SEX" column should have no color coding
+    And the "color of cell 1 of RACE" reading of grid should be "#3366cc"
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    And user removes the coloring of "RACE" column
+    Then "RACE" column should have no color coding
     And no errors should have been logged

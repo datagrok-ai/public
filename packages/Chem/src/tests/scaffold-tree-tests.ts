@@ -88,6 +88,34 @@ category('scaffold tree', () => {
     tv.close();
   });
 
+  // #2626: the child dialog of a scaffold drawn with an explicit H warned that the parent's own molecule was not a
+  // superstructure of it
+  test('parent node drawn with an explicit H opens its child with no warning', async () => {
+    const {tv, scaffoldTree} = openScaffoldTree(mol1K);
+    try {
+      await frameAttached(scaffoldTree);
+      const parent = '[H]c1ccccc1';
+      const rootGroup = scaffoldTree.createGroup(parent, scaffoldTree.tree);
+      expect(rootGroup !== null, true, 'the scaffold was not added');
+      scaffoldTree.openAddSketcher(rootGroup!);
+      const wrapper = scaffoldTree.wrapper!;
+      await wrapper.sketcher.sketcherReady();
+      await waitUntil(() => !wrapper.sketcher.isEmpty(), 'the child dialog did not load the parent molecule');
+      const held = wrapper.normalizeMolStr(wrapper.sketcher.getMolFile());
+      expect(ScaffoldTreeViewer.validateNodes(held, parent), true,
+        'the parent molecule the dialog opens with is not taken as a superstructure of the parent');
+      const label = wrapper.dialog.root.querySelector('.ui-label') as HTMLElement;
+      await waitUntil(() => label.innerText === '', () => `the child dialog warns: ${label.innerText}`);
+      expect(ScaffoldTreeViewer.validateNodes('Cc1ccccc1', parent), true, 'toluene is not taken as a child of it');
+      expect(ScaffoldTreeViewer.validateNodes('C1CCNCC1', parent), false, 'piperidine is taken as a child of it');
+      wrapper.dialog.close();
+      scaffoldTree.wrapper = null;
+    }
+    finally {
+      tv.close();
+    }
+  });
+
   test('edit invalid structure', async () => {
     const {tv, scaffoldTree, table} = openScaffoldTree(mol1K);
 

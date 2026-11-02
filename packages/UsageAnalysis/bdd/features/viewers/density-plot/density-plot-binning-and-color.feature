@@ -13,6 +13,8 @@ Feature: Density plot binning, bin shape and the colour scale
   last scenario saves the plot at its peak setting (HEIGHT, 200 rectangular bins, scheme inverted)
   and claims what the frame draws after the layout and after the project: the same readings and the
   same number of painted bins; the scatter plot added after the save is gone with the layout.
+  A click on a rectangular bin selects exactly the rows counted in it, as it does for hexagons (it
+  selected a different number of rows before core#1048).
 
   Background:
     Given user is logged in
@@ -73,6 +75,7 @@ Feature: Density plot binning, bin shape and the colour scale
     When user sets "invertColorScheme" property of density plot viewer to "false"
     Then no errors should have been logged
 
+  @realizes:core#1048
   Scenario: Rectangles and hexagons bin the same rows into different shapes
     Then the "bin shape" reading of density plot viewer should be "hexagon"
     When user remembers the "rows shown" reading of density plot viewer
@@ -81,7 +84,13 @@ Feature: Density plot binning, bin shape and the colour scale
     And the "rows shown" reading of density plot viewer should be as remembered
     And density plot viewer should have repainted
     And density plot viewer should be painted
-    When user sets "binShape" property of density plot viewer to "hexagon"
+    And density plot viewer should have a "densest bin" area
+    When user clears the row selection
+    And user clicks on the "densest bin" area of density plot viewer
+    Then the "rows in densest bin" reading of density plot viewer should be at least 1
+    And the "rows selected" and "rows in densest bin" readings of density plot viewer should be the same
+    When user clears the row selection
+    And user sets "binShape" property of density plot viewer to "hexagon"
     Then the "bin shape" reading of density plot viewer should be "hexagon"
     And no errors should have been logged
 

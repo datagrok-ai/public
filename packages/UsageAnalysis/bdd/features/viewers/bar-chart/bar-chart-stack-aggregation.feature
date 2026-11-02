@@ -2,7 +2,10 @@
 Feature: Bar chart stack aggregation and datetime split
   Stacking needs an additive aggregation: with avg a Stack column draws no segments and no legend,
   sum and count build the stack, removing the Stack collapses it. A datetime Split column enables
-  the Split Map, whose year and month re-categorize the bars. One journey on demog-1000 with a bar
+  the Split Map, whose year and month re-categorize the bars. A vertical chart with every row
+  filtered out draws no bar and logs nothing (core#974). A Filter click on a chart stacked by a date
+  column (STARTED) is released by a click on empty space after an unrelated setting changed (the
+  click was lost before core#974); the click on the Asian bar keeps 6 rows. One journey on demog-1000 with a bar
   chart of AGE by RACE.
 
   Background:
@@ -27,11 +30,24 @@ Feature: Bar chart stack aggregation and datetime split
     And legend of bar chart viewer should have 2 items
     And no errors should have been logged
 
+  @realizes:core#974
   Scenario: Count keeps the stack; removing the Stack collapses it
     When user sets "Value Aggr Type" property of bar chart viewer to "count"
     Then the "stack segments" reading of bar chart viewer should be 8
     And legend of bar chart viewer should have 2 items
-    When user sets "Stack" property of bar chart viewer to ""
+    When user sets properties of bar chart viewer:
+      | Stack    | STARTED |
+      | On Click | Filter  |
+    And user clicks on the "bar Asian" area of bar chart viewer
+    Then 6 rows should pass the filter
+    When user sets "Bar Corner Radius" property of bar chart viewer to "4"
+    And user clicks on empty plot space of bar chart viewer
+    Then all rows should pass the filter
+    And no errors should have been logged
+    When user sets properties of bar chart viewer:
+      | On Click          | Select |
+      | Bar Corner Radius | 0      |
+    And user sets "Stack" property of bar chart viewer to ""
     Then the "stack segments" reading of bar chart viewer should be 0
     And legend of bar chart viewer should be hidden
     And no errors should have been logged
@@ -59,3 +75,17 @@ Feature: Bar chart stack aggregation and datetime split
       | Split           | RACE |
       | Value Aggr Type | avg  |
     Then the "bars" reading of bar chart viewer should be 4
+
+  @realizes:core#974
+  Scenario: A vertical bar chart with every row filtered out draws no bar and logs nothing (core#974)
+    When user sets "Orientation" property of bar chart viewer to "vertical"
+    And user filters rows where "AGE" is between 200 and 300
+    Then 0 rows should pass the filter
+    And bar chart viewer should show 0 rows
+    And the "bars" reading of bar chart viewer should be 0
+    When user hovers over the "view" area of bar chart viewer
+    Then no errors should have been logged
+    When user resets the filter
+    Then the "bars" reading of bar chart viewer should be 4
+    And bar chart viewer should show 1000 rows
+    And no errors should have been logged

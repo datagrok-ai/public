@@ -15,6 +15,13 @@ Feature: The Files section of the Browse tree
   finds the folder under Shared with me": the running account shares a folder, and the second
   account opens it from the node of the running account under Shared with me.
 
+  Files Browse cannot preview are claimed in the same folder. The help says: "Unsupported file formats
+  cannot be previewed, but you can download them" (help/access/files/files.md, the note under File
+  browsing and preview). A file with an extension no reader claims (".qqq") is downloaded from its
+  menu with its content, and it and an empty (0-byte) .csv and .txt show their details in the context
+  panel when clicked, with no error. Those files are named with the run's time and deleted when the
+  feature ends.
+
   The shares claimed are the two every stand is provisioned with, App Data and Demo. The user's
   own home share is named by the stand ("My files" on dev) and a stand whose users have no home
   storage lists none, so it is not claimed.
@@ -63,8 +70,12 @@ Feature: The Files section of the Browse tree
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: A file written on the server shows in the tree after Refresh
+  Scenario: Files written on the server show in the tree after Refresh, and files of no readable format are clicked with no error
     Given a file "System:AppData/UsageAnalysis/bdd-browse-refresh.txt" with text "written by a feature" is on the server
+    And a file "System:AppData/UsageAnalysis/bdd-edge-odd-{time}.qqq" with text "an unreadable format" is on the server
+    And a file "System:AppData/UsageAnalysis/bdd-edge-empty-{time}.csv" with text "" is on the server
+    And a file "System:AppData/UsageAnalysis/bdd-edge-empty-{time}.txt" with text "" is on the server
+    And the context panel is open
     And Files---App-Data tree node inside browse tree is expanded
     When user refreshes the browse tree
     # Refresh brings a folder open inside a section back collapsed (a candidate finding, see
@@ -72,6 +83,18 @@ Feature: The Files section of the Browse tree
     And Files---App-Data tree node inside browse tree is expanded
     And user expands Files---App-Data---UsageAnalysis tree node inside browse tree
     Then Files---App-Data---UsageAnalysis---bdd-browse-refresh.txt tree node inside browse tree should be visible
+    And Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree should be visible
+    Given user watches downloads
+    When user opens the context menu of Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree
+    And user downloads a file through "Download" menu item in context menu
+    Then a file "bdd-edge-odd-{time}.qqq" should have been downloaded
+    And the downloaded file "bdd-edge-odd-{time}.qqq" should contain text "an unreadable format"
+    When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-odd-{time}.qqq tree node inside browse tree
+    Then the context panel should show "bdd-edge-odd-{time}.qqq"
+    When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-empty-{time}.csv tree node inside browse tree
+    Then the context panel should show "bdd-edge-empty-{time}.csv"
+    When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-empty-{time}.txt tree node inside browse tree
+    Then the context panel should show "bdd-edge-empty-{time}.txt"
     When user collapses Files---App-Data tree node inside browse tree
     Then no errors should have been logged
     And no error or warning balloon should have been shown

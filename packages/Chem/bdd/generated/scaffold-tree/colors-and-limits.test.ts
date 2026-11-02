@@ -36,7 +36,7 @@ test.describe("Scaffold Tree colors, blocked generation, large tables and two ta
     await session.step(16, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
     await session.step(17, "And user picks \"Chem > Analyze > Scaffold Tree\" from the top menu", () => pickFromTopMenu(page, "Chem > Analyze > Scaffold Tree"));
     await run.scenario("The magic wand is blocked on a table with no molecule column", async () => {
-      await session.step(20, "Given user opens demog dataset", () => openDataset(page, ds("demog")));
+      await session.step(20, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
       await session.step(21, "And user adds Scaffold Tree viewer", () => addViewer(page, "Scaffold Tree"));
       await session.step(22, "Then Scaffold Tree viewer should be visible", () => shouldBe(page, el("Scaffold Tree viewer"), "visible"));
       await session.step(23, "And the \"generate blocked reason\" reading of Scaffold Tree viewer should be \"There is no molecule column in the table\"", () => readingReads(page, "generate blocked reason", el("Scaffold Tree viewer"), "There is no molecule column in the table"));

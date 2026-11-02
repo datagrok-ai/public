@@ -91,11 +91,24 @@ Still to write: a folder share gives read but not write, and files outside the f
 only View, Edit, Delete and Share), so View is what lets the grantee run it, and the existing View and
 use test covers it.
 
-## 8. Edge cases (`share-dialog-edge-cases`) — still open
+## 8. Edge cases (now in `sharing-dialog` and `sharing-table`) — still open
 
-Written for the edge-case feature, with no library, binding or code change. That feature claims a removal
-cancelled, and OK disabled until a recipient is accepted (core#980, a known failure: an email becomes a
-recipient only once Enter accepts it).
+Written for the edge cases, with no library, binding or code change. `sharing-dialog` claims a removal
+cancelled, and `sharing-table` OK disabled until a recipient is accepted (core#980, a known failure: an
+email becomes a recipient only once Enter accepts it).
+
+Claimed once core#980 is fixed: the `sharing-table` scenario ends at its pin, OK disabled on the fresh dialog.
+With the tag gone, these steps go after it:
+
+```gherkin
+When user types "bdd-share-edge-{time}@example.com" into "User, group, or email" input in "Share BDD-ShareTable-{time}" dialog
+Then OK button in "Share BDD-ShareTable-{time}" dialog should be disabled
+When user presses Enter in "User, group, or email" input in "Share BDD-ShareTable-{time}" dialog
+Then "Remove" icon in "Share BDD-ShareTable-{time}" dialog should be visible
+And OK button in "Share BDD-ShareTable-{time}" dialog should be enabled
+When user clicks on CANCEL button in "Share BDD-ShareTable-{time}" dialog
+Then the "Share BDD-ShareTable-{time}" dialog should close
+```
 
 ### Steps requested
 
@@ -105,7 +118,7 @@ recipient only once Enter accepts it).
    the current user`). Then:
 
    ```gherkin
-   When user types "<disabled user's name>" into "User, group, or email" input in "Share ShareEdgeA{time}" dialog
+   When user types "<disabled user's name>" into "User, group, or email" input in "Share ShareDialog1" dialog
    Then the user suggestions should not offer "<disabled user's name>"
    ```
 2. **A grant revoked while the recipient has the entity open** (decided): the revoked privilege is closed on the

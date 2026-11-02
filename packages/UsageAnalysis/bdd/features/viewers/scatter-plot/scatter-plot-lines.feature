@@ -8,7 +8,9 @@ Feature: Scatter plot trend lines
   plot reports: the `regression lines` and `formula lines` readings and the `regression line`,
   `regression stats` and `moving average` hit areas. One journey on demog-1000, X = WEIGHT,
   Y = HEIGHT (872 of the 1000 rows have a HEIGHT); every scenario puts back what it changed.
-  The Formula Lines dialog is PowerPack's and has no scenarios here.
+  The Formula Lines dialog is PowerPack's and has no scenarios here. A Moving Average Window typed
+  in the context panel outside the 2..100 it declares is a known failure (core#1200) in
+  scatter-plot-conditional-legend.feature.
 
   Background:
     Given user is logged in
@@ -38,7 +40,8 @@ Feature: Scatter plot trend lines
     And scatter plot viewer should not have a "regression line" area
     And no errors should have been logged
 
-  Scenario: Regression Per Category fits one line per color, and the stats table is drawn
+  @realizes:public#3695
+  Scenario: Regression Per Category fits one line per color, and the stats table is drawn, and one common line past 20 categories (public#3695)
     Then "Regression Per Category" property of scatter plot viewer should be "true"
     When user sets properties of scatter plot viewer:
       | Color                | RACE |
@@ -60,6 +63,9 @@ Feature: Scatter plot trend lines
       | Show Determination Coefficient | true |
       | Regression Per Category        | true |
     Then the "regression lines" reading of scatter plot viewer should be 4
+    When user sets "Color" property of scatter plot viewer to "USUBJID"
+    Then the "regression lines" reading of scatter plot viewer should be 1
+    And scatter plot viewer should have a "regression line" area
     When user sets properties of scatter plot viewer:
       | Show Regression Line | false |
       | Color                |       |

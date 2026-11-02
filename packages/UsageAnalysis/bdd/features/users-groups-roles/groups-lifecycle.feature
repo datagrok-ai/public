@@ -12,9 +12,15 @@ Feature: A group from creation to deletion
   as "New Group", and cleared it is marked invalid and OK is disabled (grok_group_meta.dart
   propertiesDialog). The feature claims what the dialog does.
 
+  A group made in the New Group dialog under the name of a group made through the API is refused
+  ("A group or role with the same name already exists", `groups_repository.dart`), the dialog
+  staying open. Properties refuses a name of spaces only (`propertiesDialog`), and its CANCEL leaves
+  the group on the server under its name.
+
   Background:
     Given user is logged in
     And no group named "BDD-GL-Group-{time}, BDD-GL-Renamed-{time}, BDD-GL-Cancelled-{time}" is on the server
+    And no group named "BDDGEApi{time}" is on the server
     And the browse panel is open
     And the context panel is open
     When user expands "Platform" tree node inside browse tree
@@ -30,18 +36,6 @@ Feature: A group from creation to deletion
       | Description input in "Create New Group" dialog |
     When user types "BDD-GL-Cancelled-{time}" into Name input in "Create New Group" dialog
     And user clicks on CANCEL button in "Create New Group" dialog
-    Then the "Create New Group" dialog should close
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-
-  Scenario: The New Group dialog refuses an empty name (Groups-05)
-    When user clicks on "New Group..." button
-    Then Name input in "Create New Group" dialog should have value "New Group"
-    And OK button in "Create New Group" dialog should be enabled
-    When user clears Name input in "Create New Group" dialog
-    Then Name input in "Create New Group" dialog should be invalid
-    And OK button in "Create New Group" dialog should be disabled
-    When user clicks on CANCEL button in "Create New Group" dialog
     Then the "Create New Group" dialog should close
     And no errors should have been logged
     And no error or warning balloon should have been shown
@@ -63,6 +57,27 @@ Feature: A group from creation to deletion
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  Scenario: The New Group dialog refuses an empty name and a taken one (Groups-05)
+    When user clicks on "New Group..." button
+    Then Name input in "Create New Group" dialog should have value "New Group"
+    And OK button in "Create New Group" dialog should be enabled
+    When user clears Name input in "Create New Group" dialog
+    Then Name input in "Create New Group" dialog should be invalid
+    And OK button in "Create New Group" dialog should be disabled
+    When user clicks on CANCEL button in "Create New Group" dialog
+    Then the "Create New Group" dialog should close
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+    Given a group named "BDDGEApi{time}" is on the server
+    When user clicks on "New Group..." button
+    And user types "BDDGEApi{time}" into Name input in "Create New Group" dialog
+    And user clicks on OK button in "Create New Group" dialog
+    Then an error balloon containing "A group or role with the same name already exists" should have been shown
+    And "Create New Group" dialog should be visible
+    And 1 group named "BDDGEApi{time}" should be on the server
+    When user clicks on CANCEL button in "Create New Group" dialog
+    Then the "Create New Group" dialog should close
+
   Scenario: Properties... renames the group and rewrites its description (Groups-09)
     When user picks "Properties..." from the context menu of "BDD-GL-Group-{time}" link in gallery
     Then "BDD-GL-Group-{time} Properties" dialog should be visible
@@ -79,9 +94,13 @@ Feature: A group from creation to deletion
     When user picks "Properties..." from the context menu of "BDD-GL-Renamed-{time}" link in gallery
     Then "BDD-GL-Renamed-{time} Properties" dialog should be visible
     And Description input in "BDD-GL-Renamed-{time} Properties" dialog should have value "renamed by the BDD suite"
+    When user types "   " into Name input in "BDD-GL-Renamed-{time} Properties" dialog
+    Then Name input in "BDD-GL-Renamed-{time} Properties" dialog should be invalid
+    And OK button in "BDD-GL-Renamed-{time} Properties" dialog should be disabled
     When user clicks on CANCEL button in "BDD-GL-Renamed-{time} Properties" dialog
     Then the "BDD-GL-Renamed-{time} Properties" dialog should close
     And no errors should have been logged
+    And 1 group named "BDD-GL-Renamed-{time}" should be on the server
     And no error or warning balloon should have been shown
 
   Scenario: Delete removes the group after confirmation (Groups-14)

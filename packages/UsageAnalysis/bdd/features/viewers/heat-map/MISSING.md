@@ -79,9 +79,9 @@ slider handles, a Shift-drag selection and Escape, the Table property).
   sorts that grid only — the heat map keeps the table's order (`row order` stays 1..10), since each
   grid holds its own order. That is how every grid behaves, not a heat map claim.
 
-## Edge cases (`heat-map-edge-cases.feature`)
+## Edge cases
 
-Written for `heat-map-edge-cases.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+The edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today; the claimed ones are steps of `heat-map-navigation.feature` and `heat-map-columns-and-sorting.feature`, and the core#1202 known failure is the last scenario of `heat-map-layout.feature`. No library, binding or code change was made for them.
 
 ### Still open
 
@@ -90,11 +90,34 @@ Written for `heat-map-edge-cases.feature`: the edge cases of this viewer that th
 1. Alt-drag zoom on a sorted map (TestTrack `Heatmap/heatmap-ui.md`: "view zooms into that area"): the zoom passes table row indexes to the grid-row scroll (`grid_core.dart`), so on a map sorted by AGE the window may land elsewhere. Needs a reading of the first and last grid rows in the vertical window (`first row shown`, `last row shown`) to claim that the zoomed window starts at the sorted top rows.
 2. Sort > Custom on a categorical column with the empty value moved to the top, then Ascending / Descending (heatmap-ui.md, "Custom sorting on categorical column"): needs steps for the custom sort dialog's order list (drag an item to the top).
 
-3. Max Heatmap Columns −1 typed in the context panel is not taken (the out-of-bounds rule of `viewer-rules-edge-cases.feature`). The heat map is a grid: its row in that outline needs the grid's settings opened (`user clicks on settings icon of heat map viewer` is to be checked) and the property's declared minimum confirmed.
+3. Max Heatmap Columns −1 typed in the context panel is not taken (the out-of-bounds rule, `../MISSING.md`). The heat map is a grid: its check needs the grid's settings opened (`user clicks on settings icon of heat map viewer` is to be checked) and the property's declared minimum confirmed.
 
 **Decided**
 
-1. An Alt-click without moving zooms the map to one row and an Alt-drag to the rows it spans (no row is selected): claimed green in `heat-map-edge-cases.feature` on `y scroll span`.
-2. Max Heatmap Columns counts only the visible columns, so a column hidden in the Columns dialog stays hidden when the cap is raised (core#1202, a defect): written in `heat-map-edge-cases.feature` as a known failure (today raising the cap from 5 to 6 shows the hidden AGE again).
+1. An Alt-click without moving zooms the map to one row and an Alt-drag to the rows it spans (no row is selected): claimed green in `heat-map-navigation.feature` on `y scroll span`.
+2. Max Heatmap Columns counts only the visible columns, so a column hidden in the Columns dialog stays hidden when the cap is raised (core#1202, a defect): written as a known failure, the last scenario of `heat-map-layout.feature` (today raising the cap from 5 to 6 shows the hidden AGE again).
+
+**API or Dart tests to write**
+
+1. AGE removed from demog-1000 while the map shows it: 10 columns shown, no AGE band, WEIGHT kept, no error reported or logged.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
 
 ### Won't do
+
+## Closed issues the regression round of 26 Oct 2026 could not claim
+
+- **The grid status does not publish the viewer's error** (measured 26 Oct 2026 on localhost, master).
+  With Max Heatmap Columns 0 the map shows "No columns to show: Max Heatmap Columns is 0" in its
+  `.d4-viewer-error` (core#928, `grid_core.dart` sets it as the viewer error), yet
+  `getWidgetStatus().error` is null, so `heat map viewer should report the error "…"` cannot see it and
+  `should report no error` passes over it. `heat-map-columns-and-sorting.feature` (GROK-17776, core#928) claims the hint as text shown
+  in the viewer (`heat map viewer should show the text …`). Needs `grid_status.dart` to report the
+  viewer's error, as the other viewers' statuses do; then the hint can be claimed as:
+
+  ```gherkin
+  When user sets "maxHeatmapColumns" property of heat map viewer to "0"
+  Then heat map viewer should report the error "No columns to show: Max Heatmap Columns is 0"
+  When user sets "maxHeatmapColumns" property of heat map viewer to "100"
+  Then heat map viewer should report no error
+  ```

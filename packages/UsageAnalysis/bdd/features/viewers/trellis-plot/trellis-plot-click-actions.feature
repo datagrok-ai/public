@@ -7,8 +7,9 @@ Feature: Trellis plot click actions
   Row Source All — adding all of its rows, since the selection ignores the filter), and the cell's own rows filtered — composed with a filter
   card, dropped by Escape and by a change of split column. Both trellis events fire off one click.
   A cell is clicked on the corner band the trellis owns: the middle of a cell belongs to the inner
-  viewer's canvas. One journey on demog-1000 with SEX by RACE; every scenario puts back what it
-  changed.
+  viewer's canvas. Closing the trellis gives back the rows its clicked cell filtered out: a filter
+  that outlives its viewer is a defect (core#233). One journey on demog-1000 with SEX by RACE;
+  every scenario puts back what it changed.
 
   Background:
     Given user is logged in
@@ -165,4 +166,11 @@ Feature: Trellis plot click actions
     Then "d4-trellis-plot-current-cell-changed" event should have fired on trellis plot viewer
     And "d4-trellis-plot-inner-viewer-clicked" event should have fired on trellis plot viewer
     And the "current cell" reading of trellis plot viewer should be "F | Black"
+    And no errors should have been logged
+    When user sets "On Click" property of trellis plot viewer to "Filter"
+    And user clicks on the "cell F | Caucasian" area of trellis plot viewer
+    Then 480 rows should pass the filter
+    When user clicks on close icon of trellis plot viewer
+    Then the open tableview should have 0 trellis plot viewers
+    And all rows should pass the filter
     And no errors should have been logged

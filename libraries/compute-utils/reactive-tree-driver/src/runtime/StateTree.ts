@@ -595,10 +595,12 @@ export class StateTree {
   private treeLock() {
     if (this.globalROLocked$.value)
       throw new LockError(`Changes double lock`);
+    this.linksState.skipDebounce = true;
     this.globalROLocked$.next(true);
   }
 
   private treeUnlock() {
+    this.linksState.skipDebounce = false;
     if (this.globalROLocked$.value)
       this.globalROLocked$.next(false);
   }

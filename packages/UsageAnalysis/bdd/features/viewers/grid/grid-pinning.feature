@@ -15,7 +15,16 @@ Feature: Grid pinned rows and pinned columns
   demog-1000, because Unpin All Columns only moves the freeze line back and leaves a pinned column
   where pinning put it, so one scenario's pinning would decide the next one's column order. USUBJID
   is unique, SEX is not; rows 990, 995 and 998 are X0273T51070200002, X0273T51080100021 and
-  X0273T51080200011.
+  X0273T51080200011. A pinned column sorts from its header and takes a resize (public#1159); after
+  a layout with a viewer stacked over the grid as a tab, the pinned columns stay side by side
+  (public#1625) and a row-number click still makes its row current (public#679).
+  A pinned row follows its column through a rename and a layout. The grid's defects at these edges
+  are scenarios of their own at the end, each ending on its known failure: a pinned row deleted and
+  brought back by Control+Z should be pinned again (core#1196); with twelve rows pinned the grid
+  shows ten and should say that pinned rows are hidden, and Unpin All Rows should unpin the ones it
+  does not show (core#1191); Unpin Column with Frozen Columns above the column count should log no
+  error, and Frozen Columns typed in the context panel above the column count or below 0 should not
+  be taken (core#1137).
 
   Not claimed: which row is current after Control+End or ArrowDown once rows are pinned. With N
   rows pinned the keyboard stops at table row 1000 - N (998 with two pinned) although rows 999 and
@@ -83,6 +92,11 @@ Feature: Grid pinned rows and pinned columns
     And grid should have a "row header 6" area
     And grid should not have a "row header 3" area
     And no errors should have been logged
+    When user renames "USUBJID" column to "ID"
+    And user saves the layout of the current table view
+    And user loads the saved layout
+    Then the "pinned rows" reading of grid should be 1
+    And no errors should have been logged
 
   Scenario: Pin Selected Rows pins every selected row at once
     When user clicks on the "row header 5" area of grid
@@ -142,7 +156,8 @@ Feature: Grid pinned rows and pinned columns
     And the "column order" reading of grid should be "SEX, DEMOG, RACE, USUBJID, AGE, HEIGHT, DIS_POP, WEIGHT, CONTROL, STARTED, SEVERITY"
     And no errors should have been logged
 
-  Scenario: The arrow keys cross the pinned-column boundary both ways
+  @realizes:public#1159
+  Scenario: The arrow keys cross the pinned-column boundary both ways, and the pinned column sorts and resizes from its header (public#1159)
     When user picks "Pin > Pin Column" from the context menu of the "header SEX" area of grid
     Then "Frozen Columns" property of grid should be "2"
     When user clicks on the "cell 3 of SEX" area of grid
@@ -155,4 +170,86 @@ Feature: Grid pinned rows and pinned columns
     And user presses ArrowLeft
     Then the "current column" reading of grid should be "SEX"
     And row 3 should be current
+    When user double-clicks on the "header SEX" area of grid
+    Then the "sort column" reading of grid should be "SEX"
+    And the "sort direction" reading of grid should be "descending"
+    When user double-clicks on the "header SEX" area of grid
+    Then the "sort direction" reading of grid should be "ascending"
+    When user double-clicks on the "header SEX" area of grid
+    Then the "sort column" reading of grid should be ""
+    When user drags the "column resizer SEX" area of grid by 40 pixels to the right
+    Then the "column width of SEX" reading of grid should be higher than before
     And no errors should have been logged
+
+  @realizes:public#1625 @realizes:public#679
+  Scenario: After a layout with a viewer stacked over the grid the pinned columns stay side by side and a row-number click still makes the row current (public#1625, public#679)
+    When user picks "Pin > Pin Column" from the context menu of the "header USUBJID" area of grid
+    And user picks "Pin > Pin Column" from the context menu of the "header AGE" area of grid
+    Then the grid should pin the columns "USUBJID, AGE"
+    And the "header AGE" area of grid should lie to the right of the "header USUBJID" area
+    Given user adds a scatter plot viewer
+    When user stacks scatter plot viewer onto grid as a tab
+    Then the viewers "demog-1000, Scatter plot" should be the tabs of one panel
+    When user saves the layout of the current table view to the server
+    And user loads the saved layout
+    And user switches the tabbed panel to the "demog-1000" tab
+    Then the grid should pin the columns "USUBJID, AGE"
+    And the "header AGE" area of grid should lie to the right of the "header USUBJID" area
+    When user clicks on the "row header 5" area of grid
+    Then row 5 should be current
+    When user clicks on the "row header 7" area of grid holding Shift
+    Then rows 5 to 7 should be selected
+    And 3 rows should be selected
+    And no errors should have been logged
+
+  @known-failure:214 @realizes:core#1196
+  Scenario: A pinned row deleted and brought back by Control+Z is pinned again
+    When user picks "Pin > Pin Row" from the context menu of the "cell 3 of USUBJID" area of grid
+    Then the "pinned rows" reading of grid should be 1
+    When user clicks on the "row header 3" area of grid holding Control
+    And user presses Shift+Delete
+    Then the table should have 999 rows
+    When user presses Control+Z
+    Then the table should have 1000 rows
+    And the "pinned rows" reading of grid should be 1
+
+  @known-failure:223 @realizes:core#1191
+  Scenario: Twelve rows pinned show ten, and the grid says that pinned rows are hidden
+    When user clicks on the "row header 1" area of grid
+    And user clicks on the "row header 12" area of grid holding Shift
+    Then 12 rows should be selected
+    When user picks "Pin > Pin Selected Rows" from the context menu of the "cell 1 of USUBJID" area of grid
+    Then the "pinned rows" reading of grid should be 10
+    And a warning balloon containing "10" should have been shown
+
+  @known-failure:235 @realizes:core#1191
+  Scenario: Unpin All Rows unpins the pinned rows the grid does not show
+    When user clicks on the "row header 1" area of grid
+    And user clicks on the "row header 12" area of grid holding Shift
+    And user picks "Pin > Pin Selected Rows" from the context menu of the "cell 1 of USUBJID" area of grid
+    Then the "pinned rows" reading of grid should be 10
+    When user picks "Pin > Unpin All Rows" from the context menu of the "cell 1 of USUBJID" area of grid
+    Then the "pinned rows" reading of grid should be 0
+    When user saves the layout of the current table view
+    And user loads the saved layout
+    Then the "pinned rows" reading of grid should be 0
+
+  @known-failure:241 @realizes:core#1137
+  Scenario: Unpin Column with Frozen Columns above the column count logs no error
+    When user sets "Frozen Columns" property of grid to "20"
+    And user picks "Pin > Unpin Column" from the context menu of the "header AGE" area of grid
+    Then the "column order" reading of grid should contain "AGE"
+
+  Scenario Outline: Frozen Columns typed in the context panel as <typed> is not taken
+    When user hovers over the "header AGE" area of grid
+    And user clicks on "Edit properties (F4)" icon in grid
+    Then context panel should be visible
+    Given "Columns" category in context panel is expanded
+    When user enters "<typed>" into "Frozen Columns" property in context panel
+    Then "Frozen Columns" property of grid should be "1"
+
+    @known-failure:249 @realizes:core#1137
+    Examples: The typed value is taken
+      | typed |
+      | 20    |
+      | -1    |

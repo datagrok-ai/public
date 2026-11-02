@@ -8,7 +8,8 @@ Feature: Colour coding across columns
   kept, and a categorical colouring (RACE to a copy of it) and a linear scheme (STARTED to HEIGHT)
   applied to other columns (through the colouring's own copy, the step the md's Pick Up / Apply
   performs, not the header menu) — and a layout and a project: a categorical colouring
-  comes back when the saved layout is applied to the table opened anew, and a linked colouring (a
+  comes back when the saved layout is applied to the table opened anew, and Color Coding > Off in
+  the header menu then takes it away (public#1071), and a linked colouring (a
   link to a link, RACE to AGE, HEIGHT to RACE) comes back from a layout and from a project.
   Not translated: the md's "Grid Color Coding" header-menu ladder (All / scheme / None / Auto),
   which is `grid/grid-appearance.feature`'s, and the SPGI_v2 Edit Color Scheme dialog, which the
@@ -17,6 +18,8 @@ Feature: Colour coding across columns
   never the tag alone — a tag a renderer ignores would otherwise pass.
   One journey on demog-1000 (row 1: AGE 26, SEX F, RACE Caucasian; row 2: AGE 30, SEX F, RACE Other;
   row 3: AGE 58, SEX F; row 4: AGE 45, SEX M). Each scenario puts back what it changed.
+  A link that closes a cycle of linked colourings (AGE linked to WEIGHT, linked to HEIGHT, linked to
+  AGE) takes the colouring away until the chain is broken.
 
   Background:
     Given user is logged in
@@ -115,6 +118,24 @@ Feature: Colour coding across columns
     And user removes the coloring of "DIS_POP" column
     And user removes the coloring of "CONTROL" column
     And user removes the coloring of "STARTED" column
+    When user colors "AGE" column linearly from "#0000FF" to "#FF0000"
+    And user colors "HEIGHT" column linked to "AGE" column
+    And user colors "WEIGHT" column linked to "HEIGHT" column
+    And user picks "Color Coding > Edit..." from the context menu of the "header AGE" area of grid
+    Then "Color-coding: AGE" dialog should be visible
+    When user selects "Linked" in Type input in "Color-coding: AGE" dialog
+    And user selects "WEIGHT" in Source column input in "Color-coding: AGE" dialog
+    And user clicks on CLOSE button in "Color-coding: AGE" dialog
+    Then "Color-coding: AGE" dialog should be hidden
+    And the coloring of "AGE" column should be linked to "WEIGHT" column
+    And the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should be the same
+    When user colors "HEIGHT" column linearly from "#0000FF" to "#FF0000"
+    Then the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should differ
+    When user removes the coloring of "AGE" column
+    And user removes the coloring of "HEIGHT" column
+    And user removes the coloring of "WEIGHT" column
+    Then "AGE" column should have no color coding
+    And "HEIGHT" column should have no color coding
     Then no errors should have been logged
 
   Scenario: Inverting a linear scheme swaps the ends of the gradient
@@ -187,7 +208,8 @@ Feature: Colour coding across columns
     Then the table should not have a column "Race_copy"
     And no errors should have been logged
 
-  Scenario: A column's colouring comes back from a saved layout on the reopened table
+  @realizes:public#1071
+  Scenario: A column's colouring comes back from a saved layout on the reopened table, and Off in the header menu takes it away (public#1071)
     When user colors "SEX" column categorically:
       | M | #3366CC |
       | F | #CC6699 |
@@ -204,8 +226,11 @@ Feature: Colour coding across columns
     And the "color of cell 1 of SEX" and "color of cell 4 of SEX" readings of grid should differ
     When user clicks on close icon of scatter plot viewer
     Then "SEX" column should be color-coded categorically
-    When user removes the coloring of "SEX" column
-    Then no errors should have been logged
+    When user picks "Color Coding > Off" from the context menu of the "header SEX" area of grid
+    Then "SEX" column should have no color coding
+    And the "color of cell 1 of SEX" and "color of cell 4 of SEX" readings of grid should be the same
+    And the "color of cell 1 of SEX" reading of grid should be "#ffffff"
+    And no errors should have been logged
 
   Scenario: Linked colourings come back from a saved layout and from a saved project
     When user colors "AGE" column conditionally:

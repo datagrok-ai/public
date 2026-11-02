@@ -11,11 +11,17 @@ Feature: A role from creation to deletion
   feature's end whatever it got to.
 
   The Name field of the New Role dialog starts as "New Role"; Roles-05 is claimed on the field
-  cleared, where it is marked invalid and OK is disabled.
+  cleared, where it is marked invalid and OK is disabled, and on a name of spaces only.
+
+  Groups and roles share one set of names: a role named in the New Role dialog after a group made in
+  the New Group dialog is refused ("A group or role with the same name already exists",
+  `groups_repository.dart`), and the dialog stays open with the message in an error balloon. That
+  group is named with the run's time and deleted at feature end.
 
   Background:
     Given user is logged in
     And no role named "BDD-RL-Role-{time}, BDD-RL-Renamed-{time}, BDD-RL-Cancelled-{time}" is on the server
+    And no group named "BDD-RE-Group-{time}" is on the server
     And the browse panel is open
     And the context panel is open
     When user expands "Platform" tree node inside browse tree
@@ -39,6 +45,11 @@ Feature: A role from creation to deletion
     When user clicks on "New Role..." button
     Then Name input in "Create New Role" dialog should have value "New Role"
     And OK button in "Create New Role" dialog should be enabled
+    When user types "   " into Name input in "Create New Role" dialog
+    Then Name input in "Create New Role" dialog should be invalid
+    And OK button in "Create New Role" dialog should be disabled
+    When user types "New Role" into Name input in "Create New Role" dialog
+    Then OK button in "Create New Role" dialog should be enabled
     When user clears Name input in "Create New Role" dialog
     Then Name input in "Create New Role" dialog should be invalid
     And OK button in "Create New Role" dialog should be disabled
@@ -46,6 +57,23 @@ Feature: A role from creation to deletion
     Then the "Create New Role" dialog should close
     And no errors should have been logged
     And no error or warning balloon should have been shown
+    When user clicks on "Platform > Groups" tree node inside browse tree
+    Then the "Groups" view should be current
+    When user clicks on "New Group..." button
+    And user types "BDD-RE-Group-{time}" into Name input in "Create New Group" dialog
+    And user clicks on OK button in "Create New Group" dialog
+    Then the "Create New Group" dialog should close
+    And 1 group named "BDD-RE-Group-{time}" should be on the server
+    When user clicks on "Platform > Roles" tree node inside browse tree
+    Then the "Roles" view should be current
+    When user clicks on "New Role..." button
+    And user types "BDD-RE-Group-{time}" into Name input in "Create New Role" dialog
+    And user clicks on OK button in "Create New Role" dialog
+    Then an error balloon containing "A group or role with the same name already exists" should have been shown
+    And "Create New Role" dialog should be visible
+    And 1 group named "BDD-RE-Group-{time}" should be on the server
+    When user clicks on CANCEL button in "Create New Role" dialog
+    Then the "Create New Role" dialog should close
 
   Scenario: A role is created (Roles-04)
     When user clicks on "New Role..." button

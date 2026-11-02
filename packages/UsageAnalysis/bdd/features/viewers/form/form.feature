@@ -3,19 +3,30 @@ Feature: Form viewer
   One record as a form: every column of the current row as a labelled field, the toolbar that walks
   the rows and selects them, the track-row modes, editing a field, the field set and its
   persistence (a layout, and a form saved to a file and loaded back from it through the toolbar's
-  own icons), and the colour coding the grid gives a field. One journey on demog-1000; every
+  own icons), and the colour coding the grid gives a field. Closed issues claimed on the way: a
+  field keeps its own row's colour after the grid is sorted (public#940), the next-row arrow takes
+  the next row of the grid's order, not the table's (public#2644: sorted by HEIGHT descending, row 1
+  at 174.705 is followed by row 808 at 174.652), and an empty cell of an integer column shows an
+  empty field, not the integer null (public#3561). One journey on demog-1000; every
   scenario puts back what it changed. The viewer draws no canvas, so its claims are the readings
   and the hit areas it reports, never pixels. A default form orders its fields by a relevance
   score (a molecule first, then anything with a semantic type, constant columns last) and
   re-sorts a set it is given the same way, so the claims name fields and count them, never
-  their order.
+  their order. A column removed from the table takes its field off a default form, and stays on a
+  designed form with an empty field.
+  The previous-row arrow on the first row and the next-row arrow on the last row leave the current
+  row where it is. A file that is not a form, a CSV file or a JSON file with no form in it (a saved
+  table layout), is refused with an error balloon "<file> is not a valid form file" and the form
+  keeps its fields (core#1138); the files are fixtures the project already keeps
+  (`fixtures/cars-small.csv`, `fixtures/nx/spgi-legend-position-old.layout`). In an editable form,
+  text typed into a numeric field leaves the cell as it was (core#1192).
   The md's manual design mode is a scenario of its own: with the toolbar's design toggle on, a field
   dragged down stays below the fields it passed once the toggle is off, and a form saved to a file
   after that brings the field back to its new place when the file is loaded over a rebuilt form.
   From the md's manual sections: Column selector — the toolbar's column list dialog builds the form
   from the columns checked in it, and opened again it starts from the fields shown; Column changes
   reaction — a column renamed in the grid's Column Properties dialog renames its field and the
-  label beside it (step 3, a deleted column, is claimed in `form-edge-cases`);
+  label beside it (step 3, a deleted column, is the removed-column scenario: the field stays);
   Table switching — the Table property moves a default form to spgi-100's columns and back, and a
   form built from columns chosen in that dialog shows spgi-100's columns too.
 
@@ -77,15 +88,30 @@ Feature: Form viewer
     And the "fields shown" reading of form viewer should be 11
     And no errors should have been logged
 
-  Scenario: A column's colour coding reaches its field
+  @realizes:public#940
+  Scenario: A column's colour coding reaches its field, the field of its own row after a sort (public#940)
     Then the "background of AGE" reading of form viewer should be ""
     When user colors "AGE" column linearly from "#FF0000" to "#0000FF"
     Then the "background of AGE" reading of form viewer should differ from before
-    When user removes the coloring of "AGE" column
+    When user makes row 5 current
+    Then the "background of AGE" reading of form viewer should not be ""
+    When user remembers the "background of AGE" reading of form viewer
+    And user makes row 7 current
+    Then the "background of AGE" reading of form viewer should not be as remembered
+    When user double-clicks on the "header AGE" area of grid
+    Then the "sort column" reading of grid should be "AGE"
+    When user makes row 5 current
+    Then the "row" reading of form viewer should be 5
+    And the "background of AGE" reading of form viewer should be as remembered
+    When user picks "Sort > Reset" from the context menu of the "header AGE" area of grid
+    Then the "sort column" reading of grid should be ""
+    When user makes row 1 current
+    And user removes the coloring of "AGE" column
     Then the "background of AGE" reading of form viewer should be ""
     And no errors should have been logged
 
-  Scenario: The arrows walk the rows
+  @realizes:public#2644
+  Scenario: The arrows walk the rows, stop at the first and the last, and follow the grid's order once it is sorted (public#2644)
     When user clicks on the "next row" area of form viewer
     Then row 2 should be current
     And the "USUBJID" reading of form viewer should be "X0273T21000300005"
@@ -93,6 +119,39 @@ Feature: Form viewer
     When user clicks on the "previous row" area of form viewer
     Then row 1 should be current
     And the "USUBJID" reading of form viewer should be "X0273T21000300003"
+    When user clicks on the "previous row" area of form viewer
+    Then row 1 should be current
+    And the "row" reading of form viewer should be 1
+    When user makes the last row current
+    Then the "row" reading of form viewer should be 1000
+    When user clicks on the "next row" area of form viewer
+    Then row 1000 should be current
+    And the "row" reading of form viewer should be 1000
+    When user makes row 1 current
+    When user double-clicks on the "header HEIGHT" area of grid
+    Then the "sort column" reading of grid should be "HEIGHT"
+    And the "sort direction" reading of grid should be "descending"
+    When user makes row 1 current
+    Then the "HEIGHT" reading of form viewer should be "174.705"
+    When user clicks on the "next row" area of form viewer
+    Then row 808 should be current
+    And the "row" reading of form viewer should be 808
+    And the "HEIGHT" reading of form viewer should be "174.652"
+    When user picks "Sort > Reset" from the context menu of the "header HEIGHT" area of grid
+    Then the "sort column" reading of grid should be ""
+    When user makes row 1 current
+    Then no errors should have been logged
+
+  @realizes:public#3561
+  Scenario: An empty integer cell shows an empty field, not the integer null (public#3561)
+    Then "AGE" column should have type "int"
+    When user sets "AGE" column in row 2 to ""
+    And user makes row 2 current
+    Then the "row" reading of form viewer should be 2
+    And the "AGE" reading of form viewer should be ""
+    When user sets "AGE" column in row 2 to "30"
+    And user makes row 1 current
+    Then the "AGE" reading of form viewer should be "26"
     And no errors should have been logged
 
   Scenario: The form follows the grid's current row
@@ -144,6 +203,7 @@ Feature: Form viewer
     Then only rows where "USUBJID" is "X0273T21000300003" should be selected
     When user clears the row selection
 
+  @realizes:core#1192
   Scenario: A field writes its cell only while the form is editable
     Then the "editable" reading of form viewer should be "false"
     When user clicks on the "edit" area of form viewer
@@ -151,6 +211,8 @@ Feature: Form viewer
     When user enters "31" into the "field AGE" area of form viewer
     Then the value of "AGE" column in row 1 should be "31"
     And the "AGE" reading of form viewer should be "31"
+    When user enters "abc" into the "field AGE" area of form viewer
+    Then the value of "AGE" column in row 1 should be "31"
     When user enters "26" into the "field AGE" area of form viewer
     And user clicks on the "edit" area of form viewer
     Then the "editable" reading of form viewer should be "false"
@@ -242,6 +304,7 @@ Feature: Form viewer
     And the "AGE" reading of form viewer should be "26"
     And no errors should have been logged
 
+  @realizes:core#1138
   Scenario: A form saved to a file comes back from the file
     Given user sets "columnNames" property of form viewer to "AGE, SEX, RACE"
     Then the "fields shown" reading of form viewer should be 3
@@ -258,6 +321,12 @@ Feature: Form viewer
     And the "AGE" reading of form viewer should be "26"
     When user sets "columnNames" property of form viewer to "AGE, HEIGHT, WEIGHT"
     Then the "fields shown" reading of form viewer should be 3
+    When user uploads "fixtures/cars-small.csv" through folder open icon in form viewer
+    Then an error balloon containing "cars-small.csv is not a valid form file" should have been shown
+    And the "fields shown" reading of form viewer should be 3
+    When user uploads "fixtures/nx/spgi-legend-position-old.layout" through folder open icon in form viewer
+    Then an error balloon containing "spgi-legend-position-old.layout is not a valid form file" should have been shown
+    And the "fields shown" reading of form viewer should be 3
     And no errors should have been logged
 
   Scenario: A field dragged in design mode keeps its place, and the saved file brings the place back
@@ -284,6 +353,16 @@ Feature: Form viewer
     Then the "fields shown" reading of form viewer should be 3
     And no errors should have been logged
 
+  Scenario: A removed column empties its field but keeps it on the form
+    When user removes "WEIGHT" column
+    Then the table should not have a column "WEIGHT"
+    And the "fields shown" reading of form viewer should be 3
+    And the "WEIGHT" reading of form viewer should be ""
+    And the "AGE" reading of form viewer should be "26"
+    And no errors should have been logged
+    When user adds a calculated column "WEIGHT" with formula "0"
+    Then the table should have a column "WEIGHT"
+
   Scenario: The arrows walk the filtered rows
     Given user sets "columnNames" property of form viewer to "USUBJID, AGE, SEX"
     When user filters rows where "SEX" is "M"
@@ -294,6 +373,19 @@ Feature: Form viewer
     And the "USUBJID" reading of form viewer should be "X0273T21000500008"
     When user resets the filter
     And user makes row 1 current
+
+  Scenario: A column removed from the table takes its field off a default form
+    When user clicks on close icon of form viewer
+    And user adds a form viewer
+    Then the "fields shown" reading of form viewer should be 11
+    When user removes "DEMOG" column
+    Then the table should not have a column "DEMOG"
+    And the "fields shown" reading of form viewer should be 10
+    And form viewer should not have a "field DEMOG" area
+    And form viewer should report no error
+    And no errors should have been logged
+    When user adds a calculated column "DEMOG" with formula "${RACE}"
+    Then the table should have a column "DEMOG"
 
   Scenario: The viewer closes from its title bar
     When user clicks on close icon of form viewer

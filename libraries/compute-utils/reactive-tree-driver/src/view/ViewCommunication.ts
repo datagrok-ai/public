@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {ItemId, NqName} from '../data/common-types';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
+import type {SaveTarget} from '../../../history-utils/src/history-utils';
 
 // view config update requests
 
@@ -25,8 +26,8 @@ export interface LoadDynamicItem {
 export type ItemMetadata = {
   title?: string,
   description?: string,
-  isFavorite?: boolean,
   tags?: string[],
+  target?: SaveTarget,
 }
 
 export interface SaveDynamicItem extends ItemMetadata {

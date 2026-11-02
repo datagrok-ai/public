@@ -1,7 +1,7 @@
 # Spaces edge cases — what the features cannot say yet
 
-Written for the edge-case features `space-edge-cases` and `space-content-edge-cases`, with no library, binding or
-code change. Each item below is a case those features leave out: the expected behaviour is not decided yet, a
+Written for the space edge cases, now checks of `spaces-rename`, `spaces-create`, `spaces-delete` and
+`spaces-drag-and-drop`, with no library, binding or code change. Each item below is a case those checks leave out: the expected behaviour is not decided yet, a
 defect blocks the path, or the check belongs to another test layer.
 
 ## Still open
@@ -14,12 +14,22 @@ defect blocks the path, or the check belongs to another test layer.
 
 ### Waiting for core#1042 (Link of a file into a space)
 
+**The linked file in the target space.** The known failure in `spaces-drag-and-drop` ends at its pin, the
+"Move entity" dialog closing. Claimed once core#1042 is fixed, after that step:
+
+```gherkin
+And no error or warning balloon should have been shown
+When user double-clicks on BDDEdgeDst{time} tree node inside browse tree
+Then the "BDDEdgeDst{time}" view should be current
+And "edgecars{time}.csv" link in gallery should be visible
+```
+
 2. **The same file linked twice into one space**: the second Link changes nothing, the space shows the file once
    and no error is logged (decided).
 3. **A linked file gone with its source**: the source file deleted, the link goes from the target space too, a
    Link being the same entity (decided).
 4. **core#382 with a file**: a linked file whose original moved to another space. The project variant is claimed
-   (green) in `space-content-edge-cases`.
+   (green) in `spaces-drag-and-drop`.
 
 ### API or server tests to write
 

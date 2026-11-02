@@ -4,6 +4,7 @@
 /* ---
 generated: features/general/profile.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+sub_features_covered: [core#1180]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -20,33 +21,62 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, enterInto, shouldBe, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clearField, clickOn, enterInto, shouldBe, shouldContainText, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openAddress} from '@datagrok-libraries/bdd/bindings/platform/browse';
 import {dialogCloses, runningAccountSignedIn, signInAs, signInAsSelf, userNameOnServer, userOnServer} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {el, feature} from '@datagrok-libraries/bdd/runtime';
+import {el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("A person edits their own name on their profile", () => {
   const session = feature(test, "features/general/profile.feature", import.meta.url);
   test("An edited name shows on the profile and is saved", {tag: ["@serial"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(17, "Given user is logged in", () => loggedIn(page));
-    await session.step(18, "And a user \"bddprofile\" is on the server", () => userOnServer(page, "bddprofile"));
-    await session.step(21, "When user signs in as \"bddprofile\"", () => signInAs(page, "bddprofile"));
-    await session.step(22, "And user opens the address \"/u\"", () => openAddress(page, "/u"));
-    await session.step(23, "Then \"Logout\" link should be visible", () => shouldBe(page, el("\"Logout\" link"), "visible"));
-    await session.step(24, "When user clicks on second \"Edit\" icon", () => clickOn(page, el("second \"Edit\" icon")));
-    await session.step(25, "Then \"Enter new name\" dialog should be visible", () => shouldBe(page, el("\"Enter new name\" dialog"), "visible"));
-    await session.step(26, "And \"First name\" input in \"Enter new name\" dialog should have value \"bddprofile\"", () => shouldHaveValue(page, el("\"First name\" input in \"Enter new name\" dialog"), "bddprofile"));
-    await session.step(27, "When user enters \"Prof{time}\" into \"First name\" input in \"Enter new name\" dialog", () => enterInto(page, session.text("Prof{time}"), el("\"First name\" input in \"Enter new name\" dialog")));
-    await session.step(28, "And user enters \"Ile{time}\" into \"Last name\" input in \"Enter new name\" dialog", () => enterInto(page, session.text("Ile{time}"), el("\"Last name\" input in \"Enter new name\" dialog")));
-    await session.step(29, "And user clicks on OK button in \"Enter new name\" dialog", () => clickOn(page, el("OK button in \"Enter new name\" dialog")));
-    await session.step(30, "Then the \"Enter new name\" dialog should close", () => dialogCloses(page, "Enter new name"));
-    await session.step(31, "And \"Prof{time} Ile{time}\" text should be visible", () => shouldBe(page, el(session.text("\"Prof{time} Ile{time}\" text")), "visible"));
-    await session.step(32, "And the user \"bddprofile\" should have the name \"Prof{time} Ile{time}\" on the server", () => userNameOnServer(page, "bddprofile", session.text("Prof{time} Ile{time}")));
-    await session.step(33, "And no error or warning balloon should have been shown", () => noBalloons(page));
-    await session.step(34, "When user signs in as themselves again", () => signInAsSelf(page));
-    await session.step(35, "Then the running account should be signed in", () => runningAccountSignedIn(page));
-    await session.step(36, "And no errors should have been logged", () => noErrors(page));
+    await session.step(21, "Given user is logged in", () => loggedIn(page));
+    await session.step(22, "And a user \"bddprofile\" is on the server", () => userOnServer(page, "bddprofile"));
+    await session.step(25, "When user signs in as \"bddprofile\"", () => signInAs(page, "bddprofile"));
+    await session.step(26, "And user opens the address \"/u\"", () => openAddress(page, "/u"));
+    await session.step(27, "Then \"Logout\" link should be visible", () => shouldBe(page, el("\"Logout\" link"), "visible"));
+    await session.step(28, "When user clicks on second \"Edit\" icon", () => clickOn(page, el("second \"Edit\" icon")));
+    await session.step(29, "Then \"Enter new name\" dialog should be visible", () => shouldBe(page, el("\"Enter new name\" dialog"), "visible"));
+    await session.step(30, "And \"First name\" input in \"Enter new name\" dialog should have value \"bddprofile\"", () => shouldHaveValue(page, el("\"First name\" input in \"Enter new name\" dialog"), "bddprofile"));
+    await session.step(31, "When user enters \"Prof{time}\" into \"First name\" input in \"Enter new name\" dialog", () => enterInto(page, session.text("Prof{time}"), el("\"First name\" input in \"Enter new name\" dialog")));
+    await session.step(32, "And user enters \"Ile{time}\" into \"Last name\" input in \"Enter new name\" dialog", () => enterInto(page, session.text("Ile{time}"), el("\"Last name\" input in \"Enter new name\" dialog")));
+    await session.step(33, "And user clicks on OK button in \"Enter new name\" dialog", () => clickOn(page, el("OK button in \"Enter new name\" dialog")));
+    await session.step(34, "Then the \"Enter new name\" dialog should close", () => dialogCloses(page, "Enter new name"));
+    await session.step(35, "And \"Prof{time} Ile{time}\" text should be visible", () => shouldBe(page, el(session.text("\"Prof{time} Ile{time}\" text")), "visible"));
+    await session.step(36, "And the user \"bddprofile\" should have the name \"Prof{time} Ile{time}\" on the server", () => userNameOnServer(page, "bddprofile", session.text("Prof{time} Ile{time}")));
+    await session.step(37, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(38, "When user signs in as themselves again", () => signInAsSelf(page));
+    await session.step(39, "Then the running account should be signed in", () => runningAccountSignedIn(page));
+    await session.step(40, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("An emptied first name keeps OK disabled", {tag: ["@serial", "@known-failure:51", "@realizes:core#1180"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(21, "Given user is logged in", () => loggedIn(page));
+    await session.step(22, "And a user \"bddprofile\" is on the server", () => userOnServer(page, "bddprofile"));
+    await knownFailure(async () => {
+      await session.step(45, "When user signs in as \"bddprofile\"", () => signInAs(page, "bddprofile"));
+      await session.step(46, "And user opens the address \"/u\"", () => openAddress(page, "/u"));
+      await session.step(47, "Then \"Logout\" link should be visible", () => shouldBe(page, el("\"Logout\" link"), "visible"));
+      await session.step(48, "When user clicks on second \"Edit\" icon", () => clickOn(page, el("second \"Edit\" icon")));
+      await session.step(49, "Then \"Enter new name\" dialog should be visible", () => shouldBe(page, el("\"Enter new name\" dialog"), "visible"));
+      await session.step(50, "When user clears \"First name\" input in \"Enter new name\" dialog", () => clearField(page, el("\"First name\" input in \"Enter new name\" dialog")));
+      await session.step(51, "Then OK button in \"Enter new name\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Enter new name\" dialog"), "disabled"));
+    }, 51);
+  });
+  test("A first name longer than 64 characters is refused, not saved", {tag: ["@serial", "@known-failure:65", "@realizes:core#1180"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(21, "Given user is logged in", () => loggedIn(page));
+    await session.step(22, "And a user \"bddprofile\" is on the server", () => userOnServer(page, "bddprofile"));
+    await knownFailure(async () => {
+      await session.step(58, "When user signs in as \"bddprofile\"", () => signInAs(page, "bddprofile"));
+      await session.step(59, "And user opens the address \"/u\"", () => openAddress(page, "/u"));
+      await session.step(60, "Then \"Logout\" link should be visible", () => shouldBe(page, el("\"Logout\" link"), "visible"));
+      await session.step(61, "When user clicks on second \"Edit\" icon", () => clickOn(page, el("second \"Edit\" icon")));
+      await session.step(62, "Then \"Enter new name\" dialog should be visible", () => shouldBe(page, el("\"Enter new name\" dialog"), "visible"));
+      await session.step(63, "When user enters \"LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\" into \"First name\" input in \"Enter new name\" dialog", () => enterInto(page, "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL", el("\"First name\" input in \"Enter new name\" dialog")));
+      await session.step(64, "And user clicks on OK button in \"Enter new name\" dialog", () => clickOn(page, el("OK button in \"Enter new name\" dialog")));
+      await session.step(65, "Then \"Enter new name\" dialog should contain text \"64\"", () => shouldContainText(page, el("\"Enter new name\" dialog"), "64"));
+    }, 65);
   });
 });

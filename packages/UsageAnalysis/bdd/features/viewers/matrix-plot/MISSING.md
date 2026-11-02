@@ -31,9 +31,9 @@ Scenario: A point inside a cell hovers, clicks and drag-selects its row
   And no errors should have been logged
 ```
 
-## Edge cases (`matrix-plot-edge-cases.feature`)
+## Edge cases
 
-Written for `matrix-plot-edge-cases.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+Written during the edge-case round of 26 Oct 2026: the edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
 
 ### Still open
 
@@ -43,11 +43,18 @@ Written for `matrix-plot-edge-cases.feature`: the edge cases of this viewer that
 
 **Decided**
 
-1. A layout naming a missing column: the missing column is skipped and the others are drawn (the layout rule of `viewer-rules-edge-cases.feature`). Today nothing is drawn and nothing is said, a defect with no ticket. No outline row yet: the matrix plot has no reading of the columns it lays out after a layout, and its X Column Names may keep the missing name while drawing nothing; the cell count (`cells drawn`) is the reading to claim once the expected count is measured.
+1. A layout naming a missing column: the missing column is skipped and the others are drawn. Today nothing is drawn and nothing is said, a defect with no ticket. Not claimed yet: the matrix plot has no reading of the columns it lays out after a layout, and its X Column Names may keep the missing name while drawing nothing; the cell count (`cells drawn`) is the reading to claim once the expected count is measured.
 
 **API or Dart tests to write**
 
 1. Dart regTest: `xColumnNames` naming a column the table lacks (`matrix_plot_core.dart` keeps the null from `dataFrame[cn]`) draws the other columns.
+2. ApiTests: X Column Names cleared gives 0 x columns, no cell drawn and an empty `error` reading, no error logged; set back to AGE, HEIGHT it draws 8 cells.
+3. ApiTests: a calculated column holding 5 in every row, as X and Y next to AGE, draws 4 cells with a histogram on its diagonal and 1000 rows in its cells, no error.
+4. ApiTests: HEIGHT renamed to HEIGHT_CM is followed in X Column Names, the cell is named HEIGHT_CM x AGE and 16 cells are drawn, no error.
+5. ApiTests: with every row filtered out the plot shows 0 rows and reports no error; with the filter reset it shows 1000 rows.
+6. ApiTests: once every row of the table is deleted the plot shows 0 rows and reports no error.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
 
 ### Won't do
 

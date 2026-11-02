@@ -16,6 +16,10 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
   Translated from the TestTrack case Charts/sunburst. In ae.csv AESTDTC is a string column (its
   values are not parsed as dates), so the date column claimed missing is AEENDTC, as in the md. An
   empty value's sector is `segment S_PART | (empty)` (github-2992).
+  Switching On Click from Filter to Select gives back the rows a clicked segment filtered out, and
+  closing the sunburst in Filter mode gives every row back (public#4425). Removing the column of the
+  clicked segment should give the rows back too; today the table stays filtered until the next
+  refilter (core#1174, a known failure).
 
   Background:
     Given user is logged in
@@ -137,6 +141,7 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And no rows where "RACE" is "Asian" should be selected
     And no errors should have been logged
 
+  @realizes:public#4425
   Scenario: On Click = Filter; a double-click on empty space and Reset View clear it (github-2994, github-3097)
     Given "Misc" category in context panel is expanded
     When user presses Escape in grid
@@ -156,6 +161,11 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     When user selects "Select" in "On Click" property in context panel
     Then the "on click" reading of sunburst viewer should be "Select"
     And "Row Source" property in context panel should contain text "Filtered"
+    When user selects "Filter" in "On Click" property in context panel
+    And user clicks on the "segment F" area of sunburst viewer
+    Then 553 rows should pass the filter
+    When user selects "Select" in "On Click" property in context panel
+    Then all rows should pass the filter
     And no errors should have been logged
 
   Scenario: Empty values — Include Nulls, and a click on the empty segment (github-2992)
@@ -203,6 +213,7 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And the "rows of segment S_PART" reading of sunburst viewer should be 10
     And no errors should have been logged
 
+  @realizes:public#4425
   Scenario: The viewer's filter and the Filter Panel combine (GROK-15543)
     Given "Misc" category in context panel is expanded
     When user selects "Filter" in "On Click" property in context panel
@@ -219,6 +230,11 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And the filter should pass exactly the rows where "SEX" is "F"
     When user double-clicks on empty plot space of sunburst viewer
     Then 1000 rows should pass the filter
+    When user clicks on the "segment F" area of sunburst viewer
+    Then 553 rows should pass the filter
+    When user clicks on close icon of sunburst viewer
+    Then the open tableview should have 0 sunburst viewers
+    And all rows should pass the filter
     And no errors should have been logged
 
   Scenario: A scatter plot's legend color picker does not strip the Sunburst's colors (github-3412)
@@ -307,6 +323,16 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And the "on click" reading of sunburst viewer should be "Filter"
     And the "segments" reading of sunburst viewer should be 10
     And no errors should have been logged
+
+  @known-failure:335 @realizes:core#1174
+  Scenario: Removing the column of a clicked segment gives back the rows it filtered out (core#1174)
+    Given "Misc" category in context panel is expanded
+    When user selects "Filter" in "On Click" property in context panel
+    Then the "on click" reading of sunburst viewer should be "Filter"
+    When user clicks on the "segment F" area of sunburst viewer
+    Then 553 rows should pass the filter
+    When user removes "SEX" column
+    Then all rows should pass the filter
 
   Scenario: A layout saved from the Layouts pane restores the hierarchy
     Given the layouts named "Sunburst-{time}" are deleted when the feature ends

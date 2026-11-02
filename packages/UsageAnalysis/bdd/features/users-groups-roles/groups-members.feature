@@ -9,6 +9,15 @@ Feature: A group's members
   an addition also in the pane. A removal is claimed on the server only: the pane empties and
   refills while it reloads, and an absence read off it would prove nothing.
 
+  Guards: CANCEL in MANAGE leaves the members as they were. The account that creates a group becomes
+  its only admin (`groups_repository.dart` save), and "if user is the only admin in group, they
+  can't leave the group or revoke their admin privileges" (help
+  govern/access-control/users-and-groups.md): unticking its Admin box or removing itself keeps the
+  MANAGE dialog open with the server's message in an error balloon, and nothing changes. The running
+  account is named by its login in the membership editor, which lists a user by name: on a stand
+  where the two differ those scenarios cannot find its row. The group added as a member of its own
+  member is refused as a circular reference.
+
   Every user has a personal security group, named by the login; the Groups view does not list those,
   so the user's login is found nowhere in the gallery. That the personal group is made is tested in
   datlas users_groups/users_test.dart 'Save user'.
@@ -30,6 +39,13 @@ Feature: A group's members
     When user clicks on "BDD-GM-Group-{time}" link in gallery
     Then the context panel should show "BDD-GM-Group-{time}"
     When user clicks on MANAGE button in "Members" section in context panel
+    And user types "BDD-GM-Child-{time}" into membership search
+    And user clicks on add button of "BDD-GM-Child-{time}" membership candidate
+    Then "BDD-GM-Child-{time}" membership row should be visible
+    When user clicks on CANCEL button in "BDD-GM-Group-{time} members" dialog
+    Then the "BDD-GM-Group-{time} members" dialog should close
+    And "BDD-GM-Child-{time}" should not be a member of "BDD-GM-Group-{time}" on the server
+    When user clicks on MANAGE button in "Members" section in context panel
     Then "BDD-GM-Group-{time} members" dialog should be visible
     When user types "bddmanaged" into membership search
     And user clicks on add button of "bddmanaged" membership candidate
@@ -40,6 +56,23 @@ Feature: A group's members
     And "Members" section in context panel should contain text "bddmanaged"
     And no errors should have been logged
     And no error or warning balloon should have been shown
+
+  Scenario Outline: The only admin <change> is refused and stays the admin
+    Then "{login}" should be an admin member of "BDD-GM-Group-{time}" on the server
+    When user clicks on MANAGE button in "Members" section in context panel
+    Then "BDD-GM-Group-{time} members" dialog should be visible
+    When user <gesture> of "{login}" membership row
+    And user clicks on SAVE button in "BDD-GM-Group-{time} members" dialog
+    Then an error balloon containing "should have at least one admin user" should have been shown
+    And "BDD-GM-Group-{time} members" dialog should be visible
+    And "{login}" should be an admin member of "BDD-GM-Group-{time}" on the server
+    When user clicks on CANCEL button in "BDD-GM-Group-{time} members" dialog
+    Then the "BDD-GM-Group-{time} members" dialog should close
+
+    Examples:
+      | change                        | gesture                      |
+      | unticking their Admin box     | unchecks checkbox            |
+      | removing themselves           | clicks on remove button      |
 
   Scenario: The Admin box makes the member an admin (Groups-13)
     When user clicks on MANAGE button in "Members" section in context panel
@@ -67,6 +100,25 @@ Feature: A group's members
     And "Members" section in context panel should contain text "BDD-GM-Child-{time}"
     And no errors should have been logged
     And no error or warning balloon should have been shown
+    When user clears gallery search
+    And user types "BDD-GM-Child-{time}" into gallery search
+    And user clicks on "BDD-GM-Child-{time}" link in gallery
+    Then the context panel should show "BDD-GM-Child-{time}"
+    When user clicks on MANAGE button in "Members" section in context panel
+    Then "BDD-GM-Child-{time} members" dialog should be visible
+    When user types "BDD-GM-Group-{time}" into membership search
+    And user clicks on add button of "BDD-GM-Group-{time}" membership candidate
+    Then "BDD-GM-Group-{time}" membership row should be visible
+    When user clicks on SAVE button in "BDD-GM-Child-{time} members" dialog
+    Then an error balloon containing "Circular reference detected" should have been shown
+    And "BDD-GM-Group-{time}" should not be a member of "BDD-GM-Child-{time}" on the server
+    And "BDD-GM-Child-{time}" should be a member of "BDD-GM-Group-{time}" on the server
+    When user clicks on CANCEL button in "BDD-GM-Child-{time} members" dialog
+    Then the "BDD-GM-Child-{time} members" dialog should close
+    When user clears gallery search
+    And user types "BDD-GM-Group-{time}" into gallery search
+    And user clicks on "BDD-GM-Group-{time}" link in gallery
+    Then the context panel should show "BDD-GM-Group-{time}"
 
   Scenario: Removing a member leaves the others (Groups-12)
     When user clicks on MANAGE button in "Members" section in context panel

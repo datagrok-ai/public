@@ -15,6 +15,11 @@ Feature: Legend interaction
   the Background docks it on the right and the position scenario is the one that moves it. A
   category's picked color is the column's palette and outlives the coding being switched off:
   removing the coding leaves the items (and the markers' default palette) in the picked colors.
+  A selection also outlives a filter that removes every row: once the rows are back, the legend
+  lists its four categories and the selected one still narrows the plot (Black, 25 of the 872 rows
+  drawn). Renaming the color column releases the selection on the legend and on the plot, and
+  removing it takes the selection with it (a removed column is dropped from the viewer's settings):
+  the plot draws every row again either way.
 
   Background:
     Given user is logged in
@@ -84,6 +89,13 @@ Feature: Legend interaction
     And scatter plot viewer should show 17 rows
     When user resets the filter
     Then scatter plot viewer should show 25 rows
+    When user filters rows where "AGE" is between 500 and 600
+    Then 0 rows should pass the filter
+    And scatter plot viewer should show 0 rows
+    When user resets the filter
+    Then the legend of scatter plot viewer should list 4 items
+    And "Black" legend item in legend of scatter plot viewer should be selected
+    And scatter plot viewer should show 25 rows
     When user sets "Color" property of scatter plot viewer to "DIS_POP"
     Then the legend of scatter plot viewer should list 5 items
     And "Indigestion" legend item in legend of scatter plot viewer should not be selected
@@ -92,6 +104,25 @@ Feature: Legend interaction
     Then the legend of scatter plot viewer should list 4 items
     And "Black" legend item in legend of scatter plot viewer should not be selected
     And scatter plot viewer should show 872 rows
+    When user clicks on "Black" item in the legend of scatter plot viewer
+    Then scatter plot viewer should show 25 rows
+    When user renames "RACE" column to "ETHNICITY"
+    Then "Color" property of scatter plot viewer should be "ETHNICITY"
+    And the legend of scatter plot viewer should list 4 items
+    And "Black" legend item in legend of scatter plot viewer should not be selected
+    And scatter plot viewer should show 872 rows
+    When user renames "ETHNICITY" column to "RACE"
+    Then "Color" property of scatter plot viewer should be "RACE"
+    When user adds a calculated column "RACE copy" with formula "${RACE}"
+    And user sets "Color" property of scatter plot viewer to "RACE copy"
+    Then the legend of scatter plot viewer should list 4 items
+    When user clicks on "Black" item in the legend of scatter plot viewer
+    Then scatter plot viewer should show 25 rows
+    When user removes "RACE copy" column
+    Then "Color" property of scatter plot viewer should not be "RACE copy"
+    And scatter plot viewer should show 872 rows
+    When user sets "Color" property of scatter plot viewer to "RACE"
+    Then the legend of scatter plot viewer should list 4 items
     And no errors should have been logged
 
   Scenario: A filter that empties a category drops it from the legend

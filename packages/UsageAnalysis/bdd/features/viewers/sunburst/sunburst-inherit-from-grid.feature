@@ -1,10 +1,13 @@
-@viewers @realizes:charts.viewer.sunburst
-Feature: Sunburst takes its segment colors from the grid's color coding with Inherit From Grid
+@journey @viewers @realizes:charts.viewer.sunburst
+Feature: Sunburst takes its segment colors from the grid's color coding with Inherit From Grid, and follows its Table property
   The Sunburst colors a segment by its column's categorical color coding while Color > Inherit From
   Grid is on (the default); off, it uses its own palette, where the first category, F, is #1F77B4.
   SEX on demog-1000 is colored F red and M blue through the column's color coding, as the grid's
   Color Coding > Edit dialog would set it; the hierarchy is SEX alone, picked in the Select columns
   dialog of the Hierarchy property. A segment's color is read inside its `segment <path>` area.
+  The Table property picked in the context panel moves the sunburst to spgi-100 and back
+  (public#2292: it did not respond); a table change rebuilds the default hierarchy, which on
+  demog-1000 is SEX, CONTROL, RACE.
   Translated from the TestTrack case Charts/sunburst (step 3.3, Inherit From Grid), whose old spec
   only read the property back.
 
@@ -47,4 +50,19 @@ Feature: Sunburst takes its segment colors from the grid's color coding with Inh
     When user checks "Inherit From Grid" property in context panel
     Then the "segment F" area of sunburst viewer should contain the color "#FF0000"
     And the "segment M" area of sunburst viewer should contain the color "#0000FF"
+    And no errors should have been logged
+
+  @realizes:public#2292
+  Scenario: The Table property moves the sunburst to another table and back (public#2292)
+    Given user opens spgi dataset
+    And user switches to the "demog-1000" table view
+    When user remembers the "segment names" reading of sunburst viewer
+    And user clicks on settings icon of sunburst viewer
+    And user selects "spgi-100" in "Table" property in context panel
+    Then sunburst viewer should be bound to table "spgi-100"
+    And the "segment names" reading of sunburst viewer should not be as remembered
+    And sunburst viewer should report no error
+    When user selects "demog-1000" in "Table" property in context panel
+    Then sunburst viewer should be bound to table "demog-1000"
+    And the "hierarchy columns" reading of sunburst viewer should be "SEX, CONTROL, RACE"
     And no errors should have been logged

@@ -7,6 +7,12 @@ Feature: The context menu acts on the right-clicked cell
   it, a right click made the clicked cell current for a moment, then the grid jumped back to the old
   current row and scrolled it into view, and the Current Value actions took whichever cell the
   pointer landed on after the jump.
+  The scenarios at the end hold the grid's defects at the edges of its settings, its formats and its
+  editing, each ending on its known failure: Row Height typed in the context panel as 0 or 501
+  should not be taken, since the property declares 1..500 (core#1200); a malformed number format
+  should mark the format field invalid and should not be taken, the old format staying (core#1198);
+  a column group named with spaces only should not be made (core#1195); a read-only grid should
+  keep its rows on Shift+Delete (core#1193).
 
   Background:
     Given user is logged in
@@ -61,3 +67,57 @@ Feature: The context menu acts on the right-clicked cell
     When user presses Escape
     Then HELM notation tab should be hidden
     And no errors should have been logged
+
+  Scenario Outline: Row Height typed in the context panel as <typed> is not taken
+    Given user opens demog-1000 dataset
+    When user hovers over the "header AGE" area of grid
+    And user clicks on "Edit properties (F4)" icon in grid
+    Then context panel should be visible
+    Given "Rows" category in context panel is expanded
+    When user enters "<typed>" into "Row Height" property in context panel
+    Then "Row Height" property of grid should be "28"
+
+    @known-failure:78 @realizes:core#1200
+    Examples: The typed value is taken although the property declares 1..500
+      | typed |
+      | 0     |
+      | 501   |
+
+  @known-failure:92 @realizes:core#1198
+  Scenario: A malformed number format marks the format field invalid
+    Given user opens demog-1000 dataset
+    When user picks "Format > Custom..." from the context menu of the "header AGE" area of grid
+    Then Format AGE dialog should be visible
+    When user enters "0.0.0" into Custom input in Format AGE dialog
+    Then Custom input in Format AGE dialog should be invalid
+
+  @known-failure:101 @realizes:core#1198
+  Scenario: A malformed number format is not taken and the old format stays
+    Given user opens demog-1000 dataset
+    When user picks "Format > Custom..." from the context menu of the "header AGE" area of grid
+    Then Format AGE dialog should be visible
+    When user enters "0.0.0" into Custom input in Format AGE dialog
+    And user clicks on OK button in Format AGE dialog
+    Then "AGE" column should have tag "format" equal to ""
+
+  @known-failure:114 @realizes:core#1195
+  Scenario: A column group named with spaces only is not made
+    Given user opens demog-1000 dataset
+    When user clicks on the "header AGE" area of grid holding Control
+    And user clicks on the "header SEX" area of grid holding Control
+    Given the context panel is open
+    And Actions accordion header in context panel is expanded
+    When user clicks on "Group columns..." text in context panel
+    Then Group input in dialog should be visible
+    When user types "   " into Group input in dialog
+    And user clicks on OK button in dialog
+    Then "AGE" column should have tag "group" equal to ""
+
+  @known-failure:123 @realizes:core#1193
+  Scenario: A read-only grid keeps its rows on Shift+Delete
+    Given user opens demog-1000 dataset
+    When user sets "Allow Edit" property of grid to "false"
+    And user clicks on the "row header 5" area of grid holding Control
+    Then 1 row should be selected
+    When user presses Shift+Delete
+    Then the table should have 1000 rows

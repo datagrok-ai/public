@@ -1413,13 +1413,13 @@ export class FuncFlowView extends DG.ViewBase {
       setTimeout(() => {
         const cur = grok.shell.v;
         if (!this.dart || !cur || cur.dart !== this.dart) return;
+        this.teardownAutoPin();
         try {
           grok.shell.v.pin?.();
         } catch (e) {
           console.error(e);
         }
       }, 100);
-      this.teardownAutoPin();
     };
     this.autoPinHandler = handler;
     this.root.addEventListener('pointerdown', handler, opts);

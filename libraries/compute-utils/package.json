@@ -41,8 +41,8 @@
     "build": "grok tsc -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
     "clean": "tsc --build --clean",
-    "update-codegen": "codegen-async-to-sync --roots function-views webworkers shared-utils shared-components",
-    "codegen:check": "codegen-async-to-sync --check --roots function-views webworkers shared-utils shared-components"
+    "update-codegen": "codegen-async-to-sync --roots function-views webworkers shared-utils",
+    "codegen:check": "codegen-async-to-sync --check --roots function-views webworkers shared-utils"
   },
   "repository": {
     "type": "git",

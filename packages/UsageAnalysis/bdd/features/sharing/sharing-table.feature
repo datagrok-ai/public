@@ -7,11 +7,17 @@ Feature: A table saved in a project, shared from its Sharing pane
   side of the TestTrack case Sharing/share-table-permissions (playwright-public/Sharing
   share-table-permissions).
 
-  The table is the first 20 rows of demog, named with the run's time and saved through the ribbon's Save
+  The table is the first 20 rows of demog-1000, named with the run's time and saved through the ribbon's Save
   in a project of the same name: a table saved through the JS API has no friendly name, and the tree
   lists it without a label. The project, with its table and view, the grant with them, is removed when
   the feature starts and ends. Neither the project's Share dialog the save opens (closed with Escape) nor
-  the table's share sends a notification.
+  the table's share sends a notification. The view is closed before the Browse tree is refreshed: with the
+  just-saved project's view open, the tree took 10 s to rebuild (1 s without it).
+
+  The Share dialog keeps OK disabled until a recipient is accepted (core#980): today OK is enabled on a
+  fresh dialog and says "Shared" while nothing is shared, a known failure. It is claimed on a query of
+  the scenario's own on System:Datagrok, made through the API with the run's time in its name and
+  deleted when the feature ends, its dialog opened from the Sharing pane.
 
   Not translated, and why: what the second account may then do with the table (read its data, not delete
   or share it further) and the per-privilege matrix of the PermissionsView are the server's answers, an API
@@ -20,13 +26,14 @@ Feature: A table saved in a project, shared from its Sharing pane
   Background:
     Given user is logged in
     And no project named "BDD-ShareTable-{time}" is on the server
-    And user opens demog dataset keeping the first 20 rows as "BDD-ShareTable-{time}"
+    And user opens demog-1000 dataset keeping the first 20 rows as "BDD-ShareTable-{time}"
     When user opens the Save project dialog from the ribbon
     And user types "BDD-ShareTable-{time}" into text input in "Save project" dialog
     And user clicks on OK in the Save project dialog and the project uploads
     Then the "Save project" dialog should close
     When user presses Escape
     Then 1 project named "BDD-ShareTable-{time}" should be on the server
+    When user closes all views
     Given the browse panel is open
     When user refreshes the browse tree
     Given "My stuff" tree node inside browse tree is expanded
@@ -54,3 +61,16 @@ Feature: A table saved in a project, shared from its Sharing pane
     Then the "Share BDD-ShareTable-{time}" dialog should close
     And no errors should have been logged
     And no error or warning balloon should have been shown
+
+  @known-failure:76 @realizes:core#980
+  Scenario: OK stays disabled until a recipient is accepted
+    core#980: OK is enabled on a fresh dialog and with an email typed but not accepted with Enter, and
+    says "Shared" while nothing is shared. Remove the tag when core#980 is fixed, and claim then that
+    OK stays disabled with an email typed and is enabled once Enter accepts it.
+    Given the context panel is open
+    When user clicks on "My stuff > My dashboards > BDD-ShareTable-{time} > BDD-ShareTable-{time}" tree node inside browse tree
+    Then the context panel should show "BDD-ShareTable-{time}"
+    When user expands Sharing section in context panel
+    And user clicks on "Share..." button in Sharing section in context panel
+    Then "Share BDD-ShareTable-{time}" dialog should be visible
+    And OK button in "Share BDD-ShareTable-{time}" dialog should be disabled

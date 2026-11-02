@@ -11,6 +11,8 @@ Feature: Combined boolean filter card
   A click on a flag's name replaces the flag kept, while a tick in its "true" checkbox adds it: two
   flags ticked keep the rows holding either (OR, CONTROL or F: 554) until the word in the card's
   header is clicked to AND (CONTROL and F: 5), and a second tick takes the flag off again.
+  A Combined Boolean card can be added to a table with no boolean column, and a boolean column
+  added later joins it (a two-row table of its own, closed again).
 
   Background:
     Given user is logged in
@@ -30,6 +32,23 @@ Feature: Combined boolean filter card
     And the "cards" reading of filter panel should be "Flags"
     And the filter panel should have 1 filter
     And all rows should pass the filter
+    Given user opens a table "no-flags" with:
+      | Name | Value |
+      | a    | 1     |
+      | b    | 2     |
+    When user opens an empty filter panel
+    And user opens the viewer menu of filter panel
+    Then the open menu should list "Add Filter > Combined Boolean" as enabled
+    When user closes the context menu
+    And user picks "Add Filter | Combined Boolean" from the filter panel menu
+    Then "Flags" filter card should be visible
+    And the filter panel should have 1 filter
+    When user adds a calculated column "BIG" with formula "${Value} > 1"
+    And user clicks on the "category BIG of Flags" area of filter panel
+    Then 1 row should pass the filter
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    Then all rows should pass the filter
     And no errors should have been logged
 
   Scenario: A click on a flag keeps its true rows

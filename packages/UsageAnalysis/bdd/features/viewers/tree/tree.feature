@@ -4,22 +4,26 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
   `branch <path>` area (the names from the root down, `branch All | false | F | Asian`, on the line
   into the node, where a click selects its rows), with `branches` and `rows of branch <path>`
   readings; a style setting is claimed as reaching the viewer (its property) and the viewer drawing
-  again (its canvas changed). The viewer is added from the ribbon's Add viewer gallery on demog
-  (5850 rows; CONTROL true 39) and its hierarchy is picked in the Select columns dialog of the
+  again (its canvas changed). The viewer is added from the ribbon's Add viewer gallery on demog-1000
+  (1000 rows; CONTROL true 6, all Caucasian: 5 F, 1 M; false | F | Asian 7, false | F | Black 18,
+  false | M | Asian 8) and its hierarchy is picked in the Select columns dialog of the
   Hierarchy property.
   Translated from the TestTrack cases Charts/tree and Charts/charts-ui (branch clicks with Shift). The
   hierarchy is checked in the order CONTROL, SEX, RACE; the dialog keeps the check order, so no row
   is dragged.
+  A value typed in the context panel above a property's declared maximum (Font Size 31, Initial
+  Tree Depth 6) should not be taken; today it is written into the property although the input
+  marks it invalid (core#1200, known failures).
 
   Background:
     Given user is logged in
     And the package autostarts have completed
-    And user opens demog dataset
+    And user opens demog-1000 dataset
     When user clicks on "Add viewer" icon
     Then "Add Viewer" dialog should be visible
     When user clicks on first "Tree" card in "Add Viewer" dialog
     Then tree viewer should be visible
-    And tree viewer should be bound to table "demog"
+    And tree viewer should be bound to table "demog-1000"
     When user clicks on grid
     And user clicks on settings icon of tree viewer
     Then "Hierarchy" property in context panel should be visible
@@ -41,16 +45,16 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
     Then filter panel should be visible
     When user takes a snapshot of tree viewer
     And user clicks on the "category true of CONTROL" area of filter panel
-    Then 39 rows should pass the filter
+    Then 6 rows should pass the filter
     And the filter should pass exactly the rows where "CONTROL" is "true"
     And tree viewer should have repainted
-    And tree viewer should have a "branch All | true | F | Black" area
+    And tree viewer should have a "branch All | true | F | Caucasian" area
     And tree viewer should not have a "branch All | false" area
     And no errors should have been logged
     When user takes a snapshot of tree viewer
     And user hovers over "CONTROL" filter card
     And user clicks on close of "CONTROL" filter card
-    Then 5850 rows should pass the filter
+    Then 1000 rows should pass the filter
     And tree viewer should have repainted
     And tree viewer should have a "branch All | false" area
     And no errors should have been logged
@@ -61,9 +65,9 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
     When user clicks on the "branch All | false | F | Asian" area of tree viewer holding Shift
     And user clicks on the "branch All | false | F | Black" area of tree viewer holding Shift
     And user clicks on the "branch All | false | M | Asian" area of tree viewer holding Shift
-    Then 174 rows should be selected
-    When user clicks on the "branch All | true | F | Black" area of tree viewer holding Shift
-    Then 176 rows should be selected
+    Then 33 rows should be selected
+    When user clicks on the "branch All | true | F | Caucasian" area of tree viewer holding Shift
+    Then 38 rows should be selected
     And no errors should have been logged
 
   Scenario: A branch Shift+clicked under a filter adds only the rows under it
@@ -71,18 +75,18 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
     And user clicks on the "branch All | false | F | Asian" area of tree viewer holding Shift
     And user clicks on the "branch All | false | F | Black" area of tree viewer holding Shift
     And user clicks on the "branch All | false | M | Asian" area of tree viewer holding Shift
-    Then 174 rows should be selected
+    Then 33 rows should be selected
     When user clicks on filter icon in toolbar
     Then filter panel should be visible
     When user clicks on the "category true of CONTROL" area of filter panel
-    Then 39 rows should pass the filter
+    Then 6 rows should pass the filter
     And 0 selected rows should pass the filter
-    When user clicks on the "branch All | true | F | Black" area of tree viewer holding Shift
-    Then 2 selected rows should pass the filter
+    When user clicks on the "branch All | true | F | Caucasian" area of tree viewer holding Shift
+    Then 5 selected rows should pass the filter
     When user hovers over "CONTROL" filter card
     And user clicks on close of "CONTROL" filter card
-    Then 5850 rows should pass the filter
-    And 176 rows should be selected
+    Then 1000 rows should pass the filter
+    And 38 rows should be selected
     And no errors should have been logged
 
   Scenario: Style, size and color settings apply without errors (github-3221, GROK-17376, GROK-17405, GROK-18087)
@@ -176,6 +180,20 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
     Then no rows should be selected
     And no errors should have been logged
 
+  @realizes:core#1200
+  Scenario Outline: <caption> <typed> typed in the context panel above its declared maximum is not taken (core#1200)
+    When user clicks on settings icon of tree viewer
+    Then context panel should be visible
+    Given "Style" category in context panel is expanded
+    When user enters "<typed>" into "<caption>" property in context panel
+    Then "<caption>" property of tree viewer should be "<kept>"
+
+    @known-failure:189 @realizes:core#1200
+    Examples: The value is written into the property although the input marks it invalid
+      | caption            | typed | kept |
+      | Initial Tree Depth | 6     | 3    |
+      | Font Size          | 31    | 12   |
+
   Scenario: Settings survive Clone View and a project save and reopen (GROK-18322, GROK-18265, GROK-18324)
     Given no project named "TreeRoundTrip{time}" is on the server
     And "Style" category in context panel is expanded
@@ -191,7 +209,7 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
       | Orient      | TB                 |
       | On Click    | Filter             |
     When user picks "View > Layout > Clone View" from the top menu
-    Then the open table views should be exactly "demog, demog"
+    Then the open table views should be exactly "demog-1000, demog-1000"
     And the open tableview should have 1 tree viewer
     And tree viewer should be painted
     And properties of tree viewer should be:
@@ -201,7 +219,7 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
       | Orient      | TB                 |
       | On Click    | Filter             |
     When user closes the current view
-    Then the "demog" view should be current
+    Then the "demog-1000" view should be current
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
     When user enters "TreeRoundTrip{time}" into Name text input in "Save project" dialog
@@ -220,7 +238,7 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
     Given user watches the task bar
     When user double-clicks on TreeRoundTrip{time} gallery card
     Then the task bar should have finished "Opening project"
-    And the "demog" view should be current
+    And the "demog-1000" view should be current
     And tree viewer should be painted
     And properties of tree viewer should be:
       | Hierarchy   | CONTROL, SEX, RACE |

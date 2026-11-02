@@ -10,7 +10,9 @@ Feature: Who holds a role, and what it grants
   An assignment is claimed on the server, and an addition also in the pane; a removal on the server
   only, since the pane empties while it reloads. A global permission has no reading in the JS API,
   so it is claimed in the MANAGE dialog, reopened after SAVE; since GROK-20902 was fixed the pane
-  lists the role's own grants only, which the scenario on a new role claims. The cleanup revokes the
+  lists the role's own grants only, which the scenario on a new role claims, along with CANCEL in
+  the Global Permissions dialog granting nothing (the box ticked before it is unticked when the
+  dialog is opened again). The cleanup revokes the
   grant before it deletes the role.
 
   Deleting a role that holds a global permission (GROK-20904) is tested in datlas
@@ -87,6 +89,21 @@ Feature: Who holds a role, and what it grants
   Scenario: A new role has no global permissions in its pane (Roles-14)
     When user expands "Global Permissions" section in context panel
     Then "Global Permissions" section in context panel should contain text "No global permissions"
+    When user clicks on MANAGE button in "Global Permissions" section in context panel
+    Then "BDD-RA-Role-{time}: Global Permissions" dialog should be visible
+    When user expands "Browse" tree node in "BDD-RA-Role-{time}: Global Permissions" dialog
+    And user checks "Browse > Browse Apps" tree node in "BDD-RA-Role-{time}: Global Permissions" dialog
+    Then "Browse > Browse Apps" tree node in "BDD-RA-Role-{time}: Global Permissions" dialog should be checked
+    When user clicks on CANCEL button in "BDD-RA-Role-{time}: Global Permissions" dialog
+    Then the "BDD-RA-Role-{time}: Global Permissions" dialog should close
+    When user clicks on MANAGE button in "Global Permissions" section in context panel
+    And user expands "Browse" tree node in "BDD-RA-Role-{time}: Global Permissions" dialog
+    Then "Browse > Browse Apps" tree node in "BDD-RA-Role-{time}: Global Permissions" dialog should be unchecked
+    When user clicks on CANCEL button in "BDD-RA-Role-{time}: Global Permissions" dialog
+    Then the "BDD-RA-Role-{time}: Global Permissions" dialog should close
+    And "Global Permissions" section in context panel should contain text "No global permissions"
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   Scenario: Global Permissions grants the role a permission (Roles-14)
     When user expands "Global Permissions" section in context panel

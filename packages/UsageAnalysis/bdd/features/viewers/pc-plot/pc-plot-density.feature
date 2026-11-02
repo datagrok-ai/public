@@ -11,7 +11,8 @@ Feature: PC plot density overlay
   demog-1000 has exactly 1000 rows and `autoStyle` sets `showDensity = rowCount > 1000`, so a fresh
   plot has NO density and `density style` reads "" — the old spec's claim that the plot opens with
   density on holds only on the larger demog.csv. The style default (circles) survives regardless.
-  Every scenario puts the density settings back.
+  Every scenario puts the density settings back. A layout saved with Line Width 0 and density on,
+  applied back to the view, renders and takes a hover without an error (a crash of core#967).
 
   Background:
     Given user is logged in
@@ -119,4 +120,25 @@ Feature: PC plot density overlay
     Then the "density style" reading of pc plot viewer should be ""
     And pc plot viewer should not have a "density \"AGE\"" area
     And the "lines drawn" reading of pc plot viewer should be 1000
+    And no errors should have been logged
+
+  @realizes:core#967
+  Scenario: A layout saved with Line Width 0 and density on is applied and hovered without an error (core#967)
+    When user sets properties of pc plot viewer:
+      | Show Density | true |
+      | Line Width   | 0    |
+    And user saves the layout of the current table view as "pc-width-0"
+    And user applies the layout "pc-width-0" to the current table view
+    Then "Line Width" property of pc plot viewer should be "0"
+    And the "density style" reading of pc plot viewer should be "circles"
+    And pc plot viewer should be painted
+    When user hovers over the "view" area of pc plot viewer
+    And user moves the pointer away from pc plot viewer
+    Then the "error" reading of pc plot viewer should be ""
+    And no errors should have been logged
+    When user sets properties of pc plot viewer:
+      | Show Density | false |
+      | Line Width   | 1     |
+    Then the "density style" reading of pc plot viewer should be ""
+    And pc plot viewer should not have a "density \"AGE\"" area
     And no errors should have been logged

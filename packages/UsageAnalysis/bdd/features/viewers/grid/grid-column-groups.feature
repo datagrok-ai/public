@@ -50,6 +50,7 @@ Feature: Grid column groups
   area only for a group, so the empty part of the band has no name to click. The Context Panel is
   checked by the column names it lists, not by the current object: a list of columns has no name
   for `the context panel should show`.
+  A group follows a renamed column: the renamed member keeps the group's name and the band stays.
 
   Background:
     Given user is logged in
@@ -177,6 +178,11 @@ Feature: Grid column groups
     And the "group Measures" area of grid should contain the color "#d62728"
     And "SEX" column should have tag "group" equal to "Measures"
     And "AGE" column should have tag "group" equal to "Measures"
+    When user renames "AGE" column to "YEARS"
+    Then "YEARS" column should have tag "group" equal to "Measures"
+    And grid should have a "group Measures" area
+    When user renames "YEARS" column to "AGE"
+    Then "AGE" column should have tag "group" equal to "Measures"
     When user presses Escape
     Then no errors should have been logged
 

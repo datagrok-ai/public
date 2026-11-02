@@ -31,6 +31,7 @@ Feature: Forms viewer field set, row binding, sort mirroring and pinning
   Fixture: demog-1000, 11 columns, none of them `~`-prefixed. SEVERITY has exactly five Critical
   rows — 215, 304, 428, 430, 512, all SEX M, AGE 29 / 59 / 44 / 31 / 46, WEIGHT 71.5 / 123.9 / 88 /
   83 / 85 — which is what makes an expected card order writable.
+  A pinned row the filter hides stays pinned, as in the grid.
 
   Background:
     Given user is logged in
@@ -215,6 +216,12 @@ Feature: Forms viewer field set, row binding, sort mirroring and pinning
     And the "records shown" reading of forms viewer should be 6
     And 5 rows should be selected
     And no error or warning balloon should have been shown
+    When user filters rows where "SEVERITY" is "Low"
+    Then 177 rows should pass the filter
+    And the "pinned records" reading of forms viewer should be 1
+    And the "pinned values" reading of forms viewer should be "X0273T29012500105"
+    When user resets the filter
+    Then the "pinned records" reading of forms viewer should be 1
     When user picks "Unpin Row" from the context menu of the "field USUBJID of pinned card 1" area of forms viewer
     Then the "pinned pane shown" reading of forms viewer should be "false"
     And the "pinned records" reading of forms viewer should be 0

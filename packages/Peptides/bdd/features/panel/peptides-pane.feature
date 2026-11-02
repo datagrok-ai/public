@@ -70,6 +70,9 @@ Feature: Peptide column information and SAR parameters
     Then the "rows selected" reading of WebLogo viewer in Peptides pane should be 630
     When user clears the row selection
     Then no rows should be selected
+    # the table view shows the table for a cleared selection 100 ms later (a debounced handler); waiting here keeps
+    # that from replacing the column the next scenario clicks
+    And the context panel should show "peptides"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

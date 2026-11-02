@@ -17,7 +17,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe, toggle} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {autostartsCompleted, noHintShown, packageInstalled, userSettingsPutBack} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {clickFirstArea, clickTakenArea, dragZoomOverArea, hoverFirstArea, hoverFirstFreeArea, noErrors, readingIs, readingLowerThanRemembered, readingReads, rememberReading, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {clickFirstArea, clickTakenArea, dragZoomOverArea, hoverFirstFreeArea, noErrors, readingIs, readingLowerThanRemembered, readingReads, rememberReading, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {dragTopBorder} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -43,7 +43,7 @@ test.describe("The Activity Cliffs tutorial", () => {
     await session.step(38, "And scatter plot viewer should be visible", () => shouldBe(page, el("scatter plot viewer"), "visible"));
     await session.step(39, "And the \"cliffs\" reading of scatter plot viewer should be 15", () => readingIs(page, "cliffs", el("scatter plot viewer"), 15));
     await session.step(41, "And the tutorial step \"Hover over data points for molecule information\" should be current", () => stepCurrent(page, "Hover over data points for molecule information"));
-    await session.step(42, "When user hovers over the first \"marker\" area of scatter plot viewer", () => hoverFirstArea(page, "marker", el("scatter plot viewer")));
+    await session.step(42, "When user hovers over the first free \"marker\" area of scatter plot viewer", () => hoverFirstFreeArea(page, "marker", el("scatter plot viewer")));
     await session.step(43, "Then the tutorial step \"Hover over data points for molecule information\" should be done", () => stepDone(page, "Hover over data points for molecule information"));
     await session.step(44, "And tooltip should be visible", () => shouldBe(page, el("tooltip"), "visible"));
     await session.step(45, "When user toggles \"Show only cliffs\" input in scatter plot viewer", () => toggle(page, el("\"Show only cliffs\" input in scatter plot viewer")));

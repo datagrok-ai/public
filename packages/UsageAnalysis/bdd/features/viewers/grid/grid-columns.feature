@@ -8,7 +8,9 @@ Feature: Grid column geometry
   until the grid scrolls sideways (GROK-19753), and the Order or Hide Columns dialog: its type
   filter, Reset filter (GROK-19333) and its title after both (GROK-20167), and the column manager
   the status bar docks - a click on "Columns: 11" - keeping its type filter while it rebinds from
-  one table to another and back (GROK-19332). Pinning lives in
+  one table to another and back (GROK-19332). Sync New Columns off keeps a new calculated column out
+  of the grid, on lets it in (public#2348), and a column narrowed below its name still shows its
+  header tooltip, which the header menu takes away (public#1130). Pinning lives in
   `grid-pinning.feature`. The grid reports its own geometry - `column width of <col>`, `column
   order`, `sort column`, `sort direction`, `x scroll span` - and the drag handles as the hit areas
   `column resizer <col>`, `row resizer <row>` and `x scroll handle`, so nothing is measured from
@@ -18,6 +20,8 @@ Feature: Grid column geometry
   descending by default, and the feature relies on that default rather than setting it). The
   sideways-scroll scenario also resizes a column while the grid is scrolled, the case GROK-19753
   was about.
+  The sort follows a renamed column, and empty values go last in a sort, descending and ascending
+  (on a four-row table opened for it).
 
   The second table is the first 100 rows of demog-1000 with RACE, DIS_POP, DEMOG and SEVERITY
   removed through the API (data preparation), so it holds two string columns where the first holds
@@ -67,6 +71,10 @@ Feature: Grid column geometry
     Then "d4-grid-rows-sorted" event should have fired on grid
     And the "sort column" reading of grid should be "AGE"
     And the "sort direction" reading of grid should be "descending"
+    When user renames "AGE" column to "YEARS"
+    Then the "sort column" reading of grid should be "YEARS"
+    When user renames "YEARS" column to "AGE"
+    Then the "sort column" reading of grid should be "AGE"
     And grid should have a "cell 600 of AGE" area
     And the value of "AGE" column in row 1 should be "26"
     When user double-clicks on the "header AGE" area of grid
@@ -78,7 +86,21 @@ Feature: Grid column geometry
     And grid should have a "cell 1 of AGE" area
     And grid should not have a "cell 692 of AGE" area
     And the value of "AGE" column in row 1 should be "26"
-    And no errors should have been logged
+    Given user opens a table "sort-empty" with:
+      | id | v |
+      | a  | 2 |
+      | b  |   |
+      | c  | 1 |
+      | d  | 3 |
+    When user double-clicks on the "header v" area of grid
+    Then the "sort direction" reading of grid should be "descending"
+    And the "row order" reading of grid should be "4, 1, 3, 2"
+    When user double-clicks on the "header v" area of grid
+    Then the "sort direction" reading of grid should be "ascending"
+    And the "row order" reading of grid should be "3, 1, 4, 2"
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    Then no errors should have been logged
 
   Scenario: The Sort dialog sorts by two levels
     When user picks "Sort..." from the context menu of the "cell 4 of AGE" area of grid
@@ -214,7 +236,7 @@ Feature: Grid column geometry
     Then all rows should pass the filter
     And no errors should have been logged
 
-  @GROK-19288 @known-failure:233
+  @GROK-19288 @known-failure:255
   Scenario: A coloring picked in the column popup shows in the Context Panel's Colors pane for that column
     When user clicks on the "header AGE" area of grid
     Given the context panel is open
@@ -232,6 +254,34 @@ Feature: Grid column geometry
     And the context panel should show "AGE"
     And Type input in context panel should have value "Linear"
     When user removes the coloring of "AGE" column
+    Then no errors should have been logged
+
+  @realizes:public#2348
+  Scenario: Sync New Columns decides whether a new calculated column is drawn (public#2348)
+    When user sets "Sync New Columns" property of grid to "false"
+    And user adds a calculated column "H2" with formula "${HEIGHT} * 2"
+    Then the table should have a column "H2"
+    And the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"
+    When user sets "Sync New Columns" property of grid to "true"
+    And user adds a calculated column "H3" with formula "${HEIGHT} * 3"
+    Then the table should have a column "H3"
+    And the "column order" reading of grid should include the text "H3"
+    And the "column order" reading of grid should not include the text "H2"
+    When user removes "H2" column
+    And user removes "H3" column
+    Then no errors should have been logged
+
+  @realizes:public#1130
+  Scenario: A column narrowed below its name still shows its header tooltip, and the header menu hides it (public#1130)
+    When user drags the "column resizer RACE" area of grid by 60 pixels to the left
+    Then the "column width of RACE" reading of grid should be lower than before
+    When user hovers over the "header RACE" area of grid
+    Then tooltip should be visible
+    And tooltip should contain text "RACE"
+    When user right-clicks on the "header RACE" area of grid
+    Then tooltip should be hidden
+    When user closes the context menu
+    And user drags the "column resizer RACE" area of grid by 60 pixels to the right
     Then no errors should have been logged
 
   Scenario: The column manager keeps its type filter while it rebinds to another table and back (GROK-19332)

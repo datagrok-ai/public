@@ -8,6 +8,10 @@ Feature: Searching spaces
   search box that hides everything passes a one-sided check. The spaces are made through the API: the
   Create Space dialog is spaces-create's subject.
 
+  Characters of the search syntax typed as text (an opening parenthesis, a double quote, a condition
+  with no value: "name =") match no space here: each search empties the list with no error, and
+  clearing the box brings the spaces back.
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -33,13 +37,35 @@ Feature: Searching spaces
 
   Scenario: A name nothing carries empties the list
     When user enters "zzz-no-such-space" into gallery search
-    Then BDD-Find link in gallery should be absent
+    Then gallery should have finished updating
+    And BDD-Find link in gallery should be absent
     And BDD-Miss link in gallery should be absent
 
-  Scenario: Clearing the search brings both back
+  Scenario: Clearing the search brings both back, also after a search of characters of the search syntax
     When user clears gallery search
     Then BDD-Find link in gallery should be visible
     And BDD-Miss link in gallery should be visible
+    When user enters "(" into gallery search
+    Then gallery should have finished updating
+    And BDD-Find link in gallery should be absent
+    And BDD-Miss link in gallery should be absent
+    When user clears gallery search
+    Then BDD-Find link in gallery should be visible
+    When user enters "\"" into gallery search
+    Then gallery should have finished updating
+    And BDD-Find link in gallery should be absent
+    And BDD-Miss link in gallery should be absent
+    When user clears gallery search
+    Then BDD-Find link in gallery should be visible
+    When user enters "name =" into gallery search
+    Then gallery should have finished updating
+    And BDD-Find link in gallery should be absent
+    And BDD-Miss link in gallery should be absent
+    When user clears gallery search
+    Then BDD-Find link in gallery should be visible
+    And BDD-Miss link in gallery should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   Scenario: A child space is searchable inside its parent
     Given a space named "BDD-Find-Child" under "BDD-Find" is on the server

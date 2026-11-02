@@ -1,6 +1,7 @@
 # Connections edge cases — what the features cannot say yet
 
-What `connection-edge-cases.feature` leaves out, written for it: no library, binding or code change was made.
+What the connection guards (folded into `connections-add`, `connections-edit` and `connections-delete`) leave out,
+written for them: no library, binding or code change was made.
 Each item names the case, why it is not a scenario yet, and what would make it one.
 
 ## Still open
@@ -8,8 +9,29 @@ Each item names the case, why it is not a scenario yet, and what would make it o
 ### Decided and written
 
 A clone of a connection carries its credentials, and a rename in the Edit dialog keeps them (decided 2026-10-27):
-`connection-edge-cases` clones the stand's NorthwindTest and lists its schemas before and after the rename. Today
-the clone says "Unavailable": core#1176, a known failure.
+`connections-add` clones the stand's NorthwindTest and claims its schemas listed. Today the clone says
+"Unavailable": core#1176, a known failure; the rename is claimed once the clone lists its schemas.
+
+Claimed once core#1176 is fixed. The scenario ends at its pin, the Schemas node of the clone; with the tag
+gone, its sweep becomes `Given no connection named "BDDConnClone{time}, BDDConnCloneRen{time}" is on the server`
+and these steps go after the pinned one:
+
+```gherkin
+    Given Databases---Postgres---BDDConnClone{time}---Schemas tree node inside browse tree is expanded
+    Then Databases---Postgres---BDDConnClone{time}---Schemas---public tree node inside browse tree should be visible
+    When user picks "Edit..." from the context menu of Databases---Postgres---BDDConnClone{time} tree node inside browse tree
+    Then "Edit Connection" dialog should be visible
+    When user enters "BDDConnCloneRen{time}" into Name input in "Edit Connection" dialog
+    And user clicks on OK button in "Edit Connection" dialog
+    Then the "Edit Connection" dialog should close
+    And 1 connection named "BDDConnCloneRen{time}" should be on the server
+    Given Databases---Postgres---BDDConnCloneRen{time} tree node inside browse tree is expanded
+    Then Databases---Postgres---BDDConnCloneRen{time}---Schemas tree node inside browse tree should become visible within 60 seconds
+    Given Databases---Postgres---BDDConnCloneRen{time}---Schemas tree node inside browse tree is expanded
+    Then Databases---Postgres---BDDConnCloneRen{time}---Schemas---public tree node inside browse tree should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+```
 
 ### API or server tests to write
 

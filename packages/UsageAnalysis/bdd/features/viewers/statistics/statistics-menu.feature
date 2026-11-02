@@ -13,6 +13,8 @@ Feature: The Statistics and Histograms submenus, and what they turn on
   here: the submenu reopens, and removing `sum` again is a scenario, not a manual note. The md's
   manual "Open as table" closes the journey: the statistics become a table of their own, one row
   per column and one column per aggregation.
+  A column picked for Histograms is dropped from them when it is removed from the table, and the
+  other statistics stay: AGE still averages 45.68 over the 1000 rows.
   Not translated: the md's manual "Full-screen shortcut" — the title bar's icon takes the viewer
   full screen in the suite's browser, but Alt+F pressed in the viewer leaves it there (in a bare
   Playwright Chromium the same key takes it back), so the way out is not a claim this suite can
@@ -80,7 +82,7 @@ Feature: The Statistics and Histograms submenus, and what they turn on
     When user closes the context menu
     Then no errors should have been logged
 
-  Scenario: Histograms > SEX adds a histogram column, and picking it again removes it
+  Scenario: Histograms > SEX adds a histogram column, picking it again removes it, and so does removing its column from the table
     Then the "histogram columns" reading of statistics viewer should be 0
     When user picks "Histograms > SEX" from the context menu of the "row AGE" area of statistics viewer
     Then the "histogram columns" reading of statistics viewer should be 1
@@ -90,6 +92,14 @@ Feature: The Statistics and Histograms submenus, and what they turn on
     And the "stats" reading of statistics viewer should not contain "sum"
     When user picks "Histograms > SEX" from the context menu of the "row AGE" area of statistics viewer
     Then the "histogram columns" reading of statistics viewer should be 0
+    When user adds a calculated column "SEX2" with formula "${SEX}"
+    And user picks "Histograms > SEX2" from the context menu of the "row AGE" area of statistics viewer
+    Then the "histogram columns" reading of statistics viewer should be 1
+    When user removes "SEX2" column
+    Then the table should not have a column "SEX2"
+    And the "histogram columns" reading of statistics viewer should be 0
+    And the "avg of AGE" reading of statistics viewer should be "45.68"
+    And statistics viewer should report no error
     And no errors should have been logged
 
   Scenario: Open as table hands the statistics over as a table of their own

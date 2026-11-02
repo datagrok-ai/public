@@ -12,13 +12,21 @@ Feature: Categorical filter card
   categories holding one, with no error (it used to go into a regular expression and throw). One
   journey on demog-1000, whose DIS_POP is RA 434, Psoriasis 204, Indigestion 152, UC 123, AS 49 and
   PsA 38; its AGE takes 72 values from 18 to 89, and a band on SEX and AGE over 60 holds F (60+) 98,
-  F [..60] 455, M (60+) 55, M [..60] 392. The search syntax itself (other regular-expression
-  characters, the "*" wildcard, "," between alternatives, a pasted list) is the Dart test
-  "d4 | Filters | Categorical search" (xamgle filters_test.dart), not a scenario.
+  F [..60] 455, M (60+) 55, M [..60] 392. The literal search for "(", ".", "+" and "[" is an outline
+  on a table of its own (core#1134); the rest of the search syntax (the "*" wildcard, "," between
+  alternatives, a pasted list) is the Dart test "d4 | Filters | Categorical search" (xamgle
+  filters_test.dart), not a scenario. The scenario after that outline starts by switching back to
+  demog-1000, so an example that fails before closing its table leaves the rest on the right one.
   Not translated: the row deletion is "Edit > Remove > Selected Rows" over a selection made through
   the table's API — the md's own grid-selection gesture is not the subject; Ctrl+Z is pressed for real.
   The panel is opened, and the one-value column made and removed, through the API; the card's own
   count of matching categories under the search is not read, the rows the search keeps are.
+  Closed issues claimed on the way: Control+C in a card's search copies its text, not a picture of
+  the panel (public#3027); a text column holding one value is a compact row after the cards, not a
+  card (core#479); the card's sort menu orders the categories by count, and a layout keeps that
+  order (public#1889, last, as it ends on a layout).
+  A bracket or another special character typed into the search finds the category with that literal
+  text (core#1134): "a(b", "a.b", "a+b" and "a[b" on a six-row table of their own, closed again.
 
   Background:
     Given user is logged in
@@ -89,7 +97,8 @@ Feature: Categorical filter card
     When user closes the context menu
     Then no errors should have been logged
 
-  Scenario: The in-card search narrows the table to the categories that match
+  @realizes:public#3027
+  Scenario: The in-card search narrows the table to the categories that match, and Control+C copies its text (public#3027)
     When user picks "Select all" from the indicator menu of the "DIS_POP" filter card
     Then all rows should pass the filter
     When user clicks on search icon of "DIS_POP" filter card
@@ -97,6 +106,9 @@ Feature: Categorical filter card
     Then 242 rows should pass the filter
     And the filter should pass exactly the rows where "DIS_POP" contains "Ps"
     And counter of filter panel should have text "1"
+    When user presses Control+A in search of "DIS_POP" filter card
+    And user presses Control+C
+    Then the clipboard should have text "Ps"
     When user clears the search of the "DIS_POP" filter card
     Then all rows should pass the filter
     When user types "ori" into the search of the "DIS_POP" filter card
@@ -189,4 +201,62 @@ Feature: Categorical filter card
     When user removes "AGE_BAND" column
     Then "AGE_BAND" filter card should be absent
     And all rows should pass the filter
+    And no errors should have been logged
+
+  @realizes:core#1134
+  Scenario Outline: "<typed>" typed into the in-card search finds the category with that literal text
+    Given user opens a table "special-categories" with:
+      | Name | Value |
+      | a(b  | 1     |
+      | a.b  | 2     |
+      | axb  | 3     |
+      | a+b  | 4     |
+      | aab  | 5     |
+      | a[b  | 6     |
+    When user opens an empty filter panel
+    And user adds a card for "Name" to the filter panel
+    And user hovers over "Name" filter card
+    And user clicks on search icon of "Name" filter card
+    And user types "<typed>" into the search of the "Name" filter card
+    Then 1 row should pass the filter
+    And the filter should pass exactly the rows where "Name" is "<typed>"
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    Then all rows should pass the filter
+    And no errors should have been logged
+
+    Examples:
+      | typed |
+      | a(b   |
+      | a.b   |
+      | a+b   |
+      | a[b   |
+
+  @realizes:core#479
+  Scenario: A text column holding one value is listed as a row after the cards (core#479)
+    When user switches to the "demog-1000" table view
+    And user adds a calculated column "probe_class" with formula '"low"'
+    And user drags the "header probe_class" area of grid onto the "view" area of filter panel
+    Then the filter panel should have a filter on "probe_class" column
+    And filter panel should have a "card probe_class" area
+    And "probe_class" filter card should be hidden
+    And the "card probe_class" area of filter panel should lie below the "card DIS_POP" area
+    And all rows should pass the filter
+    When user removes "probe_class" column
+    Then all rows should pass the filter
+    And no errors should have been logged
+
+  @realizes:public#1889
+  Scenario: The card's sort menu orders the categories by count, and the layout keeps the order (public#1889)
+    Then the "category RA of DIS_POP" area of filter panel should lie below the "category Psoriasis of DIS_POP" area
+    When user hovers over "DIS_POP" filter card
+    And user clicks on "sort-amount-down" icon in "DIS_POP" filter card
+    And user picks "Count (high to low)" from the open menu
+    Then the "category RA of DIS_POP" area of filter panel should lie above the "category Psoriasis of DIS_POP" area
+    When user saves the layout of the current table view to the server
+    And user picks "Remove All" from the filter panel menu
+    Then the filter panel should have 0 filters
+    When user loads the saved layout
+    Then "DIS_POP" filter card should be visible
+    And the "category RA of DIS_POP" area of filter panel should lie above the "category Psoriasis of DIS_POP" area
     And no errors should have been logged

@@ -45,9 +45,9 @@ Written during the viewer-gaps round of 23 Oct 2026, against
   (`edges.get()` whose `arrows` option is set) — so Show Arrows = to can be claimed as 4 arrow heads
   on demog-1000 and 0 after it is switched off.
 
-## Edge cases (`network-diagram-edge-cases.feature`)
+## Edge cases
 
-Written for `network-diagram-edge-cases.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+Written during the edge-case round of 26 Oct 2026: the edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
 
 ### Still open
 
@@ -58,12 +58,18 @@ Written for `network-diagram-edge-cases.feature`: the edge cases of this viewer 
 
 **Decided**
 
-1. More than 10000 nodes show "Too many nodes to display, max 10000". Written in `network-diagram-edge-cases.feature` on demog (5850 rows) with USUBJID and a per-row PARTNER column, 11700 nodes: no node is drawn and the message is shown (the viewer reports no `error` reading for it, so the claim reads the text). Node 1 alone with more than 10000 categories is not written: no dataset of the library has a column with that many values.
+1. More than 10000 nodes show "Too many nodes to display, max 10000": requested below as an API test. Node 1 alone with more than 10000 categories is not written: no dataset of the library has a column with that many values.
 
 **API or Dart tests to write**
 
 1. Dart regTest: edge widths after a filter drops a group come from the wrong group (core#1041, wrong output); no edge reading exists for a feature.
 2. Dart regTest: a click on empty space, then the viewer closed within 300 ms, throws from `clickTimer` (core#1041, crash 5); too tight for a feature.
+3. ApiTests: with SEX as both Node 1 and Node 2, filtering to SEX = F shows 553 rows and logs no error (core#1041, crash 1, fixed).
+4. ApiTests: on demog (5850 rows) USUBJID as Node 1 and a per-row PARTNER column (`${USUBJID} + '-b'`) as Node 2 make 11700 nodes: no node is drawn and the viewer shows "Too many nodes to display, max 10000" (it reports no `error` reading for it).
+5. ApiTests: with every row filtered out the diagram shows 0 rows and reports no error; with the filter reset it shows 1000 rows.
+6. ApiTests: once every row of the table is deleted the diagram shows 0 rows and reports no error.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
 
 ### Won't do
 

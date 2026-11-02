@@ -41,19 +41,33 @@ Nothing planned.
 - **The legend's own picker, its Cancel and a second pick (github-3132)**: `legend/legend-across-viewers.feature`;
   a conditional coloring's legend: `guides/scatter-plot-conditional-colors.feature`.
 
-## Edge cases (`color-coding-edge-cases.feature`)
+## Edge cases (now in the color-coding journeys)
 
-Added with `color-coding-edge-cases.feature` (edge-case round of 2026-10-26, localhost). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+Added with the color-coding edge cases (edge-case round of 2026-10-26, localhost), now steps of `color-coding.feature`, `color-coding-editor-linear.feature`, `color-coding-editor-conditional-and-categorical.feature` and `color-coding-pick-up-apply-and-viewers.feature`. Only the scenarios were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 
 1. **Decided** (2026-10-28):
-   - A linked coloring whose source column is removed paints nothing: claimed in
-     `color-coding-edge-cases` (core#1139, fixed). The column's menu still shows it as Linked.
+   - A linked coloring whose source column is removed paints nothing (core#1139, fixed). The
+     column's menu still shows it as Linked.
    - Bin... takes a number of bins in a range (for example 1 to 100): core#1171, fixed (OK stays
-     disabled for 0), claimed in `color-coding-edge-cases`. 10000 bins hangs the tab, so no scenario
+     disabled for 0), claimed in `color-coding-editor-conditional-and-categorical.feature`. 10000 bins hangs the tab, so no scenario
      runs it.
    - A coloring picked up from an uncoloured column and applied to a coloured one: the present
      behaviour is right, the coloring is applied as if the source had it on.
 2. **Steps requested**: the stop values typed in Edit scheme... (`abc`, stops out of order) have no
    invalid state to read; the conditional editor's "Invalid pattern" mark is the model.
+3. **API or Dart tests to write** (demog-1000, AGE colored linearly, RACE linked to AGE):
+   - AGE renamed to AGE2: AGE2 stays linearly colored and RACE's cells keep AGE2's colors
+     (core#1139).
+   - AGE removed: RACE's cells paint as an uncolored column (as SEX) and no error is logged
+     (core#1139).
+
+   Moved out of BDD (no user gesture); requested from ApiTests.
+
+## Closed issues the regression round of 26 Oct 2026 could not claim
+
+- **A colour-coded category column paints the bar chart's category names (public#3621)** regressed: filed
+  as core#1153; claim it in `bar-chart/bar-chart.feature` once fixed.
+- **Pick Up Coloring / Apply Coloring is per grid** — by design (Olesia, 27 Oct 2026); across tables it is
+  Pick Up / Apply that carries a colouring (`color-coding-pick-up-apply-and-viewers.feature`, public#1887).

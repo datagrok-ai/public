@@ -97,9 +97,9 @@ test.describe("The widgets of the Home page", () => {
       await session.step(120, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The Home icon brings back the same widgets", async () => {
-      await session.step(123, "Given user opens demog dataset", () => openDataset(page, ds("demog")));
+      await session.step(123, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
       await session.step(124, "And the browse panel is open", () => browsePanelOpen(page));
-      await session.step(125, "Then the \"demog\" view should be current", () => viewIsCurrent(page, "demog"));
+      await session.step(125, "Then the \"demog-1000\" view should be current", () => viewIsCurrent(page, "demog-1000"));
       await session.step(126, "When user clicks on \"Home\" icon in browse toolbar", () => clickOn(page, el("\"Home\" icon in browse toolbar")));
       await session.step(127, "Then the \"Home\" view should be current", () => viewIsCurrent(page, "Home"));
       await session.step(128, "And the Home page should show the widgets \"Spotlight, Reports, Usage, Community\"", () => homeWidgetsAre(page, "Spotlight, Reports, Usage, Community"));

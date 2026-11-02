@@ -30,21 +30,26 @@ and the viewer's "Automation surface" (`public/libraries/utils/src/viewers/CLAUD
   library's "What never becomes a feature"). `forms-cards-drawn.feature` claims which row each card
   shows (`record of card <n>`).
 
-## Edge cases (`forms-edge-cases.feature`)
+## Edge cases (now in `forms-core.feature` and `forms-layout.feature`)
 
-Added with `forms-edge-cases.feature` (edge-case round of 2026-10-26, localhost). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+Added in the edge-case round of 2026-10-26 (localhost); its scenarios are now steps of `forms-core.feature` (a pinned row the filter hides) and `forms-layout.feature` (a pinned row deleted). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 
-1. **Decided, a known failure with no ticket yet**: a layout naming a column the table no longer has
-   is applied without that column (the layout rule of `viewer-rules-edge-cases.feature`). Observed on
-   localhost: fields AGE, HEIGHT, SEX; layout saved; HEIGHT removed (`fields` = "AGE, SEX"); the
-   saved layout loaded: `fields` is "AGE, HEIGHT, SEX" again, and every render logs
+1. **Decided**: a layout naming a column the table no longer has is applied without that column.
+   Observed on localhost: fields AGE, HEIGHT, SEX; layout saved; HEIGHT removed (`fields` =
+   "AGE, SEX"); the saved layout loaded: `fields` is "AGE, HEIGHT, SEX" again, and every render logs
    "TypeError: Cannot read properties of null (reading 'semType')" (`buildForm`; rechecked 2026-10-29,
-   the removal itself logs nothing): public#4452, a known failure there.
+   the removal itself logs nothing): public#4452, still open.
 2. **Decided**: a pinned row the filter hides stays pinned, as in the grid (claimed in
-   `forms-edge-cases`). A row pinned by an empty cell is stored as the text "null" and
+   `forms-core.feature`). A row pinned by an empty cell is stored as the text "null" and
    matches the first empty row on reload, with the non-unique warning shown at the pin: not a defect.
 3. **Package tests to write (PowerGrid)**: the Data Manipulation set the Dart viewers get (remove all
    columns, all values empty, every row filtered out) for the Forms viewer, which is a JS viewer the
    Dart regTest does not run; `fixedRowNumbers` set before Show Current Row.
+4. **API or Dart tests to write** (demog-1000):
+   - Every row deleted: 0 record cards and no error logged.
+   - Fields AGE, HEIGHT, SEX, the layout saved, HEIGHT removed and the layout loaded: 2 fields shown,
+     `fields` is "AGE, SEX", no error logged. public#4452, still open.
+
+   Moved out of BDD (no user gesture); requested from ApiTests.

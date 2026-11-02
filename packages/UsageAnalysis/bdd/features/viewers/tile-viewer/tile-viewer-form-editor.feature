@@ -11,6 +11,7 @@ Feature: Tile viewer form designer
   slot, while a designed card keeps exactly the fields it was given — the departed column's field
   stays on it, empty. In both states the column leaves through the same gesture, a right-click on
   its field and Remove (GROK-19983).
+  Escape in the designer, a view and not a dialog, leaves it open with the edits it holds.
   One journey on demog-1000 — 11 columns, a card of ten fields, SEVERITY the column the relevance
   score leaves over.
 
@@ -99,6 +100,9 @@ Feature: Tile viewer form designer
     And the form designer should show label fields "AGE, CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, STARTED, USUBJID, WEIGHT"
     When user deletes the "AGE" value field in the form designer
     Then the form designer should show value fields "CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, SEX, STARTED, USUBJID, WEIGHT"
+    When user presses Escape
+    Then form designer should be visible
+    And the form designer should show value fields "CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, SEX, STARTED, USUBJID, WEIGHT"
     When user clicks on "RESET" button
     Then the form designer should show value fields "AGE, CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, SEX, STARTED, USUBJID, WEIGHT"
     And the form designer should show label fields "AGE, CONTROL, DEMOG, DIS_POP, HEIGHT, RACE, STARTED, USUBJID, WEIGHT"

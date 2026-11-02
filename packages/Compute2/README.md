@@ -6,6 +6,9 @@ execution framework. It powers the [Compute](https://datagrok.ai/help/compute/)
 capabilities of the platform, including rich function editors, multi-step workflow
 pipelines, and the Model Hub.
 
+Compute2 requires Datagrok platform 1.28.0 or later. The platform doesn't check this when it
+installs a package, so don't install this version on an older one.
+
 ## Features
 
 ### Rich Function View (RFV)

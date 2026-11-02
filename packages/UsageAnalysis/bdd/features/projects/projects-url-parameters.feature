@@ -30,10 +30,14 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
   ?type=Script, as the hint says, so the claim is made after the save). The Save dialog's "Share
   link:" line follows the name typed into the dialog (core#569). Each is a scenario of its own.
 
+  A second query, with an integer "lim" and a string "typeName", is saved as a dashboard whose URL
+  Parameters list both; a value of the wrong type in its address (?lim=abc) is refused with a
+  balloon that names the parameter.
+
   entity_types has no "Package" row on localhost (the md allows another value of its name column
   then), so "Script" stands for the md's "Package"; "Project" and "Script" are core entity types.
   Names are letters and digits only (the Dashboards search misses "-" and "_") and carry the run's
-  time. The query and the two projects are removed when the feature starts and ends.
+  time. The queries and the projects are removed when the feature starts and ends.
 
   Background:
     Given user is logged in
@@ -242,3 +246,35 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     When user opens the address "/p/Admin.BDDUrlParamProj{time}?type=Project"
     Then the "BDDUrlParamQuery{time}" view should be current
     And the "text of cell 1 of name" reading of grid should be "Script"
+
+  Scenario: A value of the wrong type in the address is refused with a balloon naming the parameter and the value
+    Given no project named "BDDUrlEdgeP{time}" is on the server
+    And a query "BDDUrlEdgeQ{time}" on "System:Datagrok" is on the server:
+      """
+      --input: int lim = 2
+      --input: string typeName = "Project"
+      select name from entity_types where name <> @typeName order by name limit @lim
+      """
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
+    Given the browse panel is open
+    When user clicks on "Refresh" icon inside browse toolbar
+    Given Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    And Databases---Postgres---Datagrok tree node inside browse tree is expanded
+    When user double-clicks on Databases---Postgres---Datagrok---BDDUrlEdgeQ{time} tree node inside browse tree and the query it runs completes
+    Then the "BDDUrlEdgeQ{time}" view should be current
+    When user clicks on Save ribbon item
+    Then "Save project" dialog should be visible
+    When user enters "BDDUrlEdgeP{time}" into Name text input in "Save project" dialog
+    And user clicks on "URL Parameters" button in "BDDUrlEdgeQ{time}" project table in "Save project" dialog
+    Then first "URL alias" text input in "Save project" dialog should have value "lim"
+    When user clicks on OK button in "Save project" dialog
+    Then the "Save project" dialog should close
+    And "Share BDDUrlEdgeP{time}" dialog should be visible
+    When user clicks on CANCEL button in "Share BDDUrlEdgeP{time}" dialog
+    Then the "Share BDDUrlEdgeP{time}" dialog should close
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
+    When user opens the address "/p/{login}.BDDUrlEdgeP{time}?lim=abc"
+    Then an error or warning balloon matching "lim.*abc|abc.*lim" should have been shown

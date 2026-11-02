@@ -3,7 +3,8 @@ Feature: Grid row selection, navigation and row source
   How the grid picks rows out: a click sets the current row without selecting, a drag down the
   row-number strip selects a range with Shift, Control+A takes everything and Escape drops rows,
   columns and the current row together, Control+click on headers selects columns, the arrows and
-  Control+Home / Control+End / PageDown move the current row, Tab and Shift+Tab walk the cells and
+  Control+Home / Control+End / PageDown move the current row, Control+Shift+Home and Control+Shift+End
+  select from the current row to the first and to the last row (public#2663), Tab and Shift+Tab walk the cells and
   wrap to the next and the previous row at the edges, Space and Shift+Enter select by value, Allow
   Row Selection gates all of it (Shift+ArrowDown moves the caret and selects nothing), and Row
   Source decides how many rows the grid shows at all. Under a filter and a sort the arrows walk the
@@ -72,7 +73,8 @@ Feature: Grid row selection, navigation and row source
     When user presses Escape
     Then no columns should be selected
 
-  Scenario: Arrows and Control+Home, Control+End and PageDown move the current row
+  @realizes:public#2663
+  Scenario: Arrows and Control+Home, Control+End and PageDown move the current row, and Control+Shift+Home / End select to the edge (public#2663)
     When user clicks on the "cell 5 of AGE" area of grid
     And user presses ArrowDown
     And user presses ArrowDown
@@ -93,6 +95,19 @@ Feature: Grid row selection, navigation and row source
     Then the "current row" reading of grid should be higher than before
     When user presses Control+Home
     Then row 1 should be current
+    When user clicks on the "cell 5 of AGE" area of grid
+    And user presses Control+Shift+Home
+    Then 5 rows should be selected
+    And rows 1 to 5 should all be selected
+    When user clears the row selection
+    And user clicks on the "cell 5 of AGE" area of grid
+    And user presses Control+Shift+End
+    Then 996 rows should be selected
+    And rows 5 to 1000 should all be selected
+    When user clears the row selection
+    And user presses Control+Home
+    Then row 1 should be current
+    And no rows should be selected
     And no errors should have been logged
 
   Scenario: Space selects the current row and Shift+Enter every row of the same value

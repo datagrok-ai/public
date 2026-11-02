@@ -19,6 +19,15 @@ Feature: A project through its card in the Dashboards gallery
   the context panel's header after Add To Favorites. The words of the recipient's line in the
   Sharing pane ("can view and use") are claimed on the pane as a whole.
 
+  Guards on the way: with its only table left out (the times icon), the Save dialog keeps OK
+  disabled until the plus icon brings the table back (core#1161). Rename refuses an emptied name (its
+  validator, `DbEntityMeta.getRenameDialog`: the Name box is marked invalid and OK is disabled; the
+  validator's text is not shown, so it is not claimed), and CANCEL on Rename or on the Delete
+  Project confirmation changes nothing on the server or in the gallery. The owner's Save dialog of
+  the reopened project holds the project's name; the View and use recipient's opens in its Save a
+  copy mode, its Name box holding "Copy of <name>" (`dashboard.md`, "Saving a dashboard"). The
+  recipient's Rename... in the card menu (core#1162) is in `projects-regressions-shared-tag.feature`.
+
   The recipient of the share is the library's sharing user (the md's "qa_playwright" is any user
   other than yourself). The Grok name, markup and URL are claimed for the admin account the suite
   runs as (namespace "Admin"). Names are letters and digits only (the Dashboards search misses "-"
@@ -33,6 +42,7 @@ Feature: A project through its card in the Dashboards gallery
     And no project named "BDDSmoke{time}" is on the server
     And no project named "BDDSmokeRenamed{time}" is on the server
 
+  @realizes:core#1161
   Scenario: A file opened from its context menu is saved as a project
     Given Files tree node inside browse tree is expanded
     And Files---Demo tree node inside browse tree is expanded
@@ -42,6 +52,12 @@ Feature: A project through its card in the Dashboards gallery
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
     And "Creation script" button in "cars" project table in "Save project" dialog should be visible
+    And Data sync switch in "cars" project table in "Save project" dialog should be checked
+    When user clicks on times icon in "cars" project table in "Save project" dialog
+    Then plus icon in "cars" project table in "Save project" dialog should be visible
+    And OK button in "Save project" dialog should be disabled
+    When user clicks on plus icon in "cars" project table in "Save project" dialog
+    Then OK button in "Save project" dialog should be enabled
     And Data sync switch in "cars" project table in "Save project" dialog should be checked
     When user enters "BDDSmoke{time}" into Name text input in "Save project" dialog
     And user clicks on OK button in "Save project" dialog
@@ -119,6 +135,21 @@ Feature: A project through its card in the Dashboards gallery
   Scenario: The project is renamed from its card
     When user picks "Rename..." from the context menu of BDDSmoke{time} gallery card
     Then Rename project dialog should be visible
+    And OK button in Rename project dialog should be enabled
+    When user clears Name input in Rename project dialog
+    Then Name input in Rename project dialog should be invalid
+    And OK button in Rename project dialog should be disabled
+    When user types "BDDSmokeRenamed{time}" into Name input in Rename project dialog
+    Then Name input in Rename project dialog should be valid
+    And OK button in Rename project dialog should be enabled
+    When user clicks on CANCEL button in Rename project dialog
+    Then the "Rename project" dialog should close
+    And 0 projects named "BDDSmokeRenamed{time}" should be on the server
+    And 1 project named "BDDSmoke{time}" should be on the server
+    When user clicks on "Refresh" icon inside gallery toolbar
+    Then BDDSmoke{time} gallery card should be visible
+    When user picks "Rename..." from the context menu of BDDSmoke{time} gallery card
+    Then Rename project dialog should be visible
     And Name input in Rename project dialog should have value "BDDSmoke{time}"
     When user enters "BDDSmokeRenamed{time}" into Name input in Rename project dialog
     And user clicks on OK button in Rename project dialog
@@ -173,6 +204,28 @@ Feature: A project through its card in the Dashboards gallery
     And status bar should contain text "Rows: 30"
     And no errors should have been logged
     And no error or warning balloon should have been shown
+    When user clicks on Save ribbon item
+    Then "Save project" dialog should be visible
+    And Name text input in "Save project" dialog should have value "BDDSmokeRenamed{time}"
+    When user clicks on CANCEL button in "Save project" dialog
+    Then the "Save project" dialog should close
+    When user closes all views
+    And user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDSmokeRenamed{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDSmokeRenamed{time} gallery card and the project opens
+    Then the "cars" view should be current
+    When user clicks on Save ribbon item
+    Then "Save project" dialog should be visible
+    And Name text input in "Save project" dialog should have value "Copy of BDDSmokeRenamed{time}"
+    When user clicks on CANCEL button in "Save project" dialog
+    Then the "Save project" dialog should close
+    When user closes all views
+    And user signs in as themselves again
+    Then the running account should be signed in
 
   Scenario: The project is deleted from its card
     When user picks "Close All" from the context menu of browse tab
@@ -180,6 +233,13 @@ Feature: A project through its card in the Dashboards gallery
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDSmokeRenamed{time}" into gallery search
+    Then BDDSmokeRenamed{time} gallery card should be visible
+    When user picks "Delete Project" from the context menu of BDDSmokeRenamed{time} gallery card
+    Then "Are you sure?" dialog should contain text 'Delete project "BDDSmokeRenamed{time}"?'
+    When user clicks on CANCEL button in "Are you sure?" dialog
+    Then the "Are you sure?" dialog should close
+    And 1 project named "BDDSmokeRenamed{time}" should be on the server
+    When user clicks on "Refresh" icon inside gallery toolbar
     Then BDDSmokeRenamed{time} gallery card should be visible
     When user picks "Delete Project" from the context menu of BDDSmokeRenamed{time} gallery card
     Then "Are you sure?" dialog should contain text 'Delete project "BDDSmokeRenamed{time}"?'

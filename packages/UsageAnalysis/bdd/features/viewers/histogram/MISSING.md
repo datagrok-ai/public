@@ -45,9 +45,9 @@ slider against the Bins property (github-2296) in `histogram.feature`, and exact
     And no errors should have been logged
   ```
 
-## Edge cases (`histogram-edge-cases.feature`)
+## Edge cases
 
-Added with `histogram-edge-cases.feature` (edge-case round of 2026-10-26, localhost). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+The edge-case round of 2026-10-26 (localhost). Its checks are now steps of the journeys: `histogram-range-filter.feature`. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 
@@ -55,14 +55,47 @@ Added with `histogram-edge-cases.feature` (edge-case round of 2026-10-26, localh
    the input validator ("Max should be greater than min", `histogram_core.dart`), while the viewer's
    `error` reading stays empty (measured on localhost; the viewer reports only max below min). No step
    reads the inputs' invalid state.
-2. **Decided**: Bins typed as 201 is not taken (the out-of-bounds rule): a known failure with no
-   ticket yet in `viewer-rules-edge-cases.feature`; every row filtered out is a row there too.
-3. **Decided (2026-10-30)**, claimed in `histogram-edge-cases.feature`: `abc` in a range input is not
-   taken and the filter stays; switching Value while a range filters releases the range; a layout
-   whose Value column the table lacks leaves the histogram empty with the message `value: Column
-   "HEIGHT" does not exist.`. Bin labels dropped above 100 bins are right as they are (no scenario:
-   no reading of the axis labels).
+2. **Decided**: Bins typed as 201 is not taken (the out-of-bounds rule): a known failure (core#1200)
+   in `histogram-range-filter.feature`, its last scenario.
+3. **Decided (2026-10-30)**, claimed in `histogram-range-filter.feature`: `abc` in a range input is not
+   taken and the filter stays; switching Value while a range filters releases the range. Bin labels
+   dropped above 100 bins are right as they are (no scenario: no reading of the axis labels).
 4. **Not written yet**: the selectors hidden at 200 × 200 and shown at 201 × 201. The range checks
-   for a date value column (`STARTED`, date inputs) are in `histogram-edge-cases.feature`: a maximum
+   for a date value column (`STARTED`, date inputs) are in `histogram-range-filter.feature`: a maximum
    below the minimum is reported, a bound past the dates is clamped, a range normalized to the
    filter logs no error with every row filtered out (green, 2026-10-29).
+
+### API or Dart tests to write
+
+- A layout whose Value column (HEIGHT) the table no longer has, loaded back, leaves the histogram
+  with no bin and the message `value: Column "HEIGHT" does not exist.`, and logs no error.
+- With every row filtered out the histogram shows 0 rows and reports no error; once the filter is
+  reset it shows 1000 rows again.
+- Bins set to 201 or 0 keeps 20: a known failure, core#1200, still open.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
+
+## Closed issues the regression round of 26 Oct 2026 could not claim
+
+Written while turning the closed histogram issues into scenarios, now in the histogram's own journeys.
+
+- **The distribution lines follow a filter made elsewhere (core#998).** The lines are computed in
+  `render` over the rows shown and cached by `combinedFilter` (`histogram/CLAUDE.md` "Split"); the bug
+  left them on the old rows after any filter but the histogram's own. A repaint claim cannot tell the
+  lines from the bars, which move with the same filter. Needs a reading of what a line was computed
+  from — `distribution line <category> mean` (and `… stdev`) — then:
+
+  ```gherkin
+  Scenario: The distribution lines follow a filter made in another place (core#998)
+    Given user opens demog-1000 dataset
+    And user adds a histogram viewer with:
+      | Value                   | AGE  |
+      | Split                   | SEX  |
+      | Show Distribution Lines | true |
+    When user remembers the "distribution line F mean" reading of histogram viewer
+    And user filters rows where "AGE" is between 18 and 40
+    Then the "distribution line F mean" reading of histogram viewer should be lower than remembered
+    When user resets the filter
+    Then the "distribution line F mean" reading of histogram viewer should be as remembered
+    And no errors should have been logged
+  ```

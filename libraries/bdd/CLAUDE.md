@@ -423,6 +423,9 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   tries that form; a sketch box's name sits on its `.d4-host`, not on `.d4-sketch-item`.
 - A balloon claim takes the balloon it matched (the read is destructive; the others go back): a second claim on
   the same balloon fails. Claim a balloon once.
+- A reload reopens the view its address names (a script, a project) and that view can land after the shell
+  reset's `closeAll`: `resetShellAfterLoad` closes a non-Home view that becomes current while it waits for Home,
+  where it used to wait out 60 s (projects-lifecycle-script, 2026-10-30).
 - A context menu of a non-viewer element is opened at a point of its visible part that
   `elementFromPoint` gives back to it: a tree row runs past its panel's edge, and a panel docked a
   moment ago (the console) covers part of a gallery. `scrollIntoView` is the last resort — it moves

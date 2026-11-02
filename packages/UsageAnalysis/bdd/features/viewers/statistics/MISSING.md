@@ -45,9 +45,10 @@ surface" and `statistics-ui.md` / `statistics.md`. Back Color is in `statistics-
     And the "columns shown" reading of statistics viewer should be 11
   ```
 
-## Edge cases (`statistics-edge-cases.feature`)
+## Edge cases (now in `statistics-menu.feature`)
 
-Written for `statistics-edge-cases.feature` (26 Oct 2026), the guard suite of edge cases: data
+Written for the guard suite of edge cases of 26 Oct 2026 (its check now ends a scenario of
+`statistics-menu.feature`): data
 shapes, columns removed or renamed under the open viewer, layouts naming a missing column, property
 bounds, closing the viewer. Nothing here asks for a library, binding or code change made by that
 feature; it lists what the feature could not claim and why.
@@ -58,24 +59,36 @@ feature; it lists what the feature could not claim and why.
 
 None.
 
-#### 2. Decided (the rules of `viewer-rules-edge-cases.feature`)
+#### 2. Decided
 
-1. **Numeric statistics over no values are empty, not 0.** `statistics-edge-cases.feature` claims
-   `avg of AGE` empty with every row filtered out, and an all-empty numeric column with avg and
-   stdev empty: a known failure on core#1125 (stdev reads 0.00). A constant column (min, max,
-   avg 5.00, stdev 0.00) is claimed green.
+1. **Numeric statistics over no values are empty, not 0.** `avg of AGE` empty with every row
+   filtered out, an all-empty numeric column with avg and stdev empty (core#1125, fixed), and a
+   constant column (min, max, avg 5.00, stdev 0.00) are requested from ApiTests below.
 2. **A Histograms > <column> column** is dropped when that column is removed: claimed green in
-   `statistics-edge-cases.feature`. That it follows a rename (`[SEX]` is built once by name,
+   `statistics-menu.feature`. That it follows a rename (`[SEX]` is built once by name,
    `stats_viewer_core.dart:111-122`) is not written: `histogram columns` is a count, which a column
    kept under the old name satisfies too; it needs the histogram columns' names as a reading.
 
 #### 3. Questions for owners
 
-None. A column added while Columns is an explicit list gets no row (2026-10-30): claimed.
+None. A column added while Columns is an explicit list gets no row (2026-10-30): requested from
+ApiTests below.
 
-#### 3. API or Dart tests to write
+#### 4. API or Dart tests to write
 
-None.
+1. ApiTests: a filter that passes no row shows 0 rows, 0 values for AGE and RACE, an empty avg of
+   AGE and no error; resetting it brings back 1000 rows and avg 45.68.
+2. ApiTests: Row Source Selected with nothing selected shows 0 rows and 0 values for AGE, no error.
+3. ApiTests: a one-row table shows 1 row, 1 value and 0 nulls for its column.
+4. ApiTests: a calculated column added while the viewer is open gets a row (12 columns, 1000 values).
+5. ApiTests: removing RACE takes its row away (10 columns) and keeps avg of AGE at 45.68.
+6. ApiTests: AGE renamed to AGE_YEARS keeps its row under the new name (avg 45.68), with no row AGE.
+7. ApiTests: an int column with no values has 0 values, 1000 nulls and empty avg, stdev and min
+   (core#1125, fixed).
+8. ApiTests: a constant column of 5 has min, max and avg 5.00 and stdev 0.00.
+9. ApiTests: with Columns set to AGE, HEIGHT, a calculated column added afterwards gets no row.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
 
 ### Edge cases: Won't do
 

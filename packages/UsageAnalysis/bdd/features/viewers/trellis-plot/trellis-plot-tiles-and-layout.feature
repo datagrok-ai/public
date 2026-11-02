@@ -11,6 +11,12 @@ Feature: Trellis plot tiled view and auto layout
   whose every row is missing the HEIGHT or the WEIGHT the inner scatter plot draws. UC is the cell
   that is drawn and stays blank in the two rungs wide enough to show it.
 
+  Tiles Per Row 0 typed in the context panel on this one-column trellis logs no error: it threw a
+  truncating division by zero on every render before core#1057; the context panel is then hidden
+  again, so the auto layout rungs measure the viewer at the width they did before. A Tiles Per Row
+  typed outside its declared bounds (11) is a known failure (core#1200) in
+  trellis-plot-pick-up-color-and-scroll.feature.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -51,6 +57,7 @@ Feature: Trellis plot tiled view and auto layout
     And trellis plot viewer should have a "cell UC" area
     And no errors should have been logged
 
+  @realizes:core#1057
   Scenario: Tiles off returns a single band
     When user sets "Tiles" property of trellis plot viewer to "false"
     Then the cells of trellis plot viewer should be 5 wide and 1 tall
@@ -63,6 +70,17 @@ Feature: Trellis plot tiled view and auto layout
       | Tiles Per Row | 4    |
     Then the cells of trellis plot viewer should be 4 wide and 2 tall
     And no errors should have been logged
+    And the "y categories" reading of trellis plot viewer should be 1
+    When user clicks on settings icon of trellis plot viewer
+    Then context panel should be visible
+    Given "Misc" category in context panel is expanded
+    When user enters "0" into "Tiles Per Row" property in context panel
+    Then no errors should have been logged
+    And trellis plot viewer should report no error
+    When user sets "Tiles Per Row" property of trellis plot viewer to "4"
+    Then the cells of trellis plot viewer should be 4 wide and 2 tall
+    When user presses F4
+    Then context panel should be hidden
 
   Scenario: Auto layout drops the control panel when the viewer gets short
     When user resizes trellis plot viewer to 900 by 700

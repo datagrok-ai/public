@@ -20,7 +20,7 @@ import '../bindings/common/kinds.js';
 import '../bindings/platform/elements.js';
 import {noSpaceOnServer} from '../bindings/platform/steps.js';
 import {el} from '../src/runtime/args.js';
-import {clear, keysOf, press, pressIn, readExpanded, select, setExpanded, typeInto, withKeys} from '../src/runtime/gestures.js';
+import {clear, hover, keysOf, press, pressIn, readExpanded, select, setExpanded, typeInto, withKeys} from '../src/runtime/gestures.js';
 import {atFeatureEnd, feature, takeErrors, watchErrors} from '../src/runtime/harness.js';
 import {expectState, expectText} from '../src/runtime/assertions.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
@@ -320,6 +320,16 @@ scenario('tooltip text assertions ignore hidden content retained between hovers'
   await assert.rejects(whileExpectedToFail(() => expectText(page!, el('tooltip'), 'Pearson R', {negate: true})));
   await page!.locator('.d4-tooltip').evaluate((e) => e.remove());
   await expectText(page!, el('tooltip'), 'Pearson R', {negate: true});
+});
+
+scenario('a hover enters a row wider than the panel that clips it', async () => {
+  await page!.setContent('<div style="width:200px;overflow:hidden"><div data-u2="list" data-u2-name="clipped">' +
+    '<div class="u2-list-row" role="option" style="width:900px">wide</div></div></div>' +
+    '<div style="position:absolute;left:200px;top:0;width:900px;height:400px"></div>');
+  await page!.locator('.u2-list-row').evaluate((e) =>
+    e.addEventListener('mouseenter', () => (window as any).__rowEntered = true));
+  await hover(page!, el('item in clipped list'));
+  assert.equal(await page!.evaluate(() => (window as any).__rowEntered), true);
 });
 
 scenario('space cleanup deletes existing fixtures even when server filters return no matches', async () => {

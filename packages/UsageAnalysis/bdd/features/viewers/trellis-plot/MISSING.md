@@ -63,12 +63,14 @@ Nothing planned.
 - Pick Up / Apply, inner color, scroll: `x label <category>` / `y label <category>` areas are the way to
   tell which categories a scroll brought into the window.
 
-## Edge cases (`trellis-plot-edge-cases.feature`)
+## Edge cases
 
-Written for `trellis-plot-edge-cases.feature` (26 Oct 2026), the guard suite of edge cases: data
-shapes, columns removed or renamed under the open viewer, layouts naming a missing column, property
-bounds, closing the viewer. Nothing here asks for a library, binding or code change made by that
-feature; it lists what the feature could not claim and why.
+The edge-case round of 26 Oct 2026: data shapes, columns removed or renamed under the open viewer,
+layouts naming a missing column, property bounds, closing the viewer. Its checks are now steps of
+`trellis-plot-keyboard.feature`, `trellis-plot-categories.feature`,
+`trellis-plot-click-actions.feature`, `trellis-plot-tiles-and-layout.feature` and
+`trellis-plot-pick-up-color-and-scroll.feature`. Nothing here asks
+for a library, binding or code change; it lists what the features could not claim and why.
 
 ### Edge cases: Still open
 
@@ -76,14 +78,14 @@ feature; it lists what the feature could not claim and why.
 
 None.
 
-#### 2. Decided (the rules of `viewer-rules-edge-cases.feature`)
+#### 2. Decided (the rules in `../MISSING.md`)
 
 1. **Values outside a property's declared bounds typed in the context panel are not taken.** The
    number input carries min/max validators (`number_input.dart` `addMinMaxValidators`), but
-   `InputBase.bind` writes every change into the property. Tiles Per Row 11 is a known failure with
-   no ticket yet in the out-of-bounds outline; 0 on a one-column trellis also crashes it (core#1057,
-   in `trellis-plot-edge-cases.feature`). No rows and a renamed split column are rows of the outlines
-   too.
+   `InputBase.bind` writes every change into the property. Tiles Per Row 11 is a known failure of
+   core#1200, the last scenario of `trellis-plot-pick-up-color-and-scroll.feature`; 0 on a
+   one-column trellis crashed it (core#1057, fixed, in `trellis-plot-tiles-and-layout.feature`). No rows, a renamed split column and Tiles Per Row 0 set
+   through the API are requested from ApiTests in `../MISSING.md`.
 
 #### 3. Questions for owners
 
@@ -103,3 +105,26 @@ a feature.
 ### Edge cases: Won't do
 
 Nothing.
+
+## Closed issues the regression round of 26 Oct 2026 could not claim
+
+public#2144 is claimed in `trellis-plot-split-and-inner-type.feature`, public#3617 and public#1547 in
+`trellis-plot-inner-bar-charts.feature`.
+
+- **Inner box plot settings survive re-running the view's parameterised query (public#3692)** is an ApiTests
+  case, not a feature: what it claims is that the inner look survives the view's table being replaced.
+
+- **Show Empty Bars off gives every inner bar chart its own categories (public#3616).** The trellis
+  reports a cell's picture (`cell signature`), not how many bars its inner bar chart drew. Needs a
+  per-cell `bars of <xcat> | <ycat>` reading from the inner bar chart's own status (its `bars`
+  reading), so the claim is the count of the categories present in that cell:
+
+  ```gherkin
+  Scenario: Show Empty Bars off draws only each cell's own categories (public#3616)
+    Given user opens demog-1000 dataset
+    And user adds a trellis plot viewer with:
+      | X Column Names | SEX |
+    When user picks "Bar chart" in the viewer selector of trellis plot viewer
+    And user sets "showEmptyBars" inner property of trellis plot viewer to "false"
+    Then the "bars of F" reading of trellis plot viewer should be <F categories, measured>
+  ```

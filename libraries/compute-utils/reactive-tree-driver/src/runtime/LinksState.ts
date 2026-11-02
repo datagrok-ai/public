@@ -40,6 +40,8 @@ export class LinksState {
 
   public runningLinks$ = new BehaviorSubject<undefined | string[]>(undefined);
   public forceInitialMetaRun = false;
+  // debounce is for user edits only, runs and mutations hold the tree lock
+  public skipDebounce = false;
   public batchLinks: boolean;
 
   private batchPending = new Set<string>();

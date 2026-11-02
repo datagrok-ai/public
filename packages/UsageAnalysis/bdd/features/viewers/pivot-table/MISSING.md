@@ -42,32 +42,63 @@ surface" and `pivot-table.md`. The Table switch is in `pivot-table-table-switch.
 - **Dragging a key column header inside the inner grid** is now a `@known-failure` scenario in
   `pivot-table-inner-grid-drag.feature` (core#467).
 
-## Edge cases (`pivot-table-edge-cases.feature`)
+## Edge cases (now in `pivot-table-aggregation.feature`)
 
-Written for `pivot-table-edge-cases.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+Written for the pivot table edge cases, now steps of `pivot-table-aggregation.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
 
 ### Still open
 
-**Decided, steps requested**: a blank key clicked under Filtering Enabled is the `(empty)` category (the empty-category rule of `viewer-rules-edge-cases.feature`), so the `filter label` should say `(empty)`. The outline reads a viewer reading; the pivot's row needs a click on the blank key cell, which has no hit area yet (`key cell <row> of <column>`).
+**Decided, steps requested**: a blank key clicked under Filtering Enabled is the `(empty)` category (an empty value is a category named `(empty)`), so the `filter label` should say `(empty)`. The claim needs a click on the blank key cell, which has no hit area yet (`key cell <row> of <column>`).
 
 **Decided, steps requested**: a pivot on a column with thousands of categories (demog USUBJID) says that part of the categories was dropped (the silent-cut rule). Today `auto()` stops at 100 and the + picker has no cap, with no sign of either. The note has no wording yet, and the pivot reports no reading of it.
 
 **Questions for owners**
 
-None. ADD with nothing passing the filter adds an empty table, the user's choice (2026-10-30): claimed in `pivot-table-edge-cases.feature`.
+None. ADD with nothing passing the filter adds an empty table, the user's choice (2026-10-30): claimed in `pivot-table-aggregation.feature`.
 
 **Remark on the code docs**
 
 - `pivot_viewer/CLAUDE.md` says a removed Group by column leaves `missingColumnError` over the grid. On the
   stand the removal re-picks a column (`look.auto` from `onColumnsRemoved`) and no error shows. The re-pick is
-  the expected behaviour (a viewer that picks another column after its column is removed is correct), and the
-  feature claims it; the document is left as it is.
+  the expected behaviour (a viewer that picks another column after its column is removed is correct), and it
+  is requested from ApiTests below; the document is left as it is.
 
 **API or Dart tests to write**
 
 1. Dart regTest: the Data Manipulation crash test runs for `ViewerDescriptor.all.take(30)` and skips the pivot, the tile viewer and the points viewer.
 2. Dart regTest: column names holding `, `, `[`, `]` or quotes through Save parameters and the history menu.
+3. ApiTests: on demog-1000 grouped by DIS_POP, removing DIS_POP re-picks SEVERITY as Group by; the pivot shows no error, aggregates 5 rows and logs nothing.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
 
 ### Won't do
 
 - A layout grouping by a column the table lacks: covered by the Dart regTest "Grouped by a column the table lacks" (`viewers_test.dart`).
+
+## Closed issues the regression round of 26 Oct 2026 could not claim
+
+Written while folding the closed pivot table issues into `pivot-table-inner-grid.feature` and
+`pivot-table-aggregation.feature`.
+
+### Steps requested
+
+- **The column picker of a tag row opens inside the window when the pivot is docked at the right edge
+  (public#3690).** The picker the `+` of a tag row opens (`.d4-column-grid` with a
+  `.d4-column-selector-backdrop`, `gestures.ts` `openColumnSelector`) has no noun, so no geometry claim
+  can name it. Needs a `column picker popup` kind (the visible `.d4-column-grid:has(.d4-column-selector-backdrop)`),
+  then:
+
+  ```gherkin
+  @realizes:public#3690
+  Scenario: The Group by picker of a pivot docked at the right edge opens inside the window (public#3690)
+    Given user is logged in
+    And user opens demog-1000 dataset
+    And user adds a pivot table viewer
+    When user docks pivot table viewer to the right edge of the view
+    And user clicks on the "add group by" area of pivot table viewer
+    Then column picker popup should be visible
+    And column picker popup should be inside the window
+    When user presses Escape
+    Then column picker popup should be absent
+    And no errors should have been logged
+  ```
