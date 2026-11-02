@@ -1,6 +1,6 @@
 /** Queued-task admission for AI chat turns: the queued aiChatTurnTask call holds one celery
  *  slot for exactly the turn's duration while the turn streams over the browser WebSocket;
- *  no conversation content ever enters the queue or the platform logs. */
+ *  no conversation content ever enters the queue. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ClaudeRuntimeClient} from './runtime-client';

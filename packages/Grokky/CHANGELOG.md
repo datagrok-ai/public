@@ -3,7 +3,7 @@
 ## v.next
 
 * AI: Every completed turn is logged as an `ai-turn` usage event with its feature, status, model, tokens, cost and duration, including failed and stopped turns
-* AI: Prompts moved from the `ai-request` usage events to `ai-turn-content`, logged by default with a notice in the AI panel
+* AI: Prompts moved from the `ai-request` usage events to `ai-turn-content`, logged by default with a notice in the AI panel and AI search
 * AI: Added settings to turn off prompt logging and to opt in to logging responses and tool calls
 * Runtime, MCP server: Updated the Node.js base images to 22.23.4 (Node.js October 2026 security release)
 
