@@ -2,15 +2,16 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {armsFrame} from '../arms-input';
-import {MIN_GROUP} from '../engine';
+import {MIN_GROUP, finite} from '../engine';
+import {tgisOf} from '../frames';
 
 /** pmxPlanStudy as the Plan view calls it: the outputs by name. */
 async function plan(params: {[k: string]: any}): Promise<{[k: string]: DG.DataFrame}> {
   const fc = DG.Func.find({package: 'PmxStudio', name: 'pmxPlanStudy'})[0].prepare({line: 'MC38', endpoint: 1500,
     power: 80, correction: 'dunnett', ...params});
   await fc.call();
-  return Object.fromEntries(['plan', 'armResults', 'powerCurve', 'curves', 'duration', 'schedules', 'calendar']
-    .map((o) => [o, fc.outputs[o] as DG.DataFrame]));
+  return Object.fromEntries(['plan', 'armResults', 'powerCurve', 'curves', 'duration', 'schedules', 'calendar',
+    'scenarios'].map((o) => [o, fc.outputs[o] as DG.DataFrame]));
 }
 
 const arm = (name: string, effect = 60) => ({name, therapy: 'small_molecule' as const, metric: 'TGI' as const, effect});
@@ -111,6 +112,49 @@ category('Plan', () => {
     expect(end >= e && end - e < 7 && end % 7 === 1, true, `end ${end}, endpoint day ${e}`);
     expect(o.plan.get('measurement_weekdays', 0), 'Tue');
   }, {timeout: 120000});
+
+  test('Explore: a larger assumed TGI needs no more animals, whatever the form\'s n and metric', async () => {
+    const declared = {n: 12, arms: armsFrame([{name: 'Cpd-1', therapy: 'small_molecule', metric: 'TC', effect: 40}])};
+    const o = await plan({...declared, tgiScenarios: '80, 40, 60'});
+    const rows = o.scenarios.toJson() as {[k: string]: number}[];
+    const totals = rows.filter((r) => r.per_week === 3).map((r) => r.n_total);
+    expect(rows.filter((r) => r.per_week === 3).map((r) => r.tgi).join(), '40,60,80');
+    expect(totals[0] >= totals[1] && totals[1] >= totals[2] && totals[2] >= 2 * MIN_GROUP, true, `${totals}`);
+    // the assumption changes the animals, not the controls' calendar
+    expect(new Set(rows.map((r) => r.study_end)).size, 1);
+    // and the plan itself stays what the form declares
+    const alone = await plan(declared);
+    expect(alone.scenarios.rowCount, 0);
+    expect(o.plan.toCsv(), alone.plan.toCsv());
+  }, {timeout: 300000});
+
+  test('Explore: a TGI no group size reaches has no count, not the column\'s empty value', async () => {
+    const s = (await plan({arms: armsFrame([arm('Cpd-1')]), tgiScenarios: '30, 80'})).scenarios;
+    const at = (tgi: number, column: string) => {
+      const row = Array.from({length: s.rowCount}, (_, i) => i)
+        .find((i) => s.get('tgi', i) === tgi && s.get('per_week', i) === 3)!;
+      return finite(s.get(column, row));
+    };
+    for (const column of ['n_total', 'randomise_total', 'implant_total']) {
+      expect(at(30, column), null, column);
+      expect((at(80, column) ?? 0) > 0, true, column);
+    }
+  }, {timeout: 120000});
+
+  test('Explore: the assumed TGIs of a text', async () => {
+    expect(tgisOf(null).length, 0);
+    expect(tgisOf(' ').length, 0);
+    expect(tgisOf('70%; 30, 30 50').join(), '30,50,70');
+    for (const bad of ['0', '100', 'high', '10 20 30 40 50 60 70 80 90']) {
+      let refused = false;
+      try {
+        tgisOf(bad);
+      } catch {
+        refused = true;
+      }
+      expect(refused, true, bad);
+    }
+  });
 
   test('without the schedules, the same plan and an empty schedules table', async () => {
     const all = await plan({arms: armsFrame([arm('Cpd-1')])});

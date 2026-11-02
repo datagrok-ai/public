@@ -1,5 +1,9 @@
 # PmxStudio changelog
 
+## v.next
+
+* Plan: Added Explore (`tgiScenarios` input, `scenarios` output, Explore tab): the animals a study needs for each assumed TGI, on every measurement schedule
+
 ## 0.0.1 (2026-10-26)
 
 PMX Studio Preclinical, Plan and Analyze, on Crux (crate tgi) and the atlas of historical controls:

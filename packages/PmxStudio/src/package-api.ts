@@ -49,6 +49,7 @@ export namespace funcs {
    *   choices: ["dunnett","bonferroni","none"]
    * @param {number} n - Empty for the number the target power needs, or set it to see the power and smallest detectable effect with that many.
    * @param {number} lastDay - Leave empty to end when the median control reaches the endpoint.
+   * @param {string} tgiScenarios - Up to 8 TGIs to compare, such as 30, 50, 70: the animals the study needs if every arm had each one, sized for the target power whatever the animals per arm. Scenarios, not predictions. Each adds a whole design to the run. Empty: off.
    * @param {number} alpha - Two-sided significance level of the comparisons with the control.
    * @param {number} preLoss - Implanted animals that never reach randomization (no take, or out of the volume window), at your facility.
    * @param {number} postLoss - Randomized animals that cannot be analyzed (ulceration, deaths, technical failures), at your facility.
@@ -63,8 +64,8 @@ export namespace funcs {
    * @param {boolean} compareSchedules - Also give the power by measurements per week (off: that table is empty and the plan twice as fast).
    * @param {boolean} detectableEffect - With the animals per arm set, also search each arm’s smallest detectable effect (off: left empty and the plan several times faster).
    */
-  export async function pmxPlanStudy(line: string , endpoint: number , arms: DG.DataFrame | undefined, power: number , correction: string , n?: number | null, lastDay?: number | null, alpha?: number , preLoss?: number , postLoss?: number , lossRule?: string , confidence?: number , vRand?: number , measurementDays?: string , startWeekday?: string , humane?: number , compareSchedules?: boolean , detectableEffect?: boolean ): Promise<{plan: DG.DataFrame, armResults: DG.DataFrame, powerCurve: DG.DataFrame, curves: DG.DataFrame, duration: DG.DataFrame, schedules: DG.DataFrame, calendar: DG.DataFrame}> {
-    return await grok.functions.call('PMXStudio:PmxPlanStudy', { line, endpoint, arms, power, correction, n, lastDay, alpha, preLoss, postLoss, lossRule, confidence, vRand, measurementDays, startWeekday, humane, compareSchedules, detectableEffect });
+  export async function pmxPlanStudy(line: string , endpoint: number , arms: DG.DataFrame | undefined, power: number , correction: string , n?: number | null, lastDay?: number | null, tgiScenarios?: string | null, alpha?: number , preLoss?: number , postLoss?: number , lossRule?: string , confidence?: number , vRand?: number , measurementDays?: string , startWeekday?: string , humane?: number , compareSchedules?: boolean , detectableEffect?: boolean ): Promise<{plan: DG.DataFrame, armResults: DG.DataFrame, powerCurve: DG.DataFrame, curves: DG.DataFrame, duration: DG.DataFrame, schedules: DG.DataFrame, calendar: DG.DataFrame, scenarios: DG.DataFrame}> {
+    return await grok.functions.call('PMXStudio:PmxPlanStudy', { line, endpoint, arms, power, correction, n, lastDay, tgiScenarios, alpha, preLoss, postLoss, lossRule, confidence, vRand, measurementDays, startWeekday, humane, compareSchedules, detectableEffect });
   }
 
   /**
@@ -89,8 +90,9 @@ export namespace funcs {
    * @param {number} weightLimit - An animal is removed when it loses this much weight (your institution’s limit).
    * @param {number} humane - An animal is removed when its tumor passes your institution’s limit.
    * @param {number} density - The tumor’s mass per mm³ of caliper volume (empty: the cell line’s typical one).
+   * @param {boolean} withTwin - Also compare each treated animal with its untreated twin (off: those tables are empty and the analysis several times faster).
    */
-  export async function pmxAnalyzeStudy(study: DG.DataFrame , animal: DG.Column , group: DG.Column , day: DG.Column , volume: DG.Column , bodyWeight: DG.Column | undefined| null, tumorWeight: DG.Column | undefined| null, removalReason: DG.Column | undefined| null, plan: string | undefined| null, line: string , control: string | undefined| null, endpoint: number , correction: string , evaluationDay?: number | null, alpha?: number , weightLimit?: number , humane?: number , density?: number | null): Promise<{analysis: DG.DataFrame, comparisons: DG.DataFrame, animals: DG.DataFrame, volumes: DG.DataFrame, twins: DG.DataFrame, effects: DG.DataFrame, checks: DG.DataFrame, versusPlan: DG.DataFrame, predicted: DG.DataFrame, tolerability: DG.DataFrame, weights: DG.DataFrame}> {
-    return await grok.functions.call('PMXStudio:PmxAnalyzeStudy', { study, animal, group, day, volume, bodyWeight, tumorWeight, removalReason, plan, line, control, endpoint, correction, evaluationDay, alpha, weightLimit, humane, density });
+  export async function pmxAnalyzeStudy(study: DG.DataFrame , animal: DG.Column , group: DG.Column , day: DG.Column , volume: DG.Column , bodyWeight: DG.Column | undefined| null, tumorWeight: DG.Column | undefined| null, removalReason: DG.Column | undefined| null, plan: string | undefined| null, line: string , control: string | undefined| null, endpoint: number , correction: string , evaluationDay?: number | null, alpha?: number , weightLimit?: number , humane?: number , density?: number | null, withTwin?: boolean ): Promise<{analysis: DG.DataFrame, comparisons: DG.DataFrame, animals: DG.DataFrame, volumes: DG.DataFrame, twins: DG.DataFrame, effects: DG.DataFrame, checks: DG.DataFrame, versusPlan: DG.DataFrame, predicted: DG.DataFrame, tolerability: DG.DataFrame, weights: DG.DataFrame}> {
+    return await grok.functions.call('PMXStudio:PmxAnalyzeStudy', { study, animal, group, day, volume, bodyWeight, tumorWeight, removalReason, plan, line, control, endpoint, correction, evaluationDay, alpha, weightLimit, humane, density, withTwin });
   }
 }

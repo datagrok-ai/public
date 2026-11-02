@@ -6,7 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {button, buttonWithIcon, computed, div, divH, divV, dot, icon, loader, RadioInput, Section, span,
   StatCard, TabStrip, Tooltip} from '@datagrok-libraries/u2';
-import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
+import type {Reason, ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
 /** A fraction as a whole percent: 0.734 → "73%". */
@@ -210,7 +210,8 @@ export function stageStrip(current: Stage, open: (stage: Stage) => void): HTMLEl
 
 /** A tab of a stage's results: what it is for in one plain line (`intro`), its blocks, or for one not built yet
  *  (`soon`) what it will show. */
-export interface ResultTab {id: string, label: string, intro: string, content?: HTMLElement[], soon?: string}
+export interface ResultTab {id: string, label: string, intro: string, content?: HTMLElement[], soon?: string,
+  disabled?: Reason}
 
 /** The results' tabs, one per question, under the figures that answer the main one; a view opens on its first. */
 export function resultTabs(view: string, tabs: ResultTab[]): TabStrip {
@@ -220,8 +221,8 @@ export function resultTabs(view: string, tabs: ResultTab[]): TabStrip {
     const body = t.soon !== undefined ? [infoNote(`<b>Coming soon.</b> ${t.soon}`)] : t.content ?? [];
     const panel = divV([intro, ...body], `pmx-${view}-tab-${t.id}`);
     Object.assign(panel.style, {gap: 'var(--dg-space-l)', paddingTop: 'var(--dg-space-m)'});
-    return {id: t.id, title: t.label, content: panel, tooltip: t.soon !== undefined ? `${t.label}: coming soon` :
-      t.label};
+    return {id: t.id, title: t.label, content: panel, disabled: t.disabled,
+      tooltip: t.soon !== undefined ? `${t.label}: coming soon` : t.label};
   })});
   return strip;
 }

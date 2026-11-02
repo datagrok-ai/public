@@ -32,6 +32,9 @@ const WEEKDAYS = WEEKDAY_NAMES.map((d) => d.slice(0, 3));
 /** What a section with nothing to compare says: no arm reaches the target power with any group size. */
 const UNREACHABLE = 'No group size up to 40 reaches the target power: lower it, or set the animals per arm.';
 
+/** Where a study's total has no number: the limit is per group, and totals over 40 are common. */
+const OVER_40 = 'over 40 per group';
+
 /** A day's mark in the calendar: a short label in its kind's colour. */
 function mark(text: string, color: string, filled: boolean): HTMLElement {
   const el = span(text);
@@ -159,8 +162,8 @@ function schedulesTable(sc: DG.DataFrame, own: number | undefined): HTMLElement 
   const byWeek = new Map<number, Schedule[1]>();
   for (let i = 0; i < sc.rowCount; i++) {
     const k = sc.get('per_week', i);
-    const row: Schedule[1] = byWeek.get(k) ?? {measurements: sc.get('measurements', i), nTotal: sc.get('n_total', i),
-      power: {}};
+    const row: Schedule[1] = byWeek.get(k) ?? {measurements: sc.get('measurements', i),
+      nTotal: finite(sc.get('n_total', i)), power: {}};
     row.power[sc.get('arm', i)] = sc.get('assurance', i);
     byWeek.set(k, row);
   }
@@ -168,7 +171,7 @@ function schedulesTable(sc: DG.DataFrame, own: number | undefined): HTMLElement 
   const columns = [
     {header: 'Measurements a week', render: ([k]: Schedule) => k === own ? `${k} · this plan` : String(k)},
     {header: 'Measurement days', render: ([, s]: Schedule) => String(s.measurements)},
-    {header: 'Analyzable animals', render: ([k, s]: Schedule) => animals(s.nTotal ?? 'over 40', k === own)},
+    {header: 'Analyzable animals', render: ([k, s]: Schedule) => animals(s.nTotal ?? OVER_40, k === own)},
     ...armNames.map((arm) => ({header: armNames.length > 1 ? `Power, ${arm}` : 'Power',
       render: ([, s]: Schedule) => pct(s.power[arm])})),
   ];
@@ -184,6 +187,33 @@ function animals(n: unknown, primary: boolean): HTMLElement {
   Object.assign(el.style, {fontVariantNumeric: 'tabular-nums', fontWeight: primary ? '600' : '500',
     fontSize: primary ? '15px' : '13px', color: primary ? 'var(--dg-accent, #2083d5)' : 'inherit'});
   return el;
+}
+
+/** One row per assumed TGI: the animals to implant and randomize on the plan's schedule (`own`), and the analyzable
+ *  animals on each schedule. */
+function scenariosTable(sc: DG.DataFrame, own: number | undefined): HTMLElement {
+  type Row = {tgi: number, implant: number | null, randomise: number | null, byWeek: Map<number, number | null>};
+  const rows = new Map<number, Row>();
+  for (let i = 0; i < sc.rowCount; i++) {
+    const tgi = sc.get('tgi', i);
+    const row = rows.get(tgi) ?? {tgi, implant: finite(sc.get('implant_total', i)),
+      randomise: finite(sc.get('randomise_total', i)), byWeek: new Map()};
+    row.byWeek.set(sc.get('per_week', i), finite(sc.get('n_total', i)));
+    rows.set(tgi, row);
+  }
+  const weeks = [...new Set(sc.col('per_week')!.toList() as number[])];
+  const columns = [
+    {header: 'Assumed TGI', render: (r: Row) => `${r.tgi}%`},
+    {header: 'To implant', render: (r: Row) => animals(r.implant, true)},
+    {header: 'To randomize', render: (r: Row) => animals(r.randomise, false)},
+    ...weeks.map((k) => ({header: `Analyzable, ${k} a week${k === own ? ' · this plan' : ''}`,
+      render: (r: Row) => animals(r.byWeek.get(k) ?? OVER_40, false)})),
+  ];
+  const table = new BasicTable<Row>({items: [...rows.values()], keyOf: (r) => String(r.tgi),
+    columns: columns.map((c, j) => ({...c, align: j >= 1 ? 'center' : 'left'}))});
+  table.root.style.width = '100%';
+  wrapCells(table.root);
+  return table.root;
 }
 
 /** A .pmxplan file opened from Files or dropped on the platform: Plan with it (no table to open). */
@@ -217,7 +247,8 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
   const form = funcForm(call, {layout: 'tall',
     overrides: {arms: {input: armsInput}, correction: {input: correction}},
     onInputChanged: () => stale.value = result.peek() !== undefined});
-  settleForm(form, {n: 'Auto (target power)', lastDay: 'Auto (endpoint reached)'});
+  settleForm(form, {n: 'Auto (target power)', lastDay: 'Auto (endpoint reached)',
+    tgiScenarios: 'Off, or e.g. 30, 50, 70'});
 
   // busy while the view plans (the first plan, Run, a change of randomization day)
   const planning = signal(true);
@@ -582,6 +613,8 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     legendVisibility: 'Always', showXAxis: true, showYAxis: true,
     showTopPanel: false, showAggrSelectors: false, showSplitSelector: false});
 
+  const scenarioEnd = div([], 'pmx-plan-scenario-end');
+  const scenarioBox = div([]);
   // the figures answer the plan's question; each tab, one closer question
   const tabs = resultTabs('plan', [
     {id: 'design', label: 'Design', intro: 'The animals each group needs and how its tumors are expected to grow.',
@@ -598,6 +631,14 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
       block('Power by group size', 'With more or fewer animals', sized(power, 260)),
       block('Power by end of study', 'Ending earlier or later', endSummary, sized(byEnd, 280)),
       block('Measurement schedule', 'Measuring more or less often', scheduleBox)]},
+    {id: 'explore', label: 'Explore', intro: 'What the study would need if the treatment had each TGI. The TGIs are ' +
+      'scenarios you read across, not predictions of what a treatment will do.',
+    disabled: computed(() => result.value?.scenarios.rowCount ? null :
+      'Enter the TGIs to assume under Explore in the form, then run'),
+    content: [
+      block('Assumed TGI', 'The animals of the whole study with every arm at that TGI, sized for the target power ' +
+        'whatever animals per arm is set. To implant and to randomize are for this plan’s schedule', scenarioEnd,
+      scenarioBox)]},
     {id: 'protocol', label: 'Protocol', intro: 'The plan written out, ready to paste into your study protocol.',
       content: [
         block('Study protocol', 'Design, sample size and analysis, ready to paste',
@@ -609,6 +650,14 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
   form.effect(() => byEnd.root.style.visibility = result.value?.duration.rowCount ? '' : 'hidden');
   // the schedules are the design's costliest scan: computed while their tab is open
   form.effect(() => scheduleOpen.value = tabs.activeTab.value === 'alternatives');
+
+  form.effect(() => {
+    const r = result.value;
+    if (!r?.scenarios.rowCount)
+      return;
+    scenarioEnd.textContent = `The study ends on day ${r.scenarios.get('study_end', 0)} in every scenario.`;
+    scenarioBox.replaceChildren(scenariosTable(r.scenarios, r.plan.get('per_week', 0)));
+  });
   const content = divV([cards, tabs.root], 'pmx-plan-content');
   Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
 
@@ -651,7 +700,7 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
       return;
     const f = DG.Func.byName('PmxStudio:pmxPlanStudy');
     const fill = f.prepare({...Object.fromEntries(f.inputs.map((p) => [p.name, call.getParamValue(p.name)])),
-      compareSchedules: true});
+      compareSchedules: true, tgiScenarios: null});
     void fill.call().then((c) => {
       if (result.peek() === r)
         schedules.value = c.outputs['schedules'];
@@ -668,7 +717,7 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     searching = r;
     const f = DG.Func.byName('PmxStudio:pmxPlanStudy');
     const fill = f.prepare({...Object.fromEntries(f.inputs.map((p) => [p.name, call.getParamValue(p.name)])),
-      compareSchedules: false, detectableEffect: true});
+      compareSchedules: false, detectableEffect: true, tgiScenarios: null});
     void fill.call().then((c) => {
       const a: DG.DataFrame = c.outputs['armResults'];
       detectable.value = {of: r, mde: new Map(Array.from({length: a.rowCount}, (_, i) =>

@@ -6,6 +6,8 @@
  * function's table and parameters; every arm is designed with the same seed, so the studies drawn, the study end
  * and the controls are the same in every call, and the study's animals per arm are the largest arm's.
  */
+import * as DG from 'datagrok-api/dg';
+
 import {crux, CruxResult, named, rows} from './crux';
 import {MeasurementError, enginePriors, linePrior, mapPrior} from './priors';
 import {ARCHETYPES, Archetype, Therapy} from './archetypes';
@@ -17,9 +19,10 @@ export type Correction = 'dunnett' | 'bonferroni' | 'none';
 export const correctionOf = (x: unknown): Correction =>
   x === 'bonferroni' || x === 'none' ? x : 'dunnett';
 
-/** Whether x is a finite number; `finite` gives it or null (Crux's nulls, a form's empty optionals). */
+/** Whether x is a finite number; `finite` gives it or null (Crux's nulls, a form's empty optionals, and the empty cell
+ *  of an integer column, which reads as INT_NULL). */
 export const isFiniteNumber = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
-export const finite = (x: unknown): number | null => isFiniteNumber(x) ? x : null;
+export const finite = (x: unknown): number | null => isFiniteNumber(x) && x !== DG.INT_NULL ? x : null;
 
 /** Monday, Wednesday and Friday (0 Monday … 6 Sunday): the measurement weekdays when none are given. */
 export const LAB_WEEKDAYS = [0, 2, 4];
@@ -189,6 +192,15 @@ export async function lineModel(line: string) {
   return {lp, me, prior, params};
 }
 
+export interface Scenario {tgi: number, design: StudyDesign}
+
+/** The study sized for each assumed TGI (percent), every declared arm at that TGI: what the design needs if the effect
+ *  is that large, which says nothing about whether a treatment reaches it. */
+export function designScenarios(d: StudyDeclaration, tgis: number[]): Promise<Scenario[]> {
+  return Promise.all(tgis.map(async (tgi) => ({tgi, design: await designStudy({...d, n: null, schedules: true,
+    mde: false, arms: d.arms.map((a) => ({...a, metric: 'TGI' as const, effect: tgi}))})})));
+}
+
 export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   if (d.arms.length === 0)
     throw new Error('Add at least one treatment arm');
@@ -250,7 +262,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     .map((x) => ({...x, arm: d.arms[k].name}) as Curve)));
 
   // by last day: each arm's power at Crux's n for it (the user's n, else its n_assurance, which the minimum group can
-  // raise) and the controls' state (the same in every call)
+  // raise) and the controls' state, from the first call (its shares move a little between calls: simulation)
   const byDay = results.map((r) => named(r, 'duration'));
   // each arm's value in row i of its own table, for the arms designed (an arm with no n has none)
   const perArm = (tables: {[k: string]: any}[][], i: number) =>

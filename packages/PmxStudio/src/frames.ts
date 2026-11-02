@@ -3,7 +3,8 @@
 import * as DG from 'datagrok-api/dg';
 
 import {enginePriors, mapPrior} from './priors';
-import {HUMANE, LAB_WEEKDAYS, StudyDeclaration, correctionOf, designStudy, isFiniteNumber as ok} from './engine';
+import {HUMANE, LAB_WEEKDAYS, StudyDeclaration, correctionOf, designScenarios, designStudy,
+  isFiniteNumber as ok} from './engine';
 import {armsOf} from './arms-input';
 
 /** pmxPlanStudy's startWeekday choices, Monday first (the engine's 0 … 6). */
@@ -20,6 +21,20 @@ export function weekdaysOf(text: string | undefined): number[] {
 
 /** The weekdays as the measurementDays parameter writes them: "Mon, Wed, Fri". */
 export const weekdaysText = (days: number[]) => days.map((i) => WEEKDAY_NAMES[i].slice(0, 3)).join(', ');
+
+/** Most assumed TGIs in one run: each is a whole design. */
+const MAX_SCENARIOS = 8;
+
+/** The assumed TGIs of a text such as "30, 50, 70", in order; empty: none (no scenarios are computed). */
+export function tgisOf(text: string | null | undefined): number[] {
+  const tgis = [...new Set(String(text ?? '').split(/[,;\s%]+/).filter((w) => w !== '').map(Number))]
+    .sort((a, b) => a - b);
+  if (tgis.some((x) => !(x > 0 && x < 100)))
+    throw new Error(`Assumed TGIs: write percentages between 0 and 100, such as 30, 50, 70 (got "${text}")`);
+  if (tgis.length > MAX_SCENARIOS)
+    throw new Error(`Assumed TGIs: at most ${MAX_SCENARIOS} at a time, each is a whole design`);
+  return tgis;
+}
 
 /** pmxPlanStudy's inputs as the form and Grokky give them: percentages, choice labels, empty optionals. */
 export interface PlanInputs {
@@ -86,13 +101,18 @@ export function armColors(arms: string[]): {[arm: string]: string} {
 
 /** The study (one row), its arms (one row each), the power curves (per arm and n), the predicted volumes (per
  *  day and arm: the control, then each treated arm), the power by last day (per arm and day) and by measurement
- *  schedule (per arm and measurements a week), and the study calendar (per day from randomization). */
+ *  schedule (per arm and measurements a week), the study calendar (per day from randomization) and the assumed-TGI
+ *  scenarios (per TGI and measurements a week). */
 export interface PlanFrames {plan: DG.DataFrame, armResults: DG.DataFrame, powerCurve: DG.DataFrame,
   curves: DG.DataFrame,
-  duration: DG.DataFrame, schedules: DG.DataFrame, calendar: DG.DataFrame}
+  duration: DG.DataFrame, schedules: DG.DataFrame, calendar: DG.DataFrame, scenarios: DG.DataFrame}
 
-export async function planFrames(d: StudyDeclaration): Promise<PlanFrames> {
-  const s = await designStudy(d);
+export async function planFrames(d: StudyDeclaration, tgis: number[] = []): Promise<PlanFrames> {
+  const [s, sweep] = await Promise.all([designStudy(d), designScenarios(d, tgis)]);
+  // (none asked for: an empty table, which fromObjects does not build)
+  const scenarios = DG.DataFrame.fromObjects(sweep.flatMap(({tgi, design: x}) => x.schedules.map((c) => ({tgi,
+    per_week: c.perWeek, n_total: c.nTotal, implant_total: x.implant, randomise_total: x.randomiseTotal,
+    study_end: x.studyEnd})))) ?? DG.DataFrame.create();
   const me = s.measurement;
   const tag = `${d.line} · ${d.arms.length} arm${d.arms.length > 1 ? 's' : ''}`;
   // the first day some controls (5%) may be over the humane limit, before the end
@@ -174,7 +194,7 @@ export async function planFrames(d: StudyDeclaration): Promise<PlanFrames> {
     style: 'solid', color: '#4d5261'});
   for (const [df, name] of [[plan, 'Plan'], [arms, 'Arms'], [powerCurve, 'Power'], [curves, 'Volumes'],
     [duration, 'Power by end of study'], [schedules, 'Power by measurement schedule'],
-    [calendar, 'Study calendar']] as const)
+    [calendar, 'Study calendar'], [scenarios, 'Assumed TGI scenarios']] as const)
     df.name = `${name} ${tag}`;
-  return {plan, armResults: arms, powerCurve, curves, duration, schedules, calendar};
+  return {plan, armResults: arms, powerCurve, curves, duration, schedules, calendar, scenarios};
 }
