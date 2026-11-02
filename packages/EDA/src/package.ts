@@ -60,13 +60,6 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.init({tags: ['init']})
-  static async init(): Promise<void> {
-    await initXgboost();
-    await initSvm();
-  }
-
-
   @grok.decorators.func({
     'top-menu': 'ML | Cluster | DBSCAN...',
     'name': 'DBSCAN',
@@ -403,8 +396,8 @@ export class PackageFunctions {
     'name': 'MVA demo',
     'description': 'Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.',
   })
-  static async demoMultivariateAnalysis(): Promise<void> {
-    await runDemoMVA();
+  static demoMultivariateAnalysis(): void {
+    runDemoMVA();
   }
 
 
@@ -721,9 +714,10 @@ export class PackageFunctions {
     'name': 'Apply XGBoost',
     'description': 'Predict the target for a table using a trained XGBoost gradient-boosting model.',
   })
-  static applyXGBooster(
+  static async applyXGBooster(
     df: DG.DataFrame,
-    @grok.decorators.param({'options': {'description': 'Trained XGBoost model to apply.'}}) model: any): DG.DataFrame {
+    @grok.decorators.param({'options': {'description': 'Trained XGBoost model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    await initXgboost();
     const unpackedModel = new XGBooster(model);
     return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
   }
@@ -795,9 +789,10 @@ export class PackageFunctions {
     'name': 'Apply SVM',
     'description': 'Predict the target for a table using a trained support vector machine (SVM) model.',
   })
-  static applySVM(
+  static async applySVM(
     df: DG.DataFrame,
-    @grok.decorators.param({'options': {'description': 'Trained SVM model to apply.'}}) model: any): DG.DataFrame {
+    @grok.decorators.param({'options': {'description': 'Trained SVM model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    await initSvm();
     const unpackedModel = new SVM(model);
     return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
   }

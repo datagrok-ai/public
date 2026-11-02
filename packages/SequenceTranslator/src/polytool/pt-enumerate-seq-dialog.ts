@@ -27,7 +27,9 @@ import {PolyToolPlaceholdersInput} from './pt-placeholders-input';
 import {showMonomerSelectionDialog} from '@datagrok-libraries/bio/src/utils/monomer-selection-dialog';
 import {defaultErrorHandler} from '../utils/err-info';
 import {PolyToolPlaceholdersBreadthInput} from './pt-placeholders-breadth-input';
-import {PT_ENUM_TYPE_TOOLTIPS, PT_HELM_UI_DIALOG_ENUMERATION, PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY} from './const';
+import {PT_ENUM_TYPE_TOOLTIPS, PT_HELM_UI_DIALOG_ENUMERATION, PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED,
+  PT_UI_ADD_HELM, PT_UI_APPEND_TO_TABLE_TT, PT_UI_HIGHLIGHT_MONOMERS_TT, PT_UI_KEEP_ORIGINAL_TT, PT_UI_TO_ATOMIC_LEVEL_TT,
+  PT_UI_TRIVIAL_NAME_TT} from './const';
 import {PolyToolDataRole, PolyToolTags} from '../consts';
 import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
 import {attachHelmEnumeratorAi} from './ai-functions';
@@ -37,7 +39,6 @@ import {polyToolConvert} from './pt-dialog';
 import {_package, applyNotationProviderForCyclized, PackageFunctions} from '../package';
 import {tagAsOligoNucleotide} from '../oligo-renderer/converters';
 import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
-import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
 import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {CyclizedNotationProvider} from '../utils/cyclized';
@@ -67,7 +68,6 @@ type PolyToolEnumerateInputs = {
   keepOriginal: DG.InputBase<boolean>;
   toAtomicLevel: DG.InputBase<boolean>;
   generateHelm: DG.InputBase<boolean>;
-  chiralityEngine: DG.InputBase<boolean>;
   highlightMonomers: DG.InputBase<boolean>;
   rules: { header: HTMLElement, form: HTMLDivElement },
 };
@@ -82,7 +82,6 @@ type PolyToolEnumerateHelmSerialized = {
   keepOriginal: boolean;
   toAtomicLevel: boolean;
   generateHelm: boolean;
-  chiralityEngine: boolean;
   highlightMonomers: boolean;
   rules: string[],
 };
@@ -288,7 +287,6 @@ async function getPolyToolEnumerateDialog(
           onValueChanged: (value, input) => { updateViewRules(); }
         }),
       generateHelm: ui.input.bool(PT_UI_GET_HELM, {value: true}),
-      chiralityEngine: ui.input.bool(PT_UI_USE_CHIRALITY, {value: false}),
       highlightMonomers: ui.input.bool(PT_UI_HIGHLIGHT_MONOMERS, {value: false}),
       rules: {
         header: ui.inlineText([PT_UI_RULES_USED]),
@@ -318,6 +316,12 @@ async function getPolyToolEnumerateDialog(
       ui.tooltip.bind(inputs.enumeratorType.input, tooltipText);
     };
     updateEnumTypeTooltip();
+    ui.tooltip.bind(inputs.keepOriginal.root, PT_UI_KEEP_ORIGINAL_TT);
+    ui.tooltip.bind(inputs.toAtomicLevel.root, PT_UI_TO_ATOMIC_LEVEL_TT);
+    ui.tooltip.bind(inputs.generateHelm.root, PT_UI_ADD_HELM);
+    ui.tooltip.bind(inputs.highlightMonomers.root, PT_UI_HIGHLIGHT_MONOMERS_TT);
+    ui.tooltip.bind(inputs.trivialName.root, PT_UI_TRIVIAL_NAME_TT);
+    ui.tooltip.bind(inputs.appendToTable.root, PT_UI_APPEND_TO_TABLE_TT);
 
     // Attach a "pick from column" icon button to the trivial name input
     if (cell?.dataFrame) {
@@ -570,19 +574,21 @@ async function getPolyToolEnumerateDialog(
       inputs.macromolecule.redraw();
     };
 
-    // Shows/hides conversion rules UI based on toAtomicLevel setting and data role
+    // Shows/hides conversion rules UI based on toAtomicLevel setting and data role; Highlight monomers shows whenever
+    // the molecules are made, both data roles use it (hidden, a value restored from the history applied unseen)
     const updateViewRules = () => {
       if (inputs.toAtomicLevel.value && dataRole === PolyToolDataRole.template) {
         inputs.generateHelm.root.style.removeProperty('display');
-        inputs.chiralityEngine.root.style.removeProperty('display');
-        inputs.highlightMonomers.root.style.removeProperty('display');
         inputs.rules.header.style.removeProperty('display');
         inputs.rules.form.style.removeProperty('display');
       } else {
-        inputs.generateHelm.root.style.display = inputs.chiralityEngine.root.style.display =
-          inputs.highlightMonomers.root.style.display = 'none';
+        inputs.generateHelm.root.style.display = 'none';
         inputs.rules.header.style.display = inputs.rules.form.style.display = 'none';
       }
+      if (inputs.toAtomicLevel.value)
+        inputs.highlightMonomers.root.style.removeProperty('display');
+      else
+        inputs.highlightMonomers.root.style.display = 'none';
       if (resizeInputs)
         resizeInputs();
     };
@@ -721,7 +727,7 @@ async function getPolyToolEnumerateDialog(
           const enumeratorResDf = await polyToolEnumerateSeq(srcHelm, dataRole, srcId, params,
             toAtomicLevelV ? {
               generateHelm: inputs.generateHelm.value,
-              chiralityEngine: inputs.chiralityEngine.value,
+              chiralityEngine: true, // no input any more: stereo is always absolute
               highlightMonomers: inputs.highlightMonomers.value,
               rules: await ruleInputs.getActive()
             } : false,
@@ -773,7 +779,7 @@ async function getPolyToolEnumerateDialog(
         {style: {width: '50%'}}),
         ui.divV([
           ui.divH([inputs.toAtomicLevel.root, inputs.generateHelm.root]),
-          ui.divH([inputs.chiralityEngine.root, inputs.highlightMonomers.root]),
+          inputs.highlightMonomers.root,
           inputs.rules.header, inputs.rules.form],
         {style: {width: '50%'}})],
       {style: {width: '100%'}}))
@@ -804,7 +810,6 @@ async function getPolyToolEnumerateDialog(
           keepOriginal: inputs.keepOriginal.value,
           toAtomicLevel: inputs.toAtomicLevel.value,
           generateHelm: inputs.generateHelm.value,
-          chiralityEngine: inputs.chiralityEngine.value,
           highlightMonomers: inputs.highlightMonomers.value,
           rules: ruleFileList,
         };
@@ -819,7 +824,6 @@ async function getPolyToolEnumerateDialog(
         inputs.keepOriginal.value = x.keepOriginal ?? false;
         inputs.toAtomicLevel.value = x.toAtomicLevel ?? true;
         inputs.generateHelm.value = x.generateHelm ?? true;
-        inputs.chiralityEngine.value = x.chiralityEngine ?? false;
         inputs.highlightMonomers.value = x.highlightMonomers ?? false;
         ruleInputs.setActive(x.rules);
         setTimeout(() => {
@@ -833,7 +837,7 @@ async function getPolyToolEnumerateDialog(
     const optionInputs: {[name: string]: DG.InputBase<any>} = {
       enumeratorType: inputs.enumeratorType, keepOriginal: inputs.keepOriginal,
       toAtomicLevel: inputs.toAtomicLevel, generateHelm: inputs.generateHelm,
-      chiralityEngine: inputs.chiralityEngine, highlightMonomers: inputs.highlightMonomers,
+      highlightMonomers: inputs.highlightMonomers,
       trivialName: inputs.trivialName,
     };
     attachHelmEnumeratorAi(dialog, {
@@ -847,7 +851,6 @@ async function getPolyToolEnumerateDialog(
         keepOriginal: inputs.keepOriginal.value,
         toAtomicLevel: inputs.toAtomicLevel.value,
         generateHelm: inputs.generateHelm.value,
-        chiralityEngine: inputs.chiralityEngine.value,
         highlightMonomers: inputs.highlightMonomers.value,
         trivialName: inputs.trivialName.value,
         appendToTable: inputs.appendToTable.value?.name ?? null,
@@ -934,7 +937,6 @@ export async function polyToolEnumerateSeq(
   const pi = DG.TaskBarProgressIndicator.create('PolyTool enumerating...');
   try {
     const libHelper = await getMonomerLibHelper();
-    const rdKitModule = await getRdKitModule();
     const monomerLib = libHelper.getMonomerLib(); // TODO: Get monomer lib from src SeqValueBase
 
     // Core enumeration: produces [helm, id] pairs
@@ -984,10 +986,10 @@ export async function polyToolEnumerateSeq(
           toAtomicLevel.chiralityEngine, toAtomicLevel.highlightMonomers);
         enumeratorResDf.columns.add(talRes.molCol!, false);
         const resMolCol = talRes.molCol!;
-        await buildMonomerHoverLink(resHelmCol, resMolCol, monomerLib, helmHelper.seqHelper, rdKitModule, true);
+        await buildMonomerHoverLink(resHelmCol, resMolCol, monomerLib, helmHelper.seqHelper, null, true);
       } else if (dataRole === PolyToolDataRole.template) {
-        const talRes = await polyToolConvert(enumCol,
-          toAtomicLevel.generateHelm, false, toAtomicLevel.chiralityEngine, false, toAtomicLevel.rules);
+        const talRes = await polyToolConvert(enumCol, toAtomicLevel.generateHelm, false,
+          toAtomicLevel.chiralityEngine, toAtomicLevel.highlightMonomers, toAtomicLevel.rules);
         resHelmCol = talRes[0];
       }
     }

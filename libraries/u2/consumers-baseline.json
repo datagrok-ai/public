@@ -284,6 +284,49 @@
         "classBuildsUi": []
       }
     },
+    "packages/Admetica": {
+      "files": 11,
+      "u2Files": 2,
+      "valueValue": 0,
+      "valuePeek": 0,
+      "runInScope": 0,
+      "runWith": 0,
+      "runWithUndefined": 0,
+      "newScope": 0,
+      "viewZoo": 0,
+      "freeSubscribe": 0,
+      "enabledOpt": 0,
+      "okEnabled": 0,
+      "deepDgIndex": 0,
+      "deepImports": 0,
+      "controlBuild": 0,
+      "newAppHeader": 0,
+      "rawSubscribe": 0,
+      "tsInternalSelectors": 0,
+      "subclassU2": 0,
+      "subclassEms": 0,
+      "classBuildsUi": 0,
+      "cssFiles": 1,
+      "cssLines": 91,
+      "cssInternalLines": 1,
+      "cssImportant": 0,
+      "commentLines": 78,
+      "fileHeaders": 4,
+      "privateDocs": 0,
+      "classes": {
+        "subclassU2": [],
+        "subclassEms": [],
+        "classBuildsUi": []
+      },
+      "lint": {
+        "u2/comments": 0,
+        "u2/no-snapshot-in-live-slot": 0,
+        "u2/reason-text": 0,
+        "u2/no-raw-column-list": 0,
+        "u2/build-in-owner": 0,
+        "u2/no-unowned-root": 0
+      }
+    },
     "packages/ApiTests": {
       "files": 234,
       "u2Files": 2,
@@ -1228,6 +1271,13 @@
       "reason": "U2Demo's Chained choices page shows its own code on the page (source-panel.ts sourceOf): one rule keeps the lines whole and scrolls them sideways, where the context panel wraps them",
       "grown": [
         "packages/U2Demo cssLines: 660 → 667"
+      ]
+    },
+    {
+      "date": "2026-11-02",
+      "reason": "Admetica's Calculate dialog drops the frame of its VirtualTree (.admetica-editor-tree > .u2-list), as U2Demo's nav tree does: VirtualTree has no borderless option",
+      "grown": [
+        "packages/Admetica cssInternalLines: 0 → 1"
       ]
     }
   ]

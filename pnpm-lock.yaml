@@ -181,8 +181,8 @@ importers:
         specifier: workspace:^
         version: link:../gridext
       '@datagrok-libraries/hwe':
-        specifier: ^1.0.5
-        version: 1.0.5(@datagrok-libraries/bio@libraries+bio)
+        specifier: ^1.1.0
+        version: 1.1.0(@datagrok-libraries/bio@libraries+bio)
       '@datagrok-libraries/ml':
         specifier: workspace:^
         version: link:../ml
@@ -822,6 +822,9 @@ importers:
       '@datagrok-libraries/tutorials':
         specifier: workspace:^
         version: link:../../libraries/tutorials
+      '@datagrok-libraries/u2':
+        specifier: workspace:^
+        version: link:../../libraries/u2
       '@datagrok-libraries/utils':
         specifier: workspace:^
         version: link:../../libraries/utils
@@ -837,6 +840,9 @@ importers:
       punycode:
         specifier: ^2.3.1
         version: 2.3.1
+      rxjs:
+        specifier: 'catalog:'
+        version: 6.6.7
 
   packages/Alation:
     dependencies:
@@ -992,8 +998,8 @@ importers:
         specifier: workspace:^
         version: link:../../libraries/chem-meta
       '@datagrok-libraries/hwe':
-        specifier: ^1.0.1
-        version: 1.0.5(@datagrok-libraries/bio@libraries+bio)
+        specifier: ^1.1.0
+        version: 1.1.0(@datagrok-libraries/bio@libraries+bio)
       '@datagrok-libraries/math':
         specifier: workspace:^
         version: link:../../libraries/math
@@ -1036,9 +1042,6 @@ importers:
       immunum:
         specifier: ^1.1.0
         version: 1.3.1
-      openchemlib:
-        specifier: 'catalog:'
-        version: 8.21.0
       rxjs:
         specifier: 'catalog:'
         version: 6.6.7
@@ -2453,11 +2456,8 @@ importers:
         specifier: workspace:^
         version: link:../../libraries/chem-meta
       '@datagrok-libraries/hwe':
-        specifier: ^1.0.5
-        version: 1.0.5(@datagrok-libraries/bio@libraries+bio)
-      '@datagrok-libraries/ml':
-        specifier: workspace:^
-        version: link:../../libraries/ml
+        specifier: ^1.1.0
+        version: 1.1.0(@datagrok-libraries/bio@libraries+bio)
       '@datagrok-libraries/test':
         specifier: workspace:^
         version: link:../../libraries/test
@@ -2470,40 +2470,19 @@ importers:
       datagrok-api:
         specifier: workspace:^
         version: link:../../js-api
-      dayjs:
-        specifier: 'catalog:'
-        version: 1.11.23
-      lru-cache:
-        specifier: ^10.4.3
-        version: 10.4.3
       rxjs:
         specifier: 'catalog:'
         version: 6.6.7
-      wu:
-        specifier: 'catalog:'
-        version: 2.1.0
     devDependencies:
       '@datagrok-libraries/bdd':
         specifier: workspace:^
         version: link:../../libraries/bdd
+      '@datagrok-libraries/ml':
+        specifier: workspace:^
+        version: link:../../libraries/ml
       '@playwright/test':
         specifier: ^1.48.0
         version: 1.63.0
-      '@types/webpack-env':
-        specifier: ^1.18.5
-        version: 1.18.8
-      '@types/wu':
-        specifier: 'catalog:'
-        version: 2.1.44
-      eslint-plugin-deprecation:
-        specifier: ^3.0.0
-        version: 3.0.0(eslint@9.39.5(jiti@2.7.0))(typescript@7.0.2)
-      eslint-plugin-rxjs:
-        specifier: ^5.0.3
-        version: 5.0.3(eslint@9.39.5(jiti@2.7.0))(typescript@7.0.2)
-      path:
-        specifier: ^0.12.7
-        version: 0.12.7
 
   packages/HitTriage:
     dependencies:
@@ -3546,8 +3525,8 @@ importers:
         specifier: workspace:^
         version: link:../../libraries/chem-meta
       '@datagrok-libraries/hwe':
-        specifier: ^1.0.0
-        version: 1.0.5(@datagrok-libraries/bio@libraries+bio)
+        specifier: ^1.1.0
+        version: 1.1.0(@datagrok-libraries/bio@libraries+bio)
       '@datagrok-libraries/test':
         specifier: workspace:^
         version: link:../../libraries/test
@@ -3564,7 +3543,7 @@ importers:
         specifier: 'catalog:'
         version: 8.1.5
       datagrok-api:
-        specifier: ^1.27.4
+        specifier: workspace:^
         version: link:../../js-api
       lodash:
         specifier: ^4.17.21
@@ -5171,8 +5150,8 @@ packages:
     peerDependencies:
       d3-array: '*'
 
-  '@datagrok-libraries/hwe@1.0.5':
-    resolution: {integrity: sha512-iYn9g7291N0MDMt/M91eKFFc/p2c4CYB2qea8zrRzPw/bXUrWsnJmAbUrr0zYtIisxRicfNiTImwSeZL7Io2qA==}
+  '@datagrok-libraries/hwe@1.1.0':
+    resolution: {integrity: sha512-bnHAHZNOn/LsmDkYRTZKweA5L3Elp1AftWOTSdL370o4F2W1ibPKiTqM6RLQjnp0Phb4pvJhTKGEIMJhBVdTNg==}
     engines: {node: '>=18'}
     peerDependencies:
       '@datagrok-libraries/bio': '*'
@@ -8928,9 +8907,6 @@ packages:
 
   '@types/web-bluetooth@0.0.21':
     resolution: {integrity: sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA==}
-
-  '@types/webpack-env@1.18.8':
-    resolution: {integrity: sha512-G9eAoJRMLjcvN4I08wB5I7YofOb/kaJNd5uoCMX+LbKXTPCF+ZIHuqTnFaK9Jz1rgs035f9JUPUhNFtqgucy/A==}
 
   '@types/webpack-sources@3.2.3':
     resolution: {integrity: sha512-4nZOdMwSPHZ4pTEZzSp0AsTM4K7Qmu40UKW4tJDiOVs20UzYF9l+qUe4s0ftfN0pin06n+5cWWDJXH+sbhAiDw==}
@@ -19841,7 +19817,7 @@ snapshots:
       '@d3fc/d3fc-rebind': 6.0.1
       d3-array: 3.2.4
 
-  '@datagrok-libraries/hwe@1.0.5(@datagrok-libraries/bio@libraries+bio)':
+  '@datagrok-libraries/hwe@1.1.0(@datagrok-libraries/bio@libraries+bio)':
     dependencies:
       lru-cache: 10.4.3
     optionalDependencies:
@@ -25490,8 +25466,6 @@ snapshots:
   '@types/uuid@9.0.8': {}
 
   '@types/web-bluetooth@0.0.21': {}
-
-  '@types/webpack-env@1.18.8': {}
 
   '@types/webpack-sources@3.2.3':
     dependencies:

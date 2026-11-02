@@ -4,8 +4,13 @@ import * as DG from 'datagrok-api/dg';
 
 import {CellRendererBackBase} from '../cell-renderer-back-base';
 import {ISeqHandler} from './seq-handler';
-import {PolymerType} from '../../helm/types';
-import {NOTATION_PROVIDER_CONSTRUCTOR_ROLE} from './consts';
+import {HelmType, PolymerType} from '../../helm/types';
+
+/** meta.role of a custom notation provider's constructor function (re-exported by consts.ts).
+ * Defined here so that types.ts has no run-time import of consts.ts: consts.ts builds `candidateAlphabets` from
+ * CandidateType when it loads, so the cycle threw "Cannot access 'CandidateType' before initialization" in any bundle
+ * that reached it through types.ts or utils.ts first (Helm's package-test.js did). */
+export const NOTATION_PROVIDER_CONSTRUCTOR_ROLE = 'notationProviderConstructor';
 
 export type SeqSplittedBase = ArrayLike<string> & Iterable<string>;
 
@@ -27,6 +32,46 @@ export interface ISeqGraphInfo {
   disjointSeqStarts: number[];
   /** Polimer types same as the indexes. only applicapble to helm */
   polymerTypes?: PolymerType[];
+}
+
+/** A HELM section-1 connection with its kind: hydrogen bonds (`pair`) are 'hbond' and carry rGroup 0 */
+export interface ISeqConnectionExt extends ISeqConnection {
+  kind?: 'covalent' | 'hbond';
+}
+
+/** A fixed repeat `A'3'`, `(A.G)'2'`, `(R(U)P)'3'` over the flat monomer range [start, end), listed once in the
+ * splitted; the assembly input copies the range `min` (=== `max`) times in place */
+export interface ISeqRepeat {
+  start: number;
+  end: number;
+  min: number;
+  max: number;
+}
+
+/** Graph info of a HELM sequence split by the hwe parser; extra fields are optional, old consumers ignore them.
+ * Mirrors IAsmGraphInfoExt of monomer-works/assembly-input. */
+export interface ISeqGraphInfoHelm extends ISeqGraphInfo {
+  /** Covalent connections only (kind 'covalent'): hydrogen bonds are in {@link hbonds}. Ambiguous connections
+   * (multi-site `(1,3):R3`, ranges `2-5`, `?`, a symbol `C:R3` found more than once, group endpoints) are left out
+   * and listed in {@link errors}: hwe draws them at the first candidate, but an old consumer (joinToHelm, joinToBiln,
+   * the atomic-level converter) would take that for a definite bond. */
+  connections: ISeqConnectionExt[];
+  /** Hydrogen bonds (`pair`), kind 'hbond'; kept out of {@link connections} so old consumers never bond them */
+  hbonds?: ISeqConnectionExt[];
+  /** Per flat monomer: HELM_AA, HELM_SUGAR, HELM_BASE, HELM_LINKER, HELM_CHEM, HELM_BLOB; unset for RNA rows with a
+   * lone sugar-slot monomer (e.g. a 5' phosphate), whose role hwe cannot tell */
+  biotypes?: HelmType[];
+  /** Polymer ids per chain in source order ('PEPTIDE1', 'CHEM1', ...) */
+  chainIds?: string[];
+  /** Fixed repeats in source order, non-overlapping (hwe's expandRepeats decides which are fixed); ranges `'2-5'`,
+   * CHEM and nested repeats are in {@link errors} instead */
+  repeats?: ISeqRepeat[];
+  /** Problems that make the row unbuildable at atomic level (ambiguous monomers or connections, repeat ranges,
+   * dropped connections, ...) */
+  errors?: string[];
+  /** hwe recovered from a syntax error (listed in {@link errors}): its parse may miss monomers after it, or have
+   * none */
+  recovered?: boolean;
 }
 
 export interface ISeqSplitted {

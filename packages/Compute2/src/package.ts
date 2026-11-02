@@ -202,8 +202,6 @@ export class PackageFunctions {
       viewService.dispose();
     });
 
-    grok.shell.windows.showHelp = false;
-
     return view;
   }
 
@@ -245,8 +243,6 @@ export class PackageFunctions {
       if (resolve)
         resolve();
     });
-
-    grok.shell.windows.showHelp = false;
 
     return view;
   }
@@ -910,21 +906,6 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean): Promise<string> {
     return `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}|${startDownload}`;
-  }
-
-  // Fixture for the URL-inputs parsing tests (see test/url-inputs.ts).
-  @grok.decorators.func()
-  static async TestUrlInputsFixture(
-    @grok.decorators.param({type: 'int'}) a: number,
-    b: number,
-    flag: boolean,
-    s: string,
-    @grok.decorators.param({type: 'datetime'}) when: dayjs.Dayjs,
-    df: DG.DataFrame,
-    @grok.decorators.param({options: {optional: true}}) opt: number,
-    @grok.decorators.param({type: 'int', options: {nullable: true}}) nul: number,
-  ): Promise<number> {
-    return a;
   }
 
   // Fixtures for the project-export data-prep tests (see test/project-export-data.ts);

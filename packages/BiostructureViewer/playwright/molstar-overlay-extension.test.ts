@@ -108,21 +108,21 @@ test('BiostructureViewer / Mol* viewport overlay buttons extension (Screenshot /
         if (!btn) return {btnPresent: false};
 
         const classBefore = btn.className;
-        const mspPanelsBefore = document.querySelectorAll('.msp-plugin .msp-control').length;
+        const mspPanelsBefore = document.querySelectorAll('.msp-plugin .msp-viewport-controls-panel').length;
 
         btn.click();
         await poll(() =>
           btn.className.includes('msp-btn-link-toggle-on') ||
-          document.querySelectorAll('.msp-plugin .msp-control').length !== mspPanelsBefore);
+          document.querySelectorAll('.msp-plugin .msp-viewport-controls-panel').length !== mspPanelsBefore);
 
         const classAfter1 = btn.className;
-        const mspPanelsAfter1 = document.querySelectorAll('.msp-plugin .msp-control').length;
+        const mspPanelsAfter1 = document.querySelectorAll('.msp-plugin .msp-viewport-controls-panel').length;
 
         btn.click();
         await poll(() => btn.className === classBefore);
 
         const classAfter2 = btn.className;
-        const mspPanelsAfter2 = document.querySelectorAll('.msp-plugin .msp-control').length;
+        const mspPanelsAfter2 = document.querySelectorAll('.msp-plugin .msp-viewport-controls-panel').length;
 
         const canvasStillPresent = !!document.querySelector('.msp-viewport canvas');
         return {
@@ -147,15 +147,15 @@ test('BiostructureViewer / Mol* viewport overlay buttons extension (Screenshot /
         `Screenshot overlay button did not enter toggled-on state (msp-btn-link-toggle-on) on first click. ` +
         `Before: '${res.classBefore}', After1: '${res.classAfter1}'.`,
       ).toBe(true);
-      // Panel-mount DOM diff: msp-control count increases on first click, returns on toggle-off.
+      // Panel-mount DOM diff: controls-panel count increases on first click, returns on toggle-off.
       expect(
         res.mspPanelsAfter1,
-        `Screenshot panel did not mount (msp-control count did not increase). ` +
+        `Screenshot panel did not mount (controls-panel count did not increase). ` +
         `Before: ${res.mspPanelsBefore}, After1: ${res.mspPanelsAfter1}.`,
       ).toBeGreaterThan(res.mspPanelsBefore);
       expect(
         res.mspPanelsAfter2,
-        `Screenshot panel did not close on toggle-off (msp-control count did not return). ` +
+        `Screenshot panel did not close on toggle-off (controls-panel count did not return). ` +
         `Before: ${res.mspPanelsBefore}, After2: ${res.mspPanelsAfter2}.`,
       ).toBe(res.mspPanelsBefore);
       expect(
@@ -342,17 +342,17 @@ test('BiostructureViewer / Mol* viewport overlay buttons extension (Screenshot /
         ) as HTMLButtonElement | null;
         if (!btn) return {btnPresent: false};
         const classBefore = btn.className;
-        const mspPanelsBefore = document.querySelectorAll('.msp-plugin .msp-control').length;
+        const mspPanelsBefore = document.querySelectorAll('.msp-plugin .msp-viewport-controls-panel').length;
         btn.click();
         await poll(() =>
           btn.className.includes('msp-btn-link-toggle-on') ||
-          document.querySelectorAll('.msp-plugin .msp-control').length !== mspPanelsBefore);
+          document.querySelectorAll('.msp-plugin .msp-viewport-controls-panel').length !== mspPanelsBefore);
         const classAfter1 = btn.className;
-        const mspPanelsAfter1 = document.querySelectorAll('.msp-plugin .msp-control').length;
+        const mspPanelsAfter1 = document.querySelectorAll('.msp-plugin .msp-viewport-controls-panel').length;
         btn.click();
         await poll(() => btn.className === classBefore);
         const classAfter2 = btn.className;
-        const mspPanelsAfter2 = document.querySelectorAll('.msp-plugin .msp-control').length;
+        const mspPanelsAfter2 = document.querySelectorAll('.msp-plugin .msp-viewport-controls-panel').length;
         const canvasStillPresent = !!document.querySelector('.msp-viewport canvas');
         return {
           btnPresent: true,
@@ -378,12 +378,12 @@ test('BiostructureViewer / Mol* viewport overlay buttons extension (Screenshot /
       ).toBe(res.classBefore);
       expect(
         res.mspPanelsAfter1,
-        `Settings / Controls Info panel did not mount (msp-control count did not increase). ` +
+        `Settings / Controls Info panel did not mount (controls-panel count did not increase). ` +
         `Before: ${res.mspPanelsBefore}, After1: ${res.mspPanelsAfter1}.`,
       ).toBeGreaterThan(res.mspPanelsBefore);
       expect(
         res.mspPanelsAfter2,
-        `Settings / Controls Info panel did not close on toggle-off (msp-control count did not return). ` +
+        `Settings / Controls Info panel did not close on toggle-off (controls-panel count did not return). ` +
         `Before: ${res.mspPanelsBefore}, After2: ${res.mspPanelsAfter2}.`,
       ).toBe(res.mspPanelsBefore);
       expect(

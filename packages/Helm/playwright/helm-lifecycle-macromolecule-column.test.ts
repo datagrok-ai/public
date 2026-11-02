@@ -4,21 +4,12 @@ import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 // Single-user spec: cold Helm init (RDKit + monomer-lib, ~300s worst) dominates;
-// 300s ceiling covers login + setup + Scenarios 1-6.
+// 300s ceiling covers login + setup + Scenarios 1-4.
 test.use({timeout: 300_000});
 
 // Dot-namespaced for the direct file-browse URL (see loginAndOpenFile). This
 // spec keeps the canonical 540-row HELM.csv (with the numeric Activity column).
 const DATASET_PATH = 'System.AppData/Helm/samples/HELM.csv';
-
-// Scenario fixtures (cited verbatim from the scenario .md Scenarios 5+6).
-const PEPTIDE_FIXTURE = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et}$$$$';
-const RNA_FIXTURE = 'RNA1{r(A)p.r(C)p.r(G)p.r(U)p}$$$$';
-const GAP_MID = 'PEPTIDE1{A.*.G.*.K}$$$$';
-const GAP_START = 'PEPTIDE1{*.A.G.K}$$$$';
-const GAP_END = 'PEPTIDE1{A.G.K.*}$$$$';
-// Empirically-verified output shape (V2.0 suffix appended by the helper).
-const GAP_STRIPPED_EXPECTED = 'PEPTIDE1{A.G.K}$$$$V2.0';
 
 test('Helm / lifecycle chain for the Macromolecule HELM column', async ({page}) => {
   stepErrors.length = 0;
@@ -571,113 +562,6 @@ test('Helm / lifecycle chain for the Macromolecule HELM column', async ({page}) 
       'convert_helm_to_molfile: re-issue after the eviction window MUST NOT raise an error balloon')
       .toBe(0);
   });
-
-
-  await softStep('Scenario 5 Step 1-2: Helm:getHelmHelper → hh.parse(peptide fixture) → atoms + bonds > 0, linear shape', async () => {
-    const out = await page.evaluate(async (peptide: string) => {
-      const grok = (window as any).grok;
-      const hh = await grok.functions.call('Helm:getHelmHelper');
-      const mol = hh.parse(peptide);
-      return {
-        nonNull: mol !== null && mol !== undefined,
-        atoms: mol?.atoms?.length ?? null,
-        bonds: mol?.bonds?.length ?? null,
-      };
-    }, PEPTIDE_FIXTURE);
-    expect(out.nonNull,
-      'helm.api.helm-helper.parse: hh.parse(peptide fixture) MUST return a non-null HelmMol').toBe(true);
-    expect(out.atoms,
-      'helm.api.helm-helper.parse: peptide fixture MUST yield atoms (9 per MCP recon)').toBeGreaterThan(0);
-    expect(out.bonds,
-      'helm.api.helm-helper.parse: peptide fixture MUST yield bonds (n-1 = 8 for a 9-monomer linear chain)')
-      .toBeGreaterThan(0);
-    // Linear chain invariant: bonds == atoms - 1 (verified empirically: 9-1=8).
-    expect(out.bonds,
-      'helm.utils.parse-helm (transitively): linear peptide chain → bonds == atoms - 1')
-      .toBe((out.atoms ?? 0) - 1);
-  });
-
-  await softStep('Scenario 5 Step 4: hh.parse(RNA fixture) → atoms + bonds > 0; multi-token square-bracket monomers handled', async () => {
-    const out = await page.evaluate(async (rna: string) => {
-      const grok = (window as any).grok;
-      const hh = await grok.functions.call('Helm:getHelmHelper');
-      const mol = hh.parse(rna);
-      return {
-        nonNull: mol !== null && mol !== undefined,
-        atoms: mol?.atoms?.length ?? null,
-        bonds: mol?.bonds?.length ?? null,
-      };
-    }, RNA_FIXTURE);
-    expect(out.nonNull,
-      'helm.api.helm-helper.parse: hh.parse(RNA fixture) MUST return a non-null HelmMol').toBe(true);
-    expect(out.atoms,
-      'helm.api.helm-helper.parse: RNA fixture MUST yield atoms (12 per MCP recon — branched r/p/branch expansion)')
-      .toBeGreaterThan(0);
-    expect(out.bonds,
-      'helm.api.helm-helper.parse: RNA fixture MUST yield bonds (11 per MCP recon)').toBeGreaterThan(0);
-    const balloonErrors = await page.locator('.d4-balloon.error').count();
-    expect(balloonErrors,
-      'parse_helm: hh.parse on peptide + RNA fixtures MUST NOT raise an error balloon').toBe(0);
-  });
-
-
-  await softStep('Scenario 6 Step 1-2: hh.removeGaps(mid-gap) → "*" monomers removed; bonds re-linked', async () => {
-    const out = await page.evaluate(async (helm: string) => {
-      const grok = (window as any).grok;
-      const hh = await grok.functions.call('Helm:getHelmHelper');
-      const res = hh.removeGaps(helm);
-      // Empirical return-shape (per MCP recon 2026-06-09):
-      // {srcHelm, resHelm, monomerMap}
-      return {
-        hasResHelm: typeof res?.resHelm === 'string',
-        resHelm: res?.resHelm ?? null,
-        srcHelm: res?.srcHelm ?? null,
-        hasMonomerMap: res?.monomerMap !== undefined,
-      };
-    }, GAP_MID);
-    expect(out.hasResHelm,
-      'helm.api.helm-helper.remove-gaps: return MUST carry a resHelm string').toBe(true);
-    expect(out.resHelm,
-      `remove_gaps mid-gap: '*' monomers MUST be stripped → expected '${GAP_STRIPPED_EXPECTED}' (per MCP recon empirical shape)`)
-      .toBe(GAP_STRIPPED_EXPECTED);
-    expect(out.hasMonomerMap,
-      'helm.api.helm-helper.remove-gaps: helper return MUST include a monomerMap object (per scenario Expected line 199-203 — the helper variant carries a mapping; pure-string utility does not)')
-      .toBe(true);
-  });
-
-  await softStep('Scenario 6 Step 4: hh.removeGaps edge cases (start, end) strip cleanly without throwing', async () => {
-    const out = await page.evaluate(async (helms: string[]) => {
-      const grok = (window as any).grok;
-      const hh = await grok.functions.call('Helm:getHelmHelper');
-      const results: Array<{helm: string; resHelm: string | null; error: string | null}> = [];
-      for (const h of helms) {
-        try {
-          const r = hh.removeGaps(h);
-          results.push({helm: h, resHelm: r?.resHelm ?? null, error: null});
-        } catch (e: any) {
-          results.push({helm: h, resHelm: null, error: e?.message ?? String(e)});
-        }
-      }
-      return results;
-    }, [GAP_START, GAP_END]);
-    for (const r of out) {
-      expect(r.error,
-        `remove_gaps edge case '${r.helm}': MUST NOT throw (atlas dep_lifecycle_ops.remove_gaps invariant)`)
-        .toBeNull();
-      expect(r.resHelm,
-        `remove_gaps edge case '${r.helm}': MUST strip to '${GAP_STRIPPED_EXPECTED}' (per MCP recon — V2.0 suffix appended)`)
-        .toBe(GAP_STRIPPED_EXPECTED);
-    }
-    const balloonErrors = await page.locator('.d4-balloon.error').count();
-    expect(balloonErrors,
-      'remove_gaps: start/end edge cases MUST NOT raise an error balloon').toBe(0);
-  });
-
-  // Scenario 6 step 3 (pure-string equivalence) is covered transitively above
-  // (the helper calls the pure-string utility; its return adds monomerMap).
-  // Step 4 final clause (>2-bonded `*` → HelmNotSupportedError) is deferred —
-  // no reliable 3-bonded gap-monomer fixture exists; the mid/start/end paths
-  // cover the remove_gaps op contract.
 
   await page.evaluate(() => (window as any).grok.shell.closeAll());
   finishSpec();

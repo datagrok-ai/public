@@ -15,15 +15,13 @@ export interface AdmeticaResponse {
 }
 
 export interface ModelProperty {
-  name: string;
-  description: string;
-  units: string;
-  direction?: 'Lower is better' | 'Higher is better';
-  ranges?: { [key: string]: string };
-  weight: number;
-  object: { [key: string]: {
-    [key: string]: string
-  }};
+  property: {
+    name: string;
+    inputType: string;
+    enable?: boolean;
+    skip?: boolean;
+  };
+  object: { [key: string]: any };
 }
 
 export interface ModelColoring {

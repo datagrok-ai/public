@@ -362,7 +362,7 @@ export class HttpDataSource<T> {
     return Object.assign(copy, this, {query: {...this.query, ...patch}});
   }
 
-  private prepare(q: DataSourceQuery = this.query): any {
+  _prepare(q: DataSourceQuery = this.query): any {
     let d = api.grok_DataSource_ResetQuery(this.dart);
     if (q.allPackageVersions)
       d = api.grok_DataSource_AllPackageVersions(d);
@@ -392,19 +392,19 @@ export class HttpDataSource<T> {
       s = s.filter(options.filter);
     if (options.order !== undefined)
       s = s.order(options.order);
-    return api.grok_DataSource_List(s.prepare());
+    return api.grok_DataSource_List(s._prepare());
   }
 
   /** Counts entities that satisfy the filtering criteria (see {@link filter}).
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
    *  Smart filter: {@link https://datagrok.ai/help/datagrok/smart-search} */
   count(): Promise<number> {
-    return api.grok_DataSource_Count(this.prepare());
+    return api.grok_DataSource_Count(this._prepare());
   }
 
   /** Returns the first entity that satisfies the filtering criteria (see {@link filter}). */
   first(): Promise<T> {
-    return api.grok_DataSource_First(this.prepare());
+    return api.grok_DataSource_First(this._prepare());
   }
 
   /** Returns an entity with the specified id.
@@ -413,12 +413,12 @@ export class HttpDataSource<T> {
    *  @param id - GUID of the corresponding object
    *  @returns `{Promise<object>}` - entity.  */
   find(id: string): Promise<T> {
-    return api.grok_DataSource_Find(this.prepare(), id);
+    return api.grok_DataSource_Find(this._prepare(), id);
   }
 
   /** Saves an entity; the saved copy comes back with this source's {@link include}s loaded. */
   save(e: DartObject): Promise<T> {
-    return api.grok_DataSource_Save(this.prepare({includes: this.query.includes}), e.dart);
+    return api.grok_DataSource_Save(this._prepare({includes: this.query.includes}), e.dart);
   }
 
   /** Deletes an entity. */

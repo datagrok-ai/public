@@ -1,5 +1,6 @@
 import type {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {ChemWasm} from '../engine/crux-module';
+import type {AssembleOptions} from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
 import type {RdKitServiceWorker} from '../rdkit-service/rdkit-service-worker';
 
 /**
@@ -92,6 +93,54 @@ export interface DescriptorTiming {
   phases: {[phase: string]: number};
   chunks: {worker: number, size: number, ms: number, wasmMs: number, parseMs: number}[];
 }
+
+// The biopolymer calls (Bio-on-Crux PLAN §4.3, crux-core's chem-wasm `chem_biopolymer.rs`; types from the generated
+// vendor/chem-wasm/chem_wasm.d.ts): a monomer library compiled once and assembled from per batch (the workers,
+// jobs/biopolymer.ts) or per row (the main thread, engine/biopolymer.ts); the stereo pass and the V2000 writer.
+
+/** A Pistoia monomer library read by Crux (`new ChemMonomerLibrary(json)`: throws for text that is no JSON array;
+ * each template is compiled at its first use, every one by `errors()`). */
+export type CruxMonomerLibrary = InstanceType<ChemWasm['ChemMonomerLibrary']>;
+
+/** A batch's result (`ChemMonomerLibrary.assemble`): per row a V3000 block (null where the row has an error, '' for a
+ * row of no monomers), an AsmLayout (passed through: a value Chem does not list is kept) and an error. */
+export type CruxAssembledBatch = ReturnType<CruxMonomerLibrary['assemble']>;
+
+/** One row's result (`ChemMonomerLibrary.assembleOne`), with `atomPosition` / `bondPosition` under the option `map`. */
+export type CruxAssembledRow = ReturnType<CruxMonomerLibrary['assembleOne']>;
+
+/** The biopolymer exports of Chem's Crux file. */
+export type CruxBiopolymerApi = Pick<ChemWasm, 'ChemMonomerLibrary' | 'chemMarkStereoAbsolute' | 'chemToV2000'>;
+
+/** The biopolymer calls of `crux` (a worker's module or the main thread's); throws "not supported by Crux" for a Crux
+ * file older than them. */
+export function cruxBiopolymer(crux: unknown): CruxBiopolymerApi {
+  const api = crux as Partial<CruxBiopolymerApi>;
+  if (typeof api.ChemMonomerLibrary !== 'function' || typeof api.chemMarkStereoAbsolute !== 'function' ||
+    typeof api.chemToV2000 !== 'function')
+    throw new Error('not supported by Crux: biopolymer assembly (a Crux file older than its biopolymer calls)');
+  return api as CruxBiopolymerApi;
+}
+
+/**
+ * AssembleOptions (chem-meta) as the binding reads them, the same for a batch on the workers and a row on the main
+ * thread: its keys only (another key is "not supported by Crux"), `map` only where `map` is set (a row's call;
+ * `assemble` refuses it). The depictor by default, as Bio's beautify was: Crux's own default sends big rows to
+ * CoordGen, about 8x slower (an antibody VH chain 1.6 s instead of 0.2 s), so only `nonlinearEngine: 'auto'` asks for
+ * that switch (`autoCoordgen`).
+ */
+export function assembleOptionsJson(options: AssembleOptions, map: boolean): string {
+  const engine = options.nonlinearEngine ?? 'depictor';
+  return JSON.stringify({layout: options.layout, autoCoordgen: engine === 'auto',
+    ...(engine === 'auto' ? {} : {nonlinearEngine: engine}), ...(map && options.map ? {map: true} : {})});
+}
+
+/** How a Crux worker says it does not hold the monomer library a batch names (jobs/biopolymer.ts): the service then
+ * sends the library and asks once more. Not a trap's message (CruxService's `isTrap`). */
+export const BIOPOLYMER_LIBRARY_MISSING = 'biopolymer: the worker holds no monomer library';
+
+/** The monomer libraries a Crux worker keeps compiled (jobs/biopolymer.ts), the least recently used freed first. */
+export const BIOPOLYMER_LIBRARIES = 4;
 
 export interface CruxWorkerApi {
   CollectionBuilder: new (buildIndex: boolean) => CruxCollectionBuilder;

@@ -143,19 +143,6 @@ export function clearAnnotations(df: DG.DataFrame, seqCol: DG.Column<string>): v
   seqCol.setTag(bioTAGS.regions, '');
 }
 
-/** Adds an annotation to the column-level list. */
-export function addColumnAnnotation(col: DG.Column<string>, annotation: SeqAnnotation): void {
-  const existing = getColumnAnnotations(col);
-  existing.push(annotation);
-  setColumnAnnotations(col, existing);
-}
-
-/** Removes an annotation by id from the column-level list. */
-export function removeColumnAnnotation(col: DG.Column<string>, annotationId: string): void {
-  const existing = getColumnAnnotations(col).filter((a) => a.id !== annotationId);
-  setColumnAnnotations(col, existing);
-}
-
 /** Merges row-level annotation hits by replacing hits of one kind while preserving the rest.
  *  @param existingHits Current per-row hits
  *  @param newHits New hits to add

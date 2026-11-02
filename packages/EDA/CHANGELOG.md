@@ -14,9 +14,6 @@
 * Tests: Added the BDD feature `models/apply-and-delete` — PLS and linear regression models saved, applied to new data and deleted from the gallery (from TestTrack General/predictive-models)
 * GROK-21061: Pareto front: Fixed result columns staying in the table after the viewer is closed
 * GROK-21017: Skip adding MVA viewers when the source table view was closed during the analysis
-
-## 1.9.1 (WIP)
-
 * Tests: Added BDD features for PCA, PLS, multivariate analysis, ANOVA, control comparisons, model training, sharing a model and the Pareto front viewer
 * Tests: Check completed training, rendered charts and fixture cleanup; isolate shared models per run
 * Pareto front: Corrected the viewer help link

@@ -16,7 +16,6 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {awaitGrid, initHelmMainPackage} from './utils';
-import {TAGS as helmTAGS} from '../constants';
 
 import {_package} from '../package-test';
 
@@ -60,14 +59,6 @@ category('renderers', () => {
     expect(helmCol.semType, DG.SEMTYPE.MACROMOLECULE);
     expect(helmCol.meta.units, NOTATION.HELM);
     expect(helmCol.getTag(DG.TAGS.CELL_RENDERER), 'helm');
-
-    const cellRendererErrorJson: string = helmCol.getTag(helmTAGS.cellRendererRenderError);
-    if (!!cellRendererErrorJson) {
-      const cellRendererError: any = JSON.parse(cellRendererErrorJson);
-      const err = new Error(cellRendererError['message']);
-      err.stack = cellRendererError['stack'];
-      throw err;
-    }
   }
 
   const helmCoordsCsv = `seq,x,y

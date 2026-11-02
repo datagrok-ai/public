@@ -4,7 +4,9 @@ import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import {Fingerprint, hasNewLines, withinSmilesLimit} from '../utils/chem-common';
 import {compileCrux, loadCrux, noteCruxError} from '../engine/crux-module';
 import {DescriptorTiming, INT_NONE, PackedDescriptorValues, ToxicityAlert, isNoneValue} from './crux-api';
-import {CLUSTER_MCS_TIMEOUT_S} from './crux-api';
+import {BIOPOLYMER_LIBRARIES, BIOPOLYMER_LIBRARY_MISSING, CLUSTER_MCS_TIMEOUT_S, CruxAssembledBatch,
+  assembleOptionsJson} from './crux-api';
+import {batchRowCount, pickRows, rowMonomerCount, sliceBatch} from './biopolymer-batch';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
@@ -13,6 +15,8 @@ import type {RuleId} from '../panels/structural-alerts';
 import type {FingerprintOptions} from '../utils/fingerprint-options';
 import type {IMmpFragmentsResult, IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
 import type {RGroupCluster} from './crux-analysis-jobs';
+import {AsmBatch, AsmLayout, AssembleOptions, AssembleResult}
+  from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
 
 const CRUX_INDEX_TAG = '.crux-index';
 /** Rows per segment in the first round over the workers: small, so the first hits come early; doubles each round. */
@@ -51,7 +55,16 @@ const PAIR_MCS_TIMEOUT_S = 5;
  * FMCS Timeout, an hour.
  */
 const ANALYSIS_MS = {mmpa: 50, rGroups: 100, link: 20, molzip: 20, clusterMCS: CLUSTER_MCS_TIMEOUT_S * 1000,
-  clusterRGroups: 60000, mcs: 3600000};
+  clusterRGroups: 60000, mcs: 3600000,
+  // A macromolecule batch's (CruxService.assembleMacromolecules): a chunk's limit is JOB_BASE_MS plus `biopolymer` per
+  // row and `biopolymerMonomer` per monomer; a long row's (alone on an idle worker, BIOPOLYMER_LONG_ROW) JOB_BASE_MS
+  // plus `biopolymerLongMonomer` per monomer; `markStereo` per MOL block (CruxService.markStereoAbsolute).
+  // TODO(bio-crux §7): set them from the vendored file's measured speed (S2's native profile: ~3 ms a golden row with
+  // the depictor, whose time grows faster than the monomers past ~100; non-linear rows past a size use coordgen).
+  biopolymer: 5, biopolymerMonomer: 1, biopolymerLongMonomer: 50, markStereo: 5};
+/** A row of more monomers than this is assembled alone on an idle worker (CruxService.assembleMacromolecules): one
+ * huge row does not take a chunk past its limit, which would restart the pool. */
+export const BIOPOLYMER_LONG_ROW = 400;
 /** A Synthon Space Search job's limit: scripts/synthon_search.py's own (RDKit's SynthonSpaceSearchParams.timeOut). */
 const SYNTHON_MS = 600000;
 
@@ -135,6 +148,13 @@ function withoutHoles(arg: unknown): unknown {
 }
 
 class CruxWorkerClient extends WorkerMessageBusClient {
+  /**
+   * The monomer libraries sent to this worker (CruxService.assembleMacromolecules), by key, the most recently used
+   * last, as the worker keeps them (jobs/biopolymer.ts, the last BIOPOLYMER_LIBRARIES): each load's count of monomers
+   * Crux does not read. A new worker (a restart, a replaced one) has none.
+   */
+  readonly biopolymerLibraries = new Map<string, Promise<number>>();
+
   constructor() {
     super(new Worker(new URL('./crux.worker', import.meta.url)));
   }
@@ -548,10 +568,11 @@ export class CruxService {
    * chunk's first row in `starts`. Fewer than `chunkSize` molecules per worker are split evenly over the workers. A
    * worker runs its calls one after another, so each worker is handed its next chunk when the last one is done, and a
    * chunk's time limit runs from its own start; a failed chunk ends the call (the chunks not started are not run).
+   * `chunkMs`, where given, is a chunk's time beyond `baseMs` in place of `msPerMolecule` per molecule.
    */
   private async inChunks<M, R>(molecules: M[], msPerMolecule: number,
     job: (worker: CruxWorkerClient, chunk: M[]) => Promise<R>, chunkSize = CHUNK_SIZE, baseMs = JOB_BASE_MS,
-    starts: number[] = []): Promise<R[]> {
+    starts: number[] = [], chunkMs?: (chunk: M[]) => number): Promise<R[]> {
     const size = Math.max(1, Math.min(chunkSize, Math.ceil(molecules.length / Math.max(1, this.workers.length))));
     const chunks: M[][] = [];
     for (let start = 0; start < molecules.length; start += size) {
@@ -569,7 +590,8 @@ export class CruxService {
       while (!failed && next < chunks.length) {
         const i = next++;
         try {
-          results[i] = await this.job(job(worker, chunks[i]), baseMs + chunks[i].length * msPerMolecule);
+          results[i] = await this.job(job(worker, chunks[i]),
+            baseMs + (chunkMs ? chunkMs(chunks[i]) : chunks[i].length * msPerMolecule));
         } catch (e) {
           failed = true;
           throw e;
@@ -799,6 +821,162 @@ export class CruxService {
     return {smiles: parts.flatMap((part) => part.smiles), error: parts.find((part) => part.error)?.error ?? null};
   }
 
+  // Macromolecules (engine/biopolymer.ts sends them, jobs/biopolymer.ts runs them; Crux in both engines): Bio's
+  // sequences assembled from the templates of a monomer library.
+
+  /**
+   * The rows of `batch` (chem-meta's AsmBatch) assembled from monomer library `json` (Pistoia JSON; `key` names it in
+   * the workers, so another JSON needs another key) and laid out per `options` (read as a row's are,
+   * `assembleOptionsJson`; its `map` is a single row's): a V3000 MOL block (null where the row has an error), an
+   * AsmLayout (passed through as Crux gives it) and an error per row, in row order.
+   * - The library: sent to every worker at the first call, each worker's chunks waiting for its own load; a worker
+   *   that has not got it (a new one after {@link restart} or {@link restartWorker}, one that dropped it) is sent it
+   *   again, once more where a batch finds it gone.
+   * - The rows: in chunks across the workers ({@link inChunks}; a chunk's limit grows with its rows and monomers,
+   *   `ANALYSIS_MS.biopolymer`), then each row of more than {@link BIOPOLYMER_LONG_ROW} monomers alone on an idle
+   *   worker with a limit of its own ({@link assembleLongRows}): past it, or on a trap, that worker alone is replaced
+   *   and the row gets the failure as its error.
+   * - Datagrok's row errors (`batch.rowError`) are the rows' errors; those rows are not sent.
+   */
+  async assembleMacromolecules(batch: AsmBatch, key: string, json: string, options: AssembleOptions):
+    Promise<AssembleResult> {
+    const n = batchRowCount(batch);
+    const result: AssembleResult = {molblocks: new Array<string | null>(n).fill(null),
+      layouts: new Uint8Array(n).fill(AsmLayout.ERROR), errors: new Array<string | null>(n).fill(null)};
+    const rows: number[] = [];
+    const longRows: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const error = batch.rowError[i]; // a hole (a sparse array) is no error
+      if (error)
+        result.errors[i] = error;
+      else
+        (rowMonomerCount(batch, i) > BIOPOLYMER_LONG_ROW ? longRows : rows).push(i);
+    }
+    if (rows.length === 0 && longRows.length === 0)
+      return result;
+    const details = assembleOptionsJson(options, false); // as engine/biopolymer.ts's rows
+    const put = (part: CruxAssembledBatch, at: number[]): void => {
+      for (let k = 0; k < at.length; k++) {
+        const i = at[k];
+        result.errors[i] = part.errors[k] ?? null;
+        result.molblocks[i] = result.errors[i] ? null : part.molblocks[k] ?? null;
+        result.layouts[i] = part.layouts[k] ?? AsmLayout.ERROR;
+      }
+    };
+    for (const worker of this.workers) // all at once; a chunk waits for its own worker's load, and fails with it
+      this.loadLibrary(worker, key, json).catch(() => {});
+    if (rows.length > 0) {
+      const monomers = (chunk: number[]) => chunk.reduce((sum, i) => sum + rowMonomerCount(batch, i), 0);
+      const parts = await this.inChunks(rows, 0, async (worker, chunk) =>
+        ({chunk, part: await this.assembleOn(worker, pickRows(batch, chunk), key, json, details)}), CHUNK_SIZE,
+      JOB_BASE_MS, [], (chunk) => chunk.length * ANALYSIS_MS.biopolymer +
+        monomers(chunk) * ANALYSIS_MS.biopolymerMonomer);
+      for (const {chunk, part} of parts)
+        put(part, chunk);
+    }
+    if (longRows.length > 0) {
+      await this.assembleLongRows(batch, longRows, key, json, details, put, (i, error) => {
+        result.errors[i] = error;
+        result.layouts[i] = AsmLayout.ERROR;
+      });
+    }
+    return result;
+  }
+
+  // A batch's long rows after its chunks, each alone on a worker with no call in flight, as eachCluster runs clusters
+  // (a worker's queue is not the row's time). One late or trapped gets `fail` and its worker replaced; the others go
+  // on. Another failure ends the call.
+  private async assembleLongRows(batch: AsmBatch, rows: number[], key: string, json: string, details: string,
+    put: (part: CruxAssembledBatch, at: number[]) => void, fail: (row: number, error: string) => void): Promise<void> {
+    let next = 0;
+    let failure: {error: unknown} | null = null;
+    await Promise.all(this.workers.map(async (_, w) => {
+      while (!failure && next < rows.length) {
+        if (this.workers[w].pendingCalls > 0) { // busy: look again once it is not
+          await this.workers[w].whenIdle();
+          continue;
+        }
+        const row = rows[next++];
+        const limitMs = JOB_BASE_MS + rowMonomerCount(batch, row) * ANALYSIS_MS.biopolymerLongMonomer;
+        this.biopolymerLongRowsForTests++;
+        try {
+          const work = this.assembleOn(this.workers[w], sliceBatch(batch, row, row + 1), key, json, details);
+          work.catch(() => {}); // a late one fails once its worker is replaced: handled here, not left unhandled
+          const done = await withLimit(work, limitMs);
+          if (done === 'late') {
+            this.restartWorker(w);
+            fail(row, `biopolymer: the row took longer than ${limitMs} ms (its Crux worker was replaced)`);
+          } else
+            put(done, [row]);
+        } catch (e) {
+          if (!isTrap(e)) {
+            failure = {error: e};
+            return;
+          }
+          this.restartWorker(w); // its instance may be broken
+          fail(row, `biopolymer: ${String((e as Error)?.message ?? e)}`);
+        }
+      }
+    }));
+    if (failure)
+      throw (failure as {error: unknown}).error;
+  }
+
+  // Sent only where the worker's mirror (its last BIOPOLYMER_LIBRARIES) lacks it; a failed load is forgotten, so the
+  // next call sends it again.
+  private loadLibrary(worker: CruxWorkerClient, key: string, json: string): Promise<number> {
+    const loads = worker.biopolymerLibraries;
+    let load = loads.get(key);
+    if (load)
+      loads.delete(key);
+    else {
+      const sent = worker.run<{errors: number}>('biopolymer::library', [key, json]).then(({errors}) => {
+        if (errors > 0 && !this.biopolymerLibraryWarned.has(key)) {
+          this.biopolymerLibraryWarned.add(key);
+          console.warn(`Chem | monomer library ${key}: ${errors} monomers Crux does not read (their rows get errors)`);
+        }
+        return errors;
+      });
+      sent.catch(() => {
+        if (loads.get(key) === sent)
+          loads.delete(key);
+      });
+      load = sent;
+      while (loads.size >= BIOPOLYMER_LIBRARIES)
+        loads.delete(loads.keys().next().value!);
+    }
+    loads.set(key, load);
+    return load;
+  }
+
+  private biopolymerLibraryWarned = new Set<string>();
+
+  // The library once more where the worker answers that it no longer holds it.
+  private async assembleOn(worker: CruxWorkerClient, batch: AsmBatch, key: string, json: string, details: string):
+    Promise<CruxAssembledBatch> {
+    await this.loadLibrary(worker, key, json);
+    try {
+      return await worker.run<CruxAssembledBatch>('biopolymer::assemble', [batch, key, details]);
+    } catch (e) {
+      if (!String((e as Error)?.message ?? e).startsWith(BIOPOLYMER_LIBRARY_MISSING))
+        throw e;
+      worker.biopolymerLibraries.delete(key);
+      await this.loadLibrary(worker, key, json);
+      return await worker.run<CruxAssembledBatch>('biopolymer::assemble', [batch, key, details]);
+    }
+  }
+
+  /** Each MOL block with every specified stereocentre in one ABS group, V3000 (null where one does not read), the MOL
+   * blocks in chunks across the workers: a column's call of engine/biopolymer.ts's `markStereoAbsolute`. */
+  async markStereoAbsolute(molblocks: (string | null)[]): Promise<(string | null)[]> {
+    const starts: number[] = [];
+    const parts = await this.jobInChunks<(string | null)[]>('biopolymer::markStereoAbsolute', molblocks,
+      ANALYSIS_MS.markStereo, [], starts);
+    const result = new Array<string | null>(molblocks.length).fill(null);
+    parts.forEach((part, k) => part.forEach((m, i) => result[starts[k] + i] = m ?? null));
+    return result;
+  }
+
   /**
    * A job's result within `timeoutMs`. A wasm trap (the worker reports `RuntimeError: ...`; out of memory), a timeout
    * or a worker gone restarts the workers: they may hold a broken instance or a call that never ends; the next jobs and
@@ -833,6 +1011,21 @@ export class CruxService {
 
   /** Tests: the time limit of every cluster of {@link eachCluster} (null: each kind's own). */
   clusterLimitForTests: number | null = null;
+
+  /** Tests: the long rows {@link assembleMacromolecules} has sent alone. */
+  biopolymerLongRowsForTests = 0;
+
+  /** Tests: each worker's monomer libraries (jobs/biopolymer.ts): the keys it holds, the libraries it has compiled. */
+  biopolymerLibrariesForTests(): Promise<{keys: string[], compiled: number}[]> {
+    return Promise.all(this.workers.map((worker) =>
+      this.job(worker.run<{keys: string[], compiled: number}>('biopolymer::libraries::test', []), JOB_BASE_MS)));
+  }
+
+  /** Tests: every worker drops library `key`, its client still counting it as sent. */
+  async forgetBiopolymerLibraryForTests(key: string): Promise<void> {
+    await Promise.all(this.workers.map((worker) =>
+      this.job(worker.run('biopolymer::forget::test', [key]), JOB_BASE_MS)));
+  }
 
   /** Tests: replaces worker `w`, as a cluster past its time limit does ({@link restartWorker}). */
   restartWorkerForTests(w: number): void {

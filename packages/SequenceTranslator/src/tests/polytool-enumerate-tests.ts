@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {before, after, category, expect, test, expectArray} from '@datagrok-libraries/test/src/test';
+import {before, after, awaitCheck, category, expect, test, expectArray} from '@datagrok-libraries/test/src/test';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
@@ -12,6 +12,8 @@ import {
 
 import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes} from '../polytool/types';
 import {doPolyToolEnumerateHelm} from '../polytool/pt-enumeration-helm';
+import {polyToolEnumerateHelmUI} from '../polytool/pt-enumerate-seq-dialog';
+import {PT_HELM_UI_DIALOG_ENUMERATION, PT_UI_HIGHLIGHT_MONOMERS} from '../polytool/const';
 
 import {_package} from '../package-test';
 
@@ -167,4 +169,29 @@ category('PolyTool: Enumerate', () => {
       expectArray(res, testData.tgt.map((r) => [r.seq, r.name]));
     });
   }
+
+  // The box was hidden for macromolecules, where its value (restored from the dialog's history) still applied, so
+  // every enumerated molecule could come out highlighted with no box to untick
+  test('dialog: Highlight monomers shows with To atomic level for a macromolecule', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('seq', ['PEPTIDE1{A.G.C.D}$$$$'])]);
+    await grok.data.detectSemanticTypes(df);
+    await polyToolEnumerateHelmUI(df.cell(0, 'seq'));
+    const dlg = DG.Dialog.getOpenDialogs().find((d) => d.title === PT_HELM_UI_DIALOG_ENUMERATION);
+    expect(!!dlg, true, 'the dialog did not open');
+    try {
+      const inputRoot = (caption: string): HTMLElement => Array.from(dlg!.root.querySelectorAll('div.ui-input-root'))
+        .find((r) => r.querySelector('label.ui-input-label')?.textContent?.trim() === caption) as HTMLElement;
+      const highlight = inputRoot(PT_UI_HIGHLIGHT_MONOMERS);
+      const toAtomicLevel = inputRoot('To atomic level').querySelector('input[type="checkbox"]') as HTMLInputElement;
+      // the input reports a change after the click's event, not within it
+      if (toAtomicLevel.checked)
+        toAtomicLevel.click();
+      await awaitCheck(() => highlight.style.display === 'none', 'shown with To atomic level off', 3000);
+      toAtomicLevel.click();
+      expect(toAtomicLevel.checked, true, 'To atomic level did not switch on');
+      await awaitCheck(() => highlight.style.display === '', 'hidden with To atomic level on', 3000);
+    } finally {
+      dlg!.close();
+    }
+  });
 });

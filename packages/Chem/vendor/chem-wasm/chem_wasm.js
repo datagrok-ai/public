@@ -1,6 +1,127 @@
 /* @ts-self-types="./chem_wasm.d.ts" */
 
 /**
+ * A monomer library read once (the effective Pistoia JSON Datagrok resolves with), assembling sequences (module docs).
+ */
+export class ChemMonomerLibrary {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        ChemMonomerLibraryFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_chemmonomerlibrary_free(ptr, 0);
+    }
+    /**
+     * `assembleOne(sequence, options?)`: one `AsmSequence` (JSON) → `{molblock, layout, error}`, with
+     * `atomPosition` / `bondPosition` (`Int32Array`, per atom / bond of the block: the monomer's position, -1 none)
+     * when `options.map` and the row assembled. Throws where the text is no `AsmSequence` or the options are wrong.
+     * @param {string} sequence
+     * @param {string | null} [options]
+     * @returns {{molblock: string | null, layout: number, error: string | null, atomPosition?: Int32Array, bondPosition?: Int32Array}}
+     */
+    assembleOne(sequence, options) {
+        const ptr0 = passStringToWasm0(sequence, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        var ptr1 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len1 = WASM_VECTOR_LEN;
+        const ret = wasm.chemmonomerlibrary_assembleOne(this.__wbg_ptr, ptr0, len0, ptr1, len1);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * `assemble(symbols, rowStart, monSymbol, monRole, monPosition, chainStart, rowChainStart, conn, rowConnStart,
+     * rowError, options?)`: chem-meta's `AsmBatch` (`symbols` as JSON), `AssembleResult` back (module docs). Throws
+     * where the arrays do not fit together or the options are wrong.
+     * @param {string} symbols
+     * @param {Int32Array} rowStart
+     * @param {Int32Array} monSymbol
+     * @param {Uint8Array} monRole
+     * @param {Int32Array} monPosition
+     * @param {Int32Array} chainStart
+     * @param {Int32Array} rowChainStart
+     * @param {Int32Array} conn
+     * @param {Int32Array} rowConnStart
+     * @param {(string | null)[]} rowError
+     * @param {string | null} [options]
+     * @returns {{molblocks: (string | null)[], layouts: Uint8Array, errors: (string | null)[]}}
+     */
+    assemble(symbols, rowStart, monSymbol, monRole, monPosition, chainStart, rowChainStart, conn, rowConnStart, rowError, options) {
+        const ptr0 = passStringToWasm0(symbols, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passArray32ToWasm0(rowStart, wasm.__wbindgen_malloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passArray32ToWasm0(monSymbol, wasm.__wbindgen_malloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passArray8ToWasm0(monRole, wasm.__wbindgen_malloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ptr4 = passArray32ToWasm0(monPosition, wasm.__wbindgen_malloc);
+        const len4 = WASM_VECTOR_LEN;
+        const ptr5 = passArray32ToWasm0(chainStart, wasm.__wbindgen_malloc);
+        const len5 = WASM_VECTOR_LEN;
+        const ptr6 = passArray32ToWasm0(rowChainStart, wasm.__wbindgen_malloc);
+        const len6 = WASM_VECTOR_LEN;
+        const ptr7 = passArray32ToWasm0(conn, wasm.__wbindgen_malloc);
+        const len7 = WASM_VECTOR_LEN;
+        const ptr8 = passArray32ToWasm0(rowConnStart, wasm.__wbindgen_malloc);
+        const len8 = WASM_VECTOR_LEN;
+        var ptr9 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len9 = WASM_VECTOR_LEN;
+        const ret = wasm.chemmonomerlibrary_assemble(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, ptr5, len5, ptr6, len6, ptr7, len7, ptr8, len8, rowError, ptr9, len9);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * `errors()`: JSON `[{polymerType, symbol, error} | {index, error}]`, the monomers without a template and the
+     * entries that are no monomer (compiles every template).
+     * @returns {string}
+     */
+    errors() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.chemmonomerlibrary_errors(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * `new ChemMonomerLibrary(json)`: the Pistoia library (a JSON array of monomers); the templates compile on first
+     * use. Throws when the text is no JSON array.
+     * @param {string} json
+     */
+    constructor(json) {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemmonomerlibrary_new(ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        this.__wbg_ptr = ret[0];
+        ChemMonomerLibraryFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * The number of monomers (keys) read.
+     * @returns {number}
+     */
+    get size() {
+        const ret = wasm.chemmonomerlibrary_size(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+}
+if (Symbol.dispose) ChemMonomerLibrary.prototype[Symbol.dispose] = ChemMonomerLibrary.prototype.free;
+
+/**
  * Groups of SMARTS compiled once (Chem's structural alert rule sets, its pharmacophore families), matched against
  * many molecules (`match`; chem-wasm's chem_batch.rs docs).
  */
@@ -2945,6 +3066,18 @@ export function chemInchiInputs(molecules) {
 }
 
 /**
+ * `chemMarkStereoAbsolute(molblocks)`: each block with every specified stereocentre in one ABS group, as V3000 (Bio's
+ * replacement of `OCL.fromMolfile(m).toMolfileV3().replace('STERAC1', 'STEABS')`); null where a block is null, not a
+ * string, or not read.
+ * @param {(string | null)[]} molblocks
+ * @returns {(string | null)[]}
+ */
+export function chemMarkStereoAbsolute(molblocks) {
+    const ret = wasm.chemMarkStereoAbsolute(molblocks);
+    return ret;
+}
+
+/**
  * `chemMurckoScaffolds(molecules)`: the JSON list of the script's `scaffolds` per molecule (module docs).
  * @param {(string | null)[]} molecules
  * @returns {string}
@@ -3044,9 +3177,36 @@ export function chemQed(molecules) {
 }
 
 /**
+ * `chemToV2000(molblock)`: the molecule as a V2000 MOL block (Bio's 3D panel: `OCL.Molecule.fromMolfile(m).toMolfile()`);
+ * throws where the block is not read or V2000 cannot hold the molecule (over 999 atoms or bonds).
+ * @param {string} molblock
+ * @returns {string}
+ */
+export function chemToV2000(molblock) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(molblock, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemToV2000(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
  * is `"core,heavy,search,descriptors,scaffold-tree,inchi-input,chem-scripts,chem-conformers,chem-identifiers,chem-murcko,
- * chem-filter-catalogs,synthon-search"`.
+ * chem-filter-catalogs,synthon-search,biopolymer"`.
  * @returns {string}
  */
 export function chemWasmModules() {
@@ -3780,6 +3940,10 @@ function __wbg_get_imports() {
             const ret = Reflect.get(arg0, arg1);
             return ret;
         }, arguments); },
+        __wbg_get_6c896e0571ddae51: function(arg0, arg1) {
+            const ret = arg0[arg1 >>> 0];
+            return ret;
+        },
         __wbg_get_unchecked_288889d017702237: function(arg0, arg1) {
             const ret = arg0[arg1 >>> 0];
             return ret;
@@ -3874,6 +4038,10 @@ function __wbg_get_imports() {
             const ret = new Uint32Array(getArrayU32FromWasm0(arg0, arg1));
             return ret;
         },
+        __wbg_new_from_slice_911f717853b222c7: function(arg0, arg1) {
+            const ret = new Int32Array(getArrayI32FromWasm0(arg0, arg1));
+            return ret;
+        },
         __wbg_new_from_slice_9a868026ffa4208a: function(arg0, arg1) {
             const ret = new Uint8Array(getArrayU8FromWasm0(arg0, arg1));
             return ret;
@@ -3962,6 +4130,9 @@ function __wbg_get_imports() {
     };
 }
 
+const ChemMonomerLibraryFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_chemmonomerlibrary_free(ptr, 1));
 const ChemSmartsSetFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_chemsmartsset_free(ptr, 1));
@@ -4083,6 +4254,11 @@ function getArrayF64FromWasm0(ptr, len) {
     return getFloat64ArrayMemory0().subarray(ptr / 8, ptr / 8 + len);
 }
 
+function getArrayI32FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getInt32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
+}
+
 function getArrayJsValueFromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     const mem = getDataViewMemory0();
@@ -4126,6 +4302,14 @@ function getFloat64ArrayMemory0() {
         cachedFloat64ArrayMemory0 = new Float64Array(wasm.memory.buffer);
     }
     return cachedFloat64ArrayMemory0;
+}
+
+let cachedInt32ArrayMemory0 = null;
+function getInt32ArrayMemory0() {
+    if (cachedInt32ArrayMemory0 === null || cachedInt32ArrayMemory0.byteLength === 0) {
+        cachedInt32ArrayMemory0 = new Int32Array(wasm.memory.buffer);
+    }
+    return cachedInt32ArrayMemory0;
 }
 
 function getStringFromWasm0(ptr, len) {
@@ -4265,6 +4449,7 @@ function __wbg_finalize_init(instance, module) {
     cachedDataViewMemory0 = null;
     cachedFloat32ArrayMemory0 = null;
     cachedFloat64ArrayMemory0 = null;
+    cachedInt32ArrayMemory0 = null;
     cachedUint32ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
     wasm.__wbindgen_start();

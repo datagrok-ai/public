@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../../package';
 import {ClaudeRuntimeClient} from '../../claude/runtime-client';
 import {RENDERED_EVENT} from '../ui';
+import {AiFeature} from '../../claude/ai-feature';
 
 export interface QueryMatchResult {
   searchPattern: string;
@@ -149,7 +150,7 @@ Analyze the user request and return a JSON object with:
 
   try {
     const rawResult = await ClaudeRuntimeClient.getInstance().query(`${systemPrompt}\n\n${userPrompt}`,
-      {outputSchema: schema});
+      {outputSchema: schema, feature: AiFeature.QueryMatch, logPrompt: question});
     if (rawResult.searchPattern === NO_MATCH)
       return null;
     const parametersRecord: Record<string, string> = {};
