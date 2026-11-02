@@ -6,11 +6,13 @@ import * as DG from 'datagrok-api/dg';
 import {after, waitUntil, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {callMvaTransform, getMvaNames, MvaInput, MvaNames, runDemoMVA} from '../pls/pls-tools';
 import {MVA_MODEL_TAG, MVA_TRANSFORM_FUNC, TITLE} from '../pls/pls-constants';
+import {carsDataframe, carsMvaResults} from '../data-generators';
 
 const DATA_FILE = 'System:AppData/Eda/drugs-props-train.csv';
 const COMPONENTS = 3;
 const TIMEOUT = 180000;
 const CHECK_TIMEOUT = 30000;
+const REL_TOL = 1e-3;
 
 const projects: DG.Project[] = [];
 
@@ -42,6 +44,16 @@ async function runMva(table: DG.DataFrame, componentsOnly: boolean = false): Pro
   await callMvaTransform(input, names, componentsOnly);
 
   return names;
+}
+
+/** Check that the column values agree up to float32 precision */
+function expectClose(actual: DG.Column, expected: DG.Column): void {
+  for (let i = 0; i < expected.length; ++i) {
+    const e = expected.get(i);
+    const a = actual.get(i);
+    expect(Math.abs(a - e) <= REL_TOL * Math.max(1, Math.abs(e)), true,
+      `'${expected.name}', row ${i}: expected ${e}, got ${a}`);
+  }
 }
 
 /** Save the table, the analysis tables & the layout to a project, then reopen it */
@@ -154,10 +166,32 @@ category('Multivariate analysis: projects', () => {
     await checkResults(tableName, names);
   }, {timeout: TIMEOUT});
 
-  test('Closing the view during the analysis', async () => {
-    const analysis = runDemoMVA();
-    grok.shell.closeAll();
-    await analysis;
+  test('Demo adds the precomputed results', async () => {
+    runDemoMVA();
+    const df = grok.shell.tv.dataFrame;
+    const model = JSON.parse(df.getTag(MVA_MODEL_TAG)!);
+
+    for (const col of carsMvaResults().columns)
+      expect(df.col(col.name) !== null, true, `The '${col.name}' column has not been added`);
+
+    expect(df.col(model.prediction) !== null, true, 'The model refers to a missing prediction column');
+  }, {timeout: TIMEOUT});
+
+  test('Precomputed demo results match the fit', async () => {
+    const table = carsDataframe();
+    const names = await runMva(table);
+    const expected = carsMvaResults();
+
+    for (const col of expected.columns)
+      expectClose(table.col(col.name)!, col);
+
+    const analysis = grok.shell.table(names.analysisTable);
+    for (const col of expected.analysis.columns.numerical)
+      expectClose(analysis.col(col.name)!, col);
+
+    const explVars = grok.shell.table(names.explVarTable);
+    for (const col of expected.explVars.columns.numerical)
+      expectClose(explVars.col(col.name)!, col);
   }, {timeout: TIMEOUT});
 
   after(async () => {
