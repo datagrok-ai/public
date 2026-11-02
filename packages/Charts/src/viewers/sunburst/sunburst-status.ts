@@ -7,7 +7,7 @@ import {Box, Readings, treePath} from '../../utils/utils';
  * hole, not the ring. */
 const HIT = 6;
 
-type Segment = {path: string, value: number, point: {x: number, y: number}};
+type Segment = {path: string, value: number, selected: number, point: {x: number, y: number}};
 
 /** Every sector the last layout drew, addressed by its tree path the same way a click is
  * (`treePathInfo` minus the root, joined with ` | `), with a point the sector itself confirms it
@@ -32,7 +32,8 @@ function laidOutSegments(chart: any): Segment[] {
     if (point == null)
       continue;
 
-    segments.push({path, value: Number(data.getValues?.(i)?.[0]), point});
+    const selected = Number(data.tree?.getNodeByDataIndex?.(i)?.getModel?.()?.get?.('selectedCount') ?? 0);
+    segments.push({path, value: Number(data.getValues?.(i)?.[0]), selected, point});
   }
   return segments;
 }
@@ -87,6 +88,7 @@ export function sunburstStatus(v: SunburstViewer): DG.IWidgetStatus & {values: R
         x: segment.point.x - HIT / 2, y: segment.point.y - HIT / 2, width: HIT, height: HIT,
       };
       values[`rows of segment ${segment.path}`] = segment.value;
+      values[`selected rows of segment ${segment.path}`] = segment.selected;
     }
     values['segments'] = segments.length;
     values['segment names'] = segments.map((s) => s.path).join(', ');
