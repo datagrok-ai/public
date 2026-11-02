@@ -4,6 +4,7 @@
 /* ---
 generated: features/compare-columns/compare-columns.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+sub_features_covered: [core#1246, public#4475]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/add-new-column.js';
@@ -25,7 +26,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Data > Compare Columns counts the rows where two columns agree, selects the others and adds a match column", () => {
   const session = feature(test, "features/compare-columns/compare-columns.feature", import.meta.url);
-  test("Data > Compare Columns counts the rows where two columns agree, selects the others and adds a match column", {tag: ["@journey", "@known-failure:44", "@known-failure:111"]}, async ({browser}) => {
+  test("Data > Compare Columns counts the rows where two columns agree, selects the others and adds a match column", {tag: ["@journey", "@known-failure:44", "@realizes:core#1246", "@known-failure:111", "@realizes:public#4475"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 5, page);
     await session.step(24, "Given user is logged in", () => loggedIn(page));

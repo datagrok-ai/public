@@ -4,6 +4,7 @@
 /* ---
 generated: features/data/data-to-curves.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+sub_features_covered: [core#1246]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/curves.js';
@@ -24,7 +25,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Data to Curves turns a table of wells into a table of fitted curves, one per compound, assay, target and run", () => {
   const session = feature(test, "features/data/data-to-curves.feature", import.meta.url);
-  test("Data to Curves turns a table of wells into a table of fitted curves, one per compound, assay, target and run", {tag: ["@journey", "@known-failure:45"]}, async ({browser}) => {
+  test("Data to Curves turns a table of wells into a table of fitted curves, one per compound, assay, target and run", {tag: ["@journey", "@known-failure:45", "@realizes:core#1246"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 2, page);
     await session.step(26, "Given user is logged in", () => loggedIn(page));

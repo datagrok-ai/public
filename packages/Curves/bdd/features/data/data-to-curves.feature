@@ -10,7 +10,7 @@ Feature: Data to Curves turns a table of wells into a table of fitted curves, on
   (`dataToCurvesUI`, `convertDataToCurves`).
 
   The function declares the top-menu path Data | Curves | Data to Curves, but a table view's Data menu leaves it
-  out (it takes no table input; MISSING.md, Findings): the first scenario is that known failure, and the other
+  out (it takes no table input; core#1246): the first scenario is that known failure, and the other
   opens the dialog by calling the function, the way Run a function does.
 
   The wells are written here: compound C1 measured in runs R1 and R2, C2 in R1, four concentrations each, so
@@ -40,7 +40,7 @@ Feature: Data to Curves turns a table of wells into a table of fitted curves, on
       | C2          | A          | T             | B2       | R1     | 10               | 30         |
       | C2          | A          | T             | B2       | R1     | 100              | 50         |
 
-  @known-failure:45
+  @known-failure:45 @realizes:core#1246
   Scenario: The Data menu offers Data to Curves
     Then the top menu should list "Data > Curves > Data to Curves" as enabled
     And no errors should have been logged

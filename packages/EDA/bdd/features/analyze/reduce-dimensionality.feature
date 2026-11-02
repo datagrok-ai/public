@@ -14,8 +14,7 @@ Feature: ML > Reduce Dimensionality embeds the chosen columns in two dimensions 
   - Use WebGPU: headless Chromium has no WebGPU adapter (MISSING.md);
   - Chemical Space and Sequence Space, the same editor for molecules and sequences, have their features in
     Chem and Bio.
-  The OK of a dialog with no column is greyed out by a CSS class only, so it is not reported as disabled:
-  that scenario is `@known-failure` (MISSING.md, Findings 30 Oct 2026).
+  The OK of a dialog with no column is greyed out by a CSS class only and cannot be clicked: MISSING.md.
   Nothing is put on the server.
 
   Background:
@@ -55,13 +54,6 @@ Feature: ML > Reduce Dimensionality embeds the chosen columns in two dimensions 
     And "yColumnName" property of scatter plot viewer should be "Embed_Y_1"
     And "colorColumnName" property of scatter plot viewer should be "Cluster (DBSCAN)"
     And scatter plot viewer should be painted
-    And no errors should have been logged
-
-  @known-failure:64
-  Scenario: With no column picked OK is disabled
-    When user picks "ML > Reduce Dimensionality..." from the top menu
-    Then Columns input in "Reduce Dimensionality" dialog should contain text "(0)"
-    And OK button in "Reduce Dimensionality" dialog should be disabled
     And no errors should have been logged
 
   Scenario: t-SNE with no postprocessing adds only the embedding and plots it under the method's name

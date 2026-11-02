@@ -30,7 +30,7 @@ Feature: `data/data-to-curves.feature` (30 Oct 2026, local stand).
 
 ### Findings 30 Oct 2026 (Data to Curves)
 
-- **Data > Curves > Data to Curves is missing from the table view's Data menu.** Steps: open any table; open
+- **Data > Curves > Data to Curves is missing from the table view's Data menu** — filed as core#1246 (2 Nov 2026). Steps: open any table; open
   Data > Curves. Measured: the group holds Calculate MSR... only. Expected: Data to Curves, which the function
   declares (`'top-menu': 'Data | Curves | Data to Curves'`, Curves `src/package.ts`). Cause: the table view's
   menu adds a package function only when it takes a dataframe input (core `xamgle/lib/src/views/table_view.dart`

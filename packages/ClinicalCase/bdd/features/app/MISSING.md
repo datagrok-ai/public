@@ -40,7 +40,7 @@
 
 ### Findings 30 Oct 2026 (ClinicalCase)
 
-- **Import study... on the start page closes the app and opens nothing when the Clinical Case tree node has
+- Filed as [public#4476](https://github.com/datagrok-ai/public/issues/4476) (2 Nov 2026). **Import study... on the start page closes the app and opens nothing when the Clinical Case tree node has
   not been expanded.** Hand steps (local stand, fresh page): Browse > Apps, click **Clinical Case** (the
   label, not the arrow) — the start page opens; click **IMPORT STUDY...**. Measured: the Clinical Case view
   closes and Home becomes current; no Import view (twice, runs p5c/p5d). Expected: the "Import Study -

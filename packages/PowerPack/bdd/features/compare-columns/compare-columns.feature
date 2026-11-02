@@ -8,10 +8,10 @@ Feature: Data > Compare Columns counts the rows where two columns agree, selects
   No help page covers the dialog; the claims follow PowerPack `src/compare-columns.ts`.
 
   The function declares the top-menu path Data | Compare Columns..., but a table view's Data menu leaves it
-  out (it takes no table input; MISSING.md, Findings): the first scenario is that known failure, and the
+  out (it takes no table input; core#1246): the first scenario is that known failure, and the
   others open the dialog by calling the function, the way Run a function does. ADD COLUMN over columns of two
   tables writes a formula that names the second table's column in the first table, so the column is false in
-  every row (MISSING.md, Findings): the last scenario is that known failure.
+  every row (public#4475): the last scenario is that known failure.
 
   Every scenario runs on tables written here: cmp (a = 1..4, b agrees with a in rows 1 and 3), twin (four
   rows, its c agrees with cmp's a in rows 1 and 2) and short (two rows). Left out on purpose:
@@ -39,7 +39,7 @@ Feature: Data > Compare Columns counts the rows where two columns agree, selects
       | 3 | 3 |
       | 4 | 5 |
 
-  @known-failure:44
+  @known-failure:44 @realizes:core#1246
   Scenario: The Data menu offers Compare Columns
     Then the top menu should list "Data > Compare Columns..." as enabled
     And no errors should have been logged
@@ -96,7 +96,7 @@ Feature: Data > Compare Columns counts the rows where two columns agree, selects
     When user clicks on CANCEL button in "Compare Columns" dialog
     Then "Compare Columns" dialog should be hidden
 
-  @known-failure:111
+  @known-failure:111 @realizes:public#4475
   Scenario: A column of another table of the same length is compared, and ADD COLUMN adds the match column to the first table
     When user calls "PowerPack:_compareColumns" function
     And user selects "cmp" in Tables input in "Compare Columns" dialog

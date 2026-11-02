@@ -5,9 +5,8 @@ Feature: Clinical Case opens from Browse > Apps with its demo studies and the Im
   demo SDTM studies of the package's files (CDISCPILOT01, nida-ctn-0001) and their subject counts, the
   studies and Import study under the Clinical Case node of the tree, and the Import study view with its
   Import button held disabled, and the error it shows for files without a study definition.
-  Listing the studies writes a studyConfig.json into each study folder of System:AppData/ClinicalCase; the
-  first scenario, right after the listing, puts the same text there through the library's file step, which
-  deletes both files at feature end (a run killed before that leaves the same text the app writes).
+  Listing the studies writes a studyConfig.json, the app's own cache, into each demo study folder of
+  System:AppData/ClinicalCase; the feature leaves it there, as a user's first visit does.
   Left out on purpose: opening a study (its Summary and every view under it) and Import itself. Opening a
   study runs the CDISC rules engine in the package's container (ClinicalCase:RunCoreValidate) and writes
   <study>.d42 and validation_results.json into the study folder, which no library step puts back; Import
@@ -24,10 +23,7 @@ Feature: Clinical Case opens from Browse > Apps with its demo studies and the Im
     And the current view should show the text "Visualize and explore your SDTM data"
     And the current view should show the text "Study Standard Protocol Total subjects Start date End date CDISCPILOT01 SDTM 306 nida-ctn-0001 SDTM 138"
     And "Import study..." button should be visible
-    # the listing above wrote these two files; the step deletes them at feature end
-    Given a file "System:AppData/ClinicalCase/SDTM/CDISCPILOT01/studyConfig.json" with text '{"standard":"SDTM","name":"CDISCPILOT01","totalSubjects":306}' is on the server
-    And a file "System:AppData/ClinicalCase/SDTM/nida-ctn-0001/studyConfig.json" with text '{"standard":"SDTM","name":"nida-ctn-0001","totalSubjects":138,"other":{"TEST PRODUCT IS BEING ADDED ON TO EXISTING TREATMENT":"Y","AGE GROUP":"CHILDREN AND ADULTS","PLANNED MAXIMUM AGE OF SUBJECTS":"NO UPPER LIMIT","PLANNED MINIMUM AGE OF SUBJECTS":"15 YEARS","COMPARATIVE TREATMENT NAME":"CLONIDINE","TYPE OF CONTROL":"ACTIVE","TRIAL DESIGN":"SINGLE GROUP PARALLEL","DIAGNOSIS GROUP":"ADDICTED SUBJECTS","TEST PRODUCT TOTAL DAILY DOSE":"ESCALATING FROM 4 MG BUP/1 MG NX TO 16 MG BUP TO 4 MG NX","TEST PRODUCT DOSE UNITS":"MG","DRUG DICTIONARY":"NONE","TRIAL INDICATIONS":"OPIATE DEPENDENCE","TRIAL INDICATION TYPE":"TREATMENT","LENGTH OF TRIAL":"P6M","TRIAL BLINDING SCHEMA":"OPEN LABEL","TRIAL PRIMARY OBJECTIVE":"COMPARE THE RELATIVE CLINICAL UTILITY OF BUP/NX TO CLONIDINE IN A SHORT-TERM (13 DAY) DETOXIFICATION INITIATED IN AN INPATIENT SETTING","TRIAL SECONDARY OBJECTIVE":"DETERMINE THE EFFECT OF TREATMENT ON WITHDRAWAL SYMPTOMS, TREATMENT RETENTION, SAFETY, PATIENT SATISFACTION, AND EXTENT OF ANCILLARY MEDICATIONS DISPENSED","TRIAL PHASE":"4","PLANNED NUMBER OF SUBJECTS":"360","TRIAL IS RANDOMIZED":"Y","RANDOMIZATION RATIO":"2:1 TEST TO COMPARATOR","TEST PRODUCT ROUTE OF ADMINISTRATION":"SUBLINGUAL","SEX OF PARTICIPANTS":"BOTH","SPONSORING ORGANIZATION":"NIDA","TRIAL TITLE":"BUPRENORPHINE/NALOXONE VERSUS CLONIDINE FOR INPATIENT OPIATE DETOXIFICATION","REPORTED NAME OF TEST PRODUCT":"BUPRENORPHINE/CLONIDINE","TYPE OF TRIAL":"EFFICACY"}}' is on the server
-    Then no errors should have been logged
+    And no errors should have been logged
 
   Scenario: The Clinical Case node lists the studies and Import study
     When user expands Apps---Clinical-Case tree node inside browse tree

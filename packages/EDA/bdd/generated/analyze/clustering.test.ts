@@ -4,6 +4,7 @@
 /* ---
 generated: features/analyze/clustering.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+sub_features_covered: [public#4473]
 --- */
 import {test} from '@playwright/test';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -74,7 +75,7 @@ test.describe("ML > Cluster runs DBSCAN on two columns and Markov clustering on 
     await session.step(80, "And the table should have 150 rows", () => rowCount(page, 150));
     await session.step(81, "And no errors should have been logged", () => noErrors(page));
   });
-  test("MCL on four number columns adds the cluster columns", {tag: ["@eda", "@known-failure:97"]}, async ({browser}) => {
+  test("MCL on four number columns adds the cluster columns", {tag: ["@eda", "@known-failure:97", "@realizes:public#4473"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(23, "Given user is logged in", () => loggedIn(page));
     await knownFailure(async () => {

@@ -18,7 +18,7 @@ Feature: `compare-columns.feature` (30 Oct 2026, local stand).
 
 ### Findings 30 Oct 2026 (Compare Columns)
 
-- **Data > Compare Columns... is missing from the table view's Data menu.** Steps: open any table; open the Data
+- **Data > Compare Columns... is missing from the table view's Data menu** — filed as core#1246 (2 Nov 2026). Steps: open any table; open the Data
   menu. Measured: the menu lists Aggregate Rows... through Categorize..., Calculate MSR..., Curves; no Compare
   Columns.... Expected: the item the function declares (`'top-menu': 'Data | Compare Columns...'`, PowerPack
   `src/package.ts`). Cause: the table view's menu adds a package function only when it takes a dataframe input
@@ -27,7 +27,7 @@ Feature: `compare-columns.feature` (30 Oct 2026, local stand).
   which `Check.forFunc` honours for enabling but the menu filter does not). Curves' Data to Curves
   (`requiresTableView`, no inputs) is missing from Data > Curves the same way. The feature's first scenario is a
   `@known-failure` on this.
-- **ADD COLUMN over columns of two tables gives a column that is false in every row.** Steps: open a table cmp
+- **ADD COLUMN over columns of two tables gives a column that is false in every row** — filed as [public#4475](https://github.com/datagrok-ai/public/issues/4475) (2 Nov 2026). Steps: open a table cmp
   (a = 1, 2, 3, 4) and a table twin (c = 1, 2, 9, 9); open Compare Columns (Run function `PowerPack:_compareColumns`);
   Tables cmp and twin, Columns a and c; the dialog says Matched: 2; click ADD COLUMN. Measured: the info balloon
   "Column was added to cmp" and an "a == c" column in cmp that is false in all four rows. Expected: true in rows 1

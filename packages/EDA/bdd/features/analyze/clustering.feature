@@ -11,7 +11,7 @@ Feature: ML > Cluster runs DBSCAN on two columns and Markov clustering on severa
   DBSCAN runs on a nine-row table written here: two tight groups of four points and one point far from
   both. MCL runs on iris (150 rows), over Species with Petal.Length and over the four measurements; with
   number columns only it never finishes (the viewer stays at "Updating..."), so that scenario is
-  `@known-failure` (MISSING.md, Findings 30 Oct 2026). Not a journey: each run adds columns the
+  `@known-failure` (public#4473). Not a journey: each run adds columns the
   next one's claims would read. Left out on purpose:
   - how many clusters MCL finds and which row goes where: EDA and the ml library's tests;
   - DBSCAN as the postprocessing of Reduce Dimensionality (`reduce-dimensionality.feature`), of Chemical
@@ -80,7 +80,7 @@ Feature: ML > Cluster runs DBSCAN on two columns and Markov clustering on severa
     And the table should have 150 rows
     And no errors should have been logged
 
-  @known-failure:97
+  @known-failure:97 @realizes:public#4473
   Scenario: MCL on four number columns adds the cluster columns
     Given user opens iris dataset
     When user picks "ML > Cluster > MCL..." from the top menu

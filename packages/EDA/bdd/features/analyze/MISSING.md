@@ -54,9 +54,10 @@ Features: `reduce-dimensionality.feature`, `clustering.feature`, `hypothesis-tes
   probe confirmed `disabled=false aria=null`). Expected: OK disabled, as the T-test dialog does with
   `runBtn.disabled = true`. Source: EDA `src/package.ts:220`, `okButton.classList.add('disabled')` in
   `reduceDimensionality`'s `validate`. The help says nothing either way; "OK disabled with no input" is the
-  platform's dialog convention. `reduce-dimensionality.feature`, scenario "With no column picked OK is
-  disabled", `@known-failure` on that step (runs p1d, p1e).
-- **Markov clustering on number columns only never finishes.** Steps: open iris; ML > Cluster > MCL...;
+  platform's dialog convention. Checked by hand 2 Nov 2026: a click on the greyed OK does nothing, so it
+  was not filed. Not in the feature: the OK has `pointer-events: none`, so the click step cannot press it
+  (the command bar intercepts the click), and no step reads a CSS-only disabled state.
+- **Markov clustering on number columns only never finishes** — filed as [public#4473](https://github.com/datagrok-ai/public/issues/4473) (2 Nov 2026). Steps: open iris; ML > Cluster > MCL...;
   Columns: tick Sepal.Length, Sepal.Width, Petal.Length, Petal.Width; OK. Measured: the MCL viewer docks and
   shows "Updating..." for more than two minutes; no column is added and nothing is logged (run p1f, 120 s;
   run p1g fails at the pinned step). With Species and Petal.Length the same dialog finishes in about 2 s
