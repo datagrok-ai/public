@@ -13,7 +13,8 @@
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts src",
-    "test": "grok test"
+    "test": "grok test",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Developers"
@@ -30,5 +31,9 @@
     "name": "Guillermo Canudo-Barreras",
     "email": "gcbarreras@datagrok.ai"
   },
-  "category": "Health"
+  "category": "Health",
+  "devDependencies": {
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.62.1"
+  }
 }

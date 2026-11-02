@@ -18,7 +18,7 @@ import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
 import {planInput} from './plan-vs-observed';
 import {openStage} from './stages';
 import {LOOKS_TAG, addLog, logOf, newStudyTable, parseStudy, saveStudy, studyOf, tableOf} from './study-file';
-import {addRunButton, block, busyOverlay, cardGrid, dayText, declarationPane, DECLARATION_MIN, infoNote, noteLine, notes,
+import {addRunButton, askedOf, block, busyOverlay, cardGrid, dayText, declarationPane, DECLARATION_MIN, infoNote, noteLine, notes,
   notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, resultTabs, settleForm, sized, stageStrip, staleNote,
   statCard, swatch, volumeAxis, wrapCells} from './ui';
 
@@ -59,16 +59,20 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     const v = call.getParamValue('study');
     return v instanceof DG.DataFrame ? v : null;
   };
+  const planState = {stale, error, result: computed(() => result.value && {analysis: result.value.status}),
+    reading: Promise.resolve() as Promise<unknown>};
   const run = async (prepare?: () => Promise<void>) => {
     busy.value = true;
     const mine = ++latest;
     try {
       await prepare?.();
+      await planState.reading;
+      const sent = askedOf(call);
       const c = await call.call();
       if (mine !== latest)
         return;
       error.value = null;
-      stale.value = false;
+      stale.value = askedOf(call) !== sent;
       // the reviews stay with the study from its first run
       const df = studyTable();
       if (df && !df.getTag(LOOKS_TAG))
@@ -126,8 +130,7 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     if (initial)
       void setStudy(initial);
   });
-  const planField = planInput(form, call, {stale, error,
-    result: computed(() => result.value && {analysis: result.value.status})});
+  const planField = planInput(form, call, planState);
 
   const start = divV([
     span('Open the study\'s measurements (one row per animal and day, day 0 the randomization), check the columns ' +

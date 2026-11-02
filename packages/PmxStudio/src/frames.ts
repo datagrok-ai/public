@@ -27,6 +27,7 @@ export interface PlanInputs {
   measurementDays?: string; n?: number; lastDay?: number; alpha?: number; preLoss?: number; postLoss?: number;
   lossRule?: string;
   confidence?: number; vRand?: number; startWeekday?: string; humane?: number; compareSchedules?: boolean;
+  detectableEffect?: boolean;
 }
 
 /** The declaration the engine reads: each empty optional at its default, percentages as shares, counts rounded and
@@ -44,7 +45,7 @@ export function declarationOf(x: PlanInputs): StudyDeclaration {
     humane: ok(x.humane) && x.humane > 0 ? x.humane : HUMANE,
     preLoss: share(x.preLoss, 20), postLoss: share(x.postLoss, 10), confidence: share(x.confidence, 90),
     lossRule: x.lossRule === 'Average loss only' ? 'expected' : 'confident',
-    schedules: x.compareSchedules !== false,
+    schedules: x.compareSchedules !== false, mde: x.detectableEffect !== false,
   };
 }
 
@@ -127,9 +128,11 @@ export async function planFrames(d: StudyDeclaration): Promise<PlanFrames> {
   const powerCurve = DG.DataFrame.fromObjects(s.arms.flatMap((a) => a.power.map((r) =>
     ({arm: a.declaration.name, n: r.n, implant: r.implant, assurance: r.assurance}))))!;
   const curves = DG.DataFrame.fromObjects(s.curves)!;
-  // the controls' shares repeated on each arm's rows: one tidy table, coloured by arm like the others
+  // the controls' shares repeated on each arm's rows: one tidy table, coloured by arm like the others (no arm reaches
+  // the target power with any n: an empty table, which fromObjects does not build)
   const duration = DG.DataFrame.fromObjects(s.duration.flatMap((r) => Object.entries(r.assurance).map(([arm, p]) =>
-    ({arm, day: r.day, assurance: p, past_endpoint: r.pastEndpoint, past_humane: r.pastHumane}))))!;
+    ({arm, day: r.day, assurance: p, past_endpoint: r.pastEndpoint, past_humane: r.pastHumane})))) ??
+    DG.DataFrame.create();
   // (not asked for: an empty table, which fromObjects does not build)
   const schedules = DG.DataFrame.fromObjects(s.schedules.flatMap((r) => Object.entries(r.assurance).map(([arm, p]) =>
     ({arm, per_week: r.perWeek, measurements: r.measurements, assurance: p, n_total: r.nTotal})))) ??

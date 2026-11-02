@@ -17,12 +17,22 @@ interface CruxModules {
   call(name: string, table: {[col: string]: any}, params?: object): Promise<CruxResult>;
 }
 
-let modules: Promise<CruxModules> | null = null;
+/** Sets of workers, opened as calls overlap: a set's module runs one call at a time, and every call is seeded, so
+ *  which set runs it changes nothing. Each set costs its modules' memory, hence the cap. */
+const pool: {modules: Promise<CruxModules>, busy: number}[] = [];
+const MAX_SETS = Math.max(1, Math.min(4, (navigator.hardwareConcurrency ?? 2) - 1));
 
+let first: Promise<CruxModules> | null = null;
+
+/** A new set of workers: the loader and its manifest are fetched for the first only (a slow server pays once). */
 function load(): Promise<CruxModules> {
+  if (first)
+    return first.then((m: any) => new m.constructor(m.manifest, m.options));
   const base = new URL('crux-modules/', _package.webRoot.endsWith('/') ? _package.webRoot : `${_package.webRoot}/`);
-  return import(/* webpackIgnore: true */ new URL('crux-modules.js', base).href)
+  first = import(/* webpackIgnore: true */ new URL('crux-modules.js', base).href)
     .then((m) => m.CruxModules.fromBase(base) as Promise<CruxModules>);
+  first.catch(() => first = null);
+  return first;
 }
 
 /** A float column of `n` nulls (a function's "solve for this" input): the leaf ABI's explicit layout, since
@@ -56,9 +66,18 @@ export const named = (r: CruxResult, name: string) => rows(r.named![name].table)
 
 /** Calls the crux-fn `name` (e.g. 'stats.map_prior') on `table` (column name -> values) with `params`. */
 export async function crux(name: string, table: {[col: string]: any}, params: object = {}): Promise<CruxResult> {
-  modules ??= load().catch((e) => {
-    modules = null; // the next call retries
-    throw e;
-  });
-  return (await modules).call(name, table, params);
+  let set = pool.find((s) => s.busy === 0);
+  if (!set && pool.length < MAX_SETS) {
+    const opened = {modules: load(), busy: 0};
+    pool.push(opened);
+    opened.modules.catch(() => pool.splice(pool.indexOf(opened), 1)); // the next call retries
+    set = opened;
+  }
+  set ??= pool.reduce((a, b) => b.busy < a.busy ? b : a);
+  set.busy++;
+  try {
+    return await (await set.modules).call(name, table, params);
+  } finally {
+    set.busy--;
+  }
 }

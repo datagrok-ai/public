@@ -40,6 +40,12 @@ export const finishedRunning = Then('the study should have finished running', as
     {timeout: pollMs(120000), message: 'the view\'s loader shows'}).toBe(0);
 }, {description: 'the view\'s loader is gone: the plan or the analysis is on the page; silent in a guide'});
 
+export const effectsArrived = Then('the smallest detectable effects should have arrived', async (page: Page) => {
+  const cell = page.locator('tbody tr').filter({visible: true, hasText: 'Treatment 1'}).locator('td').last();
+  await expect.poll(() => cell.innerText(), {timeout: pollMs(120000), message: 'the arm\'s smallest detectable effect'})
+    .toMatch(/^(TGI|T\/C) \d+%$|^out of reach$/);
+}, {description: 'with the animals per arm set, the groups table\'s last column is filled in after the plan'});
+
 export const rememberFigure = When('user remembers the {string} figure', async (page: Page, label: string) => {
   const map = REMEMBERED.get(page) ?? new Map<string, string>();
   map.set(label, await reading(page, label));
@@ -95,6 +101,12 @@ export const planIsSaved = Then('a plan named {string} should be saved', async (
     return g.dapi.files.exists(`${g.shell.user.project.name}:Home/PMX Studio/plans/${plan}.pmxplan`);
   }, name), {message: `the plan "${name}" in the user's plans folder`}).toBe(true);
 }, {description: 'read back from the server'});
+
+export const pickSavedPlan = When('user picks the saved plan {string}', async (page: Page, name: string) => {
+  await page.locator('.pmx-declaration [data-u2$="-input"]:visible').filter({hasText: 'Plan'})
+    .locator('.fa-list, [name*="list" i]').first().click();
+  await page.locator('.d4-menu-item').filter({hasText: `${name}.pmxplan`}).first().click();
+}, {tier: 'ui', description: 'through the list icon of the Plan field in Analyze'});
 
 export const rememberTwin = When('user remembers the twin line', async (page: Page) => {
   const map = REMEMBERED.get(page) ?? new Map<string, string>();

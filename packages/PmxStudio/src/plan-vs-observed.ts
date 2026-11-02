@@ -126,7 +126,9 @@ const PLACEHOLDER = 'Optional: a plan saved in Plan';
 /** The Plan field, under the form's Study fields; a plan picked writes its pre-specified analysis into the form and
  *  its text into the call (`state`: the view's stale mark, error line and last analysis). The view owns it. */
 export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: Signal<boolean>,
-  error: Signal<string | null>, result: ReadonlySignal<{analysis: DG.DataFrame} | undefined>}): FileInput {
+  error: Signal<string | null>, result: ReadonlySignal<{analysis: DG.DataFrame} | undefined>,
+  /** the plan file being read: a run waits for it, or it would analyze without the plan just picked */
+  reading: Promise<unknown>}): FileInput {
   const {stale, error, result} = state;
   // the Plan field also offers the user's saved plans; a plan picked writes its pre-specified analysis into the form
   const applyPlan = (p: SavedPlan) => {
@@ -177,7 +179,7 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
         call.setParamValue('plan', null);
         return;
       }
-      void file.readAsString().then((text) => {
+      state.reading = file.readAsString().then((text) => {
         if (mine !== latest)
           return;
         applyPlan(parsePlan(text));

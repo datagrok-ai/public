@@ -72,16 +72,24 @@ export function copyRow(text: () => string, what: string): HTMLElement {
 /** The form's Run, which only computes: u2's showRun also saves the call, uploading its tables (the user's study) to
  *  the server. Blocked while a field is missing or invalid, and while `busy`. */
 export function addRunButton(form: FuncCallForm, run: () => unknown, busy: ReadonlySignal<boolean>): void {
-  const b = form.runInScope(() => button('Run', () => void run(), {primary: true}));
-  form.addButtons((row) => row.append(b));
-  form.effect(() => {
+  const off = computed(() => {
     const missing = form.missingRequired.value;
     const invalid = form.invalidFields.value;
-    b.disabled = missing.length > 0 || invalid.length > 0 || busy.value;
-    b.title = missing.length > 0 ? `Missing: ${missing.join(', ')}` :
-      invalid.length > 0 ? `Invalid: ${invalid.join(', ')}` : '';
+    return missing.length > 0 ? `Missing: ${missing.join(', ')}` : invalid.length > 0 ?
+      `Invalid: ${invalid.join(', ')}` : busy.value ? 'Running' : null;
   });
+  const b = form.runInScope(() => button('Run', () => void run(), {primary: true, disabled: off}));
+  form.addButtons((row) => row.append(b));
 }
+
+/** What a call is asked, to tell whether a run still matches its form when it ends; `compareSchedules`,
+ *  `detectableEffect` and `withTwin` say only how much the run computes, not what it is about. */
+export const askedOf = (call: DG.FuncCall) => JSON.stringify(call.func.inputs
+  .filter((p) => !['compareSchedules', 'detectableEffect', 'withTwin'].includes(p.name)).map((p) => {
+    const v = call.inputs[p.name];
+    // (a column param holds the platform's own object, which JSON cannot write)
+    return v instanceof DG.DataFrame ? v.toCsv() : v instanceof DG.Column ? v.name : v;
+  }));
 
 /** A finished call's outputs by name. */
 export const outputsOf = <T>(c: DG.FuncCall): T =>

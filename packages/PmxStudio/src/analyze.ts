@@ -16,7 +16,7 @@
  */
 import * as DG from 'datagrok-api/dg';
 
-import {crux, named, rows} from './crux';
+import {crux, CruxResult, named, rows} from './crux';
 import {Correction, EffectMetric, HUMANE, LAB_WEEKDAYS, SEED, StudyDeclaration, StudyDesign, correctionOf,
   designStudy, finite, isFiniteNumber as ok, lineModel} from './engine';
 import {armColors} from './frames';
@@ -49,6 +49,8 @@ export interface AnalysisDeclaration {
   humane: number;
   /** mg per mm³: the tumor's density for the tumor-corrected weight (null: the cell line's, from the atlas) */
   density: number | null;
+  /** false: no digital twin (the longest call): twins, effects and checks empty, the rest the same */
+  twin?: boolean;
 }
 
 /** pmxAnalyzeStudy's inputs as the form and Grokky give them: columns, an optional plan file, empty optionals. */
@@ -57,7 +59,7 @@ export interface AnalysisInputs {
   /** the text of a .pmxplan file */
   plan?: string | null; line: string; control: string; endpoint: number; correction: string;
   evaluationDay?: number; alpha?: number; bodyWeight?: DG.Column | null; weightLimit?: number; humane?: number;
-  tumorWeight?: DG.Column | null; density?: number; removalReason?: DG.Column | null;
+  tumorWeight?: DG.Column | null; density?: number; removalReason?: DG.Column | null; withTwin?: boolean;
 }
 
 /** A column's values, an empty cell as null. */
@@ -78,7 +80,7 @@ export function analysisDeclarationOf(x: AnalysisInputs): AnalysisDeclaration {
     plan: planText ? parsePlan(planText) : null, alpha: ok(x.alpha) ? x.alpha : 0.05,
     correction: correctionOf(x.correction),
     weightLimit: ok(x.weightLimit) ? x.weightLimit : 20, humane: ok(x.humane) ? x.humane : HUMANE,
-    density: ok(x.density) && x.density > 0 ? x.density : null,
+    density: ok(x.density) && x.density > 0 ? x.density : null, twin: x.withTwin !== false,
     data: {animal: pick(animal).map(String), group: groups, day: pick(day),
       volume: pick(volume).map((v) => ok(v) ? v : NaN),
       weight: x.bodyWeight ? pick(valuesOf(x.bodyWeight)) : null,
@@ -131,6 +133,8 @@ export interface OddControl {animal: string, outside: number, measurements: numb
 
 export interface StudyAnalysis {
   declaration: AnalysisDeclaration;
+  /** whether the twins were computed (false: their tables empty, asked for later) */
+  twinned: boolean;
   treated: string[];
   evaluationDay: number;
   /** the evaluation day came from the endpoint (false: given, or the last day when the controls never reach it) */
@@ -232,6 +236,20 @@ export async function twinModel(line: string) {
     skew: tw.skew};
 }
 
+/** The last study's twins: a rerun that only changes the correction, α or the limits keeps them (they take seconds
+ *  and depend on nothing else). */
+let lastTwin: {key: string, result: Promise<CruxResult>} | null = null;
+
+function twinOf(window: {animal: string[], group: string[], day: Float64Array, volume: Float64Array}, params: object) {
+  const key = JSON.stringify([window.animal, window.group, Array.from(window.day), Array.from(window.volume), params]);
+  if (lastTwin?.key !== key) {
+    const result = crux('stats.tumor_twin', window, params);
+    lastTwin = {key, result};
+    result.catch(() => lastTwin = null);
+  }
+  return lastTwin.result;
+}
+
 export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysis> {
   const groups = [...new Set(d.data.group)];
   if (!groups.includes(d.control))
@@ -240,12 +258,23 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
   if (treated.length === 0)
     throw new Error('The study has no treated group');
   const end = d.day === null ? evaluationDay(d) : {day: d.day, fromEndpoint: false};
+  // the tests and the twins read the volumes of that very day, and a growth rate takes two days from randomization
+  const measured = [...new Set(d.data.day.filter((t) => t >= 0))].sort((a, b) => a - b);
+  if (!measured.includes(end.day) || end.day <= measured[0]) {
+    throw new Error(`Evaluation day ${end.day} cannot be analyzed: choose a measurement day after the first, ` +
+      `one of ${measured.slice(1).join(', ')}`);
+  }
 
   // from randomisation to the evaluation day: the window the design's slope and effects are defined on
   const keep = d.data.day.map((t) => t >= 0 && t <= end.day);
   const pick = <T>(xs: T[]) => xs.filter((_, i) => keep[i]);
   const window = {animal: pick(d.data.animal), group: pick(d.data.group),
     day: Float64Array.from(pick(d.data.day)), volume: Float64Array.from(pick(d.data.volume))};
+  // the twin is the analysis's longest call and needs nothing from the others
+  const twinned = d.twin !== false;
+  const twinning = !twinned ? null :
+    twinModel(d.line).then((m) => twinOf(window, {...m, control: d.control, day: end.day}));
+  twinning?.catch(() => null); // (awaited below; a failure of the calls before it is the one reported)
   const tgi = await crux('stats.tgi', window, {control: d.control, change: 'paired', rate_floor: V_LOD,
     endpoint_volume: d.endpoint, days: String(end.day)});
 
@@ -260,10 +289,10 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
     contrast: 'trt.vs.ctrl', ref: 'g0', adjust: ADJUST[d.correction], alpha: d.alpha})).main as any);
 
   // each treated animal against its twin, each control against the others
-  const tw = await crux('stats.tumor_twin', window, {...await twinModel(d.line), control: d.control, day: end.day});
-  const twins = rows(tw.main as any);
-  const effects = named(tw, 'effects');
-  const checks = named(tw, 'checks');
+  const tw = await twinning;
+  const twins = tw ? rows(tw.main as any) : [];
+  const effects = tw ? named(tw, 'effects') : [];
+  const checks = tw ? named(tw, 'checks') : [];
 
   const table = rows(tgi.main as any);
   const delay = named(tgi, 'delay');
@@ -323,7 +352,7 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
   for (const a of arms) {
     if (a.n < 3)
       notes.push(`${a.arm}: ${a.n} animal${a.n === 1 ? '' : 's'} with a slope, too few for a test`);
-    if (a.twinAnimals < a.n) {
+    if (twinned && a.twinAnimals < a.n) {
       notes.push(`${a.arm}: ${a.n - a.twinAnimals} animal${a.n - a.twinAnimals > 1 ? 's' : ''} not measured on day ` +
         `${end.day}, so not compared with ${a.n - a.twinAnimals > 1 ? 'their twins' : 'its twin'}`);
     }
@@ -334,7 +363,7 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
   }
   const inside = checks.filter((r) => r.inside).length;
   const versusPlan = await compareWithPlan(d, treated, arms, sloped.filter((a) => a.group === d.control).length);
-  return {declaration: d, treated, evaluationDay: end.day, fromEndpoint: end.fromEndpoint, versusPlan,
+  return {declaration: d, twinned, treated, evaluationDay: end.day, fromEndpoint: end.fromEndpoint, versusPlan,
     nControl: sloped.filter((a) => a.group === d.control).length,
     controlMedianTte: finite(delay.find((r) => r.group === d.control)?.median), arms, animals, volumes,
     twins, effects, checks, controlCoverage: checks.length ? inside / checks.length : null, oddControls, notes};
@@ -537,7 +566,7 @@ export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFr
   const {tolerability, weights} = await tolerabilityFrames(d);
   const vp = s.versusPlan;
   const analysis = DG.DataFrame.fromObjects([{
-    line: d.line, control: d.control, n_control: s.nControl, treated_arms: s.treated.length,
+    line: d.line, twinned: s.twinned, control: d.control, n_control: s.nControl, treated_arms: s.treated.length,
     evaluation_day: s.evaluationDay, from_endpoint: s.fromEndpoint, endpoint: d.endpoint,
     control_median_tte: s.controlMedianTte, alpha: d.alpha, correction: d.correction, compared: COMPARED,
     v_lod: V_LOD, control_coverage: s.controlCoverage, odd_controls: s.oddControls.length,
@@ -561,11 +590,13 @@ export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFr
   const animals = DG.DataFrame.fromObjects(s.animals.map((a) => ({group: a.group, animal: a.animal,
     slope_per_day: a.slope, time_to_endpoint: a.time_to_endpoint, endpoint_reached: a.event, mrecist: a.mrecist})))!;
   const volumes = DG.DataFrame.fromObjects(s.volumes)!;
-  const twins = DG.DataFrame.fromObjects(s.twins)!;
-  const effects = DG.DataFrame.fromObjects(s.effects.map((e) => ({group: e.group, animal: e.animal,
+  // (no rows, as without the twin: an empty table, which fromObjects does not build)
+  const table = (xs: object[]) => xs.length ? DG.DataFrame.fromObjects(xs)! : DG.DataFrame.create(0);
+  const twins = table(s.twins);
+  const effects = table(s.effects.map((e) => ({group: e.group, animal: e.animal,
     effect: 100 * e.effect, effect_lower: 100 * e.effect_lo, effect_upper: 100 * e.effect_hi,
-    responder: e.effect_lo > 0})))!;
-  const checks = DG.DataFrame.fromObjects(s.checks)!;
+    responder: e.effect_lo > 0})));
+  const checks = table(s.checks);
   // each treated group against the plan (with none: its effect, nothing assumed)
   const versusPlan = DG.DataFrame.fromObjects(vp.groups.map((g) => ({group: g.group, planned_as: g.plannedAs,
     metric: g.metric, assumed: g.assumed, observed: g.observed, lower: g.lower, upper: g.upper,
@@ -586,21 +617,31 @@ export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFr
     [effects, 'group'], [tolerability, 'group'], [weights, 'group']] as const)
     df.col(col)?.meta.colors.setCategorical(colors);
   predicted.col('series')!.meta.colors.setCategorical({[PREDICTED]: '#9aa5b1', [OBSERVED]: colors['Control']});
-  for (const df of [volumes, twins, checks, predicted])
-    df.col('day')!.meta.units = 'd';
+  for (const df of [volumes, twins, checks, predicted]) {
+    const c = df.col('day');
+    if (c)
+      c.meta.units = 'd';
+  }
   for (const [df, cols] of [[volumes, ['median', 'lower', 'upper']], [twins, ['observed', 'twin_q05', 'twin_median',
     'twin_q95']], [checks, ['observed', 'q05', 'median', 'q95']], [predicted, ['lower', 'upper', 'median']]] as const) {
     for (const q of cols) {
-      df.col(q)!.meta.units = 'mm³';
-      df.col(q)!.meta.format = '0.0';
+      const c = df.col(q);
+      if (c) {
+        c.meta.units = 'mm³';
+        c.meta.format = '0.0';
+      }
     }
   }
-  for (const q of ['effect', 'effect_lower', 'effect_upper'])
-    effects.col(q)!.meta.units = '%';
+  for (const q of ['effect', 'effect_lower', 'effect_upper']) {
+    const c = effects.col(q);
+    if (c)
+      c.meta.units = '%';
+  }
   volumes.meta.formulaLines.addLine({title: `Endpoint ${d.endpoint} mm³`, formula: `\${median} = ${d.endpoint}`});
   volumes.meta.formulaLines.addLine({title: `Evaluation, day ${s.evaluationDay}`,
     formula: `\${day} = ${s.evaluationDay}`, style: 'solid', color: '#4d5261'});
-  effects.meta.formulaLines.addLine({title: 'No effect', formula: '${effect} = 0', color: '#4d5261'});
+  if (s.effects.length)
+    effects.meta.formulaLines.addLine({title: 'No effect', formula: '${effect} = 0', color: '#4d5261'});
   const tag = `${s.treated.length + 1} groups, day ${s.evaluationDay}`;
   for (const [df, name] of [[analysis, 'Analysis'], [comparisons, 'Comparisons'], [animals, 'Animals'],
     [volumes, 'Volumes'], [twins, 'Twins'], [effects, 'Paired effects'], [checks, 'Control check'],

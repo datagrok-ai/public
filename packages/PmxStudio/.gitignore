@@ -32,3 +32,9 @@ dist/
 # Emitted *.js files
 src/**/*.js
 
+
+# bdd (grok-bdd) run artifacts
+bdd/guides/
+bdd/test-results/
+bdd/e2e/
+bdd/.auth.json

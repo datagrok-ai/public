@@ -8,15 +8,17 @@
    analyzed. */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {badge, BasicTable, button, computed, div, divH, divV, dot, signal, span, Splitter, tableFromMap,
+import {badge, BasicTable, button, computed, div, divH, divV, dot, loader, signal, span, Splitter, tableFromMap,
   Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
+import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
 import {AnalysisFrames, exampleStudy, median} from './analyze';
 import {armColors} from './frames';
 import {CorrectionInput} from './arms-input';
-import {addRunButton, axisAt, block, busyOverlay, cardGrid, copyRow, dayText, declarationPane, DECLARATION_MIN, guide,
+import {addRunButton, askedOf, axisAt, block, busyOverlay, cardGrid, copyRow, dayText, declarationPane,
+  DECLARATION_MIN, guide,
   infoNote, noteLine, notesBox, num, outputsOf, resultTabs, pct, pValue, RESULTS_MIN, resultsFrame, settleForm, signed,
   sized, staleNote, stageStrip, statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {openStage} from './stages';
@@ -126,6 +128,7 @@ function withNci(el: HTMLElement, x: NciReading | undefined, open: () => void): 
 
 /** The results in words, a line each: the study, each treated group's effect and result, the test, the body weight. */
 function summaryLines(r: AnalysisFrames, nci: Map<string, NciReading>): string[] {
+  const twinned = r.analysis.get('twinned', 0);
   const v = (k: string) => r.analysis.get(k, 0);
   const c = r.comparisons;
   const control = v('control');
@@ -138,8 +141,8 @@ function summaryLines(r: AnalysisFrames, nci: Map<string, NciReading>): string[]
     const tc = g('tc') === null ? '' : `, T/C ${pct(g('tc') / 100)}` + (g('tc_lower') === null ? '' :
       ` (95% CI ${Math.round(g('tc_lower'))}–${Math.round(g('tc_upper'))}%)`);
     lines.push(`${g('arm')} (${g('n')} animals): TGI ${pct(g('tgi') / 100)}${tc}; ${g('activity').toLowerCase()} ` +
-      `against the control (p ${p.startsWith('<') ? p : `= ${p}`}); ${g('responders')} of ${g('twin_animals')} ` +
-      'animals responded against their untreated twin.');
+      `against the control (p ${p.startsWith('<') ? p : `= ${p}`})` + (twinned ? `; ${g('responders')} of ` +
+      `${g('twin_animals')} animals responded against their untreated twin.` : '.'));
   }
   lines.push(`Tumor growth of each treated group against the control, two-sided α = ${num(v('alpha'), 2)} with ` +
     `${correctionWords(v('correction'), v('treated_arms'))}.`);
@@ -158,6 +161,11 @@ function summaryLines(r: AnalysisFrames, nci: Map<string, NciReading>): string[]
 }
 
 export async function analyzeView(): Promise<DG.ViewBase> {
+  return ViewHost.create({name: 'PMX Studio · Analyze', content: (self) => analyzeContent(self)}).view;
+}
+
+/** What the view shows, built under its host, which owns it all. */
+function analyzeContent(self: ViewHost): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxAnalyzeStudy').prepare();
   const read = (c: DG.FuncCall) => outputsOf<AnalysisFrames>(c);
   const result = signal<AnalysisFrames | undefined>(undefined);
@@ -194,17 +202,32 @@ export async function analyzeView(): Promise<DG.ViewBase> {
   });
   // busy while the study is analyzed, and before that while the example study is prepared
   const busy = signal(false);
+  const planState = {stale, error, result, reading: Promise.resolve() as Promise<unknown>};
   const analyze = async (prepare?: () => Promise<void>) => {
     busy.value = true;
     const mine = ++latest;
     try {
       await prepare?.();
+      await planState.reading;
+      const sent = askedOf(call);
+      // the analysis first; then the same inputs with the twins (seconds), whatever the form holds by then
+      call.setParamValue('withTwin', false);
+      const f = call.func;
+      const full = f.prepare({...Object.fromEntries(f.inputs.map((p) => [p.name, call.getParamValue(p.name)])),
+        withTwin: true});
       const c = await call.call();
       if (mine !== latest)
         return;
       error.value = null;
-      stale.value = false;
+      stale.value = askedOf(call) !== sent;
       result.value = read(c);
+      void full.call().then((done) => {
+        if (mine === latest)
+          result.value = read(done);
+      }, (e) => {
+        if (mine === latest)
+          error.value = String(e?.message ?? e);
+      });
     } catch (e: any) {
       error.value = String(e?.message ?? e);
     } finally {
@@ -218,7 +241,7 @@ export async function analyzeView(): Promise<DG.ViewBase> {
   const openExample = () => analyze(async () => {
     const df = await exampleStudy();
     grok.shell.addTableView(df);
-    grok.shell.v = view;
+    grok.shell.v = self.view;
     const study = form.getInput('study');
     if (study)
       study.value = df.name;
@@ -241,7 +264,7 @@ export async function analyzeView(): Promise<DG.ViewBase> {
         'as Plan predicts it, a vehicle and two treated groups', run: () => void openExample()}];
     }
   });
-  const planField = planInput(form, call, {stale, error, result});
+  planInput(form, call, planState);
 
   const start = divV([
     span('Open your study table (one row per animal and measurement day, day 0 the randomization), check its ' +
@@ -262,6 +285,10 @@ export async function analyzeView(): Promise<DG.ViewBase> {
   const cell = <T = number>(name: string) =>
     computed(() => (analysis.value?.get(name, 0) ?? undefined) as T | undefined);
   const comparisons = computed(() => result.value?.comparisons);
+  // what depends on the twins waits for them: a loader, or a dash if they failed
+  const twinned = computed(() => !!analysis.value?.get('twinned', 0));
+  const waitingTwin = (words?: string) => error.peek() !== null ? span('—') : loader(words);
+  const coverage = cell('control_coverage');
   const significant = computed(() => {
     const c = comparisons.value;
     return c ? `${c.col('activity')!.toList().filter((x) => x === 'Slows growth').length} of ${c.rowCount}` :
@@ -284,8 +311,8 @@ export async function analyzeView(): Promise<DG.ViewBase> {
       'Chosen, or the last measurement day if the median control never reached the endpoint', dayText),
     card('Animals analyzed', analyzed, () => `${cell('n_control').value} controls and ${treatedAnalyzed.value} ` +
       'treated animals with at least two measurements'),
-    card('Controls on track', cell('control_coverage'), () => 'Control measurements inside the range the other ' +
-      'controls predict for them (about 90% is as expected)', (x) => pct(x)),
+    card('Controls on track', computed(() => twinned.value ? coverage.value : undefined), () => 'Control ' +
+      'measurements inside the range the other controls predict for them (about 90% is as expected)', (x) => pct(x)),
   ], 'pmx-analyze-cards', 150);
 
   const groupsTable = div([]);
@@ -313,6 +340,8 @@ export async function analyzeView(): Promise<DG.ViewBase> {
     if (!r)
       return;
     const v = (c: string) => r.analysis.get(c, 0);
+    const done = v('twinned');
+    void error.value;
     treatedGroups.value = v('treated_arms');
     const control = v('control');
     const colors = colorsOf(r);
@@ -340,8 +369,8 @@ export async function analyzeView(): Promise<DG.ViewBase> {
       rows.push({name: g('arm'), cells: [swatch(g('arm'), colors[g('arm')]), String(g('n')), pct(g('tgi') / 100),
         tc === null ? '—' : observedCell(pct(tc / 100), g('tc_lower') === null ? '' :
           `(${Math.round(g('tc_lower'))}–${Math.round(g('tc_upper'))}%)`),
-        g('paired_effect') === null ? '—' : pct(g('paired_effect') / 100),
-        `${g('responders')} of ${g('twin_animals')}`, pValue(g('p_value')).replace(' ', ' '),
+        !done ? waitingTwin() : g('paired_effect') === null ? '—' : pct(g('paired_effect') / 100),
+        !done ? waitingTwin() : `${g('responders')} of ${g('twin_animals')}`, pValue(g('p_value')).replace(' ', ' '),
         withNci(verdict, nci.get(g('arm')), showNci)]});
     }
     const headers = ['Group', 'Analyzed', 'TGI', 'T/C (95% CI)', 'Smaller than its twin', 'Responders', 'p',
@@ -372,14 +401,15 @@ export async function analyzeView(): Promise<DG.ViewBase> {
     statsTable.replaceChildren(st.root);
 
     // the controls against each other: how many measurements fall in their range, and the ones that grow apart
-    const coverage = v('control_coverage');
-    controlCheck.replaceChildren(divV([
-      span(coverage === null ? 'Too few controls to check them against each other.' :
-        `${pct(coverage)} of the control measurements fall in the range the other controls predict for them ` +
+    const inBand = v('control_coverage');
+    controlCheck.replaceChildren(!done ? waitingTwin('Checking the controls against each other…') : divV([
+      span(inBand === null ? 'Too few controls to check them against each other.' :
+        `${pct(inBand)} of the control measurements fall in the range the other controls predict for them ` +
         `(about 90% when the controls grow as the ${v('line')} model expects).`),
       ...(odd.length ? odd.map((n) => noteLine(n)) : [noteLine('No control grows apart from the others.', 'success')]),
     ], 'pmx-control-check'));
-    (controlCheck.firstElementChild as HTMLElement).style.gap = 'var(--dg-space-s)';
+    if (done)
+      (controlCheck.firstElementChild as HTMLElement).style.gap = 'var(--dg-space-s)';
 
     // the analysis protocol, as Plan pre-specifies it
     const k = v('treated_arms');
@@ -459,6 +489,8 @@ export async function analyzeView(): Promise<DG.ViewBase> {
     color: 'var(--dg-text-color-muted, #68727f)', lineHeight: '1.45'});
   // the rows' columns: the animal, its effect in words, the bar, its badge; one grid the rows share (subgrid), so
   // every row's bar sits under the axis and the badge column fits its widest badge, beside the chart too
+  const twinSide = divV([], 'pmx-twin-side');
+  Object.assign(twinSide.style, {position: 'sticky', top: '0', alignSelf: 'start'});
   const animalList = div([], 'pmx-animal-list');
   Object.assign(animalList.style, {display: 'grid', columnGap: 'var(--dg-space-m)',
     gridTemplateColumns: 'auto auto minmax(140px, 1fr) max-content'});
@@ -474,6 +506,17 @@ export async function analyzeView(): Promise<DG.ViewBase> {
     const r = result.value;
     if (!r)
       return;
+    // (a pick stays until the twins are in)
+    const done = r.analysis.get('twinned', 0);
+    void error.value;
+    responderNote.hidden = !done;
+    twinSide.hidden = !done;
+    if (!done) {
+      const waiting = waitingTwin('Comparing each animal with its untreated twin…');
+      waiting.style.gridColumn = '1 / -1';
+      animalList.replaceChildren(waiting);
+      return;
+    }
     const e = r.effects;
     const colors = colorsOf(r);
     const all: AnimalRow[] = Array.from({length: e.rowCount}, (_, i) => ({animal: e.get('animal', i),
@@ -537,7 +580,7 @@ export async function analyzeView(): Promise<DG.ViewBase> {
   const pickedRow = computed(() => {
     const e = result.value?.effects;
     const a = picked.value;
-    const i = e && a ? e.col('animal')!.toList().indexOf(a) : -1;
+    const i = e && a ? e.col('animal')?.toList().indexOf(a) ?? -1 : -1;
     return i < 0 ? undefined : {animal: a!, group: e!.get('group', i) as string, effect: e!.get('effect', i),
       lower: e!.get('effect_lower', i), upper: e!.get('effect_upper', i)};
   });
@@ -557,8 +600,7 @@ export async function analyzeView(): Promise<DG.ViewBase> {
   });
   const twinHead = divV([effectLine, twinAxis.row]);
   Object.assign(twinHead.style, {gap: 'var(--dg-space-s)', margin: '0 0 var(--dg-space-s)', fontWeight: '500'});
-  const twinSide = divV([twinHead, sized(animalTwin, 320)], 'pmx-twin-side');
-  Object.assign(twinSide.style, {position: 'sticky', top: '0', alignSelf: 'start'});
+  twinSide.append(twinHead, sized(animalTwin, 320));
   const animals = div([divV([animalList, responderNote]), twinSide], 'pmx-animals');
   Object.assign(animals.style, {display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))',
     gap: 'var(--dg-space-l)', alignItems: 'start'});
@@ -627,14 +669,10 @@ export async function analyzeView(): Promise<DG.ViewBase> {
   const panes = new Splitter([declarationPane(form.root),
     resultsFrame([failure, outdated, start, content], overlay)],
   {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
-  const host = ViewHost.create({name: 'PMX Studio · Analyze', content: () => ({
+  return {
     root: panes,
     ribbon: [[stageStrip('analyze', (s) => void openStage(s))]],
     path: '/analyze',
     status: computed(() => busy.value ? 'Analyzing the study…' : result.value ? result.value.analysis.name : ''),
-  })});
-  [form, correction, planField, growthAxis.input, twinAxis.input, growth, animalTwin, ...versus.own,
-    ...tolerability.own, tabs].forEach((c) => host.own(() => c.dispose()));
-  const view: DG.ViewBase = host.view;
-  return view;
+  };
 }

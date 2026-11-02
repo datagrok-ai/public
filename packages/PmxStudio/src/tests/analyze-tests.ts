@@ -18,6 +18,21 @@ async function analyze(study: DG.DataFrame, params: {[k: string]: any} = {}): Pr
 }
 
 category('Analyze', () => {
+  test('without the twin, the same tests and effects, its tables empty', async () => {
+    const study = await exampleStudy();
+    const [all, lean] = [await analyze(study), await analyze(study, {withTwin: false})];
+    expect(lean.analysis.get('twinned', 0), false);
+    expect(all.analysis.get('twinned', 0), true);
+    for (const name of ['twins', 'effects', 'checks']) {
+      expect(lean[name].rowCount, 0, name);
+      expect(all[name].rowCount > 0, true, name);
+    }
+    for (const name of ['animals', 'volumes', 'versusPlan', 'predicted'])
+      expect(lean[name].toCsv(), all[name].toCsv(), name);
+    for (const c of ['tgi', 'tc', 'p_value', 'slope_difference', 'activity'])
+      expect(lean.comparisons.col(c)!.toList().join(), all.comparisons.col(c)!.toList().join(), c);
+  }, {timeout: 120000});
+
   test('tolerability: the example\'s body weight read per group, and nothing without the column', async () => {
     const study = await exampleStudy();
     const o = await analyze(study, {bodyWeight: study.col('body_weight')});
