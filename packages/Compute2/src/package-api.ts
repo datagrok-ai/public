@@ -183,10 +183,6 @@ export namespace funcs {
     return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall, startDownload });
   }
 
-  export async function testUrlInputsFixture(a: number , b: number , flag: boolean , s: string , when: any , df: DG.DataFrame , opt: number | undefined, nul: number | null): Promise<number> {
-    return await grok.functions.call('Compute2:TestUrlInputsFixture', { a, b, flag, s, when, df, opt, nul });
-  }
-
   export async function testProjectExportSingleOut(x: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Compute2:TestProjectExportSingleOut', { x });
   }
