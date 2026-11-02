@@ -136,6 +136,11 @@ class BrowserCallEvent(TypedDict):
     timeoutMs: int
 
 
+class UsageEvent(TypedDict):
+    type: Literal['usage']
+    metrics: Metrics
+
+
 class StoppedEvent(TypedDict):
     type: Literal['stopped']
     text: str
@@ -146,13 +151,11 @@ class StoppedEvent(TypedDict):
 class LimitEvent(TypedDict):
     type: Literal['limit']
     kind: Literal['turns', 'budget']
-    metrics: NotRequired[Metrics]
 
 
 class ErrorEvent(TypedDict):
     type: Literal['error']
     message: str
-    metrics: NotRequired[Metrics]
 
 
 class CancelledEvent(TypedDict):
@@ -164,5 +167,6 @@ class SessionLostEvent(TypedDict):
 
 
 Event = (ReadyEvent | CheckedEvent | FatalEvent | SessionEvent | TextEvent | ActivityEvent | ToolStartEvent |
-         ToolEndEvent | BrowserCallEvent | StoppedEvent | LimitEvent | ErrorEvent | CancelledEvent | SessionLostEvent)
+         ToolEndEvent | BrowserCallEvent | UsageEvent | StoppedEvent | LimitEvent | ErrorEvent |
+         CancelledEvent | SessionLostEvent)
 Emit = Callable[[Event], None]

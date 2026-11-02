@@ -143,12 +143,12 @@ export class ClaudeRuntimeClient {
           ...(data.metrics ? {metrics: data.metrics} : {}),
           ...(data.revision ? {revision: data.revision} : {}),
         });
-        this.logTurn(data.sessionId, data.metrics);
+        this.logTurn(data.sessionId, 'ok', data.metrics);
         break;
       case 'error':
         this._resumable.add(data.sessionId);
         this.onError.next({sessionId: data.sessionId, message: data.message});
-        this.logTurn(data.sessionId, data.metrics);
+        this.logTurn(data.sessionId, 'error', data.metrics);
         break;
       case 'session_reset':
         this._resumable.delete(data.sessionId);
@@ -157,6 +157,7 @@ export class ClaudeRuntimeClient {
       case 'aborted':
         this._resumable.add(data.sessionId);
         this.onAborted.next({sessionId: data.sessionId});
+        this.logTurn(data.sessionId, 'aborted', data.metrics);
         break;
       case 'input_request':
         this.onInputRequest.next({sessionId: data.sessionId, requestId: data.requestId, toolName: data.toolName, input: data.input});
@@ -279,17 +280,16 @@ export class ClaudeRuntimeClient {
   }
 
   /** Parameter names avoid `token`: the platform's log redactor blanks any parameter named so. */
-  private logTurn(sessionId: string, metrics?: TurnServerMetrics): void {
-    if (!metrics)
+  private logTurn(sessionId: string, status: 'ok' | 'error' | 'aborted', metrics?: TurnServerMetrics): void {
+    if (!sessionId)
       return;
-    const params: {[key: string]: string | number} = {turnId: crypto.randomUUID(), chatId: sessionId, feature: featureOf(sessionId)};
-    if (metrics.model)
-      params.model = metrics.model;
-    const values: {[key: string]: number | null} = {
-      inputCount: metrics.inputTokens, outputCount: metrics.outputTokens,
-      cacheReadCount: metrics.cacheReadTokens, cacheCreationCount: metrics.cacheCreationTokens,
-      costUsd: metrics.costUsd, numTurns: metrics.numTurns,
-      durationMs: metrics.durationMs, apiDurationMs: metrics.durationApiMs,
+    const params: {[key: string]: string | number} = {turnId: crypto.randomUUID(), chatId: sessionId, feature: featureOf(sessionId), status};
+    const values: {[key: string]: string | number | null | undefined} = {
+      model: metrics?.model,
+      inputCount: metrics?.inputTokens, outputCount: metrics?.outputTokens,
+      cacheReadCount: metrics?.cacheReadTokens, cacheCreationCount: metrics?.cacheCreationTokens,
+      costUsd: metrics?.costUsd, numTurns: metrics?.numTurns,
+      durationMs: metrics?.durationMs, apiDurationMs: metrics?.durationApiMs,
     };
     for (const [name, value] of Object.entries(values)) {
       if (value != null)

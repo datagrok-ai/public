@@ -60,7 +60,8 @@ class Tokens:
 class Turn:
     """One browser message, with its gate follow-ups and structured-output retries."""
 
-    def __init__(self, cmd: TurnCommand) -> None:
+    def __init__(self, cmd: TurnCommand, model: str) -> None:
+        self.model = model
         self.system_prompt = cmd['systemPrompt']
         self.schema = cmd.get('outputSchema')
         self.cwd = cmd['cwd']
@@ -82,8 +83,8 @@ class Turn:
         self.approvals = guard.Approvals()
         self.redirected = False
 
-    def metrics(self, model: str) -> Metrics:
-        return {'model': model, 'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
+    def metrics(self) -> Metrics:
+        return {'model': self.model, 'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
                 'cacheReadTokens': self.tokens.cache_read, 'cacheCreationTokens': self.tokens.cache_write,
                 'costUsd': self.cost, 'numTurns': self.api_calls,
                 'durationMs': round((time.time() - self.started) * 1000),
@@ -261,7 +262,7 @@ class Session:
     def receive(self, cmd: TurnCommand | ContinueCommand) -> Turn:
         """The turn a `turn` or `continue` command runs, taken when the command arrives."""
         if cmd['type'] == 'turn':
-            self.latest = Turn(cmd)
+            self.latest = Turn(cmd, self.provider.model)
         assert self.latest is not None, 'a continue follows its turn'
         return self.latest
 
@@ -412,35 +413,34 @@ class Session:
                 self.emit({'type': 'cancelled'})
                 return
             if t.limit or str(result.get('turn_exit_reason') or '').startswith('max_iterations'):
-                self.emit({'type': 'limit', 'kind': t.limit or 'turns', 'metrics': t.metrics(self.provider.model)})
+                self.emit({'type': 'limit', 'kind': t.limit or 'turns'})
                 return
             if t.api_error or result.get('failed'):
                 self.emit({'type': 'error',
-                           'message': t.api_error or result.get('error') or 'The model request failed.',
-                           'metrics': t.metrics(self.provider.model)})
+                           'message': t.api_error or result.get('error') or 'The model request failed.'})
                 return
             text = result.get('final_response') or ''
             if t.schema is None:
                 if text:
-                    self.emit({'type': 'stopped', 'text': text, 'metrics': t.metrics(self.provider.model)})
+                    self.emit({'type': 'stopped', 'text': text, 'metrics': t.metrics()})
                 else:
-                    self.emit({'type': 'error', 'message': 'The assistant stopped without an answer.', 'metrics': t.metrics(self.provider.model)})
+                    self.emit({'type': 'error', 'message': 'The assistant stopped without an answer.'})
                 return
             value, error = structured.check(t.schema, text)
             if error is None:
-                self.emit({'type': 'stopped', 'text': text, 'structuredOutput': value, 'metrics': t.metrics(self.provider.model)})
+                self.emit({'type': 'stopped', 'text': text, 'structuredOutput': value, 'metrics': t.metrics()})
                 return
             problem = error
             content = RETRY_STRUCTURED.format(problem)
         self.emit({'type': 'error', 'message': 'The model did not return valid structured output after '
-                                               f'{MAX_STRUCTURED_ATTEMPTS} attempts: {problem}',
-                   'metrics': t.metrics(self.provider.model)})
+                                               f'{MAX_STRUCTURED_ATTEMPTS} attempts: {problem}'})
 
     def _account(self, t: Turn, usage: Usage, api_duration: float | None) -> None:
         t.tokens.add(usage)
         t.api_seconds += api_duration or 0.0
         cost = self.provider.cost(usage)
         t.cost = None if cost is None or t.cost is None else t.cost + cost
+        self.emit({'type': 'usage', 'metrics': t.metrics()})
         if t.cost is not None and t.cost > t.max_cost:
             self._stop(t, 'budget')
 

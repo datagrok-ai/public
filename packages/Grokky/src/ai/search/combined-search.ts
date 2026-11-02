@@ -21,6 +21,8 @@ interface AISearchFuncInfo {
  * The idea is to provide single AI search provider which will decide which LLM to use based on user prompt.
  * This class will not care about individual LLM implementations, nor the presence of api keys and other needed things.
  */
+const SEARCH_FEATURES: {[func: string]: AiFeature} = {Help: AiFeature.Help, Execute: AiFeature.Execute};
+
 export class CombinedAISearchAssistant {
   private collectFunctions(): {[name: string]: AISearchFuncInfo} {
     // these function should have descriptions, one input of a string prompt and an output of a widget. meta.useWhen must be defined as well
@@ -109,7 +111,7 @@ export class CombinedAISearchAssistant {
 
   private buildFunctionTabContent(funcInfo: AISearchFuncInfo, prompt: string): HTMLElement {
     const host = ui.divV([], 'grokky-ai-search-tab-host');
-    const chat = new AIPanel(`search-${funcInfo.func.name}`, grok.shell.v, {inline: true});
+    const chat = new AIPanel(`search-${funcInfo.func.name}`, grok.shell.v, {inline: true, feature: SEARCH_FEATURES[funcInfo.func.name]});
     chat.onRunRequest.subscribe((a) => runPromptWithLifecycle(chat, a.currentPrompt.prompt, grok.shell.v, 'search'));
 
     host.appendChild(ui.wait(async () => {
