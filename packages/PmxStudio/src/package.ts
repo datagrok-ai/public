@@ -58,11 +58,11 @@ export class PackageFunctions {
     ],
   })
   static async pmxPlanStudy(
-    @grok.decorators.param({options: {category: 'Tumor model', caption: 'Cell line', choices: ['MC38', 'CT26', 'B16F10'], initialValue: 'MC38', description: 'Syngeneic cell line: its growth prior comes from the atlas of historical controls.'}}) line: string,
-    @grok.decorators.param({options: {category: 'Tumor model', caption: 'Endpoint volume', units: 'mm³', min: '500', max: '3000', initialValue: '1500', description: 'The study ends when the median control reaches it.'}}) endpoint: number,
+    @grok.decorators.param({options: {category: 'Tumor model', caption: 'Cell line', nullable: false, choices: ['MC38', 'CT26', 'B16F10'], initialValue: 'MC38', description: 'Syngeneic cell line: its growth prior comes from the atlas of historical controls.'}}) line: string,
+    @grok.decorators.param({options: {category: 'Tumor model', caption: 'Endpoint volume', nullable: false, units: 'mm³', min: '500', max: '3000', initialValue: '1500', description: 'The study ends when the median control reaches it.'}}) endpoint: number,
     @grok.decorators.param({options: {category: 'Treatment arms', caption: 'Arms', optional: true, description: 'The treated arms, each compared with the control: name, therapy (small_molecule, biologic, immunotherapy, immune_agonist, cell_therapy, vaccine_peptide, oligo_rna), metric (TGI or TC) and the expected effect in percent. Empty: one small-molecule arm at TGI 60%.'}}) arms: DG.DataFrame,
-    @grok.decorators.param({options: {category: 'Design', caption: 'Target power', units: '%', min: '50', max: '99', initialValue: '80', description: 'Chance of detecting each arm’s effect.'}}) power: number,
-    @grok.decorators.param({options: {category: 'Design', caption: 'Multiple comparisons', choices: ['dunnett', 'bonferroni', 'none'], initialValue: 'dunnett', description: 'Correction over the arms compared with the control: Dunnett (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).'}}) correction: string,
+    @grok.decorators.param({options: {category: 'Design', caption: 'Target power', nullable: false, units: '%', min: '50', max: '99', initialValue: '80', description: 'Chance of detecting each arm’s effect.'}}) power: number,
+    @grok.decorators.param({options: {category: 'Design', caption: 'Multiple comparisons', nullable: false, choices: ['dunnett', 'bonferroni', 'none'], initialValue: 'dunnett', description: 'Correction over the arms compared with the control: Dunnett (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).'}}) correction: string,
     @grok.decorators.param({type: 'int', options: {category: 'Design', caption: 'Animals per arm', optional: true, nullable: true, min: '2', max: '100', description: 'Empty for the number the target power needs, or set it to see the power and smallest detectable effect with that many.'}}) n?: number,
     @grok.decorators.param({type: 'int', options: {category: 'Design', caption: 'End of study', optional: true, nullable: true, units: 'day', min: '5', max: '120', description: 'Leave empty to end when the median control reaches the endpoint.'}}) lastDay?: number,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Significance (α)', optional: true, min: '0.001', max: '0.2', initialValue: '0.05', description: 'Two-sided significance level of the comparisons with the control.'}}) alpha?: number,
@@ -81,9 +81,12 @@ export class PackageFunctions {
     // set by the Plan view, which compares the schedules only while their section is open
     // @ts-expect-error (as above)
     @grok.decorators.param({type: 'bool', options: {category: 'Advanced', caption: 'Compare measurement schedules', optional: true, visible: 'false', initialValue: 'true', description: 'Also give the power by measurements per week (off: that table is empty and the plan twice as fast).'}}) compareSchedules?: boolean,
+    // set by the Plan view, which shows the plan first and fills the smallest detectable effects in afterwards
+    // @ts-expect-error (as above)
+    @grok.decorators.param({type: 'bool', options: {category: 'Advanced', caption: 'Smallest detectable effect', optional: true, visible: 'false', initialValue: 'true', description: 'With the animals per arm set, also search each arm’s smallest detectable effect (off: left empty and the plan several times faster).'}}) detectableEffect?: boolean,
   ): Promise<PlanFrames> {
     return planFrames(declarationOf({line, endpoint, arms, power, correction, measurementDays, n, lastDay, alpha,
-      preLoss, postLoss, lossRule, confidence, vRand, startWeekday, humane, compareSchedules}));
+      preLoss, postLoss, lossRule, confidence, vRand, startWeekday, humane, compareSchedules, detectableEffect}));
   }
 
   @grok.decorators.func({
@@ -105,27 +108,31 @@ export class PackageFunctions {
   })
   static async pmxAnalyzeStudy(
     @grok.decorators.param({options: {category: 'Study', caption: 'Study', nullable: false, description: 'The measurements: one row per animal and day, day 0 the randomization (start of treatment).'}}) study: DG.DataFrame,
-    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Animal', description: 'The animal (tumor) identifier, unique in the study.'}}) animal: DG.Column,
-    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Group', description: 'The treatment group.'}}) group: DG.Column,
-    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Day', type: 'numerical', description: 'Days from randomization.'}}) day: DG.Column,
-    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Volume', type: 'numerical', description: 'Tumor volume (mm³).'}}) volume: DG.Column,
+    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Animal', nullable: false, description: 'The animal (tumor) identifier, unique in the study.'}}) animal: DG.Column,
+    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Group', nullable: false, description: 'The treatment group.'}}) group: DG.Column,
+    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Day', nullable: false, type: 'numerical', description: 'Days from randomization.'}}) day: DG.Column,
+    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Volume', nullable: false, type: 'numerical', description: 'Tumor volume (mm³).'}}) volume: DG.Column,
     @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Body weight', type: 'numerical', optional: true, nullable: true, description: 'Body weight (g), weighed with the tumor (empty: no tolerability).'}}) bodyWeight: DG.Column | null,
     @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Tumor weight', type: 'numerical', optional: true, nullable: true, description: 'The excised tumor’s weight (g), on the row of the animal’s last measurement.'}}) tumorWeight: DG.Column | null,
     @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Removal reason', optional: true, nullable: true, description: 'Why an animal left the study (found dead, moribund, weight, tumor, ulceration, other), on any of its rows.'}}) removalReason: DG.Column | null,
     // the plan's text, not a file: the Analyze view reads the file into it
     // @ts-expect-error (the platform's `visible` rule, as above)
     @grok.decorators.param({type: 'string', options: {category: 'Study', caption: 'Plan', optional: true, nullable: true, visible: 'false', description: 'The plan saved in Plan (its .pmxplan file’s contents), to compare the study with.'}}) plan: string | null,
-    @grok.decorators.param({options: {category: 'Analysis', caption: 'Cell line', choices: ['MC38', 'CT26', 'B16F10'], initialValue: 'MC38', description: 'The tumor model: its growth model from the atlas of historical controls predicts each treated animal untreated.'}}) line: string,
+    @grok.decorators.param({options: {category: 'Analysis', caption: 'Cell line', nullable: false, choices: ['MC38', 'CT26', 'B16F10'], initialValue: 'MC38', description: 'The tumor model: its growth model from the atlas of historical controls predicts each treated animal untreated.'}}) line: string,
     @grok.decorators.param({options: {category: 'Analysis', caption: 'Control group', optional: true, nullable: true, description: 'The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).'}}) control: string,
-    @grok.decorators.param({options: {category: 'Analysis', caption: 'Endpoint volume', units: 'mm³', min: '500', max: '3000', initialValue: '1500', description: 'The effects are read on the first measurement day the median control reaches this volume, as the design defines the end of the study.'}}) endpoint: number,
-    @grok.decorators.param({options: {category: 'Analysis', caption: 'Multiple comparisons', choices: ['dunnett', 'bonferroni', 'none'], initialValue: 'dunnett', description: 'Correction over the arms compared with the control: Dunnett (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).'}}) correction: string,
+    @grok.decorators.param({options: {category: 'Analysis', caption: 'Endpoint volume', nullable: false, units: 'mm³', min: '500', max: '3000', initialValue: '1500', description: 'The effects are read on the first measurement day the median control reaches this volume, as the design defines the end of the study.'}}) endpoint: number,
+    @grok.decorators.param({options: {category: 'Analysis', caption: 'Multiple comparisons', nullable: false, choices: ['dunnett', 'bonferroni', 'none'], initialValue: 'dunnett', description: 'Correction over the arms compared with the control: Dunnett (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).'}}) correction: string,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Evaluation day', optional: true, nullable: true, description: 'Leave empty for the day the median control reaches the endpoint volume (the last day if it never does).'}}) evaluationDay?: number,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Significance (α)', optional: true, min: '0.001', max: '0.2', initialValue: '0.05', description: 'Two-sided significance level of the comparisons with the control.'}}) alpha?: number,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Humane limit, weight loss', optional: true, units: '%', min: '5', max: '50', initialValue: '20', description: 'An animal is removed when it loses this much weight (your institution’s limit).'}}) weightLimit?: number,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Humane limit, tumor', optional: true, units: 'mm³', min: '500', max: '4000', initialValue: '2000', description: 'An animal is removed when its tumor passes your institution’s limit.'}}) humane?: number,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Tumor density', optional: true, nullable: true, units: 'mg/mm³', min: '0.1', max: '3', description: 'The tumor’s mass per mm³ of caliper volume (empty: the cell line’s typical one).'}}) density?: number,
+    // set by the Analyze view, which shows the analysis first and fills the twins in afterwards
+    // @ts-expect-error (the platform's `visible` rule, as above)
+    @grok.decorators.param({type: 'bool', options: {category: 'Advanced', caption: 'Digital twin', optional: true, visible: 'false', initialValue: 'true', description: 'Also compare each treated animal with its untreated twin (off: those tables are empty and the analysis several times faster).'}}) withTwin?: boolean,
   ): Promise<AnalysisFrames> {
     return analysisFrames(analysisDeclarationOf({study, animal, group, day, volume, bodyWeight, tumorWeight,
-      removalReason, plan, line, control, endpoint, correction, evaluationDay, alpha, weightLimit, humane, density}));
+      removalReason, plan, line, control, endpoint, correction, evaluationDay, alpha, weightLimit, humane, density,
+      withTwin}));
   }
 }

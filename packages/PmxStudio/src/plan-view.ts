@@ -6,17 +6,18 @@
    group size, by end of study (platform line charts) and by measurement schedule, and the study protocol. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, loader, signal, span,
+import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, loader, Reason, signal, span,
   Splitter, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
+import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
 import {PlanFrames, WEEKDAY_NAMES, armColors, weekdaysOf, weekdaysText} from './frames';
 import {ArmsInput, CorrectionInput, armsFrame} from './arms-input';
 import {MIN_GROUP, finite} from './engine';
-import {addRunButton, block, busyOverlay, cardGrid, copyRow, declarationPane, DECLARATION_MIN, infoNote, notes,
+import {addRunButton, askedOf, block, busyOverlay, cardGrid, copyRow, declarationPane, DECLARATION_MIN, infoNote, notes,
   notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, resultTabs, settleForm, sized, staleNote, stageStrip,
-  statCard, swatch, volumeAxis} from './ui';
+  statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {openStage} from './stages';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
 import {BandChart} from './band-chart';
@@ -27,6 +28,9 @@ const monitorNote = () => infoNote('<b>From implantation to randomization, in Mo
   'the groups automatically, balanced on tumor volume, as soon as there are enough.');
 
 const WEEKDAYS = WEEKDAY_NAMES.map((d) => d.slice(0, 3));
+
+/** What a section with nothing to compare says: no arm reaches the target power with any group size. */
+const UNREACHABLE = 'No group size up to 40 reaches the target power: lower it, or set the animals per arm.';
 
 /** A day's mark in the calendar: a short label in its kind's colour. */
 function mark(text: string, color: string, filled: boolean): HTMLElement {
@@ -192,12 +196,18 @@ export async function openPlanFile(content: string): Promise<DG.DataFrame[]> {
 
 /** The Plan view; given a saved plan, its declaration in the form and planned again. */
 export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
+  return ViewHost.create({name: 'PMX Studio · Plan', content: (self) => planContent(self, initial)}).view;
+}
+
+/** What the view shows, built under its host, which owns it all. */
+function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxPlanStudy').prepare();
   const read = (c: DG.FuncCall) => outputsOf<PlanFrames>(c);
   const result = signal<PlanFrames | undefined>(undefined);
-  // the newest run: Run and the calendar's replans share the call, and a run that finishes after a newer one started
-  // is dropped
-  let latest = 0;
+  // Run and the calendar's replans share the call, one run at a time: a change made during a run is planned next, and
+  // the run it overtook is never shown
+  let running: Promise<void> | null = null;
+  let again = false;
   const error = signal<string | null>(null);
   const armsInput = new ArmsInput({label: 'Arms'});
   const correction = new CorrectionInput({label: 'Multiple comparisons', arms: armsInput.count});
@@ -215,17 +225,36 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
   // under a loader of the calendar's own, the page left in view
   const refreshing = signal(false);
   const busy = computed(() => planning.value || refreshing.value);
-  const replan = (fromCalendar = false) => {
-    (fromCalendar ? refreshing : planning).value = true;
-    const mine = ++latest;
-    return call.call().then((c) => {
-      if (mine !== latest)
-        return;
-      error.value = null;
-      stale.value = false;
-      result.value = read(c);
-    }).catch((e) => error.value = String(e?.message ?? e))
-      .finally(() => (fromCalendar ? refreshing : planning).value = false);
+  const replan = (fromCalendar = false): Promise<void> => {
+    if (running) {
+      again = true;
+      return running;
+    }
+    const flag = fromCalendar ? refreshing : planning;
+    flag.value = true;
+    const once = (): Promise<void> => {
+      const sent = askedOf(call);
+      const next = () => {
+        again = false;
+        return once();
+      };
+      return call.call().then((c) => {
+        if (again)
+          return next();
+        error.value = null;
+        stale.value = askedOf(call) !== sent;
+        result.value = read(c);
+      }, (e) => {
+        if (again)
+          return next();
+        error.value = String(e?.message ?? e);
+      });
+    };
+    running = once().finally(() => {
+      running = null;
+      flag.value = false;
+    });
+    return running;
   };
   addRunButton(form, () => replan(), busy);
 
@@ -233,15 +262,17 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
   const cell = <T = number>(name: string) => computed(() => (plan.value?.get(name, 0) ?? undefined) as T | undefined);
   const groups = computed(() => (cell('treated_arms').value ?? 1) + 1);
   // the animals in the order the study uses them, then its end; what each count covers in its tooltip
-  const card = (label: string, value: ReadonlySignal<number | undefined>, tip: () => string,
+  const card = (label: string, value: ReadonlySignal<StatValue | undefined>, tip: () => string,
     format?: (x: StatValue) => string) => statCard(form, label, value, tip, format);
+  // a count no group size reaches has no number (a column with no value reads as an empty string)
+  const count = (name: string) => computed(() => plan.value ? finite(plan.value.get(name, 0)) ?? '—' : undefined);
   // each card by the plan column it shows, so a change made on the calendar can point at what it moved
   const cardOf: {[column: string]: HTMLElement} = {
-    implant_total: card('Animals to implant', cell('implant_total'), () => `Covers ${pct(cell('pre_loss').value)} ` +
+    implant_total: card('Animals to implant', count('implant_total'), () => `Covers ${pct(cell('pre_loss').value)} ` +
       'that never reach randomization: no take, or out of the volume window'),
-    randomise_total: card('To randomize', cell('randomise_total'), () => `Covers ${pct(cell('post_loss').value)} ` +
+    randomise_total: card('To randomize', count('randomise_total'), () => `Covers ${pct(cell('post_loss').value)} ` +
       'lost after randomization: ulceration, deaths, technical failures'),
-    n_total: card('Analyzable', cell('n_total'), () => cell('n_fixed').value ? `${groups.value} groups of the ` +
+    n_total: card('Analyzable', count('n_total'), () => cell('n_fixed').value ? `${groups.value} groups of the ` +
       'animals per arm you set' : `${groups.value} groups, ${pct(cell('power_target').value)} power per comparison`),
     study_end: card('End of study', cell('study_end'), () => cell('last_day_chosen').value ? 'Chosen; the median ' +
       `control reaches the endpoint on day ${cell('endpoint_day').value}` :
@@ -280,7 +311,7 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
     const moved: string[] = [];
     for (const [c, what] of [['n_total', 'analyzable animals'], ['implant_total', 'animals to implant']]) {
       if (was(c) !== now(c))
-        moved.push(`${was(c) ?? '—'} → ${now(c) ?? '—'} ${what}`);
+        moved.push(`${finite(was(c)) ?? '—'} → ${finite(now(c)) ?? '—'} ${what}`);
     }
     if (was('study_end') !== now('study_end'))
       moved.push(`the study ends on day ${now('study_end')} instead of ${was('study_end')}`);
@@ -326,13 +357,14 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
   });
   form.effect(() => {
     const chosen = startDay.value;
-    if (chosen && chosen !== WEEKDAY_NAMES[plan.peek()?.get('start_weekday', 0) ?? 0] && !busy.peek())
+    // against what was last asked, not the plan on the page: a run may be on its way to another day
+    if (chosen && chosen !== (call.getParamValue('startWeekday') ??
+      WEEKDAY_NAMES[plan.peek()?.get('start_weekday', 0) ?? 0]))
       setField('startWeekday', chosen);
   });
   const toggleWeekday = (i: number) => {
-    if (busy.peek())
-      return;
-    const days = new Set(weekdaysOf(plan.peek()?.get('measurement_weekdays', 0)));
+    const days = new Set(weekdaysOf(call.getParamValue('measurementDays') ??
+      plan.peek()?.get('measurement_weekdays', 0)));
     if (days.has(i))
       days.delete(i);
     else
@@ -340,6 +372,7 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
     if (days.size > 0)
       setField('measurementDays', weekdaysText([...days].sort()));
   };
+  const detectable = signal<{of: PlanFrames, mde: Map<string, number | null>} | null>(null);
   const endSummary = div([], 'pmx-plan-end-summary');
   Object.assign(endSummary.style, {margin: '0 0 var(--dg-space-s)', lineHeight: '1.45'});
   form.effect(() => {
@@ -356,27 +389,36 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
     const colors = armColors(a.col('arm')!.toList());
     type Row = {name: string, cells: (string | HTMLElement)[]};
     const fixed = v('n_fixed');
+    // the smallest detectable effects arrive after the plan (their search takes several times as long)
+    const known = detectable.value?.of === r ? detectable.value.mde : null;
     const rows: Row[] = [{name: 'Control', cells: [swatch('Control', colors['Control']), '—', '—',
-      animals(v('n_control'), true), animals(v('randomise_control'), false), '—', ...(fixed ? ['—'] : [])]}];
+      animals(finite(v('n_control')) ?? 'over 40', true), animals(finite(v('randomise_control')), false), '—',
+      ...(fixed ? ['—'] : [])]}];
     for (let i = 0; i < a.rowCount; i++) {
       const g = (c: string) => a.get(c, i);
       const metric = g('metric') === 'TC' ? 'T/C' : 'TGI';
       rows.push({name: g('arm'), cells: [swatch(g('arm'), colors[g('arm')]), g('therapy'),
-        `${metric} ${num(g('effect'))}%`, animals(g('n') ?? 'over 40', true), animals(g('randomise'), false),
+        `${metric} ${num(g('effect'))}%`, animals(finite(g('n')) ?? 'over 40', true),
+        animals(finite(g('randomise')), false),
         pct(g('assurance')),
-        ...(fixed ? [g('mde') === null ? 'out of reach' : `${metric} ${Math.round(g('mde'))}%`] : [])]});
+        ...(fixed ? [!known ? (stale.value || error.value !== null ? '—' : loader()) :
+          known.get(g('arm')) === null ? 'out of reach' : `${metric} ${Math.round(known.get(g('arm'))!)}%`] : [])]});
     }
     const headers = ['Group', 'Therapy', 'Expected effect', 'Analyzable', 'To randomize', 'Power',
       ...(fixed ? ['Smallest detectable effect'] : [])];
     const table = new BasicTable<Row>({items: rows, keyOf: (x) => x.name, columns: headers.map((header, j) => ({header,
       render: (x: Row) => x.cells[j], align: j >= 2 ? 'center' : 'left'}))});
     table.root.style.width = '100%';
+    wrapCells(table.root);
     groupsTable.replaceChildren(table.root);
   });
   form.effect(() => {
     const sc = schedules.value;
-    scheduleBox.replaceChildren(sc ? schedulesTable(sc, plan.peek()?.get('per_week', 0)) :
-      loader('Comparing measurement schedules…'));
+    // (nothing comes for a plan out of date or a failed run: no loader then)
+    const waiting = stale.value || error.value !== null ? span('Run to compare the measurement schedules.') :
+      loader('Comparing measurement schedules…');
+    scheduleBox.replaceChildren(!sc ? waiting : sc.rowCount > 0 ?
+      schedulesTable(sc, plan.peek()?.get('per_week', 0)) : span(UNREACHABLE));
   });
 
   form.effect(() => {
@@ -386,6 +428,7 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
     const v = (c: string) => r.plan.get(c, 0);
     // what ending later than the plan's end buys and costs, read off the power-by-end curves
     const du = r.duration;
+    endSummary.textContent = du.rowCount > 0 ? '' : UNREACHABLE;
     if (du.rowCount > 0 && du.col('assurance')!.stats.missingValueCount < du.rowCount) {
       const e = v('study_end');
       // (a day with no power left out)
@@ -415,7 +458,7 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
     const ar = r.armResults;
     const armRows = Array.from({length: ar.rowCount}, (_, i) => ({name: ar.get('arm', i) as string,
       therapy: String(ar.get('therapy', i)).toLowerCase(), effect: `${ar.get('metric', i) === 'TC' ? 'T/C' : 'TGI'} ` +
-        `${num(ar.get('effect', i))}%`, n: ar.get('n', i), power: ar.get('assurance', i)}));
+        `${num(ar.get('effect', i))}%`, n: finite(ar.get('n', i)), power: ar.get('assurance', i)}));
     const plan: {[row: string]: string} = {
       'Design': `${v('line')} syngeneic tumors; ${k + 1} groups: a control and ` + armRows.map((x) =>
         `${x.name} (${x.therapy}, expected ${x.effect})`).join(', ') + '; each treated group compared with the control',
@@ -425,8 +468,9 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
         (v('n_fixed') ? 'The animals per group were set; the power is what they give' :
           `Sized for ${pct(v('power_target'))} power`) + `, averaged over the growth of ${v('line')} controls in ` +
         `${v('atlas_papers')} published studies (historical-control prior); at least ${MIN_GROUP} per group`,
-      'Animals': `${v('implant_total')} to implant, ${v('randomise_total')} to randomize, ${v('n_total')} ` +
-        `analyzable. ${pct(v('pre_loss'))} expected lost before randomization (no take, out of the volume ` +
+      'Animals': (finite(v('n_total')) === null ? 'Not sized: no group size up to 40 reaches the target power. ' :
+        `${v('implant_total')} to implant, ${v('randomise_total')} to randomize, ${v('n_total')} analyzable. `) +
+        `${pct(v('pre_loss'))} expected lost before randomization (no take, out of the volume ` +
         `window) and ${pct(v('post_loss'))} after it (ulceration, deaths, technical failures); ` +
         (v('loss_rule') === 'expected' ? 'the counts cover the average loss' :
           `each count is enough with ${pct(v('confidence'))} probability`) +
@@ -455,7 +499,7 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
       .join('\n');
   });
 
-  const {input: scale, row: scaleRow, log} = volumeAxis();
+  const {row: scaleRow, log} = volumeAxis();
   const growth = new BandChart(computed(() => result.value?.curves), {x: 'day', lower: 'q05', upper: 'q95',
     line: 'median', split: 'arm', xTitle: 'Day after randomization', yTitle: 'Tumor volume', log});
 
@@ -470,7 +514,7 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
     const pc = r.powerCurve;
     const a = r.armResults;
     const label = new Map(Array.from({length: a.rowCount}, (_, i) => [a.get('arm', i) as string,
-      `${a.get('arm', i)} · ${a.get('n', i) ?? 'over 40'} animals`]));
+      `${a.get('arm', i)} · ${finite(a.get('n', i)) ?? 'over 40'} animals`]));
     // on a power axis the declared target reads by itself: a bare formula line (a one-space title, so that neither a
     // label nor the formula is drawn)
     const target = r.plan.get('power_target', 0);
@@ -560,7 +604,9 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
           copyRow(() => protocolText, 'Study protocol'), analysis)]},
   ]);
   // an empty viewer says what columns it lacks: the charts hidden until the first plan gives them their data
-  form.effect(() => [growth, power, byEnd].forEach((v) => v.root.style.visibility = result.value ? '' : 'hidden'));
+  form.effect(() => [growth, power].forEach((v) => v.root.style.visibility = result.value ? '' : 'hidden'));
+  // (with no group size, no power by end: the chart would keep the last plan's)
+  form.effect(() => byEnd.root.style.visibility = result.value?.duration.rowCount ? '' : 'hidden');
   // the schedules are the design's costliest scan: computed while their tab is open
   form.effect(() => scheduleOpen.value = tabs.activeTab.value === 'alternatives');
   const content = divV([cards, tabs.root], 'pmx-plan-content');
@@ -612,9 +658,31 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
     }).catch((e) => error.value = String(e?.message ?? e));
   });
 
+  // with the animals per arm set, the plan shows first and each arm's smallest detectable effect fills in after it,
+  // from the form's own inputs (the plan unchanged)
+  let searching: PlanFrames | null = null;
+  form.effect(() => {
+    const r = result.value;
+    if (!r || !r.plan.get('n_fixed', 0) || stale.value || busy.value || searching === r || detectable.peek()?.of === r)
+      return;
+    searching = r;
+    const f = DG.Func.byName('PmxStudio:pmxPlanStudy');
+    const fill = f.prepare({...Object.fromEntries(f.inputs.map((p) => [p.name, call.getParamValue(p.name)])),
+      compareSchedules: false, detectableEffect: true});
+    void fill.call().then((c) => {
+      const a: DG.DataFrame = c.outputs['armResults'];
+      detectable.value = {of: r, mde: new Map(Array.from({length: a.rowCount}, (_, i) =>
+        [a.get('arm', i) as string, finite(a.get('mde', i))]))};
+    }).catch((e) => error.value = String(e?.message ?? e)).finally(() => {
+      if (searching === r)
+        searching = null;
+    });
+  });
+
   // the view opens at once; the default declaration (or the saved plan's) is planned behind the loader, once the
   // form has written its defaults into the call
   void form.settled.then(() => {
+    call.setParamValue('detectableEffect', false);
     for (const [name, value] of Object.entries(initial?.inputs ?? {})) {
       const v = name === 'arms' ? armsFrame(value as SavedPlan['inputs']['arms']) : value;
       const field = form.getInput(name);
@@ -640,20 +708,22 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
     const r = ready();
     if (!r)
       return;
-    const name = new TextInput({label: 'Name', value: defaultName(r), nullable: false});
     const where = span(`Saved to ${plansFolder()}. Share it from Files, or pick it in Analyze's Plan field.`);
     Object.assign(where.style, {color: 'var(--dg-text-color-muted, #68727f)', maxWidth: '360px', lineHeight: '1.45'});
     // a plan of the same name is replaced only when Save is pressed again for it (the dialog says so and stays open)
     let replacing: string | null = null;
-    new Dialog('Save plan').add(name).add(where).onOK(async () => {
-      const chosen = name.value.trim() || defaultName(r);
-      if (chosen !== replacing && await planSaved(chosen)) {
-        replacing = chosen;
-        throw new Error(`A plan named "${chosen}" is already saved: press Save again to replace it, or rename it`);
-      }
-      const path = await savePlan(await planOf(chosen, call, r));
-      grok.shell.info(`Plan saved: ${path}`);
-    }, {text: 'Save'}).show();
+    self.show(self.build(() => {
+      const name = new TextInput({label: 'Name', value: defaultName(r), nullable: false});
+      return new Dialog('Save plan').add(name).add(where).onOK(async () => {
+        const chosen = name.value.trim() || defaultName(r);
+        if (chosen !== replacing && await planSaved(chosen)) {
+          replacing = chosen;
+          throw new Error(`A plan named "${chosen}" is already saved: press Save again to replace it, or rename it`);
+        }
+        const path = await savePlan(await planOf(chosen, call, r));
+        grok.shell.info(`Plan saved: ${path}`);
+      }, {text: 'Save'});
+    }));
   };
   const saveButton = buttonWithIcon('Save plan', 'save', saveDialog);
   saveButton.title = 'Save the plan to your files, to compare the study with it in Analyze';
@@ -667,17 +737,18 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
       .finally(() => saving.value = false);
   });
   downloadButton.title = 'Download the plan as a file, to send it to someone';
-  form.effect(() => [saveButton, downloadButton].forEach((b) => b.disabled = !result.value || busy.value ||
-    saving.value));
+  form.effect(() => {
+    const off = !result.value ? 'The plan is not ready yet' : busy.value ? 'The plan is being updated' :
+      saving.value ? 'The plan is being prepared' : null;
+    [saveButton, downloadButton].forEach((b) => Reason.apply(b, off));
+  });
 
   const panes = new Splitter([declaration, results], {direction: 'horizontal', sizes: [0.3, 0.7],
     minSize: DECLARATION_MIN});
-  const host = ViewHost.create({name: 'PMX Studio · Plan', content: () => ({
+  return {
     root: panes,
     ribbon: [[stageStrip('plan', (s) => void openStage(s))], [saveButton, downloadButton]],
     path: '/plan',
     status: computed(() => busy.value ? 'Designing the study…' : result.value ? result.value.plan.name : ''),
-  })});
-  [form, armsInput, correction, scale, growth, startDay, tabs].forEach((c) => host.own(() => c.dispose()));
-  return host.view;
+  };
 }

@@ -67,7 +67,8 @@ export function savedPlan(name: string, inputs: {[param: string]: unknown},
 /** The plan Plan shows: the form's inputs (`call`) and its outputs, with its predictive checks for the animals
  *  each group has (an arm that needs more than 40: 40). */
 export async function planOf(name: string, call: DG.FuncCall, f: PlanFrames): Promise<SavedPlan> {
-  const inputs = Object.fromEntries(call.func.inputs.filter((p) => p.name !== 'compareSchedules')
+  const inputs = Object.fromEntries(call.func.inputs
+    .filter((p) => p.name !== 'compareSchedules' && p.name !== 'detectableEffect')
     .map((p) => [p.name, call.getParamValue(p.name)]));
   const v = (c: string) => f.plan.get(c, 0);
   // (a column with no value reads as an empty string)
@@ -141,6 +142,6 @@ export const downloadPlan = (p: SavedPlan) => DG.Utils.download(fileName(p.name)
 
 /** The plans in the user's plans folder (none yet: an empty list). */
 export async function myPlans(): Promise<DG.FileInfo[]> {
-  return await grok.dapi.files.exists(plansFolder()) ?
-    await grok.dapi.files.list(plansFolder(), false, PLAN_EXT) : [];
+  // (no folder yet lists as nothing; files.exists says false of any path ending in a slash)
+  return grok.dapi.files.list(plansFolder(), false, PLAN_EXT);
 }

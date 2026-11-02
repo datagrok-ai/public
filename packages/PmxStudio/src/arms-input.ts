@@ -5,7 +5,7 @@
      the number of arms declared. Bonferroni stays a value of the function, for scripts and Grokky. */
 import * as DG from 'datagrok-api/dg';
 import {BoolInput, buttonWithIcon, ChoiceInput, Control, div, divH, Form, iconButton, Input, InputOptions, NumberInput,
-  RadioInput, ReadonlySignal, Signal, signal, span, TextInput} from '@datagrok-libraries/u2';
+  RadioInput, ReadonlySignal, Reason, Signal, signal, span, TextInput} from '@datagrok-libraries/u2';
 import {ARCHETYPES, THERAPIES, Therapy} from './archetypes';
 
 export interface Arm {name: string, therapy: Therapy, metric: 'TGI' | 'TC', effect: number}
@@ -42,6 +42,9 @@ export function armsOf(value: DG.DataFrame | null | undefined): Arm[] {
 
 /** One arm's card: its fields write through `onChange`; its control is disposed when the arm is removed. */
 class ArmCard extends Control {
+  /** What holds the arm's fields back, or null; followed by whoever reads it in a signal's scope. */
+  problem: () => string | null = () => null;
+
   constructor(arm: Arm, index: number, removable: boolean, onChange: (a: Arm) => void, onRemove: () => void) {
     super();
     this.root.classList.add('u2-card', 'pmx-arm');
@@ -57,15 +60,15 @@ class ArmCard extends Control {
         value: arm.metric === 'TC' ? 'T/C' : 'TGI',
         itemTooltips: {'TGI': 'Tumor growth inhibition', 'T/C': 'Treated / control volume ratio'}});
       const effect = new NumberInput({label: 'Expected', value: arm.effect, min: 5, max: 95, postfix: '%',
-        tooltipText: 'The effect expected when the median control reaches the endpoint'});
-      const remove = iconButton('times', () => onRemove(), {tooltip: removable ? 'Remove this arm' :
-        'A study needs at least one treated arm'});
-      remove.disabled = !removable;
+        nullable: false, tooltipText: 'The effect expected when the median control reaches the endpoint'});
+      const remove = iconButton('times', () => onRemove(), {tooltip: 'Remove this arm',
+        disabled: removable ? null : 'A study needs at least one treated arm'});
       const head = divH([span(`Arm ${index + 1}`, 'pmx-arm-title'), remove]);
       Object.assign(head.style, {justifyContent: 'space-between', alignItems: 'center', fontWeight: '500'});
       // a form of its own, captions above: the card keeps its look whatever layout the outer form takes
       const fields = new Form({layout: 'tall'}).add(name).add(therapy).add(metric).add(effect);
       this.root.append(head, fields.root);
+      this.problem = () => effect.validity.value === null ? null : `Arm ${index + 1}: ${effect.validity.value}`;
       this.effect(() => onChange({name: name.value.trim() || `Treatment ${index + 1}`,
         therapy: (therapy.value ?? 'small_molecule') as Therapy,
         metric: metric.value === 'T/C' ? 'TC' : 'TGI', effect: effect.value ?? arm.effect}));
@@ -77,7 +80,7 @@ class ArmCard extends Control {
 export class ArmsInput extends Input<DG.DataFrame | null> {
   // set in createEditor, which the base constructor calls before this class's field initialisers would run
   private declare _arms: Arm[];
-  private declare _cards: ArmCard[];
+  private declare _cards: Signal<ArmCard[]>;
   private declare _list: HTMLElement;
   private declare _add: HTMLButtonElement;
   /** how many arms are declared, for the inputs that word themselves by it */
@@ -86,11 +89,20 @@ export class ArmsInput extends Input<DG.DataFrame | null> {
   constructor(options: InputOptions<DG.DataFrame | null>) {
     super(options, null);
     this.root.dataset.u2 = 'pmx-arms-input';
+    // the study's tables key their rows by arm name: two arms of one name would collapse into one
+    this.addValidator(() => {
+      const problem = this._cards.value.map((c) => c.problem()).find((p) => p !== null);
+      if (problem)
+        return problem;
+      const names = this._arms.map((a) => a.name);
+      const twice = names.find((n, i) => names.indexOf(n) !== i);
+      return twice === undefined ? null : `Two arms are named "${twice}"`;
+    });
   }
 
   protected createEditor(): HTMLElement {
     this._arms = [];
-    this._cards = [];
+    this._cards = signal<ArmCard[]>([]);
     (this as {count: Signal<number>}).count = signal(1);
     this._list = div([], 'pmx-arms');
     Object.assign(this._list.style, {display: 'flex', flexDirection: 'column', gap: 'var(--dg-space-m)'});
@@ -113,17 +125,18 @@ export class ArmsInput extends Input<DG.DataFrame | null> {
   }
 
   private _set(arms: Arm[], commit = true): void {
-    this._cards.forEach((c) => c.dispose());
+    this._cards.peek().forEach((c) => c.dispose());
     this._arms = arms.slice(0, MAX_ARMS);
-    this._cards = this._arms.map((a, i) => this.runInScope(() => new ArmCard(a, i, this._arms.length > 1,
+    this._cards.value = this._arms.map((a, i) => this.runInScope(() => new ArmCard(a, i, this._arms.length > 1,
       (next) => {
         this._arms[i] = next;
         this._commit();
       },
       () => this._set(this._arms.filter((_, j) => j !== i)))));
-    this._list.replaceChildren(...this._cards.map((c) => c.root));
-    this._add.disabled = this._arms.length >= MAX_ARMS;
-    this._add.title = this._add.disabled ? `At most ${MAX_ARMS} treated arms` : 'Add another treated arm';
+    this._list.replaceChildren(...this._cards.peek().map((c) => c.root));
+    const full = this._arms.length >= MAX_ARMS;
+    Reason.apply(this._add, full ? `At most ${MAX_ARMS} treated arms` : null);
+    this._add.title = full ? `At most ${MAX_ARMS} treated arms` : 'Add another treated arm';
     this.count.value = this._arms.length;
     if (commit)
       this._commit();

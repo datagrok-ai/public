@@ -67,6 +67,8 @@ export interface StudyDeclaration {
   lossRule: 'confident' | 'expected';
   /** whether to scan the measurement schedules (the costliest alternative; off: none, the rest the same) */
   schedules: boolean;
+  /** false: no search of the minimum detectable effect at a fixed n (the costliest step; none, the rest the same) */
+  mde?: boolean;
 }
 
 /** One arm's design. */
@@ -197,19 +199,16 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     endpoint: d.endpoint, power: d.power, alpha: d.alpha, treated_arms: d.treatedArms ?? d.arms.length,
     correction: d.correction,
     weekdays: weekdaysParam(d.weekdays),
-    start_weekday: d.startWeekday, humane: d.humane, schedules: d.schedules, seed: SEED,
+    start_weekday: d.startWeekday, humane: d.humane, schedules: d.schedules, mde: d.mde !== false, seed: SEED,
     ...(d.n ? {n: d.n} : {}), ...(d.lastDay ? {last_day: d.lastDay} : {}),
   };
-  const results: CruxResult[] = [];
-  for (const arm of d.arms) {
+  const results: CruxResult[] = await Promise.all(d.arms.map((arm) => {
     const a = ARCHETYPES[arm.therapy];
-    try {
-      results.push(await crux('stats.tumor_study_design', prior, {...shared, metric: arm.metric.toLowerCase(),
-        effect: arm.effect, onset: a.onsetDays, kappa_sd: a.kappaSd, responders: a.responders}));
-    } catch (e: any) {
+    return crux('stats.tumor_study_design', prior, {...shared, metric: arm.metric.toLowerCase(),
+      effect: arm.effect, onset: a.onsetDays, kappa_sd: a.kappaSd, responders: a.responders}).catch((e: any) => {
       throw new Error(`${arm.name}: ${e?.message ?? e}`);
-    }
-  }
+    });
+  }));
 
   // every arm with its own n (the treatments differ in what they need); the control as large as the largest arm,
   // so each comparison has at least the control its own design assumed (equal groups): conservative

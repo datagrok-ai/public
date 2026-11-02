@@ -121,6 +121,19 @@ category('Plan', () => {
       expect(lean[name].toCsv(), all[name].toCsv(), name);
   }, {timeout: 120000});
 
+  test('at a fixed n, without the detectable effect the same plan; calls in parallel as one by one', async () => {
+    const one = {arms: armsFrame([arm('Cpd-1')]), n: 8, compareSchedules: false};
+    const all = await plan(one);
+    const lean = await plan({...one, detectableEffect: false});
+    expect(typeof all.armResults.get('mde', 0), 'number');
+    expect(lean.armResults.col('mde')!.isNone(0), true);
+    expect(lean.plan.toCsv(), all.plan.toCsv());
+    expect(lean.powerCurve.toCsv(), all.powerCurve.toCsv());
+    const [a, b] = await Promise.all([plan(one), plan(one)]);
+    expect(a.armResults.toCsv(), all.armResults.toCsv());
+    expect(b.armResults.toCsv(), all.armResults.toCsv());
+  }, {timeout: 120000});
+
   test('the humane limit: declared, in the plan, and a note when the endpoint is not below it', async () => {
     const o = await plan({arms: armsFrame([arm('Cpd-1')]), humane: 1500});
     expect(o.plan.get('humane_limit', 0), 1500);
