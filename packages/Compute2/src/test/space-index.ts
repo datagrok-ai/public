@@ -10,9 +10,10 @@ import {
 } from '../components/RunStorage/run-storage';
 import {useSpaceIndex} from '../components/RunStorage/use-space-index';
 import {
-  SpaceIndex, loadSpaceIndex, makeIndex, parentsOf, reloadSpaces, subtreeCounts, subtreeRuns,
+  SpaceIndex, favoriteSpaces, loadSpaceIndex, makeIndex, parentsOf, reloadSpaces, subtreeCounts, subtreeRuns,
 } from '../components/RunStorage/space-index';
-import {SPACES, locationKey, useSpaceNavigation} from '../components/RunStorage/use-space-navigation';
+import {FavoritesApi, createFavorites} from '../components/RunStorage/use-favorites';
+import {RunsLocation, SPACES, locationKey, useSpaceNavigation} from '../components/RunStorage/use-space-navigation';
 import {NO_FILTERS, RunFilters, useRunFilters} from '../components/RunStorage/use-run-filters';
 import {RunFiltersBar} from '../components/RunStorage/RunFiltersBar';
 import {useRunDetails} from '../components/RunStorage/use-run-details';
@@ -34,6 +35,13 @@ const runIds = (index: SpaceIndex, spaceIds: string[]) =>
 const space = (id: string) => ({id, name: id, friendlyName: id, isSpace: true}) as unknown as DG.Project;
 const plainIndex = (tree: Record<string, string[]>, top: string[]): SpaceIndex =>
   makeIndex(top, new Map(Object.entries(tree).map(([id, children]) => [id, {space: space(id), children, runs: []}])));
+
+// favorites kept in memory, for the parts that don't need the server
+const favoritesApi = (initial: string[] = []): FavoritesApi => ({
+  list: async () => initial.map(space),
+  add: async () => {},
+  remove: async () => {},
+});
 
 // the id of a run that was never saved
 const missingId = () => {
@@ -148,7 +156,9 @@ category('Run storage: space index', () => {
     const authors = Vue.shallowRef(new Map([
       [runs[0].id, {id: 'u1', name: 'Maria'}], [runs[1].id, {id: 'u2', name: 'Tom'}]]));
     const scope = Vue.effectScope();
-    const {filters, isActive, tagOptions, matches} = scope.run(() => useRunFilters(Vue.shallowRef(runs), authors))!;
+    const favorites = new Set([runs[2].id]);
+    const {filters, isActive, tagOptions, matches} =
+      scope.run(() => useRunFilters(Vue.shallowRef(runs), authors, favorites))!;
     try {
       expect(isActive.value, false);
       expect(tagOptions.value.map((option) => `${option.value}:${option.detail}`).join(), 'feed:2,late:1');
@@ -159,6 +169,9 @@ category('Run storage: space index', () => {
       filters.value = {...filters.value, tags: [], authors: ['u1']};
       expect(runs.filter(matches).map(getRunName).join(), 'Early feed');
       expect(isActive.value, true);
+      filters.value = {...NO_FILTERS, favorites: true};
+      expect(isActive.value, true);
+      expect(runs.filter(matches).map(getRunName).join(), 'Baseline');
       filters.value = NO_FILTERS;
       expect(isActive.value, false);
     } finally {
@@ -210,7 +223,7 @@ category('Run storage: space index', () => {
     });
 
   test('The filters bar reports each change as a new value and keeps the one it got', async () => {
-    const value: RunFilters = {search: '', tags: ['feed', 'late'], authors: ['u1']};
+    const value: RunFilters = {search: '', favorites: false, tags: ['feed', 'late'], authors: ['u1']};
     const changes: RunFilters[] = [];
     const {root, unmount} = mount(RunFiltersBar, {
       'modelValue': value, 'onUpdate:modelValue': (v: RunFilters) => changes.push(v),
@@ -225,9 +238,14 @@ category('Run storage: space index', () => {
       expect(chips().map((chip) => chip.textContent?.trim()).join(), 'feed ×,late ×,Maria ×');
       chips()[0].click();
       chips()[2].click();
-      expect(JSON.stringify(changes), JSON.stringify([{search: 'a', tags: ['feed', 'late'], authors: ['u1']},
-        {search: '', tags: ['late'], authors: ['u1']}, {search: '', tags: ['feed', 'late'], authors: []}]));
-      expect(JSON.stringify(value), JSON.stringify({search: '', tags: ['feed', 'late'], authors: ['u1']}));
+      root.querySelector<HTMLElement>('.c2-runs-favorites-toggle')!.click();
+      expect(JSON.stringify(changes), JSON.stringify([
+        {search: 'a', favorites: false, tags: ['feed', 'late'], authors: ['u1']},
+        {search: '', favorites: false, tags: ['late'], authors: ['u1']},
+        {search: '', favorites: false, tags: ['feed', 'late'], authors: []},
+        {search: '', favorites: true, tags: ['feed', 'late'], authors: ['u1']}]));
+      expect(JSON.stringify(value), JSON.stringify(
+        {search: '', favorites: false, tags: ['feed', 'late'], authors: ['u1']}));
     } finally {
       unmount();
     }
@@ -272,7 +290,8 @@ category('Run storage: space index', () => {
     const index = makeIndex(['a'], new Map([['a', {space: space('a'), children: ['b'], runs: []}],
       ['b', {space: space('b'), children: [], runs: [], error: 'Permission denied'}]]));
     expect(spaceFolders(index, ['b'], 'a', undefined)[0].error, 'Permission denied');
-    const {root, unmount} = mount(PlacesTree, {index, location: {myRuns: false, path: ['a', 'b']}});
+    const {root, unmount} = mount(PlacesTree, {index, location: {myRuns: false, path: ['a', 'b']},
+      favorites: createFavorites(favoritesApi())});
     try {
       const warned = Array.from(root.querySelectorAll('.c2-runs-tree-row'))
         .filter((row) => row.querySelector('.c2-runs-error-icon'))
@@ -282,6 +301,144 @@ category('Run storage: space index', () => {
       unmount();
     }
   });
+
+  test('Favorite spaces keep every space above them and nothing below them', async () => {
+    // a > b > c > d, e links c, f has nothing favorite
+    const index = plainIndex({a: ['b'], b: ['c'], c: ['d'], d: [], e: ['c'], f: []}, ['a', 'e', 'f']);
+    const kept = (...favorites: string[]) => [...favoriteSpaces(index, new Set(favorites))].sort().join();
+    expect(kept('c'), 'a,b,c,e');
+    expect(kept('a'), 'a');
+    expect(kept('b', 'd'), 'a,b,c,d,e');
+    expect(kept('not-a-space'), '');
+    expect(kept(), '');
+  });
+
+  test('The tree stars a space without selecting it, and shows only favorites and their parents', async () => {
+    const index = plainIndex({a: ['b', 'c'], b: ['d'], c: [], d: [], e: []}, ['a', 'e']);
+    const favorites = createFavorites(favoritesApi(['d']));
+    await favorites.load();
+    const selected: RunsLocation[] = [];
+    const {root, unmount} = mount(PlacesTree, {index, location: SPACES, favorites,
+      onSelect: (location: RunsLocation) => selected.push(location)});
+    const rows = () => Array.from(root.querySelectorAll<HTMLElement>('.c2-runs-tree-row'));
+    const shown = () => rows().map((row) => row.querySelector('.c2-runs-tree-name')?.textContent).join();
+    const filter = () => root.querySelector<HTMLElement>('.c2-runs-star-filter')!;
+    try {
+      // only the top level is open, and the arrow opens a
+      expect(shown(), 'My runs,a,e');
+      rows()[1].querySelector<HTMLElement>('.c2-runs-tree-arrow')!.click();
+      await Vue.nextTick();
+      expect(shown(), 'My runs,a,b,c,e');
+
+      filter().click();
+      await Vue.nextTick();
+      expect(shown(), 'My runs,a,b,d');
+      expect(rows()[1].querySelector('.c2-runs-tree-arrow')?.textContent, '');
+      expect(root.querySelector('.c2-runs-tree-row .c2-runs-star-on')?.closest('.c2-runs-tree-row')
+        ?.textContent?.trim(), 'd');
+
+      rows()[3].querySelector<HTMLElement>('.c2-runs-star')!.click();
+      await awaitCheck(() => !favorites.ids.value.has('d'), 'the star should remove the favorite', 1000);
+      await Vue.nextTick();
+      expect(shown(), 'My runs');
+      expect(root.querySelector('.c2-runs-tree')?.textContent?.includes('No favorite spaces'), true);
+      expect(selected.length, 0);
+
+      // back to the tree as it was
+      filter().click();
+      await Vue.nextTick();
+      expect(shown(), 'My runs,a,b,c,e');
+    } finally {
+      unmount();
+    }
+  });
+
+  test('A failed favorites load is an error in the favorites tree, with a retry', async () => {
+    const index = plainIndex({a: []}, ['a']);
+    let fails = true;
+    const favorites = createFavorites({...favoritesApi(['a']), list: async () => {
+      if (fails)
+        throw new Error('No connection');
+      return [space('a')];
+    }});
+    await favorites.load();
+    const {root, unmount} = mount(PlacesTree, {index, location: SPACES, favorites});
+    try {
+      expect(root.textContent?.includes('No connection'), false);
+      root.querySelector<HTMLElement>('.c2-runs-star-filter')!.click();
+      await Vue.nextTick();
+      expect(root.querySelector('.c2-runs-error')?.textContent?.includes('No connection'), true);
+      expect(root.textContent?.includes('No favorite spaces'), false);
+      fails = false;
+      root.querySelector<HTMLElement>('.c2-runs-error .c2-runs-link')!.click();
+      await awaitCheck(() => !favorites.error.value, 'the retry should load the favorites', 1000);
+      await Vue.nextTick();
+      expect(root.querySelector('.c2-runs-error'), null);
+      expect(root.querySelector('.c2-runs-tree-row .c2-runs-star-on') != null, true);
+    } finally {
+      unmount();
+    }
+  });
+
+  test('Favorites apply quick toggles in order, and a load under way does not undo one', async () => {
+    const release: (() => void)[] = [];
+    const server = new Set(['a']);
+    const request = <T>(answer: () => T) => new Promise<T>((resolve) => release.push(() => resolve(answer())));
+    const favorites = createFavorites({
+      list: () => request(() => [...server].map(space)),
+      add: (entity) => request(() => {server.add(entity.id);}),
+      remove: (entity) => request(() => {server.delete(entity.id);}),
+    });
+    const firstLoad = favorites.load();
+    await new Promise((resolve) => setTimeout(resolve));
+    release.shift()!();
+    await firstLoad;
+    const pending = [favorites.load(), favorites.toggle(space('b')), favorites.toggle(space('c')),
+      favorites.toggle(space('b'))];
+    // a request starts only when the one before it has finished
+    for (const _ of pending) {
+      await new Promise((resolve) => setTimeout(resolve));
+      expect(release.length, 1);
+      release.shift()!();
+    }
+    await Promise.all(pending);
+    expect([...favorites.ids.value].sort().join(), 'a,c');
+    expect([...server].sort().join(), 'a,c');
+  });
+
+  test('A star clicked before the first load finishes changes nothing', async () => {
+    let finishLoad = () => {};
+    const calls: string[] = [];
+    const favorites = createFavorites({
+      list: () => new Promise((resolve) => finishLoad = () => resolve([space('a')])),
+      add: async (entity) => {calls.push(`add:${entity.id}`);},
+      remove: async (entity) => {calls.push(`remove:${entity.id}`);},
+    });
+    const loading = favorites.load();
+    const click = favorites.toggle(space('a'));
+    await new Promise((resolve) => setTimeout(resolve));
+    finishLoad();
+    await Promise.all([loading, click]);
+    expect(calls.join(), '');
+    expect(favorites.ids.value.has('a'), true);
+    await favorites.toggle(space('a'));
+    expect(calls.join(), 'remove:a');
+  });
+
+  test('A space can be a platform favorite', () => withRunStorage(async (f) => {
+    const target = await f.space();
+    f.favorite(target);
+    const favorites = createFavorites();
+    await favorites.load();
+    await favorites.toggle(target);
+    expect(favorites.ids.value.has(target.id), true);
+    const reloaded = createFavorites();
+    await reloaded.load();
+    expect(reloaded.ids.value.has(target.id), true);
+    await favorites.toggle(target);
+    await reloaded.load();
+    expect(reloaded.ids.value.has(target.id), false);
+  }));
 
   test('The details pane shows an edit once it is saved', () => withRunStorage(async (f) => {
     const name = uniqueName('Before edit');

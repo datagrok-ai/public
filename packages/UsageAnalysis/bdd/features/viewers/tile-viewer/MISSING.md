@@ -44,3 +44,8 @@ Written during the viewer-gaps round of 23 Oct 2026, against
     And the "lane names" reading of tile viewer should be "Asian, Black, Caucasian, Other"
     And no errors should have been logged
   ```
+
+## Closed issues the regression round of 26 Oct 2026 could not claim
+
+- **A value the card cuts off shows whole in a tooltip (public#1593, the value half)** regressed: no tooltip
+  shows; filed as core#1151. The caption half is claimed in `tile-viewer-mirroring.feature`.

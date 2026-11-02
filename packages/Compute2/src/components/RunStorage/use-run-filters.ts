@@ -4,13 +4,14 @@ import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/
 import {FilterOption} from '../Inspector/FilterDropdown';
 import {RunAuthor} from './run-storage';
 
-export type RunFilters = {search: string, tags: string[], authors: string[]};
+export type RunFilters = {search: string, favorites: boolean, tags: string[], authors: string[]};
 
-export const NO_FILTERS: RunFilters = {search: '', tags: [], authors: []};
+export const NO_FILTERS: RunFilters = {search: '', favorites: false, tags: [], authors: []};
 
 /** Filter values for the caller to own, and what they do to runs; options count the runs they would keep. */
 export function useRunFilters(
   runs: Vue.MaybeRefOrGetter<DG.FuncCall[]>, authors: Vue.MaybeRefOrGetter<Map<string, RunAuthor> | undefined>,
+  favorites: Vue.MaybeRefOrGetter<Set<string>>,
 ) {
   const filters = Vue.shallowRef<RunFilters>(NO_FILTERS);
 
@@ -35,11 +36,13 @@ export function useRunFilters(
   });
 
   const isActive = Vue.computed(() => {
-    const {search, tags, authors: selectedAuthors} = filters.value;
-    return !!search.trim() || tags.length > 0 || selectedAuthors.length > 0;
+    const {search, favorites: onlyFavorites, tags, authors: selectedAuthors} = filters.value;
+    return !!search.trim() || onlyFavorites || tags.length > 0 || selectedAuthors.length > 0;
   });
 
   const matches = (run: DG.FuncCall) => {
+    if (filters.value.favorites && !Vue.toValue(favorites).has(run.id))
+      return false;
     const {name, description, tags} = historyUtils.getRunMetadata(run);
     // a run must have every selected tag, as in the platform's multi-value filter
     if (filters.value.tags.some((selected) => !tags.includes(selected)))

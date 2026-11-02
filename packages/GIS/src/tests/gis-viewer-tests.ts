@@ -22,7 +22,7 @@ category('MapViewer', async () => {
   });
 
   test('Map', async () => {
-    await testViewer('Map', testDF2, {detectSemanticTypes: true});
+    await testViewer('Map', testDF2.clone(), {detectSemanticTypes: true});
   });
 
   test('openMapViewer', async () => {

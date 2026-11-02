@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Sequence Variability Map: Fixed the Mutation Cliffs mode switch being cut off by the left edge of a narrow viewer, where it could not be clicked
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): SAR demo: subscribes to the grid's first draw at once instead of 50 ms later, so it no longer misses it and waits its 3 s cap
 * App: The landing header is u2's `AppHeader` (moved out of `@datagrok-libraries/utils`): the same icon, bullets and Learn more
 * [core#1010](https://github.com/datagrok-ai/core/issues/1010): Logo Summary Table: Fixed WebLogo cells failing with "row counts differ" when the table is filtered and Web Logo Aggregation Type is not count

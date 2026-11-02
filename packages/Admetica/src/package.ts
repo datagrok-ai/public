@@ -10,8 +10,8 @@ import {
   setProperties,
 } from './utils/admetica-utils';
 import { properties } from './utils/admetica-utils';
-import { AdmeticaBaseEditor } from './utils/admetica-editor';
-import { FuncCallParamsEditor, MessageFuncCallEditor } from '@datagrok-libraries/utils/src/func-call-params-editor';
+import { admeticaFuncCallEditor } from './utils/admetica-editor';
+import { MessageFuncCallEditor } from '@datagrok-libraries/utils/src/func-call-params-editor';
 import { Model, Subgroup } from './utils/constants';
 import { AdmeticaViewApp } from './utils/admetica-app';
 
@@ -81,22 +81,7 @@ export class PackageFunctions {
     const dataFrame = grok.shell.tv?.dataFrame;
     if (!dataFrame || !dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).length)
       return new MessageFuncCallEditor('Admetica requires an open table with a Molecule column');
-    const funcEditor = new AdmeticaBaseEditor();
-    return new FuncCallParamsEditor(call, {
-      inner: funcEditor,
-      stableInputs: [funcEditor.tableInput, funcEditor.templatesInput,
-        funcEditor.addPiechartInput, funcEditor.addFormInput],
-      map: (p) => ({
-        table: p.table,
-        molecules: p.col,
-        template: p.templateContent,
-        models: p.models,
-        addPiechart: p.addPiechart,
-        addForm: p.addForm,
-      }),
-      isValid: (p) => !!p.table && !!p.col && p.models.length > 0,
-      inputFor: {table: funcEditor.tableInput},
-    });
+    return admeticaFuncCallEditor(call, dataFrame);
   }
 
   @grok.decorators.func({

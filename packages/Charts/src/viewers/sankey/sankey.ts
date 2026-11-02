@@ -286,6 +286,15 @@ export class SankeyViewer extends DG.JsViewer {
     if (this.graph.links.length === 0)
       return;
 
+    if (this.graph.links.some((link: Link) => link.value < 0)) {
+      MessageHandler._showMessage(this.root, `${this.valueColumnName} contains negative values`, 'd4-viewer-error');
+      return;
+    }
+    if (this.graph.links.every((link: Link) => link.value === 0)) {
+      MessageHandler._showMessage(this.root, `${this.valueColumnName}: all values are 0`, 'd4-viewer-error');
+      return;
+    }
+
     const cycles = this.detectGraphCycles(this.graph);
     if (cycles.length > 0) {
       MessageHandler._showMessage(this.root, 'The graph contains cycles. Please remove circular dependencies.', 'd4-viewer-error');

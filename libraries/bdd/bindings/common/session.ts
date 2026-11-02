@@ -31,6 +31,8 @@ async function homeWidgetsSettled(page: Page): Promise<void> {
  * runtime installed. What the page logged while it booted stays on the error floor: a widget that fails
  * to load is the claim of a scenario that reloads or signs in. */
 export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSimpleMode()): Promise<void> {
+  // the preloader goes once the start-up URL is routed; a closeAll before that is undone by the view it opens
+  await page.waitForFunction(() => !document.querySelector('#grok-preloader'), null, {timeout: 180000});
   await page.evaluate(([simple, filmed, help]) => {
     grok.shell.closeAll();
     // the test styles (title-bar icons shown without a hover) are not what a person sees in a guide
@@ -50,8 +52,14 @@ export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSi
       grok.shell.windows.showContextPanel = false;
     }
   }, [simpleMode, !!guide.guideDir(), guide.helpMode()] as [boolean, boolean, boolean]);
-  // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
-  await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});
+  // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it, and the view a
+  // reloaded address opens (a script, a project) can land after it: that one is closed in turn
+  await page.waitForFunction(() => {
+    const v = grok.shell.v;
+    if (v != null && v.type !== 'datagrok')
+      v.close();
+    return grok.shell.v?.type === 'datagrok';
+  }, null, {timeout: 60000, polling: 100});
   await homeWidgetsSettled(page);
   await installViewerRuntime(page);
   // a cold load or a reload starts the scenario's leak baseline here, before any app view opens

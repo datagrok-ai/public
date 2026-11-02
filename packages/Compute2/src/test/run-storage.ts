@@ -49,7 +49,7 @@ export class RunStorageFixture {
   private runIds = new Set<string>();
   private spaces: DG.Project[] = [];
   private subspaces: DG.Project[] = [];
-  private favorites: DG.FuncCall[] = [];
+  private favorites: DG.Entity[] = [];
 
   async space(): Promise<DG.Project> {
     const space = await grok.dapi.spaces.createRootSpace(uniqueName('Run storage test'));
@@ -96,8 +96,8 @@ export class RunStorageFixture {
     this.runIds.add(id);
   }
 
-  favorite(run: DG.FuncCall) {
-    this.favorites.push(run);
+  favorite(entity: DG.Entity) {
+    this.favorites.push(entity);
   }
 
   async dispose() {

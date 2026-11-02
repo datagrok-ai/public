@@ -96,16 +96,16 @@ export namespace funcs {
     return await grok.functions.call('HitTriage:PeptiHitAppTreeBrowser', { treeNode });
   }
 
-  export async function hitTriageApp(): Promise<DG.View> {
-    return await grok.functions.call('HitTriage:HitTriageApp', {});
+  export async function hitTriageApp(campaignId?: string ): Promise<DG.View> {
+    return await grok.functions.call('HitTriage:HitTriageApp', { campaignId });
   }
 
-  export async function hitDesignApp(): Promise<DG.View> {
-    return await grok.functions.call('HitTriage:HitDesignApp', {});
+  export async function hitDesignApp(campaignId?: string ): Promise<DG.View> {
+    return await grok.functions.call('HitTriage:HitDesignApp', { campaignId });
   }
 
-  export async function peptiHitApp(): Promise<DG.View> {
-    return await grok.functions.call('HitTriage:PeptiHitApp', {});
+  export async function peptiHitApp(campaignId?: string ): Promise<DG.View> {
+    return await grok.functions.call('HitTriage:PeptiHitApp', { campaignId });
   }
 
   export async function pepTriageAppTreeBrowser(treeNode: any ): Promise<void> {

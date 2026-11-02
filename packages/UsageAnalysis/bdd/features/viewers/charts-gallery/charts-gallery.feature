@@ -7,14 +7,14 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
   its inner grid's readings, and its layout is saved and applied from the toolbox's Layouts pane,
   under the run-unique name its table gets.
   Translated from the TestTrack case Charts/charts-other-viewers. The Surface plot is checked on
-  demog: on earthquakes.csv it is not shown.
+  demog-1000: on earthquakes.csv it is not shown.
 
   Background:
     Given user is logged in
     And the package autostarts have completed
 
   Scenario: The gallery disables the Charts viewers a table cannot feed and says why
-    Given user opens demog dataset
+    Given user opens demog-1000 dataset
     When user clicks on "Add viewer" icon
     Then "Add Viewer" dialog should be visible
     And the following elements should be enabled:
@@ -62,8 +62,8 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
     Then globe viewer should be absent
     And no errors should have been logged
 
-  Scenario: Surface plot on demog takes its columns, Projection and Wireframe
-    Given user opens demog dataset
+  Scenario: Surface plot on demog-1000 takes its columns, Projection and Wireframe
+    Given user opens demog-1000 dataset
     When user clicks on "Add viewer" icon
     And user clicks on first "Surface plot" card in "Add Viewer" dialog
     Then surface plot viewer should be visible
@@ -83,7 +83,7 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
     And no errors should have been logged
 
   Scenario: Group Analysis adds an analysed column and keeps it in a layout (GROK-19039, GROK-19047)
-    Given user opens demog dataset keeping the first 5850 rows as "GroupAnalysis-{time}"
+    Given user opens demog-1000 dataset keeping the first 1000 rows as "GroupAnalysis-{time}"
     And the layouts named "GroupAnalysis-{time}" are deleted when the feature ends
     When user clicks on "Add viewer" icon
     And user clicks on first "Group Analysis" card in "Add Viewer" dialog

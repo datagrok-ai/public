@@ -410,6 +410,14 @@ export class PackageFunctions {
         id: 'link1',
         from: 'in1:step1/res',
         to: 'out1:step2/a',
+      }, {
+        id: 'rootTitle',
+        type: 'nodemeta',
+        from: 'in:step1/a',
+        to: 'title:title',
+        handler({controller}) {
+          controller.setDescriptionItem('title', 'Pipeline 1 title');
+        },
       }],
     };
     return c;

@@ -132,9 +132,9 @@ Everything re-derives from `entries` + the selections. In `RunComparison`:
 
 In each `ComparisonTab`:
 
-4. `selectedTarget`, `compatibleTargets` (multi-value candidates for the current anchor), `filteredTargets` (`listedTargets`).
-5. `charted` (`chartedTargets`: the anchor, or the multi-value selection anchor first), `gaps`, and `comparison` — `buildComparison` over `charted`, wrapped in `markRaw` (DataFrames must not be made reactive); `currentChartSpec` turns it into a `ChartSpec`.
-6. `entryStatuses` — exclusion chips, through `statusChips`.
+1. `selectedTarget`, `compatibleTargets` (multi-value candidates for the current anchor), `filteredTargets` (`listedTargets`).
+2. `charted` (`chartedTargets`: the anchor, or the multi-value selection anchor first), `gaps`, and `comparison` — `buildComparison` over `charted`, wrapped in `markRaw` (DataFrames must not be made reactive); `currentChartSpec` turns it into a `ChartSpec`.
+3. `entryStatuses` — exclusion chips, through `statusChips`.
 
 ### Notable mechanics
 
@@ -157,17 +157,17 @@ In each `ComparisonTab`:
   Single-value charts read their y column from the result's `valueColumnName` (the deduped label), not from `target.displayName`.
 
   Column multi-value mode scales the minimum chart height by the number of stacked value panels (`250px` per value, a flat `250px` for the shared panel); multi-scalar uses a flat minimum (one chart, not stacked series).
-- **Export** (`exportComparison`, per tab): `snapshotData` clones `chartDf` and captures the chart with its current options (`chartViewer.getOptions()`), so user tweaks to the chart carry over. The dialog offers OPEN IN WORKSPACE (`snapshotView` — adds a table view of the snapshot to the workspace) and SAVE & SHARE (`saveAndShare` — a serialized layout captured via `captureTableLayout` and handed with the table to the platform project-save dialog, which handles upload, layout linking, and sharing). The save-dialog plumbing (`canSaveProject`, `showProjectSaveDialog`, `captureTableLayout`) is shared with the RFV project export in `src/project-export.ts`; when the platform has no save-dialog API, the dialog degrades to OPEN IN WORKSPACE only.
+- **Export** (`exportComparison`, per tab): `snapshotData` clones `chartDf` and captures the chart with its current options (`chartViewer.getOptions()`), so user tweaks to the chart carry over. The dialog offers OPEN IN WORKSPACE (`snapshotView` — adds a table view of the snapshot to the workspace) and SAVE & SHARE (`saveAndShare` — a serialized layout captured via `captureTableLayout` and handed with the table to the platform project-save dialog, which handles upload, layout linking, and sharing). The save-dialog plumbing (`showProjectSaveDialog`, `captureTableLayout`) is shared with the RFV project export in `src/project-export.ts`; when the platform has no save-dialog API, the dialog degrades to OPEN IN WORKSPACE only.
 
 ## Entry points and tests
 
 Besides the Model Hub menu:
 
-- **Compare with original** (`compareWithOriginal`): the branch icon menu of an editable tree node based on a completed run (`source-run.ts`, `TreeNode.tsx`), and the link in `PipelineView`, always open a new view with the original run (by id) and a snapshot of the node. Read-only copies get no compare items: links skip them, so they equal the original.
-- **Add to comparison** (`addToComparison`): **Add to comparison...** in the same menu, and the compare icon next to Save in `TreeWizard` (the whole model) and in `RichFunctionView` at the root level (standalone RFV through `RFVApp`, single-step workflows through `TreeWizard`). With no view open it opens a new one; otherwise a modal radio dialog lists **New comparison** and the open views with the names of their entries, the most recent one preselected, and adds the snapshot through the chosen view's service. The workflow's compare icon adds the saved run instead of a snapshot when the model has an id and no unsaved edits (`savedRunOf` in `TreeWizard`), and so does a read-only item, which adds its original run (`addRunToComparison`). Editable items have no edit tracking, so they always add a snapshot.
+- **Compare with original** (`compareWithOriginal`): the branch icon menu of an editable tree node based on a completed run (`source-run.ts`, `TreeNode.tsx`), and the link in `PipelineView`, add the original run (by id) and a snapshot of the node. Read-only copies get no compare items: links skip them, so they equal the original.
+- **Add to comparison** (`addToComparison`): **Add to comparison...** in the same menu, and the compare icon next to Save in `TreeWizard` (the whole model) and in `RichFunctionView` at the root level (standalone RFV through `RFVApp`, single-step workflows through `TreeWizard`). A modal dialog names the snapshot and, with views open, lists **New comparison** and those views with the names of their entries, and adds it through the chosen view's service. The workflow's compare icon adds the saved run instead of a snapshot when the model has an id and no unsaved edits (`savedRunOf` in `TreeWizard`), and so does a read-only item, which adds its original run (`addRunToComparison`). Editable items have no edit tracking, so they always add a snapshot.
 - **Models**: every launch passes the function whose history holds the snapshot's saved runs (the call's function, the workflow function, or a nested item's function). A new view selects it; an open view only adds it to its model list. Functions the Model Hub filter leaves out (no model role) are appended to the list.
 
-Every snapshot launch goes through `confirmOutdated`, which asks before comparing a snapshot with outdated outputs; saved runs are added without asking.
+Every launch with runs or snapshots goes through `showAddToComparisonDialog`: each item gets an editable name (a run left empty keeps its saved name), a snapshot with outdated outputs shows a warning under its name, and open views are offered unless the launch names its view. **Compare** in the run browser and **Compare with original** start on **New comparison**, other launches on the most recent view. The embedded run picker adds to its own view. A run already in the chosen view isn't added again, with a warning.
 
 `History.tsx` also has an `allowCompare` prop with a `compareSelected` handler — but that path opens the *old* compute-utils `RunComparisonView`; the new tool explicitly passes `allowCompare={false}` to its embedded History.
 

@@ -33,7 +33,7 @@ import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
 import {applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
-import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
+import {saveCallToProject, DfExportEntry} from '../../project-export';
 import {getToggledInputs} from './input-toggles';
 import {compareRibbonIcon} from '../RunComparison/comparison-views';
 
@@ -573,8 +573,7 @@ export const RichFunctionView = Vue.defineComponent({
         activeExports.push({name, handler});
       }
       activeExports.push(...customExports.value.filter(x => x.function && x.name).map(x => ({...x, handler: () => reportHandler(x.function)})));
-      if (canSaveProject())
-        activeExports.push({name: 'Save as project...', handler: () => saveCallToProject(currentCall.value, collectDfExportEntries())});
+      activeExports.push({name: 'Save as project...', handler: () => saveCallToProject(currentCall.value, collectDfExportEntries())});
       if (props.urlExportHandler)
         activeExports.push({name: 'Copy link with inputs', handler: () => props.urlExportHandler!()});
       return activeExports;

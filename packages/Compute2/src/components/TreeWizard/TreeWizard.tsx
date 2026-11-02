@@ -189,8 +189,9 @@ export const TreeWizard = Vue.defineComponent({
     // the function whose history holds the node's saved runs
     const modelOf = (state: PipelineState) => isFuncCallState(state) ?
       state.funcCall?.func : (state.nqName ? DG.Func.byName(state.nqName) : undefined);
+    const sourceTitle = (state: PipelineState) => isFuncCallState(state) ? state.sourceRunTitle : undefined;
     const compareNodeWithOriginal = (state: PipelineState) =>
-      compareWithOriginal(snapshotOf(state), state.sourceRunId!, modelOf(state));
+      compareWithOriginal(snapshotOf(state), state.sourceRunId!, sourceTitle(state), modelOf(state));
     // an unedited saved model and read-only copies equal their saved runs; editable copies aren't tracked
     const savedRunOf = (state: PipelineState) => state.uuid === treeState.value?.uuid ?
       (hasNotSavedEdits.value ? undefined : currentMetaCallData.value?.id) :
@@ -198,7 +199,8 @@ export const TreeWizard = Vue.defineComponent({
     const addNodeToComparison = (state: PipelineState) => {
       const runId = savedRunOf(state);
       if (runId)
-        addRunToComparison(runId, nodeName(state), modelOf(state));
+        addRunToComparison(runId, state.uuid === treeState.value?.uuid ? currentMetaCallData.value?.title :
+          sourceTitle(state), modelOf(state));
       else
         addToComparison(snapshotOf(state), modelOf(state));
     };
@@ -356,15 +358,19 @@ export const TreeWizard = Vue.defineComponent({
       setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '?');
     });
 
-    Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
+    const rootTitle = Vue.computed(() => nodeMetadata(treeState.value?.uuid).title);
+
+    Vue.watch([currentMetaCallData, hasNotSavedEdits, rootTitle], ([metadata, hasNotSavedEdits, rootTitle]) => {
       if (hasNotSavedEdits)
         pinView(currentView);
       const {id, title} = metadata?.id ? metadata : {id: undefined, title: undefined};
       searchParams.id = id && !hasNotSavedEdits ? id : undefined;
-      if (!title)
-        setViewName(modelName.value);
-      else
+      if (title)
         setViewName(`${modelName.value} - ${title}${hasNotSavedEdits ? ' (edited)' : ''}`);
+      else if (!id && rootTitle)
+        setViewName(`${modelName.value} - ${rootTitle}`);
+      else
+        setViewName(modelName.value);
     });
 
 

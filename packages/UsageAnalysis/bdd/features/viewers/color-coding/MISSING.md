@@ -40,3 +40,10 @@ Nothing planned.
 - **Pixel checks of a renderer, a correlation plot's mirrored cells (GROK-20919)**: renderer.
 - **The legend's own picker, its Cancel and a second pick (github-3132)**: `legend/legend-across-viewers.feature`;
   a conditional coloring's legend: `guides/scatter-plot-conditional-colors.feature`.
+
+## Closed issues the regression round of 26 Oct 2026 could not claim
+
+- **A colour-coded category column paints the bar chart's category names (public#3621)** regressed: filed
+  as core#1153; claim it in `bar-chart/bar-chart.feature` once fixed.
+- **Pick Up Coloring / Apply Coloring is per grid** — by design (Olesia, 27 Oct 2026); across tables it is
+  Pick Up / Apply that carries a colouring (`color-coding-pick-up-apply-and-viewers.feature`, public#1887).

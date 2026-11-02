@@ -255,12 +255,13 @@ export class Sandbox {
     return df.rowCount ? df.col('updated_at')!.getString(0) : null;
   }
 
-  private call(name: string): DG.FuncCall {
-    return DG.Func.find({package: 'HitTriage', name})[0].prepare();
+  private call(name: string, params?: {[name: string]: unknown}): DG.FuncCall {
+    return DG.Func.find({package: 'HitTriage', name})[0].prepare(params);
   }
 
-  async hitDesign(): Promise<HitDesignApp> {
-    return await this.start(new HitDesignApp(this.call('hitDesignApp'), this.appName));
+  /** The app as a link opens it when [campaignId] is given: the router passes the link's `campaignId` to its call. */
+  async hitDesign(campaignId?: string): Promise<HitDesignApp> {
+    return await this.start(new HitDesignApp(this.call('hitDesignApp', {campaignId}), this.appName));
   }
 
   async peptiHit(): Promise<PeptiHitApp> {

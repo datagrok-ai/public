@@ -54,6 +54,7 @@ category('Viewers: Monomer-Position', () => {
   let mpViewer: MonomerPosition;
 
   before(async () => {
+    await PeptideUtils.loadComponents();
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
@@ -100,6 +101,27 @@ category('Viewers: Monomer-Position', () => {
     mpViewer.mode = SELECTION_MODE.MUTATION_CLIFFS;
     expect(mpViewer.mode, SELECTION_MODE.MUTATION_CLIFFS,
       `Monomer-Position mode is not ${SELECTION_MODE.MUTATION_CLIFFS} after switching`);
+  });
+
+  test('Mode switch stays inside a narrow viewer', async () => {
+    const root = mpViewer.root;
+    const width = root.style.width;
+    root.style.width = '200px';
+    try {
+      const rootRect = root.getBoundingClientRect();
+      const radios = Array.from(root.querySelectorAll<HTMLElement>('#pep-viewer-title input'));
+      expect(radios.length, 2, 'the mode switch has two radios');
+      for (const radio of radios) {
+        const rect = radio.getBoundingClientRect();
+        expect(rect.left >= rootRect.left && rect.right <= rootRect.right, true,
+          `the ${radio.getAttribute('name')} radio is cut off by the viewer edge`);
+        const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        expect(radio.closest('#pep-viewer-title')!.contains(hit), true,
+          `the ${radio.getAttribute('name')} radio is covered`);
+      }
+    } finally {
+      root.style.width = width;
+    }
   });
 
   test('Highlighting after row removal', async () => {

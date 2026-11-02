@@ -1,7 +1,8 @@
 @journey @realizes:filters.cp.chem-and-bio-filters
 Feature: A substructure card from a cell, after a reset and on a cloned view
   On spgi-100, Current Value | Use as filter on a Structure cell adds one Structure card holding that
-  cell's molecule (GROK-20001). A Structure card rebuilt through Remove All and a reopened panel,
+  cell's molecule (GROK-20001); on a Core cell it goes to the Core card, not the Structure card
+  (public#1473, public#1225, public#1216). A Structure card rebuilt through Remove All and a reopened panel,
   holding pyridine in Similar mode, is cleared by the panel's reset icon: every row passes, the card
   stays, its structure is empty, its search type is Contains, it no longer filters and the header
   counter is hidden, and the card offers its Sketch link again (GROK-14028, GROK-20739). Set again to Similar at cutoff 0.6, the card comes back in a view
@@ -23,8 +24,17 @@ Feature: A substructure card from a cell, after a reset and on a cloned view
     Then there should be 1 visible "Structure" filter card
     And the "type of Structure" reading of filter panel should be "Chem:substructureFilter"
     And the "structure of Structure" reading of filter panel should be the molecule in row 1 of "Structure" column
-    And fewer than 100 rows should pass the filter
+    And 1 row should pass the filter
     And the "filtering of Structure" reading of filter panel should be "true"
+    And no errors should have been logged
+
+  @realizes:public#1473 @realizes:public#1225 @realizes:public#1216
+  Scenario: Use as filter on a Core cell fills the Core card and leaves the Structure card's molecule (public#1473, public#1225, public#1216)
+    When user scrolls the grid to the "Core" column
+    And user picks "Current Value > Use as filter" from the context menu of the "cell 1 of Core" area of grid
+    Then the "filtering of Core" reading of filter panel should be "true"
+    And the "structure of Core" reading of filter panel should be the molecule in row 1 of "Core" column
+    And the "structure of Structure" reading of filter panel should be the molecule in row 1 of "Structure" column
     And no errors should have been logged
 
   Scenario: The reset icon clears the card's structure and search type and keeps the card

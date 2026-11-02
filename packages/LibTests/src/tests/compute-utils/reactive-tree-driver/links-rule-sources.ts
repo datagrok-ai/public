@@ -542,7 +542,6 @@ const callController = (call: DG.FuncCall) => ({
 const items = async (call: DG.FuncCall): Promise<string[]> =>
   (await resolvedSources(callController(call), cities)).c.items;
 
-// evaluated choices need platform 1.28.0 or later
 category('ComputeUtils: Driver rule choices sources', async () => {
   const prepare = (region: string) => DG.Func.byName('LibTests:TestCountingChoices').prepare({region, n: 1});
 

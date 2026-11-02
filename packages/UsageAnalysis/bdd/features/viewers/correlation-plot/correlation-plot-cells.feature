@@ -4,7 +4,8 @@ Feature: Correlation plot — a cell as a click, hover and menu target
   it, a double-click that opens it as a real scatter plot, the tooltip with the pair's own scatter
   inside, the pinned name column that hovers the column's statistics instead, the cell menu, and
   "Open as table", which hands the whole matrix over as a four-row table, and the grid's own Order
-  or Hide Columns dialog, which searches the matrix's columns and leaves the name column pinned.
+  or Hide Columns dialog, which searches the matrix's columns and leaves the name column pinned;
+  a column hidden there leaves the matrix while every row name stays (public#3492).
   Every gesture here lands on a region the plot reports — `cell HEIGHT x AGE`, `row header HEIGHT`,
   `pinned band` — where the spec this replaces ran a six-attempt calibration loop that moved its own
   `pinnedW` by a cell width and its `headerH` by four pixels until a probe click produced the pair it
@@ -78,7 +79,8 @@ Feature: Correlation plot — a cell as a click, hover and menu target
     When user closes the context menu
     Then no errors should have been logged
 
-  Scenario: Grid > Order or Hide Columns from the cell menu searches the matrix's columns and closes, the name column still pinned (GROK-9310)
+  @realizes:public#3492
+  Scenario: Grid > Order or Hide Columns from the cell menu searches the matrix's columns and closes, the name column still pinned, and a hidden column keeps the row names (GROK-9310, public#3492)
     When user picks "Grid > Order or Hide Columns..." from the context menu of the "cell HEIGHT x AGE" area of correlation plot viewer
     Then Order or Hide Columns dialog should be visible
     When user remembers the "rows shown" reading of Grid viewer in Order or Hide Columns dialog
@@ -86,8 +88,19 @@ Feature: Correlation plot — a cell as a click, hover and menu target
     Then the "rows shown" reading of Grid viewer in Order or Hide Columns dialog should be 1
     When user clears "Search" input in Order or Hide Columns dialog
     Then the "rows shown" reading of Grid viewer in Order or Hide Columns dialog should be as remembered
-    When user clicks on CLOSE button in Order or Hide Columns dialog
+    When user toggles the "WEIGHT" column in the column list of Order or Hide Columns dialog
+    And user clicks on CLOSE button in Order or Hide Columns dialog
     Then Order or Hide Columns dialog should be hidden
+    And correlation plot viewer should not have a "header WEIGHT" area
+    And correlation plot viewer should have a "pinned band" area
+    And correlation plot viewer should have a "row header HEIGHT" area
+    And correlation plot viewer should have a "row header AGE" area
+    And correlation plot viewer should have a "row header WEIGHT" area
+    When user picks "Grid > Order or Hide Columns..." from the context menu of the "cell HEIGHT x AGE" area of correlation plot viewer
+    And user toggles the "WEIGHT" column in the column list of Order or Hide Columns dialog
+    And user clicks on CLOSE button in Order or Hide Columns dialog
+    Then Order or Hide Columns dialog should be hidden
+    And correlation plot viewer should have a "header WEIGHT" area
     And correlation plot viewer should have a "pinned band" area
     And correlation plot viewer should have a "row header HEIGHT" area
     And the "cells" reading of correlation plot viewer should be 16

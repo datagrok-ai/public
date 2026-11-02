@@ -2,8 +2,9 @@
 Feature: Box plot filter semantics
   How the box plot answers the table's filter and its own: the value range follows the filter
   (Zoom Values By Filter), the viewer's formula filter leaves the table's filter alone, Show
-  Empty Categories drops and restores an empty-valued category, and a coloring under a filter
-  keeps its color scale. One journey on spgi-100 with a box plot of Average Mass by Series.
+  Empty Categories drops and restores an empty-valued category, a zoom survives Show Empty
+  Categories switched off and on (core#307), and a coloring under a filter keeps its color scale.
+  One journey on spgi-100 with a box plot of Average Mass by Series.
 
   Background:
     Given user is logged in
@@ -71,3 +72,17 @@ Feature: Box plot filter semantics
     Then the color scale of box plot viewer should cover a narrower range than before
     When user resets the filter
     And user sets "Marker Color Column" property of box plot viewer to ""
+
+  @realizes:core#307
+  Scenario: Toggling Show Empty Categories keeps the zoom (core#307)
+    Then "Show Empty Categories" property of box plot viewer should be "true"
+    When user zooms into the value axis of box plot viewer
+    Then box plot viewer should show a narrower value range than before
+    When user remembers the value range of box plot viewer
+    And user sets "Show Empty Categories" property of box plot viewer to "false"
+    Then box plot viewer should show the remembered value range
+    When user sets "Show Empty Categories" property of box plot viewer to "true"
+    Then box plot viewer should show the remembered value range
+    When user double-clicks on the "view" area of box plot viewer
+    Then box plot viewer should show a wider value range than before
+    And no errors should have been logged

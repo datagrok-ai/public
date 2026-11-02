@@ -659,10 +659,12 @@ export class SubstructureFilter extends DG.Filter {
       this.updateFilterUiOnSketcherChanged(newMolecule);
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
       filterId: this.filterId, tableName: this.tableName});
+    // the search owner's own state in rows.filters can name a query applyState took but has not searched yet
+    const ownsSearch = this.column!.temp[CHEM_APPLY_FILTER_SYNC]?.filterId === this.filterId;
     if (!this.isFiltering)
       this.stopFiltering(newMolecule, newSmarts);
-    else if ((wu(this.dataFrame!.rows.filters)
-      .has(`${this.columnName}: ${this.getFilterSummary(newMolecule)}`) || this.isFilteringBySameStructure(newMolecule)) &&
+    else if (((!ownsSearch && wu(this.dataFrame!.rows.filters)
+      .has(`${this.columnName}: ${this.getFilterSummary(newMolecule)}`)) || this.isFilteringBySameStructure(newMolecule)) &&
       !this.recalculateFilter && !this.searchNotCompleted) {
       //check if the coordinates have changed and in case align is true - reset the tag on column
       if (this.currentMolecule !== newMolecule && this.sketcher.align) {

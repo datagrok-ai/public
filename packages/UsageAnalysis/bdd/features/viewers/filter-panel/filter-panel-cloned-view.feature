@@ -3,7 +3,8 @@ Feature: Filter panel of a cloned view
   View > Layout > Clone View opens a second view over the same table, and its filter panel comes up
   with the original's cards, criteria and switches; a category clicked on a card of the original is
   followed by the clone's card on the same column, a card switched off in one view is switched off
-  in the other while a card of another type on the same column is left alone, and removing a card
+  in the other while a card of another type on the same column is left alone, the master toggle
+  switched off in one view is switched back on from the other (public#1837, public#1460), and removing a card
   in the clone leaves the original's card as it was. A layout saved from the clone brings its cards
   and switches back. A missing-values choice made from a card's own menu survives the clone, and
   the clone refuses a second card on that column (github-1984). A second table built on the very
@@ -74,6 +75,23 @@ Feature: Filter panel of a cloned view
     Then 18 rows should pass the filter
     When user switches to the "demog-1000 copy" view
     Then "SEX" filter card should be enabled
+    And no errors should have been logged
+
+  @realizes:public#1837 @realizes:public#1460
+  Scenario: The master toggle switched off in one view is switched back on from the clone (public#1837, public#1460)
+    When user switches to the "demog-1000" view
+    And user hovers over filter panel
+    And user unchecks master of filter panel
+    Then all rows should pass the filter
+    And the "active" reading of filter panel should be "false"
+    When user switches to the "demog-1000 copy" view
+    And user hovers over filter panel
+    And user checks master of filter panel
+    Then 18 rows should pass the filter
+    And the "active" reading of filter panel should be "true"
+    When user switches to the "demog-1000" view
+    Then 18 rows should pass the filter
+    And the "active" reading of filter panel should be "true"
     And no errors should have been logged
 
   Scenario: Switching off a card of another type in the clone leaves the original's card alone

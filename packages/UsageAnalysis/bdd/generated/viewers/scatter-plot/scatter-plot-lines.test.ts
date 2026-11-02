@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/scatter-plot/scatter-plot-lines.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.scatter-plot]
+sub_features_covered: [viewers.scatter-plot, public#3695]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -27,7 +27,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Scatter plot trend lines", () => {
   const session = feature(test, "features/viewers/scatter-plot/scatter-plot-lines.feature", import.meta.url);
-  test("Scatter plot trend lines", {tag: ["@journey", "@viewers", "@realizes:viewers.scatter-plot"]}, async ({browser}) => {
+  test("Scatter plot trend lines", {tag: ["@journey", "@viewers", "@realizes:viewers.scatter-plot", "@realizes:public#3695"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 4, page);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
@@ -52,58 +52,61 @@ test.describe("Scatter plot trend lines", () => {
       await session.step(38, "And scatter plot viewer should not have a \"regression line\" area", () => hasNoArea(page, el("scatter plot viewer"), "regression line"));
       await session.step(39, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Regression Per Category fits one line per color, and the stats table is drawn", async () => {
-      await session.step(42, "Then \"Regression Per Category\" property of scatter plot viewer should be \"true\"", () => propertyShouldBe(page, "Regression Per Category", el("scatter plot viewer"), "true"));
-      await session.step(43, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Color","RACE"],["Show Regression Line","true"]]), [["Color","RACE"],["Show Regression Line","true"]]);
-      await session.step(46, "Then the \"regression lines\" reading of scatter plot viewer should be 4", () => readingIs(page, "regression lines", el("scatter plot viewer"), 4));
-      await session.step(47, "And \"Show Regression Line Equation\" property of scatter plot viewer should be \"true\"", () => propertyShouldBe(page, "Show Regression Line Equation", el("scatter plot viewer"), "true"));
-      await session.step(48, "And \"Show Determination Coefficient\" property of scatter plot viewer should be \"true\"", () => propertyShouldBe(page, "Show Determination Coefficient", el("scatter plot viewer"), "true"));
-      await session.step(49, "When user sets \"Regression Per Category\" property of scatter plot viewer to \"false\"", () => setProperty(page, "Regression Per Category", el("scatter plot viewer"), "false"));
-      await session.step(50, "Then the \"regression lines\" reading of scatter plot viewer should be 1", () => readingIs(page, "regression lines", el("scatter plot viewer"), 1));
-      await session.step(51, "And scatter plot viewer should have a \"regression stats\" area", () => hasArea(page, el("scatter plot viewer"), "regression stats"));
-      await session.step(52, "And the \"regression stats\" area of scatter plot viewer should be painted", () => areaPainted(page, "regression stats", el("scatter plot viewer")));
-      await session.step(53, "When user sets \"Show Regression Line Equation\" property of scatter plot viewer to \"false\"", () => setProperty(page, "Show Regression Line Equation", el("scatter plot viewer"), "false"));
-      await session.step(54, "Then scatter plot viewer should have a \"regression stats\" area", () => hasArea(page, el("scatter plot viewer"), "regression stats"));
-      await session.step(55, "And the \"regression stats\" area of scatter plot viewer should be painted", () => areaPainted(page, "regression stats", el("scatter plot viewer")));
-      await session.step(56, "When user sets \"Show Determination Coefficient\" property of scatter plot viewer to \"false\"", () => setProperty(page, "Show Determination Coefficient", el("scatter plot viewer"), "false"));
-      await session.step(57, "Then scatter plot viewer should not have a \"regression stats\" area", () => hasNoArea(page, el("scatter plot viewer"), "regression stats"));
-      await session.step(58, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Show Regression Line Equation","true"],["Show Determination Coefficient","true"],["Regression Per Category","true"]]), [["Show Regression Line Equation","true"],["Show Determination Coefficient","true"],["Regression Per Category","true"]]);
-      await session.step(62, "Then the \"regression lines\" reading of scatter plot viewer should be 4", () => readingIs(page, "regression lines", el("scatter plot viewer"), 4));
-      await session.step(63, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Show Regression Line","false"],["Color",""]]), [["Show Regression Line","false"],["Color",""]]);
-      await session.step(66, "Then the \"regression lines\" reading of scatter plot viewer should be 0", () => readingIs(page, "regression lines", el("scatter plot viewer"), 0));
-      await session.step(67, "And no errors should have been logged", () => noErrors(page));
+    await run.scenario("Regression Per Category fits one line per color, and the stats table is drawn, and one common line past 20 categories (public#3695)", async () => {
+      await session.step(43, "Then \"Regression Per Category\" property of scatter plot viewer should be \"true\"", () => propertyShouldBe(page, "Regression Per Category", el("scatter plot viewer"), "true"));
+      await session.step(44, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Color","RACE"],["Show Regression Line","true"]]), [["Color","RACE"],["Show Regression Line","true"]]);
+      await session.step(47, "Then the \"regression lines\" reading of scatter plot viewer should be 4", () => readingIs(page, "regression lines", el("scatter plot viewer"), 4));
+      await session.step(48, "And \"Show Regression Line Equation\" property of scatter plot viewer should be \"true\"", () => propertyShouldBe(page, "Show Regression Line Equation", el("scatter plot viewer"), "true"));
+      await session.step(49, "And \"Show Determination Coefficient\" property of scatter plot viewer should be \"true\"", () => propertyShouldBe(page, "Show Determination Coefficient", el("scatter plot viewer"), "true"));
+      await session.step(50, "When user sets \"Regression Per Category\" property of scatter plot viewer to \"false\"", () => setProperty(page, "Regression Per Category", el("scatter plot viewer"), "false"));
+      await session.step(51, "Then the \"regression lines\" reading of scatter plot viewer should be 1", () => readingIs(page, "regression lines", el("scatter plot viewer"), 1));
+      await session.step(52, "And scatter plot viewer should have a \"regression stats\" area", () => hasArea(page, el("scatter plot viewer"), "regression stats"));
+      await session.step(53, "And the \"regression stats\" area of scatter plot viewer should be painted", () => areaPainted(page, "regression stats", el("scatter plot viewer")));
+      await session.step(54, "When user sets \"Show Regression Line Equation\" property of scatter plot viewer to \"false\"", () => setProperty(page, "Show Regression Line Equation", el("scatter plot viewer"), "false"));
+      await session.step(55, "Then scatter plot viewer should have a \"regression stats\" area", () => hasArea(page, el("scatter plot viewer"), "regression stats"));
+      await session.step(56, "And the \"regression stats\" area of scatter plot viewer should be painted", () => areaPainted(page, "regression stats", el("scatter plot viewer")));
+      await session.step(57, "When user sets \"Show Determination Coefficient\" property of scatter plot viewer to \"false\"", () => setProperty(page, "Show Determination Coefficient", el("scatter plot viewer"), "false"));
+      await session.step(58, "Then scatter plot viewer should not have a \"regression stats\" area", () => hasNoArea(page, el("scatter plot viewer"), "regression stats"));
+      await session.step(59, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Show Regression Line Equation","true"],["Show Determination Coefficient","true"],["Regression Per Category","true"]]), [["Show Regression Line Equation","true"],["Show Determination Coefficient","true"],["Regression Per Category","true"]]);
+      await session.step(63, "Then the \"regression lines\" reading of scatter plot viewer should be 4", () => readingIs(page, "regression lines", el("scatter plot viewer"), 4));
+      await session.step(64, "When user sets \"Color\" property of scatter plot viewer to \"USUBJID\"", () => setProperty(page, "Color", el("scatter plot viewer"), "USUBJID"));
+      await session.step(65, "Then the \"regression lines\" reading of scatter plot viewer should be 1", () => readingIs(page, "regression lines", el("scatter plot viewer"), 1));
+      await session.step(66, "And scatter plot viewer should have a \"regression line\" area", () => hasArea(page, el("scatter plot viewer"), "regression line"));
+      await session.step(67, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Show Regression Line","false"],["Color",""]]), [["Show Regression Line","false"],["Color",""]]);
+      await session.step(70, "Then the \"regression lines\" reading of scatter plot viewer should be 0", () => readingIs(page, "regression lines", el("scatter plot viewer"), 0));
+      await session.step(71, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A regression over a datetime axis takes a time unit", async () => {
-      await session.step(70, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["X","STARTED"],["Show Regression Line","true"]]), [["X","STARTED"],["Show Regression Line","true"]]);
-      await session.step(73, "Then the \"regression lines\" reading of scatter plot viewer should be 1", () => readingIs(page, "regression lines", el("scatter plot viewer"), 1));
-      await session.step(74, "And scatter plot viewer should be painted", () => painted(page, el("scatter plot viewer")));
-      await session.step(75, "And no error or warning balloon should have been shown", () => noBalloons(page));
-      await session.step(76, "When user sets \"X Map\" property of scatter plot viewer to \"year\"", () => setProperty(page, "X Map", el("scatter plot viewer"), "year"));
-      await session.step(77, "Then \"X Map\" property of scatter plot viewer should be \"year\"", () => propertyShouldBe(page, "X Map", el("scatter plot viewer"), "year"));
-      await session.step(78, "And scatter plot viewer should have repainted", () => repainted(page, el("scatter plot viewer")));
+      await session.step(74, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["X","STARTED"],["Show Regression Line","true"]]), [["X","STARTED"],["Show Regression Line","true"]]);
+      await session.step(77, "Then the \"regression lines\" reading of scatter plot viewer should be 1", () => readingIs(page, "regression lines", el("scatter plot viewer"), 1));
+      await session.step(78, "And scatter plot viewer should be painted", () => painted(page, el("scatter plot viewer")));
       await session.step(79, "And no error or warning balloon should have been shown", () => noBalloons(page));
-      await session.step(80, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["X Map",""],["X","WEIGHT"],["Show Regression Line","false"]]), [["X Map",""],["X","WEIGHT"],["Show Regression Line","false"]]);
-      await session.step(84, "Then the \"regression lines\" reading of scatter plot viewer should be 0", () => readingIs(page, "regression lines", el("scatter plot viewer"), 0));
-      await session.step(85, "And scatter plot viewer should show 872 rows", () => showsRows(page, el("scatter plot viewer"), 872));
-      await session.step(86, "And no errors should have been logged", () => noErrors(page));
+      await session.step(80, "When user sets \"X Map\" property of scatter plot viewer to \"year\"", () => setProperty(page, "X Map", el("scatter plot viewer"), "year"));
+      await session.step(81, "Then \"X Map\" property of scatter plot viewer should be \"year\"", () => propertyShouldBe(page, "X Map", el("scatter plot viewer"), "year"));
+      await session.step(82, "And scatter plot viewer should have repainted", () => repainted(page, el("scatter plot viewer")));
+      await session.step(83, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(84, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["X Map",""],["X","WEIGHT"],["Show Regression Line","false"]]), [["X Map",""],["X","WEIGHT"],["Show Regression Line","false"]]);
+      await session.step(88, "Then the \"regression lines\" reading of scatter plot viewer should be 0", () => readingIs(page, "regression lines", el("scatter plot viewer"), 0));
+      await session.step(89, "And scatter plot viewer should show 872 rows", () => showsRows(page, el("scatter plot viewer"), 872));
+      await session.step(90, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The moving average line, its window, its split and its deviation band", async () => {
-      await session.step(89, "Then scatter plot viewer should not have a \"moving average\" area", () => hasNoArea(page, el("scatter plot viewer"), "moving average"));
-      await session.step(90, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Color","RACE"],["Moving Average Per Category","false"]]), [["Color","RACE"],["Moving Average Per Category","false"]]);
-      await session.step(93, "And user sets \"Show Moving Average Line\" property of scatter plot viewer to \"true\"", () => setProperty(page, "Show Moving Average Line", el("scatter plot viewer"), "true"));
-      await session.step(94, "Then scatter plot viewer should have a \"moving average\" area", () => hasArea(page, el("scatter plot viewer"), "moving average"));
-      await session.step(95, "And scatter plot viewer should have more ink than before", () => moreInk(page, el("scatter plot viewer")));
-      await session.step(96, "When user sets \"Moving Average Window\" property of scatter plot viewer to \"200\"", () => setProperty(page, "Moving Average Window", el("scatter plot viewer"), "200"));
-      await session.step(97, "Then scatter plot viewer should have repainted", () => repainted(page, el("scatter plot viewer")));
-      await session.step(98, "When user sets \"Moving Average Per Category\" property of scatter plot viewer to \"true\"", () => setProperty(page, "Moving Average Per Category", el("scatter plot viewer"), "true"));
-      await session.step(99, "Then scatter plot viewer should have repainted", () => repainted(page, el("scatter plot viewer")));
-      await session.step(100, "When user sets \"Show Moving Average Deviation\" property of scatter plot viewer to \"true\"", () => setProperty(page, "Show Moving Average Deviation", el("scatter plot viewer"), "true"));
-      await session.step(101, "Then scatter plot viewer should have more ink than before", () => moreInk(page, el("scatter plot viewer")));
-      await session.step(102, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Show Moving Average Deviation","false"],["Moving Average Window","10"],["Show Moving Average Line","false"],["Color",""]]), [["Show Moving Average Deviation","false"],["Moving Average Window","10"],["Show Moving Average Line","false"],["Color",""]]);
-      await session.step(107, "Then scatter plot viewer should not have a \"moving average\" area", () => hasNoArea(page, el("scatter plot viewer"), "moving average"));
-      await session.step(108, "And scatter plot viewer should have less ink than before", () => lessInk(page, el("scatter plot viewer")));
-      await session.step(109, "And the \"formula lines\" reading of scatter plot viewer should be 0", () => readingIs(page, "formula lines", el("scatter plot viewer"), 0));
-      await session.step(110, "And no errors should have been logged", () => noErrors(page));
+      await session.step(93, "Then scatter plot viewer should not have a \"moving average\" area", () => hasNoArea(page, el("scatter plot viewer"), "moving average"));
+      await session.step(94, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Color","RACE"],["Moving Average Per Category","false"]]), [["Color","RACE"],["Moving Average Per Category","false"]]);
+      await session.step(97, "And user sets \"Show Moving Average Line\" property of scatter plot viewer to \"true\"", () => setProperty(page, "Show Moving Average Line", el("scatter plot viewer"), "true"));
+      await session.step(98, "Then scatter plot viewer should have a \"moving average\" area", () => hasArea(page, el("scatter plot viewer"), "moving average"));
+      await session.step(99, "And scatter plot viewer should have more ink than before", () => moreInk(page, el("scatter plot viewer")));
+      await session.step(100, "When user sets \"Moving Average Window\" property of scatter plot viewer to \"200\"", () => setProperty(page, "Moving Average Window", el("scatter plot viewer"), "200"));
+      await session.step(101, "Then scatter plot viewer should have repainted", () => repainted(page, el("scatter plot viewer")));
+      await session.step(102, "When user sets \"Moving Average Per Category\" property of scatter plot viewer to \"true\"", () => setProperty(page, "Moving Average Per Category", el("scatter plot viewer"), "true"));
+      await session.step(103, "Then scatter plot viewer should have repainted", () => repainted(page, el("scatter plot viewer")));
+      await session.step(104, "When user sets \"Show Moving Average Deviation\" property of scatter plot viewer to \"true\"", () => setProperty(page, "Show Moving Average Deviation", el("scatter plot viewer"), "true"));
+      await session.step(105, "Then scatter plot viewer should have more ink than before", () => moreInk(page, el("scatter plot viewer")));
+      await session.step(106, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Show Moving Average Deviation","false"],["Moving Average Window","10"],["Show Moving Average Line","false"],["Color",""]]), [["Show Moving Average Deviation","false"],["Moving Average Window","10"],["Show Moving Average Line","false"],["Color",""]]);
+      await session.step(111, "Then scatter plot viewer should not have a \"moving average\" area", () => hasNoArea(page, el("scatter plot viewer"), "moving average"));
+      await session.step(112, "And scatter plot viewer should have less ink than before", () => lessInk(page, el("scatter plot viewer")));
+      await session.step(113, "And the \"formula lines\" reading of scatter plot viewer should be 0", () => readingIs(page, "formula lines", el("scatter plot viewer"), 0));
+      await session.step(114, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

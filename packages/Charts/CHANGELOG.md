@@ -1,5 +1,10 @@
 # Charts changelog
 
+## v.next
+
+* [public#4459](https://github.com/datagrok-ai/public/issues/4459): Timelines: Date Format resets to the default on any column change
+* [public#4462](https://github.com/datagrok-ai/public/issues/4462): Sankey: a Value column with negative values or only zeros draws with no message
+
 ## 1.8.2 (2026-10-29)
 
 * Word cloud: Fixed errors logged after the viewer is closed while a render waits for its size

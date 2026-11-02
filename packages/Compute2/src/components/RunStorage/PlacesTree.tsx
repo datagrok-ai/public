@@ -1,7 +1,8 @@
 import * as Vue from 'vue';
 import {IconFA} from '@datagrok-libraries/webcomponents-vue';
 import {placeName, spaceListingError} from './run-storage';
-import {RunFilter, SpaceIndex, parentsOf, subtreeCounts} from './space-index';
+import {RunFilter, SpaceIndex, favoriteSpaces, parentsOf, subtreeCounts} from './space-index';
+import {Favorites} from './use-favorites';
 import {RunsLocation, locationKey} from './use-space-navigation';
 
 const pathKey = (path: string[]) => locationKey({myRuns: false, path});
@@ -17,6 +18,7 @@ export const PlacesTree = Vue.defineComponent({
     runFilter: {type: Function as Vue.PropType<RunFilter>, required: false},
     // the host lists My runs itself, so it passes the count
     myRunsCount: {type: Number, required: false},
+    favorites: {type: Object as Vue.PropType<Favorites>, required: true},
   },
   emits: {
     select: (_location: RunsLocation) => true,
@@ -41,6 +43,9 @@ export const PlacesTree = Vue.defineComponent({
     const counts = Vue.computed(() => props.index && props.runFilter ?
       subtreeCounts(props.index, props.runFilter) : undefined);
     const selectedKey = Vue.computed(() => locationKey(props.location));
+    const onlyFavorites = Vue.ref(false);
+    const kept = Vue.computed(() => onlyFavorites.value && props.index ?
+      favoriteSpaces(props.index, props.favorites.ids.value) : undefined);
 
     const renderSpace = (index: SpaceIndex, id: string, parentPath: string[]): Vue.VNode[] => {
       const node = index.nodes.get(id);
@@ -48,19 +53,22 @@ export const PlacesTree = Vue.defineComponent({
         return [];
       const path = [...parentPath, id];
       const key = pathKey(path);
-      const children = node.children;
-      const isOpen = expanded.value.has(key);
+      const children = kept.value ? node.children.filter((child) => kept.value!.has(child)) : node.children;
+      // the favorites-only tree stays open: a closed parent would hide the favorite it is there for
+      const canToggle = !kept.value && children.length > 0;
+      const isOpen = !!kept.value || expanded.value.has(key);
       const parents = parentsOf(index, id);
       const count = counts.value?.get(id);
+      const isFavorite = props.favorites.ids.value.has(id);
       return [
         <div key={key} class={['c2-runs-tree-row', selectedKey.value === key ? 'c2-runs-selected' : '']}
           style={{paddingLeft: `${8 + (path.length - 1) * 14}px`}}
           onClick={() => emit('select', {myRuns: false, path})}>
           <span class='c2-runs-tree-arrow' onClick={(e: MouseEvent) => {
             e.stopPropagation();
-            if (children.length > 0)
+            if (canToggle)
               toggle(key);
-          }}>{children.length > 0 ? (isOpen ? '▾' : '▸') : ''}</span>
+          }}>{canToggle ? (isOpen ? '▾' : '▸') : ''}</span>
           <IconFA name='folder' class='c2-runs-folder-icon'/>
           <span class='c2-runs-tree-name'>{placeName(node.space)}</span>
           { node.error && <IconFA name='exclamation-triangle' class='c2-runs-error-icon'
@@ -70,11 +78,22 @@ export const PlacesTree = Vue.defineComponent({
               .filter((parent) => parent.id !== parentPath[parentPath.length - 1]).map(placeName).join(', ')}`}/> }
           { count !== undefined &&
             <span class='c2-runs-muted' title='Runs in this space and its subspaces'>({count})</span> }
+          <IconFA name='star' faStyle={isFavorite ? 'fas' : 'fal'}
+            class={['c2-runs-row-icon', isFavorite ? 'c2-runs-star c2-runs-star-on' : 'c2-runs-star']}
+            tooltip={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            onClick={(e: MouseEvent) => {e.stopPropagation(); props.favorites.toggle(node.space);}}/>
         </div>,
         ...(isOpen ? children.flatMap((child) => renderSpace(index, child, path)) : []),
       ];
     };
 
+    const renderFavoritesNote = () => {
+      if (props.favorites.error.value) {
+        return <div class='c2-runs-error c2-runs-pad'>Couldn't load favorites: {props.favorites.error.value}
+          <span class='c2-runs-link' onClick={() => props.favorites.load()}> Try again</span></div>;
+      }
+      return kept.value?.size === 0 ? <div class='c2-runs-muted c2-runs-pad'>No favorite spaces</div> : undefined;
+    };
 
     return () => (
       <div class='c2-runs-tree'>
@@ -92,9 +111,16 @@ export const PlacesTree = Vue.defineComponent({
             <span class='c2-runs-link' onClick={() => emit('retry')}> Try again</span></div> }
         { !props.index && !props.error && <div class='c2-runs-muted c2-runs-pad'>Loading spaces…</div> }
         <div class='c2-runs-label c2-runs-tree-root' onClick={() => emit('select', {myRuns: false, path: []})}>
-          Spaces</div>
-        { props.index && props.index.top.flatMap((id) => renderSpace(props.index!, id, [])) }
-        { props.index && props.index.top.length === 0 &&
+          <span class='c2-runs-tree-name'>Spaces</span>
+          <IconFA name='star' faStyle={onlyFavorites.value ? 'fas' : 'fal'}
+            class={['c2-runs-row-icon c2-runs-star-filter', onlyFavorites.value ? 'c2-runs-star-on' : '']}
+            tooltip={onlyFavorites.value ? 'Show all spaces' : 'Show only favorite spaces'}
+            onClick={(e: MouseEvent) => {e.stopPropagation(); onlyFavorites.value = !onlyFavorites.value;}}/>
+        </div>
+        { props.index && props.index.top.filter((id) => !kept.value || kept.value.has(id))
+          .flatMap((id) => renderSpace(props.index!, id, [])) }
+        { onlyFavorites.value && renderFavoritesNote() }
+        { !onlyFavorites.value && props.index && props.index.top.length === 0 &&
           <div class='c2-runs-muted c2-runs-pad'>No spaces available</div> }
       </div>
     );

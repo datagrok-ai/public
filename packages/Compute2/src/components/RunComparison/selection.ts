@@ -3,7 +3,7 @@
 // User documentation lives in help/compute/run-comparison.md
 
 import {
-  ColumnInfo, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, ColumnCandidate, isNumericType,
+  ColumnInfo, ComparisonEntry, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, ColumnCandidate, isNumericType,
   TimeUnit, TIME_UNIT_MS, TIME_UNITS, AxisMode, AxisModeConfig, AxisModeSelection, AxisConfigMap, toTargetUnits,
   isTimeIndexType, isIndexCandidateType, TableNodeInfo,
 } from './types';
@@ -11,6 +11,9 @@ import {
   normalizeName, nameSimilarity, nameMatchConfidence, normalizeUnits, unitsCompatibility, UnitConverter,
   FUZZY_NAME_THRESHOLD,
 } from './matching';
+
+export const withEntryName = (entry: ComparisonEntry, name: string): ComparisonEntry =>
+  name === entry.name ? entry : {...entry, name, nodes: {...entry.nodes, entryName: name}};
 
 /** The name, or with the first free ` (n)` suffix when another entry has it: charts split by run name. */
 export function uniqueEntryName(name: string, taken: string[]): string {
