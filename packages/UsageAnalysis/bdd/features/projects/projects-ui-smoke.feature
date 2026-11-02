@@ -33,9 +33,10 @@ Feature: A project through its card in the Dashboards gallery
   changes nothing on the server or in the gallery. The owner's Save dialog of the reopened project
   holds the project's name; the View and use recipient's opens in its Save a copy mode, its Name box
   holding "Copy of <name>" (`dashboard.md`, "Saving a dashboard"). These run after the journey's
-  project is deleted, on a second project of cars (BDDSmokeEdge with the run's time) saved through the
-  API and deleted with its table, view and grant when the feature ends. The recipient's Rename... in
-  the card menu (core#1162) is in `projects-regressions-shared-tag.feature`.
+  project is deleted, each on a project of cars of its own (BDDSmokeEdge and BDDSmokeEdgeShared with
+  the run's time) saved through the API and deleted with its table, view and grant when the feature
+  ends. The recipient's Rename... in the card menu (core#1162) is in
+  `projects-regressions-shared-tag.feature`.
 
   Background:
     Given user is logged in
@@ -258,22 +259,25 @@ Feature: A project through its card in the Dashboards gallery
 
   @edge-cases
   Scenario: The reopened project's Save dialog holds its name for the owner and offers the recipient a copy
+    Given user opens cars dataset
+    When user saves the current view as project "BDDSmokeEdgeShared{time}"
+    And user closes all views
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
-    And user enters "BDDSmokeEdge{time}" into gallery search
+    And user enters "BDDSmokeEdgeShared{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    Then BDDSmokeEdge{time} gallery card should be visible
-    When user picks "Share..." from the context menu of BDDSmokeEdge{time} gallery card
-    Then "Share BDDSmokeEdge{time}" dialog should be visible
-    When user picks the sharing user in "User, group, or email" input in "Share BDDSmokeEdge{time}" dialog
-    And user unchecks "Send notifications" input in "Share BDDSmokeEdge{time}" dialog
-    And user clicks on OK button in "Share BDDSmokeEdge{time}" dialog
-    Then the "Share BDDSmokeEdge{time}" dialog should close
-    When user double-clicks on BDDSmokeEdge{time} gallery card and the project opens
+    Then BDDSmokeEdgeShared{time} gallery card should be visible
+    When user picks "Share..." from the context menu of BDDSmokeEdgeShared{time} gallery card
+    Then "Share BDDSmokeEdgeShared{time}" dialog should be visible
+    When user picks the sharing user in "User, group, or email" input in "Share BDDSmokeEdgeShared{time}" dialog
+    And user unchecks "Send notifications" input in "Share BDDSmokeEdgeShared{time}" dialog
+    And user clicks on OK button in "Share BDDSmokeEdgeShared{time}" dialog
+    Then the "Share BDDSmokeEdgeShared{time}" dialog should close
+    When user double-clicks on BDDSmokeEdgeShared{time} gallery card and the project opens
     Then the "cars" view should be current
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
-    And Name text input in "Save project" dialog should have value "BDDSmokeEdge{time}"
+    And Name text input in "Save project" dialog should have value "BDDSmokeEdgeShared{time}"
     When user clicks on CANCEL button in "Save project" dialog
     Then the "Save project" dialog should close
     When user closes all views
@@ -281,13 +285,13 @@ Feature: A project through its card in the Dashboards gallery
     Then the sharing user should be signed in
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
-    And user enters "BDDSmokeEdge{time}" into gallery search
+    And user enters "BDDSmokeEdgeShared{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDSmokeEdge{time} gallery card and the project opens
+    And user double-clicks on BDDSmokeEdgeShared{time} gallery card and the project opens
     Then the "cars" view should be current
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
-    And Name text input in "Save project" dialog should have value "Copy of BDDSmokeEdge{time}"
+    And Name text input in "Save project" dialog should have value "Copy of BDDSmokeEdgeShared{time}"
     When user clicks on CANCEL button in "Save project" dialog
     Then the "Save project" dialog should close
     When user closes all views

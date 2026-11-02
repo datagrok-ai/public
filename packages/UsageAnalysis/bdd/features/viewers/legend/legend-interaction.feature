@@ -16,11 +16,12 @@ Feature: Legend interaction
   category's picked color is the column's palette and outlives the coding being switched off:
   removing the coding leaves the items (and the markers' default palette) in the picked colors.
 
-  Edge cases: a selection also outlives a filter that removes every row: once the rows are back, the
-  legend lists its four categories and the selected one still narrows the plot (Black, 25 of the 872
-  rows drawn). Renaming the color column releases the selection on the legend and on the plot, and
-  removing it takes the selection with it (a removed column is dropped from the viewer's settings):
-  the plot draws every row again either way.
+  Edge cases: a selection also outlives a filter that removes every row (Deselect all in the SEX card
+  on the filter panel's card): once they are ticked again, the legend lists its four categories and
+  the selected one still narrows the plot (Black, 25 of the 872 rows drawn). Renaming the color
+  column in its Column Properties releases the selection on the legend and on the plot, and removing
+  it from the grid header's menu takes the selection with it (a removed column is dropped from the
+  viewer's settings): the plot draws every row again either way.
 
   Background:
     Given user is logged in
@@ -189,14 +190,18 @@ Feature: Legend interaction
   Scenario: A selection outlives a filter that removes every row
     When user clicks on "Black" item in the legend of scatter plot viewer
     Then scatter plot viewer should show 25 rows
-    When user filters rows where "AGE" is between 500 and 600
+    When user opens an empty filter panel
+    And user adds a card for "SEX" to the filter panel
+    And user picks "Deselect all" from the indicator menu of the "SEX" filter card
     Then 0 rows should pass the filter
     And scatter plot viewer should show 0 rows
-    When user resets the filter
-    Then the legend of scatter plot viewer should list 4 items
+    When user picks "Select all" from the indicator menu of the "SEX" filter card
+    Then all rows should pass the filter
+    And the legend of scatter plot viewer should list 4 items
     And "Black" legend item in legend of scatter plot viewer should be selected
     And scatter plot viewer should show 25 rows
-    When user sets "Color" property of scatter plot viewer to "DIS_POP"
+    When user clicks on close icon of filters viewer
+    And user sets "Color" property of scatter plot viewer to "DIS_POP"
     And user sets "Color" property of scatter plot viewer to "RACE"
     Then "Black" legend item in legend of scatter plot viewer should not be selected
     And scatter plot viewer should show 872 rows
@@ -206,7 +211,10 @@ Feature: Legend interaction
   Scenario: Renaming the color column releases the selection, and removing it takes the selection with it
     When user clicks on "Black" item in the legend of scatter plot viewer
     Then scatter plot viewer should show 25 rows
-    When user renames "RACE" column to "ETHNICITY"
+    When user scrolls the grid to the "RACE" column
+    And user picks "Column Properties..." from the context menu of the "header RACE" area of grid
+    And user enters "ETHNICITY" into "New name:" input in "RACE" dialog
+    And user clicks on OK button in "RACE" dialog
     Then "Color" property of scatter plot viewer should be "ETHNICITY"
     And the legend of scatter plot viewer should list 4 items
     And "Black" legend item in legend of scatter plot viewer should not be selected
@@ -218,7 +226,8 @@ Feature: Legend interaction
     Then the legend of scatter plot viewer should list 4 items
     When user clicks on "Black" item in the legend of scatter plot viewer
     Then scatter plot viewer should show 25 rows
-    When user removes "RACE copy" column
+    When user scrolls the grid to the "RACE copy" column
+    And user picks "Remove" from the context menu of the "header RACE copy" area of grid
     Then "Color" property of scatter plot viewer should not be "RACE copy"
     And scatter plot viewer should show 872 rows
     When user sets "Color" property of scatter plot viewer to "RACE"

@@ -353,12 +353,13 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And all rows should pass the filter
     And no errors should have been logged
 
-  @edge-cases @known-failure:364 @realizes:core#1174
+  @edge-cases @known-failure:365 @realizes:core#1174
   Scenario: Removing the column of a clicked segment gives back the rows it filtered out (core#1174)
     Given "Misc" category in context panel is expanded
     When user selects "Filter" in "On Click" property in context panel
     Then the "on click" reading of sunburst viewer should be "Filter"
     When user clicks on the "segment F" area of sunburst viewer
     Then 553 rows should pass the filter
-    When user removes "SEX" column
+    When user scrolls the grid to the "SEX" column
+    And user picks "Remove" from the context menu of the "header SEX" area of grid
     Then all rows should pass the filter

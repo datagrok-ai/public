@@ -196,7 +196,8 @@ Feature: Line chart chrome, chart types and the empty chart
 
   @edge-cases
   Scenario: The Y column removed from the table while the chart shows it raises no error
-    When user removes "Chemical Space X" column
+    When user scrolls the grid to the "Chemical Space X" column
+    And user picks "Remove" from the context menu of the "header Chemical Space X" area of grid
     Then the table should not have a column "Chemical Space X"
     When user hovers over the "view" area of line chart viewer
     And user moves the pointer away from line chart viewer

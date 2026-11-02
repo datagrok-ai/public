@@ -307,7 +307,9 @@ Feature: Grid column geometry
     When user double-clicks on the "header AGE" area of grid
     Then the "sort column" reading of grid should be "AGE"
     And the "sort direction" reading of grid should be "descending"
-    When user renames "AGE" column to "YEARS"
+    When user picks "Column Properties..." from the context menu of the "header AGE" area of grid
+    And user enters "YEARS" into "New name:" input in "AGE" dialog
+    And user clicks on OK button in "AGE" dialog
     Then the "sort column" reading of grid should be "YEARS"
     When user renames "YEARS" column to "AGE"
     Then the "sort column" reading of grid should be "AGE"

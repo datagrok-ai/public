@@ -22,11 +22,11 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clickOn, doubleClickOn, enterInto, hoverOver, isExpanded, pressKeyIn, selectIn, shouldBe, shouldContainText, typeInto, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {filterIsExactlyCategory, filterPasses, filterPassesAll, noneOfFiltered, noneOfSelected, noneSelected, onlyOfSelected, removeColumn, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {filterIsExactlyCategory, filterPasses, filterPassesAll, noneOfFiltered, noneOfSelected, noneSelected, onlyOfSelected, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {taskBarFinished, watchTaskBar} from '@datagrok-libraries/bdd/bindings/platform/events';
 import {autostartsCompleted, browsePanelOpen, dialogCloses, layoutsDeleted, noProjectOnServer, openDataset, openDatasetRowsAs, projectsOnServer, toolboxPaneShown, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {areaColor, areaNotColor, boundTable, clickArea, clickAreaHolding, hasNoArea, hoverArea, legendLists, noErrors, pickFromAreaContextMenu, pickFromContextMenu, pointerAway, propertyShouldBe, readingIs, readingReads, reportsNoError, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {columnListExactly, columnListLacks, doubleClickEmptySpace, readingContains, toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {columnListExactly, columnListLacks, doubleClickEmptySpace, readingContains, scrollGridTo, toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Sunburst segments, clicks, filtering, empty values and the project round trip", () => {
@@ -564,7 +564,7 @@ test.describe("Sunburst segments, clicks, filtering, empty values and the projec
     await session.step(353, "And all rows should pass the filter", () => filterPassesAll(page));
     await session.step(354, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Removing the column of a clicked segment gives back the rows it filtered out (core#1174)", {tag: ["@viewers", "@realizes:charts.viewer.sunburst", "@edge-cases", "@known-failure:364", "@realizes:core#1174"]}, async ({browser}) => {
+  test("Removing the column of a clicked segment gives back the rows it filtered out (core#1174)", {tag: ["@viewers", "@realizes:charts.viewer.sunburst", "@edge-cases", "@known-failure:365", "@realizes:core#1174"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(26, "Given user is logged in", () => loggedIn(page));
     await session.step(27, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -592,8 +592,9 @@ test.describe("Sunburst segments, clicks, filtering, empty values and the projec
       await session.step(360, "Then the \"on click\" reading of sunburst viewer should be \"Filter\"", () => readingReads(page, "on click", el("sunburst viewer"), "Filter"));
       await session.step(361, "When user clicks on the \"segment F\" area of sunburst viewer", () => clickArea(page, "segment F", el("sunburst viewer")));
       await session.step(362, "Then 553 rows should pass the filter", () => filterPasses(page, 553));
-      await session.step(363, "When user removes \"SEX\" column", () => removeColumn(page, "SEX"));
-      await session.step(364, "Then all rows should pass the filter", () => filterPassesAll(page));
-    }, 364);
+      await session.step(363, "When user scrolls the grid to the \"SEX\" column", () => scrollGridTo(page, "SEX"));
+      await session.step(364, "And user picks \"Remove\" from the context menu of the \"header SEX\" area of grid", () => pickFromAreaContextMenu(page, "Remove", "header SEX", el("grid")));
+      await session.step(365, "Then all rows should pass the filter", () => filterPassesAll(page));
+    }, 365);
   });
 });

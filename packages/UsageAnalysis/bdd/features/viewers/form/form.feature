@@ -407,7 +407,9 @@ Feature: Form viewer
     When user clicks on close icon of form viewer
     And user adds a form viewer
     Then the "fields shown" reading of form viewer should be 11
-    When user removes "DEMOG" column
+    When user clicks on a "USUBJID" cell of grid other than the current one
+    And user moves the current cell of grid to the "DEMOG" column
+    And user picks "Remove" from the context menu of the "header DEMOG" area of grid
     Then the table should not have a column "DEMOG"
     And the "fields shown" reading of form viewer should be 10
     And form viewer should not have a "field DEMOG" area

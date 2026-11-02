@@ -23,10 +23,10 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {hasNoColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {filterPasses, removeColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {filterPasses} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, areaNarrower, areaPainted, areaRepainted, areaShorter, closeContextMenu, hasArea, hasNoArea, hoverArea, menuLists, moreInk, noErrors, openContextMenu, painted, pickFromContextMenu, pointerAway, propertyShouldBe, propertyShouldContain, readingIs, readingReads, repainted, reportsError, reportsNoError, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {descriptionAbove, descriptionBelow} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {addViewerWith, areaNarrower, areaPainted, areaRepainted, areaShorter, closeContextMenu, hasArea, hasNoArea, hoverArea, menuLists, moreInk, noErrors, openContextMenu, painted, pickFromAreaContextMenu, pickFromContextMenu, pointerAway, propertyShouldBe, propertyShouldContain, readingIs, readingReads, repainted, reportsError, reportsNoError, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {descriptionAbove, descriptionBelow, scrollGridTo} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Line chart chrome, chart types and the empty chart", () => {
@@ -197,11 +197,12 @@ test.describe("Line chart chrome, chart types and the empty chart", () => {
       await session.step(195, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The Y column removed from the table while the chart shows it raises no error", async () => {
-      await session.step(199, "When user removes \"Chemical Space X\" column", () => removeColumn(page, "Chemical Space X"));
-      await session.step(200, "Then the table should not have a column \"Chemical Space X\"", () => hasNoColumn(page, "Chemical Space X"));
-      await session.step(201, "When user hovers over the \"view\" area of line chart viewer", () => hoverArea(page, "view", el("line chart viewer")));
-      await session.step(202, "And user moves the pointer away from line chart viewer", () => pointerAway(page, el("line chart viewer")));
-      await session.step(203, "Then no errors should have been logged", () => noErrors(page));
+      await session.step(199, "When user scrolls the grid to the \"Chemical Space X\" column", () => scrollGridTo(page, "Chemical Space X"));
+      await session.step(200, "And user picks \"Remove\" from the context menu of the \"header Chemical Space X\" area of grid", () => pickFromAreaContextMenu(page, "Remove", "header Chemical Space X", el("grid")));
+      await session.step(201, "Then the table should not have a column \"Chemical Space X\"", () => hasNoColumn(page, "Chemical Space X"));
+      await session.step(202, "When user hovers over the \"view\" area of line chart viewer", () => hoverArea(page, "view", el("line chart viewer")));
+      await session.step(203, "And user moves the pointer away from line chart viewer", () => pointerAway(page, el("line chart viewer")));
+      await session.step(204, "Then no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

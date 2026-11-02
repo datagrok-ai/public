@@ -20,10 +20,10 @@ Feature: A layout saved from the toolbox gets a name and tags
   table is suggested its own layout and neither a HEIGHT/WEIGHT scatter plot layout nor a grid-only
   layout of a demog table; each demog table opened again is suggested its own. The cars card shown in
   the same pane is what makes a missing demog card a finished reading rather than a pane still loading.
-  A layout renamed to an empty name in the context panel is expected to keep its name, in the panel
-  and on its card once the table is opened again; today the panel keeps the name but the server
-  saves the layout with an empty one (core#1252, a known failure). These scenarios save layouts of their own, of tables named with the
-  run's time, so each layout is named after its table and is deleted when the feature ends.
+  A layout renamed to an empty name in the context panel is expected to keep its name; today the server
+  saves it with an empty one (core#1252), a known failure in `layouts-known-failures.feature`. These
+  scenarios save layouts of their own, of tables named with the run's time, so each layout is named after
+  its table and is deleted when the feature ends.
 
   Background:
     Given user is logged in
@@ -196,24 +196,3 @@ Feature: A layout saved from the toolbox gets a name and tags
     When user clicks on "bdd-edge-hw-{time}" layout card
     Then the open tableview should have 1 scatter plot viewer
     And no errors should have been logged
-
-  @edge-cases @known-failure:219 @realizes:core#1252
-  Scenario: A layout renamed to an empty name in the context panel keeps its name
-    Given the layouts named "bdd-edge-name-{time}" are deleted when the feature ends
-    When user closes all views
-    Given user opens demog-1000 dataset keeping the first 1000 rows as "bdd-edge-name-{time}"
-    And the toolbox pane is shown
-    And Layouts accordion header in toolbox is expanded
-    When user clicks on the "header AGE" area of grid
-    Then the context panel should show "AGE"
-    When user clicks on Save button in layouts pane
-    Then "bdd-edge-name-{time}" layout card should be visible
-    And the context panel should show "bdd-edge-name-{time}"
-    When user clears Name details field in context panel
-    And user presses Enter
-    Then value of Name details field in context panel should have text "bdd-edge-name-{time}"
-    When user closes all views
-    Given user opens demog-1000 dataset keeping the first 1000 rows as "bdd-edge-name-{time}"
-    And the toolbox pane is shown
-    And Layouts accordion header in toolbox is expanded
-    Then "bdd-edge-name-{time}" layout card should be visible

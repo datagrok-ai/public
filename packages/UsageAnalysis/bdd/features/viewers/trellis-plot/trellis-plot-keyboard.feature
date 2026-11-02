@@ -6,7 +6,8 @@ Feature: Trellis plot keyboard navigation
   gives every row back. The keys go to the viewer's own root, which is focusable, so no click on
   the charts grid is needed to make them work. One journey on demog-1000 with SEX by RACE.
 
-  Edge cases: after the trellis is set to another table (cars) and back, the arrow keys still move
+  Edge cases: after the trellis is set to another table (cars) and back in the context panel's Table
+  property, the arrow keys still move
   the current cell: the key subscription was cancelled on the first detach and never added again
   before core#1057.
 
@@ -67,15 +68,18 @@ Feature: Trellis plot keyboard navigation
   Scenario: After the trellis is set to another table and back, the arrow keys still move the current cell (core#1057)
     Given user opens cars dataset
     And user switches to the "demog-1000" table view
-    When user sets "table" property of trellis plot viewer to "cars"
+    And the context panel is open
+    When user clicks on settings icon of trellis plot viewer
+    Then context panel should be visible
+    When user selects "cars" in "Table" property in context panel
     Then trellis plot viewer should be bound to table "cars"
-    When user sets "table" property of trellis plot viewer to "demog-1000"
-    And user sets properties of trellis plot viewer:
+    When user selects "demog-1000" in "Table" property in context panel
+    Then trellis plot viewer should be bound to table "demog-1000"
+    When user sets properties of trellis plot viewer:
       | X Column Names | SEX          |
       | Y Column Names | RACE         |
       | Viewer Type    | Scatter plot |
-    Then trellis plot viewer should be bound to table "demog-1000"
-    When user clicks on the "cell F | Caucasian" area of trellis plot viewer
+    And user clicks on the "cell F | Caucasian" area of trellis plot viewer
     Then the "current cell" reading of trellis plot viewer should be "F | Caucasian"
     When user presses ArrowRight in trellis plot viewer
     Then the "current cell" reading of trellis plot viewer should be "M | Caucasian"

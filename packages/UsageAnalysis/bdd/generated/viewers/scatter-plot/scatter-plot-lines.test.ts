@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/scatter-plot/scatter-plot-lines.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.scatter-plot, public#3695, core#1200]
+sub_features_covered: [viewers.scatter-plot, public#3695]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -21,16 +21,15 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, enterInto, isExpanded, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, areaPainted, hasArea, hasNoArea, lessInk, moreInk, noBalloons, noErrors, painted, propertyShouldBe, readingIs, repainted, setProperties, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Scatter plot trend lines", () => {
   const session = feature(test, "features/viewers/scatter-plot/scatter-plot-lines.feature", import.meta.url);
-  test("Scatter plot trend lines", {tag: ["@journey", "@viewers", "@realizes:viewers.scatter-plot", "@realizes:public#3695", "@edge-cases", "@realizes:core#1200", "@known-failure:129"]}, async ({browser}) => {
+  test("Scatter plot trend lines", {tag: ["@journey", "@viewers", "@realizes:viewers.scatter-plot", "@realizes:public#3695"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 6, page);
+    const run = journey(test, 4, page);
     await session.step(19, "Given user is logged in", () => loggedIn(page));
     await session.step(20, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(21, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["X","WEIGHT"],["Y","HEIGHT"]]), [["X","WEIGHT"],["Y","HEIGHT"]]);
@@ -109,24 +108,6 @@ test.describe("Scatter plot trend lines", () => {
       await session.step(118, "And the \"formula lines\" reading of scatter plot viewer should be 0", () => readingIs(page, "formula lines", el("scatter plot viewer"), 0));
       await session.step(119, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("A Moving Average Window of 1 typed in the context panel is not taken (core#1200) [typed=1]", async () => {
-      await session.step(123, "Given user sets \"Moving Average Window\" property of scatter plot viewer to \"10\"", () => setProperty(page, "Moving Average Window", el("scatter plot viewer"), "10"));
-      await session.step(124, "When user sets \"Show Moving Average Line\" property of scatter plot viewer to \"true\"", () => setProperty(page, "Show Moving Average Line", el("scatter plot viewer"), "true"));
-      await session.step(125, "And user clicks on settings icon of scatter plot viewer", () => clickOn(page, el("settings icon of scatter plot viewer")));
-      await session.step(126, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
-      await session.step(127, "Given \"Statistics\" category in context panel is expanded", () => isExpanded(page, el("\"Statistics\" category in context panel")));
-      await session.step(128, "When user enters \"1\" into \"Moving Average Window\" property in context panel", () => enterInto(page, "1", el("\"Moving Average Window\" property in context panel")));
-      await session.step(129, "Then \"Moving Average Window\" property of scatter plot viewer should be \"10\"", () => propertyShouldBe(page, "Moving Average Window", el("scatter plot viewer"), "10"));
-    }, {knownFailure: true, line: 129});
-    await run.scenario("A Moving Average Window of 101 typed in the context panel is not taken (core#1200) [typed=101]", async () => {
-      await session.step(123, "Given user sets \"Moving Average Window\" property of scatter plot viewer to \"10\"", () => setProperty(page, "Moving Average Window", el("scatter plot viewer"), "10"));
-      await session.step(124, "When user sets \"Show Moving Average Line\" property of scatter plot viewer to \"true\"", () => setProperty(page, "Show Moving Average Line", el("scatter plot viewer"), "true"));
-      await session.step(125, "And user clicks on settings icon of scatter plot viewer", () => clickOn(page, el("settings icon of scatter plot viewer")));
-      await session.step(126, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
-      await session.step(127, "Given \"Statistics\" category in context panel is expanded", () => isExpanded(page, el("\"Statistics\" category in context panel")));
-      await session.step(128, "When user enters \"101\" into \"Moving Average Window\" property in context panel", () => enterInto(page, "101", el("\"Moving Average Window\" property in context panel")));
-      await session.step(129, "Then \"Moving Average Window\" property of scatter plot viewer should be \"10\"", () => propertyShouldBe(page, "Moving Average Window", el("scatter plot viewer"), "10"));
-    }, {knownFailure: true, line: 129});
     run.finish();
   });
 });

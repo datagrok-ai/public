@@ -53,7 +53,7 @@ Feature: Grid column groups
 
   Edge cases: a group follows a renamed column: the renamed member keeps the group's name and the
   band stays. A column group named with spaces only should not be made (core#1195, a known failure,
-  the last scenario).
+  in grid-known-failures.feature while the ticket is open).
 
   Background:
     Given user is logged in
@@ -202,21 +202,11 @@ Feature: Grid column groups
   @edge-cases
   Scenario: A group follows a renamed column
     Then "HEIGHT" column should have tag "group" equal to "Body"
-    When user renames "HEIGHT" column to "TALL"
+    When user picks "Column Properties..." from the context menu of the "header HEIGHT" area of grid
+    And user enters "TALL" into "New name:" input in "HEIGHT" dialog
+    And user clicks on OK button in "HEIGHT" dialog
     Then "TALL" column should have tag "group" equal to "Body"
     And grid should have a "group Body" area
     When user renames "TALL" column to "HEIGHT"
     Then "HEIGHT" column should have tag "group" equal to "Body"
     And no errors should have been logged
-
-  @edge-cases @known-failure:222 @realizes:core#1195
-  Scenario: A column group named with spaces only is not made
-    When user clicks on the "header AGE" area of grid holding Control
-    And user clicks on the "header SEX" area of grid holding Control
-    Given the context panel is open
-    And Actions accordion header in context panel is expanded
-    When user clicks on "Group columns..." text in context panel
-    Then Group input in dialog should be visible
-    When user types "   " into Group input in dialog
-    And user clicks on OK button in dialog
-    Then "AGE" column should have tag "group" equal to ""

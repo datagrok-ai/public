@@ -24,9 +24,10 @@ Feature: Grid row selection, navigation and row source
   click had left it (measured on dev). Rows pinned under a scroll are `grid-pinning.feature`'s;
   Control+F and the block drag across the cells are out of scope by operator decision.
 
-  Edge cases: two known failures at the end. Shift+Enter, which selects every row holding the
-  current cell's value, should select only the rows that pass the filter (82 F rows aged 20 to
-  30), and nothing while Allow Row Selection is off (core#1194).
+  Edge cases: two known failures, in grid-known-failures.feature while core#1194 is open.
+  Shift+Enter, which selects every row holding the current cell's value, should select only the
+  rows that pass the filter (82 F rows aged 20 to 30), and nothing while Allow Row Selection is off
+  (core#1194).
 
   Background:
     Given user is logged in
@@ -260,26 +261,3 @@ Feature: Grid row selection, navigation and row source
     Then the "current column" reading of grid should be "USUBJID"
     And the "current row" reading of grid should be 3
     And no errors should have been logged
-
-  @edge-cases @known-failure:274 @realizes:core#1194
-  Scenario: Shift+Enter selects nothing while Allow Row Selection is off
-    When user clears the row selection
-    And user clicks on the "cell 4 of SEX" area of grid
-    And user presses Shift+Enter
-    Then 447 rows should be selected
-    When user clears the row selection
-    And user sets "Allow Row Selection" property of grid to "false"
-    And user clicks on the "cell 1 of SEX" area of grid
-    And user presses Shift+Enter
-    Then no rows should be selected
-
-  @edge-cases @known-failure:285 @realizes:core#1194
-  Scenario: Shift+Enter selects only the same rows that pass the filter
-    When user sets "Allow Row Selection" property of grid to "true"
-    And user clears the row selection
-    And user filters rows where "AGE" is between 20 and 30
-    And user clicks on the "cell 2 of SEX" area of grid
-    And user clicks on the "cell 1 of SEX" area of grid
-    And user presses Shift+Enter
-    Then some rows should be selected
-    And 82 rows should be selected

@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/pie-chart/pie-chart.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.pie-chart, core#1200]
+sub_features_covered: [viewers.pie-chart]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -22,16 +22,15 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {slicesByCategory, slicesByShareAscending, slicesByShareDescending, slicesOffCentre} from '../../../bindings/pie-chart.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, enterInto, isExpanded, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, areaColors, areaNarrower, areaRepainted, areaWider, boundTable, hasArea, hasNoArea, lessInk, moreInk, noErrors, painted, propertyShouldBe, readingHigher, readingIs, readingLower, readingSame, repainted, repaintedBy, resizeTo, restoreSize, setProperties, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Pie chart property surface", () => {
   const session = feature(test, "features/viewers/pie-chart/pie-chart.feature", import.meta.url);
-  test("Pie chart property surface", {tag: ["@journey", "@viewers", "@realizes:viewers.pie-chart", "@edge-cases", "@realizes:core#1200", "@known-failure:238"]}, async ({browser}) => {
+  test("Pie chart property surface", {tag: ["@journey", "@viewers", "@realizes:viewers.pie-chart"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 17, page);
+    const run = journey(test, 14, page);
     await session.step(23, "Given user is logged in", () => loggedIn(page));
     await session.step(24, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(25, "And user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"]]), [["Category","RACE"]]);
@@ -222,30 +221,6 @@ test.describe("Pie chart property surface", () => {
       await session.step(228, "And pie chart viewer should have more ink than before", () => moreInk(page, el("pie chart viewer")));
       await session.step(229, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Max Radius 600 typed in the context panel outside its declared bounds is not taken (core#1200) [caption=Max Radius, typed=600, kept=150]", async () => {
-      await session.step(233, "Given user sets \"Max Radius\" property of pie chart viewer to \"150\"", () => setProperty(page, "Max Radius", el("pie chart viewer"), "150"));
-      await session.step(234, "When user clicks on settings icon of pie chart viewer", () => clickOn(page, el("settings icon of pie chart viewer")));
-      await session.step(235, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
-      await session.step(236, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
-      await session.step(237, "When user enters \"600\" into \"Max Radius\" property in context panel", () => enterInto(page, "600", el("\"Max Radius\" property in context panel")));
-      await session.step(238, "Then \"Max Radius\" property of pie chart viewer should be \"150\"", () => propertyShouldBe(page, "Max Radius", el("pie chart viewer"), "150"));
-    }, {knownFailure: true, line: 238});
-    await run.scenario("Start Angle -30 typed in the context panel outside its declared bounds is not taken (core#1200) [caption=Start Angle, typed=-30, kept=0]", async () => {
-      await session.step(233, "Given user sets \"Start Angle\" property of pie chart viewer to \"0\"", () => setProperty(page, "Start Angle", el("pie chart viewer"), "0"));
-      await session.step(234, "When user clicks on settings icon of pie chart viewer", () => clickOn(page, el("settings icon of pie chart viewer")));
-      await session.step(235, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
-      await session.step(236, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
-      await session.step(237, "When user enters \"-30\" into \"Start Angle\" property in context panel", () => enterInto(page, "-30", el("\"Start Angle\" property in context panel")));
-      await session.step(238, "Then \"Start Angle\" property of pie chart viewer should be \"0\"", () => propertyShouldBe(page, "Start Angle", el("pie chart viewer"), "0"));
-    }, {knownFailure: true, line: 238});
-    await run.scenario("Start Angle 400 typed in the context panel outside its declared bounds is not taken (core#1200) [caption=Start Angle, typed=400, kept=0]", async () => {
-      await session.step(233, "Given user sets \"Start Angle\" property of pie chart viewer to \"0\"", () => setProperty(page, "Start Angle", el("pie chart viewer"), "0"));
-      await session.step(234, "When user clicks on settings icon of pie chart viewer", () => clickOn(page, el("settings icon of pie chart viewer")));
-      await session.step(235, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
-      await session.step(236, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
-      await session.step(237, "When user enters \"400\" into \"Start Angle\" property in context panel", () => enterInto(page, "400", el("\"Start Angle\" property in context panel")));
-      await session.step(238, "Then \"Start Angle\" property of pie chart viewer should be \"0\"", () => propertyShouldBe(page, "Start Angle", el("pie chart viewer"), "0"));
-    }, {knownFailure: true, line: 238});
     run.finish();
   });
 });

@@ -23,7 +23,8 @@ Feature: Filter panel entry points
   empty through its API; the GROK-12955 freeze is claimed only as "no errors" after the drags, the page staying responsive
   being what every later step already needs.
 
-  Edge cases: a card on a column that is removed goes with the column and releases its rows, a
+  Edge cases: a card on a column that is removed (Remove in the grid header's context menu) goes
+  with the column and releases its rows, a
   categorical card (RACE on Asian, 15 rows) and a numeric one (AGE up to 40) alike
   (`filters_core.dart` `onColumnsRemoved`); the last scenario, as it removes the two columns.
 
@@ -285,7 +286,7 @@ Feature: Filter panel entry points
     When user adds a card for "RACE" to the filter panel
     And user clicks on the "category Asian of RACE" area of filter panel
     Then 15 rows should pass the filter
-    When user removes "RACE" column
+    When user picks "Remove" from the context menu of the "header RACE" area of grid
     Then the filter panel should have no "RACE" filter card
     And the filter panel should have 0 filters
     And all rows should pass the filter
@@ -294,7 +295,7 @@ Feature: Filter panel entry points
     And user closes the context menu
     And user enters "40" into the max field of the "AGE" filter card
     Then 365 rows should pass the filter
-    When user removes "AGE" column
+    When user picks "Remove" from the context menu of the "header AGE" area of grid
     Then the filter panel should have 0 filters
     And all rows should pass the filter
     And no errors should have been logged

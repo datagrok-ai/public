@@ -4,7 +4,7 @@
 /* ---
 generated: features/layouts/layout-names-tags.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [views.layouts, sharing.share-dialog, core#1179, core#1252]
+sub_features_covered: [views.layouts, sharing.share-dialog, core#1179]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -28,9 +28,9 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("A layout saved from the toolbox gets a name and tags", () => {
   const session = feature(test, "features/layouts/layout-names-tags.feature", import.meta.url);
-  test("A layout saved from the toolbox gets a name and tags", {tag: ["@realizes:views.layouts", "@journey", "@realizes:sharing.share-dialog", "@edge-cases", "@realizes:core#1179", "@known-failure:219", "@realizes:core#1252"]}, async ({browser}) => {
+  test("A layout saved from the toolbox gets a name and tags", {tag: ["@realizes:views.layouts", "@journey", "@realizes:sharing.share-dialog", "@edge-cases", "@realizes:core#1179"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 9, page);
+    const run = journey(test, 8, page);
     await session.step(29, "Given user is logged in", () => loggedIn(page));
     await session.step(30, "And the layouts named \"bdd-layout-{time}, BDD height vs weight-{time}, BDD tags-{time}\" are deleted when the feature ends", () => layoutsDeleted(page, session.text("bdd-layout-{time}, BDD height vs weight-{time}, BDD tags-{time}")));
     await session.step(31, "And user opens demog-1000 dataset keeping the first 100 rows as \"bdd-layout-{time}\"", () => openDatasetRowsAs(page, ds("demog-1000"), 100, session.text("bdd-layout-{time}")));
@@ -191,26 +191,6 @@ test.describe("A layout saved from the toolbox gets a name and tags", () => {
       await session.step(197, "Then the open tableview should have 1 scatter plot viewer", () => viewerCount(page, 1, "scatter plot"));
       await session.step(198, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("A layout renamed to an empty name in the context panel keeps its name", async () => {
-      await session.step(202, "Given the layouts named \"bdd-edge-name-{time}\" are deleted when the feature ends", () => layoutsDeleted(page, session.text("bdd-edge-name-{time}")));
-      await session.step(203, "When user closes all views", () => closeAllViews(page));
-      await session.step(204, "Given user opens demog-1000 dataset keeping the first 1000 rows as \"bdd-edge-name-{time}\"", () => openDatasetRowsAs(page, ds("demog-1000"), 1000, session.text("bdd-edge-name-{time}")));
-      await session.step(205, "And the toolbox pane is shown", () => toolboxPaneShown(page));
-      await session.step(206, "And Layouts accordion header in toolbox is expanded", () => isExpanded(page, el("Layouts accordion header in toolbox")));
-      await session.step(207, "When user clicks on the \"header AGE\" area of grid", () => clickArea(page, "header AGE", el("grid")));
-      await session.step(208, "Then the context panel should show \"AGE\"", () => contextPanelShows(page, "AGE"));
-      await session.step(209, "When user clicks on Save button in layouts pane", () => clickOn(page, el("Save button in layouts pane")));
-      await session.step(210, "Then \"bdd-edge-name-{time}\" layout card should be visible", () => shouldBe(page, el(session.text("\"bdd-edge-name-{time}\" layout card")), "visible"));
-      await session.step(211, "And the context panel should show \"bdd-edge-name-{time}\"", () => contextPanelShows(page, session.text("bdd-edge-name-{time}")));
-      await session.step(212, "When user clears Name details field in context panel", () => clearField(page, el("Name details field in context panel")));
-      await session.step(213, "And user presses Enter", () => pressKey(page, "Enter"));
-      await session.step(214, "Then value of Name details field in context panel should have text \"bdd-edge-name-{time}\"", () => shouldHaveText(page, el("value of Name details field in context panel"), session.text("bdd-edge-name-{time}")));
-      await session.step(215, "When user closes all views", () => closeAllViews(page));
-      await session.step(216, "Given user opens demog-1000 dataset keeping the first 1000 rows as \"bdd-edge-name-{time}\"", () => openDatasetRowsAs(page, ds("demog-1000"), 1000, session.text("bdd-edge-name-{time}")));
-      await session.step(217, "And the toolbox pane is shown", () => toolboxPaneShown(page));
-      await session.step(218, "And Layouts accordion header in toolbox is expanded", () => isExpanded(page, el("Layouts accordion header in toolbox")));
-      await session.step(219, "Then \"bdd-edge-name-{time}\" layout card should be visible", () => shouldBe(page, el(session.text("\"bdd-edge-name-{time}\" layout card")), "visible"));
-    }, {knownFailure: true, line: 219});
     run.finish();
   });
 });

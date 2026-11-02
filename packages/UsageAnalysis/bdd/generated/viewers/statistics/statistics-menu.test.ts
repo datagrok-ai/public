@@ -23,10 +23,10 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe, shouldNotBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {hasNoColumn, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {addCalculated, removeColumn, tableColumns, tableOpen, tableRows} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {addCalculated, tableColumns, tableOpen, tableRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {closeCurrentView, openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, closeContextMenu, hasArea, hasNoArea, menuDoesNotList, menuLists, noErrors, pickFromAreaContextMenu, readingIs, readingReads, reportsNoError, resizeTo, rightClickArea} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {readingContains, readingNotContains} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {readingContains, readingNotContains, scrollGridTo} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The Statistics and Histograms submenus, and what they turn on", () => {
@@ -125,12 +125,13 @@ test.describe("The Statistics and Histograms submenus, and what they turn on", (
       await session.step(115, "When user adds a calculated column \"SEX2\" with formula \"${SEX}\"", () => addCalculated(page, "SEX2", "${SEX}"));
       await session.step(116, "And user picks \"Histograms > SEX2\" from the context menu of the \"row AGE\" area of statistics viewer", () => pickFromAreaContextMenu(page, "Histograms > SEX2", "row AGE", el("statistics viewer")));
       await session.step(117, "Then the \"histogram columns\" reading of statistics viewer should be 1", () => readingIs(page, "histogram columns", el("statistics viewer"), 1));
-      await session.step(118, "When user removes \"SEX2\" column", () => removeColumn(page, "SEX2"));
-      await session.step(119, "Then the table should not have a column \"SEX2\"", () => hasNoColumn(page, "SEX2"));
-      await session.step(120, "And the \"histogram columns\" reading of statistics viewer should be 0", () => readingIs(page, "histogram columns", el("statistics viewer"), 0));
-      await session.step(121, "And the \"avg of AGE\" reading of statistics viewer should be \"45.68\"", () => readingReads(page, "avg of AGE", el("statistics viewer"), "45.68"));
-      await session.step(122, "And statistics viewer should report no error", () => reportsNoError(page, el("statistics viewer")));
-      await session.step(123, "And no errors should have been logged", () => noErrors(page));
+      await session.step(118, "When user scrolls the grid to the \"SEX2\" column", () => scrollGridTo(page, "SEX2"));
+      await session.step(119, "And user picks \"Remove\" from the context menu of the \"header SEX2\" area of grid", () => pickFromAreaContextMenu(page, "Remove", "header SEX2", el("grid")));
+      await session.step(120, "Then the table should not have a column \"SEX2\"", () => hasNoColumn(page, "SEX2"));
+      await session.step(121, "And the \"histogram columns\" reading of statistics viewer should be 0", () => readingIs(page, "histogram columns", el("statistics viewer"), 0));
+      await session.step(122, "And the \"avg of AGE\" reading of statistics viewer should be \"45.68\"", () => readingReads(page, "avg of AGE", el("statistics viewer"), "45.68"));
+      await session.step(123, "And statistics viewer should report no error", () => reportsNoError(page, el("statistics viewer")));
+      await session.step(124, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

@@ -66,7 +66,7 @@ test.describe("A table saved in a project, shared from its Sharing pane", () => 
     await session.step(61, "And no errors should have been logged", () => noErrors(page));
     await session.step(62, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
-  test("OK stays disabled until a recipient is accepted", {tag: ["@realizes:sharing.share-dialog", "@edge-cases", "@known-failure:75", "@realizes:core#980"]}, async ({browser}) => {
+  test("A fresh Share dialog keeps OK disabled", {tag: ["@realizes:sharing.share-dialog", "@edge-cases", "@known-failure:75", "@realizes:core#980"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(26, "Given user is logged in", () => loggedIn(page));
     await session.step(27, "And no project named \"BDD-ShareTable-{time}\" is on the server", () => noProjectOnServer(page, session.text("BDD-ShareTable-{time}")));

@@ -12,7 +12,7 @@ Written 2026-10-22 when `calendar.feature` took the manual steps 2–4 of TestTr
 
 ## Edge cases
 
-The edge-case round of 2026-10-26 (localhost). Its checks are now `@edge-cases` scenarios of their own, after the master scenarios of `calendar-selection.feature`. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+The edge-case round of 2026-10-26 (localhost). Its checks are now `@edge-cases` scenarios of their own; the two known failures (core#233, core#1221) are in `calendar-known-failures.feature` while their tickets are open, and go back after the master scenarios of `calendar-selection.feature` once fixed. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 

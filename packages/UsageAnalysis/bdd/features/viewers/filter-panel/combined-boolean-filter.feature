@@ -14,8 +14,8 @@ Feature: Combined boolean filter card
 
   Edge cases: a Combined Boolean card can be added to a table with no boolean column, and a boolean
   column added later joins it (a two-row table of its own, closed again). Removing the column of a
-  flag the card filters by should release its rows (core#1174, a known failure, the last
-  scenario).
+  flag the card filters by should release its rows (core#1174, a known failure, in
+  filter-panel-known-failures.feature while the ticket is open).
 
   Background:
     Given user is logged in
@@ -150,17 +150,16 @@ Feature: Combined boolean filter card
     And user picks "Add Filter | Combined Boolean" from the filter panel menu
     Then "Flags" filter card should be visible
     And the filter panel should have 1 filter
-    When user adds a calculated column "BIG" with formula "${Value} > 1"
-    And user clicks on the "category BIG of Flags" area of filter panel
+    When user clicks on "Add New Column..." icon
+    Then "Add New Column" dialog should be visible
+    When user enters "BIG" into Name input in "Add New Column" dialog
+    And user replaces the code of code editor in "Add New Column" dialog with "${Value} > 1"
+    And user clicks on OK button in "Add New Column" dialog
+    Then "Add New Column" dialog should be hidden
+    And the table should have a column "BIG"
+    When user clicks on the "category BIG of Flags" area of filter panel
     Then 1 row should pass the filter
     When user closes the current view
     And user switches to the "demog-1000" table view
     Then all rows should pass the filter
     And no errors should have been logged
-
-  @edge-cases @known-failure:166 @realizes:core#1174
-  Scenario: Removing the column of a filtering flag in the Combined Boolean card releases its rows
-    When user clicks on the "category CONTROL of Flags" area of filter panel
-    Then 6 rows should pass the filter
-    When user picks "Remove" from the context menu of the "header CONTROL" area of grid
-    Then all rows should pass the filter

@@ -16,8 +16,8 @@ Feature: Pie chart property surface
 
   Edge cases: a value typed in the context panel outside the property's declared bounds is not
   taken; the property keeps its value: Max Radius 600 (150 stays), Start Angle -30 and 400 (0
-  stays). The panel's number input marks such a value invalid but writes it into the property
-  (core#1200, a known failure, the last scenario).
+  stays). The panel's number input marks such a value invalid but writes it into the property: a
+  known failure (core#1200), claimed in pie-chart-known-failures.feature while the ticket is open.
 
   Background:
     Given user is logged in
@@ -227,19 +227,3 @@ Feature: Pie chart property surface
     And pie chart viewer should not have a "centre label" area
     And pie chart viewer should have more ink than before
     And no errors should have been logged
-
-  @edge-cases @realizes:core#1200
-  Scenario Outline: <caption> <typed> typed in the context panel outside its declared bounds is not taken (core#1200)
-    Given user sets "<caption>" property of pie chart viewer to "<kept>"
-    When user clicks on settings icon of pie chart viewer
-    Then context panel should be visible
-    Given "Misc" category in context panel is expanded
-    When user enters "<typed>" into "<caption>" property in context panel
-    Then "<caption>" property of pie chart viewer should be "<kept>"
-
-    @known-failure:238 @realizes:core#1200
-    Examples: The value is written into the property although the input marks it invalid
-      | caption     | typed | kept |
-      | Max Radius  | 600   | 150  |
-      | Start Angle | -30   | 0    |
-      | Start Angle | 400   | 0    |

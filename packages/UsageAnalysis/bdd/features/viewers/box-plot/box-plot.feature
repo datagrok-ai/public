@@ -81,10 +81,6 @@ Feature: Box plot property surface
     And box plot viewer should not have a "x axis" area
     And box plot viewer should not have a "y axis" area
     And box plot viewer should not have a "stats" area
-    When user hovers over box plot viewer
-    And user moves the pointer away from box plot viewer
-    And user hovers over box plot viewer
-    Then no errors should have been logged
     When user restores the size of box plot viewer
     And user hovers over box plot viewer
     Then "Marker Color" column input in box plot viewer should be visible
@@ -285,3 +281,15 @@ Feature: Box plot property surface
     When user double-clicks on empty plot space of box plot viewer
     Then "d4-boxplot-reset-view" event should have fired on box plot viewer
     And box plot viewer should show the remembered value range
+
+  @edge-cases @realizes:core#960
+  Scenario: A pointer moved over the plot shrunk under Auto Layout logs no error (core#960)
+    Given user sets "Auto Layout" property of box plot viewer to "true"
+    When user resizes box plot viewer to 170 by 150
+    Then box plot viewer should not have a "stats" area
+    When user hovers over box plot viewer
+    And user moves the pointer away from box plot viewer
+    And user hovers over box plot viewer
+    Then no errors should have been logged
+    When user restores the size of box plot viewer
+    Then box plot viewer should have a "stats" area

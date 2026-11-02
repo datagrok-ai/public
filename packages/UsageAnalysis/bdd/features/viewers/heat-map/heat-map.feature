@@ -13,7 +13,7 @@ Feature: Heat map layout, column labels, column cap and scrollbars
 
   Edge cases: Max Heatmap Columns counts only the visible columns, so a column hidden in the Columns
   dialog under a cap of 5 stays hidden when the cap is raised to 6; today it comes back (core#1202, a
-  known failure, the last scenario).
+  known failure, in heat-map-known-failures.feature while the ticket is open).
 
   Background:
     Given user is logged in
@@ -123,20 +123,3 @@ Feature: Heat map layout, column labels, column cap and scrollbars
     When user sets "maxHeatmapColumns" property of heat map viewer to "3"
     Then the "max heatmap columns" reading of heat map viewer should be 3
     And the "columns shown" reading of heat map viewer should be 3
-
-  @edge-cases @known-failure:142 @realizes:core#1202
-  Scenario: A column hidden under Max Heatmap Columns stays hidden when the cap is raised (core#1202)
-    When user sets "maxHeatmapColumns" property of heat map viewer to "5"
-    Then the "columns shown" reading of heat map viewer should be 5
-    And heat map viewer should have a "column AGE" area
-    When user clicks on settings icon of heat map viewer
-    Given "Columns" category in context panel is expanded
-    When user clicks on first button in "Columns" property in context panel
-    Then Order or Hide Columns dialog should be visible
-    When user toggles the "AGE" column in the column list of Order or Hide Columns dialog
-    And user clicks on CLOSE button in Order or Hide Columns dialog
-    Then the "columns shown" reading of heat map viewer should be 4
-    And heat map viewer should not have a "column AGE" area
-    When user sets "maxHeatmapColumns" property of heat map viewer to "6"
-    Then the "columns shown" reading of heat map viewer should be higher than before
-    And heat map viewer should not have a "column AGE" area

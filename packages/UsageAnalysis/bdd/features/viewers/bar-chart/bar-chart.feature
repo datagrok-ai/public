@@ -14,7 +14,8 @@ Feature: Bar chart property surface
   Category Width) is not taken and the old value stays. A value typed in the context panel outside
   the property's declared bounds is not taken either; the property keeps its value: Max Bar Height 0
   or -5, Max Category Width 0, Category Value Width 0. The panel's number input marks such a value
-  invalid but writes it into the property (core#1200).
+  invalid but writes it into the property (core#1200): that check is in
+  bar-chart-known-failures.feature while the ticket is open.
 
   Background:
     Given user is logged in
@@ -288,20 +289,3 @@ Feature: Bar chart property surface
     And no errors should have been logged
     When user presses F4
     Then context panel should be hidden
-
-  @edge-cases @realizes:core#1200
-  Scenario Outline: <caption> <typed> typed in the context panel outside its declared bounds is not taken (core#1200)
-    Given user sets "<caption>" property of bar chart viewer to "<kept>"
-    When user clicks on settings icon of bar chart viewer
-    Then context panel should be visible
-    Given "Style" category in context panel is expanded
-    When user enters "<typed>" into "<caption>" property in context panel
-    Then "<caption>" property of bar chart viewer should be "<kept>"
-
-    @known-failure:299 @realizes:core#1200
-    Examples: The value is written into the property although the input marks it invalid
-      | caption              | typed | kept |
-      | Max Bar Height       | 0     | 50   |
-      | Max Bar Height       | -5    | 50   |
-      | Max Category Width   | 0     | 300  |
-      | Category Value Width | 0     | 50   |

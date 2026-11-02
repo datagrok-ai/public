@@ -121,9 +121,15 @@ Feature: Density plot selection, zoom and axis bounds
     And the "bin to range" reading of density plot viewer should be "false"
     When user drags a zoom box over the "view" area of density plot viewer
     Then density plot viewer should show a narrower value range than before
-    When user sets "bins" property of density plot viewer to "30"
-    Then density plot viewer should have repainted
+    When user remembers the "bins drawn" reading of density plot viewer
+    And user clicks on settings icon of density plot viewer
+    Then context panel should be visible
+    Given "Misc" category in context panel is expanded
+    When user enters "30" into "Bins" property in context panel
+    Then the "bins drawn" reading of density plot viewer should not be as remembered
     And the "rows shown" reading of density plot viewer should be 1000
+    When user presses F4
+    Then context panel should be hidden
     When user sets properties of density plot viewer:
       | bins     | 50      |
       | binShape | hexagon |

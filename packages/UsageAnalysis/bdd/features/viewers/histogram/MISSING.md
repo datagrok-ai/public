@@ -47,7 +47,7 @@ slider against the Bins property (github-2296) in `histogram.feature`, and exact
 
 ## Edge cases
 
-The edge-case round of 2026-10-26 (localhost). Its checks are now `@edge-cases` scenarios of their own, after the master scenarios of `histogram-range-filter.feature` and `histogram.feature`. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+The edge-case round of 2026-10-26 (localhost). Its checks are now `@edge-cases` scenarios of their own, after the master scenarios of `histogram-range-filter.feature`; the core#1200 known failure of `histogram.feature` is in `histogram-known-failures.feature` while the ticket is open. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 
@@ -56,7 +56,7 @@ The edge-case round of 2026-10-26 (localhost). Its checks are now `@edge-cases` 
    `error` reading stays empty (measured on localhost; the viewer reports only max below min). No step
    reads the inputs' invalid state.
 2. **Decided**: Bins typed as 201 is not taken (the out-of-bounds rule): a known failure (core#1200)
-   in `histogram.feature`, its last scenario.
+   in `histogram-known-failures.feature` while the ticket is open (it goes back into `histogram.feature` once fixed).
 3. **Decided (2026-10-30)**, claimed in `histogram-range-filter.feature`: `abc` in a range input is not
    taken and the filter stays; switching Value while a range filters releases the range. Bin labels
    dropped above 100 bins are right as they are (no scenario: no reading of the axis labels).

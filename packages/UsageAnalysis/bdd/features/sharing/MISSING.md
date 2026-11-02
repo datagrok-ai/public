@@ -94,7 +94,7 @@ use test covers it.
 ## 8. Edge cases (now in `sharing-dialog` and `sharing-table`) — still open
 
 Written for the edge cases, with no library, binding or code change. `sharing-dialog` claims a removal
-cancelled, and `sharing-table` OK disabled until a recipient is accepted (core#980, a known failure: an
+cancelled, and `sharing-table` OK disabled on a fresh dialog, no recipient accepted (core#980, a known failure: an
 email becomes a recipient only once Enter accepts it).
 
 Claimed once core#980 is fixed: the `sharing-table` scenario ends at its pin, OK disabled on the fresh dialog.

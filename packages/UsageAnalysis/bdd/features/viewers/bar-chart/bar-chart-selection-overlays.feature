@@ -9,7 +9,7 @@ Feature: Bar chart selected and filtered rows overlays
 
   Edge cases: removing the column of the category a click filtered by gives the rows back (Asian
   keeps 15 rows); the removal does not refilter the table, and the rows come back only on the next
-  refilter (core#1174).
+  refilter (core#1174). That check is in bar-chart-known-failures.feature while the ticket is open.
 
   Background:
     Given user is logged in
@@ -102,11 +102,3 @@ Feature: Bar chart selected and filtered rows overlays
     Then all rows should pass the filter
     And no rows should be selected
     And no errors should have been logged
-
-  @edge-cases @known-failure:112 @realizes:core#1174
-  Scenario: Removing the column of the category a click filtered by gives the rows back (core#1174)
-    When user sets "onClick" property of bar chart viewer to "Filter"
-    And user clicks on the "bar Asian" area of bar chart viewer
-    Then 15 rows should pass the filter
-    When user removes "RACE" column
-    Then all rows should pass the filter

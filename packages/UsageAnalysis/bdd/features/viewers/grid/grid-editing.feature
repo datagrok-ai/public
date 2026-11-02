@@ -27,7 +27,7 @@ Feature: Grid cell editing and the clipboard
   already says it is read-only (the same paste into an editable cell right after shows that the
   clipboard held a value); a value the column refuses, typed into the last row, keeps that cell as
   it was and keeps the added row. A read-only grid should keep its rows on Shift+Delete (core#1193, a
-  known failure, the last scenario).
+  known failure, in grid-known-failures.feature while the ticket is open).
 
   Background:
     Given user is logged in
@@ -275,11 +275,3 @@ Feature: Grid cell editing and the clipboard
     When user clears the row selection
     And user presses Control+Home
     Then no errors should have been logged
-
-  @edge-cases @known-failure:285 @realizes:core#1193
-  Scenario: A read-only grid keeps its rows on Shift+Delete
-    When user sets "Allow Edit" property of grid to "false"
-    And user clicks on the "row header 5" area of grid holding Control
-    Then 1 row should be selected
-    When user presses Shift+Delete
-    Then the table should have 1000 rows

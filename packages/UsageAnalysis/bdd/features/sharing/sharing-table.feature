@@ -18,7 +18,7 @@ Feature: A table saved in a project, shared from its Sharing pane
   or share it further) and the per-privilege matrix of the PermissionsView are the server's answers, an API
   test (ApiTests, Dapi: permissions); the dialog has no Advanced editor link any more.
 
-  Edge cases: the Share dialog keeps OK disabled until a recipient is accepted (core#980): today OK is
+  Edge cases: a fresh Share dialog, with no recipient accepted, keeps OK disabled (core#980): today OK is
   enabled on a fresh dialog and says "Shared" while nothing is shared, a known failure. It is claimed
   on the same BDD-ShareTable table the Background saves, its dialog opened from the table's Sharing pane.
 
@@ -62,7 +62,7 @@ Feature: A table saved in a project, shared from its Sharing pane
     And no error or warning balloon should have been shown
 
   @edge-cases @known-failure:75 @realizes:core#980
-  Scenario: OK stays disabled until a recipient is accepted
+  Scenario: A fresh Share dialog keeps OK disabled
     core#980: OK is enabled on a fresh dialog and with an email typed but not accepted with Enter, and
     says "Shared" while nothing is shared. Remove the tag when core#980 is fixed, and claim then that
     OK stays disabled with an email typed and is enabled once Enter accepts it.

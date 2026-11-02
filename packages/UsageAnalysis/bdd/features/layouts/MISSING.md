@@ -1,6 +1,6 @@
 # Layout edge cases — what the features cannot say yet
 
-What the layout edge cases, now @edge-cases scenarios of `layout-names-tags.feature`, leave out, written for them with no library, binding or code
+What the layout edge cases, now @edge-cases scenarios of `layout-names-tags.feature` and `layouts-known-failures.feature`, leave out, written for them with no library, binding or code
 change.
 
 ## Still open
@@ -9,7 +9,7 @@ change.
 
 The answers of 2026-10-27 are @edge-cases scenarios of `layout-names-tags`: a layout of a grid alone is suggested only for a
 table that has the grid's columns (`TableView.getViewerColumns`, fixed in core#1179: the lookup read
-`dataFrame[name]` instead of `dataFrame[colName]`); a layout renamed to an empty name keeps its name. View > Layout > Open Gallery opens the same Layout
+`dataFrame[name]` instead of `dataFrame[colName]`); a layout renamed to an empty name keeps its name (core#1252, a known failure in `layouts-known-failures`). View > Layout > Open Gallery opens the same Layout
 suggestions panel, under the same rule, so a layout missing a column of the table is offered nowhere.
 
 **API tests to write**

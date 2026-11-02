@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/filter-panel/filter-panel-persistence.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.filters, public#377, core#1223]
+sub_features_covered: [viewers.filters, public#377]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -22,17 +22,17 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, hoverOver, shouldBe, shouldHaveText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {addRangeFilter, configureHierarchical, filterPanelCount, filterPasses, filterPassesAll, openEmptyFilterPanel, removeColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {addRangeFilter, filterPanelCount, filterPasses, filterPassesAll, openEmptyFilterPanel} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {closeAllViews, openDataset, openProject, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addCardFor, pickCardIndicatorMenu, pickPanelMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
-import {clickArea, loadLayout, noErrors, readingIs, readingReads, saveLayout, saveLayoutToServer} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addCardFor, pickCardIndicatorMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
+import {clickArea, loadLayout, noErrors, readingIs, readingReads, saveLayoutToServer} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Filter panel persistence", () => {
   const session = feature(test, "features/viewers/filter-panel/filter-panel-persistence.feature", import.meta.url);
-  test("Filter panel persistence", {tag: ["@journey", "@viewers", "@realizes:viewers.filters", "@realizes:public#377", "@edge-cases", "@known-failure:89", "@realizes:core#1223"]}, async ({browser}) => {
+  test("Filter panel persistence", {tag: ["@journey", "@viewers", "@realizes:viewers.filters", "@realizes:public#377"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 4, page);
+    const run = journey(test, 3, page);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(17, "And user opens an empty filter panel", () => openEmptyFilterPanel(page));
@@ -97,15 +97,6 @@ test.describe("Filter panel persistence", () => {
       await session.step(78, "And 896 rows should pass the filter", () => filterPasses(page, 896));
       await session.step(79, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("A layout naming a removed level column brings the hierarchical card back without that level", async () => {
-      await session.step(83, "When user picks \"Add Filter | Hierarchical\" from the filter panel menu", () => pickPanelMenu(page, "Add Filter | Hierarchical"));
-      await session.step(84, "And user configures the hierarchical filter with columns \"SEX, RACE, SEVERITY\"", () => configureHierarchical(page, "SEX, RACE, SEVERITY"));
-      await session.step(85, "Then \"SEX / RACE / SEVERITY\" filter card should be visible", () => shouldBe(page, el("\"SEX / RACE / SEVERITY\" filter card"), "visible"));
-      await session.step(86, "When user saves the layout of the current table view", () => saveLayout(page));
-      await session.step(87, "And user removes \"RACE\" column", () => removeColumn(page, "RACE"));
-      await session.step(88, "And user loads the saved layout", () => loadLayout(page));
-      await session.step(89, "Then \"SEX / SEVERITY\" filter card should be visible", () => shouldBe(page, el("\"SEX / SEVERITY\" filter card"), "visible"));
-    }, {knownFailure: true, line: 89});
     run.finish();
   });
 });

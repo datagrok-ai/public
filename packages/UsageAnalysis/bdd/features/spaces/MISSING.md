@@ -1,7 +1,7 @@
 # Spaces edge cases — what the features cannot say yet
 
 Written for the space edge cases, now @edge-cases scenarios of `spaces-rename`, `spaces-create`, `spaces-delete`,
-`spaces-drag-and-drop` and `spaces-search`, with no library, binding or code change. Each item below is a case those scenarios leave out: the expected behaviour is not decided yet, a
+`spaces-drag-and-drop` and `spaces-search`, their known failures in `spaces-known-failures`, with no library, binding or code change. Each item below is a case those scenarios leave out: the expected behaviour is not decided yet, a
 defect blocks the path, or the check belongs to another test layer.
 
 ## Still open
@@ -14,7 +14,7 @@ defect blocks the path, or the check belongs to another test layer.
 
 ### Waiting for core#1042 (Link of a file into a space)
 
-**The linked file in the target space.** The known failure in `spaces-drag-and-drop` ends at its pin, the
+**The linked file in the target space.** The known failure of core#1042 in `spaces-known-failures` ends at its pin, the
 "Move entity" dialog closing. Claimed once core#1042 is fixed, after that step:
 
 ```gherkin

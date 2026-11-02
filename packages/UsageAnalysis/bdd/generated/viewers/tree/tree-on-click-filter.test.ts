@@ -22,10 +22,10 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, isExpanded, selectIn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {clearSelection, filterIsExactlyCategory, filterPasses, filterPassesAll, noneOfFiltered, noneOfSelected, noneSelected, removeColumn, resetFilter, selectWhereIs, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {clearSelection, filterIsExactlyCategory, filterPasses, filterPassesAll, noneOfFiltered, noneOfSelected, noneSelected, resetFilter, selectWhereIs, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {clickArea, clickAreaHolding, hasArea, lessHighlight, moreHighlight, noErrors, propertyShouldBe, takeSnapshot, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {clickArea, clickAreaHolding, hasArea, lessHighlight, moreHighlight, noErrors, pickFromAreaContextMenu, propertyShouldBe, takeSnapshot, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {scrollGridTo, toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Tree clicks: On Click = Filter and Select, Shift and Control, and the grid's selection drawn on the tree", () => {
@@ -192,7 +192,7 @@ test.describe("Tree clicks: On Click = Filter and Select, Shift and Control, and
     await session.step(118, "And all rows should pass the filter", () => filterPassesAll(page));
     await session.step(119, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Removing the column of a clicked branch gives back the rows it filtered out (core#1174)", {tag: ["@viewers", "@realizes:charts.viewer.tree", "@edge-cases", "@known-failure:129", "@realizes:core#1174"]}, async ({browser}) => {
+  test("Removing the column of a clicked branch gives back the rows it filtered out (core#1174)", {tag: ["@viewers", "@realizes:charts.viewer.tree", "@edge-cases", "@known-failure:130", "@realizes:core#1174"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(22, "Given user is logged in", () => loggedIn(page));
     await session.step(23, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -221,8 +221,9 @@ test.describe("Tree clicks: On Click = Filter and Select, Shift and Control, and
       await session.step(125, "Then \"On Click\" property of tree viewer should be \"Filter\"", () => propertyShouldBe(page, "On Click", el("tree viewer"), "Filter"));
       await session.step(126, "When user clicks on the \"branch All | false | F | Asian\" area of tree viewer", () => clickArea(page, "branch All | false | F | Asian", el("tree viewer")));
       await session.step(127, "Then 7 rows should pass the filter", () => filterPasses(page, 7));
-      await session.step(128, "When user removes \"RACE\" column", () => removeColumn(page, "RACE"));
-      await session.step(129, "Then all rows should pass the filter", () => filterPassesAll(page));
-    }, 129);
+      await session.step(128, "When user scrolls the grid to the \"RACE\" column", () => scrollGridTo(page, "RACE"));
+      await session.step(129, "And user picks \"Remove\" from the context menu of the \"header RACE\" area of grid", () => pickFromAreaContextMenu(page, "Remove", "header RACE", el("grid")));
+      await session.step(130, "Then all rows should pass the filter", () => filterPassesAll(page));
+    }, 130);
   });
 });

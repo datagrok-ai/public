@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/filter-panel/combined-boolean-filter.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.filters, core#1174]
+sub_features_covered: [viewers.filters]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -21,20 +21,20 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, hoverOver, shouldBe, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {columnCount, columnType} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {clickOn, enterInto, hoverOver, replaceCode, shouldBe, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {columnCount, columnType, hasColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {addCalculated, filterIsExactlyCategory, filterPanelCount, filterPasses, filterPassesAll, openEmptyFilterPanel, removeColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {closeAllViews, closeCurrentView, openDataset, openProject, openTableOf, saveAsProject, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {pickPanelMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
-import {clickArea, closeContextMenu, loadLayout, menuListsEnabled, noErrors, pickFromAreaContextMenu, readingIs, readingReads, saveLayoutToServer} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {clickArea, closeContextMenu, loadLayout, menuListsEnabled, noErrors, readingIs, readingReads, saveLayoutToServer} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {openViewerMenu, pickFromViewerMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Combined boolean filter card", () => {
   const session = feature(test, "features/viewers/filter-panel/combined-boolean-filter.feature", import.meta.url);
-  test("Combined boolean filter card", {tag: ["@journey", "@viewers", "@realizes:viewers.filters", "@edge-cases", "@known-failure:166", "@realizes:core#1174"]}, async ({browser}) => {
+  test("Combined boolean filter card", {tag: ["@journey", "@viewers", "@realizes:viewers.filters", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 10, page);
+    const run = journey(test, 9, page);
     await session.step(21, "Given user is logged in", () => loggedIn(page));
     await session.step(22, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(23, "And user opens an empty filter panel", () => openEmptyFilterPanel(page));
@@ -162,20 +162,20 @@ test.describe("Combined boolean filter card", () => {
       await session.step(150, "And user picks \"Add Filter | Combined Boolean\" from the filter panel menu", () => pickPanelMenu(page, "Add Filter | Combined Boolean"));
       await session.step(151, "Then \"Flags\" filter card should be visible", () => shouldBe(page, el("\"Flags\" filter card"), "visible"));
       await session.step(152, "And the filter panel should have 1 filter", () => filterPanelCount(page, 1));
-      await session.step(153, "When user adds a calculated column \"BIG\" with formula \"${Value} > 1\"", () => addCalculated(page, "BIG", "${Value} > 1"));
-      await session.step(154, "And user clicks on the \"category BIG of Flags\" area of filter panel", () => clickArea(page, "category BIG of Flags", el("filter panel")));
-      await session.step(155, "Then 1 row should pass the filter", () => filterPasses(page, 1));
-      await session.step(156, "When user closes the current view", () => closeCurrentView(page));
-      await session.step(157, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
-      await session.step(158, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(159, "And no errors should have been logged", () => noErrors(page));
+      await session.step(153, "When user clicks on \"Add New Column...\" icon", () => clickOn(page, el("\"Add New Column...\" icon")));
+      await session.step(154, "Then \"Add New Column\" dialog should be visible", () => shouldBe(page, el("\"Add New Column\" dialog"), "visible"));
+      await session.step(155, "When user enters \"BIG\" into Name input in \"Add New Column\" dialog", () => enterInto(page, "BIG", el("Name input in \"Add New Column\" dialog")));
+      await session.step(156, "And user replaces the code of code editor in \"Add New Column\" dialog with \"${Value} > 1\"", () => replaceCode(page, el("code editor in \"Add New Column\" dialog"), "${Value} > 1"));
+      await session.step(157, "And user clicks on OK button in \"Add New Column\" dialog", () => clickOn(page, el("OK button in \"Add New Column\" dialog")));
+      await session.step(158, "Then \"Add New Column\" dialog should be hidden", () => shouldBe(page, el("\"Add New Column\" dialog"), "hidden"));
+      await session.step(159, "And the table should have a column \"BIG\"", () => hasColumn(page, "BIG"));
+      await session.step(160, "When user clicks on the \"category BIG of Flags\" area of filter panel", () => clickArea(page, "category BIG of Flags", el("filter panel")));
+      await session.step(161, "Then 1 row should pass the filter", () => filterPasses(page, 1));
+      await session.step(162, "When user closes the current view", () => closeCurrentView(page));
+      await session.step(163, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
+      await session.step(164, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(165, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Removing the column of a filtering flag in the Combined Boolean card releases its rows", async () => {
-      await session.step(163, "When user clicks on the \"category CONTROL of Flags\" area of filter panel", () => clickArea(page, "category CONTROL of Flags", el("filter panel")));
-      await session.step(164, "Then 6 rows should pass the filter", () => filterPasses(page, 6));
-      await session.step(165, "When user picks \"Remove\" from the context menu of the \"header CONTROL\" area of grid", () => pickFromAreaContextMenu(page, "Remove", "header CONTROL", el("grid")));
-      await session.step(166, "Then all rows should pass the filter", () => filterPassesAll(page));
-    }, {knownFailure: true, line: 166});
     run.finish();
   });
 });

@@ -118,12 +118,13 @@ Feature: Tree clicks: On Click = Filter and Select, Shift and Control, and the g
     And all rows should pass the filter
     And no errors should have been logged
 
-  @edge-cases @known-failure:129 @realizes:core#1174
+  @edge-cases @known-failure:130 @realizes:core#1174
   Scenario: Removing the column of a clicked branch gives back the rows it filtered out (core#1174)
     Given "Misc" category in context panel is expanded
     When user selects "Filter" in "On Click" property in context panel
     Then "On Click" property of tree viewer should be "Filter"
     When user clicks on the "branch All | false | F | Asian" area of tree viewer
     Then 7 rows should pass the filter
-    When user removes "RACE" column
+    When user scrolls the grid to the "RACE" column
+    And user picks "Remove" from the context menu of the "header RACE" area of grid
     Then all rows should pass the filter

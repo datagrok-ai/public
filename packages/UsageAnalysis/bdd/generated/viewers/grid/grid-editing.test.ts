@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/grid/grid-editing.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.grid, core#1193]
+sub_features_covered: [viewers.grid]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -30,9 +30,9 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Grid cell editing and the clipboard", () => {
   const session = feature(test, "features/viewers/grid/grid-editing.feature", import.meta.url);
-  test("Grid cell editing and the clipboard", {tag: ["@journey", "@viewers", "@realizes:viewers.grid", "@GROK-20266", "@edge-cases", "@known-failure:285", "@realizes:core#1193"]}, async ({browser}) => {
+  test("Grid cell editing and the clipboard", {tag: ["@journey", "@viewers", "@realizes:viewers.grid", "@GROK-20266", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 14, page);
+    const run = journey(test, 13, page);
     await session.step(33, "Given user is logged in", () => loggedIn(page));
     await session.step(34, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(35, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
@@ -275,13 +275,6 @@ test.describe("Grid cell editing and the clipboard", () => {
       await session.step(276, "And user presses Control+Home", () => pressKey(page, "Control+Home"));
       await session.step(277, "Then no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("A read-only grid keeps its rows on Shift+Delete", async () => {
-      await session.step(281, "When user sets \"Allow Edit\" property of grid to \"false\"", () => setProperty(page, "Allow Edit", el("grid"), "false"));
-      await session.step(282, "And user clicks on the \"row header 5\" area of grid holding Control", () => clickAreaHolding(page, "row header 5", el("grid"), "Control"));
-      await session.step(283, "Then 1 row should be selected", () => selectedRowCount(page, 1));
-      await session.step(284, "When user presses Shift+Delete", () => pressKey(page, "Shift+Delete"));
-      await session.step(285, "Then the table should have 1000 rows", () => rowCount(page, 1000));
-    }, {knownFailure: true, line: 285});
     run.finish();
   });
 });

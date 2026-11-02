@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/bar-chart/bar-chart-selection-overlays.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.bar-chart, core#1174]
+sub_features_covered: [viewers.bar-chart]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -21,16 +21,16 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clearSelection, filterPasses, filterPassesAll, filterTo, noneSelected, onlyOfAnySelected, onlyOfSelected, removeColumn, resetFilter, rowCount, selectWhereIs, selectWhereOneOf} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {clearSelection, filterPasses, filterPassesAll, filterTo, noneSelected, onlyOfAnySelected, onlyOfSelected, resetFilter, rowCount, selectWhereIs, selectWhereOneOf} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, areaColor, areaLessInk, clickArea, hasArea, hasNoArea, noErrors, noHighlight, repaintedBy, setProperties, setProperty, someHighlight} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, areaColor, areaLessInk, hasArea, hasNoArea, noErrors, noHighlight, repaintedBy, setProperties, setProperty, someHighlight} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Bar chart selected and filtered rows overlays", () => {
   const session = feature(test, "features/viewers/bar-chart/bar-chart-selection-overlays.feature", import.meta.url);
-  test("Bar chart selected and filtered rows overlays", {tag: ["@journey", "@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@known-failure:112", "@realizes:core#1174"]}, async ({browser}) => {
+  test("Bar chart selected and filtered rows overlays", {tag: ["@journey", "@viewers", "@realizes:viewers.bar-chart"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 7, page);
+    const run = journey(test, 6, page);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(17, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"],["Value","AGE"],["Value Aggr Type","count"],["Row Source","All"],["Show Selected Rows","true"],["Show Filtered Rows","true"]]), [["Split","RACE"],["Value","AGE"],["Value Aggr Type","count"],["Row Source","All"],["Show Selected Rows","true"],["Show Filtered Rows","true"]]);
@@ -112,13 +112,6 @@ test.describe("Bar chart selected and filtered rows overlays", () => {
       await session.step(103, "And no rows should be selected", () => noneSelected(page));
       await session.step(104, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Removing the column of the category a click filtered by gives the rows back (core#1174)", async () => {
-      await session.step(108, "When user sets \"onClick\" property of bar chart viewer to \"Filter\"", () => setProperty(page, "onClick", el("bar chart viewer"), "Filter"));
-      await session.step(109, "And user clicks on the \"bar Asian\" area of bar chart viewer", () => clickArea(page, "bar Asian", el("bar chart viewer")));
-      await session.step(110, "Then 15 rows should pass the filter", () => filterPasses(page, 15));
-      await session.step(111, "When user removes \"RACE\" column", () => removeColumn(page, "RACE"));
-      await session.step(112, "Then all rows should pass the filter", () => filterPassesAll(page));
-    }, {knownFailure: true, line: 112});
     run.finish();
   });
 });

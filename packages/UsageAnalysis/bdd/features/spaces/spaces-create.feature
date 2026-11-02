@@ -19,8 +19,9 @@ Feature: Creating a space
   Edge cases: a child space dropped onto the Spaces node asks "Move <name> out?" in the "Move space"
   dialog; MOVE saves it as a root space (`_initSpacesDragDrop` in browse_panel_tree.dart). A root name
   must be unique: a child named like an existing root space is refused with the server's message in an
-  error balloon, the dialog stays open, and the child keeps its parent. Those two spaces and their
-  parent are made through the API and named with the run's time.
+  error balloon, the dialog stays open, and the child keeps its parent. Each scenario makes its own
+  parent and child, and for the refusal the root space, through the API, named with the run's time and
+  swept, the child moved out included, when the feature starts and ends.
 
   Background:
     Given user is logged in
@@ -85,13 +86,18 @@ Feature: Creating a space
 
   @edge-cases
   Scenario: A child space dropped on the Spaces node is moved out to the root
-    Given Spaces---BDD-Parent tree node inside browse tree is expanded
-    When user drags Spaces---BDD-Parent---BDD-Child tree node inside browse tree to Spaces tree node inside browse tree
+    Given no space named "BDDEdgeOut{time}, BDDEdgeOutParent{time}" is on the server
+    And a space named "BDDEdgeOutParent{time}" is on the server
+    And a space named "BDDEdgeOut{time}" under "BDDEdgeOutParent{time}" is on the server
+    And Spaces tree node inside browse tree is expanded
+    And Spaces---BDDEdgeOutParent{time} tree node inside browse tree is expanded
+    Then Spaces---BDDEdgeOutParent{time}---BDDEdgeOut{time} tree node inside browse tree should be visible
+    When user drags Spaces---BDDEdgeOutParent{time}---BDDEdgeOut{time} tree node inside browse tree to Spaces tree node inside browse tree
     Then "Move space" dialog should be visible
-    And "Move space" dialog should contain text "Move BDD-Child out?"
+    And "Move space" dialog should contain text "Move BDDEdgeOut{time} out?"
     When user clicks on MOVE button in "Move space" dialog
     Then the "Move space" dialog should close
-    And Spaces---BDD-Child tree node inside browse tree should be visible
+    And Spaces---BDDEdgeOut{time} tree node inside browse tree should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

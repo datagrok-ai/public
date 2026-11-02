@@ -53,9 +53,10 @@ but the input writes every change into the property (`InputBase.bind`).
 The checks of these rules for the sunburst, the tree and the word cloud are `@edge-cases`
 scenarios of their own, after the master scenarios of: `sunburst/sunburst.feature`, `tree/tree-on-click-filter.feature`, `tree/tree.feature` and
 `word-cloud/word-cloud-appearance.feature`. For the bar chart, calendar, histogram, pie chart and
-trellis plot: `bar-chart/bar-chart-interaction.feature`, `bar-chart/bar-chart-selection-overlays.feature`,
-`bar-chart/bar-chart.feature`, `calendar/calendar-selection.feature`, `histogram/histogram.feature`,
-`pie-chart/pie-chart.feature` and `trellis-plot/trellis-plot-tiles-and-layout.feature`.
+trellis plot: `bar-chart/bar-chart-interaction.feature`, `bar-chart/bar-chart-known-failures.feature`,
+`calendar/calendar-known-failures.feature`, `histogram/histogram.feature`, `pie-chart/pie-chart-known-failures.feature`
+and `trellis-plot/trellis-plot-known-failures.feature`. The known failures of a journey wait in the
+`<folder>-known-failures.feature` of its folder while their tickets are open.
 
 A viewer that breaks a rule carries the check as the known failure of its ticket. Run on localhost
 2026-10-29 (core master 575f6ae603): the known failures fail at their pinned steps.

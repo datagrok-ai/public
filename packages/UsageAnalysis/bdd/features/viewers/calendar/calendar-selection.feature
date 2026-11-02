@@ -17,7 +17,8 @@ Feature: Calendar selection, On Click and Show Filtered Only
   until something else asks for a refilter (core#233, a known failure). The calendar's click filter
   stays when a category is toggled in the filter panel (19 of the 32 rows of January 1990 are F);
   today the category click releases the calendar's filter, and 553 rows pass at once (core#1221, a
-  known failure, the last scenario, on a calendar of its own). That the filter then goes when On
+  known failure). Both checks are in calendar-known-failures.feature while their tickets are open,
+  each a test of its own. That the filter then goes when On
   Click is switched to Select (553 F rows) is claimed once the defect is fixed: today that count is
   already reached by the defect.
 
@@ -107,25 +108,3 @@ Feature: Calendar selection, On Click and Show Filtered Only
     And the "rows shown" reading of calendar viewer should be 1000
     And the "rows of weekday Sunday" reading of calendar viewer should be 153
     And no errors should have been logged
-
-  @edge-cases @known-failure:118 @realizes:core#233
-  Scenario: Closing a calendar whose Filter click filters the table gives the rows back (core#233)
-    When user sets "onClick" property of calendar viewer to "Filter"
-    And user clicks on the "month 1990-01" area of calendar viewer
-    Then 32 rows should pass the filter
-    When user clicks on close icon of calendar viewer
-    Then calendar viewer should be absent
-    And all rows should pass the filter
-
-  @edge-cases @known-failure:131 @realizes:core#1221
-  Scenario: The calendar's click filter stays when a category is toggled in the filter panel (core#1221)
-    Given user adds a calendar viewer
-    When user resets the filter
-    Then all rows should pass the filter
-    When user sets "onClick" property of calendar viewer to "Filter"
-    And user clicks on the "month 1990-01" area of calendar viewer
-    Then 32 rows should pass the filter
-    When user opens an empty filter panel
-    And user adds a card for "SEX" to the filter panel
-    And user clicks on the "category F of SEX" area of filter panel
-    Then 19 rows should pass the filter

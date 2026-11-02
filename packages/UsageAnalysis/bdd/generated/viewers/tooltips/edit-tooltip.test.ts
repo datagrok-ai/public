@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/tooltips/edit-tooltip.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.tooltips, public#1208, public#373, core#1215]
+sub_features_covered: [viewers.tooltips, public#1208, public#373]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -23,17 +23,17 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clearField, clickOn, shouldBe, shouldHaveValue, typeInto, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
-import {addCalculated, removeColumn, renameColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {addCalculated} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {closeCurrentView, dialogCloses, openDataset, switchTableView, switchView, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, boundTable, hoverArea, noErrors, pickFromContextMenu, pointerAway, propertiesShouldBe, setProperties, setProperty, tooltipColumns, tooltipColumnsInOrder, tooltipNotColumns} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {checkedInColumnList, columnListExactly, columnListLacks, columnListStartsWith, toggleInColumnList, uncheckedInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {addViewer, boundTable, hoverArea, noErrors, pickFromAreaContextMenu, pickFromContextMenu, pointerAway, propertiesShouldBe, setProperties, setProperty, tooltipColumns, tooltipColumnsInOrder, tooltipNotColumns} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {checkedInColumnList, columnListExactly, columnListLacks, columnListStartsWith, scrollGridTo, toggleInColumnList, uncheckedInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Editing the table's tooltip from a viewer", () => {
   const session = feature(test, "features/viewers/tooltips/edit-tooltip.feature", import.meta.url);
-  test("Editing the table's tooltip from a viewer", {tag: ["@journey", "@viewers", "@realizes:viewers.tooltips", "@realizes:public#1208", "@realizes:public#373", "@edge-cases", "@known-failure:219", "@realizes:core#1215"]}, async ({browser}) => {
+  test("Editing the table's tooltip from a viewer", {tag: ["@journey", "@viewers", "@realizes:viewers.tooltips", "@realizes:public#1208", "@realizes:public#373", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 8, page);
+    const run = journey(test, 7, page);
     await session.step(39, "Given user is logged in", () => loggedIn(page));
     await session.step(40, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(41, "And user sets properties of grid:", () => setProperties(page, el("grid"), [["Show Tooltip","inherit from table"],["Show Column Names","Always"],["Show Visible Columns In Tooltip","true"]]), [["Show Tooltip","inherit from table"],["Show Column Names","Always"],["Show Visible Columns In Tooltip","true"]]);
@@ -179,29 +179,13 @@ test.describe("Editing the table's tooltip from a viewer", () => {
       await session.step(194, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
       await session.step(195, "Then the tooltip should show columns \"AGE, SEX_copy, WEIGHT\"", () => tooltipColumns(page, "AGE, SEX_copy, WEIGHT"));
       await session.step(196, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
-      await session.step(197, "And user removes \"SEX_copy\" column", () => removeColumn(page, "SEX_copy"));
-      await session.step(198, "And user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
-      await session.step(199, "Then the tooltip should show columns in the order \"AGE, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, WEIGHT"));
-      await session.step(200, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
-      await session.step(201, "Then no errors should have been logged", () => noErrors(page));
+      await session.step(197, "And user scrolls the grid to the \"SEX_copy\" column", () => scrollGridTo(page, "SEX_copy"));
+      await session.step(198, "And user picks \"Remove\" from the context menu of the \"header SEX_copy\" area of grid", () => pickFromAreaContextMenu(page, "Remove", "header SEX_copy", el("grid")));
+      await session.step(199, "And user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+      await session.step(200, "Then the tooltip should show columns in the order \"AGE, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, WEIGHT"));
+      await session.step(201, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+      await session.step(202, "Then no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("A tooltip column renamed is shown under its new name", async () => {
-      await session.step(205, "When user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
-      await session.step(206, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
-      await session.step(207, "When user checks checkbox in \"Edit Tooltip\" dialog", () => check(page, el("checkbox in \"Edit Tooltip\" dialog")));
-      await session.step(208, "And user unchecks checkbox in \"Edit Tooltip\" dialog", () => uncheck(page, el("checkbox in \"Edit Tooltip\" dialog")));
-      await session.step(209, "Then the \"WEIGHT\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
-      await session.step(210, "When user toggles the \"AGE\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
-      await session.step(211, "And user toggles the \"WEIGHT\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
-      await session.step(212, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
-      await session.step(213, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
-      await session.step(214, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
-      await session.step(215, "Then the tooltip should show columns in the order \"AGE, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, WEIGHT"));
-      await session.step(216, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
-      await session.step(217, "And user renames \"WEIGHT\" column to \"MASS\"", () => renameColumn(page, "WEIGHT", "MASS"));
-      await session.step(218, "And user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
-      await session.step(219, "Then the tooltip should show columns in the order \"AGE, MASS\"", () => tooltipColumnsInOrder(page, "AGE, MASS"));
-    }, {knownFailure: true, line: 219});
     run.finish();
   });
 });

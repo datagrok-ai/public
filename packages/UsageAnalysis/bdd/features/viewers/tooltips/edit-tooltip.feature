@@ -28,10 +28,10 @@ Feature: Editing the table's tooltip from a viewer
   on OK only (`edit_tooltip.dart`), so a change made in it and cancelled leaves the tooltip as it was.
   Every column unticked and confirmed is a tooltip set to no column (`tooltip.dart`, "Columns
   explicitly set to none"): the dialog opened again has every column unticked, and one ticked column
-  brings the tooltip back. A tooltip column removed from the table (a calculated copy of SEX) is
-  skipped and the others still show, without an error. The last scenario claims that a renamed one
-  should show under its new name, a known failure (core#1215): the tooltip keeps the old name in the
-  table tag (`tooltip.dart`), nothing renames it, and the column drops out of the tooltip.
+  brings the tooltip back. A tooltip column removed from the table (a calculated copy of SEX, removed
+  from the grid header's menu) is skipped and the others still show, without an error. That a
+  renamed one should show under its new name is a known failure (core#1215), claimed in
+  tooltips-known-failures.feature while the ticket is open.
   The check box above the list reads unchecked while only some columns are ticked, so unticking it
   then changes nothing; a scenario that starts from a partial tooltip ticks it first, then unticks it.
 
@@ -194,26 +194,9 @@ Feature: Editing the table's tooltip from a viewer
     When user hovers over the "marker" area of box plot viewer
     Then the tooltip should show columns "AGE, SEX_copy, WEIGHT"
     When user moves the pointer away from grid
-    And user removes "SEX_copy" column
+    And user scrolls the grid to the "SEX_copy" column
+    And user picks "Remove" from the context menu of the "header SEX_copy" area of grid
     And user hovers over the "marker" area of box plot viewer
     Then the tooltip should show columns in the order "AGE, WEIGHT"
     When user moves the pointer away from grid
     Then no errors should have been logged
-
-  @edge-cases @known-failure:219 @realizes:core#1215
-  Scenario: A tooltip column renamed is shown under its new name
-    When user picks "Tooltip > Edit..." from the context menu of box plot viewer
-    Then "Edit Tooltip" dialog should be visible
-    When user checks checkbox in "Edit Tooltip" dialog
-    And user unchecks checkbox in "Edit Tooltip" dialog
-    Then the "WEIGHT" column should not be checked in the column list of "Edit Tooltip" dialog
-    When user toggles the "AGE" column in the column list of "Edit Tooltip" dialog
-    And user toggles the "WEIGHT" column in the column list of "Edit Tooltip" dialog
-    And user clicks on OK button in "Edit Tooltip" dialog
-    Then the "Edit Tooltip" dialog should close
-    When user hovers over the "marker" area of box plot viewer
-    Then the tooltip should show columns in the order "AGE, WEIGHT"
-    When user moves the pointer away from grid
-    And user renames "WEIGHT" column to "MASS"
-    And user hovers over the "marker" area of box plot viewer
-    Then the tooltip should show columns in the order "AGE, MASS"

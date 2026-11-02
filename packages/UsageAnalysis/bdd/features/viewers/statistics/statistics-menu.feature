@@ -115,7 +115,8 @@ Feature: The Statistics and Histograms submenus, and what they turn on
     When user adds a calculated column "SEX2" with formula "${SEX}"
     And user picks "Histograms > SEX2" from the context menu of the "row AGE" area of statistics viewer
     Then the "histogram columns" reading of statistics viewer should be 1
-    When user removes "SEX2" column
+    When user scrolls the grid to the "SEX2" column
+    And user picks "Remove" from the context menu of the "header SEX2" area of grid
     Then the table should not have a column "SEX2"
     And the "histogram columns" reading of statistics viewer should be 0
     And the "avg of AGE" reading of statistics viewer should be "45.68"

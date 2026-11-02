@@ -26,7 +26,7 @@ import {columnType, currentRowIs, hasColumn, hasNoColumn, makeLastRowCurrent, ma
 import {addCalculated, clearSelection, colorLinear, colorOff, filterTo, noneSelected, onlyOfSelected, removeColumn, renameColumn, resetFilter, setCell} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, boundTable, clickArea, doubleClickArea, dragAreaBy, enterIntoArea, errorBalloonText, hasArea, hasNoArea, hoverArea, loadLayout, noErrors, pickFromAreaContextMenu, pickFromContextMenu, pointerAway, propertyShouldBe, readingAsRemembered, readingDiffers, readingDoesNotRead, readingIs, readingNotAsRemembered, readingReads, rememberReading, reportsNoError, saveLayout, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {areaHangsBelow, toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {areaHangsBelow, clickOtherCell, toggleInColumnList, walkToColumn} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Form viewer", () => {
@@ -399,14 +399,16 @@ test.describe("Form viewer", () => {
       await session.step(407, "When user clicks on close icon of form viewer", () => clickOn(page, el("close icon of form viewer")));
       await session.step(408, "And user adds a form viewer", () => addViewer(page, "form"));
       await session.step(409, "Then the \"fields shown\" reading of form viewer should be 11", () => readingIs(page, "fields shown", el("form viewer"), 11));
-      await session.step(410, "When user removes \"DEMOG\" column", () => removeColumn(page, "DEMOG"));
-      await session.step(411, "Then the table should not have a column \"DEMOG\"", () => hasNoColumn(page, "DEMOG"));
-      await session.step(412, "And the \"fields shown\" reading of form viewer should be 10", () => readingIs(page, "fields shown", el("form viewer"), 10));
-      await session.step(413, "And form viewer should not have a \"field DEMOG\" area", () => hasNoArea(page, el("form viewer"), "field DEMOG"));
-      await session.step(414, "And form viewer should report no error", () => reportsNoError(page, el("form viewer")));
-      await session.step(415, "And no errors should have been logged", () => noErrors(page));
-      await session.step(416, "When user adds a calculated column \"DEMOG\" with formula \"${RACE}\"", () => addCalculated(page, "DEMOG", "${RACE}"));
-      await session.step(417, "Then the table should have a column \"DEMOG\"", () => hasColumn(page, "DEMOG"));
+      await session.step(410, "When user clicks on a \"USUBJID\" cell of grid other than the current one", () => clickOtherCell(page, "USUBJID", el("grid")));
+      await session.step(411, "And user moves the current cell of grid to the \"DEMOG\" column", () => walkToColumn(page, el("grid"), "DEMOG"));
+      await session.step(412, "And user picks \"Remove\" from the context menu of the \"header DEMOG\" area of grid", () => pickFromAreaContextMenu(page, "Remove", "header DEMOG", el("grid")));
+      await session.step(413, "Then the table should not have a column \"DEMOG\"", () => hasNoColumn(page, "DEMOG"));
+      await session.step(414, "And the \"fields shown\" reading of form viewer should be 10", () => readingIs(page, "fields shown", el("form viewer"), 10));
+      await session.step(415, "And form viewer should not have a \"field DEMOG\" area", () => hasNoArea(page, el("form viewer"), "field DEMOG"));
+      await session.step(416, "And form viewer should report no error", () => reportsNoError(page, el("form viewer")));
+      await session.step(417, "And no errors should have been logged", () => noErrors(page));
+      await session.step(418, "When user adds a calculated column \"DEMOG\" with formula \"${RACE}\"", () => addCalculated(page, "DEMOG", "${RACE}"));
+      await session.step(419, "Then the table should have a column \"DEMOG\"", () => hasColumn(page, "DEMOG"));
     });
     run.finish();
   });

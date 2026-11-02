@@ -269,12 +269,16 @@ Feature: Forms viewer field set, row binding, sort mirroring and pinning
     When user picks "Pin Row" from the context menu of the "field USUBJID of card 3" area of forms viewer
     Then the "pinned records" reading of forms viewer should be 1
     And the "pinned values" reading of forms viewer should be "X0273T29012500105"
-    When user filters rows where "SEVERITY" is "Low"
+    When user opens an empty filter panel
+    And user adds a card for "SEVERITY" to the filter panel
+    And user clicks on the "category Low of SEVERITY" area of filter panel
     Then 177 rows should pass the filter
     And the "pinned records" reading of forms viewer should be 1
     And the "pinned values" reading of forms viewer should be "X0273T29012500105"
     When user resets the filter
-    Then the "pinned records" reading of forms viewer should be 1
+    And user clicks on close icon of filters viewer
+    Then all rows should pass the filter
+    And the "pinned records" reading of forms viewer should be 1
     When user picks "Unpin Row" from the context menu of the "field USUBJID of pinned card 1" area of forms viewer
     Then the "pinned records" reading of forms viewer should be 0
     When user sets "showMouseOverRow" property of forms viewer to "true"
@@ -294,7 +298,8 @@ Feature: Forms viewer field set, row binding, sort mirroring and pinning
     And the "pinned values" reading of forms viewer should be "X0273T29012500105"
     When user clears the row selection
     And user selects rows where "USUBJID" is "X0273T29012500105"
-    And user deletes the selected rows
+    And user clicks on the "cell 1 of AGE" area of grid
+    And user presses Shift+Delete
     Then the table should have 999 rows
     And the "pinned records" reading of forms viewer should be 0
     And the "pinned pane shown" reading of forms viewer should be "false"

@@ -14,7 +14,8 @@ Feature: Hierarchical filter card
   SEX's there — a reorder clears the criterion (GROK-16528), as the manual case notes.
 
   Edge cases: a level whose column is removed should drop out of the card, which keeps the other two
-  (core#1223: today the card keeps its three levels; a known failure, the last scenario).
+  (core#1223: today the card keeps its three levels; a known failure, in
+  filter-panel-known-failures.feature while the ticket is open).
 
   Background:
     Given user is logged in
@@ -156,10 +157,3 @@ Feature: Hierarchical filter card
     And the "F" row of the hierarchical filter card should be checked
     And the "M" row of the hierarchical filter card should be unchecked
     And no errors should have been logged
-
-  @edge-cases @known-failure:165 @realizes:core#1223
-  Scenario: Removing the column of a hierarchical card's middle level drops that level
-    When user configures the hierarchical filter with columns "SEX, RACE, SEVERITY"
-    Then "SEX / RACE / SEVERITY" filter card should be visible
-    When user removes "RACE" column
-    Then "SEX / SEVERITY" filter card should be visible

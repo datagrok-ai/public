@@ -255,7 +255,9 @@ Feature: Grid pinned rows and pinned columns
   Scenario: A pinned row follows its column through a rename and a layout
     When user picks "Pin > Pin Row" from the context menu of the "cell 6 of USUBJID" area of grid
     Then the "pinned rows" reading of grid should be 1
-    When user renames "USUBJID" column to "ID"
+    When user picks "Column Properties..." from the context menu of the "header USUBJID" area of grid
+    And user enters "ID" into "New name:" input in "USUBJID" dialog
+    And user clicks on OK button in "USUBJID" dialog
     And user saves the layout of the current table view
     And user loads the saved layout
     Then the "pinned rows" reading of grid should be 1

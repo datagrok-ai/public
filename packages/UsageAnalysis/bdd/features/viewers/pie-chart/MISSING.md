@@ -1,13 +1,13 @@
 # Pie chart edge cases — what the features cannot say yet
 
-The edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today; the claimed ones are `@edge-cases` scenarios of their own, after the master scenarios of `pie-chart.feature` and `pie-chart-filter-and-auto-legend.feature`. No library, binding or code change was made for them.
+The edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today; the claimed ones are `@edge-cases` scenarios of their own, after the master scenarios of `pie-chart-filter-and-auto-legend.feature`, and the known failures in `pie-chart-known-failures.feature`. No library, binding or code change was made for them.
 
 ## Still open
 
 **Decided** (the rules in `../MISSING.md`)
 
 1. A renamed category column is followed, and every row filtered out leaves no slice: requested below as API tests.
-2. Max Radius typed in the context panel above its maximum of 500 (600) is not taken; Start Angle typed as −30 or 400 is the same. Both are known failures of core#1200, the last scenario outline of `pie-chart.feature` (one Examples row per value).
+2. Max Radius typed in the context panel above its maximum of 500 (600) is not taken; Start Angle typed as −30 or 400 is the same. Both are known failures of core#1200, the scenario outline of `pie-chart-known-failures.feature` (one Examples row per value; back into `pie-chart.feature` once fixed).
 3. The category column removed: no other column is picked, and the pie, which cannot draw without one, says so. No scenario: the pie has no such message, and `PieChartLook.auto`, run on every removal, picks another categorical column. Needs the message in the pie (`validateState`) before a row can claim it. A layout whose category column the table lacks is the same case.
 
 4. A Segment Angle Column holding NaN or ±Infinity leaves that value out, as an empty one (viewers treat such values as empty): right as it is (2026-10-30), requested below as an API test.

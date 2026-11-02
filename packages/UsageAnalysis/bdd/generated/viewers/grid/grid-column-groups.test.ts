@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/grid/grid-column-groups.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.grid, core#1195]
+sub_features_covered: [viewers.grid]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -21,18 +21,18 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clearField, clickOn, isExpanded, pressKey, shouldBe, shouldContainText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clearField, clickOn, enterInto, isExpanded, pressKey, shouldBe, shouldContainText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnTag} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {columnsSelected, noColumnsSelected, renameColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {closeAllViews, contextPanelOpen, openDataset, openProject, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {areaColor, areaNotColor, clickArea, clickAreaHolding, hasArea, hasNoArea, loadLayout, noErrors, saveLayoutToServer, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {areaColor, areaNotColor, clickArea, clickAreaHolding, hasArea, hasNoArea, loadLayout, noErrors, pickFromAreaContextMenu, saveLayoutToServer, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Grid column groups", () => {
   const session = feature(test, "features/viewers/grid/grid-column-groups.feature", import.meta.url);
-  test("Grid column groups", {tag: ["@journey", "@viewers", "@realizes:viewers.grid", "@edge-cases", "@known-failure:222", "@realizes:core#1195"]}, async ({browser}) => {
+  test("Grid column groups", {tag: ["@journey", "@viewers", "@realizes:viewers.grid", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 10, page);
+    const run = journey(test, 9, page);
     await session.step(59, "Given user is logged in", () => loggedIn(page));
     await session.step(60, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(61, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
@@ -177,24 +177,15 @@ test.describe("Grid column groups", () => {
     });
     await run.scenario("A group follows a renamed column", async () => {
       await session.step(204, "Then \"HEIGHT\" column should have tag \"group\" equal to \"Body\"", () => columnTag(page, "HEIGHT", "group", "Body"));
-      await session.step(205, "When user renames \"HEIGHT\" column to \"TALL\"", () => renameColumn(page, "HEIGHT", "TALL"));
-      await session.step(206, "Then \"TALL\" column should have tag \"group\" equal to \"Body\"", () => columnTag(page, "TALL", "group", "Body"));
-      await session.step(207, "And grid should have a \"group Body\" area", () => hasArea(page, el("grid"), "group Body"));
-      await session.step(208, "When user renames \"TALL\" column to \"HEIGHT\"", () => renameColumn(page, "TALL", "HEIGHT"));
-      await session.step(209, "Then \"HEIGHT\" column should have tag \"group\" equal to \"Body\"", () => columnTag(page, "HEIGHT", "group", "Body"));
-      await session.step(210, "And no errors should have been logged", () => noErrors(page));
+      await session.step(205, "When user picks \"Column Properties...\" from the context menu of the \"header HEIGHT\" area of grid", () => pickFromAreaContextMenu(page, "Column Properties...", "header HEIGHT", el("grid")));
+      await session.step(206, "And user enters \"TALL\" into \"New name:\" input in \"HEIGHT\" dialog", () => enterInto(page, "TALL", el("\"New name:\" input in \"HEIGHT\" dialog")));
+      await session.step(207, "And user clicks on OK button in \"HEIGHT\" dialog", () => clickOn(page, el("OK button in \"HEIGHT\" dialog")));
+      await session.step(208, "Then \"TALL\" column should have tag \"group\" equal to \"Body\"", () => columnTag(page, "TALL", "group", "Body"));
+      await session.step(209, "And grid should have a \"group Body\" area", () => hasArea(page, el("grid"), "group Body"));
+      await session.step(210, "When user renames \"TALL\" column to \"HEIGHT\"", () => renameColumn(page, "TALL", "HEIGHT"));
+      await session.step(211, "Then \"HEIGHT\" column should have tag \"group\" equal to \"Body\"", () => columnTag(page, "HEIGHT", "group", "Body"));
+      await session.step(212, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("A column group named with spaces only is not made", async () => {
-      await session.step(214, "When user clicks on the \"header AGE\" area of grid holding Control", () => clickAreaHolding(page, "header AGE", el("grid"), "Control"));
-      await session.step(215, "And user clicks on the \"header SEX\" area of grid holding Control", () => clickAreaHolding(page, "header SEX", el("grid"), "Control"));
-      await session.step(216, "Given the context panel is open", () => contextPanelOpen(page));
-      await session.step(217, "And Actions accordion header in context panel is expanded", () => isExpanded(page, el("Actions accordion header in context panel")));
-      await session.step(218, "When user clicks on \"Group columns...\" text in context panel", () => clickOn(page, el("\"Group columns...\" text in context panel")));
-      await session.step(219, "Then Group input in dialog should be visible", () => shouldBe(page, el("Group input in dialog"), "visible"));
-      await session.step(220, "When user types \"   \" into Group input in dialog", () => typeInto(page, "   ", el("Group input in dialog")));
-      await session.step(221, "And user clicks on OK button in dialog", () => clickOn(page, el("OK button in dialog")));
-      await session.step(222, "Then \"AGE\" column should have tag \"group\" equal to \"\"", () => columnTag(page, "AGE", "group", ""));
-    }, {knownFailure: true, line: 222});
     run.finish();
   });
 });
