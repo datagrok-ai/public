@@ -5,6 +5,7 @@
 declare const DG: typeof import('datagrok-api/dg');
 declare const grok: typeof import('datagrok-api/grok');
 declare const ui: typeof import('datagrok-api/ui');
+declare const dayjs: typeof import('dayjs');
 
 /**
  * Loaded by the platform at startup without the main package bundle. Besides semantic type
@@ -16,6 +17,7 @@ declare const ui: typeof import('datagrok-api/ui');
 class Compute2PackageDetectors extends DG.Package {
   //name: autostart
   //meta.role: autostart
+  //meta.autostartImmediate: true
   //description: Registers the Compute2 run handler at platform startup
   autostart() {
     if (DG.ObjectHandler.list().some((h) => h.type === 'ComputeRun'))
@@ -67,87 +69,61 @@ class ComputeRunHandler extends DG.ObjectHandler {
     return (call.func && (call.func.friendlyName || call.func.name)) || 'Run';
   }
 
-  startedText(call: any): string {
+  // Copies of the run browser rules (compute-utils getRunCreated, Compute2 useRunDetails and runVersion):
+  // runs saved before the createdById option fall back to their start time and platform author.
+  savedText(call: any): string {
     try {
-      const started = call.started;
-      return started && started.isValid() ? started.format('YYYY-MM-DD HH:mm') : '';
+      const saved = call.options['createdById'] ? dayjs(call.options['createdAt']) : call.started;
+      return saved && saved.isValid() ? saved.format('YYYY-MM-DD HH:mm') : '';
     } catch (_) {
       return '';
     }
   }
 
-  subtitleText(call: any, author: string): string {
-    const tags = ((call.options['tags'] || []) as string[]).map((t) => '#' + t).join(' ');
-    return [this.modelName(call), this.startedText(call), author, tags].filter((s) => s).join(' · ');
-  }
-
-  async authorOf(call: any): Promise<string> {
-    if (call.author && call.author.friendlyName)
-      return call.author.friendlyName;
-    try {
-      const full: any = await grok.dapi.functions.calls.allPackageVersions()
-        .include('session.user,func.package').find(call.id);
-      return (full && full.author && full.author.friendlyName) || '';
-    } catch (_) {
-      return '';
-    }
+  // after someone else edited the details, the platform author is the last editor
+  async authors(run: any): Promise<{by: string, modifiedBy?: string}> {
+    const authorId = run.options['createdById'];
+    const lastEditor = run.author;
+    if (!authorId || authorId === (lastEditor && lastEditor.id))
+      return {by: (lastEditor && lastEditor.friendlyName) || ''};
+    const author = await grok.dapi.users.find(authorId).then((user: any) => (user && user.friendlyName) || '', () => '');
+    return {by: author, modifiedBy: lastEditor && lastEditor.friendlyName};
   }
 
   renderIcon(_x: any): HTMLElement {
-    return ui.iconFA('play-circle');
-  }
-
-  renderMarkup(x: any): HTMLElement {
-    const call = DG.toJs(x);
-    const markup = ui.span([ui.iconFA('play-circle'), ui.label(this.getCaption(call))]);
-    markup.ondblclick = () => void openComputeRun(call.id);
-    return markup;
+    return ui.iconFA('file-chart-line');
   }
 
   renderTooltip(x: any): HTMLElement {
     const call = DG.toJs(x);
     return ui.divV([
       ui.divText(this.getCaption(call)),
-      ui.divText(this.subtitleText(call, (call.author && call.author.friendlyName) || '')),
+      ui.divText([this.modelName(call), this.savedText(call)].filter((s) => s).join(' · ')),
     ]);
-  }
-
-  renderCard(x: any): HTMLElement {
-    const call = DG.toJs(x);
-    const subtitle = ui.divText(this.subtitleText(call, (call.author && call.author.friendlyName) || ''),
-      {style: {color: 'var(--grey-4)'}});
-    void this.authorOf(call).then((author) => {
-      subtitle.textContent = this.subtitleText(call, author);
-    });
-    const card = ui.divV([
-      ui.divH([ui.iconFA('play-circle'), ui.divText(this.getCaption(call), {style: {fontWeight: 'bold'}})],
-        {style: {alignItems: 'center', gap: '6px'}}),
-      subtitle,
-    ], 'd4-gallery-item');
-    card.ondblclick = () => void openComputeRun(call.id);
-    return card;
   }
 
   renderProperties(x: any): HTMLElement {
     const call = DG.toJs(x);
-    const info = ui.div([]);
-    const fill = (author: string) => {
-      ui.empty(info);
-      const map: {[key: string]: string} = {'Model': this.modelName(call), 'Started': this.startedText(call)};
-      if (author)
-        map['Author'] = author;
-      const tags = ((call.options['tags'] || []) as string[]).join(', ');
+    return ui.wait(async () => {
+      const run = await this.getById(call.id);
+      const {by, modifiedBy} = await this.authors(run);
+      const map: {[key: string]: string} = {'Model': this.modelName(run), 'Saved': this.savedText(run), 'By': by};
+      if (modifiedBy)
+        map['Modified by'] = modifiedBy;
+      const tags = ((run.options['tags'] || []) as string[]).join(', ');
       if (tags)
         map['Tags'] = tags;
-      info.appendChild(ui.tableFromMap(map));
-    };
-    fill((call.author && call.author.friendlyName) || '');
-    void this.authorOf(call).then(fill);
-    return ui.divV([
-      ui.h2(this.getCaption(call)),
-      info,
-      ui.div([ui.bigButton('Open run', () => void openComputeRun(call.id))], {style: {marginTop: '8px'}}),
-    ]);
+      const version = run.options['version'] || (run.func && run.func.package && run.func.package.version);
+      if (version)
+        map['Version'] = version;
+      const description = run.options['description'];
+      return ui.divV([
+        ui.h2(this.getCaption(run)),
+        ...description ? [ui.divText(description)] : [],
+        ui.tableFromMap(map),
+        ui.div([ui.bigButton('Open run', () => void openComputeRun(run.id))], {style: {marginTop: '8px'}}),
+      ]);
+    });
   }
 
   async renderPreview(x: any): Promise<any> {
