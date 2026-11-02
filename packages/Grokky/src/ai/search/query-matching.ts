@@ -165,7 +165,7 @@ Analyze the user request and return a JSON object with:
       reasoning: rawResult.reasoning ?? 'No reasoning provided',
     };
 
-    _package.logger.info(`Match found with confidence ${result.confidence}`);
+    _package.logger.info(`Match found with confidence ${result.confidence}. Reasoning: ${result.reasoning}`);
     if (result.suggestedConnection)
       _package.logger.info(`Suggested connection: ${result.suggestedConnection}`);
 
@@ -196,7 +196,7 @@ async function buildQueryWidget(s: string): Promise<DG.Widget> {
     if (!matches)
       return DG.Widget.fromRoot(ui.divText('Unable to process query. Please try rephrasing.'));
 
-    _package.logger.info(`Match result - Confidence: ${matches.confidence}`);
+    _package.logger.info(`Match result - Confidence: ${matches.confidence}, Reasoning: ${matches.reasoning || 'N/A'}`);
 
     if (matches.confidence > 0.7 && matches.searchPattern && matches.parameters) {
       console.log(`Function matched with high confidence ${matches.confidence}`);
