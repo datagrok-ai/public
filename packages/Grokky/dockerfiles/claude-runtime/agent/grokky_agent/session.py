@@ -60,7 +60,8 @@ class Tokens:
 class Turn:
     """One browser message, with its gate follow-ups and structured-output retries."""
 
-    def __init__(self, cmd: TurnCommand) -> None:
+    def __init__(self, cmd: TurnCommand, model: str) -> None:
+        self.model = model
         self.system_prompt = cmd['systemPrompt']
         self.schema = cmd.get('outputSchema')
         self.cwd = cmd['cwd']
@@ -83,7 +84,7 @@ class Turn:
         self.redirected = False
 
     def metrics(self) -> Metrics:
-        return {'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
+        return {'model': self.model, 'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
                 'cacheReadTokens': self.tokens.cache_read, 'cacheCreationTokens': self.tokens.cache_write,
                 'costUsd': self.cost, 'numTurns': self.api_calls,
                 'durationMs': round((time.time() - self.started) * 1000),
@@ -261,7 +262,7 @@ class Session:
     def receive(self, cmd: TurnCommand | ContinueCommand) -> Turn:
         """The turn a `turn` or `continue` command runs, taken when the command arrives."""
         if cmd['type'] == 'turn':
-            self.latest = Turn(cmd)
+            self.latest = Turn(cmd, self.provider.model)
         assert self.latest is not None, 'a continue follows its turn'
         return self.latest
 
@@ -439,6 +440,7 @@ class Session:
         t.api_seconds += api_duration or 0.0
         cost = self.provider.cost(usage)
         t.cost = None if cost is None or t.cost is None else t.cost + cost
+        self.emit({'type': 'usage', 'metrics': t.metrics()})
         if t.cost is not None and t.cost > t.max_cost:
             self._stop(t, 'budget')
 

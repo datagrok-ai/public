@@ -8,6 +8,7 @@ import {ClaudeRuntimeClient} from '../../claude/runtime-client';
 import {UsageLimiter} from '../usage-limiter';
 import {AIPanel} from '../panel';
 import {runPromptWithLifecycle, RENDERED_EVENT} from '../ui';
+import {AiFeature} from '../../claude/ai-feature';
 
 interface AISearchFuncInfo {
   func: DG.Func;
@@ -20,6 +21,8 @@ interface AISearchFuncInfo {
  * The idea is to provide single AI search provider which will decide which LLM to use based on user prompt.
  * This class will not care about individual LLM implementations, nor the presence of api keys and other needed things.
  */
+const SEARCH_FEATURES: {[func: string]: AiFeature} = {Help: AiFeature.Help, Execute: AiFeature.Execute};
+
 export class CombinedAISearchAssistant {
   private collectFunctions(): {[name: string]: AISearchFuncInfo} {
     // these function should have descriptions, one input of a string prompt and an output of a widget. meta.useWhen must be defined as well
@@ -108,7 +111,7 @@ export class CombinedAISearchAssistant {
 
   private buildFunctionTabContent(funcInfo: AISearchFuncInfo, prompt: string): HTMLElement {
     const host = ui.divV([], 'grokky-ai-search-tab-host');
-    const chat = new AIPanel(`search-${funcInfo.func.name}`, grok.shell.v, {inline: true});
+    const chat = new AIPanel(`search-${funcInfo.func.name}`, grok.shell.v, {inline: true, feature: SEARCH_FEATURES[funcInfo.func.name]});
     chat.onRunRequest.subscribe((a) => runPromptWithLifecycle(chat, a.currentPrompt.prompt, grok.shell.v, 'search'));
 
     host.appendChild(ui.wait(async () => {
@@ -161,7 +164,7 @@ export class CombinedAISearchAssistant {
     if (this.lastUiprompt === prompt)
       return;
     this.lastUiprompt = prompt;
-    if (!await UsageLimiter.getInstance().tryCheckAndIncrement('search', prompt, 'Fast'))
+    if (!await UsageLimiter.getInstance().tryCheckAndIncrement('search', 'Fast'))
       return;
     // add components to right places in ui
     const searchResultHost = document.getElementsByClassName('power-pack-search-host')[0];
@@ -222,6 +225,7 @@ User query: ${prompt}`;
       const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt, {
         systemPromptMode: 'none',
         outputSchema: orderSchema,
+        feature: AiFeature.Search,
       });
       const parsed = (res as {order?: unknown})?.order;
       if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string' && this.functions[s]) && parsed.length > 0)

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* AI: Every completed turn is logged as an `ai-turn` usage event with its feature, status, model, tokens, cost and duration, including failed and stopped turns
+* AI: Prompts are no longer written to the `ai-request` usage events
 * Runtime, MCP server: Updated the Node.js base images to 22.23.4 (Node.js October 2026 security release)
 
 * AI: The assistant runs on Claude and GPT models through Anthropic, OpenRouter, OpenAI, Microsoft Azure, Amazon Bedrock, Databricks or your own Anthropic- or OpenAI-compatible endpoint; Claude subscription sign-in is not supported
