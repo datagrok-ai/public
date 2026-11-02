@@ -7,6 +7,8 @@ import {PlanFrames, declarationOf, mapPriorFrame, planFrames, priorsFrame} from 
 import {openPlanFile, planView} from './plan-view';
 import {AnalysisFrames, analysisDeclarationOf, analysisFrames} from './analyze';
 import {analyzeView} from './analyze-view';
+import {MonitorFrames, monitorFrames} from './monitor';
+import {monitorView, openStudyFile} from './monitor-view';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -18,7 +20,44 @@ export class PackageFunctions {
     // the app's URL path, which the platform passes: /analyze opens Analyze, anything else Plan
     @grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string): Promise<DG.ViewBase> {
     // ponytail: the stage from the URL until the four-stage hub exists
-    return path?.replace(/^\//, '').startsWith('analyze') ? analyzeView() : planView();
+    const stage = path?.replace(/^\//, '') ?? '';
+    return stage.startsWith('analyze') ? analyzeView() : stage.startsWith('monitor') ? monitorView() : planView();
+  }
+
+  @grok.decorators.fileHandler({ext: 'pmxstudy', description: 'Opens a PMX Studio study in Monitor.'})
+  static async pmxStudyFileHandler(content: string): Promise<DG.DataFrame[]> {
+    return openStudyFile(content);
+  }
+
+  @grok.decorators.func({
+    name: 'pmxMonitorStudy',
+    description: 'Follows a running xenograft or syngeneic efficacy study with Crux stats.tumor_monitor, from every measurement so far, the cell line’s growth model from the atlas and the plan: for each animal the range of its next measurement, its chance of passing the humane limit and whether its last value was unexpected; for each group its median day by day to the end; the day the study is expected to end; and, on the reviews fixed at the start, each treated group’s chance that the final test finds it slower than the control.',
+    outputs: [
+      {name: 'status', type: 'dataframe', options: {description: 'The study today: one row.'}},
+      {name: 'animals', type: 'dataframe', options: {description: 'Per animal: the range of its next measurement and why it needs attention.'}},
+      {name: 'days', type: 'dataframe', options: {description: 'Per group and day, measured and to come: its median volume and range.'}},
+      {name: 'decisions', type: 'dataframe', options: {description: 'Per treated group, on a planned review: the chance of success (empty between reviews).'}},
+    ],
+  })
+  static async pmxMonitorStudy(
+    @grok.decorators.param({options: {category: 'Study', caption: 'Study', nullable: false, description: 'The measurements so far: one row per animal and day, day 0 the randomization.'}}) study: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Animal', description: 'The animal (tumor) identifier, unique in the study.'}}) animal: DG.Column,
+    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Group', description: 'The treatment group.'}}) group: DG.Column,
+    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Day', type: 'numerical', description: 'Days from randomization.'}}) day: DG.Column,
+    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Volume', type: 'numerical', description: 'Tumor volume (mm³).'}}) volume: DG.Column,
+    // @ts-expect-error (the platform's `visible` rule, as in pmxPlanStudy)
+    @grok.decorators.param({type: 'string', options: {category: 'Study', caption: 'Plan', optional: true, nullable: true, visible: 'false', description: 'The plan saved in Plan (its .pmxplan file’s contents).'}}) plan: string | null,
+    @grok.decorators.param({options: {category: 'Study', caption: 'Planned reviews', optional: true, nullable: true, description: 'The study days fixed at the start to review each treated group, comma-separated, e.g. 7, 10.'}}) looks: string | null,
+    @grok.decorators.param({options: {category: 'Monitoring', caption: 'Cell line', choices: ['MC38', 'CT26', 'B16F10'], initialValue: 'MC38', description: 'The tumor model: its growth model from the atlas of historical controls makes the forecasts.'}}) line: string,
+    @grok.decorators.param({options: {category: 'Monitoring', caption: 'Control group', optional: true, nullable: true, description: 'The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).'}}) control: string,
+    @grok.decorators.param({options: {category: 'Monitoring', caption: 'Endpoint volume', units: 'mm³', min: '500', max: '3000', initialValue: '1500', description: 'The study ends when the median control reaches it.'}}) endpoint: number,
+    @grok.decorators.param({options: {category: 'Monitoring', caption: 'Humane limit', units: 'mm³', min: '500', max: '4000', initialValue: '2000', description: 'Your protocol’s limit: an animal near it is listed.'}}) humane: number,
+    @grok.decorators.param({options: {category: 'Advanced', caption: 'Multiple comparisons', choices: ['dunnett', 'bonferroni', 'none'], initialValue: 'dunnett', description: 'Correction over the groups compared with the control in the final test.'}}) correction: string,
+    @grok.decorators.param({options: {category: 'Advanced', caption: 'Evaluation day', optional: true, nullable: true, description: 'Leave empty for the day the median control reaches the endpoint volume.'}}) evaluationDay?: number,
+    @grok.decorators.param({options: {category: 'Advanced', caption: 'Significance (α)', optional: true, min: '0.001', max: '0.2', initialValue: '0.05', description: 'Two-sided significance level of the final test.'}}) alpha?: number,
+  ): Promise<MonitorFrames> {
+    return monitorFrames({study, animal, group, day, volume, plan, looks, line, control, endpoint, humane, correction,
+      evaluationDay, alpha});
   }
 
   // the extension as a literal (the decorators' generator reads no constants): plan-file.ts's PLAN_EXT

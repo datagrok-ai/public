@@ -126,7 +126,7 @@ const PLACEHOLDER = 'Optional: a plan saved in Plan';
 /** The Plan field, under the form's Study fields; a plan picked writes its pre-specified analysis into the form and
  *  its text into the call (`state`: the view's stale mark, error line and last analysis). The view owns it. */
 export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: Signal<boolean>,
-  error: Signal<string | null>, result: ReadonlySignal<AnalysisFrames | undefined>}): FileInput {
+  error: Signal<string | null>, result: ReadonlySignal<{analysis: DG.DataFrame} | undefined>}): FileInput {
   const {stale, error, result} = state;
   // the Plan field also offers the user's saved plans; a plan picked writes its pre-specified analysis into the form
   const applyPlan = (p: SavedPlan) => {

@@ -1,5 +1,13 @@
 # PmxStudio changelog
 
+## Unreleased
+
+* Monitor (`pmxMonitorStudy`, app route `/monitor`; needs Crux `stats.tumor_monitor` and `stats.tumor_allocate`): follow
+  a running study without seeing its groups. Today lists who needs attention and each animal's expected next value;
+  Enrollment proposes balanced groups; Growth (once revealed) each group's forecast; Decisions flags a treated group
+  with a low chance of a clear result, only on reviews fixed at the start, and logs what is decided. Followed studies
+  are saved as `.pmxstudy` files; Plan has Follow this study.
+
 ## 0.0.1 (2026-10-26)
 
 PMX Studio Preclinical, Plan and Analyze, on Crux (crate tgi) and the atlas of historical controls:

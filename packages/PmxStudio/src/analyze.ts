@@ -219,7 +219,7 @@ function evaluationDay(d: AnalysisDeclaration): {day: number, fromEndpoint: bool
 
 /** Crux stats.tumor_twin's model of the line: the engine priors' study prior, noise and start spread with the twin's
  *  own fit (between-animal spread, process noise, slow animals, skew). */
-async function twinModel(line: string) {
+export async function twinModel(line: string) {
   const lp = await linePrior(line);
   const [sp, nz, tw] = [lp.study_prior, lp.noise, lp.twin];
   if (!sp || !nz || !tw)
@@ -357,7 +357,7 @@ function noPlanDesign(d: StudyDeclaration): Promise<StudyDesign> {
 
 /** Each treated group with the plan's arm it ran as: the same name (any case), else, for the groups left, the arms
  *  left in their order when they are as many (said in a note). */
-function pairGroups(treated: string[], arms: SavedPlan['predicted']['arms'], notes: string[]) {
+export function pairGroups(treated: string[], arms: SavedPlan['predicted']['arms'], notes: string[]) {
   const key = (s: string) => s.trim().toLowerCase();
   const byName = new Map(arms.map((a) => [key(a.name), a]));
   const pairs = new Map(treated.flatMap((g) => byName.has(key(g)) ? [[g, byName.get(key(g))!] as const] : []));

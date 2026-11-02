@@ -16,6 +16,36 @@ export namespace funcs {
   }
 
   /**
+   * Opens a PMX Studio study in Monitor.
+   */
+  export async function pmxStudyFileHandler(content: string ): Promise<any> {
+    return await grok.functions.call('PMXStudio:PmxStudyFileHandler', { content });
+  }
+
+  /**
+   * Follows a running xenograft or syngeneic efficacy study with Crux stats.tumor_monitor, from every measurement so far, the cell line’s growth model from the atlas and the plan: for each animal the range of its next measurement, its chance of passing the humane limit and whether its last value was unexpected; for each group its median day by day to the end; the day the study is expected to end; and, on the reviews fixed at the start, each treated group’s chance that the final test finds it slower than the control.
+   * @param {DG.DataFrame} study - The measurements so far: one row per animal and day, day 0 the randomization.
+   * @param {DG.Column} animal - The animal (tumor) identifier, unique in the study.
+   * @param {DG.Column} group - The treatment group.
+   * @param {DG.Column} day - Days from randomization.
+   * @param {DG.Column} volume - Tumor volume (mm³).
+   * @param {string} plan - The plan saved in Plan (its .pmxplan file’s contents).
+   * @param {any} looks - The study days fixed at the start to review each treated group, comma-separated, e.g. 7, 10.
+   * @param {string} line - The tumor model: its growth model from the atlas of historical controls makes the forecasts.
+   *   choices: ["MC38","CT26","B16F10"]
+   * @param {string} control - The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).
+   * @param {number} endpoint - The study ends when the median control reaches it.
+   * @param {number} humane - Your protocol’s limit: an animal near it is listed.
+   * @param {string} correction - Correction over the groups compared with the control in the final test.
+   *   choices: ["dunnett","bonferroni","none"]
+   * @param {number} evaluationDay - Leave empty for the day the median control reaches the endpoint volume.
+   * @param {number} alpha - Two-sided significance level of the final test.
+   */
+  export async function pmxMonitorStudy(study: DG.DataFrame , animal: DG.Column , group: DG.Column , day: DG.Column , volume: DG.Column , plan: string | undefined| null, looks: any | undefined| null, line: string , control: string | undefined| null, endpoint: number , humane: number , correction: string , evaluationDay?: number | null, alpha?: number ): Promise<{status: DG.DataFrame, animals: DG.DataFrame, days: DG.DataFrame, decisions: DG.DataFrame}> {
+    return await grok.functions.call('PMXStudio:PmxMonitorStudy', { study, animal, group, day, volume, plan, looks, line, control, endpoint, humane, correction, evaluationDay, alpha });
+  }
+
+  /**
    * Opens a PMX Studio plan in Plan.
    */
   export async function pmxPlanFileHandler(content: string ): Promise<any> {

@@ -10,6 +10,38 @@ export async function pmxStudioApp(path?: string) : Promise<any> {
   return await PackageFunctions.pmxStudioApp(path);
 }
 
+//description: Opens a PMX Studio study in Monitor.
+//input: string content 
+//output: list<dataframe> result
+//meta.role: fileHandler
+//meta.ext: pmxstudy
+export async function pmxStudyFileHandler(content: string) : Promise<any> {
+  return await PackageFunctions.pmxStudyFileHandler(content);
+}
+
+//description: Follows a running xenograft or syngeneic efficacy study with Crux stats.tumor_monitor, from every measurement so far, the cell line’s growth model from the atlas and the plan: for each animal the range of its next measurement, its chance of passing the humane limit and whether its last value was unexpected; for each group its median day by day to the end; the day the study is expected to end; and, on the reviews fixed at the start, each treated group’s chance that the final test finds it slower than the control.
+//input: dataframe study { category: Study; caption: Study; nullable: false; description: The measurements so far: one row per animal and day, day 0 the randomization. }
+//input: column animal { category: Study; caption: Animal; description: The animal (tumor) identifier, unique in the study. }
+//input: column group { category: Study; caption: Group; description: The treatment group. }
+//input: column day { category: Study; caption: Day; type: numerical; description: Days from randomization. }
+//input: column volume { category: Study; caption: Volume; type: numerical; description: Tumor volume (mm³). }
+//input: string plan { category: Study; caption: Plan; optional: true; nullable: true; visible: false; description: The plan saved in Plan (its .pmxplan file’s contents). }
+//input: dynamic looks { category: Study; caption: Planned reviews; optional: true; nullable: true; description: The study days fixed at the start to review each treated group, comma-separated, e.g. 7, 10. }
+//input: string line = 'MC38' { category: Monitoring; caption: Cell line; choices: ["MC38","CT26","B16F10"]; description: The tumor model: its growth model from the atlas of historical controls makes the forecasts. }
+//input: string control { category: Monitoring; caption: Control group; optional: true; nullable: true; description: The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first). }
+//input: double endpoint = 1500 { category: Monitoring; caption: Endpoint volume; units: mm³; min: 500; max: 3000; description: The study ends when the median control reaches it. }
+//input: double humane = 2000 { category: Monitoring; caption: Humane limit; units: mm³; min: 500; max: 4000; description: Your protocol’s limit: an animal near it is listed. }
+//input: string correction = 'dunnett' { category: Advanced; caption: Multiple comparisons; choices: ["dunnett","bonferroni","none"]; description: Correction over the groups compared with the control in the final test. }
+//input: double evaluationDay { category: Advanced; caption: Evaluation day; optional: true; nullable: true; description: Leave empty for the day the median control reaches the endpoint volume. }
+//input: double alpha = 0.05 { category: Advanced; caption: Significance (α); optional: true; min: 0.001; max: 0.2; description: Two-sided significance level of the final test. }
+//output: dataframe status { description: The study today: one row. }
+//output: dataframe animals { description: Per animal: the range of its next measurement and why it needs attention. }
+//output: dataframe days { description: Per group and day, measured and to come: its median volume and range. }
+//output: dataframe decisions { description: Per treated group, on a planned review: the chance of success (empty between reviews). }
+export async function pmxMonitorStudy(study: DG.DataFrame, animal: DG.Column, group: DG.Column, day: DG.Column, volume: DG.Column, plan: any, looks: any, line: string, control: string, endpoint: number, humane: number, correction: string, evaluationDay?: number, alpha?: number) : Promise<any> {
+  return await PackageFunctions.pmxMonitorStudy(study, animal, group, day, volume, plan, looks, line, control, endpoint, humane, correction, evaluationDay, alpha);
+}
+
 //description: Opens a PMX Studio plan in Plan.
 //input: string content 
 //output: list<dataframe> result

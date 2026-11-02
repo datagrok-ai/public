@@ -18,13 +18,13 @@ import {addRunButton, block, busyOverlay, cardGrid, copyRow, declarationPane, DE
   notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, resultTabs, settleForm, sized, staleNote, stageStrip,
   statCard, swatch, volumeAxis} from './ui';
 import {openStage} from './stages';
+import {followPlan} from './monitor-view';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
 import {BandChart} from './band-chart';
 
 /** Where the plan's first stage is run: Monitor takes the implanted pool to randomization. */
-const monitorNote = () => infoNote('<b>From implantation to randomization, in Monitor.</b> Monitor follows every ' +
-  'implanted animal until its tumor enters the randomization window, flags the ones that do not take, and forms ' +
-  'the groups automatically, balanced on tumor volume, as soon as there are enough.');
+const monitorNote = () => infoNote('<b>From randomization on, in Monitor.</b> Follow this study to form the groups, ' +
+  'balanced on tumor volume, and to see each session who needs attention and how the study is going.');
 
 const WEEKDAYS = WEEKDAY_NAMES.map((d) => d.slice(0, 3));
 
@@ -667,14 +667,23 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
       .finally(() => saving.value = false);
   });
   downloadButton.title = 'Download the plan as a file, to send it to someone';
-  form.effect(() => [saveButton, downloadButton].forEach((b) => b.disabled = !result.value || busy.value ||
-    saving.value));
+  const followButton = buttonWithIcon('Follow this study', 'eye', () => {
+    const r = ready();
+    if (!r)
+      return;
+    saving.value = true;
+    void planOf(defaultName(r), call, r).then(followPlan).catch((e) => error.value = String(e?.message ?? e))
+      .finally(() => saving.value = false);
+  });
+  followButton.title = 'Start following this study in Monitor, with this plan';
+  form.effect(() => [saveButton, downloadButton, followButton].forEach((b) => b.disabled = !result.value ||
+    busy.value || saving.value));
 
   const panes = new Splitter([declaration, results], {direction: 'horizontal', sizes: [0.3, 0.7],
     minSize: DECLARATION_MIN});
   const host = ViewHost.create({name: 'PMX Studio · Plan', content: () => ({
     root: panes,
-    ribbon: [[stageStrip('plan', (s) => void openStage(s))], [saveButton, downloadButton]],
+    ribbon: [[stageStrip('plan', (s) => void openStage(s))], [saveButton, downloadButton, followButton]],
     path: '/plan',
     status: computed(() => busy.value ? 'Designing the study…' : result.value ? result.value.plan.name : ''),
   })});

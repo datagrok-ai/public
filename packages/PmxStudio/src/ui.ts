@@ -165,14 +165,13 @@ export function volumeAxis(): {input: RadioInput, row: HTMLElement, log: Readonl
 export type Stage = 'plan' | 'monitor' | 'analyze';
 const STAGES: {stage: Stage, label: string, tip: string}[] = [
   {stage: 'plan', label: 'Plan', tip: 'Design the study before it runs: animals, end of study, calendar and power'},
-  {stage: 'monitor', label: 'Monitor', tip: 'Coming soon: follow the study live against its plan, from implantation ' +
-    'to the end'},
+  {stage: 'monitor', label: 'Monitor', tip: 'Follow the running study: who needs attention, and how it is going'},
   {stage: 'analyze', label: 'Analyze', tip: 'Analyze the finished study as planned, each treated animal against its ' +
     'untreated twin'},
 ];
 
-/** The app's stages in order, the current one marked; `open` brings another one up (Monitor is not built yet). A
- *  stage moves the whole page, so the strip goes in the view's ribbon, above the declaration and the results. */
+/** The app's stages in order, the current one marked; `open` brings another one up. A stage moves the whole page, so
+ *  the strip goes in the view's ribbon, above the declaration and the results. */
 export function stageStrip(current: Stage, open: (stage: Stage) => void): HTMLElement {
   const strip = divH([], 'pmx-stages');
   strip.setAttribute('role', 'navigation');
@@ -182,14 +181,12 @@ export function stageStrip(current: Stage, open: (stage: Stage) => void): HTMLEl
     if (i > 0)
       strip.append(span('›'));
     const on = stage === current;
-    const ready = stage !== 'monitor';
-    const step = document.createElement(on || !ready ? 'span' : 'button');
+    const step = document.createElement(on ? 'span' : 'button');
     step.textContent = `${i + 1} ${label}`;
     Object.assign(step.style, {border: '0', background: 'none', padding: '2px 4px', font: 'inherit',
       borderBottom: on ? '2px solid var(--dg-accent, #2083d5)' : '2px solid transparent',
-      color: on ? 'var(--dg-text-color, #1f2a37)' : ready ? 'var(--dg-accent, #2083d5)' :
-        'var(--dg-text-color-muted, #9aa3ad)', fontWeight: on ? '600' : '400', cursor: on || !ready ? 'default' :
-        'pointer'});
+      color: on ? 'var(--dg-text-color, #1f2a37)' : 'var(--dg-accent, #2083d5)', fontWeight: on ? '600' : '400',
+      cursor: on ? 'default' : 'pointer'});
     if (on)
       step.setAttribute('aria-current', 'step');
     if (step instanceof HTMLButtonElement)
