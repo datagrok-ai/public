@@ -99,7 +99,7 @@ function showMoleculeMenu(molStr: string) {
     DG.chem.isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
     ui.dialog()
       .add(sketcher)
-      .show();
+      .show({resizable: true});
   });
   menu.item('Explore', () => {
     grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
