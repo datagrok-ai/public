@@ -18,27 +18,34 @@ params as (
     and p.name in ('feature', 'model', 'status', 'chatId', 'inputCount', 'outputCount', 'cacheReadCount',
       'cacheCreationCount', 'costUsd', 'durationMs')
 ),
-turns as (
-  select e.id, e.event_time, s.user_id,
-    max(v.value) filter (where p.name = 'feature') as feature,
-    max(v.value) filter (where p.name = 'model') as model,
-    max(v.value) filter (where p.name = 'status') as status,
-    max(v.value) filter (where p.name = 'chatId') as chat_id,
-    max(v.value) filter (where p.name = 'inputCount')::bigint as input_tokens,
-    max(v.value) filter (where p.name = 'outputCount')::bigint as output_tokens,
-    max(v.value) filter (where p.name = 'cacheReadCount')::bigint as cache_read_tokens,
-    max(v.value) filter (where p.name = 'cacheCreationCount')::bigint as cache_write_tokens,
-    max(v.value) filter (where p.name = 'costUsd')::numeric as cost_usd,
-    max(v.value) filter (where p.name = 'durationMs')::bigint as duration_ms
+turn_events as (
+  select e.id, e.event_time, s.user_id, u.friendly_name as user_name
   from events e
   join users_sessions s on s.id = e.session_id
   join users u on u.id = s.user_id
-  join event_parameter_values v on v.event_id = e.id
-  join params p on p.id = v.parameter_id
   where e.event_type_id in (select id from turn_type)
     and @date(e.event_time)
     and u.group_id in (select id from selected_groups)
-  group by e.id, e.event_time, s.user_id
+),
+turns as (
+  select e.id, e.event_time, e.user_id, e.user_name, x.*
+  from turn_events e
+  cross join lateral (
+    select
+      max(v.value) filter (where p.name = 'feature') as feature,
+      max(v.value) filter (where p.name = 'model') as model,
+      max(v.value) filter (where p.name = 'status') as status,
+      max(v.value) filter (where p.name = 'chatId') as chat_id,
+      max(v.value) filter (where p.name = 'inputCount')::bigint as input_tokens,
+      max(v.value) filter (where p.name = 'outputCount')::bigint as output_tokens,
+      max(v.value) filter (where p.name = 'cacheReadCount')::bigint as cache_read_tokens,
+      max(v.value) filter (where p.name = 'cacheCreationCount')::bigint as cache_write_tokens,
+      max(v.value) filter (where p.name = 'costUsd')::numeric as cost_usd,
+      max(v.value) filter (where p.name = 'durationMs')::bigint as duration_ms
+    from event_parameter_values v
+    join params p on p.id = v.parameter_id
+    where v.event_id = e.id
+  ) x
 ),
 memberships as (
   select u.id as user_id, u.group_id from users u
@@ -54,13 +61,12 @@ user_groups as (
   where not g.personal and not g.hidden and g.friendly_name <> 'All users'
   group by m.user_id
 )
-select t.event_time as time, date_trunc('day', t.event_time) as day, u.friendly_name as "user", ug.groups,
+select t.event_time as time, date_trunc('day', t.event_time) as day, t.user_name as "user", ug.groups,
   t.feature, t.model, coalesce(t.status, 'ok') as status, t.chat_id,
   t.input_tokens, t.output_tokens, t.cache_read_tokens, t.cache_write_tokens,
   coalesce(t.input_tokens, 0) + coalesce(t.output_tokens, 0) + coalesce(t.cache_read_tokens, 0) + coalesce(t.cache_write_tokens, 0) as total_tokens,
   t.cost_usd, t.duration_ms
 from turns t
-join users u on u.id = t.user_id
 left join user_groups ug on ug.user_id = t.user_id
 order by t.event_time desc
 --end
