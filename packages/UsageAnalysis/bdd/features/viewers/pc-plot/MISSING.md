@@ -48,7 +48,7 @@ The edge cases of this viewer that the features could not state with the current
 
 ### Still open
 
-**Decided**: a Log Columns axis over a column holding zero or negative values says it cannot be logarithmic (core#1203, a defect): requested below as an API test (today the axis is drawn linear without a message, `pc_plot_core.dart`, `col.min > 0`; the wording of the message is not set).
+**Decided**: a Log Columns axis over a column holding zero or negative values says it cannot be logarithmic (core#1203, fixed: the axis says why it is drawn linear): requested below as an API test.
 
 **Decided**: a transformation turned on releases the filter of the axis sliders it replaces (core#967, behaviour): claimed in `pc-plot-filter.feature`, green on localhost (core#967 is closed).
 
@@ -58,7 +58,7 @@ The edge cases of this viewer that the features could not state with the current
 
 1. Dart regTest: a constant column as an axis under Normalized with density box or violin (normalization divides by max − min).
 2. ApiTests: Column Names set to AGE alone gives the `error` reading "please select at least 2 columns"; AGE, WEIGHT clears it and draws 1000 lines.
-3. ApiTests: Log Columns = WEIGHT with one WEIGHT value set to 0 gives a non-empty `error` reading: a known failure, core#1203, still open.
+3. ApiTests: Log Columns = WEIGHT with one WEIGHT value set to 0 gives a non-empty `error` reading (core#1203, fixed).
 4. ApiTests: with every row filtered out the plot draws 0 lines and reports no error; with the filter reset it draws its lines again.
 5. ApiTests: once every row of the table is deleted the plot draws 0 lines and reports no error.
 6. ApiTests: HEIGHT renamed to TALL makes Column Names `AGE, TALL, WEIGHT`, no error.

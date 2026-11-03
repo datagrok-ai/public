@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/heat-map/heat-map.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.heat-map]
+sub_features_covered: [viewers.heat-map, core#1202]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -21,17 +21,18 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, hoverOver, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, enterInto, hoverOver, isExpanded, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {addCategoricalFilter, filterPasses} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, areaShorter, areaTaller, hasArea, hasNoArea, noErrors, painted, paintedInColors, readingAsRemembered, readingBetween, readingHigher, readingIs, readingLower, readingReads, rememberReading, repainted, setProperty, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Heat map layout, column labels, column cap and scrollbars", () => {
   const session = feature(test, "features/viewers/heat-map/heat-map.feature", import.meta.url);
-  test("Heat map layout, column labels, column cap and scrollbars", {tag: ["@journey", "@viewers", "@realizes:viewers.heat-map"]}, async ({browser}) => {
+  test("Heat map layout, column labels, column cap and scrollbars", {tag: ["@journey", "@viewers", "@realizes:viewers.heat-map", "@edge-cases", "@realizes:core#1202"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 8, page);
+    const run = journey(test, 9, page);
     await session.step(19, "Given user is logged in", () => loggedIn(page));
     await session.step(20, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(21, "And user adds a heat map viewer", () => addViewer(page, "heat map"));
@@ -129,6 +130,30 @@ test.describe("Heat map layout, column labels, column cap and scrollbars", () =>
       await session.step(123, "When user sets \"maxHeatmapColumns\" property of heat map viewer to \"3\"", () => setProperty(page, "maxHeatmapColumns", el("heat map viewer"), "3"));
       await session.step(124, "Then the \"max heatmap columns\" reading of heat map viewer should be 3", () => readingIs(page, "max heatmap columns", el("heat map viewer"), 3));
       await session.step(125, "And the \"columns shown\" reading of heat map viewer should be 3", () => readingIs(page, "columns shown", el("heat map viewer"), 3));
+    });
+    await run.scenario("A column hidden under Max Heatmap Columns stays hidden when the cap is raised (core#1202)", async () => {
+      await session.step(129, "When user clicks on settings icon of heat map viewer", () => clickOn(page, el("settings icon of heat map viewer")));
+      await session.step(130, "And user sets \"maxHeatmapColumns\" property of heat map viewer to \"5\"", () => setProperty(page, "maxHeatmapColumns", el("heat map viewer"), "5"));
+      await session.step(131, "Then the \"columns shown\" reading of heat map viewer should be 5", () => readingIs(page, "columns shown", el("heat map viewer"), 5));
+      await session.step(132, "And heat map viewer should have a \"column AGE\" area", () => hasArea(page, el("heat map viewer"), "column AGE"));
+      await session.step(133, "Given \"Columns\" category in context panel is expanded", () => isExpanded(page, el("\"Columns\" category in context panel")));
+      await session.step(134, "When user clicks on first button in \"Columns\" property in context panel", () => clickOn(page, el("first button in \"Columns\" property in context panel")));
+      await session.step(135, "Then Order or Hide Columns dialog should be visible", () => shouldBe(page, el("Order or Hide Columns dialog"), "visible"));
+      await session.step(136, "When user toggles the \"AGE\" column in the column list of Order or Hide Columns dialog", () => toggleInColumnList(page, "AGE", el("Order or Hide Columns dialog")));
+      await session.step(137, "And user clicks on CLOSE button in Order or Hide Columns dialog", () => clickOn(page, el("CLOSE button in Order or Hide Columns dialog")));
+      await session.step(138, "Then the \"columns shown\" reading of heat map viewer should be 5", () => readingIs(page, "columns shown", el("heat map viewer"), 5));
+      await session.step(139, "And heat map viewer should not have a \"column AGE\" area", () => hasNoArea(page, el("heat map viewer"), "column AGE"));
+      await session.step(140, "When user enters \"6\" into \"Max Heatmap Columns\" property in context panel", () => enterInto(page, "6", el("\"Max Heatmap Columns\" property in context panel")));
+      await session.step(141, "Then the \"columns shown\" reading of heat map viewer should be 6", () => readingIs(page, "columns shown", el("heat map viewer"), 6));
+      await session.step(142, "And heat map viewer should not have a \"column AGE\" area", () => hasNoArea(page, el("heat map viewer"), "column AGE"));
+      await session.step(143, "When user clicks on first button in \"Columns\" property in context panel", () => clickOn(page, el("first button in \"Columns\" property in context panel")));
+      await session.step(144, "Then Order or Hide Columns dialog should be visible", () => shouldBe(page, el("Order or Hide Columns dialog"), "visible"));
+      await session.step(145, "When user toggles the \"AGE\" column in the column list of Order or Hide Columns dialog", () => toggleInColumnList(page, "AGE", el("Order or Hide Columns dialog")));
+      await session.step(146, "And user clicks on CLOSE button in Order or Hide Columns dialog", () => clickOn(page, el("CLOSE button in Order or Hide Columns dialog")));
+      await session.step(147, "And user enters \"100\" into \"Max Heatmap Columns\" property in context panel", () => enterInto(page, "100", el("\"Max Heatmap Columns\" property in context panel")));
+      await session.step(148, "Then the \"columns shown\" reading of heat map viewer should be 11", () => readingIs(page, "columns shown", el("heat map viewer"), 11));
+      await session.step(149, "And heat map viewer should have a \"column AGE\" area", () => hasArea(page, el("heat map viewer"), "column AGE"));
+      await session.step(150, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

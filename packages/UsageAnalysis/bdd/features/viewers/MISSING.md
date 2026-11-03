@@ -94,8 +94,6 @@ A viewer that breaks a rule carries the check as the known failure of its ticket
   throws a TypeError on every render instead: public#4452, still open.
 - A viewer that picks another column after its column is removed (the box plot's category) is
   correct: the check is only that the removed column leaves the setting.
-- **The tile viewer shows an empty value as a lane with no name** (lane names "x, y, "), not
-  `(empty)`: core#1217.
 - **A viewer's click filter stays after its column is removed** (bar chart, tree, sunburst): the
   removal does not refilter the table, and the rows come back on the next refilter (any filter
   change). Added to core#1174 (2026-10-30); pinned on it.
@@ -126,7 +124,8 @@ logged and the viewer reports no error.
   RACE, SEX without SEX.
 - **Out of bounds through the API**: histogram Bins 201 and 0 keep 20, pie chart Max Radius 600
   keeps 150, trellis plot Tiles Per Row 0 keeps 4. core#1200, still open: the value is written.
-- **An empty value** is the `(empty)` category: a tile viewer with lanes on a column holding an
-  empty value shows 3 tiles and a lane named `(empty)`. core#1217, still open: the lane has no name.
+- **An empty value**: a tile viewer with lanes on a column holding an empty value shows 3 tiles,
+  and the lane is titled `(no value)` (core#1217, fixed, claimed in `tile-viewer/tile-viewer-lanes.feature`).
+  The status still names that lane `""`.
 
 Moved out of BDD (no user gesture); requested from ApiTests.

@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/tile-viewer/tile-viewer-lanes.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.tile-viewer]
+sub_features_covered: [viewers.tile-viewer, core#1217]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -19,21 +19,21 @@ import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
-import {addTileViewer, dragCardIntoLane} from '../../../bindings/tile-viewer.js';
+import {addTileViewer, addTileViewerWith, dragCardIntoLane} from '../../../bindings/tile-viewer.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {filterOut, filterPasses, filterPassesAll, resetFilter} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {closeCurrentView, openDataset, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {closeContextMenu, hasArea, hasNoArea, menuLists, noErrors, pointerAway, propertyShouldBe, readingAtLeast, readingIs, readingReads, setProperties, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {openViewerMenu, pickFromViewerMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {openViewerMenu, pickFromViewerMenu, showsText} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Tile viewer lanes", () => {
   const session = feature(test, "features/viewers/tile-viewer/tile-viewer-lanes.feature", import.meta.url);
-  test("Tile viewer lanes", {tag: ["@journey", "@viewers", "@realizes:viewers.tile-viewer"]}, async ({browser}) => {
+  test("Tile viewer lanes", {tag: ["@journey", "@viewers", "@realizes:viewers.tile-viewer", "@edge-cases", "@realizes:core#1217"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 11, page);
+    const run = journey(test, 12, page);
     await session.step(23, "Given user is logged in", () => loggedIn(page));
     await session.step(24, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(25, "And user adds a tile viewer", () => addTileViewer(page));
@@ -181,19 +181,30 @@ test.describe("Tile viewer lanes", () => {
       await session.step(172, "And the \"lane of row 10\" reading of tile viewer should be \"Asian\"", () => readingReads(page, "lane of row 10", el("tile viewer"), "Asian"));
       await session.step(173, "And no errors should have been logged", () => noErrors(page));
     });
+    await run.scenario("The lane of an empty value is titled (no value) (core#1217)", async () => {
+      await session.step(177, "Given user opens a table \"with-empty\" with:", () => openTableOf(page, "with-empty", [["site","arm"],["A","x"],["A",""],["B","y"]]), [["site","arm"],["A","x"],["A",""],["B","y"]]);
+      await session.step(182, "And user adds a tile viewer with:", () => addTileViewerWith(page, [["Lanes Column Name","arm"]]), [["Lanes Column Name","arm"]]);
+      await session.step(184, "Then the \"lane of row 1\" reading of tile viewer should be \"x\"", () => readingReads(page, "lane of row 1", el("tile viewer"), "x"));
+      await session.step(185, "And the \"lanes\" reading of tile viewer should be 3", () => readingIs(page, "lanes", el("tile viewer"), 3));
+      await session.step(186, "And tile viewer should show the text \"(no value)\"", () => showsText(page, el("tile viewer"), "(no value)"));
+      await session.step(187, "When user closes the current view", () => closeCurrentView(page));
+      await session.step(188, "Then tile viewer should show 1000 rows", () => showsRows(page, el("tile viewer"), 1000));
+      await session.step(189, "And the \"lanes\" reading of tile viewer should be 4", () => readingIs(page, "lanes", el("tile viewer"), 4));
+      await session.step(190, "And no errors should have been logged", () => noErrors(page));
+    });
     await run.scenario("The viewer's menu is reached where no card is", async () => {
-      await session.step(176, "Then tile viewer should have a \"viewer menu\" area", () => hasArea(page, el("tile viewer"), "viewer menu"));
-      await session.step(177, "When user opens the viewer menu of tile viewer", () => openViewerMenu(page, el("tile viewer")));
-      await session.step(178, "Then the open menu should list \"Edit Form...\"", () => menuLists(page, "Edit Form..."));
-      await session.step(179, "And the open menu should list \"Lanes\"", () => menuLists(page, "Lanes"));
-      await session.step(180, "And the open menu should list \"Show Empty Lanes\"", () => menuLists(page, "Show Empty Lanes"));
-      await session.step(181, "When user closes the context menu", () => closeContextMenu(page));
-      await session.step(182, "And user picks \"Show Empty Lanes\" from the viewer menu of tile viewer", () => pickFromViewerMenu(page, "Show Empty Lanes", el("tile viewer")));
-      await session.step(183, "Then \"Show Empty Lanes\" property of tile viewer should be \"false\"", () => propertyShouldBe(page, "Show Empty Lanes", el("tile viewer"), "false"));
-      await session.step(184, "When user picks \"Show Empty Lanes\" from the viewer menu of tile viewer", () => pickFromViewerMenu(page, "Show Empty Lanes", el("tile viewer")));
-      await session.step(185, "Then \"Show Empty Lanes\" property of tile viewer should be \"true\"", () => propertyShouldBe(page, "Show Empty Lanes", el("tile viewer"), "true"));
-      await session.step(186, "And the \"lanes\" reading of tile viewer should be 4", () => readingIs(page, "lanes", el("tile viewer"), 4));
-      await session.step(187, "And no errors should have been logged", () => noErrors(page));
+      await session.step(193, "Then tile viewer should have a \"viewer menu\" area", () => hasArea(page, el("tile viewer"), "viewer menu"));
+      await session.step(194, "When user opens the viewer menu of tile viewer", () => openViewerMenu(page, el("tile viewer")));
+      await session.step(195, "Then the open menu should list \"Edit Form...\"", () => menuLists(page, "Edit Form..."));
+      await session.step(196, "And the open menu should list \"Lanes\"", () => menuLists(page, "Lanes"));
+      await session.step(197, "And the open menu should list \"Show Empty Lanes\"", () => menuLists(page, "Show Empty Lanes"));
+      await session.step(198, "When user closes the context menu", () => closeContextMenu(page));
+      await session.step(199, "And user picks \"Show Empty Lanes\" from the viewer menu of tile viewer", () => pickFromViewerMenu(page, "Show Empty Lanes", el("tile viewer")));
+      await session.step(200, "Then \"Show Empty Lanes\" property of tile viewer should be \"false\"", () => propertyShouldBe(page, "Show Empty Lanes", el("tile viewer"), "false"));
+      await session.step(201, "When user picks \"Show Empty Lanes\" from the viewer menu of tile viewer", () => pickFromViewerMenu(page, "Show Empty Lanes", el("tile viewer")));
+      await session.step(202, "Then \"Show Empty Lanes\" property of tile viewer should be \"true\"", () => propertyShouldBe(page, "Show Empty Lanes", el("tile viewer"), "true"));
+      await session.step(203, "And the \"lanes\" reading of tile viewer should be 4", () => readingIs(page, "lanes", el("tile viewer"), 4));
+      await session.step(204, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

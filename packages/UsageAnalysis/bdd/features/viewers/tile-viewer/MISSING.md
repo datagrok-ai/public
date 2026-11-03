@@ -65,11 +65,11 @@ None.
 1. **The lanes column removed** is dropped from the settings, as clearing it does, and no other
    column is picked (`TileViewerLook.auto` keeps only a lanes name the table has). This check, with
    no rows and a renamed lanes column, is requested from ApiTests in `../MISSING.md`.
-2. **A lanes column with empty values** has an `(empty)` lane: core#1217, still open, requested
-   from ApiTests in `../MISSING.md`. That lane offered as `(empty)` is written in
-   `tile-viewer-known-failures.feature` (back into `tile-viewer-lanes.feature` once fixed), core#1217, a
-   known failure (the lane has no name today, so there is no `(empty)` lane to drop on);
-   the drop and the empty value it writes are claimed once the lane exists.
+2. **A lanes column with empty values** has a lane titled `(no value)` (core#1217, fixed): claimed in
+   `tile-viewer-lanes.feature`. A card dropped into that lane gets an empty value, but the drop is not
+   claimed there: with a tile viewer open in another view (the journey's demog-1000), a card drag
+   logs `NullError: method not found: 'cZ' on null` while the value is still written (measured
+   2026-11-03 on localhost, not filed).
 3. **Escape in the form designer** after deleting a field does nothing: the designer is a view, not
    a dialog. Right as it is (2026-10-30), claimed in `tile-viewer-form-editor.feature`. Escape in the
    Edit dialog (the EDIT icon of the ribbon) cancels it: not written.

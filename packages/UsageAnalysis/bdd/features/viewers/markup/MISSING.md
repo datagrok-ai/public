@@ -14,7 +14,7 @@ None. Html mode content from a shared layout or project runs its scripts (`NodeT
 2. ApiTests: a cell value holding HTML (`<b>bold</b> <i>it</i>`) substituted into `${NAME}` is shown as written text, with no bold element rendered (`d4/CLAUDE.md` rule 8, `htmlEscape` in `markup_viewer_core.dart`).
 3. ApiTests: a column removed while the content references it leaves the reference as written (`Age: 26 Sex: ${SEX}`), no error.
 4. ApiTests: once every row of the table is deleted, `#{t.rowCount}` reads 0, the viewer has no current row and reports no error.
-5. ApiTests: a referenced column renamed (AGE to YEARS) is followed by the content (`Age: ${YEARS}`) and its values are still substituted: a known failure, core#1232, still open.
+5. ApiTests: a referenced column renamed (AGE to YEARS) is followed by the content (`Age: ${YEARS}`) and its values are still substituted (core#1232, fixed).
 
 Moved out of BDD (no user gesture); requested from ApiTests.
 

@@ -93,7 +93,7 @@ The edge cases of this viewer that the features could not state with the current
 **Decided**
 
 1. An Alt-click without moving zooms the map to one row and an Alt-drag to the rows it spans (no row is selected): claimed green in `heat-map-navigation.feature` on `y scroll span`.
-2. Max Heatmap Columns counts only the visible columns, so a column hidden in the Columns dialog stays hidden when the cap is raised (core#1202, a defect): written as a known failure, in `heat-map-known-failures.feature` (today raising the cap from 5 to 6 shows the hidden AGE again).
+2. Max Heatmap Columns counts only the visible columns, so a column hidden in the Columns dialog stays hidden when the cap is raised (core#1202, fixed): claimed in `heat-map.feature`; the hidden column also no longer counts toward the cap, so 5 columns stay on screen.
 
 **API or Dart tests to write**
 
