@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {sequenceToMolfile} from '../utils/sequence-to-mol';
-import {showMoleculeDialog, toAtomicLevelSingle} from '../widgets/to-atomic-level-widget';
+import {EMBED_3D_FAILED, EMBED_3D_TOO_LONG, embedMolecule3d, showMoleculeDialog, toAtomicLevelSingle}
+  from '../widgets/to-atomic-level-widget';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
@@ -117,6 +118,24 @@ category('toAtomicLevel-ui', () => {
     expect(newConversionBalloons(shown).length, 0, 'the panel showed the warning balloon');
   });
 
+  // bio-edge 2026-11-02: the panels said 'No structure generated' for every failed row, without its reason
+  test('panel-failed-sequence-reason', async () => {
+    for (const [seq, reason] of [
+      [UNKNOWN_MONOMER_HELM, 'unknown monomer PEPTIDE:Unknown_Monomer_X'],
+      ['PEPTIDE1{}|PEPTIDE2{A.C}$$$$', 'polymer PEPTIDE1 has no monomers'],
+      ['PEPTIDE1{A.(G,C).A}$$$$', 'ambiguous monomer'],
+      ['PEPTIDE1{A.C.D', 'HELM unterminated-brace'],
+    ]) {
+      const col = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'seq', [seq]) as DG.Column<string>;
+      col.semType = DG.SEMTYPE.MACROMOLECULE;
+      col.meta.units = NOTATION.HELM;
+      DG.DataFrame.fromColumns([col]);
+      const res = await toAtomicLevelSingle(DG.SemanticValue.fromTableCell(col.dataFrame.cell(0, 'seq')));
+      expect(res.mol, '', seq);
+      expect(res.errorText.startsWith(`No structure generated: ${reason}`), true, `${seq}: ${res.errorText}`);
+    }
+  });
+
   test('column-failed-rows-balloon', async () => {
     const shown = balloonsNow();
     const seqCol = await seqColOf([UNKNOWN_MONOMER_HELM, 'PEPTIDE1{A.C}$$$$']);
@@ -140,6 +159,46 @@ category('toAtomicLevel-ui', () => {
     expect(rna121.errorText, 'Maximum number of monomers for molecular conversion is 360');
     const rna120 = await toAtomicLevelSingle(await panelValue(rna(120)));
     expect(!!rna120.mol, true, `120 nucleotides: ${rna120.errorText}`);
+  });
+
+  // bio-edge 2026-11-02: a fixed repeat is one position but many monomers: `A'3000'` passed the limit and the panel
+  // built and drew a 15,000-atom molecule
+  test('panel-monomer-limit-repeats', async () => {
+    const limitMsg = 'Maximum number of monomers for molecular conversion is 120';
+    for (const [helm, overLimit] of [
+      [`PEPTIDE1{A'121'}$$$$`, true], [`PEPTIDE1{A'3000'}$$$$`, true], [`PEPTIDE1{(A.G)'61'}$$$$`, true],
+      [`PEPTIDE1{A'120'}$$$$`, false], [`PEPTIDE1{G.(A.G)'59'.G}$$$$`, false],
+    ] as [string, boolean][]) {
+      const res = await toAtomicLevelSingle(await panelValue(helm));
+      if (overLimit)
+        expect(res.errorText, limitMsg, helm);
+      else
+        expect(!!res.mol && !res.errorText, true, `${helm}: ${res.errorText}`);
+    }
+    const rnaRes = await toAtomicLevelSingle(await panelValue(`RNA1{(r(A)p)'121'}$$$$`));
+    expect(rnaRes.errorText, 'Maximum number of monomers for molecular conversion is 360');
+  });
+
+  // bio-edge 2026-11-02: an embedding that failed or timed out left the 3D panel an empty viewer, one that never
+  // finished (RDKit mode's server script has no deadline) a spinner
+  test('panel-3d-embedding-failed-message', async () => {
+    const molBlock2D = 'CC(N)C(=O)O';
+    for (const [what, embed] of [
+      ['throws', async () => {
+        throw new Error('chemEmbed3d: timed out');
+      }],
+      ['empty', async () => ''],
+      ['blank', async () => '\n  \n'],
+    ] as [string, (m: string) => Promise<string>][]) {
+      const res = await embedMolecule3d(molBlock2D, embed);
+      expect(res.error, EMBED_3D_FAILED, what);
+      expect(res.molBlock3D, null, what);
+    }
+    const never = await embedMolecule3d(molBlock2D, () => new Promise<string>(() => {}), 200);
+    expect(never.error, EMBED_3D_TOO_LONG, 'an embedding that never finishes');
+    const ok = await embedMolecule3d(molBlock2D, async (m) => `3D of ${m}`);
+    expect(ok.error, null);
+    expect(ok.molBlock3D, `3D of ${molBlock2D}`);
   });
 
   // A click on the panel's molecule: drawn at twice the shown resolution, a 3x lens under the mouse

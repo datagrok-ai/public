@@ -24,10 +24,20 @@ export interface WorkerJobContext {
 /** A job of the Crux worker, run by name (CruxService: `jobInChunks`, `idleWorkerJob`, a typed method). */
 export type WorkerJob = (ctx: WorkerJobContext, ...args: any[]) => unknown;
 
-/** Rethrows a wasm trap, which a job must not turn into "no result": the call fails, so the service replaces the worker
- * (its instance may be broken) and RDKit does the work. Other errors are the job's to handle. */
+/** Whether `e` leaves a Crux instance broken: a wasm trap (`WebAssembly.RuntimeError`), or a stack overflow out of a
+ * wasm call (`RangeError: Maximum call stack size exceeded` in Chrome and Safari, `InternalError: too much recursion`
+ * in Firefox; e.g. a recursive writer on a very large molecule), whose unwind does not restore the wasm stack pointer:
+ * after a few the instance reads and writes out of bounds. */
+export function isWasmTrap(e: unknown): e is Error {
+  return e instanceof WebAssembly.RuntimeError || (e instanceof Error &&
+    (e instanceof RangeError || e.name === 'InternalError') && /call stack|too much recursion/i.test(e.message));
+}
+
+/** Rethrows a wasm trap ({@link isWasmTrap}), which a job must not turn into "no result": the call fails, so the
+ * service replaces the worker (its instance may be broken) and RDKit does the work. Other errors are the job's to
+ * handle. */
 export function throwIfTrap(e: unknown): void {
-  if (e instanceof WebAssembly.RuntimeError)
+  if (isWasmTrap(e))
     throw e;
 }
 

@@ -339,7 +339,9 @@ export class JSMol {
      */
     generate_aligned_coords(template: JSMol, details?: string | null): string;
     /**
-     * PORT(minilib.cpp `get_aromatic_form`): the MOL block of the aromatic form.
+     * PORT(minilib.cpp:360-369 `get_aromatic_form`): the MOL block of the aromatic form, written
+     * with its aromatic bonds (`MolToMolBlock(..., kekulize = false)`; Crux wrote it Kekulé, and
+     * failed where the molecule does not kekulize, `c1cccc1`).
      */
     get_aromatic_form(): string;
     get_atom_pair_fp_as_uint8array(details?: string | null): Uint8Array;

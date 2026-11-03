@@ -75,17 +75,20 @@ const AMBIGUITY_TOKEN_RE = /^\(|\)$|[,+]/;
 /** Resolves symbols through the library's lookup ({@link IMonomerLibBase.getMonomer}) to exact library keys, with
  * a cache. Lookup never registers anything in the library. */
 export class MonomerResolver {
-  private readonly cache = new Map<string, AsmResolvedSymbol | string>();
+  /** By polymer type, then symbol: no key string is built per monomer */
+  private readonly cache = new Map<string, Map<string, AsmResolvedSymbol | string>>();
 
   constructor(public readonly monomerLib: IMonomerLibBase) {}
 
   /** @return {AsmResolvedSymbol | string} the resolved symbol or an error message */
   resolve(polymerType: PolymerType, symbol: string): AsmResolvedSymbol | string {
-    const cacheKey = `${polymerType}\u0001${symbol}`;
-    let res = this.cache.get(cacheKey);
+    let byType = this.cache.get(polymerType);
+    if (byType === undefined)
+      this.cache.set(polymerType, byType = new Map<string, AsmResolvedSymbol | string>());
+    let res = byType.get(symbol);
     if (res === undefined) {
       res = this.resolveInt(polymerType, symbol);
-      this.cache.set(cacheKey, res);
+      byType.set(symbol, res);
     }
     return res;
   }
@@ -162,7 +165,8 @@ function resolveOrThrow(resolver: MonomerResolver, polymerType: PolymerType, sym
 }
 
 /** Expands fixed repeats: the copies keep the source monomers' positions, chain starts and connection indices move
- * to the expanded indices (a connection to a repeated monomer goes to its first copy). */
+ * to the expanded indices (a connection to a repeated monomer goes to its first copy, an R2 connection to its last:
+ * the backbone joins the copies R2 to R1, so only the last copy's R2 can be free). */
 export function expandAsmRepeats(seq: AsmSequence, repeats: AsmRepeat[]): AsmSequence {
   if (repeats.length === 0) return seq;
   const src = seq.monomers;
@@ -175,29 +179,36 @@ export function expandAsmRepeats(seq: AsmSequence, repeats: AsmRepeat[]): AsmSeq
       throw new AsmInputError(`invalid repeat [${r.start}, ${r.end}) x${r.min}`);
   }
   const newIdx = new Int32Array(src.length);
+  /** The last copy's index: an R2 connection to a repeated monomer (the end of `A.(G)'3'` closing a cycle) */
+  const lastIdx = new Int32Array(src.length);
   const monomers: AsmMonomer[] = [];
   let ri = 0;
   for (let i = 0; i < src.length;) {
     const r = ri < sorted.length && sorted[ri].start === i ? sorted[ri] : null;
     if (r) {
-      for (let k = r.start; k < r.end; ++k) newIdx[k] = monomers.length + (k - r.start);
+      for (let k = r.start; k < r.end; ++k) {
+        newIdx[k] = monomers.length + (k - r.start);
+        lastIdx[k] = newIdx[k] + (r.min - 1) * (r.end - r.start);
+      }
       for (let copy = 0; copy < r.min; ++copy)
         for (let k = r.start; k < r.end; ++k) monomers.push({...src[k]});
 
       i = r.end;
       ++ri;
     } else {
-      newIdx[i] = monomers.length;
+      newIdx[i] = lastIdx[i] = monomers.length;
       monomers.push(src[i]);
       ++i;
     }
   }
   const srcStarts = seq.graphInfo.disjointSeqStarts;
   const disjointSeqStarts = srcStarts.map((s) => newIdx[s]);
+  const indexOf = (seqIndex: number, monomerIndex: number, rGroup: number): number =>
+    (rGroup === 2 ? lastIdx : newIdx)[srcStarts[seqIndex] + monomerIndex] - disjointSeqStarts[seqIndex];
   const connections: AsmConnection[] = seq.graphInfo.connections.map((c) => ({
     ...c,
-    monomerIndex1: newIdx[srcStarts[c.seqIndex1] + c.monomerIndex1] - disjointSeqStarts[c.seqIndex1],
-    monomerIndex2: newIdx[srcStarts[c.seqIndex2] + c.monomerIndex2] - disjointSeqStarts[c.seqIndex2],
+    monomerIndex1: indexOf(c.seqIndex1, c.monomerIndex1, c.rGroup1),
+    monomerIndex2: indexOf(c.seqIndex2, c.monomerIndex2, c.rGroup2),
   }));
   return {monomers, graphInfo: {...seq.graphInfo, connections, disjointSeqStarts}};
 }
@@ -219,6 +230,8 @@ function helmToAsm(splitted: ISeqSplitted, resolver: MonomerResolver, helm: stri
   for (let c = 0; c < starts.length; ++c) {
     const start = starts[c];
     const end = c + 1 < starts.length ? starts[c + 1] : n;
+    // an empty polymer (PEPTIDE1{}) starts where the next one does: no chain of the assembler's input
+    if (end <= start) throw new AsmInputError(`polymer ${chainIds?.[c] ?? c + 1} has no monomers`);
     let prevRole: AsmRole | null = null;
     const chainPt: string = gi?.polymerTypes?.[start] ?? PolymerTypes.PEPTIDE;
     if (chainPt === PolymerTypes.CHEM && end - start > 1)
@@ -383,4 +396,17 @@ export function buildSeqBatch(
     }
   }
   return packBatch(seqs, errors);
+}
+
+/** The number of monomers a split sequence assembles from, before the DNA/RNA expansion of FASTA and separator
+ * sequences: its positions, with HELM's fixed repeats expanded ({@link IAsmGraphInfoExt.repeats}; `A'3000'` is 3000
+ * monomers, one position). Size limits read it.
+ * @param {ISeqSplitted} splitted
+ * @return {number} */
+export function getAsmMonomerCount(splitted: ISeqSplitted): number {
+  let n = splitted.length;
+  const repeats = (splitted.graphInfo as IAsmGraphInfoExt | undefined)?.repeats ?? [];
+  for (const r of repeats)
+    if (r.min === r.max && r.min > 1 && r.end > r.start) n += (r.min - 1) * (r.end - r.start);
+  return n;
 }

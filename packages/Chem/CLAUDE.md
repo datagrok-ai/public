@@ -167,8 +167,9 @@ and crux-core revisions), bundled like any dependency, the sketcher a chunk of i
 WebAssembly (the sketch engine, and the CDXML and InChI modules, each lazy) emitted beside Chem's chunks; nothing of it
 loads until a Crux sketcher opens. It is a different module from `vendor/chem-wasm/` (Chem's Crux engine), built
 from another crux-core crate. To update it: copy the new dist into `vendor/crux-sketch/` (keep `VERSION`, update it),
-regenerate the Crux Sketch block of `CREDITS.md` from crux-sketch's notices, build, and run the `Crux sketcher` and
-`sketcher testing` categories. Tests: `src/tests/crux-sketcher-tests.ts`.
+regenerate the Crux Sketch block of `CREDITS.md` from crux-sketch's notices, set the InChI module's file name
+(`inchi-<hash>.js`) in `src/crux/jobs/inchi.ts`, which the Crux workers load for a column's InChIs, build, and run the
+`Crux sketcher`, `sketcher testing` and `chemical engine` categories. Tests: `src/tests/crux-sketcher-tests.ts`.
 
 ### Docker integration
 

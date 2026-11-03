@@ -165,6 +165,24 @@ export class Permission {
 
   static ADMIN_URL_ALIASES = 'AdminUrlAliases';
 
+  /** Read the feedback users submit. */
+  static VIEW_FEEDBACK = 'ViewFeedback';
+
+  /** Start the garbage collector and run SQL benchmarks on demand. */
+  static RUN_SERVER_MAINTENANCE = 'RunServerMaintenance';
+
+  /** Upload Docker image vulnerability scans as reports. */
+  static POST_VULNERABILITY_REPORTS = 'PostVulnerabilityReports';
+
+  /** Export every chat and its comments to server storage. */
+  static EXPORT_CHATS = 'ExportChats';
+
+  /** Create Jira tickets from user reports. */
+  static CREATE_JIRA_TICKETS = 'CreateJiraTickets';
+
+  /** View and manage cluster workloads, nodes, resources, scaling and placement. */
+  static ADMIN_CLUSTER = 'AdminCluster';
+
   static MANAGE_ALERTS = 'ManageAlerts';
 
   static VIEW_TELEMETRY = 'ViewTelemetry';
@@ -195,6 +213,9 @@ export class Permission {
   static CREATE_SPACE = 'CreateSpace';
 
   static CREATE_DOMAIN_SCHEMA = 'CreateDomainSchema';
+
+  /** Connect a folder of your computer with `grok connect-folder`. */
+  static CONNECT_LOCAL_FOLDERS = 'ConnectLocalFolders';
 
   /** ===== General ===== */
   static INVITE_USER = 'InviteUser';

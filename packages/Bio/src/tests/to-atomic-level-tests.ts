@@ -10,6 +10,7 @@ import {before, after, category, test, expectArray, expect, awaitCheck} from '@d
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
+import {MONOMER_MAP_MAX_MONOMERS, MonomerMapProvider} from '@datagrok-libraries/bio/src/monomer-works/assembler';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -377,6 +378,26 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
         .filter((l) => /^M {2}V30 \d+ [A-Za-z]+ /.test(l) && / MASS=1\b/.test(l) && !/^M {2}V30 \d+ [HD] /.test(l));
       expect(flagged.length, 0, `${name}: heavy atoms with MASS=1: ${flagged.join('; ')}`);
     }
+  });
+
+  // bio-edge 2026-11-02: the single-sequence functions read a FASTA with more than two gaps as BILN, and BILN without
+  // its notation provider ('Unexpected units biln'): no structure for either
+  test('singleSeqNotations', async () => {
+    const heavyAtoms = async (seq: string): Promise<number> => {
+      const molfile: string = await grok.functions.call('Bio:seq2atomic', {seq, nonlinear: false});
+      expect(!!molfile, true, `no molecule for ${seq}`);
+      return mg.heavyAtomCount(mg.parseMolblockGraph(molfile));
+    };
+    const acde = await heavyAtoms('ACDE');
+    for (const seq of ['AC---DE', 'ACDE---', 'A-C-D-E'])
+      expect(await heavyAtoms(seq), acde, seq);
+    expect(await heavyAtoms('meI-C-A-D'), await heavyAtoms('[meI]CAD'), 'BILN multi-char');
+    const cyclic = async (seq: string) => mg.heavyAtomBondCounts(
+      await grok.functions.call('Bio:seq2atomic', {seq, nonlinear: false}) as string);
+    expectArray(Object.values(await cyclic('C(1,3)-A-A-C(1,3)')),
+      Object.values(await cyclic('PEPTIDE1{C.A.A.C}$PEPTIDE1,PEPTIDE1,1:R3-4:R3$$$V2.0')));
+    const single: string = await grok.functions.call('Bio:toAtomicLevelSingleSeq', {sequence: 'A-C-D-E'});
+    expect(mg.heavyAtomCount(mg.parseMolblockGraph(single)), acde, 'toAtomicLevelSingleSeq BILN');
   });
 
   async function _testToAtomicLevel(
@@ -1454,6 +1475,34 @@ category('toAtomicLevelHover', async () => {
       `hover atoms must index into the combined molfile (max=${Math.max(...atomsUnion)}, atomCount=${atomCount})`);
     expect(atomsUnion.length >= atomCount - 3, true,
       `hover map should cover both chains (covered=${atomsUnion.length}, atomCount=${atomCount})`);
+  });
+
+  // bio-edge 2026-11-02: the maps are assembled on the main thread, where a long non-linear row took seconds and
+  // gigabytes (~2,000 monomers ran Crux out of memory, which switches it off for the session). Rows past the limit
+  // (fixed repeats expanded, gaps not counted) get no map; up to it they do.
+  test('hover-map-size-limit', async () => {
+    const n = MONOMER_MAP_MAX_MONOMERS;
+    const protein = (len: number) => 'MDYKETLLMPK'.repeat(Math.ceil(len / 11)).slice(0, len);
+    const fastaCol = DG.Column.fromStrings('seq', [protein(n) + '-'.repeat(20), protein(n + 1)]);
+    fastaCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    fastaCol.meta.units = NOTATION.FASTA;
+    fastaCol.setTag(bioTAGS.aligned, 'SEQ');
+    fastaCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
+    const helmCol = DG.Column.fromStrings('seq', [`PEPTIDE1{A'${n}'}$$$$V2.0`, `PEPTIDE1{A'${n + 1}'}$$$$V2.0`]);
+    helmCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    helmCol.meta.units = NOTATION.HELM;
+    for (const [col, what] of [[fastaCol, 'FASTA'], [helmCol, 'HELM repeat']] as [DG.Column<string>, string][]) {
+      const maps = new MonomerMapProvider(col, monomerLib, seqHelper, () => 'linear');
+      const mapOf = async (rowIdx: number) => {
+        await new Promise<void>((resolve) => {
+          if (maps.get(rowIdx, resolve, true) !== undefined) resolve();
+        });
+        return maps.get(rowIdx);
+      };
+      const atLimit = await mapOf(0);
+      expect(!!atLimit && atLimit.size > 0, true, `${what}: no map for ${n} monomers`);
+      expect(await mapOf(1), null, `${what}: a map for ${n + 1} monomers`);
+    }
   });
 });
 

@@ -14,7 +14,7 @@ import {HelmTypes} from '../helm/consts';
 import {IMonomerLibBase} from '../types/monomer-library';
 import {ISeqHelper, ToAtomicLevelRes} from '../utils/seq-helper';
 import {buildSeqBatch} from './assembly-input';
-import {getMonomerLibJson, getMonomerLibKey} from './library-json';
+import {getMonomerLibJson} from './library-json';
 import {MonomerMap} from './types';
 import {getMolColName} from './utils';
 
@@ -62,28 +62,20 @@ export async function getMacromoleculeAssembler(): Promise<IMacromoleculeAssembl
   return res;
 }
 
-/** Library keys registered per assembler object; the promise is dropped on failure so that it is sent again. */
-const libRegistrations = new WeakMap<IMacromoleculeAssembler, Map<string, Promise<void>>>();
-
-/** Registers the effective library with the assembler, once per library key.
+/** Registers the effective library with the assembler, at every call: the assembler keeps only the last few
+ * libraries it was given (Chem's: eight, the least recently used dropped first; every PolyTool conversion and rule
+ * preview gives it an override library of its own), so a key registered once may be gone by the next call. For a key
+ * it holds, the call only marks it used: the JSON is built once per key here (library-json.ts) and passed by
+ * reference.
  * @param {IMacromoleculeAssembler} assembler
  * @param {IMonomerLibBase} monomerLib the library to resolve with, an override library included
  * @return {Promise<string>} the library key to assemble with */
 export async function setAssemblerLibrary(
   assembler: IMacromoleculeAssembler, monomerLib: IMonomerLibBase,
 ): Promise<string> {
-  let byKey = libRegistrations.get(assembler);
-  if (!byKey) libRegistrations.set(assembler, byKey = new Map<string, Promise<void>>());
-  const key = getMonomerLibKey(monomerLib);
-  let reg = byKey.get(key);
-  if (!reg) {
-    const lib = getMonomerLibJson(monomerLib);
-    reg = assembler.setLibrary(lib.key, lib.json);
-    byKey.set(key, reg);
-    reg.catch(() => byKey!.delete(key));
-  }
-  await reg;
-  return key;
+  const lib = getMonomerLibJson(monomerLib);
+  await assembler.setLibrary(lib.key, lib.json);
+  return lib.key;
 }
 
 /** Registers the effective library and readies it on the assembler's main-thread module ({@link
@@ -96,9 +88,6 @@ export async function readyAssemblerLibrary(
 ): Promise<string> {
   const lib = getMonomerLibJson(monomerLib);
   await assembler.ready(lib.key, lib.json);
-  let byKey = libRegistrations.get(assembler);
-  if (!byKey) libRegistrations.set(assembler, byKey = new Map<string, Promise<void>>());
-  byKey.set(lib.key, Promise.resolve()); // ready() registers the library as setLibrary() does
   return lib.key;
 }
 
@@ -227,6 +216,12 @@ export async function assembleRowWithMap(
 ): Promise<AssembledRow> {
   const {seq, error} = getRowAsmSequence(seqCol, rowIdx, monomerLib, seqHelper);
   if (!seq) return {molfile: '', monomers: new MonomerMap(), layout: null, error};
+  return assembleSeqWithMap(seq, monomerLib, layout);
+}
+
+/** One parsed sequence assembled on the main-thread module with its monomer map. */
+async function assembleSeqWithMap(seq: AsmSequence, monomerLib: IMonomerLibBase, layout: AsmLayoutName,
+): Promise<AssembledRow> {
   const assembler = await getMacromoleculeAssembler();
   const libKey = await setAssemblerLibrary(assembler, monomerLib);
   return rowOfResult(seq, await assembler.assembleOne(seq, libKey, {layout, map: true}));
@@ -255,6 +250,12 @@ function rowOfResult(seq: AsmSequence, res: AssembleOneResult): AssembledRow {
 const MAP_CACHE_MAX = 100;
 /** Requests waiting beyond this count are dropped, the oldest first (rows scrolled away while their maps waited) */
 const MAP_QUEUE_MAX = 200;
+/** Rows of more monomers than this (gaps not counted, fixed repeats expanded, FASTA/separator nucleotides counted as
+ * sugar, base and phosphate) get no monomer map: the maps are assembled on the main thread, where a non-linear
+ * layout's time and memory grow with the square of the size (400 monomers: ~0.5 s, ~100 MB; 1,600: ~7 s, ~3 GB;
+ * ~2,000: out of memory, which switches Crux off for the session). Chem's workers take rows past this size one at a
+ * time. */
+export const MONOMER_MAP_MAX_MONOMERS = 400;
 
 type MapRequest = { key: string, rowIdx: number, seq: string, layout: AsmLayoutName };
 type MapReady = () => void;
@@ -262,7 +263,8 @@ type MapReady = () => void;
 /** The monomer maps of a molecule column made from a sequence column, from the assembler on demand, one row at a
  * time (D6). The renderers ask synchronously: {@link get} returns the map when it is cached and otherwise requests
  * it and returns undefined; the callback runs when the map arrives. Maps are cached by layout and sequence string
- * (the last {@link MAP_CACHE_MAX}); the requests run one after another, the hovered row first. */
+ * (the last {@link MAP_CACHE_MAX}); the requests run one after another, the hovered row first. Rows past
+ * {@link MONOMER_MAP_MAX_MONOMERS} have no map. */
 export class MonomerMapProvider {
   /** false: the row has no map (empty, rejected or failed) */
   private readonly cache = new LRUCache<string, MonomerMap | false>({max: MAP_CACHE_MAX});
@@ -308,6 +310,18 @@ export class MonomerMapProvider {
     return undefined;
   }
 
+  /** The map of a request's row; false for an empty, rejected or failed row, or one past
+   * {@link MONOMER_MAP_MAX_MONOMERS} */
+  private async mapOf(req: MapRequest): Promise<MonomerMap | false> {
+    const {seq} = getRowAsmSequence(this.seqCol, req.rowIdx, this.monomerLib, this.seqHelper);
+    if (!seq) return false;
+    let monomerCount = 0; // gaps (an aligned column's) cost nothing
+    for (const m of seq.monomers) if (!m.gap) ++monomerCount;
+    if (monomerCount > MONOMER_MAP_MAX_MONOMERS) return false;
+    const res = await assembleSeqWithMap(seq, this.monomerLib, req.layout);
+    return res.error ? false : res.monomers;
+  }
+
   private async run(): Promise<void> {
     if (this.running) return;
     this.running = true;
@@ -319,11 +333,8 @@ export class MonomerMapProvider {
         try {
           // The row may have changed while its request waited: no map is cached for a stale request
           current = this.seqCol.get(req.rowIdx) === req.seq;
-          if (current) {
-            const res = await assembleRowWithMap(this.seqCol, req.rowIdx, this.monomerLib, this.seqHelper,
-              req.layout);
-            map = res.error ? false : res.monomers;
-          }
+          if (current)
+            map = await this.mapOf(req); // always awaited: the callbacks of get() are registered after it returns
         } catch (err: any) {
           console.error(err);
         }

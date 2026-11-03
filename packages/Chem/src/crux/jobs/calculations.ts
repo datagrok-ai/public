@@ -25,10 +25,11 @@ function packDescriptors(values: {[name: string]: DescriptorValues}, transfer: T
 
 /**
  * InChI's input of each molecule, as RDKit's MolToInchi fills it (chem-wasm's `get_inchi_input`) for crux-sketch's
- * InChI module to run the library on (engine/worker-jobs.ts); '' where RDKit's `get_inchi` gives '' (an empty cell, no
- * input, a throw) and null where Crux cannot read the molecule. The inputs' buffers are transferred.
+ * InChI module to run the library on (jobs/inchi.ts); '' where RDKit's `get_inchi` gives '' (an empty cell, no input, a
+ * throw) and null where Crux cannot read the molecule. The inputs' buffers go to `transfer`.
  */
-function inchiInputs(module: RDModule, molecules: string[], transfer: Transferable[]): (Uint8Array | '' | null)[] {
+export function inchiInputs(module: RDModule, molecules: string[], transfer: Transferable[]):
+  (Uint8Array | '' | null)[] {
   return molecules.map((m) => {
     const mol = m ? getMolSafe(m, {}, module).mol : null;
     if (!mol)
@@ -71,8 +72,6 @@ export const CALCULATION_JOBS: {[op: string]: WorkerJob} = {
   /** Toxicity: FilterCatalog's Brenk and NIH alerts (widgets/toxicity.ts). */
   'chemAlerts': ({crux}, molecules: (string | null)[], catalogs: string[], atoms: boolean) =>
     JSON.parse(crux.chemAlerts(molecules, catalogs, atoms)),
-  /** InChI's input per molecule (engine/worker-jobs.ts `inchisByEngine`). */
-  'inchiInputs': ({module, transfer}, molecules: string[]) => inchiInputs(module, molecules, transfer),
   /** The 3D Structure pane's coordinates (widgets/structure3d.ts); a timeout throws. */
   'chemEmbed3d': ({crux}, molecule: string, options: string): string | null =>
     crux.chemEmbed3d(molecule, options) ?? null,

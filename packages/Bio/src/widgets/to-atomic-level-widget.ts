@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMacromoleculeAssembler} from '@datagrok-libraries/bio/src/monomer-works/assembler';
+import {getAsmMonomerCount} from '@datagrok-libraries/bio/src/monomer-works/assembly-input';
 import {_package, PackageFunctions, toAtomicLevelDo} from '../package';
 import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
@@ -35,12 +36,12 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue,
     const seqSplitted = seqSh.getSplitted(sequence.cell.rowIndex);
     // Converting and drawing 200 monomers takes about 300 ms; the full-screen dialog (a click on the molecule) shows
     // the details of a long one. An all-RNA HELM row counts sugar, base and phosphate as three positions, so 360 is
-    // about 120 nucleotides
+    // about 120 nucleotides. HELM's fixed repeats count expanded (`A'3000'` is 3000 monomers in one position)
     let maxLength = 120;
     if (seqSh.isHelm() && !seqSplitted.graphInfo?.polymerTypes?.some((pt) => pt !== 'RNA'))
       maxLength = 360;
 
-    if (!range && (seqSplitted?.length ?? 100) > maxLength) {
+    if (!range && (seqSplitted ? getAsmMonomerCount(seqSplitted) : 100) > maxLength) {
       errorText = 'Maximum number of monomers for molecular conversion is ' + maxLength;
       // fasta/separator sequences are single linear chains, so they can still be viewed in scrollable windows;
       // isSeparator() is true for BILN columns too (they carry a separator tag), so check the notation strictly
@@ -69,15 +70,15 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue,
 
     // Linear unless asked otherwise: rows with connections, custom notations or mixed polymer types fall back to the
     // non-linear layout in the assembler, per row. No warning balloon: the panel shows the error itself
-    await toAtomicLevelDo(sDf, singleValCol, nonlinear, false, false);
+    const talRes = await toAtomicLevelDo(sDf, singleValCol, nonlinear, false, false);
     if (sDf.columns.length < 2) {
-      errorText = 'No structure generated';
+      errorText = noStructureText(talRes.warnings);
       return {errorText, mol: ''};
     }
     const molCol = sDf.columns.byIndex(1);
     const molfile = molCol.get(0);
     if (!molfile) {
-      errorText = 'No structure generated';
+      errorText = noStructureText(talRes.warnings);
       return {errorText, mol: ''};
     }
     return {errorText: '', mol: molfile as string};
@@ -87,6 +88,14 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue,
 
   errorText = 'No Structure generated';
   return {errorText, mol: ''};
+}
+
+/** The panels' message for a sequence that gave no molecule, with the row's reason (`unknown monomer PEPTIDE:Xyz`,
+ * hwe's error, ...) when the conversion reported one: 'Cannot get molfile of row #0: <reason>.' from the column
+ * conversion */
+function noStructureText(warnings: string[]): string {
+  const reason = /^Cannot get molfile of row #\d+: ([\s\S]*?)\.?$/.exec(warnings[0] ?? '')?.[1];
+  return reason ? `No structure generated: ${reason}` : 'No structure generated';
 }
 
 function drawMoleculeHost(mol: string, sequence: DG.SemanticValue): HTMLElement {
@@ -254,6 +263,45 @@ export async function toAtomicLevelWidget(sequence: DG.SemanticValue): Promise<D
   return DG.Widget.fromRoot(ui.divText('No structure generated'));
 }
 
+/** The 3D panel's message when the embedding gives no 3D structure */
+export const EMBED_3D_FAILED = 'Couldn\'t get 3D structure: the 3D embedding failed';
+/** The 3D panel's message when the embedding has not finished within {@link EMBED_3D_LIMIT_MS} */
+export const EMBED_3D_TOO_LONG = 'Couldn\'t get 3D structure: the 3D embedding takes too long';
+/** The 3D panel waits this long for the embedding (Crux mode gives up after 10 s itself; RDKit mode's server script
+ * has no deadline, and ETKDG may never finish on a big peptide) */
+const EMBED_3D_LIMIT_MS = 60000;
+
+/** The 3D MOL block of a 2D one by Chem's one entry point for 3D coordinates (`Chem:embed3d`, which follows Chem's
+ * engine setting), or the panel's message when the embedding fails, times out or gives nothing: the panel shows the
+ * message, not an empty viewer or an endless wait.
+ * @param {string} molBlock2D
+ * @param {Function} embed the embedding (tests pass their own)
+ * @param {number} limitMs how long to wait for it
+ * @return {Promise<{molBlock3D: string, error: null} | {molBlock3D: null, error: string}>} */
+export async function embedMolecule3d(molBlock2D: string,
+  embed: (molecule: string) => Promise<string> = async (molecule) =>
+    (await grok.functions.call('Chem:embed3d', {molecule})) as unknown as string,
+  limitMs: number = EMBED_3D_LIMIT_MS,
+): Promise<{molBlock3D: string, error: null} | {molBlock3D: null, error: string}> {
+  let molBlock3D: string;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const tooLong = new Promise<null>((resolve) => timer = setTimeout(() => resolve(null), limitMs));
+  try {
+    const res = await Promise.race([embed(molBlock2D), tooLong]);
+    if (res === null)
+      return {molBlock3D: null, error: EMBED_3D_TOO_LONG};
+    molBlock3D = res;
+  } catch (err: any) {
+    _package.logger.warning(`Molecular 3D Structure: ${err instanceof Error ? err.message : String(err)}`);
+    return {molBlock3D: null, error: EMBED_3D_FAILED};
+  } finally {
+    clearTimeout(timer);
+  }
+  if (typeof molBlock3D !== 'string' || !molBlock3D.trim())
+    return {molBlock3D: null, error: EMBED_3D_FAILED};
+  return {molBlock3D, error: null};
+}
+
 /**
  * 3D representation widget of macromolecule.
  *
@@ -277,8 +325,12 @@ export async function molecular3DStructureWidget(
         return new DG.Widget(widgetHost);
       }
       const molBlock2D = result.mol;
-      // Chem's one entry point for 3D coordinates (it follows Chem's engine setting)
-      molBlock3D = (await grok.functions.call('Chem:embed3d', {molecule: molBlock2D})) as unknown as string;
+      const embedded = await embedMolecule3d(molBlock2D);
+      if (embedded.error !== null) {
+        pi.close();
+        return new DG.Widget(ui.divText(embedded.error));
+      }
+      molBlock3D = embedded.molBlock3D;
       // NGL reads V2000 (sdf); the assembler's module converts it (no OCL)
       try {
         const assembler = await getMacromoleculeAssembler();

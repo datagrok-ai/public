@@ -13,7 +13,7 @@ import {AsmBatch, AsmLayout, AsmSequence, AssembleOneResult, AssembleOptions, As
 import {getCruxService} from '../crux/crux-searches';
 import {CruxAssembledBatch, CruxAssembledRow, CruxBiopolymerApi, CruxMonomerLibrary, assembleOptionsJson,
   cruxBiopolymer} from '../crux/crux-api';
-import {loadCrux, noteCruxError} from './crux-module';
+import {cruxLoadFailed, loadCrux, noteCruxError} from './crux-module';
 
 /** The libraries kept by key, the least recently used dropped first (Bio keeps a few, each a new key per change). */
 const MAX_LIBRARIES = 8;
@@ -165,12 +165,16 @@ export class CruxMacromoleculeAssembler implements IMacromoleculeAssembler {
     return this.api = cruxBiopolymer(module);
   }
 
-  // The main thread's module for a synchronous twin: loaded by an earlier ready() (or another async call).
+  // The main thread's module for a synchronous twin: loaded by an earlier ready() (or another async call), and not
+  // after a trap there (Crux is off for the session, crux-module.ts noteCruxError: the instance may be broken, and the
+  // async twins refuse it too)
   private syncApi(): CruxBiopolymerApi {
     if (!this.api) {
       throw new Error('Chem | the macromolecule assembler\'s synchronous calls need ready(key, json) first: ' +
         'the main thread\'s Crux module is not loaded');
     }
+    if (cruxLoadFailed())
+      throw new Error('Chem | the macromolecule assembler: the main thread\'s Crux module trapped in this session');
     return this.api;
   }
 

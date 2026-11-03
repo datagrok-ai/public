@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Dependencies: `@datagrok-libraries/hwe` 1.1.1 (`parseHelm` about 15-20% faster with the same results; a `trailing-monomer-separator` warning)
 * PolyTool: Enumerate: Fixed Highlight monomers applying unseen: the box was hidden for macromolecules, where its value (restored from the dialog's history) was used, and ignored for templates, where it showed; it now shows whenever To atomic level is on and applies to both
 * PolyTool: Convert, Convert Notation and Enumerate: Removed the Chirality engine option, which no longer did anything (stereo is always absolute). `polyToolConvert2` no longer declares `chiralityEngine`: a caller that passes it is not refused
 * PolyTool: Convert and Enumerate: Added tooltips to the column, Highlight monomers, Keep original, To atomic level, Get HELM, Trivial name and Append to table inputs; Linearize's tooltip says what it does now

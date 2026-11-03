@@ -313,6 +313,45 @@ category('toAtomicLevelCrux', () => {
     expect(syncCol.get(2), '', 'the column\'s failed row');
   });
 
+  // bio-edge 2026-11-02: HELM to Molecule assembled the whole column on the main thread (the legacy synchronous
+  // converter): the page froze on large columns, and a row too large for memory switched Crux off for the session.
+  // It runs on the workers now: the same column as the synchronous converter's
+  test('helm-to-molecule-workers', async () => {
+    const col = helmCol(['PEPTIDE1{A.C.G}$$$$V2.0', '', 'PEPTIDE1{A.[Xyz]}$$$$V2.0',
+      'PEPTIDE1{C.A.A.C}$PEPTIDE1,PEPTIDE1,1:R3-4:R3$$$V2.0', 'RNA1{R(A)P.R(C)P.R(G)}$$$$V2.0',
+      'PEPTIDE1{A.C}|PEPTIDE2{G.K}$PEPTIDE1,PEPTIDE2,2:R3-1:R1$$$V2.0', 'PEPTIDE1{[meI].[hHis].[Aca].N.T.[dK]}$$$$V2.0']);
+    const df = DG.DataFrame.fromColumns([col]);
+    const converter = await seqHelper.getHelmToMolfileConverter(monomerLib);
+    const sync = converter.convertToRdKitBeautifiedMolfileColumn(col, true, null, monomerLib);
+    // the registered function (the package's own init has run for it: getMolColumnFromHelm reads _package.seqHelper)
+    const workers: DG.Column<string> = await grok.functions.call('Bio:getMolFromHelm', {df, helmCol: col});
+    expect(workers.name, sync.name);
+    expect(workers.semType, DG.SEMTYPE.MOLECULE);
+    expect(workers.meta.units, sync.meta.units);
+    for (const tag of [ChemTags.SEQUENCE_SRC_COL, SEQUENCE_SRC_LAYOUT_TAG])
+      expect(workers.getTag(tag), sync.getTag(tag), tag);
+    for (let rowIdx = 0; rowIdx < col.length; ++rowIdx)
+      expect(workers.get(rowIdx) ?? '', sync.get(rowIdx) ?? '', `row ${rowIdx}`);
+    expect(!!workers.get(3) && !!workers.get(4), true, 'the cyclic and RNA rows build');
+  });
+
+  // bio-edge 2026-11-02: a connection to a repeated monomer went to its first copy, R2 too: `A.(G)'3'` closed head to
+  // tail failed with "R-group R2 of PEPTIDE:G used twice" (the first copy's R2 joins the second copy). R2 goes to the
+  // last copy now: the same molecule as the sequence written out
+  test('repeat-r2-connection-last-copy', async () => {
+    for (const [repeated, writtenOut] of [
+      [`PEPTIDE1{A.(G)'3'}$PEPTIDE1,PEPTIDE1,2:R2-1:R1$$$V2.0`, 'PEPTIDE1{A.G.G.G}$PEPTIDE1,PEPTIDE1,4:R2-1:R1$$$V2.0'],
+      [`PEPTIDE1{C.(A.G)'2'}$PEPTIDE1,PEPTIDE1,3:R2-1:R1$$$V2.0`, 'PEPTIDE1{C.A.G.A.G}$PEPTIDE1,PEPTIDE1,5:R2-1:R1$$$V2.0'],
+      [`PEPTIDE1{C.(A.C)'2'.C}$PEPTIDE1,PEPTIDE1,1:R3-3:R3$$$V2.0`, 'PEPTIDE1{C.A.C.A.C.C}$PEPTIDE1,PEPTIDE1,1:R3-3:R3$$$V2.0'],
+    ]) {
+      for (const nonlinear of [false, true]) {
+        const {mols, warnings} = await convert(helmCol([repeated, writtenOut]), nonlinear);
+        expect(warnings.length, 0, `${repeated}: ${warnings.join('; ')}`);
+        expect(await mg.canonicalSmiles(mols[0]), await mg.canonicalSmiles(mols[1]), `${repeated} nonlinear=${nonlinear}`);
+      }
+    }
+  });
+
   // Fixed repeats expand; the copies keep the source token's position
   test('fixed-repeat-expanded', async () => {
     const col = helmCol(['PEPTIDE1{A\'3\'.G}$$$$V2.0']);

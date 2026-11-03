@@ -943,7 +943,9 @@ export class JSMol {
         }
     }
     /**
-     * PORT(minilib.cpp `get_aromatic_form`): the MOL block of the aromatic form.
+     * PORT(minilib.cpp:360-369 `get_aromatic_form`): the MOL block of the aromatic form, written
+     * with its aromatic bonds (`MolToMolBlock(..., kekulize = false)`; Crux wrote it Kekulé, and
+     * failed where the molecule does not kekulize, `c1cccc1`).
      * @returns {string}
      */
     get_aromatic_form() {

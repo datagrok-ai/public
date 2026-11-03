@@ -181,8 +181,8 @@ importers:
         specifier: workspace:^
         version: link:../gridext
       '@datagrok-libraries/hwe':
-        specifier: ^1.1.0
-        version: 1.1.0(@datagrok-libraries/bio@libraries+bio)
+        specifier: ^1.1.1
+        version: 1.1.1(@datagrok-libraries/bio@libraries+bio)
       '@datagrok-libraries/ml':
         specifier: workspace:^
         version: link:../ml
@@ -998,8 +998,8 @@ importers:
         specifier: workspace:^
         version: link:../../libraries/chem-meta
       '@datagrok-libraries/hwe':
-        specifier: ^1.1.0
-        version: 1.1.0(@datagrok-libraries/bio@libraries+bio)
+        specifier: ^1.1.1
+        version: 1.1.1(@datagrok-libraries/bio@libraries+bio)
       '@datagrok-libraries/math':
         specifier: workspace:^
         version: link:../../libraries/math
@@ -2456,8 +2456,8 @@ importers:
         specifier: workspace:^
         version: link:../../libraries/chem-meta
       '@datagrok-libraries/hwe':
-        specifier: ^1.1.0
-        version: 1.1.0(@datagrok-libraries/bio@libraries+bio)
+        specifier: ^1.1.1
+        version: 1.1.1(@datagrok-libraries/bio@libraries+bio)
       '@datagrok-libraries/test':
         specifier: workspace:^
         version: link:../../libraries/test
@@ -3525,8 +3525,8 @@ importers:
         specifier: workspace:^
         version: link:../../libraries/chem-meta
       '@datagrok-libraries/hwe':
-        specifier: ^1.1.0
-        version: 1.1.0(@datagrok-libraries/bio@libraries+bio)
+        specifier: ^1.1.1
+        version: 1.1.1(@datagrok-libraries/bio@libraries+bio)
       '@datagrok-libraries/test':
         specifier: workspace:^
         version: link:../../libraries/test
@@ -5150,8 +5150,8 @@ packages:
     peerDependencies:
       d3-array: '*'
 
-  '@datagrok-libraries/hwe@1.1.0':
-    resolution: {integrity: sha512-bnHAHZNOn/LsmDkYRTZKweA5L3Elp1AftWOTSdL370o4F2W1ibPKiTqM6RLQjnp0Phb4pvJhTKGEIMJhBVdTNg==}
+  '@datagrok-libraries/hwe@1.1.1':
+    resolution: {integrity: sha512-76exYLjinRVgd2m/QfgCWJsYRQoKtdwGDkWmaw8vBF+rwmtzPLuiUbPocDtpr3jqsqNrQLGDicO3v5UiaGQpgg==}
     engines: {node: '>=18'}
     peerDependencies:
       '@datagrok-libraries/bio': '*'
@@ -19817,7 +19817,7 @@ snapshots:
       '@d3fc/d3fc-rebind': 6.0.1
       d3-array: 3.2.4
 
-  '@datagrok-libraries/hwe@1.1.0(@datagrok-libraries/bio@libraries+bio)':
+  '@datagrok-libraries/hwe@1.1.1(@datagrok-libraries/bio@libraries+bio)':
     dependencies:
       lru-cache: 10.4.3
     optionalDependencies:

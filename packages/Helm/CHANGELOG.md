@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Dependencies: `@datagrok-libraries/hwe` 1.1.1 (`parseHelm` about 15-20% faster with the same results; a `trailing-monomer-separator` warning)
+* Renderer: Keeps the hover data of the last 1,000 values drawn, not of every value ever drawn (memory grew while scrolling large tables), and builds a cell's hover view only when the cell is hovered or highlighted
 * Molecular Structure pane: Bio's panel, now linear by default with the assembler's per-row non-linear fallback
 * Removed dead code: HelmHelper's `parse`, `removeGaps` and monomer-funcs override (gone from `IHelmHelper`), the old `parseHelm` / `findMonomers` utils, unused constants, renderer shims and the unused dayjs, lru-cache and wu dependencies, with their tests and Playwright steps
 * Tests: The non-linear To Atomic Level test counts the heavy atoms and bonds of the molblock instead of calling RDKit

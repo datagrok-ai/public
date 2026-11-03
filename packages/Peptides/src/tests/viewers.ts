@@ -157,6 +157,7 @@ category('Viewers: Most Potent Residues', () => {
   let mprViewer: MostPotentResidues;
 
   before(async () => {
+    await PeptideUtils.loadComponents();
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
@@ -200,6 +201,7 @@ category('Viewers: Logo Summary Table', () => {
   let lstViewer: LogoSummaryTable;
 
   before(async () => {
+    await PeptideUtils.loadComponents();
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
