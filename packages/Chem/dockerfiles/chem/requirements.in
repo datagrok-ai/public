@@ -1,4 +1,5 @@
 rdkit
+pillow>=13.0.0
 Flask==3.1.3
 Werkzeug==3.1.6
 gunicorn==23.0.0
