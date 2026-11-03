@@ -6,7 +6,8 @@ import {
   DockManager, IconFA, ifOverlapping, MarkDown, RibbonPanel, tooltip,
 } from '@datagrok-libraries/webcomponents-vue';
 import {RunBrowser} from '../RunStorage/RunBrowser';
-import {hasAddControls, PipelineWithAdd, STICKY_BAR_BACKGROUND} from '../../utils';
+import {STICKY_BAR_BACKGROUND} from '../../utils';
+import {hasAddControls, PipelineWithAdd} from '../TreeWizard/tree-utils';
 import {isFuncCallState, isStaticPipelineState, PipelineState, ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useHelp} from '../../composables/use-help';
 import {hasContextHelp} from '@datagrok-libraries/compute-utils/shared-utils/utils';
