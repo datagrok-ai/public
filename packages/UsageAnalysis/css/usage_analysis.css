@@ -502,3 +502,17 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
   white-space: nowrap;
   font-family: monospace;
 }
+
+.ua-ai-text {
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 12px;
+  background: var(--grey-1);
+  padding: 6px 8px;
+  border-radius: 2px;
+}
+
+.ua-ai-text-missing {
+  color: var(--grey-4);
+  font-style: italic;
+}

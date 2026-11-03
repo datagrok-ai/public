@@ -25,6 +25,7 @@ export class AiUsageView extends UaView {
   }
 
   async initViewers(): Promise<void> {
+    this.root.className = 'grok-view ui-box';
     const cards = ui.div([], {classes: 'ua-cards'});
     const showCards = (t: Promise<DG.DataFrame>) => {
       const summary = t.then((t) => AiUsageView.summary(t));
@@ -58,6 +59,7 @@ export class AiUsageView extends UaView {
       yAggrTypes: ['sum'],
       splitColumnNames: ['model'],
       chartTypes: ['Stacked Bar Chart'],
+      legendPosition: 'Top',
       title: 'Cost per day',
     }));
     const byUser = viewer('Cost by user', (t) => AiUsageView.costBarChart(t, 'user', 'Cost by user', {
@@ -78,6 +80,10 @@ export class AiUsageView extends UaView {
       grid.columns.setOrder(GRID_COLUMNS);
       for (const name of t.columns.names())
         grid.col(name)!.visible = GRID_COLUMNS.includes(name);
+      const widths: {[name: string]: number} = {time: 110, user: 110, groups: 140, feature: 90, model: 130, status: 60,
+        total_tokens: 90, cost_usd: 70};
+      for (const [name, width] of Object.entries(widths))
+        grid.col(name)!.width = width;
       return grid;
     });
 
@@ -120,7 +126,7 @@ export class AiUsageView extends UaView {
       'Input tokens': [n(sum('input_tokens'))],
       'Output tokens': [n(sum('output_tokens'))],
       'Total tokens': [n(sum('total_tokens'))],
-      'Estimated cost': [`$${n(sum('cost_usd'))}`, priced < rows.length ? `priced: ${priced} of ${rows.length}` : ''],
+      'Estimated cost': [`$${n(sum('cost_usd'))}`, priced < rows.length ? `${Math.round(priced / rows.length * 100)}% priced` : ''],
     };
   }
 
@@ -163,6 +169,14 @@ export class AiUsageView extends UaView {
           ['Time', 'Tokens', 'Cost, $']);
       }, true);
     }
+    const content = queries.aiTurnContent(s('turn_id'));
+    const text = (name: string) => ui.wait(async () => {
+      const value = (await content).get(name, 0);
+      return value ? ui.divText(value, 'ua-ai-text') : ui.divText('Not logged', 'ua-ai-text-missing');
+    });
+    acc.addPane('Prompt', () => text('prompt'), true);
+    acc.addPane('Answer', () => text('response'), true);
+    acc.addPane('Tool calls', () => text('tool_calls'), true);
     grok.shell.o = acc.root;
   }
 }

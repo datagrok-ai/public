@@ -16,6 +16,10 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:AiUsage', { date, groups });
   }
 
+  export async function aiTurnContent(turnId: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:AiTurnContent', { turnId });
+  }
+
   export async function allTestRuns(benchmarks: boolean ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:AllTestRuns', { benchmarks });
   }

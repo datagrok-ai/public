@@ -15,7 +15,7 @@ turn_type as (
 params as (
   select p.id, p.name from event_parameters p
   where p.event_type_id in (select id from turn_type)
-    and p.name in ('feature', 'model', 'status', 'chatId', 'inputCount', 'outputCount', 'cacheReadCount',
+    and p.name in ('feature', 'model', 'status', 'chatId', 'turnId', 'inputCount', 'outputCount', 'cacheReadCount',
       'cacheCreationCount', 'costUsd', 'durationMs')
 ),
 turn_events as (
@@ -36,6 +36,7 @@ turns as (
       max(v.value) filter (where p.name = 'model') as model,
       max(v.value) filter (where p.name = 'status') as status,
       max(v.value) filter (where p.name = 'chatId') as chat_id,
+      max(v.value) filter (where p.name = 'turnId') as turn_id,
       max(v.value) filter (where p.name = 'inputCount')::int as input_tokens,
       max(v.value) filter (where p.name = 'outputCount')::int as output_tokens,
       max(v.value) filter (where p.name = 'cacheReadCount')::int as cache_read_tokens,
@@ -62,11 +63,31 @@ user_groups as (
   group by m.user_id
 )
 select t.event_time as time, date_trunc('day', t.event_time) as day, t.user_name as "user", ug.groups,
-  t.feature, t.model, coalesce(t.status, 'ok') as status, t.chat_id,
+  t.feature, t.model, coalesce(t.status, 'ok') as status, t.chat_id, t.turn_id,
   t.input_tokens, t.output_tokens, t.cache_read_tokens, t.cache_write_tokens,
   coalesce(t.input_tokens, 0) + coalesce(t.output_tokens, 0) + coalesce(t.cache_read_tokens, 0) + coalesce(t.cache_write_tokens, 0) as total_tokens,
   t.cost_usd, t.duration_ms
 from turns t
 left join user_groups ug on ug.user_id = t.user_id
 order by t.event_time desc
+--end
+
+--name: AiTurnContent
+--input: string turnId
+--connection: System:Datagrok
+with content_params as (
+  select p.id, p.name from event_parameters p
+  join event_types et on et.id = p.event_type_id
+  where et.source = 'usage' and et.friendly_name = 'ai-turn-content'
+)
+select
+  max(v.value) filter (where p.name = 'prompt') as prompt,
+  max(v.value) filter (where p.name = 'response') as response,
+  max(v.value) filter (where p.name = 'toolCalls') as tool_calls
+from event_parameter_values v
+join content_params p on p.id = v.parameter_id
+where p.name in ('prompt', 'response', 'toolCalls')
+  and v.event_id in (
+    select t.event_id from event_parameter_values t
+    where t.parameter_id in (select id from content_params where name = 'turnId') and t.value = @turnId)
 --end
