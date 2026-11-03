@@ -43,6 +43,7 @@ export class AiUsageView extends UaView {
       df = queries.aiUsage(filter.date!, filter.groups).then((t) => {
         t.col('groups')!.setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ', ');
         t.col('time')!.meta.format = 'yyyy-MM-dd HH:mm';
+        t.col('cost_usd')!.meta.format = '0.0000';
         t.onFilterChanged.subscribe(() => showCards(Promise.resolve(t)));
         t.onCurrentRowChanged.subscribe(() => AiUsageView.showRequest(t));
         return t;
@@ -54,14 +55,14 @@ export class AiUsageView extends UaView {
     const viewer = (name: string, createViewer: (t: DG.DataFrame) => DG.Viewer, getDataFrame = () => df) =>
       new UaFilterableQueryViewer({filterSubscription: this.uaToolbox.filterStream, name, getDataFrame, createViewer});
 
-    const perDay = viewer('Cost per day', (t) => DG.Viewer.lineChart(t, {
-      xColumnName: 'day',
+    const perDay = viewer('Cost over time', (t) => DG.Viewer.lineChart(t, {
+      xColumnName: 'period',
       yColumnNames: ['cost_usd'],
       yAggrTypes: ['sum'],
       splitColumnNames: ['model'],
       chartTypes: ['Stacked Bar Chart'],
       legendPosition: 'Top',
-      title: 'Cost per day',
+      title: 'Cost over time',
     }));
     const byUser = viewer('Cost by user', (t) => AiUsageView.costBarChart(t, 'user', 'Cost by user', {
       onClick: DG.RowGroupAction.Filter,

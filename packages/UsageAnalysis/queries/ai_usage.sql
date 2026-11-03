@@ -72,7 +72,9 @@ user_groups as (
   where not g.personal and not g.hidden and g.id <> 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6'
   group by m.user_id
 )
-select t.event_time as time, date_trunc('day', t.event_time) as day, t.user_name as "user", ug.groups,
+select t.event_time as time,
+  date_trunc(case when max(t.event_time) over () - min(t.event_time) over () < interval '3 days' then 'hour' else 'day' end,
+    t.event_time) as period, t.user_name as "user", ug.groups,
   t.feature, coalesce(t.model, 'unknown') as model, coalesce(t.status, 'unknown') as status, t.chat_id, t.turn_id,
   t.input_tokens, t.output_tokens, t.cache_read_tokens, t.cache_write_tokens,
   coalesce(t.input_tokens, 0) + coalesce(t.output_tokens, 0) + coalesce(t.cache_read_tokens, 0) + coalesce(t.cache_write_tokens, 0) as total_tokens,
