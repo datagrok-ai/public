@@ -63529,7 +63529,7 @@
         var x, t1;
         x = J.$index$asx(this._data, idx);
         t1 = J.getInterceptor(x);
-        return t1.$eq(x, 26789344063684636e-50) !== true && t1.$eq(x, 1 / 0) !== true && t1.$eq(x, -1 / 0) !== true;
+        return t1.$eq(x, 26789344063684636e-50) !== true && t1.get$isFinite(x) === true;
       }, "call$1", "get$isFinite", 2, 0, 69],
       $index: function(_, idx) {
         return J.$index$asx(this._data, idx);
@@ -64621,27 +64621,23 @@
         return new N.IntRawEncoder();
       },
       toStr$2$format: function(item, format) {
-        var t1, t2, t3;
-        t1 = {};
-        t1.format = format;
+        var t1;
         if (item == null || J.$eq$(item, -2147483648) === true)
           return "";
-        if (format == null) {
+        if (format == null)
           format = $.IntMeta_defaultFormat;
-          t1.format = format;
-          t2 = format;
-        } else
-          t2 = format;
-        if (t2 == null)
+        if (format == null)
           return J.toString$0$(item);
-        if (J.$eq$(t2, "duration.friendly") === true)
+        if (J.$eq$(format, "duration.friendly") === true)
           return N.formatDuration(P.Duration$(0, 0, 0, 0, 0, item));
         else {
-          t3 = this.formatters;
-          if (t3.containsKey$1(0, t2))
-            return t3.$index(0, t2).call$1(item);
-          else
-            return t3.putIfAbsent$2(0, t2, new N.IntMeta_toStr_closure(t1)).call$1(item);
+          t1 = this.formatters;
+          if (t1.containsKey$1(0, format))
+            return t1.$index(0, format).call$1(item);
+          else {
+            $.$get$FloatMeta_instance().toString;
+            return N.FloatMeta_formatNumber(item, format);
+          }
         }
       },
       toStr$1: function(item) {
@@ -64705,12 +64701,6 @@
           }
           return str == null ? null : N.IntMeta__doubleFormatter(str);
         }, "call$1", "ddt_IntMeta__extractNumbersFormatter$closure", 2, 0, 75]
-      }
-    },
-    IntMeta_toStr_closure: {
-      "^": "Closure:3;_box_0",
-      call$0: function() {
-        return T.NumberFormat_NumberFormat(this._box_0.format, null).get$format();
       }
     },
     IntMeta_closure: {
@@ -180404,8 +180394,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "Alexander-Paramonov/grok-share");
-        t2.set$commit(t1, "b767bc11c088c37710b7a22b2f1ed92307f16383");
-        t2.set$date(t1, "2026-11-03T12:53:55.864Z");
+        t2.set$commit(t1, "50162913cf9eaa73aa48d839fc400ddb3aa5ec32");
+        t2.set$date(t1, "2026-11-03T13:12:58.426Z");
         t2.set$version(t1, "1.27.12");
         return t1;
       }, null, null, 0, 0, null, "call"]
