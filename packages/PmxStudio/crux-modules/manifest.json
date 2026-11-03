@@ -37,8 +37,8 @@
    "thread": "worker",
    "compute": "nonclinical/compute.json",
    "hash": {
-    "js": "ecf714376e705496",
-    "wasm": "982ae1646b0a0024"
+    "js": "55b51c313e2b6e1b",
+    "wasm": "343e4c032387bc2c"
    }
   },
   "stats": {
@@ -69,20 +69,23 @@
     "statsmodels",
     "vsn"
    ],
-   "functions": 97,
+   "functions": 100,
    "abi": 1,
    "fns": "stats/fns.json",
    "thread": "worker",
    "compute": "stats/compute.json",
    "hash": {
-    "js": "20176e038e73ec3e",
-    "wasm": "38d2a9130dd07405"
+    "js": "aaa3928bcacfeb66",
+    "wasm": "438fc1a5648f0f85"
    }
   }
  },
  "functions": {
+  "numerics.least_squares": "stats",
   "numerics.linprog": "stats",
   "numerics.milp": "stats",
+  "numerics.minimize": "stats",
+  "numerics.test_problem": "stats",
   "pathology.mi_concordance": "nonclinical",
   "pathology.tox_slide_findings": "nonclinical",
   "pkpd.dose_utility": "stats",

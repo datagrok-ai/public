@@ -25,6 +25,7 @@ export async function pmxStudyFileHandler(content: string) : Promise<any> {
 //input: column group { category: Study; caption: Group; description: The treatment group. }
 //input: column day { category: Study; caption: Day; type: numerical; description: Days from randomization. }
 //input: column volume { category: Study; caption: Volume; type: numerical; description: Tumor volume (mm³). }
+//input: column bodyWeight { category: Study; caption: Body weight; type: numerical; optional: true; nullable: true; description: Body weight (g), weighed with the tumor (empty: no weight checks). }
 //input: string plan { category: Study; caption: Plan; optional: true; nullable: true; visible: false; description: The plan saved in Plan (its .pmxplan file’s contents). }
 //input: dynamic looks { category: Study; caption: Planned reviews; optional: true; nullable: true; description: The study days fixed at the start to review each treated group, comma-separated, e.g. 7, 10. }
 //input: string line = 'MC38' { category: Monitoring; caption: Cell line; choices: ["MC38","CT26","B16F10"]; description: The tumor model: its growth model from the atlas of historical controls makes the forecasts. }
@@ -34,12 +35,15 @@ export async function pmxStudyFileHandler(content: string) : Promise<any> {
 //input: string correction = 'dunnett' { category: Advanced; caption: Multiple comparisons; choices: ["dunnett","bonferroni","none"]; description: Correction over the groups compared with the control in the final test. }
 //input: double evaluationDay { category: Advanced; caption: Evaluation day; optional: true; nullable: true; description: Leave empty for the day the median control reaches the endpoint volume. }
 //input: double alpha = 0.05 { category: Advanced; caption: Significance (α); optional: true; min: 0.001; max: 0.2; description: Two-sided significance level of the final test. }
+//input: double weightLimit = 20 { category: Advanced; caption: Humane limit, weight loss; optional: true; units: %; min: 5; max: 50; description: An animal is listed when it nears this loss of weight, and is over it at this one (your institution’s limit). }
 //output: dataframe status { description: The study today: one row. }
 //output: dataframe animals { description: Per animal: the range of its next measurement and why it needs attention. }
 //output: dataframe days { description: Per group and day, measured and to come: its median volume and range. }
+//output: dataframe tolerability { description: Per group: its body weight, as Tolerability reads it (empty without body weights). }
+//output: dataframe weights { description: Per group and day: its mean body weight change (empty without body weights). }
 //output: dataframe decisions { description: Per treated group, on a planned review: the chance of success (empty between reviews). }
-export async function pmxMonitorStudy(study: DG.DataFrame, animal: DG.Column, group: DG.Column, day: DG.Column, volume: DG.Column, plan: any, looks: any, line: string, control: string, endpoint: number, humane: number, correction: string, evaluationDay?: number, alpha?: number) : Promise<any> {
-  return await PackageFunctions.pmxMonitorStudy(study, animal, group, day, volume, plan, looks, line, control, endpoint, humane, correction, evaluationDay, alpha);
+export async function pmxMonitorStudy(study: DG.DataFrame, animal: DG.Column, group: DG.Column, day: DG.Column, volume: DG.Column, bodyWeight: any, plan: any, looks: any, line: string, control: string, endpoint: number, humane: number, correction: string, evaluationDay?: number, alpha?: number, weightLimit?: number) : Promise<any> {
+  return await PackageFunctions.pmxMonitorStudy(study, animal, group, day, volume, bodyWeight, plan, looks, line, control, endpoint, humane, correction, evaluationDay, alpha, weightLimit);
 }
 
 //description: Opens a PMX Studio plan in Plan.

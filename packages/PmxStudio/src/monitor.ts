@@ -3,7 +3,7 @@
    forecasts and the checks are Crux's; here only the translation and the reasons a person reads. */
 import * as DG from 'datagrok-api/dg';
 
-import {AnalysisInputs, analysisDeclarationOf, pairGroups, twinModel} from './analyze';
+import {AnalysisInputs, analysisDeclarationOf, pairGroups, tolerabilityFrames, twinModel} from './analyze';
 import {ARCHETYPES} from './archetypes';
 import {crux, named, rows} from './crux';
 import {LAB_WEEKDAYS, designStudy} from './engine';
@@ -13,6 +13,9 @@ import {SavedPlan} from './plan-file';
 export const LIMIT_ALERT = 0.2;
 /** A last value this far out of its forecast (two-sided) is listed as unexpected. */
 export const UNEXPECTED = 0.005;
+/** The share of the weight-loss limit from which an animal is listed (15% for the usual 20%). Our criterion, not a
+ *  published one: a margin to act before the limit. */
+export const WEIGHT_WATCH = 0.75;
 
 export interface MonitorInputs extends AnalysisInputs {
   /** the planned reviews: study days, comma-separated */
@@ -28,6 +31,9 @@ export interface MonitorFrames {
   days: DG.DataFrame;
   /** per treated arm: the chance of success, on a planned review */
   decisions: DG.DataFrame;
+  /** the body weight by group, as Tolerability reads it; empty without a body weight column */
+  tolerability: DG.DataFrame;
+  weights: DG.DataFrame;
 }
 
 /** The planned reviews from their text: the study days, ascending; anything else is an error. */
@@ -56,7 +62,8 @@ async function armsOf(plan: SavedPlan | null, treated: string[], endpoint: numbe
     new Map<string, SavedPlan['predicted']['arms'][0]>();
   const kill = new Map<string, number>();
   if (plan) {
-    const arms = plan.predicted.arms.map((a) => ({name: a.name, therapy: a.therapy, metric: a.metric, effect: a.effect}));
+    const arms = plan.predicted.arms.map((a) => ({name: a.name, therapy: a.therapy, metric: a.metric,
+      effect: a.effect}));
     const d = await designStudy({line: plan.predicted.line, vRand: plan.predicted.vRand, endpoint, power: 0.8,
       alpha: 0.05, correction: 'dunnett', n: null, arms, preLoss: 0, postLoss: 0, lossRule: 'confident',
       confidence: 0.9, weekdays: LAB_WEEKDAYS, startWeekday: 0, humane, schedules: false, lastDay: null});
@@ -87,6 +94,21 @@ export function reasonsOf(a: {p_limit_next?: number | null, last_pit?: number | 
     (a.last_pit < UNEXPECTED || a.last_pit > 1 - UNEXPECTED))
     out.push('Last value unexpected: measure again');
   return out;
+}
+
+/** Why an animal's body weight needs attention today. `change`: its % change from baseline at its last weighing, as
+ *  weighed (the tumor's mass, an estimate, stays in Welfare). `latest`, `previous`: the study's last two weighing days;
+ *  an animal not weighed on the latest is listed once, and only while it is still measured. */
+export function weightReasons(w: {change: number | null, lastDay: number}, latest: number, previous: number | null,
+  limit: number, present: boolean): string[] {
+  if (w.lastDay < latest)
+    return present && w.lastDay === previous ? [`Not weighed on day ${latest}`] : [];
+  if (w.change === null)
+    return [];
+  const loss = Math.round(-w.change);
+  if (-w.change >= limit)
+    return [`Over the ${limit}% weight-loss limit (lost ${loss}%)`];
+  return -w.change >= limit * WEIGHT_WATCH ? [`Losing weight: ${loss}%, limit ${limit}%`] : [];
 }
 
 const emptyDecisions = () => DG.DataFrame.fromColumns([DG.Column.string('arm', 0), DG.Column.bool('planned', 0),
@@ -124,12 +146,36 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   // an id with its group in it shows the group on every list, hidden or not
   if ([...new Set(animal.map((a, i) => a.toLowerCase().includes(group[i].toLowerCase())))].includes(true))
     notes.push('Some animal ids contain their group\'s name, so the lists below show the group');
+  // the body weight is optional: without it, none of this says anything
+  const {tolerability, weights, animals: weighed} = await tolerabilityFrames(d);
+  const baseline = new Map(weighed.map((w) => [String(w.animal), w.baseline as number | null]));
+  const lastWeight = new Map<string, {day: number, weight: number}>();
+  const weighDays = new Set<number>();
+  d.data.weight?.forEach((w, i) => {
+    const [a, wd] = [d.data.animal[i], d.data.day[i]];
+    if (typeof w === 'number' && w > 0) {
+      weighDays.add(wd);
+      if (!(lastWeight.get(a)?.day! >= wd))
+        lastWeight.set(a, {day: wd, weight: w});
+    }
+  });
+  const [latestWeighed, previousWeighed] = [...weighDays].sort((p, q) => q - p);
+  const weightOf = (a: string, lastMeasured: number) => {
+    const [w, b] = [lastWeight.get(a), baseline.get(a)];
+    if (!w)
+      return {reasons: [] as string[], fields: weighDays.size ? {weight_change: null} : {}};
+    const change = b ? 100 * (w.weight / b - 1) : null;
+    return {reasons: weightReasons({change, lastDay: w.day}, latestWeighed, previousWeighed ?? null, d.weightLimit,
+      lastMeasured >= latestWeighed), fields: {weight_change: change}};
+  };
   const animals = rows(r.main as any).map((a) => {
     const l = last.get(String(a.animal))!;
+    const w = weightOf(String(a.animal), l.day);
     return {animal: String(a.animal), group: a.group, last_day: l.day, last_volume: l.volume, next_lower: a.next_q05,
       next_median: a.next_median, next_upper: a.next_q95, check_lower: a.next_q005, check_upper: a.next_q995,
       p_limit: a.p_limit_next, limit_day: a.limit_day, last_pit: a.last_pit,
-      attention: reasonsOf(a, latest, d.humane, l.day, l.volume, previous).join('; ')};
+      ...w.fields,
+      attention: [...reasonsOf(a, latest, d.humane, l.day, l.volume, previous), ...w.reasons].join('; ')};
   });
   const study = (r.named as any).study.value;
   // the chance of success only on a planned review: between them, an empty table (MONITOR_DESIGN.md §3)
@@ -149,7 +195,24 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
     animals: DG.DataFrame.fromObjects(animals)!,
     days,
     decisions: atLook && decisions.length ? DG.DataFrame.fromObjects(decisions)! : emptyDecisions(),
+    tolerability,
+    weights,
   };
+}
+
+/** The values just entered for the next measurement day that fall outside what the last run expected ("measure
+ *  again"). Only that day: the band is for it, and another day's value has no band yet. */
+export function outsideBand(rows: {animal: string, day: number, volume: number}[], nextDay: number,
+  bands: Map<string, {check_lower: number | null, check_upper: number | null}>):
+  {animal: string, volume: number, lower: number, upper: number}[] {
+  const out = [];
+  for (const r of rows) {
+    const b = bands.get(r.animal);
+    if (r.day === nextDay && Number.isFinite(r.volume) && b && b.check_lower !== null && b.check_upper !== null &&
+      (r.volume < b.check_lower || r.volume > b.check_upper))
+      out.push({animal: r.animal, volume: r.volume, lower: b.check_lower, upper: b.check_upper});
+  }
+  return out;
 }
 
 /** Balanced groups for these animals: who goes where, and each group's balance. */

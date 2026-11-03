@@ -42,8 +42,12 @@ const NADIR = 'the group’s lowest mean weight change from day 0, on its worst 
 export type NciReading = {kind: 'error' | 'warning' | 'success', text: string, also: string, criteria: string,
   nadir: number | null};
 
+/** What this tab reads, which Monitor has as well as Analyze. */
+export type TolerabilityFrames = Pick<AnalysisFrames, 'analysis' | 'comparisons' | 'volumes' | 'tolerability' |
+  'weights'>;
+
 /** Each group against the NCI limits, as weighed, by group; empty without body weight. */
-export function nciReadings(r: AnalysisFrames): Map<string, NciReading> {
+export function nciReadings(r: TolerabilityFrames): Map<string, NciReading> {
   const control = r.analysis.get('control', 0);
   return new Map(rowsOf(r.tolerability).filter((g) => g.basis === BASES.measured).map((g) =>
     [g.group, nciReading(g, g.group === control)]));
@@ -84,7 +88,7 @@ function nciReading(g: Row, vehicle: boolean): NciReading {
 
 /** The tumor's density the corrected weights use, in words: the line's typical one (its studies and their range),
  *  the one given, or this study's from its weighed tumors (by group, when the groups differ). */
-function densityText(r: AnalysisFrames): string {
+function densityText(r: TolerabilityFrames): string {
   const used = JSON.parse(r.tolerability.getTag(DENSITY_TAG) ?? '{}') as DensityUsed;
   const gs = rowsOf(r.tolerability).filter((g) => g.basis === BASES.tumor_corrected);
   const pairs = gs.reduce((t, g) => t + g.density_pairs, 0);
@@ -110,8 +114,8 @@ const muted = (el: HTMLElement) => {
   return el;
 };
 
-export function tolerabilityTab(form: FuncCallForm, result: ReadonlySignal<AnalysisFrames | undefined>,
-  colorsOf: (r: AnalysisFrames) => {[group: string]: string}): {content: HTMLElement[], own: {dispose(): void}[]} {
+export function tolerabilityTab<R extends TolerabilityFrames>(form: FuncCallForm, result: ReadonlySignal<R | undefined>,
+  colorsOf: (r: R) => {[group: string]: string}): {content: HTMLElement[], own: {dispose(): void}[]} {
   const corrected = new BoolInput({label: 'Tumor-corrected', switch: true, value: false,
     tooltipText: 'Take the tumor’s mass off each weighing'});
   const basis = computed(() => corrected.value ? BASES.tumor_corrected : BASES.measured);

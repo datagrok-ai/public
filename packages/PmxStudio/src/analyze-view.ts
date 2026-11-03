@@ -20,7 +20,8 @@ import {CorrectionInput} from './arms-input';
 import {addRunButton, askedOf, axisAt, block, busyOverlay, cardGrid, copyRow, dayText, declarationPane,
   DECLARATION_MIN, guide,
   infoNote, noteLine, notesBox, num, outputsOf, resultTabs, pct, pValue, RESULTS_MIN, resultsFrame, settleForm, signed,
-  sized, staleNote, stageStrip, statCard, swatch, volumeAxis, wrapCells} from './ui';
+  isBodyWeight, keepNamedColumns, sized, staleNote, stageStrip, statCard, swatch, volumeAxis, wrapCells} from './ui';
+import {restoreFields} from './study-file';
 import {openStage} from './stages';
 import {noEffectNote, observedCell, planInput, planTab} from './plan-vs-observed';
 import {nciReadings, NciReading, tolerabilityTab} from './tolerability';
@@ -160,12 +161,12 @@ function summaryLines(r: AnalysisFrames, nci: Map<string, NciReading>): string[]
   return lines;
 }
 
-export async function analyzeView(): Promise<DG.ViewBase> {
-  return ViewHost.create({name: 'PMX Studio · Analyze', content: (self) => analyzeContent(self)}).view;
+export async function analyzeView(study?: DG.DataFrame): Promise<DG.ViewBase> {
+  return ViewHost.create({name: 'PMX Studio · Analyze', content: (self) => analyzeContent(self, study)}).view;
 }
 
 /** What the view shows, built under its host, which owns it all. */
-function analyzeContent(self: ViewHost): ViewContent {
+function analyzeContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxAnalyzeStudy').prepare();
   const read = (c: DG.FuncCall) => outputsOf<AnalysisFrames>(c);
   const result = signal<AnalysisFrames | undefined>(undefined);
@@ -182,23 +183,10 @@ function analyzeContent(self: ViewHost): ViewContent {
     onInputChanged: () => stale.value = result.peek() !== undefined});
   settleForm(form, {control: 'Auto (the vehicle group)', evaluationDay: 'Auto (endpoint reached)',
     density: 'Auto (the cell line’s in the atlas)'});
-  // u2 auto-picks a column for every column param, the optional ones too (the nearest name): an optional column keeps
-  // the pick only when its name says what it is, so a study without body weights does not read its volumes as weights
-  const optional: {[input: string]: (column: string) => boolean} = {
-    bodyWeight: (c) => /weight|\bbw\b/i.test(c) && !/tum/i.test(c),
+  keepNamedColumns(form, {
+    bodyWeight: isBodyWeight,
     tumorWeight: (c) => /tum/i.test(c) && /weight|mass/i.test(c),
     removalReason: (c) => /reason|removal|fate|cause|status/i.test(c),
-  };
-  form.effect(() => {
-    void form.getInput('study')?.value;
-    void form.settled.then(() => {
-      for (const [name, named] of Object.entries(optional)) {
-        const input = form.getInput(name);
-        const column = input?.peek();
-        if (input && typeof column === 'string' && !named(column))
-          input.value = null;
-      }
-    });
   });
   // busy while the study is analyzed, and before that while the example study is prepared
   const busy = signal(false);
@@ -238,14 +226,20 @@ function analyzeContent(self: ViewHost): ViewContent {
 
   // the example: Plan's study opened in the workspace like any table (the form's table picker then offers it), this
   // view brought back and the study analyzed at once
-  const openExample = () => analyze(async () => {
-    const df = await exampleStudy();
-    grok.shell.addTableView(df);
-    grok.shell.v = self.view;
+  const useTable = async (df: DG.DataFrame) => {
     const study = form.getInput('study');
     if (study)
       study.value = df.name;
     await form.settled;
+    // a table from Monitor brings its body weight column and limits
+    restoreFields(form, df);
+    await form.settled;
+  };
+  const openExample = () => analyze(async () => {
+    const df = await exampleStudy();
+    grok.shell.addTableView(df);
+    grok.shell.v = self.view;
+    await useTable(df);
     // the optional body and tumor weights: the example's own columns
     for (const [input, column] of [['bodyWeight', 'body_weight'], ['tumorWeight', 'tumor_weight']]) {
       const w = form.getInput(input);
@@ -265,6 +259,9 @@ function analyzeContent(self: ViewHost): ViewContent {
     }
   });
   planInput(form, call, planState);
+  // a study handed over (Monitor's "Analyze this study"), analyzed at once
+  if (initial)
+    void form.settled.then(() => analyze(() => useTable(initial)));
 
   const start = divV([
     span('Open your study table (one row per animal and measurement day, day 0 the randomization), check its ' +

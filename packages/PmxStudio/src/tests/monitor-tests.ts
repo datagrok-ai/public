@@ -2,9 +2,10 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 
 import {exampleStudy} from '../analyze';
-import {allocateGroups, futureDays, parseLooks, reasonsOf} from '../monitor';
+import {allocateGroups, futureDays, outsideBand, parseLooks, reasonsOf, weightReasons} from '../monitor';
 import {PLAN_TAG, parsePlan} from '../plan-file';
-import {LOG_TAG, LOOKS_TAG, addLog, logOf, newStudyTable, parseStudy, studyOf, tableOf} from '../study-file';
+import {LIMITS_TAG, LOG_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, studyOf, tableOf}
+  from '../study-file';
 
 /** The example study up to `today`, as a follower has it. */
 async function upTo(today: number): Promise<DG.DataFrame> {
@@ -14,12 +15,14 @@ async function upTo(today: number): Promise<DG.DataFrame> {
   return df;
 }
 
-async function monitor(study: DG.DataFrame, looks: string): Promise<{[k: string]: DG.DataFrame}> {
+async function monitor(study: DG.DataFrame, looks: string, bodyWeight: DG.Column | null = null):
+Promise<{[k: string]: DG.DataFrame}> {
   const fc = DG.Func.find({package: 'PmxStudio', name: 'pmxMonitorStudy'})[0].prepare({study,
     animal: study.col('animal'), group: study.col('group'), day: study.col('day'), volume: study.col('volume'), looks,
-    line: 'MC38', endpoint: 1500, humane: 2000, correction: 'dunnett'});
+    line: 'MC38', endpoint: 1500, humane: 2000, correction: 'dunnett', bodyWeight, weightLimit: 20});
   await fc.call();
-  return Object.fromEntries(['status', 'animals', 'days', 'decisions'].map((o) => [o, fc.outputs[o] as DG.DataFrame]));
+  return Object.fromEntries(['status', 'animals', 'days', 'decisions', 'tolerability', 'weights'].map((o) =>
+    [o, fc.outputs[o] as DG.DataFrame]));
 }
 
 category('Monitor', () => {
@@ -34,6 +37,55 @@ category('Monitor', () => {
     }
     expect(bad, true);
     expectArray(futureDays([0, 3, 6, 9]).slice(0, 2), [12, 15]);
+  });
+
+  test('a value entered is checked against its band, on its day only', async () => {
+    const bands = new Map([['a', {check_lower: 100, check_upper: 200}],
+      ['gone', {check_lower: null, check_upper: null}]]);
+    const off = outsideBand([{animal: 'a', day: 12, volume: 300}, {animal: 'a', day: 12, volume: 150},
+      {animal: 'a', day: 14, volume: 900}, {animal: 'a', day: 12, volume: NaN}, {animal: 'gone', day: 12, volume: 5},
+      {animal: 'new', day: 12, volume: 5}], 12, bands);
+    expect(off.length, 1);
+    expect(off[0].volume, 300);
+  });
+
+  test('body weight: the limit, a margin before it, and an animal not weighed once', async () => {
+    const r = (change: number | null, lastDay = 10, present = true) => weightReasons({change, lastDay}, 10, 7, 20,
+      present);
+    expect(r(-25)[0].startsWith('Over the 20%'), true);
+    expect(r(-15)[0].startsWith('Losing weight'), true);
+    expectArray(r(-14), []);
+    expectArray(r(5), []);
+    expectArray(r(null), []);
+    expect(r(-1, 7)[0], 'Not weighed on day 10');
+    // listed on the session it first misses, and not once it is gone from the study
+    expectArray(r(-1, 4), []);
+    expectArray(r(-1, 7, false), []);
+  });
+
+  test('body weight is optional, and when given it works', async () => {
+    const study = await upTo(9);
+    const without = await monitor(study, '');
+    expect(without.tolerability.rowCount, 0);
+    expect(without.animals.col('weight_change'), null);
+    const withWeight = await monitor(study, '', study.col('body_weight'));
+    expect(withWeight.tolerability.rowCount > 0, true);
+    expect(withWeight.weights.rowCount > 0, true);
+    expect(withWeight.animals.col('weight_change') !== null, true);
+    expect(withWeight.animals.rowCount, without.animals.rowCount);
+  }, {timeout: 120000});
+
+  test('a saved study keeps its body weights and limits', async () => {
+    const study = await upTo(9);
+    study.setTag(WEIGHT_TAG, 'body_weight');
+    const back = tableOf(parseStudy(JSON.stringify(studyOf(study, 1800, 15))));
+    expect(back.getTag(WEIGHT_TAG), 'body_weight');
+    expect(back.col('body_weight')!.stats.valueCount, study.col('body_weight')!.stats.valueCount);
+    expect(JSON.parse(back.getTag(LIMITS_TAG)!).weightLimit, 15);
+    expect(JSON.parse(back.getTag(LIMITS_TAG)!).humane, 1800);
+    // and one without body weights stays without
+    const none = await upTo(9);
+    expect(tableOf(parseStudy(JSON.stringify(studyOf(none, 2000)))).col('body_weight'), null);
   });
 
   test('who needs attention and why', async () => {

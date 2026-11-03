@@ -284,3 +284,23 @@ export function declarationPane(form: HTMLElement): HTMLElement {
     padding: 'var(--dg-space-m) var(--dg-space-l) var(--dg-space-l)', minWidth: `${DECLARATION_MIN}px`});
   return pane;
 }
+
+/** u2 auto-picks a column for every column param, the optional ones too (the nearest name): an optional column keeps
+ *  the pick only when its name says what it is, so a study without body weights does not read its volumes as
+ *  weights. */
+export function keepNamedColumns(form: FuncCallForm, optional: {[input: string]: (column: string) => boolean}): void {
+  form.effect(() => {
+    void form.getInput('study')?.value;
+    void form.settled.then(() => {
+      for (const [name, named] of Object.entries(optional)) {
+        const input = form.getInput(name);
+        const column = input?.peek();
+        if (input && typeof column === 'string' && !named(column))
+          input.value = null;
+      }
+    });
+  });
+}
+
+/** The name of a body weight column, for the optional column above. */
+export const isBodyWeight = (c: string) => /weight|\bbw\b/i.test(c) && !/tum/i.test(c);

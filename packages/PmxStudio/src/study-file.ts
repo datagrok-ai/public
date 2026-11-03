@@ -4,6 +4,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
+
 import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
 
 export const STUDY_EXT = 'pmxstudy';
@@ -11,6 +13,9 @@ const FORMAT = 'pmx-study';
 /** The tags of a measurements table that carry the study's reviews and log. */
 export const LOOKS_TAG = 'pmx.looks';
 export const LOG_TAG = 'pmx.log';
+/** The name of the table's body weight column, and the protocol's limits ({humane, weightLimit}). */
+export const WEIGHT_TAG = 'pmx.weight';
+export const LIMITS_TAG = 'pmx.limits';
 
 export interface LogEntry {when: string, who: string, what: string}
 
@@ -21,11 +26,26 @@ export interface SavedStudy {
   plan: SavedPlan | null;
   looks: string;
   humane: number | null;
-  rows: {animal: string, group: string | null, day: number, volume: number | null}[];
+  /** the % of body weight lost at which an animal is removed (older files: none) */
+  weightLimit?: number | null;
+  /** `weight`: only when the study has body weights */
+  rows: {animal: string, group: string | null, day: number, volume: number | null, weight?: number | null}[];
   log: LogEntry[];
 }
 
 export const logOf = (df: DG.DataFrame): LogEntry[] => JSON.parse(df.getTag(LOG_TAG) || '[]');
+
+/** What a table says of itself into a form on it: its body weight column and the protocol's limits. */
+export function restoreFields(form: FuncCallForm, df: DG.DataFrame): void {
+  const limits = JSON.parse(df.getTag(LIMITS_TAG) || '{}');
+  const fields = {bodyWeight: df.getTag(WEIGHT_TAG) || null, humane: limits.humane ?? null,
+    weightLimit: limits.weightLimit ?? null};
+  for (const [name, value] of Object.entries(fields)) {
+    const input = form.getInput(name);
+    if (input && value !== null)
+      input.value = value;
+  }
+}
 
 /** A log line, on the table it is about: when, who, what. */
 export function addLog(df: DG.DataFrame, what: string): LogEntry[] {
@@ -43,7 +63,7 @@ export function newStudyTable(plan: SavedPlan): DG.DataFrame {
   return df;
 }
 
-export function studyOf(df: DG.DataFrame, humane: number | null): SavedStudy {
+export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: number | null = null): SavedStudy {
   const planText = df.getTag(PLAN_TAG);
   const [a, g, d, v] = ['animal', 'group', 'day', 'volume'].map((c) => {
     const col = df.col(c);
@@ -51,10 +71,12 @@ export function studyOf(df: DG.DataFrame, humane: number | null): SavedStudy {
       throw new Error(`The study table has no column "${c}"`);
     return col;
   });
+  const weightName = df.getTag(WEIGHT_TAG);
+  const w = weightName ? df.col(weightName) : null;
   return {format: FORMAT, version: 1, name: df.name, plan: planText ? parsePlan(planText) : null,
-    looks: df.getTag(LOOKS_TAG) ?? '', humane, log: logOf(df),
+    looks: df.getTag(LOOKS_TAG) ?? '', humane, weightLimit, log: logOf(df),
     rows: Array.from({length: df.rowCount}, (_, i) => ({animal: String(a.get(i)), group: g.isNone(i) ? null : g.get(i),
-      day: d.get(i), volume: v.isNone(i) ? null : v.get(i)}))};
+      day: d.get(i), volume: v.isNone(i) ? null : v.get(i), ...w ? {weight: w.isNone(i) ? null : w.get(i)} : {}}))};
 }
 
 /** A study read from a file someone may have edited or sent: checked before use. */
@@ -76,13 +98,18 @@ export function parseStudy(text: string): SavedStudy {
   return s as SavedStudy;
 }
 
-/** The measurements table of a saved study, with its plan, reviews and log in tags. */
+/** The measurements table of a saved study, with its plan, reviews, limits and log in tags. */
 export function tableOf(s: SavedStudy): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
     DG.Column.fromStrings('animal', s.rows.map((r) => r.animal)),
     DG.Column.fromStrings('group', s.rows.map((r) => r.group ?? '')),
     DG.Column.fromFloat64Array('day', Float64Array.from(s.rows, (r) => r.day)),
     DG.Column.fromFloat64Array('volume', Float64Array.from(s.rows, (r) => r.volume ?? NaN))]);
+  if (s.rows.some((r) => 'weight' in r)) {
+    df.columns.add(DG.Column.fromFloat64Array('body_weight', Float64Array.from(s.rows, (r) => r.weight ?? NaN)));
+    df.setTag(WEIGHT_TAG, 'body_weight');
+  }
+  df.setTag(LIMITS_TAG, JSON.stringify({humane: s.humane, weightLimit: s.weightLimit ?? null}));
   df.name = s.name;
   if (s.plan)
     df.setTag(PLAN_TAG, JSON.stringify(s.plan));

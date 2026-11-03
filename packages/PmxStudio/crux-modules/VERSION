@@ -1,2 +1,2 @@
-crux-core 0d0199251 + spike/tumor-monitor (uncommitted: stats.tumor_monitor, stats.tumor_allocate), modules nonclinical and stats
+crux-core 32d155a0c (spike/tumor-monitor, on main 84661f2fb: stats.tumor_monitor, stats.tumor_allocate), modules nonclinical and stats
 built 2026-11-02 with tools/parity/wasm-modules/modules.py build --bindgen web (README, "Crux modules"); rebuild from main once the spike lands

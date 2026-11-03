@@ -36,6 +36,8 @@ export class PackageFunctions {
       {name: 'status', type: 'dataframe', options: {description: 'The study today: one row.'}},
       {name: 'animals', type: 'dataframe', options: {description: 'Per animal: the range of its next measurement and why it needs attention.'}},
       {name: 'days', type: 'dataframe', options: {description: 'Per group and day, measured and to come: its median volume and range.'}},
+      {name: 'tolerability', type: 'dataframe', options: {description: 'Per group: its body weight, as Tolerability reads it (empty without body weights).'}},
+      {name: 'weights', type: 'dataframe', options: {description: 'Per group and day: its mean body weight change (empty without body weights).'}},
       {name: 'decisions', type: 'dataframe', options: {description: 'Per treated group, on a planned review: the chance of success (empty between reviews).'}},
     ],
   })
@@ -45,6 +47,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Group', description: 'The treatment group.'}}) group: DG.Column,
     @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Day', type: 'numerical', description: 'Days from randomization.'}}) day: DG.Column,
     @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Volume', type: 'numerical', description: 'Tumor volume (mm³).'}}) volume: DG.Column,
+    @grok.decorators.param({type: 'column', options: {category: 'Study', caption: 'Body weight', type: 'numerical', optional: true, nullable: true, description: 'Body weight (g), weighed with the tumor (empty: no weight checks).'}}) bodyWeight: DG.Column | null,
     // @ts-expect-error (the platform's `visible` rule, as in pmxPlanStudy)
     @grok.decorators.param({type: 'string', options: {category: 'Study', caption: 'Plan', optional: true, nullable: true, visible: 'false', description: 'The plan saved in Plan (its .pmxplan file’s contents).'}}) plan: string | null,
     @grok.decorators.param({options: {category: 'Study', caption: 'Planned reviews', optional: true, nullable: true, description: 'The study days fixed at the start to review each treated group, comma-separated, e.g. 7, 10.'}}) looks: string | null,
@@ -55,9 +58,10 @@ export class PackageFunctions {
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Multiple comparisons', choices: ['dunnett', 'bonferroni', 'none'], initialValue: 'dunnett', description: 'Correction over the groups compared with the control in the final test.'}}) correction: string,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Evaluation day', optional: true, nullable: true, description: 'Leave empty for the day the median control reaches the endpoint volume.'}}) evaluationDay?: number,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Significance (α)', optional: true, min: '0.001', max: '0.2', initialValue: '0.05', description: 'Two-sided significance level of the final test.'}}) alpha?: number,
+    @grok.decorators.param({options: {category: 'Advanced', caption: 'Humane limit, weight loss', optional: true, units: '%', min: '5', max: '50', initialValue: '20', description: 'An animal is listed when it nears this loss of weight, and is over it at this one (your institution’s limit).'}}) weightLimit?: number,
   ): Promise<MonitorFrames> {
-    return monitorFrames({study, animal, group, day, volume, plan, looks, line, control, endpoint, humane, correction,
-      evaluationDay, alpha});
+    return monitorFrames({study, animal, group, day, volume, bodyWeight, weightLimit, plan, looks, line, control,
+      endpoint, humane, correction, evaluationDay, alpha});
   }
 
   // the extension as a literal (the decorators' generator reads no constants): plan-file.ts's PLAN_EXT

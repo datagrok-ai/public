@@ -13,14 +13,17 @@ import {funcForm, ViewHost} from '@datagrok-libraries/u2/dg';
 import {exampleStudy} from './analyze';
 import {BandChart} from './band-chart';
 import {armColors} from './frames';
-import {allocateGroups, MonitorFrames} from './monitor';
+import {allocateGroups, MonitorFrames, outsideBand} from './monitor';
 import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
 import {planInput} from './plan-vs-observed';
 import {openStage} from './stages';
-import {LOOKS_TAG, addLog, logOf, newStudyTable, parseStudy, saveStudy, studyOf, tableOf} from './study-file';
-import {addRunButton, askedOf, block, busyOverlay, cardGrid, dayText, declarationPane, DECLARATION_MIN, infoNote, noteLine, notes,
+import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, restoreFields, saveStudy,
+  studyOf, tableOf} from './study-file';
+import {tolerabilityTab} from './tolerability';
+import {addRunButton, askedOf, block, busyOverlay, cardGrid, dayText, declarationPane, DECLARATION_MIN, infoNote,
+  isBodyWeight, keepNamedColumns, noteLine, notes,
   notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, resultTabs, settleForm, sized, stageStrip, staleNote,
-  statCard, swatch, volumeAxis, wrapCells} from './ui';
+  signed, statCard, swatch, volumeAxis, wrapCells} from './ui';
 
 /** Below this chance of success, on a planned review, Monitor suggests stopping the arm. A person decides. */
 export const FUTILITY = 0.1;
@@ -54,10 +57,26 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
   let latest = 0;
   const form = funcForm(call, {layout: 'tall', onInputChanged: () => stale.value = result.peek() !== undefined});
   settleForm(form, {control: 'Auto (the vehicle group)', evaluationDay: 'Auto (endpoint reached)'});
+  keepNamedColumns(form, {bodyWeight: isBodyWeight});
 
   const studyTable = (): DG.DataFrame | null => {
     const v = call.getParamValue('study');
     return v instanceof DG.DataFrame ? v : null;
+  };
+  const lockLooks = () => {
+    const field = form.getInput('looks');
+    if (field)
+      field.disabled = studyTable()?.getTag(LOOKS_TAG) ? 'The reviews were fixed when this study started' : null;
+  };
+  // what goes with the table: its body weight column and the protocol's limits, for the study file and for Analyze
+  const remember = () => {
+    const df = studyTable();
+    if (!df)
+      return;
+    const weight = call.getParamValue('bodyWeight');
+    df.setTag(WEIGHT_TAG, weight instanceof DG.Column ? weight.name : typeof weight === 'string' ? weight : '');
+    df.setTag(LIMITS_TAG, JSON.stringify({humane: call.getParamValue('humane') ?? null,
+      weightLimit: call.getParamValue('weightLimit') ?? null}));
   };
   const planState = {stale, error, result: computed(() => result.value && {analysis: result.value.status}),
     reading: Promise.resolve() as Promise<unknown>};
@@ -67,6 +86,10 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     try {
       await prepare?.();
       await planState.reading;
+      // the reviews fixed at the start hold, whatever the field says
+      const fixed = studyTable()?.getTag(LOOKS_TAG);
+      if (fixed)
+        call.setParamValue('looks', fixed);
       const sent = askedOf(call);
       const c = await call.call();
       if (mine !== latest)
@@ -77,6 +100,8 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
       const df = studyTable();
       if (df && !df.getTag(LOOKS_TAG))
         df.setTag(LOOKS_TAG, String(call.getParamValue('looks') ?? ''));
+      lockLooks();
+      remember();
       result.value = outputsOf<MonitorFrames>(c);
     } catch (e: any) {
       error.value = String(e?.message ?? e);
@@ -103,6 +128,9 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
         field.value = looks;
       call.setParamValue('looks', looks);
     }
+    restoreFields(form, df);
+    await form.settled;
+    lockLooks();
   };
   // the example: Plan's example study halfway, today a planned review
   const openExample = () => run(async () => {
@@ -118,6 +146,7 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     df.col('animal')!.init((i) => coded.get(df.get('animal', i))!);
     df.setTag(PLAN_TAG, whole.getTag(PLAN_TAG)!);
     df.setTag(LOOKS_TAG, String(today));
+    df.setTag(WEIGHT_TAG, 'body_weight');
     await setStudy(df);
   });
   void form.settled.then(() => {
@@ -167,7 +196,39 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
   const attention = div([], 'pmx-monitor-attention');
   const sheet = div([], 'pmx-monitor-sheet');
   const noteBox = notesBox();
+  // each value as it goes in, against what the last run expected: no run needed to hear "measure again"
+  const entered = div([], 'pmx-monitor-entered');
+  const checkEntered = () => {
+    const [r, df] = [result.peek(), studyTable()];
+    if (!r || !df || !['animal', 'day', 'volume'].every((c) => df.col(c))) {
+      entered.replaceChildren();
+      return;
+    }
+    const nextDay = r.status.get('next_day', 0);
+    const off = outsideBand(Array.from({length: df.rowCount}, (_, i) => ({animal: String(df.get('animal', i)),
+      day: df.get('day', i), volume: df.col('volume')!.isNone(i) ? NaN : df.get('volume', i)})), nextDay,
+    new Map(rowsOf(r.animals).map((a) => [a.animal, a as any])));
+    entered.replaceChildren(...off.length === 0 ? [] : [noteLine(`Measure again (${dayText(nextDay)}): ` +
+      off.map((o) => `${o.animal} at ${mm3(o.volume)} mm³, expected ${mm3(o.lower)}–${mm3(o.upper)}`).join('; '),
+    'warning')]);
+  };
+  let watching: {unsubscribe(): void}[] = [];
+  const stopWatching = () => {
+    watching.forEach((w) => w.unsubscribe());
+    watching = [];
+  };
+  form.effect(() => {
+    void result.value;
+    stopWatching();
+    const df = studyTable();
+    if (df)
+      watching = [df.onDataChanged.subscribe(checkEntered), df.onRowsAdded.subscribe(checkEntered)];
+    checkEntered();
+  });
   const groupCols = (): [string, (r: AnimalRow) => string][] => revealed.value ? [['Group', (a) => a.group]] : [];
+  // only for a study with body weights
+  const weightCols = (r: MonitorFrames): [string, (a: AnimalRow) => string][] => r.animals.col('weight_change') ?
+    [['Body weight', (a) => typeof a.weight_change === 'number' ? signed(a.weight_change) : '—']] : [];
   form.effect(() => {
     const r = result.value;
     if (!r)
@@ -181,11 +242,12 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     else {
       fill(attention, listed, (a) => a.animal, [['Animal', (a) => a.animal], ...groupCols(),
         ['Why', (a) => a.attention], ['Last volume', (a) => `${mm3(a.last_volume)} mm³, day ${a.last_day}`],
+        ...weightCols(r),
         ['Next expected', (a) => a.next_median === null ? '—' : `${mm3(a.next_lower)}–${mm3(a.next_upper)} mm³`]]);
     }
     fill(sheet, all, (a) => a.animal, [['Animal', (a) => a.animal], ...groupCols(),
-      ['Last volume', (a) => mm3(a.last_volume)], ['Next expected', (a) => a.next_median === null ? '—' :
-        `${mm3(a.next_lower)}–${mm3(a.next_upper)}`],
+      ['Last volume', (a) => mm3(a.last_volume)], ...weightCols(r),
+      ['Next expected', (a) => a.next_median === null ? '—' : `${mm3(a.next_lower)}–${mm3(a.next_upper)}`],
       ['Measure again outside', (a) => a.next_median === null ? '—' : `${mm3(a.check_lower)}–${mm3(a.check_upper)}`]]);
     noteBox.replaceChildren(...notes(r.status.get('notes', 0)));
   });
@@ -228,14 +290,17 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
 
   // Growth: by group, once revealed
   const growthAxis = volumeAxis();
+  const colorsOf = (r: MonitorFrames) => {
+    const names = [...new Set(r.days.col('group')!.toList() as string[])];
+    const colors = armColors(names);
+    colors[r.status.get('control', 0)] = colors['Control'];
+    return Object.fromEntries(names.map((n) => [n, colors[n]]));
+  };
   const growthData = computed(() => {
     const r = result.value;
     if (!r || !revealed.value)
       return undefined;
-    const names = [...new Set(r.days.col('group')!.toList() as string[])];
-    const colors = armColors(names);
-    colors[r.status.get('control', 0)] = colors['Control'];
-    r.days.col('group')!.meta.colors.setCategorical(Object.fromEntries(names.map((n) => [n, colors[n]])));
+    r.days.col('group')!.meta.colors.setCategorical(colorsOf(r));
     return r.days;
   });
   const growth = new BandChart(growthData, {x: 'day', lower: 'lower', upper: 'upper', line: 'median', split: 'group',
@@ -267,7 +332,8 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     if (!r)
       return;
     if (!revealed.value) {
-      decisionBody.replaceChildren(infoNote('<b>The groups are hidden.</b> The chance of success tells how the groups ' +
+      decisionBody.replaceChildren(infoNote('<b>The groups are hidden.</b> The chance of success tells how the ' +
+        'groups ' +
         'differ: reveal them only when someone must decide.'), button('Reveal the groups', reveal));
       return;
     }
@@ -303,25 +369,60 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
         ['Who', (l) => l.who], ['What', (l) => l.what]]);
     }
   });
+  // Welfare: Analyze's Tolerability on the weights so far; by group, so once revealed
+  const welfareFrames = computed(() => {
+    const r = result.value;
+    if (!r)
+      return undefined;
+    const control = r.status.get('control', 0) as string;
+    const today = r.status.get('day', 0) as number;
+    const arms = r.tolerability.rowCount === 0 ? [] :
+      [...new Set(r.tolerability.col('group')!.toList() as string[])].filter((g) => g !== control);
+    return {...r, analysis: DG.DataFrame.fromColumns([DG.Column.fromStrings('control', [control])]),
+      comparisons: DG.DataFrame.fromColumns([DG.Column.fromStrings('arm', arms)]),
+      volumes: r.days.clone(DG.BitSet.create(r.days.rowCount, (i) => r.days.get('day', i) <= today))};
+  });
+  const welfare = tolerabilityTab(form, welfareFrames, colorsOf);
+  const welfareBody = divV(welfare.content);
+  const welfareHidden = divV([infoNote('<b>The groups are hidden.</b> Body weight by group tells how the groups ' +
+    'differ. The animals to look at are under Today, without their group.'), button('Reveal the groups', reveal)]);
+  welfareHidden.style.gap = 'var(--dg-space-m)';
+  form.effect(() => {
+    const has = (result.value?.tolerability.rowCount ?? 0) > 0;
+    welfareHidden.hidden = !has || revealed.value;
+    welfareBody.hidden = has && !revealed.value;
+  });
+
   const saveButton = buttonWithIcon('Save study', 'save', () => {
     const df = studyTable();
     if (!df)
       return;
-    void saveStudy(studyOf(df, call.getParamValue('humane') ?? null)).then((p) => grok.shell.info(`Study saved: ${p}`),
-      (e) => error.value = String(e?.message ?? e));
+    remember();
+    void saveStudy(studyOf(df, call.getParamValue('humane') ?? null, call.getParamValue('weightLimit') ?? null))
+      .then((p) => grok.shell.info(`Study saved: ${p}`), (e) => error.value = String(e?.message ?? e));
   });
   saveButton.title = 'Save the plan, the measurements and the log to your files';
-  const analyzeButton = buttonWithIcon('Analyze this study', 'chart-line', () => void openStage('analyze'));
-  analyzeButton.title = 'Open Analyze, where this table can be analyzed as planned';
+  const analyzeButton = buttonWithIcon('Analyze this study', 'chart-line', () => {
+    const df = studyTable();
+    if (!df)
+      return;
+    // Analyze shows the groups: that is revealing them
+    if (!revealed.value)
+      reveal();
+    void openStage('analyze', df);
+  });
+  analyzeButton.title = 'Analyze this table as planned; this reveals the groups, and the log says so';
 
   const tabs = resultTabs('monitor', [
     {id: 'today', label: 'Today', intro: 'Who needs attention, and the range each animal\'s next value should fall in.',
-      content: [block('Needs attention', 'A person decides what to do', attention), noteBox,
+      content: [entered, block('Needs attention', 'A person decides what to do', attention), noteBox,
         block('Measurement sheet', 'Check each value as you measure it', sheet)]},
     {id: 'enrollment', label: 'Enrollment', intro: 'Random groups alike in their starting tumors.', content: [
       divH([proposeButton]), allocationTable]},
     {id: 'growth', label: 'Growth', intro: 'Each group so far and what is expected up to the end.', content: [
       growthHidden, growthAxis.row, sized(growth, 340)]},
+    {id: 'welfare', label: 'Welfare', intro: 'Whether the treatments are being tolerated, from the body weights so ' +
+      'far.', content: [welfareHidden, welfareBody]},
     {id: 'decisions', label: 'Decisions', intro: 'Whether each treated group is still worth continuing, and what was ' +
       'decided.', content: [decisionBody, block('Log', 'Who did what, and when', logBox),
       divH([saveButton, analyzeButton])]},
@@ -357,6 +458,8 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
       ''),
   })});
   [form, planField, growthAxis.input, growth, tabs].forEach((c) => host.own(() => c.dispose()));
+  host.own(stopWatching);
+  welfare.own.forEach((c) => host.own(() => c.dispose()));
   const view: DG.ViewBase = host.view;
   return view;
 }

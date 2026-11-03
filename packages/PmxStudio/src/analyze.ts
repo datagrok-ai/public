@@ -521,11 +521,11 @@ export interface DensityUsed extends LineDensity {line: string, declared: boolea
  *  from day 0 and its range. The tumor's mass is its volume times the line's density (the atlas's), or the declared
  *  one; with the tumors' ex vivo weights Crux calibrates it to the study and its groups, and the row a tumor was
  *  excised takes off its own mass. Empty tables when the study has no body weight. */
-async function tolerabilityFrames(d: AnalysisDeclaration): Promise<{tolerability: DG.DataFrame,
-  weights: DG.DataFrame}> {
+export async function tolerabilityFrames(d: AnalysisDeclaration): Promise<{tolerability: DG.DataFrame,
+  weights: DG.DataFrame, animals: {[k: string]: any}[]}> {
   const w = d.data.weight;
   if (!w?.some((x) => typeof x === 'number' && x > 0))
-    return {tolerability: DG.DataFrame.create(0), weights: DG.DataFrame.create(0)};
+    return {tolerability: DG.DataFrame.create(0), weights: DG.DataFrame.create(0), animals: []};
   const num = (xs: (number | null)[]) => Float64Array.from(xs, (x) => x ?? NaN);
   const atlas = await tumourDensity();
   const line = atlas.lines[d.line] ?? atlas.all;
@@ -539,7 +539,8 @@ async function tolerabilityFrames(d: AnalysisDeclaration): Promise<{tolerability
     group_sd: s.between_groups, within_sd: Math.hypot(s.between_animals, s.caliper), toxic_nadir: NCI.nadir,
     toxic_deaths: NCI.deaths});
   const why: {[r: string]: string} = {death: 'dead', weight: 'weight', volume: 'tumor', other: 'other reason'};
-  const removed = named(bw, 'animals').filter((a) => a.removal !== 'none');
+  const animals = named(bw, 'animals');
+  const removed = animals.filter((a) => a.removal !== 'none');
   const tolerability = DG.DataFrame.fromObjects(rows(bw.main as any).map((g) => ({...g, basis: BASES[g.basis],
     removed_animals: removed.filter((a) => a.group === g.group).map((a) =>
       `${a.animal} (day ${Math.round(a.last_day)}, ${why[a.removal]})`).join(', ')})))!;
@@ -554,7 +555,7 @@ async function tolerabilityFrames(d: AnalysisDeclaration): Promise<{tolerability
   for (const [y, title] of [[-5, '−5%'], [-10, '−10%'], [-d.weightLimit, `−${d.weightLimit}%, humane endpoint`]] as
     [number, string][])
     weights.meta.formulaLines.addLine({title, formula: `\${mean} = ${y}`, color: '#9aa5b1'});
-  return {tolerability, weights};
+  return {tolerability, weights, animals};
 }
 
 /** The predicted control series and the observed one, as the band chart draws them. */
