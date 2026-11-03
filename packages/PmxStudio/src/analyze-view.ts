@@ -161,12 +161,16 @@ function summaryLines(r: AnalysisFrames, nci: Map<string, NciReading>): string[]
   return lines;
 }
 
-export async function analyzeView(study?: DG.DataFrame): Promise<DG.ViewBase> {
-  return ViewHost.create({name: 'PMX Studio · Analyze', content: (self) => analyzeContent(self, study)}).view;
+/** What Analyze opens with: a study table (with its plan in the `pmx.plan` tag, if any), or the example. */
+export interface AnalyzeStart {study?: DG.DataFrame, example?: boolean}
+
+/** The Analyze view; given a study, it analyzes it at once. */
+export async function analyzeView(opening?: AnalyzeStart): Promise<DG.ViewBase> {
+  return ViewHost.create({name: 'PMX Studio · Analyze', content: (self) => analyzeContent(self, opening)}).view;
 }
 
 /** What the view shows, built under its host, which owns it all. */
-function analyzeContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
+function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxAnalyzeStudy').prepare();
   const read = (c: DG.FuncCall) => outputsOf<AnalysisFrames>(c);
   const result = signal<AnalysisFrames | undefined>(undefined);
@@ -226,7 +230,13 @@ function analyzeContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
 
   // the example: Plan's study opened in the workspace like any table (the form's table picker then offers it), this
   // view brought back and the study analyzed at once
-  const useTable = async (df: DG.DataFrame) => {
+  // a study brought from elsewhere (the hub, Monitor's "Analyze this study") the same way: in the workspace, picked
+  // in the form, analyzed; its columns as the form picks them by name
+  const openStudy = (getStudy: () => Promise<DG.DataFrame>, weights?: [string, string][]) => analyze(async () => {
+    const df = await getStudy();
+    if (!grok.shell.tables.includes(df))
+      grok.shell.addTableView(df);
+    grok.shell.v = self.view;
     const study = form.getInput('study');
     if (study)
       study.value = df.name;
@@ -234,19 +244,20 @@ function analyzeContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
     // a table from Monitor brings its body weight column and limits
     restoreFields(form, df);
     await form.settled;
-  };
-  const openExample = () => analyze(async () => {
-    const df = await exampleStudy();
-    grok.shell.addTableView(df);
-    grok.shell.v = self.view;
-    await useTable(df);
-    // the optional body and tumor weights: the example's own columns
-    for (const [input, column] of [['bodyWeight', 'body_weight'], ['tumorWeight', 'tumor_weight']]) {
+    for (const [input, column] of weights ?? []) {
       const w = form.getInput(input);
       if (w)
         w.value = column;
     }
     await form.settled;
+  });
+  // the optional body and tumor weights: the example's own columns
+  const openExample = () => openStudy(exampleStudy, [['bodyWeight', 'body_weight'], ['tumorWeight', 'tumor_weight']]);
+  void form.settled.then(() => {
+    if (opening?.example)
+      void openExample();
+    else if (opening?.study)
+      void openStudy(async () => opening.study!);
   });
   // the example also among the Study field's own actions (beside open file, Files, database), within reach once a
   // study is open
@@ -259,9 +270,6 @@ function analyzeContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
     }
   });
   planInput(form, call, planState);
-  // a study handed over (Monitor's "Analyze this study"), analyzed at once
-  if (initial)
-    void form.settled.then(() => analyze(() => useTable(initial)));
 
   const start = divV([
     span('Open your study table (one row per animal and measurement day, day 0 the randomization), check its ' +

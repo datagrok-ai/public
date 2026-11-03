@@ -8,6 +8,7 @@ import type {ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {iconOf} from '../display/icon.js';
+import {Reason} from '../../core/reason.js';
 import type {IItemsState} from '../../core/widget-like.js';
 
 export interface TabOptions {
@@ -26,6 +27,10 @@ export interface TabOptions {
    * ({@link TabStrip.setInvalid}). Unset and the content is a `Form`, the form's shown error with its field
    * ({@link Form.shownProblem}) — nothing on a fresh form, the first failing field after a Save attempt. */
   validity?: ReadonlySignal<string | null>;
+  /** Why the tab cannot be opened, followed live, `null` while it can: the header stays in view and reachable by the
+   * keyboard, saying why as its tooltip, while a press on it does nothing. A tab turned off while open hands over to
+   * the first tab that is on. */
+  disabled?: Reason;
 }
 
 export type TabOrientation = 'horizontal' | 'vertical';
@@ -164,9 +169,24 @@ export class TabStrip extends Control {
       this._watchValidity(entry, tab.validity);
     else if (typeof tab.content !== 'function')
       this._watchContent(entry, tab.content);
-    if (this.activeTab.peek() === null)
+    Reason.follow(tab.disabled, (reason) => untracked(() => this._setDisabled(entry, reason)), entry.scope);
+    if (this.activeTab.peek() === null && Reason.of(header) === null)
       this.activeTab.value = tab.id;
     this._updateOverflow();
+  }
+
+  private _setDisabled(tab: Tab, reason: string | null): void {
+    Reason.apply(tab.header, reason);
+    tab.header.title = reason ?? tab.invalid ?? tab.options.tooltip ?? tab.options.title;
+    if (reason !== null && this.activeTab.peek() === tab.options.id)
+      this.activeTab.value = this._firstOn(this._tabs.peek());
+    else if (reason === null && this.activeTab.peek() === null)
+      this.activeTab.value = tab.options.id;
+    this._tabs.value = [...this._tabs.peek()];
+  }
+
+  private _firstOn(tabs: Tab[]): string | null {
+    return tabs.find((t) => Reason.of(t.header) === null)?.options.id ?? null;
   }
 
   private _watchValidity(tab: Tab, validity: ReadonlySignal<string | null>): void {
@@ -195,8 +215,11 @@ export class TabStrip extends Control {
     const rest = tabs.slice();
     rest.splice(index, 1);
     this._tabs.value = rest;
-    if (this.activeTab.peek() === id)
-      this.activeTab.value = rest.length > 0 ? rest[Math.min(index, rest.length - 1)].options.id : null;
+    if (this.activeTab.peek() === id) {
+      const next = rest[Math.min(index, rest.length - 1)];
+      this.activeTab.value = next !== undefined && Reason.of(next.header) === null ? next.options.id :
+        this._firstOn(rest);
+    }
     this._updateOverflow();
     this.fireEvent('tabClosed', id);
   }
@@ -212,7 +235,8 @@ export class TabStrip extends Control {
     const list = this._tabs.peek().map((tab, index) => {
       const {id, title, tooltip} = tab.options;
       return {key: id, label: title || tooltip || id, index, selected: id === active, current: id === active,
-        ...tab.invalid ? {invalid: true} : {}, rendered: true};
+        ...tab.invalid ? {invalid: true} : {}, ...Reason.of(tab.header) === null ? {} : {disabled: true},
+        rendered: true};
     });
     return {count: list.length, list, truncated: false};
   }
@@ -235,7 +259,7 @@ export class TabStrip extends Control {
       tab.header.removeAttribute('aria-invalid');
     else
       tab.header.setAttribute('aria-invalid', 'true');
-    tab.header.title = message ?? tab.options.tooltip ?? tab.options.title;
+    tab.header.title = Reason.of(tab.header) ?? message ?? tab.options.tooltip ?? tab.options.title;
   }
 
   private static _icon(source: string | HTMLElement): HTMLElement {
@@ -252,7 +276,7 @@ export class TabStrip extends Control {
       return;
     tab.options = {...tab.options, title};
     tab.header.querySelector('.u2-tabs-label')!.textContent = title;
-    if (tab.options.tooltip === undefined && !tab.invalid)
+    if (tab.options.tooltip === undefined && !tab.invalid && Reason.of(tab.header) === null)
       tab.header.title = title;
     this._tabs.value = [...this._tabs.peek()];
   }
@@ -322,7 +346,8 @@ export class TabStrip extends Control {
       this.closeTab(tab.options.id);
       return;
     }
-    this.activeTab.value = tab.options.id;
+    if (Reason.of(header) === null)
+      this.activeTab.value = tab.options.id;
   }
 
   private _onKeyDown(e: KeyboardEvent): void {
@@ -353,7 +378,8 @@ export class TabStrip extends Control {
       case 'Enter':
       case ' ':
         e.preventDefault();
-        this.activeTab.value = tabs[current].options.id;
+        if (Reason.of(tabs[current].header) === null)
+          this.activeTab.value = tabs[current].options.id;
         return;
       case 'Delete': {
         if (!tabs[current].options.closable)
@@ -377,7 +403,7 @@ export class TabStrip extends Control {
       return;
     const tab = this._find(item.dataset.id!);
     this._menuOpen.value = false;
-    if (!tab)
+    if (!tab || Reason.of(tab.header) !== null)
       return;
     this.activeTab.value = tab.options.id;
     tab.header.scrollIntoView({block: 'nearest', inline: 'nearest'});
@@ -415,6 +441,8 @@ export class TabStrip extends Control {
       item.dataset.id = id;
       item.setAttribute('role', 'menuitem');
       item.classList.toggle('u2-tabs-overflow-item-active', id === active);
+      Reason.apply(item, Reason.of(tab.header));
+      item.title = Reason.of(tab.header) ?? '';
       // the header owns its icon element, so the menu gets a copy
       if (icon !== undefined)
         item.append(TabStrip._icon(typeof icon === 'string' ? icon : icon.cloneNode(true) as HTMLElement));

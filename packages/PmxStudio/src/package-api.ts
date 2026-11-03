@@ -9,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-   * Plans a xenograft or syngeneic efficacy study de novo from the atlas of historical controls.
+   * Plans, follows and analyzes xenograft and syngeneic efficacy studies.
    */
   export async function pmxStudioApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('PMXStudio:PmxStudioApp', { path });
@@ -81,6 +81,7 @@ export namespace funcs {
    *   choices: ["dunnett","bonferroni","none"]
    * @param {number} n - Empty for the number the target power needs, or set it to see the power and smallest detectable effect with that many.
    * @param {number} lastDay - Leave empty to end when the median control reaches the endpoint.
+   * @param {string} tgiScenarios - Up to 8 TGIs to compare, such as 30, 50, 70: the animals the study needs if every arm had each one, sized for the target power whatever the animals per arm. Scenarios, not predictions. Each adds a whole design to the run. Empty: off.
    * @param {number} alpha - Two-sided significance level of the comparisons with the control.
    * @param {number} preLoss - Implanted animals that never reach randomization (no take, or out of the volume window), at your facility.
    * @param {number} postLoss - Randomized animals that cannot be analyzed (ulceration, deaths, technical failures), at your facility.
@@ -95,8 +96,8 @@ export namespace funcs {
    * @param {boolean} compareSchedules - Also give the power by measurements per week (off: that table is empty and the plan twice as fast).
    * @param {boolean} detectableEffect - With the animals per arm set, also search each arm’s smallest detectable effect (off: left empty and the plan several times faster).
    */
-  export async function pmxPlanStudy(line: string , endpoint: number , arms: DG.DataFrame | undefined, power: number , correction: string , n?: number | null, lastDay?: number | null, alpha?: number , preLoss?: number , postLoss?: number , lossRule?: string , confidence?: number , vRand?: number , measurementDays?: string , startWeekday?: string , humane?: number , compareSchedules?: boolean , detectableEffect?: boolean ): Promise<{plan: DG.DataFrame, armResults: DG.DataFrame, powerCurve: DG.DataFrame, curves: DG.DataFrame, duration: DG.DataFrame, schedules: DG.DataFrame, calendar: DG.DataFrame}> {
-    return await grok.functions.call('PMXStudio:PmxPlanStudy', { line, endpoint, arms, power, correction, n, lastDay, alpha, preLoss, postLoss, lossRule, confidence, vRand, measurementDays, startWeekday, humane, compareSchedules, detectableEffect });
+  export async function pmxPlanStudy(line: string , endpoint: number , arms: DG.DataFrame | undefined, power: number , correction: string , n?: number | null, lastDay?: number | null, tgiScenarios?: string | null, alpha?: number , preLoss?: number , postLoss?: number , lossRule?: string , confidence?: number , vRand?: number , measurementDays?: string , startWeekday?: string , humane?: number , compareSchedules?: boolean , detectableEffect?: boolean ): Promise<{plan: DG.DataFrame, armResults: DG.DataFrame, powerCurve: DG.DataFrame, curves: DG.DataFrame, duration: DG.DataFrame, schedules: DG.DataFrame, calendar: DG.DataFrame, scenarios: DG.DataFrame}> {
+    return await grok.functions.call('PMXStudio:PmxPlanStudy', { line, endpoint, arms, power, correction, n, lastDay, tgiScenarios, alpha, preLoss, postLoss, lossRule, confidence, vRand, measurementDays, startWeekday, humane, compareSchedules, detectableEffect });
   }
 
   /**

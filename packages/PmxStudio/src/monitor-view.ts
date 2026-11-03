@@ -11,12 +11,13 @@ import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost} from '@datagrok-libraries/u2/dg';
 
 import {exampleStudy} from './analyze';
+import {analyzeView} from './analyze-view';
 import {BandChart} from './band-chart';
 import {armColors} from './frames';
 import {allocateGroups, MonitorFrames, outsideBand} from './monitor';
 import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
 import {planInput} from './plan-vs-observed';
-import {openStage} from './stages';
+import {NAMES, openStage, showStage} from './stages';
 import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, restoreFields, saveStudy,
   studyOf, tableOf} from './study-file';
 import {tolerabilityTab} from './tolerability';
@@ -409,7 +410,9 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     // Analyze shows the groups: that is revealing them
     if (!revealed.value)
       reveal();
-    void openStage('analyze', df);
+    // in place of an Analyze view already open
+    [...grok.shell.views].find((v) => v.name === NAMES.analyze)?.close();
+    void analyzeView({study: df}).then((v) => showStage('analyze', v));
   });
   analyzeButton.title = 'Analyze this table as planned; this reveals the groups, and the log says so';
 

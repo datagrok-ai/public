@@ -1,28 +1,35 @@
-/* Moving between the app's stages: the stage's view when it is open, else a new one; Analyze with a study to analyze
-   always a new one, in place of the one open. */
+/* Moving between the app's home and stages: the stage's view when it is open, else a new one; a stage opened with
+   something in it (a study, a plan) is a view of its own. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {planView} from './plan-view';
 import {analyzeView} from './analyze-view';
 import {monitorView} from './monitor-view';
+import {hubView} from './hub-view';
 import type {Stage} from './ui';
 
-const NAMES: {[stage in Stage]: string} = {plan: 'PMX Studio · Plan', monitor: 'PMX Studio · Monitor',
-  analyze: 'PMX Studio · Analyze'};
+export const NAMES: {[stage in Stage]: string} = {home: 'PMX Studio', plan: 'PMX Studio · Plan',
+  monitor: 'PMX Studio · Monitor', analyze: 'PMX Studio · Analyze'};
 
-export async function openStage(stage: Stage, study?: DG.DataFrame): Promise<void> {
+/** The URL path of a stage's view; the home's is the app's own. */
+export const pathOf = (stage: Stage) => stage === 'home' ? '/apps/PmxStudio' : `/apps/PmxStudio/${stage}`;
+
+export async function openStage(stage: Stage): Promise<void> {
   const open = [...grok.shell.views].find((v) => v.name === NAMES[stage]);
   // after the click that asked for it: the platform makes the clicked view current once the click is handled
-  if (open && study)
-    open.close();
-  else if (open) {
+  if (open) {
     setTimeout(() => grok.shell.v = open);
     return;
   }
-  const view = stage === 'plan' ? await planView() : stage === 'analyze' ? await analyzeView(study) :
-    await monitorView();
+  const view = stage === 'plan' ? await planView() : stage === 'analyze' ? await analyzeView() :
+    stage === 'monitor' ? await monitorView() : await hubView();
+  showStage(stage, view);
+}
+
+/** A stage's view opened with something in it (a study, a plan): always a view of its own. */
+export function showStage(stage: Stage, view: DG.ViewBase): void {
   grok.shell.addView(view);
   // the platform puts the app's root before the path of the view it opens as the app, not of one added later
-  view.path = `/apps/PmxStudio/${stage}`;
+  view.path = pathOf(stage);
 }

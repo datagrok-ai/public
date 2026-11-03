@@ -3,26 +3,28 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {PlanFrames, declarationOf, mapPriorFrame, planFrames, priorsFrame} from './frames';
+import {PlanFrames, declarationOf, mapPriorFrame, planFrames, priorsFrame, tgisOf} from './frames';
 import {openPlanFile, planView} from './plan-view';
 import {AnalysisFrames, analysisDeclarationOf, analysisFrames} from './analyze';
 import {analyzeView} from './analyze-view';
 import {MonitorFrames, monitorFrames} from './monitor';
 import {monitorView, openStudyFile} from './monitor-view';
+import {hubView} from './hub-view';
 
 export * from './package.g';
 export const _package = new DG.Package();
 
 export class PackageFunctions {
   @grok.decorators.app({name: 'PMX Studio',
-    description: 'Plans a xenograft or syngeneic efficacy study de novo from the atlas of historical controls.'})
+    description: 'Plans, follows and analyzes xenograft and syngeneic efficacy studies.'})
   static async pmxStudioApp(
-    // the app's URL path, which the platform passes: /analyze opens Analyze, anything else Plan
+    // the app's URL path, which the platform passes: /plan opens Plan, /analyze Analyze, anything else the home
     @grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string): Promise<DG.ViewBase> {
-    // ponytail: the stage from the URL until the four-stage hub exists
     const stage = path?.replace(/^\//, '') ?? '';
-    return stage.startsWith('analyze') ? analyzeView() : stage.startsWith('monitor') ? monitorView() : planView();
+    return stage.startsWith('analyze') ? analyzeView() : stage.startsWith('monitor') ? monitorView() :
+      stage.startsWith('plan') ? planView() : hubView();
   }
+
 
   @grok.decorators.fileHandler({ext: 'pmxstudy', description: 'Opens a PMX Studio study in Monitor.'})
   static async pmxStudyFileHandler(content: string): Promise<DG.DataFrame[]> {
@@ -98,6 +100,7 @@ export class PackageFunctions {
       {name: 'duration', type: 'dataframe', options: {description: 'Each arm’s power by the day the study ends, with the share of controls past the endpoint and over the humane limit.'}},
       {name: 'schedules', type: 'dataframe', options: {description: 'Each arm’s power and the analyzable animals the study needs, by measurements per week (empty when not asked for).'}},
       {name: 'calendar', type: 'dataframe', options: {description: 'The study day by day from randomization: what is done each day.'}},
+      {name: 'scenarios', type: 'dataframe', options: {description: 'Per assumed TGI and measurements per week: the animals the study needs with every arm at that TGI (empty when no TGIs are assumed). Scenarios, not predictions.'}},
     ],
   })
   static async pmxPlanStudy(
@@ -108,6 +111,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {category: 'Design', caption: 'Multiple comparisons', nullable: false, choices: ['dunnett', 'bonferroni', 'none'], initialValue: 'dunnett', description: 'Correction over the arms compared with the control: Dunnett (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).'}}) correction: string,
     @grok.decorators.param({type: 'int', options: {category: 'Design', caption: 'Animals per arm', optional: true, nullable: true, min: '2', max: '100', description: 'Empty for the number the target power needs, or set it to see the power and smallest detectable effect with that many.'}}) n?: number,
     @grok.decorators.param({type: 'int', options: {category: 'Design', caption: 'End of study', optional: true, nullable: true, units: 'day', min: '5', max: '120', description: 'Leave empty to end when the median control reaches the endpoint.'}}) lastDay?: number,
+    @grok.decorators.param({type: 'string', options: {category: 'Explore', caption: 'Assumed TGIs', optional: true, nullable: true, units: '%', description: 'Up to 8 TGIs to compare, such as 30, 50, 70: the animals the study needs if every arm had each one, sized for the target power whatever the animals per arm. Scenarios, not predictions. Each adds a whole design to the run. Empty: off.'}}) tgiScenarios?: string | null,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Significance (α)', optional: true, min: '0.001', max: '0.2', initialValue: '0.05', description: 'Two-sided significance level of the comparisons with the control.'}}) alpha?: number,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Lost before randomization', optional: true, units: '%', min: '0', max: '80', initialValue: '20', description: 'Implanted animals that never reach randomization (no take, or out of the volume window), at your facility.'}}) preLoss?: number,
     @grok.decorators.param({options: {category: 'Advanced', caption: 'Lost after randomization', optional: true, units: '%', min: '0', max: '50', initialValue: '10', description: 'Randomized animals that cannot be analyzed (ulceration, deaths, technical failures), at your facility.'}}) postLoss?: number,
@@ -129,7 +133,8 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'bool', options: {category: 'Advanced', caption: 'Smallest detectable effect', optional: true, visible: 'false', initialValue: 'true', description: 'With the animals per arm set, also search each arm’s smallest detectable effect (off: left empty and the plan several times faster).'}}) detectableEffect?: boolean,
   ): Promise<PlanFrames> {
     return planFrames(declarationOf({line, endpoint, arms, power, correction, measurementDays, n, lastDay, alpha,
-      preLoss, postLoss, lossRule, confidence, vRand, startWeekday, humane, compareSchedules, detectableEffect}));
+      preLoss, postLoss, lossRule, confidence, vRand, startWeekday, humane, compareSchedules, detectableEffect}),
+    tgisOf(tgiScenarios));
   }
 
   @grok.decorators.func({

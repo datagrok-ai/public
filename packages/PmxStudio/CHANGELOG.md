@@ -9,6 +9,8 @@
   body weight column, Today lists animals near or over the weight-loss limit or not weighed, and Welfare (once revealed)
   shows Analyze's Tolerability on the weights so far. Followed studies are saved as `.pmxstudy` files; Plan has Follow
   this study.
+* Overview: the app opens on its stages as cards (Plan, Monitor, Analyze) joined by the files that pass between them, the user's saved plans, and Open a study: a plan, a followed study or a table of measurements, dropped anywhere or picked, opens in its stage. `/plan` opens Plan directly
+* Plan: Added Explore (`tgiScenarios` input, `scenarios` output, Explore tab): the animals a study needs for each assumed TGI, on every measurement schedule
 
 ## 0.0.1 (2026-10-26)
 
