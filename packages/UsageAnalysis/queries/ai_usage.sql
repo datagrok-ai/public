@@ -36,12 +36,12 @@ turns as (
       max(v.value) filter (where p.name = 'model') as model,
       max(v.value) filter (where p.name = 'status') as status,
       max(v.value) filter (where p.name = 'chatId') as chat_id,
-      max(v.value) filter (where p.name = 'inputCount')::bigint as input_tokens,
-      max(v.value) filter (where p.name = 'outputCount')::bigint as output_tokens,
-      max(v.value) filter (where p.name = 'cacheReadCount')::bigint as cache_read_tokens,
-      max(v.value) filter (where p.name = 'cacheCreationCount')::bigint as cache_write_tokens,
+      max(v.value) filter (where p.name = 'inputCount')::int as input_tokens,
+      max(v.value) filter (where p.name = 'outputCount')::int as output_tokens,
+      max(v.value) filter (where p.name = 'cacheReadCount')::int as cache_read_tokens,
+      max(v.value) filter (where p.name = 'cacheCreationCount')::int as cache_write_tokens,
       max(v.value) filter (where p.name = 'costUsd')::numeric as cost_usd,
-      max(v.value) filter (where p.name = 'durationMs')::bigint as duration_ms
+      max(v.value) filter (where p.name = 'durationMs')::int as duration_ms
     from event_parameter_values v
     join params p on p.id = v.parameter_id
     where v.event_id = e.id

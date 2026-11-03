@@ -40,6 +40,7 @@ export class AiUsageView extends UaView {
     this.uaToolbox.filterStream.subscribe((filter: UaFilter) => {
       df = queries.aiUsage(filter.date!, filter.groups).then((t) => {
         t.col('groups')!.setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ', ');
+        t.col('time')!.meta.format = 'yyyy-MM-dd HH:mm';
         t.onFilterChanged.subscribe(() => showCards(Promise.resolve(t)));
         t.onCurrentRowChanged.subscribe(() => AiUsageView.showRequest(t));
         return t;
@@ -86,7 +87,7 @@ export class AiUsageView extends UaView {
     this.viewers.push(perDay, byUser, byGroup, filters, requests);
     this.root.append(ui.splitV([
       ui.box(cards, {style: {maxHeight: '100px'}}),
-      ui.box(ui.splitH([perDay.root, byUser.root, byGroup.root]), {style: {maxHeight: '300px'}}),
+      ui.box(ui.splitH([perDay.root, ui.splitH([byUser.root, byGroup.root])]), {style: {maxHeight: '300px'}}),
       ui.splitH([filters.root, requests.root]),
     ]));
   }
@@ -107,7 +108,10 @@ export class AiUsageView extends UaView {
 
   static summary(t: DG.DataFrame): {[label: string]: string[]} {
     const rows = Array.from(t.filter.getSelectedIndexes());
-    const sum = (name: string) => rows.reduce((s, i) => s + Number(t.get(name, i) ?? 0), 0);
+    const sum = (name: string) => {
+      const col = t.col(name)!;
+      return rows.reduce((s, i) => col.isNone(i) ? s : s + col.get(i), 0);
+    };
     const priced = rows.filter((i) => !t.col('cost_usd')!.isNone(i)).length;
     const n = (x: number) => DG.format(x, 'compact');
     return {
