@@ -1,7 +1,8 @@
 # Notebooks changelog
 
-## v.next
+## 1.6.4 (2026-11-03)
 
+* Docker: rebuilt the jupyter-notebook image with patched dependencies (underscore 1.13.8 in the nbclassic static files)
 * Container: Fixed script environments failing to build when a conda package has a non-PEP 440 version (tzdata 2026e)
 * GROK-20991: Fixed the package failing to load since the rspack migration (CodeMirror is not defined, process is not defined), so no notebook could be opened
 * Notebooks: Read the session token from `grok.dapi.token` instead of the `auth` cookie, which is now HttpOnly
