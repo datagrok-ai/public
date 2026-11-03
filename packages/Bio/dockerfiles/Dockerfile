@@ -1,5 +1,5 @@
 # Add ability to easily change python version
-ARG PYTHON_VERSION=3.8
+ARG PYTHON_VERSION=3.11
 
 # Use our base image which is optimised and secured by our flow
 FROM datagrok/python:${PYTHON_VERSION}
@@ -116,25 +116,22 @@ USER grok:grok
 # The PATH works better for Docker
 ARG VIRTUAL_ENV=${HOME_DIR}/venv
 ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
-# Create app venv and install PepSeA deps, then raise web-stack/security floors (VEX GROK-18695).
-# PepSeA's requirements.txt pins vulnerable versions; the extra pip run overrides them. Floors are
-# capped by the base python 3.8 (starlette<0.45, uvicorn<0.34, urllib3<2.3, ujson 5.10, numpy<1.24).
+# PepSeA's requirements.txt pins 2021 versions that do not install on python 3.11; only what alignment/ imports is installed.
 RUN mkdir -p ${VIRTUAL_ENV} ; \
     python -m venv ${VIRTUAL_ENV} ; \
-    pip install --no-cache-dir --upgrade pip ; \
-    pip install --no-cache-dir --upgrade wheel setuptools ; \
+    pip install --no-cache-dir --upgrade pip 'setuptools>=78.1.1' 'wheel>=0.46.2' ; \
     pip install --timeout 3600 --no-cache-dir \
-      --requirement /opt/PepSeA-main/requirements.txt ; \
-    pip install --no-cache-dir --upgrade \
-      'fastapi>=0.121.0' 'starlette>=0.44,<0.45' 'h11>=0.16' \
-      'uvicorn>=0.33,<0.34' 'gunicorn>=23' 'ujson>=5.10' \
-      'certifi>=2024.7.4' 'urllib3>=2.2.3' 'requests>=2.32.4' \
-      'idna>=3.15' 'pydantic>=1.10.13,<2' 'numpy>=1.22,<1.24' ; \
+      'fastapi>=0.133' 'starlette>=1.3.1' 'pydantic>=2.7,<3' \
+      'uvicorn[standard]>=0.34' 'h11>=0.16' 'ujson>=5.12.1' 'pymsa==0.8.1' ; \
     find ${VIRTUAL_ENV} -type d \( -path *tensorflow \) -prune -false -depth \( \
       \( -type d -a \( -name test -o -name tests -o -name idle_test \) \) \
           -o \( -type f -a \( -name '*.pyc' -o -name '*.pyo' \) \) \
       \) -exec rm -rf '{}' + ; \
     rm -rf /var/cache/* /var/tmp/* /tmp/*
+
+USER root
+RUN rm -f /usr/lib/python3*/ensurepip/_bundled/*.whl
+USER grok:grok
 
 WORKDIR /opt/PepSeA-main
 
