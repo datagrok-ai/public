@@ -466,6 +466,7 @@ Runtime paths are relative to [`dockerfiles/claude-runtime/`](../dockerfiles/cla
 | [`src/server.ts`](../dockerfiles/claude-runtime/src/server.ts) | Hono server: `/ws` dispatch, `/health`, task claim/release, pool start, shutdown |
 | [`src/session.ts`](../dockerfiles/claude-runtime/src/session.ts) | Per-session queue, file sync, gates, idle watchdog, browser round-trips, event forwarding, abort |
 | [`src/agent/pool.ts`](../dockerfiles/claude-runtime/src/agent/pool.ts) | Agent processes: spawn with `init`, warm spares, LRU and idle eviction, parking and reload, process-tree kills |
+| [`src/credentials.ts`](../dockerfiles/claude-runtime/src/credentials.ts) | The user's provider credentials, bought from Datlas with the connection's container token |
 | [`src/agent/turn.ts`](../dockerfiles/claude-runtime/src/agent/turn.ts) | One turn over the JSON-lines protocol: commands out, events in, gate continuation, cancel |
 | [`src/types.ts`](../dockerfiles/claude-runtime/src/types.ts) | WebSocket protocol, turn request, `AgentCommand` / `AgentProcessEvent`, tool inputs |
 | [`src/prompts.ts`](../dockerfiles/claude-runtime/src/prompts.ts) | System prompts, inlined skills, skills index (`buildSystemPrompt`) |
@@ -587,8 +588,16 @@ limit in `container.json`.
 
 ### Credentials
 
-The provider settings are the `claude-runtime` container's credentials (its Credentials dialog), which the
-platform passes to the container as environment variables.
+The provider settings are the Grokky package's credentials (Plugins | Grokky | Credentials...), a set per group
+with Allow client side off. Every connection the platform proxies to the container carries
+`X-Datagrok-Container-Token`, a 15-minute token scoped to `GET /docker/credentials`
+([AUTH_RESOURCES](https://github.com/datagrok-ai/core/blob/master/docs/AUTH_RESOURCES.md#from-a-docker-container)).
+The server trades it for the user's credentials when the WebSocket opens (`src/credentials.ts`): the package's
+for the user's groups, with the container's own laid over them key by key. The container's credentials, which the
+platform also passes to it as environment variables, serve a connection without the token and a user with no
+credentials; when they hold an `apiKey`, they serve everyone, so the container's key never goes out with a group's
+`provider`, `baseUrl` or `TEST_UPSTREAM`. A failed lookup fails that connection's turns and closes it, so the browser's next prompt
+reconnects with a new token; a change of credentials or groups reaches a user on their next connection.
 
 | Credential | Meaning |
 |---|---|
@@ -600,8 +609,13 @@ platform passes to the container as environment variables.
 | `apiFormat` | Custom: `anthropic-messages`, `openai-responses` or `openai-chat-completions` |
 | `service` | Databricks: a model service of the workspace (`<catalog>.<schema>.<name>`) to call `model` through |
 
-The server takes these (and `TEST_UPSTREAM`) out of its environment at startup and sends them to each agent in
-its `init` line (`PROVIDER_CREDENTIALS` in `src/constants.ts`). Each provider (`agent/grokky_agent/providers/`)
+The server keeps only these (and `TEST_UPSTREAM`, `PROVIDER_CREDENTIALS` in `src/constants.ts`), takes the
+container's out of its environment at startup, and sends a set to each agent in its `init` line. An agent serves
+only turns of the credentials it started with: a turn of other credentials on a live session (rotated keys,
+another group) parks the session and reloads its history in an agent started with the turn's. New warm spares start
+with the credentials an agent last started with successfully, the container's at first; spares of other
+credentials stay until a session of theirs takes them or room is needed, and a session no spare matches starts
+cold. The redaction of agent output covers each agent's own key. Each provider (`agent/grokky_agent/providers/`)
 checks its credentials and declares the formats it serves and where; with two, a model whose name contains
 `claude` is called in Anthropic's Messages format and any other in OpenAI's Responses format. An agent whose
 provider refuses the credentials does not start, so every turn ends in "The assistant could not start: …",
@@ -613,9 +627,11 @@ prices, OpenRouter's live ones). Bedrock, Azure, Databricks and custom endpoints
 list lacks (it stops at Claude Sonnet 5 and Opus 5): such a turn reports `costUsd: null` and only its call limit
 bounds it. Hermes finds the context window itself; images go to the model as they are.
 
-At startup the server runs `python -m grokky_agent --check` once: one short call to the model on the path a turn
-takes. The log reads `provider check: <provider> <model> answered`, or `failed: <error>`, and `/health` reports
-it as `provider`; turns do not wait for it.
+At startup a container with an `apiKey` of its own runs `python -m grokky_agent --check` once: one short call to
+the model on the path a turn takes. The log reads `provider check: <provider> <model> answered`, or
+`failed: <error>`, and `/health` reports it as `provider` (`none` for a container without credentials of its
+own); turns do not wait for it. A user's credentials are checked by their first agent: one the provider refuses
+fails that user's turns with "The assistant could not start: …".
 
 - Anthropic: a Claude subscription token is refused, for any key bound for `api.anthropic.com`: Anthropic allows
   those only in its own applications

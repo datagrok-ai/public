@@ -12,6 +12,7 @@ import type {WsSender} from './stream-filter';
 import {handleMessage, handleAbort, handleInputResponse, handleDisconnect} from './session';
 import {claimTask, releaseTask} from './tasks';
 import {disposeAll, providerCheck, startPool} from './agent/pool';
+import {CONTAINER_TOKEN_HEADER, userCredentials} from './credentials';
 
 const PORT = 5355;
 
@@ -39,7 +40,10 @@ app.post('/task/release', async (c) => {
   return c.json({status: 'released'});
 });
 
-app.get('/ws', upgradeWebSocket(() => {
+app.get('/ws', upgradeWebSocket((c) => {
+  // Read while the token is fresh: it comes only with the handshake and expires in 15 minutes.
+  const credentials = userCredentials(c.req.header(CONTAINER_TOKEN_HEADER));
+  credentials.catch((e: Error) => console.warn(`credentials: ${e.message}`));
   const sessionIds = new Set<string>();
   const disconnect = (_evt: unknown, ws: WsSender) => handleDisconnect(sessionIds, ws);
   return {
@@ -96,8 +100,10 @@ app.get('/ws', upgradeWebSocket(() => {
       }
 
       sessionIds.add(data.sessionId ?? '');
-      handleMessage(sender, data).catch((e: any) =>
-        emit(sender, {type: 'error', sessionId: data.sessionId ?? '', message: String(e?.message ?? e)}));
+      handleMessage(sender, data, credentials).catch((e: any) =>
+        emit(sender, {type: 'error', sessionId: data.sessionId ?? '', message: String(e?.message ?? e)}))
+        // Without credentials the connection is of no use: the browser's next prompt reconnects with a new token.
+        .then(() => credentials.catch(() => ws.close(1011, 'Credentials unavailable')));
     },
     onClose: disconnect,
     onError: disconnect,

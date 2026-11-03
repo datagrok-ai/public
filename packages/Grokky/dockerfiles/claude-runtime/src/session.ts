@@ -14,6 +14,7 @@ import {WORKSPACE, apiUrlFromMcpUrl, rewriteForDocker} from './constants';
 import {waitForClaim, endTask} from './tasks';
 import {runTurn as runAgentTurn} from './agent/turn';
 import {hasSession, parkSession} from './agent/pool';
+import type {ProviderCredentials} from './credentials';
 
 // Longest a turn may emit nothing before it is treated as wedged. Bounds silence between events,
 // not total turn length.
@@ -129,7 +130,8 @@ const QUEUED_HEARTBEAT_MS = 60_000;
 
 const sessionChains = new Map<string, Promise<void>>();
 
-export async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
+export async function handleMessage(ws: WsSender, data: UserMessage,
+  credentials: Promise<ProviderCredentials>): Promise<void> {
   const sid = data.sessionId ?? '';
   const message = data.message ?? '';
   const images = data.images;
@@ -153,7 +155,7 @@ export async function handleMessage(ws: WsSender, data: UserMessage): Promise<vo
         clearInterval(heartbeat);
       }
     }
-    await runTurn(ws, data, sid, message);
+    await runTurn(ws, data, sid, message, credentials);
   } finally {
     release();
     if (sessionChains.get(sid) === tail)
@@ -161,7 +163,8 @@ export async function handleMessage(ws: WsSender, data: UserMessage): Promise<vo
   }
 }
 
-async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: string): Promise<void> {
+async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: string,
+  credentials: Promise<ProviderCredentials>): Promise<void> {
   // Registered before anything is awaited, so an abort that arrives at any point reaches this turn.
   const abortController = new AbortController();
   const active: ActiveQuery = {abortController, ws, pendingInputs: new Map()};
@@ -174,6 +177,7 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
     if (data.resumeExpected && !hasSession(sid))
       return emit(ws, {type: 'session_reset', sessionId: sid});
     const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
+    const turnCredentials = await credentials;
     // Admission: wait for the celery claim (when the queued route is deployed) — the
     // queue container's concurrency limit is the only cap on concurrent turns.
     if (data.taskId) {
@@ -230,6 +234,7 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       gates: [verifier, groundingGate].filter((g) => g !== undefined),
       awaitBrowser: (toolName, input, timeoutMs) => awaitBrowserInput(sid, active, toolName, input, timeoutMs),
       signal: abortController.signal,
+      credentials: turnCredentials,
     });
     // Each event is raced against the idle timeout, so a turn that goes silent is bounded (see
     // watchdog.ts): a wedged agent emits nothing at all, which a plain await would wait on forever.

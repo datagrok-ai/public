@@ -1,3 +1,5 @@
+import type {ProviderCredentials} from './credentials';
+
 // Browser ↔ runtime WebSocket protocol
 
 export type PromptMode = 'datagrok' | 'bash' | 'none';
@@ -106,6 +108,7 @@ export interface AgentTurnRequest {
   awaitBrowser: (toolName: string, input: unknown, timeoutMs: number) => Promise<unknown>;
   /** Aborts the turn: the agent is cancelled, nothing more is sent to it, and the event stream ends. */
   signal: AbortSignal;
+  credentials: ProviderCredentials;
 }
 
 export type AgentEvent =
@@ -126,7 +129,7 @@ export type AgentCommand =
   | ({type: 'turn';
       /** The stored Hermes session a reloaded process continues. */
       restore?: string} &
-      Omit<AgentTurnRequest, 'sessionKey' | 'resumeExpected' | 'gates' | 'awaitBrowser' | 'signal'>)
+      Omit<AgentTurnRequest, 'sessionKey' | 'resumeExpected' | 'gates' | 'awaitBrowser' | 'signal' | 'credentials'>)
   | {type: 'continue'; text: string}
   | {type: 'cancel'}
   | {type: 'browser_result'; id: string; value?: unknown; error?: string};

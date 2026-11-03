@@ -2,6 +2,7 @@
 
 ## v.next
 
+* AI: Introduced per-group model credentials in the package's credentials (Plugins | Grokky | Credentials...): each user's chat runs on the key and model of their group, read by the runtime container through the platform and never sent to the browser
 * Runtime, MCP server: Updated the Node.js base images to 22.23.4 (Node.js October 2026 security release)
 
 * AI: The assistant runs on Claude and GPT models through Anthropic, OpenRouter, OpenAI, Microsoft Azure, Amazon Bedrock, Databricks or your own Anthropic- or OpenAI-compatible endpoint; Claude subscription sign-in is not supported
