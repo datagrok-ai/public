@@ -170,17 +170,21 @@ export function volumeAxis(): {input: RadioInput, row: HTMLElement, log: Readonl
   return {input, row, log: computed(() => input.value === 'Log')};
 }
 
-export type Stage = 'plan' | 'monitor' | 'analyze';
+export type Stage = 'home' | 'plan' | 'monitor' | 'analyze';
+/** Whether Monitor is built in this package: its card, its step and the studies it opens. */
+export const MONITOR_READY = false;
 const STAGES: {stage: Stage, label: string, tip: string}[] = [
+  {stage: 'home', label: 'Overview', tip: 'Every stage, and your studies'},
   {stage: 'plan', label: 'Plan', tip: 'Design the study before it runs: animals, end of study, calendar and power'},
-  {stage: 'monitor', label: 'Monitor', tip: 'Coming soon: follow the study live against its plan, from implantation ' +
-    'to the end'},
+  {stage: 'monitor', label: 'Monitor', tip: (MONITOR_READY ? '' : 'Coming soon: ') + 'follow the study live ' +
+    'against its plan'},
   {stage: 'analyze', label: 'Analyze', tip: 'Analyze the finished study as planned, each treated animal against its ' +
     'untreated twin'},
 ];
 
-/** The app's stages in order, the current one marked; `open` brings another one up (Monitor is not built yet). A
- *  stage moves the whole page, so the strip goes in the view's ribbon, above the declaration and the results. */
+/** The app's home and stages in order, the current one marked; `open` brings another one up (Monitor once it is
+ *  built). A stage moves the whole page, so the strip goes in the view's ribbon, above the declaration and the
+ *  results. */
 export function stageStrip(current: Stage, open: (stage: Stage) => void): HTMLElement {
   const strip = divH([], 'pmx-stages');
   strip.setAttribute('role', 'navigation');
@@ -190,9 +194,9 @@ export function stageStrip(current: Stage, open: (stage: Stage) => void): HTMLEl
     if (i > 0)
       strip.append(span('›'));
     const on = stage === current;
-    const ready = stage !== 'monitor';
+    const ready = stage !== 'monitor' || MONITOR_READY;
     const step = document.createElement(on || !ready ? 'span' : 'button');
-    step.textContent = `${i + 1} ${label}`;
+    step.textContent = stage === 'home' ? label : `${i} ${label}`;
     Object.assign(step.style, {border: '0', background: 'none', padding: '2px 4px', font: 'inherit',
       borderBottom: on ? '2px solid var(--dg-accent, #2083d5)' : '2px solid transparent',
       color: on ? 'var(--dg-text-color, #1f2a37)' : ready ? 'var(--dg-accent, #2083d5)' :

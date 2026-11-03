@@ -1,0 +1,459 @@
+/* PMX Studio's home: the stages as cards joined the way Flow joins its steps (each edge names the file that passes
+   between two stages), the growth of a study behind them, the user's studies, and the way in for a study under way:
+   a file dropped anywhere on the page, or picked in the Open a study dialog, is read and opened in its stage. */
+import '../css/hub.css';
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import {BasicTable, signal} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
+import type {ViewContent} from '@datagrok-libraries/u2/dg';
+
+import {MONITOR_READY, stageStrip} from './ui';
+import type {Stage} from './ui';
+import {NAMES, openStage, pathOf, showStage} from './stages';
+import {planView} from './plan-view';
+import {analyzeView} from './analyze-view';
+import {PLAN_TAG, myPlans, parsePlan} from './plan-file';
+import {Brought, OPENED_EXTS, OpenStage, bring, readFile, suggestedStage} from './open-study';
+
+/** The home view. */
+export async function hubView(): Promise<DG.ViewBase> {
+  return ViewHost.create({name: NAMES.home!, content: () => hubContent()}).view;
+}
+
+// ---- small builders: the page is static markup with a few listeners, so plain elements do -------------------------
+
+function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, children: (Node | string)[] = [],
+  attrs: {[name: string]: string} = {}): HTMLElementTagNameMap[K] {
+  const e = document.createElement(tag);
+  if (cls)
+    e.className = cls;
+  for (const [k, v] of Object.entries(attrs))
+    e.setAttribute(k, v);
+  e.append(...children);
+  return e;
+}
+
+/** An inline icon in the current colour (the paths are constants of this file). */
+function icon(paths: string, size = 22, width = 1.6): SVGSVGElement {
+  const t = document.createElement('template');
+  t.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" ` +
+    `stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+  return t.content.firstElementChild as SVGSVGElement;
+}
+
+const ICON = {
+  plan: '<rect x="3.5" y="5" width="17" height="15" rx="2"/>' +
+    '<path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M12 14h2M16 14h.5M8 17h2"/>',
+  monitor: '<path d="M3 12h4l2.5-6 4 12 2.5-6H21"/>',
+  analyze: '<path d="M4 4v16h16"/><path d="M7 16c3-1 5-4 7-7s3-4 5-5"/><path d="M7 17c3 0 6-1 8-3s3-3 4-4" ' +
+    'stroke-dasharray="2 2.5"/>',
+  open: '<path d="M12 15V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
+  drop: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
+  file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 15h6M9 18h4"/>',
+  ok: '<path d="M5 12l5 5 9-10"/>',
+  none: '<path d="M6 12h12"/>',
+  warn: '<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17h0"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h0"/>',
+  add: '<path d="M12 5v14M5 12h14"/>',
+};
+
+// ---- the growth behind the page ------------------------------------------------------------------------------------
+
+/** A study as the atlas draws one, for the page's background: a control on a reduced Gompertz curve and two treated
+ *  arms (kill rates from day 2), each with the band of 50% and of 90% of its animals widening over 28 days and its
+ *  median. Illustrative parameters, fixed: the same picture every time. */
+function growthArt(): SVGSVGElement {
+  const xAt = (t: number) => (t / 28 * 1440).toFixed(1);
+  const yAt = (v: number) => (400 - v * 84).toFixed(1);
+  const gompertz = (t: number) => (0.24 / 0.035) * (1 - Math.exp(-0.035 * t));
+  const steps = Array.from({length: 57}, (_, i) => i / 2);
+  const arms = [{cls: 'arm2', k: 0.12, s0: 0.1, s1: 0.022},
+    {cls: 'arm1', k: 0.075, s0: 0.1, s1: 0.02},
+    {cls: 'ctrl', k: 0, s0: 0.08, s1: 0.016}];
+  const groups = arms.map((p) => {
+    const m = (t: number) => gompertz(t) - p.k * Math.max(0, t - 2);
+    const s = (t: number) => p.s0 + p.s1 * t;
+    const band = (z: number) => 'M' + steps.map((t) => `${xAt(t)},${yAt(m(t) + z * s(t))}`).join(' L') + ' L' +
+      steps.slice().reverse().map((t) => `${xAt(t)},${yAt(m(t) - z * s(t))}`).join(' L') + ' Z';
+    const median = 'M' + steps.map((t) => `${xAt(t)},${yAt(m(t))}`).join(' L');
+    return `<g class="${p.cls}"><path class="b90" d="${band(1.645)}"/><path class="b50" d="${band(0.674)}"/>` +
+      `<path class="med" pathLength="1" d="${median}"/></g>`;
+  });
+  const t = document.createElement('template');
+  t.innerHTML = `<svg class="pmx-bg" viewBox="0 0 1440 440" preserveAspectRatio="xMaxYMin slice" ` +
+    `aria-hidden="true">${groups.join('')}</svg>`;
+  return t.content.firstElementChild as SVGSVGElement;
+}
+
+// ---- the stages and the edges between them -------------------------------------------------------------------------
+
+/** An edge between two neighbouring cards, from the first's output port to the next one's input, named by the file
+ *  that passes between them. */
+function edge(chip: string): HTMLElement {
+  const wire = 'M0,70 C38,70 34,30 72,30';
+  const t = document.createElement('template');
+  t.innerHTML = `<svg class="pmx-wire-h" width="72" height="100" viewBox="0 0 72 100"><path class="pmx-glow" ` +
+    `d="${wire}"/><path class="pmx-wire" d="${wire}"/><circle class="pmx-port" cx="0" cy="70" r="4.5"/>` +
+    `<circle class="pmx-port" cx="72" cy="30" r="4.5"/></svg>` +
+    '<svg class="pmx-wire-v" width="10" height="64" viewBox="0 0 10 64"><path class="pmx-wire" d="M5,0 L5,64"/></svg>';
+  return h('div', 'pmx-link', [t.content, h('span', 'pmx-chip', [chip])], {'aria-hidden': 'true'});
+}
+
+/** The edge under the cards, from Plan to Analyze: the plan Analyze reads the study against. */
+function arc(chip: string): HTMLElement {
+  const t = document.createElement('template');
+  t.innerHTML = '<svg width="40" height="48" style="left:-2px"><path class="pmx-glow" d="M2,0 C2,28 14,38 40,38"/>' +
+    '<path class="pmx-wire" d="M2,0 C2,28 14,38 40,38"/><circle class="pmx-port" cx="2" cy="0" r="4.5"/></svg>' +
+    '<svg height="48" style="left:38px;width:calc(100% - 76px)"><line class="pmx-glow" x1="0" y1="38" x2="100%" ' +
+    'y2="38"/><line class="pmx-wire" x1="0" y1="38" x2="100%" y2="38"/></svg>' +
+    '<svg width="40" height="48" style="right:-2px"><path class="pmx-glow" d="M0,38 C26,38 38,28 38,0"/>' +
+    '<path class="pmx-wire" d="M0,38 C26,38 38,28 38,0"/><circle class="pmx-port" cx="38" cy="0" r="4.5"/></svg>';
+  const a = h('div', 'pmx-arc', [t.content, h('span', 'pmx-chip', [chip])], {'aria-hidden': 'true'});
+  // from the first card's centre to the third's: three cards share the width left by the two 72px edges
+  Object.assign(a.style, {marginLeft: 'calc((100% - 144px) / 6)', marginRight: 'calc((100% - 144px) / 6)'});
+  return a;
+}
+
+interface Card {stage: Stage, n: string, name: string, what: string, icon: string, ready: boolean}
+const CARDS: Card[] = [
+  {stage: 'plan', n: '01', name: 'Plan', what: 'Animals, duration, calendar and power, before the study runs.',
+    icon: ICON.plan, ready: true},
+  {stage: 'monitor', n: '02', name: 'Monitor', what: 'A running study against its plan: new measurements, animals ' +
+    'that need attention, futility reviews.', icon: ICON.monitor, ready: MONITOR_READY},
+  {stage: 'analyze', n: '03', name: 'Analyze', what: 'A finished study as planned: each arm against the control, ' +
+    'each animal against its untreated twin.', icon: ICON.analyze, ready: true},
+];
+
+function card(c: Card, onOpen: () => void, onHover: (on: boolean) => void): HTMLButtonElement {
+  const b = h('button', 'pmx-card pmx-rise', [
+    h('span', 'pmx-card-top', [h('span', 'pmx-ico', [icon(c.icon)]),
+      c.ready ? h('span', 'pmx-num', [c.n]) : h('span', 'pmx-soon', ['Coming soon'])]),
+    h('span', 'pmx-name', [c.name + ' ', ...(c.ready ? [h('span', 'pmx-go', ['→'], {'aria-hidden': 'true'})] : [])]),
+    h('span', 'pmx-what', [c.what]),
+  ], {'type': 'button', 'data-stage': c.stage});
+  b.disabled = !c.ready;
+  b.addEventListener('click', onOpen);
+  for (const [ev, on] of [['mouseenter', true], ['focus', true], ['mouseleave', false], ['blur', false]] as const)
+    b.addEventListener(ev, () => onHover(on));
+  return b;
+}
+
+// ---- the page ------------------------------------------------------------------------------------------------------
+
+function hubContent(): ViewContent {
+  const open = (stage: Stage) => stage === 'plan' ? void openStage('plan') : openStudyDialog();
+  // the card under the pointer lights the edges that touch it and dims the others
+  const edges: {el: HTMLElement, ends: Stage[], off: boolean}[] = [];
+  const hover = (stage: Stage | null) => {
+    for (const e of edges) {
+      const on = stage !== null && e.ends.includes(stage);
+      e.el.classList.toggle('is-on', on && !e.off);
+      e.el.classList.toggle('is-dim', stage !== null && !on);
+    }
+  };
+  const cards = CARDS.map((c, i) => {
+    const el = card(c, () => open(c.stage), (on) => hover(on ? c.stage : null));
+    el.style.animationDelay = `${0.16 + i * 0.08}s`;
+    return el;
+  });
+  const between = [edge('.pmxplan'), edge('.pmxstudy')];
+  between.forEach((el, i) => {
+    edges.push({el, ends: [CARDS[i].stage, CARDS[i + 1].stage], off: !MONITOR_READY});
+    el.classList.toggle('is-off', !MONITOR_READY);
+  });
+  const under = arc('.pmxplan');
+  edges.push({el: under, ends: ['plan', 'analyze'], off: false});
+
+  const flow = h('div', 'pmx-flow', [cards[0], between[0], cards[1], between[1], cards[2]]);
+  flow.style.gridTemplateColumns = 'minmax(0,1fr) 72px minmax(0,1fr) 72px minmax(0,1fr)';
+
+  const strip = h('button', 'pmx-strip pmx-rise', [
+    h('span', 'pmx-ico', [icon(ICON.open, 20)]),
+    h('span', '', [h('span', 'pmx-strip-title', ['Open a study']),
+      h('span', 'pmx-strip-text', ['A plan, a followed study or a table of measurements. Or drop it anywhere.'])]),
+  ], {type: 'button'});
+  strip.style.animationDelay = '.44s';
+  strip.addEventListener('click', () => openStudyDialog());
+
+  const studies = yourStudies();
+  studies.style.animationDelay = '.52s';
+
+  const title = h('h1', 'pmx-hub-title pmx-rise', ['PMX Studio']);
+  const lede = h('p', 'pmx-hub-lede pmx-rise', ['Xenograft and syngeneic efficacy studies, from design to analysis.']);
+  lede.style.animationDelay = '.08s';
+  const page = h('div', 'pmx-hub-page', [title, lede, flow, under, strip, studies]);
+
+  // a file dragged anywhere on the page: the whole page takes it, and the dialog opens with it read
+  const dropLayer = h('div', 'pmx-drop', [h('div', 'pmx-drop-frame'),
+    h('div', 'pmx-drop-text', [h('span', 'pmx-ico', [icon(ICON.drop, 26, 1.7)]), 'Drop to open'])],
+  {'aria-hidden': 'true'});
+  const root = h('div', 'pmx-hub', [growthArt(), page, dropLayer]);
+  takeDrops(root, (on) => dropLayer.classList.toggle('is-open', on), (files) => openStudyDialog(files));
+
+  return {root, ribbon: [[stageStrip('home', (s) => void openStage(s))]], path: pathOf('home')};
+}
+
+/** The user's saved plans, newest first, each opening in Plan; hidden while there are none. Built with the page
+ *  (the view owns the table), filled once the folder is listed. */
+function yourStudies(): HTMLElement {
+  const items = signal<DG.FileInfo[]>([]);
+  const host = h('div', 'pmx-studies pmx-rise');
+  host.hidden = true;
+  void myPlans().catch(() => [] as DG.FileInfo[]).then((files) => {
+    items.value = files.sort((a, b) => (b.updatedOn?.valueOf() ?? 0) - (a.updatedOn?.valueOf() ?? 0)).slice(0, 8);
+    host.hidden = items.value.length === 0;
+  });
+  const table = new BasicTable<DG.FileInfo>({items, keyOf: (f) => f.fullPath,
+    columns: [
+      {header: 'Study', render: (f) => f.fileName.replace(/\.[^.]+$/, '')},
+      {header: 'Stage', render: () => 'Plan'},
+      {header: 'Updated', render: (f) => f.updatedOn ? f.updatedOn.format('D MMM YYYY') : ''},
+    ],
+    onRowClick: (f) => void grok.dapi.files.readAsText(f).then(async (text) =>
+      showStage('plan', await planView(parsePlan(text))))});
+  table.root.style.width = '100%';
+  table.root.style.cursor = 'pointer';
+  host.append(h('h3', '', ['Your studies']), table.root);
+  return host;
+}
+
+/** Takes the files dragged over `target` (and only files): `over` says when some are over it, `got` receives them.
+ *  The platform's own drop handling (which would open them as tables) does not see them. */
+function takeDrops(target: HTMLElement, over: (on: boolean) => void, got: (files: File[]) => void): void {
+  let depth = 0;
+  const hasFiles = (e: DragEvent) => !!e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+  target.addEventListener('dragenter', (e) => {
+    if (!hasFiles(e))
+      return;
+    e.preventDefault();
+    if (depth++ === 0)
+      over(true);
+  });
+  target.addEventListener('dragover', (e) => {
+    if (!hasFiles(e))
+      return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer!.dropEffect = 'copy';
+  });
+  target.addEventListener('dragleave', (e) => {
+    if (hasFiles(e) && --depth <= 0) {
+      depth = 0;
+      over(false);
+    }
+  });
+  target.addEventListener('drop', (e) => {
+    if (!hasFiles(e))
+      return;
+    e.preventDefault();
+    e.stopPropagation();
+    depth = 0;
+    over(false);
+    got([...e.dataTransfer!.files]);
+  });
+}
+
+// ---- Open a study --------------------------------------------------------------------------------------------------
+
+type Phase = 'drop' | 'loading' | 'loaded' | 'error';
+interface Option {stage: OpenStage, title: string, desc: string, note: string, disabled: boolean}
+
+/** The Open a study dialog: a file dropped on it, browsed for, or one of the user's plans; once read, what it holds
+ *  and the stage it opens in (suggested from its dates). `first`: files dropped on the page, read at once. */
+export function openStudyDialog(first?: File[]): void {
+  let phase: Phase = 'drop';
+  let brought: Brought = {};
+  let chosen: OpenStage | null = null;
+  let error = '';
+  let loadingName = '';
+  let latest = 0;
+
+  const body = h('div', 'pmx-open');
+  const dialog = ui.dialog({title: 'Open a study'});
+  dialog.add(body);
+  dialog.onOK(() => void go(), {closeOnEnter: false});
+  // the OK button says where the study opens, and waits until there is one
+  const ok: HTMLButtonElement = dialog.getButton('OK') ?? document.createElement('button');
+
+  const options = (): {question: string, list: Option[], hint: string} => {
+    const {table, plan, study} = brought;
+    const monitorNote = MONITOR_READY ? '' : 'Coming soon';
+    if (study) {
+      return {question: 'Has the study finished?', hint: '', list: [
+        {stage: 'monitor', title: 'Still running', desc: 'Monitor', note: monitorNote, disabled: !MONITOR_READY}]};
+    }
+    if (table) {
+      const canMonitor = MONITOR_READY && !!plan;
+      const dated = canMonitor && table.lastDay !== null && plan!.end !== null;
+      return {question: 'Has the study finished?',
+        hint: dated ? `Day ${table.lastDay} of about ${plan!.end}, from the dates alone: the groups stay blind.` : '',
+        list: [
+          {stage: 'monitor', title: 'Still running', desc: 'Monitor', disabled: !canMonitor,
+            note: !MONITOR_READY ? monitorNote : !plan ? 'Needs the plan it was run with' : ''},
+          {stage: 'analyze', title: 'Finished', note: '', disabled: false,
+            desc: plan ? 'Analyze, against its plan' : 'Analyze, against the historical controls'},
+        ]};
+    }
+    return {question: 'Has the study started?', hint: '', list: [
+      {stage: 'plan', title: 'Not started', desc: 'Plan', note: '', disabled: false},
+      {stage: 'monitor', title: 'Starting now', desc: 'Monitor', note: monitorNote, disabled: !MONITOR_READY}]};
+  };
+
+  const selected = (): Option | null => {
+    if (phase !== 'loaded')
+      return null;
+    const list = options().list;
+    const pick = list.find((o) => o.stage === chosen && !o.disabled) ??
+      list.find((o) => o.stage === suggestedStage(brought, MONITOR_READY) && !o.disabled) ??
+      list.find((o) => !o.disabled);
+    return pick ?? null;
+  };
+
+  const dropZone = (small: boolean, text: string): HTMLElement => {
+    const input = h('input', 'pmx-file-input', [], {type: 'file', multiple: '',
+      accept: OPENED_EXTS.map((x) => '.' + x).join(',')});
+    input.addEventListener('change', () => {
+      void take([...input.files ?? []]);
+      input.value = '';
+    });
+    const zone = h('label', 'pmx-dz' + (small ? ' pmx-dz-small' : ''), small ?
+      [h('span', 'pmx-ico', [icon(ICON.add, 14, 2)]), text, input] :
+      [h('span', 'pmx-ico', [icon(ICON.open)]),
+        h('span', 'pmx-dz-main', ['Drag a file here, or ', h('b', '', ['browse'])]),
+        h('span', 'pmx-exts', [OPENED_EXTS.filter((x) => x !== 'txt').map((x) => '.' + x).join(' · ')]), input]);
+    return zone;
+  };
+
+  const render = () => {
+    const parts: HTMLElement[] = [];
+    if (phase === 'drop' || phase === 'error') {
+      if (phase === 'error')
+        parts.push(h('div', 'pmx-error', [icon(ICON.warn, 16, 1.8), h('span', '', [error])]));
+      const saved = ui.link('Saved plans', () => void savedPlans(), 'Your plans saved in Plan');
+      const example = ui.link('Example study', () => {
+        dialog.close();
+        void analyzeView({example: true}).then((v) => showStage('analyze', v));
+      }, 'An MC38 study as Plan predicts it, analyzed at once');
+      parts.push(dropZone(false, ''), h('div', 'pmx-alts', [saved, example]));
+    } else if (phase === 'loading') {
+      parts.push(h('div', 'pmx-loading', [
+        h('div', 'pmx-file-row', [icon(ICON.file, 20), h('div', '', [h('b', '', [loadingName])])]),
+        h('div', 'pmx-track', [h('div')])]));
+    } else {
+      const {table, plan, study} = brought;
+      const rows = [...(table ? [[table.file, 'Measurements']] : []), ...(plan ? [[plan.file, 'Plan']] : []),
+        ...(study ? [[study.file, 'Followed study']] : [])]
+        .map(([name, kind]) => h('div', 'pmx-file-row', [icon(ICON.file, 20),
+          h('div', '', [h('b', '', [name]), h('span', '', [kind])])]));
+      parts.push(h('div', 'pmx-opts', rows));
+      const holds = holdsOf(brought);
+      if (holds.length)
+        parts.push(h('ul', 'pmx-holds', holds));
+      const {question, list, hint} = options();
+      const pick = selected();
+      parts.push(h('div', 'pmx-ask', [h('div', 'pmx-q', [question]), h('div', 'pmx-opts', list.map((o) => {
+        const radio = h('input', '', [], {type: 'radio', name: 'pmx-stage'});
+        radio.checked = pick?.stage === o.stage;
+        radio.disabled = o.disabled;
+        radio.addEventListener('change', () => {
+          chosen = o.stage;
+          render();
+        });
+        return h('label', 'pmx-opt' + (o.disabled ? ' is-off' : pick?.stage === o.stage ? ' is-on' : ''), [radio,
+          h('span', '', [h('b', '', [o.title]), o.desc, ...(o.note ? [h('em', '', [o.note])] : [])])]);
+      }))]));
+      if (hint)
+        parts.push(h('div', 'pmx-hint', [icon(ICON.info, 16, 1.8), h('span', '', [hint])]));
+      if (error)
+        parts.push(h('div', 'pmx-error', [icon(ICON.warn, 16, 1.8), h('span', '', [error])]));
+      const missing = table && !plan ? 'Add its .pmxplan' : plan && !table && !study ? 'Add its measurements' : '';
+      if (missing)
+        parts.push(dropZone(true, missing));
+    }
+    body.replaceChildren(h('div', 'pmx-in', parts));
+    const pick = selected();
+    ok.textContent = pick ? `Open in ${pick.desc.split(',')[0]}` : 'Open';
+    ok.disabled = !pick;
+    ok.classList.toggle('disabled', !pick);
+  };
+
+  /** Reads the files and adds what they hold to what the dialog already has; a later read overtakes an earlier. */
+  const take = async (files: File[]) => {
+    if (files.length === 0)
+      return;
+    const mine = ++latest;
+    phase = 'loading';
+    loadingName = files.map((f) => f.name).join(', ');
+    render();
+    const started = Date.now();
+    const reads = await Promise.all(files.map((f) => f.text().then((t) => readFile(f.name, t),
+      () => readFile(f.name, ''))));
+    // the bar shows for a moment even for a small file: the change of state reads as the file being taken in
+    await new Promise((r) => setTimeout(r, Math.max(0, 450 - (Date.now() - started))));
+    if (mine !== latest)
+      return;
+    const {brought: next, bad} = bring(brought, reads);
+    error = bad.length ? `Not a study file: ${bad.join(', ')}` : '';
+    brought = next;
+    chosen = null;
+    phase = next.table || next.plan || next.study ? 'loaded' : 'error';
+    render();
+  };
+
+  const savedPlans = async () => {
+    const files = await myPlans().catch(() => [] as DG.FileInfo[]);
+    if (files.length === 0) {
+      grok.shell.info('No saved plans yet');
+      return;
+    }
+    DG.Menu.popup().items(files.map((f) => f.fileName), (name: string) => {
+      const f = files.find((x) => x.fileName === name)!;
+      void grok.dapi.files.readAsText(f).then((text) => take([new File([text], f.fileName)]));
+    }).show();
+  };
+
+  const go = async () => {
+    const pick = selected();
+    const {table, plan} = brought;
+    if (!pick)
+      return;
+    if (pick.stage === 'plan' && plan)
+      showStage('plan', await planView(parsePlan(plan.text)));
+    else if (pick.stage === 'analyze' && table) {
+      if (plan)
+        table.df.setTag(PLAN_TAG, plan.text);
+      showStage('analyze', await analyzeView({study: table.df}));
+    }
+  };
+
+  takeDrops(dialog.root, (on) => body.querySelectorAll('.pmx-dz').forEach((z) => z.classList.toggle('is-over', on)),
+    (files) => void take(files));
+  render();
+  dialog.show();
+  if (first?.length)
+    void take(first);
+}
+
+/** What the files brought hold, one line each. */
+function holdsOf(b: Brought): HTMLElement[] {
+  const line = (kind: 'ok' | 'none' | 'warn', text: string, sub = '') => h('li', '', [
+    h('span', kind, [icon(kind === 'ok' ? ICON.ok : kind === 'warn' ? ICON.warn : ICON.none, 16, 2)]),
+    h('span', '', [text, ...(sub ? [h('small', '', [sub])] : [])])]);
+  const out: HTMLElement[] = [];
+  if (b.table) {
+    const t = b.table;
+    const facts = [t.animals !== null ? `${t.animals} animals` : '', t.groups !== null ? `${t.groups} groups` : '',
+      t.lastDay !== null ? `day 0–${t.lastDay}` : ''].filter(Boolean);
+    const what = facts.join(' · ') || 'Measurements';
+    out.push(t.missing.length ? line('warn', what, `Not found: ${t.missing.join(', ')}. ` +
+      'You pick it next.') : line('ok', what, t.found.join(' · ')));
+    out.push(t.weight ? line('ok', 'Body weight') : line('none', 'No body weight'));
+    out.push(b.plan ? line('ok', `Plan: ${b.plan.name}`) : line('none', 'No plan'));
+  } else if (b.plan && !b.study) {
+    const facts = [b.plan.line, b.plan.end !== null ? `about ${b.plan.end} days` : ''].filter(Boolean);
+    out.push(line('ok', b.plan.name, facts.join(' · ')));
+  }
+  return out;
+}

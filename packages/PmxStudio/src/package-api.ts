@@ -9,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-   * Plans a xenograft or syngeneic efficacy study de novo from the atlas of historical controls.
+   * Plans, follows and analyzes xenograft and syngeneic efficacy studies.
    */
   export async function pmxStudioApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('PMXStudio:PmxStudioApp', { path });

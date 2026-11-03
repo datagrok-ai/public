@@ -2,7 +2,7 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: PMX Studio
-//description: Plans a xenograft or syngeneic efficacy study de novo from the atlas of historical controls.
+//description: Plans, follows and analyzes xenograft and syngeneic efficacy studies.
 //input: string path { meta.url: true; optional: true }
 //output: view result
 //meta.role: app
