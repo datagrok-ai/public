@@ -69,7 +69,7 @@ user_groups as (
   select m.user_id, string_agg(g.friendly_name, ', ' order by g.friendly_name) as groups
   from memberships m
   join groups g on g.id = m.group_id
-  where not g.personal and not g.hidden and g.id <> 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6'
+  where not g.personal and not g.hidden and g.id <> 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6' -- All users
   group by m.user_id
 )
 select t.event_time as time,

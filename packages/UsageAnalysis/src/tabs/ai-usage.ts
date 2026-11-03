@@ -90,7 +90,6 @@ export class AiUsageView extends UaView {
     });
 
     filters.root.classList.add('ua-filters');
-    filters.root.style.maxWidth = '190px';
     requests.root.classList.add('ui-panel');
     this.requests = requests;
     this.viewers.push(perDay, byUser, byGroup, filters, requests);
@@ -137,16 +136,14 @@ export class AiUsageView extends UaView {
   static groupsFrame(t: DG.DataFrame): DG.DataFrame {
     const rows: number[] = [];
     const names: string[] = [];
-    for (let i = 0; i < t.rowCount; i++) {
-      for (const name of (t.get('groups', i) as string | null)?.split(', ') ?? []) {
+    const separator = t.col('groups')!.getTag(DG.TAGS.MULTI_VALUE_SEPARATOR);
+    for (let i = 0; i < t.rowCount; i++)
+      for (const name of (t.get('groups', i) as string | null)?.split(separator) ?? []) {
         rows.push(i);
         names.push(name);
       }
-    }
     const groups = DG.DataFrame.fromColumns([
       DG.Column.fromStrings('group', names),
-      DG.Column.fromStrings('user', rows.map((i) => t.get('user', i))),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'total_tokens', rows.map((i) => Number(t.get('total_tokens', i) ?? 0))),
       DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'cost_usd', rows.map((i) => t.get('cost_usd', i))),
     ]);
     t.onFilterChanged.subscribe(() => groups.filter.init((j) => t.filter.get(rows[j])));
@@ -173,14 +170,17 @@ export class AiUsageView extends UaView {
           ['Time', 'Tokens', 'Cost, $']);
       }, true);
     }
-    const content = queries.aiTurnContent(s('turn_id'));
-    const text = (name: string) => ui.wait(async () => {
-      const value = (await content).get(name, 0);
-      return value ? ui.divText(value, 'ua-ai-text') : ui.divText('Not logged', 'ua-ai-text-missing');
-    });
-    acc.addPane('Prompt', () => text('prompt'), true);
-    acc.addPane('Answer', () => text('response'), true);
-    acc.addPane('Tool calls', () => text('tool_calls'), true);
+    const turnId: string | null = t.get('turn_id', i);
+    if (turnId != null) {
+      const content = queries.aiTurnContent(turnId);
+      const text = (name: string) => ui.wait(async () => {
+        const value = (await content).get(name, 0);
+        return value ? ui.divText(value, 'ua-ai-text') : ui.divText('Not logged', 'ua-ai-text-missing');
+      });
+      acc.addPane('Prompt', () => text('prompt'), true);
+      acc.addPane('Answer', () => text('response'), true);
+      acc.addPane('Tool calls', () => text('tool_calls'), true);
+    }
     grok.shell.o = acc.root;
   }
 }
