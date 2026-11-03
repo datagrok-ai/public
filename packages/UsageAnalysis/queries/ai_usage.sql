@@ -89,5 +89,5 @@ join content_params p on p.id = v.parameter_id
 where p.name in ('prompt', 'response', 'toolCalls')
   and v.event_id in (
     select t.event_id from event_parameter_values t
-    where t.parameter_id in (select id from content_params where name = 'turnId') and t.value = @turnId)
+    where t.parameter_id in (select id from content_params where name = 'turnId') and t.value::text = @turnId::text)
 --end

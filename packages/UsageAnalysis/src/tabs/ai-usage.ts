@@ -26,7 +26,7 @@ export class AiUsageView extends UaView {
 
   async initViewers(): Promise<void> {
     this.root.className = 'grok-view ui-box';
-    const cards = ui.div([], {classes: 'ua-cards'});
+    const cards = ui.div([], {classes: 'ua-cards ua-ai-cards'});
     const showCards = (t: Promise<DG.DataFrame>) => {
       const summary = t.then((t) => AiUsageView.summary(t));
       cards.textContent = '';
@@ -80,7 +80,7 @@ export class AiUsageView extends UaView {
       grid.columns.setOrder(GRID_COLUMNS);
       for (const name of t.columns.names())
         grid.col(name)!.visible = GRID_COLUMNS.includes(name);
-      const widths: {[name: string]: number} = {time: 110, user: 110, groups: 140, feature: 90, model: 130, status: 60,
+      const widths: {[name: string]: number} = {time: 125, user: 110, groups: 140, feature: 90, model: 130, status: 60,
         total_tokens: 90, cost_usd: 70};
       for (const [name, width] of Object.entries(widths))
         grid.col(name)!.width = width;
@@ -91,10 +91,11 @@ export class AiUsageView extends UaView {
     requests.root.classList.add('ui-panel');
     this.requests = requests;
     this.viewers.push(perDay, byUser, byGroup, filters, requests);
+    const breakdown = ui.tabControl({'By user': byUser.root, 'By group': byGroup.root});
     this.root.append(ui.splitV([
-      ui.box(cards, {style: {maxHeight: '100px'}}),
-      ui.box(ui.splitH([perDay.root, ui.splitH([byUser.root, byGroup.root])]), {style: {maxHeight: '300px'}}),
-      ui.splitH([filters.root, requests.root]),
+      ui.box(cards, {style: {maxHeight: '96px'}}),
+      ui.box(ui.splitH([perDay.root, breakdown.root]), {style: {maxHeight: '290px'}}),
+      ui.splitH([ui.box(filters.root, {style: {maxWidth: '230px'}}), requests.root]),
     ]));
   }
 
