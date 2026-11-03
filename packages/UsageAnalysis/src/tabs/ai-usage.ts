@@ -10,7 +10,7 @@ import {queries} from '../package-api';
 import '../../css/usage_analysis.css';
 
 const CARDS = ['Requests', 'Users', 'Input tokens', 'Output tokens', 'Total tokens', 'Estimated cost'];
-const GRID_COLUMNS = ['time', 'user', 'groups', 'feature', 'model', 'status', 'total_tokens', 'cost_usd'];
+const GRID_COLUMNS = ['time', 'user', 'feature', 'model', 'status', 'total_tokens', 'cost_usd'];
 
 export class AiUsageView extends UaView {
   private requests?: UaFilterableQueryViewer;
@@ -26,6 +26,7 @@ export class AiUsageView extends UaView {
 
   async initViewers(): Promise<void> {
     this.root.className = 'grok-view ui-box';
+    this.root.style.overflow = 'hidden';
     const cards = ui.div([], {classes: 'ua-cards ua-ai-cards'});
     const showCards = (t: Promise<DG.DataFrame>) => {
       const summary = t.then((t) => AiUsageView.summary(t));
@@ -80,8 +81,8 @@ export class AiUsageView extends UaView {
       grid.columns.setOrder(GRID_COLUMNS);
       for (const name of t.columns.names())
         grid.col(name)!.visible = GRID_COLUMNS.includes(name);
-      const widths: {[name: string]: number} = {time: 140, user: 110, groups: 140, feature: 90, model: 130, status: 60,
-        total_tokens: 90, cost_usd: 70};
+      const widths: {[name: string]: number} = {time: 118, user: 100, feature: 80, model: 120, status: 55,
+        total_tokens: 75, cost_usd: 60};
       for (const [name, width] of Object.entries(widths))
         grid.col(name)!.width = width;
       return grid;
@@ -95,7 +96,7 @@ export class AiUsageView extends UaView {
     this.root.append(ui.splitV([
       ui.box(cards, {style: {maxHeight: '96px'}}),
       ui.box(ui.splitH([perDay.root, breakdown.root]), {style: {maxHeight: '290px'}}),
-      ui.splitH([ui.box(filters.root, {style: {maxWidth: '230px'}}), requests.root]),
+      ui.splitH([ui.box(filters.root, {style: {maxWidth: '200px'}}), requests.root]),
     ]));
   }
 
