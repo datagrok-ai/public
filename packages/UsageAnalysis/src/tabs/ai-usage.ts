@@ -1,56 +1,164 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {UaToolbox} from '../ua-toolbox';
+import {UaFilter} from '../filter';
+import {queries} from '../package-api';
 import '../../css/usage_analysis.css';
 
+const CARDS = ['Requests', 'Users', 'Input tokens', 'Output tokens', 'Total tokens', 'Estimated cost'];
+const GRID_COLUMNS = ['time', 'user', 'groups', 'feature', 'model', 'status', 'total_tokens', 'cost_usd'];
+
 export class AiUsageView extends UaView {
+  private requests?: UaFilterableQueryViewer;
+
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'AI Usage';
   }
 
-  async initViewers(path?: string): Promise<void> {
-    const grid = (name: string, queryName: string) => new UaFilterableQueryViewer({
-      filterSubscription: this.uaToolbox.filterStream,
-      name,
-      queryName,
-      createViewer: (t: DG.DataFrame) => {
-        const g = DG.Viewer.grid(t, {showRowHeader: false, allowRowSelection: false, allowBlockSelection: false});
-        const ugid = g.col('ugid');
-        if (ugid)
-          ugid.visible = false;
-        return g;
-      },
+  async exportFiles(): Promise<DG.FileInfo[]> {
+    return UaView.csvFiles({'requests': this.requests?.errorDiv == null ? this.requests?.viewer?.dataFrame : null});
+  }
+
+  async initViewers(): Promise<void> {
+    const cards = ui.div([], {classes: 'ua-cards'});
+    const showCards = (t: Promise<DG.DataFrame>) => {
+      const summary = t.then((t) => AiUsageView.summary(t));
+      cards.textContent = '';
+      for (const label of CARDS) {
+        cards.append(ui.div([ui.divText(label), ui.wait(async () =>
+          ui.div((await summary)[label].map((s) => ui.divText(s))))], 'ua-card'));
+      }
+    };
+
+    let df: Promise<DG.DataFrame>;
+    let groups: Promise<DG.DataFrame>;
+    this.uaToolbox.filterStream.subscribe((filter: UaFilter) => {
+      df = queries.aiUsage(filter.date!, filter.groups).then((t) => {
+        t.col('groups')!.setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ', ');
+        t.onFilterChanged.subscribe(() => showCards(Promise.resolve(t)));
+        t.onCurrentRowChanged.subscribe(() => AiUsageView.showRequest(t));
+        return t;
+      });
+      groups = df.then((t) => AiUsageView.groupsFrame(t));
+      showCards(df);
     });
 
-    const timeline = new UaFilterableQueryViewer({
-      filterSubscription: this.uaToolbox.filterStream,
-      name: 'Tokens over time',
-      queryName: 'AiUsageTimeline',
-      createViewer: (t: DG.DataFrame) => DG.Viewer.lineChart(t, {
-        xColumnName: 'time_start',
-        showXSelector: false,
-        yColumnNames: ['input_tokens', 'output_tokens'],
-        showYSelectors: false,
-        showAggrSelectors: false,
-        showSplitSelector: false,
-        chartTypes: ['Line Chart'],
-        title: 'Tokens over time',
-      }),
-    });
-    const byUser = grid('By user', 'AiUsageByUser');
-    const byGroup = grid('By group', 'AiUsageByGroup');
-    const byFeature = grid('By feature', 'AiUsageByFeature');
-    const content = grid('Content', 'AiTurnContent');
+    const viewer = (name: string, createViewer: (t: DG.DataFrame) => DG.Viewer, getDataFrame = () => df) =>
+      new UaFilterableQueryViewer({filterSubscription: this.uaToolbox.filterStream, name, getDataFrame, createViewer});
 
-    this.viewers.push(timeline, byUser, byGroup, byFeature, content);
+    const perDay = viewer('Cost per day', (t) => DG.Viewer.lineChart(t, {
+      xColumnName: 'day',
+      yColumnNames: ['cost_usd'],
+      yAggrTypes: ['sum'],
+      splitColumnNames: ['model'],
+      chartTypes: ['Stacked Bar Chart'],
+      title: 'Cost per day',
+    }));
+    const byUser = viewer('Cost by user', (t) => AiUsageView.costBarChart(t, 'user', 'Cost by user', {
+      onClick: DG.RowGroupAction.Filter,
+      rowSource: DG.RowSet.All,
+    }));
+    const byGroup = viewer('Cost by group', (t) => AiUsageView.costBarChart(t, 'group', 'Cost by group'), () => groups);
+    const filters = viewer('Filters', (t) => DG.Viewer.filters(t,
+      {columnNames: ['status', 'feature', 'model', 'groups', 'user']}));
+    const requests = viewer('Requests', (t) => {
+      const grid = DG.Viewer.grid(t, {
+        showRowHeader: false,
+        showColumnGridlines: false,
+        allowRowSelection: false,
+        allowBlockSelection: false,
+        showCurrentCellOutline: false,
+      });
+      grid.columns.setOrder(GRID_COLUMNS);
+      for (const name of t.columns.names())
+        grid.col(name)!.visible = GRID_COLUMNS.includes(name);
+      return grid;
+    });
+
+    filters.root.classList.add('ua-filters');
+    requests.root.classList.add('ui-panel');
+    this.requests = requests;
+    this.viewers.push(perDay, byUser, byGroup, filters, requests);
     this.root.append(ui.splitV([
-      ui.box(timeline.root, {style: {maxHeight: '320px'}}),
-      ui.box(ui.tabControl({'By user': byUser.root, 'By group': byGroup.root, 'By feature': byFeature.root,
-        'Content': content.root}).root),
+      ui.box(cards, {style: {maxHeight: '100px'}}),
+      ui.box(ui.splitH([perDay.root, byUser.root, byGroup.root]), {style: {maxHeight: '300px'}}),
+      ui.splitH([filters.root, requests.root]),
     ]));
+  }
+
+  static costBarChart(t: DG.DataFrame, splitColumnName: string, title: string, options: object = {}): DG.Viewer {
+    return DG.Viewer.barChart(t, {
+      splitColumnName,
+      valueColumnName: 'cost_usd',
+      valueAggrType: 'sum',
+      stackColumnName: '',
+      orientation: 'horizontal',
+      barSortType: 'by value',
+      barSortOrder: 'desc',
+      title,
+      ...options,
+    });
+  }
+
+  static summary(t: DG.DataFrame): {[label: string]: string[]} {
+    const rows = Array.from(t.filter.getSelectedIndexes());
+    const sum = (name: string) => rows.reduce((s, i) => s + Number(t.get(name, i) ?? 0), 0);
+    const priced = rows.filter((i) => !t.col('cost_usd')!.isNone(i)).length;
+    const n = (x: number) => DG.format(x, 'compact');
+    return {
+      'Requests': [n(rows.length)],
+      'Users': [n(new Set(rows.map((i) => t.get('user', i))).size)],
+      'Input tokens': [n(sum('input_tokens'))],
+      'Output tokens': [n(sum('output_tokens'))],
+      'Total tokens': [n(sum('total_tokens'))],
+      'Estimated cost': [`$${n(sum('cost_usd'))}`, priced < rows.length ? `priced: ${priced} of ${rows.length}` : ''],
+    };
+  }
+
+  static groupsFrame(t: DG.DataFrame): DG.DataFrame {
+    const rows: number[] = [];
+    const names: string[] = [];
+    for (let i = 0; i < t.rowCount; i++) {
+      for (const name of (t.get('groups', i) as string | null)?.split(', ') ?? []) {
+        rows.push(i);
+        names.push(name);
+      }
+    }
+    const groups = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('group', names),
+      DG.Column.fromStrings('user', rows.map((i) => t.get('user', i))),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'total_tokens', rows.map((i) => Number(t.get('total_tokens', i) ?? 0))),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'cost_usd', rows.map((i) => t.get('cost_usd', i))),
+    ]);
+    t.onFilterChanged.subscribe(() => groups.filter.init((j) => t.filter.get(rows[j])));
+    return groups;
+  }
+
+  static showRequest(t: DG.DataFrame): void {
+    const i = t.currentRowIdx;
+    if (i < 0)
+      return;
+    const s = (name: string, row: number = i) => t.col(name)!.getString(row);
+    const acc = ui.accordion();
+    acc.addPane('Details', () => ui.tableFromMap({'User': s('user'), 'Groups': s('groups'), 'Feature': s('feature'),
+      'Model': s('model'), 'Status': s('status'), 'Cost, $': s('cost_usd'), 'Duration, ms': s('duration_ms'),
+      'Chat': s('chat_id')}), true);
+    acc.addPane('Tokens', () => ui.tableFromMap({'Input': s('input_tokens'), 'Output': s('output_tokens'),
+      'Cache read': s('cache_read_tokens'), 'Cache write': s('cache_write_tokens'), 'Total': s('total_tokens')}), true);
+    const chat = t.get('chat_id', i);
+    if (chat != null) {
+      acc.addPane('Chat', () => {
+        const others = [...Array(t.rowCount).keys()].filter((j) => j !== i && t.get('chat_id', j) === chat);
+        return others.length === 0 ? ui.divText('No other requests') : ui.table(others,
+          (j) => [ui.link(s('time', j), () => t.currentRowIdx = j), s('total_tokens', j), s('cost_usd', j)],
+          ['Time', 'Tokens', 'Cost, $']);
+      }, true);
+    }
+    grok.shell.o = acc.root;
   }
 }

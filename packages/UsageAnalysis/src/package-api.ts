@@ -12,24 +12,8 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:GetAggregatedClicks', { date });
   }
 
-  export async function aiUsageTimeline(date: string , groups: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:AiUsageTimeline', { date, groups });
-  }
-
-  export async function aiUsageByUser(date: string , groups: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:AiUsageByUser', { date, groups });
-  }
-
-  export async function aiUsageByGroup(date: string , groups: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:AiUsageByGroup', { date, groups });
-  }
-
-  export async function aiUsageByFeature(date: string , groups: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:AiUsageByFeature', { date, groups });
-  }
-
-  export async function aiTurnContent(date: string , groups: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:AiTurnContent', { date, groups });
+  export async function aiUsage(date: string , groups: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:AiUsage', { date, groups });
   }
 
   export async function allTestRuns(benchmarks: boolean ): Promise<DG.DataFrame> {
