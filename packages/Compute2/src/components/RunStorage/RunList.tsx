@@ -2,29 +2,11 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {IconFA} from '@datagrok-libraries/webcomponents-vue';
 import {getRunName} from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {RunAuthor, formatSaved, placeName, spaceListingError} from './run-storage';
-import {RunFilter, SpaceIndex, parentsOf, subtreeRuns} from './space-index';
+import {RunAuthor, formatSaved, spaceListingError} from './run-storage';
+import {Folder} from './space-index';
 import {Crumb} from './use-space-navigation';
 
-export type Folder = {id: string, name: string, count?: number, alsoIn?: string, error?: string};
 export type ListedRun = {run: DG.FuncCall, spaceId?: string};
-
-/** The subspaces of a location as folders, with the runs runFilter keeps in each and below it. */
-export function spaceFolders(index: SpaceIndex, ids: string[], parentId: string | undefined,
-  runFilter: RunFilter | undefined): Folder[] {
-  return ids.flatMap((id) => {
-    const node = index.nodes.get(id);
-    if (!node)
-      return [];
-    const others = parentsOf(index, id).filter((parent) => parent.id !== parentId);
-    return [{
-      id, name: placeName(node.space),
-      count: runFilter ? subtreeRuns(index, [id], runFilter).length : undefined,
-      alsoIn: parentId && others.length > 0 ? others.map(placeName).join(', ') : undefined,
-      error: node.error,
-    }];
-  });
-}
 
 /** The way back up from the location: a link per level. */
 export const Breadcrumbs = Vue.defineComponent({

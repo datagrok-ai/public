@@ -6,7 +6,7 @@ import * as Vue from 'vue';
 import {IconFA, Viewer, ResizeHandle, ToggleInput, wheelGuard} from '@datagrok-libraries/webcomponents-vue';
 import {
   AxisConfigMap, CandidateOverrides, ColumnCandidate, ColumnTarget, ComparisonEntry, ComparisonEntryNodes,
-  ComparisonTarget, EntrySourceKind, MatchConfidence, candidateId,
+  ComparisonTarget, candidateId,
 } from './types';
 import {UnitConverter} from './matching';
 import {
@@ -18,26 +18,7 @@ import {
 import {captureTableLayout, showProjectSaveDialog} from '../../project-export';
 import {buildComparison} from './comparison-builders';
 import {ScalarChartType, chartSpec} from './chart-spec';
-
-// chip styling lives in RunComparison.css (c2-comparison-badge + these modifiers)
-export const sourceBadge = (kind: EntrySourceKind) =>
-  <span class={`c2-comparison-badge c2-badge-${kind}`}>{kind}</span>;
-
-const confidenceBadge = (confidence: MatchConfidence) =>
-  <span class={`c2-comparison-badge c2-confidence-${confidence}`}>{confidence}</span>;
-
-export const renderListFilter = (value: Vue.Ref<string>, placeholder: string) => (
-  <input
-    type='text'
-    placeholder={placeholder}
-    value={value.value}
-    onInput={(e: Event) => value.value = (e.target as HTMLInputElement).value}
-    style={{
-      border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 6px',
-      outline: 'none', width: '160px',
-    }}
-  />
-);
+import {confidenceBadge, renderListFilter, sourceBadge} from './list-ui';
 
 type ColumnTypeGetter = (entryId: string, tablePath: string, columnName: string) => string | undefined;
 

@@ -10,7 +10,8 @@ import {
 } from '../components/RunStorage/run-storage';
 import {useSpaceIndex} from '../components/RunStorage/use-space-index';
 import {
-  SpaceIndex, favoriteSpaces, loadSpaceIndex, makeIndex, parentsOf, reloadSpaces, subtreeCounts, subtreeRuns,
+  SpaceIndex, favoriteSpaces, loadSpaceIndex, makeIndex, parentsOf, reloadSpaces, spaceFolders, subtreeCounts,
+  subtreeRuns,
 } from '../components/RunStorage/space-index';
 import {FavoritesApi, createFavorites} from '../components/RunStorage/use-favorites';
 import {RunsLocation, SPACES, locationKey, useSpaceNavigation} from '../components/RunStorage/use-space-navigation';
@@ -20,7 +21,7 @@ import {useRunDetails} from '../components/RunStorage/use-run-details';
 import {useRunSelection} from '../components/RunStorage/use-run-selection';
 import {useMyRuns} from '../components/RunStorage/use-my-runs';
 import {useRunAuthors} from '../components/RunStorage/use-run-authors';
-import {RunList, spaceFolders} from '../components/RunStorage/RunList';
+import {RunList} from '../components/RunStorage/RunList';
 import {ModelSelector} from '../components/RunStorage/ModelSelector';
 import {PlacesTree} from '../components/RunStorage/PlacesTree';
 import {SaveRunDialog} from '../components/RunStorage/SaveRunDialog';

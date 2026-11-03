@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {EMPTY, Observable, defer, from, of} from 'rxjs';
 import {catchError, expand, filter, map, mergeMap, toArray} from 'rxjs/operators';
+import {placeName} from './run-storage';
 
 /** A space with its subspaces and the runs linked into it; `error` says why it couldn't be listed. */
 export type SpaceNode = {space: DG.Project, children: string[], runs: DG.FuncCall[], error?: string};
@@ -136,3 +137,22 @@ export function favoriteSpaces(index: SpaceIndex, favorites: Set<string>): Set<s
 /** The spaces a run is linked into. */
 export const spacesWithRun = (index: SpaceIndex, runId: string) =>
   [...index.nodes.entries()].filter(([, node]) => node.runs.some((run) => run.id === runId)).map(([id]) => id);
+
+export type Folder = {id: string, name: string, count?: number, alsoIn?: string, error?: string};
+
+/** The subspaces of a location as folders, with the runs runFilter keeps in each and below it. */
+export function spaceFolders(index: SpaceIndex, ids: string[], parentId: string | undefined,
+  runFilter: RunFilter | undefined): Folder[] {
+  return ids.flatMap((id) => {
+    const node = index.nodes.get(id);
+    if (!node)
+      return [];
+    const others = parentsOf(index, id).filter((parent) => parent.id !== parentId);
+    return [{
+      id, name: placeName(node.space),
+      count: runFilter ? subtreeRuns(index, [id], runFilter).length : undefined,
+      alsoIn: parentId && others.length > 0 ? others.map(placeName).join(', ') : undefined,
+      error: node.error,
+    }];
+  });
+}
