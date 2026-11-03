@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
-import {applyCustomExport} from '../utils';
+import {applyCustomExport} from '../components/TreeWizard/tree-export';
 
 // Headless check for the custom-export "report handler" contract: the function named in
 // `meta.customExports` (NOT the model itself) must run, and it must receive the step's funcCall.

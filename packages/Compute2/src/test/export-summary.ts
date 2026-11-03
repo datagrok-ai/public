@@ -9,7 +9,7 @@ import type {
 import type {
   FuncCallStateInfo,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {getExportSummary, reportSummary, reportTree, SUMMARY_FILE_NAME} from '../utils';
+import {getExportSummary, reportSummary, reportTree, SUMMARY_FILE_NAME} from '../components/TreeWizard/tree-export';
 import {friendlyIoName} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
 
 const callState = (isOutputOutdated: boolean, runError?: string): FuncCallStateInfo =>

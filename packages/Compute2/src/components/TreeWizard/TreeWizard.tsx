@@ -26,15 +26,16 @@ import '@he-tree/vue/style/material-design.css';
 import {PipelineView} from '../PipelineView/PipelineView';
 import {useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
+import {disposeViewers, getViewers, pinView} from '../../utils';
 import {
   findNextStep,
-  applyCustomExport,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
-  disposeViewers, findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
-  pinView, reportTree, getExportSummary, reportSummary, resolveChosenUuid, resolveSingleStep, SELECTED_STEP_BACKGROUND,
+  findTreeNodeParrent, getRelevantGlobalActions, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
+  resolveChosenUuid, resolveSingleStep, SELECTED_STEP_BACKGROUND,
   isEachDraggable, isDeletable, isDuplicable,
-} from '../../utils';
+} from './tree-utils';
+import {applyCustomExport, reportTree, getExportSummary, reportSummary} from './tree-export';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
