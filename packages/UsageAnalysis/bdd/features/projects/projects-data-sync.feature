@@ -24,8 +24,8 @@ Feature: A project saved with and without Data sync
   same name without the column its bar chart is split by, it opens, the chart saying the column does
   not exist; replaced by one without the column a calculated column reads, it opens with a warning
   balloon naming both, the calculated column empty; the file it was saved from deleted from its space,
-  it shows the Data loading error. These queries are made through the API on System:Datagrok. Their
-  projects are named with the run's time in letters and digits only (the Dashboards search misses "-"
+  it shows the Data loading error, reopened without a reload. These queries are made through the API
+  on System:Datagrok. Their projects are named with the run's time in letters and digits only (the Dashboards search misses "-"
   and "_") and removed, with their tables and views, when the feature starts and ends.
 
   Background:
@@ -300,7 +300,6 @@ Feature: A project saved with and without Data sync
     And user clicks on DELETE button in "Are you sure?" dialog
     Then the "Are you sure?" dialog should close
     And "syncedcars{time}.csv" link in gallery should be absent
-    When user reloads the page
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDEdgeSyncFile{time}" into gallery search
