@@ -1,11 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 
 import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {sequenceToMolfile} from '../utils/sequence-to-mol';
-import {EMBED_3D_FAILED, EMBED_3D_TOO_LONG, embedMolecule3d, showMoleculeDialog, toAtomicLevelSingle}
-  from '../widgets/to-atomic-level-widget';
+import {EMBED_3D_FAILED, EMBED_3D_TOO_LONG, embedMolecule3d, molecular3DStructureWidget, showMoleculeDialog,
+  toAtomicLevelSingle} from '../widgets/to-atomic-level-widget';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
@@ -200,6 +201,57 @@ category('toAtomicLevel-ui', () => {
     expect(ok.error, null);
     expect(ok.molBlock3D, `3D of ${molBlock2D}`);
   });
+
+  // 3 November: the 3D panel's NGL stage was never released, and a page keeps 16 WebGL contexts (Chrome drops the one
+  // used least recently): after a few sequences the panel on screen lost its context and showed an empty white box
+  test('panel-3d-stage-released-off-page', async () => {
+    const glContext = (root: HTMLElement): WebGLRenderingContext | null =>
+      root.querySelector('canvas')?.getContext('webgl') ?? null;
+    const neverShown = await molecular3DStructureWidget(await panelValue('PEPTIDE1{A.C.D}$$$$'));
+    await delay(500);
+    expect(glContext(neverShown.root), null, 'a panel never shown makes no stage');
+    const panels: HTMLElement[] = [];
+    try {
+      for (const seq of ['PEPTIDE1{A.C.D}$$$$', 'PEPTIDE1{G.K.W}$$$$']) {
+        panels.at(-1)?.remove(); // the context panel makes a new panel for each sequence
+        const widget = await molecular3DStructureWidget(await panelValue(seq));
+        const panel = ui.div([widget.root], {style: {width: '300px'}});
+        document.body.append(panel);
+        panels.push(panel);
+        await awaitCheck(() => glContext(panel) !== null, `${seq}: no stage on the page`, 10000);
+      }
+      await awaitCheck(() => glContext(panels[0])?.isContextLost() === true,
+        'the panel off the page kept its context', 10000);
+      expect(glContext(panels[1])?.isContextLost(), false, 'the panel on the page lost its context');
+    } finally {
+      panels.at(-1)?.remove();
+    }
+  }, {timeout: 60000});
+
+  // 3 November: the context panel's stylesheet sizes an NGL host `initial`, and a stage made once the panel is on the
+  // page sizes its canvas by its host: the panel must stay a square, not a strip
+  test('panel-3d-square-in-context-panel', async () => {
+    const col = await seqColOf(['PEPTIDE1{A.C.D.G.K.W}$$$$']);
+    const showContextPanel = grok.shell.windows.showContextPanel;
+    const tv = grok.shell.addTableView(col.dataFrame);
+    try {
+      grok.shell.windows.showContextPanel = true;
+      col.dataFrame.currentCell = col.dataFrame.cell(0, 'seq');
+      const header = () => [...document.querySelectorAll<HTMLElement>('.grok-prop-panel .d4-accordion-pane-header')]
+        .find((h) => h.textContent?.trim() === 'Molecular 3D Structure');
+      await awaitCheck(() => header() !== undefined, 'no Molecular 3D Structure pane in the context panel', 10000);
+      if (!header()!.classList.contains('expanded'))
+        header()!.click();
+      const canvas = () => document.querySelector<HTMLCanvasElement>('.grok-prop-panel #ngl-3d-host canvas');
+      await awaitCheck(() => (canvas()?.getBoundingClientRect().width ?? 0) > 200, 'no 3D view in the pane', 20000);
+      await delay(1000); // the stage sized after its structure loaded
+      const {width, height} = canvas()!.getBoundingClientRect();
+      expect(Math.abs(height - width) < 0.1 * width, true, `a square canvas, not ${width} x ${height}`);
+    } finally {
+      grok.shell.windows.showContextPanel = showContextPanel;
+      tv.close();
+    }
+  }, {timeout: 60000});
 
   // A click on the panel's molecule: drawn at twice the shown resolution, a 3x lens under the mouse
   test('dialog-resolution-and-lens', async () => {

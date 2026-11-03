@@ -2,6 +2,7 @@
 
 ## v.next
 
+* 3D Structure: Fixed the pane showing an empty white box after some molecules: each pane's 3D viewer (NGL) kept its WebGL context, a page keeps 16 (the browser drops the one used least recently), so the pane on screen lost its own. The viewer is made once the pane is on the page and released, with its context, once the pane leaves it. A V3000 block (any molecule with enhanced stereo, e.g. a CXSMILES with `|a:...|`, is written so), which the viewer loaded as no atoms, goes to V2000 with its 3D coordinates and is drawn; one over 999 atoms shows a message instead of an empty box. Tests: `cell panel` structure3d-widget
 * Crux engine: CXSMILES coordinates, wedges and coordinate bonds are kept, as in RDKit mode (drawing, MOL export, stereo from 3D coordinates)
 * Crux engine: SMARTS hybridization queries (`[^2]`) match in substructure search
 * Crux engine: atom aliases and values in MOL files are kept on export
