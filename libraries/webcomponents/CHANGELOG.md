@@ -4,6 +4,7 @@
 
 * ValidationIcon: A `disabled` or `restricted` input whose value is consistent shows a link icon
 * InputForm: Added the `skipLogic` property, passed to `DG.InputForm.forFuncCall`
+* InputForm: Fixed a form opened with invalid or missing required values reporting itself valid
 
 ## 0.3.7 (2026-09-23)
 
