@@ -1,8 +1,9 @@
 # Grokky changelog
 
-## v.next
+## 1.0.5 (2026-11-03)
 
 * AI: Introduced per-group model credentials in the package's credentials (Plugins | Grokky | Credentials...): each user's chat runs on the key and model of their group, read by the runtime container through the platform and never sent to the browser. They are the only source: the runtime no longer takes credentials from its container's environment
+* Docker: Rebuilt the claude-runtime, mcp-server and queue images; claude-runtime has setuptools 78.1.1+ in place of Debian's 66.1.1
 * AI: Every completed turn is logged as an `ai-turn` usage event with its feature, status, model, tokens, cost and duration, including failed and stopped turns
 * AI: Prompts moved from the `ai-request` usage events to `ai-turn-content`, logged by default, up to 2500 bytes each, with a notice in the AI panel and AI search
 * AI: Added settings to turn off prompt logging and to opt in to logging responses and tool calls
