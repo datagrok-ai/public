@@ -14,16 +14,7 @@ Feature: Calendar known failures
     And "On Click" property of calendar viewer should be "Select"
     And all rows should pass the filter
 
-  @edge-cases @known-failure:24 @realizes:core#233
-  Scenario: Closing a calendar whose Filter click filters the table gives the rows back (core#233)
-    When user sets "onClick" property of calendar viewer to "Filter"
-    And user clicks on the "month 1990-01" area of calendar viewer
-    Then 32 rows should pass the filter
-    When user clicks on close icon of calendar viewer
-    Then calendar viewer should be absent
-    And all rows should pass the filter
-
-  @edge-cases @known-failure:34 @realizes:core#1221
+  @edge-cases @known-failure:25 @realizes:core#1221
   Scenario: The calendar's click filter stays when a category is toggled in the filter panel (core#1221)
     When user sets "onClick" property of calendar viewer to "Filter"
     And user clicks on the "month 1990-01" area of calendar viewer

@@ -107,7 +107,7 @@ The `ChemicalEngine` package property ("Chemical Engine": `RDKit` default, `Crux
 chemistry; `src/engine/` is the one place that reads it (`chem-engine.ts`). Crux is one wasm file, `vendor/chem-wasm/`
 (crux-core's `crates/chem-wasm`; `VERSION.chem-wasm` names its revision and build, `NOTICE.chem-wasm` its licences,
 both emitted to `dist/`), answering RDKit.js's calls: fetched and compiled once, on first use (`crux-module.ts`; RDKit
-mode fetches it only for `molzip` and FCFP or chiral fingerprints, Crux's in both modes), instantiated on the main
+mode fetches it only for `molzip`, the macromolecule assembler and FCFP or chiral fingerprints, Crux's in both modes), instantiated on the main
 thread for one molecule's work and handed to the Crux workers (`src/crux/`) for a column's. In Crux mode nearly all of
 Chem's chemistry runs on Crux (drawing, conversions, every search type, fingerprints, descriptors, properties, alerts,
 MMPA, R-groups, MCS, reactions, 3D, InChI, the scaffold tree, synthon search, the Python scripts), each with its RDKit,
@@ -117,7 +117,7 @@ branch is at a feature's entry, through `cruxOrRdKit` / `cruxOrRdKitAsync` or th
 feature, and how a feature moves behind the setting: [`src/engine/README.md`](src/engine/README.md). Other packages get
 RDKit objects in both modes (`getRdKitModule`, `getRdKitService`); in Crux mode the moved functions' pictures and values
 come from Crux. Tests: `chemical engine` (and its `: column jobs`, `: python scripts`), `crux analyses`, `crux
-substructure search` (and `: search types`). Whole suites in Crux mode on a stand: `misc/crux/engine-setting.sh set
+substructure search` (and `: search types`), `crux: biopolymer`. Whole suites in Crux mode on a stand: `misc/crux/engine-setting.sh set
 Crux` (the package settings on the server), `restore` after.
 
 ### Crux substructure engine

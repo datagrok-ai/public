@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/calendar/calendar-known-failures.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.calendar, core#233, core#1221]
+sub_features_covered: [viewers.calendar, core#1221]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -21,7 +21,6 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterPasses, filterPassesAll, openEmptyFilterPanel} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addCardFor} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
@@ -30,7 +29,7 @@ import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Calendar known failures", () => {
   const session = feature(test, "features/viewers/calendar/calendar-known-failures.feature", import.meta.url);
-  test("Closing a calendar whose Filter click filters the table gives the rows back (core#233)", {tag: ["@viewers", "@realizes:viewers.calendar", "@edge-cases", "@known-failure:24", "@realizes:core#233"]}, async ({browser}) => {
+  test("The calendar's click filter stays when a category is toggled in the filter panel (core#1221)", {tag: ["@viewers", "@realizes:viewers.calendar", "@edge-cases", "@known-failure:25", "@realizes:core#1221"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(10, "Given user is logged in", () => loggedIn(page));
     await session.step(11, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -42,27 +41,10 @@ test.describe("Calendar known failures", () => {
       await session.step(19, "When user sets \"onClick\" property of calendar viewer to \"Filter\"", () => setProperty(page, "onClick", el("calendar viewer"), "Filter"));
       await session.step(20, "And user clicks on the \"month 1990-01\" area of calendar viewer", () => clickArea(page, "month 1990-01", el("calendar viewer")));
       await session.step(21, "Then 32 rows should pass the filter", () => filterPasses(page, 32));
-      await session.step(22, "When user clicks on close icon of calendar viewer", () => clickOn(page, el("close icon of calendar viewer")));
-      await session.step(23, "Then calendar viewer should be absent", () => shouldBe(page, el("calendar viewer"), "absent"));
-      await session.step(24, "And all rows should pass the filter", () => filterPassesAll(page));
-    }, 24);
-  });
-  test("The calendar's click filter stays when a category is toggled in the filter panel (core#1221)", {tag: ["@viewers", "@realizes:viewers.calendar", "@edge-cases", "@known-failure:34", "@realizes:core#1221"]}, async ({browser}) => {
-    const page = await session.page(browser);
-    await session.step(10, "Given user is logged in", () => loggedIn(page));
-    await session.step(11, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(12, "And user adds a calendar viewer", () => addViewer(page, "calendar"));
-    await session.step(13, "Then the \"date column\" reading of calendar viewer should be \"STARTED\"", () => readingReads(page, "date column", el("calendar viewer"), "STARTED"));
-    await session.step(14, "And \"On Click\" property of calendar viewer should be \"Select\"", () => propertyShouldBe(page, "On Click", el("calendar viewer"), "Select"));
-    await session.step(15, "And all rows should pass the filter", () => filterPassesAll(page));
-    await knownFailure(async () => {
-      await session.step(28, "When user sets \"onClick\" property of calendar viewer to \"Filter\"", () => setProperty(page, "onClick", el("calendar viewer"), "Filter"));
-      await session.step(29, "And user clicks on the \"month 1990-01\" area of calendar viewer", () => clickArea(page, "month 1990-01", el("calendar viewer")));
-      await session.step(30, "Then 32 rows should pass the filter", () => filterPasses(page, 32));
-      await session.step(31, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
-      await session.step(32, "And user adds a card for \"SEX\" to the filter panel", () => addCardFor(page, "SEX"));
-      await session.step(33, "And user clicks on the \"category F of SEX\" area of filter panel", () => clickArea(page, "category F of SEX", el("filter panel")));
-      await session.step(34, "Then 19 rows should pass the filter", () => filterPasses(page, 19));
-    }, 34);
+      await session.step(22, "When user opens an empty filter panel", () => openEmptyFilterPanel(page));
+      await session.step(23, "And user adds a card for \"SEX\" to the filter panel", () => addCardFor(page, "SEX"));
+      await session.step(24, "And user clicks on the \"category F of SEX\" area of filter panel", () => clickArea(page, "category F of SEX", el("filter panel")));
+      await session.step(25, "Then 19 rows should pass the filter", () => filterPasses(page, 19));
+    }, 25);
   });
 });

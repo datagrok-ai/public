@@ -9,8 +9,6 @@ import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 
-export const MONOMER_MOLS_COL = 'monomeric-mols';
-
 export const enum MONOMERIC_COL_TAGS {
   MONOMERIC_MOLS = 'monomeric-mols',
   LAST_INVALIDATED_VERSION = 'last-invalidated-version',

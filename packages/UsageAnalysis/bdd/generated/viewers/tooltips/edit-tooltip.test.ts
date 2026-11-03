@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/tooltips/edit-tooltip.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.tooltips, public#1208, public#373]
+sub_features_covered: [viewers.tooltips, public#1208, public#373, core#474]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -31,9 +31,9 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Editing the table's tooltip from a viewer", () => {
   const session = feature(test, "features/viewers/tooltips/edit-tooltip.feature", import.meta.url);
-  test("Editing the table's tooltip from a viewer", {tag: ["@journey", "@viewers", "@realizes:viewers.tooltips", "@realizes:public#1208", "@realizes:public#373", "@edge-cases"]}, async ({browser}) => {
+  test("Editing the table's tooltip from a viewer", {tag: ["@journey", "@viewers", "@realizes:viewers.tooltips", "@realizes:public#1208", "@realizes:public#373", "@realizes:core#474", "@edge-cases"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 7, page);
+    const run = journey(test, 8, page);
     await session.step(39, "Given user is logged in", () => loggedIn(page));
     await session.step(40, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(41, "And user sets properties of grid:", () => setProperties(page, el("grid"), [["Show Tooltip","inherit from table"],["Show Column Names","Always"],["Show Visible Columns In Tooltip","true"]]), [["Show Tooltip","inherit from table"],["Show Column Names","Always"],["Show Visible Columns In Tooltip","true"]]);
@@ -118,73 +118,84 @@ test.describe("Editing the table's tooltip from a viewer", () => {
       await session.step(130, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
       await session.step(131, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("A change made in Edit Tooltip and cancelled leaves the tooltip as it was", async () => {
-      await session.step(135, "When user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
+    await run.scenario("View > Edit Tooltip keeps setting the table's tooltip for the plots (core#474)", async () => {
+      await session.step(135, "When user picks \"View > Edit Tooltip...\" from the top menu", () => pickFromTopMenu(page, "View > Edit Tooltip..."));
       await session.step(136, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
-      await session.step(137, "When user toggles the \"AGE\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
-      await session.step(138, "And user toggles the \"RACE\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "RACE", el("\"Edit Tooltip\" dialog")));
-      await session.step(139, "Then the \"AGE\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
-      await session.step(140, "And the \"RACE\" column should be checked in the column list of \"Edit Tooltip\" dialog", () => checkedInColumnList(page, "RACE", el("\"Edit Tooltip\" dialog")));
-      await session.step(141, "When user clicks on CANCEL button in \"Edit Tooltip\" dialog", () => clickOn(page, el("CANCEL button in \"Edit Tooltip\" dialog")));
-      await session.step(142, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
-      await session.step(143, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
-      await session.step(144, "Then the tooltip should show columns in the order \"AGE, SEX, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, SEX, WEIGHT"));
-      await session.step(145, "And the tooltip should not show columns \"RACE\"", () => tooltipNotColumns(page, "RACE"));
-      await session.step(146, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
-      await session.step(147, "Then no errors should have been logged", () => noErrors(page));
+      await session.step(137, "And \"Use tooltip\" input in \"Edit Tooltip\" dialog should have value \"Table\"", () => shouldHaveValue(page, el("\"Use tooltip\" input in \"Edit Tooltip\" dialog"), "Table"));
+      await session.step(138, "When user toggles the \"WEIGHT\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
+      await session.step(139, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
+      await session.step(140, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
+      await session.step(141, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+      await session.step(142, "Then the tooltip should show columns in the order \"AGE, SEX\"", () => tooltipColumnsInOrder(page, "AGE, SEX"));
+      await session.step(143, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+      await session.step(144, "Then no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("A change made in Edit Tooltip and cancelled leaves the tooltip as it was", async () => {
+      await session.step(148, "When user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
+      await session.step(149, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
+      await session.step(150, "When user toggles the \"AGE\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
+      await session.step(151, "And user toggles the \"RACE\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "RACE", el("\"Edit Tooltip\" dialog")));
+      await session.step(152, "Then the \"AGE\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
+      await session.step(153, "And the \"RACE\" column should be checked in the column list of \"Edit Tooltip\" dialog", () => checkedInColumnList(page, "RACE", el("\"Edit Tooltip\" dialog")));
+      await session.step(154, "When user clicks on CANCEL button in \"Edit Tooltip\" dialog", () => clickOn(page, el("CANCEL button in \"Edit Tooltip\" dialog")));
+      await session.step(155, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
+      await session.step(156, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+      await session.step(157, "Then the tooltip should show columns in the order \"AGE, SEX\"", () => tooltipColumnsInOrder(page, "AGE, SEX"));
+      await session.step(158, "And the tooltip should not show columns \"RACE\"", () => tooltipNotColumns(page, "RACE"));
+      await session.step(159, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+      await session.step(160, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Every column unticked and confirmed is kept, and one ticked column brings the tooltip back", async () => {
-      await session.step(151, "When user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
-      await session.step(152, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
-      await session.step(153, "When user checks checkbox in \"Edit Tooltip\" dialog", () => check(page, el("checkbox in \"Edit Tooltip\" dialog")));
-      await session.step(154, "Then the \"RACE\" column should be checked in the column list of \"Edit Tooltip\" dialog", () => checkedInColumnList(page, "RACE", el("\"Edit Tooltip\" dialog")));
-      await session.step(155, "When user unchecks checkbox in \"Edit Tooltip\" dialog", () => uncheck(page, el("checkbox in \"Edit Tooltip\" dialog")));
-      await session.step(156, "Then the \"AGE\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
-      await session.step(157, "And the \"RACE\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "RACE", el("\"Edit Tooltip\" dialog")));
-      await session.step(158, "When user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
-      await session.step(159, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
-      await session.step(160, "When user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
-      await session.step(161, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
-      await session.step(162, "And the \"AGE\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
-      await session.step(163, "And the \"SEX\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "SEX", el("\"Edit Tooltip\" dialog")));
-      await session.step(164, "When user toggles the \"AGE\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
-      await session.step(165, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
-      await session.step(166, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
-      await session.step(167, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
-      await session.step(168, "Then the tooltip should show columns in the order \"AGE\"", () => tooltipColumnsInOrder(page, "AGE"));
-      await session.step(169, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
-      await session.step(170, "And user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
-      await session.step(171, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
-      await session.step(172, "When user toggles the \"SEX\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "SEX", el("\"Edit Tooltip\" dialog")));
-      await session.step(173, "And user toggles the \"WEIGHT\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
-      await session.step(174, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
-      await session.step(175, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
-      await session.step(176, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
-      await session.step(177, "Then the tooltip should show columns in the order \"AGE, SEX, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, SEX, WEIGHT"));
-      await session.step(178, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
-      await session.step(179, "Then no errors should have been logged", () => noErrors(page));
+      await session.step(164, "When user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
+      await session.step(165, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
+      await session.step(166, "When user checks checkbox in \"Edit Tooltip\" dialog", () => check(page, el("checkbox in \"Edit Tooltip\" dialog")));
+      await session.step(167, "Then the \"RACE\" column should be checked in the column list of \"Edit Tooltip\" dialog", () => checkedInColumnList(page, "RACE", el("\"Edit Tooltip\" dialog")));
+      await session.step(168, "When user unchecks checkbox in \"Edit Tooltip\" dialog", () => uncheck(page, el("checkbox in \"Edit Tooltip\" dialog")));
+      await session.step(169, "Then the \"AGE\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
+      await session.step(170, "And the \"RACE\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "RACE", el("\"Edit Tooltip\" dialog")));
+      await session.step(171, "When user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
+      await session.step(172, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
+      await session.step(173, "When user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
+      await session.step(174, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
+      await session.step(175, "And the \"AGE\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
+      await session.step(176, "And the \"SEX\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "SEX", el("\"Edit Tooltip\" dialog")));
+      await session.step(177, "When user toggles the \"AGE\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
+      await session.step(178, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
+      await session.step(179, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
+      await session.step(180, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+      await session.step(181, "Then the tooltip should show columns in the order \"AGE\"", () => tooltipColumnsInOrder(page, "AGE"));
+      await session.step(182, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+      await session.step(183, "And user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
+      await session.step(184, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
+      await session.step(185, "When user toggles the \"SEX\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "SEX", el("\"Edit Tooltip\" dialog")));
+      await session.step(186, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
+      await session.step(187, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
+      await session.step(188, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+      await session.step(189, "Then the tooltip should show columns in the order \"AGE, SEX\"", () => tooltipColumnsInOrder(page, "AGE, SEX"));
+      await session.step(190, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+      await session.step(191, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A tooltip column removed from the table is skipped and the others still show", async () => {
-      await session.step(183, "Given user adds a calculated column \"SEX_copy\" with formula \"${SEX}\"", () => addCalculated(page, "SEX_copy", "${SEX}"));
-      await session.step(184, "When user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
-      await session.step(185, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
-      await session.step(186, "When user checks checkbox in \"Edit Tooltip\" dialog", () => check(page, el("checkbox in \"Edit Tooltip\" dialog")));
-      await session.step(187, "And user unchecks checkbox in \"Edit Tooltip\" dialog", () => uncheck(page, el("checkbox in \"Edit Tooltip\" dialog")));
-      await session.step(188, "Then the \"WEIGHT\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
-      await session.step(189, "When user toggles the \"AGE\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
-      await session.step(190, "And user toggles the \"SEX_copy\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "SEX_copy", el("\"Edit Tooltip\" dialog")));
-      await session.step(191, "And user toggles the \"WEIGHT\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
-      await session.step(192, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
-      await session.step(193, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
-      await session.step(194, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
-      await session.step(195, "Then the tooltip should show columns \"AGE, SEX_copy, WEIGHT\"", () => tooltipColumns(page, "AGE, SEX_copy, WEIGHT"));
-      await session.step(196, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
-      await session.step(197, "And user scrolls the grid to the \"SEX_copy\" column", () => scrollGridTo(page, "SEX_copy"));
-      await session.step(198, "And user picks \"Remove\" from the context menu of the \"header SEX_copy\" area of grid", () => pickFromAreaContextMenu(page, "Remove", "header SEX_copy", el("grid")));
-      await session.step(199, "And user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
-      await session.step(200, "Then the tooltip should show columns in the order \"AGE, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, WEIGHT"));
-      await session.step(201, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
-      await session.step(202, "Then no errors should have been logged", () => noErrors(page));
+      await session.step(195, "Given user adds a calculated column \"SEX_copy\" with formula \"${SEX}\"", () => addCalculated(page, "SEX_copy", "${SEX}"));
+      await session.step(196, "When user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
+      await session.step(197, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
+      await session.step(198, "When user checks checkbox in \"Edit Tooltip\" dialog", () => check(page, el("checkbox in \"Edit Tooltip\" dialog")));
+      await session.step(199, "And user unchecks checkbox in \"Edit Tooltip\" dialog", () => uncheck(page, el("checkbox in \"Edit Tooltip\" dialog")));
+      await session.step(200, "Then the \"WEIGHT\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
+      await session.step(201, "When user toggles the \"AGE\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
+      await session.step(202, "And user toggles the \"SEX_copy\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "SEX_copy", el("\"Edit Tooltip\" dialog")));
+      await session.step(203, "And user toggles the \"WEIGHT\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
+      await session.step(204, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
+      await session.step(205, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
+      await session.step(206, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+      await session.step(207, "Then the tooltip should show columns \"AGE, SEX_copy, WEIGHT\"", () => tooltipColumns(page, "AGE, SEX_copy, WEIGHT"));
+      await session.step(208, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+      await session.step(209, "And user scrolls the grid to the \"SEX_copy\" column", () => scrollGridTo(page, "SEX_copy"));
+      await session.step(210, "And user picks \"Remove\" from the context menu of the \"header SEX_copy\" area of grid", () => pickFromAreaContextMenu(page, "Remove", "header SEX_copy", el("grid")));
+      await session.step(211, "And user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+      await session.step(212, "Then the tooltip should show columns in the order \"AGE, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, WEIGHT"));
+      await session.step(213, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+      await session.step(214, "Then no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

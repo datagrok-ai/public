@@ -38,7 +38,7 @@ post() {  # post <group id> <settings JSON>
 case "$cmd" in
 show)
   echo "$current" | json 'Object.entries(v).map(([g, p]) => `${g}${g === "'$ALL_USERS'" ? " (All users)" : ""}: ` +
-    `ChemicalEngine ${p.ChemicalEngine ?? "(default RDKit)"}`).join("\n")'
+    `ChemicalEngine ${p.ChemicalEngine ?? "(default Crux)"}`).join("\n")'
   ;;
 set)
   engine=${2:?usage: engine-setting.sh set <RDKit|Crux>}
@@ -68,7 +68,7 @@ restore)
   for g in $(echo "$after" | json "Object.keys(v).join(' ')"); do
     fix=$(node -e "const a = JSON.parse(process.argv[1])['$g'] ?? {}, o = JSON.parse(process.argv[2])['$g'] ?? {};
       const out = {...a}; let changed = false;
-      if (!('ChemicalEngine' in o) && a.ChemicalEngine && a.ChemicalEngine !== 'RDKit') { out.ChemicalEngine = 'RDKit'; changed = true; }
+      if (!('ChemicalEngine' in o) && a.ChemicalEngine && a.ChemicalEngine !== 'Crux') { out.ChemicalEngine = 'Crux'; changed = true; }
       console.log(changed ? JSON.stringify(out) : '')" "$after" "$saved")
     if [ -n "$fix" ]; then
       post "$g" "$fix"

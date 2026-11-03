@@ -285,10 +285,6 @@ export const RichFunctionView = Vue.defineComponent({
     viewersHook: {
       type: Function as Vue.PropType<ViewersHook>,
     },
-    // standalone hosts that support URL inputs pass a handler; adds a "Copy link with inputs" export
-    urlExportHandler: {
-      type: Function as Vue.PropType<() => void>,
-    },
     hideDefaultExport: {
       type: Boolean,
       default: false,
@@ -574,8 +570,6 @@ export const RichFunctionView = Vue.defineComponent({
       }
       activeExports.push(...customExports.value.filter(x => x.function && x.name).map(x => ({...x, handler: () => reportHandler(x.function)})));
       activeExports.push({name: 'Save as project...', handler: () => saveCallToProject(currentCall.value, collectDfExportEntries())});
-      if (props.urlExportHandler)
-        activeExports.push({name: 'Copy link with inputs', handler: () => props.urlExportHandler!()});
       return activeExports;
     });
 

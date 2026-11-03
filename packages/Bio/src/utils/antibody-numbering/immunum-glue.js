@@ -269,7 +269,3 @@ export async function initImmunum(wasmSource) {
     wasm = inst.exports;
     wasm.__wbindgen_start();
 }
-
-export function isImmunumReady() {
-    return wasm !== null;
-}

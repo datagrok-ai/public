@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -23,8 +22,8 @@ export class SeqPropertiesError extends Error {
 // the Helm package is initialized) rather than `_package.helmHelper` — the
 // latter is not initialized in the standalone test bundle. This makes the
 // property calc async (it previously relied on the eagerly-loaded JSDraw2
-// global). The adapter emits the formula in the legacy element order
-// (C,H,N,O,S,P) with no `<sub>` markup, so the strip below is a defensive no-op.
+// global). The adapter emits the formula as plain text in the legacy element
+// order (C,H,N,O,S,P), with no `<sub>` markup.
 export async function getPropertiesDict(seq: string, sh: ISeqHandler): Promise<{}> {
   const host = ui.div([], {style: {width: '0', height: '0'}});
   document.documentElement.appendChild(host);
@@ -44,7 +43,7 @@ export async function getPropertiesDict(seq: string, sh: ISeqHandler): Promise<{
     const molWeight = Math.round(editor.getMolWeight() * 100) / 100;
     const coef = Math.round(editor.getExtinctionCoefficient() * 100) / 100;
     return {
-      'formula': formula.replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
+      'formula': formula,
       'molecular weight': molWeight,
       'extinction coefficient': coef,
     };

@@ -229,10 +229,10 @@ export class PackageFunctions {
     table: DG.DataFrame,
     @grok.decorators.param({options: {caption: 'Sequence'}}) seqCol: DG.Column,
     @grok.decorators.param({options: {initialValue: 'true', description: 'Also produce a HELM column alongside the molfiles'}}) generateHelm: boolean,
-    @grok.decorators.param({options: {initialValue: 'true', description: 'Use the chirality engine when building structures'}}) chiralityEngine: boolean,
     @grok.decorators.param({type: 'object'}) rules: string[]
   ): Promise<DG.Column<string>> {
-    const ptConvertRes = await polyToolConvert(seqCol, generateHelm, false, chiralityEngine, false, rules);
+    // no chiralityEngine input any more (stereo is always absolute); the platform drops it where a caller still passes it
+    const ptConvertRes = await polyToolConvert(seqCol, generateHelm, false, true, false, rules);
     return ptConvertRes[0];
   }
 

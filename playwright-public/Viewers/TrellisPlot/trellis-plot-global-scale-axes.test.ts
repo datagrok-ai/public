@@ -331,8 +331,9 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
 
     const dragged = await dragInnerRangeSlider(page, 'x');
     expect(dragged).toBe(true);
+    // the drag repaints from the range-slider handler, which lands after 2 s on a loaded agent
     const after = await v.pollValue(() => cellHashes(page, probes),
-      (h) => h[0] !== baseline[0] && h[1] !== baseline[1], 2000, 50);
+      (h) => h[0] !== baseline[0] && h[1] !== baseline[1], 8000, 100);
     console.log(`[Scenario 2 Step 4] baseline=${JSON.stringify(baseline)} after=${JSON.stringify(after)}`);
     expect(after.every((h) => h !== null)).toBe(true);
 

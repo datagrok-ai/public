@@ -5,11 +5,12 @@ import $ from 'cash-dom';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation, asSmiles} from '../utils/convert-notation-utils';
 
-/** Renders the molecule and returns div with the canvas inside. */
+/** Renders the molecule and returns div with the canvas inside. `cache: false` draws without the renderer's caches,
+ * keeping nothing afterwards (very large one-off drawings); the default keeps the picture for the next draw. */
 export function renderMolecule(
   molStr: string,
   options?: {renderer?: 'RDKit',
-  width?: number, height?: number, popupMenu?: boolean}): HTMLElement {
+  width?: number, height?: number, popupMenu?: boolean, cache?: boolean}): HTMLElement {
   options ??= {};
   options.renderer ??= 'RDKit';
   options.width ??= 200;
@@ -29,8 +30,11 @@ export function renderMolecule(
   const renderFunctions = DG.Func.find({meta: {chemRendererName: options.renderer}});
   if (renderFunctions.length > 0) {
     renderFunctions[0].apply().then((rendndererObj) => {
-      rendndererObj.render(moleculeHost.getContext('2d')!, 0, 0, options!.width, options!.height,
-        DG.GridCell.fromValue(molStr));
+      const g = moleculeHost.getContext('2d')!;
+      if (options!.cache === false)
+        rendndererObj.renderUncached(g, 0, 0, options!.width, options!.height, molStr);
+      else
+        rendndererObj.render(g, 0, 0, options!.width, options!.height, DG.GridCell.fromValue(molStr));
     });
   }
 
@@ -71,7 +75,9 @@ export function renderMolecule(
 export function showEnlargedMolecule(molStr: string): DG.Dialog {
   const width = Math.max(200, window.innerWidth - 200);
   const height = Math.max(100, window.innerHeight - 200);
-  return ui.dialog({title: 'Molecule'}).add(renderMolecule(molStr, {width, height, popupMenu: false})).showModal(true);
+  // uncached: the renderer would otherwise keep a picture this large for the session
+  return ui.dialog({title: 'Molecule'})
+    .add(renderMolecule(molStr, {width, height, popupMenu: false, cache: false})).showModal(true);
 }
 
 function showMoleculeMenu(molStr: string) {

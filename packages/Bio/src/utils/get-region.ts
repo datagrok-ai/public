@@ -9,10 +9,6 @@ import {
 import {getAnnotationColumnName, cacheAllRowAnnotations} from './annotations/annotation-manager';
 import {_package} from '../package';
 
-export function getRegionUI(col: DG.Column<string>): void {
-  showGetRegionDialog(col);
-}
-
 /** Shows the Get Region dialog for the given column.
  *  When the user confirms, the region column is extracted, added to the dataframe, and
  *  {@link onRegionCreated} is called with it (if provided).

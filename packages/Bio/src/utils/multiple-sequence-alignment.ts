@@ -131,20 +131,6 @@ export async function runKalign(table: DG.DataFrame, srcCol: DG.Column<string>, 
   return tgtCol;
 }
 
-export async function testMSAEnoughMemory(col: DG.Column<string>): Promise<void> {
-  const sequencesCount = col.length;
-  const delta = sequencesCount / 100;
-
-  for (let i = delta; i < sequencesCount; i += delta) {
-    try {
-      await runKalign(col.dataFrame, DG.Column.fromStrings(col.name, col.toList().slice(0, Math.round(i))));
-      console.log(`runKalign succeeded on ${i}`);
-    } catch (error) {
-      console.log(`runKalign failed on ${i} with '${error}'`);
-    }
-  }
-}
-
 function parseKalignError(out: string, limit?: number): string {
   const errLineList: string[] = [];
   const errLineRe = /^.+ERROR : (.+)$/gm;

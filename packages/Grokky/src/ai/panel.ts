@@ -10,7 +10,9 @@ import {dartLike, fireAIAbortEvent, createStyledMarkdown, normalizeMarkdownTable
 import {buildWorkspaceContext, executeSingleBlock} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
+import {contentLoggingNotice} from '../claude/turn-log';
 import {resolveScopes, showSuggestionsMenu, runSuggestionAction, Suggestion, Block, ChoiceOption} from './prompt-suggestions';
+import {AiFeature} from '../claude/ai-feature';
 
 export type MessageType = {role: string; content: any};
 
@@ -186,6 +188,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
+  private _loggingNotice: HTMLElement | null = null;
+  private _feature: AiFeature;
   /** Guards async {@link renderEmptyState} against out-of-order completion on rapid view switches. */
   private _emptyStateSeq = 0;
   /** Index into {@link promptHistory} while cycling with Ctrl+[ / Ctrl+]; `null` means the live draft is shown. */
@@ -197,9 +201,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
 
   private currentConversationId: string | null = null;
-  constructor(private _contextID: string = 'global-ai-panel', view: DG.View | DG.ViewBase, opts: {inline?: boolean} = {}) {
+  constructor(private _contextID: string = 'global-ai-panel', view: DG.View | DG.ViewBase, opts: {inline?: boolean, feature?: AiFeature} = {}) {
     this.view = view;
-    this._sessionId = `claude-${_contextID}-${crypto.randomUUID()}`;
+    this._feature = opts.feature ?? AiFeature.Chat;
+    this._sessionId = `${this._feature}-${_contextID}-${crypto.randomUUID()}`;
     this._inline = !!opts.inline;
     this.root = ui.divV([], 'd4-ai-generation-panel');
     this.inputArea = ui.divV([], 'd4-ai-panel-input-area');
@@ -303,6 +308,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     });
     this.inputArea.appendChild(this.textAreaDiv);
     this.inputArea.appendChild(controlsDiv);
+    this.refreshLoggingNotice();
     this.root.appendChild(this.header);
     this.root.appendChild(this.outputArea);
     this.root.appendChild(this.inputArea);
@@ -733,8 +739,15 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return `[The user previously asked:]\n${items}\n\n`;
   }
 
+  private refreshLoggingNotice(): void {
+    this._loggingNotice?.remove();
+    this._loggingNotice = contentLoggingNotice();
+    if (this._loggingNotice)
+      this.inputArea.appendChild(this._loggingNotice);
+  }
+
   resetSession(): void {
-    this._sessionId = `claude-${crypto.randomUUID()}`;
+    this._sessionId = `${this._feature}-${crypto.randomUUID()}`;
     this._streamingContainer = null;
     this._streamingMarkdownEl = null;
   }
@@ -901,6 +914,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       return;
     const inputs = this.getCurrentInputs();
     inputs.prompt = 'Please try again. ';
+    this.refreshLoggingNotice();
     this._onRunRequest.next({
       prevMessages: [...this._messages],
       currentPrompt: inputs,
@@ -957,6 +971,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._pendingAttachmentsForRender = [...this.attachedEntities];
     this.clearAttachments();
     this._promptHistoryIndex = null;
+    this.refreshLoggingNotice();
     this._onRunRequest.next({
       prevMessages: this._messages,
       currentPrompt: inputs,

@@ -3,6 +3,8 @@
 ## v.next
 
 * [public#4459](https://github.com/datagrok-ai/public/issues/4459): Timelines: Date Format resets to the default on any column change
+* [public#4462](https://github.com/datagrok-ai/public/issues/4462): Sankey: a Value column with negative values or only zeros draws with no message
+* [public#4477](https://github.com/datagrok-ai/public/issues/4477): Charts: Sunburst paints a partial selection as full on the outer rings and not at all on the inner ring
 
 ## 1.8.2 (2026-10-29)
 

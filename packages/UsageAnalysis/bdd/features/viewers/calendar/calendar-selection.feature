@@ -12,15 +12,13 @@ Feature: Calendar selection, On Click and Show Filtered Only
   filter puts `rows shown` back to 1000 while `dataFrame.filter` stands at 447 — the honest
   witness for GROK-20635, which the spec this replaces could only assert as "the canvas changed".
 
-  Edge cases: closing a calendar whose On Click = Filter click is filtering the table gives the rows
-  back: a filter that outlives its viewer is a defect. Today the calendar leaves the table filtered
-  until something else asks for a refilter (core#233, a known failure). The calendar's click filter
-  stays when a category is toggled in the filter panel (19 of the 32 rows of January 1990 are F);
-  today the category click releases the calendar's filter, and 553 rows pass at once (core#1221, a
-  known failure). Both checks are in calendar-known-failures.feature while their tickets are open,
-  each a test of its own. That the filter then goes when On
-  Click is switched to Select (553 F rows) is claimed once the defect is fixed: today that count is
-  already reached by the defect.
+  Edge cases: the calendar's click filter stays when a category is toggled in the filter panel (19
+  of the 32 rows of January 1990 are F); today the category click releases the calendar's filter,
+  and 553 rows pass at once (core#1221, a known failure). The check is in
+  calendar-known-failures.feature while its ticket is open. That the filter then goes when On Click
+  is switched to Select (553 F rows) is claimed once the defect is fixed: today that count is
+  already reached by the defect. Closing a calendar under its click filter (core#233) is claimed in
+  calendar-filter.feature.
 
   Background:
     Given user is logged in

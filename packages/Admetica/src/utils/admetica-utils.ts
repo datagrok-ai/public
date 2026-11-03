@@ -53,13 +53,13 @@ export async function setProperties() {
 
 export async function performChemicalPropertyPredictions(
   molColumn: DG.Column, viewTable: DG.DataFrame, models: string[], template?: string,
-  addPiechart: boolean = false, addForm: boolean = false, update: boolean = false, raiseException: boolean = false,
+  addPiechart: boolean = false, addForm: boolean = false, raiseException: boolean = false,
 ) {
   let props: any;
   if (template) {
     try {
       props = JSON.parse(template);
-    } catch (error) {
+    } catch {
       grok.shell.error('Invalid JSON template.');
       throw new Error('Failed to parse template JSON.');
     }
@@ -128,10 +128,10 @@ function applyPostProcessing(
 }
 
 function applyColumnColorCoding(column: DG.Column, model: Model): void {
-  const { type, min, max, colors } = model.coloring;
+  const {type, min, max, colors} = model.coloring;
 
   if (type === DG.COLOR_CODING_TYPE.LINEAR)
-    column.meta.colors.setLinear(JSON.parse(colors!), { min, max });
+    column.meta.colors.setLinear(JSON.parse(colors!), {min, max});
   else if (type === 'Conditional')
     column.meta.colors.setConditional(createConditionalColoringRules(model.coloring));
 }
@@ -191,7 +191,7 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
       if (modelName) {
         matched.push(modelName);
         const column = table.col(modelName);
-        const { line, weight, min, max, functionType, mode } = model;
+        const {line, weight, min, max, functionType, mode} = model;
 
         if (column) {
           const updatedMeta = {
@@ -249,7 +249,7 @@ export function addSparklines(
       name = `piechart (${i})`;
     tablePieChartNameMap.set(table.name, name);
   }
-  const pie = grid.columns.add({ gridColumnName: name, cellType: 'piechart' });
+  const pie = grid.columns.add({gridColumnName: name, cellType: 'piechart'});
 
   pie.settings = createPieSettings(table, columnNames, props ?? properties);
 
@@ -373,7 +373,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
   const update = async (result: HTMLDivElement, modelName: string) => {
     const queryParams = properties.subgroup.find((subg: any) => subg.name === modelName)
-      ['models'].map((model: any) => model.name);
+      .models.map((model: any) => model.name);
 
     if (smiles === 'MALFORMED_INPUT_VALUE')
       return result.appendChild(ui.divText(ERROR_MESSAGES.MALFORMED));
@@ -407,7 +407,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
           const units = model.units && model.units !== '-' ? model.units : '';
           const value = typeof firstValue === 'string' ? firstValue : `${firstValue.toFixed(3)} ${units}`;
           map[param] = ui.divText(value, {
-            style: { color: color ? DG.Color.toHtml(color) : 'var(--text-color)' },
+            style: {color: color ? DG.Color.toHtml(color) : 'var(--text-color)'},
           });
         }
       }
@@ -449,13 +449,13 @@ function createSummaryPane(semValue: DG.SemanticValue): HTMLElement {
 }
 
 async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
-  let { cell } = semValue;
+  let {cell} = semValue;
   cell ??= grok.shell.o.cell;
 
   if (!cell)
     return ui.divText('Failed to identify the current object');
 
-  const { dataFrame, column, rowIndex, value } = cell;
+  const {dataFrame, column, rowIndex, value} = cell;
 
   const view = grok.shell.tableView(dataFrame.name);
   const gridCol = view.grid.col(column.name);
@@ -475,7 +475,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
 export function createDynamicForm(
   viewTable: DG.DataFrame, updatedModelNames: string[], molColName: string, addPiechart: boolean, props?: any,
 ): DG.FormViewer {
-  const form = DG.FormViewer.createDefault(viewTable, { columns: updatedModelNames });
+  const form = DG.FormViewer.createDefault(viewTable, {columns: updatedModelNames});
   const mapping = FormStateGenerator.createCategoryModelMapping(props ?? properties, updatedModelNames);
   const generator = new FormStateGenerator(viewTable.name, mapping, molColName, addPiechart);
   const formState = generator.generateFormState();

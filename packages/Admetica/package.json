@@ -17,11 +17,13 @@
     "@datagrok-libraries/statistics": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/tutorials": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:",
-    "punycode": "^2.3.1"
+    "punycode": "^2.3.1",
+    "rxjs": "catalog:"
   },
   "scripts": {
     "build": "grok build",

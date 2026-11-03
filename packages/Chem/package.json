@@ -37,7 +37,7 @@
         "RDKit",
         "Crux"
       ],
-      "defaultValue": "RDKit",
+      "defaultValue": "Crux",
       "nullable": false
     },
     {

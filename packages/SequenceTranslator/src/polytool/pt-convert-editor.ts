@@ -11,7 +11,6 @@ export enum P {
   table = 'table',
   seqCol = 'seqCol',
   generateHelm = 'generateHelm',
-  chiralityEngine = 'chiralityEngine',
   rules = 'rules'
 }
 
@@ -19,7 +18,6 @@ type PolyToolConvertInputs = {
   table: DG.InputBase<DG.DataFrame | null>;
   seqCol: DG.InputBase<DG.Column | null>;
   generateHelm: DG.InputBase<boolean>;
-  chiralityEngine: DG.InputBase<boolean>;
   rules: { header: HTMLElement, form: HTMLDivElement };
 }
 
@@ -46,7 +44,6 @@ export class PolyToolConvertFuncEditor {
         return ui.input.column(p.property.caption, {value: p.value, table: p.value.dataFrame});
       })(),
       generateHelm: ui.input.forProperty(getParam(P.generateHelm).property),
-      chiralityEngine: ui.input.forProperty(getParam(P.chiralityEngine).property),
       rules: {
         header: ui.inlineText([PT_UI_RULES_USED]),
         form: rulesForm,
@@ -67,7 +64,6 @@ export class PolyToolConvertFuncEditor {
       table: this.inputs.table.value!,
       seqCol: this.inputs.seqCol.value!,
       generateHelm: this.inputs.generateHelm.value,
-      chiralityEngine: this.inputs.chiralityEngine.value,
       rules: await this.ruleInputs.getActive(),
     };
   }
@@ -77,7 +73,6 @@ export class PolyToolConvertFuncEditor {
       this.inputs.table,
       this.inputs.seqCol,
       this.inputs.generateHelm,
-      this.inputs.chiralityEngine,
       this.inputs.rules.header,
       this.inputs.rules.form,
     ],

@@ -1,6 +1,6 @@
 # Chem's chemical engine: RDKit and Crux
 
-The package setting **Chemical Engine** (`ChemicalEngine`: `RDKit`, the default, or `Crux`) picks the engine behind
+The package setting **Chemical Engine** (`ChemicalEngine`: `Crux`, the default, or `RDKit`) picks the engine behind
 Chem's own chemistry. Crux ([crux-core](https://github.com/datagrok-ai/crux-core), Rust compiled to one wasm file,
 `vendor/chem-wasm/`) answers RDKit.js's calls with the same names, arguments and return shapes, and adds calls of its
 own (descriptors, properties, QED, the scripts' replacements). In Crux mode a feature that has moved runs on Crux, with
@@ -19,9 +19,10 @@ The history of each move, its parity numbers and timings are in `CHANGELOG.md`.
 | `engine/worker-jobs.ts` | Column jobs by engine: fingerprints, structural alerts and pharmacophores, notation conversions, InChI; `cruxInput` (a column as the Crux workers get it) |
 | `engine/molecule-jobs.ts` | Column jobs by engine: CoordGen coordinates, flattening, beautifying, elemental analysis, the R-group dialog's cores, the SAR matrix's atom counts |
 | `engine/analysis-jobs.ts` | Analyses by engine: MMPA fragments, R-groups, MCS, cluster MCS and R-groups, fragment linking; `molzip` (Crux in both modes) |
+| `engine/biopolymer.ts` | The macromolecule assembler (`Chem:getMacromoleculeAssembler`, chem-meta's `IMacromoleculeAssembler`; Crux in both modes): a column on the workers (`CruxService.assembleMacromolecules`, each worker's monomer library sent once), one row on the main thread's module; `ready(key, json)` loads that module and compiles the library for the synchronous twins (`assembleOneSync`, `assembleSync`, `markStereoAbsoluteSync`, `toV2000Sync`: main thread only, for Bio's legacy synchronous APIs; they throw before `ready`) |
 | `crux/crux-service.ts` | The Crux worker pool (`CruxService`, `getCruxService` in `crux-searches.ts`): `jobInChunks` (a column in chunks across the workers), `idleWorkerJob` (one long call with its own deadline), clusters one per job, typed methods; the search index's segments; time limits, worker restarts |
 | `crux/crux.worker.ts` | The worker: the search segments (`build`, `search`, `drop`) and `JOBS`, every job table by name |
-| `crux/jobs/*.ts`, `crux/crux-analysis-jobs.ts` | The job tables, one per area (`calculations`, `batch`, `molecule-jobs`, `search-types`, `python-free`, `synthon-search`; the analyses), each job a `WorkerJob` |
+| `crux/jobs/*.ts`, `crux/crux-analysis-jobs.ts` | The job tables, one per area (`calculations`, `batch`, `molecule-jobs`, `search-types`, `python-free`, `synthon-search`, `biopolymer`; the analyses), each job a `WorkerJob` |
 | `crux/crux-api.ts` | Crux's calls beyond RDKit.js's; the job shape (`WorkerJobContext`, `WorkerJob`, `throwIfTrap`) |
 | `crux/crux-searches.ts`, `crux/crux-search-types.ts` | The substructure search on Crux: Contains / Not contains on the index; Exact, Stereo agnostic, (Not) included in, Similar |
 | `crux/crux-inchi.ts` | InChI by the split: InChI's input from Crux, the InChI library in crux-sketch's module |
@@ -33,8 +34,8 @@ The history of each move, its parity numbers and timings are in `CHANGELOG.md`.
 | `rendering/rdkit-reaction-renderer.ts`, `rendering/reaction-depiction.ts`, `utils/reactions/reaction-drawing.ts` | Reaction drawing: RDKit in both modes until Crux draws reactions |
 | `rendering/atom-picker-controller.ts`, `rendering/mol3d-hover-handler.ts` | The 2D↔3D atom picker and hover, by engine (`mapAtomIndices2Dto3DByEngine`) |
 
-RDKit mode loads the Crux file only for what is Crux's in both modes (`molzip`; FCFP and chirality fingerprints, which
-Chem's RDKit.js lacks). Crux mode loads it at the package's init; a switch at run time draws with RDKit until it is
+RDKit mode loads the Crux file only for what is Crux's in both modes (`molzip`, the macromolecule assembler; FCFP and
+chirality fingerprints, which Chem's RDKit.js lacks). Crux mode loads it at the package's init; a switch at run time draws with RDKit until it is
 ready, then the renderers empty their caches and the grids repaint.
 
 ## Moving a feature behind the setting
@@ -88,6 +89,7 @@ Crux cannot read or a CXSMILES whose query features Crux's reader skips (`cruxRe
 | One molecule on the main thread: `getCLogP`, the sketcher's free text, the atom picker, panels (`widgets/`, `rendering/`) | the main thread's module (`byEngineModule`) | RDKit's module |
 | The Python scripts replaced (`python-free.ts`: Curate, Mutate, Generate Conformers, Gasteiger charges, Butina, InchiToMol, Calculate logP, Murcko Scaffolds, Filter by Catalogs, Map Identifiers; `widgets/synthon-search.ts`: Synthon Search) | crux's replacements of the scripts (`crux/jobs/python-free.ts`, `crux/jobs/synthon-search.ts`) | the script, renamed with the suffix `Python`, per call |
 | `molzip` (`engine/analysis-jobs.ts`) | the workers, in both modes | none: it throws when Crux does not load |
+| Bio's macromolecule assembly (`Chem:getMacromoleculeAssembler`, `engine/biopolymer.ts`) | the workers for a column, the main thread's module for one row, in both modes | none: it throws when Crux does not load |
 
 Known differences, both deliberate: Crux is RDKit 2026.03, Chem's RDKit.js is 2024.09, so where they differ (some
 canonical SMILES' stereo marks or atom order, atom-pair and torsion fingerprints of a few molecules, an MCS SMARTS'
@@ -110,6 +112,7 @@ RDKit mode changes nothing they receive. In Crux mode, the pictures and values o
 | `beautifyMols`, `getCLogP`, `embed3d` | Crux's |
 | The replaced scripts' functions (`Curate`, `Mutate`, `GenerateConformers`, `ButinaMoleculesClustering`, `InchiToMol`, `CalculateLogP`, `MurckoScaffolds`, `FilterByCatalogs`, `Chem:SynthonSearch`) | Crux's: the scripts' names, inputs and outputs |
 | `molzip` | Crux's in both modes |
+| `getMacromoleculeAssembler` (Bio's sequences to MOL blocks, monomer maps, ABS stereo, V2000) | Crux's in both modes |
 | every other function | RDKit |
 
 ## What stays RDKit, by design or for now
@@ -123,7 +126,7 @@ RDKit mode changes nothing they receive. In Crux mode, the pictures and values o
 
 ## Removing RDKit
 
-When Crux becomes the default and RDKit.js goes, the change is deletion, in this order:
+Crux is the default (since 2026-11-02). When RDKit.js goes, the change is deletion, in this order:
 
 1. **Close the gaps first**, each a fallback that would otherwise have nothing behind it: CXSMILES query features in
    Crux's reader (`cruxReadsCxExtension` then always true), reaction drawing, a Crux object API (or moves) for the

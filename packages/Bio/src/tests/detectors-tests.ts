@@ -156,12 +156,14 @@ Aca-A-Aca-A-A-A-meI-A-A-A-A-A-Aca-G-NH2
 Aca-A-A-A-A-A-A-A-A-A-A-A-A-A-Aca-G-NH2`,
       pos: {'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 5, true, '-')}
     },
+    // Invalid HELM (a peptide branch): detected as HELM; hwe reads each row up to the unterminated brace, so the
+    // alphabet is the three first monomers Ac, Ab, Ad
     'helmSameLength': {
       csv: `seq
 PEPTIDE1{Ac(1).A.A.A.A.A.A.A.A.A.A.A.A.A.C(1).G.NH2}$$$$
 PEPTIDE1{Ab(1).Y.V.K.H.P.F.W.R.W.Y.A.A.A.C(1).G.NH2}$$$$
 PEPTIDE1{Ad(1).S.W.Y.C.K.H.P.M.W.A.A.A.A.C(1)-G-NH2}$$$$`,
-      pos: {'seq': new PosCol(NOTATION.HELM, null, null, 19, undefined, undefined)}
+      pos: {'seq': new PosCol(NOTATION.HELM, null, null, 3, undefined, undefined)},
     },
     'fastaNonDigitAlphabet': {
       csv: `flagC
@@ -462,10 +464,8 @@ MWRSWY-CKHPMWRSWY-CKHP`;
   // sample_testHelm.csv
   // columns: ID,Test type,HELM string,Valid?,Mol Weight,Mol Formula,SMILES
   test('samplesTestHelmCsv', async () => {
-    // Alphabet size of 8 reflects splitterAsHelm's triplet-splitting of HELM
-    // RNA monomers (each `sugar(base)phosphate` becomes 3 tokens), which can
-    // collapse what used to be N distinct triple-tokens into a smaller union
-    // of {sugar(s), bases, phosphate(s)} symbols.
+    // splitterAsHelm gives an RNA nucleotide `sugar(base)phosphate` as 3 positions, so the alphabet is the union of
+    // the sugars, bases and linkers rather than of the whole nucleotides.
     await _testDf(readSamples(Samples.testHelmCsv), {
       'HELM string': new PosCol(NOTATION.HELM, null, null, 7, true),
     }, seqHelper);

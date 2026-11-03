@@ -48,7 +48,6 @@ This decouples the library from concrete package implementations, allowing packa
 | `seq-palettes.ts` | `SeqPalette` interface + `SeqPaletteBase` base class with shared color palette definitions |
 | `sequence-encoder.ts` | `AlignedSequenceEncoder` — categorical/numerical encoding of amino acid sequences (Wimley-White, categorial scales) |
 | `unknown.ts` | `UnknownSeqPalettes` — hash-based color assignment for non-standard monomers, reads custom colors from monomer library |
-| `utils.ts` | `getColumnSeparator()` — detects separator character in sequence columns |
 
 ### `types/` — Core Type Definitions
 
@@ -65,9 +64,9 @@ This decouples the library from concrete package implementations, allowing packa
 
 | File | Purpose |
 |---|---|
-| `types.ts` | Re-exports HELM types from `@datagrok-libraries/helm-web-editor` and `js-draw-lite`: `HelmType`, `HelmAtom` / `Atom` / `IJsAtom`, `HelmBond` / `Bond`, `HelmMol` / `Mol`, `HelmEditor` / `Editor`, `MonomerExplorer`, `PolymerType`, `MonomerType`, `IHelmWebEditor`, `ISeqMonomer`, `MonomerSetType`, `WebEditorRGroups`, `MonomersFuncs`, `TabDescType`, `IBio` / `IHelmBio`, `HelmString`, `Point`, browser-side singletons `HweWindow` / `ScilModuleType` / `JSDraw2ModuleType` / `OrgType` / `DojoType` / `DojoxType` |
-| `consts.ts` | Re-exports `HelmTypes`, `MonomerTypes`, `PolymerTypes`, `MonomerNumberingTypes`, `HelmTabKeys` |
-| `helm-helper.ts` | `IHelmHelper` interface — `parse()`, `removeGaps()`, `getMolfiles()`, `createHelmInput()`, `createHelmWebEditor()`, `createWebEditorApp()`, `getHoveredAtom()`, plus monomer-funcs hooks (`originalMonomersFuncs` getter, `buildMonomersFuncsFromLib()`, `overrideMonomersFuncs()` / `revertOriginalMonomersFuncs()`) and `seqHelper` getter. `HelmInputBase` abstract class. `HelmNotSupportedError` (+ `HelmNotSupportedErrorType`). `getHelmHelper()` factory. `getMonomerHandleArgs()` helper. `IHelmInputInitOptions`, `HelmConvertRes` exported. Augments `ui.input` with `helmAsync()` |
+| `types.ts` | Re-exports HELM types from `@datagrok-libraries/helm-web-editor` and `js-draw-lite`: `HelmType`, `HelmAtom` / `Atom`, `Bond`, `HelmMol` / `Mol`, `HelmEditor` / `Editor`, `PolymerType`, `MonomerType`, `IHelmWebEditor`, `ISeqMonomer`, `MonomerSetType`, `WebEditorRGroups`, `MonomersFuncs`, `TabDescType`, `IHelmBio`, `HelmString`, `Point`, browser-side singletons `HweWindow` / `ScilModuleType` / `JSDraw2ModuleType` / `OrgType` / `DojoType` / `DojoxType` |
+| `consts.ts` | Re-exports `HelmTypes`, `MonomerTypes`, `PolymerTypes`, `MonomerNumberingTypes` |
+| `helm-helper.ts` | `IHelmHelper` interface — `getMolfiles()`, `createHelmInput()`, `createHelmWebEditor()`, `createWebEditorApp()`, `getHoveredAtom()`, `buildMonomersFuncsFromLib()` and `seqHelper` getter. `HelmInputBase` abstract class. `HelmNotSupportedError` (+ `HelmNotSupportedErrorType`). `getHelmHelper()` factory. `getMonomerHandleArgs()` helper. `IHelmInputInitOptions` exported. Augments `ui.input` with `helmAsync()` |
 | `utils.ts` | `cleanupHelmSymbol()` — strips brackets from HELM monomer symbols |
 
 ### `molecule/` — 2D Molecule Column Handling
@@ -93,23 +92,23 @@ The core engine for converting macromolecule sequences into V3000 molfiles.
 
 | File | Purpose |
 |---|---|
-| `types.ts` | Core types: `Atoms` / `Bonds` / `MonomerMetadata` (parsed-molfile data), `MolGraph` (assembled molecule graph) + `MonomerMolGraphMap` + `getMolGraph` / `hasMolGraph` / `setMolGraph` helpers, `LibMonomerKey`, `MonomerMap` / `MonomerMapValue` / `MolfileWithMap`, `LoopVariables` / `LoopConstants` / `NumberWrapper`, `Point`, `ITypedArray`, `UserLibSettings`, `NucleotideRole` enum (`SUGAR` / `BASE` / `PHOSPHATE` / `TERMINAL_5P` / `TERMINAL_3P`), `SeqToMolfileWorkerData` / `SeqToMolfileWorkerRes` |
-| `consts.ts` | `monomerWorksConsts` object — V2K/V3K parsing tokens, `PRECISION_FACTOR`, canonical nucleotide component keys (`RIBOSE` / `DEOXYRIBOSE` / `PHOSPHATE`), `OXYGEN` / `HYDROGEN` element symbols |
-| `monomer-works.ts` | `MonomerWorks` class — wraps `IMonomerLib`, provides `getMonomerMolfile()`. `helmTypeToPolymerType()` converter. `IMolfileConverter` interface |
-| `to-atomic-level.ts` | **Core engine.** `_toAtomicLevel()` — converts macromolecule column to V3000 molfile column. HELM RNA path (triples mode) keeps per-position sugar/base/phosphate (via `getMonomerSequencesArray`, `getMonomersDictFromLib`, `buildRolesForHelmRna`); legacy path uses default ribose/deoxyribose/phosphate. Handles V2K→V3K conversion (`convertMolfileToV3K`, `fixV2000MolfileRAtomLines`), atom/bond block parsing (`parseAtomBlock` is internal; `parseBondBlock`, `parseAtomAndBondCounts`, `parseCapGroups`, `parseCapGroupIdxMap` / `parseCapGroupIdxMapV2K` / `parseCapGroupIdxMapV3K` are exported), R-group capping, stereo-center handling, V3K serialization (`convertMolGraphToMolfileV3K`), capped-monomer rendering (`getSymbolToCappedMolfileMap`, `capPeptideMonomer`). The geometric pipeline (`adjustSugarMonomerGraph`, `adjustPhosphateMonomerGraph`, `adjustBaseMonomerGraph`, `adjustPeptideMonomerGraph`) places R-attached atoms (`terminalNodes`) on the OX axis with R3 / branch up; the sugar branch is overridden so the base is placed above the topmost atom for non-canonical sugars (e.g. LNA's 2,4-bridge). `setShiftsAndTerminalNodes` injects an O at the R1 cap position when the cap is `H` so phosphorothioate-style linkers (sp, en, …) keep a real C-O-P bridging atom |
-| `to-atomic-level-utils.ts` | Molfile assembly engine: `monomerSeqToMolfile()` — chains monomers into a complete V3K molfile (peptide bonds, nucleotide assembly: sugar+base+phosphate, terminal capping). `runTriplesAssembly()` (internal) handles HELM RNA per-row triples including 5'/3' terminal modifiers (Chol / GalNAc / Bio) and missing-trailing-phosphate. `getFormattedMonomerLib()` (lib → per-symbol object map). `keepPrecision()` (coordinate rounding helper) |
-| `seq-to-molfile.ts` | `seqToMolFileWorker()` — orchestrates the molfile column build (single-threaded today; the `Worker` plumbing is wired but disabled — runs synchronously per row). `getMolHighlight()` — builds an `ISubstruct` from per-monomer atom/bond ranges for hover highlights. `SeqToMolfileResult` type |
-| `seq-to-molfile-worker.ts` | Web Worker entry point — receives `SeqToMolfileWorkerData`, calls `monomerSeqToMolfile()`, posts `SeqToMolfileWorkerRes` back |
-| `monomer-hover.ts` | `addMonomerHoverLink()` — wires hover from a sequence cell to a molecule cell with LRU-cached monomer maps. `execMonomerHoverLinks()` / `getMonomerHoverLinks()`. `MonomerHoverLinksTemp` column-tag constant |
-| `monomer-utils.ts` | Analytics: `encodeMonomers()` (Unicode encoding of monomer symbols for cosine-distance use), `getMolfilesFromSeq()` / `getMolfilesFromSingleSeq()` (per-position molfile assembly), `createMomomersMolDict()`, `createJsonMonomerLibFromSdf()` (SDF table → HELM JSON library) |
+| `types.ts` | `MonomerMap` / `MonomerMapValue` / `MolfileWithMap` (a molecule with its per-position monomer atoms and bonds), `UserLibSettings` |
+| `monomer-works.ts` | `helmTypeToPolymerType()` converter |
+| `assembler.ts` | **Sequence → molecule.** Every conversion runs on Chem's macromolecule assembler (Crux; `IMacromoleculeAssembler` and its types in chem-meta's `macromolecule-assembler.ts`): `getMacromoleculeAssembler()` (session singleton on `window.$macromoleculeAssemblerPromise`, from `Chem:getMacromoleculeAssembler`), `setAssemblerLibrary()` (the effective library once per key), `assembleSeqColumn()` (any notation, `layout: 'linear' \| 'nonlinear'`, the linear one falling back per row; column `molfile(<seq>)`, Molecule/molblock, tags `.sequence-src-col` and `SEQUENCE_SRC_LAYOUT_TAG` `.sequence-src-layout`; per-row errors as warnings), `assembleRowWithMap()` (one row on the main-thread module with its map), `readyAssemblerLibrary()` + `assembleSeqColumnSync()` / `assembleRowWithMapSync()` (the synchronous twins for the legacy synchronous APIs: `IHelmToMolfileConverter`, `helmToAtomicLevelSingle`), `asmMapToMonomerMap()` (the assembler's atom/bond provenance → `MonomerMap`), `MonomerMapProvider` (per-row maps on demand for the hover: LRU 100, a sequential queue, the hovered row first), `getSeqSrcLayout()` (every layout but 'linear' is non-linear) |
+| `to-atomic-level.ts` | `_toAtomicLevel()` — the linear conversion (`assembleSeqColumn(..., 'linear')`; the `rdKitModule` param is unused) |
+| `seq-to-molfile.ts` | `getMolHighlight()` — builds an `ISubstruct` from per-monomer atom/bond lists for hover highlights |
+| `assembly-input.ts` | Input of the macromolecule assembler (`IMacromoleculeAssembler`, types in chem-meta's `macromolecule-assembler.ts`; used by `assembler.ts`): `toAsmSequence()` turns one split sequence of any notation (HELM, BILN, custom via its HELM, FASTA/separator with DNA/RNA expanded to sugar/base/phosphate) into an `AsmSequence` with exact library keys (`MonomerResolver`, through `IMonomerLibBase.getMonomer`, quirks included), inline-SMILES monomers inline, gaps kept; per-row errors for unknown monomers, ambiguity, repeats/ranges, `?`, BLOB and the splitter's `graphInfo.errors` (HELM hwe cannot read). `buildSeqBatch()` packs rows into an `AsmBatch`. `IAsmGraphInfoExt` is the hook a splitter fills (chain ids, biotypes, hbond kind, repeats, errors); `expandAsmRepeats()` |
+| `library-json.ts` | The effective monomer library for the assembler: `getEffectiveMonomers()`, `getMonomerLibJson()` (Pistoia JSON array, cached per key), `getMonomerLibKey()` (source + a counter bumped on `onChanged` + a hash of the effective sources and duplicate winners), `getSeqColMonomerLib()` (the column's `MmcrTemps.overriddenLibrary` or the system library), `isLibraryMonomer()` |
+| `monomer-hover.ts` | `buildMonomerHoverLink()` — hover from a sequence cell to a molecule cell; the maps come per row from the assembler (`MonomerMapProvider`, the layout of the molecule column's `.sequence-src-layout` tag): the first hover requests the map and redraws the cell when it arrives; with `.sequence-src-highlight-monomers` on, the rows the renderer draws are requested and their grids redrawn. `addMonomerHoverLink()`, `execMonomerHoverLinks()` / `getMonomerHoverLinks()`. `MonomerHoverLinksTemp` column-tag constant |
+| `monomer-utils.ts` | `createJsonMonomerLibFromSdf()` (SDF table → HELM JSON library), `sequenceChemSimilarity()` (per-position monomer similarity to a reference), `getMonomerSubstitutionMatrix()` / `calculateMonomerSimilarity()` (monomer similarity matrices from fingerprints) |
 | `lib-settings.ts` | `getUserLibSettings()` / `setUserLibSettings()` — user-specific monomer library preferences with chunked storage |
-| `utils.ts` | Small shared helpers: `getUnusedColName()`, `getMolColName()`, `alphabetToPolymerType()`, `hexToPercentRgb()`. `MonomerHoverLink` type |
+| `utils.ts` | Small shared helpers: `getUnusedColName()`, `getMolColName()`, `hexToPercentRgb()`. `MonomerHoverLink` type |
 
 **Data flow for sequence → molfile conversion:**
-1. `_toAtomicLevel()` in `to-atomic-level.ts` is the entry point. HELM RNA columns stay in triples mode (per-position sugar / base / phosphate); other notations convert to separator first.
-2. It parses monomer molfiles from the library into `MolGraph` objects (`getMonomersDictFromLib` → `getMolGraph` per symbol).
-3. `seqToMolFileWorker()` in `seq-to-molfile.ts` iterates rows.
-4. Each row calls `monomerSeqToMolfile()` from `to-atomic-level-utils.ts`, which threads the row through the geometric assembly loop. The chirality engine (`Chem:convertToV3KViaOCL`) is applied to the resulting column to add `STEABS` blocks.
+1. `_toAtomicLevel()` (linear) and Bio's `sequenceToMolfile()` / `SeqHelper.helmToAtomicLevel()` call `assembleSeqColumn()` in `assembler.ts`.
+2. `buildSeqBatch()` (`assembly-input.ts`) turns every row into the parsed sequence; `getMonomerLibJson()` (`library-json.ts`) gives the effective library and its key, registered once per key with `setLibrary`.
+3. `assembler.assemble(batch, key, {layout})` builds the V3000 molblocks in Chem's Crux workers (stereo absolute, no OpenChemLib, no RDKit); row errors become warnings.
+4. The hover asks for one row's map at a time (`assembleOne(..., {layout, map: true})`, `MonomerMapProvider`).
 
 ### `utils/` — Core Utilities
 
@@ -118,12 +117,12 @@ The core engine for converting macromolecule sequences into V3000 molfiles.
 | File | Purpose |
 |---|---|
 | `types.ts` | **Key file.** `ISeqSplitted` (split sequence interface) + `SeqSplittedBase`, `INotationProvider` (notation-specific behavior) + `NotationProviderBase`, `SplitterFunc` type, `IMonomerCanonicalizer`, `CandidateType` / `CandidateSimType` (alphabet detection), `MonomerFreqs`, `SeqColStats`, graph types `ISeqConnection` / `ISeqGraphInfo` |
-| `consts.ts` | **Key file.** `NOTATION` enum (FASTA, SEPARATOR, HELM, BILN, CUSTOM), `ALIGNMENT` enum, `ALPHABET` enum (DNA, RNA, PT, UN), `TAGS` enum (column tag names — `units`, `aligned`, `alphabet`, `separator`, `region`, plus also exported as `BioTags`), `Alphabets` namespace (per-alphabet character sets), `GAP_SYMBOL`, `GapOriginals`, `candidateAlphabets`, `monomerRe` / `helmRe` / `helmPp1Re`, `MONOMER_MOTIF_SPLITTER`, `MONOMER_CANONICALIZER_FUNC_TAG` / `MONOMER_CANONICALIZER_TEMP`, `NOTATION_PROVIDER_CONSTRUCTOR_ROLE`, `positionSeparator` |
-| `utils.ts` | **Largest utility file.** Splitter implementations: `StringListSeqSplitted` (separator), `FastaSimpleSeqSplitted`, `HelmSplitted` (with graph info), `BilnSeqSplitted` (cycles/connections). Splitter factory funcs: `splitterAsFasta`, `splitterAsFastaSimple`, `splitterAsHelm`, `splitterAsBiln`, `getSplitterWithSeparator`, `getSplitter`. Alphabet detection: `detectAlphabet`, `detectHelmAlphabet`, `getAlphabet`, `getAlphabetSimilarity`, `getStatsForCol`, `pickUpPalette` / `pickUpSeqCol` / `getPaletteByType`. Monomer abbreviation (`monomerToShort`). HELM helpers: `polymerTypeToHelmType`, `RNA_HELM_TRIPLET_MONOMER_REG`, `RNA_HELM_TERMINAL_PHOSPHATELESS_MONOMER_REG` |
+| `consts.ts` | **Key file.** `NOTATION` enum (FASTA, SEPARATOR, HELM, BILN, CUSTOM), `ALIGNMENT` enum, `ALPHABET` enum (DNA, RNA, PT, UN), `TAGS` enum (column tag names — `units`, `aligned`, `alphabet`, `separator`, `region`, plus also exported as `BioTags`), `Alphabets` namespace (per-alphabet character sets), `GAP_SYMBOL`, `GapOriginals`, `candidateAlphabets`, `monomerRe`, `MONOMER_MOTIF_SPLITTER`, `MONOMER_CANONICALIZER_FUNC_TAG` / `MONOMER_CANONICALIZER_TEMP`, `NOTATION_PROVIDER_CONSTRUCTOR_ROLE`, `positionSeparator` |
+| `utils.ts` | **Largest utility file.** Splitter implementations: `StringListSeqSplitted` (separator), `FastaSimpleSeqSplitted`, `HelmSplitted` (abstract, with graph info), `BilnSeqSplitted` (cycles/connections). Splitter factory funcs: `splitterAsFasta`, `splitterAsFastaSimple`, `splitterAsHelm`, `splitterAsBiln`, `getSplitterWithSeparator`, `getSplitter`. Alphabet detection: `detectAlphabet`, `detectHelmAlphabet`, `getAlphabet`, `getAlphabetSimilarity`, `getStatsForCol`, `pickUpPalette` / `pickUpSeqCol` / `getPaletteByType`. Monomer abbreviation (`monomerToShort`). HELM helper: `polymerTypeToHelmType` |
 | `seq-handler.ts` | `ISeqHandler` interface — central abstraction for a macromolecule column: notation, alphabet, separator, splitter/joiner, HELM conversion, region extraction, distance function selection. `SeqValueBase` — wraps a single row value with `getOriginal()`, `getCanonical()`, `helm` |
 | `scoring.ts` | `ScoringMethod` enum + `calculateIdentityScoring()` / `calculateChemSimilarityScoring()` — sequence scoring vs reference |
 | `alignment.ts` | `pairwiseAlignmentWithEmptyPositions()` — Needleman-Wunsch alignment with gap penalties |
-| `monomers.ts` | Precomputed SMILES + fingerprints for the 20 amino acids and 5 nucleotides: `naturalMonomers`, `naturalMonomerFps`, `getMorganFingerprint()`, `mostSimilarNaturalAnalog()` |
+| `monomers.ts` | Precomputed Morgan fingerprints for the 20 amino acids and 5 nucleobases: `naturalMonomerFps`, `getMorganFingerprint()`, `mostSimilarNaturalAnalog()` |
 | `annotations.ts` | Sequence-annotation type system: `AnnotationVisualType` / `AnnotationCategory` / `LiabilitySeverity` enums, `SeqAnnotation` / `SeqAnnotationHit` interfaces, `RowAnnotationData` row payload, default colors/opacity constants used by the annotation cell-renderer overlay |
 | `numbering-schemes.ts` | Antibody numbering scheme region definitions: `NumberingScheme` / `ChainType` enums, `SchemeRegionDef`, and `IMGT_REGIONS` / `KABAT_REGIONS` / `CHOTHIA_REGIONS` / `AHO_REGIONS` plus `SCHEME_REGIONS` lookup |
 | `index.ts` | Barrel re-exports for the macromolecule module |
@@ -143,7 +142,7 @@ The core engine for converting macromolecule sequences into V3000 molfiles.
 | File | Purpose |
 |---|---|
 | `seq-helper.ts` | `ISeqHelper` interface + `getSeqHelper()` factory. `ISeqHelper` is the primary entry point for sequence operations: `helmToAtomicLevel()` / `helmToAtomicLevelSingle()` (column-wide and one-shot HELM → V3K molfile), `getSeqHandler()`, `getSeqMonomers()`, `setUnitsToFastaColumn()` / `setUnitsToSeparatorColumn()` / `setUnitsToHelmColumn()`, `getHelmToMolfileConverter()`. Also exports `ToAtomicLevelRes`, `IHelmToMolfileConverter` |
-| `const.ts` | HELM monomer library JSON schema field names (`HELM_REQUIRED_FIELD`, `HELM_OPTIONAL_FIELDS`, `HELM_RGROUP_FIELDS`), SDF-to-JSON mapping, dummy monomer template, encoding ranges |
+| `const.ts` | HELM monomer library JSON schema field names (`HELM_REQUIRED_FIELD`, `HELM_OPTIONAL_FIELDS`, `HELM_RGROUP_FIELDS`), SDF-to-JSON mapping, dummy monomer template, RNA sugar/phosphate symbols |
 | `splitter.ts` | `splitAlignedSequences()` — splits aligned sequences into per-position columns |
 | `composition-table.ts` | `getCompositionTable()` — builds HTML monomer composition bar chart |
 | `fasta-handler.ts` | `FastaFileHandler` — parses FASTA files into DataFrames |
@@ -160,7 +159,7 @@ The core engine for converting macromolecule sequences into V3000 molfiles.
 | `units-handler-base.ts` | `UnitsHandlerBase<S, D>` — generic base class for semtype column units handling with lazy data parsing |
 | `err-info.ts` | `errInfo()` / `toErrorString()` — error message extraction from various error types |
 | `logger.ts` | `ILogger` / `BioLogger` — structured logging with prefix and debug suppression |
-| `monomer-ui.ts` | Interfaces for monomer editor UI (`ICreateMonomerForm`, `IMonomerManager`) and DG property schema for monomer input fields |
+| `monomer-ui.ts` | Interfaces for monomer editor UI (`INewMonomerForm` + `MonomerFormFields`, `IMonomerManager`) |
 
 ### `viewers/` — Viewer Interface Definitions
 
@@ -238,7 +237,7 @@ Monomers follow the Pistoia HELM JSON schema. The library system has three layer
 Sequences are split into per-position monomers via `SplitterFunc` factories returning `ISeqSplitted`:
 - `splitterAsFastaSimple` / `splitterAsFasta` → `FastaSimpleSeqSplitted` — character-level splitting for FASTA notation (the multichar variant handles `[multi]` brackets)
 - `getSplitterWithSeparator` → `StringListSeqSplitted` — separator-based splitting
-- `splitterAsHelm` → `HelmSplitted` — HELM parsing with graph/connection info (`ISeqGraphInfo` exposes per-monomer `polymerTypes`, `cycles`, etc.)
+- `splitterAsHelm` → `HelmSplitted` — HELM parsed by hwe (lenient) with graph/connection info (`ISeqGraphInfoHelm`: per-monomer `polymerTypes`, chain ids, hydrogen bonds, repeats, row `errors`; invalid HELM keeps what hwe read, with `recovered` set)
 - `splitterAsBiln` → `BilnSeqSplitted` — BILN notation with cyclization marks
 - `getSplitter(notation, sep)` is the dispatcher used everywhere else
 
@@ -274,8 +273,8 @@ Macromolecule grid cell rendering uses a layered async architecture:
 | Low-level monomer drawing | `src/utils/cell-renderer.ts` |
 | Async cell renderer base classes | `src/utils/cell-renderer-async-base.ts` |
 | Sequence-to-molfile conversion | `src/monomer-works/to-atomic-level.ts` |
-| Molfile assembly from monomers | `src/monomer-works/to-atomic-level-utils.ts` |
-| Parallel molfile conversion | `src/monomer-works/seq-to-molfile.ts` |
+| Assembler input (parsed sequences) | `src/monomer-works/assembly-input.ts` |
+| Sequence → molecule (assembler) | `src/monomer-works/assembler.ts` |
 | Monomer hover highlighting | `src/monomer-works/monomer-hover.ts` |
 | Monomer similarity/scoring matrices | `src/monomer-works/monomer-utils.ts` |
 | HELM JSON schema constants | `src/utils/const.ts` |

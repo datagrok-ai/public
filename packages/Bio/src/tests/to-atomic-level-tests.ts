@@ -6,8 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {before, after, category, test, expectArray, expect} from '@datagrok-libraries/test/src/test';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {before, after, category, test, expectArray, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
@@ -19,9 +18,10 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 import {_package} from '../package-test';
+import * as mg from './utils/molblock-graph';
 
 const appPath = 'System:AppData/Bio';
 const fileSource = new DG.FilesDataSource(appPath);
@@ -139,10 +139,8 @@ category('toAtomicLevel', async () => {
 
   let seqHelper: ISeqHelper;
   let monomerLib: IMonomerLib;
-  let rdKitModule: RDModule;
 
   before(async () => {
-    rdKitModule = await getRdKitModule();
     seqHelper = await getSeqHelper();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
@@ -166,6 +164,8 @@ category('toAtomicLevel', async () => {
     await monomerLibHelper.loadMonomerLib(true);
   });
 
+  // The expected molfiles are Crux's (regenerated 2026-11-02 from the assembler's linear layout, with a diff review
+  // against the old JavaScript path: stereo now kept on sugars and wedge-shift monomers, dehydro double bonds kept)
   async function getTestResult(source: DG.DataFrame, target: DG.DataFrame): Promise<void> {
     const inputCol = source.getCol(inputColName);
     // await toAtomicLevel(source, inputCol, false);
@@ -299,34 +299,25 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     const resCol = (await _testToAtomicLevel(srcDf, 'seq', monomerLibHelper))!;
     // DG.Utils.download('molfile.mol', polishMolfile(resCol.get(0)));
 
+    // L-Ala-L-Arg (HELMCore's Arg tautomer), whatever writes the molfile
+    expect(await mg.canonicalSmiles(resCol.get(0)), await mg.canonicalSmiles('C[C@H](N)C(=O)N[C@@H](CCCNC(=N)N)C(=O)O'));
+    // the .mol is Crux's (regenerated 2026-11-02)
     expect(polishMolfile(resCol.get(0)), polishMolfile(tgtMol));
   });
 
   async function _testToAtomicLevelWithCustomMonomer(srcHelm: string, expectedSmiles: string): Promise<void> {
-    let error: any = null;
-    // first, patch the monomer library with a custom monomers
-    const monomerLib = monomerLibHelper.getMonomerLib();
-    // @ts-ignore
-    monomerLib._monomers['PEPTIDE'][complexMonomerAllylRgroup.symbol] = complexMonomerAllylRgroup;
-    // @ts-ignore
-    monomerLib._monomers['PEPTIDE'][complexMonomerWithComplexRgroup.symbol] = complexMonomerWithComplexRgroup;
-
-    try {
-      const converter = await seqHelper.getHelmToMolfileConverter(monomerLib);
-      const resMolFile = seqHelper.helmToAtomicLevelSingle(srcHelm, converter, true, true);
-      const resSmiles = grok.chem.convert(resMolFile.molfile, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
-      expect(resSmiles, expectedSmiles);
-    } catch (err) {
-      error = err;
-    }
-    // restore the monomer library to avoid affecting other tests
-    // @ts-ignore
-    delete monomerLib._monomers['PEPTIDE'][complexMonomerAllylRgroup.symbol];
-    // @ts-ignore
-    delete monomerLib._monomers['PEPTIDE'][complexMonomerWithComplexRgroup.symbol];
-
-    if (error)
-      throw error;
+    // The custom monomers go in an override library (its own library key for the assembler), so the system
+    // library is left as it is
+    const lib = monomerLibHelper.getMonomerLib().override({
+      'PEPTIDE': {
+        [complexMonomerAllylRgroup.symbol]: complexMonomerAllylRgroup,
+        [complexMonomerWithComplexRgroup.symbol]: complexMonomerWithComplexRgroup,
+      },
+    }, 'test custom monomers');
+    const converter = await seqHelper.getHelmToMolfileConverter(lib);
+    const resMolFile = seqHelper.helmToAtomicLevelSingle(srcHelm, converter, true, true);
+    expect(!!resMolFile.molfile, true, `no molecule for ${srcHelm}`);
+    expect(await mg.canonicalSmiles(resMolFile.molfile), await mg.canonicalSmiles(expectedSmiles));
   }
 
   test('SingleHelmMonomerWithAllylGroups', async () => {
@@ -366,15 +357,10 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
         expected: `CCC[C@H]1C(=O)O[C@H](Cc2ccccc2)C(=O)N[C@H]2CCC(=O)C(=O)[C@@H](Cc3ccccc3)OC(=O)[C@H](CCC)N(C)C(=O)[C@H](C)OC(=O)[C@H](CCC)N(C)C(=O)[C@@H](Cc3ccccc3)OC(=O)[C@H](CC(C)C)N(C)C(=O)[C@@H](C)OC(=O)[C@H](CC(C)C)N(C)C(=O)CC[C@H](NC(=O)[C@@H](C)OC2=O)C(=O)O[C@H](Cc2ccccc2)C(=O)N(C)[C@@H](CCC)C(=O)O[C@@H](C)C(=O)N1C`,
       },
     ];
-    const canonical = (smiles: string): string => {
-      const mol = rdKitModule.get_mol(smiles);
-      try { return mol.get_smiles(); } finally { mol.delete(); }
-    };
     const converter = await seqHelper.getHelmToMolfileConverter(monomerLib);
     for (const {name, helm, expected} of cases) {
       const resMolFile = seqHelper.helmToAtomicLevelSingle(helm, converter, true, true);
-      const resSmiles = grok.chem.convert(resMolFile.molfile, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
-      expect(canonical(resSmiles), canonical(expected), `${name}: SMILES mismatch`);
+      expect(await mg.canonicalSmiles(resMolFile.molfile), await mg.canonicalSmiles(expected), `${name}: SMILES mismatch`);
     }
   });
 
@@ -397,7 +383,7 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
   ): Promise<DG.Column | null> {
     const seqCol: DG.Column<string> = df.getCol(seqColName);
-    const res = await _toAtomicLevel(df, seqCol, monomerLib, seqHelper, rdKitModule);
+    const res = await _toAtomicLevel(df, seqCol, monomerLib, seqHelper);
     if (res.warnings.length > 0)
       _package.logger.warning(`_toAtomicLevel() warnings ${res.warnings.join('\n')}`);
     return res.molCol;
@@ -405,18 +391,16 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
 });
 
 /** Tests for the linear HELM-RNA path: must preserve modified sugars,
- * phosphates, and bases per nucleotide. The non-linear (HELM via POM)
- * path is the reference; the linear path is expected to match it on
- * canonical SMILES for these inputs. */
+ * phosphates, and bases per nucleotide. The chemistry is checked on the
+ * produced molblock's own graph (./utils/molblock-graph), not by a chemistry
+ * engine: each SMARTS below names the feature its graph counter counts. */
 category('toAtomicLevelHelmRna', async () => {
   let monomerLibHelper: IMonomerLibHelper;
   let userLibSettings: UserLibSettings;
   let seqHelper: ISeqHelper;
   let monomerLib: IMonomerLib;
-  let rdKitModule: RDModule;
 
   before(async () => {
-    rdKitModule = await getRdKitModule();
     seqHelper = await getSeqHelper();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
@@ -442,7 +426,7 @@ category('toAtomicLevelHelmRna', async () => {
     const seqCol = df.getCol('seq');
     expect(seqCol.semType, DG.SEMTYPE.MACROMOLECULE);
 
-    const res = await _toAtomicLevel(df, seqCol, monomerLib, seqHelper, rdKitModule);
+    const res = await _toAtomicLevel(df, seqCol, monomerLib, seqHelper);
     if (!res.molCol)
       throw new Error(`_toAtomicLevel returned no molCol for HELM '${srcHelm}'. ` +
         `Warnings: ${(res.warnings ?? []).join(' / ')}`);
@@ -452,7 +436,7 @@ category('toAtomicLevelHelmRna', async () => {
       throw new Error(`_toAtomicLevel produced an empty molfile for HELM '${srcHelm}'`);
     let smiles: string;
     try {
-      smiles = grok.chem.convert(molfile, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+      smiles = await mg.canonicalSmiles(molfile);
     } catch (err: any) {
       throw new Error(`SMILES conversion threw for HELM '${srcHelm}': ${err?.message ?? err}\n` +
         `--- MOLFILE START ---\n${molfile}\n--- MOLFILE END ---`);
@@ -464,57 +448,64 @@ category('toAtomicLevelHelmRna', async () => {
     return {molfile, smiles};
   }
 
-  /** Build an RDKit `RDMol` from the molfile, run `fn`, and free the mol.
-   * Always pass the produced molfile (not its SMILES round-trip) — atom
-   * indices and coordinates here are the same ones we want to assert on. */
-  function withMol<T>(molfile: string, fn: (mol: any) => T): T {
-    const mol = rdKitModule.get_mol(molfile);
-    if (!mol || !mol.is_valid())
-      throw new Error(`RDKit refused the produced molfile:\n${molfile}`);
-    try {
-      return fn(mol);
-    } finally {
-      mol.delete();
-    }
+  /** Parse the molfile's atom/bond graph and run `fn` on it. Always pass the
+   * produced molfile (not its SMILES round-trip) — atom indices and
+   * coordinates here are the same ones we want to assert on. */
+  function withMol<T>(molfile: string, fn: (mol: mg.MolblockGraph) => T): T {
+    const mol = mg.parseMolblockGraph(molfile);
+    if (mol.elements.length === 0)
+      throw new Error(`no atoms read from the produced molfile:\n${molfile}`);
+    return fn(mol);
+  }
+
+  /** The engine-free counter of each SMARTS the tests use (distinct atom sets,
+   * as RDKit's uniquified matches); see ./utils/molblock-graph. */
+  const PATTERN_COUNTERS: { [smarts: string]: (mol: mg.MolblockGraph) => number } = {
+    '[*]': (mol) => mg.heavyAtomCount(mol),
+    '[#6;R]1[#6;R][#6;R][#6;R][O;R]1': (mol) => mg.furanoseRings(mol).length,
+    '[#6]1[#6][#6][#6][#6][O]1': (mol) => mg.pyranoseRings(mol).length,
+    '[#6]1[#6][#6][#6][#6]1': (mol) => mg.cyclopentaneRings(mol).length,
+    '[#6][OX2][PX4](=[OX1])([OX2,SX2,OX1H,SX1H,OX1-,SX1-])[OX2][#6]': mg.phosphodiesters,
+    '[#6][OX2][PX4](=[OX1])([SX2,SX1H,SX1-])[OX2][#6]': mg.phosphorothioateDiesters,
+    '[#6][OX2][PX4](=[OX1])([CH3])[OX2][#6]': mg.methylphosphonateDiesters,
+    '[CX4][PX4]': mg.directCPBonds,
+    '[PX4][OX2][PX4]': mg.popBridges,
+    '[PX4][SX2,SX1H,SX1-]': mg.phosphorusSulfurSingle,
+    '[PX4]=S': mg.phosphorusSulfurDouble,
+    '[CX4][OX2][PX4](=[OX1])[SX2,SX1H,SX1-]': mg.thiophosphateCOPBridges,
+    '[F][CX4;R]': mg.fluorineOnRingCarbon,
+    '[NX3]C(=O)[CH3]': mg.nAcetylGroups,
+    '[CH3][OX2][#6;R]': mg.methoxyOnRingCarbon,
+    '[#6;R2]': mg.carbonsInTwoRings,
+    '[#16;R]': mg.ringSulfurs,
+    'n1cnc2c1ncnc2N': mg.adenineRings,
+    '[CH3]c1cn([!#1])c(=O)nc1N': mg.methylCytosineRings,
+    '[CH3][#6]1=[#6][#7]([!#1])[#6](=O)[#7][#6]1=O': mg.thymineRings,
+    'Cc1cn([!#1])c(=O)[nH]c1=O': mg.thymineRings,
+    '[#7;R]1[#6;R](=[OX1])[#7;R][#6;R][#6;R]1': mg.cyclicUreaRings,
+  };
+
+  function patternCounter(smarts: string): (mol: mg.MolblockGraph) => number {
+    const counter = PATTERN_COUNTERS[smarts];
+    if (!counter) throw new Error(`no molblock-graph counter for SMARTS '${smarts}'`);
+    return counter;
   }
 
   /** True iff the molecule contains at least one match of the SMARTS query. */
-  function hasSmarts(mol: any, smarts: string): boolean {
-    const qmol = rdKitModule.get_qmol(smarts);
-    try {
-      const raw = mol.get_substruct_match(qmol);
-      // RDKit JS returns the literal '{}' when there is no match.
-      return !!raw && raw !== '{}';
-    } finally {
-      qmol.delete();
-    }
+  function hasSmarts(mol: mg.MolblockGraph, smarts: string): boolean {
+    return patternCounter(smarts)(mol) > 0;
   }
 
-  /** Number of distinct matches of the SMARTS query in the molecule.
-   * `get_substruct_matches` returns either '{}' (no match), a JSON array
-   * of `{atoms,bonds}` objects, or — depending on the build — a single
-   * match object. Normalise all three. */
-  function countSmarts(mol: any, smarts: string): number {
-    const qmol = rdKitModule.get_qmol(smarts);
-    try {
-      const raw = mol.get_substruct_matches(qmol);
-      if (!raw || raw === '{}') return 0;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed.length;
-      // Single-match object
-      if (parsed && typeof parsed === 'object' && Array.isArray(parsed.atoms))
-        return parsed.atoms.length > 0 ? 1 : 0;
-      return 0;
-    } finally {
-      qmol.delete();
-    }
+  /** Number of distinct matches of the SMARTS query in the molecule. */
+  function countSmarts(mol: mg.MolblockGraph, smarts: string): number {
+    return patternCounter(smarts)(mol);
   }
 
-  /** Atoms-by-element via a single-atom SMARTS — strictly counts the heavy
-   * element (no false positives from `[Pa]`, `Si`, etc. that plain regex
-   * on SMILES would produce). */
-  function countAtoms(mol: any, atomicNumber: number): number {
-    return countSmarts(mol, `[#${atomicNumber}]`);
+  /** Heavy atoms of an element — strictly counts the element (no false
+   * positives from `[Pa]`, `Si`, etc. that plain regex on SMILES would produce). */
+  const ELEMENT_BY_NUMBER: { [n: number]: string } = {6: 'C', 7: 'N', 8: 'O', 9: 'F', 15: 'P', 16: 'S'};
+  function countAtoms(mol: mg.MolblockGraph, atomicNumber: number): number {
+    return mg.countElement(mol, ELEMENT_BY_NUMBER[atomicNumber]);
   }
 
   /** SMARTS shortcuts used by several tests below. Bracketed atom specs are
@@ -574,7 +565,7 @@ category('toAtomicLevelHelmRna', async () => {
    * SMARTS is unique to steroids. We additionally require ≥ 4 ring
    * carbons in two rings (R2) to confirm a fused polycyclic system, not
    * an isolated cyclopentane. */
-  function looksLikeSteroid(mol: any): boolean {
+  function looksLikeSteroid(mol: mg.MolblockGraph): boolean {
     const cyclopentane = hasSmarts(mol, '[#6]1[#6][#6][#6][#6]1');
     const fusedRingAtoms = countSmarts(mol, '[#6;R2]');
     return cyclopentane && fusedRingAtoms >= 4;
@@ -623,24 +614,6 @@ category('toAtomicLevelHelmRna', async () => {
     }
   }
 
-  /** Run a SMARTS against the molecule and collect every atom index that
-   * appears in any match. Used to bin atoms by role (sugar / base / etc.). */
-  function collectMatchedAtoms(mol: any, smarts: string): Set<number> {
-    const set = new Set<number>();
-    const qmol = rdKitModule.get_qmol(smarts);
-    try {
-      const raw = mol.get_substruct_matches(qmol);
-      if (!raw || raw === '{}') return set;
-      const parsed = JSON.parse(raw);
-      const list = Array.isArray(parsed) ? parsed : [parsed];
-      for (const m of list)
-        for (const a of (m?.atoms ?? [])) set.add(a as number);
-    } finally {
-      qmol.delete();
-    }
-    return set;
-  }
-
   /** Layout assertion: every atom in any nucleobase ring sits at a higher
    * Y than every sugar (furanose) ring atom. With the abnormal-sugar
    * override, the base is placed above the topmost atom of the sugar
@@ -651,10 +624,10 @@ category('toAtomicLevelHelmRna', async () => {
     const atoms = parseV3KAtoms(molfile);
     if (atoms.length === 0) throw new Error(`failed to parse molblock atoms`);
     withMol(molfile, (mol) => {
-      const sugarIdx = collectMatchedAtoms(mol, SMARTS.FURANOSE);
-      // Base atoms = aromatic ring atoms (purines and pyrimidines aromatize
-      // in RDKit's perception). Sugars are sp3, won't match `[a]`.
-      const baseIdx = collectMatchedAtoms(mol, '[a]');
+      const sugarIdx = new Set(mg.furanoseRings(mol).flat());
+      // Base atoms = the atoms of nitrogen-containing rings (purines and
+      // pyrimidines; RDKit's aromatic `[a]`). Sugar rings have no nitrogen.
+      const baseIdx = mg.nucleobaseRingAtoms(mol);
       if (sugarIdx.size === 0)
         throw new Error('no furanose ring atoms found — cannot verify layout');
       if (baseIdx.size === 0)
@@ -918,14 +891,19 @@ category('toAtomicLevelHelmRna', async () => {
   // GalNAc oxygen-count regression. Previously the R1 placeholder atom
   // (substituted to 'O' from the "OH" cap) was left in the assembly,
   // adding a stray OH on the chain-attach carbon. lna(T)GalNAc has a known
-  // expected oxygen count; an extra OH would push it to 11.
-  test('rna-helm-3p-terminal-galnac-no-extra-oh', async () => {
+  // expected oxygen count; a stray OH would push it to 12.
+  // 11, not the old linear path's 10: GalNAc is an O-glycoside on the LNA
+  // sugar's 3'-O, as HELM and Datagrok's old non-linear converter build it.
+  // The old linear path dropped that 3'-O and bonded GalNAc's C1 straight to
+  // C3' (oracle capture: the non-linear GalNAc row has 104 O, the old linear
+  // path 103). Renamed from 'rna-helm-3p-terminal-galnac-no-extra-oh'.
+  test('rna-helm-3p-terminal-galnac-oxygen-count', async () => {
     const {molfile} = await helmRnaLinear(`RNA1{[lna](T)[GalNAc]}$$$$V2.0`);
     withMol(molfile, (mol) => {
       // Heavy oxygen atom count — RDKit doesn't double-count ring closures
       // or atoms inside brackets.
-      expect(countAtoms(mol, 8), 10,
-        'expected exactly 10 oxygen atoms in lna(T)GalNAc');
+      expect(countAtoms(mol, 8), 11,
+        'expected exactly 11 oxygen atoms in lna(T)GalNAc (3\'-O-glycoside kept, no stray OH)');
       // No phosphate (GalNAc replaces the trailing P slot).
       expect(countAtoms(mol, 15), 0, 'expected no phosphate');
       // GalNAc N-acetyl preserved.
@@ -1407,10 +1385,8 @@ category('toAtomicLevelHover', async () => {
   let userLibSettings: UserLibSettings;
   let seqHelper: ISeqHelper;
   let monomerLib: IMonomerLib;
-  let rdKitModule: RDModule;
 
   before(async () => {
-    rdKitModule = await getRdKitModule();
     seqHelper = await getSeqHelper();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
@@ -1432,18 +1408,18 @@ category('toAtomicLevelHover', async () => {
     const seqCol = df.getCol('seq');
     expect(seqCol.semType, DG.SEMTYPE.MACROMOLECULE);
 
-    const res = await _toAtomicLevel(df, seqCol, monomerLib, seqHelper, rdKitModule);
+    const res = await _toAtomicLevel(df, seqCol, monomerLib, seqHelper);
     const molCol = res.molCol!;
     const molfile = molCol.get(0)!;
-    const rdMol = rdKitModule.get_mol(molfile);
-    const atomCount = rdMol.get_num_atoms();
-    rdMol.delete();
+    // every atom of the molblock (the map indexes all of them, explicit hydrogens included)
+    const atomCount = mg.parseMolblockGraph(molfile).elements.length;
 
     // The whole-molecule substruct provider is gated on this tag.
     molCol.setTag(ChemTags.SEQUENCE_SRC_HL_MONOMERS, 'true');
-    const link = await buildMonomerHoverLink(seqCol, molCol, monomerLib, seqHelper, rdKitModule, false);
-    const sub = link.getSubstruct(0);
-    expect(sub != null, true, 'hover provider returned no substruct');
+    const link = await buildMonomerHoverLink(seqCol, molCol, monomerLib, seqHelper, null, false);
+    // The map is asked for on the first call and arrives asynchronously (undefined until then)
+    let sub: ISubstruct | undefined = link.getSubstruct(0);
+    await awaitCheck(() => (sub = link.getSubstruct(0)) != null, 'hover provider returned no substruct', 15000);
     return {atomsUnion: (sub!.atoms ?? []) as number[], atomCount};
   }
 
