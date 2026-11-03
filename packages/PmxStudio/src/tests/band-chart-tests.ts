@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {signal} from '@datagrok-libraries/u2';
+import {Scope, signal} from '@datagrok-libraries/u2';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {BandChart, axisTitle, collectBands, refLines} from '../band-chart';
@@ -58,7 +58,9 @@ category('Band chart', () => {
   test('Draws the table it is given, and none', async () => {
     const df = signal<DG.DataFrame | undefined>(undefined);
     const log = signal(true);
-    const chart = new BandChart(df, {x: 'day', lower: 'q05', upper: 'q95', line: 'median', split: 'arm', log});
+    const owner = Scope.root('band chart test');
+    const chart = owner.build(() => new BandChart(df, {x: 'day', lower: 'q05', upper: 'q95', line: 'median',
+      split: 'arm', log}));
     document.body.append(chart.root);
     try {
       expect(chart.bands.length, 0);
@@ -70,7 +72,7 @@ category('Band chart', () => {
       expect(chart.bands.length, 0);
     } finally {
       chart.root.remove();
-      chart.dispose();
+      owner.dispose();
     }
   });
 });
