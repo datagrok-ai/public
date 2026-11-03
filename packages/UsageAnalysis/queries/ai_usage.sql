@@ -12,11 +12,21 @@ with recursive selected_groups as (
 turn_type as (
   select id from event_types where source = 'usage' and friendly_name = 'ai-turn'
 ),
-params as (
-  select p.id, p.name from event_parameters p
+pid as (
+  select
+    (array_agg(p.id) filter (where p.name = 'feature'))[1] as feature,
+    (array_agg(p.id) filter (where p.name = 'model'))[1] as model,
+    (array_agg(p.id) filter (where p.name = 'status'))[1] as status,
+    (array_agg(p.id) filter (where p.name = 'chatId'))[1] as chat_id,
+    (array_agg(p.id) filter (where p.name = 'turnId'))[1] as turn_id,
+    (array_agg(p.id) filter (where p.name = 'inputCount'))[1] as input_tokens,
+    (array_agg(p.id) filter (where p.name = 'outputCount'))[1] as output_tokens,
+    (array_agg(p.id) filter (where p.name = 'cacheReadCount'))[1] as cache_read_tokens,
+    (array_agg(p.id) filter (where p.name = 'cacheCreationCount'))[1] as cache_write_tokens,
+    (array_agg(p.id) filter (where p.name = 'costUsd'))[1] as cost_usd,
+    (array_agg(p.id) filter (where p.name = 'durationMs'))[1] as duration_ms
+  from event_parameters p
   where p.event_type_id in (select id from turn_type)
-    and p.name in ('feature', 'model', 'status', 'chatId', 'turnId', 'inputCount', 'outputCount', 'cacheReadCount',
-      'cacheCreationCount', 'costUsd', 'durationMs')
 ),
 turn_events as (
   select e.id, e.event_time, s.user_id, u.friendly_name as user_name
@@ -30,21 +40,21 @@ turn_events as (
 turns as (
   select e.id, e.event_time, e.user_id, e.user_name, x.*
   from turn_events e
+  cross join pid
   cross join lateral (
     select
-      max(v.value) filter (where p.name = 'feature') as feature,
-      max(v.value) filter (where p.name = 'model') as model,
-      max(v.value) filter (where p.name = 'status') as status,
-      max(v.value) filter (where p.name = 'chatId') as chat_id,
-      max(v.value) filter (where p.name = 'turnId') as turn_id,
-      max(v.value) filter (where p.name = 'inputCount')::int as input_tokens,
-      max(v.value) filter (where p.name = 'outputCount')::int as output_tokens,
-      max(v.value) filter (where p.name = 'cacheReadCount')::int as cache_read_tokens,
-      max(v.value) filter (where p.name = 'cacheCreationCount')::int as cache_write_tokens,
-      max(v.value) filter (where p.name = 'costUsd')::numeric as cost_usd,
-      max(v.value) filter (where p.name = 'durationMs')::int as duration_ms
+      max(v.value) filter (where v.parameter_id = pid.feature) as feature,
+      max(v.value) filter (where v.parameter_id = pid.model) as model,
+      max(v.value) filter (where v.parameter_id = pid.status) as status,
+      max(v.value) filter (where v.parameter_id = pid.chat_id) as chat_id,
+      max(v.value) filter (where v.parameter_id = pid.turn_id) as turn_id,
+      max(v.value) filter (where v.parameter_id = pid.input_tokens)::int as input_tokens,
+      max(v.value) filter (where v.parameter_id = pid.output_tokens)::int as output_tokens,
+      max(v.value) filter (where v.parameter_id = pid.cache_read_tokens)::int as cache_read_tokens,
+      max(v.value) filter (where v.parameter_id = pid.cache_write_tokens)::int as cache_write_tokens,
+      max(v.value) filter (where v.parameter_id = pid.cost_usd)::numeric as cost_usd,
+      max(v.value) filter (where v.parameter_id = pid.duration_ms)::int as duration_ms
     from event_parameter_values v
-    join params p on p.id = v.parameter_id
     where v.event_id = e.id
   ) x
 ),
@@ -59,11 +69,11 @@ user_groups as (
   select m.user_id, string_agg(g.friendly_name, ', ' order by g.friendly_name) as groups
   from memberships m
   join groups g on g.id = m.group_id
-  where not g.personal and not g.hidden and g.friendly_name <> 'All users'
+  where not g.personal and not g.hidden and g.id <> 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6'
   group by m.user_id
 )
 select t.event_time as time, date_trunc('day', t.event_time) as day, t.user_name as "user", ug.groups,
-  t.feature, coalesce(t.model, 'unknown') as model, coalesce(t.status, 'ok') as status, t.chat_id, t.turn_id,
+  t.feature, coalesce(t.model, 'unknown') as model, coalesce(t.status, 'unknown') as status, t.chat_id, t.turn_id,
   t.input_tokens, t.output_tokens, t.cache_read_tokens, t.cache_write_tokens,
   coalesce(t.input_tokens, 0) + coalesce(t.output_tokens, 0) + coalesce(t.cache_read_tokens, 0) + coalesce(t.cache_write_tokens, 0) as total_tokens,
   t.cost_usd, t.duration_ms
