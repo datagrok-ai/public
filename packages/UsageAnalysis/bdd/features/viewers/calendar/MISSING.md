@@ -12,7 +12,7 @@ Written 2026-10-22 when `calendar.feature` took the manual steps 2–4 of TestTr
 
 ## Edge cases
 
-The edge-case round of 2026-10-26 (localhost). Its checks are now `@edge-cases` scenarios of their own; the known failure core#1221 is in `calendar-known-failures.feature` while its ticket is open, and goes back after the master scenarios of `calendar-selection.feature` once fixed. Closing a calendar under its click filter (core#233) was one of them; it is claimed now by `calendar-filter.feature` on master, so that copy was dropped. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+The edge-case round of 2026-10-26 (localhost). Its checks are now `@edge-cases` scenarios of their own; the click filter kept under a filter panel toggle (core#1221) is the last scenario of `calendar-selection.feature`. Closing a calendar under its click filter (core#233) was one of them; it is claimed now by `calendar-filter.feature` on master, so that copy was dropped. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 

@@ -13,12 +13,8 @@ Feature: Calendar selection, On Click and Show Filtered Only
   witness for GROK-20635, which the spec this replaces could only assert as "the canvas changed".
 
   Edge cases: the calendar's click filter stays when a category is toggled in the filter panel (19
-  of the 32 rows of January 1990 are F); today the category click releases the calendar's filter,
-  and 553 rows pass at once (core#1221, a known failure). The check is in
-  calendar-known-failures.feature while its ticket is open. That the filter then goes when On Click
-  is switched to Select (553 F rows) is claimed once the defect is fixed: today that count is
-  already reached by the defect. Closing a calendar under its click filter (core#233) is claimed in
-  calendar-filter.feature.
+  of the 32 rows of January 1990 are F; core#1221), after the scenarios above. Closing a calendar
+  under its click filter (core#233) is claimed in calendar-filter.feature.
 
   Background:
     Given user is logged in
@@ -105,4 +101,22 @@ Feature: Calendar selection, On Click and Show Filtered Only
     Then 1000 rows should pass the filter
     And the "rows shown" reading of calendar viewer should be 1000
     And the "rows of weekday Sunday" reading of calendar viewer should be 153
+    And no errors should have been logged
+
+  @edge-cases @realizes:core#1221
+  Scenario: The calendar's click filter stays when a category is toggled in the filter panel (core#1221)
+    When user sets "onClick" property of calendar viewer to "Filter"
+    And user clicks on the "month 1990-01" area of calendar viewer
+    Then 32 rows should pass the filter
+    When user opens an empty filter panel
+    And user adds a card for "SEX" to the filter panel
+    And user clicks on the "category F of SEX" area of filter panel
+    Then 19 rows should pass the filter
+    When user hovers over "SEX" filter card
+    And user clicks on close of "SEX" filter card
+    And user clicks on close icon of filters viewer
+    Then filter panel should be hidden
+    When user resets the filter
+    And user sets "onClick" property of calendar viewer to "Select"
+    Then 1000 rows should pass the filter
     And no errors should have been logged
