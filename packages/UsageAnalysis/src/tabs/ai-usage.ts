@@ -80,7 +80,7 @@ export class AiUsageView extends UaView {
       grid.columns.setOrder(GRID_COLUMNS);
       for (const name of t.columns.names())
         grid.col(name)!.visible = GRID_COLUMNS.includes(name);
-      const widths: {[name: string]: number} = {time: 125, user: 110, groups: 140, feature: 90, model: 130, status: 60,
+      const widths: {[name: string]: number} = {time: 140, user: 110, groups: 140, feature: 90, model: 130, status: 60,
         total_tokens: 90, cost_usd: 70};
       for (const [name, width] of Object.entries(widths))
         grid.col(name)!.width = width;
