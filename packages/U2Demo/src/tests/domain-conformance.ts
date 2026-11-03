@@ -10,7 +10,6 @@ import {after, before, category, expect, expectArray, expectExceptionAsync, expe
   from '@datagrok-libraries/test/src/test';
 import {emsBackends} from '@datagrok-libraries/ems';
 import type {DomainTableLike, DomainTransactionOpLike} from '@datagrok-libraries/ems';
-import '@datagrok-libraries/u2/src/dg/index.js';
 // extensionless: tsc reads `scenarios.d.ts` next to it, webpack resolves the `.mjs` itself
 import {scenarios} from '@datagrok-libraries/ems/tests/conformance/scenarios';
 import type {ConformanceAssert, ConformanceSeedRow} from '@datagrok-libraries/ems/tests/conformance/scenarios';

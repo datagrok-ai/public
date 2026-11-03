@@ -71,7 +71,7 @@ test.describe("A project through its card in the Dashboards gallery", () => {
       await session.step(67, "When user clicks on BDDSmoke{time} gallery card", () => clickOn(page, el(session.text("BDDSmoke{time} gallery card"))));
       await session.step(68, "Then the context panel should show \"BDDSmoke{time}\"", () => contextPanelShows(page, session.text("BDDSmoke{time}")));
       await session.step(69, "And the sharing pane should not list the sharing user", () => sharingPaneListsNot(page));
-      await session.step(70, "And Sharing pane in context panel should not contain text \"has special permissions\"", () => shouldNotContainText(page, el("Sharing pane in context panel"), "has special permissions"));
+      await session.step(70, "And Sharing pane in context panel should not contain text \"can view and use\"", () => shouldNotContainText(page, el("Sharing pane in context panel"), "can view and use"));
     });
     await run.scenario("A tag is added in the Details pane and the \"#tag\" search finds the project by it", async () => {
       await session.step(73, "When user clicks on BDDSmoke{time} gallery card", () => clickOn(page, el(session.text("BDDSmoke{time} gallery card"))));
@@ -117,7 +117,7 @@ test.describe("A project through its card in the Dashboards gallery", () => {
       await session.step(114, "When user clicks on BDDSmoke{time} gallery card", () => clickOn(page, el(session.text("BDDSmoke{time} gallery card"))));
       await session.step(115, "Then the context panel should show \"BDDSmoke{time}\"", () => contextPanelShows(page, session.text("BDDSmoke{time}")));
       await session.step(116, "And the sharing pane should list the sharing user", () => sharingPaneLists(page));
-      await session.step(117, "And Sharing pane in context panel should contain text \"has special permissions\"", () => shouldContainText(page, el("Sharing pane in context panel"), "has special permissions"));
+      await session.step(117, "And Sharing pane in context panel should contain text \"can view and use\"", () => shouldContainText(page, el("Sharing pane in context panel"), "can view and use"));
     });
     await run.scenario("The project is renamed from its card", async () => {
       await session.step(120, "When user picks \"Rename...\" from the context menu of BDDSmoke{time} gallery card", () => pickFromContextMenu(page, "Rename...", el(session.text("BDDSmoke{time} gallery card"))));

@@ -20,11 +20,10 @@ scenario that pins the fix.
 What is not here, and why (each feature says it too): the monomer tooltip on hover, since the
 renderer publishes no hit area for the monomers it draws (a `grid.addStatusProvider` in
 `HelmGridCellRendererBack` would give one); the service surface (`Helm:getHelmHelper`,
-`Helm:getMolfiles`) and the helper's computations (`parse`, `removeGaps`, `getHoveredAtom`,
-`createHelmInput`, `createHelmWebEditor`, the monomer-function override,
-`buildMonomersFuncsFromLib`), which have no user-visible effect and are the package's own tests in
-`src/tests` (`helm-helper-surface-tests.ts`, `get-molfiles-tests.ts`); starring a Favorites tile,
-which would leave a user setting behind; the extinction coefficient of the editor's Properties tab,
+`Helm:getMolfiles`) and the helper's computations (`getHoveredAtom`, `createHelmInput`,
+`createHelmWebEditor`, `buildMonomersFuncsFromLib`), which have no user-visible effect and are
+the package's own tests in `src/tests` (`helm-helper-surface-tests.ts`, `get-molfiles-tests.ts`);
+starring a Favorites tile, which would leave a user setting behind; the extinction coefficient of the editor's Properties tab,
 which shows 0 where the context panel shows 0.06 for the same sequence — the editor does not show
 the full number (a display format, confirmed by the Helm owners), so the pane's value is claimed.
 

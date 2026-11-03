@@ -13,6 +13,10 @@ viewers with the same setup). What could not be said is listed here. Run on the 
   columns pushed out of sight. The TestTrack cases (`default-tooltip`,
   `default-tooltip-visibility`, `edit-tooltip`, `uniform-default-tooltip`, `tooltip-properties`) now switch the
   grid to "inherit from table" first, and grid-visible-columns-tooltip claims the default.
+- **The table's tooltip lists at most seven columns — by design** (Olesia, 2026-10-27). With ten columns
+  picked in Edit Tooltip the row tooltip shows seven (AGE…DEMOG, without CONTROL, STARTED, SEVERITY; the cap
+  is in `tooltip.dart`), while a viewer's custom Row Tooltip lists all it was given —
+  `tooltip-properties.feature` claims the latter for public#2297.
 - **Tooltip > Hide switches off every tooltip of the table — by design** (Dmytro Kovalyov in the team thread,
   2026-10-07). The histogram's bin and the bar chart's bar tooltips go too, and so do the viewers' custom
   tooltips (`_isTooltipShownForViewer` in `tooltip.dart` reads the table's `.tooltip-visibility`). The cases

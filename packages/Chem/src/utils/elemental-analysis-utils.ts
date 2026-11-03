@@ -5,6 +5,7 @@ import {_convertMolNotation, MALFORMED_MOL_V2000} from './convert-notation-utils
 import {getMolSafe} from './mol-creation_rdkit';
 import {_rdKitModule} from './chem-common-rdkit';
 import { PackageFunctions } from '../package';
+import {isV3000Block, v3000Atoms} from './molblock-atoms';
 
 /** Gets map of chem elements to list with counts of atoms in rows */
 export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, number[]] {
@@ -34,6 +35,17 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
         continue;
       }
       mol?.delete();
+    }
+    // RDKit writes V3000 for a molecule V2000 cannot hold (enhanced stereo): its atoms were counted as none
+    if (isV3000Block(el)) {
+      const {symbols, charge} = v3000Atoms(el);
+      for (const elName of symbols) {
+        if (!elements.has(elName))
+          elements.set(elName, new Int32Array(molCol.length));
+        ++elements.get(elName)![rowI];
+      }
+      elements.get('Molecule Charge')![rowI] = charge;
+      continue;
     }
     let curPos = 0;
     curPos = el.indexOf('\n', curPos) + 1;

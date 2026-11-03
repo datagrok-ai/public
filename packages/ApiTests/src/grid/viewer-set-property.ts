@@ -49,3 +49,29 @@ category('Viewers: setProperty', () => {
     expect(options.look['relativeValues'], true);
   });
 });
+
+category('Viewers: props', () => {
+  let demog: DG.DataFrame;
+
+  before(async () => {
+    demog = grok.data.demo.demog(100);
+  });
+
+  test('get and set by name on a core viewer', async () => {
+    const sp = demog.plot.scatter({xColumnName: 'height', yColumnName: 'weight'});
+    expect(sp.props.get('xColumnName'), 'height');
+    expect(sp.props.get('xColumnName'), sp.props.xColumnName);
+    sp.props.set('xColumnName', 'age');
+    expect(sp.props.xColumnName, 'age');
+    expect(sp.getOptions(true).look['xColumnName'], 'age');
+  });
+
+  test('get and set by name match the proxy', async () => {
+    const bar = demog.plot.bar();
+    bar.props.set('valueAggrType', 'max');
+    expect(bar.props.get('valueAggrType'), 'max');
+    expect(bar.props.valueAggrType, 'max');
+    bar.props.setAll({showValueAxis: false});
+    expect(bar.props.get('showValueAxis'), false);
+  });
+});

@@ -1,7 +1,3 @@
-/* Guide mode: with `BDD_GUIDE=<dir>` set, a run leaves a manifest per scenario — for every step
-   the page before and after it, the element the step located, where the pointer went and what
-   it clicked — that `tool/guide-render.py` turns into a how-to video. Without the variable
-   nothing here runs; a step of a test costs nothing. */
 import {mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import type {Locator, Page, TestInfo} from '@playwright/test';

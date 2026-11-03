@@ -14,8 +14,9 @@ export interface DateInputOptions extends InputOptions<Date | null> {
   /** Inclusive: days outside are disabled in the calendar, typed values clamp on commit. */
   min?: Date;
   max?: Date;
-  /** 0 Sunday, 1 Monday (the default). */
-  firstDayOfWeek?: 0 | 1;
+  /** The column the calendar's weeks start in, 0 Sunday … 6 Saturday; the browser locale's own by
+   * default ({@link Dates.firstDayOfWeek}). */
+  firstDayOfWeek?: number;
   /** The box also takes a span relative to now (`-1w`, `2d`, `now`); the value is the resolved `Date`
    * tagged with its text (`spanOf`), shown as typed. A picked calendar day is a plain date. */
   relative?: boolean;
@@ -90,7 +91,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   private declare _id: string;
   private declare _input: HTMLInputElement;
   private declare _field: HTMLElement;
-  private declare _toggle: HTMLElement;
+  private declare _toggle: HTMLButtonElement;
   private declare _popup: HTMLElement;
   private declare _title: HTMLElement;
   private declare _weeks: HTMLElement;
@@ -112,6 +113,10 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   }
 
   protected abstract get withTime(): boolean;
+
+  get unreadable(): boolean {
+    return this._bad.value;
+  }
 
   /** Whether the calendar is open. */
   getState(): ReturnType<Input<Date | null>['getState']> {
@@ -138,19 +143,21 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
     // set by a typed write, dropped by the effect run it causes (handlers run batched)
     let echo = false;
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
+      // an equal Date re-sent mid-typing must not reformat "09:3" into "09:03"
+      const shown = this._parse(input.value);
       if (echo)
         echo = false;
-      else
+      else if (shown === undefined || shown?.getTime() !== value?.getTime())
         input.value = this._format(value);
     });
     this.scope.listen(input, 'input', () => {
       const parsed = this._parse(input.value);
       this._bad.value = parsed === undefined;
-      if (parsed === undefined || parsed === this.value.peek())
+      if (parsed === undefined || parsed === this.peek())
         return;
       echo = true;
-      this.value.value = parsed;
+      this.value = parsed;
     });
     this.scope.listen(input, 'blur', () => {
       this._commit();
@@ -165,7 +172,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
       {tooltip: 'Pick a date'});
     this._toggle.classList.add('u2-date-toggle');
     this._toggle.setAttribute('aria-haspopup', 'dialog');
-    this.addOptions(this._toggle);
+    this.addOptions(this._toggle, {edits: true});
 
     const field = document.createElement('div');
     this._field = field;
@@ -195,7 +202,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   }
 
   private get _firstDay(): number {
-    return this.options.firstDayOfWeek ?? 1;
+    return this.options.firstDayOfWeek ?? Dates.firstDayOfWeek();
   }
 
   private _buildPopup(): HTMLElement {
@@ -298,7 +305,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   private _openPopup(): void {
     if (this._open.peek())
       return;
-    const value = this.value.peek();
+    const value = this.peek();
     const day = value === null ? this._defaultDay() : startOfDay(value, this._utc);
     this._month.value = startOfMonth(day);
     this._active.value = day;
@@ -306,7 +313,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
       {hours: value.getHours(), minutes: value.getMinutes()};
     this._time.value = time.hours * 60 + time.minutes;
     this._machine.value = 'open';
-    this._closeOverlay = Overlay.show(this._field, this._popup, this.scope, {matchWidth: false});
+    this._closeOverlay = Overlay.show(this._field, this._popup, {owner: this.scope, matchWidth: false});
     this._open.value = true;
     this._syncTime();
     this._focusActive();
@@ -481,7 +488,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
     const hours = Math.min(Number(this._hours!.value) || 0, 23);
     const minutes = Math.min(Number(this._minutes!.value) || 0, 59);
     this._time.value = hours * 60 + minutes;
-    const value = this.value.peek();
+    const value = this.peek();
     if (value !== null)
       this._set(this._combine(startOfDay(value, this._utc)));
   }
@@ -544,7 +551,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   }
 
   private _applyDays(): void {
-    const value = this.value.value;
+    const value = this.value;
     const selected = value === null ? null : isoDay(value, this._utc);
     const active = isoDay(this._active.value);
     for (const el of this._dayEls.value) {
@@ -563,8 +570,8 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
 
   private _set(value: Date | null): void {
     this._bad.value = false;
-    this.value.value = value === null ? null : this._clamp(value);
-    this._input.value = this._format(this.value.peek());
+    this.value = value === null ? null : this._clamp(value);
+    this._input.value = this._format(this.peek());
   }
 
   private _disabled(date: Date): boolean {

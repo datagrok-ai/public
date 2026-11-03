@@ -4,8 +4,8 @@ import {HandlerBase} from '../config/PipelineConfiguration';
 import {BaseTree, NodePath, NodePathSegment, TreeNode} from '../data/BaseTree';
 import {descriptionOutputs, isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, MatchedIO, MatchedNodePaths, MatchInfo} from './link-matching';
-import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapScheduler} from 'rxjs';
-import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, distinctUntilChanged, take} from 'rxjs/operators';
+import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapScheduler, timer} from 'rxjs';
+import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, debounce, distinctUntilChanged, take} from 'rxjs/operators';
 import {callHandler, copyDataFrame, indexFromEnd} from '../utils';
 import {defaultLinkHandler, Slot} from './default-handler';
 import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NodeMetaController, PipelineValidatorController, RuntimeReturnController, ValidatorController} from './LinkControllers';
@@ -58,8 +58,10 @@ export class Link {
   // the same ms/frame, reporting a link as not running while a handler is in flight
   private nextScheduled$ = new BehaviorSubject(0);
   private lastFinished$ = new BehaviorSubject(0);
-  public isRunning$ = combineLatest([this.nextScheduled$, this.lastFinished$]).pipe(
-    map(([next, last]) => next > last),
+  // inputs changed, the run is still waiting for its debounce or batch
+  private inputsPending$ = new BehaviorSubject(false);
+  public isRunning$ = combineLatest([this.inputsPending$, this.nextScheduled$, this.lastFinished$]).pipe(
+    map(([pending, next, last]) => pending || next > last),
     distinctUntilChanged(),
   );
 
@@ -110,7 +112,10 @@ export class Link {
     inputsChanges$.pipe(
       map((_, idx) => idx + 1),
       takeUntil(this.destroyed$),
-    ).subscribe(this.nextScheduled$);
+    ).subscribe((idx) => {
+      this.nextScheduled$.next(idx);
+      this.inputsPending$.next(false);
+    });
 
     inputsChanges$.pipe(
       switchMap(
@@ -185,20 +190,26 @@ export class Link {
     const toInputsChanges = ([scope, entries]: readonly [any, any]) =>
       [scope as ScopeInfo | undefined, Object.fromEntries(entries) as Record<string, any>] as const;
 
-    if (this.isBatchable && linksState?.batchLinks) {
-      inputsEntries$.pipe(
-        filter(() => this.isActive$.value),
-        takeUntil(this.destroyed$),
-      ).subscribe(() => linksState.scheduleBatch(this.uuid));
+    const isBatched = this.isBatchable && !!linksState?.batchLinks;
+    inputsEntries$.pipe(
+      filter(() => this.isActive$.value),
+      takeUntil(this.destroyed$),
+    ).subscribe(() => {
+      this.inputsPending$.next(true);
+      if (isBatched)
+        linksState!.scheduleBatch(this.uuid);
+    });
 
+    if (isBatched)
       return inputsTriggered$.pipe(map(toInputsChanges));
-    }
 
     const debounceVal = this.customDebounceTime ?? ((this.isValidator || this.isPipelineValidator) ? VALIDATOR_DEBOUNCE_TIME : 0);
 
     const activeInputs$ = inputsEntries$.pipe(
       filter(() => this.isActive$.value),
-      debounceTime(debounceVal, debounceVal === 0 ? asapScheduler : undefined),
+      debounceVal === 0 ?
+        debounceTime(0, asapScheduler) :
+        debounce(() => linksState?.skipDebounce ? timer(0, asapScheduler) : timer(debounceVal)),
       map((obs) => [undefined, obs] as const),
     );
 

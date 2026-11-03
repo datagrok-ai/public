@@ -42,7 +42,7 @@ export interface IUserReport {
 
   data: any;
 
-  friendlyName: any;
+  friendlyName: string;
 
   /** Name;
    * Property name.

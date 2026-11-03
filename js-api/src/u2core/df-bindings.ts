@@ -102,9 +102,16 @@ export function dfBindings(df: ReadonlySignal<DataFrameLike | undefined>, scope:
     const at = rowAt(d);
     return at >= 0 && d!.columns.byName(name) !== null ? d!.get(name, at) : undefined;
   };
+  // what each column signal last read: the write-back skips exactly that, as a datetime cell reads a fresh `dayjs`
+  const known = new Map<string, unknown>();
+  const readInto = (name: string, sig: Signal<unknown>) => {
+    const v = readColumn(name);
+    known.set(name, v);
+    sig.value = v;
+  };
   const refreshColumns = () => {
     for (const [name, sig] of columnSigs)
-      sig.value = readColumn(name);
+      readInto(name, sig);
   };
   const bump = (sig: Signal<number>) => sig.value = sig.peek() + 1;
 
@@ -122,10 +129,13 @@ export function dfBindings(df: ReadonlySignal<DataFrameLike | undefined>, scope:
         rowIdx.value = d.currentRowIdx;
         refreshColumns();
       })));
-      subs.push(d.onValuesChanged.subscribe(() => batch(() => {
+      // a row added or removed fires its own event, never onValuesChanged
+      const changed = () => batch(() => {
         bump(dataVersion);
         refreshColumns();
-      })));
+      });
+      subs.push(d.onValuesChanged.subscribe(changed), d.onRowsAdded.subscribe(changed),
+        d.onRowsRemoved.subscribe(changed));
       subs.push(d.onSelectionChanged.subscribe(() => selection.set(d.selection)));
       subs.push(d.onFilterChanged.subscribe(() => filter.set(d.filter)));
       subs.push(d.onColumnsChanged.subscribe(() => bump(columnsVersion)));
@@ -159,10 +169,13 @@ export function dfBindings(df: ReadonlySignal<DataFrameLike | undefined>, scope:
   const columnSignal = (name: string): Signal<unknown> => {
     let sig = columnSigs.get(name);
     if (sig === undefined) {
-      const created = signal(readColumn(name));
+      const created = signal<unknown>(undefined);
+      readInto(name, created);
       columnSigs.set(name, created);
       scope.effect(() => {
         const v = created.value;
+        if (Object.is(v, known.get(name)))
+          return;
         const d = df.peek();
         const at = rowAt(d);
         if (at >= 0 && d!.columns.byName(name) !== null && d!.get(name, at) !== v)

@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {registerAll, renderSpec} from '@datagrok-libraries/u2';
-import {SpecNodeRef, designerView, registerSpecNodeHandler} from '@datagrok-libraries/u2/src/dg/index.js';
+import {Scope, registerAll, renderSpec} from '@datagrok-libraries/u2';
+import {SpecNodeRef, designerView, registerSpecNodeHandler} from '@datagrok-libraries/u2/dg';
 import {DESIGNER_SPEC, designerContext} from '../designer';
 
 /* The designer's platform seams — handler registration, selection, and the view's chrome. Everything
@@ -13,9 +13,10 @@ category('designer', () => {
   const designer = (): {ref: SpecNodeRef, dispose: () => void} => {
     registerAll();
     registerSpecNodeHandler();
-    const instance = renderSpec(DESIGNER_SPEC, designerContext());
+    const owner = Scope.root('designer test');
+    const instance = owner.build(() => renderSpec(DESIGNER_SPEC, designerContext()));
     const node = [...instance.nodes().keys()].find((n) => n.name === 'saveButton')!;
-    return {ref: new SpecNodeRef(instance, node), dispose: () => instance.dispose()};
+    return {ref: new SpecNodeRef(instance, node), dispose: () => owner.dispose()};
   };
 
   test('the node handler is registered and applicable', async () => {

@@ -6,12 +6,6 @@ export function info() : void {
   PackageFunctions.info();
 }
 
-//tags: init
-//meta.role: init
-export async function init() : Promise<void> {
-  await PackageFunctions.init();
-}
-
 //name: DBSCAN
 //description: Density-based spatial clustering of applications with noise (DBSCAN)
 //input: dataframe df 
@@ -170,8 +164,8 @@ export function mvaModelInitFunction(viewer: any) : void {
 //name: MVA demo
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.
 //meta.demoPath: Compute | Multivariate Analysis
-export async function demoMultivariateAnalysis() : Promise<void> {
-  await PackageFunctions.demoMultivariateAnalysis();
+export function demoMultivariateAnalysis() : void {
+  PackageFunctions.demoMultivariateAnalysis();
 }
 
 //name: T-test
@@ -368,8 +362,8 @@ export async function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column,
 //output: dataframe result
 //meta.mlname: XGBoost
 //meta.mlrole: apply
-export function applyXGBooster(df: DG.DataFrame, model: any) : any {
-  return PackageFunctions.applyXGBooster(df, model);
+export async function applyXGBooster(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyXGBooster(df, model);
 }
 
 //input: dataframe df 
@@ -412,8 +406,8 @@ export async function trainSVM(df: DG.DataFrame, predictColumn: DG.Column, kerne
 //output: dataframe result
 //meta.mlname: SVM
 //meta.mlrole: apply
-export function applySVM(df: DG.DataFrame, model: any) : any {
-  return PackageFunctions.applySVM(df, model);
+export async function applySVM(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applySVM(df, model);
 }
 
 //input: dataframe df 

@@ -15,10 +15,10 @@ import {ChemSearchBaseViewer, DIVERSITY} from './chem-search-base-viewer';
 import {malformedDataWarning} from '../utils/malformed-data-utils';
 import {PackageFunctions} from '../package';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
+import {byEngineModule} from '../engine/chem-engine';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
   renderMolIds: number[];
-  columnNames = [];
   tooltipUse: boolean;
 
   constructor(tooltipUse = false, col?: DG.Column) {
@@ -127,20 +127,27 @@ export async function chemDiversitySearch(
     fingerprintArray = new Array<BitArray | null>(size).fill(null);
     const rdkit = PackageFunctions.getRdKitModule();
     for (let i = 0; i < randomIndexes.length; ++i) {
-      const mol = getMolSafe(moleculeColumn.categories[randomIndexes[i]], {}, rdkit).mol;
-      if (mol) {
+      // "Chemical engine": by the main thread's module (Crux's in Crux mode: the same Morgan bits), RDKit's where Crux
+      // reads none or throws
+      fingerprintArray[i] = byEngineModule('diversity tooltip', rdkit, (module, crux) => {
+        const mol = getMolSafe(moleculeColumn.categories[randomIndexes![i]], {}, module).mol;
+        if (!mol)
+          return null;
         try {
           mol.remove_hs_in_place(); // hydrogens can cause identical molecules to have different fingerprints
           const fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
             radius: defaultMorganFpRadius,
             nBits: defaultMorganFpLength,
           }));
-          fingerprintArray[i] = rdKitFingerprintToBitArray(fp);
+          return rdKitFingerprintToBitArray(fp);
         } catch (e) {
+          if (crux)
+            throw e;
+          return null;
         } finally {
           mol.delete();
         }
-      }
+      });
     }
   } else
     fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, false);

@@ -23,7 +23,7 @@ const DG_NOTATION: {[n in Notation]: DG.chem.Notation} = {
 
 /** Crux Sketch (`vendor/crux-sketch/`), bundled with Chem like any dependency: a chunk of its own, loaded the first
  * time a Crux sketcher opens, its WebAssembly emitted beside Chem's chunks. */
-function loadCruxSketch(): Promise<typeof CruxSketch> {
+export function loadCruxSketch(): Promise<typeof CruxSketch> {
   return import('../../vendor/crux-sketch/crux-sketch.js');
 }
 
@@ -272,6 +272,10 @@ export class CruxSketcher extends grok.chem.SketcherBase {
     // synced the current object (js-api's Sketcher.syncCurrentObject) that value is a molblock: Crux opened empty.
     if (notation === 'smiles' && DG.chem.isMolBlock(value))
       notation = value.includes('V3000') ? 'molblockV3000' : 'molblock';
+    // and the other way round: a SMILES given as a molblock (SequenceTranslator's Markush enumerator sets its cores'
+    // SMILES with setMolFile) is read as the SMILES it is
+    else if ((notation === 'molblock' || notation === 'molblockV3000') && value && !DG.chem.isMolBlock(value))
+      notation = 'smiles';
     this.explicitMol = {notation, value};
     if (this.sketch === null || this.isDetached) {
       this.unshown = {notation, value};

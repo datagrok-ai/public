@@ -4,7 +4,9 @@ Feature: Pick Up / Apply Coloring from the header menu, and a column's coloring 
   Pick Up Coloring on RACE, coloured with colours of its own, and Apply Coloring on a copy of it give
   the copy those colours, not the default palette. A heat map added to the view leaves the grid's
   coloring as it was (public#3043). Categorical colours set on the grid column are the colours a
-  scatter plot's legend paints its categories in (public#1929). Translated from the closed tickets
+  scatter plot's legend paints its categories in (public#1929). A style picked up from RACE with
+  Pick Up / Apply > Pick Up is applied, colouring included, to RACE of another table, demog-1000's
+  first 100 rows (public#1887). Translated from the closed tickets
   public#3043, public#1929, GROK-17058 and the help's "Pick Up / Apply Coloring";
   `color-coding.feature` copies a coloring by its tags, this feature does it through the menu a
   person uses.
@@ -86,4 +88,21 @@ Feature: Pick Up / Apply Coloring from the header menu, and a column's coloring 
     When user clicks on close icon of scatter plot viewer
     And user removes the coloring of "SEX" column
     Then "SEX" column should have no color coding
+    And no errors should have been logged
+
+  @realizes:public#1887
+  Scenario: A colouring picked up in one table applies to a column of another table (public#1887)
+    Given user opens demog-1000 dataset keeping the first 100 rows as "demog-100"
+    And user switches to the "demog-1000" table view
+    When user colors "RACE" column categorically:
+      | Caucasian | #3366CC |
+      | Other     | #CC6699 |
+    And user picks "Pick Up / Apply > Pick Up" from the context menu of the "header RACE" area of grid
+    And user switches to the "demog-100" table view
+    Then "RACE" column should have no color coding
+    When user picks "Pick Up / Apply > Apply" from the context menu of the "header RACE" area of grid
+    Then "RACE" column should be color-coded categorically
+    And the categorical color of "Caucasian" in "RACE" column should be "3366CC"
+    And the categorical color of "Other" in "RACE" column should be "CC6699"
+    And the "color of cell 1 of RACE" reading of grid should be "#3366cc"
     And no errors should have been logged

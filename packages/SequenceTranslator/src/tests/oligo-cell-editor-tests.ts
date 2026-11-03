@@ -1,4 +1,4 @@
-import {after, category, test, expect, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
+import {after, category, test, expect, waitUntil, delay} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -30,8 +30,7 @@ category('OligoCellEditor', () => {
     df.name = 'oligo-edit-test';
     const tv = grok.shell.addTableView(df);
 
-    await awaitCheck(() => $(tv.root).find('.d4-grid canvas').length > 0,
-      'Grid canvas did not appear', 5000);
+    await waitUntil(() => $(tv.root).find('.d4-grid canvas').length > 0, 'Grid canvas did not appear', 5000);
 
     // Find the cellEditor that the platform would dispatch on double-click for
     // a column tagged quality=OligoNucleotide. Pre-fix: zero matches (the
@@ -53,13 +52,12 @@ category('OligoCellEditor', () => {
     // Post-fix (using helmHelper.createWebEditorApp directly): dialog opens.
     await matches[0].apply({cell: gridCell});
 
-    await awaitCheck(() => dialogCount() > dialogsBefore,
-      'HELM editor dialog did not open within 15s', 15000);
+    await waitUntil(() => dialogCount() > dialogsBefore, 'HELM editor dialog did not open within 15s', 15000);
 
     // Wait for HWE async init (Dojo + JSDraw2 + monomer lib) to mount the editor.
     // JSDraw2 renders to SVG, so wait for the OK button to be wired up — that's
     // a reliable signal that the dialog footer is fully constructed.
-    await awaitCheck(() => $('.d4-dialog .ui-btn-ok, .d4-dialog button.ui-btn.ui-btn-ok').length > 0,
+    await waitUntil(() => $('.d4-dialog .ui-btn-ok, .d4-dialog button.ui-btn.ui-btn-ok').length > 0,
       'OK button did not appear in HELM editor dialog within 15s', 15000);
 
     // Allow the editor a moment to load the HELM string into the canvas before we read it back.
@@ -70,8 +68,7 @@ category('OligoCellEditor', () => {
 
     okBtn.trigger('click');
 
-    await awaitCheck(() => dialogCount() <= dialogsBefore,
-      'Dialog did not close after OK', 5000);
+    await waitUntil(() => dialogCount() <= dialogsBefore, 'Dialog did not close after OK', 5000);
 
     // After OK: cell.setValue(helmValue) must have run with the editor's HELM.
     // The editor may canonicalize formatting, so we don't require byte-equality —

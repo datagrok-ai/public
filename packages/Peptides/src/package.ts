@@ -10,10 +10,10 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {LogoSummaryTable} from './viewers/logo-summary';
-import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {PeptidesModel} from './model';
 import {macromoleculeSarFastaDemoUI} from './demo/fasta';
-import {u2} from '@datagrok-libraries/utils/src/u2';
+import {AppHeader} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 import {ClusterMaxActivityViewer} from './viewers/cluster-max-activity-viewer';
 import {LSTPieChartRenderer} from './utils/cell-renderer';
 import {PeptideUtils} from './peptideUtils';
@@ -21,7 +21,6 @@ import {SequencePositionStatsViewer} from './viewers/position-statistics-viewer'
 import {MutationCliffsViewer} from './viewers/mutation-cliffs-viewer';
 import {PeptideGenerationViewer} from './viewers/peptide-generation-viewer';
 
-let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper;
 export const _package = new DG.Package();
 export * from './package.g';
@@ -57,11 +56,6 @@ decorators.forEach((decorator) => {
 
 /** End temporary polyfill */
 
-export function getMonomerWorksInstance(): MonomerWorks | null {
-  return monomerWorks;
-}
-
-
 export function getTreeHelperInstance(): ITreeHelper {
   return treeHelper;
 }
@@ -83,7 +77,6 @@ export class PackageFunctions {
   @grok.decorators.init({tags: ['init']})
   static async initPeptides(): Promise<void> {
     try {
-      monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
       treeHelper ??= await getTreeHelper();
       await PeptideUtils.loadComponents();
     } catch (e) {
@@ -93,25 +86,26 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static Peptides(): DG.View {
-    const appHeader = u2.appHeader({
-      iconPath: _package.getIconUrl(),
-      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md',
-      description:
-        '- Automatically recognizes peptides in your data\n' +
-        '- Invariant map and mutation cliffs\n' +
-        '- Logo plots to explore sequence composition\n' +
-        '- Hierarchical clustering\n' +
-        '- Sequence space to analyze clustering and activity cliffs\n' +
-        '- Finds statistically significant changes in activity for monomer/positions\n',
-    });
+    const view = View.create();
+    view.name = 'Peptides';
+    const appHeader = ViewHost.of(view).build(() => new AppHeader({
+      icon: _package.getIconUrl(),
+      learnMore: 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md',
+      items: [
+        'Automatically recognizes peptides in your data',
+        'Invariant map and mutation cliffs',
+        'Logo plots to explore sequence composition',
+        'Hierarchical clustering',
+        'Sequence space to analyze clustering and activity cliffs',
+        'Finds statistically significant changes in activity for monomer/positions',
+      ],
+    })).root;
 
     const windows = grok.shell.windows;
     windows.showToolbox = false;
     windows.showHelp = false;
     windows.showContextPanel = false;
 
-    const view = View.create();
-    view.name = 'Peptides';
     ui.appendAll(view.root, [
       appHeader,
       ui.divH([

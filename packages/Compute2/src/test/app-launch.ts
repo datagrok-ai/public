@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, before, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, before, waitUntil, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {closeViewsAfter, launchApp, awaitElement, awaitWebComponents, findButton, clickAndAwait} from './utils';
+import {DAY_CALCULATION, withRunStorage} from './run-storage';
+import {openRunBrowserDialog} from '../components/RunStorage/run-browser-dialog';
 
 category('Apps: ViewerTestApp', () => {
   const track = closeViewsAfter();
@@ -43,10 +45,8 @@ category('Apps: ViewerTestApp', () => {
     await awaitElement(view.root, 'dg-viewer', 'Viewer', 10000);
     // Set data first — types have no effect without data
     findButton(view.root, 'change data').click();
-    await awaitCheck(
-      () => view.root.querySelector('dg-viewer') !== null,
-      'Viewer gone after setting initial data', 5000,
-    );
+    await waitUntil(() => view.root.querySelector('dg-viewer') !== null,
+      'Viewer gone after setting initial data', 5000);
 
     // Cycle through all 4 types: Grid → Histogram → Line chart → Scatter plot
     const btn = findButton(view.root, 'change type');
@@ -79,10 +79,8 @@ category('Apps: FormTestApp', () => {
     );
 
     // The form should contain actual input fields rendered by DG.InputForm
-    await awaitCheck(
-      () => view.root.querySelectorAll('dg-input-form input').length > 0,
-      'InputForm has no input elements', 5000,
-    );
+    await waitUntil(() => view.root.querySelectorAll('dg-input-form input').length > 0,
+      'InputForm has no input elements', 5000);
   });
 
   test('Toggle funcall switches form content', async () => {
@@ -99,13 +97,10 @@ category('Apps: FormTestApp', () => {
 
     // Toggle to the other function — form content should change
     btn.click();
-    await awaitCheck(
-      () => {
-        const form = view.root.querySelector('dg-input-form');
-        return form !== null && form.innerHTML !== formBefore && form.querySelectorAll('input').length > 0;
-      },
-      'Form content did not change after toggling function', 10000,
-    );
+    await waitUntil(() => {
+      const form = view.root.querySelector('dg-input-form');
+      return form !== null && form.innerHTML !== formBefore && form.querySelectorAll('input').length > 0;
+    }, 'Form content did not change after toggling function', 10000);
   });
 
   test('Remove funcall clears all inputs', async () => {
@@ -128,24 +123,28 @@ category('Apps: FormTestApp', () => {
   });
 });
 
-category('Apps: HistoryTestApp', () => {
-  const track = closeViewsAfter();
-
+category('Apps: Browse runs', () => {
   before(async () => {
     await awaitWebComponents();
   });
 
-
-  test('Renders history component for ObjectCooling2', async () => {
-    const view = track(await launchApp('HistoryTestApp'));
-    // The History component should render — either a table/grid with runs,
-    // or an empty state message. Verify it has meaningful content.
+  test('Lists a saved run of the chosen model', () => withRunStorage(async (f) => {
+    const name = `Browse runs test ${Date.now()}`;
+    await f.saveDayRun(name);
+    const existing = new Set(document.querySelectorAll('.c2-runs-browser'));
+    const opened = openRunBrowserDialog({
+      title: 'Browse runs', selectModel: true, model: DG.Func.byName(DAY_CALCULATION),
+    });
+    let browser: HTMLElement | undefined;
     await awaitCheck(() => {
-      const text = view.root.textContent ?? '';
-      // The History component shows the function name or "No runs" or a table
-      return view.root.children.length > 0
-        && (text.includes('ObjectCooling2') || text.includes('cooling')
-          || text.includes('No') || text.length > 10);
-    }, 'HistoryTestApp rendered no meaningful content', 10000);
-  });
+      browser = [...document.querySelectorAll<HTMLElement>('.c2-runs-browser')].find((el) => !existing.has(el));
+      return !!browser;
+    }, 'The run browser did not open', 10000);
+    try {
+      await awaitCheck(() => (browser!.textContent ?? '').includes(name), 'The saved run is not listed', 15000);
+    } finally {
+      findButton(browser!, 'cancel').click();
+    }
+    expect(await opened, null);
+  }));
 });

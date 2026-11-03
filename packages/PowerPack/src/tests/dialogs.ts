@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {after, awaitCheck, before, category, expect, expectArray, expectFloat,
+import {after, waitUntil, before, category, expect, expectArray, expectFloat,
   expectObject, isDialogPresent, test} from '@datagrok-libraries/test/src/test';
 import {AddNewColumnDialog} from '../dialogs/add-new-column';
 import {FormulaLinesDialog} from '../dialogs/formula-lines';
@@ -19,14 +19,14 @@ category('Dialogs', () => {
   
   test('FormulaLines', async () => {
     const dlg = new FormulaLinesDialog(df);
-    await awaitCheck(() => isDialogPresent(dlg.dialog.title));
+    await waitUntil(() => isDialogPresent(dlg.dialog.title), 'timed out waiting for isDialogPresent(dlg.dialog.title)');
   });
 
   test('Viewer gallery with a package-less viewer', async () => {
     grok.functions.register({signature: 'viewer PowerPackTestNoPackageViewer()',
       run: () => DG.Viewer.grid(df), options: {role: DG.FUNC_TYPES.VIEWER}});
     viewersDialog(grok.shell.tv, df);
-    await awaitCheck(() => isDialogPresent('Add Viewer'));
+    await waitUntil(() => isDialogPresent('Add Viewer'), 'timed out waiting for isDialogPresent(\'Add Viewer\')');
     DG.Dialog.getOpenDialogs().find((d) => d.title === 'Add Viewer')?.close();
   });
 }, {clear: false});

@@ -7,7 +7,8 @@ import wu from 'wu';
 import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
 import {TAGS as bioTAGS, splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {ISeqGraphInfoHelm, ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {parseHelm} from '@datagrok-libraries/hwe';
 import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -59,10 +60,8 @@ category('splitters', async () => {
         'D-Tyr_Et', 'D-Dap', 'dV', 'E', 'N', 'pnG', 'Phe_4Me'],
     ],
 
-    // splitterAsHelm triplet-splits HELM RNA monomers `sugar(base)phosphate`
-    // into 3 tokens, and `sugar(base)` (terminal-only) into 2. Standalone
-    // tokens that don't match either form (e.g. lone `P`, or non-terminal
-    // `R(U)` without a phosphate) are kept verbatim.
+    // splitterAsHelm gives one position per hwe monomer: an RNA nucleotide `sugar(base)phosphate` is 3 positions,
+    // `sugar(base)` 2, and a lone linker (`P`) one.
     testHelm1: [
       'RNA1{R(U)P.R(T)P.R(G)P.R(C)P.R(A)}$$$$',
       ['R', 'U', 'P', 'R', 'T', 'P', 'R', 'G', 'P', 'R', 'C', 'P', 'R', 'A'],
@@ -85,10 +84,222 @@ category('splitters', async () => {
   test('helm2', async () => { await _testHelmSplitter(data.helm2[0], data.helm2[1]); });
   test('helm3-multichar', async () => { await _testHelmSplitter(data.helm3[0], data.helm3[1]); });
 
-  // examples from Helm/tests/test.csv file
+  // examples from Helm's former tests/test.csv file
   test('testHelm1', async () => { await _testHelmSplitter(data.testHelm1[0], data.testHelm1[1]); });
   test('testHelm2', async () => { await _testHelmSplitter(data.testHelm2[0], data.testHelm2[1]); });
   test('testHelm3', async () => { await _testHelmSplitter(data.testHelm3[0], data.testHelm3[1]); });
+});
+
+// splitterAsHelm on the hwe parser (Bio on Crux, PLAN §5.2): bugs of the regex splitter (context/01 §9)
+category('splitters', () => {
+  const originals = (ss: ISeqSplitted): string[] =>
+    wu.count(0).take(ss.length).map((i) => ss.getOriginal(i)).toArray();
+  const conns = (ss: ISeqSplitted): string[] => (ss.graphInfo?.connections ?? []).map((c) =>
+    [c.seqIndex1, c.monomerIndex1, c.rGroup1, c.seqIndex2, c.monomerIndex2, c.rGroup2].join(','));
+  const giOf = (ss: ISeqSplitted): ISeqGraphInfoHelm => ss.graphInfo as ISeqGraphInfoHelm;
+
+  test('helm-B1-mixed-types', async () => {
+    // The chain index comes from the chain's order in the string, not from the number in its id
+    const ss = splitterAsHelm('PEPTIDE1{A.C.D}|CHEM1{[PEG2]}$PEPTIDE1,CHEM1,3:R2-1:R1$$$V2.0');
+    expectArray(originals(ss), ['A', 'C', 'D', 'PEG2']);
+    expectArray(conns(ss), ['0,2,2,1,0,1']);
+    expectArray(ss.graphInfo!.polymerTypes!, ['PEPTIDE', 'PEPTIDE', 'PEPTIDE', 'CHEM']);
+    expectArray(giOf(ss).chainIds!, ['PEPTIDE1', 'CHEM1']);
+  });
+
+  test('helm-B1-chem-first', async () => {
+    // HELM_CHEMS.csv row 10 shape: the legacy splitter dropped this connection
+    const ss = splitterAsHelm('CHEM1{[SMCC]}|PEPTIDE1{G.G.C}$PEPTIDE1,CHEM1,3:R3-1:R1$$$V2.0');
+    expectArray(originals(ss), ['SMCC', 'G', 'G', 'C']);
+    expectArray(ss.graphInfo!.disjointSeqStarts, [0, 1]);
+    expectArray(conns(ss), ['1,2,3,0,0,1']);
+    expect(ss.graphInfo!.connections[0].seq1Type, 'PEPTIDE');
+    expect(ss.graphInfo!.connections[0].seq2Type, 'CHEM');
+  });
+
+  test('helm-B2-annotated-chains', async () => {
+    // A polymer annotation no longer merges two chains
+    const ss = splitterAsHelm('PEPTIDE1{A.C.D}"HC"|PEPTIDE2{G.C}$$$$V2.0');
+    expectArray(originals(ss), ['A', 'C', 'D', 'G', 'C']);
+    expectArray(ss.graphInfo!.disjointSeqStarts, [0, 3]);
+    expectArray(ss.graphInfo!.polymerTypes!, ['PEPTIDE', 'PEPTIDE', 'PEPTIDE', 'PEPTIDE', 'PEPTIDE']);
+  });
+
+  test('helm-B3-position-100', async () => {
+    // A 120-mer head-to-tail cycle keeps its connection
+    const ss = splitterAsHelm(`PEPTIDE1{${new Array(120).fill('A').join('.')}}$PEPTIDE1,PEPTIDE1,120:R2-1:R1$$$V2.0`);
+    expect(ss.length, 120);
+    expectArray(conns(ss), ['0,119,2,0,0,1']);
+  });
+
+  test('helm-B3-rgroup-10', async () => {
+    const ss = splitterAsHelm('PEPTIDE1{A.C}$PEPTIDE1,PEPTIDE1,1:R10-2:R3$$$V2.0');
+    expectArray(conns(ss), ['0,0,10,0,1,3']);
+  });
+
+  test('helm-inline-smiles-dot', async () => {
+    // Inline SMILES with '.' or nested brackets is one monomer
+    const ss = splitterAsHelm('CHEM1{[C(=O)O.N[*:1]]}|PEPTIDE1{A.G.C}$PEPTIDE1,CHEM1,3:R3-1:R1$$$V2.0');
+    expectArray(originals(ss), ['C(=O)O.N[*:1]', 'A', 'G', 'C']);
+    expectArray(conns(ss), ['1,2,3,0,0,1']);
+  });
+
+  test('helm-inline-smiles-rna-base', async () => {
+    const ss = splitterAsHelm('RNA1{R([NC1=NC(N([*:1])C=C1)=O])P.R(A)}$$$$');
+    expectArray(originals(ss), ['R', 'NC1=NC(N([*:1])C=C1)=O', 'P', 'R', 'A']);
+    expectArray(giOf(ss).biotypes!, ['HELM_SUGAR', 'HELM_BASE', 'HELM_LINKER', 'HELM_SUGAR', 'HELM_BASE']);
+  });
+
+  test('helm-monomer-annotation', async () => {
+    const ss = splitterAsHelm('PEPTIDE1{A.A.C"mutation".D}$$$$V2.0');
+    expectArray(originals(ss), ['A', 'A', 'C', 'D']);
+  });
+
+  test('helm-hbonds-out-of-connections', async () => {
+    // Old consumers (joinToHelm, joinToBiln, the POM choice) read connections as covalent bonds
+    const ss = splitterAsHelm('RNA1{R(A)P.R(C)}|RNA2{R(G)P.R(U)}$RNA1,RNA2,2:pair-5:pair$$$V2.0');
+    expect(ss.graphInfo!.connections.length, 0);
+    const hb = giOf(ss).hbonds!;
+    expect(hb.length, 1);
+    expect(hb[0].kind, 'hbond');
+    expectArray([hb[0].seqIndex1, hb[0].monomerIndex1, hb[0].seqIndex2, hb[0].monomerIndex2], [0, 1, 1, 4]);
+  });
+
+  const repeatsOf = (ss: ISeqSplitted): string[] =>
+    (giOf(ss).repeats ?? []).map((r) => [r.start, r.end, r.min, r.max].join(','));
+  const errorsOf = (helm: string): string[] => giOf(splitterAsHelm(helm)).errors ?? [];
+
+  test('helm-repeats', async () => {
+    // Listed once, as written (position = hwe continuousId - 1): renderers and WebLogo see the source tokens.
+    // graphInfo.repeats holds the fixed repeats for the assembly input, which expands them.
+    const ss = splitterAsHelm('PEPTIDE1{A.(G.A.C)\'3\'.A}$$$$V2.0');
+    expectArray(originals(ss), ['A', 'G', 'A', 'C', 'A']);
+    expectArray(repeatsOf(ss), ['1,4,3,3']);
+    expect(giOf(ss).errors!.length, 0);
+    // One monomer, and the end of a chain followed by another chain
+    const one = splitterAsHelm('PEPTIDE1{A.G.A.C\'5\'}|PEPTIDE2{C.C}$PEPTIDE1,PEPTIDE2,4:R3-1:R3$$$V2.0');
+    expectArray(repeatsOf(one), ['3,4,5,5']);
+    expectArray(conns(one), ['0,3,3,1,0,3']);
+  });
+
+  test('helm-repeats-rna', async () => {
+    // An RNA nucleotide repeat covers sugar, base and linker; a sugar with its base alone takes the base in
+    const ss = splitterAsHelm('RNA1{R(C)P.(R(U)P)\'3\'.R(A)P}$$$$V2.0');
+    expectArray(originals(ss), ['R', 'C', 'P', 'R', 'U', 'P', 'R', 'A', 'P']);
+    expectArray(repeatsOf(ss), ['3,6,3,3']);
+    expectArray(repeatsOf(splitterAsHelm('RNA1{(R(U))\'2\'.R(A)P}$$$$V2.0')), ['0,2,2,2']);
+  });
+
+  test('helm-repeats-errors', async () => {
+    // D9: ranges, CHEM repeats, nested repeats and zero counts are per-row errors, not repeats
+    const range = splitterAsHelm('RNA1{R(A)P.(R(N)P)\'4\'.(R(G)P)\'3-7\'}$$$$V2.0');
+    expectArray(repeatsOf(range), ['3,6,4,4']);
+    expectArray(giOf(range).errors!, ['repeat range \'3-7\' at position 7 is not supported']);
+    expect(errorsOf('CHEM1{[Az]\'3\'}$$$$V2.0').some((e) => e.includes('repeat \'3\'')), true);
+    expect(errorsOf('PEPTIDE1{A.((G.A)\'2\'.C)\'3\'.A}$$$$V2.0').some((e) => e.startsWith('nested repeats')), true);
+    expect(errorsOf('PEPTIDE1{A\'0\'.C}$$$$V2.0').some((e) => e.includes('repeat-zero-count')), true);
+  });
+
+  test('helm-ambiguous-connections', async () => {
+    // Multi-site positions, ranges, '?' and group endpoints: hwe draws them at the first candidate; the adapter
+    // leaves them out of connections (old consumers would take them for definite bonds) and errors the row
+    for (const [helm, text] of [
+      ['PEPTIDE1{A.C.K.D}|CHEM1{[sDBL]}$PEPTIDE1,CHEM1,(1,3):R3-1:R1$$$V2.0', 'PEPTIDE1,CHEM1,(1,3):R3-1:R1'],
+      ['PEPTIDE1{A.C.K.D}|CHEM1{[sDBL]}$PEPTIDE1,CHEM1,2-4:R3-1:R1$$$V2.0', 'PEPTIDE1,CHEM1,2-4:R3-1:R1'],
+      ['PEPTIDE1{A.C}$PEPTIDE1,PEPTIDE1,?:R1-2:R2$$$V2.0', 'PEPTIDE1,PEPTIDE1,?:R1-2:R2'],
+      ['BLOB1{Bead}|PEPTIDE1{A.K}$G1,PEPTIDE1,K:R3-1:R1$G1(BLOB1+PEPTIDE1)$$V2.0', 'G1,PEPTIDE1,K:R3-1:R1'],
+    ]) {
+      const ss = splitterAsHelm(helm);
+      expect(ss.graphInfo!.connections.length, 0, helm);
+      expectArray(giOf(ss).errors!, [`ambiguous connection '${text}' is not supported`]);
+    }
+    // A definite connection next to an ambiguous one stays
+    const mixed = splitterAsHelm(
+      'PEPTIDE1{A.C}|PEPTIDE2{G}$PEPTIDE1,PEPTIDE2,(1,2):R3-1:R1|PEPTIDE1,PEPTIDE2,2:R2-1:R1$$$V2.0');
+    expectArray(conns(mixed), ['0,1,2,1,0,1']);
+    // A symbol position whose symbol occurs once is one monomer: a connection, no error
+    const sym = splitterAsHelm('PEPTIDE1{A.A.C.D}|CHEM1{[PEG2]}$PEPTIDE1,CHEM1,C:R3-1:R1$$$V2.0');
+    expectArray(conns(sym), ['0,2,3,1,0,1']);
+    expect(giOf(sym).errors!.length, 0);
+    expect(errorsOf('PEPTIDE1{C.A.C}|CHEM1{[PEG2]}$PEPTIDE1,CHEM1,C:R3-1:R1$$$V2.0')[0]
+      .startsWith('ambiguous connection'), true);
+  });
+
+  test('helm-errors-for-assembly', async () => {
+    expect(errorsOf('PEPTIDE1{A.(G,C).A}$$$$V2.0')[0], 'ambiguous monomer \'(G,C)\' at position 2 is not supported');
+    expect(errorsOf('PEPTIDE1{A.C}$PEPTIDE1,PEPTIDE1,?:R1-2:R2$$$V2.0')[0].startsWith('ambiguous connection'), true);
+    expect(errorsOf('PEPTIDE1{A.C.D}$$$$V2.0').length, 0);
+    // Two polymers with one id: two chains, and an error (hwe sends connections to the last one)
+    const dup = splitterAsHelm('PEPTIDE1{A.C}|PEPTIDE1{G.G}$$$$V2.0');
+    expectArray(dup.graphInfo!.disjointSeqStarts, [0, 2]);
+    expect(giOf(dup).errors![0].includes('duplicate-polymer-id'), true);
+  });
+
+  test('helm-whitespace', async () => {
+    // context/01 B10: hwe 1.1.0 skips whitespace outside brackets (a warning), so these rows parse in hwe
+    for (const helm of ['PEPTIDE1{A.C}$$$$V2.0 ', 'PEPTIDE1{A . C}$$$$V2.0', ' PEPTIDE1{A.C}\t$$$$V2.0']) {
+      const ss = splitterAsHelm(helm);
+      expectArray(originals(ss), ['A', 'C']);
+      expect(giOf(ss).errors!.length, 0);
+    }
+  });
+
+  test('helm-blob-with-spaces', async () => {
+    // hwe 1.0.5 failed the whole parse on the space; the regex splitter glued the rest of the string to the BLOB
+    const ss = splitterAsHelm('BLOB1{Gold Particle}$$$$V2.0');
+    expectArray(originals(ss), ['Gold Particle']);
+    expectArray(ss.graphInfo!.polymerTypes!, ['BLOB']);
+    expect(giOf(ss).errors!.length, 0);
+    const conj = splitterAsHelm('PEPTIDE1{C.C}|BLOB1{Gold Particle}"Au10, Diameter:10nm"$PEPTIDE1,BLOB1,C:R3-?:?' +
+      '$G1(PEPTIDE1:20-34+BLOB1)${"Name":"Gold particle conjugated with peptides","Load":26}$V2.0');
+    expectArray(originals(conj), ['C', 'C', 'Gold Particle']);
+    expectArray(conj.graphInfo!.disjointSeqStarts, [0, 2]);
+    expectArray(giOf(conj).errors!, ['ambiguous connection \'PEPTIDE1,BLOB1,C:R3-?:?\' is not supported']);
+  });
+
+  test('helm-position-invariant', async () => {
+    // Hover and PolyTool map hwe atoms to positions by continuousId - 1 (context/01 §12)
+    for (const helm of [
+      'RNA1{R(U)P.R(T)P}|RNA2{P.R(A)P.R(A)}$RNA1,RNA2,2:pair-6:pair$$$',
+      'CHEM1{[SMCC]}|PEPTIDE1{G.[meI].C}$PEPTIDE1,CHEM1,3:R3-1:R1$$$V2.0',
+      'RNA1{[dR](A)p.r([NC1=NC(N([*:1])C=C1)=O])p.r(G)}$$$$V2.0',
+      'RNA1{R(C)P.(R(U)P)\'3\'.R(A)P}$$$$V2.0',
+      'PEPTIDE1{A . C}|PEPTIDE2{G}$$$$V2.0 ',
+    ]) {
+      const ss = splitterAsHelm(helm);
+      const atoms = parseHelm(helm, null, {mode: 'lenient'}).mol.atoms;
+      expect(ss.length, atoms.length);
+      for (const a of atoms)
+        expect(ss.getOriginal(a.bio.continuousId - 1), a.symbol);
+    }
+  });
+
+  test('helm-no-sections', async () => {
+    // The regex splitter returned no monomers without the '$' sections
+    expectArray(originals(splitterAsHelm('PEPTIDE1{A.C}')), ['A', 'C']);
+  });
+
+  test('helm-unparsable', async () => {
+    // A string hwe's lexer rejects (an unexpected character): no monomers, hwe's error, unbuildable at atomic level
+    const ss = splitterAsHelm('PEPTIDE1{A.C.D}$$$$V2.0#');
+    expect(ss.length, 0);
+    expect(giOf(ss).recovered, true);
+    expect(giOf(ss).errors![0].startsWith('HELM unexpected-char'), true);
+  });
+
+  test('helm-recovered', async () => {
+    // Invalid HELM (a peptide branch): hwe recovers after 'Ac' and skips the rest of the polymer. The row keeps the
+    // monomers hwe read, with hwe's error, and stays unbuildable at atomic level.
+    const ss = splitterAsHelm('PEPTIDE1{Ac(1).A.A.C(1).G}$$$$');
+    expectArray(originals(ss), ['Ac']);
+    expect(giOf(ss).recovered, true);
+    expect(giOf(ss).errors![0].startsWith('HELM unterminated-brace'), true);
+    // A recovery that loses no monomer
+    const rep = splitterAsHelm('CHEM1{[Az]\'3\'}$$$$V2.0');
+    expectArray(originals(rep), ['Az']);
+    expect(giOf(rep).recovered, true);
+    expect(giOf(rep).errors!.some((e) => e.startsWith('HELM repeat-on-non-iterable-polymer')), true);
+  });
 });
 
 category('splitters', () => {

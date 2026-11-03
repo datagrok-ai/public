@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {injectInputBaseStatus} from '@datagrok-libraries/webcomponents-vue/src/InputForm/utils';
 import {awaitWebComponents} from './utils';
 
@@ -11,11 +11,11 @@ const ADVICE = {validation: {warnings: [{
 
 async function clickAdviceLink(root: HTMLElement) {
   const icon = () => root.querySelector('dg-validation-icon i') as HTMLElement | null;
-  await awaitCheck(() => icon() != null, 'validation icon not rendered', 3000);
+  await waitUntil(() => icon() != null, 'validation icon not rendered', 3000);
   icon()!.click();
   const link = () => Array.from(root.querySelectorAll('a.ui-link'))
     .find((el) => el.textContent?.trim() === 'Set to 10') as HTMLElement | undefined;
-  await awaitCheck(() => link() != null, 'advice link not rendered', 3000);
+  await waitUntil(() => link() != null, 'advice link not rendered', 3000);
   link()!.click();
 }
 

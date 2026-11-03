@@ -6,6 +6,7 @@ import {signal, Signal} from '../../core/signals.js';
 import type {ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {div, span, Text} from '../../core/elements.js';
+import {Reason} from '../../core/reason.js';
 import {iconOf} from '../display/icon.js';
 import {Fold} from './fold.js';
 
@@ -29,6 +30,11 @@ export interface SectionOptions {
    * of a toggle placed in a row of its own. The {@link Section.header} stays the section's toggle wherever
    * it is put: `row.append(section.header)` sets Details beside a Save, its body opening below. */
   chevron?: 'start' | 'end';
+  /** After the title: the icons and links that act on the body (a table's columns and refresh); a press on one
+   * does not fold the section. */
+  actions?: (Control | HTMLElement)[];
+  /** Why the body is off: dimmed and out of reach, the reason said after the title; `null` while on. */
+  disabled?: Reason;
 }
 
 let sectionCount = 0;
@@ -57,7 +63,7 @@ export class Section extends Control {
       this.expanded.value = stored;
     this._validity = options.validity;
     const collapsible = this._collapsible = options.collapsible !== false;
-    const title = this._title = this.runInScope(() => span(options.title, 'u2-section-title'));
+    const title = this._title = this.build(() => span(options.title, 'u2-section-title'));
     title.id = `${id}-title`;
     title.dataset.u2Part = 'title';
     this.root.setAttribute('aria-labelledby', title.id);
@@ -78,6 +84,25 @@ export class Section extends Control {
     if (hint !== undefined) {
       Fold.bindHint(this.scope, {root: this.root, header: this.header, hint, cls: 'u2-section', text: options.hint,
         validity: options.validity, folded: () => collapsible && !this.expanded.value});
+    }
+    if (options.disabled !== undefined) {
+      const reason = span('', 'u2-section-reason');
+      reason.dataset.u2Part = 'reason';
+      this.header.append(reason);
+      Reason.follow(options.disabled, (why) => {
+        reason.textContent = why ?? '';
+        Reason.region(this.body, why);
+      }, this.scope);
+    }
+    if (options.actions !== undefined) {
+      const actions = span('', 'u2-section-actions');
+      actions.dataset.u2Part = 'actions';
+      for (const action of options.actions)
+        actions.append(Control.is(action) ? action.root : action);
+      // a press or a key on an action is the action's, not the header's toggle
+      for (const type of ['click', 'keydown'])
+        this.scope.listen(actions, type, (e) => e.stopPropagation());
+      this.header.append(actions);
     }
     if (!collapsible)
       return;

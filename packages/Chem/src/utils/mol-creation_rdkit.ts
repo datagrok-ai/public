@@ -1,4 +1,9 @@
 /* eslint-disable max-len */
+/**
+ * Reading molecules and queries, shared by both engines: every function takes the module it reads with (`RDModule`,
+ * RDKit.js's shape, which Crux's module answers too) and none picks one itself, so the same code serves RDKit mode,
+ * Crux mode and its RDKit fallback. ("RDKit" in the comments below names the reader's behaviour, which Crux ports.)
+ */
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {hasNewLines, isMolBlock} from './chem-common';
 import {MAX_SMILES_LENGTH} from './chem-constants';
@@ -55,14 +60,19 @@ export function isSmilesSyntax(s: string): boolean {
   return SMILES_SYNTAX.test(s);
 }
 
-/** Whether RDKit reads `s` as a query and not as a molecule, even unsanitized: a SMARTS of primitives alone, which no
+/** Whether the module reads `s` as a query and not as a molecule, even unsanitized: a SMARTS of primitives alone, which no
  * syntax tells from SMILES (Daylight's [NX3][CX3]=[OX1], [R], A-A, C@C). */
-export function readsAsQueryOnly(s: string, rdKitModule: RDModule): boolean {
+export function readsAsQueryOnly(s: string, module: RDModule): boolean {
+  return readsAsQuery(s, module) ?? false;
+}
+
+/** {@link readsAsQueryOnly}, and null where the module reads `s` as neither a molecule nor a query. */
+export function readsAsQuery(s: string, module: RDModule): boolean | null {
   if (!s || isMolBlock(s) || (!hasNewLines(s) && s.length > MAX_SMILES_LENGTH))
     return false;
   let mol: RDMol | null = null;
   try {
-    mol = rdKitModule.get_mol(s, JSON.stringify({sanitize: false}));
+    mol = module.get_mol(s, JSON.stringify({sanitize: false}));
   } catch {
     mol = null;
   }
@@ -72,12 +82,12 @@ export function readsAsQueryOnly(s: string, rdKitModule: RDModule): boolean {
   }
   let query: RDMol | null = null;
   try {
-    query = rdKitModule.get_qmol(s);
+    query = module.get_qmol(s);
   } catch {
     query = null;
   }
   query?.delete();
-  return query !== null;
+  return query !== null ? true : null;
 }
 
 export function hasRadicals(mol: RDMol): boolean {
@@ -88,7 +98,7 @@ export function hasRadicals(mol: RDMol): boolean {
   }
 }
 
-export function getMolSafe(molString: string, details: object = {}, rdKitModule: RDModule,
+export function getMolSafe(molString: string, details: object = {}, module: RDModule,
   warnOff: boolean = true, onError?: (e: unknown) => void): IMolContext {
   // `onError` sees what the module threw (Chem's Crux module: a trap marks Crux failed); the molecule is null then
   if (molString && !hasNewLines(molString) && molString.length > MAX_SMILES_LENGTH)
@@ -100,14 +110,14 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
   let mol: RDMol | null = null;
 
   try {
-    mol = rdKitModule.get_mol(molString, JSON.stringify(details));
+    mol = module.get_mol(molString, JSON.stringify(details));
   } catch (e) {
     onError?.(e);
   }
   if (!mol && kekulize) {
     kekulize = false; //Pyrrole cycles
     try {
-      mol = rdKitModule.get_mol(molString, JSON.stringify({...details, kekulize}));
+      mol = module.get_mol(molString, JSON.stringify({...details, kekulize}));
     } catch (e) {
       onError?.(e);
     }
@@ -116,7 +126,7 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
     kekulize = true; //previous step failed, so retrun kekulize parameter to true
     isQMol = true;
     try {
-      mol = rdKitModule.get_qmol(molString);
+      mol = module.get_qmol(molString);
       isQMol = true;
     } catch (e) {
       onError?.(e);
@@ -279,7 +289,7 @@ function withHCountHs(molBlock: string): string {
 }
 
 export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: string,
-  rdKitModule: RDModule): RDMol | null {
+  module: RDModule): RDMol | null {
   if (queryMolString && !hasNewLines(queryMolString) && queryMolString.length > MAX_SMILES_LENGTH)
     return null; // do not attempt to parse very long SMILES, will cause MOB.
   let queryMol = null;
@@ -294,13 +304,13 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
     // read unsanitized it matched nothing, the molecules holding those charge-separated, as sanitizing makes the query.
     // One with explicit H is read with its H merged into their atoms, which only the molecule reader does.
     if (queryMolString.includes(' H '))
-      queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, rdKitModule).mol;
+      queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, module).mol;
     else {
       if (hasHCountQuery(queryMolString) || hasPentavalentN(queryMolString)) {
         // with its hhh atoms given their H, else as it is (an H the atom has no room for: RDKit cannot sanitize it)
         for (const molBlock of new Set([withHCountHs(queryMolString), queryMolString])) {
           try {
-            queryMol = rdKitModule.get_mol(molBlock, JSON.stringify({kekulize: false}));
+            queryMol = module.get_mol(molBlock, JSON.stringify({kekulize: false}));
           } catch (e) {
             queryMol = null;
           }
@@ -309,7 +319,7 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
         }
       }
       try {
-        queryMol = rdKitModule.get_qmol(queryMolString);
+        queryMol = module.get_qmol(queryMolString);
       } catch (e) {
         queryMol = null;
       }
@@ -325,10 +335,10 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
   } else { // not a molblock
     const treatAsSmarts = _isSmarts(queryMolString);
     try {
-      queryMol = rdKitModule.get_qmol(queryMolString);
+      queryMol = module.get_qmol(queryMolString);
     } catch (e) { }
     if (queryMol !== null) {
-      const mol = rdKitModule.get_mol(queryMolString, '{"mergeQueryHs":true}');
+      const mol = module.get_mol(queryMolString, '{"mergeQueryHs":true}');
       if (mol !== null) { // check the qmol is proper
         // for a plain SMILES use the molecule query: its pattern fingerprint and matching are consistent
         // with molblock-derived queries (a SMARTS qmol's pattern fp over-filters and drops valid hits).
@@ -342,19 +352,19 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
       } // else, this looks to be a real SMARTS
     } else { // failover to queryMolBlockFailover
       // possibly get rid of fall-over in future
-      queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, rdKitModule).mol;
+      queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, module).mol;
     }
   }
   return queryMol;
 }
 
 /**
- * The query a substructure search builds from `molString` ({@link getQueryMolSafe}), as RDKit's SMARTS: what names a query
+ * The query a substructure search builds from `molString` ({@link getQueryMolSafe}), as the module's SMARTS: what names a query
  * where two drawings must be told apart exactly when the search tells them apart (the substructure filter's key). Null
- * when RDKit cannot read it.
+ * when the module cannot read it.
  */
-export function querySmarts(molString: string, rdKitModule: RDModule): string | null {
-  const queryMol = getQueryMolSafe(molString, '', rdKitModule);
+export function querySmarts(molString: string, module: RDModule): string | null {
+  const queryMol = getQueryMolSafe(molString, '', module);
   try {
     return queryMol?.get_smarts() ?? null;
   } catch {
@@ -362,4 +372,23 @@ export function querySmarts(molString: string, rdKitModule: RDModule): string | 
   } finally {
     queryMol?.delete();
   }
+}
+
+/**
+ * Each cluster's MCS as SMILES ('' for none) from FMCS's SMARTS (`mcs`, RdKitService.clusterMCS' raw result), written
+ * by `module` (RDKit's; Crux's in Crux mode, engine/analysis-jobs.ts).
+ */
+export function clusterMcsSmiles(mcs: string[], clusteredMolecules: string[][], module: RDModule): string[] {
+  return mcs.map((it, i) => {
+    if (!it)
+      return '';
+    try {
+      // a one-molecule cluster is its own MCS: read as a query, its implicit hydrogens would be lost
+      const mol = clusteredMolecules[i].length === 1 ? getMolSafe(it, {}, module).mol : getQueryMolSafe(it, '', module);
+      const smiles = mol?.get_smiles();
+      mol?.delete();
+      return smiles ?? '';
+    } catch {}
+    return '';
+  });
 }

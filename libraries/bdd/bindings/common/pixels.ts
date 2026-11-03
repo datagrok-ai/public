@@ -1,8 +1,3 @@
-/* A pixel claim that does not go through one viewer. The `viewers` tier reads a viewer's own canvas
-   and the areas it reports, which is the answer whenever the thing on screen IS a viewer — of a
-   table view or, through `DG.Widget.find`, of any view. This step is for a claim no single viewer
-   can make: the colours across the small multiples of a facet, which are several viewers. It works
-   at the page level, over every canvas inside the phrase, so the element needs no registration. */
 import {Page} from '@playwright/test';
 import {expect} from '../../src/runtime/patience.js';
 import {Then} from '../../src/registry.js';
@@ -11,8 +6,8 @@ import {locate} from '../../src/runtime/locate.js';
 
 /** Distinct colours over every canvas inside the phrase: alpha under half ignored, near-white and
  * near-black dropped (paper and axis text), greys dropped (gridlines), and the rest rounded to four
- * bits per channel so antialiasing does not read as a colour of its own. The same reduction the
- * hand-written spec used, as a step. */
+ * bits per channel so antialiasing does not read as a colour of its own. For a claim no single viewer can
+ * make (the small multiples of a facet); a viewer's own colours are the `viewers` tier's. */
 export const canvasColors = Then('the canvases of {element} should be painted in at least {int} colors',
   async (page: Page, target: ElementRef, min: number) => {
     const loc = await locate(page, target);

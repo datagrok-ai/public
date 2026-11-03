@@ -1,0 +1,95 @@
+/* catalog table (src/components/collections/catalog-table.ts): a BasicTable in a host that scrolls it
+   sideways, its state views, the footer line and the row actions */
+.u2-catalog {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.u2-catalog-body {
+  max-width: 100%;
+}
+
+.u2-catalog-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.u2-catalog .u2-skeleton {
+  width: 860px;
+  max-width: 100%;
+}
+
+.u2-catalog .u2-empty-state {
+  max-width: 720px;
+}
+
+.u2-catalog-footer {
+  padding-top: var(--dg-space-s);
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+/* the actions cell: icons edge to edge, the room of pending ones kept */
+.u2-catalog-actions .u2-row-actions {
+  gap: 0;
+  margin-left: 0;
+}
+
+.u2-catalog .u2-table .u2-table-pin-end {
+  padding-left: var(--dg-space-m);
+}
+
+.u2-catalog-actions-pending {
+  visibility: hidden;
+}
+
+.u2-catalog-view-only {
+  width: var(--dg-button-height);
+  color: var(--dg-grey-3);
+  text-align: center;
+}
+
+/* `actionsVisible: 'always'`: the icons show on every row, grey at rest, in the accent colour on the
+   row under the pointer, a destructive one red under the pointer itself */
+.u2-catalog-actions-always .u2-row-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.u2-catalog-actions-always .u2-row-actions .u2-btn.u2-icon-btn {
+  color: var(--dg-grey-4);
+}
+
+.u2-catalog-actions-always .u2-table-row:hover .u2-row-actions .u2-btn.u2-icon-btn {
+  color: var(--dg-accent);
+}
+
+.u2-catalog-actions-always .u2-row-actions .u2-btn.u2-icon-btn.u2-row-action-destructive:hover {
+  color: var(--dg-error);
+}
+
+/* the table is wider than its host: the pinned end column casts the overflow edge (elements.css) over what runs
+   under it — the cell lets it out, a table cell clips its content */
+.u2-catalog-overflow .u2-table .u2-table-pin-end {
+  overflow: visible;
+}
+
+/* the refresh icon spins while the items come */
+.u2-catalog-refreshing .u2-icon {
+  animation: u2-catalog-spin 0.8s linear infinite;
+}
+
+@keyframes u2-catalog-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .u2-catalog-refreshing .u2-icon {
+    animation: none;
+  }
+}

@@ -111,7 +111,8 @@ export async function hierarchicalClusteringUI(
     hierarchicalClusteringFilterDfForNulls(df, colNameSet);
   const th: ITreeHelper = new TreeHelper();
 
-  let tv: DG.TableView = options ? options.tableView ?? grok.shell.tableView(df.name) : grok.shell.tableView(df.name);
+  let tv: DG.TableView = options?.tableView ??
+    Array.from(grok.shell.tableViews).find((v) => v.dataFrame?.dart === df.dart)!;
   if (filteredDf.rowCount != df.rowCount) {
     grok.shell.warning('Hierarchical clustering analysis on data filtered out for nulls.');
     tv = grok.shell.addTableView(filteredDf);
@@ -135,6 +136,7 @@ export async function hierarchicalClusteringUI(
 
   const loaderNB = attachLoaderDivToGrid(tv.grid, neighborWidth);
   let loaderClosed = false;
+  loaderNB.onClosed.subscribe(() => loaderClosed = true);
   const closeLoader = () => {
     if (loaderClosed) return;
     loaderClosed = true;
@@ -170,6 +172,8 @@ export async function hierarchicalClusteringUI(
        distanceMatrix!.data, preparedDf.rowCount, linkageCode
     );
     const clusterMatrix = await clusterMatrixWorker;
+    if (loaderClosed)
+      return;
 
     // const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
     // Replace rows indexes with filtered
@@ -196,12 +200,13 @@ export async function hierarchicalClusteringUI(
     // bail out if the table view was disposed while we were awaiting compute
     if (!tv?.grid || !tv?.grid?.dataFrame)
       return;
-    // `v` is the grid the layout restores; clustering runs only while the view named after its table is that
-    // grid's, since hierarchicalClustering finds its view by table name, and that view may have closed or be another
+    // `v` is the grid the layout restores; clustering runs only while the view of its table is that grid's,
+    // since hierarchicalClustering finds its view by the table, and that view may have closed or be another
     tv.grid.props.onInitializedScript = `
       setTimeout(async () => {
         const t = v.dataFrame;
-        const hosted = () => t != null && grok.shell.tableView(t.name)?.grid?.root === v.root;
+        const hosted = () => t != null &&
+          Array.from(grok.shell.tableViews).find((tv) => tv.dataFrame?.dart === t.dart)?.grid?.root === v.root;
         if (!hosted())
           return;
         await t.meta.detectSemanticTypes();

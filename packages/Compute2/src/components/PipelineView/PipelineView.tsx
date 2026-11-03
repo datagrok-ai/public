@@ -5,8 +5,9 @@ import * as Vue from 'vue';
 import {
   DockManager, IconFA, ifOverlapping, MarkDown, RibbonPanel, tooltip,
 } from '@datagrok-libraries/webcomponents-vue';
-import {History} from '../History/History';
-import {hasAddControls, PipelineWithAdd, STICKY_BAR_BACKGROUND} from '../../utils';
+import {RunBrowser} from '../RunStorage/RunBrowser';
+import {STICKY_BAR_BACKGROUND} from '../../utils';
+import {hasAddControls, PipelineWithAdd} from '../TreeWizard/tree-utils';
 import {isFuncCallState, isStaticPipelineState, PipelineState, ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useHelp} from '../../composables/use-help';
 import {hasContextHelp} from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -65,7 +66,7 @@ export const PipelineView = Vue.defineComponent({
     const disableHistory = Vue.ref(false);
     const functionsHidden = Vue.ref(true);
 
-    const historyRef = Vue.shallowRef<InstanceType<typeof History> | undefined>(undefined);
+    const historyRef = Vue.shallowRef<InstanceType<typeof RunBrowser> | undefined>(undefined);
     const helpRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
     const functionsRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
 
@@ -282,17 +283,16 @@ export const PipelineView = Vue.defineComponent({
             </div>
           }
           { (!historyHidden.value && !disableHistory.value && currentCall.value) &&
-            <History
-              func={currentCall.value.func}
-              version={!isFuncCallState(state.value) ? state.value.version : undefined}
-              allowOtherVersions={isRoot.value}
-              onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall, historyReadonly.value)}
+            <RunBrowser
+              model={currentCall.value.func}
+              openLabel={historyReadonly.value ? 'Open read-only' : 'Open'}
+              onOpen={(chosenCall: DG.FuncCall) => emit('update:funcCall', chosenCall, historyReadonly.value)}
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.5}
-              dock-spawn-title={historyReadonly.value ? 'History (read-only load)' : 'History'}
+              dock-spawn-title={historyReadonly.value ? 'Runs (read-only load)' : 'Runs'}
               dock-spawn-panel-icon='history'
               ref={historyRef}
-              class='overflow-scroll h-full'
+              class='h-full'
             />
           }
           { !helpHidden.value ?

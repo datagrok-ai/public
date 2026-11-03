@@ -1,18 +1,17 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {getRdKitService} from '../../../utils/chem-common-rdkit';
+import {mmpFragmentsByEngine} from '../../../engine/analysis-jobs';
 import {webGPUMMP} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-mmp';
 import {IMmpFragmentsResult} from '../../../rdkit-service/rdkit-service-worker-substructure';
 import {MMP_CONSTRICTIONS, MMP_ERRORS, MmpFragments, MmpRules, MolecularPair} from './mmpa-misc';
 
 /**
-* Runs parallel fragmentation for molecules
+* Runs parallel fragmentation for molecules (on the Crux workers in Crux mode, "Chemical engine")
 * @param {DG.Column} molecules column with molecules
 */
 export async function getMmpFrags(molecules: string[]): Promise<[MmpFragments, string[]]> {
-  const service = await getRdKitService();
-  const res = await service.mmpGetFragments(molecules);
+  const res = await mmpFragmentsByEngine(molecules);
   return [encodeFragments(res), res.smiles];
 }
 

@@ -1,19 +1,15 @@
-/* `collectionSelection` (3-4, lifted into u2) — the one binding between a collection control and its source,
-   here over a `DataTable`, which never had the multi-selection mirror: the lead and `currentRow`
-   are one value in either direction, the mark is armed by a gesture and mirrored into the frame's
-   selection bitset, a collection read again keeps it BY KEY, and Escape clears both. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, Control, DataTable} from '@datagrok-libraries/u2';
 import {backend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
-const {collectionSelection} = await import('@datagrok-libraries/u2/src/dg/index.js');
+const {collectionSelection} = await import('@datagrok-libraries/u2/dg');
 
 function scoped(name, body) {
   test(name, async () => {
@@ -40,15 +36,15 @@ function scoped(name, body) {
 async function bound(options = {}) {
   emsBackends.domain = backend();
   const handle = await domains.table('grit.issue');
-  const source = handle.source(options);
+  const source = testOwner().build(() => handle.source(options));
   await flush();
-  const owner = new Control();
-  const table = owner.runInScope(() => new DataTable({rowHeight: 20, items: source.rows,
+  const owner = testOwner().build(() => new Control());
+  const table = owner.build(() => new DataTable({rowHeight: 20, items: source.rows,
     columns: [{name: 'title'}]}));
-  collectionSelection(owner, source, table);
+  collectionSelection(source, table, {owner});
   owner.root.append(table.root);
   document.body.append(owner.root);
-  table.root.clientHeight = 300;
+  layout(table.root, {clientHeight: 300});
   fire(table.root, 'scroll');
   return {source, owner, table};
 }

@@ -23,7 +23,8 @@ src/compile.ts          FeatureModel → *.test.ts (feature(test) session, test(
 src/states.ts           the {state} list, shared by the assertions, the parameter type and init's VS Code settings
 src/init.ts, src/cli.ts init | compile [--check] | lint | list-steps | run [playwright args] | guide <features> | link
 src/runtime/            args, locate (R9 order, item reveal, BDD_RESOLVE_TRACE), gestures, assertions, u2-state (DG.U2.state
-                        reads), layout (the layout audit, geometry claims), audit (the automatic audits),
+                        reads), layout (the layout audit, geometry claims), operability (DG.U2.operability: the audit and
+                        the claim), audit (the automatic audits),
                         harness (session, journey, resetShell, error floor, audits),
                         viewer-runtime (in-page window.__bdd), viewers (readers over it), viewer-pixels,
                         viewer-menus, viewer-legend, menus (top menu), events, functions, patience, failure,
@@ -192,7 +193,7 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   analysis a scenario left running reopens its closed table and makes it current in the next feature;
   a menu command's `onAfterRunAction` can come before its work ends — then Escape for dialogs and
   menus, `ui.tooltip.hide`, notices removed, `closeAll`, the context panes' expanded state
-  (`Accordion:*` in `localStorage`) and the galleries' view modes (`card-view-render-mode-*`) cleared, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
+  (`Accordion:*` in `localStorage`) and the galleries' view modes (`card-view-render-mode-*`) cleared, the Browse tree's groups collapsed, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
   Datagrok pages in one browser. The renderer keeps what every feature left (closed views and their
   viewers stay reachable, ~60 MB a feature; a Chem feature starts RDKit's pool of a worker per core
   but two, ~1.2 GB on 32 cores), so after `BDD_PAGE_MAX_FEATURES` features (25) or once the renderer,
@@ -313,13 +314,18 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   strategy, part or Dart name the hand-written table had (`kinds-before.json`) unless `REPLACED`
   lists the narrowing.
 - **Audits run before the reset, leaks after** (`audit.ts`, `harness.ts` `afterEach`): a scenario
-  that passed as expected on a page showing u2 gets the layout audit and the console-error floor on
-  its final state, then the shell reset, then the leak check against the baseline taken when it
+  that passed as expected on a page showing u2 gets the layout audit, the console-error floor, the
+  balloon floor (error and warning balloons no balloon step took off the record) and the operability
+  audit (`operability.ts`, the engine's `DG.U2.operability` with hit-testing) on its final state — the
+  last two also when only a step showed u2: every u2 dialog, popup and menu is probed after the step that
+  opened it (`auditAfterStep`, kept until the scenario's audit), so one opened and closed is checked too
+  — then the shell reset, then the leak check against the baseline taken when it
   started (`markLeakBaseline`, last in `resetShellAfterLoad`; none on a page not yet in the shell).
   A journey audits layout and errors at each scenario's end and leaks once at the test's end; a test
   carrying `@known-failure` skips its end-of-test audits, leaks included; a failed, skipped or crashed
   scenario is not audited; an audit that cannot run warns and never fails. `__U2_DEBUG__` is set
-  only in pages of a project whose leaks audit is not `off`.
+  only in pages of a project whose leaks audit is not `off`; `__U2_STRICT__` in every page (`strictU2`:
+  u2 throws on a misuse; `U2_STRICT=report` logs instead).
 - **Labels are found first, items second** (`byLabel`, `:scope >` labels); menu items match
   their own label, not their children's.
 - **The context panel renders the current object (`grok.shell.o`) and nothing else**
@@ -368,7 +374,8 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 - **Codegen emits names, never selectors**; `\n` endings, no timestamps; orphans removed on
   compile and reported by `--check`.
 
-- **Server fixture names may include `{run}` and `{time}`**: the compiler resolves strings, element
+- **Server fixture names may include `{run}`, `{time}` and `{login}`** (the login of the account the run
+  started as, global-setup's `DATAGROK_RUN_LOGIN`; for names the product makes per user): the compiler resolves strings, element
   phrases, tables and doc strings through the feature session. One UUID and one start time per
   feature instance keep workers and repeated runs independent; never generate either at compile time.
 - **Spaces cleanup verifies IDs against every page of the root listing.** Spaces smart filters
@@ -416,6 +423,9 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   tries that form; a sketch box's name sits on its `.d4-host`, not on `.d4-sketch-item`.
 - A balloon claim takes the balloon it matched (the read is destructive; the others go back): a second claim on
   the same balloon fails. Claim a balloon once.
+- A reload reopens the view its address names (a script, a project) and that view can land after the shell
+  reset's `closeAll`: `resetShellAfterLoad` closes a non-Home view that becomes current while it waits for Home,
+  where it used to wait out 60 s (projects-lifecycle-script, 2026-10-30).
 - A context menu of a non-viewer element is opened at a point of its visible part that
   `elementFromPoint` gives back to it: a tree row runs past its panel's edge, and a panel docked a
   moment ago (the console) covers part of a gallery. `scrollIntoView` is the last resort — it moves
@@ -666,8 +676,8 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
 - A run started in the background is polled with `pgrep -f "[l]ibraries/bdd/bin/grok-bdd.js run"`:
   without the brackets the pattern also matches the command line of the shell that runs `pgrep`, and
   the run never seems to end.
-- `BDD_AUDIT=<mode>` (`fail`, `report`, `off`) overrides a project's audits for a run,
-  `BDD_AUDIT_LAYOUT|ERRORS|LEAKS` one of them; `node tool/audit-summary.mjs <report.json>
+- Audits fail a scenario by default (leaks `off`). `BDD_AUDIT=<mode>` (`fail`, `report`, `off`) overrides a project's
+  audits for a run, `BDD_AUDIT_LAYOUT|ERRORS|BALLOONS|OPERABILITY|LEAKS` one of them; `node tool/audit-summary.mjs <report.json>
   [memory.jsonl …]` sums the findings of a run up.
 
 ## Conventions

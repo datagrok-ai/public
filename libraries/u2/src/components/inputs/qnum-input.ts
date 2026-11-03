@@ -36,7 +36,7 @@ export class QNumInput extends Input<number | null, QNumInputOptions> {
     // handler, when its batch ends — so the text being typed is never rewritten
     let echo = false;
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (echo)
         echo = false;
       else
@@ -46,9 +46,9 @@ export class QNumInput extends Input<number | null, QNumInputOptions> {
       const parsed = this._parse();
       if (parsed === undefined || this.options.commitOn === 'change')
         return;
-      const before = this.value.peek();
-      this.value.value = parsed;
-      echo = !Object.is(this.value.peek(), before);
+      const before = this.peek();
+      this.value = parsed;
+      echo = !Object.is(this.peek(), before);
     });
     this.scope.listen(input, 'blur', () => this._commit());
     this.scope.listen(input, 'keydown', (e) => {
@@ -61,14 +61,18 @@ export class QNumInput extends Input<number | null, QNumInputOptions> {
     return input;
   }
 
+  get unreadable(): boolean {
+    return this._bad.value;
+  }
+
   /** Redraws the committed value on blur, so `> 10.` settles as `>10` — Dart reformats on every
    * `value` write (`qnum_input.dart:33-36`). */
   private _commit(): void {
     const parsed = this._parse();
     if (parsed === undefined)
       return;
-    this.value.value = parsed;
-    this._input.value = QNum.format(this.value.peek() ?? null, this.options.format);
+    this.value = parsed;
+    this._input.value = QNum.format(this.peek() ?? null, this.options.format);
   }
 
   /** The packed number in the field, null when it is blank, undefined (and invalid) when it carries

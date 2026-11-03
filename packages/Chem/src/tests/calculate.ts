@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {category, before, after, expect, expectArray, expectFloat, test, delay, awaitCheck}
+import {category, before, after, expect, expectArray, expectFloat, test, uiSettled, waitUntil}
   from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {CONTAINER_TIMEOUT, readDataframe} from './utils';
@@ -9,6 +9,11 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
 import {getMapIdentifiers} from '../widgets/identifiers';
 import {PackageFunctions} from '../package';
+import {ChemicalEngine} from '../engine/chem-engine';
+import {inEngine} from './engine-utils';
+import {getPropertiesAsColumns} from '../widgets/properties';
+import {getDrugLikenessColumn} from '../widgets/drug-likeness';
+import {TOXICITY_ALERTS_NEED_CRUX} from '../widgets/toxicity';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 
 category('calculate', () => {
@@ -76,15 +81,88 @@ category('calculate', () => {
   }, {stressTest: true});
 
 
+  /** Molecules with and without Brenk / NIH alerts, an empty cell and one no engine reads. */
+  const alertMolecules = () => {
+    const col = DG.Column.fromStrings('smiles', ['c1ccc2c(c1)CCNC2', 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO',
+      'C=CC(=O)NCCSC(=O)C', 'CN1CCC(CC1)Oc2ccc(cc2)C(F)(F)F', 'CC1CCN(CC(O)CN2C(=O)C3=C(SCCS3)C2=O)CC1',
+      'NCc1cnn(O)c1Br', '', 'C1CC(']);
+    col.semType = DG.SEMTYPE.MOLECULE;
+    return col;
+  };
+
+  test('toxicity alerts: Crux mode, Brenk and NIH counts', async () => {
+    // the product owner, 2026-10-22: Crux mode's alerts get their own menu (Toxicity Risks stays OpenChemLib's); the
+    // pinned RDKit's FilterCatalog counts (crux-core's tools/chem-wasm/chem_qed_alerts_oracle.py)
+    const col = alertMolecules();
+    const df = DG.DataFrame.fromColumns([col]);
+    await inEngine(ChemicalEngine.Crux, async () => {
+      await PackageFunctions.addToxicityAlertsColumns(df, col, true, true);
+      const counts = (name: string) => Array.from({length: df.rowCount}, (_, i) =>
+        df.col(name)!.isNone(i) ? null : df.col(name)!.get(i));
+      expect(df.col('Brenk alerts')?.type, DG.TYPE.INT, 'an int column per set');
+      expect(JSON.stringify(counts('Brenk alerts')), '[0,0,3,0,1,1,null,null]', 'Brenk');
+      expect(JSON.stringify(counts('NIH alerts')), '[0,0,3,0,0,0,null,null]', 'NIH');
+    });
+  });
+
+  test('toxicity alerts: RDKit mode asks for the Crux engine', async () => {
+    const col = alertMolecules();
+    const df = DG.DataFrame.fromColumns([col]);
+    const error = await inEngine(ChemicalEngine.RDKit, () =>
+      PackageFunctions.addToxicityAlertsColumns(df, col, true, true).then(() => '', (e: any) => e?.message ?? `${e}`));
+    expect(error, TOXICITY_ALERTS_NEED_CRUX);
+    expect(df.columns.length, 1, 'no column added');
+  });
+
+  test('drug likeness: Crux mode, a QED column', async () => {
+    // RDKit's QED.qed (the pinned RDKit's values, crux-core's tools/chem-wasm/chem_qed_alerts_oracle.py)
+    const expected = [0.5627155967397938, 0.7698182146008907, 0.4990914517777916, 0.8084644545905696,
+      0.7733418707960393, 0.6302835582335422];
+    await inEngine(ChemicalEngine.Crux, async () => {
+      const qed = await getDrugLikenessColumn(alertMolecules());
+      expect(`${qed.name}:${qed.type}`, 'QED:double');
+      expected.forEach((value, i) => expectFloat(qed.get(i), value, 1e-6, `row ${i} (a float column: 32 bits)`));
+      expect(qed.isNone(6) && qed.isNone(7), true, 'empty for an empty cell and a molecule not read');
+    });
+  });
+
   test('properties', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
-    await PackageFunctions.addChemPropertiesColumns(smiles, smiles.col('smiles')!, true, true, true);
+    await inEngine(ChemicalEngine.RDKit, async () => { // OpenChemLib's values (Crux mode's: the next test)
+      await PackageFunctions.addChemPropertiesColumns(smiles, smiles.col('smiles')!, true, true, true);
+    });
     expect(['MW', 'HBA', 'HBD'].every((it) => smiles.columns.names().includes(it)),
       true, 'Not all properties columns have been added');
     expect(smiles.col('MW')?.get(3), 342.107177734375, `incorrect MW value`);
     expect(smiles.col('HBA')?.get(3), 5, `incorrect HBA value`);
     expect(smiles.col('HBD')?.get(3), 1, `incorrect HBD value`);
+  });
+
+  test('properties: Crux mode, RDKit\'s definitions', async () => {
+    // the pinned RDKit's values (crux-core's tools/chem-wasm/chem_props_oracle.py): MolWt, not OpenChemLib's
+    // monoisotopic mass; ESOL, Crippen, RDKit's strict rotatable bonds; empty cells where no molecule is read
+    const col = DG.Column.fromStrings('smiles', ['CN1CCC(CC1)Oc2ccc(cc2)C(F)(F)F',
+      'CC1CCN(CC(O)CN2C(=O)C3=C(SCCS3)C2=O)CC1', 'NCc1cnn(O)c1Br', '', 'C1CC(']);
+    col.semType = DG.SEMTYPE.MOLECULE;
+    const names = ['MW', 'HBA', 'HBD', 'LogP', 'LogS', 'PSA', 'Rotatable bonds', 'Stereo centers', 'Molecule charge',
+      'Molecular formula'];
+    const expected: {[name: string]: any[]} = {
+      'MW': [259.271, 342.486, 192.016], 'HBA': [2, 5, 4], 'HBD': [0, 1, 2], 'LogP': [3.1784, 1.1396, 0.3416],
+      'LogS': [-3.9460940582866364, -2.8353577331083555, -1.4954699830328941], 'PSA': [12.47, 111.45, 64.07],
+      'Rotatable bonds': [2, 4, 1], 'Stereo centers': [0, 1, 0], 'Molecule charge': [0, 0, 0],
+      'Molecular formula': ['C13H16F3NO', 'C15H22N2O3S2', 'C4H6BrN3O']};
+    await inEngine(ChemicalEngine.Crux, async () => {
+      const cols = await getPropertiesAsColumns(col, names);
+      expect(cols.map((c) => `${c.name}:${c.type}`).join(', '), 'MW:double, HBA:int, HBD:int, LogP:double, ' +
+        'LogS:double, PSA:double, Rotatable bonds:int, Stereo centers:int, Molecule charge:int, ' +
+        'Molecular formula:string');
+      for (const c of cols) {
+        expected[c.name].forEach((value, i) => typeof value === 'number' && c.type === DG.TYPE.FLOAT ?
+          expectFloat(c.get(i), value, 1e-4, `${c.name}, row ${i}`) : expect(c.get(i), value, `${c.name}, row ${i}`));
+        expect(c.isNone(3) && c.isNone(4), true, `${c.name}: empty for an empty cell and a molecule not read`);
+      }
+    });
   });
 
 
@@ -185,10 +263,10 @@ async function testGroup(groupName: string, funcName: string, colName: string, d
   const smiles = grok.data.demo.molecules(20);
   const v = grok.shell.addTableView(smiles);
   await grok.data.detectSemanticTypes(smiles);
-  await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+  await waitUntil(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
   grok.shell.topMenu.find('Chem').group(groupName).find(funcName).click();
   await getDlgAndClickOK(`cannot load ${funcName} dialog`, dlgName);
-  await awaitCheck(() => v.dataFrame.columns.names().includes(colName), `${colName} column has not been added`, 10000);
+  await waitUntil(() => v.dataFrame.columns.names().includes(colName), `${colName} column has not been added`, 10000);
   v.close();
   grok.shell.o = ui.div();
 }
@@ -200,9 +278,9 @@ async function getDlgAndClickOK(error: string, header: string) {
       .filter((dlg) => dlg.getElementsByClassName('d4-dialog-header')[0]
         .children[0].textContent?.toLocaleLowerCase() === header.toLocaleLowerCase());
   };
-  await awaitCheck(() => {
+  await waitUntil(() => {
     return dlg().length > 0;
   }, error, 5000);
-  await delay(1000);
+  await uiSettled(`the ${header} dialog`);
   Array.from(dlg()[0].getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
 }

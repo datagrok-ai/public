@@ -12,7 +12,7 @@ import {FlowEntityHandler} from '../entity/flow-entity-handler';
 import {FuncFlowView} from '../funcflow-view';
 import {FuncFlowDocument, FlowSettings} from '../serialization/flow-schema';
 import {_package} from '../package';
-import {makeEditor, destroyEditor, addNode, TestEditor} from './test-utils';
+import {makeEditor, destroyEditor, addNode, until, TestEditor} from './test-utils';
 import {SpacePicker, spaceEntityName} from '../ui/space-picker';
 
 const SETTINGS = {scriptName: 'EntityFlow', scriptDescription: 'entity test', tags: ['funcflow']};
@@ -347,7 +347,7 @@ category('Flow: entity server round-trip', () => {
       saved = fetched;
     } finally {
       destroyEditor(e);
-      await new Promise((r) => setTimeout(r, 120));
+      await (view as unknown as {editorReady: Promise<void>}).editorReady;
       ((view as any).flow)?.destroy?.();
       view.root.remove();
       if (saved != null)
@@ -379,7 +379,7 @@ category('Flow: entity server round-trip', () => {
       destroyEditor(e);
       if (saved != null)
         await grok.dapi.scripts.delete(saved).catch(() => {});
-      await new Promise((r) => setTimeout(r, 120)); // let the deferred initEditor run before teardown
+      await (view as unknown as {editorReady: Promise<void>}).editorReady;
       ((view as any).flow)?.destroy?.();
       view.root.remove();
     }
@@ -527,7 +527,8 @@ category('Flow: save button + auto-pin', () => {
 
       // serializeFlow stamps fresh timestamps each call — the delay makes them differ if they leaked
       const snap = probe.currentSnapshot();
-      await new Promise((r) => setTimeout(r, 5));
+      const snappedAt = Date.now();
+      expect(await until(() => Date.now() > snappedAt, 3000, 1), true, 'the clock moved on');
       expect(probe.currentSnapshot(), snap, 'snapshot is stable across calls (no volatile timestamps)');
       expect(probe.saveAvailability().tooltip.toLowerCase().includes('no changes'), true,
         'still clean after a delay — no false "changed"');
@@ -537,7 +538,7 @@ category('Flow: save button + auto-pin', () => {
       expect(probe.saveAvailability().tooltip.toLowerCase().includes('no changes'), false,
         'a parameter edit marks the flow dirty (onGraphEdited path)');
     } finally {
-      await new Promise((r) => setTimeout(r, 120));
+      await probe.editorReady;
       probe.flow?.destroy?.();
       view.root.remove();
     }
@@ -561,7 +562,7 @@ category('Flow: save button + auto-pin', () => {
       probe.teardownAutoPin();
       expect(probe.autoPinHandler, null, 'teardown disarms the handler');
     } finally {
-      await new Promise((r) => setTimeout(r, 120));
+      await probe.editorReady;
       probe.flow?.destroy?.();
       view.root.remove();
     }

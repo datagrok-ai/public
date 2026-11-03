@@ -6,6 +6,7 @@ generated: features/hit-design/campaign-column-metadata.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/landing.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';

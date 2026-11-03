@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, test} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration, historyUtils} from '@datagrok-libraries/compute-utils';
@@ -178,6 +179,48 @@ category('ComputeUtils: Driver state tree persistence', async () => {
       expectDeepEqual(meta?.id, savedId, {prefix: 'Loaded metaCall id'});
       expectDeepEqual(meta?.title, 'meta title', {prefix: 'Loaded title'});
       expectDeepEqual(meta?.description, 'meta desc', {prefix: 'Loaded description'});
+    } finally {
+      const steps = (driver.currentState$.value as PipelineStateStatic<StepFunCallState, {}> | undefined)?.steps ?? [];
+      const stepIds = steps.map((step) => (step as StepFunCallState).funcCall?.id);
+      await deleteRuns([driver.currentMetaCallData$.value?.id, ...stepIds]);
+      driver.close();
+    }
+  });
+
+  test('Driver savePipeline with a space target links only the workflow run there', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const driver = new Driver();
+    const space = await grok.dapi.spaces.createRootSpace(`Driver save target ${Date.now()}`);
+    try {
+      await driver.sendCommand({event: 'initPipeline', provider: '', config: pconf});
+      await driver.sendCommand({event: 'savePipeline', title: 'space title', target: {spaceId: space.id}});
+      const meta = driver.currentMetaCallData$.value;
+      expectDeepEqual(meta?.title, 'space title', {prefix: 'Saved title'});
+      const linked = await historyUtils.listSpaceRuns(space.id);
+      expectDeepEqual(linked.map((run) => run.id), [meta?.id], {prefix: 'Linked runs'});
+    } finally {
+      const steps = (driver.currentState$.value as PipelineStateStatic<StepFunCallState, {}> | undefined)?.steps ?? [];
+      const stepIds = steps.map((step) => (step as StepFunCallState).funcCall?.id);
+      await grok.dapi.spaces.delete(space);
+      await deleteRuns([driver.currentMetaCallData$.value?.id, ...stepIds]);
+      driver.close();
+    }
+  });
+
+  test('Driver savePipeline that fails only to link into the space keeps the run', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const driver = new Driver();
+    const space = await grok.dapi.spaces.createRootSpace(`Driver deleted space ${Date.now()}`);
+    await grok.dapi.spaces.delete(space);
+    try {
+      await driver.sendCommand({event: 'initPipeline', provider: '', config: pconf});
+      const saved = await driver.sendCommand({event: 'savePipeline', title: 'unlinked', target: {spaceId: space.id}});
+      expectDeepEqual(saved != null, true, {prefix: 'Save resolves with the run'});
+      const meta = driver.currentMetaCallData$.value;
+      expectDeepEqual(meta?.title, 'unlinked', {prefix: 'Saved title'});
+      expectDeepEqual((await historyUtils.loadRun(meta!.id!)).id, meta?.id, {prefix: 'Saved run'});
     } finally {
       const steps = (driver.currentState$.value as PipelineStateStatic<StepFunCallState, {}> | undefined)?.steps ?? [];
       const stepIds = steps.map((step) => (step as StepFunCallState).funcCall?.id);

@@ -1,4 +1,3 @@
-/* What generated specs and project bindings import from `@datagrok-libraries/bdd/runtime`. */
 export * from './args.js';
 export * from './assertions.js';
 export * from './harness.js';

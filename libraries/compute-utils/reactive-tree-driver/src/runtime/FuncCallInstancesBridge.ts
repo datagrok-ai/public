@@ -2,7 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge, EMPTY} from 'rxjs';
 import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter, catchError, tap} from 'rxjs/operators';
 import {deepEqual} from 'fast-equals';
-import {FuncCallAdapter, IFuncCallAdapter, IRunnableWrapper, IStateStore, MemoryStore} from './FuncCallAdapters';
+import {
+  FuncCallAdapter, IFuncCallAdapter, IRunnableWrapper, IStateStore, MemoryStore, MockResults,
+} from './FuncCallAdapters';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {FuncCallIODescription} from '../config/config-processing-utils';
 import {copyDataFrame} from '../utils';
@@ -258,7 +260,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     this.outdatedChanged$.next(isOutdated);
   }
 
-  run(mockResults?: Record<string, any>, mockDelay?: number) {
+  run(mockResults?: MockResults, mockDelay?: number) {
     return defer(() => {
       const currentInstance = this.instance$.value?.adapter;
       if (!currentInstance)
@@ -268,6 +270,10 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
       if (!this.isRunable$.value)
         throw new Error(`Attempting to run FuncCallInstancesBridge with validation errors`);
       this.isRunning$.next(true);
+      const stopRunning = () => {
+        if (this.isRunning$.value)
+          this.isRunning$.next(false);
+      };
       return currentInstance.run(mockResults, mockDelay).pipe(
         tap(() => {
           if (this.runError$.value)
@@ -280,9 +286,9 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
           reportError('recoverable', 'bridge:run', e instanceof Error ? e : new Error(String(e)), this.logger);
           return EMPTY;
         }),
-        finalize(() => {
-          this.isRunning$.next(false);
-        }),
+        // stopped before the completion is passed on, so whoever waits for the run sees it done
+        tap({complete: stopRunning}),
+        finalize(stopRunning),
       );
     });
   }

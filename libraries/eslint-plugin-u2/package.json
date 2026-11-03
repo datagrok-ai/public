@@ -1,0 +1,29 @@
+{
+  "name": "@datagrok-libraries/eslint-plugin-u2",
+  "private": true,
+  "fullName": "ESLint plugin u2",
+  "version": "0.1.0",
+  "description": "ESLint rules that hold the u2 conventions: entry-point imports, owned subscriptions and roots, function components in consumer code",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "lib",
+    "rules"
+  ],
+  "peerDependencies": {
+    "eslint": ">=8.57.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/parser": "^8.39.0",
+    "eslint": "^8.57.1",
+    "typescript": "npm:typescript@^5.9.3"
+  },
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "libraries/eslint-plugin-u2"
+  }
+}

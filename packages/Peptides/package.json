@@ -19,6 +19,7 @@
     "@datagrok-libraries/statistics": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/tutorials": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "catalog:",

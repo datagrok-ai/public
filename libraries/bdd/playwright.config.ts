@@ -59,6 +59,8 @@ export default defineConfig({
   // shared 15 s once two workers share it: BDD_EXPECT_TIMEOUT raises what every check waits
   expect: {...baseConfig.expect, timeout: Number(process.env.BDD_EXPECT_TIMEOUT ?? baseConfig.expect?.timeout ?? 15000)},
   // @serial features share server state another worker would change under them (a fuzzy gallery
-  // search over fixtures the others create and delete): they take turns, beside everything else
-  projects: [{name: 'bdd', grepInvert: /@serial(\s|$)/}, {name: 'bdd-serial', grep: /@serial(\s|$)/, workers: 1}],
+  // search over fixtures the others create and delete): they take turns, beside everything else.
+  // Listed first so their lane starts with the run: a free worker takes the first runnable job in
+  // project order, and a serial lane queued last ran alone after the other workers were done
+  projects: [{name: 'bdd-serial', grep: /@serial(\s|$)/, workers: 1}, {name: 'bdd', grepInvert: /@serial(\s|$)/}],
 });

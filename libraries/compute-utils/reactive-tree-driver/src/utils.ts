@@ -45,6 +45,8 @@ export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): 
   if (typeof handler === 'string') {
     return defer(async () => {
       const f = DG.Func.byName(handler);
+      if (!f)
+        throw new Error(`Function '${handler}' not found`);
       const call = f.prepare({params});
       await call.call(undefined, undefined, {processed: true, report: false});
       const res = call.getOutputParamValue() as R;

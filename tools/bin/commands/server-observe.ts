@@ -13,6 +13,8 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
   problems get <id|kind:key>           One field per line, details by path
   problems history <id|kind:key> [--limit 50]
   problems status <id|kind:key> --data '{"status": "muted", "reason": "...", "until": "<ISO>"}' | --json body.json
+  problems severity <id|kind:key> <info|warning|critical|none> [--reason <text>]
+                                       Pin the severity its raises use; none unpins it
   problems ack <id|kind:key> --reason <text>
   problems resolve <id|kind:key> --reason <text>
   rules get                            The problem rules (Settings > Alerts), as JSON
@@ -188,6 +190,15 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
       await needId();
       printOutput(await dapi.raw('POST', `${problemPath()}/status`, readBody(argv)), output);
       return true;
+    case 'problems severity': {
+      await needId();
+      const severity = rest[1];
+      if (!['info', 'warning', 'critical', 'none'].includes(severity))
+        throw new Error('Usage: grok s observe problems severity <id|kind:key> <info|warning|critical|none> [--reason <text>]');
+      printOutput(await dapi.raw('POST', `${problemPath()}/severity`,
+        {severity: severity === 'none' ? null : severity, reason: argv.reason}), output);
+      return true;
+    }
     case 'problems ack':
     case 'problems resolve':
       await needId();

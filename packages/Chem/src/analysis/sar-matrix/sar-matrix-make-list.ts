@@ -3,24 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {renderMolecule} from '../../rendering/render-molecule';
-import {fitAdditiveEffects} from './sar-matrix-assemble';
-import {standardizeFragment} from './sar-matrix-columns';
+import {fitAdditiveEffects} from './build/sar-matrix-assemble';
 import {closeGridQuietly, SarMatrix, SarMatrixCell} from './sar-matrix-types';
-import {ANALOG_W, CELL_H, CELL_W, CORE_W, MatrixCellRef} from './sar-matrix-ui-common';
-
-const structureCache = new Map<string, boolean>();
-const STRUCTURE_CACHE_MAX = 2000;
-
-/** Whether a fragment is a structure rather than a name such as "VHL". */
-function isStructure(value: string): boolean {
-  let known = structureCache.get(value);
-  if (known === undefined) {
-    if (structureCache.size >= STRUCTURE_CACHE_MAX)
-      structureCache.clear();
-    structureCache.set(value, known = standardizeFragment(value).structure);
-  }
-  return known;
-}
+import {ANALOG_W, CELL_H, CELL_W, CORE_W, isStructure, MatrixCellRef} from './sar-matrix-ui-common';
 
 /** Spelled out in the Context Panel, where there is room to say what produced the number. */
 const FREE_WILSON_METHOD = 'local Free-Wilson (row + column effects)';
@@ -51,6 +36,8 @@ export interface MakeListHost {
   readonly activityColumnName: string;
   readonly scalingLabel: string;
   readonly selectedCell: MatrixCellRef | null;
+  /** The analysis on screen; a cell of any other matrix holds numbers on a scale it may no longer use. */
+  readonly matrices: SarMatrix[];
   formatActivity(value: number): string;
   showMoleculeContext(smiles: string, build?: () => HTMLElement): void;
 }
@@ -61,7 +48,11 @@ export class MakeListPanel {
   readonly root = ui.divV([], 'chem-sar-makelist');
   private makeList: DG.DataFrame | null = null;
   private makeListGrid: DG.Grid | null = null;
-  private readonly sources: MatrixCellRef[] = [];
+  /** The cell each listed compound was collected from, by its Structure value: the grid can delete
+   *  rows, so a row's position does not stay with its compound. */
+  private readonly sources = new Map<string, MatrixCellRef>();
+  /** Whether a listed value is a structure. Uncapped: it holds only values put on the list, and empties with it. */
+  private readonly structures = new Map<string, boolean>();
   /** Current-cell subscription on the list; torn down with the grid it drives. */
   private currentCellSub: {unsubscribe(): void} | null = null;
   /** Context-panel structure size observer; replaced per click so they do not stack. */
@@ -69,6 +60,10 @@ export class MakeListPanel {
   private cpStructureToken = 0;
 
   constructor(private readonly host: MakeListHost) {}
+
+  get count(): number {
+    return this.makeList?.rowCount ?? 0;
+  }
 
   /** Drop the tab grid and the context-panel observer: the panel outlives the viewer, so its
    *  observer must not keep firing into a closed one. */
@@ -97,39 +92,37 @@ export class MakeListPanel {
    *  compound the set holds but never tested is made AND predicted. `Support (n)` is left empty rather
    *  than zeroed for a measured value, where zero would read as no support. */
   private buildAnalogTable(cells: MatrixCellRef[]): DG.DataFrame {
-    const molCol = (name: string, values: string[]): DG.Column => {
-      const col = DG.Column.fromStrings(name, values);
-      if (values.every((value) => !value || isStructure(value)))
-        col.semType = DG.SEMTYPE.MOLECULE;
-      return col;
-    };
+    // Not fromStrings: it types a column by its values, so a batch of numeric series labels would make
+    // an int column that the next batch's names cannot be appended to.
+    const strings = (name: string, values: string[]): DG.Column =>
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, values);
     const cell = (c: MatrixCellRef): SarMatrixCell => c.matrix.cells[c.ri][c.ci];
     const isVirtual = (c: MatrixCellRef): boolean => cell(c).kind === 'virtual';
     const isPredicted = (c: MatrixCellRef): boolean => cell(c).kind !== 'real';
     const support = DG.Column.fromList('int', 'Support (n)',
       cells.map((c) => isPredicted(c) ? cell(c).support ?? 0 : null));
     const df = DG.DataFrame.fromColumns([
-      molCol(MAKELIST_STRUCTURE, cells.map((c) => cell(c).smiles!)),
-      DG.Column.fromStrings('Status', cells.map((c) => isVirtual(c) ? STATUS_VIRTUAL :
+      strings(MAKELIST_STRUCTURE, cells.map((c) => cell(c).smiles!)),
+      strings('Status', cells.map((c) => isVirtual(c) ? STATUS_VIRTUAL :
         cell(c).kind === 'unmeasured' ? STATUS_UNTESTED : STATUS_MADE)),
       DG.Column.fromList('double', MAKELIST_ACTIVITY, cells.map((c) => cell(c).value!)),
       // Per row, not in the caption: the list outlives the settings it was collected under, so rows
       // gathered before a scaling change would otherwise sit unmarked under the current name.
-      DG.Column.fromStrings('Activity basis',
+      strings('Activity basis',
         cells.map(() => `${this.host.activityColumnName || 'activity'} (${this.host.scalingLabel})`)),
       support,
-      DG.Column.fromStrings('Series', cells.map((c) => c.matrix.label)),
-      molCol('Core', cells.map((c) => c.matrix.rows[c.ri].keySmiles)),
-      molCol('Substituent', cells.map((c) => c.matrix.columns[c.ci].substSmiles)),
-      DG.Column.fromStrings('Method', cells.map((c) => isPredicted(c) ? METHOD_PREDICTED : METHOD_MEASURED)),
+      strings('Series', cells.map((c) => c.matrix.label)),
+      strings('Core', cells.map((c) => c.matrix.rows[c.ri].keySmiles)),
+      strings('Substituent', cells.map((c) => c.matrix.columns[c.ci].substSmiles)),
+      strings('Method', cells.map((c) => isPredicted(c) ? METHOD_PREDICTED : METHOD_MEASURED)),
     ]);
     df.name = MAKELIST_NAME;
     return df;
   }
   /** Append analogs, creating the list on first use. A structure already present is skipped — the
    *  same analog is reachable from several matrices — so the count of what actually landed is
-   *  returned alongside the total. Deduplication runs over the incoming batch before the table is
-   *  built, which keeps `sources` row-for-row with the list. */
+   *  returned alongside the total. The incoming batch is deduplicated too, so a Structure value
+   *  names one row and keys its source. */
   private collectAnalogs(cells: MatrixCellRef[]): {added: number, total: number} {
     const seen = new Set<string>(this.makeList?.col(MAKELIST_STRUCTURE)?.toList() ?? []);
     const fresh = cells.filter((c) => {
@@ -143,15 +136,25 @@ export class MakeListPanel {
       const table = this.buildAnalogTable(fresh);
       if (this.makeList === null)
         this.makeList = table;
-      else {
-        const cols = table.columns.toList();
-        for (let i = 0; i < table.rowCount; i++)
-          this.makeList.rows.addNew(cols.map((c) => c.get(i)));
+      else
+        this.makeList.append(table, true);
+      // Decided over the whole list: a batch of named fragments followed by drawn ones is one column.
+      for (const name of [MAKELIST_STRUCTURE, 'Core', 'Substituent']) {
+        const col = this.makeList.col(name)!;
+        // Through the panel's own memo: isStructure parses with RDKit, and its shared cache is smaller than the list.
+        col.semType = col.categories.every((value) => !value || this.structureOf(value)) ? DG.SEMTYPE.MOLECULE : '';
       }
-      this.sources.push(...fresh);
+      for (const c of fresh)
+        this.sources.set(c.matrix.cells[c.ri][c.ci].smiles!, c);
     }
     this.renderMakeList();
     return {added: fresh.length, total: this.makeList?.rowCount ?? 0};
+  }
+  private structureOf(value: string): boolean {
+    let known = this.structures.get(value);
+    if (known === undefined)
+      this.structures.set(value, known = isStructure(value));
+    return known;
   }
   releaseMakeListGrid(): void {
     this.currentCellSub?.unsubscribe();
@@ -169,7 +172,7 @@ export class MakeListPanel {
       return;
     const cell = df.currentCell;
     const rowIdx = cell?.rowIndex ?? df.currentRowIdx;
-    if (rowIdx < 0 || rowIdx >= this.sources.length)
+    if (rowIdx < 0 || rowIdx >= df.rowCount)
       return;
     const column = cell?.column ?? null;
     if (column !== null && column.semType === DG.SEMTYPE.MOLECULE && column.name !== MAKELIST_STRUCTURE) {
@@ -179,9 +182,12 @@ export class MakeListPanel {
       return;
     }
     const smiles = df.col(MAKELIST_STRUCTURE)!.get(rowIdx);
-    const source = this.sources[rowIdx];
-    if (smiles)
-      this.host.showMoleculeContext(smiles, () => this.buildCellPanel(source.matrix, source.ri, source.ci));
+    // Missing for a row typed into the grid or a Structure edited there: neither came from a cell.
+    const source = this.sources.get(smiles);
+    if (smiles) {
+      this.host.showMoleculeContext(smiles, source === undefined ? undefined :
+        () => this.buildCellPanel(source.matrix, source.ri, source.ci));
+    }
   }
   /** The make-list tab: the collected analogs as a grid, or a note when nothing has been collected. */
   renderMakeList(): void {
@@ -209,12 +215,13 @@ export class MakeListPanel {
       }
       // Highest index first, so the rows still to be dropped keep the positions they were found at.
       for (const i of [...picked].sort((a, b) => b - a)) {
+        this.sources.delete(this.makeList!.get(MAKELIST_STRUCTURE, i));
         this.makeList!.rows.removeAt(i);
-        this.sources.splice(i, 1);
       }
       if (this.makeList!.rowCount === 0) {
         this.makeList = null;
-        this.sources.length = 0;
+        this.sources.clear();
+        this.structures.clear();
       }
       this.renderMakeList();
     });
@@ -226,7 +233,8 @@ export class MakeListPanel {
     });
     const clear = ui.button('Clear', () => {
       this.makeList = null;
-      this.sources.length = 0;
+      this.sources.clear();
+      this.structures.clear();
       this.renderMakeList();
     });
     ui.tooltip.bind(clear, 'Empty the whole list');
@@ -285,6 +293,12 @@ export class MakeListPanel {
   }
   /** Per-cell action: append one compound to the make-list, predicted or already made. */
   addAnalogToMakeList(matrix: SarMatrix, ri: number, ci: number): void {
+    // A Context Panel built before a rebuild keeps its button, and its cell's value was read on the old
+    // scale: listed now, it would be labelled with the new one.
+    if (!this.host.matrices.includes(matrix)) {
+      grok.shell.info('The analysis was rebuilt since this cell was opened. Click the cell in the matrix again.');
+      return;
+    }
     const cell = matrix.cells[ri][ci];
     if (cell.kind === 'empty' || cell.smiles === null || cell.value === null) {
       grok.shell.info('This cell has no structure to add.');

@@ -2,7 +2,8 @@
    piles up with every rebuild: with u2 debug tracking on, u2 warns once per call site. Registering
    on a control built in the row, or calling from the control's own build, stays quiet. */
 
-import {after, before, test} from 'node:test';
+import {after, before} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {debug} from '../src/core/scope.js';
@@ -14,7 +15,7 @@ after(() => debug.disable());
 class Editor extends Control {
   constructor(rows, register) {
     super();
-    this.runInScope(() => {
+    this.build(() => {
       const host = div([]);
       each(host, rows, (key) => key, (key) => {
         const input = new TextInput({label: key});

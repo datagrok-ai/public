@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {Filters, KIND} from '@datagrok-libraries/u2';
-import type {FilterCondition} from '@datagrok-libraries/u2';
-import {moltrackEmsDb} from '../generated/db';
+import type {FilterCondition, FilterGroup, FilterOperator} from '@datagrok-libraries/u2';
+import {moltrackDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS} from './chemistry';
 import {MolTrackTables} from './tables';
 
@@ -13,11 +13,12 @@ export class StructureSearch {
   static readonly EXACT = 'is exactly';
   static readonly PAGE = 5000;
 
-  static register(): () => void {
-    const ids = [StructureSearch.SUBSTRUCTURE, StructureSearch.SUPERSTRUCTURE, StructureSearch.SIMILAR,
-      StructureSearch.EXACT];
-    return Filters.operators.register(ids.map((id) => ({id, label: id, arity: 1 as const, kinds: [KIND.STRING],
-      semType: DG.SEMTYPE.MOLECULE, exclusive: true, editor: 'default' as const, host: true})));
+  static readonly OPERATORS = [StructureSearch.SUBSTRUCTURE, StructureSearch.SUPERSTRUCTURE, StructureSearch.SIMILAR,
+    StructureSearch.EXACT];
+
+  static operators(): FilterOperator[] {
+    return StructureSearch.OPERATORS.map((id) => ({id, label: id, arity: 1 as const,
+      kinds: [KIND.STRING], semType: DG.SEMTYPE.MOLECULE, exclusive: true, editor: 'default' as const, host: true}));
   }
 
   static threshold(): number {
@@ -25,12 +26,19 @@ export class StructureSearch {
     return Number.isFinite(value) && value > 0 && value <= 1 ? value : 0.5;
   }
 
+  /** The query with every structure condition replaced by the ids of the compounds it matches. */
+  static async resolve(root: FilterGroup): Promise<FilterGroup> {
+    return {...root, nodes: await Promise.all(root.nodes.map(async (n) => Filters.isGroup(n) ?
+      StructureSearch.resolve(n) : StructureSearch.OPERATORS.includes(n.operator) ?
+        Filters.cond('id', 'in', await StructureSearch.matching(n)) : n))};
+  }
+
   static async matching(condition: FilterCondition, signal?: AbortSignal): Promise<string[]> {
     const query = String(condition.value);
     if (condition.operator === StructureSearch.EXACT) {
       const rule = MolTrackTables.matchRule();
       const {hash_mol: hash} = await Chemistry.identify(query, rule);
-      const rows = await moltrackEmsDb.compounds.query({filter: DG.cond(HASH_COLUMNS[rule], '=', hash),
+      const rows = await moltrackDb.compounds.query({filter: DG.cond(HASH_COLUMNS[rule], '=', hash),
         columns: [HASH_COLUMNS[rule]], deleted: 'include'});
       return rows.map((r) => r.id);
     }
@@ -52,7 +60,7 @@ export class StructureSearch {
     const structures: string[] = [];
     for (let offset = 0; ; offset += StructureSearch.PAGE) {
       signal?.throwIfAborted();
-      const rows = await moltrackEmsDb.compounds.query({columns: [column], sort: 'molregno',
+      const rows = await moltrackDb.compounds.query({columns: [column], sort: 'molregno',
         limit: StructureSearch.PAGE, offset, deleted: 'include'});
       for (const row of rows) {
         ids.push(row.id);

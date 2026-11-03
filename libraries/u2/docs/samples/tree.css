@@ -1,0 +1,2 @@
+.files-tree { height: 260px; }
+.files-selected { display: block; padding-top: var(--dg-space-s); color: var(--dg-text-color-light); }

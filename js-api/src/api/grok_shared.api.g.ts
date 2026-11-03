@@ -165,6 +165,16 @@ export class Permission {
 
   static ADMIN_URL_ALIASES = 'AdminUrlAliases';
 
+  static VIEW_FEEDBACK = 'ViewFeedback';
+
+  static RUN_SERVER_MAINTENANCE = 'RunServerMaintenance';
+
+  static POST_VULNERABILITY_REPORTS = 'PostVulnerabilityReports';
+
+  static EXPORT_CHATS = 'ExportChats';
+
+  static CREATE_JIRA_TICKETS = 'CreateJiraTickets';
+
   static ADMIN_CLUSTER = 'AdminCluster';
 
   static MANAGE_ALERTS = 'ManageAlerts';

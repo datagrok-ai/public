@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package-test';
 
@@ -98,8 +98,8 @@ category('HMMER logo', () => {
       const viewer = await df.plot.fromType('WebLogo',
         {profile: 'V-set', sequenceColumnName: aligned.name}) as DG.Viewer;
       tv.dockManager.dock(viewer, DG.DOCK_TYPE.DOWN);
-      for (let i = 0; i < 150 && ((viewer as any).positions?.length ?? 0) !== 109; i++)
-        await new Promise((r) => setTimeout(r, 100));
+      await waitUntil(() => ((viewer as any).positions?.length ?? 0) === 109,
+        () => `WebLogo has ${(viewer as any).positions?.length} positions`, 15000);
       expect((viewer as any).positions.length, 109, 'WebLogo positions');
     } finally {
       tv.close();

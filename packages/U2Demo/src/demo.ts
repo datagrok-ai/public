@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {signal, computed, untracked, Control, Scope, Splitter, VirtualTree, divV} from '@datagrok-libraries/u2';
 import type {Signal, ReadonlySignal} from '@datagrok-libraries/u2';
-import {controlAt} from '@datagrok-libraries/u2/src/dg/index.js';
+import {controlAt} from '@datagrok-libraries/u2/dg';
 import {DEMO_TREE, DemoContext, DemoLeaf, leafById, pageShown} from './nav';
 
 const LAST_TAB = 'u2demo.tab';
@@ -68,7 +68,7 @@ export function buildDemo(options?: DemoOptions): DemoParts {
       pageScope = new Scope();
       last.value = '';
       ui.empty(host);
-      host.replaceChildren(Scope.runWith(pageScope, () => leaf.build(ctx)));
+      host.replaceChildren(pageScope.build(() => leaf.build(ctx)));
       current.value = leaf;
       localStorage.setItem(LAST_TAB, leaf.id);
       pageShown(leaf);

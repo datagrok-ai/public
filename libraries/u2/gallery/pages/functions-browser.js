@@ -72,8 +72,8 @@ export function render(main) {
     roles: ROLES,
     runAction: (item) => log.textContent = `Ran ${item.name}`,
     contextActions: (item) => [
-      {name: 'Run', icon: 'play', run: () => log.textContent = `Ran ${item.name}`},
-      {name: 'Copy name', icon: 'copy', run: () => log.textContent = `Copied "${item.name}"`},
+      {text: 'Run', icon: 'play', run: () => log.textContent = `Ran ${item.name}`},
+      {text: 'Copy name', icon: 'copy', run: () => log.textContent = `Copied "${item.name}"`},
     ],
     onActivate: (item) => log.textContent = `Activated ${item.name} (dblclick / Enter)`,
   });

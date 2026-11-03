@@ -85,6 +85,7 @@ export interface IDartApi {
   grok_View_Get_Temp(v: any): any;
   grok_View_Load_Layout(v: any, l: any, pickupColumnsTags: Bool): any;
   grok_View_Save_Layout(v: any, saveWithData: Bool): any;
+  grok_ViewLayout_Get_BoundColumnNames(layout: any): any;
   grok_View_Get_Info(v: any): any;
   grok_View_Get_DockNode(v: any): any;
   grok_View_Get_RibbonMenu(v: any): any;
@@ -118,6 +119,10 @@ export interface IDartApi {
   grok_TableView_Set_DataFrame(v: any, d: any): any;
   grok_TableView_Get_SyncCurrentObject(tv: any): any;
   grok_TableView_Set_SyncCurrentObject(tv: any, x: Bool): any;
+  grok_TableView_Get_ShowParentCrumb(tv: any): any;
+  grok_TableView_Set_ShowParentCrumb(tv: any, x: Bool): any;
+  grok_TableView_Get_ShowSaveButton(tv: any): any;
+  grok_TableView_Set_ShowSaveButton(tv: any, x: Bool): any;
   grok_TableView_GetFilters(tv: any, addDefaultFilters: Bool): any;
   grok_TableView_LoadState(v: any, state: String, pickupColumnsTags: Bool): any;
   grok_TableView_SaveState(v: any): any;
@@ -929,6 +934,7 @@ export interface IDartApi {
   grok_UI_ToggleButtonGroup(buttons: any, toggleFirst: Bool): any;
   grok_UI_ComboPopup(caption: any, items: any, handler: any, renderer: any): any;
   grok_UI_TableFromMap(x: any, showCopyValue: Bool): any;
+  grok_UI_PickFileFromFiles(multiple: Bool, connection: any, mode: String): Promise<any>;
   grok_UI_PickTableFromFiles(): Promise<any>;
   grok_UI_PickTableFromQuery(): Promise<any>;
   grok_UI_List(items: any, maxRows: Num): any;

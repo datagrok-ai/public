@@ -1,16 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {category, before, test, after, delay} from '@datagrok-libraries/test/src/test';
+import {category, before, test, after, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {EntityType} from '../constants';
 
 
 category('Dev panel', () => {
-  const subs = [];
-  const delayDuration = 1000;
   const entities: EntityType[] = [];
   const showPropertyPanel = grok.shell.windows.showContextPanel;
-  let currentEntity: EntityType;
-  let devPane: DG.AccordionPane;
 
   before(async () => {
     const df = grok.data.demo.demog();
@@ -31,72 +27,38 @@ category('Dev panel', () => {
     grok.shell.windows.showContextPanel = true;
   });
 
-  test('Dev panel opens', () => new Promise(async (resolve, reject) => {
-    if (!entities.length)
-      reject('Failed to find entities for the test');
-    let stop: boolean = false;
-    setTimeout(() => {
-      stop = true;
-      reject('Timeout exceeded');
-    }, delayDuration * entities.length + 100);
-
-    function check() {
-      if (devPane != null) {
-        stop = false;
-        resolve('OK');
-      }
-      if (!stop)
-        setTimeout(check, 50);
-    }
-    check();
-    let result = true;
-    let object = null;
-
-    subs.push(grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
-      currentEntity = acc.context;
-      devPane = acc.getPane('Dev');
-      result = result && devPane != null && (<DG.Entity>currentEntity).id === object.id;
-    }));
-
-    for (const ent of entities) {
+  /** Makes [ent] the current object and resolves with the Dev pane the context panel builds for it. */
+  async function devPaneOf(ent: EntityType): Promise<DG.AccordionPane> {
+    let pane: DG.AccordionPane | null = null;
+    const sub = grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
+      if ((acc.context as DG.Entity)?.id === (ent as DG.Entity).id)
+        pane = acc.getPane('Dev');
+    });
+    try {
       grok.shell.o = ent;
-      object = ent;
-      await delay(delayDuration);
+      await waitUntil(() => pane != null, `no Dev pane for ${ent}`);
+    } finally {
+      sub.unsubscribe();
     }
+    return pane!;
+  }
 
-    if (result)
-      resolve('OK');
-  }));
+  test('Dev panel opens', async () => {
+    expect(entities.length > 0, true, 'Failed to find entities for the test');
+    for (const ent of entities)
+      await devPaneOf(ent);
+  });
 
-  test('Dev panel content', () => new Promise(async (resolve, reject) => {
-    if (!entities.length)
-      reject('Failed to find entities for the test');
-
-    subs.push(grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
-      devPane = acc.getPane('Dev');
-      devPane.expanded = true;
-    }));
-
-    grok.shell.o = entities[0];
-    await delay(1500);
-    if (!devPane)
-      reject('Dev panel not constructed');
-
-    const devPaneContainer = devPane.root.querySelector('.dt-dev-pane-container');
-    const snippetSection = devPane.root.querySelector('.dt-snippet-section');
-    const textArea = devPane.root.querySelector('.dt-textarea-box');
-
-    if (!devPaneContainer)
-      reject('Missing dev pane container');
-    else if (!snippetSection)
-      reject('Missing snippet section');
-    else if (!textArea)
-      reject('Missing text area');
-    resolve('OK');
-  }));
+  test('Dev panel content', async () => {
+    expect(entities.length > 0, true, 'Failed to find entities for the test');
+    const pane = await devPaneOf(entities[0]);
+    pane.expanded = true;
+    await waitUntil(() => pane.root.querySelector('.dt-dev-pane-container') != null, 'Missing dev pane container');
+    expect(pane.root.querySelector('.dt-snippet-section') != null, true, 'Missing snippet section');
+    expect(pane.root.querySelector('.dt-textarea-box') != null, true, 'Missing text area');
+  });
 
   after(async () => {
-    subs.forEach((sub) => sub.unsubscribe());
     grok.shell.windows.showContextPanel = showPropertyPanel;
   });
 });

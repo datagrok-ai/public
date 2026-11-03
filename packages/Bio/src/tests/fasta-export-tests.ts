@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {before, category, delay, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, expectArray, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
@@ -102,7 +102,8 @@ MRGGL
       saveAsFastaUI();
       const dlg = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Save as FASTA')!;
       dlg.getButton('OK').click();
-      await delay(100);
+      await waitUntil(() => Array.from(document.querySelectorAll('.d4-balloon.warning'))
+        .some((b) => b.textContent?.includes('Seq column is mandatory')), 'the missing column warning has not shown');
       const lastError = await grok.shell.lastError;
       expect(!lastError, true, `Unexpected error: ${lastError}`);
     } finally {

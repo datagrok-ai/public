@@ -7,13 +7,16 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from . import browser_tools, formats, guard, hermes, structured
+from . import browser_tools, formats, guard, hermes, skills, structured
 from .hermes import Usage
 from .protocol import BrowserResultCommand, ContinueCommand, Emit, JsonObject, McpServer, Metrics, TurnCommand
 from .providers import Provider
 
 MAX_STRUCTURED_ATTEMPTS = 5
 HEARTBEAT_SECONDS = 30
+# A model call that writes a long tool call without streaming it is busy, not hung, for this long; Hermes' own
+# stale-stream detector waits 180 s.
+MODEL_CALL_BUSY_SECONDS = 240
 # Node answers every browser call within its own timeout; this only frees a thread whose call Node dropped.
 BROWSER_GRACE_SECONDS = 30
 # Hermes stamps its activity clock with this for every stream event (`_count_chunk`, agent/chat_completion_helpers.py).
@@ -57,7 +60,8 @@ class Tokens:
 class Turn:
     """One browser message, with its gate follow-ups and structured-output retries."""
 
-    def __init__(self, cmd: TurnCommand) -> None:
+    def __init__(self, cmd: TurnCommand, model: str) -> None:
+        self.model = model
         self.system_prompt = cmd['systemPrompt']
         self.schema = cmd.get('outputSchema')
         self.cwd = cmd['cwd']
@@ -75,10 +79,12 @@ class Turn:
         self.cancelled = False
         self.segment_start = True
         self.in_flight: set[str] = set()
+        self.model_call_since: float | None = None
         self.approvals = guard.Approvals()
+        self.redirected = False
 
     def metrics(self) -> Metrics:
-        return {'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
+        return {'model': self.model, 'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
                 'cacheReadTokens': self.tokens.cache_read, 'cacheCreationTokens': self.tokens.cache_write,
                 'costUsd': self.cost, 'numTurns': self.api_calls,
                 'durationMs': round((time.time() - self.started) * 1000),
@@ -115,7 +121,8 @@ class Heartbeat:
             self._busy = False
             return
         activity = agent.get_activity_summary()
-        self._busy = self._busy or bool(turn.in_flight) or self.streamed(self._last_at, activity)
+        calling = turn.model_call_since is not None and now - turn.model_call_since < MODEL_CALL_BUSY_SECONDS
+        self._busy = self._busy or bool(turn.in_flight) or calling or self.streamed(self._last_at, activity)
         self._last_at = activity.get('last_activity_at')
         if self._busy and now - self._sent >= HEARTBEAT_SECONDS:
             self._emit({'type': 'activity'})
@@ -145,6 +152,7 @@ class Session:
         # The stored session this process reloads, until a turn has restored it.
         self.restore: str | None = None
         self.calls: dict[str, BrowserCall] = {}
+        self.skills: list[skills.Skill] = []
         self.hooks_registered = False
         browser_tools.register(registry, self.call_browser)
         threading.Thread(target=self._beat_every_second, daemon=True).start()
@@ -171,6 +179,9 @@ class Session:
             t.approvals.check(tool_name, args)
         if why:
             return {'action': 'block', 'message': why}
+        if not t.redirected and (why := skills.redirect(tool_name, args, self.skills)):
+            t.redirected = True
+            return {'action': 'block', 'message': why}
         t.in_flight.add(tool_call_id or tool_name)
         path = guard.absolute_edit_path(tool_name, args, t.cwd)
         return {'action': 'modify', 'args': {'path': path}} if path else None
@@ -192,12 +203,14 @@ class Session:
         # Every attempt, retries included: the error of the one before no longer stands.
         if self.turn:
             self.turn.api_error = None
+            self.turn.model_call_since = time.time()
 
     def post_api_request(self, usage: Usage | None = None, api_duration: float | None = None,
                          finish_reason: str | None = None, **_: Any) -> None:
         t = self.turn
         if t is None:
             return
+        t.model_call_since = None
         t.api_calls += 1
         self._account(t, usage or {}, api_duration)
         # The reply's tools must not run when no call is left to answer them with.
@@ -209,6 +222,7 @@ class Session:
         t = self.turn
         if t is None:
             return
+        t.model_call_since = None
         if reason == SAFETY_FILTER:
             t.api_error = SAFETY_FILTER_MESSAGE
             return
@@ -248,7 +262,7 @@ class Session:
     def receive(self, cmd: TurnCommand | ContinueCommand) -> Turn:
         """The turn a `turn` or `continue` command runs, taken when the command arrives."""
         if cmd['type'] == 'turn':
-            self.latest = Turn(cmd)
+            self.latest = Turn(cmd, self.provider.model)
         assert self.latest is not None, 'a continue follows its turn'
         return self.latest
 
@@ -426,6 +440,7 @@ class Session:
         t.api_seconds += api_duration or 0.0
         cost = self.provider.cost(usage)
         t.cost = None if cost is None or t.cost is None else t.cost + cost
+        self.emit({'type': 'usage', 'metrics': t.metrics()})
         if t.cost is not None and t.cost > t.max_cost:
             self._stop(t, 'budget')
 

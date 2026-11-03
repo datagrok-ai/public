@@ -1,4 +1,4 @@
-import {category, test, before, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, before, waitUntil} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {PipelineLinkConfigurationInput} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
@@ -214,10 +214,10 @@ category('ComputeUtils: Driver annotation checks', async () => {
     await tree.init().toPromise();
     const node = stepAt(tree, 0);
     node.getStateStore().setState('x', 20);
-    await awaitCheck(() => sameJson(node.validationInfo$.value.x, errors('too big')),
+    await waitUntil(() => sameJson(node.validationInfo$.value.x, errors('too big')),
       `x is not too big, got ${JSON.stringify(node.validationInfo$.value.x)}`, 5000);
     node.getStateStore().setState('x', 1);
-    await awaitCheck(() => node.validationInfo$.value.x == null || sameJson(node.validationInfo$.value.x, errors()),
+    await waitUntil(() => node.validationInfo$.value.x == null || sameJson(node.validationInfo$.value.x, errors()),
       'x is still too big', 5000);
   });
 });

@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {category, expect, expectFloat, expectArray, test, delay,
-  before, after, awaitCheck, testEvent} from '@datagrok-libraries/test/src/test';
+  before, after, waitUntil, testEvent} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {Fingerprint} from '../utils/chem-common';
 import {createTableView, readDataframe, molV2000, molV3000} from './utils';
@@ -58,7 +58,7 @@ category('top menu similarity/diversity', () => {
     const viewer: ChemSimilarityViewer = (await tv.dataFrame.plot
       .fromType('Chem Similarity Search')) as ChemSimilarityViewer;
     await testEvent(viewer.renderCompleted, () => {}, () => {}, 5000);
-    await awaitCheck(() => viewer.scores != undefined, 'scores haven\'t been returned', 2000);
+    await waitUntil(() => viewer.scores != undefined, 'scores haven\'t been returned', 2000);
     try {
       expectArray(viewer.scores!.toList(), [1, 0.6808510422706604, 0.6739130616188049, 0.6521739363670349,
         0.6458333134651184, 0.4821428656578064, 0.4736842215061188, 0.4736842215061188, 0.4655172526836395,
@@ -72,7 +72,7 @@ category('top menu similarity/diversity', () => {
     DG.Balloon.closeAll();
     const viewer = await tv.dataFrame.plot.fromType('Chem Similarity Search');
     try {
-      await awaitCheck(() => viewer.root.classList.contains('chem-malformed-molecule-error'),
+      await waitUntil(() => viewer.root.classList.contains('chem-malformed-molecule-error'),
         'error message has not been shown', 2000);
     } finally {
       tv.close();
@@ -88,7 +88,7 @@ category('top menu similarity/diversity', () => {
       .fromType('Chem Similarity Search')) as ChemSimilarityViewer;
     await testEvent(viewer.renderCompleted, () => {}, () => {}, 5000);
     try {
-      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
+      await waitUntil(() => document.querySelector('.d4-balloon-content')?.children[0]?.children[0]?.innerHTML ===
         '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 2000);
       expectArray(viewer.scores!.toList(), [1, 0.4333333373069763, 0.32894736528396606, 0.234375, 0.23076923191547394,
@@ -103,12 +103,20 @@ category('top menu similarity/diversity', () => {
   test('similarity.malformedInput', async () => {
     const tv = grok.shell.addTableView(malformed);
     DG.Balloon.closeAll();
-    const viewer = await tv.dataFrame.plot.fromType('Chem Similarity Search');
+    const viewer = (await tv.dataFrame.plot.fromType('Chem Similarity Search')) as ChemSimilarityViewer;
+    // a current row set before the first search ends is not searched
+    await testEvent(viewer.renderCompleted, () => {}, () => {}, 5000);
+    // the error shows for as long as the viewer's next render takes to start: recorded as it is added
+    const error = 'chem-malformed-molecule-error';
+    let shown = false;
+    const observer = new MutationObserver((records) => shown ||= viewer.root.classList.contains(error) ||
+      records.some((r) => r.oldValue?.split(' ').includes(error)));
+    observer.observe(viewer.root, {attributes: true, attributeFilter: ['class'], attributeOldValue: true});
     malformed.currentRowIdx = 30;
     try {
-      await awaitCheck(() => viewer.root.classList.contains('chem-malformed-molecule-error'),
-        'error message has not been shown', 2000);
+      await waitUntil(() => shown, 'error message has not been shown', 5000);
     } finally {
+      observer.disconnect();
       tv.close();
       DG.Balloon.closeAll();
     }
@@ -153,7 +161,7 @@ category('top menu similarity/diversity', () => {
     const tv = grok.shell.addTableView(empty);
     const viewer: ChemDiversityViewer = (await tv.dataFrame.plot
       .fromType('Chem Diversity Search')) as ChemDiversityViewer;
-    await awaitCheck(() => viewer.renderMolIds.length === 12, `Molecules haven't been rendered`, 10000);
+    await waitUntil(() => viewer.renderMolIds.length === 12, `Molecules haven't been rendered`, 10000);
     tv.close()
   });
 
@@ -163,8 +171,8 @@ category('top menu similarity/diversity', () => {
     const viewer: ChemDiversityViewer = (await tv.dataFrame.plot
       .fromType('Chem Diversity Search')) as ChemDiversityViewer;
     try {
-      await awaitCheck(() => viewer.renderMolIds.length === 12, `Molecules haven't been rendered`, 10000);
-      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
+      await waitUntil(() => viewer.renderMolIds.length === 12, `Molecules haven't been rendered`, 10000);
+      await waitUntil(() => document.querySelector('.d4-balloon-content')?.children[0]?.children[0]?.innerHTML ===
         '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 1000);
     } finally {
@@ -291,7 +299,7 @@ async function _testDiversitySearchViewerOpen() {
   const molecules = await createTableView('tests/sar-small_test.csv');
   const diversitySearchviewer: ChemDiversityViewer = (await molecules.dataFrame.plot
     .fromType('Chem Diversity Search')) as ChemDiversityViewer;
-  await awaitCheck(() => diversitySearchviewer.renderMolIds.length > 0, `Molecules haven't been rendered`, 10000);
+  await waitUntil(() => diversitySearchviewer.renderMolIds.length > 0, `Molecules haven't been rendered`, 10000);
   expect(diversitySearchviewer.fingerprint, Fingerprint.Morgan);
   expect(diversitySearchviewer.distanceMetric, BitArrayMetricsNames.Tanimoto);
   expect(diversitySearchviewer.initialized, true);

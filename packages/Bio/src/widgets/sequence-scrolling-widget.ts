@@ -432,10 +432,8 @@ export function handleSequenceHeaderRendering() {
             conservationTrackRef.resetViewportTracking();
             conservationTrackRef.forceUpdate();
           }
-          setTimeout(() => {
-            if (!grid.isDetached)
-              grid.invalidate();
-          }, 50);
+          if (!grid.isDetached)
+            grid.invalidate();
         });
 
         sub(filterChangeSub);
@@ -568,7 +566,7 @@ export function handleSequenceHeaderRendering() {
       // headers painted before the scrollers existed stay plain until the next repaint
       if (seqCols.length > 0)
         grid.invalidate();
-    }, 1000);
+    });
   };
 
   const _ = grok.events.onViewerAdded.subscribe((e) => {

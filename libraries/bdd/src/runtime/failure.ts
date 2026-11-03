@@ -1,6 +1,3 @@
-/* What a failed step reports: the feature line, the step as written, and the reason in one plain
-   sentence — never a matcher diff, an in-page stack or a harness line. Pure, so it is unit-tested. */
-
 const PROGRAMMING_ERRORS = ['TypeError', 'ReferenceError', 'RangeError', 'SyntaxError'];
 const INTERNAL_FRAME = /node_modules[\\/]+(?:playwright|@playwright)|UtilityScript|eval at evaluate|node:internal|node:async_hooks/;
 const ANSI = new RegExp(String.fromCharCode(27) + '\\[[0-9;]*m', 'g');

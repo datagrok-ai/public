@@ -2,7 +2,8 @@
 
 Written during the MPO qnum round of 16 Oct 2026 (public#4291, the manual checks of that day and the Slack
 thread on MPO), updated on 20 Oct 2026. Covers `qnum-scoring.feature` and `score-dialog-cancel.feature`,
-written with the existing steps only: no library, binding or code change.
+written with the existing steps only: no library, binding or code change. Coverage Score (public#4403) is claimed in
+`calculate/mpo.feature`.
 
 ## Resolved
 
@@ -44,15 +45,9 @@ written with the existing steps only: no library, binding or code change.
 5. **OK's calculation.** A step that waits for the `Chem:mpoCalculate` call OK makes and fails if it threw.
    OK's errors are caught and shown as a balloon (`analysis/mpo.ts`, `runMpoCalculation`); the features claim
    the dialog closed and no error balloon, while the preview writes the same column.
-6. **API tests** (statistics `mapColumnDesirability` / `MpoCalculator`, Chem `mpoScoreByProfile`); none
-   exist yet:
-   - the three Score as options for `<x` and `>x` on rising, falling and peaked curves; a bound inside a flat
-     part (the same in every option), a bound wholly outside the curve, an inverted curve;
-   - a log10 curve with bounds: `0`, `<0`, `<-1`, `-2` give an empty score, `>0` and `>-1` are scored over
-     the whole curve; an exact `0` gives an empty score while `>0` with Limit value gives 0;
-   - the smallest exact positive value of a qnum column on the default flat curve;
-   - MPO Score by Profile on a qnum column uses the `qualifiers` the profile stores;
-   - missing values: Exclude row gives an empty score, Use default score, Skip property.
+6. **API and package tests**: listed in `libraries/bdd/API_TESTS_TO_WRITE.md` (the Chem MPO row): the Score as
+   options on rising and falling curves and inside a flat part, log10 bounds, MPO Score by Profile on a qnum
+   column, and the coverage count on a log10 curve, after a cached compute and in `Chem:mpoCalculate`.
 
 ## Won't do
 

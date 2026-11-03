@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, uiSettled, waitUntil} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {startAnalysis} from '../widgets/peptides';
@@ -41,10 +41,10 @@ category('Table view', () => {
       throw new Error('Model is null');
     model = tempModel;
 
-    await delay(500);
+    await uiSettled('Peptides analysis');
   });
 
-  after(async () => await delay(3000));
+  after(async () => await uiSettled('Peptides analysis'));
 
   test('Visible columns', async () => {
     const gridCols = model.analysisView.grid.columns;
@@ -63,7 +63,7 @@ category('Table view', () => {
     const selection = model.df.selection;
 
     const mpViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition;
-    await awaitCheck(() => mpViewer.mutationCliffs !== null, 'mutation cliffs haven\'t been generated', 2000);
+    await waitUntil(() => mpViewer.mutationCliffs !== null, 'mutation cliffs haven\'t been generated', 2000);
 
     for (const [position, selectedMonomers] of Object.entries(mpViewer.mutationCliffsSelection))
       expect(selectedMonomers.length, 0, `Selection is not empty for position ${position} after initialization`);

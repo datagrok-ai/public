@@ -14,6 +14,11 @@ Feature: The grid's tooltip and the columns it cannot show
   Column Names is set to Always, so the tooltip names the columns it lists (Auto leaves the names
   out of a grid's row tooltip).
 
+  A cut-off value still shows in full in that default, while one that wraps inside a tall row is
+  not cut off and shows nothing; a grid with its own Row Tooltip shows only that. View > Edit Tooltip says where the columns go: its Use tooltip opens on Table, which moves a
+  default grid to the table's tooltip, or on Grid for a grid with its own Row Tooltip, which edits
+  that. A grid set to "do not show" gets no such choice and stays as it is.
+
   The case's other way of pushing the last column out of sight, widening the context panel, moves
   nothing the grid does not already show by the widened column, and is not translated.
 
@@ -33,6 +38,126 @@ Feature: The grid's tooltip and the columns it cannot show
     And "Show Visible Columns In Tooltip" property of grid should be "false"
     When user drags the "column resizer value" area of grid by 1000 pixels to the right
     Then grid should not have a "cell 1 of target" area
+    When user hovers over the "cell 1 of value" area of grid
+    Then the mouse-over row of the table should be 1
+    And tooltip should be hidden
+    When user moves the pointer away from grid
+    Then no errors should have been logged
+
+  @realizes:core#441 @realizes:core#407
+  Scenario: By default a cut-off value shows in full, a value that fits shows nothing, and a Row Tooltip shows only itself (core#441)
+    When user closes all views
+    And user opens a table "energy_uk" with:
+      | value              | source               | target         |
+      | 124.72899627685547 | Agricultural 'waste' | Bio-conversion |
+      | 0.597000002861023  | Bio-conversion       | Liquid         |
+      | 26.86199951171875  | Bio-conversion       | Losses         |
+      | 280.3219909667969  | Bio-conversion       | Solid          |
+      | 81.14399719238281  | Bio-conversion       | Gas            |
+    And user drags the "column resizer source" area of grid by 80 pixels to the left
+    And user hovers over the "cell 1 of source" area of grid
+    Then tooltip should contain text "Agricultural 'waste'"
+    When user moves the pointer away from grid
+    Then tooltip should be hidden
+    When user hovers over the "cell 1 of target" area of grid
+    Then the mouse-over row of the table should be 1
+    When user moves the pointer away from grid
+    And user sets properties of grid:
+      | Row Height | 80 |
+    And user hovers over the "cell 1 of source" area of grid
+    Then the mouse-over row of the table should be 1
+    And tooltip should be hidden
+    When user moves the pointer away from grid
+    And user sets properties of grid:
+      | Row Height        | 20     |
+      | Show Column Names | Always |
+      | Row Tooltip       | target |
+    And user hovers over the "cell 1 of source" area of grid
+    Then the tooltip should show columns "target"
+    And tooltip should not contain text "Agricultural"
+    When user moves the pointer away from grid
+    Then no errors should have been logged
+
+  @realizes:core#474
+  Scenario: View > Edit Tooltip gives the grid the columns picked, unless it has its own (core#474)
+    When user closes all views
+    And user opens a table "energy_uk" with:
+      | value              | source               | target         |
+      | 124.72899627685547 | Agricultural 'waste' | Bio-conversion |
+      | 0.597000002861023  | Bio-conversion       | Liquid         |
+      | 26.86199951171875  | Bio-conversion       | Losses         |
+      | 280.3219909667969  | Bio-conversion       | Solid          |
+      | 81.14399719238281  | Bio-conversion       | Gas            |
+    And user sets properties of grid:
+      | Show Column Names | Always |
+    And user picks "View > Edit Tooltip..." from the top menu
+    Then "Edit Tooltip" dialog should be visible
+    And "Use tooltip" input in "Edit Tooltip" dialog should have value "Table"
+    When user unchecks checkbox in "Edit Tooltip" dialog
+    And user toggles the "target" column in the column list of "Edit Tooltip" dialog
+    And user clicks on OK button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    And "Show Tooltip" property of grid should be "inherit from table"
+    When user hovers over the "cell 1 of value" area of grid
+    Then the tooltip should show columns "target"
+    When user moves the pointer away from grid
+    And user sets properties of grid:
+      | Show Tooltip | show custom tooltip |
+      | Row Tooltip  | source              |
+    And user picks "View > Edit Tooltip..." from the top menu
+    Then "Edit Tooltip" dialog should be visible
+    And "Use tooltip" input in "Edit Tooltip" dialog should have value "Grid"
+    When user clicks on OK button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    And "Show Tooltip" property of grid should be "show custom tooltip"
+    When user hovers over the "cell 1 of value" area of grid
+    Then the tooltip should show columns "source"
+    When user moves the pointer away from grid
+    Then no errors should have been logged
+
+  @realizes:core#474
+  Scenario: View > Edit Tooltip can give a default grid its own Row Tooltip (core#474)
+    When user closes all views
+    And user opens a table "energy_uk" with:
+      | value              | source               | target         |
+      | 124.72899627685547 | Agricultural 'waste' | Bio-conversion |
+      | 0.597000002861023  | Bio-conversion       | Liquid         |
+      | 26.86199951171875  | Bio-conversion       | Losses         |
+      | 280.3219909667969  | Bio-conversion       | Solid          |
+      | 81.14399719238281  | Bio-conversion       | Gas            |
+    And user sets properties of grid:
+      | Show Column Names | Always |
+    And user picks "View > Edit Tooltip..." from the top menu
+    Then "Edit Tooltip" dialog should be visible
+    When user selects "Grid" in "Use tooltip" input in "Edit Tooltip" dialog
+    And user toggles the "target" column in the column list of "Edit Tooltip" dialog
+    And user clicks on OK button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    And "Show Tooltip" property of grid should be "show custom tooltip"
+    And "Row Tooltip" property of grid should be "target"
+    When user hovers over the "cell 1 of value" area of grid
+    Then the tooltip should show columns "target"
+    When user moves the pointer away from grid
+    Then no errors should have been logged
+
+  @realizes:core#474
+  Scenario: View > Edit Tooltip leaves a grid set to "do not show" as it is (core#474)
+    When user closes all views
+    And user opens a table "energy_uk" with:
+      | value              | source               | target         |
+      | 124.72899627685547 | Agricultural 'waste' | Bio-conversion |
+      | 0.597000002861023  | Bio-conversion       | Liquid         |
+      | 26.86199951171875  | Bio-conversion       | Losses         |
+      | 280.3219909667969  | Bio-conversion       | Solid          |
+      | 81.14399719238281  | Bio-conversion       | Gas            |
+    And user sets properties of grid:
+      | Show Tooltip | do not show |
+    And user picks "View > Edit Tooltip..." from the top menu
+    Then "Edit Tooltip" dialog should be visible
+    And "Use tooltip" input in "Edit Tooltip" dialog should not be visible
+    When user clicks on OK button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    And "Show Tooltip" property of grid should be "do not show"
     When user hovers over the "cell 1 of value" area of grid
     Then the mouse-over row of the table should be 1
     And tooltip should be hidden

@@ -1,7 +1,7 @@
 /* ListInput and MapInput: the two collection editors ported from Dart — the quote-aware CSV
    contract plus the expand toggle, and the key/value rows with their duplicate-key validity. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -45,11 +45,11 @@ function rows(input) {
 }
 
 function keys(input) {
-  return input.root.querySelectorAll('.u2-map-key');
+  return [...input.root.querySelectorAll('.u2-map-key')];
 }
 
 function values(input) {
-  return input.root.querySelectorAll('.u2-map-value');
+  return [...input.root.querySelectorAll('.u2-map-value')];
 }
 
 function rowButton(input, index, action) {
@@ -66,18 +66,18 @@ smoke('ListInput: the quote-aware split round-trips', async () => {
 
   const input = mount(new ListInput({label: 'Synonyms'}));
   assert.equal(input.root.dataset.u2, 'list-input');
-  assert.deepEqual(input.value.value, []);
+  assert.deepEqual(input.value, []);
   assert.equal(field(input).placeholder, 'Comma-separated values');
 
   type(field(input), 'a,"b,c",d');
-  assert.deepEqual(input.value.value, ['a', 'b,c', 'd']);
+  assert.deepEqual(input.value, ['a', 'b,c', 'd']);
 
-  input.value.value = ['x', 'y,z'];
+  input.value = ['x', 'y,z'];
   assert.equal(field(input).value, 'x,"y,z"', 'a programmatic write re-quotes the text');
   assert.equal(area(input).value, 'x,"y,z"', 'and reaches the collapsed textarea too');
 
   type(field(input), '');
-  assert.deepEqual(input.value.value, []);
+  assert.deepEqual(input.value, []);
   input.dispose();
 });
 
@@ -98,7 +98,7 @@ smoke('ListInput: the toggle swaps field and textarea, keeping the text', async 
   assert.equal(toggle.getAttribute('aria-label'), 'Collapse');
 
   type(area(input), 'ASA,aspirin');
-  assert.deepEqual(input.value.value, ['ASA', 'aspirin'], 'the textarea edits the same value');
+  assert.deepEqual(input.value, ['ASA', 'aspirin'], 'the textarea edits the same value');
   fire(toggle, 'click');
   assert.equal(input.expanded, false);
   assert.equal(field(input).value, 'ASA,aspirin', 'collapsing keeps it too');
@@ -108,7 +108,7 @@ smoke('ListInput: the toggle swaps field and textarea, keeping the text', async 
 smoke('ListInput: two inputs on one signal; dispose kills the listeners', async () => {
   const before = Scope.liveCount;
   const first = mount(new ListInput({label: 'Tags', value: ['a']}));
-  const second = mount(new ListInput({label: 'Also tags', bind: first.value}));
+  const second = mount(new ListInput({label: 'Also tags', bind: first.signal}));
   type(field(first), 'a,b');
   assert.equal(field(second).value, 'a,b');
 
@@ -117,7 +117,7 @@ smoke('ListInput: two inputs on one signal; dispose kills the listeners', async 
   assert.equal(Scope.liveCount, before);
 
   type(field(first), 'a,b,c');
-  assert.deepEqual(first.value.value, ['a', 'b'], 'listeners died with the scope');
+  assert.deepEqual(first.value, ['a', 'b'], 'listeners died with the scope');
 });
 
 smoke('MapInput: rows write through, and an empty key stays out of the value', async () => {
@@ -125,18 +125,18 @@ smoke('MapInput: rows write through, and an empty key stays out of the value', a
   const input = mount(new MapInput({label: 'Params', onChanged: (v) => changes.push(v)}));
   assert.equal(input.root.dataset.u2, 'map-input');
   assert.equal(rows(input).length, 1, 'an empty map still offers one row to type into');
-  assert.deepEqual(input.value.value, {});
+  assert.deepEqual(input.value, {});
 
   type(values(input)[0], 'DMSO');
-  assert.deepEqual(input.value.value, {}, 'a value without a key is not an entry');
+  assert.deepEqual(input.value, {}, 'a value without a key is not an entry');
   assert.deepEqual(changes, []);
 
   type(keys(input)[0], 'solvent');
-  assert.deepEqual(input.value.value, {solvent: 'DMSO'});
+  assert.deepEqual(input.value, {solvent: 'DMSO'});
   assert.equal(changes.length, 1);
 
   type(keys(input)[0], '');
-  assert.deepEqual(input.value.value, {}, 'clearing the key drops the entry again');
+  assert.deepEqual(input.value, {}, 'clearing the key drops the entry again');
   input.dispose();
 });
 
@@ -149,19 +149,19 @@ smoke('MapInput: add and remove rows', async () => {
   fire(rowButton(input, 0, 'add'), 'click');
   assert.equal(rows(input).length, 2, 'the new row lands below');
   assert.equal(keys(input)[1].value, '');
-  assert.deepEqual(input.value.value, {solvent: 'DMSO'}, 'an empty row is not a change');
+  assert.deepEqual(input.value, {solvent: 'DMSO'}, 'an empty row is not a change');
 
   type(keys(input)[1], 'temperature');
   type(values(input)[1], '25');
-  assert.deepEqual(input.value.value, {solvent: 'DMSO', temperature: '25'});
+  assert.deepEqual(input.value, {solvent: 'DMSO', temperature: '25'});
 
   fire(rowButton(input, 0, 'remove'), 'click');
   assert.equal(rows(input).length, 1);
-  assert.deepEqual(input.value.value, {temperature: '25'});
+  assert.deepEqual(input.value, {temperature: '25'});
 
   fire(rowButton(input, 0, 'remove'), 'click');
   assert.equal(rows(input).length, 1, 'the last row is never removed, only emptied');
-  assert.deepEqual(input.value.value, {});
+  assert.deepEqual(input.value, {});
   input.dispose();
 });
 
@@ -175,12 +175,12 @@ smoke('MapInput: duplicate keys mark the cells and the input invalid', async () 
   assert.equal(keys(input)[1].classList.contains('u2-invalid'), true);
   assert.equal(input.root.querySelector('.u2-input-error').textContent,
     'Duplicate keys are not allowed');
-  assert.deepEqual(input.value.value, {a: '1', b: '2'}, 'no row is dropped from the value while a key repeats');
+  assert.deepEqual(input.value, {a: '1', b: '2'}, 'no row is dropped from the value while a key repeats');
 
   type(keys(input)[1], 'c');
   assert.equal(input.validity.value, null);
   assert.equal(keys(input)[0].classList.contains('u2-invalid'), false);
-  assert.deepEqual(input.value.value, {a: '1', c: '2'});
+  assert.deepEqual(input.value, {a: '1', c: '2'});
   input.dispose();
 });
 
@@ -188,25 +188,25 @@ smoke('MapInput: a programmatic write rebuilds the rows; dispose kills the liste
   const before = Scope.liveCount;
   const input = mount(new MapInput({label: 'Params'}));
 
-  input.value.value = {solvent: 'DMSO', temperature: '25'};
+  input.value = {solvent: 'DMSO', temperature: '25'};
   assert.equal(rows(input).length, 2);
   assert.deepEqual(keys(input).map((k) => k.value), ['solvent', 'temperature']);
   assert.deepEqual(values(input).map((v) => v.value), ['DMSO', '25']);
 
-  input.value.value = {};
+  input.value = {};
   assert.equal(rows(input).length, 1);
   assert.equal(keys(input)[0].value, '');
 
   input.dispose();
   assert.equal(Scope.liveCount, before);
   type(keys(input)[0], 'solvent');
-  assert.deepEqual(input.value.value, {}, 'listeners died with the scope');
+  assert.deepEqual(input.value, {}, 'listeners died with the scope');
 });
 
 smoke('a disabled map input stays disabled through a programmatic write', () => {
   const input = mount(new MapInput({value: {a: '1'}}));
-  input.enabled = false;
-  input.value.value = {a: '1', b: '2'};
+  input.disabled = 'Not editable in this test';
+  input.value = {a: '1', b: '2'};
   const cells = input.root.querySelectorAll('.u2-map-key, .u2-map-value, .u2-map-btn');
   assert.ok(cells.length > 0);
   for (let i = 0; i < cells.length; i++)
@@ -248,6 +248,6 @@ smoke('MapInput: a value typed into a row with no key is flagged, not dropped si
   assert.equal(keys(input)[0].classList.contains('u2-invalid'), true);
   type(keys(input)[0], 'b');
   assert.equal(input.validity.value, null);
-  assert.deepEqual(input.value.value, {b: '1'});
+  assert.deepEqual(input.value, {b: '1'});
   input.dispose();
 });

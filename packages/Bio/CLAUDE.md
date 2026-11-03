@@ -8,7 +8,7 @@ Category: **Bioinformatics**. Top menu: `Bio | ...`.
 
 ## Key Dependencies
 
-- `@datagrok-libraries/bio` — **core shared library**: macromolecule types, HELM types, splitters, palettes, MonomerWorks (seq→molfile), cell renderer engines, monomer hover, seq-helper/seq-handler interfaces
+- `@datagrok-libraries/bio` — **core shared library**: macromolecule types, HELM types, splitters, palettes, the assembly input for Chem's macromolecule assembler (seq→molfile), cell renderer engines, monomer hover, seq-helper/seq-handler interfaces
 - `@datagrok-libraries/ml` — distance matrices, dimensionality reduction (UMAP/tSNE), activity cliffs, KNN, MCL clustering, macromolecule distance functions
 - `@datagrok-libraries/math` — DBSCAN worker, WebGPU utilities
 - `@datagrok-libraries/utils` — BitArray, type declarations, SVG utilities
@@ -17,7 +17,6 @@ Category: **Bioinformatics**. Top menu: `Bio | ...`.
 - `@biowasm/aioli` — WebAssembly runtime for kalign (MSA)
 - `immunum` — WebAssembly antibody/TCR numbering (IMGT/Kabat) — run in a worker via `src/utils/antibody-numbering/`
 - `ajv` / `ajv-errors` — JSON schema validation for monomer libraries
-- `openchemlib` — molfile conversion, chirality engine
 
 ### Relationship to `@datagrok-libraries/bio`
 
@@ -120,7 +119,6 @@ Other packages depend on these implementations: **Helm**, **Peptides**, **Biostr
 - `seqHelper: ISeqHelper` — sequence operations facade
 - `monomerLib: IMonomerLib` — current merged monomer library
 - `monomerSets: IMonomerSet` — monomer set preferences
-- `rdKitModule: RDModule` — RDKit WebAssembly module
 - `properties: BioPackageProperties` — observable package settings (FontSize, MaxMonomerLength, TooltipWebLogo, DefaultSeparator)
 - `completeInit()` — wires up all singletons after loading
 
@@ -169,7 +167,6 @@ Key methods: `detectSeparator()`, `detectAlphabet()`, `getAlphabetSimilarity()`,
 | `to-atomic-level-widget.ts` | `toAtomicLevelSingle()` (seq→molfile), `toAtomicLevelWidget()` (2D molecule drawing), `molecular3DStructureWidget()` (3D NGL viewer) |
 | `sequence-scrolling-widget.ts` | `handleSequenceHeaderRendering()` — MSA column header with WebLogo + conservation tracks, viewport-aware lazy caching (50-position chunks), click to dock position statistics viewer. Installs the headers of every long non-HELM, known-alphabet column of a grid in one synchronous pass (re-run on columns added/removed, semantic types detected, the grid's table changed) and repaints the grid after it; the ruler names positions by the column's `.positionNames`, so regions extracted from a numbered aligned column keep the scheme's numbering |
 | `monomer-info-widget.ts` | `getMonomerInfoWidget()` — info-panel widget for `Monomer` semtype cells; renders the monomer card with structure, library origin and R-group info |
-| `package-settings-editor-widget.ts` | `PackageSettingsEditorWidget` — Bio package global settings form |
 
 ### Utilities (`src/utils/`)
 
@@ -184,7 +181,7 @@ Key methods: `detectSeparator()`, `detectAlphabet()`, `getAlphabetSimilarity()`,
 | `get-region.ts` | `getRegionDo()` — extracts positional sub-region from macromolecule column via `ISeqHandler.getRegion()` |
 | `get-region-func-editor.ts` | Custom function-editor UI for the `getRegion` DG function (allows interactive position-range selection) |
 | `split-to-monomers.ts` | `splitToMonomersUI()` — splits aligned sequences into per-position `Monomer` columns using `splitAlignedSequences` |
-| `sequence-to-mol.ts` | `sequenceToMolfile()` — converts macromolecule column to atomic-level molfile column (linear via `_toAtomicLevel`, nonlinear via HELM converter) |
+| `sequence-to-mol.ts` | `sequenceToMolfile()` — converts a macromolecule column (any notation, read as it is) to an atomic-level molfile column on Chem's macromolecule assembler (`assembleSeqColumn`, linear layout with per-row fallback or non-linear), adds it with the hover link and the highlight tag |
 | `calculate-scores.ts` | `calculateScoresWithEmptyValues()` — wraps `calculateIdentityScoring`/`calculateChemSimilarityScoring` from bio lib, handles empty values |
 | `save-as-fasta.ts` | `saveAsFastaUI()` — dialog + download for FASTA export. `buildFasta()` builds the string. |
 | `biln.ts` | `BilnNotationProvider` — notation provider for BILN sequences with splitter, HELM converter, cell renderer back-end |
@@ -349,8 +346,8 @@ Existing engines:
 
 | File | Purpose |
 |---|---|
-| `utils.ts` | `getMolColumnFromHelm()` (HELM → beautified V3K molfile column), `getSmilesColumnFromHelm()` (HELM → SMILES column) |
-| `converter/` | Full pipeline (~20 files) for HELM → V3K molfile conversion. `HelmToMolfileConverter` class handles HELM decomposition → monomer assembly → composite V3K with monomer-position maps and chirality (via OpenChemLib). |
+| `utils.ts` | `getMolColumnFromHelm()` (HELM → non-linear V3K molfile column; behind `HELM to Molecule`) |
+| `converter/converter.ts` | `HelmToMolfileConverter` — the `IHelmToMolfileConverter` implementation kept as a wrapper over the assembler (its own HELM parser, monomer wrappers and the RDKit/OpenChemLib steps were removed): made by the async `SeqHelper.getHelmToMolfileConverter()`, which readies the assembler's main-thread module and the library, its methods stay synchronous on the assembler's sync twins; `convertToMolfileV3K()` with per-row maps, `convertToMolfileV3KColumn()`, `convertToRdKitBeautifiedMolfileColumn()` (the `HELM to Molecule` path); `helmListColumn()` / `asHelmColumn()` |
 
 #### Substructure Search — `src/substructure-search/`
 
@@ -379,9 +376,7 @@ Existing engines:
 |---|---|
 | `bio01-similarity-diversity.ts` | Similarity & diversity search side-by-side |
 | `bio01a-hierarchical-clustering-and-sequence-space.ts` | UMAP sequence space + hierarchical clustering |
-| `bio01b-hierarchical-clustering-and-activity-cliffs.ts` | Activity cliffs + UMAP + clustering |
-| `bio03-atomic-level.ts` | HELM → atomic level conversion with monomer hover highlighting |
-| `bio05-helm-msa-sequence-space.ts` | HELM MSA via PepSeA + sequence space scatter plot |
+| `bio01b-hierarchical-clustering-and-activity-cliffs.ts` | Activity cliffs: opens the saved demo project and its cliffs grid |
 | `utils.ts` | Shared: `demoSequenceSpace()` (UMAP/tSNE + scatter), constants |
 
 ## Automation surface (`bdd/`)
@@ -448,14 +443,16 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | `pepsea-tests.ts` | PepSeA Docker MSA |
 | `antibody-numbering-tests.ts` | Immunum antibody numbering worker + DataFrame shape (IMGT/Kabat, heavy/light, empty-input handling) |
 | `liability-scanner-tests.ts` | Scan Liabilities rules: hits and their positions, the annotation and summary count columns |
-| `to-atomic-level-tests.ts` | Sequence → molfile conversion |
-| `to-atomic-level-ui-tests.ts` | Atomic level UI widgets |
+| `to-atomic-level-tests.ts` | Sequence → molfile conversion (goldens marked TODO(goldens): regenerate from Crux), HELM RNA chemistry checked on the molblock graph, hover maps |
+| `to-atomic-level-ui-tests.ts` | `sequenceToMolfile` linear/non-linear heavy-atom and bond counts |
+| `to-atomic-level-crux-tests.ts` | Category `toAtomicLevelCrux`: reproducing tests of the bugs the assembler fixes (connections ≥ 100, mixed types, annotated chains, siRNA pairs, per-row errors, R10, X caps, sugar stereo, wedge-shift monomers, dehydro double bonds, gap map, multi-chain linear, fixed repeats) |
+| `utils/molblock-graph.ts` | Engine-free chemistry checks on molblocks (atom/bond graph, SSSR, the SMARTS features the tests count), `canonicalSmiles()` through `Chem:convertMolNotation` |
+| `assembly-input-tests.ts` | Category `assemblyInput`: the macromolecule assembler's input (bio lib `assembly-input.ts`, `library-json.ts`): notations to `AsmSequence`, library keys, per-row errors, `buildSeqBatch`, pack/unpack, the effective library JSON and override keys |
 | `activity-cliffs-tests.ts` | Activity cliff detection |
 | `sequence-space-test.ts` | Sequence space UMAP/tSNE |
 | `similarity-diversity-tests.ts` | Similarity/diversity viewers |
 | `substructure-filters-tests.ts` | Substructure filter |
 | `monomer-libraries-tests.ts` | Monomer library loading/merging |
-| `lib-tests.ts` | Library management |
 | `scoring.ts` | Identity/similarity scoring |
 | `WebLogo-positions-test.ts` | WebLogo position handling |
 | `WebLogo-project-tests.ts` | WebLogo save/load projects |
@@ -536,7 +533,7 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | Notation conversion | `src/utils/convert.ts` |
 | Compare two macromolecule columns | `src/utils/compare-sequences.ts` |
 | Seq → molfile conversion | `src/utils/sequence-to-mol.ts` |
-| HELM → molfile pipeline | `src/utils/helm-to-molfile/converter/` |
+| HELM → molfile (assembler wrapper) | `src/utils/helm-to-molfile/converter/converter.ts` |
 | FASTA import/export | `src/utils/save-as-fasta.ts` + bio lib `FastaFileHandler` |
 | Pairwise alignment | `src/seq_align.ts` (`SequenceAlignment`) |
 | BILN notation support | `src/utils/biln.ts` |

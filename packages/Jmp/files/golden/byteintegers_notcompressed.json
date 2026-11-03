@@ -1,0 +1,1 @@
+{"nrows":4,"columns":[{"name":"onebyte","type":"Int8","values":[1,2,-126,127]},{"name":"twobyte","type":"Int16","values":[32767,null,0,-32766]},{"name":"fourbyte","type":"Int32","values":[null,2147483647,-2147483646,null]},{"name":"numeric","type":"Float64","values":[null,2.147483648e9,null,null]}]}

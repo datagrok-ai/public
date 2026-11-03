@@ -3,7 +3,7 @@
    func-param tree group (func_param_editor.dart:754-830), but with the summary checkbox
    pixel-flush over the item checkbox column. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
@@ -66,14 +66,14 @@ smoke('the summary reads "N of M" on init and follows checks and unchecks', () =
 
   checkItem(input, 2, true);
   assert.equal(summaryText(input), '3 of 5');
-  assert.deepEqual(input.value.value, ['Liver', 'Kidney', 'Heart']);
+  assert.deepEqual(input.value, ['Liver', 'Kidney', 'Heart']);
 
   checkItem(input, 0, false);
   checkItem(input, 1, false);
   checkItem(input, 2, false);
   assert.equal(summaryText(input), '0 of 5');
 
-  input.value.value = ITEMS.slice();
+  input.value = ITEMS.slice();
   assert.equal(summaryText(input), '5 of 5', 'programmatic writes reach the summary too');
   input.dispose();
 });
@@ -87,11 +87,11 @@ smoke('the summary checkbox is tri-state: unchecked, indeterminate, checked', ()
   assert.equal(summaryBox(input).checked, false);
   assert.equal(summaryBox(input).indeterminate, true, 'some but not all');
 
-  input.value.value = ITEMS.slice();
+  input.value = ITEMS.slice();
   assert.equal(summaryBox(input).checked, true);
   assert.equal(summaryBox(input).indeterminate, false);
 
-  input.value.value = [];
+  input.value = [];
   assert.equal(summaryBox(input).checked, false);
   assert.equal(summaryBox(input).indeterminate, false);
   input.dispose();
@@ -106,7 +106,7 @@ smoke('clicking the summary checkbox selects all from indeterminate, then none, 
   // a click on an indeterminate checkbox lands as checked
   summaryBox(input).checked = true;
   fire(summaryBox(input), 'change');
-  assert.deepEqual(input.value.value, ITEMS, 'all selected, in item order');
+  assert.deepEqual(input.value, ITEMS, 'all selected, in item order');
   assert.equal(summaryText(input), '5 of 5');
   assert.equal(summaryBox(input).checked, true);
   for (const box of itemBoxes(input))
@@ -114,7 +114,7 @@ smoke('clicking the summary checkbox selects all from indeterminate, then none, 
 
   summaryBox(input).checked = false;
   fire(summaryBox(input), 'change');
-  assert.deepEqual(input.value.value, []);
+  assert.deepEqual(input.value, []);
   assert.equal(summaryText(input), '0 of 5');
   for (const box of itemBoxes(input))
     assert.equal(box.checked, false);
@@ -135,7 +135,7 @@ smoke('the text and the chevron collapse the list; the content is hidden, never 
   assert.equal(toggle(input).getAttribute('aria-expanded'), 'false');
   assert.equal(itemsHost(input).style.display, 'none');
   assert.equal(itemBoxes(input).length, 5, 'rows stay in the DOM');
-  assert.deepEqual(input.value.value, ['Liver'], 'the value survives collapse');
+  assert.deepEqual(input.value, ['Liver'], 'the value survives collapse');
 
   fire(toggle(input), 'click');
   assert.equal(input.expanded.value, true);
@@ -163,7 +163,7 @@ smoke('setItems recomputes the text and preserves the collapse state', () => {
 
   input.setItems(['Liver', 'Kidney', 'Spleen']);
   assert.equal(summaryText(input), '1 of 3', 'Heart vanished with its check');
-  assert.deepEqual(input.value.value, ['Liver']);
+  assert.deepEqual(input.value, ['Liver']);
   assert.equal(itemsHost(input).style.display, 'none', 'still collapsed');
   assert.equal(input.expanded.value, false);
 
@@ -181,7 +181,7 @@ smoke('empty items read "0 of 0" and the summary checkbox is a no-op', () => {
 
   summaryBox(input).checked = true;
   fire(summaryBox(input), 'change');
-  assert.deepEqual(input.value.value, []);
+  assert.deepEqual(input.value, []);
   assert.equal(summaryBox(input).checked, false, 'snapped back to unchecked');
   assert.deepEqual(changes, [], 'no write, no onChanged');
   input.dispose();
@@ -198,7 +198,7 @@ smoke('without the option the editor is exactly the plain checkbox list', () => 
   assert.equal(editor.children.length, 5);
 
   checkItem(input, 1, true);
-  assert.deepEqual(input.value.value, ['Liver', 'Kidney'], 'value semantics unchanged');
+  assert.deepEqual(input.value, ['Liver', 'Kidney'], 'value semantics unchanged');
   input.dispose();
 });
 
@@ -212,13 +212,13 @@ smoke('the summary checkbox is named by the "N of M" text, and disabling parks t
     'the toggle never shares the checkbox\'s "N of M" name');
   assert.equal(toggle(input).tabIndex, 0);
 
-  input.enabled = false;
+  input.disabled = 'Not editable in this test';
   assert.equal(toggle(input).tabIndex, -1, 'the span gives up its tab stop with the input');
   fire(toggle(input), 'keydown', {key: 'Enter'});
   fire(toggle(input), 'click');
   assert.equal(input.expanded.value, true, 'gestures are inert while disabled');
 
-  input.enabled = true;
+  input.disabled = null;
   assert.equal(toggle(input).tabIndex, 0);
   fire(toggle(input), 'click');
   assert.equal(input.expanded.value, false, 'and live again');

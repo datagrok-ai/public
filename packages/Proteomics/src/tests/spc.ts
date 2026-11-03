@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
+import {category, test, expect} from '@datagrok-libraries/test/src/test';
 
 // =====================================================================================
 // Inline LCG for deterministic synthetic series (no npm seeded-random dependency).
@@ -634,7 +634,4 @@ category('SPC', () => {
     expect(agg[0].rule + '@' + agg[0].metric, 'nelson_1@median_intensity');
     expect(agg[0].count, 3);
   });
-
-  // keep the awaitCheck/delay imports referenced so linter doesn't drop them
-  void awaitCheck; void delay;
 });

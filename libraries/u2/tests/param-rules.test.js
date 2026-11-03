@@ -60,6 +60,11 @@ bare('unsupported flags are dropped from the RegExp but stay in the label (vld:1
   assert.equal(v('zzz'), 'Value doesn\'t match /^a.c$/gs');
 });
 
+bare('a pattern that does not compile fails every value with why, instead of throwing while the form builds', () => {
+  const v = regexValidator('/(/');
+  assert.equal(v('anything'), 'Invalid validator /(/: Unterminated group');
+});
+
 bare('a non-string value fails with the same message a non-match gets', () => {
   const v = regexValidator('/^\\d+$/');
   assert.equal(v(42), 'Value doesn\'t match /^\\d+$/');

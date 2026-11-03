@@ -1,23 +1,3 @@
-/* The pivot table's own steps (promoted from UsageAnalysis when the Data Aggregation tutorial wanted
-   them too). Everything else its features use is the rest of the `viewers` tier and the platform's
-   data steps, read from the regions and readings the pivot reports
-   (`group by chip <name>`, `add aggregate`, `counts`, `grid cell <r> of <col>`, `group by`,
-   `aggregated rows`, `text of grid cell <r> of <col>`, … — see
-   `core/client/d4/lib/src/viewers/pivot_viewer/CLAUDE.md`).
-
-   What is left here:
-   - the column picker the `+` of a tag row opens (a `ColumnComboBox` popup whose search box is
-     created by the first keystroke on the focused icon) — a thin wrapper, to be deleted once the
-     picker announces its readiness in the core;
-   - the arithmetic: the aggregation the pivot shows, compared against an independent `groupBy`
-     over the same table, which is the only check that reads the numbers rather than their shape;
-   - the two popups that are not menus and not dialogs: the history menu of the command bar and
-     the viewer-column combo of the Aggregate row;
-   - the saved-parameters store, which lives in `localStorage` and outlives a feature.
-
-   The cross-widget drag, the list-reading membership check and the dialog's plain checkbox were
-   none of them pivot business and are in the library now
-   (`bindings/tiers/viewers/widgets.ts` and `bindings/platform/steps.ts`). */
 import type {Page} from '@playwright/test';
 import {expect} from '../../../src/runtime/patience.js';
 import {Given, Then, When} from '../../../src/registry.js';

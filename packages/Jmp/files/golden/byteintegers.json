@@ -1,0 +1,1 @@
+{"nrows":5,"columns":[{"name":"Column 1","type":"Int8","values":[-29,-4,-62,27,30]},{"name":"2-byte integer","type":"Int16","values":[-187,-30,-18,13,-55]},{"name":"4-byte integer","type":"Int32","values":[-28711,-16887,-26063,13093,-44761]},{"name":"1-byte integer","type":"Int8","values":[0,1,0,1,0]}]}

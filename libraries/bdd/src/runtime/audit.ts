@@ -1,17 +1,12 @@
-/* The automatic audits the harness runs after every passing scenario. On a u2 page, on the
-   scenario's final state and before the shell reset: the layout audit (layout.ts) and the console-error
-   floor. After the reset: the leak check, which asks `DG.U2.debug` what was created since the baseline
-   taken when the scenario started and is still live (scopes, timers, global listeners). Tracking is on
-   only in pages whose project audits leaks: an init script sets `__U2_DEBUG__` before the platform
-   loads. Modes per project (`audits` in bdd.config.json), env overrides first; `report` warns and
-   annotates the test (`bdd-audit`, counted by tool/audit-summary.mjs), `fail` fails the scenario. */
 import type {Page, TestInfo} from '@playwright/test';
 import {type AuditConfig, type AuditMode, CONFIG_FILE, readConfig} from '../project.js';
 import {auditLayout, type LayoutRule} from './layout.js';
+import {type OperabilityRead, type OperabilityRule, readOperability} from './operability.js';
+import type {Balloon} from './viewer-runtime.js';
 
-export type AuditName = 'layout' | 'errors' | 'leaks';
+export type AuditName = 'layout' | 'errors' | 'balloons' | 'operability' | 'leaks';
 export type AuditModes = Record<AuditName, AuditMode>;
-export type AuditRule = LayoutRule | 'console-error' | 'leak';
+export type AuditRule = LayoutRule | OperabilityRule | 'console-error' | 'balloon' | 'leak';
 export type AuditAllow = Required<NonNullable<AuditConfig['allow']>>;
 
 export interface AuditFinding {audit: AuditName; rule: AuditRule; detail: string}
@@ -26,12 +21,15 @@ export interface AuditOutcome {ran: AuditName[]; findings: AuditFinding[]}
 export const AUDIT_ANNOTATION = 'bdd-audit';
 export const AUDITS_RAN_ANNOTATION = 'bdd-audits';
 
-const AUDITS: AuditName[] = ['layout', 'errors', 'leaks'];
+const AUDITS: AuditName[] = ['layout', 'errors', 'balloons', 'operability', 'leaks'];
 const MODES: AuditMode[] = ['fail', 'report', 'off'];
-const DEFAULT_MODES: AuditModes = {layout: 'report', errors: 'report', leaks: 'off'};
+const DEFAULT_MODES: AuditModes = {layout: 'fail', errors: 'fail', balloons: 'fail', operability: 'fail', leaks: 'off'};
 
 /** Findings every project accepts — u2's own page-wide singletons, platform noise — each with its reason. */
-export const BUILTIN_ALLOW: AuditAllow = {layout: [], errors: [], leaks: []};
+export const BUILTIN_ALLOW: AuditAllow = {layout: [], errors: [], balloons: [], leaks: [], operability: [
+  {rule: 'disabled-without-reason', selector: '.svg-remove-selected-rows, .svg-remove-selected-columns',
+    reason: 'platform ribbon icon; a core change is the lead\'s call'},
+]};
 
 function modeOf(value: unknown, source: string): AuditMode | undefined {
   if (value === undefined || value === '')
@@ -41,7 +39,7 @@ function modeOf(value: unknown, source: string): AuditMode | undefined {
   return value as AuditMode;
 }
 
-/** `BDD_AUDIT_LAYOUT|ERRORS|LEAKS` > `BDD_AUDIT` > the project's `audits` > layout and errors `report`, leaks `off`. */
+/** `BDD_AUDIT_LAYOUT|ERRORS|BALLOONS|OPERABILITY|LEAKS` > `BDD_AUDIT` > the project's `audits` > `fail`, leaks `off`. */
 export function resolveModes(config: AuditConfig | undefined, env: Record<string, string | undefined> = process.env): AuditModes {
   const all = modeOf(env.BDD_AUDIT, 'BDD_AUDIT');
   const modes = {} as AuditModes;
@@ -58,6 +56,8 @@ export function resolveAllow(config: AuditConfig | undefined): AuditAllow {
   const allow: AuditAllow = {
     layout: [...BUILTIN_ALLOW.layout, ...config?.allow?.layout ?? []],
     errors: [...BUILTIN_ALLOW.errors, ...config?.allow?.errors ?? []],
+    balloons: [...BUILTIN_ALLOW.balloons, ...config?.allow?.balloons ?? []],
+    operability: [...BUILTIN_ALLOW.operability, ...config?.allow?.operability ?? []],
     leaks: [...BUILTIN_ALLOW.leaks, ...config?.allow?.leaks ?? []],
   };
   for (const name of AUDITS) {
@@ -113,6 +113,46 @@ export function errorFindings(errors: LoggedError[], allow: AuditAllow['errors']
       detail: `${e.message.split('\n')[0].slice(0, 300)}${e.url ? ` (${e.url})` : ''}`}));
 }
 
+/** The error and warning balloons left on the record — a balloon step takes off the ones it claims. An entry
+ * matching the text without its markup drops one. */
+export function balloonFindings(balloons: Balloon[], allow: AuditAllow['balloons']): AuditFinding[] {
+  return balloons
+    .filter((b) => b.type === 'error' || b.type === 'warning')
+    .map((b) => ({type: b.type, text: b.message.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}))
+    .filter((b) => !allow.some((a) => new RegExp(a.message).test(b.text)))
+    .map((b) => ({audit: 'balloons', rule: 'balloon', detail: `${b.type} balloon "${b.text.slice(0, 300)}" that no step claimed`}));
+}
+
+const stepFindings = new WeakMap<Page, AuditFinding[]>();
+let operabilityUnavailable = false;
+
+function operabilityFindings(read: OperabilityRead): AuditFinding[] | undefined {
+  if (read.missing === undefined)
+    return read.findings.map((f): AuditFinding => ({audit: 'operability', rule: f.rule, detail: f.detail}));
+  if (!operabilityUnavailable) {
+    operabilityUnavailable = true;
+    console.warn(`bdd: operability is audited, but ${read.missing}: no operability audit on this worker`);
+  }
+  return undefined;
+}
+
+/** A scenario starts with none of the step findings of the one before. */
+export function startScenarioAudit(page: Page): void {
+  stepFindings.delete(page);
+}
+
+/** After a step that passed: the u2 dialogs, popups and menus it opened, probed once each and kept for the
+ * scenario's audit — a dialog the scenario opens and closes again is checked too. Never fails the step. */
+export async function auditAfterStep(page: Page): Promise<void> {
+  const {modes, allow} = auditSettings();
+  if (modes.operability === 'off')
+    return;
+  const read = await readOperability(page, 'new', allow.operability).catch(() => undefined);
+  const found = read && read.probed > 0 ? operabilityFindings(read) : undefined;
+  if (found)
+    stepFindings.set(page, [...stepFindings.get(page) ?? [], ...found]);
+}
+
 /** What the leak check reads back: the records the baseline did not have, singletons left out. */
 export interface LeakRead {
   scopes: {id: number; label: string; name?: string; stack?: string}[];
@@ -152,6 +192,17 @@ export async function trackLeaks(page: Page): Promise<void> {
     return;
   tracked.add(page);
   await page.addInitScript(() => { (globalThis as any).__U2_DEBUG__ = true; });
+}
+
+const strict = new WeakSet<Page>();
+
+/** On a new page, before the platform loads: u2 throws on a misuse it detects (`U2UsageError`), or does what
+ * `U2_STRICT` says (`report` logs each one on the console). */
+export async function strictU2(page: Page): Promise<void> {
+  if (strict.has(page))
+    return;
+  strict.add(page);
+  await page.addInitScript((mode) => { (globalThis as any).__U2_STRICT__ = mode; }, process.env.U2_STRICT ?? 'throw');
 }
 
 let leakCheckUnavailable = false;
@@ -225,15 +276,18 @@ export async function leakCheck(page: Page): Promise<AuditOutcome> {
   return read ? {ran: ['leaks'], findings: leakFindings(read, allow.leaks)} : {ran: [], findings: []};
 }
 
-/** The layout audit and the console-error floor on the scenario's final state, when the current view or an
- * overlay over it shows u2. `errors` takes the errors logged since the scenario's floor. */
+/** The layout audit and the console-error floor on the scenario's final state, when the current view or an overlay
+ * over it shows u2; the balloon floor and the operability audit also when a step opened a u2 overlay. `errors` takes
+ * the errors logged since the scenario's floor; the balloons are taken off the record. */
 export async function auditScenario(page: Page, errors: () => LoggedError[]): Promise<AuditOutcome> {
   const {modes, allow} = auditSettings();
   const outcome: AuditOutcome = {ran: [], findings: []};
-  if (modes.layout === 'off' && modes.errors === 'off')
+  const steps = stepFindings.get(page);
+  stepFindings.delete(page);
+  if (AUDITS.every((name) => name === 'leaks' || modes[name] === 'off'))
     return outcome;
   // one cheap read first: most scenarios of a platform suite show no u2, and the audit waits two frames
-  let u2 = await page.evaluate(() => {
+  const first = await page.evaluate((take) => {
     const w = window as any;
     let root: unknown = null;
     try {
@@ -243,9 +297,11 @@ export async function auditScenario(page: Page, errors: () => LoggedError[]): Pr
       root = null;
     }
     const scope = root instanceof Element && root.isConnected ? root : document.body;
-    return scope.querySelector('[data-u2]') !== null ||
-      document.querySelector('[data-u2="dialog"], [data-u2-part="popup"], [data-u2="menu"]') !== null;
-  }).catch(() => false);
+    return {u2: scope.querySelector('[data-u2]') !== null ||
+      document.querySelector('[data-u2="dialog"], [data-u2-part="popup"], [data-u2="menu"]') !== null,
+    balloons: (take ? w.__bdd?.takeBalloons?.() ?? [] : []) as Balloon[]};
+  }, modes.balloons !== 'off').catch(() => ({u2: false, balloons: [] as Balloon[]}));
+  let u2 = first.u2;
   if (u2 && modes.layout !== 'off') {
     const layout = await auditLayout(page, {allow: allow.layout});
     u2 = layout.u2;
@@ -257,6 +313,22 @@ export async function auditScenario(page: Page, errors: () => LoggedError[]): Pr
   if (u2 && modes.errors !== 'off') {
     outcome.ran.push('errors');
     outcome.findings.push(...errorFindings(errors(), allow.errors));
+  }
+  const shown = u2 || steps !== undefined;
+  if (shown && modes.balloons !== 'off') {
+    outcome.ran.push('balloons');
+    outcome.findings.push(...balloonFindings(first.balloons, allow.balloons));
+  }
+  const found = shown && modes.operability !== 'off' ? operabilityFindings(await readOperability(page, 'all', allow.operability)) : undefined;
+  if (found) {
+    outcome.ran.push('operability');
+    const seen = new Set<string>();
+    for (const f of [...steps ?? [], ...found]) {
+      if (!seen.has(`${f.rule}: ${f.detail}`)) {
+        seen.add(`${f.rule}: ${f.detail}`);
+        outcome.findings.push(f);
+      }
+    }
   }
   return outcome;
 }

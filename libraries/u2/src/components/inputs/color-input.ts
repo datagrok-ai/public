@@ -53,7 +53,7 @@ export class ColorInput extends Input<string, ColorInputOptions> {
     // set by a typed write, dropped by the effect run it causes (handlers run batched)
     let echo = false;
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (echo)
         echo = false;
       else {
@@ -66,21 +66,21 @@ export class ColorInput extends Input<string, ColorInputOptions> {
     this.scope.listen(text, 'input', () => {
       const typed = text.value.trim();
       this._bad.value = !HEX.test(typed);
-      if (this._bad.peek() || typed === this.value.peek())
+      if (this._bad.peek() || typed === this.peek())
         return;
       echo = true;
-      this.value.value = typed;
+      this.value = typed;
     });
     this.scope.listen(picker, 'input', () => {
       this._bad.value = false;
-      this.value.value = picker.value;
+      this.value = picker.value;
     });
     this.scope.listen(swatch, 'click', () => picker.click());
 
     const box = document.createElement('span');
     box.className = 'u2-color-box';
     box.append(swatch, picker);
-    this.addOptions(box);
+    this.addRail(box, {edits: true});
     if (this.options.swatchOnly) {
       this.root.classList.add('u2-color-box-only');
       text.hidden = true;
@@ -92,8 +92,12 @@ export class ColorInput extends Input<string, ColorInputOptions> {
 
   protected resetEditor(): void {
     this._bad.value = false;
-    this._text.value = this.value.peek();
-    this._paint(this.value.peek());
+    this._text.value = this.peek();
+    this._paint(this.peek());
+  }
+
+  get unreadable(): boolean {
+    return this._bad.value;
   }
 
   private _paint(color: string): void {

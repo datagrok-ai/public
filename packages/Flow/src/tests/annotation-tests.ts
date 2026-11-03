@@ -53,7 +53,8 @@ category('Flow: annotations', () => {
     const e = makeEditor();
     try {
       const node = await addNode(e.flow, 'Inputs/String Input', 20, 20);
-      await until(() => !!e.container.querySelector(`.ff-node[data-node-id="${node.id}"]`));
+      const stays = await addNode(e.flow, 'Inputs/String Input', 20, 100);
+      await until(() => !!e.container.querySelector(`.ff-node[data-node-id="${stays.id}"]`));
       const ann = e.flow.addAnnotation({pos: {x: -20, y: -20}, size: {w: 320, h: 220}});
 
       drag(ann.element, 40, 0);
@@ -61,7 +62,7 @@ category('Flow: annotations', () => {
 
       await e.flow.translate(node.id, 2000, 2000);
       drag(ann.element, 40, 0);
-      await new Promise((r) => setTimeout(r, 100));
+      expect(await until(() => stays.pos.x === 100), true, 'the drag carried the node still inside');
       expect(node.pos.x, 2000, 'a node outside the frame is no longer carried');
     } finally {
       destroyEditor(e);
@@ -114,7 +115,6 @@ category('Flow: annotations', () => {
 
       e.container.querySelector('.ff-canvas')!.dispatchEvent(new PointerEvent('pointerdown', down));
       window.dispatchEvent(new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true}));
-      await new Promise((r) => setTimeout(r, 50));
       expect(e.flow.getAnnotations().length, 1, 'a disarmed annotation survives Delete');
       expect(ann.element.classList.contains('ff-annotation-active'), false, 'the mark is gone');
 
@@ -315,9 +315,11 @@ category('Flow: annotations', () => {
     const e = makeEditor();
     try {
       const out = await addNode(e.flow, 'Outputs/Table Output', 20, 20);
+      const carried = await addNode(e.flow, 'Inputs/String Input', 20, 150);
+      await until(() => !!e.container.querySelector(`.ff-node[data-node-id="${carried.id}"]`));
       const ann = e.flow.addAnnotation({pos: {x: -50, y: -50}, size: {w: 500, h: 400}});
       drag(ann.element, 80, 0);
-      await new Promise((r) => setTimeout(r, 100));
+      expect(await until(() => carried.pos.x === 100), true, 'the drag carried the canvas node');
       expect(out.pos.x, 20, 'output row position untouched');
     } finally {
       destroyEditor(e);

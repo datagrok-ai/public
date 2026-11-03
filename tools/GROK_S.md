@@ -522,6 +522,7 @@ grok s o problems list --alert-status open                 # the open alerts; --
 grok s o problems get 'health:Jupyter@<server>'            # by id or kind:key; history <id> for its records
 grok s o problems status connection:<connection id> --data '{"status": "muted", "reason": "maintenance", "until": "2026-10-04T06:00:00Z"}'
 grok s o problems ack 'health:Jupyter@<server>' --reason x  # resolve <id> --reason ... closes the alert
+grok s o problems severity dashboard:<project id> critical --reason 'board meeting'   # pin; none unpins
 grok s o rules get > rules.json                             # Settings > Alerts problem rules; rules put --json rules.json
 grok s o rules test                                         # evaluates the saved rules once, now
 grok s o logger get exportSettings                          # the logger settings, or one path of them

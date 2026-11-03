@@ -3,14 +3,28 @@
 // User documentation lives in help/compute/run-comparison.md
 
 import {
-  ColumnInfo, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, isNumericType,
-  TimeUnit, TIME_UNIT_MS, TIME_UNITS, AxisMode, AxisModeSelection, AxisConfigMap, toTargetUnits,
-  isTimeIndexType, isIndexCandidateType,
+  ColumnInfo, ComparisonEntry, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, ColumnCandidate, isNumericType,
+  TimeUnit, TIME_UNIT_MS, TIME_UNITS, AxisMode, AxisModeConfig, AxisModeSelection, AxisConfigMap, toTargetUnits,
+  isTimeIndexType, isIndexCandidateType, TableNodeInfo,
 } from './types';
 import {
   normalizeName, nameSimilarity, nameMatchConfidence, normalizeUnits, unitsCompatibility, UnitConverter,
   FUZZY_NAME_THRESHOLD,
 } from './matching';
+
+export const withEntryName = (entry: ComparisonEntry, name: string): ComparisonEntry =>
+  name === entry.name ? entry : {...entry, name, nodes: {...entry.nodes, entryName: name}};
+
+/** The name, or with the first free ` (n)` suffix when another entry has it: charts split by run name. */
+export function uniqueEntryName(name: string, taken: string[]): string {
+  const names = new Set(taken);
+  if (!names.has(name))
+    return name;
+  let n = 2;
+  while (names.has(`${name} (${n})`))
+    n++;
+  return `${name} (${n})`;
+}
 
 /** Entry nodes without the outputs of steps whose results are outdated. */
 export const withoutOutdatedOutputs = (nodes: ComparisonEntryNodes): ComparisonEntryNodes => ({
@@ -50,6 +64,31 @@ export function compatibleTargetsFor(
   if (!lineIndexed(anchor))
     return [];
   return targets.filter((target) => target.kind === 'column' && lineIndexed(target));
+}
+
+export interface TargetListOptions {
+  multiMode: boolean;
+  isCharted: (key: string) => boolean;
+  compatible: ComparisonTarget[];
+  equalKeys: Set<string>;
+  filter: string;
+  contexts: Map<string, string>;
+}
+
+/**
+ * The Compare list. Multi mode lists the suggestions plus everything charted, so a charted
+ * target that became incompatible can still be unchecked; a charted target stays listed
+ * even when equal. The filter also matches the step context.
+ */
+export function listedTargets(
+  targets: ComparisonTarget[],
+  {multiMode, isCharted, compatible, equalKeys, filter, contexts}: TargetListOptions,
+): ComparisonTarget[] {
+  const compatibleKeys = new Set(compatible.map((target) => target.key));
+  return targets.filter((target) =>
+    (!multiMode || isCharted(target.key) || compatibleKeys.has(target.key)) &&
+    (!equalKeys.has(target.key) || isCharted(target.key)) &&
+    matchesFilter(filter, `${target.displayName} ${contexts.get(target.key) ?? ''}`));
 }
 
 /**
@@ -130,6 +169,24 @@ export function isTargetEqualAcrossRuns(
   return rest.every((s) => sameValues(s.value, first.value) &&
     sameValues(s.index, first.index, indexCompare) &&
     (s.split === first.split || sameValues(s.split, first.split)));
+}
+
+/** Keys of the targets equal across runs; each column's values are fetched once. */
+export function equalTargetKeys(
+  targets: ComparisonTarget[],
+  getColumnValues: ColumnValuesGetter,
+  getColumnType?: (entryId: string, tablePath: string, columnName: string) => string | undefined,
+): Set<string> {
+  const cache = new Map<string, ArrayLike<unknown> | undefined>();
+  const cached: ColumnValuesGetter = (entryId, tablePath, columnName) => {
+    const key = `${entryId}|${tablePath}|${columnName}`;
+    if (!cache.has(key))
+      cache.set(key, getColumnValues(entryId, tablePath, columnName));
+    return cache.get(key);
+  };
+  return new Set(targets
+    .filter((target) => isTargetEqualAcrossRuns(target, cached, getColumnType))
+    .map((target) => target.key));
 }
 
 // bare 'm' is deliberately not recognized — ambiguous with meters
@@ -213,30 +270,81 @@ export interface PickerSelections {
   axis: AxisModeSelection;
 }
 
+// tables merged into one picker row: the same output of the same function
+const sameFuncKey = (table: TableNodeInfo) => table.nqName ? `${table.nqName}|${table.path.split('/').pop()}` : null;
+
+export interface TableRef {
+  entryId: string;
+  tablePath: string;
+}
+
+/** Tables of the other runs that share the table's merged picker row; none for a table without nqName. */
+export function sameFuncPeers(table: TableNodeInfo, others: ComparisonEntryNodes[]): TableRef[] {
+  const key = sameFuncKey(table);
+  return key ? others.flatMap((other) => other.tables.filter((peer) => sameFuncKey(peer) === key)
+    .map((peer) => ({entryId: other.entryId, tablePath: peer.path}))) : [];
+}
+
+/** The pick when all picks agree; undefined for no picks or a disagreement. */
+export function agreedPick<T>(picks: T[], same: (a: T, b: T) => boolean = (a, b) => a === b): T | undefined {
+  return picks.length > 0 && picks.every((pick) => same(pick, picks[0])) ? picks[0] : undefined;
+}
+
+const SERIES: AxisModeConfig = {mode: 'series'};
+const sameAxis = (a: AxisModeConfig, b: AxisModeConfig) => a.mode === b.mode && a.units === b.units;
+
+function annotatedPicks(table: TableNodeInfo): {index?: string, split?: string, axis?: AxisModeConfig} {
+  const mode = table.defaultAxisMode;
+  return {
+    index: table.defaultIndexColumn,
+    split: table.defaultSplitColumn,
+    // units matter only on the elapsed axis; storing them elsewhere would let a
+    // unit the user never saw outrank the column-meta prefill later
+    axis: mode && {mode, ...mode === 'timeseries' && table.defaultTimeUnits ? {units: table.defaultTimeUnits} : {}},
+  };
+}
+
 /**
- * Pickers pre-filled from the tables' {comparison: {...}} annotations wherever the user has
- * no pick yet; unchanged selections are returned as the same objects.
+ * Pickers pre-filled wherever the user has no pick yet: with the pick the same function's tables
+ * in the other runs agree on, else with the tables' {comparison: {...}} annotations. The axis mode
+ * comes from the runs only along with their index. Unchanged selections are returned as the same objects.
  */
-export function withAnnotatedDefaults(entry: ComparisonEntryNodes, selections: PickerSelections): PickerSelections {
+export function withDefaultPicks(
+  entry: ComparisonEntryNodes, selections: PickerSelections, others: ComparisonEntryNodes[] = [],
+): PickerSelections {
   let {index, split, axis} = selections;
   const set = <T, >(selection: Record<string, Record<string, T>>, tablePath: string, value: T) =>
     ({...selection, [entry.entryId]: {...selection[entry.entryId], [tablePath]: value}});
   for (const table of entry.tables) {
-    const indexDefault = table.defaultIndexColumn;
-    if (indexDefault && !index[entry.entryId]?.[table.path] && table.columns.some((col) => col.name === indexDefault))
-      index = set(index, table.path, indexDefault);
-    const splitColumn = table.columns.find((col) => col.name === table.defaultSplitColumn);
-    if (splitColumn && !split[entry.entryId]?.[table.path] &&
-      isSplitCandidate(splitColumn, index[entry.entryId]?.[table.path] ?? ''))
-      split = set(split, table.path, splitColumn.name);
-    const modeDefault = table.defaultAxisMode;
-    if (modeDefault && !axis[entry.entryId]?.[table.path]) {
-      // units matter only on the elapsed axis; storing them elsewhere would let a
-      // unit the user never saw outrank the column-meta prefill later
-      axis = set(axis, table.path, {
-        mode: modeDefault,
-        ...modeDefault === 'timeseries' && table.defaultTimeUnits ? {units: table.defaultTimeUnits} : {},
-      });
+    const columnOf = (name?: string) => table.columns.find((col) => col.name === name);
+    const annotated = annotatedPicks(table);
+    const peers = sameFuncPeers(table, others);
+    const picksOf = <T, >(selection: Record<string, Record<string, T>>, refs = peers) =>
+      refs.map(({entryId, tablePath}) => selection[entryId]?.[tablePath]).filter((pick): pick is T => !!pick);
+
+    const peerIndex = columnOf(agreedPick(picksOf(index)))?.name;
+    if (!index[entry.entryId]?.[table.path]) {
+      const name = peerIndex ?? columnOf(annotated.index)?.name;
+      if (name)
+        index = set(index, table.path, name);
+    }
+    const currentIndex = index[entry.entryId]?.[table.path] ?? '';
+
+    if (!split[entry.entryId]?.[table.path]) {
+      const column = [agreedPick(picksOf(split)), annotated.split].map(columnOf)
+        .find((col) => col && isSplitCandidate(col, currentIndex));
+      if (column)
+        split = set(split, table.path, column.name);
+    }
+
+    if (!axis[entry.entryId]?.[table.path]) {
+      const indexPeers = peers.filter(({entryId, tablePath}) => index[entryId]?.[tablePath] === currentIndex);
+      const peerAxis = peerIndex && currentIndex === peerIndex ?
+        agreedPick(indexPeers.map(({entryId, tablePath}) => axis[entryId]?.[tablePath] ?? SERIES), sameAxis) :
+        undefined;
+      const config = peerAxis ?? annotated.axis;
+      if (config)
+        axis = set(axis, table.path, config);
     }
   }
   return {index, split, axis};
@@ -348,8 +456,7 @@ export function computeIndexRows(
   if (!mergeSameFuncs)
     return perTable.map(singleRow);
 
-  const groupKey = ({table}: typeof perTable[number]) =>
-    table.nqName ? `${table.nqName}|${table.path.split('/').pop()}` : null;
+  const groupKey = ({table}: typeof perTable[number]) => sameFuncKey(table);
   const groups = new Map<string, typeof perTable>();
   for (const item of perTable) {
     const key = groupKey(item);
@@ -474,6 +581,47 @@ export function getEntryStatuses(
       return {entryId: entry.entryId, matched: false, reason: 'units differ', units};
     return {entryId: entry.entryId, matched: false, reason: 'no similar data'};
   });
+}
+
+export interface StatusChip {
+  entryId: string;
+  text: string;
+  // set on amber chips: the axis mode the run's table lacks
+  warningMode?: string;
+}
+
+const WARNING_MODES: Record<NonNullable<EntryStatus['warning']>, string> = {
+  'relative timeseries not set': 'relative timeseries',
+  'independent points not set': 'independent points',
+};
+
+/** Red chips for excluded runs, amber ones for matched runs that chart as a plain series. */
+export function statusChips(statuses: EntryStatus[]): StatusChip[] {
+  return statuses.flatMap((status): StatusChip[] => {
+    if (!status.matched)
+      return [{entryId: status.entryId, text: status.units ? `${status.reason} (${status.units})` : status.reason!}];
+    if (status.warning)
+      return [{entryId: status.entryId, text: status.warning, warningMode: WARNING_MODES[status.warning]}];
+    return [];
+  });
+}
+
+export interface CandidateGroup {
+  entryId: string;
+  candidates: ColumnCandidate[];
+}
+
+/** A column target's candidates in runs of consecutive same-entry items, as listed. */
+export function groupCandidatesByEntry(candidates: ColumnCandidate[]): CandidateGroup[] {
+  const groups: CandidateGroup[] = [];
+  for (const candidate of candidates) {
+    const last = groups[groups.length - 1];
+    if (last && last.entryId === candidate.binding.entryId)
+      last.candidates.push(candidate);
+    else
+      groups.push({entryId: candidate.binding.entryId, candidates: [candidate]});
+  }
+  return groups;
 }
 
 /**

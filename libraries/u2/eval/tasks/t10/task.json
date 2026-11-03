@@ -1,0 +1,10 @@
+{
+  "name": "group-format",
+  "entry": "campaign-catalog.ts",
+  "title": "A grouped catalog whose group headers read like its cells",
+  "source": "N-5: a Date group header in the locale format over cells in 2026/6/29; an '[object Object]' group for an object key",
+  "bad": {
+    "bad-date-key": ["kickoff-headers"],
+    "bad-object-key": ["owner-headers"]
+  }
+}

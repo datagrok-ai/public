@@ -838,6 +838,40 @@ function install(): void {
     const areas = areasOf(v);
     return {boxes: names.map((n) => edgeOf(areas, n)), has: Object.keys(areas)};
   };
+  /** A point a gesture aims at, brought into view: a viewer inside a scrolling panel (a filter card at the bottom
+   * of the filter panel) can have the area outside the panel's visible box, and the pointer then lands on whatever
+   * is drawn there. Only a scrolling ancestor whose visible box the point lies outside of is scrolled, to put the
+   * point in its middle; whether anything moved. */
+  const revealArea = (el: Element, x: number, y: number): boolean => {
+    let moved = false;
+    const root = viewerOf(el).root as HTMLElement;
+    // the filter panel scrolls a wrapper inside its root, a card's viewer the panel around it
+    const scrollers = Array.from(root.querySelectorAll<HTMLElement>('*'))
+      .filter((a) => a.scrollHeight > a.clientHeight || a.scrollWidth > a.clientWidth).reverse();
+    for (let a: HTMLElement | null = root; a; a = a.parentElement)
+      scrollers.push(a);
+    for (const a of scrollers) {
+      const style = getComputedStyle(a);
+      const r = a.getBoundingClientRect();
+      const top = r.top + a.clientTop;
+      const left = r.left + a.clientLeft;
+      const acrossX = x >= left && x <= left + a.clientWidth;
+      const acrossY = y >= top && y <= top + a.clientHeight;
+      if (acrossX && !acrossY && /auto|scroll|overlay/.test(style.overflowY) && a.scrollHeight > a.clientHeight) {
+        const before = a.scrollTop;
+        a.scrollTop += y - (top + a.clientHeight / 2);
+        y -= a.scrollTop - before;
+        moved = moved || a.scrollTop !== before;
+      }
+      if (acrossY && !acrossX && /auto|scroll|overlay/.test(style.overflowX) && a.scrollWidth > a.clientWidth) {
+        const before = a.scrollLeft;
+        a.scrollLeft += x - (left + a.clientWidth / 2);
+        x -= a.scrollLeft - before;
+        moved = moved || a.scrollLeft !== before;
+      }
+    }
+    return moved;
+  };
   const hitArea = (el: Element, name: string, beforeChange = false): Box => {
     const found = findArea(el, name, beforeChange);
     if (!found.box)
@@ -1082,8 +1116,13 @@ function install(): void {
     delete armed[token];
     return result !== undefined;
   };
-  /** Closes the open popup menu the platform's way (a click outside) and waits for it to be gone. */
+  /** Closes the open popup menu the platform's way (a click outside) and waits for it to be gone; a u2 menu
+   * closes on Escape on its panel. */
   const closeMenu = async (): Promise<void> => {
+    for (const panel of Array.from(document.querySelectorAll('.u2-menu'))) {
+      if (!panel.parentElement?.closest('.u2-menu'))
+        panel.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    }
     if (!document.querySelector('.d4-menu-popup'))
       return;
     const closed = armEvent('onContextMenuClosed', 1500);
@@ -1347,7 +1386,7 @@ function install(): void {
   };
 
   w.__bdd = {table, tableNamed, col, rowFacts, setRows,
-    viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, quietAreaRects, areaInk, areaChange, areaDelta, areaColors,
+    viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, revealArea, hitArea, areas, quietAreaRects, areaInk, areaChange, areaDelta, areaColors,
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
     snapshot, baselineAll, settleAll, changeAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
     palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer, writePropertiesOfAdded,

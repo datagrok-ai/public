@@ -1,5 +1,9 @@
 // This file will be used from Web Workers
 // There should be no imports from Datagrok or OCL
+// RDKit-only (it goes with RDKit.js, engine/README.md "Removing RDKit"): RDKit's main-thread module and pool
+// (`initRdKitModuleLocal`, `initRdKitService`, `getRdKitModule`, `getRdKitService`, `cancelChemOp`),
+// `checkMoleculeValid`, `validationMessageByRdKit` and reaction drawing (`drawRdKitReactionToOffscreenCanvas`). The
+// rest takes the module or branches by engine, and stays.
 import {RdKitService} from '../rdkit-service/rdkit-service';
 import {convertToRDKit} from '../analysis/r-group-analysis';
 //@ts-ignore
@@ -9,13 +13,13 @@ import initRDKitModule from '../RDKit_minimal.js';
 import {hasNewLines, isChemOpRunning, isMolBlock} from './chem-common';
 import {MAX_SMILES_LENGTH} from './chem-constants';
 import $ from 'cash-dom';
-import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDLog, RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {IMolContext, getMolSafe} from './mol-creation_rdkit';
 import {initRdKitFrom} from '../rdkit-service/rdkit-service-worker-api';
-import {ChemicalEngine, renderingModule} from '../engine/chem-engine';
-import {warnCruxFallback} from '../engine/fallback';
+import {byEngineModule, withMol} from '../engine/chem-engine';
 import {noteCruxError} from '../engine/crux-module';
+import {cruxReadsCxExtension} from '../crux/crux-service';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -111,6 +115,8 @@ export async function cancelChemOp(opId: string, workers: number[]): Promise<voi
   await Promise.all(workers.map((w) => svc.restartWorker(w)));
 }
 
+/** Chem's web root (the package's files, the wasm files' folder), set at the package's init: not RDKit's, despite the
+ * name; it stays when RDKit goes. */
 export function getRdKitWebRoot() {
   return _webRoot;
 }
@@ -222,23 +228,16 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   if (!isMol)
     molString = convertToRDKit(molString);
 
-  // in Crux mode ("Chemical engine") Crux draws, and RDKit whatever Crux cannot read or refuses
-  const rendering = renderingModule(getRdKitModule());
-  if (rendering.engine === ChemicalEngine.Crux) {
-    let drawn = false;
-    try {
-      drawn = drawMoleculeWith(rendering.module, true, x, y, w, h, nW, nH, onscreenCanvas, molString, isMol,
-        scaffoldMolString, scaffoldStruct, renderingOptions);
-    } catch (e) {
-      noteCruxError(e);
-      warnCruxFallback('canvasMol', e);
-    }
-    if (drawn)
-      return;
-    warnCruxFallback('canvasMol', `RDKit draws what Crux cannot read or refuses, e.g. ${molString}`);
-  }
-  drawMoleculeWith(getRdKitModule(), false, x, y, w, h, nW, nH, onscreenCanvas, molString, isMol,
-    scaffoldMolString, scaffoldStruct, renderingOptions);
+  // in Crux mode ("Chemical engine") Crux draws, and RDKit whatever Crux cannot read or refuses, and a CXSMILES whose
+  // query features Crux's reader skips (the molecule's or the scaffold's)
+  const cruxReads = (s: string | null): boolean => !s || cruxReadsCxExtension(s);
+  byEngineModule('canvasMol', getRdKitModule(), (module, crux) => {
+    if (crux && !(cruxReads(molString) && cruxReads(scaffoldMolString)))
+      return null;
+    const drawn = drawMoleculeWith(module, crux, x, y, w, h, nW, nH, onscreenCanvas, molString, isMol,
+      scaffoldMolString, scaffoldStruct, renderingOptions);
+    return drawn || !crux ? true : null;
+  }, `RDKit draws what Crux cannot read or refuses, e.g. ${molString}`);
 }
 
 /** {@link drawMoleculeToCanvas} by one engine's module. Under Crux (`crux`) false, with nothing drawn, for a molecule
@@ -303,11 +302,29 @@ function drawMoleculeWith(module: RDModule, crux: boolean, x: number, y: number,
   }
 }
 
-export function checkMolEqualSmiles(mol1: any, molfile2: string): boolean {
-  const mol2 = checkMoleculeValid(molfile2);
-  const result = mol2 ? mol1.get_smiles() === mol2.get_smiles() : false;
-  mol2?.delete();
-  return result;
+/** `molecule`'s canonical SMILES (null where it does not read: {@link checkMoleculeValid}'s `get_mol`) on `module`;
+ * under Crux (`crux`) what the module throws is thrown (the fallback notes a trap). */
+export function canonicalWith(module: RDModule, crux: boolean, molecule: string): string | null {
+  if (!hasNewLines(molecule) && molecule?.length > MAX_SMILES_LENGTH)
+    return null;
+  return withMol(module, crux, molecule, (mol) => mol.get_smiles());
+}
+
+/** Whether `molecule` reads as a molecule ({@link checkMoleculeValid}'s check) by the main thread's module: "Chemical
+ * engine", Crux's in Crux mode, RDKit's where Crux reads none. */
+export function readsAsMolecule(molecule: string): boolean {
+  return byEngineModule('molecule check', getRdKitModule(),
+    (module, crux) => canonicalWith(module, crux, molecule) !== null ? true : null) ?? false;
+}
+
+/** Whether two molecule strings are one molecule (the same canonical SMILES) by the main thread's module: "Chemical
+ * engine", Crux's in Crux mode, RDKit's where Crux reads either none. A string that does not read is no match. */
+export function sameMolecule(molecule1: string, molecule2: string): boolean {
+  return byEngineModule('molecule compare', getRdKitModule(), (module, crux) => {
+    const smiles1 = canonicalWith(module, crux, molecule1);
+    const smiles2 = smiles1 === null ? null : canonicalWith(module, crux, molecule2);
+    return smiles2 === null ? null : smiles1 === smiles2;
+  }) ?? false;
 }
 
 export function checkMoleculeValid(molecule: string): any {
@@ -321,4 +338,23 @@ export function checkMoleculeValid(molecule: string): any {
     return null;
   }
   return mol;
+}
+
+/** RDKit's message for a molecule string it does not read ('' for one it reads with nothing logged): what
+ * `validateMolecule` shows. RDKit-only: Crux keeps no log. */
+export function validationMessageByRdKit(rdKitModule: RDModule, molecule: string): string | null {
+  let logHandle: RDLog | null = null;
+  let mol: RDMol | null = null;
+  try {
+    logHandle = rdKitModule.set_log_capture('rdApp.error');
+    mol = getMolSafe(molecule, {}, rdKitModule, true).mol;
+    let logBuffer = logHandle?.get_buffer();
+    logHandle?.clear_buffer();
+    if (!mol && !logBuffer)
+      logBuffer = 'unknown error';
+    return logBuffer ?? null;
+  } finally {
+    logHandle?.delete();
+    mol?.delete();
+  }
 }

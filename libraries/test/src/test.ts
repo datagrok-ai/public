@@ -371,6 +371,7 @@ export async function initAutoTests(package_: _DG.Package, module?: any) {
   }
   const moduleAutoTests = [];
   const moduleDemo = [];
+  let previousDemo: string | null = null;
   const moduleDetectors = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
   const reg = new RegExp(/skip:\s*([^,\s]+)|wait:\s*(\d+)|cat:\s*([^,\s]+)|timeout:\s*(\d+)/g);
@@ -389,7 +390,9 @@ export async function initAutoTests(package_: _DG.Package, module?: any) {
         });
         const test = new Test(map.cat ?? autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
           const res = await grok.functions.eval(addNamespace(tests[i], f));
-          if (map.wait) await delay(map.wait);
+          // `wait` marks a test that opens UI: let it finish loading rather than sleep for the given ms
+          if (map.wait)
+            await uiSettled(f.name);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
         }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout ?? BENCHMARK_TIMEOUT : map.timeout ?? STANDART_TIMEOUT,
@@ -412,13 +415,18 @@ export async function initAutoTests(package_: _DG.Package, module?: any) {
       }
     }
     if (demo) {
-      const wait = f.options['demoWait'] ? parseInt(f.options['demoWait']) : undefined;
       const test = new Test(demoCatName, f.friendlyName, async () => {
-        await delay(300);
+        await uiSettled('the views the previous test closed');
+        // an error raised after the previous demo had settled surfaces here: name the demo it belongs to
+        const late = previousDemo ? await grok.shell.lastError : null;
         grok.shell.clearLastError();
+        if (late)
+          throw new Error(`${previousDemo} raised an error after it finished: ${late}`);
+        previousDemo = f.friendlyName;
         await f.apply();
-        await delay(wait ? wait : 2000);
+        await uiSettled(f.friendlyName);
         const unhandled = await grok.shell.lastError;
+        grok.shell.clearLastError();
         if (unhandled)
           throw new Error(unhandled);
       }, { skipReason: f.options['demoSkip'] });
@@ -759,8 +767,14 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
       resetConsole();
     }
     if (options.testContext!.catchUnhandled && (!DG.Test.isInBenchmark)) {
-      await delay(1000);
-      const error = await grok.shell.lastError;
+      let error: string | undefined;
+      try {
+        await uiSettled('the last test');
+        error = await grok.shell.lastError;
+      }
+      catch (e: any) {
+        error = e.message;
+      }
       if (error != undefined) {
           const params: any = {
               logs: '',
@@ -936,6 +950,27 @@ export async function settled(viewer: _DG.Viewer, timeout: number = 10000): Prom
     held = box.width > 0 && box.height > 0 && !renderPending(viewer) ? held + 1 : 0;
     return held >= 2;
   }, `${viewer.type} is still rendering`, timeout, 16);
+}
+
+/** Resolves once nothing is on its way to the screen, on two checks in a row: no viewer shown in a table view is
+ * rendering, and the current view and open dialogs show no loader (`ui.wait`, `ui.setUpdateIndicator`) or busy region
+ * (`aria-busy`); rejects after [timeout] ms, naming [what] was still loading. The rest of the shell is not looked at:
+ * a test runner's tree and the context panel show loaders of their own while tests run. Resolves at once under
+ * Node.js, which has no UI. */
+export async function uiSettled(what: string, timeout: number = 20000): Promise<void> {
+  if (typeof process !== 'undefined')
+    return;
+  const loading = '.grok-wait .grok-loader, .d4-update-shadow, [aria-busy="true"]';
+  const busy = () => [grok.shell.v?.root, ...document.querySelectorAll('.d4-dialog')]
+    .some((root) => root != null && Array.from(root.querySelectorAll<HTMLElement>(loading))
+      .some((e) => e.offsetParent !== null)) ||
+    Array.from(grok.shell.tableViews).some((tv) => Array.from(tv.viewers)
+      .some((v) => v.root.offsetParent !== null && renderPending(v)));
+  let held = 0;
+  await waitUntil(() => {
+    held = busy() ? 0 : held + 1;
+    return held >= 2;
+  }, `${what}: still loading`, timeout, 16);
 }
 
 // platforms before 2026-09 do not report pending renders

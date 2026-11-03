@@ -6,7 +6,9 @@ Feature: Scatter plot axes, encodings and persistence
   addressed by name) and a logarithmic axis switched on over the inverted, reversed window
   (GROK-13110), a datetime axis taking the axis type away and giving the time unit instead,
   one column serving both axes, and the whole configuration surviving a layout and a project
-  round-trip on the server. One journey on demog-1000; every scenario puts back what it changed.
+  round-trip on the server — the explicit X window with the layout (public#2402), the window a range
+  slider zoom left with the project (core#375) — and a new X column dropping the explicit window
+  (public#1882). One journey on demog-1000; every scenario puts back what it changed.
 
   Background:
     Given user is logged in
@@ -38,7 +40,8 @@ Feature: Scatter plot axes, encodings and persistence
     And scatter plot viewer should show 872 rows
     And no errors should have been logged
 
-  Scenario: An explicit window, a logarithmic axis and an inverted one
+  @realizes:public#1882
+  Scenario: An explicit window, dropped by a new X column (public#1882), a logarithmic axis and an inverted one
     When user sets "X Axis Type" property of scatter plot viewer to "logarithmic"
     Then scatter plot viewer should have repainted
     And no error or warning balloon should have been shown
@@ -49,6 +52,15 @@ Feature: Scatter plot axes, encodings and persistence
     Then the "x axis min" reading of scatter plot viewer should be 20
     And the "x axis max" reading of scatter plot viewer should be 60
     And scatter plot viewer should show fewer rows than before
+    When user sets "X" property of scatter plot viewer to "WEIGHT"
+    Then "xMin" property of scatter plot viewer should be ""
+    And "xMax" property of scatter plot viewer should be ""
+    And the "x axis min" reading of scatter plot viewer should not be "20"
+    When user sets properties of scatter plot viewer:
+      | X    | AGE |
+      | xMin | 20  |
+      | xMax | 60  |
+    Then the "x axis min" reading of scatter plot viewer should be 20
     When user sets "Invert X Axis" property of scatter plot viewer to "true"
     Then scatter plot viewer should have repainted
     When user sets properties of scatter plot viewer:
@@ -105,7 +117,12 @@ Feature: Scatter plot axes, encodings and persistence
     Then scatter plot viewer should show 872 rows
     And no errors should have been logged
 
-  Scenario: A layout round-trip on the server brings the five columns back
+  @realizes:public#2402
+  Scenario: A layout round-trip on the server brings the five columns back, and an explicit X window (public#2402)
+    When user sets properties of scatter plot viewer:
+      | xMin | 30 |
+      | xMax | 60 |
+    Then the "x axis min" reading of scatter plot viewer should be 30
     When user saves the layout of the current table view to the server
     And user adds a histogram viewer
     And user sets "Color" property of scatter plot viewer to ""
@@ -120,10 +137,21 @@ Feature: Scatter plot axes, encodings and persistence
       | Size    | WEIGHT |
       | Markers | SEX    |
     And the legend of scatter plot viewer should list 6 items
+    And the "x axis min" reading of scatter plot viewer should be 30
+    And the "x axis max" reading of scatter plot viewer should be 60
+    When user sets properties of scatter plot viewer:
+      | xMin |  |
+      | xMax |  |
+    Then scatter plot viewer should show 872 rows
     And no errors should have been logged
 
-  Scenario: A project round-trip brings them back too
-    When user saves the current view as project "zz-scatter-plot-axes"
+  @realizes:core#375
+  Scenario: A project round-trip brings them back too, with the window a zoom left (core#375)
+    When user drags the min handle of the "x" range slider of scatter plot viewer by 40 pixels
+    Then the "x axis min" reading of scatter plot viewer should be higher than before
+    When user remembers the "x axis min" reading of scatter plot viewer
+    And user remembers how many rows pass the filter
+    And user saves the current view as project "zz-scatter-plot-axes"
     And user closes all views
     And user opens the "zz-scatter-plot-axes" project
     Then scatter plot viewer should be visible
@@ -134,5 +162,9 @@ Feature: Scatter plot axes, encodings and persistence
       | Size    | WEIGHT |
       | Markers | SEX    |
     And the legend of scatter plot viewer should list 6 items
+    And the "x axis min" reading of scatter plot viewer should be as remembered
+    And as many rows as remembered should pass the filter
+    When user picks "Reset View" from the context menu of scatter plot viewer
+    Then all rows should pass the filter
     And scatter plot viewer should show 872 rows
     And no errors should have been logged

@@ -1,6 +1,3 @@
-/* Custom platform events (`grok.events.fireCustomEvent`): the word a package gives about work it
-   finished off-screen — Bio's `bio-monomer-lib-loaded` after the monomer libraries reload. A
-   scenario listens by id, acts, and claims the event fired (or did not). */
 import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then} from '../../src/registry.js';

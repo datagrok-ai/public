@@ -116,7 +116,7 @@ Feature: Histogram range filter
 
   Scenario: Bounds outside the column extent are clamped, the typed text is kept
     When user enters "40" into the "range min input" area of histogram viewer
-    Then fewer than 1000 rows should pass the filter
+    Then 665 rows should pass the filter
     And the "range min" reading of histogram viewer should be 40
     When user enters "-999" into the "range min input" area of histogram viewer
     Then all rows should pass the filter
@@ -135,12 +135,13 @@ Feature: Histogram range filter
     And the range min input of histogram viewer should read "18"
     And no errors should have been logged
 
-  Scenario: A handle dragged with the pointer moves the range, a double click resets it
+  @realizes:public#2301
+  Scenario: A handle dragged with the pointer moves the range, a double click resets it, and the min handle dragged past the max leaves a valid range (public#2301)
     When user hovers over the "view" area of histogram viewer
     Then histogram viewer should have a "range min handle" area
     And histogram viewer should have a "range max handle" area
     When user drags the "range max handle" area of histogram viewer to the "bin 12" area
-    Then fewer than 1000 rows should pass the filter
+    Then 809 rows should pass the filter
     And the "range max" reading of histogram viewer should be lower than before
     And histogram viewer should show fewer rows than before
     And histogram viewer should have a "range bar" area
@@ -148,6 +149,17 @@ Feature: Histogram range filter
     Then all rows should pass the filter
     And the "range max" reading of histogram viewer should be 89
     And the "bins shown" reading of histogram viewer should be 20
+    When user moves the pointer away from histogram viewer
+    And user hovers over the "view" area of histogram viewer
+    Then histogram viewer should have a "range min handle" area
+    When user drags the "range min handle" area of histogram viewer by 450 pixels to the right
+    Then the "range min" reading of histogram viewer should be 89
+    And the "range max" reading of histogram viewer should be 89
+    And 1 row should pass the filter
+    And the "error" reading of histogram viewer should be ""
+    When user double-clicks on the "range slider" area of histogram viewer
+    Then all rows should pass the filter
+    And the "range min" reading of histogram viewer should be 18
     And no errors should have been logged
 
   Scenario: Filtering Enabled off releases the table and keeps the zoom

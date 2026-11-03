@@ -2,7 +2,8 @@
 Feature: Curve cells in the grid and their Context Panel
   Translated from TestTrack Curves/curves-grid.md. The curves demo table (System:DemoFiles/curves.csv,
   30 rows) holds five curve columns. A click on a curve cell shows its Options, Chart and Fit panes in
-  the Context Panel; a double-click opens the chart in the Edit chart dialog. Every click is preceded by
+  the Context Panel, its Options set at the Column level, which offers Dataframe and Cell as well
+  (scenario 1, step 4); a double-click opens the chart in the Edit chart dialog. Every click is preceded by
   scrolling the grid to the column, and followed by the current column it made, so a pane is read for
   the cell that was meant.
 
@@ -30,6 +31,8 @@ Feature: Curve cells in the grid and their Context Panel
     And "Fit" pane in context panel should be visible
     Given "Options" pane in context panel is expanded
     Then "Level" input in context panel should have value "Column"
+    And "Level" input in context panel should offer the choice "Dataframe"
+    And "Level" input in context panel should offer the choice "Cell"
     And "Statistics mode" input in context panel should be visible
     And no errors should have been logged
 

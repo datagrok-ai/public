@@ -27,8 +27,9 @@ export interface SelectableCollection {
  *    (`armed`), and a collection read again keeps it BY KEY — a query that answers none of the
  *    kept keys is a new collection with nothing selected;
  * 3. Escape clears both the mark and the lead. */
-export function collectionSelection(owner: Control, source: SelectableCollection,
-  rows: VirtualRows<RowView>): void {
+export function collectionSelection(source: SelectableCollection, rows: VirtualRows<RowView>,
+  options: {owner: Control}): void {
+  const owner = options.owner;
   // the list's selection and the source's current row are one thing, written in either direction —
   // seeded from the row that is current already, so the first effect does not clear it
   const current = source.currentRow.peek();

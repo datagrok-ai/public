@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {after, awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, category, expect, settled, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {createDefaultChartData} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {changeCurvesOptions} from '../fit/fit-options';
@@ -44,15 +44,14 @@ async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise
   const projId = project.id;
   // the fit cell renderer keeps painting while the view tears down, and closeAll() surfaces that as
   // an unhandled exception - let the grid settle first
-  await delay(500);
+  await settled(tv.grid);
   grok.shell.closeAll();
-  await delay(500);
   const p = await grok.dapi.projects.find(projId);
   await p.open();
 }
 
 async function dataFrameContainsColumn(colName: string): Promise<void> {
-  await awaitCheck(() => grok.shell.tv?.dataFrame?.col(colName) != null,
+  await waitUntil(() => grok.shell.tv?.dataFrame?.col(colName) != null,
     `${colName} is missing from the reopened project`, 30000);
 }
 
@@ -73,14 +72,11 @@ async function runSaveAndOpenProjectTest(dataSync?: boolean): Promise<void> {
     tv = grok.shell.tv;
     await grok.data.detectSemanticTypes(tv.dataFrame);
   } else { tv = await createTableView(DEMO_FILE); }
-  await delay(100);
   turnOffConfidenceIntervals(tv);
-  await delay(10);
   await saveAndOpenProject(tv, dataSync);
-  await delay(10);
   await dataFrameContainsColumn(CURVE_COLUMN);
   // the tags are restored after the table, so wait for the option rather than for the column
-  await awaitCheck(() => getColumnChartOptions(grok.shell.tv.dataFrame.col(CURVE_COLUMN)!)
+  await waitUntil(() => getColumnChartOptions(grok.shell.tv.dataFrame.col(CURVE_COLUMN)!)
     .seriesOptions?.showCurveConfidenceInterval === false,
   'the column tag did not come back with the project', 30000);
 
@@ -97,7 +93,6 @@ category('projects', () => {
 
   test('column-level option survives a project', async () => {
     await runSaveAndOpenProjectTest();
-    await delay(100);
   }, {timeout: 120000});
 
   test('painting a table leaves its dataframe tags alone, so its layout saves', async () => {
@@ -112,7 +107,7 @@ category('projects', () => {
     try {
       for (const col of df.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE))
         getOrCreateParsedChartData(df.cell(0, col.name), false);
-      await delay(500);
+      await settled(tv.grid);
       expect(df.getTag(FitConstants.TAG_FIT) == null, true, 'reading the options tagged the dataframe');
       layout = await grok.dapi.layouts.save(tv.saveLayout());
     } finally {
@@ -129,11 +124,11 @@ category('projects', () => {
     expect(curveColumns.length, 5, `the demo has five curve columns, found ${curveColumns}`);
     await saveAndOpenProject(tv);
     try {
-      await awaitCheck(() => curveColumns.every((name) =>
+      await waitUntil(() => curveColumns.every((name) =>
         grok.shell.tv?.dataFrame?.col(name)?.semType === FitConstants.FIT_SEM_TYPE),
       `the reopened project lost a curve column: ${curveColumns}`, 30000);
     } finally {
-      await delay(500);
+      await settled(grok.shell.tv.grid);
       grok.shell.closeAll();
     }
   }, {timeout: 120000});
@@ -142,6 +137,5 @@ category('projects', () => {
     // the table is rebuilt from its creation script, so the cells come back declaring the interval
     // and only the tag the layout carries can turn it off
     await runSaveAndOpenProjectTest(true);
-    await delay(100);
   }, {timeout: 120000});
 });

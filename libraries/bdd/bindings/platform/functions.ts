@@ -1,5 +1,3 @@
-/* A package function the UI offers no entry to, called the way the platform calls it — for what it then shows
-   (a dialog a package opens only from code). What a function returns is a package test, not a feature. */
 import {Page} from '@playwright/test';
 import {When} from '../../src/registry.js';
 import {callFunction} from '../../src/runtime/functions.js';

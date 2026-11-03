@@ -1,9 +1,10 @@
 import {computePosition, flip, offset, shift} from '@floating-ui/dom';
 import {Overlay} from './overlay.js';
-import {Scope} from './scope.js';
+import {Ownership} from './owner.js';
+import type {Owner} from './owner.js';
 
-const SHOW_DELAY_MS = 300;
 const WARM_MS = 100;
+const TOOLTIP = Symbol.for('u2.tooltip');
 
 /** The single hover tooltip. One reused element in the shared {@link Overlay} layer — it is
  * never disposed, so a bound element only ever costs two listeners on its owner's scope.
@@ -15,6 +16,9 @@ export class Tooltip {
   private static _pending: HTMLElement | undefined;
   private static _timer = 0;
   private static _hiddenAt = 0;
+
+  /** How long a hover waits before the tooltip shows, in ms; 0 shows it at once (a test). */
+  static delay = 300;
 
   static get root(): HTMLElement {
     if (!Tooltip._root || !Tooltip._root.isConnected) {
@@ -34,21 +38,38 @@ export class Tooltip {
     return Tooltip._anchor !== undefined;
   }
 
+  /** The elements whose `title` {@link titleIfCut} wrote. */
+  private static readonly _cutTitles = new WeakSet<HTMLElement>();
+
+  /** Full text on hover for a line that is cut: `el`'s whole text as its `title` while it runs past its box, gone
+   * once it fits. A title the element carries of its own is left alone. */
+  static titleIfCut(el: HTMLElement): void {
+    const ours = Tooltip._cutTitles.has(el);
+    if (el.scrollWidth > el.clientWidth) {
+      if (!ours && el.title !== '')
+        return;
+      el.title = (el.textContent ?? '').trim();
+      Tooltip._cutTitles.add(el);
+    }
+    else if (ours) {
+      el.removeAttribute('title');
+      Tooltip._cutTitles.delete(el);
+    }
+  }
+
   /** Shows the tooltip for `el` after a hover delay; `content` is evaluated at show time.
-   * The listeners are released with `scope` — by default whoever is building (an `each()` row). */
-  static bind(el: HTMLElement, content: string | (() => string | HTMLElement), scope?: Scope): void {
-    const owner = scope ?? Scope.ambient;
-    if (owner === undefined)
-      throw new Error('u2: Tooltip.bind needs an owner — pass a scope, or bind while a control builds');
+   * The listeners are released with `owner` — by default whoever is building (an `each()` row). */
+  static bind(el: HTMLElement, content: string | (() => string | HTMLElement), options?: {owner?: Owner}): void {
+    const owner = Ownership.scopeOf(options?.owner, 'Tooltip.bind()');
     const enter = () => {
       const show = () => Tooltip.show(typeof content === 'function' ? content() : content, el);
       // Warm state: leaving one bound element and entering another switches with no delay.
-      if (Tooltip.isVisible || Date.now() - Tooltip._hiddenAt < WARM_MS)
+      if (Tooltip.isVisible || Date.now() - Tooltip._hiddenAt < WARM_MS || Tooltip.delay <= 0)
         show();
       else {
         window.clearTimeout(Tooltip._timer);
         Tooltip._pending = el;
-        Tooltip._timer = window.setTimeout(show, SHOW_DELAY_MS);
+        Tooltip._timer = window.setTimeout(show, Tooltip.delay);
       }
     };
     const leave = () => Tooltip.hide();
@@ -62,7 +83,12 @@ export class Tooltip {
     el.addEventListener('pointerdown', leave);
     el.addEventListener('focusin', focus);
     el.addEventListener('focusout', leave);
+    // what the engine's operability probe compares an icon button's accessible name with
+    const slot = el as unknown as Record<symbol, unknown>;
+    slot[TOOLTIP] = content;
     owner.own(() => {
+      if (slot[TOOLTIP] === content)
+        delete slot[TOOLTIP];
       el.removeEventListener('pointerenter', enter);
       el.removeEventListener('pointerleave', leave);
       el.removeEventListener('pointerdown', leave);

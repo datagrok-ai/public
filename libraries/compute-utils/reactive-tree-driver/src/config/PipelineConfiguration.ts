@@ -66,14 +66,11 @@ export interface ExportSummaryRollup {
   inconsistent: number,
 }
 
-export interface ExportSummaryItem {
+export interface RunSummaryItem {
   kind: 'step' | 'workflow',
-  /** Folders in the exported zip */
-  path: string[],
+  uuid: string,
   name: string,
   title?: string,
-  /** The step workbook in the zip; absent for workflows and for steps that are not loaded */
-  fileName?: string,
   /** The status the tree shows; absent for workflows and for steps that are not loaded */
   status?: StepStatus,
   runError?: string,
@@ -83,6 +80,13 @@ export interface ExportSummaryItem {
   inconsistentInputs: string[],
   /** Workflows only: counts over all steps below */
   rollup?: ExportSummaryRollup,
+}
+
+export interface ExportSummaryItem extends RunSummaryItem {
+  /** Folders in the exported zip */
+  path: string[],
+  /** The step workbook in the zip; absent for workflows and for steps that are not loaded */
+  fileName?: string,
 }
 
 export interface ExportCbInput {
@@ -247,7 +251,7 @@ export type RuleEffect = RuleMetaEffect | RuleValidatorEffect | RuleDataEffect;
  *  rule; a returned promise or observable gives its first value. */
 export type RuleSource =
   {validators: {input: string, names?: string[], call?: string}} |
-  /** The annotation `choices` of the io behind `input`, evaluated by the platform (1.28+) through the step's
+  /** The annotation `choices` of the io behind `input`, evaluated by the platform through the step's
    *  FuncCall: `{items, values, inList, row}`, `row` being the `propagateChoice` lookup row of the current value. */
   {choices: {input: string, call?: string}} |
   {js: {args: string[], fn: (...values: any[]) => any}} |

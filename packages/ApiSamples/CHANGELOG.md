@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Added ui/widgets/u2-usage.js (`DG.U2.Usage`: a misuse reported, then thrown), u2-task.js (`Scope.root`, `build`, `task` with a serial queue, `subscribe`), u2-lens.js (`lens`, `afterFlush`), u2-operability.js (`DG.U2.operability`) and u2-build.js (`DG.U2.component` with a handle and a name)
+* Added ui/dialogs/pick-file.js (`ui.pickFileFromFiles`: one file, then several from one share) and ui/views/layout-bound-columns.js (`DG.ViewLayout.boundColumnNames` of a view state with a scatter plot and filters)
+* Added ui/widgets/u2-version.js (`DG.U2.version`, the engine version a u2 plugin checks on load) and ui/widgets/u2-thenable.js (`DG.U2.Scope.thenable`: which handler answers are waited for)
+* Added ui/views/table-view-parent-crumb.js (an app's table view with the app home as a crumb, `TableView.showParentCrumb`) and ui/views/table-view-no-save.js (a ribbon without the project Save, `TableView.showSaveButton`)
 * Added ui/widgets/u2-debug.js (a leak check with `DG.U2.debug` snapshot/diff; a `Scope.bind` handler stops with its scope) and ui/widgets/u2-status.js (`DG.U2.state`, `status`, `items` and `revealItem` on a control)
 * GROK-20298: Added dapi/domains/authoring.js (authoring an external binding: `draft` over a connection, the dry run, `createSchema(name, {manifest})`, a table grant, `validate()`, `delete()`)
 * GROK-20298: Added dapi/domains/external-binding.js (a domain table bound to an external database: ids are the remote key, the storage switches in `access().support`, refusals by name) and dapi/domains/external-write.js (writing through a binding: a client-supplied key on insert, `update(id, values, {expected})` guarding on the values last read, the `DomainVersionConflictError` naming `expected`/`current`)

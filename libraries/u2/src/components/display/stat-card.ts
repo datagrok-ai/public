@@ -6,6 +6,7 @@ import {Signal, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {div, span, Text} from '../../core/elements.js';
 import {AsyncValue} from '../../core/async-value.js';
+import {Format} from '../../core/format.js';
 import {icon} from './icon.js';
 import {skeleton} from './async-view.js';
 
@@ -18,7 +19,7 @@ export interface StatCardOptions {
   value?: StatValue | ReadonlySignal<StatValue | undefined>;
   /** Wins over {@link value}: loading renders a skeleton, error the message, ready the value. */
   source?: AsyncValue<StatValue>;
-  /** Default: numbers through `toLocaleString()`, strings as they are. */
+  /** Default: numbers with their thousands grouped (`Format.count`), strings as they are. */
   format?: (x: StatValue) => string;
   /** A fraction: 0.12 reads "+12%". */
   delta?: number | ReadonlySignal<number | undefined>;
@@ -43,7 +44,7 @@ export class StatCard extends Control {
     this._deltaEl = options.delta === undefined ? undefined : div(undefined, 'u2-stat-delta');
     if (this._deltaEl)
       this._deltaEl.dataset.u2Part = 'delta';
-    this.runInScope(() => {
+    this.build(() => {
       if (options.icon !== undefined)
         this.root.append(icon(options.icon, {cls: 'u2-stat-icon'}));
       const label = span(options.label, 'u2-stat-label');
@@ -104,7 +105,7 @@ export class StatCard extends Control {
     const format = this._options.format;
     if (format)
       return format(x);
-    return typeof x === 'number' ? x.toLocaleString() : x;
+    return typeof x === 'number' ? Format.count(x) : x;
   }
 
   private static _peek<T>(x: T | ReadonlySignal<T> | undefined): T | undefined {

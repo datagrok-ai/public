@@ -77,20 +77,20 @@ export class UsageLimiter {
     return max;
   }
 
-  async checkAndIncrement(feature: string, prompt: string, model?: string): Promise<void> {
+  async checkAndIncrement(feature: string, model?: string): Promise<void> {
     this.loadCount();
     const limit = await this.resolveDailyLimit();
     if (this.todayCount >= limit)
       throw new Error(`You've reached your daily AI request limit (${limit}). Contact your administrator for a higher quota.`);
     this.todayCount++;
     this.saveCount();
-    _package.logger.usage(`${USAGE_EVENT_TYPE}:${feature} | ${model ?? 'unknown'} | ${prompt}`);
+    _package.logger.usage(`${USAGE_EVENT_TYPE}:${feature} | ${model ?? 'unknown'}`);
   }
 
   /** Checks the limit and increments. Returns true if allowed, shows warning and returns false if over limit. */
-  async tryCheckAndIncrement(feature: string, prompt: string, model?: string): Promise<boolean> {
+  async tryCheckAndIncrement(feature: string, model?: string): Promise<boolean> {
     try {
-      await this.checkAndIncrement(feature, prompt, model);
+      await this.checkAndIncrement(feature, model);
       return true;
     }
     catch (e: any) {

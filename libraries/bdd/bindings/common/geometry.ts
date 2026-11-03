@@ -1,7 +1,3 @@
-/* Geometry claims: where an element stands against another, how tall it is, whether it is cut off,
-   and the layout audit over its subtree (`src/runtime/layout.ts`). Each claim polls the box of the one
-   visible match of each phrase, allows 1 px of rounding and fails with both boxes in one sentence.
-   Steps only — nouns live in kinds.ts. */
 import {Page} from '@playwright/test';
 import {Then, When} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';

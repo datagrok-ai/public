@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {Scope, divV, signal, span} from '@datagrok-libraries/u2';
-import {funcForm, functionInput} from '@datagrok-libraries/u2/src/dg/index.js';
+import {funcForm, functionInput} from '@datagrok-libraries/u2/dg';
 import {prose} from './func-convergence';
 import {readout} from './pages/common';
 
@@ -17,7 +17,7 @@ const INTRO = 'Pick a function on top (the `FunctionInput` control) and its `fun
 export function funcHistoryPage(): HTMLElement {
   const scope = Scope.ambient!;
   const name = signal('');
-  const input = Scope.runWith(scope, () => functionInput('Function', {bind: name, scalarOnly: true}));
+  const input = scope.build(() => functionInput('Function', {bind: name, scalarOnly: true}));
   const holder = divV([], 'u2demo-func-history-form');
   const result = signal(NOT_RUN);
   let formScope = new Scope();
@@ -36,7 +36,7 @@ export function funcHistoryPage(): HTMLElement {
       return;
     try {
       const call = f.prepare();
-      const form = Scope.runWith(formScope, () => funcForm(call, {showHistory: true, showRun: true,
+      const form = formScope.build(() => funcForm(call, {showHistory: true, showRun: true,
         onRun: () => result.value = f.outputs.map((p) => `${p.name}: ${call.outputs[p.name]}`).join(' · ') || 'done'}));
       // the form only greys Run out while the call runs and saves; say it where the result lands
       const busy = new MutationObserver(() => {

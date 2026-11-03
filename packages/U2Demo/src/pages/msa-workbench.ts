@@ -61,8 +61,8 @@ export function msaWorkbenchPage(): HTMLElement {
   log.dataset.u2Name = 'log';
   log.textContent = 'Nothing has run yet.';
   const resultTabs = new TabStrip({tabs: [
-    {id: 'alignment', label: 'Alignment', content: alignedList.root},
-    {id: 'log', label: 'Log', content: log},
+    {id: 'alignment', title: 'Alignment', content: alignedList.root},
+    {id: 'log', title: 'Log', content: log},
   ]});
   resultTabs.name = 'resultTabs';
   const results = divV([h2('Results'), status, resultTabs.root], 'u2demo-msa-card');
@@ -78,22 +78,22 @@ export function msaWorkbenchPage(): HTMLElement {
   // --- dialogs ------------------------------------------------------------------------------------
   function openMsaDialog(): void {
     const column = new ChoiceInput({label: 'Sequence column', name: 'dialogSequenceColumn', items: SEQUENCE_COLUMNS,
-      value: sequenceColumn.value.peek() ?? 'sequence'});
+      value: sequenceColumn.peek() ?? 'sequence'});
     const dialogMethod = new ChoiceInput({label: 'Method', name: 'dialogMethod', items: METHODS,
-      value: method.value.peek() ?? 'kalign'});
+      value: method.peek() ?? 'kalign'});
     const dialogForm = new Form({layout: 'normal'});
     dialogForm.add(column);
     dialogForm.add(dialogMethod);
     new Dialog('MSA', {name: 'msaDialog'})
       .add(dialogForm.root)
       .onOK(() => {
-        const chosen = dialogMethod.value.peek() ?? 'kalign';
-        const rows = align(chosen, keepGaps.value.peek());
+        const chosen = dialogMethod.peek() ?? 'kalign';
+        const rows = align(chosen, keepGaps.peek());
         alignedList.setItems(rows);
         status.textContent = `Aligned ${rows.length} sequences with ${chosen}`;
-        log.textContent = [`method: ${chosen}`, `column: ${column.value.peek()}`,
-          `gap penalty: ${gapPenalty.value.peek()}`, `keep gaps: ${keepGaps.value.peek()}`,
-          `name: ${nameInput.value.peek() || '(unnamed)'}`].join('\n');
+        log.textContent = [`method: ${chosen}`, `column: ${column.peek()}`,
+          `gap penalty: ${gapPenalty.peek()}`, `keep gaps: ${keepGaps.peek()}`,
+          `name: ${nameInput.peek() || '(unnamed)'}`].join('\n');
         notify.info('Alignment finished');
       })
       .onCancel(() => undefined)
@@ -104,7 +104,7 @@ export function msaWorkbenchPage(): HTMLElement {
     const dataset = new ChoiceInput({label: 'Dataset', name: 'dataset', items: ['spgi', 'demog', 'peptides'], value: 'spgi'});
     new Dialog('Open dataset', {name: 'openDialog'})
       .add(dataset.root)
-      .onOK(() => notify.info(`Opened ${dataset.value.peek()}`))
+      .onOK(() => notify.info(`Opened ${dataset.peek()}`))
       .onCancel(() => undefined)
       .show();
   }

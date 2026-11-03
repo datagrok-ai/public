@@ -1,0 +1,11 @@
+{
+  "name": "ribbon-row",
+  "entry": "campaign-ribbon.ts",
+  "title": "Ribbon actions over a platform TableView, one of them adding a DG.Row",
+  "source": "N-3: `run: () => df.rows.addNew(null, true)` handed a DG.Row proxy back, and reading its `then` threw; C-7: ribbon actions dropping their promise",
+  "bad": {
+    "bad-drops-promise": ["refresh-failure-handled"],
+    "bad-returns-row": ["typecheck"]
+  },
+  "notes": "N-3 is a type error in u2 v1: a ribbon action's `run` returns a promise or nothing. At run time it breaks nothing — the engine reads a returned value's `then` inside try (Scope.thenable), so the DG.Row handed back is no promise and no error; add-row fails it again if that guard goes"
+}

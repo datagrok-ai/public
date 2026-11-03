@@ -7,7 +7,8 @@ import '../css/u2demo.css';
 
 import {computed} from '@datagrok-libraries/u2';
 import {domains} from '@datagrok-libraries/ems/src/dg';
-import {appView, designerView, registerControlInspector, registerPlatformComponents, registerSpecNodeHandler} from '@datagrok-libraries/u2/src/dg/index.js';
+import {ViewHost, designerView, registerControlInspector, registerPlatformComponents, registerSpecNodeHandler}
+  from '@datagrok-libraries/u2/dg';
 import {installEms} from '@datagrok-libraries/ems/src/dg';
 import {DemoShell, buildDemo} from './demo';
 import {DemoLeaf, leafForPath, pathOf} from './nav';
@@ -23,7 +24,7 @@ import {demoOrders as buildDemoOrders} from './demo-orders';
 
 export * from './package.g';
 // not a package function: what the e2e leak check reads after closing every view
-export {leakReport, viewers} from '@datagrok-libraries/u2/src/dg/index.js';
+export {leakReport, viewers} from '@datagrok-libraries/u2/dg';
 export {sliceSymbol} from './source-panel';
 
 export const _package = new DG.Package();
@@ -35,7 +36,7 @@ const APP_PATH = '/apps/U2demo/U2Demo';
 let demoView: DG.ViewBase | null = null;
 let demoShell: DemoShell | null = null;
 
-// compared on `.dart`: the JS wrapper appView() built is not the object shell.views hands back
+// compared on `.dart`: the JS wrapper ViewHost.create built is not the object shell.views hands back
 // for the same Dart view, so object identity never matches
 grok.events.onViewRemoved.subscribe((v) => {
   if (demoView != null && v.dart === demoView.dart) {
@@ -66,20 +67,19 @@ export function u2DemoApp(path?: string): DG.ViewBase {
   registerDemoSourceHandler();
   // the platform routes an app URL's query string into `meta.params`, not into the `meta.url` path
   readFilterPath(path ?? '') || readFilterPath(location.search);
-  const {content, shell, status} = buildDemo({initial: leafForPath(path)?.id});
-  // the inspector's panel outlives this view otherwise, holding the control it last rendered
-  content.own(unregisterInspector);
-  const view = appView({
-    name: 'U2 Demo', content, status,
-    ribbon: [content.runInScope(() => demoRibbon(shell))],
-    path: computed(() => {
-      const leaf = shell.current.value;
-      const base = APP_PATH + pathOf(leaf);
-      return leaf.id === 'filters' ? filterPath(base) : base;
-    }),
-  });
+  const view = ViewHost.create({name: 'U2 Demo', content: () => {
+    const {content, shell, status} = buildDemo({initial: leafForPath(path)?.id});
+    // the inspector's panel outlives this view otherwise, holding the control it last rendered
+    content.own(unregisterInspector);
+    demoShell = shell;
+    return {root: content, status, ribbon: [demoRibbon(shell)],
+      path: computed(() => {
+        const leaf = shell.current.value;
+        const base = APP_PATH + pathOf(leaf);
+        return leaf.id === 'filters' ? filterPath(base) : base;
+      })};
+  }}).view;
   demoView = view;
-  demoShell = shell;
   return view;
 }
 
@@ -96,8 +96,10 @@ export function u2DemoTreeBrowser(treeNode: DG.TreeViewGroup): void {
 //meta.browsePath: Dev
 //output: view result
 export function reportsBrowserApp(): DG.ViewBase {
-  const {content, ribbon, status} = buildReportsBrowser();
-  return appView({name: 'Reports', content, ribbon, status});
+  return ViewHost.create({name: 'Reports', content: () => {
+    const {content, ribbon, status} = buildReportsBrowser();
+    return {root: content, ribbon, status};
+  }}).view;
 }
 
 //name: U2 Designer

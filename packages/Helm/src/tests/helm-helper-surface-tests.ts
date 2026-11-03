@@ -8,7 +8,14 @@ import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {MonomersFuncs} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmMol} from '@datagrok-libraries/bio/src/helm/types';
+
+/** The laid-out molecule HelmInput hit-tests: the view-only editor's mol, atoms[].p on the editor surface. */
+function getEditorMol(helmHelper: IHelmHelper, helm: string): HelmMol {
+  const editor = helmHelper.createHelmWebEditor(ui.div()).editor;
+  editor.setHelm(helm);
+  return editor.m;
+}
 
 category('HelmHelper: getHoveredAtom', () => {
   let helmHelper: IHelmHelper;
@@ -30,19 +37,19 @@ category('HelmHelper: getHoveredAtom', () => {
   const helm = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et}$$$$';
 
   test('at-atom', async () => {
-    const mol = helmHelper.parse(helm);
+    const mol = getEditorMol(helmHelper, helm);
     expect(mol.atoms.length, 9);
     for (const atom of [mol.atoms[0], mol.atoms[4], mol.atoms[8]])
       expect(helmHelper.getHoveredAtom(atom.p.x, atom.p.y, mol, 100) === atom, true);
   });
 
   test('far-away', async () => {
-    const mol = helmHelper.parse(helm);
+    const mol = getEditorMol(helmHelper, helm);
     expect(helmHelper.getHoveredAtom(-10000, -10000, mol, 100), null);
   });
 
   test('keeps-mol', async () => {
-    const mol = helmHelper.parse(helm);
+    const mol = getEditorMol(helmHelper, helm);
     const p0 = mol.atoms[0].p;
     for (const height of [40, 80, 200])
       helmHelper.getHoveredAtom(p0.x, p0.y, mol, height);
@@ -61,31 +68,11 @@ category('HelmHelper: monomersFuncs', () => {
     libHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
     await libHelper.loadMonomerLibForTests();
-    if (helmHelper.originalMonomersFuncs != null)
-      helmHelper.revertOriginalMonomersFuncs();
   });
 
   after(async () => {
-    if (helmHelper.originalMonomersFuncs != null)
-      helmHelper.revertOriginalMonomersFuncs();
     await setUserLibSettings(userLibSettings);
     await libHelper.loadMonomerLib(true);
-  });
-
-  const sentinel = (id: string): MonomersFuncs => ({
-    getMonomer: () => ({id: id, n: 'sentinel'}),
-    getMonomerSet: () => null,
-  }) as unknown as MonomersFuncs;
-
-  test('override-revert', async () => {
-    expect(helmHelper.originalMonomersFuncs, null);
-    expect(helmHelper.overrideMonomersFuncs(sentinel('SENTINEL-1')) != null, true);
-    expect(helmHelper.originalMonomersFuncs != null, true);
-    helmHelper.overrideMonomersFuncs(sentinel('SENTINEL-2'));
-    expect(helmHelper.revertOriginalMonomersFuncs() != null, true);
-    expect(helmHelper.originalMonomersFuncs, null);
-    helmHelper.revertOriginalMonomersFuncs();
-    expect(helmHelper.originalMonomersFuncs, null);
   });
 
   test('build-from-lib', async () => {

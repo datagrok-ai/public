@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, expect, test} from '@datagrok-libraries/test/src/test';
 import type {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {layoutRoundTrip, projectRoundTrip} from './utils';
 
@@ -12,7 +12,7 @@ const PINNED_ROW = 7;
 async function formsViewer(view: DG.TableView): Promise<FormsViewer> {
   const find = () =>
     Array.from(view.viewers).find((v) => typeof (v as any).pinRow === 'function') as unknown as FormsViewer;
-  await awaitCheck(() => find() != null, 'no Forms viewer in the view', 5000);
+  await waitUntil(() => find() != null, 'no Forms viewer in the view', 5000);
   return find();
 }
 
@@ -30,7 +30,7 @@ async function expectForms(view: DG.TableView): Promise<void> {
   const forms = await formsViewer(view);
   const pinned = String(view.dataFrame.get('subj', PINNED_ROW));
   const values = () => forms.getWidgetStatus().values!;
-  await awaitCheck(() => !forms.isRenderPending && values()['pinned records'] === 1, 'no pinned card', 5000);
+  await waitUntil(() => !forms.isRenderPending && values()['pinned records'] === 1, 'no pinned card', 5000);
   expect(values()['fields'], FIELDS.join(', '));
   expect(values()['sort column'], 'age');
   expect(values()['subj of pinned card 1'], pinned);

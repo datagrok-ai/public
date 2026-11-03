@@ -43,6 +43,50 @@
   align-items: center;
 }
 
+/* the edge a pinned end casts over what runs on under it, one look for every pinned end: a ribbon's package
+   group, a catalog table's actions column */
+.d4-ribbon-panel.u2-ribbon-pinned.u2-ribbon-overflow::before,
+.u2-catalog-overflow .u2-table .u2-table-pin-end::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -10px;
+  width: 10px;
+  pointer-events: none;
+  background: linear-gradient(to left, color-mix(in srgb, var(--dg-steel-4) 40%, transparent), transparent);
+}
+
+/* divH(children, {gap}) — the spacing scale for any flex or grid element */
+.u2-gap-xs {
+  gap: var(--dg-space-xs);
+}
+
+.u2-gap-s {
+  gap: var(--dg-space-s);
+}
+
+.u2-gap-m {
+  gap: var(--dg-space-m);
+}
+
+.u2-gap-l {
+  gap: var(--dg-space-l);
+}
+
+.u2-gap-xl {
+  gap: var(--dg-space-xl);
+}
+
+.u2-gap-xxl {
+  gap: var(--dg-space-xxl);
+}
+
+/* a region off with its reason (src/core/reason.ts Reason.region): inert, and dimmed */
+.u2-region-off {
+  opacity: 0.5;
+}
+
 .u2-panel {
   box-sizing: border-box;
   padding: var(--dg-space-l);
@@ -72,18 +116,24 @@
   user-select: none;
 }
 
-.u2-btn:hover:not(:disabled) {
+.u2-btn:hover:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-hover-subtle);
 }
 
-.u2-btn:active:not(:disabled) {
+.u2-btn:active:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-hover);
 }
 
-/* still hit by the pointer: its tooltip says why it is disabled, and a click on it lands nowhere
-   instead of falling through to what is under it. Spelled out, so it also wins over an older copy
-   of this sheet that a package built before it injected earlier */
-.u2-btn:disabled {
+.u2-btn:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: 1px;
+}
+
+/* disabled by `aria-disabled` (core/elements.ts focusableWhenDisabled), natively only inside a
+   disabled input: still hit by the pointer and still a tab stop, so its tooltip says why. The
+   pointer events are spelled out, so they also win over an older copy of this sheet that a
+   package built before it injected earlier */
+.u2-btn:is(:disabled, [aria-disabled='true']) {
   color: var(--dg-text-color-disabled);
   cursor: default;
   pointer-events: auto;
@@ -96,19 +146,19 @@
   background: var(--dg-accent);
 }
 
-.u2-btn-primary:hover:not(:disabled) {
+.u2-btn-primary:hover:not(:disabled, [aria-disabled='true']) {
   color: var(--dg-white);
   background: var(--dg-accent);
   filter: contrast(90%) brightness(110%);
 }
 
-.u2-btn-primary:active:not(:disabled) {
+.u2-btn-primary:active:not(:disabled, [aria-disabled='true']) {
   color: var(--dg-white);
   background: var(--dg-accent);
   filter: brightness(85%);
 }
 
-.u2-btn-primary:disabled {
+.u2-btn-primary:is(:disabled, [aria-disabled='true']) {
   color: var(--dg-grey-4);
   background: var(--dg-steel-2);
 }

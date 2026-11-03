@@ -17,9 +17,6 @@ export enum DockingRole {
   ligand = 'ligand',
 };
 
-export type DockingTargetData = Molecule3DData;
-export type DockingLigandData = Molecule3DData;
-
 export interface IMolecule3DBrowser {
 
   showStructure(data: Molecule3DData): void;

@@ -15,7 +15,7 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {cellAsRemembered, emptyCollections, pickMenuMolecule, rememberCell} from '../../bindings/crux.js';
 import {uncheckFilterAsYouDraw} from '../../bindings/dialogs.js';
-import {filterPassesMatching, readingIsRowMolecule} from '../../bindings/molecules.js';
+import {filterPassesMatching} from '../../bindings/molecules.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, close, expand, hoverOver, pressKey, pressKeyIn, shouldBe, shouldContainText, shouldNotContainText, typeInto, visibleCount} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {everyValueContains, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
@@ -208,7 +208,7 @@ test.describe("Crux in Chem's hosts", () => {
     await session.step(184, "And user clicks on close of \"Structure\" filter card", () => clickOn(page, el("close of \"Structure\" filter card")));
     await session.step(185, "And user picks \"Current Value > Use as filter\" from the context menu of the \"cell 1 of Structure\" area of grid", () => pickFromAreaContextMenu(page, "Current Value > Use as filter", "cell 1 of Structure", el("grid")));
     await session.step(186, "Then there should be 1 visible \"Structure\" filter card", () => visibleCount(page, 1, el("\"Structure\" filter card")));
-    await session.step(187, "And the \"structure of Structure\" reading of filter panel should be the molecule of row 1 of \"Structure\" column", () => readingIsRowMolecule(page, "structure of Structure", 1, "Structure"));
+    await session.step(187, "And the \"structure of Structure\" reading of filter panel should be the molecule in row 1 of \"Structure\" column", () => readingIsRowMoleculeOf(page, "structure of Structure", el("filter panel"), 1, "Structure"));
     await session.step(188, "And 1 row should pass the filter", () => filterPasses(page, 1));
     await session.step(189, "When user remembers the \"molecule of Structure\" reading of filter panel", () => rememberReading(page, "molecule of Structure", el("filter panel")));
     await session.step(190, "And user clicks on the \"card Structure\" area of filter panel", () => clickArea(page, "card Structure", el("filter panel")));

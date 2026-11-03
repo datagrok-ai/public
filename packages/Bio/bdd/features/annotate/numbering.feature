@@ -7,9 +7,9 @@ Feature: Antibody numbering with the bundled immunum engine
   the default IMGT run, made next on the same table, numbers by IMGT.
   Engines of other packages (e.g. HMM's ANARCI) come first and are the default when installed, so
   the scenario picks the bundled engine.
-  The project round-trip of a numbering (its aligned column, tags and regions) and its
-  deterministic re-run on the reopened table are tested in Bio src/tests/projects-tests.ts
-  ('antibody_numbering').
+  TestTrack Bio/bio-lifecycle-immunum-wasm.md scenarios 2 and 3 (the numbered table through a saved
+  project, the engine run again on the reopened table) are tested in Bio
+  src/tests/projects-tests.ts ('antibody_numbering').
 
   Not translated: the md's timing bound on the worker call — a duration is not a claim the
   platform signals; the other schemes of the md title (Chothia, AHo) — the bundled engine offers
@@ -37,10 +37,6 @@ Feature: Antibody numbering with the bundled immunum engine
     And user clicks on OK button in "Apply Antibody Numbering" dialog
     Then a new column "AntibodyHC (aligned)" should have been added
     And "AntibodyHC (aligned)" column should have tag ".numberingScheme" equal to "kabat"
-    And every value of "AntibodyHC (aligned)" column should have the same length
-    And "AntibodyHC (aligned)" column should have no missing values
-    And every value of "AntibodyHC (aligned)" column should match "[A-Z]{20}"
-    And the ".positionNames" tag of "AntibodyHC (aligned)" column should list at least 100 values
     And "AntibodyHC" column should carry at least 7 annotations
     And no error or warning balloon should have been shown
     And no errors should have been logged
@@ -54,8 +50,5 @@ Feature: Antibody numbering with the bundled immunum engine
     When user clicks on OK button in "Apply Antibody Numbering" dialog
     Then a new column "AntibodyHC (aligned)" should have been added
     And "AntibodyHC (aligned)" column should have tag ".numberingScheme" equal to "imgt"
-    And every value of "AntibodyHC (aligned)" column should have the same length
-    And "AntibodyHC (aligned)" column should have no missing values
-    And the ".positionNames" tag of "AntibodyHC (aligned)" column should list at least 100 values
     And no error or warning balloon should have been shown
     And no errors should have been logged

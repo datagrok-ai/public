@@ -3,16 +3,15 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {_package} from '../../package';
-import {CampaignFieldTypes, HitTriageCampaignField, HitTriageCampaignFieldType,
-  IComputeDialogResult, PepTriageTemplate, IngestType, INewTemplateResult} from '../types';
+import {IComputeDialogResult, PepTriageTemplate, IngestType, INewTemplateResult} from '../types';
 import * as C from '../consts';
 import '../../../css/hit-triage.css';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
-import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {HitAppBase} from '../hit-app-base';
 import {getLayoutInput} from './layout-input';
 import {getFuncPackageNameSafe, loadTemplate} from '../utils';
-import {getCampaignFieldEditors, saveTemplate} from './new-template-accordeon';
+import {getCampaignFieldEditors, showTemplateInputError} from './new-template-accordeon';
+import {freeKey, freeName} from '../shared/template-editor';
 
 
 export async function createPepTriageTemplateAccordeon(app: HitAppBase<any>,
@@ -43,33 +42,37 @@ export async function createPepTriageTemplateAccordeon(app: HitAppBase<any>,
   submitFunctionInput.nullable = true;
   submitFunctionInput.fireChanged();
   submitFunctionInput.setTooltip('Select function to be called upon submitting');
-  const layoutInput = getLayoutInput();
+  const layoutInput = getLayoutInput(preset);
   const errorDiv = ui.divText('Template name is empty or already exists', {classes: 'hit-triage-error-div'});
   const keyErrorDiv = ui.divText('Template key is empty or already exists', {classes: 'hit-triage-error-div'});
 
-  const templateNameInput = ui.input.string('Name', {value: preset ? `${preset.name} (copy)` : '', onValueChanged: (value) => {
-    if (value === '' || availableTemplates.includes(value)) {
-      templateNameInput.root.style.borderBottom = '1px solid red';
-      errorDiv.style.opacity = '100%';
-    } else {
-      templateNameInput.root.style.borderBottom = 'none';
-      errorDiv.style.opacity = '0%';
+  const nameProblem = () => !templateNameInput.value?.trim() || availableTemplates.includes(templateNameInput.value) ?
+    'Template name is empty or already exists' : null;
+  const keyProblem = () => !templateKeyInput.value?.trim() || availableTemplateKeys.includes(templateKeyInput.value) ?
+    'Template key is empty or already exists' : null;
+  const seqColProblem = () => seqColInput.value?.trim() ? null : 'Sequence column name is required';
+  let createTemplateButton: HTMLButtonElement | null = null;
+  let createProblem: string | null = null;
+  let createDisabled = false;
+  function updateCreate() {
+    createProblem = nameProblem() ?? keyProblem() ?? seqColProblem();
+    if (createTemplateButton && (createProblem !== null) !== createDisabled) {
+      createDisabled = createProblem !== null;
+      ui.setDisabled(createTemplateButton, createDisabled, () => createProblem);
     }
+  }
+
+  const templateNameInput = ui.input.string('Name', {value: preset ? freeName(preset.name, new Set(availableTemplates.map((n) => n.toLowerCase()))) : '', onValueChanged: () => {
+    showTemplateInputError(templateNameInput, errorDiv, nameProblem() !== null);
+    updateCreate();
   }});
-  const templateKeyInput = ui.input.string('Key', {value: preset ? `${preset.key}-copy` : '', onValueChanged: (value) => {
-    if (value === '' || availableTemplateKeys.includes(value)) {
-      templateKeyInput.root.style.borderBottom = '1px solid red';
-      keyErrorDiv.style.opacity = '100%';
-    } else {
-      templateKeyInput.root.style.borderBottom = 'none';
-      keyErrorDiv.style.opacity = '0%';
-    }
+  const templateKeyInput = ui.input.string('Key', {value: preset ? freeKey(preset.key, new Set(availableTemplateKeys.map((k) => k.toLowerCase()))) : '', onValueChanged: () => {
+    showTemplateInputError(templateKeyInput, keyErrorDiv, keyProblem() !== null);
+    updateCreate();
   }});
 
   templateKeyInput.setTooltip('Template key used for campaign prefix');
   templateNameInput.setTooltip('Template name');
-  templateNameInput.root.style.borderBottom = 'none';
-  templateKeyInput.root.style.borderBottom = 'none';
   errorDiv.style.opacity = '0%';
   keyErrorDiv.style.opacity = '0%';
 
@@ -79,13 +82,8 @@ export async function createPepTriageTemplateAccordeon(app: HitAppBase<any>,
   const seqColErrorDiv = ui.divText('Sequence column name is required', {classes: 'hit-triage-error-div'});
   seqColErrorDiv.style.opacity = '0%';
   seqColInput.onChanged.subscribe(() => {
-    if (!seqColInput.value?.trim()) {
-      seqColInput.root.style.borderBottom = '1px solid red';
-      seqColErrorDiv.style.opacity = '100%';
-    } else {
-      seqColInput.root.style.borderBottom = 'none';
-      seqColErrorDiv.style.opacity = '0%';
-    }
+    showTemplateInputError(seqColInput, seqColErrorDiv, seqColProblem() !== null);
+    updateCreate();
   });
 
   const molColInput = ui.input.string('Molecule Column', {value: preset?.moleculeColumnName ?? '', nullable: true});
@@ -150,16 +148,9 @@ export async function createPepTriageTemplateAccordeon(app: HitAppBase<any>,
   const promise = new Promise<PepTriageTemplate>((resolve) => {
     async function onOkProxy() {
       funcInput.okProxy();
-      if (errorDiv.style.opacity === '100%') {
-        grok.shell.error('Template name is empty or already exists');
-        return;
-      }
-      if (keyErrorDiv.style.opacity === '100%') {
-        grok.shell.error('Template key is empty or already exists');
-        return;
-      }
-      if (!seqColInput.value?.trim()) {
-        grok.shell.error('Sequence column name is required');
+      const problem = nameProblem() ?? keyProblem() ?? seqColProblem();
+      if (problem) {
+        grok.shell.error(problem);
         return;
       }
       const submitFunction = submitFunctionInput.value ? submitFunctionsMap[submitFunctionInput.value] : undefined;
@@ -196,12 +187,19 @@ export async function createPepTriageTemplateAccordeon(app: HitAppBase<any>,
         ...(submitFunction ? {submit: {fName: submitFunction.name, package: getFuncPackageNameSafe(submitFunction)}} : {}),
         queryFunctionName: (ingestTypeInput.value === 'Query') ? dataSourceFunctionInput.value ?? undefined : undefined,
       };
-      _package.files.writeAsText(`${templatesFolder}/${out.name}.json`, JSON.stringify(out));
+      try {
+        await _package.files.writeAsText(`${templatesFolder}/${out.name}.json`, JSON.stringify(out));
+      }
+      catch (e) {
+        grok.shell.error(`Could not save template ${out.name}: ${e instanceof Error ? e.message : e}`);
+        return;
+      }
       grok.shell.info('Template created successfully');
       resolve(out);
     }
-    const createTemplateButton = ui.bigButton(C.i18n.createTemplate, () => onOkProxy());
+    createTemplateButton = ui.bigButton(C.i18n.createTemplate, () => onOkProxy());
     buttonsContainerDiv.appendChild(createTemplateButton);
+    updateCreate();
   });
 
   return {root: form, template: promise, cancelPromise};

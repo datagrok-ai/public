@@ -53,14 +53,15 @@ export function powerSearchQueryTable(queryCall: DG.FuncCall, options?: PowerSea
     await df.meta.detectSemanticTypes();
     await grok.data.detectSemanticTypes(df);
     const tv = DG.TableView.create(df, false);
-    setTimeout(async () => {
+    // the view is set up once its root, returned below, is in the document
+    ui.tools.waitForElementInDom(tv.root).then(async () => {
       processPowerSearchTableView(tv);
       tv._onAdded();
       if (options?.postProcess)
         await options.postProcess(tv);
       if (options?.layout)
         tv.loadLayout(options.layout);
-    }, 200);
+    });
     return tv.root;
   }));
 }

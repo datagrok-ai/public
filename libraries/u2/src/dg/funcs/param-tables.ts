@@ -12,6 +12,7 @@ import {Input} from '../../core/input-base.js';
 import {ColumnInput} from '../inputs/column-combo.js';
 import {ColumnsInput} from '../inputs/columns.js';
 import {ObjectForm} from '../forms/object-form.js';
+import {Platform} from '../shell/platform.js';
 import type {FuncCallLike, FuncCallParamLike, FuncField} from './func-form.js';
 
 const api = globalThis as {grok_Property_Get?: (dart: unknown, name: string) => unknown};
@@ -68,9 +69,13 @@ export function tableByName(name: string | null): DG.DataFrame | null {
   return name == null ? null : (grok.shell.table(name) as DG.DataFrame | null) ?? null;
 }
 
-/** The auto-fill source (fpe:62-64): the current table, else the first open one. */
+/** The auto-fill source (fpe:62-64): the current table, else the first open one — of the tables the table field
+ * offers ({@link Platform.tableNames}), so a table with no name, which the field cannot show, is never the guess. */
 export function preferredTable(): DG.DataFrame | null {
-  return (grok.shell.t as DG.DataFrame | null) ?? openTables()[0] ?? null;
+  const offered = Platform.tableNames();
+  const current = grok.shell.t as DG.DataFrame | null;
+  return current != null && offered.includes(current.name) ? current :
+    openTables().find((t) => offered.includes(t.name)) ?? null;
 }
 
 /** A `column_list` readback as names: a ColumnList (P-W3-9), an array of columns, or any
@@ -150,13 +155,14 @@ const strings = DG.StringUtils as unknown as {
   jaroWinklerDistance(a: string, b: string): number,
 };
 
-/** The Dart default pick (fpe:162-179, exact): among the passing columns — none → null; a
+/** The Dart default pick (fpe:162-179): among the passing columns — none → null; a
  * semType-carrying param takes the molecule-named or first one; otherwise the nearest lowercased
  * name by normalized distance — Levenshtein for 1-character param names, Jaro-Winkler
- * otherwise. */
+ * otherwise. Only a listed column is ever the pick ({@link Platform.listedColumns}): never a hidden `~` one
+ * (Chem's `~<column>.canonicalSmiles` cache, say), which the platform's pickers do not list either. */
 export function pickColumn(table: DG.DataFrame, paramName: string,
   prop: FuncCallParamLike['property'], filter: (c: DG.Column) => boolean): DG.Column | null {
-  const candidates = table.columns.toList().filter(filter);
+  const candidates = Platform.listedColumns(table, filter);
   if (candidates.length === 0)
     return null;
   if (prop.semType != null && prop.semType !== '')
@@ -266,29 +272,17 @@ export class TableBinding {
     return typeof v === 'string' ? this._tableOf(v) : asTable(v);
   }
 
-  /** js-api wrappers are re-minted per access, so wrapper identity is meaningless; the dart
-   * handle (or, failing that, the shell-unique name) is the frame's stable identity. */
-  private static _sameTable(a: DG.DataFrame | null, b: DG.DataFrame | null): boolean {
-    if (a === b)
-      return true;
-    if (a == null || b == null)
-      return false;
-    const da = a.dart;
-    const db = b.dart;
-    return da != null && db != null ? da === db : a.name === b.name;
-  }
-
   /** The control follows its frame itself (ColumnInput's internal subscriptions) — the binding
    * only retargets it and re-defaults, mirroring {@link _startColumns}. */
   private _startColumn(dep: ColumnDependent, table: DG.DataFrame | null): void {
     const input = dep.field.input as ColumnInput;
     batch(() => {
-      if (!TableBinding._sameTable(input.table, table))
+      if (!Platform.sameTable(input.table, table))
         input.changeTable(table, dep.filter);
       if (dep.field.param.value != null || table === null) {
         const name = asNamed(dep.field.param.value)?.name ?? null;
-        if (name !== input.value.peek())
-          Input.system(() => input.value.value = name);
+        if (name !== input.peek())
+          Input.system(() => input.value = name);
         unmarkAuto(dep.field);
         return;
       }
@@ -299,7 +293,7 @@ export class TableBinding {
       }
       // the call first: the display write then reads back its own name and does not echo
       this._call.setParamValue(dep.field.param.name, picked);
-      Input.system(() => input.value.value = picked.name);
+      Input.system(() => input.value = picked.name);
       markAuto(dep.field);
     });
   }
@@ -307,11 +301,11 @@ export class TableBinding {
   private _startColumns(dep: ColumnDependent, table: DG.DataFrame | null): void {
     const input = dep.field.input as ColumnsInput;
     batch(() => {
-      if (!TableBinding._sameTable(input.table, table))
+      if (!Platform.sameTable(input.table, table))
         input.changeTable(table, dep.filter);
       const names = columnNamesOf(dep.field.param.value);
-      if (!ObjectForm.same(names, input.value.peek()))
-        Input.system(() => input.value.value = names);
+      if (!ObjectForm.same(names, input.peek()))
+        Input.system(() => input.value = names);
     });
   }
 
@@ -332,7 +326,7 @@ export class TableBinding {
    * selection must not vanish in silence: the field says whose columns it lost. */
   private _retargetColumns(dep: ColumnDependent, table: DG.DataFrame | null): void {
     const input = dep.field.input as ColumnsInput;
-    const cleared = input.value.peek();
+    const cleared = input.peek();
     const from = input.table;
     input.changeTable(table, dep.filter);
     if (cleared.length > 0 && from != null)
@@ -343,16 +337,16 @@ export class TableBinding {
     const input = dep.field.input as ColumnInput;
     const picked = table === null ? null :
       pickColumn(table, dep.field.param.name, dep.field.param.property, dep.filter);
-    const before = input.value.peek();
+    const before = input.peek();
     // one batch, so changeTable's internal clear and the re-default flush as ONE field-effect
     // write — the re-default, not the clear's null, is what reaches the call
     batch(() => {
       input.changeTable(table, dep.filter);
-      input.value.value = picked?.name ?? null;
+      input.value = picked?.name ?? null;
     });
     // an unchanged name is still a new column: the effect saw no edit, and the call must not
     // keep the old table's object
-    if (picked !== null && input.value.peek() === before)
+    if (picked !== null && input.peek() === before)
       this._call.setParamValue(dep.field.param.name, picked);
     if (picked !== null)
       markAuto(dep.field);
