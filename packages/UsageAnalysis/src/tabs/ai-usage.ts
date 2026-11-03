@@ -81,14 +81,15 @@ export class AiUsageView extends UaView {
       grid.columns.setOrder(GRID_COLUMNS);
       for (const name of t.columns.names())
         grid.col(name)!.visible = GRID_COLUMNS.includes(name);
-      const widths: {[name: string]: number} = {time: 118, user: 100, feature: 80, model: 120, status: 55,
-        total_tokens: 75, cost_usd: 60};
+      const widths: {[name: string]: number} = {time: 112, user: 92, feature: 78, model: 112, status: 50,
+        total_tokens: 70, cost_usd: 56};
       for (const [name, width] of Object.entries(widths))
         grid.col(name)!.width = width;
       return grid;
     });
 
     filters.root.classList.add('ua-filters');
+    filters.root.style.maxWidth = '190px';
     requests.root.classList.add('ui-panel');
     this.requests = requests;
     this.viewers.push(perDay, byUser, byGroup, filters, requests);
@@ -96,7 +97,7 @@ export class AiUsageView extends UaView {
     this.root.append(ui.splitV([
       ui.box(cards, {style: {maxHeight: '96px'}}),
       ui.box(ui.splitH([perDay.root, breakdown.root]), {style: {maxHeight: '290px'}}),
-      ui.splitH([ui.box(filters.root, {style: {maxWidth: '200px'}}), requests.root]),
+      ui.splitH([ui.box(filters.root, {style: {maxWidth: '190px'}}), requests.root]),
     ]));
   }
 

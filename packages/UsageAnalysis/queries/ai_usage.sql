@@ -63,7 +63,7 @@ user_groups as (
   group by m.user_id
 )
 select t.event_time as time, date_trunc('day', t.event_time) as day, t.user_name as "user", ug.groups,
-  t.feature, t.model, coalesce(t.status, 'ok') as status, t.chat_id, t.turn_id,
+  t.feature, coalesce(t.model, 'unknown') as model, coalesce(t.status, 'ok') as status, t.chat_id, t.turn_id,
   t.input_tokens, t.output_tokens, t.cache_read_tokens, t.cache_write_tokens,
   coalesce(t.input_tokens, 0) + coalesce(t.output_tokens, 0) + coalesce(t.cache_read_tokens, 0) + coalesce(t.cache_write_tokens, 0) as total_tokens,
   t.cost_usd, t.duration_ms
