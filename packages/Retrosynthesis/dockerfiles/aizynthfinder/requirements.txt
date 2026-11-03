@@ -3,13 +3,26 @@ datagrok-celery-task
 celery
 datagrok-api>=0.0.9
 filelock
-# Security floors for transitive deps (aizynthfinder[all]==4.3.2 pulls older ones).
-# protobuf capped at 4.x LTS: onnxruntime<1.17 ships pb2 gencode incompatible with protobuf 5.
-protobuf>=4.25.8
+# Runtime deps of aizynthfinder==4.3.2, which is installed with --no-deps: its pillow<10 cap blocks
+# the pillow CVE fixes, and the jupyter GUI and [all] extras (route-distances -> torch<2.6,
+# pytorch-lightning<1.8.4) are not used by app.py.
+deprecated>=1.2.10,<2.0.0
+jinja2>=3.0.0,<4.0.0
+networkx>=2.4,<3.0
+onnxruntime<1.17.0
+pandas>=1.0.0,<2.0.0
+paretoset>=1.2.3,<2.0.0
+rdchiral>=1.0.0,<2.0.0
+rdkit>=2023.9.1,<2024.0.0
+requests>=2.23.0,<3.0.0
+tables>=3.6.1,<4.0.0
+tqdm>=4.42.1,<5.0.0
+pyyaml
+psutil
+molbloom>=2.1.0,<3.0.0
+# Security floors
+protobuf>=5.29.6
+pillow>=12.2
 wheel>=0.46.2
 jaraco.context>=6.1
-pillow>=12.2
-pymongo>=4.6.3
-torch>=2.6
-pytorch-lightning>=2.4
 setuptools>=78.1.1

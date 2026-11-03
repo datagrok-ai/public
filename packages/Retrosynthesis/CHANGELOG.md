@@ -1,9 +1,9 @@
 # Retrosynthesis changelog
 
-## v.next
+## 1.1.1 (2026-11-03)
 
 * Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages and upgraded pip/setuptools/wheel in the build stage
-* Docker: Raised security floors (VEX) — pinned protobuf/wheel/jaraco.context; torch/pytorch-lightning/pillow/pymongo stay pinned by aizynthfinder[all]==4.3.2's transitive caps (route-distances torch<2.6, pillow<10)
+* Docker: rebuilt the aizynthfinder image with patched dependencies (pillow 12, protobuf 5.29, wheel/jaraco.context via setuptools); dropped the unused jupyter GUI and route-distances extras, which removes torch, pytorch-lightning, mathjax and underscore
 
 ## 1.1.0 (2026-05-18)
 

@@ -17,7 +17,7 @@ WORKDIR /app
 COPY requirements.txt /app/
 RUN pip install --upgrade pip setuptools wheel && \
     pip install --prefix=/install -r requirements.txt && \
-    pip install --prefix=/install "aizynthfinder[all]==4.3.2"
+    pip install --prefix=/install --no-deps aizynthfinder==4.3.2
 
 FROM python:3.10-slim
 
@@ -37,7 +37,8 @@ COPY --from=builder /install/bin /usr/local/bin
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN patchelf --clear-execstack /usr/local/lib/python3.10/site-packages/onnxruntime/capi/onnxruntime_pybind11_state.cpython-310-x86_64-linux-gnu.so
 RUN mkdir -p /app/configs/default && \
-    python -c "import sys; import aizynthfinder; from aizynthfinder.tools.download_public_data import main; sys.argv = ['download_public_data', '/app/configs/default']; main()"
+    python -c "import sys; import aizynthfinder; from aizynthfinder.tools.download_public_data import main; sys.argv = ['download_public_data', '/app/configs/default']; main()" && \
+    python -c "from aizynthfinder.aizynthfinder import AiZynthFinder; AiZynthFinder(configfile='/app/configs/default/config.yml')"
 COPY app.py /app/
 
 RUN chown -R datagrok:datagrok /app
