@@ -356,6 +356,23 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     await _testPos(readCsv(csvTests.fastaRna1), 'seq', seqHelper,
       NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.RNA, 4, false);
   });
+  // bio-edge 2026-11-02, pinned (not fixed): FASTA with a few bracketed multi-char monomers among amino acids is
+  // detected PT, and a known alphabet is never multi-char (SeqHandler.getAlphabetIsMultichar), so '[meI]' splits
+  // into '[', 'm', 'e', 'I', ']' (renderers, To Atomic Level: an unknown monomer in every row). A fix changes the
+  // tags or the handler of such columns (palettes, WebLogo, the column widget): listed for a decision.
+  test('fastaPtFewMultichar-pinned', async () => {
+    const list = Array.from({length: 24}, (_, i) => ['AC[meI]DEFGHIK', 'MN[Aib]PQRSTV', 'AC[dK]DEACDEA'][i % 3]);
+    const col: DG.Column = DG.Column.fromList(DG.TYPE.STRING, 'seq', list);
+    const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+    if (semType) col.semType = semType;
+    expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
+    expect(col.meta.units, NOTATION.FASTA);
+    expect(col.getTag(bioTAGS.alphabet), ALPHABET.PT);
+    const sh = seqHelper.getSeqHandler(col);
+    expect(sh.getAlphabetIsMultichar(), false);
+    expect(sh.getSplitted(0).getOriginal(2), '[');
+  });
+
   test('FastaPt1', async () => {
     await _testPos(readCsv(csvTests.fastaPt1), 'seq', seqHelper,
       NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false);

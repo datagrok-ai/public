@@ -14,7 +14,10 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
+import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+
 import {_package} from '../package-test';
+import {awaitGrid} from './utils';
 
 category('renderers: monomerPlacer', () => {
   let libHelper: IMonomerLibHelper;
@@ -222,4 +225,36 @@ id3,QHIRE--LT
       expectArray(resLengths, testData.tgt.lengths);
     });
   }
+
+  test('multiline: the lines wrap at the cell, not at the grid\'s visible edge', async () => {
+    // A column wider than the grid, scrolled: the lines wrapped at the visible part of the cell and moved as the grid
+    // scrolled (3 November)
+    const seq = 'ACDEFGHIKLMNPQRSTVWY'.repeat(12);
+    const df = DG.DataFrame.fromCsv(`seq\n${seq}\n${seq}`);
+    await grok.data.detectSemanticTypes(df);
+    df.getCol('seq').setTag('renderMultiline', 'true');
+    const tv = grok.shell.addTableView(df);
+    try {
+      const grid = tv.grid;
+      grid.props.rowHeight = 100;
+      await awaitGrid(grid); // the grid sizes its columns once it has drawn: widen the column after that
+      grid.col('seq')!.width = 5000;
+      const monomersPerLine = async (): Promise<number[]> => {
+        await awaitGrid(grid);
+        const [, , temp] = getGridCellColTemp<any, any>(grid.cell('seq', 0));
+        const bounds = (temp.rendererBack as any)._cellBounds.get(0) as { lineIdx: number }[];
+        const counts: number[] = [];
+        for (const b of bounds) counts[b.lineIdx] = (counts[b.lineIdx] ?? 0) + 1;
+        return counts;
+      };
+      const atStart = await monomersPerLine();
+      expect(grid.col('seq')!.width, 5000);
+      expect(grid.canvas.width / window.devicePixelRatio < 5000, true); // the cell runs past the grid's right edge
+      expectArray(atStart, [seq.length]); // 240 monomers fit in a 5000 px cell: one line
+      grid.scrollToPixels(1500, 0);
+      expectArray(await monomersPerLine(), atStart);
+    } finally {
+      tv.close();
+    }
+  });
 });

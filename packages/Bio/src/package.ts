@@ -116,7 +116,9 @@ async function toAtomicLevelSingleSeqInt(sequence: string, nonlinear: boolean): 
   // create temporary column and table
   const isHelm = sequence.includes('$$');
   const isSeparator = sequence.split('').filter((c) => c == '/').length > 2;
-  const isBiln = sequence.split('').filter((c) => c == '-').length > 2; // biln is super separator basically :D
+  // biln is super separator basically :D. A BILN monomer is never empty: '--' or a '-' at an end are FASTA gaps
+  const isBiln = !isHelm && !isSeparator && sequence.split('').filter((c) => c == '-').length > 2 &&
+    !/--|^-|-$/.test(sequence);
   // const isFasta = !isHelm && !isSeparator && !isBiln;
   const tempCol = DG.Column.fromStrings('sequence', [sequence]);
   tempCol.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -132,8 +134,11 @@ async function toAtomicLevelSingleSeqInt(sequence: string, nonlinear: boolean): 
   const isDNA = sequence.split('').every((c) => dnaAlphabet.includes(c) || c === '/' || c === '-');
   const isRNA = !isDNA && sequence.split('').every((c) => RNAAlphabet.includes(c) || c === '/' || c === '-');
 
-  tempCol.setTag(bioTAGS.alphabet, isDNA ? ALPHABET.DNA : isRNA ? ALPHABET.RNA : 'UN');
+  tempCol.setTag(bioTAGS.alphabet, isDNA && !isBiln ? ALPHABET.DNA : isRNA && !isBiln ? ALPHABET.RNA : 'UN');
   tempCol.setTag(bioTAGS.alphabetIsMultichar, 'true');
+  // a BILN column reads through its notation provider, which the detector sets (detectMacromoleculeBiln)
+  if (isBiln)
+    tempCol.temp[SeqTemps.notationProvider] = new BilnNotationProvider('-', await PackageFunctions.getSeqHelper(), tempCol);
 
   const tempDF = DG.DataFrame.fromColumns([tempCol]);
 

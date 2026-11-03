@@ -194,4 +194,17 @@ category('PolyTool: Enumerate', () => {
       dlg!.close();
     }
   });
+
+  // bio-edge 2026-11-02, pinned (not fixed): a placeholder past the sequence's end, or negative, is ignored and each
+  // of its monomers gives a copy of the source (Enumerate Single HELM Sequence takes positions as they come).
+  // Listed: an error or no rows would change what its callers get.
+  test('position-out-of-range-pinned', async () => {
+    const src = 'PEPTIDE1{A.C.D}$$$$V2.0';
+    for (const position of [10, -1]) {
+      const res = doPolyToolEnumerateHelm(src, '', {
+        type: PolyToolEnumeratorTypes.Single, placeholders: [{position, monomers: ['G', 'K']}],
+      });
+      expectArray(res.map(([seq]) => seq), [src, src]);
+    }
+  });
 });

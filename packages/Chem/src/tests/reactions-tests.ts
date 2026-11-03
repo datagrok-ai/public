@@ -107,8 +107,8 @@ category('Reactions', () => {
       const coupling = await runTwoComponentReaction(rdkit, smartsOf('Amide Coupling'), acids, amines,
         {mode: 'matrix'});
       expect(lastReactionEngine(), engine, 'the two-component reaction\'s engine');
-      const deprotected = addDeprotectedColumn(DG.DataFrame.fromColumns([fmoc.clone()]),
-        fmoc, defaultFragment, rdkit)!.toList();
+      const deprotected = (await addDeprotectedColumn(DG.DataFrame.fromColumns([fmoc.clone()]),
+        fmoc, defaultFragment, rdkit))!.toList();
       expect(lastReactionEngine(), engine, 'the deprotection\'s engine');
       return {hydrolysis: canonical(hydrolysis.products), errors: hydrolysis.errors,
         coupling: canonical(coupling.products), deprotected: canonical(deprotected.slice(0, 3)).concat(deprotected[3])};
@@ -158,7 +158,7 @@ category('Reactions', () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', [
       'O=C(O)CNC(=O)OCC1c2ccccc2-c2ccccc21', 'CC(NC(=O)OCC1c2ccccc2-c2ccccc21)C(=O)O',
       'O=C(O)C1CCCN1C(=O)OCC1c2ccccc2-c2ccccc21', 'CC(C)C(N)C(=O)O'])]);
-    const deprotected = addDeprotectedColumn(df, df.col('smiles')!, defaultFragment, rdkit)!;
+    const deprotected = (await addDeprotectedColumn(df, df.col('smiles')!, defaultFragment, rdkit))!;
     expectArray(canonical(deprotected.toList()),
       canonical(['NCC(=O)O', 'CC(N)C(=O)O', 'O=C(O)C1CCCN1', 'CC(C)C(N)C(=O)O']));
   });

@@ -3269,7 +3269,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {semType: 'Molecule', initialValue: 'O=C(OCC1c2ccccc2-c2ccccc21)[*:1]'}}) fragment: string): Promise<void> {
     const rdModule = PackageFunctions.getRdKitModule();
-    addDeprotectedColumn(table, molecules, fragment, rdModule);
+    await addDeprotectedColumn(table, molecules, fragment, rdModule);
   }
 
   @grok.decorators.editor({
@@ -3324,7 +3324,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Score column', description: 'Name of the resulting score column, e.g. "MPO <profile name>". The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name'}}) profileName: string,
     @grok.decorators.param({type: 'string', options: {initialValue: 'Average', choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
     createDesirabilityColumns: boolean = false,
-    @grok.decorators.param({options: {description: 'Add a column counting non-empty properties per row'}}) createCoverageColumn: boolean = false,
+    @grok.decorators.param({options: {optional: true, description: 'Add a column counting non-empty properties per row'}}) createCoverageColumn: boolean = false,
   ): DG.DataFrame | null {
     if (columns.length === 0)
       return null;

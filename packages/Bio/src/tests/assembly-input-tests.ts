@@ -15,6 +15,8 @@ import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
+import {splitterAsBiln} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 /** The input layer of the macromolecule assembler (Bio on Crux): any notation to the parsed sequence with exact
  * library keys, per-row errors, the packed batch and the effective library JSON. No assembler is called. */
@@ -171,6 +173,33 @@ category('assemblyInput', () => {
     // HELM hwe cannot read (no monomers), or reads only partly: hwe's error
     expect(errorOf(col, 6).startsWith('HELM unexpected-char'), true, errorOf(col, 6));
     expect(errorOf(col, 7).startsWith('HELM unterminated-brace'), true, errorOf(col, 7));
+  });
+
+  // bio-edge 2026-11-02: an empty polymer gave the internal 'invalid chain start 0 at 1' (or '2 at 1' last)
+  test('emptyPolymer', async () => {
+    const col = seqCol([
+      'PEPTIDE1{}|PEPTIDE2{A.C}$$$$V2.0',
+      'PEPTIDE1{A.C}|PEPTIDE2{}$$$$V2.0',
+      'PEPTIDE1{A}|RNA1{}|PEPTIDE2{C}$$$$V2.0',
+      'PEPTIDE1{A}|PEPTIDE2{C}$$$$V2.0',
+    ], NOTATION.HELM);
+    expect(errorOf(col, 0), 'polymer PEPTIDE1 has no monomers');
+    expect(errorOf(col, 1), 'polymer PEPTIDE2 has no monomers');
+    expect(errorOf(col, 2), 'polymer RNA1 has no monomers');
+    expectArray(seqOf(col, 3).graphInfo.disjointSeqStarts, [0, 1]);
+  });
+
+  // bio-edge 2026-11-02, pinned (not fixed): a BILN link number with one end (`C(1,3)-A-A`) or three
+  // (`C(1,3)-A-C(1,3)-C(1,3)`) is dropped silently: the row builds without that bond. An error would change rows that
+  // build today (the BILN splitter, which other agents tonight change too): listed for a decision.
+  test('bilnUnmatchedLinks-pinned', async () => {
+    const bilnHandler = {notation: NOTATION.BILN} as ISeqHandler;
+    for (const [biln, conns] of [['C(1,3)-A-A', 0], ['C(1,3)-A-C(1,3)-C(1,3)', 1], ['C(1,3)-A.C(1,3).C(1,3)', 1]] as
+      [string, number][]) {
+      const res = toAsmSequence(splitterAsBiln(biln), bilnHandler, monomerLib);
+      expect(res.error, null, biln);
+      expect(res.seq!.graphInfo.connections.length, conns, biln);
+    }
   });
 
   test('biln', async () => {

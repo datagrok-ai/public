@@ -97,6 +97,8 @@ export class BilnSeqSplitted extends HelmSplitted {
   override getCanonical(posIdx: number): string {
     if (this.isGap(posIdx)) return GAP_SYMBOL;
     const om = this.getOriginal(posIdx);
+    // a cyclization mark ends with ')': without one, there is nothing to strip
+    if (om.charCodeAt(om.length - 1) !== 41 /* ) */) return om;
     let cmRes = om;
     const re = /\(\d{1,2},\d{1,2}\)$/; // there can be multiple cyclization marks
     while (re.test(cmRes))
@@ -106,7 +108,8 @@ export class BilnSeqSplitted extends HelmSplitted {
 
   override getOriginal(posIdx: number): string {
     const om = super.getOriginal(posIdx);
-    // replace [] with '' for biln
+    // replace [] with '' for biln; only a monomer starting with '[' has them
+    if (om.charCodeAt(0) !== 91 /* [ */) return om;
     return om.replace(/^\[(.*)\]/, '$1');
   }
 
@@ -253,10 +256,9 @@ function getStats(splitted: Iterable<ISeqSplitted>, minLength: number): SeqColSt
  * @return {string[]} array of monomers
  */
 export const splitterAsFasta: SplitterFunc = (seq: string): ISeqSplitted => {
-  const mmList = wu<RegExpMatchArray>(seq.toString().matchAll(monomerRe))
-    .map((ma: RegExpMatchArray) => {
-      return ma[2] ?? ma[1]; // preserve '-' as gap symbol for compatibility with simpleAsFastaSimple
-    }).toArray();
+  const mmList: string[] = [];
+  for (const ma of seq.toString().matchAll(monomerRe))
+    mmList.push(ma[2] ?? ma[1]); // preserve '-' as gap symbol for compatibility with simpleAsFastaSimple
 
   return new StringListSeqSplitted(mmList, GapOriginals[NOTATION.FASTA]);
 
@@ -608,8 +610,8 @@ export function splitterAsBiln(seq: string): ISeqSplitted {
     disjointPartsRaw[i] = dp;
   }
   const disjointParts: string[][] = disjointPartsRaw
-    .map((ds) => ds.split('-')
-      .map((m) => m.replaceAll(tempSep, '-')));
+    .map((ds) => ds.indexOf(tempSep) === -1 ? ds.split('-') : // no monomer to restore
+      ds.split('-').map((m) => m.replaceAll(tempSep, '-')));
 
   //const totalLength = disjointParts.reduce((acc, ss) => acc + ss.length, 0);
   const res = new BilnSeqSplitted(

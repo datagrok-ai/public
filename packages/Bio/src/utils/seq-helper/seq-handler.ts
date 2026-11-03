@@ -17,6 +17,7 @@ import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 import {ConvertFunc, ISeqHandler, JoinerFunc, SeqTemps, SeqValueBase} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 import {SeqHelper} from './seq-helper';
+import {getSeqColStats} from './seq-stats';
 
 /** Class for handling notation units in Macromolecule columns and
  * conversion of notation systems in Macromolecule columns
@@ -410,28 +411,8 @@ export class SeqHandler implements ISeqHandler {
   }
 
   public get stats(): SeqColStats {
-    if (this._stats == null) {
-      const freq: { [m: string]: number } = {};
-      let sameLength = true;
-      let firstLength = null;
-
-      const colLen = this.column.length;
-      for (let rowIdx: number = 0; rowIdx < colLen; ++rowIdx) {
-        const mSeq: ISeqSplitted = this.getSplitted(rowIdx);
-        if (firstLength == null)
-          firstLength = mSeq.length;
-        else if (mSeq.length !== firstLength)
-          sameLength = false;
-
-        for (let posIdx = 0; posIdx < mSeq.length; ++posIdx) {
-          const cm = mSeq.getCanonical(posIdx);
-          if (!(cm in freq))
-            freq[cm] = 0;
-          freq[cm] += 1;
-        }
-      }
-      this._stats = {freq: freq, sameLength: sameLength};
-    }
+    if (this._stats == null)
+      this._stats = getSeqColStats(this.column.length, (rowIdx) => this.getSplitted(rowIdx));
     return this._stats;
   }
 
