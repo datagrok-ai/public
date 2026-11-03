@@ -25,9 +25,7 @@ RUN savedAptMark="$(apt-mark showmanual)" ; \
     ; \
     apt-mark auto '.*' > /dev/null ; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark ; \
-    wget https://mafft.cbrc.jp/alignment/software/mafft_7.520-1_amd64.deb -O mafft.deb; \
-    apt install -y ./mafft.deb; \
-    rm -rf mafft.deb; \
+    apt-get install -y --no-install-recommends mafft; \
     wget https://github.com/Merck/PepSeA/archive/refs/heads/main.zip -O PepSeA.zip; \
     unzip -q PepSeA.zip -d /opt ; \
     rm -rf PepSeA.zip; \
@@ -136,7 +134,9 @@ USER grok:grok
 WORKDIR /opt/PepSeA-main
 
 ENV ADD_HTTPS_MIDDLEWARE=""
-ENV MAFFT_DIR="/usr/bin/"
+ENV MAFFT_DIR="/usr/lib/mafft/bin/"
+
+RUN "${MAFFT_DIR}ginsi" --version && python -c "import alignment.api"
 
 # CMD can be changed easially, you need ENTRYPOINT in this case
 ENTRYPOINT ["uvicorn", "--host", "0.0.0.0", "alignment.api:api"]
