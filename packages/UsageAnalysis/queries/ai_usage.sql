@@ -1,6 +1,8 @@
 --name: AiUsage
 --input: string date {pattern: datetime}
 --input: list<string> groups
+--meta.cache: all
+--meta.cache.invalidateOn: */5 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups

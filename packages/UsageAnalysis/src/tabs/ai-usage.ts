@@ -11,6 +11,11 @@ import '../../css/usage_analysis.css';
 
 const CARDS = ['Requests', 'Users', 'Input tokens', 'Output tokens', 'Total tokens', 'Estimated cost'];
 const GRID_COLUMNS = ['time', 'user', 'feature', 'model', 'status', 'total_tokens', 'cost_usd'];
+// Without fixed widths the grid is wider than its pane and scrolls sideways.
+const GRID_WIDTHS: {[name: string]: number} = {time: 112, user: 92, feature: 78, model: 112, status: 50,
+  total_tokens: 70, cost_usd: 56};
+const COLUMNS = ['time', 'period', 'user', 'groups', 'feature', 'model', 'status', 'chat_id', 'turn_id', 'input_tokens',
+  'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'total_tokens', 'cost_usd', 'duration_ms'];
 
 export class AiUsageView extends UaView {
   private requests?: UaFilterableQueryViewer;
@@ -35,15 +40,21 @@ export class AiUsageView extends UaView {
         cards.append(ui.div([ui.divText(label), ui.wait(async () =>
           ui.div((await summary)[label].map((s) => ui.divText(s))))], 'ua-card'));
       }
+      summary.catch((e) => {
+        cards.textContent = '';
+        cards.append(ui.divText(`AI usage could not be loaded: ${e instanceof Error ? e.message : e}`, 'd4-viewer-error'));
+      });
     };
 
     let df: Promise<DG.DataFrame>;
     let groups: Promise<DG.DataFrame>;
     this.uaToolbox.filterStream.subscribe((filter: UaFilter) => {
-      df = queries.aiUsage(filter.date!, filter.groups).then((t) => {
-        t.col('groups')!.setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ', ');
-        t.col('time')!.meta.format = 'yyyy-MM-dd HH:mm';
-        t.col('cost_usd')!.meta.format = '0.0000';
+      df = queries.aiUsage(filter.date ?? 'this week', filter.groups).then((t) => {
+        for (const name of COLUMNS)
+          t.getCol(name);
+        t.getCol('groups').setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ', ');
+        t.getCol('time').meta.format = 'yyyy-MM-dd HH:mm';
+        t.getCol('cost_usd').meta.format = '0.0000';
         t.onFilterChanged.subscribe(() => showCards(Promise.resolve(t)));
         t.onCurrentRowChanged.subscribe(() => AiUsageView.showRequest(t));
         return t;
@@ -80,12 +91,16 @@ export class AiUsageView extends UaView {
         showCurrentCellOutline: false,
       });
       grid.columns.setOrder(GRID_COLUMNS);
-      for (const name of t.columns.names())
-        grid.col(name)!.visible = GRID_COLUMNS.includes(name);
-      const widths: {[name: string]: number} = {time: 112, user: 92, feature: 78, model: 112, status: 50,
-        total_tokens: 70, cost_usd: 56};
-      for (const [name, width] of Object.entries(widths))
-        grid.col(name)!.width = width;
+      for (const name of t.columns.names()) {
+        const column = grid.col(name);
+        if (column)
+          column.visible = GRID_COLUMNS.includes(name);
+      }
+      for (const [name, width] of Object.entries(GRID_WIDTHS)) {
+        const column = grid.col(name);
+        if (column)
+          column.width = width;
+      }
       return grid;
     });
 
@@ -118,10 +133,11 @@ export class AiUsageView extends UaView {
   static summary(t: DG.DataFrame): {[label: string]: string[]} {
     const rows = Array.from(t.filter.getSelectedIndexes());
     const sum = (name: string) => {
-      const col = t.col(name)!;
+      const col = t.getCol(name);
       return rows.reduce((s, i) => col.isNone(i) ? s : s + col.get(i), 0);
     };
-    const priced = rows.filter((i) => !t.col('cost_usd')!.isNone(i)).length;
+    const cost = t.getCol('cost_usd');
+    const priced = rows.filter((i) => !cost.isNone(i)).length;
     const n = (x: number) => DG.format(x, 'compact');
     return {
       'Requests': [n(rows.length)],
@@ -136,9 +152,10 @@ export class AiUsageView extends UaView {
   static groupsFrame(t: DG.DataFrame): DG.DataFrame {
     const rows: number[] = [];
     const names: string[] = [];
-    const separator = t.col('groups')!.getTag(DG.TAGS.MULTI_VALUE_SEPARATOR);
+    const column = t.getCol('groups');
+    const separator = column.getTag(DG.TAGS.MULTI_VALUE_SEPARATOR);
     for (let i = 0; i < t.rowCount; i++)
-      for (const name of (t.get('groups', i) as string | null)?.split(separator) ?? []) {
+      for (const name of column.isNone(i) ? [] : (column.get(i) as string).split(separator)) {
         rows.push(i);
         names.push(name);
       }
@@ -154,7 +171,7 @@ export class AiUsageView extends UaView {
     const i = t.currentRowIdx;
     if (i < 0)
       return;
-    const s = (name: string, row: number = i) => t.col(name)!.getString(row);
+    const s = (name: string, row: number = i) => t.getCol(name).getString(row);
     const acc = ui.accordion();
     acc.addPane('Details', () => ui.tableFromMap({'User': s('user'), 'Groups': s('groups'), 'Feature': s('feature'),
       'Model': s('model'), 'Status': s('status'), 'Cost, $': s('cost_usd'), 'Duration, ms': s('duration_ms'),
@@ -174,8 +191,13 @@ export class AiUsageView extends UaView {
     if (turnId != null) {
       const content = queries.aiTurnContent(turnId);
       const text = (name: string) => ui.wait(async () => {
-        const value = (await content).get(name, 0);
-        return value ? ui.divText(value, 'ua-ai-text') : ui.divText('Not logged', 'ua-ai-text-missing');
+        try {
+          const value: string | null = (await content).col(name)?.get(0) ?? null;
+          return value ? ui.divText(value, 'ua-ai-text') : ui.divText('Not logged', 'ua-ai-text-missing');
+        }
+        catch (e) {
+          return ui.divText(`Could not be loaded: ${e instanceof Error ? e.message : e}`, 'd4-viewer-error');
+        }
       });
       acc.addPane('Prompt', () => text('prompt'), true);
       acc.addPane('Answer', () => text('response'), true);
