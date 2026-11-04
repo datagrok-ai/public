@@ -587,49 +587,31 @@ limit in `container.json`.
 
 ### Credentials
 
-The provider settings are the Grokky package's credentials (Plugins | Grokky | Credentials...), a set per group
-with Allow client side off. Every connection the platform proxies to the container carries
-`X-Datagrok-Container-Token`, a 15-minute token scoped to `GET /docker/credentials`
-([AUTH_RESOURCES](https://github.com/datagrok-ai/core/blob/master/docs/AUTH_RESOURCES.md#from-a-docker-container)).
-The server trades it for the user's credentials when the WebSocket opens (`src/credentials.ts`): the package's
-for the user's groups. They are the only source: the container takes no credentials from its environment, a
-connection without the token gets none, and a user the package has none for gets "No AI model credentials are set
-for you". A failed lookup fails that connection's turns and closes it, so the browser's next prompt reconnects with
-a new token; a change of credentials or groups reaches a user on their next connection. The platform still lays
-credentials set on the `grokky-claude-runtime` container itself over the package's, key by key: leave the
-container's empty.
+Keys and setup: [README](../README.md#model-credentials). The runtime has no other source of provider credentials.
 
-| Credential | Meaning |
-|---|---|
-| `provider` | `Anthropic` (default), `OpenAI`, `OpenRouter`, `Azure`, `Bedrock`, `Databricks` or `Custom` |
-| `apiKey` | The provider's key; required |
-| `model` | The one model every turn runs on, as the provider names it; required |
-| `baseUrl` | Azure: the resource; Databricks: the workspace; Custom: the endpoint; OpenAI: a data-residency host |
-| `region` | Bedrock: the AWS region the key was created in |
-| `apiFormat` | Custom: `anthropic-messages`, `openai-responses` or `openai-chat-completions` |
-| `service` | Databricks: a model service of the workspace (`<catalog>.<schema>.<name>`) to call `model` through |
-| `TEST_UPSTREAM` | Test stubs and loggers only: replaces the scheme, host and port of every model URL (the path stays); http(s) to `127.0.0.1`, `localhost`, `[::1]` or `host.docker.internal`, or https to the provider's own host; with any other value the agent refuses to start |
-
-The server keeps only these (`PROVIDER_CREDENTIALS` in `src/constants.ts`) and sends a set to each agent in its
-`init` line. An agent serves
-only turns of the credentials it started with: a turn of other credentials on a live session (rotated keys,
-another group) parks the session and reloads its history in an agent started with the turn's. New warm spares start
-with the credentials an agent last started with successfully, so there are none before the first user; spares of other
-credentials stay until a session of theirs takes them or room is needed, and a session no spare matches starts
-cold. The redaction of agent output covers each agent's own key. Each provider (`agent/grokky_agent/providers/`)
-checks its credentials and declares the formats it serves and where; with two, a model whose name contains
-`claude` is called in Anthropic's Messages format and any other in OpenAI's Responses format. An agent whose
-provider refuses the credentials does not start, so every turn ends in "The assistant could not start: …",
-naming the credential, never its value. A rejected key ends the turn with the provider's message and a hint
-naming the credential to check.
+- Every connection the platform proxies carries `X-Datagrok-Container-Token`, a 15-minute token scoped to
+  `GET /docker/credentials` ([AUTH_RESOURCES](https://github.com/datagrok-ai/core/blob/master/docs/AUTH_RESOURCES.md#from-a-docker-container)).
+  The server trades it for the user's credentials, resolved by their groups, when the WebSocket opens (`src/credentials.ts`).
+- No token, no credentials or a failed lookup fails the connection's turns and closes it; the next prompt
+  reconnects with a new token.
+- Only the `PROVIDER_CREDENTIALS` keys (`src/constants.ts`) are kept, and an agent gets them in its `init` line.
+  `TEST_UPSTREAM` (test stubs only) replaces the scheme, host and port of every model URL: http(s) to `127.0.0.1`,
+  `localhost`, `[::1]` or `host.docker.internal`, or https to the provider's own host; any other value is refused.
+- An agent serves only turns of the credentials it started with. Other credentials on a live session park it and
+  reload its history in a new agent.
+- Warm spares use the credentials an agent last started with (none before the first user) and go only to
+  sessions with the same credentials.
+- Agent output is redacted of the agent's own key. A provider that refuses the credentials fails the turn with
+  "The assistant could not start: …", naming the credential, never its value.
+- Each provider (`agent/grokky_agent/providers/`) declares the formats it serves; with two, a model whose name
+  contains `claude` uses Anthropic's Messages format and any other OpenAI's Responses format.
 
 Prices come from Hermes' list for the provider (`agent/usage_pricing.py`: Anthropic's and OpenAI's published
 prices, OpenRouter's live ones). Bedrock, Azure, Databricks and custom endpoints have none, nor does a model the
 list lacks (it stops at Claude Sonnet 5 and Opus 5): such a turn reports `costUsd: null` and only its call limit
 bounds it. Hermes finds the context window itself; images go to the model as they are.
 
-A user's credentials are checked by their first agent: credentials the provider refuses fail that user's turns
-with "The assistant could not start: …".
+Provider notes:
 
 - Anthropic: a Claude subscription token is refused, for any key bound for `api.anthropic.com`: Anthropic allows
   those only in its own applications

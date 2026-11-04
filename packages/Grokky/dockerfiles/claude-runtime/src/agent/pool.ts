@@ -74,9 +74,8 @@ const parked = new Map<string, ParkedSession>();
 // Spares still starting; a session that finds no ready spare takes one of these over rather than paying for a
 // second cold start next to it.
 const starting: {proc: Promise<AgentProcess>; claimed: boolean; credentials: ProviderCredentials}[] = [];
-// New spares start with the credentials an agent last started with, none before the first: in most deployments
-// everyone shares them. Spares of other credentials stay for their next session; spares are the first to go when
-// room is needed.
+// Most deployments share one set, so new spares use the credentials an agent last started with. Spares of other
+// credentials stay until a session of theirs takes them or room is needed.
 let spareCredentials: ProviderCredentials | undefined;
 
 export const processForSession = (key: string) => bySession.get(key);

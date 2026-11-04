@@ -16,7 +16,8 @@ export function providerCredentials(values: Record<string, string>): ProviderCre
 
 const API_URL = process.env.DATAGROK_API_URL && rewriteForDocker(process.env.DATAGROK_API_URL);
 
-const NOT_SET = 'No AI model credentials are set for you: an administrator sets them in Plugins | Grokky | Credentials...';
+const NOT_SET =
+  'No AI model credentials are set for you: an administrator sets them in Plugins | Grokky | Credentials...';
 
 /** The provider credentials of the user whose proxied connection brought `token`: Grokky's package credentials,
  * resolved by the platform by the user's groups. */
