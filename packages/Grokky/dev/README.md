@@ -30,7 +30,7 @@ are mounted: a change to the agent driver (`dockerfiles/claude-runtime/agent/`) 
 | Tier | Command | Container | Browser | Model | Speed |
 |---|---|---|---|---|---|
 | **T0** unit | `npm --prefix dockerfiles/claude-runtime test` | no | no | no | ~250ms |
-| **T2** driver | `dev/harness/drive.mjs` | on a stand | no | yes | ~2–20s/turn |
+| **T2** driver | `dev/harness/drive.mjs` with `GROKKY_DEV_WS` (the stand's proxy-ws URL) and `GROKKY_DEV_TOKEN` | on a stand | no | yes | ~2–20s/turn |
 | **T3** full E2E | `dev/harness/run-benchmark.mjs` | yes | yes | yes | minutes |
 
 **T3** is [`harness/run-benchmark.mjs`](harness/run-benchmark.mjs) — Playwright drives a real

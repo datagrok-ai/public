@@ -8,15 +8,18 @@ Grokky's model is set in the package's credentials: **Browse > Platform > Plugin
 **Credentials...**. **All users** is the default; a group on the left gives its members their own key and model.
 Keep **Allow client side** off, so the values never reach the browser.
 
-| Key         | Meaning                                                                                        |
-|-------------|------------------------------------------------------------------------------------------------|
-| `provider`  | `Anthropic` (default), `OpenAI`, `OpenRouter`, `Azure`, `Bedrock`, `Databricks` or `Custom`    |
-| `apiKey`    | The provider's key; required                                                                   |
-| `model`     | The model every turn runs on, as the provider names it (e.g. `claude-sonnet-5-5`); required    |
-| `baseUrl`   | Azure: the resource; Databricks: the workspace; Custom: the endpoint; OpenAI: a data-residency host |
-| `region`    | Bedrock: the AWS region the key was created in; required for Bedrock                           |
-| `apiFormat` | Custom: `anthropic-messages`, `openai-responses` or `openai-chat-completions`                  |
-| `service`   | Databricks: a model service of the workspace (`<catalog>.<schema>.<name>`) to call `model` through |
+Every provider needs `apiKey` and `model` (the model every turn runs on, as the provider names it, e.g.
+`claude-sonnet-5-5`). `provider` defaults to `Anthropic`.
+
+| `provider`   | Also needs                                                                                  |
+|--------------|---------------------------------------------------------------------------------------------|
+| `Anthropic`  | —                                                                                           |
+| `OpenAI`     | `baseUrl` only for a data-residency project (`https://<region>.api.openai.com`)             |
+| `OpenRouter` | —                                                                                           |
+| `Azure`      | `baseUrl`: the Azure resource                                                               |
+| `Bedrock`    | `region`: the AWS region the key was created in                                             |
+| `Databricks` | `baseUrl`: the workspace; optional `service`: a model service (`<catalog>.<schema>.<name>`) to call `model` through |
+| `Custom`     | `baseUrl`: the https endpoint; `apiFormat`: `anthropic-messages`, `openai-responses` or `openai-chat-completions` |
 
 - A user without credentials gets an error in the AI panel.
 - Changes reach a user on their next connection (a page reload).

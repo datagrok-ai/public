@@ -25,7 +25,7 @@ const STDERR_TAIL_LINES = 40;
 // Unexpected exits in a row after which a session's store is dropped: the chat then recovers from the transcript.
 const MAX_CRASHES = 2;
 
-// The agent's key and anything key-shaped, wherever an agent's output reaches the log or the browser.
+// Agent output reaches the log and the browser: it loses the agent's own key and anything shaped like one.
 const redact = (text: string, key?: string) => (key ? text.split(key).join('<redacted>') : text)
   .replace(/\bsk-[\w.…-]+/g, 'sk-<redacted>');
 
@@ -101,7 +101,7 @@ async function spawnProcess(credentials: ProviderCredentials, reload?: ParkedSes
   for (const f of reload ? fs.readdirSync(home).filter((n) => !SESSION_STATE.test(n)) : [])
     fs.rmSync(path.join(home, f), {recursive: true, force: true});
   fs.mkdirSync(home, {recursive: true, mode: 0o700});
-  const proc = spawnAgent(home, !reload, credentials);
+  const proc = spawnAgent(home, !reload, credentials.values);
   const tag = path.basename(home).slice(0, 8);
   const p: AgentProcess = {
     proc, home, credentials, ready: Promise.resolve(), started: false, disposed: false, turns: 0, turn: null,
@@ -178,7 +178,7 @@ async function spawnProcess(credentials: ProviderCredentials, reload?: ParkedSes
 /** An agent process in its own home, sent its init command. The credentials go over stdin, never the environment,
  * which every tool the agent runs inherits. The cwd is root-owned, so a stray relative path never lands in runtime
  * state. */
-function spawnAgent(home: string, warm: boolean, credentials: ProviderCredentials): ChildProcessWithoutNullStreams {
+function spawnAgent(home: string, warm: boolean, credentials: Record<string, string>): ChildProcessWithoutNullStreams {
   const proc = spawn(AGENT_PYTHON, ['-m', 'grokky_agent'], {
     cwd: '/', detached: true,
     env: {PATH: process.env['PATH'] ?? '/usr/bin:/bin', HOME: home, HERMES_HOME: home, TERM: 'dumb', LANG: 'C.UTF-8',
@@ -186,7 +186,7 @@ function spawnAgent(home: string, warm: boolean, credentials: ProviderCredential
   });
   const settings = {homes: HERMES_HOMES, skillsDir: path.join(PLUGIN_DIR, 'skills'),
     compressionThresholdTokens: COMPRESSION_THRESHOLD_TOKENS, warm};
-  const init: AgentCommand = {type: 'init', credentials: credentials.values, settings};
+  const init: AgentCommand = {type: 'init', credentials, settings};
   proc.stdin.on('error', () => {});
   proc.stdin.write(JSON.stringify(init) + '\n');
   return proc;
@@ -318,7 +318,8 @@ export function dropSession(key: string, reason: string): void {
 /** Back under the process cap (a busy session is never evicted, so the pool can run over it). */
 function evictForRoom(): void {
   while (all.size >= MAX_PROCESSES) {
-    const spare = spares.shift();
+    const stale = spares.findIndex((s) => s.credentials.id !== spareCredentials?.id);
+    const spare = spares.splice(stale >= 0 ? stale : 0, 1)[0];
     if (spare) {
       dispose(spare, 'room for a session');
       continue;
@@ -336,6 +337,9 @@ export function reapIdle(now = Date.now()): void {
     if (p.started && !p.turn && now - p.lastUsed > IDLE_TTL_MS)
       evict(p, `idle ${Math.round((now - p.lastUsed) / 60_000)} min`);
   }
+  // Spares of rotated keys or of groups gone quiet would otherwise hold their key and memory for good.
+  for (const s of spares.filter((s) => s.credentials.id !== spareCredentials?.id && now - s.lastUsed > IDLE_TTL_MS))
+    dispose(s, 'idle spare of other credentials');
 }
 
 const startError = (e: any) => new Error(`The assistant could not start: ${e?.message ?? e}`);
@@ -370,7 +374,9 @@ export async function acquire(sessionKey: string, credentials: ProviderCredentia
   p.lastUsed = Date.now();
   bySession.set(sessionKey, p);
   trimParked();
-  topUpSpares();
+  // Credentials not yet seen to start an agent warm no spares.
+  if (spareCredentials?.id === credentials.id)
+    topUpSpares();
   try {
     await p.ready;
   } catch (e: any) {
