@@ -516,11 +516,3 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
   color: var(--grey-4);
   font-style: italic;
 }
-
-.ua-cards.ua-ai-cards .ua-card {
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: 260px;
-  width: auto;
-  margin: 8px 6px;
-}

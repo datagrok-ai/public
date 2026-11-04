@@ -135,7 +135,7 @@ export class ViewHandler {
     fButtons.style.display = 'none';
     toolbox.filters.root.before(fButtons);
 
-    this.view.tabs.onTabChanged.subscribe((_) => {
+    this.view.tabs.onTabChanged.subscribe(() => {
       const view = this.view.currentView;
       toolbox.toggleCategoriesInput(view.name === 'Packages');
       toolbox.toggleTagsInput(view.name === 'Functions');

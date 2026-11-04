@@ -60,11 +60,11 @@ export abstract class UaQueryViewer extends UaViewer {
         });
       this.loading = load;
       // A slower earlier query must not replace the result of a newer one.
-      load.then((t) => this.loading === load ? resolve(this.postQuery(t)) : undefined).catch((e: any) => {
+      load.then((t) => this.loading === load ? resolve(this.postQuery(t)) : undefined).catch((e: unknown) => {
         if (this.loading !== load)
           return;
         this.loader.remove();
-        this.errorDiv = ui.divText(`${this.name}: ${e?.message ?? e}`, 'd4-viewer-error');
+        this.errorDiv = ui.divText(`${this.name}: ${e instanceof Error ? e.message : e}`, 'd4-viewer-error');
         this.root.appendChild(this.errorDiv);
       });
     });

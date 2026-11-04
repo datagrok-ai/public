@@ -14,8 +14,7 @@ const COLUMNS = ['time', 'period', 'user', 'uid', 'groups', 'feature', 'model', 
   'duration_ms', 'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'tokens', 'cost'] as const;
 type AiColumn = typeof COLUMNS[number];
 type Measure = 'cost' | 'tokens';
-type Said = (row: number, name: 'prompt' | 'response' | 'tool_calls') => string;
-// Without fixed widths the grid is wider than its pane and scrolls sideways.
+type TurnText = (row: number, name: 'prompt' | 'response' | 'tool_calls') => string;
 const GRID_WIDTHS: Partial<Record<AiColumn, number>> = {time: 108, user: 86, feature: 82, model: 116, status: 46,
   tokens: 60, cost: 52};
 const BAR_CHART = {valueAggrType: 'sum', stackColumnName: '', orientation: 'horizontal', barSortType: 'by value',
@@ -30,9 +29,9 @@ export class AiUsageView extends UaView {
   private groups?: Promise<DG.DataFrame>;
   private measure: Measure = 'cost';
   private frameSubs: Subscription[] = [];
-  private contents = new Map<string, Promise<Said>>();
+  private contents = new Map<string, Promise<TurnText>>();
   private panel?: HTMLElement;
-  private cards = ui.div([], {classes: 'ua-cards ua-ai-cards'});
+  private cards = ui.div([], {classes: 'ua-cards'});
   private body = ui.box();
   private failure = ui.div();
 
@@ -90,8 +89,8 @@ export class AiUsageView extends UaView {
       sub.unsubscribe();
     this.frameSubs = [];
     this.contents.clear();
-    this.cards.textContent = '';
-    this.failure.textContent = '';
+    ui.empty(this.cards);
+    ui.empty(this.failure);
     ui.setDisplay(this.body, true);
     if (this.panel != null && grok.shell.o === this.panel)
       grok.shell.setCurrentObject(null, false);
@@ -119,8 +118,7 @@ export class AiUsageView extends UaView {
     col(t, 'groups').setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, GROUP_SEPARATOR);
     col(t, 'time').meta.format = 'yyyy-MM-dd HH:mm';
     col(t, 'cost').meta.format = '0.0000';
-    // An unpriced request would read as $0 in a cost chart, so cost is the default only when all are priced.
-    this.measure = col(t, 'cost').stats.valueCount === col(t, 'tokens').stats.valueCount ? 'cost' : 'tokens';
+    this.measure = col(t, 'cost').stats.valueCount > 0 ? 'cost' : 'tokens';
     this.showCards(t);
     this.frameSubs.push(t.onFilterChanged.subscribe(() => this.showCards(t)),
       t.onCurrentRowChanged.subscribe(() => this.showRequest(t)));
@@ -129,7 +127,6 @@ export class AiUsageView extends UaView {
   private showCards(t: DG.DataFrame): void {
     const stats = (name: AiColumn) => DG.Stats.fromColumn(col(t, name), t.filter);
     const n = (x: number) => DG.format(x, 'compact');
-    // Requests without any token counts have nothing to price.
     const used = stats('tokens').valueCount;
     const priced = stats('cost').valueCount;
     const cards: {[label: string]: string[]} = {
@@ -142,7 +139,7 @@ export class AiUsageView extends UaView {
       'Estimated cost': priced === 0 ? ['—', 'no prices'] :
         [`$${n(stats('cost').sum)}`, priced < used ? `${Math.floor(priced * 100 / used)}% priced` : ''],
     };
-    this.cards.textContent = '';
+    ui.empty(this.cards);
     for (const [label, lines] of Object.entries(cards)) {
       this.cards.append(ui.div([ui.divText(label),
         ui.wait(async () => ui.div(lines.map((s) => ui.divText(s))))], 'ua-card'));
@@ -188,8 +185,7 @@ export class AiUsageView extends UaView {
   }
 
   private addChatPanes(acc: DG.Accordion, t: DG.DataFrame, i: number, chatId: string): void {
-    // Expanded panes render at once, so the content is kept per chat to query it once per load.
-    const content = this.contents.get(chatId) ?? queries.aiChatContent(chatId).then((c): Said => {
+    const content = this.contents.get(chatId) ?? queries.aiChatContent(chatId).then((c): TurnText => {
       const turns = new Map<string, number>(c.getCol('turn_id').toList().map((id, j) => [id, j]));
       return (row, name) => {
         const turnId: string | null = col(t, 'turn_id').get(row);
@@ -198,7 +194,7 @@ export class AiUsageView extends UaView {
       };
     });
     this.contents.set(chatId, content);
-    const pane = (name: string, render: (said: Said) => HTMLElement) =>
+    const pane = (name: string, render: (turnText: TurnText) => HTMLElement) =>
       acc.addPane(name, () => ui.wait(async () => {
         try {
           return render(await content);
@@ -209,11 +205,10 @@ export class AiUsageView extends UaView {
       }), true);
     const text = (value: string) =>
       value ? ui.divText(value, 'ua-ai-text') : ui.divText('Not logged', 'ua-ai-text-missing');
-    pane('Prompt', (said) => text(said(i, 'prompt')));
-    pane('Answer', (said) => text(said(i, 'response')));
-    pane('Tool calls', (said) => {
-      const calls = said(i, 'tool_calls').split('\n').filter((call) => call !== '');
-      // Grokky logs tool calls only when there are some and logging is on, so none logged can mean either.
+    pane('Prompt', (turnText) => text(turnText(i, 'prompt')));
+    pane('Answer', (turnText) => text(turnText(i, 'response')));
+    pane('Tool calls', (turnText) => {
+      const calls = turnText(i, 'tool_calls').split('\n').filter((call) => call !== '');
       if (calls.length === 0)
         return ui.divText('None logged', 'ua-ai-text-missing');
       // ui.table maps each item to its row, so a call repeated in one turn needs its index as the item.
@@ -222,12 +217,11 @@ export class AiUsageView extends UaView {
         return at < 0 ? [calls[k], ''] : [calls[k].slice(0, at), calls[k].slice(at + 2)];
       }, ['Tool', 'Details']);
     });
-    // Rows come newest first; the chat reads oldest first, and only the requests the filters show.
     const chat = col(t, 'chat_id').toList().flatMap((id, j) => id === chatId && t.filter.get(j) ? [j] : [])
       .reverse();
     if (chat.length > 1) {
-      pane(`Chat (${chat.length} requests)`, (said) => ui.table(chat, (j) => {
-        const asked = said(j, 'prompt');
+      pane(`Chat (${chat.length} requests)`, (turnText) => ui.table(chat, (j) => {
+        const asked = turnText(j, 'prompt');
         const time = col(t, 'time').getString(j).slice(5);
         return [j === i ? ui.divText(time) : ui.link(time, () => t.currentRowIdx = j),
           asked.length > 60 ? `${asked.slice(0, 60)}…` : asked, col(t, 'tokens').getString(j),
