@@ -19,6 +19,8 @@ const GRID_WIDTHS: Partial<Record<AiColumn, number>> = {time: 108, user: 86, fea
   total_tokens: 60, cost_usd: 52};
 const col = (t: DG.DataFrame, name: AiColumn): DG.Column => t.getCol(name);
 
+type TurnText = {prompt: string | null, response: string | null, toolCalls: string | null};
+
 export class AiUsageView extends UaView {
   private requests?: UaFilterableQueryViewer;
 
@@ -35,6 +37,8 @@ export class AiUsageView extends UaView {
     this.root.className = 'grok-view ui-box';
     this.root.style.overflow = 'hidden';
     const cards = ui.div([], {classes: 'ua-cards ua-ai-cards'});
+    const body = ui.box();
+    const failure = ui.div();
     const showCards = (t: Promise<DG.DataFrame>) => {
       const summary = t.then((t) => AiUsageView.summary(t));
       cards.textContent = '';
@@ -42,10 +46,6 @@ export class AiUsageView extends UaView {
         cards.append(ui.div([ui.divText(label), ui.wait(async () =>
           ui.div((await summary)[label].map((s) => ui.divText(s))))], 'ua-card'));
       }
-      summary.catch((e) => {
-        cards.textContent = '';
-        cards.append(ui.divText(`AI usage could not be loaded: ${e instanceof Error ? e.message : e}`, 'd4-viewer-error'));
-      });
     };
 
     let df: Promise<DG.DataFrame>;
@@ -63,25 +63,35 @@ export class AiUsageView extends UaView {
       });
       groups = df.then((t) => AiUsageView.groupsFrame(t));
       showCards(df);
+      df.then(() => {
+        failure.textContent = '';
+        ui.setDisplay(body, true);
+      }).catch((e) => {
+        ui.setDisplay(body, false);
+        failure.textContent = '';
+        failure.append(ui.info([ui.divText('Check the date and groups in the toolbox, then apply them again.'),
+          ui.divText(`${e instanceof Error ? e.message : e}`, 'ua-ai-text-missing')], 'AI usage could not be loaded'));
+      });
     });
 
     const viewer = (name: string, createViewer: (t: DG.DataFrame) => DG.Viewer, getDataFrame = () => df) =>
       new UaFilterableQueryViewer({filterSubscription: this.uaToolbox.filterStream, name, getDataFrame, createViewer});
 
-    const perDay = viewer('Cost over time', (t) => DG.Viewer.lineChart(t, {
+    const perDay = viewer('Usage over time', (t) => DG.Viewer.lineChart(t, {
       xColumnName: 'period',
-      yColumnNames: ['cost_usd'],
+      yColumnNames: [AiUsageView.measure(t)],
       yAggrTypes: ['sum'],
       splitColumnNames: ['model'],
       chartTypes: ['Stacked Bar Chart'],
       legendPosition: 'Top',
-      title: 'Cost over time',
+      title: 'Usage over time',
     }));
-    const byUser = viewer('Cost by user', (t) => AiUsageView.costBarChart(t, 'user', 'Cost by user', {
+    const byUser = viewer('Usage by user', (t) => AiUsageView.barChart(t, 'user', 'Usage by user', AiUsageView.measure(t), {
       onClick: DG.RowGroupAction.Filter,
       rowSource: DG.RowSet.All,
     }));
-    const byGroup = viewer('Cost by group', (t) => AiUsageView.costBarChart(t, 'group', 'Cost by group'), () => groups);
+    const byGroup = viewer('Usage by group', (t) => AiUsageView.barChart(t, 'group', 'Usage by group', AiUsageView.measure(t)),
+      () => groups);
     const filters = viewer('Filters', (t) => DG.Viewer.filters(t,
       {columnNames: ['status', 'feature', 'model', 'groups', 'user']}));
     const requests = viewer('Requests', (t) => {
@@ -115,17 +125,25 @@ export class AiUsageView extends UaView {
     this.requests = requests;
     this.viewers.push(perDay, byUser, byGroup, filters, requests);
     const breakdown = ui.tabControl({'By user': byUser.root, 'By group': byGroup.root});
-    this.root.append(ui.splitV([
+    body.append(ui.splitV([
       ui.box(cards, {style: {maxHeight: '96px'}}),
       ui.box(ui.splitH([perDay.root, breakdown.root]), {style: {maxHeight: '38%'}}),
       ui.splitH([ui.box(filters.root, {style: {maxWidth: '190px'}}), requests.root]),
     ]));
+    this.root.append(failure, body);
   }
 
-  static costBarChart(t: DG.DataFrame, splitColumnName: string, title: string, options: object = {}): DG.Viewer {
+  /** Cost when most requests are priced; total tokens otherwise, as for models without a known price. */
+  static measure(t: DG.DataFrame): 'cost_usd' | 'total_tokens' {
+    const cost = t.col('cost_usd');
+    return cost != null && cost.stats.valueCount > t.rowCount / 2 ? 'cost_usd' : 'total_tokens';
+  }
+
+  static barChart(t: DG.DataFrame, splitColumnName: string, title: string, valueColumnName: string,
+    options: object = {}): DG.Viewer {
     return DG.Viewer.barChart(t, {
       splitColumnName,
-      valueColumnName: 'cost_usd',
+      valueColumnName,
       valueAggrType: 'sum',
       stackColumnName: '',
       orientation: 'horizontal',
@@ -168,6 +186,7 @@ export class AiUsageView extends UaView {
     const groups = DG.DataFrame.fromColumns([
       DG.Column.fromStrings('group', names),
       DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'cost_usd', rows.map((i) => col(t, 'cost_usd').get(i))),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'total_tokens', rows.map((i) => col(t, 'total_tokens').get(i))),
     ]);
     t.onFilterChanged.subscribe(() => groups.filter.init((j) => t.filter.get(rows[j])));
     return groups;
@@ -184,30 +203,47 @@ export class AiUsageView extends UaView {
       'Chat': s('chat_id')}), true);
     acc.addPane('Tokens', () => ui.tableFromMap({'Input': s('input_tokens'), 'Output': s('output_tokens'),
       'Cache read': s('cache_read_tokens'), 'Cache write': s('cache_write_tokens'), 'Total': s('total_tokens')}), true);
-    const chat = col(t, 'chat_id').get(i);
-    if (chat != null) {
-      acc.addPane('Chat', () => {
-        const others = [...Array(t.rowCount).keys()].filter((j) => j !== i && col(t, 'chat_id').get(j) === chat);
-        return others.length === 0 ? ui.divText('No other requests') : ui.table(others,
-          (j) => [ui.link(s('time', j), () => t.currentRowIdx = j), s('total_tokens', j), s('cost_usd', j)],
-          ['Time', 'Tokens', 'Cost, $']);
-      }, true);
-    }
-    const turnId: string | null = col(t, 'turn_id').get(i);
-    if (turnId != null) {
-      const content = queries.aiTurnContent(turnId);
-      const text = (name: 'prompt' | 'response' | 'tool_calls') => ui.wait(async () => {
+    const chatId: string | null = col(t, 'chat_id').get(i);
+    if (chatId != null) {
+      const turns = queries.aiChatContent(chatId).then((c) => {
+        const texts = new Map<string, TurnText>();
+        for (let j = 0; j < c.rowCount; j++) {
+          texts.set(c.getCol('turn_id').get(j), {prompt: c.getCol('prompt').get(j), response: c.getCol('response').get(j),
+            toolCalls: c.getCol('tool_calls').get(j)});
+        }
+        return texts;
+      });
+      const turnId: string | null = col(t, 'turn_id').get(i);
+      const pane = (render: (texts: Map<string, TurnText>) => HTMLElement) => ui.wait(async () => {
         try {
-          const value: string | null = (await content).col(name)?.get(0) ?? null;
-          return value ? ui.divText(value, 'ua-ai-text') : ui.divText('Not logged', 'ua-ai-text-missing');
+          return render(await turns);
         }
         catch (e) {
           return ui.info(`${e instanceof Error ? e.message : e}`, 'Could not be loaded');
         }
       });
-      acc.addPane('Prompt', () => text('prompt'), true);
-      acc.addPane('Answer', () => text('response'), true);
-      acc.addPane('Tool calls', () => text('tool_calls'), true);
+      const text = (value: string | null | undefined) =>
+        value ? ui.divText(value, 'ua-ai-text') : ui.divText('Not logged', 'ua-ai-text-missing');
+      const current = (texts: Map<string, TurnText>) => turnId == null ? undefined : texts.get(turnId);
+      acc.addPane('Prompt', () => pane((texts) => text(current(texts)?.prompt)), true);
+      acc.addPane('Answer', () => pane((texts) => text(current(texts)?.response)), true);
+      acc.addPane('Tool calls', () => pane((texts) => {
+        const calls = current(texts)?.toolCalls?.split('\n') ?? [];
+        return calls.length === 0 ? text(null) : ui.table(calls, (call) => {
+          const at = call.indexOf(': ');
+          return at < 0 ? [call, ''] : [call.slice(0, at), call.slice(at + 2)];
+        }, ['Tool', 'Details']);
+      }), true);
+      const requests = [...Array(t.rowCount).keys()].filter((j) => col(t, 'chat_id').get(j) === chatId)
+        .sort((a, b) => col(t, 'time').get(a) - col(t, 'time').get(b));
+      if (requests.length > 1) {
+        acc.addPane(`Chat (${requests.length} requests)`, () => pane((texts) => ui.table(requests, (j) => {
+          const asked = texts.get(col(t, 'turn_id').get(j))?.prompt ?? '';
+          const time = s('time', j).slice(5);
+          return [j === i ? ui.divText(time) : ui.link(time, () => t.currentRowIdx = j),
+            asked.length > 60 ? `${asked.slice(0, 60)}…` : asked, s('total_tokens', j), s('cost_usd', j)];
+        }, ['Time', 'Asked', 'Tokens', 'Cost, $'])), true);
+      }
     }
     grok.shell.setCurrentObject(acc.root, true);
   }

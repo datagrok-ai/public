@@ -86,22 +86,31 @@ left join user_groups ug on ug.user_id = t.user_id
 order by t.event_time desc
 --end
 
---name: AiTurnContent
---input: string turnId
+--name: AiChatContent
+--input: string chatId
 --connection: System:Datagrok
 with content_params as (
   select p.id, p.name from event_parameters p
   join event_types et on et.id = p.event_type_id
   where et.source = 'usage' and et.friendly_name = 'ai-turn-content'
+),
+chat_events as (
+  select t.event_id from event_parameter_values t
+  where t.parameter_id in (select id from content_params where name = 'chatId') and t.value::text = @chatId::text
+),
+per_event as (
+  select v.event_id,
+    max(v.value) filter (where p.name = 'turnId') as turn_id,
+    max(v.value) filter (where p.name = 'prompt') as prompt,
+    max(v.value) filter (where p.name = 'response') as response,
+    max(v.value) filter (where p.name = 'toolCalls') as tool_calls
+  from event_parameter_values v
+  join content_params p on p.id = v.parameter_id
+  where p.name in ('turnId', 'prompt', 'response', 'toolCalls')
+    and v.event_id in (select event_id from chat_events)
+  group by v.event_id
 )
-select
-  max(v.value) filter (where p.name = 'prompt') as prompt,
-  max(v.value) filter (where p.name = 'response') as response,
-  max(v.value) filter (where p.name = 'toolCalls') as tool_calls
-from event_parameter_values v
-join content_params p on p.id = v.parameter_id
-where p.name in ('prompt', 'response', 'toolCalls')
-  and v.event_id in (
-    select t.event_id from event_parameter_values t
-    where t.parameter_id in (select id from content_params where name = 'turnId') and t.value::text = @turnId::text)
+select turn_id, max(prompt) as prompt, max(response) as response, max(tool_calls) as tool_calls
+from per_event
+group by turn_id
 --end
