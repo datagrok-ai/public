@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Macromolecule renderer: Fixed some monomers sitting above or below the others after the font size changed (e.g. to 18 and back): the monomers of the cell drawn first after the change kept the old font's height. Test: `renderers: monomerPlacer`, font size change
 * Molecular 3D Structure panel: Fixed the panel showing an empty white box after some sequences: each panel's 3D viewer (NGL) kept its WebGL context (a page keeps 16), so the panel on screen lost its own; the viewer is released once the panel leaves the page, and a structure it cannot read shows a message. Test: `toAtomicLevel-ui` panel-3d-stage-released-off-page
 * Dependencies: `@datagrok-libraries/hwe` 1.1.1 (`parseHelm` about 15-20% faster with the same results; a `trailing-monomer-separator` warning)
 * Macromolecule renderer: Fixed multiline sequences in a column wider than the grid wrapping at the visible part of the cell, so the lines jumped while scrolling horizontally; they wrap at the cell's bounds. Test: `renderers: monomerPlacer`, multiline
