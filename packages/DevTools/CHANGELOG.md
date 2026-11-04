@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#1291: Scripts: Signature Editor removes parameter defaults and options and renames the script without any changes
 * Test Manager: Fixed the search box throwing on regular-expression characters such as "(" or "["; it now matches the typed text
 * Test Manager: Fixed "Column 'package' not found" after running tests of a package built with an older test library
 * GROK-21071: Fill the unhandled-exception results row by column name
