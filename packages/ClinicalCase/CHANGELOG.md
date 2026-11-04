@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4476](https://github.com/datagrok-ai/public/issues/4476): ClinicalCase: Import study... on the start page closes the app unless the tree node was expanded
 * App: The landing header is u2's `AppHeader` (moved out of `@datagrok-libraries/utils`): the same icon, bullets and Learn more
 * [core#993](https://github.com/datagrok-ai/core/issues/993): Timelines: Fixed an error when no event domain is selected or available
 * GROK-20800: Adverse events: Fixed the treatment-arm legend sizing — it fills its container and wraps horizontally
