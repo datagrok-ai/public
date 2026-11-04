@@ -3,11 +3,13 @@ FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
 SHELL ["/bin/bash", "-c"]
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt update && apt upgrade -y && \
-    apt install -y --no-install-recommends curl bzip2 ca-certificates && \
-    apt clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends curl bzip2 ca-certificates && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ENV MAMBA_EXE=/usr/local/bin/micromamba
+# chemprop 2.0 checkpoints pickle classes; torch 2.6 defaults torch.load to weights_only=True
+ENV TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1
 ARG MAMBA_VERSION=1.5.3
 RUN curl -L "https://micro.mamba.pm/api/micromamba/linux-64/${MAMBA_VERSION}" -o /tmp/micromamba.tar.bz2 && \
     mkdir -p /tmp/micromamba && \
