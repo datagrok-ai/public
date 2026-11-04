@@ -21,6 +21,7 @@ const GRID_WIDTHS: Partial<Record<AiColumn, number>> = {time: 108, user: 86, fea
   tokens: 60, cost: 52};
 const BAR_CHART = {valueAggrType: 'sum', stackColumnName: '', orientation: 'horizontal', barSortType: 'by value',
   barSortOrder: 'desc'};
+const GROUP_SEPARATOR = '\n';
 const col = (t: DG.DataFrame, name: AiColumn): DG.Column => t.getCol(name);
 const message = (e: unknown) => `${e instanceof Error ? e.message : e}`;
 
@@ -31,7 +32,6 @@ export class AiUsageView extends UaView {
   private measure: Measure = 'cost';
   /** Rows of each chat, oldest first, for the context panel. */
   private chats = new Map<string, number[]>();
-  /** Subscriptions to the loaded frame, replaced on each load. */
   private frameSubs: Subscription[] = [];
   private cards = ui.div([], {classes: 'ua-cards ua-ai-cards'});
   private body = ui.box();
@@ -74,8 +74,11 @@ export class AiUsageView extends UaView {
       resize?.unsubscribe();
       resize = ui.onSizeChanged(grid.root).subscribe(() => {
         const scale = Math.max(1, (grid.root.clientWidth - 20) / minimum);
-        for (const [name, width] of Object.entries(GRID_WIDTHS))
-          grid.col(name)!.width = Math.floor(width * scale);
+        for (const [name, width] of Object.entries(GRID_WIDTHS)) {
+          const column = grid.col(name);
+          if (column)
+            column.width = Math.floor(width * scale);
+        }
       });
       return grid;
     });
@@ -93,49 +96,49 @@ export class AiUsageView extends UaView {
     this.root.append(this.failure, this.body);
   }
 
-  /** Runs the query for the toolbox filter; the viewers pick the frame up through [df]. */
   private load(filter: UaFilter): void {
     for (const sub of this.frameSubs)
       sub.unsubscribe();
     this.frameSubs = [];
     this.failure.textContent = '';
     ui.setDisplay(this.body, true);
-    const load = this.df = queries.aiUsage(filter.date ?? 'this week', filter.groups).then((t) => {
-      if (this.df === load)
+    const query = this.df = queries.aiUsage(filter.date ?? 'this week', filter.groups).then((t) => {
+      if (this.df === query)
         this.prepare(t);
       return t;
     });
-    this.groups = load.then((t) => this.df === load ? this.groupsFrame(t) : t);
-    this.showCards(load);
+    this.groups = query.then((t) => this.df === query ? this.groupsFrame(t) : t);
+    this.showCards(query);
     const fail = (title: string, hint: string, detail = '') => {
-      if (this.df !== load)
+      if (this.df !== query)
         return;
       ui.setDisplay(this.body, false);
       this.failure.append(ui.info([ui.divText(hint), ui.divText(detail, 'ua-ai-text-missing')], title));
     };
-    load.then((t) => t.rowCount > 0 ? null :
+    query.then((t) => t.rowCount > 0 ? null :
       fail('No AI requests in this period', 'Try a longer period or other groups in the toolbox.'))
       .catch((e) => fail('AI usage could not be loaded',
         'Check the date and groups in the toolbox, then apply them again.', message(e)));
   }
 
-  /** Checks the columns once, then indexes the chats and follows the frame's filter and current row. */
   private prepare(t: DG.DataFrame): void {
     for (const name of COLUMNS)
       col(t, name);
-    col(t, 'groups').setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, '\n');
+    col(t, 'groups').setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, GROUP_SEPARATOR);
     col(t, 'time').meta.format = 'yyyy-MM-dd HH:mm';
     col(t, 'cost').meta.format = '0.0000';
     // An unpriced request would read as $0 in a cost chart, so cost is the default only when all are priced.
-    this.measure = t.rowCount > 0 && AiUsageView.unpriced(t, [...Array(t.rowCount).keys()]) === 0 ? 'cost' : 'tokens';
+    this.measure = AiUsageView.unpriced(t, t.filter.getSelectedIndexes()) === 0 ? 'cost' : 'tokens';
     this.chats.clear();
     const chatIds = col(t, 'chat_id');
+    // The query sorts newest first, so walking the rows backwards lists each chat oldest first.
     for (let i = t.rowCount - 1; i >= 0; i--) {
       const chat: string = chatIds.get(i) ?? '';
-      if (chat === '')
-        continue;
       const rows = this.chats.get(chat);
-      rows ? rows.push(i) : this.chats.set(chat, [i]);
+      if (rows)
+        rows.push(i);
+      else if (chat !== '')
+        this.chats.set(chat, [i]);
     }
     this.frameSubs.push(t.onFilterChanged.subscribe(() => this.showCards(Promise.resolve(t))),
       t.onCurrentRowChanged.subscribe(() => this.showRequest(t)));
@@ -151,8 +154,11 @@ export class AiUsageView extends UaView {
   }
 
   /** Requests that used tokens but have no cost; requests without any token counts have nothing to price. */
-  static unpriced(t: DG.DataFrame, rows: number[]): number {
-    return rows.filter((i) => !col(t, 'tokens').isNone(i) && col(t, 'cost').isNone(i)).length;
+  static unpriced(t: DG.DataFrame, rows: Iterable<number>): number {
+    let count = 0;
+    for (const i of rows)
+      count += !col(t, 'tokens').isNone(i) && col(t, 'cost').isNone(i) ? 1 : 0;
+    return count;
   }
 
   static summary(t: DG.DataFrame): {[label: string]: string[]} {
@@ -175,13 +181,12 @@ export class AiUsageView extends UaView {
     };
   }
 
-  /** One row per request and group of its user, filtered with the requests. */
   private groupsFrame(t: DG.DataFrame): DG.DataFrame {
     const rows: number[] = [];
     const names: string[] = [];
     const column = col(t, 'groups');
     for (let i = 0; i < t.rowCount; i++) {
-      for (const name of column.isNone(i) ? [] : (column.get(i) as string).split('\n')) {
+      for (const name of column.isNone(i) ? [] : (column.get(i) as string).split(GROUP_SEPARATOR)) {
         rows.push(i);
         names.push(name);
       }
@@ -199,32 +204,36 @@ export class AiUsageView extends UaView {
       return;
     const s = (name: AiColumn) => col(t, name).getString(i);
     const acc = ui.accordion();
-    acc.addPane('Details', () => ui.tableFromMap({'User': s('user'), 'Groups': s('groups').split('\n').join(', '),
-      'Feature': s('feature'), 'Model': s('model'), 'Status': s('status'), 'Cost, $': s('cost'),
+    acc.addPane('Details', () => ui.tableFromMap({'User': s('user'),
+      'Groups': s('groups').split(GROUP_SEPARATOR).join(', '), 'Feature': s('feature'), 'Model': s('model'),
+      'Status': s('status'), 'Cost, $': s('cost'),
       'Duration, s': col(t, 'duration_ms').isNone(i) ? '' : (col(t, 'duration_ms').get(i) / 1000).toFixed(1),
       'Chat': s('chat_id')}), true);
     acc.addPane('Tokens', () => ui.tableFromMap({'Input': s('input_tokens'), 'Output': s('output_tokens'),
       'Cache read': s('cache_read_tokens'), 'Cache write': s('cache_write_tokens'), 'Total': s('tokens')}), true);
-    const chat = this.chats.get(s('chat_id'));
+    const chatId = s('chat_id');
+    const chat = this.chats.get(chatId);
     if (chat)
-      this.addChatPanes(acc, t, i, chat);
+      this.addChatPanes(acc, t, i, chatId, chat);
     grok.shell.setCurrentObject(acc.root, false);
   }
 
-  /** The prompt, answer and tool calls of row [i], and the other requests of its chat, from one content query. */
-  private addChatPanes(acc: DG.Accordion, t: DG.DataFrame, i: number, chat: number[]): void {
-    const content = queries.aiChatContent(col(t, 'chat_id').get(i)).then((c) => {
+  private addChatPanes(acc: DG.Accordion, t: DG.DataFrame, i: number, chatId: string, chat: number[]): void {
+    type Said = (row: number, name: 'prompt' | 'response' | 'tool_calls') => string;
+    // Started by the first pane shown, so rows passed over quickly run no query.
+    let content: Promise<Said> | undefined;
+    const said = () => content ??= queries.aiChatContent(chatId).then((c) => {
       const turns = new Map<string, number>(c.getCol('turn_id').toList().map((id, j) => [id, j]));
-      // A turn's text; an empty string when the chat has no logged content for it.
-      return (row: number, name: 'prompt' | 'response' | 'tool_calls'): string => {
-        const j = turns.get(col(t, 'turn_id').get(row));
+      return (row, name) => {
+        const turnId: string | null = col(t, 'turn_id').get(row);
+        const j = turnId == null ? undefined : turns.get(turnId);
         return j === undefined ? '' : c.getCol(name).get(j) ?? '';
       };
     });
-    const pane = (name: string, render: (said: Awaited<typeof content>) => HTMLElement) =>
+    const pane = (name: string, render: (said: Said) => HTMLElement) =>
       acc.addPane(name, () => ui.wait(async () => {
         try {
-          return render(await content);
+          return render(await said());
         }
         catch (e) {
           return ui.divText(`Could not be loaded: ${message(e)}`);
