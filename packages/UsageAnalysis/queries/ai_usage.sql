@@ -77,12 +77,12 @@ user_groups as (
 select t.event_time as time,
   date_trunc(case when max(t.event_time) over () - min(t.event_time) over () < interval '3 days' then 'hour' else 'day' end,
     t.event_time) as period, t.user_name as "user", t.user_id as uid, ug.groups,
-  t.feature, coalesce(t.model, 'unknown') as model, coalesce(t.status, 'unknown') as status, t.chat_id, t.turn_id,
+  t.feature, coalesce(t.model, 'unknown') as model, coalesce(t.status, 'unknown') as status, t.chat_id, t.turn_id, t.duration_ms,
   t.input_tokens, t.output_tokens, t.cache_read_tokens, t.cache_write_tokens,
   case when num_nonnulls(t.input_tokens, t.output_tokens, t.cache_read_tokens, t.cache_write_tokens) > 0 then
     coalesce(t.input_tokens, 0) + coalesce(t.output_tokens, 0) + coalesce(t.cache_read_tokens, 0) + coalesce(t.cache_write_tokens, 0)
   end as tokens,
-  t.cost_usd as cost, t.duration_ms
+  t.cost_usd as cost
 from turns t
 left join user_groups ug on ug.user_id = t.user_id
 order by t.event_time desc

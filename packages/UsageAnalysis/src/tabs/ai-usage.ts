@@ -10,13 +10,12 @@ import {UaFilter} from '../filter';
 import {queries} from '../package-api';
 import '../../css/usage_analysis.css';
 
-const CARDS = ['Requests', 'Users', 'Input tokens', 'Output tokens', 'Total tokens', 'Estimated cost'];
 const COLUMNS = ['time', 'period', 'user', 'uid', 'groups', 'feature', 'model', 'status', 'chat_id', 'turn_id',
-  'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'tokens', 'cost', 'duration_ms'] as const;
+  'duration_ms', 'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'tokens', 'cost'] as const;
 type AiColumn = typeof COLUMNS[number];
 type Measure = 'cost' | 'tokens';
-const GRID_COLUMNS: AiColumn[] = ['time', 'user', 'feature', 'model', 'status', 'tokens', 'cost'];
-// The narrowest widths that fit the pane without scrolling sideways; a wider grid scales them up.
+type Said = (row: number, name: 'prompt' | 'response' | 'tool_calls') => string;
+// Without fixed widths the grid is wider than its pane and scrolls sideways.
 const GRID_WIDTHS: Partial<Record<AiColumn, number>> = {time: 108, user: 86, feature: 82, model: 116, status: 46,
   tokens: 60, cost: 52};
 const BAR_CHART = {valueAggrType: 'sum', stackColumnName: '', orientation: 'horizontal', barSortType: 'by value',
@@ -30,9 +29,9 @@ export class AiUsageView extends UaView {
   private df?: Promise<DG.DataFrame>;
   private groups?: Promise<DG.DataFrame>;
   private measure: Measure = 'cost';
-  /** Rows of each chat, oldest first, for the context panel. */
-  private chats = new Map<string, number[]>();
   private frameSubs: Subscription[] = [];
+  private contents = new Map<string, Promise<Said>>();
+  private panel?: HTMLElement;
   private cards = ui.div([], {classes: 'ua-cards ua-ai-cards'});
   private body = ui.box();
   private failure = ui.div();
@@ -64,22 +63,12 @@ export class AiUsageView extends UaView {
       () => this.groups!);
     const filters = viewer('Filters', (t) => DG.Viewer.filters(t,
       {columnNames: ['user', 'groups', 'model', 'feature', 'status']}));
-    let resize: Subscription | undefined;
     const requests = viewer('Requests', (t) => {
       const grid = DG.Viewer.grid(t, {showRowHeader: false, showColumnGridlines: false, allowRowSelection: false,
         allowBlockSelection: false, showCurrentCellOutline: false});
-      grid.columns.setOrder(GRID_COLUMNS);
-      grid.columns.setVisible(GRID_COLUMNS);
-      const minimum = Object.values(GRID_WIDTHS).reduce((s, w) => s + w, 0);
-      resize?.unsubscribe();
-      resize = ui.onSizeChanged(grid.root).subscribe(() => {
-        const scale = Math.max(1, (grid.root.clientWidth - 20) / minimum);
-        for (const [name, width] of Object.entries(GRID_WIDTHS)) {
-          const column = grid.col(name);
-          if (column)
-            column.width = Math.floor(width * scale);
-        }
-      });
+      grid.columns.setVisible(Object.keys(GRID_WIDTHS));
+      for (const [name, width] of Object.entries(GRID_WIDTHS))
+        grid.col(name)!.width = width;
       return grid;
     });
 
@@ -100,15 +89,18 @@ export class AiUsageView extends UaView {
     for (const sub of this.frameSubs)
       sub.unsubscribe();
     this.frameSubs = [];
+    this.contents.clear();
+    this.cards.textContent = '';
     this.failure.textContent = '';
     ui.setDisplay(this.body, true);
+    if (this.panel != null && grok.shell.o === this.panel)
+      grok.shell.setCurrentObject(null, false);
     const query = this.df = queries.aiUsage(filter.date ?? 'this week', filter.groups).then((t) => {
       if (this.df === query)
         this.prepare(t);
       return t;
     });
     this.groups = query.then((t) => this.df === query ? this.groupsFrame(t) : t);
-    this.showCards(query);
     const fail = (title: string, hint: string, detail = '') => {
       if (this.df !== query)
         return;
@@ -128,57 +120,33 @@ export class AiUsageView extends UaView {
     col(t, 'time').meta.format = 'yyyy-MM-dd HH:mm';
     col(t, 'cost').meta.format = '0.0000';
     // An unpriced request would read as $0 in a cost chart, so cost is the default only when all are priced.
-    this.measure = AiUsageView.unpriced(t, t.filter.getSelectedIndexes()) === 0 ? 'cost' : 'tokens';
-    this.chats.clear();
-    const chatIds = col(t, 'chat_id');
-    // The query sorts newest first, so walking the rows backwards lists each chat oldest first.
-    for (let i = t.rowCount - 1; i >= 0; i--) {
-      const chat: string = chatIds.get(i) ?? '';
-      const rows = this.chats.get(chat);
-      if (rows)
-        rows.push(i);
-      else if (chat !== '')
-        this.chats.set(chat, [i]);
-    }
-    this.frameSubs.push(t.onFilterChanged.subscribe(() => this.showCards(Promise.resolve(t))),
+    this.measure = col(t, 'cost').stats.valueCount === col(t, 'tokens').stats.valueCount ? 'cost' : 'tokens';
+    this.showCards(t);
+    this.frameSubs.push(t.onFilterChanged.subscribe(() => this.showCards(t)),
       t.onCurrentRowChanged.subscribe(() => this.showRequest(t)));
   }
 
-  private showCards(t: Promise<DG.DataFrame>): void {
-    const summary = t.then((t) => AiUsageView.summary(t));
-    this.cards.textContent = '';
-    for (const label of CARDS) {
-      this.cards.append(ui.div([ui.divText(label), ui.wait(async () =>
-        ui.div((await summary)[label].map((s) => ui.divText(s))))], 'ua-card'));
-    }
-  }
-
-  /** Requests that used tokens but have no cost; requests without any token counts have nothing to price. */
-  static unpriced(t: DG.DataFrame, rows: Iterable<number>): number {
-    let count = 0;
-    for (const i of rows)
-      count += !col(t, 'tokens').isNone(i) && col(t, 'cost').isNone(i) ? 1 : 0;
-    return count;
-  }
-
-  static summary(t: DG.DataFrame): {[label: string]: string[]} {
-    const rows = Array.from(t.filter.getSelectedIndexes());
-    const sum = (name: AiColumn) => {
-      const values = col(t, name);
-      return rows.reduce((s, i) => values.isNone(i) ? s : s + values.get(i), 0);
-    };
-    const used = rows.filter((i) => !col(t, 'tokens').isNone(i)).length;
-    const priced = used - AiUsageView.unpriced(t, rows);
+  private showCards(t: DG.DataFrame): void {
+    const stats = (name: AiColumn) => DG.Stats.fromColumn(col(t, name), t.filter);
     const n = (x: number) => DG.format(x, 'compact');
-    return {
-      'Requests': [n(rows.length)],
-      'Users': [n(new Set(rows.map((i) => col(t, 'uid').get(i))).size)],
-      'Input tokens': [n(sum('input_tokens'))],
-      'Output tokens': [n(sum('output_tokens'))],
-      'Total tokens': [n(sum('tokens')), `${n(sum('cache_read_tokens') + sum('cache_write_tokens'))} cache`],
+    // Requests without any token counts have nothing to price.
+    const used = stats('tokens').valueCount;
+    const priced = stats('cost').valueCount;
+    const cards: {[label: string]: string[]} = {
+      'Requests': [n(t.filter.trueCount)],
+      'Users': [n(stats('uid').uniqueCount)],
+      'Input tokens': [n(stats('input_tokens').sum)],
+      'Output tokens': [n(stats('output_tokens').sum)],
+      'Total tokens': [n(stats('tokens').sum),
+        `${n(stats('cache_read_tokens').sum + stats('cache_write_tokens').sum)} cache`],
       'Estimated cost': priced === 0 ? ['—', 'no prices'] :
-        [`$${n(sum('cost'))}`, priced < used ? `${Math.floor(priced * 100 / used)}% priced` : ''],
+        [`$${n(stats('cost').sum)}`, priced < used ? `${Math.floor(priced * 100 / used)}% priced` : ''],
     };
+    this.cards.textContent = '';
+    for (const [label, lines] of Object.entries(cards)) {
+      this.cards.append(ui.div([ui.divText(label),
+        ui.wait(async () => ui.div(lines.map((s) => ui.divText(s))))], 'ua-card'));
+    }
   }
 
   private groupsFrame(t: DG.DataFrame): DG.DataFrame {
@@ -192,8 +160,10 @@ export class AiUsageView extends UaView {
       }
     }
     const groups = DG.DataFrame.fromColumns([DG.Column.fromStrings('group', names),
-      ...(['cost', 'tokens'] as const).map((name) =>
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, rows.map((i) => col(t, name).get(i))))]);
+      ...(['cost', 'tokens'] as const).map((name) => {
+        const values = col(t, name);
+        return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, rows.map((i) => values.get(i)));
+      })]);
     this.frameSubs.push(t.onFilterChanged.subscribe(() => groups.filter.init((j) => t.filter.get(rows[j]))));
     return groups;
   }
@@ -211,18 +181,15 @@ export class AiUsageView extends UaView {
       'Chat': s('chat_id')}), true);
     acc.addPane('Tokens', () => ui.tableFromMap({'Input': s('input_tokens'), 'Output': s('output_tokens'),
       'Cache read': s('cache_read_tokens'), 'Cache write': s('cache_write_tokens'), 'Total': s('tokens')}), true);
-    const chatId = s('chat_id');
-    const chat = this.chats.get(chatId);
-    if (chat)
-      this.addChatPanes(acc, t, i, chatId, chat);
+    if (s('chat_id') !== '')
+      this.addChatPanes(acc, t, i, s('chat_id'));
+    this.panel = acc.root;
     grok.shell.setCurrentObject(acc.root, false);
   }
 
-  private addChatPanes(acc: DG.Accordion, t: DG.DataFrame, i: number, chatId: string, chat: number[]): void {
-    type Said = (row: number, name: 'prompt' | 'response' | 'tool_calls') => string;
-    // Started by the first pane shown, so rows passed over quickly run no query.
-    let content: Promise<Said> | undefined;
-    const said = () => content ??= queries.aiChatContent(chatId).then((c) => {
+  private addChatPanes(acc: DG.Accordion, t: DG.DataFrame, i: number, chatId: string): void {
+    // Expanded panes render at once, so the content is kept per chat to query it once per load.
+    const content = this.contents.get(chatId) ?? queries.aiChatContent(chatId).then((c): Said => {
       const turns = new Map<string, number>(c.getCol('turn_id').toList().map((id, j) => [id, j]));
       return (row, name) => {
         const turnId: string | null = col(t, 'turn_id').get(row);
@@ -230,10 +197,11 @@ export class AiUsageView extends UaView {
         return j === undefined ? '' : c.getCol(name).get(j) ?? '';
       };
     });
+    this.contents.set(chatId, content);
     const pane = (name: string, render: (said: Said) => HTMLElement) =>
       acc.addPane(name, () => ui.wait(async () => {
         try {
-          return render(await said());
+          return render(await content);
         }
         catch (e) {
           return ui.divText(`Could not be loaded: ${message(e)}`);
@@ -254,6 +222,9 @@ export class AiUsageView extends UaView {
         return at < 0 ? [calls[k], ''] : [calls[k].slice(0, at), calls[k].slice(at + 2)];
       }, ['Tool', 'Details']);
     });
+    // Rows come newest first; the chat reads oldest first, and only the requests the filters show.
+    const chat = col(t, 'chat_id').toList().flatMap((id, j) => id === chatId && t.filter.get(j) ? [j] : [])
+      .reverse();
     if (chat.length > 1) {
       pane(`Chat (${chat.length} requests)`, (said) => ui.table(chat, (j) => {
         const asked = said(j, 'prompt');
