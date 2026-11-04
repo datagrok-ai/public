@@ -20,6 +20,7 @@ import {crux, CruxResult, MAX_SETS, named, rows} from './crux';
 import {Correction, EffectMetric, HUMANE, LAB_WEEKDAYS, SEED, StudyDeclaration, StudyDesign, correctionOf,
   designStudy, finite, isFiniteNumber as ok, lineModel} from './engine';
 import {armColors} from './frames';
+import {gpu} from './gpu';
 import {LineDensity, linePrior, tumourDensity} from './priors';
 import {PLAN_TAG, SavedPlan, parsePlan, powerAt, savedPlan} from './plan-file';
 import {PlanChecks, Range, planChecks} from './plan-checks';
@@ -270,6 +271,40 @@ async function stagedTwin(window: Window, params: {[k: string]: any}): Promise<T
     checks: sorted(t.flatMap((r) => named(r, 'checks')))};
 }
 
+/** The twin on the browser's WebGPU (Crux's variant webgpu, one call: the likelihoods, convolutions and draws on the
+ *  device, the same posterior, the bands within Monte Carlo error); where there is no WebGPU or the device fails,
+ *  the staged twin on the workers. */
+async function fastTwin(window: Window, params: {[k: string]: any}): Promise<Twins> {
+  if (await gpu()) {
+    try {
+      const r = await crux('stats.tumor_twin', window, {...params, device: 'webgpu'});
+      return {twins: rows(r.main as any), effects: named(r, 'effects'), checks: named(r, 'checks')};
+    } catch (e) {
+      console.warn('PMX Studio: the twin on WebGPU failed, on the CPU workers instead', e);
+    }
+  }
+  return stagedTwin(window, params);
+}
+
+/** Opens the twin's WebGPU device in Crux's worker and compiles its shaders, in the background when the app opens: the
+ *  first twin of a page took 2.2 s for them, then ~0.18 s (measured). A tiny study's twin, once with series of up to 8
+ *  measurements and once up to 16 (the likelihood's shader is built for the longest series, rounded up to 8). */
+export async function warmTwin(): Promise<void> {
+  if (!await gpu())
+    return;
+  const m = await twinModel('MC38');
+  for (const n of [4, 12]) {
+    const t: Window = {animal: [], group: [], day: new Float64Array(3 * n), volume: new Float64Array(3 * n)};
+    ['c1', 'c2', 't1'].forEach((a, k) => Array.from({length: n}, (_, i) => {
+      t.animal.push(a);
+      t.group.push(a[0]);
+      t.day[k * n + i] = 3 * i;
+      t.volume[k * n + i] = 100 * Math.exp(0.1 * 3 * i);
+    }));
+    await crux('stats.tumor_twin', t, {...m, control: 'c', draws: 100, check: false, device: 'webgpu'});
+  }
+}
+
 /** The last study's twins: a rerun that only changes the correction, α or the limits keeps them (they depend on
  *  nothing else). */
 let lastTwin: {key: string, result: Promise<Twins>} | null = null;
@@ -277,7 +312,7 @@ let lastTwin: {key: string, result: Promise<Twins>} | null = null;
 function twinOf(window: Window, params: object) {
   const key = JSON.stringify([window.animal, window.group, Array.from(window.day), Array.from(window.volume), params]);
   if (lastTwin?.key !== key) {
-    const result = stagedTwin(window, params);
+    const result = fastTwin(window, params);
     lastTwin = {key, result};
     result.catch(() => lastTwin = null);
   }
@@ -619,7 +654,10 @@ export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFr
     responders: a.responders,
   })))!;
   const animals = DG.DataFrame.fromObjects(s.animals.map((a) => ({group: a.group, animal: a.animal,
-    slope_per_day: a.slope, time_to_endpoint: a.time_to_endpoint, endpoint_reached: a.event, mrecist: a.mrecist})))!;
+    slope_per_day: a.slope, time_to_endpoint: a.time_to_endpoint, endpoint_reached: a.event, mrecist: a.mrecist,
+    // mRECIST's best response (% change of the volume from baseline, its minimum from day 10) and best average:
+    // a waterfall's axis
+    best_response: a.best_response, best_avg_response: a.best_avg_response})))!;
   const volumes = DG.DataFrame.fromObjects(s.volumes)!;
   // (no rows, as without the twin: an empty table, which fromObjects does not build)
   const table = (xs: object[]) => xs.length ? DG.DataFrame.fromObjects(xs)! : DG.DataFrame.create(0);

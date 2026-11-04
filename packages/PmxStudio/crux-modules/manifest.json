@@ -37,8 +37,8 @@
    "thread": "worker",
    "compute": "nonclinical/compute.json",
    "hash": {
-    "js": "8e82a4bd63473267",
-    "wasm": "c2425a64256f7c59"
+    "js": "e9888ea03e948fd6",
+    "wasm": "c8b5956bdbd987d6"
    }
   },
   "stats": {

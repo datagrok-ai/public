@@ -1,1 +1,1 @@
-crux-core main c52cffc5a7 (land: tumor-twin-shards; includes tumor-design-shards, tumor-design-streams and dunnett-exact), modules nonclinical and stats
+crux-core spike tumor-twin-webgpu on main f329a9ab23 (not landed: stats.tumor_twin variant webgpu), modules nonclinical and stats

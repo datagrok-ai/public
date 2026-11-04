@@ -5,10 +5,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {PlanFrames, declarationOf, mapPriorFrame, planFrames, priorsFrame, tgisOf} from './frames';
 import {openPlanFile, planView} from './plan-view';
-import {AnalysisFrames, analysisDeclarationOf, analysisFrames} from './analyze';
+import {AnalysisFrames, analysisDeclarationOf, analysisFrames, warmTwin} from './analyze';
 import {analyzeView} from './analyze-view';
 import {hubView} from './hub-view';
-import {gpu} from './gpu';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -20,7 +19,9 @@ export class PackageFunctions {
     // the app's URL path, which the platform passes: /plan opens Plan, /analyze Analyze, anything else the home
     @grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string): Promise<DG.ViewBase> {
     const stage = path?.replace(/^\//, '') ?? '';
-    void gpu(); // opened in the background, ready for the first calculation that wants it
+    // opened in the background, ready for the first calculation that wants it; the twin's shaders compiled in Crux's
+    // worker (a failure only leaves the first twin slower)
+    void warmTwin().catch(() => null);
     return stage.startsWith('analyze') ? analyzeView() : stage.startsWith('plan') ? planView() : hubView();
   }
 

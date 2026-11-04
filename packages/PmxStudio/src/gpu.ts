@@ -4,7 +4,8 @@
  * high performance would wake a laptop's discrete GPU with nothing to compute. Only in a secure context (https or
  * localhost) of a browser with WebGPU (Chrome / Edge 113+, Safari 26, Firefox 141+ on Windows); elsewhere null, and
  * the calculations stay on the CPU (wasm). A lost device (a driver reset, sleep) is forgotten: the next call opens
- * another.
+ * another. The digital twin asks it whether to run on WebGPU (Crux's module worker opens its own device; the
+ * shader compiler this one warmed is the browser's).
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
