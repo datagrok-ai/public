@@ -24,6 +24,7 @@ import './test/input-toggles';
 import './test/tree-node';
 import './test/export-summary';
 import './test/headless-run';
+import './test/run-optimizer';
 import './test/run-storage';
 import './test/space-index';
 import './test/help-service';
