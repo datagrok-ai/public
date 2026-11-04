@@ -558,7 +558,7 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
           expectDeepEqual(a, 1);
           expectDeepEqual(b, 2);
           expectDeepEqual(fc instanceof DG.FuncCall, true);
-          const func: DG.Func = await grok.functions.eval('LibTests:simpleInputs');
+          const func: DG.Func = await grok.functions.eval('LibTests:TestAdd2');
           const nfc = func.prepare({a: 33, b: 44});
           controller.setFuncCall('out', nfc);
         },
@@ -607,7 +607,7 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
             async handler({controller}) {
               const fc = controller.getFirst('fc');
               expectDeepEqual(fc instanceof DG.FuncCall, true);
-              const func: DG.Func = await grok.functions.eval('LibTests:simpleInputs');
+              const func: DG.Func = await grok.functions.eval('LibTests:TestAdd2');
               const nfc = func.prepare({a: 33, b: 44});
               controller.setFuncCall('out', nfc);
             },
@@ -1020,7 +1020,7 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
           const b = controller.getFirst('b');
           const fc = controller.getFirst('fc');
           expectDeepEqual(fc instanceof DG.FuncCall, true);
-          const func: DG.Func = await grok.functions.eval('LibTests:simpleInputs');
+          const func: DG.Func = await grok.functions.eval('LibTests:TestAdd2');
           const nfc = func.prepare({a: a + 10, b: b + 10});
           controller.setFuncCall('out', nfc);
         },

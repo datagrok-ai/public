@@ -2672,40 +2672,18 @@ importers:
       '@datagrok-libraries/webcomponents-vue':
         specifier: workspace:^
         version: link:../../libraries/webcomponents-vue
-      cash-dom:
-        specifier: 'catalog:'
-        version: 8.1.5
       datagrok-api:
         specifier: workspace:^
         version: link:../../js-api
       dayjs:
         specifier: 'catalog:'
         version: 1.11.23
-      fast-equals:
-        specifier: ^5.2.2
-        version: 5.4.2
-      fflate:
-        specifier: ^0.8.2
-        version: 0.8.3
-      lodash.clonedeepwith:
-        specifier: ^4.5.0
-        version: 4.5.0
       rxjs:
         specifier: 'catalog:'
         version: 6.6.7
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@7.0.2)
-      wu:
-        specifier: 'catalog:'
-        version: 2.1.0
-    devDependencies:
-      '@types/lodash.clonedeepwith':
-        specifier: ^4.5.9
-        version: 4.5.9
-      '@types/wu':
-        specifier: 'catalog:'
-        version: 2.1.44
 
   packages/MLFlow:
     dependencies:
