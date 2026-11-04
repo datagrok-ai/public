@@ -524,8 +524,3 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
   width: auto;
   margin: 8px 6px;
 }
-
-.ua-ai-cards .ua-card > .grok-wait > .ui-div > div + div {
-  white-space: nowrap;
-  font-size: 11px;
-}

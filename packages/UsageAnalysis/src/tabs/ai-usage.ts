@@ -9,19 +9,19 @@ import {UaFilter} from '../filter';
 import {queries} from '../package-api';
 import '../../css/usage_analysis.css';
 import {Subscription} from 'rxjs';
-import {debounceTime} from 'rxjs/operators';
 
-const CARDS = ['Requests', 'Users', 'Tokens', 'Estimated cost'];
-const COLUMNS = ['time', 'period', 'user', 'uid', 'groups', 'feature', 'model', 'status', 'chat_id', 'turn_id', 'input_tokens',
-  'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'total_tokens', 'cost_usd', 'duration_ms'] as const;
+const CARDS = ['Requests', 'Users', 'Input tokens', 'Output tokens', 'Total tokens', 'Estimated cost'];
+const COLUMNS = ['time', 'period', 'user', 'uid', 'groups', 'feature', 'model', 'status', 'chat_id', 'turn_id',
+  'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'total_tokens', 'cost_usd',
+  'duration_ms'] as const;
 type AiColumn = typeof COLUMNS[number];
 const GRID_COLUMNS: AiColumn[] = ['time', 'user', 'feature', 'model', 'status', 'total_tokens', 'cost_usd'];
 // The narrowest widths that fit the pane without scrolling sideways; a wider grid scales them up.
 const GRID_WIDTHS: Partial<Record<AiColumn, number>> = {time: 108, user: 86, feature: 82, model: 116, status: 46,
   total_tokens: 60, cost_usd: 52};
 const col = (t: DG.DataFrame, name: AiColumn): DG.Column => t.getCol(name);
-
-type TurnText = {prompt: string | null, response: string | null, toolCalls: string | null};
+const BAR_CHART = {valueAggrType: 'sum', stackColumnName: '', orientation: 'horizontal', barSortType: 'by value',
+  barSortOrder: 'desc'};
 
 export class AiUsageView extends UaView {
   private requests?: UaFilterableQueryViewer;
@@ -66,9 +66,10 @@ export class AiUsageView extends UaView {
         col(t, 'cost_usd').meta.format = '0.0000';
         if (df === load) {
           // An unpriced request would read as $0 in a cost chart, so cost is the default only when all are priced.
-          measure = t.rowCount > 0 && AiUsageView.unpriced(t, [...Array(t.rowCount).keys()]) === 0 ? 'cost_usd' : 'total_tokens';
+          const priced = t.rowCount > 0 && AiUsageView.unpriced(t, [...t.filter.getSelectedIndexes()]) === 0;
+          measure = priced ? 'cost_usd' : 'total_tokens';
           subs.push(t.onFilterChanged.subscribe(() => showCards(Promise.resolve(t))),
-            t.onCurrentRowChanged.pipe(debounceTime(200)).subscribe(() => AiUsageView.showRequest(t)));
+            t.onCurrentRowChanged.subscribe(() => AiUsageView.showRequest(t)));
         }
         return t;
       });
@@ -76,21 +77,16 @@ export class AiUsageView extends UaView {
       failure.textContent = '';
       ui.setDisplay(body, true);
       showCards(df);
-      df.then((t) => {
-        if (df !== load)
-          return;
-        failure.textContent = '';
-        ui.setDisplay(body, t.rowCount > 0);
-        if (t.rowCount === 0)
-          failure.append(ui.info('Try a longer period or other groups in the toolbox.', 'No AI requests in this period'));
-      }).catch((e) => {
+      const fail = (title: string, hint: string, detail = '') => {
         if (df !== load)
           return;
         ui.setDisplay(body, false);
-        failure.textContent = '';
-        failure.append(ui.info([ui.divText('Check the date and groups in the toolbox, then apply them again.'),
-          ui.divText(`${e instanceof Error ? e.message : e}`, 'ua-ai-text-missing')], 'AI usage could not be loaded'));
-      });
+        failure.append(ui.info([ui.divText(hint), ui.divText(detail, 'ua-ai-text-missing')], title));
+      };
+      df.then((t) => t.rowCount > 0 ? null :
+        fail('No AI requests in this period', 'Try a longer period or other groups in the toolbox.'))
+        .catch((e) => fail('AI usage could not be loaded',
+          'Check the date and groups in the toolbox, then apply them again.', `${e instanceof Error ? e.message : e}`));
     });
 
     const viewer = (name: string, createViewer: (t: DG.DataFrame) => DG.Viewer, getDataFrame = () => df) =>
@@ -105,12 +101,10 @@ export class AiUsageView extends UaView {
       legendPosition: 'Top',
       title: 'Usage over time',
     }));
-    const byUser = viewer('Usage by user', (t) => AiUsageView.barChart(t, 'user', 'Usage by user', measure, {
-      onClick: DG.RowGroupAction.Filter,
-      rowSource: DG.RowSet.All,
-    }));
-    const byGroup = viewer('Usage by group', (t) => AiUsageView.barChart(t, 'group', 'Usage by group, a user counts in each of their groups', measure),
-      () => groups);
+    const byUser = viewer('Usage by user', (t) => DG.Viewer.barChart(t, {...BAR_CHART, splitColumnName: 'user',
+      valueColumnName: measure, title: 'Usage by user', onClick: DG.RowGroupAction.Filter, rowSource: DG.RowSet.All}));
+    const byGroup = viewer('Usage by group', (t) => DG.Viewer.barChart(t, {...BAR_CHART, splitColumnName: 'group',
+      valueColumnName: measure, title: 'Usage by group, a user counts in each of their groups'}), () => groups);
     const filters = viewer('Filters', (t) => DG.Viewer.filters(t,
       {columnNames: ['user', 'groups', 'model', 'feature', 'status']}));
     let resize: Subscription | undefined;
@@ -150,26 +144,9 @@ export class AiUsageView extends UaView {
     this.root.append(failure, body);
   }
 
-  static barChart(t: DG.DataFrame, splitColumnName: string, title: string, valueColumnName: string,
-    options: object = {}): DG.Viewer {
-    return DG.Viewer.barChart(t, {
-      splitColumnName,
-      valueColumnName,
-      valueAggrType: 'sum',
-      stackColumnName: '',
-      orientation: 'horizontal',
-      barSortType: 'by value',
-      barSortOrder: 'desc',
-      title,
-      ...options,
-    });
-  }
-
   /** Requests that used tokens but have no cost; requests without any token counts have nothing to price. */
   static unpriced(t: DG.DataFrame, rows: number[]): number {
-    const cost = col(t, 'cost_usd');
-    const tokens = col(t, 'total_tokens');
-    return rows.filter((i) => !tokens.isNone(i) && cost.isNone(i)).length;
+    return rows.filter((i) => !col(t, 'total_tokens').isNone(i) && col(t, 'cost_usd').isNone(i)).length;
   }
 
   static summary(t: DG.DataFrame): {[label: string]: string[]} {
@@ -184,8 +161,9 @@ export class AiUsageView extends UaView {
     return {
       'Requests': [n(rows.length)],
       'Users': [n(new Set(rows.map((i) => col(t, 'uid').get(i))).size)],
-      'Tokens': [n(sum('total_tokens')), `${n(sum('input_tokens'))} in, ${n(sum('output_tokens'))} out, ` +
-        `${n(sum('cache_read_tokens') + sum('cache_write_tokens'))} cache`],
+      'Input tokens': [n(sum('input_tokens'))],
+      'Output tokens': [n(sum('output_tokens'))],
+      'Total tokens': [n(sum('total_tokens')), `${n(sum('cache_read_tokens') + sum('cache_write_tokens'))} cache`],
       'Estimated cost': priced === 0 ? ['—', 'no prices'] :
         [`$${n(sum('cost_usd'))}`, priced < used ? `${Math.floor(priced * 100 / used)}% priced` : ''],
     };
@@ -224,35 +202,32 @@ export class AiUsageView extends UaView {
       'Cache read': s('cache_read_tokens'), 'Cache write': s('cache_write_tokens'), 'Total': s('total_tokens')}), true);
     const chatId: string | null = col(t, 'chat_id').get(i);
     if (chatId != null) {
-      const turns = queries.aiChatContent(chatId).then((c) => {
-        const texts = new Map<string, TurnText>();
-        for (let j = 0; j < c.rowCount; j++) {
-          texts.set(c.getCol('turn_id').get(j), {prompt: c.getCol('prompt').get(j), response: c.getCol('response').get(j),
-            toolCalls: c.getCol('tool_calls').get(j)});
-        }
-        return texts;
-      });
-      const turnId: string | null = col(t, 'turn_id').get(i);
-      const pane = (render: (texts: Map<string, TurnText>) => HTMLElement) => ui.wait(async () => {
+      const chat = queries.aiChatContent(chatId);
+      // A turn's text; an empty string when the chat has no logged content for it.
+      const said = (c: DG.DataFrame, row: number, name: 'prompt' | 'response' | 'tool_calls'): string => {
+        const j = c.getCol('turn_id').toList().indexOf(col(t, 'turn_id').get(row));
+        return j < 0 ? '' : c.getCol(name).get(j) ?? '';
+      };
+      const pane = (render: (c: DG.DataFrame) => HTMLElement) => ui.wait(async () => {
         try {
-          return render(await turns);
+          return render(await chat);
         }
         catch (e) {
-          return ui.info(`${e instanceof Error ? e.message : e}`, 'Could not be loaded');
+          return ui.divText(`Could not be loaded: ${e instanceof Error ? e.message : e}`);
         }
       });
-      const text = (value: string | null | undefined) =>
+      const text = (value: string) =>
         value ? ui.divText(value, 'ua-ai-text') : ui.divText('Not logged', 'ua-ai-text-missing');
-      const current = (texts: Map<string, TurnText>) => turnId == null ? undefined : texts.get(turnId);
-      acc.addPane('Prompt', () => pane((texts) => text(current(texts)?.prompt)), true);
-      acc.addPane('Answer', () => pane((texts) => text(current(texts)?.response)), true);
-      acc.addPane('Tool calls', () => pane((texts) => {
-        const turn = current(texts);
-        const calls = turn?.toolCalls?.split('\n').filter((call) => call !== '') ?? [];
-        // Grokky logs tool calls only when asked to, so an absent value means not logged, not none.
+      acc.addPane('Prompt', () => pane((c) => text(said(c, i, 'prompt'))), true);
+      acc.addPane('Answer', () => pane((c) => text(said(c, i, 'response'))), true);
+      acc.addPane('Tool calls', () => pane((c) => {
+        const calls = said(c, i, 'tool_calls').split('\n').filter((call) => call !== '');
+        // Grokky logs tool calls only when there are some and logging is on, so none logged can mean either.
         if (calls.length === 0)
-          return turn?.toolCalls != null ? ui.divText('No tool calls', 'ua-ai-text-missing') : text(null);
-        return ui.table(calls, (call) => {
+          return ui.divText('None logged', 'ua-ai-text-missing');
+        // ui.table maps each item to its row, so a call repeated in one turn needs its index as the item.
+        return ui.table(calls.map((_, k) => k), (k) => {
+          const call = calls[k];
           const at = call.indexOf(': ');
           return at < 0 ? [call, ''] : [call.slice(0, at), call.slice(at + 2)];
         }, ['Tool', 'Details']);
@@ -260,14 +235,14 @@ export class AiUsageView extends UaView {
       const requests = [...Array(t.rowCount).keys()].filter((j) => col(t, 'chat_id').get(j) === chatId)
         .sort((a, b) => col(t, 'time').get(a) - col(t, 'time').get(b));
       if (requests.length > 1) {
-        acc.addPane(`Chat (${requests.length} requests)`, () => pane((texts) => ui.table(requests, (j) => {
-          const asked = texts.get(col(t, 'turn_id').get(j))?.prompt ?? '';
+        acc.addPane(`Chat (${requests.length} requests)`, () => pane((c) => ui.table(requests, (j) => {
+          const asked = said(c, j, 'prompt');
           const time = s('time', j).slice(5);
           return [j === i ? ui.divText(time) : ui.link(time, () => t.currentRowIdx = j),
             asked.length > 60 ? `${asked.slice(0, 60)}…` : asked, s('total_tokens', j), s('cost_usd', j)];
         }, ['Time', 'Asked', 'Tokens', 'Cost, $'])), true);
       }
     }
-    grok.shell.setCurrentObject(acc.root, true);
+    grok.shell.setCurrentObject(acc.root, false);
   }
 }
