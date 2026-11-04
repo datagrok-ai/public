@@ -94,8 +94,9 @@ Crux cannot read or a CXSMILES whose query features Crux's reader skips (`cruxRe
 
 Known differences, both deliberate: Crux is RDKit 2026.03, Chem's RDKit.js is 2024.09, so where they differ (some
 canonical SMILES' stereo marks or atom order, atom-pair and torsion fingerprints of a few molecules, an MCS SMARTS'
-atom order, a molecule's SMARTS without its atoms' H counts: `[#7]` for `[nH]`) Crux gives 2026.03's answer; and the property table's MW is RDKit's average weight where OpenChemLib gave
-the monoisotopic mass.
+atom order, a molecule's SMARTS without its atoms' H counts: `[#7]` for `[nH]`) Crux gives 2026.03's answer. The
+property table's MW is the average molecular weight in both modes (RDKit's MolWt; in RDKit mode OpenChemLib's average
+weight, within 0.01 of it; until 2026-11-04 RDKit mode gave OpenChemLib's monoisotopic mass).
 
 Known differences that are not (`src/tests/edge-cases-tests.ts` pins them, night 2026-11-02): a dative bond (`N->[Pt]`)
 is a single bond to Crux's matchers and descriptor graph, so a single-bond SMARTS matches it (rotatable bonds, H-bond

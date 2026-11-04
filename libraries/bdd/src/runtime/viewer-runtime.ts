@@ -545,9 +545,13 @@ function install(): void {
     return {before: snapshots.get(v.root)?.legend, now: legendState(v)};
   };
   const valuesOf = (v: any): Record<string, unknown> => v.getWidgetStatus?.()?.values ?? {};
-  /** A named reading now and at the snapshot before the last change. */
+  /** A named reading now and at the snapshot before the last change; none while the platform does not know the
+   * element as a viewer (one being built, or one closed with a pane that is being replaced), so a poll reads again
+   * instead of ending on a throw (`expect.poll` does not retry one). */
   const valueChange = (el: Element, name: string): Reading => {
-    const v = viewerOf(el);
+    const v = findViewer(el);
+    if (!v)
+      return {has: ['nothing: the element is not a viewer (or not one yet)']};
     const now = valuesOf(v);
     const key = Object.keys(now).find((k) => norm(k) === norm(name));
     const before = snapshots.get(v.root)?.values ?? {};

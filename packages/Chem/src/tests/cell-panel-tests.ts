@@ -117,7 +117,7 @@ category('cell panel', async () => {
 
   test('properties', async () => {
     const expectedRes: {[key: string]: any} = {
-      'MW': 133.089149,
+      'MW': 133.19333999999998, // the average molecular weight (the monoisotopic mass until 2026-11-04: 133.089149)
       'HBA': 1,
       'HBD': 1,
       'LogP': 1.1253999918699265,
