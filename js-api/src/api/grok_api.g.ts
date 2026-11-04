@@ -761,7 +761,7 @@ export interface IDartApi {
   grok_TreeViewNode_Get_Value(node: any): any;
   grok_TreeViewNode_Set_Value(node: any, value: any): any;
   grok_TreeViewNode_Parent(node: any): any;
-  grok_TreeViewNode_Remove(node: any): any;
+  grok_TreeViewNode_Remove(node: any, kill?: Bool): any;
   grok_TreeViewNode_CaptionLabel(node: any): any;
   grok_TreeViewNode_CheckBox(node: any): any;
   grok_TreeViewNode_Get_Checked(node: any): any;
