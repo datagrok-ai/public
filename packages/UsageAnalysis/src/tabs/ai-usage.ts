@@ -66,13 +66,15 @@ export class AiUsageView extends UaView {
         col(t, 'cost_usd').meta.format = '0.0000';
         if (df === load) {
           // An unpriced request would read as $0 in a cost chart, so cost is the default only when all are priced.
-          measure = col(t, 'cost_usd').stats.missingValueCount === 0 && t.rowCount > 0 ? 'cost_usd' : 'total_tokens';
+          measure = t.rowCount > 0 && AiUsageView.unpriced(t, [...Array(t.rowCount).keys()]) === 0 ? 'cost_usd' : 'total_tokens';
           subs.push(t.onFilterChanged.subscribe(() => showCards(Promise.resolve(t))),
             t.onCurrentRowChanged.pipe(debounceTime(200)).subscribe(() => AiUsageView.showRequest(t)));
         }
         return t;
       });
-      groups = df.then((t) => AiUsageView.groupsFrame(t, subs));
+      groups = df.then((t) => df === load ? AiUsageView.groupsFrame(t, subs) : t);
+      failure.textContent = '';
+      ui.setDisplay(body, true);
       showCards(df);
       df.then((t) => {
         if (df !== load)
@@ -163,14 +165,21 @@ export class AiUsageView extends UaView {
     });
   }
 
+  /** Requests that used tokens but have no cost; requests without any token counts have nothing to price. */
+  static unpriced(t: DG.DataFrame, rows: number[]): number {
+    const cost = col(t, 'cost_usd');
+    const tokens = col(t, 'total_tokens');
+    return rows.filter((i) => !tokens.isNone(i) && cost.isNone(i)).length;
+  }
+
   static summary(t: DG.DataFrame): {[label: string]: string[]} {
     const rows = Array.from(t.filter.getSelectedIndexes());
     const sum = (name: AiColumn) => {
       const values = col(t, name);
       return rows.reduce((s, i) => values.isNone(i) ? s : s + values.get(i), 0);
     };
-    const cost = col(t, 'cost_usd');
-    const priced = rows.filter((i) => !cost.isNone(i)).length;
+    const used = rows.filter((i) => !col(t, 'total_tokens').isNone(i)).length;
+    const priced = used - AiUsageView.unpriced(t, rows);
     const n = (x: number) => DG.format(x, 'compact');
     return {
       'Requests': [n(rows.length)],
@@ -178,7 +187,7 @@ export class AiUsageView extends UaView {
       'Tokens': [n(sum('total_tokens')), `${n(sum('input_tokens'))} in, ${n(sum('output_tokens'))} out, ` +
         `${n(sum('cache_read_tokens') + sum('cache_write_tokens'))} cache`],
       'Estimated cost': priced === 0 ? ['—', 'no prices'] :
-        [`$${n(sum('cost_usd'))}`, priced < rows.length ? `${Math.floor(priced / rows.length * 100)}% priced` : ''],
+        [`$${n(sum('cost_usd'))}`, priced < used ? `${Math.floor(priced * 100 / used)}% priced` : ''],
     };
   }
 
@@ -240,8 +249,9 @@ export class AiUsageView extends UaView {
       acc.addPane('Tool calls', () => pane((texts) => {
         const turn = current(texts);
         const calls = turn?.toolCalls?.split('\n').filter((call) => call !== '') ?? [];
+        // Grokky logs tool calls only when asked to, so an absent value means not logged, not none.
         if (calls.length === 0)
-          return turn ? ui.divText('No tool calls', 'ua-ai-text-missing') : text(null);
+          return turn?.toolCalls != null ? ui.divText('No tool calls', 'ua-ai-text-missing') : text(null);
         return ui.table(calls, (call) => {
           const at = call.indexOf(': ');
           return at < 0 ? [call, ''] : [call.slice(0, at), call.slice(at + 2)];
