@@ -20,7 +20,7 @@ interface CruxModules {
 /** Sets of workers, opened as calls overlap: a set's module runs one call at a time, and every call is seeded, so
  *  which set runs it changes nothing. Each set costs its modules' memory, hence the cap. */
 const pool: {modules: Promise<CruxModules>, busy: number}[] = [];
-const MAX_SETS = Math.max(1, Math.min(15, (navigator.hardwareConcurrency ?? 2) - 1));
+export const MAX_SETS = Math.max(1, Math.min(15, (navigator.hardwareConcurrency ?? 2) - 1));
 
 let first: Promise<CruxModules> | null = null;
 
@@ -44,11 +44,15 @@ export function nullFloats(n: number): {format: string, values: Float64Array, va
 const utf8 = new TextDecoder();
 
 /** Row i of a decoded leaf column, as crux-leaf.js's toArray reads it: null where the validity bitmap says so,
- *  a boolean from its bit, a 64-bit integer as a number, a UTF-8 string decoded. */
+ *  a boolean from its bit, a 64-bit integer as a number, a UTF-8 string decoded, a list of numbers as a view. */
 function at(c: any, i: number): any {
   const k = (c.offset ?? 0) + i;
   if (c.validity && !((c.validity[k >> 3] >> (k & 7)) & 1))
     return null;
+  if (c.format === '+l' || c.format === '+L') {
+    const ch = c.children[0];
+    return ch.values.subarray((ch.offset ?? 0) + Number(c.offsets[k]), (ch.offset ?? 0) + Number(c.offsets[k + 1]));
+  }
   if (c.format === 'b')
     return !!((c.values[k >> 3] >> (k & 7)) & 1);
   if (c.format === 'u')

@@ -8,7 +8,7 @@
  */
 import * as DG from 'datagrok-api/dg';
 
-import {crux, CruxResult, named, rows} from './crux';
+import {crux, CruxResult, MAX_SETS, named, rows} from './crux';
 import {MeasurementError, enginePriors, linePrior, mapPrior} from './priors';
 import {ARCHETYPES, Archetype, Therapy} from './archetypes';
 
@@ -78,8 +78,10 @@ export interface StudyDeclaration {
  *  schedule). A random subset of a pool is a sample of the study, so the power is unbiased at any size that fills n;
  *  measured over 20 seeds and four cases (Crux spike tumor-design-shards, 2026-11-04): the assurance's sd at the
  *  reference n 0.0090-0.0112 at 1000, 0.0095-0.0113 at 100, n as often the reference's, the design about half the
- *  time. More studies do not help (the noise floor is elsewhere); 60 starts to show. */
-const POOLS = {animals: 100, mde_animals: 100};
+ *  time. More studies do not help (the noise floor is elsewhere); 60 starts to show. The kill rate is calibrated over
+ *  every study drawn (400 labs, Crux's default 200, the same 8000 animals): its sd over seeds 24-35 % lower in all
+ *  four cases, at no cost. */
+const POOLS = {animals: 100, mde_animals: 100, cal_studies: 400};
 
 /** One arm's design. */
 export interface ArmDesign {
@@ -210,7 +212,7 @@ export function designScenarios(d: StudyDeclaration, tgis: number[]): Promise<Sc
 
 /** Calls one design is split into, each over its block of the studies drawn on a worker set of its own (crux.ts opens
  *  as many): wasm runs one thread per worker, so the shards are the design's parallelism. */
-const SHARDS = Math.max(1, Math.min(15, (navigator.hardwareConcurrency ?? 2) - 1));
+const SHARDS = MAX_SETS;
 
 type Row = {[k: string]: any};
 interface ArmTables {plan: Row, power: Row[], duration: Row[], schedules: Row[], arms: Row[]}

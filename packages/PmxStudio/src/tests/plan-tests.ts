@@ -80,7 +80,9 @@ category('Plan', () => {
     expect(later.plan.get('study_end', 0), e + 7);
     expect(later.plan.get('endpoint_day', 0), e);
     expect(later.armResults.get('kill_rate_per_day', 0), base.armResults.get('kill_rate_per_day', 0));
-    expect(later.armResults.get('n', 0) <= base.armResults.get('n', 0), true);
+    // a later end lowers the assurance a little at every n (~0.008 at MC38's 60 % TGI, measured with 200 and 400
+    // calibration labs): n may cross the power target one animal later, not more
+    expect(later.armResults.get('n', 0) <= base.armResults.get('n', 0) + 1, true);
   }, {timeout: 300000});
 
   test('schedules: the plan\'s own is the design, fewer measurements need no fewer animals', async () => {
