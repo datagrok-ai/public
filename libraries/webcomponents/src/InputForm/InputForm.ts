@@ -57,6 +57,7 @@ export class InputForm extends HTMLElement {
   }
 
   public destroy() {
+    this.formGeneration++;
     this.destroyed$.next(true);
     ui.empty(this);
   }

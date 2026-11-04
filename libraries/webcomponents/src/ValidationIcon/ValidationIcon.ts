@@ -259,7 +259,7 @@ export class ValidationIcon extends HTMLElement {
       root.appendChild(ui.divV([
         ui.divH([
           icon,
-          ui.divText(`Current value is incosistent. Computed value was ${
+          ui.divText(`Current value is inconsistent. Computed value was ${
             this.isScalar$.value ? consistentValue : 'different'
           }`),
         ]),

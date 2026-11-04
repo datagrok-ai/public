@@ -757,19 +757,9 @@ importers:
       datagrok-api:
         specifier: workspace:^
         version: link:../../js-api
-      dayjs:
-        specifier: 'catalog:'
-        version: 1.11.23
       rxjs:
         specifier: 'catalog:'
         version: 6.6.7
-      wu:
-        specifier: 'catalog:'
-        version: 2.1.0
-    devDependencies:
-      '@types/wu':
-        specifier: 'catalog:'
-        version: 2.1.44
 
   libraries/webcomponents-vue:
     dependencies:
@@ -794,22 +784,12 @@ importers:
       datagrok-api:
         specifier: workspace:^
         version: link:../../js-api
-      dayjs:
-        specifier: 'catalog:'
-        version: 1.11.23
       rxjs:
         specifier: 'catalog:'
         version: 6.6.7
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@7.0.2)
-      wu:
-        specifier: 'catalog:'
-        version: 2.1.0
-    devDependencies:
-      '@types/wu':
-        specifier: 'catalog:'
-        version: 2.1.44
 
   packages/Admetica:
     dependencies:
@@ -3827,21 +3807,12 @@ importers:
       '@datagrok-libraries/test':
         specifier: workspace:^
         version: link:../../libraries/test
-      '@datagrok-libraries/utils':
-        specifier: workspace:^
-        version: link:../../libraries/utils
       '@datagrok-libraries/webcomponents':
         specifier: workspace:^
         version: link:../../libraries/webcomponents
-      cash-dom:
-        specifier: 'catalog:'
-        version: 8.1.5
       datagrok-api:
         specifier: workspace:^
         version: link:../../js-api
-      dayjs:
-        specifier: 'catalog:'
-        version: 1.11.23
 
   packages/Widgets:
     dependencies:

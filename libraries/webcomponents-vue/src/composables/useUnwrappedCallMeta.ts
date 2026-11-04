@@ -7,7 +7,8 @@ export function useUnwrappedCallMeta(
   source: () => Record<string, BehaviorSubject<any>> | undefined,
 ): Record<string, any> {
   const state = Vue.reactive({} as Record<string, any>);
-  watchExtractedObservable(source, (meta) => {
+  // an undefined source would be skipped by the watcher, keeping the previous call's keys
+  watchExtractedObservable(() => source() ?? {}, (meta) => {
     for (const k of Object.keys(state)) delete state[k];
     const entries = Object.entries(meta).map(([name, state$]) =>
       state$.pipe(map((s) => [name, s] as const)),

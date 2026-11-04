@@ -4,42 +4,13 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {Observable} from 'rxjs';
 import {G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
-import type {ValidationIcon} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
+import type {
+  ConsistencyInfo, ValidationIcon, ValidationResult,
+} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
 
-//
-// TODO: probably a separate type lib (?)
-//
-export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
-
-export type ConsistencyInfo = {
-  restriction: RestrictionType,
-  inconsistent: boolean,
-  assignedValue: any,
-}
-
-export interface ActionItem {
-  actionName: string;
-  action: string;
-  additionalParams?: Record<string, any>;
-}
-
-export interface Advice {
-  description: string;
-  actions?: ActionItem[];
-}
-
-export type ValidationItem = string | Advice;
-
-export interface ValidationResult {
-  errors?: ValidationItem[];
-  warnings?: ValidationItem[];
-  notifications?: ValidationItem[];
-}
-
-export type ValidationIconInput = {
-  validation?: ValidationResult,
-  consistency?: ConsistencyInfo,
-};
+export type {
+  RestrictionType, ConsistencyInfo, ActionItem, Advice, ValidationItem, ValidationResult, ValidationIconInput,
+} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
 
 export interface SubscriptionLike {
   unsubscribe(): void;

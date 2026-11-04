@@ -10,12 +10,7 @@
     "@datagrok-libraries/utils": "workspace:^",
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
-    "dayjs": "catalog:",
-    "rxjs": "catalog:",
-    "wu": "catalog:"
-  },
-  "devDependencies": {
-    "@types/wu": "catalog:"
+    "rxjs": "catalog:"
   },
   "scripts": {
     "build": "grok tsc -p tsconfig.json",

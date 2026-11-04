@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import type ExcelJS from 'exceljs';
 import type html2canvas from 'html2canvas';
-import {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
+import {DEFAULT_FLOAT_FORMAT, G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
 import {viewerTypesMapping} from './consts';
 import {delay, getPropViewers, graphicsDataUrl, isSvgGraphics} from './utils';
 import type {ValidationResult} from '../reactive-tree-driver/src/data/common-types';
@@ -142,7 +142,9 @@ export const richFunctionViewReport = async (
             caption: scalarInput.options['caption'] ?? scalarInput.name,
             value: lastCall.inputs[scalarInput.name] ?? '',
             units: scalarInput.options['units'] ?? '',
-            format: scalarInput.format || DEFAULT_FLOAT_FORMAT,
+            // the form's default, so the export matches it whether or not the form was shown
+            format: scalarInput.format ||
+              (scalarInput.propertyType === DG.TYPE.FLOAT ? G7_FLOAT_FORMAT : DEFAULT_FLOAT_FORMAT),
           })),
           validationStates,
           consistencyStates,

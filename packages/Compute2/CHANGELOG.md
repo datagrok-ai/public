@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Export: Fixed float inputs of workflow steps never opened in the session exporting with fewer digits than the form shows (0.0001 as 0)
+* Run compare: Fixed the chart's "Ctrl + scroll to zoom" hint never showing
 * Requires platform 1.28.0 or later: removed the fallbacks for older platforms
 * RFV: Fixed a run opened with invalid or missing required inputs being runnable (needs WebComponents v.next)
 * Help: Fixed the help panel staying empty for every later step after one help file failed to load

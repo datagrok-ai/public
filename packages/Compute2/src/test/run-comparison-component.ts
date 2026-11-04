@@ -32,9 +32,11 @@ const chartElement = (root: HTMLElement) =>
   shownPane(root)?.querySelector('dg-viewer') as (HTMLElement & {dataFrame?: DG.DataFrame}) | null;
 const chartFrame = (root: HTMLElement) => chartElement(root)?.dataFrame;
 const hideEqual = (root: HTMLElement, value: boolean) => {
-  const toggle = Array.from(shownPane(root)!.querySelectorAll<HTMLElement & {value: boolean}>('dg-toggle-input'))
+  const toggle = Array.from(shownPane(root)!.querySelectorAll<HTMLElement>('dg-toggle-input'))
     .find((el) => el.textContent?.includes('Hide equal values'))!;
-  toggle.value = value;
+  const toggleSwitch = toggle.querySelector<HTMLElement>('.ui-input-switch')!;
+  if (toggleSwitch.getAttribute('aria-checked') !== String(value))
+    toggleSwitch.click();
 };
 const tabHeaders = (root: HTMLElement) => Array.from(root.querySelectorAll<HTMLElement>('[role="tab"]'));
 const tabTitles = (root: HTMLElement) => tabHeaders(root).map((tab) => tab.getAttribute('name'));

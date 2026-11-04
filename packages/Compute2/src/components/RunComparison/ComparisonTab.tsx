@@ -449,14 +449,17 @@ export const ComparisonTab = Vue.defineComponent({
               onUpdate:value={(val) => sharedScale.value = val}
             />
           </div> }
+        {/* the guard's hint goes on a wrapper: dg-viewer replaces its own children on every viewer render */}
         { Vue.withDirectives(
-          <Viewer
-            type={spec.type}
-            dataFrame={comparison.value!.chartDf}
-            style={{width: '100%', height: `${effectiveChartHeight}px`, flexShrink: '0'}}
-            onViewerChanged={onChartViewerChanged}
-            options={spec.options}
-          />,
+          <div style={{width: '100%', height: `${effectiveChartHeight}px`, flexShrink: '0'}}>
+            <Viewer
+              type={spec.type}
+              dataFrame={comparison.value!.chartDf}
+              style={{width: '100%', height: '100%'}}
+              onViewerChanged={onChartViewerChanged}
+              options={spec.options}
+            />
+          </div>,
           [[wheelGuard]],
         ) }
       </div>;

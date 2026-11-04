@@ -66,10 +66,6 @@ export const InputForm = Vue.defineComponent({
     consistencyReset: (_ioName: string) => true,
   },
   setup(props, {emit}) {
-    Vue.onRenderTriggered((event) => {
-      console.log('InputForm onRenderTriggered', event);
-    });
-
     const currentCall = Vue.computed(() => {
       if (props.funcCall) applyDefaultFloatFormats(props.funcCall);
       return Vue.markRaw(props.funcCall);
@@ -86,7 +82,7 @@ export const InputForm = Vue.defineComponent({
 
     const currentForm = Vue.shallowRef(undefined as undefined | DG.InputForm);
 
-    Vue.watch([currentCall, currentForm, validationStates, consistencyStates], ([call, form, validationStates, consistencyStates]) => {
+    Vue.watch([currentCall, currentForm, validationStates, consistencyStates, isReadonly], ([call, form, validationStates, consistencyStates, isReadonly]) => {
       if (!form || !call) return;
 
       [...call.inputParams.values()]
@@ -101,7 +97,7 @@ export const InputForm = Vue.defineComponent({
 
           (input as any).setStatus({validation, consistency});
 
-          input.enabled = isInputEnabled(param.property, consistency, isReadonly.value);
+          input.enabled = isInputEnabled(param.property, consistency, isReadonly);
         });
     });
 

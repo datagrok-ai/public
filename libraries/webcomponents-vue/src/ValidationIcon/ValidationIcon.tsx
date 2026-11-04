@@ -36,6 +36,7 @@ export const ValidationIcon = Vue.defineComponent({
   emits: {
     consistencyReset: () => true,
     actionRequest: (_a: string, _additionalParams?: Record<string, any>) => true,
+    showDataFrameDiff: (_consistentValue: any) => true,
   },
   setup(props, {emit}) {
     const isScalar = Vue.computed(() => props.isScalar);
@@ -50,6 +51,7 @@ export const ValidationIcon = Vue.defineComponent({
         validationStatus={validationStatus.value}
         onConsistencyReset={(_ev: CustomEvent) => emit('consistencyReset')}
         onActionRequest={(ev: ActionRequestEvent) => emit('actionRequest', ev.detail, ev.additionalParams)}
+        onShowDataframeDiff={(ev: CustomEvent) => emit('showDataFrameDiff', ev.detail)}
       >
       </dg-validation-icon>
     );

@@ -190,12 +190,12 @@ export const ComboPopup = Vue.defineComponent({
   name: 'ComboPopup',
   props: {
     caption: {
-      type: Object as Vue.PropType<String | HTMLElement>,
+      type: [String, HTMLElement] as Vue.PropType<string | HTMLElement>,
       required: true,
     },
     items: {
-      type: Array<String>,
-      default: [],
+      type: Array as Vue.PropType<string[]>,
+      default: () => [],
     },
     rightAligned: {
       type: Boolean,

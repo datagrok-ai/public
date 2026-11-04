@@ -2,6 +2,11 @@
 
 ## v.next
 
+* InputForm: Toggling `isReadonly` alone updates whether the inputs are enabled
+* InputForm: Clearing `callMeta` drops the meta of the previous call
+* ResizeHandle: A cancelled pointer ends the drag, and only the primary button starts one
+* tooltip: The directive follows changes of its value
+* ValidationIcon: Forwards the dataframe diff request as `showDataFrameDiff`
 * Tabs: Added a tab strip styled like `ui.tabControl`, with closable tabs and an optional + tab; every pane stays mounted, inactive ones are hidden, and a pane taller than the strip's host scrolls; headers and + work from the keyboard (Enter, Space) and are linked to their panes for screen readers
 * InputForm: Added the `hiddenInputs` prop; the `hidden` meta still hides an input
 * InputForm: A dataframe input with the `mutateOnly` annotation is disabled under the `restricted` or `info` restriction

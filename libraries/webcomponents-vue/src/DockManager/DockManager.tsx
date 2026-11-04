@@ -18,8 +18,8 @@ declare global {
 export const DockManager = Vue.defineComponent({
   name: 'DockManager',
   props: {
-    activePanelTitle: Object as Vue.PropType<String>,
-    preferredPanelTitle: Object as Vue.PropType<String>,
+    activePanelTitle: String,
+    preferredPanelTitle: String,
   },
   slots: Object as Vue.SlotsType<{
     default?: Vue.VNode[],
@@ -36,10 +36,6 @@ export const DockManager = Vue.defineComponent({
     'setActivePanel': (_t: string | null | undefined) => void(0),
   },
   setup(props, {slots, emit, expose}) {
-    Vue.onRenderTriggered((event) => {
-      console.log('DockManager onRenderTriggered', event);
-    });
-
     const dockSpawnRef = Vue.shallowRef<DockSpawnTsWebcomponent | undefined>(undefined);
     const activePanelTitle = Vue.computed(() => props.activePanelTitle);
     const preferredPanelTitle = Vue.computed(() => props.preferredPanelTitle);
