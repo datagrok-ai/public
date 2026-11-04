@@ -33,3 +33,41 @@ export function showStage(stage: Stage, view: DG.ViewBase): void {
   // the platform puts the app's root before the path of the view it opens as the app, not of one added later
   view.path = pathOf(stage);
 }
+
+/** The shell's panels a PMX Studio view hides: the context panel in every stage, and on the Overview also the
+ *  browse tree, the toolbox and help, so the page stands alone. */
+type Panel = 'showContextPanel' | 'showBrowse' | 'showToolbox' | 'showHelp';
+const QUIET: Panel[] = ['showContextPanel'];
+const QUIET_OVERVIEW: Panel[] = ['showContextPanel', 'showBrowse', 'showToolbox', 'showHelp'];
+
+/** The state each hidden panel had before the app hid it; given back as soon as the current view no longer hides
+ *  it (leaving the Overview for a stage, or leaving the app). */
+const before = new Map<Panel, boolean>();
+let watching = false;
+
+/** Hides the panels above while their PMX Studio view is current (F4 still opens the context panel inside). Once
+ *  per session: the app and the file handlers call it. */
+export function quietContextPanel(): void {
+  if (watching)
+    return;
+  watching = true;
+  const apply = () => {
+    const w = grok.shell.windows;
+    const name = grok.shell.v?.name ?? '';
+    const hide = name === NAMES.home ? QUIET_OVERVIEW : name.startsWith('PMX Studio') ? QUIET : [];
+    for (const [p, on] of [...before]) {
+      if (!hide.includes(p)) {
+        w[p] = on;
+        before.delete(p);
+      }
+    }
+    for (const p of hide) {
+      if (!before.has(p))
+        before.set(p, w[p]);
+      w[p] = false;
+    }
+  };
+  grok.events.onCurrentViewChanged.subscribe(apply);
+  // the app's first view may already be current when this runs
+  setTimeout(apply);
+}

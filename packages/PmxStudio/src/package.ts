@@ -10,6 +10,7 @@ import {analyzeView} from './analyze-view';
 import {MonitorFrames, monitorFrames} from './monitor';
 import {monitorView, openStudyFile} from './monitor-view';
 import {hubView} from './hub-view';
+import {quietContextPanel} from './stages';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -20,6 +21,7 @@ export class PackageFunctions {
   static async pmxStudioApp(
     // the app's URL path, which the platform passes: /plan opens Plan, /analyze Analyze, anything else the home
     @grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string): Promise<DG.ViewBase> {
+    quietContextPanel();
     const stage = path?.replace(/^\//, '') ?? '';
     return stage.startsWith('analyze') ? analyzeView() : stage.startsWith('monitor') ? monitorView() :
       stage.startsWith('plan') ? planView() : hubView();
@@ -28,6 +30,7 @@ export class PackageFunctions {
 
   @grok.decorators.fileHandler({ext: 'pmxstudy', description: 'Opens a PMX Studio study in Monitor.'})
   static async pmxStudyFileHandler(content: string): Promise<DG.DataFrame[]> {
+    quietContextPanel();
     return openStudyFile(content);
   }
 
@@ -69,6 +72,7 @@ export class PackageFunctions {
   // the extension as a literal (the decorators' generator reads no constants): plan-file.ts's PLAN_EXT
   @grok.decorators.fileHandler({ext: 'pmxplan', description: 'Opens a PMX Studio plan in Plan.'})
   static async pmxPlanFileHandler(content: string): Promise<DG.DataFrame[]> {
+    quietContextPanel();
     return openPlanFile(content);
   }
 
