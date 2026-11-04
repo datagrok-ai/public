@@ -11,7 +11,7 @@ import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-ut
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {
   couldBeSaved, hasAddControls, PipelineWithAdd, hasAnyInconsistency, statusToTooltip, statusInputs,
-} from '../../utils';
+} from './tree-utils';
 import {friendlyIoName, statesToStatus} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
 import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';

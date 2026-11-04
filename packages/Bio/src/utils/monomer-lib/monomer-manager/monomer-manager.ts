@@ -880,17 +880,6 @@ function resolveRGroupInfo(rgps: RGroup[]): RGroup[] {
 }
 
 
-export function findLastIndex<T>(ar: ArrayLike<T>, pred: (el: T) => boolean): number {
-  let foundIdx = -1;
-  for (let i = ar.length - 1; i >= 0; i--) {
-    if (pred(ar[i])) {
-      foundIdx = i;
-      break;
-    }
-  }
-  return foundIdx;
-}
-
 function replaceAllylsInSmiles(smiles: string): string {
   // OG smiles can include something like [Allyl:3], which is invalid smiles and needs to be replaced with [*:3]
   // number is single digit

@@ -4,7 +4,6 @@ import {withEngineMol} from '../sar-matrix-engine';
 import {engineGeneration} from '../../../engine/chem-engine';
 import {getMoleculeRenderer} from '../../../package';
 import {RDKitCellRenderer} from '../../../rendering/rdkit-cell-renderer';
-import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {SarMatrix} from '../sar-matrix-types';
 import {attachmentNumbers} from '../build/sar-matrix-link';
 import {MatrixGridState} from '../sar-matrix-ui-common';
@@ -216,11 +215,9 @@ export function charged<T>(work: () => T): T {
   }
 }
 
-/** The package's molecule renderer, or one of this module's own where the package's init has not run (the test
- *  bundle), so the grid draws either way. */
-let ownRenderer: RDKitCellRenderer | null = null;
+/** The package's one molecule renderer (made on first use where the package's init has not run: the test bundle). */
 function moleculeRenderer(): RDKitCellRenderer | null {
-  return getMoleculeRenderer() ?? (ownRenderer ??= new RDKitCellRenderer(getRdKitModule()));
+  return getMoleculeRenderer();
 }
 
 /** Scratch canvas the cached `ImageData` is blitted through so the grid's clip is respected

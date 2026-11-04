@@ -8,17 +8,14 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-
 
 test.use(specTestOptions);
 
-// 2026-06 editor rewrite: Pistoia removed. overrideMonomersFuncs /
-// revertOriginalMonomersFuncs / buildMonomersFuncsFromLib delegate to an internal
-// editorAdapter; there is NO window.org.helm.webeditor.Monomers to observe.
-// Verify via the helper's own observable state (hh.originalMonomersFuncs) instead.
+// 2026-06 editor rewrite: Pistoia removed. buildMonomersFuncsFromLib delegates to an
+// internal editorAdapter; there is NO window.org.helm.webeditor.Monomers to observe.
 // Behaviour changes vs the old Pistoia build:
-//   - double-apply override no longer throws (old "overridden already" guard removed)
-//   - pre-revert no longer throws (old "Unable to revert" guard removed)
 //   - buildMonomersFuncsFromLib no longer strips outer [...] brackets
 //   - rewriteLibraries + Monomers.addOneMonomer/clear are gone (old S3 removed)
-// See grok-browser references/helm.md § "Monomer-override contract (CHANGED)".
-test('Helm / monomer-funcs swap path — overrideMonomersFuncs / revertOriginalMonomersFuncs / buildMonomersFuncsFromLib (contract)', async ({page}) => {
+//   - the overrideMonomersFuncs / revertOriginalMonomersFuncs / originalMonomersFuncs
+//     swap path is gone from IHelmHelper (hwe reads Bio's library directly; old S1 removed)
+test('Helm / monomer-funcs path — buildMonomersFuncsFromLib (contract)', async ({page}) => {
   // Pure JS-API/contract spec: no Web Editor dialog open. 180s is ample.
   test.setTimeout(180_000);
   stepErrors.length = 0;
@@ -53,90 +50,10 @@ test('Helm / monomer-funcs swap path — overrideMonomersFuncs / revertOriginalM
     const lib = libHelper.getMonomerLib();
     (window as any).__hh = hh;
     (window as any).__lib = lib;
-    // Clean baseline: revert any override left over from a prior run.
-    try {
-      if (hh?.originalMonomersFuncs != null) hh.revertOriginalMonomersFuncs();
-    } catch (_) { /* ignore — best-effort baseline */ }
   });
 
   try {
-    await softStep('S1: overrideMonomersFuncs / revert state-machine — override records, revert clears, double-apply + pre-revert no longer throw', async () => {
-      const out = await page.evaluate(async () => {
-        const result: any = {
-          hhReady: false,
-          baselineNull: false,
-          overrideReturnedNonNull: false, afterOverrideNonNull: false,
-          doubleApplyThrew: false, doubleApplyMsg: '',
-          revertReturnedNonNull: false, afterRevertNull: false,
-          preRevertThrew: false, preRevertMsg: '',
-          errBalloonsDelta: 0, err: null,
-        };
-        const errBefore = document.querySelectorAll('.d4-balloon.error').length;
-        try {
-          const hh = (window as any).__hh;
-          if (!hh) throw new Error('Pre-flight prelude missing: window.__hh is undefined');
-          result.hhReady = true;
-          // Clean baseline
-          if (hh.originalMonomersFuncs != null) hh.revertOriginalMonomersFuncs();
-          result.baselineNull = hh.originalMonomersFuncs === null;
-
-          const sentinel = {
-            getMonomer: (_a: any, _name: any) => ({id: 'SENTINEL-1', m: 'sentinel-mol-1', n: 'sentinel'}),
-            getMonomerSet: (_a: any) => ({id: 'SENTINEL-SET-1'}),
-          };
-          const previous = hh.overrideMonomersFuncs(sentinel);
-          result.overrideReturnedNonNull = previous != null;
-          result.afterOverrideNonNull = hh.originalMonomersFuncs != null;
-
-          // Double-apply: must NOT throw in the new build.
-          const sentinel2 = {
-            getMonomer: (_a: any, _name: any) => ({id: 'SENTINEL-2'}),
-            getMonomerSet: (_a: any) => null,
-          };
-          try {
-            hh.overrideMonomersFuncs(sentinel2);
-          } catch (e: any) {
-            result.doubleApplyThrew = true;
-            result.doubleApplyMsg = String(e?.message ?? e).slice(0, 300);
-          }
-
-          const outgoing = hh.revertOriginalMonomersFuncs();
-          result.revertReturnedNonNull = outgoing != null;
-          result.afterRevertNull = hh.originalMonomersFuncs === null;
-
-          // Pre-revert: must NOT throw in the new build.
-          try {
-            hh.revertOriginalMonomersFuncs();
-          } catch (e: any) {
-            result.preRevertThrew = true;
-            result.preRevertMsg = String(e?.message ?? e).slice(0, 300);
-          }
-        } catch (e: any) {
-          result.err = String(e?.message ?? e).slice(0, 400);
-        }
-        // Ensure clean state for the next step.
-        try {
-          const hh = (window as any).__hh;
-          if (hh?.originalMonomersFuncs != null) hh.revertOriginalMonomersFuncs();
-        } catch (_) { /* ignore */ }
-        const errAfter = document.querySelectorAll('.d4-balloon.error').length;
-        result.errBalloonsDelta = errAfter - errBefore;
-        return result;
-      });
-      expect(out.hhReady, 'window.__hh present from pre-flight').toBe(true);
-      expect(out.baselineNull, `clean baseline: hh.originalMonomersFuncs === null; err: ${out.err ?? ''}`).toBe(true);
-      expect(out.overrideReturnedNonNull, 'overrideMonomersFuncs returns the previous funcs (non-null)').toBe(true);
-      expect(out.afterOverrideNonNull, 'after override, hh.originalMonomersFuncs is non-null (override recorded)').toBe(true);
-      // Behaviour change: double-apply no longer throws.
-      expect(out.doubleApplyThrew, `double-apply MUST NOT throw in the new build; observed msg: ${out.doubleApplyMsg}`).toBe(false);
-      expect(out.revertReturnedNonNull, 'revertOriginalMonomersFuncs returns the outgoing funcs (non-null)').toBe(true);
-      expect(out.afterRevertNull, 'after revert, hh.originalMonomersFuncs is back to null').toBe(true);
-      // Behaviour change: pre-revert no longer throws.
-      expect(out.preRevertThrew, `pre-revert (no override in effect) MUST NOT throw in the new build; observed msg: ${out.preRevertMsg}`).toBe(false);
-      expect(out.errBalloonsDelta, 'new error balloon delta after S1').toBe(0);
-    });
-
-    await softStep('S2: buildMonomersFuncsFromLib — plain lookup matches lib; unknown → missing placeholder; bracketed NOT stripped; getMonomerSet no-throw', async () => {
+    await softStep('S1: buildMonomersFuncsFromLib — plain lookup matches lib; unknown → missing placeholder; bracketed NOT stripped; getMonomerSet no-throw', async () => {
       const out = await page.evaluate(async () => {
         const result: any = {
           funcsResolved: false, hasGetMonomer: false, hasGetMonomerSet: false,
@@ -199,20 +116,16 @@ test('Helm / monomer-funcs swap path — overrideMonomersFuncs / revertOriginalM
       // Behaviour change assertion: bracketed symbol is NOT stripped → missing placeholder.
       expect(out.bracketedIsPlaceholder, `bracketed '[meI]' returns {id:'[meI]', n:'missing'} (brackets NOT stripped in new build); observed id=${out.bracketedId}, n=${out.bracketedN}`).toBe(true);
       expect(out.monomerSetThrew, `getMonomerSet('PEPTIDE') must not throw; err: ${out.monomerSetErr}`).toBe(false);
-      expect(out.errBalloonsDelta, 'new error balloon delta after S2').toBe(0);
+      expect(out.errBalloonsDelta, 'new error balloon delta after S1').toBe(0);
     });
 
     // S3 (rewriteLibraries) REMOVED in the 2026-06 build: rewriteLibraries is not a
     // method on IHelmHelper and the org.helm.webeditor.Monomers.addOneMonomer/clear
     // primitives it drove no longer exist. The lib→editor sync is covered indirectly
-    // by S2 (buildMonomersFuncsFromLib) and by the cross-feature interaction
+    // by S1 (buildMonomersFuncsFromLib) and by the cross-feature interaction
     // helm-input-bio-monomer-lib. No automatable surface remains for a direct test.
   } finally {
     await page.evaluate(() => {
-      try {
-        const hh = (window as any).__hh;
-        if (hh?.originalMonomersFuncs != null) hh.revertOriginalMonomersFuncs();
-      } catch (_) { /* ignore — teardown must not throw */ }
       try { delete (window as any).__hh; } catch (_) { /* ignore */ }
       try { delete (window as any).__lib; } catch (_) { /* ignore */ }
       try { (window as any).grok.shell.closeAll(); } catch (_) { /* ignore */ }

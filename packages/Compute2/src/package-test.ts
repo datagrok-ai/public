@@ -27,6 +27,8 @@ import './test/headless-run';
 import './test/run-storage';
 import './test/space-index';
 import './test/help-service';
+import './test/history-panel';
+import './test/kept-alive';
 import './test/space-walk';
 import './test/custom-function-view';
 import './test/feedback';

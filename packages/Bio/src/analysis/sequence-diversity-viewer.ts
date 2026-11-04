@@ -4,7 +4,6 @@ import * as grok from 'datagrok-api/grok';
 
 import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
-import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {adjustGridcolAfterRender, updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';

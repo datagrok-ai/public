@@ -51,6 +51,7 @@ export interface InputResponseMessage {
 }
 
 export interface TurnMetrics {
+  model?: string;
   inputTokens: number | null;
   outputTokens: number | null;
   cacheReadTokens: number | null;
@@ -71,10 +72,10 @@ export type OutgoingMessage =
   | {type: 'revision_start'; sessionId: string}
   | {type: 'final'; sessionId: string; content: string; structured_output?: unknown; unverified?: boolean;
       metrics?: TurnMetrics; revision?: 'kept' | 'replaced'}
-  | {type: 'error'; sessionId: string; message: string}
+  | {type: 'error'; sessionId: string; message: string; metrics?: TurnMetrics}
   | {type: 'session_reset'; sessionId: string}
   | {type: 'queued'; sessionId: string}
-  | {type: 'aborted'; sessionId: string}
+  | {type: 'aborted'; sessionId: string; metrics?: TurnMetrics}
   | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: unknown}
   | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]};
 
@@ -113,6 +114,7 @@ export interface AgentTurnRequest {
 
 export type AgentEvent =
   | {type: 'text'; text: string}
+  | {type: 'usage'; metrics: TurnMetrics}
   | {type: 'tool_activity'; name: string; summary: string}
   | {type: 'activity'}
   | {type: 'result'; text: string; structuredOutput?: unknown; metrics: TurnMetrics}
@@ -143,6 +145,7 @@ export type AgentProcessEvent =
   | {type: 'tool_start'; name: string; args: Record<string, unknown>}
   | {type: 'tool_end'; name: string; args: Record<string, unknown>; result: string}
   | {type: 'browser_call'; id: string; name: string; input: unknown; timeoutMs: number}
+  | {type: 'usage'; metrics: TurnMetrics}
   | {type: 'stopped'; text: string; structuredOutput?: unknown; metrics: TurnMetrics}
   | {type: 'limit'; kind: 'turns' | 'budget'}
   | {type: 'error'; message: string}

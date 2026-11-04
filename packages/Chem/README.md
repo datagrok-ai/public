@@ -57,7 +57,7 @@ Chem runs on [RDKit](https://www.rdkit.org) compiled to WebAssembly, and gradual
 RDKit compiled to one WebAssembly file (`vendor/chem-wasm`). Two package settings pick the engine (**Manage >
 Packages > Chem > Settings**, as above):
 
-* **Chemical Engine** (RDKit by default): with **Crux**, molecules are drawn, descriptors, fingerprints and structural
+* **Chemical Engine** (Crux by default): with **Crux**, molecules are drawn, descriptors, fingerprints and structural
   alerts calculated and the scaffold tree built by Crux, in the browser (descriptors and the scaffold tree otherwise run
   on the server); RDKit does the rest, and whatever Crux cannot handle. Other packages get RDKit objects from Chem in
   both modes (`getRdKitModule`, `getRdKitService`); in Crux mode the pictures and values of the moved functions come

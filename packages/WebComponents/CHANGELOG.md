@@ -6,6 +6,7 @@
 - InputForm: Added the `skipLogic` property
 - DockManager: Fixed views opened, or re-rendered, in the background splitting their panels evenly instead of by the declared ratios
 - ValidationIcon: Advice actions send their `additionalParams` with the action request
+- InputForm: Fixed a form opened with invalid or missing required values reporting itself valid
 
 ## 1.4.6 (2026-09-23)
 

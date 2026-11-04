@@ -119,7 +119,7 @@ PipelineView has a sticky Back/Next bottom bar (same pattern as RFV). Back is hi
 - **Skipped pipelines**: `findPrevStep`/`findNextStep` still work when the user manually selects a
   skipped pipeline — they find the nearest navigable neighbor
 
-Navigation functions (`findPrevStep`, `findNextStep`) in `src/utils.ts` locate the target node by
+Navigation functions (`findPrevStep`, `findNextStep`) in `src/components/TreeWizard/tree-utils.ts` locate the target node by
 uuid regardless of navigability, then return the nearest navigable neighbor. This ensures Back works
 correctly even on manually-selected skipped pipelines.
 

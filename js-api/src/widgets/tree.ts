@@ -276,6 +276,7 @@ export class TreeViewGroup extends TreeViewNode {
 
   /** Populates this group from a server data source (one node per entity). */
   async loadSources(source: HttpDataSource<any>): Promise<void> {
-    return api.grok_TreeViewGroup_Load_Sources(this.dart, source.dart);
+    // source.dart is shared by every copy of the source; only _prepare() puts this copy's query on it
+    return api.grok_TreeViewGroup_Load_Sources(this.dart, source._prepare());
   }
 }

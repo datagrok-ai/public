@@ -28,7 +28,8 @@ import {entryFromDataFrame, loadRunEntries} from './entry-extraction';
 import {pruneOverrides, withCandidateEnabled, withoutTargetOverrides} from './target-selection';
 import {columnPrimitives} from './comparison-builders';
 import {showMappingsDialog} from './mappings-dialog';
-import {ComparisonTab, SharedComparison, renderListFilter, sourceBadge} from './ComparisonTab';
+import {ComparisonTab, SharedComparison} from './ComparisonTab';
+import {renderListFilter, sourceBadge} from './list-ui';
 import './RunComparison.css';
 
 export const RunComparison = Vue.defineComponent({

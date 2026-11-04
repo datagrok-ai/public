@@ -22,25 +22,17 @@
   "dependencies": {
     "@datagrok-libraries/bio": "workspace:^",
     "@datagrok-libraries/chem-meta": "workspace:^",
-    "@datagrok-libraries/hwe": "^1.0.5",
+    "@datagrok-libraries/hwe": "^1.1.1",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
-    "dayjs": "catalog:",
-    "lru-cache": "^10.4.3",
-    "rxjs": "catalog:",
-    "wu": "catalog:",
-    "@datagrok-libraries/ml": "workspace:^"
+    "rxjs": "catalog:"
   },
   "devDependencies": {
     "@datagrok-libraries/bdd": "workspace:^",
-    "@playwright/test": "^1.48.0",
-    "@types/webpack-env": "^1.18.5",
-    "@types/wu": "catalog:",
-    "eslint-plugin-deprecation": "^3.0.0",
-    "eslint-plugin-rxjs": "^5.0.3",
-    "path": "^0.12.7"
+    "@datagrok-libraries/ml": "workspace:^",
+    "@playwright/test": "^1.48.0"
   },
   "scripts": {
     "build": "grok build",

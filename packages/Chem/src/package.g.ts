@@ -79,9 +79,10 @@ export function canvasMol(x: number, y: number, w: number, h: number, canvas: an
 //input: int w { optional: true }
 //input: int h { optional: true }
 //input: bool popupMenu { optional: true }
+//input: bool cache = true { optional: true; description: Keep the drawing in the renderer's caches. False keeps nothing, for very large one-off drawings }
 //output: object canvas
-export function drawMolecule(molStr: string, w?: number, h?: number, popupMenu?: boolean) : any {
-  return PackageFunctions.drawMolecule(molStr, w, h, popupMenu);
+export function drawMolecule(molStr: string, w?: number, h?: number, popupMenu?: boolean, cache?: boolean) : any {
+  return PackageFunctions.drawMolecule(molStr, w, h, popupMenu, cache);
 }
 
 //input: string smiles { semType: Molecule }
@@ -390,6 +391,11 @@ export async function performClusterMCS(molCol: DG.Column, clusterCol: DG.Column
 //output: list<string> result
 export async function molzip(molecules: string[], params?: any) : Promise<string[]> {
   return await PackageFunctions.molzip(molecules, params);
+}
+
+//output: object result
+export async function getMacromoleculeAssembler() : Promise<any> {
+  return await PackageFunctions.getMacromoleculeAssembler();
 }
 
 //description: The Chemical Engine setting in effect for this user: RDKit or Crux
@@ -1505,7 +1511,7 @@ export async function _mpo() : Promise<void> {
 //input: string profileName { caption: Score column; description: Name of the resulting score column, e.g. "MPO <profile name>". The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name }
 //input: string aggregation = 'Average' { choices: ["Average","Sum","Product","Geomean","Min","Max"] }
 //input: bool createDesirabilityColumns 
-//input: bool createCoverageColumn { description: Add a column counting non-empty properties per row }
+//input: bool createCoverageColumn { optional: true; description: Add a column counting non-empty properties per row }
 //output: dataframe result { action: join(df) }
 //meta.vectorFunc: true
 export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any, createDesirabilityColumns: boolean, createCoverageColumn: boolean) : any {

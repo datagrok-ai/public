@@ -98,11 +98,18 @@ export function hasRadicals(mol: RDMol): boolean {
   }
 }
 
+/** A string of blanks alone (spaces, tabs, line breaks: what RDKit's readers skip at the ends of a SMILES or SMARTS). */
+const BLANK = /^[ \t\r\n\f\v]+$/;
+
 export function getMolSafe(molString: string, details: object = {}, module: RDModule,
   warnOff: boolean = true, onError?: (e: unknown) => void): IMolContext {
   // `onError` sees what the module threw (Chem's Crux module: a trap marks Crux failed); the molecule is null then
   if (molString && !hasNewLines(molString) && molString.length > MAX_SMILES_LENGTH)
     return {mol: null, kekulize: true, isQMol: false, useMolBlockWedging: false}; // do not attempt to parse very long SMILES, will cause MOB.
+  // a blank cell (spaces, tabs, line breaks) is no molecule: RDKit reads none from it; Crux's get_qmol read an empty
+  // query from it before crux-core's spike n1102-chem-edge (the Crux mode drew nothing where RDKit mode crosses it out)
+  if (molString && BLANK.test(molString))
+    return {mol: null, kekulize: true, isQMol: false, useMolBlockWedging: false};
   let isQMol = false;
   const kekulizeProp = (details as any).kekulize;
   let kekulize: boolean = typeof kekulizeProp === 'boolean' ? kekulizeProp : true;

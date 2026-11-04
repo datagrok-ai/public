@@ -1,5 +1,9 @@
 # Scripting changelog
 
+## 1.1.3 (2026-11-03)
+
+* Rebuilt the jkg_* kernel images from master: jkg_octave clears its tornado HIGHs (tornado 6.5.10 from PyPI; conda-forge has no Python 3.10 build past 6.5.8), the other images pick up current base and dependency patches
+
 ## 1.1.2 (2026-10-14)
 
 * [core#811](https://github.com/datagrok-ai/core/issues/811): Rebuilt the jkg_* kernel images from master: a script that a kernel does not start within 15 s is resent to a fresh kernel (Octave), instead of the worker reusing a wedged kernel until restarted

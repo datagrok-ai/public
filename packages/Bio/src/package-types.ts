@@ -1,14 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 
 import {Observable, Subject} from 'rxjs';
 
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {IMonomerLib, IMonomerLibBase, IMonomerSet} from '@datagrok-libraries/bio/src/types/monomer-library';
+import {IMonomerLib, IMonomerSet} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 /** Names of package properties/settings declared in properties section of {@link './package.json'} */
 export const enum BioPackagePropertiesNames {
@@ -94,13 +92,6 @@ export class BioPackage extends DG.Package {
     return this._monomerSets;
   };
 
-  private _rdKitModule: RDModule;
-  public get rdKitModule(): RDModule {
-    if (!this._rdKitModule)
-      throw new Error('Package Bio .rdKitModule is not initialized.');
-    return this._rdKitModule;
-  };
-
   /** Package properties/settings declared in properties section of {@link './package.json'} */
   public get properties(): BioPackageProperties { return this._properties; };
 
@@ -116,13 +107,10 @@ export class BioPackage extends DG.Package {
     super._logger = new LoggerWrapper(super.logger, opts.debug);
   }
 
-  public completeInit(
-    seqHelper: ISeqHelper, monomerLib: IMonomerLib, monomerSets: IMonomerSet, rdKitModule: RDModule
-  ): void {
+  public completeInit(seqHelper: ISeqHelper, monomerLib: IMonomerLib, monomerSets: IMonomerSet): void {
     this._seqHelper = seqHelper;
     this._monomerLib = monomerLib;
     this._monomerSets = monomerSets;
-    this._rdKitModule = rdKitModule;
     this._initialized = true;
   }
 

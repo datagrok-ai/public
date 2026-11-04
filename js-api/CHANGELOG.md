@@ -2,6 +2,8 @@
 
 ## v.next
 
+* TreeView: Fixed `TreeViewGroup.loadSources` ignoring the source's `filter`, `by` and `page` (since the immutable data-source verbs): it loaded with whatever query an earlier request on the same Dart handle had left, so the Model Hub tree listed every model under each node
+* Chem: `grok.chem.drawMolecule` takes an optional last `cache` argument (true by default): false keeps no picture in Chem's renderer caches, for very large one-off drawings
 * u2core: Fixed `dfBindings` writing a bound datetime cell back to the frame in a loop: a fresh `dayjs` per read never matched, so binding `currentRow.<column>` wrote the cell and each write's refresh wrote it again; binding and moving the row now write nothing, and an edit writes once
 * u2core: Fixed `owner.subscribe(signal, handler)` from plain JS throwing on dispose and leaving the signal subscribed; a source whose `subscribe` returns the unsubscribe function is now released by calling it
 * u2core: Added `task` and `subscribe` to the types of every component, `DG.Widget`, viewers and views included (`interface Component extends Pick<OwnerVerbs, 'task' | 'subscribe'>`); `build` stays typed by u2 only, because compute-utils' function views declare their own `build(): void`

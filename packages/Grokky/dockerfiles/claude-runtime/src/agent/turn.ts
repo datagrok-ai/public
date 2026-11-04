@@ -56,6 +56,7 @@ export function runTurn(req: AgentTurnRequest): AsyncIterator<AgentEvent, undefi
     switch (ev.type) {
       case 'text':
       case 'activity':
+      case 'usage':
         return chan.push(ev);
       case 'tool_start':
         return chan.push({type: 'tool_activity', name: bareToolName(ev.name), summary: toolSummary(ev.name, ev.args)});

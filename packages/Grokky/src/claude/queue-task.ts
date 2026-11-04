@@ -1,6 +1,6 @@
 /** Queued-task admission for AI chat turns: the queued aiChatTurnTask call holds one celery
  *  slot for exactly the turn's duration while the turn streams over the browser WebSocket;
- *  no conversation content ever enters the queue or the platform logs. */
+ *  no conversation content ever enters the queue. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ClaudeRuntimeClient} from './runtime-client';
@@ -64,6 +64,7 @@ async function taskRoute(): Promise<DG.Func | null> {
 export interface ChatTurnOptions {
   systemPromptMode?: string;
   clientTools?: {name: string; description: string; inputSchema?: object}[];
+  logPrompt?: string;
 }
 
 /** Sends one chat turn, admitted through a queued task when `aiChatTurnTask` is deployed,

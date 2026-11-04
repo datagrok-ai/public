@@ -75,6 +75,7 @@ Command = TurnCommand | ContinueCommand | CancelCommand | BrowserResultCommand
 
 
 class Metrics(TypedDict):
+    model: str
     inputTokens: int
     outputTokens: int
     cacheReadTokens: int
@@ -129,6 +130,11 @@ class BrowserCallEvent(TypedDict):
     timeoutMs: int
 
 
+class UsageEvent(TypedDict):
+    type: Literal['usage']
+    metrics: Metrics
+
+
 class StoppedEvent(TypedDict):
     type: Literal['stopped']
     text: str
@@ -155,5 +161,6 @@ class SessionLostEvent(TypedDict):
 
 
 Event = (ReadyEvent | FatalEvent | SessionEvent | TextEvent | ActivityEvent | ToolStartEvent |
-         ToolEndEvent | BrowserCallEvent | StoppedEvent | LimitEvent | ErrorEvent | CancelledEvent | SessionLostEvent)
+         ToolEndEvent | BrowserCallEvent | UsageEvent | StoppedEvent | LimitEvent | ErrorEvent |
+         CancelledEvent | SessionLostEvent)
 Emit = Callable[[Event], None]

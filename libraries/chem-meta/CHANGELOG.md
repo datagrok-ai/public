@@ -1,5 +1,9 @@
 # chem-meta changelog
 
+## v.next
+
+* Added `macromolecule-assembler.ts`: the macromolecule assembler's interface (`IMacromoleculeAssembler`, with synchronous twins after `ready`), its input (`AsmSequence`, the packed `AsmBatch`, `packBatch`, `unpackRow`, `validateAsmSequence`, `asmBatchTransferables`), options and results (`AsmLayout` with the CoordGen layouts 3 and 4, `AsmAtomMap`)
+
 ## 1.2.11 (2026-04-06)
 
 Updated get_smiles() with details
