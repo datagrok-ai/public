@@ -68,7 +68,7 @@ memberships as (
   join groups_relations gr on gr.child_id = m.group_id
 ),
 user_groups as (
-  select m.user_id, string_agg(g.friendly_name, ', ' order by g.friendly_name) as groups
+  select m.user_id, string_agg(g.friendly_name, E'\n' order by g.friendly_name) as groups
   from memberships m
   join groups g on g.id = m.group_id
   where not g.personal and not g.hidden and g.id <> 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6' -- All users
@@ -81,8 +81,8 @@ select t.event_time as time,
   t.input_tokens, t.output_tokens, t.cache_read_tokens, t.cache_write_tokens,
   case when num_nonnulls(t.input_tokens, t.output_tokens, t.cache_read_tokens, t.cache_write_tokens) > 0 then
     coalesce(t.input_tokens, 0) + coalesce(t.output_tokens, 0) + coalesce(t.cache_read_tokens, 0) + coalesce(t.cache_write_tokens, 0)
-  end as total_tokens,
-  t.cost_usd, t.duration_ms
+  end as tokens,
+  t.cost_usd as cost, t.duration_ms
 from turns t
 left join user_groups ug on ug.user_id = t.user_id
 order by t.event_time desc
