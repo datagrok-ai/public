@@ -5,12 +5,19 @@ import {PLAN_TAG} from '../plan-file';
 import {MONITOR_READY} from '../ui';
 import {hubView} from '../hub-view';
 import {bring, readFile, suggestedStage} from '../open-study';
+import {gpu} from '../gpu';
 
 const CSV = 'Mouse ID,Arm,Day,Volume (mm3),Body weight\n' +
   'm1,Vehicle,0,100,20\nm1,Vehicle,3,180,20.4\nm1,Vehicle,12,900,21\n' +
   'm2,Cpd-1,0,105,20.1\nm2,Cpd-1,3,140,19.8\nm2,Cpd-1,12,300,19.5\n';
 
 category('Hub', () => {
+  test('WebGPU: one device opened once (or none, without an error, where the browser has none)', async () => {
+    const d = await gpu();
+    expect(await gpu() === d, true);
+    expect(d === null || typeof d.createBuffer === 'function', true);
+  });
+
   test('a table of measurements: its columns by name, animals, groups and last day', async () => {
     const r = readFile('study.csv', CSV);
     expect(r.kind, 'table');
