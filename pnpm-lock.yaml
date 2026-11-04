@@ -2664,6 +2664,13 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@7.0.2)
+    devDependencies:
+      '@vue/babel-plugin-jsx':
+        specifier: ^1.2.4
+        version: 1.5.0(@babel/core@7.29.7)
+      babel-loader:
+        specifier: ^9.2.1
+        version: 9.2.1(@babel/core@7.29.7)(webpack@5.110.3(@swc/core@1.16.2(@swc/helpers@0.5.23))(postcss@8.5.28))
 
   packages/MLFlow:
     dependencies:

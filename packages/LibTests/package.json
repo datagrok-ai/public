@@ -41,5 +41,9 @@
   },
   "sources": [
     "common/vue.js"
-  ]
+  ],
+  "devDependencies": {
+    "@vue/babel-plugin-jsx": "^1.2.4",
+    "babel-loader": "^9.2.1"
+  }
 }

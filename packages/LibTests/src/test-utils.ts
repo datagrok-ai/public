@@ -272,3 +272,9 @@ export function expectTreeConsistency(tree$: Observable<StateTree>, expectObserv
     },
   );
 }
+
+/** The dg-* elements are registered by the WebComponents package; init is idempotent. */
+export async function awaitWebComponents() {
+  if (!customElements.get('dg-viewer'))
+    await DG.Func.byName('WebComponents:init').prepare().call();
+}
