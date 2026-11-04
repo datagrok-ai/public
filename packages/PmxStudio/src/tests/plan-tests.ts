@@ -171,8 +171,10 @@ category('Plan', () => {
     const lean = await plan({...one, detectableEffect: false});
     expect(typeof all.armResults.get('mde', 0), 'number');
     expect(lean.armResults.col('mde')!.isNone(0), true);
-    expect(lean.plan.toCsv(), all.plan.toCsv());
-    expect(lean.powerCurve.toCsv(), all.powerCurve.toCsv());
+    // without it the design runs in shards (engine.ts): the same sums in another order, equal to rounding
+    const rounded = (df: DG.DataFrame) => df.toCsv().replace(/\d+\.\d+/g, (x) => Number(x).toFixed(10));
+    expect(rounded(lean.plan), rounded(all.plan));
+    expect(rounded(lean.powerCurve), rounded(all.powerCurve));
     const [a, b] = await Promise.all([plan(one), plan(one)]);
     expect(a.armResults.toCsv(), all.armResults.toCsv());
     expect(b.armResults.toCsv(), all.armResults.toCsv());

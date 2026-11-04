@@ -8,6 +8,7 @@ import './tests/analyze-tests';
 import './tests/band-chart-tests';
 import './tests/monitor-tests';
 import './tests/hub-tests';
+import './tests/explore-tests';
 
 // the platform initialises the _package this bundle exports: the same object priors.ts and crux.ts read
 export {_package};

@@ -91,7 +91,8 @@ export function analysisDeclarationOf(x: AnalysisInputs): AnalysisDeclaration {
 
 /** The smallest volume a caliper records (mm3): the design's v_lod (stats.tumor_study_design's default). */
 const V_LOD = 3.4;
-const ADJUST: {[c in Correction]: string} = {dunnett: 'dunnettx', bonferroni: 'bonferroni', none: 'none'};
+/** Dunnett is lsmeans' mvt: exact for any arm sizes (dunnettx assumes equal arms), as scipy and the box plot. */
+const ADJUST: {[c in Correction]: string} = {dunnett: 'mvt', bonferroni: 'bonferroni', none: 'none'};
 export const COMPARED = 'per-animal slope of log V from randomization (two-sample t test)';
 
 export interface ArmAnalysis {

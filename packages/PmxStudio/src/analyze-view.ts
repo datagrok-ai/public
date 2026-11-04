@@ -26,6 +26,7 @@ import {openStage} from './stages';
 import {noEffectNote, observedCell, planInput, planTab} from './plan-vs-observed';
 import {nciReadings, NciReading, tolerabilityTab} from './tolerability';
 import {BandChart} from './band-chart';
+import {explore, exploreContent, StudyInputs, studyInputsOf} from './explore';
 
 const TWIN = 'Untreated twin';
 const MEASURED = 'Measured';
@@ -195,6 +196,8 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   // busy while the study is analyzed, and before that while the example study is prepared
   const busy = signal(false);
   const planState = {stale, error, result, reading: Promise.resolve() as Promise<unknown>};
+  // the study and columns the shown result read (Your data opens them)
+  let resultStudy: StudyInputs | null = null;
   const analyze = async (prepare?: () => Promise<void>) => {
     busy.value = true;
     const mine = ++latest;
@@ -202,6 +205,7 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
       await prepare?.();
       await planState.reading;
       const sent = askedOf(call);
+      const reads = studyInputsOf(call);
       // the analysis first; then the same inputs with the twins (seconds), whatever the form holds by then
       call.setParamValue('withTwin', false);
       const f = call.func;
@@ -212,6 +216,7 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
         return;
       error.value = null;
       stale.value = askedOf(call) !== sent;
+      resultStudy = reads;
       result.value = read(c);
       void full.call().then((done) => {
         if (mine === latest)
@@ -649,6 +654,12 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
         block('Control check', 'Each control against the range the other controls predict', controlCheck),
         block('Analysis protocol', 'As Plan pre-specifies it, ready to paste',
           copyRow(() => protocolText, 'Analysis protocol'), protocol)]},
+    {id: 'your-data', label: 'Your data', intro: 'Your own questions: the study’s animals and measurements as ' +
+      'Datagrok tables, to chart, filter, group and compare as you like.', content: exploreContent((which) => {
+      const r = result.peek();
+      if (r && resultStudy)
+        explore(which, r, resultStudy, colorsOf(r), self.view);
+    })},
   ]);
   const content = divV([cards, tabs.root], 'pmx-analyze-content');
   Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});

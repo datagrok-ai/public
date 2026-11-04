@@ -31,14 +31,14 @@
     "trendtests",
     "vcg"
    ],
-   "functions": 84,
+   "functions": 83,
    "abi": 1,
    "fns": "nonclinical/fns.json",
    "thread": "worker",
    "compute": "nonclinical/compute.json",
    "hash": {
-    "js": "55b51c313e2b6e1b",
-    "wasm": "343e4c032387bc2c"
+    "js": "f7c44453ec3f5280",
+    "wasm": "c4ce9b0fb8cd5051"
    }
   },
   "stats": {
@@ -75,8 +75,8 @@
    "thread": "worker",
    "compute": "stats/compute.json",
    "hash": {
-    "js": "aaa3928bcacfeb66",
-    "wasm": "438fc1a5648f0f85"
+    "js": "08f2d734bd7e8a41",
+    "wasm": "b712a30378348dd4"
    }
   }
  },
@@ -221,7 +221,6 @@
   "stats.tox_terms": "nonclinical",
   "stats.ttest": "stats",
   "stats.tukey_hsd": "stats",
-  "stats.tumor_allocate": "nonclinical",
   "stats.tumor_body_weight": "nonclinical",
   "stats.tumor_body_weight_simulate": "nonclinical",
   "stats.tumor_growth_curves": "nonclinical",
@@ -229,12 +228,12 @@
   "stats.tumor_growth_rates": "nonclinical",
   "stats.tumor_growth_synergy": "nonclinical",
   "stats.tumor_measurement_error": "nonclinical",
-  "stats.tumor_monitor": "nonclinical",
   "stats.tumor_plan_checks": "nonclinical",
   "stats.tumor_study_design": "nonclinical",
   "stats.tumor_study_simulate": "nonclinical",
   "stats.tumor_survival": "nonclinical",
   "stats.tumor_twin": "nonclinical",
+  "stats.tumor_twin_loglik": "nonclinical",
   "stats.variance_test": "stats",
   "stats.vcg_compare": "nonclinical",
   "stats.vcg_match": "nonclinical",

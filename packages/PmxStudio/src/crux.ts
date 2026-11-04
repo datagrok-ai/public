@@ -20,7 +20,7 @@ interface CruxModules {
 /** Sets of workers, opened as calls overlap: a set's module runs one call at a time, and every call is seeded, so
  *  which set runs it changes nothing. Each set costs its modules' memory, hence the cap. */
 const pool: {modules: Promise<CruxModules>, busy: number}[] = [];
-const MAX_SETS = Math.max(1, Math.min(4, (navigator.hardwareConcurrency ?? 2) - 1));
+const MAX_SETS = Math.max(1, Math.min(15, (navigator.hardwareConcurrency ?? 2) - 1));
 
 let first: Promise<CruxModules> | null = null;
 
