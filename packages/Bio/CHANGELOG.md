@@ -2,6 +2,7 @@
 
 ## v.next
 
+* HELM substructure filter: The HELM editor is destroyed when its dialog closes, however it closes (it kept its document listeners, and after Escape the monomer that follows the mouse stayed on the page)
 * Macromolecule renderer: Fixed some monomers sitting above or below the others after the font size changed (e.g. to 18 and back): the monomers of the cell drawn first after the change kept the old font's height. Test: `renderers: monomerPlacer`, font size change
 * Molecular 3D Structure panel: Fixed the panel showing an empty white box after some sequences: each panel's 3D viewer (NGL) kept its WebGL context (a page keeps 16), so the panel on screen lost its own; the viewer is released once the panel leaves the page, and a structure it cannot read shows a message. Test: `toAtomicLevel-ui` panel-3d-stage-released-off-page
 * Dependencies: `@datagrok-libraries/hwe` 1.1.1 (`parseHelm` about 15-20% faster with the same results; a `trailing-monomer-separator` warning)
