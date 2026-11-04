@@ -2,6 +2,7 @@ import './privileges';
 import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
 import {createNodeWebSocket} from '@hono/node-ws';
+import type {WSContext} from 'hono/ws';
 import {syncUserFiles} from './sync/orchestrator';
 import {userDirs} from './user/user-dir';
 import {startWorkspaceSync} from './sync/workspace';
@@ -11,15 +12,17 @@ import {emit} from './stream-filter';
 import type {WsSender} from './stream-filter';
 import {handleMessage, handleAbort, handleInputResponse, handleDisconnect} from './session';
 import {claimTask, releaseTask} from './tasks';
-import {disposeAll, providerCheck, startPool} from './agent/pool';
+import {disposeAll, startPool} from './agent/pool';
+import {CONTAINER_TOKEN_HEADER, userCredentials} from './credentials';
 
 const PORT = 5355;
+// The life of the container token a connection brings: its credentials are not re-read after that.
+const CREDENTIALS_TTL_MS = 15 * 60_000;
 
 const app = new Hono();
 const {injectWebSocket, upgradeWebSocket} = createNodeWebSocket({app});
 
-// The container is healthy whatever the provider check found; `provider` says whether the model answered.
-app.get('/health', (c) => c.json({status: 'ok', provider: providerCheck ?? 'checking'}));
+app.get('/health', (c) => c.json({status: 'ok'}));
 
 // Admission-task long-poll for the queued route (see tasks.ts). The celery worker
 // re-polls while the answer is {status: 'running'}; any other status ends its task.
@@ -39,10 +42,34 @@ app.post('/task/release', async (c) => {
   return c.json({status: 'released'});
 });
 
-app.get('/ws', upgradeWebSocket(() => {
+app.get('/ws', upgradeWebSocket((c) => {
+  // The token comes only with the handshake. A connection whose lookup failed, or whose credentials have outlived
+  // the token, is closed once idle: the browser's next prompt reconnects and the credentials are read again.
+  const credentials = userCredentials(c.req.header(CONTAINER_TOKEN_HEADER));
+  let stale = false;
+  let turns = 0;
+  let socket: WSContext | undefined;
+  const closeIfStale = () => {
+    if (stale && !turns)
+      socket?.close(1000, 'Credentials refresh');
+  };
+  credentials.catch((e: Error) => {
+    console.warn(`credentials: ${e.message}`);
+    stale = true;
+  });
+  const expiry = setTimeout(() => {
+    stale = true;
+    closeIfStale();
+  }, CREDENTIALS_TTL_MS);
   const sessionIds = new Set<string>();
-  const disconnect = (_evt: unknown, ws: WsSender) => handleDisconnect(sessionIds, ws);
+  const disconnect = (_evt: unknown, ws: WsSender) => {
+    clearTimeout(expiry);
+    handleDisconnect(sessionIds, ws);
+  };
   return {
+    onOpen(_evt: Event, ws: WSContext) {
+      socket = ws;
+    },
     onMessage(evt: any, ws: any) {
       const sender = ws as unknown as WsSender;
       let data: any;
@@ -96,8 +123,13 @@ app.get('/ws', upgradeWebSocket(() => {
       }
 
       sessionIds.add(data.sessionId ?? '');
-      handleMessage(sender, data).catch((e: any) =>
-        emit(sender, {type: 'error', sessionId: data.sessionId ?? '', message: String(e?.message ?? e)}));
+      turns++;
+      handleMessage(sender, data, credentials).catch((e: any) =>
+        emit(sender, {type: 'error', sessionId: data.sessionId ?? '', message: String(e?.message ?? e)}))
+        .finally(() => {
+          turns--;
+          closeIfStale();
+        });
     },
     onClose: disconnect,
     onError: disconnect,

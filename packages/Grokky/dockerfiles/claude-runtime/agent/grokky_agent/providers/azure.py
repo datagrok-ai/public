@@ -10,7 +10,7 @@ from .base import CLAUDE, Credentials, Provider, ProviderError, Route
 RESOURCE = re.compile(r'https://[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.(services\.ai|openai)\.azure\.com')
 # Azure answers an unknown deployment with 404.
 HINTS: dict[int | None, str] = {
-    401: ' (check the apiKey container credential: a key of the Azure resource in baseUrl)',
+    401: ' (check the apiKey Grokky credential: a key of the Azure resource in baseUrl)',
     404: ' (check that baseUrl is the Azure resource and that model names one of its deployments)'}
 
 
@@ -24,18 +24,18 @@ class AzureProvider(Provider):
     def routes(self, credentials: Credentials) -> dict[ApiMode, Route]:
         resource = RESOURCE.fullmatch((credentials.get('baseUrl') or '').strip().rstrip('/').lower())
         if not resource:
-            raise ProviderError('The baseUrl container credential must be the Azure resource: '
+            raise ProviderError('The baseUrl Grokky credential must be the Azure resource: '
                                 'https://<resource>.services.ai.azure.com, or https://<resource>.openai.azure.com '
                                 'for GPT only')
         if CLAUDE.search(self.model):
             if resource[1] == 'openai':
-                raise ProviderError('The model container credential names a Claude deployment, which needs a '
+                raise ProviderError('The model Grokky credential names a Claude deployment, which needs a '
                                     'Microsoft Foundry resource, https://<resource>.services.ai.azure.com: an Azure '
                                     'OpenAI resource serves GPT only')
             # Hermes picks a Claude request's thinking and sampling settings by the model name, and turns the dots
             # of a claude-* name into hyphens.
             if '.' in self.model:
-                raise ProviderError('The model container credential names a Claude deployment with a dot in its '
+                raise ProviderError('The model Grokky credential names a Claude deployment with a dot in its '
                                     'name: name the deployment after its model id, as Azure does by default')
         routes: dict[ApiMode, Route] = {'codex_responses': Route(self.endpoint(resource[0] + '/openai/v1'))}
         if resource[1] == 'services.ai':

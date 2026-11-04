@@ -2,7 +2,7 @@ import type {AgentEvent, AgentProcessEvent, AgentTurnRequest} from '../types';
 import {toolSummary} from '../tool-summary';
 import {bareToolName} from '../verify';
 import {killDescendants} from '../watchdog';
-import {acquire, dropSession, hasExited, hasSession, processForSession, SessionLost} from './pool';
+import {acquire, dropSession, hasExited, hasSession, parkSession, processForSession, SessionLost} from './pool';
 import type {AgentProcess} from './pool';
 
 class Channel<T> {
@@ -95,15 +95,19 @@ export function runTurn(req: AgentTurnRequest): AsyncIterator<AgentEvent, undefi
       // Checked with nothing awaited before `acquire` takes the session, so it cannot vanish in between.
       if (req.resumeExpected && !hasSession(req.sessionKey))
         return chan.push({type: 'session_reset'});
-      p = await acquire(req.sessionKey);
+      p = await acquire(req.sessionKey, req.credentials);
       // A cancelled turn ends a moment after the abort that ended it on this side.
       for (let prev = p.turn; prev; prev = p.turn)
         await prev.settled;
       if (req.signal.aborted)
         return;
       // The process may have exited as the turn before this one ended; the next acquire starts another.
-      if (!hasExited(p))
+      if (hasExited(p))
+        continue;
+      if (p.credentials.id === req.credentials.id)
         break;
+      // Rotated keys or another group: the history is reloaded by a process started with this turn's credentials.
+      parkSession(req.sessionKey, 'credentials changed');
     }
     p.turn = {events: onEvent, settled};
     p.proc.once('exit', onExit);

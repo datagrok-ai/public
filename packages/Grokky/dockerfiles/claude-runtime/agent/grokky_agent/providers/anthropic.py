@@ -18,4 +18,4 @@ class AnthropicProvider(Provider):
         return {'anthropic_messages': Route(url)}
 
     def error_hint(self, status: int | None) -> str:
-        return ' (check the apiKey container credential: an Anthropic Console API key)' if status == 401 else ''
+        return ' (check the apiKey Grokky credential: an Anthropic Console API key)' if status == 401 else ''
