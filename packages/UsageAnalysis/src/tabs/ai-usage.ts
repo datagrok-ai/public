@@ -14,9 +14,9 @@ const COLUMNS = ['time', 'period', 'user', 'groups', 'feature', 'model', 'status
   'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'total_tokens', 'cost_usd', 'duration_ms'] as const;
 type AiColumn = typeof COLUMNS[number];
 const GRID_COLUMNS: AiColumn[] = ['time', 'user', 'feature', 'model', 'status', 'total_tokens', 'cost_usd'];
-// Without fixed widths the grid is wider than its pane and scrolls sideways.
-const GRID_WIDTHS: Partial<Record<AiColumn, number>> = {time: 112, user: 92, feature: 78, model: 112, status: 50,
-  total_tokens: 70, cost_usd: 56};
+// The narrowest widths that fit the pane without scrolling sideways; a wider grid scales them up.
+const GRID_WIDTHS: Partial<Record<AiColumn, number>> = {time: 108, user: 86, feature: 82, model: 116, status: 46,
+  total_tokens: 60, cost_usd: 52};
 const col = (t: DG.DataFrame, name: AiColumn): DG.Column => t.getCol(name);
 
 export class AiUsageView extends UaView {
@@ -98,11 +98,15 @@ export class AiUsageView extends UaView {
         if (column)
           column.visible = (GRID_COLUMNS as string[]).includes(name);
       }
-      for (const [name, width] of Object.entries(GRID_WIDTHS)) {
-        const column = grid.col(name);
-        if (column)
-          column.width = width;
-      }
+      const minimum = Object.values(GRID_WIDTHS).reduce((s, w) => s + w, 0);
+      ui.onSizeChanged(grid.root).subscribe(() => {
+        const scale = Math.max(1, (grid.root.clientWidth - 20) / minimum);
+        for (const [name, width] of Object.entries(GRID_WIDTHS)) {
+          const column = grid.col(name);
+          if (column)
+            column.width = Math.floor(width * scale);
+        }
+      });
       return grid;
     });
 
@@ -113,7 +117,7 @@ export class AiUsageView extends UaView {
     const breakdown = ui.tabControl({'By user': byUser.root, 'By group': byGroup.root});
     this.root.append(ui.splitV([
       ui.box(cards, {style: {maxHeight: '96px'}}),
-      ui.box(ui.splitH([perDay.root, breakdown.root]), {style: {maxHeight: '290px'}}),
+      ui.box(ui.splitH([perDay.root, breakdown.root]), {style: {maxHeight: '38%'}}),
       ui.splitH([ui.box(filters.root, {style: {maxWidth: '190px'}}), requests.root]),
     ]));
   }
@@ -205,6 +209,6 @@ export class AiUsageView extends UaView {
       acc.addPane('Answer', () => text('response'), true);
       acc.addPane('Tool calls', () => text('tool_calls'), true);
     }
-    grok.shell.o = acc.root;
+    grok.shell.setCurrentObject(acc.root, true);
   }
 }
