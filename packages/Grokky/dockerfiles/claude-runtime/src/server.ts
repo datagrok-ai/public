@@ -11,7 +11,7 @@ import {emit} from './stream-filter';
 import type {WsSender} from './stream-filter';
 import {handleMessage, handleAbort, handleInputResponse, handleDisconnect} from './session';
 import {claimTask, releaseTask} from './tasks';
-import {disposeAll, providerCheck, startPool} from './agent/pool';
+import {disposeAll, startPool} from './agent/pool';
 import {CONTAINER_TOKEN_HEADER, userCredentials} from './credentials';
 
 const PORT = 5355;
@@ -19,8 +19,7 @@ const PORT = 5355;
 const app = new Hono();
 const {injectWebSocket, upgradeWebSocket} = createNodeWebSocket({app});
 
-// The container is healthy whatever the provider check found; `provider` says whether the model answered.
-app.get('/health', (c) => c.json({status: 'ok', provider: providerCheck ?? 'checking'}));
+app.get('/health', (c) => c.json({status: 'ok'}));
 
 // Admission-task long-poll for the queued route (see tasks.ts). The celery worker
 // re-polls while the answer is {status: 'running'}; any other status ends its task.

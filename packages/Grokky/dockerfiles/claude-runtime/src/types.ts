@@ -136,7 +136,6 @@ export type AgentCommand =
 
 export type AgentProcessEvent =
   | {type: 'ready'}
-  | {type: 'checked'; error: string | null}
   | {type: 'fatal'; message: string}
   | {type: 'session'; id: string}
   | {type: 'text'; text: string}

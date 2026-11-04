@@ -572,7 +572,6 @@ See the [process model](#process-model).
 | `HERMES_READY_TIMEOUT_MS` | 30000 | an agent that has not answered `ready` by then is disposed; its turn errors |
 | `HERMES_COMPRESSION_THRESHOLD_TOKENS` | 160000 | history compression trigger (estimated prompt tokens) |
 | `HERMES_LOG_STDERR` | unset | any value forwards every agent stderr line to the runtime log |
-| `TEST_UPSTREAM` | unset | test stubs and loggers only: replaces the scheme, host and port of every model URL (the path stays); http(s) to `127.0.0.1`, `localhost`, `[::1]` or `host.docker.internal`, or https to the provider's own host; with any other value every agent refuses to start |
 | `DATAGROK_API_URL` | injected by Datlas | the URL user identity is verified against; without it, the first client-supplied URL is trusted (dev only) |
 
 `entrypoint.sh` passes each of these variables through `env -i`, so
@@ -593,11 +592,12 @@ with Allow client side off. Every connection the platform proxies to the contain
 `X-Datagrok-Container-Token`, a 15-minute token scoped to `GET /docker/credentials`
 ([AUTH_RESOURCES](https://github.com/datagrok-ai/core/blob/master/docs/AUTH_RESOURCES.md#from-a-docker-container)).
 The server trades it for the user's credentials when the WebSocket opens (`src/credentials.ts`): the package's
-for the user's groups, with the container's own laid over them key by key. The container's credentials, which the
-platform also passes to it as environment variables, serve a connection without the token and a user with no
-credentials; when they hold an `apiKey`, they serve everyone, so the container's key never goes out with a group's
-`provider`, `baseUrl` or `TEST_UPSTREAM`. A failed lookup fails that connection's turns and closes it, so the browser's next prompt
-reconnects with a new token; a change of credentials or groups reaches a user on their next connection.
+for the user's groups. They are the only source: the container takes no credentials from its environment, a
+connection without the token gets none, and a user the package has none for gets "No AI model credentials are set
+for you". A failed lookup fails that connection's turns and closes it, so the browser's next prompt reconnects with
+a new token; a change of credentials or groups reaches a user on their next connection. The platform still lays
+credentials set on the `grokky-claude-runtime` container itself over the package's, key by key: leave the
+container's empty.
 
 | Credential | Meaning |
 |---|---|
@@ -608,12 +608,13 @@ reconnects with a new token; a change of credentials or groups reaches a user on
 | `region` | Bedrock: the AWS region the key was created in |
 | `apiFormat` | Custom: `anthropic-messages`, `openai-responses` or `openai-chat-completions` |
 | `service` | Databricks: a model service of the workspace (`<catalog>.<schema>.<name>`) to call `model` through |
+| `TEST_UPSTREAM` | Test stubs and loggers only: replaces the scheme, host and port of every model URL (the path stays); http(s) to `127.0.0.1`, `localhost`, `[::1]` or `host.docker.internal`, or https to the provider's own host; with any other value the agent refuses to start |
 
-The server keeps only these (and `TEST_UPSTREAM`, `PROVIDER_CREDENTIALS` in `src/constants.ts`), takes the
-container's out of its environment at startup, and sends a set to each agent in its `init` line. An agent serves
+The server keeps only these (`PROVIDER_CREDENTIALS` in `src/constants.ts`) and sends a set to each agent in its
+`init` line. An agent serves
 only turns of the credentials it started with: a turn of other credentials on a live session (rotated keys,
 another group) parks the session and reloads its history in an agent started with the turn's. New warm spares start
-with the credentials an agent last started with successfully, the container's at first; spares of other
+with the credentials an agent last started with successfully, so there are none before the first user; spares of other
 credentials stay until a session of theirs takes them or room is needed, and a session no spare matches starts
 cold. The redaction of agent output covers each agent's own key. Each provider (`agent/grokky_agent/providers/`)
 checks its credentials and declares the formats it serves and where; with two, a model whose name contains
@@ -627,11 +628,8 @@ prices, OpenRouter's live ones). Bedrock, Azure, Databricks and custom endpoints
 list lacks (it stops at Claude Sonnet 5 and Opus 5): such a turn reports `costUsd: null` and only its call limit
 bounds it. Hermes finds the context window itself; images go to the model as they are.
 
-At startup a container with an `apiKey` of its own runs `python -m grokky_agent --check` once: one short call to
-the model on the path a turn takes. The log reads `provider check: <provider> <model> answered`, or
-`failed: <error>`, and `/health` reports it as `provider` (`none` for a container without credentials of its
-own); turns do not wait for it. A user's credentials are checked by their first agent: one the provider refuses
-fails that user's turns with "The assistant could not start: …".
+A user's credentials are checked by their first agent: credentials the provider refuses fail that user's turns
+with "The assistant could not start: …".
 
 - Anthropic: a Claude subscription token is refused, for any key bound for `api.anthropic.com`: Anthropic allows
   those only in its own applications
@@ -655,8 +653,8 @@ fails that user's turns with "The assistant could not start: …".
 ```bash
 cd packages/Grokky/dockerfiles/claude-runtime
 docker build -t grokky-claude-runtime:<version> .
-docker run --rm -p 5355:5355 -e apiKey -e model=claude-sonnet-5-5 grokky-claude-runtime:<version>
-curl -s localhost:5355/health          # {"status":"ok","provider":{"error":null}} once checked
+docker run --rm -p 5355:5355 grokky-claude-runtime:<version>
+curl -s localhost:5355/health          # {"status":"ok"}
 ```
 
 Hermes is pinned by `HERMES_COMMIT` in the Dockerfile's `hermes` stage and built with Hermes' own
@@ -672,9 +670,9 @@ the new image.
 - The server holds the provider credentials and every connected user's Datagrok key in its memory and
   sockets. It starts as root and drops to uid 1001 (gid 2001, no supplementary groups) before anything
   else runs (`src/privileges.ts`); a process whose uid changed after exec is not dumpable, so the agents'
-  tools cannot read the server's `/proc/<pid>/{environ,mem,fd}`. It takes the provider credentials out of
-  its environment at startup (`PROVIDER_ENV`, `src/constants.ts`): a child it runs (git, for the workspace
-  sync) is dumpable again after its exec, and would otherwise inherit them.
+  tools cannot read the server's `/proc/<pid>/{environ,mem,fd}`. Provider credentials never enter
+  its environment (the entrypoint passes none): a child it runs (git, for the workspace sync) is dumpable again
+  after its exec, and would inherit them.
 - An agent gets the provider credentials only in its `init` line, never in its environment or a file,
   and keeps the key in memory. Before it imports the rest of the driver or reads stdin, it makes itself
   non-dumpable (`prctl(PR_SET_DUMPABLE, 0)` in `__main__.py`), so other agents cannot read its memory,

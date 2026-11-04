@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const http = require('node:http');
 
 const TOKEN = 'eyJhbGciOiJSUzI1NiJ9.CONTAINER-TOKEN.sig';
+const NOT_SET = /^No AI model credentials are set for you/;
 let reply;
 let seen;
 const datlas = http.createServer((req, res) => {
@@ -14,8 +15,7 @@ let credentials;
 
 test.before(async () => {
   await new Promise((resolve) => datlas.listen(0, '127.0.0.1', resolve));
-  Object.assign(process.env, {DATAGROK_API_URL: `http://127.0.0.1:${datlas.address().port}`, apiKey: 'container-key',
-    model: 'container-model'});
+  process.env.DATAGROK_API_URL = `http://127.0.0.1:${datlas.address().port}`;
   credentials = require('../dist/credentials.js');
 });
 
@@ -28,16 +28,12 @@ test('the container token buys the caller\'s provider credentials, and only thos
   assert.deepEqual(c.values, {provider: 'Azure', apiKey: 'group-key', model: 'claude-x'});
 });
 
-test('no token, or none of the caller\'s credentials, leaves the container\'s own', async () => {
-  assert.equal(await credentials.userCredentials(undefined), credentials.containerCredentials);
+test('without the caller\'s credentials there is nothing to run on', async () => {
   for (reply of [{status: 404}, {status: 200, headers: {'api-error': 'NotFound', 'api-error-code': '404'}},
     {status: 200, body: {dbPassword: 'p'}}])
-    assert.equal(await credentials.userCredentials(TOKEN), credentials.containerCredentials);
-});
-
-test('the container\'s key never goes out with a group\'s provider settings', async () => {
-  reply = {status: 200, body: {apiKey: 'container-key', model: 'container-model', provider: 'Custom', baseUrl: 'https://elsewhere'}};
-  assert.equal(await credentials.userCredentials(TOKEN), credentials.containerCredentials);
+    await assert.rejects(credentials.userCredentials(TOKEN), {message: NOT_SET});
+  await assert.rejects(credentials.userCredentials(undefined),
+    {message: 'The assistant could not read its credentials: the connection did not come through Datagrok'});
 });
 
 test('a refused token fails with its status, never the token', async () => {

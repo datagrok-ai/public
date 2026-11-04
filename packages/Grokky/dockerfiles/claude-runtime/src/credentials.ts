@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {PROVIDER_CREDENTIALS, PROVIDER_ENV, rewriteForDocker} from './constants';
+import {PROVIDER_CREDENTIALS, rewriteForDocker} from './constants';
 
 export const CONTAINER_TOKEN_HEADER = 'x-datagrok-container-token';
 
@@ -14,16 +14,18 @@ export function providerCredentials(values: Record<string, string>): ProviderCre
   return {values, id};
 }
 
-export const containerCredentials = providerCredentials(PROVIDER_ENV);
-
 const API_URL = process.env.DATAGROK_API_URL && rewriteForDocker(process.env.DATAGROK_API_URL);
 
-/** The provider credentials of the user whose proxied connection brought `token`, resolved by the platform from the
- * package's and this container's credentials by the user's groups; the container's own when it has none for them. */
+const NOT_SET = 'No AI model credentials are set for you: an administrator sets them in Plugins | Grokky | Credentials...';
+
+/** The provider credentials of the user whose proxied connection brought `token`: Grokky's package credentials,
+ * resolved by the platform by the user's groups. */
 export async function userCredentials(token: string | undefined): Promise<ProviderCredentials> {
-  if (!token || !API_URL)
-    return containerCredentials;
   const failed = (why: string) => new Error(`The assistant could not read its credentials: ${why}`);
+  if (!API_URL)
+    throw failed('DATAGROK_API_URL is not set');
+  if (!token)
+    throw failed('the connection did not come through Datagrok');
   const res = await fetch(`${API_URL}/docker/credentials`, {
     headers: {'Authorization': `Bearer ${token}`},
     signal: AbortSignal.timeout(10_000),
@@ -32,19 +34,17 @@ export async function userCredentials(token: string | undefined): Promise<Provid
   });
   const status = Number(res.headers.get('api-error-code') ?? res.status);
   if (status === 404)
-    return containerCredentials;
+    throw new Error(NOT_SET);
   if (!res.ok || res.headers.has('api-error'))
     throw failed(`HTTP ${status} from /docker/credentials`);
   const all: Record<string, unknown> = await res.json();
-  // The platform lays the container's credentials over the package's key by key: the container's key goes out only
-  // with the container's own provider settings, never to an endpoint a group's credentials name.
-  if (containerCredentials.values.apiKey && all.apiKey === containerCredentials.values.apiKey)
-    return containerCredentials;
   const values: Record<string, string> = {};
   for (const k of PROVIDER_CREDENTIALS) {
     const v = all[k];
     if (typeof v === 'string' && v)
       values[k] = v;
   }
-  return Object.keys(values).length ? providerCredentials(values) : containerCredentials;
+  if (!Object.keys(values).length)
+    throw new Error(NOT_SET);
+  return providerCredentials(values);
 }

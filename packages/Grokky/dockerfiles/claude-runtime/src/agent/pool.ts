@@ -6,7 +6,6 @@ import * as path from 'node:path';
 import * as readline from 'node:readline';
 import type {AgentCommand, AgentProcessEvent} from '../types';
 import {AGENT_DIR, AGENT_PYTHON, HERMES_HOMES, PLUGIN_DIR} from '../constants';
-import {containerCredentials} from '../credentials';
 import type {ProviderCredentials} from '../credentials';
 import {IDLE, killTree, raceIdle, startOrphanReaper} from '../watchdog';
 
@@ -29,12 +28,6 @@ const MAX_CRASHES = 2;
 // The agent's key and anything key-shaped, wherever an agent's output reaches the log or the browser.
 const redact = (text: string, key?: string) => (key ? text.split(key).join('<redacted>') : text)
   .replace(/\bsk-[\w.…-]+/g, 'sk-<redacted>');
-
-const CHECK_TIMEOUT_MS = 120_000;
-
-/** The startup connection test's verdict: null when the model answered, else why not; undefined while it runs. */
-export let providerCheck: {error: string | null} | 'none' | undefined;
-let checking: ChildProcessWithoutNullStreams | undefined;
 
 export interface AgentProcess {
   proc: ChildProcessWithoutNullStreams;
@@ -81,8 +74,9 @@ const parked = new Map<string, ParkedSession>();
 // Spares still starting; a session that finds no ready spare takes one of these over rather than paying for a
 // second cold start next to it.
 const starting: {proc: Promise<AgentProcess>; claimed: boolean; credentials: ProviderCredentials}[] = [];
-// New spares start with the credentials an agent last started with: in most deployments everyone shares them. Spares
-// of other credentials stay for their next session; spares are the first to go when room is needed.
+// New spares start with the credentials an agent last started with, none before the first: in most deployments
+// everyone shares them. Spares of other credentials stay for their next session; spares are the first to go when
+// room is needed.
 let spareCredentials: ProviderCredentials | undefined;
 
 export const processForSession = (key: string) => bySession.get(key);
@@ -93,7 +87,7 @@ const holdsSession = (p?: AgentProcess) => !!p && (p.turns > 0 || p.restore !== 
 export const hasExited = (p: AgentProcess) => p.proc.exitCode !== null || p.proc.signalCode !== null;
 
 export function ownedPids(): Set<number> {
-  return new Set([...all, ...(checking ? [{proc: checking}] : [])].flatMap((p) => p.proc.pid ?? []));
+  return new Set([...all].flatMap((p) => p.proc.pid ?? []));
 }
 
 async function spawnProcess(credentials: ProviderCredentials, reload?: ParkedSession): Promise<AgentProcess> {
@@ -185,9 +179,8 @@ async function spawnProcess(credentials: ProviderCredentials, reload?: ParkedSes
 /** An agent process in its own home, sent its init command. The credentials go over stdin, never the environment,
  * which every tool the agent runs inherits. The cwd is root-owned, so a stray relative path never lands in runtime
  * state. */
-function spawnAgent(home: string, warm: boolean, credentials: ProviderCredentials,
-  args: string[] = []): ChildProcessWithoutNullStreams {
-  const proc = spawn(AGENT_PYTHON, ['-m', 'grokky_agent', ...args], {
+function spawnAgent(home: string, warm: boolean, credentials: ProviderCredentials): ChildProcessWithoutNullStreams {
+  const proc = spawn(AGENT_PYTHON, ['-m', 'grokky_agent'], {
     cwd: '/', detached: true,
     env: {PATH: process.env['PATH'] ?? '/usr/bin:/bin', HOME: home, HERMES_HOME: home, TERM: 'dumb', LANG: 'C.UTF-8',
       PYTHONUNBUFFERED: '1', PYTHONPATH: AGENT_DIR},
@@ -198,42 +191,6 @@ function spawnAgent(home: string, warm: boolean, credentials: ProviderCredential
   proc.stdin.on('error', () => {});
   proc.stdin.write(JSON.stringify(init) + '\n');
   return proc;
-}
-
-/** The connection test of the container's own credentials: a `--check` agent makes one short call to the configured
- * model and exits. Its verdict is logged and reported by /health; turns do not wait for it. */
-function checkProvider(): void {
-  const key = containerCredentials.values.apiKey;
-  const home = path.join(HERMES_HOMES, `check-${randomUUID()}`);
-  fs.mkdirSync(home, {recursive: true, mode: 0o700});
-  const proc = checking = spawnAgent(home, false, containerCredentials, ['--check']);
-  let verdict: string | null | undefined;
-  let lastStderr = '';
-  readline.createInterface({input: proc.stderr}).on('line', (line) => lastStderr = line || lastStderr);
-  readline.createInterface({input: proc.stdout}).on('line', (line) => {
-    try {
-      const ev: AgentProcessEvent = JSON.parse(line);
-      if (ev.type === 'checked')
-        verdict = ev.error && redact(ev.error, key);
-      else if (ev.type === 'fatal')
-        verdict = redact(ev.message, key);
-    }
-    catch {}
-  });
-  const timer = setTimeout(() => proc.pid && killTree(proc.pid), CHECK_TIMEOUT_MS);
-  proc.on('error', (e) => verdict ??= e.message);
-  proc.once('close', (code, signal) => {
-    clearTimeout(timer);
-    checking = undefined;
-    fs.rmSync(home, {recursive: true, force: true});
-    providerCheck = {error: verdict !== undefined ? verdict : signal === 'SIGKILL' ?
-      `the check did not finish in ${CHECK_TIMEOUT_MS / 1000} s` :
-      redact(`the check exited (${signal ?? code})${lastStderr ? `: ${lastStderr}` : ''}`, key)};
-    const {provider, model} = containerCredentials.values;
-    const what = `${provider ?? 'Anthropic'} ${model ?? ''}`.trim();
-    console.log(providerCheck.error ? `provider check: ${what} failed: ${providerCheck.error}` :
-      `provider check: ${what} answered`);
-  });
 }
 
 /** A process that died holding a session keeps its home, and the next turn reloads the store there, unless the
@@ -444,12 +401,6 @@ export function startPool(): void {
   // Homes of a previous run (container restart, crash) belong to processes that no longer exist.
   for (const entry of fs.readdirSync(HERMES_HOMES))
     fs.rmSync(path.join(HERMES_HOMES, entry), {recursive: true, force: true});
-  if (containerCredentials.values.apiKey) {
-    spareCredentials = containerCredentials;
-    checkProvider();
-  } else
-    providerCheck = 'none';
-  topUpSpares();
   setInterval(() => reapIdle(), 60_000).unref();
   startOrphanReaper(ownedPids);
 }

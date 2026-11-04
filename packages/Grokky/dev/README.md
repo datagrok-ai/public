@@ -10,8 +10,9 @@ npm --prefix dev/harness install
 node dev/runtime.mjs up                        # local container on ws://localhost:5355/ws
 ```
 
-`runtime.mjs up` reads the Anthropic API key from your environment (`ANTHROPIC_API_KEY`). It hands
-the key to the container by name, so it never appears on a command line.
+The runtime reads model credentials only from Datagrok (Grokky's package credentials, with the container token
+of a proxied connection), so a turn on this container ends in "The assistant could not read its credentials";
+live turns need the runtime on a stand.
 
 ## The loop
 

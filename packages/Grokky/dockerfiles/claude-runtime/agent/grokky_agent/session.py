@@ -35,8 +35,6 @@ SAFETY_FILTER_MESSAGE = "The model provider's safety filter stopped this answer.
 BASE_TOOLSETS = ['file', 'terminal', 'skills', 'web', browser_tools.TOOLSET]
 # The connection test's call: no system prompt, no tools, a reply of a word or two. Hermes may call again after an
 # empty reply, which a limit of one would refuse and report as the provider's error.
-CHECK: TurnCommand = {'type': 'turn', 'text': 'Reply with OK.', 'systemPrompt': '', 'cwd': '/',
-                      'limits': {'maxTurns': 3, 'maxBudgetUsd': 1.0}}
 RETRY_STRUCTURED = ('Your reply did not match the required JSON schema: {}. '
                     'Reply again with only the corrected JSON object.')
 
@@ -316,21 +314,6 @@ class Session:
                                       self.store, self._toolsets(), self._on_delta)
         self.emit({'type': 'session', 'id': self.hermes_session})
         return self.agent
-
-    def check(self) -> str | None:
-        """Why one short call to the model failed, or None when it answered: the runtime's connection test, through
-        the agent and request patch a turn uses, without tools or history."""
-        t = self.turn = self.receive(CHECK)
-        try:
-            # As the session's agent while it runs, so the call limit can interrupt it.
-            agent = self.agent = hermes.new_agent(self.provider.model, self.provider.connection(), uuid.uuid4().hex,
-                                                  self.store, [], self._on_delta)
-            result = agent.run_conversation(CHECK['text'], conversation_history=[], task_id=self.key)
-        finally:
-            self.turn = self.agent = None
-        if t.api_error:
-            return t.api_error
-        return None if result.get('final_response') else result.get('error') or 'The model returned no answer.'
 
     def _prepare(self, cmd: TurnCommand) -> hermes.Agent | None:
         """The agent for this turn's stored session, with this turn's tools; None when the stored session to

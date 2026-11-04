@@ -19,8 +19,7 @@ runtime container, never the browser.
 | `apiFormat` | Custom: `anthropic-messages`, `openai-responses` or `openai-chat-completions`                  |
 | `service`   | Databricks: a model service of the workspace to call `model` through                           |
 
-A user's chat runs on the credentials of their group. Credentials set on the `grokky-claude-runtime` container
-itself serve users the package has none for; once they hold an `apiKey` they serve every user, so clear them when
-moving to package credentials. A change reaches a user when their AI panel next connects (a page
-reload). `POST /credentials/for/Grokky?group=<group>` saves a group's values with **Allow client side** on:
+A user's chat runs on the credentials of their group; a user the package has none for gets an error. Leave the
+credentials of the `grokky-claude-runtime` container itself empty: the platform lays them over the package's.
+A change reaches a user when their AI panel next connects (a page reload). `POST /credentials/for/Grokky?group=<group>` saves a group's values with **Allow client side** on:
 turn it off in the dialog afterwards.

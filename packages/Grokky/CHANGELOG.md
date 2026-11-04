@@ -2,12 +2,11 @@
 
 ## v.next
 
-* AI: Introduced per-group model credentials in the package's credentials (Plugins | Grokky | Credentials...): each user's chat runs on the key and model of their group, read by the runtime container through the platform and never sent to the browser
+* AI: Introduced per-group model credentials in the package's credentials (Plugins | Grokky | Credentials...): each user's chat runs on the key and model of their group, read by the runtime container through the platform and never sent to the browser. They are the only source: the runtime no longer takes credentials from its container's environment
 * Runtime, MCP server: Updated the Node.js base images to 22.23.4 (Node.js October 2026 security release)
 
 * AI: The assistant runs on Claude and GPT models through Anthropic, OpenRouter, OpenAI, Microsoft Azure, Amazon Bedrock, Databricks or your own Anthropic- or OpenAI-compatible endpoint; Claude subscription sign-in is not supported
-* AI: The `claude-runtime` container now needs a `model` credential naming the model to run, as the provider names it (e.g. `claude-sonnet-5-5`): a container with only an API key no longer starts
-* AI: At startup the AI runtime checks its provider and model with one short call, and logs whether it answered
+* AI: The model credentials need a `model` naming the model to run, as the provider names it (e.g. `claude-sonnet-5-5`)
 * AI: A turn's cost limit applies only where the AI runtime knows the model's price (OpenAI, OpenRouter, older Claude models); on Claude 5.5, Bedrock, Azure, Databricks and custom endpoints only the call limit bounds a turn
 * AI: Web addresses the assistant writes as plain text, such as a documentation link, are clickable
 * AI: Qwen, Kimi and Gemini models run through OpenRouter (Chat Completions) and Amazon Bedrock (Converse), and pick the matching skill more reliably
