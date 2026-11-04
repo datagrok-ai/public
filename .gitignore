@@ -128,3 +128,6 @@ __pycache__
 # js-api node bundle (built by grok build)
 /js-api/datagrok.js
 /js-api/datagrok.js.map
+
+# help is a sibling of public in the datagrok umbrella; Jenkins links it in here
+/help

@@ -17,7 +17,6 @@ on:
       - master
       - 'release/**'
     paths:
-      - 'help'
       - 'docusaurus/**'
       - 'docusaurus-static/**'
       - 'js-api/**'
@@ -25,7 +24,6 @@ on:
       - 'packages/*/CHANGELOG.md'
   pull_request:
     paths:
-      - 'help'
       - 'docusaurus/**'
       - 'docusaurus-static/**'
       - 'js-api/**'
@@ -76,7 +74,6 @@ jobs:
         with:
           sparse-checkout: |
             docusaurus
-            help
             packages
             libraries
             js-api
@@ -88,8 +85,9 @@ jobs:
             package.json
             turbo.json
             .npmrc
-      - name: Checkout help submodule
-        run: git submodule update --init --depth 1 help
+      # help is a sibling of public in the datagrok umbrella: same layout here
+      - name: Checkout help next to public
+        run: git clone --depth 1 https://github.com/datagrok-ai/help.git ../help
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -117,7 +115,8 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           pnpm turbo run build --filter='datagrok-api^...'
-      - run: docusaurus/node_modules/.bin/markdownlint-cli2 "help/**/*.md" "help/**/*.mdx" > help/_lint-check-report.md 2>&1
+      - run: '"$GITHUB_WORKSPACE/docusaurus/node_modules/.bin/markdownlint-cli2" "**/*.md" "**/*.mdx" > "$GITHUB_WORKSPACE/_lint-check-report.md" 2>&1'
+        working-directory: ../help
         continue-on-error: true
         if: inputs.force == 'no' && needs.lint.outputs.result != 'success'
       - name: Build Docusaurus website
@@ -129,8 +128,8 @@ jobs:
             sed -i "s/Anchors: 'throw'/Anchors: 'warn'/g" docusaurus.config.js
           fi
           chmod +x ./generate_docs_py.sh
-          npm run build > ../help/_docusaurus_build.txt 2>&1
-          cat ../help/_docusaurus_build.txt
+          npm run build > ../_docusaurus_build.txt 2>&1
+          cat ../_docusaurus_build.txt
         working-directory: ./docusaurus
         continue-on-error: true
       - uses: actions/upload-artifact@v4
@@ -138,16 +137,16 @@ jobs:
         if: always() && steps.build.outcome != 'skipped'
         with:
           name: _docusaurus_build_output
-          path: help/_docusaurus_build.txt
+          path: _docusaurus_build.txt
           retention-days: 14
       - name: Set summary
         id: build_summary
         run: |
           echo "## Summary" > "${GITHUB_STEP_SUMMARY}"
 
-          bash docusaurus/broken_links.sh help/_docusaurus_build.txt help/_broken_links.csv
-          if [ -f help/_broken_links.csv ]; then
-            line_count=$(wc -l < help/_broken_links.csv)
+          bash docusaurus/broken_links.sh _docusaurus_build.txt _broken_links.csv
+          if [ -f _broken_links.csv ]; then
+            line_count=$(wc -l < _broken_links.csv)
           else
             line_count=0
           fi
@@ -161,15 +160,15 @@ jobs:
               if [ "$line_count" -gt 1 ]; then
                 echo "## Broken links" >> ${GITHUB_STEP_SUMMARY}
                 # Add CSV as Markdown table
-                echo "|$(head -n 1 help/_broken_links.csv | sed 's/,/|/g')|" | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
-                echo "|$(head -n 1 help/_broken_links.csv | sed 's/[^,]/-/g' | sed 's/,/|/g')|" >> ${GITHUB_STEP_SUMMARY}
-                tail -n +2 help/_broken_links.csv | sed 's/,/|/g' | sed 's/^/|/' | sed 's/$/|/' | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
+                echo "|$(head -n 1 _broken_links.csv | sed 's/,/|/g')|" | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
+                echo "|$(head -n 1 _broken_links.csv | sed 's/[^,]/-/g' | sed 's/,/|/g')|" >> ${GITHUB_STEP_SUMMARY}
+                tail -n +2 _broken_links.csv | sed 's/,/|/g' | sed 's/^/|/' | sed 's/$/|/' | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
                 echo "broken_links=true" >> $GITHUB_OUTPUT
               else
                 echo "## Build output" >> ${GITHUB_STEP_SUMMARY}
-                cat help/_docusaurus_build.txt >> "${GITHUB_STEP_SUMMARY}"
+                cat _docusaurus_build.txt >> "${GITHUB_STEP_SUMMARY}"
                 echo ":no_entry_sign: Docusaurus build errors:"
-                cat help/_docusaurus_build.txt
+                cat _docusaurus_build.txt
               fi
 
               if [[ "${{ steps.build.outcome }}" == "failure" ]]; then
@@ -188,7 +187,7 @@ jobs:
         if: always() && steps.build_summary.outputs.broken_links == 'true'
         with:
           name: broken_links.csv
-          path: help/_broken_links.csv
+          path: _broken_links.csv
           retention-days: 14
       - uses: actions/upload-artifact@v4
         name: Save docusaurus build

@@ -43,7 +43,7 @@ function readAll(d) {
 }
 const testsText = readAll(path.resolve(root, '../packages/ApiTests/src'));
 const samplesText = readAll(path.resolve(root, '../packages/ApiSamples/scripts'));
-const helpText = readAll(path.resolve(root, '../help/develop'));
+const helpText = readAll(path.resolve(root, '../../help/develop'));  // help is next to public in the datagrok umbrella
 
 const members = [];
 const fileStats = {};

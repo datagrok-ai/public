@@ -24,5 +24,5 @@ Fix tests
 
 ### Features
 
-* [PhylocanvasGL](../../help/visualize/viewers/phylocanvas-gl) viewer
+* [PhylocanvasGL](../../../help/visualize/viewers/phylocanvas-gl) viewer
 * `Newick` cell renderer (trees in grid)

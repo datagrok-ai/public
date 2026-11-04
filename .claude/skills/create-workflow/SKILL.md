@@ -113,7 +113,7 @@ Setup (install + dayjs/timezone imports) is covered in `examples.mdx#dependencie
 ### Phase 4: Review
 
 Validate the configuration against the
-[constraints and review checklist](../../../help/compute/workflows/configuration.mdx#constraints-and-review-checklist).
+[constraints and review checklist](../../../../help/compute/workflows/configuration.mdx#constraints-and-review-checklist).
 Spawn a sub-agent for an independent pass if the configuration is non-trivial. Fix
 anything that fails before proceeding.
 
@@ -141,5 +141,5 @@ anything that fails before proceeding.
 - **Use the `/ui` skill** only in two cases: (1) an action needs to show custom inputs
   inline (e.g. a confirmation form with extra fields), or (2) a script's output viewer
   needs tweaks applied through its `DG.Viewer` JS API inside a
-  [`viewersHook`](../../../help/compute/workflows/configuration.mdx#viewershook-script-node).
+  [`viewersHook`](../../../../help/compute/workflows/configuration.mdx#viewershook-script-node).
   Workflow scaffolding, links, validators, and meta-driven UI changes do not need `/ui`.

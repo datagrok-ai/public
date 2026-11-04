@@ -49,7 +49,7 @@ For multiple-sequence alignment, Datagrok uses the “kalign” that relies on t
 at the position of the  MSA result. User is also able to specify custom gap open, gap extend and terminal gap penalties for alignment.
 
 ![MSA and base composition analysis](
-../../help/uploads/macromolecules/macromolecules-msa-and-composition-analysis-800.gif "MSA analysis")
+../../../help/uploads/macromolecules/macromolecules-msa-and-composition-analysis-800.gif "MSA analysis")
 
 See:
 
