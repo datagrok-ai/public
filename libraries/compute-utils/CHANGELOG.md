@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Export: Fixed a failing Excel report rejecting with "Format is not supported" instead of its own error
+* Removed the unused root exports `getFuncCallDefaultFilename`, `delay`, `formatNumber`, `scalarsToSheet` and `getInputsHidden`
 * Export: Float inputs without a format export with the input form's default (`G7`), whether or not a form for the function was shown
 * RTD: Requires platform 1.28.0 or later: annotation validators, evaluated choices, computed defaults and GrokScript expressions no longer check for the platform API
 * History utils: `saveRun` takes a run name, description and tags (saved as `friendlyName`; a description or tags left out stay as they are) and a target space with the runs it replaces; added `listMyRuns`, `listSpace`, `listSpaceRuns`, `findNameConflict`, `isNamedSpaceItem`, `isRunOf`, `linkRun`, `unlinkRun`, `canEditRunDetails`, `getRunMetadata` and `getRunName`; a save with options fires `RUN_SAVED_EVENT` on the platform's event bus

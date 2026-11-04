@@ -91,7 +91,7 @@ export const getFormAsTab = (func: DG.Func): boolean => {
   return func.options['formAsTab'] === 'true';
 };
 
-export const getInputsHidden = (func: DG.Func): boolean => {
+const getInputsHidden = (func: DG.Func): boolean => {
   return func.options['inputsHidden'] === 'true';
 };
 
@@ -201,10 +201,6 @@ export const graphicsDataUrl = (value: string) => isSvgGraphics(value) ?
   `data:image/svg+xml;charset=utf-8,${encodeURIComponent(value)}` :
   `data:image/png;base64,${value}`;
 
-export const getFuncCallDefaultFilename = (funcCall: DG.FuncCall) => {
-  return `${funcCall.func.nqName} - ${getStartedOrNull(funcCall) ?? 'Not completed'}.xlsx`;
-};
-
 export const getStarted = (call: DG.FuncCall) => {
   try {
     return call.started.toDate()
@@ -252,8 +248,4 @@ export const getRunTitle = (call: DG.FuncCall) => {
     return name;
   const funcName = call.func?.friendlyName ?? call.func?.name ?? 'Run';
   return `${funcName} — ${getStarted(call)}`;
-};
-
-export const delay = (delayInms: number) => {
-  return new Promise((resolve) => setTimeout(resolve, delayInms));
 };
