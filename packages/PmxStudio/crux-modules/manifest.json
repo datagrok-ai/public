@@ -31,14 +31,14 @@
     "trendtests",
     "vcg"
    ],
-   "functions": 83,
+   "functions": 85,
    "abi": 1,
    "fns": "nonclinical/fns.json",
    "thread": "worker",
    "compute": "nonclinical/compute.json",
    "hash": {
-    "js": "e9888ea03e948fd6",
-    "wasm": "c8b5956bdbd987d6"
+    "js": "d624e1652543c963",
+    "wasm": "7e12ac4811ffbb58"
    }
   },
   "stats": {
@@ -221,6 +221,7 @@
   "stats.tox_terms": "nonclinical",
   "stats.ttest": "stats",
   "stats.tukey_hsd": "stats",
+  "stats.tumor_allocate": "nonclinical",
   "stats.tumor_body_weight": "nonclinical",
   "stats.tumor_body_weight_simulate": "nonclinical",
   "stats.tumor_growth_curves": "nonclinical",
@@ -228,6 +229,7 @@
   "stats.tumor_growth_rates": "nonclinical",
   "stats.tumor_growth_synergy": "nonclinical",
   "stats.tumor_measurement_error": "nonclinical",
+  "stats.tumor_monitor": "nonclinical",
   "stats.tumor_plan_checks": "nonclinical",
   "stats.tumor_study_design": "nonclinical",
   "stats.tumor_study_simulate": "nonclinical",
