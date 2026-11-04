@@ -12,6 +12,7 @@
 * Added `grok s o logs request <logId>`: gathers what the requests of one `--log` command logged
 * `grok s status`: server build, uptime, DB pool and HTTP connections from `/info/server`; for admins also the requests in flight (`?extended=true`)
 * `grok api`: Fixed double plurals in table accessors (`categorieses` → `categories`)
+* Build: Fixed `package-api.ts` of a decorator package lagging one build behind `package.g.ts`
 * Upgraded Puppeteer to v25, which drops the vulnerable `extract-zip` and `basic-ftp` transitive dependencies; Node.js 22.12+ is now required
 * `grok add app --domain`, `grok api --ui`: scaffold against `@datagrok-libraries/ems`
 * GROK-20884: Added `grok s o errors get <signature|problem>`: each occurrence of an error with its time, user, function and session, so an error incident leads to its calls
