@@ -12,6 +12,14 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:GetAggregatedClicks', { date });
   }
 
+  export async function aiUsage(date: string , groups: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:AiUsage', { date, groups });
+  }
+
+  export async function aiChatContent(chatId: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:AiChatContent', { chatId });
+  }
+
   export async function allTestRuns(benchmarks: boolean ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:AllTestRuns', { benchmarks });
   }
@@ -171,7 +179,6 @@ export namespace queries {
   export async function eventByErrorMessageAndFriendlyName(errorMessage: string , friendlyName: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:EventByErrorMessageAndFriendlyName', { errorMessage, friendlyName });
   }
-
 
   export async function functionErrors(date: string , users: any ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:FunctionErrors', { date, users });
@@ -392,7 +399,6 @@ export namespace queries {
   export async function userReportsSingle(reportNumber: number ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:UserReportsSingle', { reportNumber });
   }
-
 
   export async function reportDataMigration(report_id: string , id: string , screenshot: string | null, details: string | null, client_settings: string | null, server_settings: string | null, errors: string | null, client_log: string | null, server_log: string | null, console: string | null, queries_log: string | null, containers_log: string | null, images_log: string | null, services: string | null): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:ReportDataMigration', { report_id, id, screenshot, details, client_settings, server_settings, errors, client_log, server_log, console, queries_log, containers_log, images_log, services });
