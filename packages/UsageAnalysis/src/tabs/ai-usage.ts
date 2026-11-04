@@ -127,17 +127,16 @@ export class AiUsageView extends UaView {
   private showCards(t: DG.DataFrame): void {
     const stats = (name: AiColumn) => DG.Stats.fromColumn(col(t, name), t.filter);
     const n = (x: number) => DG.format(x, 'compact');
-    const used = stats('tokens').valueCount;
-    const priced = stats('cost').valueCount;
+    const tokens = stats('tokens');
+    const cost = stats('cost');
     const cards: {[label: string]: string[]} = {
       'Requests': [n(t.filter.trueCount)],
       'Users': [n(stats('uid').uniqueCount)],
       'Input tokens': [n(stats('input_tokens').sum)],
       'Output tokens': [n(stats('output_tokens').sum)],
-      'Total tokens': [n(stats('tokens').sum),
-        `${n(stats('cache_read_tokens').sum + stats('cache_write_tokens').sum)} cache`],
-      'Estimated cost': priced === 0 ? ['—', 'no prices'] :
-        [`$${n(stats('cost').sum)}`, priced < used ? `${Math.floor(priced * 100 / used)}% priced` : ''],
+      'Total tokens': [n(tokens.sum), `${n(stats('cache_read_tokens').sum + stats('cache_write_tokens').sum)} cache`],
+      'Estimated cost': cost.valueCount === 0 ? ['—', 'no prices'] : [`$${n(cost.sum)}`,
+        cost.valueCount < tokens.valueCount ? `${Math.floor(cost.valueCount * 100 / tokens.valueCount)}% priced` : ''],
     };
     ui.empty(this.cards);
     for (const [label, lines] of Object.entries(cards)) {
@@ -147,21 +146,27 @@ export class AiUsageView extends UaView {
   }
 
   private groupsFrame(t: DG.DataFrame): DG.DataFrame {
+    const lists = col(t, 'groups').categories.map((list) => list === '' ? [] : list.split(GROUP_SEPARATOR));
+    const listOf = col(t, 'groups').getRawData();
     const rows: number[] = [];
     const names: string[] = [];
-    const column = col(t, 'groups');
     for (let i = 0; i < t.rowCount; i++) {
-      for (const name of column.isNone(i) ? [] : (column.get(i) as string).split(GROUP_SEPARATOR)) {
+      for (const name of lists[listOf[i]]) {
         rows.push(i);
         names.push(name);
       }
     }
-    const groups = DG.DataFrame.fromColumns([DG.Column.fromStrings('group', names),
-      ...(['cost', 'tokens'] as const).map((name) => {
-        const values = col(t, name);
-        return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, rows.map((i) => values.get(i)));
-      })]);
-    this.frameSubs.push(t.onFilterChanged.subscribe(() => groups.filter.init((j) => t.filter.get(rows[j]))));
+    const values = (name: 'cost' | 'tokens') => {
+      const raw = col(t, name).getRawData();
+      const nulls = raw instanceof Int32Array ? DG.INT_NULL : DG.FLOAT_NULL;
+      const out = Float64Array.from(rows, (i) => raw[i] === nulls ? DG.FLOAT_NULL : raw[i]);
+      return DG.Column.fromFloat64Array(name, out);
+    };
+    const groups = DG.DataFrame.fromColumns([DG.Column.fromStrings('group', names), values('cost'), values('tokens')]);
+    this.frameSubs.push(t.onFilterChanged.subscribe(() => {
+      const bits = t.filter.getBuffer();
+      groups.filter.init((j) => (bits[rows[j] >>> 5] & (1 << (rows[j] & 31))) !== 0);
+    }));
     return groups;
   }
 
@@ -217,8 +222,13 @@ export class AiUsageView extends UaView {
         return at < 0 ? [calls[k], ''] : [calls[k].slice(0, at), calls[k].slice(at + 2)];
       }, ['Tool', 'Details']);
     });
-    const chat = col(t, 'chat_id').toList().flatMap((id, j) => id === chatId && t.filter.get(j) ? [j] : [])
-      .reverse();
+    const chatIndex = col(t, 'chat_id').categories.indexOf(chatId);
+    const chatOf = col(t, 'chat_id').getRawData();
+    const chat: number[] = [];
+    for (let j = t.rowCount - 1; j >= 0; j--) {
+      if (chatOf[j] === chatIndex && t.filter.get(j))
+        chat.push(j);
+    }
     if (chat.length > 1) {
       pane(`Chat (${chat.length} requests)`, (turnText) => ui.table(chat, (j) => {
         const asked = turnText(j, 'prompt');
