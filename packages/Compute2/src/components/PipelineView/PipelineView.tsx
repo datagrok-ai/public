@@ -6,10 +6,12 @@ import {
   DockManager, IconFA, ifOverlapping, MarkDown, RibbonPanel, tooltip,
 } from '@datagrok-libraries/webcomponents-vue';
 import {RunBrowser} from '../RunStorage/RunBrowser';
+import {KeptAlive} from '../KeptAlive/KeptAlive';
 import {STICKY_BAR_BACKGROUND} from '../../utils';
 import {hasAddControls, PipelineWithAdd} from '../TreeWizard/tree-utils';
 import {isFuncCallState, isStaticPipelineState, PipelineState, ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useHelp} from '../../composables/use-help';
+import {useHistoryPanel} from '../../composables/use-history-panel';
 import {hasContextHelp} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {openSourceRun, sourceRunLabel} from '../TreeWizard/source-run';
 
@@ -61,12 +63,11 @@ export const PipelineView = Vue.defineComponent({
       changeHelpFunc,
     } = useHelp();
 
-    const historyHidden = Vue.ref(true);
-    const historyReadonly = Vue.ref(false);
+    const {historyHidden, historyReadonly} = useHistoryPanel(() => props.funcCall?.func.nqName);
     const disableHistory = Vue.ref(false);
     const functionsHidden = Vue.ref(true);
 
-    const historyRef = Vue.shallowRef<InstanceType<typeof RunBrowser> | undefined>(undefined);
+    const historyRef = Vue.shallowRef<InstanceType<typeof KeptAlive> | undefined>(undefined);
     const helpRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
     const functionsRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
 
@@ -283,17 +284,22 @@ export const PipelineView = Vue.defineComponent({
             </div>
           }
           { (!historyHidden.value && !disableHistory.value && currentCall.value) &&
-            <RunBrowser
-              model={currentCall.value.func}
-              openLabel={historyReadonly.value ? 'Open read-only' : 'Open'}
-              onOpen={(chosenCall: DG.FuncCall) => emit('update:funcCall', chosenCall, historyReadonly.value)}
+            <KeptAlive
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.5}
               dock-spawn-title={historyReadonly.value ? 'Runs (read-only load)' : 'Runs'}
               dock-spawn-panel-icon='history'
               ref={historyRef}
               class='h-full'
-            />
+            >
+              <RunBrowser
+                key={currentCall.value.func.nqName}
+                model={currentCall.value.func}
+                openLabel={historyReadonly.value ? 'Open read-only' : 'Open'}
+                onOpen={(chosenCall: DG.FuncCall) => emit('update:funcCall', chosenCall, historyReadonly.value)}
+                class='h-full'
+              />
+            </KeptAlive>
           }
           { !helpHidden.value ?
             <div

@@ -16,6 +16,7 @@ import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {tryParseJson} from '@datagrok-libraries/utils/src/string-utils';
 import {RunBrowser} from '../RunStorage/RunBrowser';
+import {KeptAlive} from '../KeptAlive/KeptAlive';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {buildDiffGrokFromFunc} from '@datagrok-libraries/compute-utils/function-views/src/fitting/diff-studio/diff-grok-meta';
@@ -29,6 +30,7 @@ import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-
 import {useViewersHook} from '../../composables/use-viewers-hook';
 import {take} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
+import {useHistoryPanel} from '../../composables/use-history-panel';
 import {_package} from '../../package-instance';
 import {applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
 import {saveCallToProject, DfExportEntry} from '../../project-export';
@@ -175,8 +177,8 @@ export const RichFunctionView = Vue.defineComponent({
       shownToggles.value = shown;
       sessionStorage.setItem(shownTogglesKey(), JSON.stringify([...shown]));
     };
-    const historyHidden = Vue.ref(true);
-    const historyReadonly = Vue.ref(false);
+    const historyFunc = () => props.history?.func ?? currentCall.value.func;
+    const {historyHidden, historyReadonly} = useHistoryPanel(() => historyFunc().nqName);
     const toggleHistory = (readonly: boolean) => {
       if (!historyHidden.value && historyReadonly.value === readonly)
         historyHidden.value = true;
@@ -186,9 +188,8 @@ export const RichFunctionView = Vue.defineComponent({
       }
     };
 
-    const historyRef = Vue.shallowRef<InstanceType<typeof RunBrowser> | undefined>(undefined);
+    const historyRef = Vue.shallowRef<InstanceType<typeof KeptAlive> | undefined>(undefined);
 
-    const historyFunc = () => props.history?.func ?? currentCall.value.func;
     const onHistoryRunChosen = (chosenCall: DG.FuncCall, readonly: boolean) => isWorkflowHistory.value ?
       emit('historyRunChosen', chosenCall) :
       emit('stepRunChosen', chosenCall, readonly);
@@ -611,19 +612,24 @@ export const RichFunctionView = Vue.defineComponent({
           ref={dockSpawnRef}
         >
           { !historyHidden.value && props.history &&
-            <RunBrowser
+            <KeptAlive
               key="__HISTORY__"
-              model={historyFunc()}
-              stepHistory={historyMode.value === 'step'}
-              openLabel={historyReadonly.value ? 'Open read-only' : 'Open'}
-              onOpen={(chosenCall: DG.FuncCall) => onHistoryRunChosen(chosenCall, historyReadonly.value)}
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.3}
               dock-spawn-title={historyReadonly.value ? 'Runs (read-only load)' : 'Runs'}
               dock-spawn-panel-icon='history'
               ref={historyRef}
               class='h-full'
-            /> }
+            >
+              <RunBrowser
+                key={historyFunc().nqName}
+                model={historyFunc()}
+                stepHistory={historyMode.value === 'step'}
+                openLabel={historyReadonly.value ? 'Open read-only' : 'Open'}
+                onOpen={(chosenCall: DG.FuncCall) => onHistoryRunChosen(chosenCall, historyReadonly.value)}
+                class='h-full'
+              />
+            </KeptAlive> }
           { !formHidden.value &&
               <div
                 key="__FORM__"
