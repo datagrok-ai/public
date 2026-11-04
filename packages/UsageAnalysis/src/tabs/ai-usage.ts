@@ -8,9 +8,11 @@ import {UaToolbox} from '../ua-toolbox';
 import {UaFilter} from '../filter';
 import {queries} from '../package-api';
 import '../../css/usage_analysis.css';
+import {Subscription} from 'rxjs';
+import {debounceTime} from 'rxjs/operators';
 
-const CARDS = ['Requests', 'Users', 'Input tokens', 'Output tokens', 'Total tokens', 'Estimated cost'];
-const COLUMNS = ['time', 'period', 'user', 'groups', 'feature', 'model', 'status', 'chat_id', 'turn_id', 'input_tokens',
+const CARDS = ['Requests', 'Users', 'Tokens', 'Estimated cost'];
+const COLUMNS = ['time', 'period', 'user', 'uid', 'groups', 'feature', 'model', 'status', 'chat_id', 'turn_id', 'input_tokens',
   'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'total_tokens', 'cost_usd', 'duration_ms'] as const;
 type AiColumn = typeof COLUMNS[number];
 const GRID_COLUMNS: AiColumn[] = ['time', 'user', 'feature', 'model', 'status', 'total_tokens', 'cost_usd'];
@@ -50,23 +52,38 @@ export class AiUsageView extends UaView {
 
     let df: Promise<DG.DataFrame>;
     let groups: Promise<DG.DataFrame>;
+    let measure: 'cost_usd' | 'total_tokens' = 'cost_usd';
+    let subs: Subscription[] = [];
     this.uaToolbox.filterStream.subscribe((filter: UaFilter) => {
-      df = queries.aiUsage(filter.date ?? 'this week', filter.groups).then((t) => {
+      for (const sub of subs)
+        sub.unsubscribe();
+      subs = [];
+      const load = df = queries.aiUsage(filter.date ?? 'this week', filter.groups).then((t) => {
         for (const name of COLUMNS)
           col(t, name);
         col(t, 'groups').setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ', ');
         col(t, 'time').meta.format = 'yyyy-MM-dd HH:mm';
         col(t, 'cost_usd').meta.format = '0.0000';
-        t.onFilterChanged.subscribe(() => showCards(Promise.resolve(t)));
-        t.onCurrentRowChanged.subscribe(() => AiUsageView.showRequest(t));
+        if (df === load) {
+          // An unpriced request would read as $0 in a cost chart, so cost is the default only when all are priced.
+          measure = col(t, 'cost_usd').stats.missingValueCount === 0 && t.rowCount > 0 ? 'cost_usd' : 'total_tokens';
+          subs.push(t.onFilterChanged.subscribe(() => showCards(Promise.resolve(t))),
+            t.onCurrentRowChanged.pipe(debounceTime(200)).subscribe(() => AiUsageView.showRequest(t)));
+        }
         return t;
       });
-      groups = df.then((t) => AiUsageView.groupsFrame(t));
+      groups = df.then((t) => AiUsageView.groupsFrame(t, subs));
       showCards(df);
-      df.then(() => {
+      df.then((t) => {
+        if (df !== load)
+          return;
         failure.textContent = '';
-        ui.setDisplay(body, true);
+        ui.setDisplay(body, t.rowCount > 0);
+        if (t.rowCount === 0)
+          failure.append(ui.info('Try a longer period or other groups in the toolbox.', 'No AI requests in this period'));
       }).catch((e) => {
+        if (df !== load)
+          return;
         ui.setDisplay(body, false);
         failure.textContent = '';
         failure.append(ui.info([ui.divText('Check the date and groups in the toolbox, then apply them again.'),
@@ -79,21 +96,22 @@ export class AiUsageView extends UaView {
 
     const perDay = viewer('Usage over time', (t) => DG.Viewer.lineChart(t, {
       xColumnName: 'period',
-      yColumnNames: [AiUsageView.measure(t)],
+      yColumnNames: [measure],
       yAggrTypes: ['sum'],
       splitColumnNames: ['model'],
       chartTypes: ['Stacked Bar Chart'],
       legendPosition: 'Top',
       title: 'Usage over time',
     }));
-    const byUser = viewer('Usage by user', (t) => AiUsageView.barChart(t, 'user', 'Usage by user', AiUsageView.measure(t), {
+    const byUser = viewer('Usage by user', (t) => AiUsageView.barChart(t, 'user', 'Usage by user', measure, {
       onClick: DG.RowGroupAction.Filter,
       rowSource: DG.RowSet.All,
     }));
-    const byGroup = viewer('Usage by group', (t) => AiUsageView.barChart(t, 'group', 'Usage by group', AiUsageView.measure(t)),
+    const byGroup = viewer('Usage by group', (t) => AiUsageView.barChart(t, 'group', 'Usage by group, a user counts in each of their groups', measure),
       () => groups);
     const filters = viewer('Filters', (t) => DG.Viewer.filters(t,
-      {columnNames: ['status', 'feature', 'model', 'groups', 'user']}));
+      {columnNames: ['user', 'groups', 'model', 'feature', 'status']}));
+    let resize: Subscription | undefined;
     const requests = viewer('Requests', (t) => {
       const grid = DG.Viewer.grid(t, {
         showRowHeader: false,
@@ -103,13 +121,10 @@ export class AiUsageView extends UaView {
         showCurrentCellOutline: false,
       });
       grid.columns.setOrder(GRID_COLUMNS);
-      for (const name of t.columns.names()) {
-        const column = grid.col(name);
-        if (column)
-          column.visible = (GRID_COLUMNS as string[]).includes(name);
-      }
+      grid.columns.setVisible(GRID_COLUMNS);
       const minimum = Object.values(GRID_WIDTHS).reduce((s, w) => s + w, 0);
-      ui.onSizeChanged(grid.root).subscribe(() => {
+      resize?.unsubscribe();
+      resize = ui.onSizeChanged(grid.root).subscribe(() => {
         const scale = Math.max(1, (grid.root.clientWidth - 20) / minimum);
         for (const [name, width] of Object.entries(GRID_WIDTHS)) {
           const column = grid.col(name);
@@ -131,12 +146,6 @@ export class AiUsageView extends UaView {
       ui.splitH([ui.box(filters.root, {style: {maxWidth: '190px'}}), requests.root]),
     ]));
     this.root.append(failure, body);
-  }
-
-  /** Cost when most requests are priced; total tokens otherwise, as for models without a known price. */
-  static measure(t: DG.DataFrame): 'cost_usd' | 'total_tokens' {
-    const cost = t.col('cost_usd');
-    return cost != null && cost.stats.valueCount > t.rowCount / 2 ? 'cost_usd' : 'total_tokens';
   }
 
   static barChart(t: DG.DataFrame, splitColumnName: string, title: string, valueColumnName: string,
@@ -165,15 +174,15 @@ export class AiUsageView extends UaView {
     const n = (x: number) => DG.format(x, 'compact');
     return {
       'Requests': [n(rows.length)],
-      'Users': [n(new Set(rows.map((i) => col(t, 'user').get(i))).size)],
-      'Input tokens': [n(sum('input_tokens'))],
-      'Output tokens': [n(sum('output_tokens'))],
-      'Total tokens': [n(sum('total_tokens'))],
-      'Estimated cost': [`$${n(sum('cost_usd'))}`, priced < rows.length ? `${Math.round(priced / rows.length * 100)}% priced` : ''],
+      'Users': [n(new Set(rows.map((i) => col(t, 'uid').get(i))).size)],
+      'Tokens': [n(sum('total_tokens')), `${n(sum('input_tokens'))} in, ${n(sum('output_tokens'))} out, ` +
+        `${n(sum('cache_read_tokens') + sum('cache_write_tokens'))} cache`],
+      'Estimated cost': priced === 0 ? ['—', 'no prices'] :
+        [`$${n(sum('cost_usd'))}`, priced < rows.length ? `${Math.floor(priced / rows.length * 100)}% priced` : ''],
     };
   }
 
-  static groupsFrame(t: DG.DataFrame): DG.DataFrame {
+  static groupsFrame(t: DG.DataFrame, subs: Subscription[]): DG.DataFrame {
     const rows: number[] = [];
     const names: string[] = [];
     const column = col(t, 'groups');
@@ -188,7 +197,7 @@ export class AiUsageView extends UaView {
       DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'cost_usd', rows.map((i) => col(t, 'cost_usd').get(i))),
       DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'total_tokens', rows.map((i) => col(t, 'total_tokens').get(i))),
     ]);
-    t.onFilterChanged.subscribe(() => groups.filter.init((j) => t.filter.get(rows[j])));
+    subs.push(t.onFilterChanged.subscribe(() => groups.filter.init((j) => t.filter.get(rows[j]))));
     return groups;
   }
 
@@ -199,7 +208,8 @@ export class AiUsageView extends UaView {
     const s = (name: AiColumn, row: number = i) => col(t, name).getString(row);
     const acc = ui.accordion();
     acc.addPane('Details', () => ui.tableFromMap({'User': s('user'), 'Groups': s('groups'), 'Feature': s('feature'),
-      'Model': s('model'), 'Status': s('status'), 'Cost, $': s('cost_usd'), 'Duration, ms': s('duration_ms'),
+      'Model': s('model'), 'Status': s('status'), 'Cost, $': s('cost_usd'),
+      'Duration, s': col(t, 'duration_ms').isNone(i) ? '' : (col(t, 'duration_ms').get(i) / 1000).toFixed(1),
       'Chat': s('chat_id')}), true);
     acc.addPane('Tokens', () => ui.tableFromMap({'Input': s('input_tokens'), 'Output': s('output_tokens'),
       'Cache read': s('cache_read_tokens'), 'Cache write': s('cache_write_tokens'), 'Total': s('total_tokens')}), true);
@@ -228,8 +238,11 @@ export class AiUsageView extends UaView {
       acc.addPane('Prompt', () => pane((texts) => text(current(texts)?.prompt)), true);
       acc.addPane('Answer', () => pane((texts) => text(current(texts)?.response)), true);
       acc.addPane('Tool calls', () => pane((texts) => {
-        const calls = current(texts)?.toolCalls?.split('\n') ?? [];
-        return calls.length === 0 ? text(null) : ui.table(calls, (call) => {
+        const turn = current(texts);
+        const calls = turn?.toolCalls?.split('\n').filter((call) => call !== '') ?? [];
+        if (calls.length === 0)
+          return turn ? ui.divText('No tool calls', 'ua-ai-text-missing') : text(null);
+        return ui.table(calls, (call) => {
           const at = call.indexOf(': ');
           return at < 0 ? [call, ''] : [call.slice(0, at), call.slice(at + 2)];
         }, ['Tool', 'Details']);

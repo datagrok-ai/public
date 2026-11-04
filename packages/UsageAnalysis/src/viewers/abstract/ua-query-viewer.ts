@@ -19,6 +19,7 @@ export abstract class UaQueryViewer extends UaViewer {
   viewer: DG.Viewer | undefined;
   activated = false;
   errorDiv: HTMLElement | null = null;
+  private loading?: Promise<DG.DataFrame>;
 
   protected constructor(name: string, options: {queryName?: string, createViewer: (t: DG.DataFrame) => DG.Viewer,
     setStyle?: Function | null, staticFilter?: Object | null, filter?: UaFilter | null,
@@ -57,7 +58,11 @@ export abstract class UaQueryViewer extends UaViewer {
           }
           return dataFrame;
         });
-      load.then(this.postQuery.bind(this)).then(resolve).catch((e: any) => {
+      this.loading = load;
+      // A slower earlier query must not replace the result of a newer one.
+      load.then((t) => this.loading === load ? resolve(this.postQuery(t)) : undefined).catch((e: any) => {
+        if (this.loading !== load)
+          return;
         this.loader.remove();
         this.errorDiv = ui.divText(`${this.name}: ${e?.message ?? e}`, 'd4-viewer-error');
         this.root.appendChild(this.errorDiv);

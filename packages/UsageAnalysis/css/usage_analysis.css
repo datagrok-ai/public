@@ -520,7 +520,12 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
 .ua-cards.ua-ai-cards .ua-card {
   flex: 1 1 0;
   min-width: 0;
-  max-width: 200px;
+  max-width: 260px;
   width: auto;
   margin: 8px 6px;
+}
+
+.ua-ai-cards .ua-card > .grok-wait > .ui-div > div + div {
+  white-space: nowrap;
+  font-size: 11px;
 }

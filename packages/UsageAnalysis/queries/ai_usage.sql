@@ -16,17 +16,17 @@ turn_type as (
 ),
 pid as (
   select
-    (array_agg(p.id) filter (where p.name = 'feature'))[1] as feature,
-    (array_agg(p.id) filter (where p.name = 'model'))[1] as model,
-    (array_agg(p.id) filter (where p.name = 'status'))[1] as status,
-    (array_agg(p.id) filter (where p.name = 'chatId'))[1] as chat_id,
-    (array_agg(p.id) filter (where p.name = 'turnId'))[1] as turn_id,
-    (array_agg(p.id) filter (where p.name = 'inputCount'))[1] as input_tokens,
-    (array_agg(p.id) filter (where p.name = 'outputCount'))[1] as output_tokens,
-    (array_agg(p.id) filter (where p.name = 'cacheReadCount'))[1] as cache_read_tokens,
-    (array_agg(p.id) filter (where p.name = 'cacheCreationCount'))[1] as cache_write_tokens,
-    (array_agg(p.id) filter (where p.name = 'costUsd'))[1] as cost_usd,
-    (array_agg(p.id) filter (where p.name = 'durationMs'))[1] as duration_ms
+    array_agg(p.id) filter (where p.name = 'feature') as feature,
+    array_agg(p.id) filter (where p.name = 'model') as model,
+    array_agg(p.id) filter (where p.name = 'status') as status,
+    array_agg(p.id) filter (where p.name = 'chatId') as chat_id,
+    array_agg(p.id) filter (where p.name = 'turnId') as turn_id,
+    array_agg(p.id) filter (where p.name = 'inputCount') as input_tokens,
+    array_agg(p.id) filter (where p.name = 'outputCount') as output_tokens,
+    array_agg(p.id) filter (where p.name = 'cacheReadCount') as cache_read_tokens,
+    array_agg(p.id) filter (where p.name = 'cacheCreationCount') as cache_write_tokens,
+    array_agg(p.id) filter (where p.name = 'costUsd') as cost_usd,
+    array_agg(p.id) filter (where p.name = 'durationMs') as duration_ms
   from event_parameters p
   where p.event_type_id in (select id from turn_type)
 ),
@@ -45,17 +45,17 @@ turns as (
   cross join pid
   cross join lateral (
     select
-      max(v.value) filter (where v.parameter_id = pid.feature) as feature,
-      max(v.value) filter (where v.parameter_id = pid.model) as model,
-      max(v.value) filter (where v.parameter_id = pid.status) as status,
-      max(v.value) filter (where v.parameter_id = pid.chat_id) as chat_id,
-      max(v.value) filter (where v.parameter_id = pid.turn_id) as turn_id,
-      max(v.value) filter (where v.parameter_id = pid.input_tokens)::int as input_tokens,
-      max(v.value) filter (where v.parameter_id = pid.output_tokens)::int as output_tokens,
-      max(v.value) filter (where v.parameter_id = pid.cache_read_tokens)::int as cache_read_tokens,
-      max(v.value) filter (where v.parameter_id = pid.cache_write_tokens)::int as cache_write_tokens,
-      max(v.value) filter (where v.parameter_id = pid.cost_usd)::numeric as cost_usd,
-      max(v.value) filter (where v.parameter_id = pid.duration_ms)::int as duration_ms
+      max(v.value) filter (where v.parameter_id = any(pid.feature)) as feature,
+      max(v.value) filter (where v.parameter_id = any(pid.model)) as model,
+      max(v.value) filter (where v.parameter_id = any(pid.status)) as status,
+      max(v.value) filter (where v.parameter_id = any(pid.chat_id)) as chat_id,
+      max(v.value) filter (where v.parameter_id = any(pid.turn_id)) as turn_id,
+      max(v.value) filter (where v.parameter_id = any(pid.input_tokens))::int as input_tokens,
+      max(v.value) filter (where v.parameter_id = any(pid.output_tokens))::int as output_tokens,
+      max(v.value) filter (where v.parameter_id = any(pid.cache_read_tokens))::int as cache_read_tokens,
+      max(v.value) filter (where v.parameter_id = any(pid.cache_write_tokens))::int as cache_write_tokens,
+      max(v.value) filter (where v.parameter_id = any(pid.cost_usd))::numeric as cost_usd,
+      max(v.value) filter (where v.parameter_id = any(pid.duration_ms))::int as duration_ms
     from event_parameter_values v
     where v.event_id = e.id
   ) x
@@ -76,10 +76,12 @@ user_groups as (
 )
 select t.event_time as time,
   date_trunc(case when max(t.event_time) over () - min(t.event_time) over () < interval '3 days' then 'hour' else 'day' end,
-    t.event_time) as period, t.user_name as "user", ug.groups,
+    t.event_time) as period, t.user_name as "user", t.user_id as uid, ug.groups,
   t.feature, coalesce(t.model, 'unknown') as model, coalesce(t.status, 'unknown') as status, t.chat_id, t.turn_id,
   t.input_tokens, t.output_tokens, t.cache_read_tokens, t.cache_write_tokens,
-  coalesce(t.input_tokens, 0) + coalesce(t.output_tokens, 0) + coalesce(t.cache_read_tokens, 0) + coalesce(t.cache_write_tokens, 0) as total_tokens,
+  case when num_nonnulls(t.input_tokens, t.output_tokens, t.cache_read_tokens, t.cache_write_tokens) > 0 then
+    coalesce(t.input_tokens, 0) + coalesce(t.output_tokens, 0) + coalesce(t.cache_read_tokens, 0) + coalesce(t.cache_write_tokens, 0)
+  end as total_tokens,
   t.cost_usd, t.duration_ms
 from turns t
 left join user_groups ug on ug.user_id = t.user_id
