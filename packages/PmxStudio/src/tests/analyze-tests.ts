@@ -193,7 +193,8 @@ category('Analyze', () => {
       // each arm has the animals Plan asked for, and the power the plan gave it with them
       const arm = plan.predicted.arms[i];
       expect(x('n'), arm.n, `${arm.name}: ${x('n')} analysed, ${arm.n} planned`);
-      expect(Math.abs(x('power') - powerAt(arm.power!, x('n'))!) < 1e-9 && x('power') >= 0.79, true,
+      // (to the column's single precision)
+      expect(Math.abs(x('power') - powerAt(arm.power!, x('n'))!) < 1e-6 && x('power') >= 0.79, true,
         `${arm.name}: power ${x('power')}`);
     }
     expect(new Set(o.predicted.col('series')!.toList()).size, 2);

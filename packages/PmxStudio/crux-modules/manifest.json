@@ -31,14 +31,14 @@
     "trendtests",
     "vcg"
    ],
-   "functions": 82,
+   "functions": 83,
    "abi": 1,
    "fns": "nonclinical/fns.json",
    "thread": "worker",
    "compute": "nonclinical/compute.json",
    "hash": {
-    "js": "5b75b0ad5c5914d0",
-    "wasm": "792a2155d1c83f16"
+    "js": "f7c44453ec3f5280",
+    "wasm": "c4ce9b0fb8cd5051"
    }
   },
   "stats": {
@@ -69,20 +69,23 @@
     "statsmodels",
     "vsn"
    ],
-   "functions": 97,
+   "functions": 100,
    "abi": 1,
    "fns": "stats/fns.json",
    "thread": "worker",
    "compute": "stats/compute.json",
    "hash": {
-    "js": "20176e038e73ec3e",
-    "wasm": "38d2a9130dd07405"
+    "js": "08f2d734bd7e8a41",
+    "wasm": "b712a30378348dd4"
    }
   }
  },
  "functions": {
+  "numerics.least_squares": "stats",
   "numerics.linprog": "stats",
   "numerics.milp": "stats",
+  "numerics.minimize": "stats",
+  "numerics.test_problem": "stats",
   "pathology.mi_concordance": "nonclinical",
   "pathology.tox_slide_findings": "nonclinical",
   "pkpd.dose_utility": "stats",
@@ -230,6 +233,7 @@
   "stats.tumor_study_simulate": "nonclinical",
   "stats.tumor_survival": "nonclinical",
   "stats.tumor_twin": "nonclinical",
+  "stats.tumor_twin_loglik": "nonclinical",
   "stats.variance_test": "stats",
   "stats.vcg_compare": "nonclinical",
   "stats.vcg_match": "nonclinical",

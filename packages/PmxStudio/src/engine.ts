@@ -74,6 +74,13 @@ export interface StudyDeclaration {
   mde?: boolean;
 }
 
+/** The pools the trials draw from: 100 animals per arm and study (Crux's defaults: 1000, and 300 by last day and
+ *  schedule). A random subset of a pool is a sample of the study, so the power is unbiased at any size that fills n;
+ *  measured over 20 seeds and four cases (Crux spike tumor-design-shards, 2026-11-04): the assurance's sd at the
+ *  reference n 0.0090-0.0112 at 1000, 0.0095-0.0113 at 100, n as often the reference's, the design about half the
+ *  time. More studies do not help (the noise floor is elsewhere); 60 starts to show. */
+const POOLS = {animals: 100, mde_animals: 100};
+
 /** One arm's design. */
 export interface ArmDesign {
   declaration: ArmDeclaration;
@@ -201,6 +208,53 @@ export function designScenarios(d: StudyDeclaration, tgis: number[]): Promise<Sc
     mde: false, arms: d.arms.map((a) => ({...a, metric: 'TGI' as const, effect: tgi}))})})));
 }
 
+/** Calls one design is split into, each over its block of the studies drawn on a worker set of its own (crux.ts opens
+ *  as many): wasm runs one thread per worker, so the shards are the design's parallelism. */
+const SHARDS = Math.max(1, Math.min(15, (navigator.hardwareConcurrency ?? 2) - 1));
+
+type Row = {[k: string]: any};
+interface ArmTables {plan: Row, power: Row[], duration: Row[], schedules: Row[], arms: Row[]}
+
+/** One arm's stats.tumor_study_design: one call, or `shards` calls (Crux's shard / shards) whose partial sums give
+ *  the assurance curves the single call would; the rest of every shard's design is the single call's, the conditional
+ *  power shard 0's. The n chosen, its level and its power by last day and schedule follow from the summed curves. */
+async function designArm(prior: object, params: Row, shards: number, power: number,
+  nFixed: number | null): Promise<ArmTables> {
+  const calls: CruxResult[] = await Promise.all(Array.from({length: shards}, (_, shard) =>
+    crux('stats.tumor_study_design', prior, shards > 1 ? {...params, shard, shards} : params)));
+  const r = calls[0];
+  const t: ArmTables = {plan: rows(r.main as any)[0], power: named(r, 'power'), duration: named(r, 'duration'),
+    schedules: named(r, 'schedules'), arms: named(r, 'arms')};
+  if (shards === 1)
+    return t;
+  // per (part, key, n): the power summed over every shard's studies, and how many
+  const sums = new Map<string, {sum: number, count: number}>();
+  for (const c of calls) {
+    for (const p of named(c, 'partials')) {
+      const k = `${p.part} ${p.key} ${p.n}`;
+      const s = sums.get(k) ?? {sum: 0, count: 0};
+      sums.set(k, {sum: s.sum + p.sum, count: s.count + p.count});
+    }
+  }
+  const mean = (part: string, key: number | null, n: number) => {
+    const s = sums.get(`${part} ${key} ${n}`);
+    return s && s.count > 0 ? s.sum / s.count : null;
+  };
+  const reaches = (part: string, key: number | null) =>
+    t.power.find((x) => (mean(part, key, x.n) ?? -1) >= power)?.n ?? null;
+  for (const x of t.power)
+    x.assurance = mean('assurance', null, x.n);
+  const nAssurance = reaches('assurance', null);
+  const chosen = nFixed ?? nAssurance ?? t.power[t.power.length - 1].n;
+  t.plan = {...t.plan, n_assurance: nAssurance, alpha_arm: t.power.find((x) => x.n === chosen)?.alpha,
+    ...(nFixed ? {assurance_at_n: mean('assurance', null, nFixed)} : {})};
+  for (const x of t.duration)
+    x.assurance = mean('duration', x.day, chosen);
+  for (const x of t.schedules)
+    Object.assign(x, {assurance: mean('schedule', x.per_week, chosen), n_assurance: reaches('schedule', x.per_week)});
+  return t;
+}
+
 export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   if (d.arms.length === 0)
     throw new Error('Add at least one treatment arm');
@@ -212,20 +266,23 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     correction: d.correction,
     weekdays: weekdaysParam(d.weekdays),
     start_weekday: d.startWeekday, humane: d.humane, schedules: d.schedules, mde: d.mde !== false, seed: SEED,
-    ...(d.n ? {n: d.n} : {}), ...(d.lastDay ? {last_day: d.lastDay} : {}),
+    ...POOLS, ...(d.n ? {n: d.n} : {}), ...(d.lastDay ? {last_day: d.lastDay} : {}),
   };
-  const results: CruxResult[] = await Promise.all(d.arms.map((arm) => {
+  // the minimum detectable effect searches over every study at once: such a design is one call; else the worker sets
+  // shared out over the arms (each shard repeats its arm's calibration: more shards than sets only queue)
+  const shards = d.n && d.mde !== false ? 1 : Math.max(1, Math.floor(SHARDS / d.arms.length));
+  const results: ArmTables[] = await Promise.all(d.arms.map((arm) => {
     const a = ARCHETYPES[arm.therapy];
-    return crux('stats.tumor_study_design', prior, {...shared, metric: arm.metric.toLowerCase(),
-      effect: arm.effect, onset: a.onsetDays, kappa_sd: a.kappaSd, responders: a.responders}).catch((e: any) => {
+    return designArm(prior, {...shared, metric: arm.metric.toLowerCase(), effect: arm.effect, onset: a.onsetDays,
+      kappa_sd: a.kappaSd, responders: a.responders}, shards, d.power, d.n).catch((e: any) => {
       throw new Error(`${arm.name}: ${e?.message ?? e}`);
     });
   }));
 
   // every arm with its own n (the treatments differ in what they need); the control as large as the largest arm,
   // so each comparison has at least the control its own design assumed (equal groups): conservative
-  const plans = results.map((r) => rows(r.main as any)[0]);
-  const powers = results.map((r) => named(r, 'power').map((x) => ({n: x.n, implant: x.implant,
+  const plans = results.map((r) => r.plan);
+  const powers = results.map((r) => r.power.map((x) => ({n: x.n, implant: x.implant,
     assurance: finite(x.assurance), conditional: finite(x.conditional)})));
   const arms: ArmDesign[] = d.arms.map((decl, k) => {
     const p = plans[k];
@@ -256,14 +313,14 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
 
   // the control from the first call (the same in every call), then each arm's treated rows under its name
   type Curve = StudyDesign['curves'][number];
-  const curves: Curve[] = named(results[0], 'arms').filter((r) => r.arm === 'control')
+  const curves: Curve[] = results[0].arms.filter((r) => r.arm === 'control')
     .map((r) => ({...r, arm: 'Control'}) as Curve);
-  results.forEach((r, k) => curves.push(...named(r, 'arms').filter((x) => x.arm === 'treated')
+  results.forEach((r, k) => curves.push(...r.arms.filter((x) => x.arm === 'treated')
     .map((x) => ({...x, arm: d.arms[k].name}) as Curve)));
 
   // by last day: each arm's power at Crux's n for it (the user's n, else its n_assurance, which the minimum group can
   // raise) and the controls' state, from the first call (its shares move a little between calls: simulation)
-  const byDay = results.map((r) => named(r, 'duration'));
+  const byDay = results.map((r) => r.duration);
   // each arm's value in row i of its own table, for the arms designed (an arm with no n has none)
   const perArm = (tables: {[k: string]: any}[][], i: number) =>
     Object.fromEntries(d.arms.flatMap((a, k) => arms[k].n === null ? [] : [[a.name, finite(tables[k][i].assurance)]]));
@@ -271,7 +328,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     pastHumane: row.past_humane, assurance: perArm(byDay, i)}));
 
   // by measurements a week: each arm's power as above, and the study's animals by the same rules as the design's
-  const bySchedule = results.map((r) => named(r, 'schedules'));
+  const bySchedule = results.map((r) => r.schedules);
   const schedules = bySchedule[0].map((row, i) => {
     const each = bySchedule.map((t) => {
       const needed = finite(t[i].n_assurance);
