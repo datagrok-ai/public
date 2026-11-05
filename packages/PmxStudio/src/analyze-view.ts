@@ -9,7 +9,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {badge, BasicTable, button, computed, div, divH, divV, dot, loader, RadioInput, signal, span, Splitter,
+import {badge, BasicTable, button, computed, div, divH, divV, dot, loader, signal, span, Splitter,
   tableFromMap,
   Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
@@ -788,37 +788,51 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   }));
 
   // the strict Kaplan-Meier: days to the endpoint as measured, an animal that never reached it censored
-  // projected, on request: each animal still under the endpoint carried on at its last rate to a horizon
+  // projected, by its slider: at the last day measured, what was measured; further right, each animal still under
+  // the endpoint carried on at the rate of its last three measurements to that day
   const survival = signal<Survival | undefined>(undefined);
   const kmOnly = only(result, ['volumes'], (r) => [...groupsOf(r), r.analysis.get('endpoint', 0)]);
-  const kmMode = new RadioInput({items: ['Measured', 'Projected'], buttons: true, value: 'Measured',
-    itemTooltips: {Measured: 'Days to the endpoint as measured', Projected: 'Each animal still under the endpoint ' +
-      'carried on at the rate of its last three measurements, to the horizon'}});
-  const kmHorizon = ui.input.int('Horizon', {nullable: true, tooltipText: 'The day the projection goes to (empty: ' +
-    'the last day measured plus two weeks)'});
   const horizon = signal<number | null>(null);
-  const horizonSub = kmHorizon.onChanged.subscribe((v) => horizon.value = v === null || v === undefined || !(v > 0) ?
-    null : v);
-  self.own(() => horizonSub.unsubscribe());
-  kmHorizon.root.style.width = '150px';
-  const kmControls = divH([kmMode.root, kmHorizon.root], 'pmx-noprint');
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.step = '1';
+  slider.setAttribute('aria-label', 'Followed to day');
+  Object.assign(slider.style, {width: '180px', accentColor: 'var(--dg-accent, #2083d5)'});
+  slider.addEventListener('input', () => {
+    const v = Number(slider.value);
+    horizon.value = v > Number(slider.min) ? v : null;
+  });
+  Tooltip.bind(slider, 'Drag right to carry each animal still under the endpoint on at the rate of its last three ' +
+    'measurements, to that day: a projection, not a result');
+  const sliderText = span('');
+  const kmControls = divH([span('Followed to'), slider, sliderText], 'pmx-noprint');
   Object.assign(kmControls.style, {justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--dg-space-m)'});
   form.effect(() => {
     const r = kmOnly.value;
     const s = resultStudy;
-    const projected = kmMode.value === 'Projected';
-    kmHorizon.root.hidden = !projected;
     const h = horizon.value;
     if (!r || !s) {
       survival.value = undefined;
       return;
     }
     void survivalOf(s, r.analysis.get('control', 0), r.analysis.get('endpoint', 0), colorsOf(r),
-      projected ? {horizon: h} : undefined)
+      h === null ? undefined : {horizon: h})
       .then((k) => {
-        if (kmOnly.peek() === r && (kmMode.peek() === 'Projected') === projected && horizon.peek() === h)
+        if (kmOnly.peek() === r && horizon.peek() === h)
           survival.value = k;
       }, () => survival.value = undefined);
+  });
+  // the slider from the last day measured to twice it
+  form.effect(() => {
+    const k = survival.value;
+    if (!k)
+      return;
+    slider.min = String(k.lastDay);
+    slider.max = String(2 * k.lastDay);
+    if (horizon.peek() === null)
+      slider.value = String(k.lastDay);
+    sliderText.textContent = k.horizon === undefined ? `day ${k.lastDay}, as measured` :
+      `day ${k.horizon}, projected`;
   });
   const km = viewers.lineChart(computed(() => survival.value?.steps), {xColumnName: KM.day,
     yColumnNames: [KM.share], splitColumnNames: [KM.group], legendVisibility: 'Always', showTopPanel: false,
