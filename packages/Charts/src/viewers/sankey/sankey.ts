@@ -253,7 +253,7 @@ export class SankeyViewer extends DG.JsViewer {
   rowMatchesColumnValues(sourceCol: DG.Column | null, targetCol: DG.Column | null,
     rowIndex: number, sourceName: string, targetName: string, operator: 'AND' | 'OR' = 'AND',
   ): boolean {
-    if (!sourceCol || !targetCol)
+    if (!sourceCol || !targetCol || !this.filter.get(rowIndex))
       return false;
 
     const sourceMatch = this.dataFrame.get(sourceCol.name, rowIndex) === sourceName;
