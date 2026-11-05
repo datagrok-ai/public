@@ -20,11 +20,17 @@ import {planInput} from './plan-vs-observed';
 import {NAMES, openStage, showStage} from './stages';
 import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, restoreFields, saveStudy,
   studyOf, tableOf} from './study-file';
+import {panelGrid, Slot} from './panels';
+import {studyHeader} from './study-header';
 import {tolerabilityTab} from './tolerability';
 import {addRunButton, askedOf, block, busyOverlay, cardGrid, dayText, declarationPane, DECLARATION_MIN, infoNote,
   isBodyWeight, keepNamedColumns, noteLine, notes,
-  notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, resultTabs, settleForm, sized, stageStrip, staleNote,
+  notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
   signed, statCard, swatch, volumeAxis, wrapCells} from './ui';
+
+/** Monitor's panels, in order and width (twelfths): today's work first, then the groups, then the start. */
+const MONITOR_LAYOUT: Slot[] = [{id: 'today', span: 4}, {id: 'growth', span: 8}, {id: 'sheet', span: 12},
+  {id: 'decisions', span: 6}, {id: 'welfare', span: 6}, {id: 'enrollment', span: 12}];
 
 /** Below this chance of success, on a planned review, Monitor suggests stopping the arm. A person decides. */
 export const FUTILITY = 0.1;
@@ -416,22 +422,32 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
   });
   analyzeButton.title = 'Analyze this table as planned; this reveals the groups, and the log says so';
 
-  const tabs = resultTabs('monitor', [
-    {id: 'today', label: 'Today', intro: 'Who needs attention, and the range each animal\'s next value should fall in.',
-      content: [entered, block('Needs attention', 'A person decides what to do', attention), noteBox,
-        block('Measurement sheet', 'Check each value as you measure it', sheet)]},
-    {id: 'enrollment', label: 'Enrollment', intro: 'Random groups alike in their starting tumors.', content: [
-      divH([proposeButton]), allocationTable]},
-    {id: 'growth', label: 'Growth', intro: 'Each group so far and what is expected up to the end.', content: [
-      growthHidden, growthAxis.row, sized(growth, 340)]},
-    {id: 'welfare', label: 'Welfare', intro: 'Whether the treatments are being tolerated, from the body weights so ' +
-      'far.', content: [welfareHidden, welfareBody]},
-    {id: 'decisions', label: 'Decisions', intro: 'Whether each treated group is still worth continuing, and what was ' +
-      'decided.', content: [decisionBody, block('Log', 'Who did what, and when', logBox),
-      divH([saveButton, analyzeButton])]},
-  ]);
+  // the three limits an animal is checked against, together, as the last run read them
+  const limits = div([], 'pmx-monitor-limits');
+  form.effect(() => {
+    if (!result.value)
+      return;
+    const v = (k: string) => call.getParamValue(k);
+    limits.replaceChildren(noteLine(`Endpoint ${v('endpoint')} mm³ (median control) · humane limit ` +
+      `${v('humane')} mm³ · weight loss ${v('weightLimit') ?? 20}%`));
+  });
+  const panels = panelGrid([
+    {id: 'today', title: 'Needs attention', hint: 'Who needs attention today; a person decides what to do',
+      content: [limits, entered, attention, noteBox]},
+    {id: 'growth', title: 'Growth', hint: 'Each group so far and what is expected up to the end',
+      content: [growthHidden, growthAxis.row, sized(growth, 340)]},
+    {id: 'sheet', title: 'Measurement sheet', hint: 'The range the next value of each animal should fall in: check ' +
+      'each value as you measure it', content: [sheet]},
+    {id: 'decisions', title: 'Decisions', hint: 'Whether each treated group is still worth continuing, and what was ' +
+      'decided', content: [decisionBody, block('Log', 'Who did what, and when', logBox), divH([saveButton,
+      analyzeButton])]},
+    {id: 'welfare', title: 'Welfare', hint: 'Whether the treatments are being tolerated, from the body weights so far',
+      content: [welfareHidden, welfareBody]},
+    {id: 'enrollment', title: 'Enrollment', hint: 'Random groups alike in their starting tumors',
+      content: [divH([proposeButton]), allocationTable]},
+  ], MONITOR_LAYOUT, 'pmx-monitor-panels');
 
-  const content = divV([cards, tabs.root], 'pmx-monitor-content');
+  const content = divV([cards, panels], 'pmx-monitor-content');
   Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
   form.effect(() => {
     content.hidden = !result.value;
@@ -455,12 +471,22 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
   const host = ViewHost.create({name: 'PMX Studio · Monitor', content: () => ({
     root: panes,
-    ribbon: [[stageStrip('monitor', (s) => void openStage(s))]],
+    ribbon: [[studyHeader(form, 'monitor', computed(() => {
+      const r = result.value;
+      if (!r)
+        return undefined;
+      const colors = colorsOf(r);
+      const day = cell('day').value;
+      return {name: studyTable()?.name ?? '', groups: revealed.value ?
+        Object.entries(colors).map(([name, color]) => ({name, color})) : [],
+      status: [r.status.get('line', 0), day === undefined ? '' : dayText(day),
+        revealed.value ? '' : 'groups hidden'].filter((x) => x).join(' · ')};
+    }), (s) => void openStage(s))]],
     path: '/monitor',
     status: computed(() => busy.value ? 'Forecasting the study…' : result.value ? String(status.value?.get('line', 0)) :
       ''),
   })});
-  [form, planField, growthAxis.input, growth, tabs].forEach((c) => host.own(() => c.dispose()));
+  [form, planField, growthAxis.input, growth].forEach((c) => host.own(() => c.dispose()));
   host.own(stopWatching);
   welfare.own.forEach((c) => host.own(() => c.dispose()));
   const view: DG.ViewBase = host.view;

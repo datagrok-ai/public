@@ -1,0 +1,57 @@
+/* What Plan, Monitor and Analyze share: the study's header and the grid of a stage's panels. Datagrok's tokens, so
+   it follows the theme. */
+
+/* the header, in the view's ribbon: the stages, then the study */
+/* one line, as the ribbon is: the study gives way (cut with an ellipsis) before the stages or the view's actions */
+.pmx-head {
+  display: flex; flex-wrap: nowrap; align-items: center; gap: 24px; min-width: 0; overflow: hidden; color: var(--dg-text-color, #4D5261);
+  font-family: var(--dg-font-family, Roboto, sans-serif); font-size: 13px;
+}
+.pmx-head-steps { display: flex; align-items: center; gap: 6px; flex: none; }
+.pmx-head-step {
+  display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 2px 2px; font: inherit;
+  color: var(--dg-accent, #2083D5); cursor: pointer;
+}
+.pmx-head-step.on { color: var(--dg-text-color, #4D5261); font-weight: 500; cursor: default; }
+.pmx-head-step:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; border-radius: 3px; }
+.pmx-head-node {
+  width: 9px; height: 9px; border-radius: 50%; box-sizing: border-box;
+  border: 2px solid var(--dg-accent, #2083D5); background: var(--dg-bg, #fff);
+}
+.pmx-head-step.past .pmx-head-node, .pmx-head-step.on .pmx-head-node { background: var(--dg-accent, #2083D5); }
+.pmx-head-wire { width: 24px; height: 2px; background: var(--dg-border, #DBDCDF); }
+.pmx-head-wire.lit { background: var(--dg-accent, #2083D5); }
+.pmx-head-dot { color: var(--dg-grey-5, #717581); }
+.pmx-head-study { display: flex; align-items: center; gap: 12px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.pmx-head-name { overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 40px; font-size: 15px; font-weight: 500; color: var(--dg-text-color, #4D5261); }
+.pmx-head-groups { display: flex; gap: 6px; flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.pmx-head-group {
+  display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; border-radius: 10px;
+  border: 1px solid var(--dg-border, #DBDCDF); font-size: 12px;
+}
+.pmx-head-swatch { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.pmx-head-status { flex: none; font-size: 12px; color: var(--dg-grey-5, #717581); }
+
+/* the panels: twelve columns; half and then whole rows as the results pane narrows */
+.pmx-grid-host { container-type: inline-size; }
+.pmx-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; grid-auto-flow: row dense; }
+.pmx-panel { min-width: 0; }
+.pmx-panel[data-span="3"] { grid-column: span 3; }
+.pmx-panel[data-span="4"] { grid-column: span 4; }
+.pmx-panel[data-span="6"] { grid-column: span 6; }
+.pmx-panel[data-span="8"] { grid-column: span 8; }
+.pmx-panel[data-span="12"] { grid-column: span 12; }
+@container (max-width: 980px) {
+  .pmx-panel[data-span="3"], .pmx-panel[data-span="4"] { grid-column: span 6; }
+  .pmx-panel[data-span="8"] { grid-column: span 12; }
+}
+@container (max-width: 640px) {
+  .pmx-panel[data-span] { grid-column: span 12; }
+}
+
+/* under a growth chart: the animals of each group on each day */
+.pmx-n-scroll { overflow-x: auto; margin-top: 8px; }
+.pmx-n-table { border-collapse: collapse; font-size: 11px; color: var(--dg-grey-5, #717581); }
+.pmx-n-table th, .pmx-n-table td { padding: 1px 6px; text-align: center; white-space: nowrap; }
+.pmx-n-table th:first-child, .pmx-n-table td:first-child { text-align: left; }
+.pmx-n-table th { font-weight: 500; border-bottom: 1px solid var(--dg-border, #DBDCDF); }

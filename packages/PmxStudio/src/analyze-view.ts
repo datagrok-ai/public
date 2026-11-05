@@ -17,16 +17,49 @@ import type {ViewContent} from '@datagrok-libraries/u2/dg';
 import {AnalysisFrames, exampleStudy, median} from './analyze';
 import {armColors} from './frames';
 import {CorrectionInput} from './arms-input';
-import {addRunButton, askedOf, axisAt, block, busyOverlay, cardGrid, copyRow, dayText, declarationPane,
+import {addRunButton, askedOf, axisAt, busyOverlay, cardGrid, copyRow, dayText, declarationPane,
   DECLARATION_MIN, guide,
-  infoNote, noteLine, notesBox, num, outputsOf, resultTabs, pct, pValue, RESULTS_MIN, resultsFrame, settleForm, signed,
-  isBodyWeight, keepNamedColumns, sized, staleNote, stageStrip, statCard, swatch, volumeAxis, wrapCells} from './ui';
+  infoNote, noteLine, notesBox, num, outputsOf, pct, pValue, RESULTS_MIN, resultsFrame, settleForm, signed,
+  isBodyWeight, keepNamedColumns, sized, staleNote, statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {restoreFields} from './study-file';
 import {openStage} from './stages';
 import {noEffectNote, observedCell, planInput, planTab} from './plan-vs-observed';
 import {nciReadings, NciReading, tolerabilityTab} from './tolerability';
 import {BandChart} from './band-chart';
 import {explore, exploreContent, StudyInputs, studyInputsOf} from './explore';
+import {panelGrid, Slot} from './panels';
+import {studyHeader} from './study-header';
+import {KM, Survival, survivalOf} from './survival';
+
+/** Analyze's panels, in order and width (twelfths): the answer, how the tumors grew, each animal, then the rest. */
+const ANALYZE_LAYOUT: Slot[] = [{id: 'groups', span: 12}, {id: 'growth', span: 8}, {id: 'rates', span: 4},
+  {id: 'waterfall', span: 12}, {id: 'km', span: 6}, {id: 'animals', span: 12}, {id: 'tolerability', span: 12},
+  {id: 'plan', span: 12}, {id: 'controls', span: 6},
+  {id: 'explore', span: 6}, {id: 'report', span: 12}];
+
+/** mRECIST's classes (Gao 2015), best first, in the colours of better and worse. */
+const MRECIST_COLORS: {[c: string]: string} = {mCR: '#1a7f37', mPR: '#4caf50', mSD: '#9aa5b1', mPD: '#d62728'};
+
+/** Under a growth chart: how many animals each group had on each measurement day, so a thinning group shows. */
+function animalsPerDay(volumes: DG.DataFrame, groups: string[], colors: {[g: string]: string}): HTMLElement {
+  const days = [...new Set(volumes.col('day')!.toList() as number[])].sort((a, b) => a - b);
+  const n = new Map<string, number>();
+  for (let i = 0; i < volumes.rowCount; i++)
+    n.set(`${volumes.get('group', i)}|${volumes.get('day', i)}`, volumes.get('n', i));
+  const table = document.createElement('table');
+  table.className = 'pmx-n-table';
+  const head = table.createTHead().insertRow();
+  const th = (text: string) => Object.assign(document.createElement('th'), {textContent: text});
+  head.append(th('Animals by day'), ...days.map((d) => th(String(d))));
+  const body = table.createTBody();
+  for (const g of groups) {
+    const row = body.insertRow();
+    row.insertCell().append(swatch(g, colors[g]));
+    for (const d of days)
+      row.insertCell().textContent = String(n.get(`${g}|${d}`) ?? '');
+  }
+  return div([table], 'pmx-n-scroll');
+}
 
 const TWIN = 'Untreated twin';
 const MEASURED = 'Measured';
@@ -334,9 +367,8 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   const summary = divV([], 'pmx-results-summary');
   summary.style.gap = 'var(--dg-space-s)';
   let summaryText = '';
-  // the Tolerability tab, at the groups against the NCI limits (the tabs are built below)
+  // the Tolerability panel, at the groups against the NCI limits (the panels are built below)
   const showNci = () => {
-    tabs.activeTab.value = 'tolerability';
     requestAnimationFrame(() => tolerability.content.map((el) => el.querySelector('.pmx-nci')).find((el) => el)
       ?.scrollIntoView({behavior: 'smooth', block: 'center'}));
   };
@@ -616,6 +648,70 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
     gap: 'var(--dg-space-l)', alignItems: 'start'});
 
   // the growth rate of each animal, the quantity the test compares
+  // under the growth chart, the animals behind each point
+  const perDay = div([], 'pmx-n-per-day');
+  form.effect(() => {
+    const r = result.value;
+    perDay.replaceChildren(...(r ? [animalsPerDay(r.volumes, [r.analysis.get('control', 0),
+      ...r.comparisons.col('arm')!.toList()], colorsOf(r))] : []));
+  });
+
+  // each treated animal's best response (mRECIST's BestResponse, % from its volume at randomization), largest
+  // growth first, coloured by its mRECIST class
+  const waterfallData = computed(() => {
+    const r = result.value;
+    const a = r?.animals;
+    if (!r || !a?.col('best_response'))
+      return undefined;
+    const control = r.analysis.get('control', 0);
+    const rows = Array.from({length: a.rowCount}, (_, i) => ({'Animal': String(a.get('animal', i)),
+      'Group': a.get('group', i) as string, 'Best response (%)': a.get('best_response', i) as number | null,
+      'mRECIST': a.get('mrecist', i) as string | null}))
+      .filter((x) => x['Group'] !== control && x['Best response (%)'] !== null && x['mRECIST'] !== null);
+    if (rows.length === 0)
+      return undefined;
+    const df = DG.DataFrame.fromObjects(rows)!;
+    df.col('mRECIST')!.meta.colors.setCategorical(MRECIST_COLORS);
+    return df;
+  });
+  const waterfall = viewers.barChart(waterfallData, {splitColumnName: 'Animal', valueColumnName: 'Best response (%)',
+    valueAggrType: 'sum', stackColumnName: 'mRECIST', orientation: 'vertical', barSortType: 'by value',
+    barSortOrder: 'desc', showCategorySelector: false, showValueSelector: false, showStackSelector: false} as any);
+  const waterfallMissing = infoNote('<b>No best response.</b> Each animal needs measurements from day 10 on for ' +
+    'its mRECIST class.');
+  form.effect(() => {
+    const has = !!waterfallData.value;
+    waterfall.root.hidden = !has;
+    waterfallMissing.hidden = has || !result.value;
+  });
+
+  // the strict Kaplan-Meier: days to the endpoint as measured, an animal that never reached it censored
+  const survival = signal<Survival | undefined>(undefined);
+  form.effect(() => {
+    const r = result.value;
+    const s = resultStudy;
+    if (!r || !s) {
+      survival.value = undefined;
+      return;
+    }
+    void survivalOf(s, r.analysis.get('control', 0), r.analysis.get('endpoint', 0), colorsOf(r))
+      .then((k) => {
+        if (result.peek() === r)
+          survival.value = k;
+      }, () => survival.value = undefined);
+  });
+  const km = viewers.lineChart(computed(() => survival.value?.steps), {xColumnName: KM.day,
+    yColumnNames: [KM.share], splitColumnNames: [KM.group], legendVisibility: 'Always', showTopPanel: false,
+    showAggrSelectors: false, showSplitSelector: false});
+  const kmWords = div([], 'pmx-km-words');
+  form.effect(() => {
+    const k = survival.value;
+    const p = new Map((k?.logrank ?? []).map((t) => [t.group, t.p_value]));
+    kmWords.replaceChildren(...(k?.medians ?? []).map((m) => noteLine(`${m.group}: median ${m.median === null ?
+      'not reached' : dayText(m.median)}, ${m.events} of ${m.n} reached the endpoint` +
+      (p.has(m.group) ? `; log-rank against the control ${pValue(p.get(m.group))}` : ''))));
+  });
+
   const slopes = viewers.boxPlot(computed(() => {
     const r = result.value;
     if (!r)
@@ -631,37 +727,38 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   }), {valueColumnName: 'Growth rate (ln V per day)', categoryColumnNames: ['Group'], showPValue: false,
     showStatistics: false});
 
-  // the figures answer the study's question; each tab, one closer question
-  const tabs = resultTabs('analyze', [
-    {id: 'efficacy', label: 'Efficacy', intro: 'Whether each treatment slowed tumor growth against the control, and ' +
-      'by how much.', content: [
-      block('Experimental groups', 'Each treated group against the control on the evaluation day', groupsTable,
-        groupNotes),
-      block('Observed tumor growth', 'Median and range (smallest to largest tumor) of each group, to the evaluation ' +
-        'day', growthAxis.row, sized(growth, 380))]},
-    {id: 'animals', label: 'Each animal', intro: 'How each treated tumor compares with what it would have measured ' +
-      'untreated, and which animals responded.', content: [
-      block('Each animal against its untreated twin', 'Select an animal to see its growth', animals)]},
-    {id: 'tolerability', label: 'Tolerability', intro: 'Whether the treatments were well tolerated.',
+  // the figures answer the study's question; each panel, one closer question
+  const panels = panelGrid([
+    {id: 'groups', title: 'Experimental groups', hint: 'Each treated group against the control on the evaluation day',
+      content: [groupsTable, groupNotes]},
+    {id: 'growth', title: 'Observed tumor growth', hint: 'Median and range (smallest to largest tumor) ' +
+      'of each group, to the evaluation day', content: [growthAxis.row, sized(growth, 380), perDay]},
+    {id: 'rates', title: 'Growth rates', hint: 'The per-animal slope of log volume each test compares',
+      content: [sized(slopes, 380)]},
+    {id: 'waterfall', title: 'Best response', hint: 'Each treated animal\u2019s smallest volume from day 10, against ' +
+      'its volume at randomization, coloured by its mRECIST class', content: [waterfallMissing, sized(waterfall, 300)]},
+    {id: 'km', title: 'Time to endpoint', hint: 'Kaplan-Meier: the animals of each group still below the ' +
+      'endpoint volume, day by day, as measured; an animal that never reached it counts until its last measurement',
+    content: [sized(km, 300), kmWords]},
+    {id: 'animals', title: 'Each animal against its untreated twin', hint: 'How each treated tumor compares with ' +
+      'what it would have measured untreated. Select an animal to see its growth', content: [animals]},
+    {id: 'tolerability', title: 'Tolerability', hint: 'Whether the treatments were well tolerated',
       content: tolerability.content},
-    {id: 'plan', label: 'Plan vs observed', intro: 'Whether the study went as it was planned.',
+    {id: 'plan', title: 'Plan vs observed', hint: 'Whether the study went as it was planned',
       content: versus.content},
-    {id: 'statistics', label: 'Statistics', intro: 'The numbers behind each result, for a closer look or a report.',
-      content: [
-        block('Results summary', 'The study’s results in words, ready to paste',
-          copyRow(() => summaryText, 'Results summary'), summary),
-        block('Growth rates', 'The per-animal slope of log volume each test compares', statsTable, sized(slopes, 260)),
-        block('Control check', 'Each control against the range the other controls predict', controlCheck),
-        block('Analysis protocol', 'As Plan pre-specifies it, ready to paste',
-          copyRow(() => protocolText, 'Analysis protocol'), protocol)]},
-    {id: 'your-data', label: 'Your data', intro: 'Your own questions: the study’s animals and measurements as ' +
-      'Datagrok tables, to chart, filter, group and compare as you like.', content: exploreContent((which) => {
+    {id: 'controls', title: 'Control check', hint: 'Each control against the range the other controls predict',
+      content: [controlCheck]},
+    {id: 'explore', title: 'Your data', hint: 'The study’s animals and measurements as Datagrok tables, to chart, ' +
+      'filter, group and compare as you like', content: exploreContent((which) => {
       const r = result.peek();
       if (r && resultStudy)
         explore(which, r, resultStudy, colorsOf(r), self.view);
     })},
-  ]);
-  const content = divV([cards, tabs.root], 'pmx-analyze-content');
+    {id: 'report', title: 'For the report', hint: 'The results in words, the numbers behind them and the analysis ' +
+      'protocol, ready to paste', content: [copyRow(() => summaryText, 'Results summary'), summary, statsTable,
+      copyRow(() => protocolText, 'Analysis protocol'), protocol]},
+  ], ANALYZE_LAYOUT, 'pmx-analyze-panels');
+  const content = divV([cards, panels], 'pmx-analyze-content');
   Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
   form.effect(() => {
     content.hidden = !result.value;
@@ -687,7 +784,16 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
   return {
     root: panes,
-    ribbon: [[stageStrip('analyze', (s) => void openStage(s))]],
+    ribbon: [[studyHeader(form, 'analyze', computed(() => {
+      const r = result.value;
+      if (!r)
+        return undefined;
+      const colors = colorsOf(r);
+      const control = r.analysis.get('control', 0) as string;
+      const arms = r.comparisons.col('arm')!.toList() as string[];
+      return {name: r.analysis.name, groups: [control, ...arms].map((name) => ({name, color: colors[name]})),
+        status: `${r.analysis.get('line', 0)} · evaluated on ${dayText(r.analysis.get('evaluation_day', 0))}`};
+    }), (s) => void openStage(s))]],
     path: '/analyze',
     status: computed(() => busy.value ? 'Analyzing the study…' : result.value ? result.value.analysis.name : ''),
   };

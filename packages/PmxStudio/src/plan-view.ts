@@ -15,15 +15,23 @@ import type {ViewContent} from '@datagrok-libraries/u2/dg';
 import {PlanFrames, WEEKDAY_NAMES, armColors, weekdaysOf, weekdaysText} from './frames';
 import {ArmsInput, CorrectionInput, armsFrame} from './arms-input';
 import {MIN_GROUP, finite} from './engine';
-import {addRunButton, askedOf, block, busyOverlay, cardGrid, copyRow, declarationPane, DECLARATION_MIN, infoNote, notes,
-  notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, resultTabs, settleForm, sized, staleNote, stageStrip,
+import {addRunButton, askedOf, busyOverlay, cardGrid, copyRow, declarationPane, DECLARATION_MIN, infoNote, notes,
+  notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
   statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {openStage} from './stages';
+import {panelGrid, Slot} from './panels';
+import {studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
 import {BandChart} from './band-chart';
 
 /** Where the plan's first stage is run: Monitor takes the implanted pool to randomization. */
+/** Plan's panels, in order and width (twelfths): the groups, their growth and power, the calendar, the trade-offs,
+ *  the scenarios, the protocol. */
+const PLAN_LAYOUT: Slot[] = [{id: 'groups', span: 12}, {id: 'growth', span: 8}, {id: 'power', span: 4},
+  {id: 'calendar', span: 12}, {id: 'end', span: 6}, {id: 'schedule', span: 6}, {id: 'scenarios', span: 12},
+  {id: 'protocol', span: 12}];
+
 const monitorNote = () => infoNote('<b>From randomization on, in Monitor.</b> Follow this study to form the groups, ' +
   'balanced on tumor volume, and to see each session who needs attention and how the study is going.');
 
@@ -615,41 +623,44 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
 
   const scenarioEnd = div([], 'pmx-plan-scenario-end');
   const scenarioBox = div([]);
-  // the figures answer the plan's question; each tab, one closer question
-  const tabs = resultTabs('plan', [
-    {id: 'design', label: 'Design', intro: 'The animals each group needs and how its tumors are expected to grow.',
-      content: [
-        block('Experimental groups', 'The animals each group needs for its comparison with the control', groupsTable,
-          groupNotes, monitorNote()),
-        block('Predicted tumor growth', 'Median and 90% range of each group’s tumor volume, to the end of the study',
-          growthNotes, scaleRow, sized(growth, 380))]},
-    {id: 'calendar', label: 'Calendar', intro: 'When to randomize, measure and end the study, week by week.', content: [
-      block('Study calendar', 'Week by week from randomization. Click a weekday to measure on it or not',
-        calendarLoader, calendarStatus, calendarBox)]},
-    {id: 'alternatives', label: 'Trade-offs', intro: 'How the power changes with more or fewer animals, an earlier ' +
-      'or later end, or measuring more or less often.', content: [
-      block('Power by group size', 'With more or fewer animals', sized(power, 260)),
-      block('Power by end of study', 'Ending earlier or later', endSummary, sized(byEnd, 280)),
-      block('Measurement schedule', 'Measuring more or less often', scheduleBox)]},
-    {id: 'explore', label: 'Explore', intro: 'What the study would need if the treatment had each TGI. The TGIs are ' +
-      'scenarios you read across, not predictions of what a treatment will do.',
-    disabled: computed(() => result.value?.scenarios.rowCount ? null :
-      'Enter the TGIs to assume under Explore in the form, then run'),
-    content: [
-      block('Assumed TGI', 'The animals of the whole study with every arm at that TGI, sized for the target power ' +
-        'whatever animals per arm is set. To implant and to randomize are for this plan’s schedule', scenarioEnd,
-      scenarioBox)]},
-    {id: 'protocol', label: 'Protocol', intro: 'The plan written out, ready to paste into your study protocol.',
-      content: [
-        block('Study protocol', 'Design, sample size and analysis, ready to paste',
-          copyRow(() => protocolText, 'Study protocol'), analysis)]},
-  ]);
+  const noScenarios = infoNote('<b>No TGIs to assume.</b> Enter them under Explore in the form, then run.');
+  form.effect(() => {
+    const has = !!result.value?.scenarios.rowCount;
+    noScenarios.hidden = has;
+    scenarioEnd.hidden = !has;
+    scenarioBox.hidden = !has;
+  });
+  // the figures answer the plan's question; each panel, one closer question
+  const panels = panelGrid([
+    {id: 'groups', title: 'Experimental groups', hint: 'The animals each group needs for its comparison with the ' +
+      'control', content: [groupsTable, groupNotes, monitorNote()]},
+    {id: 'growth', title: 'Predicted tumor growth', hint: 'Median and 90% range of each group\u2019s tumor volume, ' +
+      'to the end of the study', content: [growthNotes, scaleRow, sized(growth, 380)]},
+    {id: 'power', title: 'Power by group size', hint: 'With more or fewer animals', content: [sized(power, 380)]},
+    {id: 'calendar', title: 'Study calendar', hint: 'Week by week from randomization. Click a weekday to measure ' +
+      'on it or not', content: [calendarLoader, calendarStatus, calendarBox]},
+    {id: 'end', title: 'Power by end of study', hint: 'Ending earlier or later', content: [endSummary,
+      sized(byEnd, 280)]},
+    {id: 'schedule', title: 'Measurement schedule', hint: 'Measuring more or less often', content: [scheduleBox]},
+    {id: 'scenarios', title: 'Assumed TGI', hint: 'What the study would need if the treatment had each TGI: ' +
+      'scenarios you read across, not predictions. The animals of the whole study with every arm at that TGI, ' +
+      'sized for the target power whatever animals per arm is set', content: [noScenarios, scenarioEnd, scenarioBox]},
+    {id: 'protocol', title: 'Study protocol', hint: 'Design, sample size and analysis, ready to paste',
+      content: [copyRow(() => protocolText, 'Study protocol'), analysis]},
+  ], PLAN_LAYOUT, 'pmx-plan-panels');
   // an empty viewer says what columns it lacks: the charts hidden until the first plan gives them their data
   form.effect(() => [growth, power].forEach((v) => v.root.style.visibility = result.value ? '' : 'hidden'));
   // (with no group size, no power by end: the chart would keep the last plan's)
   form.effect(() => byEnd.root.style.visibility = result.value?.duration.rowCount ? '' : 'hidden');
-  // the schedules are the design's costliest scan: computed while their tab is open
-  form.effect(() => scheduleOpen.value = tabs.activeTab.value === 'alternatives');
+  // the schedules are the design's costliest scan: computed once their panel has been in view (and from then on,
+  // so scrolling does not flip the form's input and dim the plan)
+  const seen = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) {
+      scheduleOpen.value = true;
+      seen.disconnect();
+    }
+  });
+  seen.observe(scheduleBox);
 
   form.effect(() => {
     const r = result.value;
@@ -658,7 +669,7 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     scenarioEnd.textContent = `The study ends on day ${r.scenarios.get('study_end', 0)} in every scenario.`;
     scenarioBox.replaceChildren(scenariosTable(r.scenarios, r.plan.get('per_week', 0)));
   });
-  const content = divV([cards, tabs.root], 'pmx-plan-content');
+  const content = divV([cards, panels], 'pmx-plan-content');
   Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
 
   // the first plan, and every later run, under u2's loader; what was shown stays, dimmed, until the new plan is in
@@ -805,7 +816,15 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     minSize: DECLARATION_MIN});
   return {
     root: panes,
-    ribbon: [[stageStrip('plan', (s) => void openStage(s))], [saveButton, downloadButton, followButton]],
+    ribbon: [[studyHeader(form, 'plan', computed(() => {
+      const r = result.value;
+      if (!r)
+        return undefined;
+      const arms = r.armResults.col('arm')!.toList() as string[];
+      const colors = armColors(arms);
+      return {name: defaultName(r), groups: ['Control', ...arms].map((name) => ({name, color: colors[name]})),
+        status: `${r.plan.get('line', 0)} · planned`};
+    }), (s) => void openStage(s))], [saveButton, downloadButton, followButton]],
     path: '/plan',
     status: computed(() => busy.value ? 'Designing the study…' : result.value ? result.value.plan.name : ''),
   };
