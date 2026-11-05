@@ -235,11 +235,14 @@ export function infoNote(html: string): HTMLElement {
   return note;
 }
 
-/** A growth chart's volume axis, Linear or Log (Log by default: exponential growth reads as a line): the row that
- *  offers it above the chart, and whether Log is chosen (the chart's `log`). */
+/** A growth chart's volume axis, Linear or Log: Linear by default (as a lab's figures are drawn), else the user's
+ *  last choice, which every chart then opens on. The row that offers it above the chart, and whether Log is chosen
+ *  (the chart's `log`). */
 export function volumeAxis(): {input: RadioInput, row: HTMLElement, log: ReadonlySignal<boolean>} {
-  const input = new RadioInput({items: ['Linear', 'Log'], buttons: true, value: 'Log',
-    itemTooltips: {Linear: 'Linear volume axis', Log: 'Logarithmic volume axis'}});
+  const input = new RadioInput({items: ['Linear', 'Log'], buttons: true,
+    value: grok.userSettings.getValue('PmxStudio', 'volumeAxis') === 'Log' ? 'Log' : 'Linear',
+    itemTooltips: {Linear: 'Linear volume axis', Log: 'Logarithmic volume axis'},
+    onInput: (v) => grok.userSettings.add('PmxStudio', 'volumeAxis', String(v))});
   const row = divH([span('Volume axis'), input.root]);
   Object.assign(row.style, {justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--dg-space-m)'});
   return {input, row, log: computed(() => input.value === 'Log')};
