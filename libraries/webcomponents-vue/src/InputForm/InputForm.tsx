@@ -82,7 +82,9 @@ export const InputForm = Vue.defineComponent({
 
     const currentForm = Vue.shallowRef(undefined as undefined | DG.InputForm);
 
-    Vue.watch([currentCall, currentForm, validationStates, consistencyStates, isReadonly], ([call, form, validationStates, consistencyStates, isReadonly]) => {
+    Vue.watch([currentCall, currentForm, validationStates, consistencyStates, isReadonly], (
+      [call, form, validationStates, consistencyStates, isReadonly],
+    ) => {
       if (!form || !call) return;
 
       [...call.inputParams.values()]
@@ -131,7 +133,7 @@ export const InputForm = Vue.defineComponent({
                 if (isParsed)
                   (input as DG.ChoiceInput<any>).items = items;
               }
-            } catch(e) {
+            } catch (e) {
               console.error(e);
             } finally {
               input.value = currentValue;
@@ -153,7 +155,7 @@ export const InputForm = Vue.defineComponent({
     });
 
     const formReplacedCb = async (event: {detail?: DG.InputForm}) => {
-      const form = event.detail ? Vue.markRaw(event.detail) : undefined
+      const form = event.detail ? Vue.markRaw(event.detail) : undefined;
       currentForm.value = form;
       emit('formReplaced', form);
     };

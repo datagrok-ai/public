@@ -82,9 +82,13 @@ export class ValidationIcon extends HTMLElement {
   constructor() {
     super();
 
-    combineLatest([this.status$.pipe(distinctUntilChanged()), this.isScalar$.pipe(distinctUntilChanged()), this.hover$.pipe(distinctUntilChanged())]).pipe(
+    combineLatest([
+      this.status$.pipe(distinctUntilChanged()),
+      this.isScalar$.pipe(distinctUntilChanged()),
+      this.hover$.pipe(distinctUntilChanged()),
+    ]).pipe(
       debounceTime(0),
-      takeUntil(this.destroyed$)
+      takeUntil(this.destroyed$),
     ).subscribe(() => this.update());
   }
 
@@ -267,7 +271,7 @@ export class ValidationIcon extends HTMLElement {
           ui.link(
             'Show dataframes diff',
             () => this.showDataFrameDiff(consistentValue),
-            undefined, { style: { paddingLeft: '20px' } },
+            undefined, {style: {paddingLeft: '20px'}},
           ),
         ] : []),
         ui.link(

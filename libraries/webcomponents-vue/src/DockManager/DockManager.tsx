@@ -66,7 +66,7 @@ export const DockManager = Vue.defineComponent({
           title: state.element!,
         };
       };
-    }
+    };
 
     return () => (
       <dock-spawn-ts
@@ -75,7 +75,8 @@ export const DockManager = Vue.defineComponent({
         preferredPanelTitle={preferredPanelTitle.value}
         onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
         onPanelOpened={(ev: {detail: any}) => emit('panelOpened', ev.detail)}
-        onActivePanelChanged={(ev: {detail: {newPanel: string | null, prevPanel: string | null}}) => emit('update:activePanelTitle', ev.detail.newPanel, ev.detail.prevPanel)}
+        onActivePanelChanged={(ev: {detail: {newPanel: string | null, prevPanel: string | null}}) =>
+          emit('update:activePanelTitle', ev.detail.newPanel, ev.detail.prevPanel)}
         onTabClicked={(ev: {detail: {title: string | null}}) => emit('tabClicked', ev.detail.title)}
         onManagerInitFinished={onManagerInitFinished}
         ref={dockSpawnRef}
@@ -83,5 +84,5 @@ export const DockManager = Vue.defineComponent({
         { slots.default?.() }
       </dock-spawn-ts>
     );
-  }
+  },
 });

@@ -22,7 +22,9 @@ export const Button = Vue.defineComponent({
   name: 'Button',
   emits: ['click'],
   setup(_props, {slots, attrs, emit}) {
-    return () => (<button v-bind={attrs} onClick={(p) => emit('click', p)} is="dg-button">{slots.default ? slots.default() : ''}</button>);
+    return () => (<button v-bind={attrs} onClick={(p) => emit('click', p)} is="dg-button">
+      {slots.default ? slots.default() : ''}
+    </button>);
   },
 });
 

@@ -109,13 +109,13 @@ export function applyDefaultFloatFormats(call: DG.FuncCall): void {
 }
 
 function showDFDiff(df1?: DG.DataFrame, df2?: DG.DataFrame) {
-  const idxName = '__compare_idx_col__'
+  const idxName = '__compare_idx_col__';
   if (!df1 || !df2) {
     grok.shell.warning('One of dataframes is empty');
     return;
   }
-  const cols1 = df1.columns.toList().map(col => col.name);
-  const cols2 = df2.columns.toList().map(col => col.name);
+  const cols1 = df1.columns.toList().map((col) => col.name);
+  const cols2 = df2.columns.toList().map((col) => col.name);
   const commonCols = getCommonValueCols(cols1, cols2);
   const df1c = df1.clone();
   df1c.columns.addNew(idxName, 'int').init((idx) => idx);
