@@ -22,7 +22,7 @@ import {planInput} from './plan-vs-observed';
 import {NAMES, openStage, showStage} from './stages';
 import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
   restoreFields, saveStudy, studyOf, tableOf} from './study-file';
-import {panelGrid, Slot} from './panels';
+import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {emptyStudy, studyDataLine, studyMenu, studyOf as studyNamesOf, tagStudy, withoutExcluded} from './study-table';
 import {StudyMeta, dateOf, dateText, emptyMeta, metaOf, setMetaOn, weekdayOf, withId} from './study-meta';
@@ -657,7 +657,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       content: [welfareHidden, welfareBody]},
     {id: 'enrollment', title: 'Enrollment', hint: 'Random groups alike in their starting tumors',
       content: [divH([proposeButton, sheetButton]), allocationTable]},
-  ], MONITOR_LAYOUT, 'pmx-monitor-panels');
+  ], MONITOR_LAYOUT, 'pmx-monitor-panels', 'monitor');
+  exports.push(['Layout…', () => editLayout(panels), 'View']);
 
   const content = divV([dataLine.root, cards, panels], 'pmx-monitor-content');
   const needStudy = () => studyTable() ?? (() => {

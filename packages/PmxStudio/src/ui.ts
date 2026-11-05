@@ -280,7 +280,10 @@ export function volumeAxis(): {input: RadioInput, row: HTMLElement, log: Readonl
   const input = new RadioInput({items: ['Linear', 'Log'], buttons: true,
     value: grok.userSettings.getValue('PmxStudio', 'volumeAxis') === 'Log' ? 'Log' : 'Linear',
     itemTooltips: {Linear: 'Linear volume axis', Log: 'Logarithmic volume axis'},
-    onInput: (v) => grok.userSettings.add('PmxStudio', 'volumeAxis', String(v))});
+    onInput: (v) => {
+      grok.userSettings.add('PmxStudio', 'volumeAxis', String(v));
+      void grok.userSettings.flush();
+    }});
   const row = divH([span('Volume axis'), input.root], 'pmx-noprint');
   Object.assign(row.style, {justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--dg-space-m)'});
   return {input, row, log: computed(() => input.value === 'Log')};

@@ -22,7 +22,7 @@ import {askedOf, autoRun, busyBar, busyOverlay, callInputs, cardGrid, copyRow, d
   notesBox, num, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
   statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {openStage} from './stages';
-import {panelGrid, Slot} from './panels';
+import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
@@ -707,7 +707,8 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
       sized(sensitivityChart, 280), noScenarios, scenarioEnd, scenarioBox]},
     {id: 'protocol', title: 'Study protocol', hint: 'Design, sample size and analysis, ready to paste',
       content: [copyRow(() => protocolText, 'Study protocol'), analysis]},
-  ], PLAN_LAYOUT, 'pmx-plan-panels');
+  ], PLAN_LAYOUT, 'pmx-plan-panels', 'plan');
+  exports.push(['Layout…', () => editLayout(panels), 'View']);
   // an empty viewer says what columns it lacks: the charts hidden until the first plan gives them their data
   form.effect(() => [growth, power].forEach((v) => v.root.style.visibility = result.value ? '' : 'hidden'));
   // (with no group size, no power by end: the chart would keep the last plan's)

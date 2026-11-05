@@ -70,6 +70,31 @@
   background: color-mix(in srgb, var(--dg-accent, #2083D5) 12%, transparent);
 }
 
+/* the layout editor: the panels as tiles on the twelve columns */
+.pmx-layout { display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+.pmx-layout-help, .pmx-layout-status, .pmx-layout-tray-label { font-size: 12px; color: var(--dg-grey-5, #717581); }
+.pmx-layout-board {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: minmax(56px, auto); gap: 8px;
+  padding: 12px; border-radius: 8px; background: var(--dg-grey-1, #f4f6f8);
+}
+.pmx-layout-tile {
+  position: relative; display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 6px 8px; cursor: grab;
+  background: var(--dg-bg, #fff); border: 1px solid var(--dg-border, #DBDCDF); border-radius: 6px;
+}
+.pmx-layout-tile:hover { border-color: var(--dg-accent, #2083D5); }
+.pmx-layout-tile:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; }
+.pmx-layout-tile.dragging { opacity: .4; }
+.pmx-layout-title { font-weight: 500; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 16px; }
+.pmx-layout-widths { display: flex; gap: 2px; flex-wrap: wrap; }
+.pmx-layout-w, .pmx-layout-hide, .pmx-layout-chip {
+  font: 11px var(--dg-font-family, Roboto, sans-serif); border: 1px solid var(--dg-border, #DBDCDF); border-radius: 3px;
+  background: var(--dg-bg, #fff); color: var(--dg-text-color, #4D5261); padding: 0 5px; cursor: pointer;
+}
+.pmx-layout-w.on { background: var(--dg-accent, #2083D5); border-color: var(--dg-accent, #2083D5); color: #fff; }
+.pmx-layout-hide { position: absolute; top: 4px; right: 4px; border: 0; padding: 0 4px; color: var(--dg-grey-5, #717581); }
+.pmx-layout-tray { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.pmx-layout-chip { border-style: dashed; padding: 2px 8px; color: var(--dg-accent, #2083D5); }
+
 /* the panels: twelve columns; half and then whole rows as the results pane narrows */
 .pmx-grid-host { container-type: inline-size; }
 .pmx-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; grid-auto-flow: row dense; }

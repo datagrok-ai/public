@@ -31,7 +31,7 @@ import {noEffectNote, observedCell, planInput, planTab} from './plan-vs-observed
 import {nciReadings, NciReading, tolerabilityTab} from './tolerability';
 import {BandChart} from './band-chart';
 import {explore, exploreContent, StudyInputs, studyInputsOf} from './explore';
-import {panelGrid, Slot} from './panels';
+import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {exclusionsOf, studyDataLine, studyMenu, studyOf, tagStudy, withoutExcluded} from './study-table';
 import {metaOf, setMetaOn} from './study-meta';
@@ -868,7 +868,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       if (r && resultStudy)
         explore(which, r, resultStudy, colorsOf(r), self.view);
     })},
-  ], ANALYZE_LAYOUT, 'pmx-analyze-panels');
+  ], ANALYZE_LAYOUT, 'pmx-analyze-panels', 'analyze');
+  exports.push(['Layout…', () => editLayout(panels), 'View']);
   const content = divV([dataLine.root, cards, panels], 'pmx-analyze-content');
   const copied = (text: string, what: string) => {
     studyNow();

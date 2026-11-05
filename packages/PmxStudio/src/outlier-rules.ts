@@ -174,6 +174,7 @@ export function saveUserRules(r: OutlierRules | null): void {
     grok.userSettings.add(SETTINGS, USER_KEY, JSON.stringify(r));
   else
     grok.userSettings.delete(SETTINGS, USER_KEY);
+  void grok.userSettings.flush();
 }
 
 /** The lab's rules, for every user (who has none of their own). */

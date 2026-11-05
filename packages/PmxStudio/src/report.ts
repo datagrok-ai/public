@@ -9,18 +9,20 @@ import * as echarts from 'echarts/core';
 import type {LogEntry} from './study-file';
 import {StudyMeta, dateOf, dateText} from './study-meta';
 
-/** A menu item: its name and what it does. */
-export type Exports = [string, () => void | Promise<void>][];
+/** A menu item: its name, what it does and its group (Export unless named). */
+export type Exports = [string, () => void | Promise<void>, string?][];
 
 const failed = (e: any) => grok.shell.error(String(e?.message ?? e));
 
-/** The view's menu, with the stage's exports in an Export group. */
+/** The view's menu: the stage's exports in an Export group, its other items in theirs (View: the layout). */
 export function exportMenu(view: DG.ViewBase, items: Exports): void {
   const menu = DG.Menu.create();
-  const group = menu.group('Export');
-  for (const [name, run] of items)
-    group.item(name, () => void Promise.resolve().then(run).catch(failed));
-  group.endGroup();
+  for (const name of [...new Set(['Export', ...items.map((x) => x[2] ?? 'Export')])]) {
+    const group = menu.group(name);
+    for (const [label, run] of items.filter((x) => (x[2] ?? 'Export') === name))
+      group.item(label, () => void Promise.resolve().then(run).catch(failed));
+    group.endGroup();
+  }
   view.ribbonMenu = menu;
 }
 
