@@ -99,3 +99,7 @@
 .pmx-line-item-type { font-size: 12px; color: var(--dg-text-color, #4D5261); }
 .pmx-line-item-evidence { display: block; font-size: 11px; color: var(--dg-grey-5, #717581); }
 .pmx-line-empty { padding: 6px; font-size: 12px; color: var(--dg-grey-5, #717581); }
+
+/* the KPI cards' change (statCard): one colour, as more is not always better; pinned figures, a dashed edge */
+.pmx-stat .u2-stat-delta-up, .pmx-stat .u2-stat-delta-down {color: var(--dg-accent, #2083d5);}
+.pmx-pinned .pmx-stat {outline: 1px dashed var(--dg-accent, #2083d5); outline-offset: -1px;}

@@ -4,7 +4,7 @@
    results. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {buttonWithIcon, computed, div, divH, divV, dot, icon, loader, RadioInput, Section, span,
+import {buttonWithIcon, computed, div, divH, divV, dot, effect, icon, loader, RadioInput, Section, signal, span,
   StatCard, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
@@ -46,8 +46,34 @@ export function guide(x: number, lo: number): HTMLElement {
 export function statCard(owner: {runInScope: <T>(f: () => T) => T}, label: string,
   value: ReadonlySignal<StatValue | undefined>, tip: () => string, format?: (x: StatValue) => string): HTMLElement {
   return owner.runInScope(() => {
-    const c = new StatCard({label, value, format});
-    Tooltip.bind(c.root, tip);
+    // the change from the previous result, or from the figures pinned (cardGrid's right click): u2's delta, as a
+    // number (a percent when the card shows one), in one colour (more animals is not better, more power is)
+    const pinned = signal(false);
+    const delta = signal<number | undefined>(undefined);
+    let last: number | undefined;
+    let base: number | undefined;
+    let wasPinned = false;
+    effect(() => {
+      const v = value.value;
+      const pin = pinned.value;
+      const x = typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+      if (pin !== wasPinned) {
+        wasPinned = pin;
+        base = pin ? x ?? last : undefined;
+      }
+      if (v === undefined)
+        return;
+      const ref = pin ? base : last;
+      delta.value = x !== undefined && ref !== undefined && x !== ref ? x - ref : undefined;
+      last = x;
+    });
+    const percent = !!format && /%$/.test(format(1));
+    const c = new StatCard({label, value, format, delta, deltaFormat: (d) =>
+      `${d > 0 ? '+' : '−'}${percent ? format!(Math.abs(d)) : +Math.abs(d).toFixed(2)}`});
+    c.root.classList.add('pmx-stat');
+    c.root.addEventListener('pmx-pin', (e) => pinned.value = (e as CustomEvent<boolean>).detail);
+    Tooltip.bind(c.root, () => `${tip()}\n\nThe arrow: the change from ${pinned.value ? 'the figures pinned' :
+      'the previous result'}. Right-click to ${pinned.value ? 'unpin them' : 'pin these figures and compare'}.`);
     return c.root;
   });
 }
@@ -57,6 +83,18 @@ export function cardGrid(cards: HTMLElement[], cls: string, minWidth: number): H
   const grid = div(cards, cls);
   Object.assign(grid.style, {display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${minWidth}px, 1fr))`,
     gap: 'var(--dg-space-m)'});
+  // pin and compare: the figures now become what every next result is compared with, until unpinned
+  const pin = (on: boolean) => {
+    grid.classList.toggle('pmx-pinned', on);
+    for (const c of cards)
+      c.dispatchEvent(new CustomEvent('pmx-pin', {detail: on}));
+  };
+  grid.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const on = grid.classList.contains('pmx-pinned');
+    DG.Menu.popup().item(on ? 'Unpin: compare with the previous result' : 'Pin these figures to compare',
+      () => pin(!on)).show({causedBy: e});
+  });
   return grid;
 }
 
