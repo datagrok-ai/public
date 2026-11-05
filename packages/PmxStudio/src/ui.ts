@@ -90,13 +90,46 @@ export function autoRun(form: () => FuncCallForm, run: () => unknown): {changed:
 const DEBOUNCE = 150;
 
 /** What a call is asked, to tell whether a run still matches its form when it ends; `compareSchedules`,
- *  `detectableEffect` and `withTwin` say only how much the run computes, not what it is about. */
-export const askedOf = (call: DG.FuncCall) => JSON.stringify(call.func.inputs
-  .filter((p) => !['compareSchedules', 'detectableEffect', 'withTwin'].includes(p.name)).map((p) => {
+ *  `detectableEffect` and `withTwin` say only how much the run computes, not what it is about. `only`: just those
+ *  inputs. */
+export const askedOf = (call: DG.FuncCall, only?: string[]) => JSON.stringify(call.func.inputs
+  .filter((p) => only ? only.includes(p.name) :
+    !['compareSchedules', 'detectableEffect', 'withTwin'].includes(p.name)).map((p) => {
     const v = call.inputs[p.name];
     // (a column param holds the platform's own object, which JSON cannot write)
     return v instanceof DG.DataFrame ? v.toCsv() : v instanceof DG.Column ? v.name : v;
   }));
+
+/** A new result with each of its tables that holds what the previous one's held replaced by that very table: a panel
+ *  that reads only unchanged tables is given the same objects, and does not redraw. */
+export function keepSame<R extends object>(prev: R | undefined, next: R): R {
+  if (!prev)
+    return next;
+  const out = {...next};
+  for (const k of Object.keys(next) as (keyof R)[]) {
+    const [a, b] = [prev[k], next[k]];
+    if (a instanceof DG.DataFrame && b instanceof DG.DataFrame && a.rowCount === b.rowCount &&
+      a.columns.names().join() === b.columns.names().join() && a.toCsv() === b.toCsv())
+      out[k] = a as R[keyof R];
+  }
+  return out;
+}
+
+/** `result` as a panel that reads only its tables `keys` (and what `extra` gives) sees it: a new value only when one of
+ *  those changed (keepSame keeps an unchanged table the same object), so the panel redraws only then. */
+export function only<R extends object>(result: ReadonlySignal<R | undefined>, keys: (keyof R)[],
+  extra: (r: R) => unknown[] = () => []): ReadonlySignal<R | undefined> {
+  let last: R | undefined;
+  let lastKey: unknown[] = [];
+  return computed(() => {
+    const r = result.value;
+    const key = r ? [...keys.map((k) => r[k]), ...extra(r)] : [];
+    if (r && last && key.length === lastKey.length && key.every((x, i) => x === lastKey[i]))
+      return last;
+    [last, lastKey] = [r, key];
+    return r;
+  });
+}
 
 /** A finished call's outputs by name. */
 export const outputsOf = <T>(c: DG.FuncCall): T =>

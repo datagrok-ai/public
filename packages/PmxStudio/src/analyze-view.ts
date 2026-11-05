@@ -17,7 +17,7 @@ import type {ViewContent} from '@datagrok-libraries/u2/dg';
 import {AnalysisFrames, exampleStudy, median} from './analyze';
 import {armColors} from './frames';
 import {CorrectionInput} from './arms-input';
-import {askedOf, autoRun, axisAt, busyBar, busyOverlay, cardGrid, copyRow, dayText, declarationPane,
+import {askedOf, autoRun, keepSame, only, axisAt, busyBar, busyOverlay, cardGrid, copyRow, dayText, declarationPane,
   DECLARATION_MIN, guide,
   infoNote, noteLine, notesBox, num, outputsOf, pct, pValue, RESULTS_MIN, resultsFrame, settleForm, signed,
   isBodyWeight, keepNamedColumns, sized, staleNote, statCard, swatch, volumeAxis, wrapCells} from './ui';
@@ -62,6 +62,10 @@ function animalsPerDay(volumes: DG.DataFrame, groups: string[], colors: {[g: str
 }
 
 const TWIN = 'Untreated twin';
+
+/** The inputs the twin reads (the study's volumes to the evaluation day, the line's model, the control): a change of
+ *  any other (the correction, α, the weights, the plan) finds the twin in the engine's cache. */
+const TWIN_INPUTS = ['study', 'animal', 'group', 'day', 'volume', 'line', 'control', 'endpoint', 'evaluationDay'];
 const MEASURED = 'Measured';
 
 /** One treated animal's measurements and its twin's band, as the band chart draws two series. */
@@ -237,6 +241,8 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   const planState = {stale, error, result, reading: Promise.resolve() as Promise<unknown>};
   // the study and columns the shown result read (Your data opens them)
   let resultStudy: StudyInputs | null = null;
+  // the twin inputs of the last analysis that got its twin (the twin then in the engine's cache)
+  let twinCached: string | null = null;
   const analyze = async (prepare?: () => Promise<void>) => {
     busy.value = true;
     const mine = ++latest;
@@ -249,7 +255,20 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
       await planState.reading;
       const sent = askedOf(call);
       const reads = studyInputsOf(call);
-      // the analysis first; then the same inputs with the twins (seconds), whatever the form holds by then
+      const twinSent = askedOf(call, TWIN_INPUTS);
+      // the twin unchanged (cached): one call, with it
+      if (twinSent === twinCached) {
+        call.setParamValue('withTwin', true);
+        const c = await call.call();
+        if (mine !== latest)
+          return;
+        error.value = null;
+        stale.value = askedOf(call) !== sent;
+        resultStudy = reads;
+        result.value = keepSame(result.peek(), read(c));
+        return;
+      }
+      // else the analysis first; then the same inputs with the twins (seconds), whatever the form holds by then
       call.setParamValue('withTwin', false);
       const f = call.func;
       const full = f.prepare({...Object.fromEntries(f.inputs.map((p) => [p.name, call.getParamValue(p.name)])),
@@ -260,10 +279,12 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
       error.value = null;
       stale.value = askedOf(call) !== sent;
       resultStudy = reads;
-      result.value = read(c);
+      result.value = keepSame(result.peek(), read(c));
       void full.call().then((done) => {
-        if (mine === latest)
-          result.value = read(done);
+        if (mine !== latest)
+          return;
+        twinCached = twinSent;
+        result.value = keepSame(result.peek(), read(done));
       }, (e) => {
         if (mine === latest)
           error.value = String(e?.message ?? e);
@@ -383,6 +404,8 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
     requestAnimationFrame(() => tolerability.content.map((el) => el.querySelector('.pmx-nci')).find((el) => el)
       ?.scrollIntoView({behavior: 'smooth', block: 'center'}));
   };
+  // what a panel reads besides its own tables: the control and the treated groups (their colours follow from them)
+  const groupsOf = (r: AnalysisFrames) => [r.analysis.get('control', 0), r.comparisons.col('arm')!.toList().join(' ')];
   const colorsOf = (r: AnalysisFrames) => {
     const colors = armColors(r.comparisons.col('arm')!.toList());
     colors[r.analysis.get('control', 0)] = colors['Control'];
@@ -495,7 +518,8 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   });
 
   const versus = planTab(form, result, colorsOf);
-  const tolerability = tolerabilityTab(form, result, colorsOf);
+  const tolerability = tolerabilityTab(form, only(result, ['tolerability', 'weights', 'volumes'], groupsOf),
+    colorsOf);
 
   const growthAxis = volumeAxis();
   const growth = new BandChart(computed(() => result.value?.volumes), {x: 'day', lower: 'lower', upper: 'upper',
@@ -630,15 +654,16 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
     picked.value = keep !== undefined && buttons.has(keep) ? keep : buttons.keys().next().value;
     mark(picked.peek());
   });
+  const twinsOnly = only(result, ['twins', 'effects'], groupsOf);
   const pickedRow = computed(() => {
-    const e = result.value?.effects;
+    const e = twinsOnly.value?.effects;
     const a = picked.value;
     const i = e && a ? e.col('animal')?.toList().indexOf(a) ?? -1 : -1;
     return i < 0 ? undefined : {animal: a!, group: e!.get('group', i) as string, effect: e!.get('effect', i),
       lower: e!.get('effect_lower', i), upper: e!.get('effect_upper', i)};
   });
   const twinTable = computed(() => {
-    const r = result.value;
+    const r = twinsOnly.value;
     const p = pickedRow.value;
     return r && p ? animalFrame(r.twins, p.animal, colorsOf(r)[p.group]) : undefined;
   });
@@ -661,16 +686,18 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   // the growth rate of each animal, the quantity the test compares
   // under the growth chart, the animals behind each point
   const perDay = div([], 'pmx-n-per-day');
+  const volumesOnly = only(result, ['volumes'], groupsOf);
   form.effect(() => {
-    const r = result.value;
+    const r = volumesOnly.value;
     perDay.replaceChildren(...(r ? [animalsPerDay(r.volumes, [r.analysis.get('control', 0),
       ...r.comparisons.col('arm')!.toList()], colorsOf(r))] : []));
   });
 
   // each treated animal's best response (mRECIST's BestResponse, % from its volume at randomization), largest
   // growth first, coloured by its mRECIST class
+  const animalsOnly = only(result, ['animals'], groupsOf);
   const waterfallData = computed(() => {
-    const r = result.value;
+    const r = animalsOnly.value;
     const a = r?.animals;
     if (!r || !a?.col('best_response'))
       return undefined;
@@ -698,8 +725,9 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
 
   // the strict Kaplan-Meier: days to the endpoint as measured, an animal that never reached it censored
   const survival = signal<Survival | undefined>(undefined);
+  const kmOnly = only(result, ['volumes'], (r) => [...groupsOf(r), r.analysis.get('endpoint', 0)]);
   form.effect(() => {
-    const r = result.value;
+    const r = kmOnly.value;
     const s = resultStudy;
     if (!r || !s) {
       survival.value = undefined;
@@ -707,7 +735,7 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
     }
     void survivalOf(s, r.analysis.get('control', 0), r.analysis.get('endpoint', 0), colorsOf(r))
       .then((k) => {
-        if (result.peek() === r)
+        if (kmOnly.peek() === r)
           survival.value = k;
       }, () => survival.value = undefined);
   });
@@ -724,7 +752,7 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   });
 
   const slopes = viewers.boxPlot(computed(() => {
-    const r = result.value;
+    const r = animalsOnly.value;
     if (!r)
       return undefined;
     const a = r.animals;
