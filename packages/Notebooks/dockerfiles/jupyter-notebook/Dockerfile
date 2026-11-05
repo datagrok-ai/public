@@ -259,8 +259,10 @@ USER grok:grok
 RUN cd /tmp ; \
     command -v antiword unrtf pdftotext xelatex ; \
     find / -xdev \( -name METADATA -o -name PKG-INFO \) -exec grep -l '^Name: setuptools' '{}' + 2>/dev/null || true ; \
-    find / -xdev -name '*.whl' 2>/dev/null || true ; \
-    apk info -r python-3.13 py3.13-setuptools 2>/dev/null || true ; \
+    find / -xdev -iname '*setuptools*' -not -path '*/setuptools/*' -not -path '*/site-packages/setuptools' 2>/dev/null || true ; \
+    find / -xdev \( -name '*.egg' -o -name '*.egg-info' \) 2>/dev/null || true ; \
+    grep -rn 'setuptools' ${VIRTUAL_ENV}/requirements.txt || true ; \
+    grep -rl '70\.3\.0' ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages 2>/dev/null | grep -iv '\.so' | head -20 || true ; \
     tesseract --list-langs ; gdalinfo --version ; gs --version ; pandoc --version > /dev/null ; \
     gnuplot -e 'set terminal dumb; plot sin(x)' > /dev/null ; \
     RESOLVER_ADDR=127.0.0.1 envsubst '${RESOLVER_ADDR}' < /etc/nginx/nginx.conf.template > /tmp/nginx.conf ; \
