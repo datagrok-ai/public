@@ -8,6 +8,7 @@ COPY requirements.txt ${VIRTUAL_ENV}/requirements.txt
 RUN python -m venv ${VIRTUAL_ENV} && \
     pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --timeout 3600 --no-cache-dir --requirement ${VIRTUAL_ENV}/requirements.txt && \
+    pip uninstall -y setuptools wheel pip && \
     rm -rf /tmp/*
 
 
@@ -15,10 +16,11 @@ FROM python:3.12-alpine
 
 WORKDIR /app
 
-# Patch base-image CVEs: apk upgrade (expat/krb5/openssl/musl/sqlite) and refresh
-# the interpreter's pip/setuptools/wheel (CVE-2022-40897/2024-6345/2025-47273 etc.).
+# Patch base-image CVEs with apk upgrade, and drop pip/setuptools/wheel and ensurepip's
+# bundled wheels: nothing installs at runtime.
 RUN apk upgrade --no-cache && \
-    pip install --no-cache-dir --upgrade pip setuptools wheel
+    python -m pip uninstall -y pip setuptools wheel && \
+    rm -rf /usr/local/lib/python3*/ensurepip
 
 ARG HOME_DIR=/home/grok
 ARG VIRTUAL_ENV=/app/venv
