@@ -15,7 +15,7 @@ import type {ViewContent} from '@datagrok-libraries/u2/dg';
 import {exampleStudy} from './analyze';
 import {analyzeView} from './analyze-view';
 import {BandChart} from './band-chart';
-import {armColors} from './frames';
+import {WEEKDAY_NAMES, armColors, weekdaysOf} from './frames';
 import {allocateGroups, MonitorFrames, monitorFrames, MonitorInputs, outsideBand} from './monitor';
 import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
 import {planInput} from './plan-vs-observed';
@@ -25,7 +25,8 @@ import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf,
 import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {emptyStudy, studyDataLine, tagStudy, withoutExcluded} from './study-table';
-import {emptyMeta, metaOf, setMetaOn, withId} from './study-meta';
+import {StudyMeta, dateOf, dateText, emptyMeta, metaOf, setMetaOn, weekdayOf, withId} from './study-meta';
+import {CAL, DayLook, dayActions, dayToday, mark, marked, weeksGrid} from './calendar';
 import {LineInput} from './line-input';
 import {printSheet, sheetHtml} from './sheet';
 import {studyInputsOf} from './explore';
@@ -38,7 +39,8 @@ import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, day
   signed, statCard, swatch, volumeAxis, wrapCells} from './ui';
 
 /** Monitor's panels, in order and width (twelfths): today's work first, then the groups, then the start. */
-const MONITOR_LAYOUT: Slot[] = [{id: 'today', span: 4}, {id: 'growth', span: 8}, {id: 'sheet', span: 12},
+const MONITOR_LAYOUT: Slot[] = [{id: 'today', span: 4}, {id: 'growth', span: 8}, {id: 'calendar', span: 12},
+  {id: 'sheet', span: 12},
   {id: 'decisions', span: 6}, {id: 'welfare', span: 6}, {id: 'enrollment', span: 12}];
 
 /** Below this chance of success, on a planned review, Monitor suggests stopping the arm. A person decides. */
@@ -380,6 +382,128 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
     growthHidden.hidden = revealed.value;
   });
 
+  // Calendar: the study by its days, today among them once day 0 has a date
+  const metaVersion = signal(0);
+  const meta = computed(() => {
+    void result.value;
+    void metaVersion.value;
+    return metaOf(studyTable()) ?? emptyMeta();
+  });
+  const setMeta = (m: StudyMeta) => {
+    const df = studyTable();
+    if (df) {
+      setMetaOn(df, m);
+      metaVersion.value++;
+    }
+  };
+  // a column the form maps a role to, else the study table's own of that name
+  const roleCol = (df: DG.DataFrame, role: string): DG.Column | null => {
+    const c = call.getParamValue(role);
+    return c instanceof DG.Column ? c : df.col(role);
+  };
+  const studyPlan = (): SavedPlan | null => {
+    const text = call.getParamValue('plan') || studyTable()?.getTag(PLAN_TAG);
+    try {
+      return text ? parsePlan(text) : null;
+    } catch {
+      return null;
+    }
+  };
+  const calendarDays = dayActions(() => meta.peek(), setMeta, () => {
+    const df = studyTable();
+    const a = df ? roleCol(df, 'animal') : null;
+    return a ? [...new Set(a.toList().map(String))].sort((x, y) => x.localeCompare(y, undefined, {numeric: true})) : [];
+  });
+  const calendarSummary = divV([], 'pmx-calendar-summary');
+  Object.assign(calendarSummary.style, {gap: '4px', lineHeight: '1.45', marginBottom: 'var(--dg-space-m)'});
+  const calendarBox = div([]);
+  form.effect(() => {
+    const r = result.value;
+    const m = meta.value;
+    const df = studyTable();
+    if (!r || !df) {
+      calendarSummary.replaceChildren();
+      calendarBox.replaceChildren();
+      return;
+    }
+    const dayCol = roleCol(df, 'day');
+    const volCol = roleCol(df, 'volume');
+    const measured = new Set<number>();
+    for (let i = 0; i < df.rowCount; i++) {
+      if (dayCol && volCol && !dayCol.isNone(i) && !volCol.isNone(i))
+        measured.add(dayCol.get(i));
+    }
+    const latest = r.status.get('day', 0) as number;
+    const plan = studyPlan();
+    const startWeekday = m.start ? weekdayOf(m.start) :
+      Math.max(0, WEEKDAY_NAMES.indexOf(String(plan?.inputs.startWeekday ?? 'Monday')));
+    const weekdays = new Set(weekdaysOf(plan?.inputs.measurementDays as string | undefined));
+    // the plan's measurement days: day 0 and its weekdays (no plan: only the days measured count)
+    const planned = (d: number) => plan !== null && (d === 0 || weekdays.has((startWeekday + d) % 7));
+    const today = dayToday(m.start);
+    // the day the study is on: today's, or without a date the last day measured
+    const now = today ?? latest;
+    const round = (x: number | undefined) => x === undefined ? undefined : Math.round(x);
+    const [end, lo, hi] = [round(cell('end_median').value), round(cell('end_lower').value),
+      round(cell('end_upper').value)];
+    const planEnd = plan?.predicted.studyEnd ?? null;
+    const looks = new Set(String(df.getTag(LOOKS_TAG) ?? '').split(/[,;\s]+/).filter((x) => x).map(Number));
+    const missing = Array.from({length: Math.max(0, now)}, (_, d) => d).filter((d) => planned(d) && !measured.has(d));
+    const last = Math.max(latest, today ?? 0, hi ?? end ?? 0, planEnd ?? 0);
+
+    const lines: HTMLElement[] = [];
+    const todayMark = mark('Today', CAL.blue, true);
+    if (today === null) {
+      lines.push(marked(todayMark, `Day 0 has no date yet: the calendar stops at the last day measured, day ` +
+        `${latest}. Set the date from any day's menu (right click) and it follows today.`));
+    } else if (today < 0)
+      lines.push(marked(todayMark, `Day 0 is in ${-today} days, on ${dateText(dateOf(m.start, 0)!, true)}.`));
+    else {
+      lines.push(marked(todayMark, `Day ${today}, ${dateText(dateOf(m.start, today)!, true)}: ${today} days in` +
+        (end === undefined ? '.' : today <= end ? `, about ${end - today} to the expected end (day ${end}` +
+          (lo !== undefined && hi !== undefined ? `, likely ${lo} to ${hi}).` : ').') :
+          `, past the expected end (day ${end}).`)));
+    }
+    if (today !== null && planned(today) && !measured.has(today))
+      lines.push(marked(mark('Measure today', CAL.blue, true), 'Today is a measurement day and has no values yet.'));
+    lines.push(marked(mark('Measured', CAL.slate, true), `${measured.size} days with measurements, the last ` +
+      `day ${latest}.`));
+    if (missing.length > 0) {
+      lines.push(marked(mark('No data', CAL.red, false), `The plan measures on day${missing.length > 1 ? 's' : ''} ` +
+        `${missing.join(', ')}, with no values in the table.`));
+    }
+    calendarSummary.replaceChildren(...lines);
+
+    const look = (d: number, own: HTMLElement[]): DayLook => {
+      const marks: HTMLElement[] = [];
+      if (d === today)
+        marks.push(mark('Today', CAL.blue, true));
+      if (d === 0)
+        marks.push(mark('Randomize', CAL.blue, false));
+      if (measured.has(d))
+        marks.push(mark('Measured', CAL.slate, true));
+      else if (planned(d)) {
+        marks.push(d < now ? mark('No data', CAL.red, false) : d === today ? mark('Measure today', CAL.blue, true) :
+          mark('Measure', CAL.slate, false));
+      }
+      if (looks.has(d))
+        marks.push(mark('Review', CAL.dark, false));
+      marks.push(...own);
+      if (d === end)
+        marks.push(mark('Expected end', CAL.dark, true));
+      if (planEnd !== null && d === planEnd && d !== end)
+        marks.push(mark('Planned end', CAL.dark, false));
+      const detail = d === today ? 'today' : measured.has(d) ? 'measured' : planned(d) ? (d < now ?
+        'a measurement day with no values' : 'a measurement day') : undefined;
+      return {marks, detail, border: d === today ? `2px solid ${CAL.blue}` : undefined,
+        tint: lo !== undefined && hi !== undefined && d >= lo && d <= hi ?
+          `color-mix(in srgb, ${CAL.dark} 6%, transparent)` : d < now ?
+            `color-mix(in srgb, ${CAL.slate} 4%, transparent)` : undefined};
+    };
+    calendarBox.replaceChildren(weeksGrid({meta: m, startWeekday, last, day: look, onMenu: calendarDays.menu,
+      onNote: calendarDays.addNote}));
+  });
+
   // Decisions
   const decisionBody = div([], 'pmx-monitor-decisions');
   const logBox = div([], 'pmx-monitor-log');
@@ -502,6 +626,9 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
       content: [limits, entered, attention, noteBox]},
     {id: 'growth', title: 'Growth', hint: 'Each group so far and what is expected up to the end',
       content: [growthHidden, growthAxis.row, sized(growth, 340)]},
+    {id: 'calendar', title: 'Study calendar', hint: 'The study by its days: today, the days measured and to measure, ' +
+      'doses, reviews and the expected end. Double-click a day to note what happened, right-click it for more',
+    content: [calendarSummary, calendarBox]},
     {id: 'sheet', title: 'Measurement sheet', hint: 'The range the next value of each animal should fall in: check ' +
       'each value as you measure it', content: [sheet]},
     {id: 'decisions', title: 'Decisions', hint: 'Whether each treated group is still worth continuing, and what was ' +
@@ -562,7 +689,7 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
         revealed.value ? '' : 'groups hidden'].filter((x) => x).join(' · '),
       meta: metaOf(df), setMeta: df ? (m) => {
         const was = !!metaOf(df)?.blinded;
-        setMetaOn(df, m);
+        setMeta(m);
         if (m.blinded !== was)
           record(m.blinded ? 'Blinded entry on' : 'Blinded entry off: the groups are shown');
       } : undefined};

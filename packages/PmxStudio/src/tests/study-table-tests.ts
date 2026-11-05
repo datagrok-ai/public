@@ -9,6 +9,7 @@ import {REVEALED, addLog, groupsShown, logOf, parseStudy, studyOf, tableOf} from
 import {dateOf, dosingDays, emptyMeta, metaOf, parseMeta, setMetaOn, startFrom, weekdayOf} from '../study-meta';
 import {entryOf, libraryOf, matches} from '../library';
 import {spiderLines} from '../spider-chart';
+import {dayToday} from '../calendar';
 import {sheetHtml, sheetRows} from '../sheet';
 
 /** Six animals of one group on days 0, 3 and 7; M4's day 7 a caliper typo (2400 for ~240), M1 losing weight. */
@@ -149,6 +150,9 @@ category('Study table', () => {
     expect(dateOf(null, 3), null);
     expect(startFrom('2026-11-12', 3), '2026-11-09');
     expect(weekdayOf('2026-11-09'), 0, 'a Monday');
+    expect(dayToday('2026-11-09', new Date(2026, 10, 21, 23, 30)), 12, 'today, by the local date');
+    expect(dayToday('2026-11-09', new Date(2026, 10, 2)), -7, 'before day 0');
+    expect(dayToday(null), null);
     const notes = parseMeta({notes: [{day: 3, kind: 'Incident', animal: 'M4', text: 'ulcerated', who: 'x', when: ''},
       {day: 'x', text: 'no day'}, {day: 5, kind: 'Party', text: 'odd kind'}]})!.notes;
     expect(notes.length, 2, 'a note without a day is dropped');

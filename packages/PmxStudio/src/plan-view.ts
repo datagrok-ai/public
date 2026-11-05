@@ -26,8 +26,8 @@ import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
-import {DayNote, StudyMeta, dateOf, dateText, dosingDays, emptyMeta, noteDialog, startFrom, weekdayOf, withId}
-  from './study-meta';
+import {StudyMeta, dateOf, dateText, dosingDays, emptyMeta, weekdayOf, withId} from './study-meta';
+import {CAL, MenuAt, WEEKDAYS, dayActions, mark, marked, weeksGrid} from './calendar';
 import {LineInput, lastLine, tumorsOf} from './line-input';
 import {BandChart} from './band-chart';
 
@@ -41,25 +41,12 @@ const PLAN_LAYOUT: Slot[] = [{id: 'groups', span: 12}, {id: 'growth', span: 8}, 
 const monitorNote = () => infoNote('<b>From randomization on, in Monitor.</b> Follow this study to form the groups, ' +
   'balanced on tumor volume, and to see each session who needs attention and how the study is going.');
 
-const WEEKDAYS = WEEKDAY_NAMES.map((d) => d.slice(0, 3));
 
 /** What a section with nothing to compare says: no arm reaches the target power with any group size. */
 const UNREACHABLE = 'No group size up to 40 reaches the target power: lower it, or set the animals per arm.';
 
 /** Where a study's total has no number: the limit is per group, and totals over 40 are common. */
 const OVER_40 = 'over 40 per group';
-
-/** Where a day's menu opens (DG.Menu.show's options): at the mouse, or next to the focused day. */
-type MenuAt = {causedBy?: MouseEvent, element?: HTMLElement, nextToElement?: boolean};
-
-/** A day's mark in the calendar: a short label in its kind's colour. */
-function mark(text: string, color: string, filled: boolean): HTMLElement {
-  const el = span(text);
-  Object.assign(el.style, {display: 'inline-block', padding: '1px 6px', borderRadius: '3px', fontSize: '11px',
-    lineHeight: '16px', whiteSpace: 'nowrap', fontWeight: '500', color: filled ? '#fff' : color,
-    background: filled ? color : `color-mix(in srgb, ${color} 12%, transparent)`});
-  return el;
-}
 
 /** The study as a wall calendar: a row a week, Monday to Sunday, day 0 on the randomization weekday (the date is
  *  known only when the tumors reach the volume), each day with what is done and its details in the tooltip; its
@@ -80,13 +67,10 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
     (_, i) => [calendar.get('day', i), calendar.get('activity', i)]));
   const measured = new Set(String(v('measurement_days')).split(', ').map(Number));
   const weekdays = new Set(weekdaysOf(v('measurement_weekdays')));
-  const [BLUE, SLATE, RED, DARK, GREEN, AMBER] = ['#2083d5', '#5b6b7f', '#c0504d', '#4d5261', '#2e8b57', '#b7791f'];
+  const {blue: BLUE, slate: SLATE, red: RED, dark: DARK, green: GREEN} = CAL;
   const meta = study.meta;
   const date = (day: number) => dateOf(meta.start, day);
   const doses = dosingDays(meta.groups, end);
-  const notesOn = new Map<number, DayNote[]>();
-  for (const n of meta.notes)
-    notesOn.set(n.day, [...notesOn.get(n.day) ?? [], n]);
 
   // day 0 falls on the randomization weekday: the measurement weekdays are the lab's, seen from it
   const start = (v('start_weekday') ?? 0) as number;
@@ -100,12 +84,6 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
     span(`(day 0${meta.start ? `, ${dateText(date(0)!, true)}` : ''}) · ${measured.size} measurement days.`)]);
   Object.assign(first.style, {alignItems: 'center', gap: '6px', flexWrap: 'wrap'});
   const lines: HTMLElement[] = [first];
-  // each line after the mark its day carries in the weeks below
-  const marked = (m: HTMLElement, text: string) => {
-    const line = divH([m, span(text)]);
-    Object.assign(line.style, {alignItems: 'baseline', gap: '6px'});
-    return line;
-  };
   if (v('last_day_chosen')) {
     lines.push(marked(mark('End', DARK, true), `The study ends on day ${end}, as chosen` +
       (weekdays.has(weekday(end)) ? '.' : `: a ${WEEKDAY_NAMES[weekday(end)]}, not one of your measurement days.`)));
@@ -129,9 +107,7 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
   Object.assign(summary.style, {gap: '4px', lineHeight: '1.45', marginBottom: 'var(--dg-space-m)'});
 
   // the weeks: a header of the lab's weekdays (click one to measure on it or not), then a cell a day up to the end
-  const grid = div([], 'pmx-calendar');
-  Object.assign(grid.style, {display: 'grid', gridTemplateColumns: '56px repeat(7, minmax(0, 1fr))', gap: '4px'});
-  grid.append(span(''), ...WEEKDAYS.map((d, i) => {
+  const header = WEEKDAYS.map((d, i) => {
     const on = weekdays.has(i);
     const h = span(d, 'pmx-calendar-weekday');
     Object.assign(h.style, {fontSize: '11px', textAlign: 'center', padding: '2px 0', borderRadius: '3px',
@@ -143,67 +119,15 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
     if (!on || weekdays.size > 1)
       h.addEventListener('click', () => toggle(i));
     return h;
-  }));
-  // calendar weeks (Monday first): the days before randomization and after the end left blank
-  const weeks = Math.floor((start + end) / 7) + 1;
-  for (let w = 0; w < weeks; w++) {
-    const label = span(`Week ${w + 1}`);
-    Object.assign(label.style, {fontSize: '11px', color: 'var(--dg-text-color-muted, #68727f)', alignSelf: 'center'});
-    grid.append(label);
-    for (let d = 0; d < 7; d++) {
-      const day = 7 * w + d - start;
-      const cell = divV([], 'pmx-calendar-day');
-      Object.assign(cell.style, {minHeight: '48px', padding: '4px 6px', gap: '3px', borderRadius: '4px',
-        border: '1px solid var(--dg-border-color, #e1e6ec)', boxSizing: 'border-box', alignItems: 'flex-start'});
-      if (day < 0 || day > end) {
-        cell.style.borderStyle = 'dashed';
-        cell.style.opacity = '0.4';
-        grid.append(cell);
-        continue;
-      }
-      const on = date(day);
-      const num = span(`Day ${day}${on ? ` · ${dateText(on)}` : ''}`);
-      Object.assign(num.style, {fontSize: '11px', color: 'var(--dg-text-color-muted, #68727f)'});
-      cell.append(num);
-      if (day === 0)
-        cell.append(mark('Randomize', BLUE, true));
-      if (measured.has(day))
-        cell.append(mark('Measure', SLATE, false));
-      if (doses.has(day))
-        cell.append(mark('Dose', GREEN, false));
-      const notes = notesOn.get(day) ?? [];
-      if (notes.length > 0)
-        cell.append(mark(notes.length === 1 ? '1 note' : `${notes.length} notes`, AMBER, false));
-      if (day === watch)
-        cell.append(mark('Watch controls', RED, false));
-      if (day === end) {
-        cell.append(mark('End', DARK, true));
-        cell.style.borderColor = DARK;
-      }
+  });
+  const grid = weeksGrid({meta, startWeekday: start, last: end, header, onMenu: study.onMenu, onNote: study.onNote,
+    day: (day, own) => ({detail: details.get(day),
+      marks: [...day === 0 ? [mark('Randomize', BLUE, true)] : [], ...measured.has(day) ?
+        [mark('Measure', SLATE, false)] : [], ...own, ...day === watch ? [mark('Watch controls', RED, false)] : [],
+      ...day === end ? [mark('End', DARK, true)] : []],
+      border: day === end ? `1px solid ${DARK}` : undefined,
       // the days the controls need a closer watch, tinted
-      if (watch !== null && day >= watch)
-        cell.style.background = `color-mix(in srgb, ${RED} 6%, transparent)`;
-      const detail = details.get(day);
-      const tip = [`Day ${day}${on ? ` (${dateText(on, true)})` : ''}${detail ? `: ${detail}` : ''}`,
-        ...doses.has(day) ? [`Dose: ${doses.get(day)!.join(', ')}`] : [],
-        ...notes.map((n) => `${n.kind}${n.animal ? ` · ${n.animal}` : ''}: ${n.text} (${n.who})`)];
-      Tooltip.bind(cell, tip.join('\n'));
-      // the day's own menu, from the mouse or the keyboard; a double click notes what happened
-      cell.tabIndex = 0;
-      cell.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        study.onMenu(day, {causedBy: e});
-      });
-      cell.addEventListener('keydown', (e) => {
-        if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) {
-          e.preventDefault();
-          study.onMenu(day, {element: cell, nextToElement: true});
-        }
-      });
-      cell.addEventListener('dblclick', () => study.onNote(day));
-      grid.append(cell);
-    }
-  }
+      tint: watch !== null && day >= watch ? `color-mix(in srgb, ${RED} 6%, transparent)` : undefined})});
   return divV([summary, grid], 'pmx-calendar-box');
 }
 
@@ -476,37 +400,7 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     if (start && startDay.peek() !== WEEKDAY_NAMES[weekdayOf(start)])
       startDay.value = WEEKDAY_NAMES[weekdayOf(start)];
   });
-  const dayLabel = (day: number) => {
-    const d = dateOf(meta.peek().start, day);
-    return `day ${day}${d ? ` (${dateText(d)})` : ''}`;
-  };
-  const addNote = (day: number) => noteDialog(day, dayLabel(day), [],
-    (n) => meta.value = {...meta.peek(), notes: [...meta.peek().notes, n]});
-  const dateDay = (day: number) => {
-    const input = ui.input.date(`Date of day ${day}`);
-    ui.dialog(`Date ${dayLabel(day)}`).add(input).onOK(() => {
-      const iso = (input.value as unknown as {format(f: string): string} | null)?.format('YYYY-MM-DD');
-      if (iso)
-        meta.value = {...meta.peek(), start: startFrom(iso, day)};
-    }).show();
-  };
-  const dayMenu = (day: number, at: MenuAt) => {
-    const m = meta.peek();
-    const menu = DG.Menu.popup().item('Add a note…', () => addNote(day));
-    const own = m.notes.filter((n) => n.day === day);
-    if (own.length > 0) {
-      const remove = menu.group('Remove a note');
-      for (const n of own) {
-        remove.item(`${n.kind}: ${n.text.length > 40 ? `${n.text.slice(0, 40)}…` : n.text}`,
-          () => meta.value = {...meta.peek(), notes: meta.peek().notes.filter((x) => x !== n)});
-      }
-    }
-    menu.item(m.start ? `Change the date of day ${day}…` : `Set the date of day ${day}…`, () => dateDay(day));
-    const d = dateOf(m.start, day);
-    if (d)
-      menu.item('Copy the date', () => void navigator.clipboard.writeText(d.toISOString().slice(0, 10)));
-    menu.show(at);
-  };
+  const {addNote, menu: dayMenu} = dayActions(() => meta.peek(), (m) => meta.value = m);
   // the calendar: the plan's days with the study's dates, doses and notes; built in its own scope, so its tooltips
   // go with the next build
   form.effect(() => {
