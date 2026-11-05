@@ -1,5 +1,5 @@
 /* What a file brought to the hub holds, and the stage it opens in: a saved plan (.pmxplan), a followed study
-   (.pmxstudy) or a table of measurements (.csv, .tsv). Reads the dates only, never the groups, so a running study
+   (.pmxstudy) or a table of measurements (.csv, .tsv). Reads the dates only, never the groups, so a blinded study
    stays blind until it is analyzed. */
 import * as DG from 'datagrok-api/dg';
 

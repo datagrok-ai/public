@@ -5,7 +5,7 @@ import {DEFAULT_RULES, findOutliers, StudyColumns} from '../outlier-rules';
 import {EXCLUDED, FLAGGED, MARK_REASON, appendPasted, caliperVolume, emptyStudy, exclusionsOf, mark,
   withoutExcluded}
   from '../study-table';
-import {parseStudy, studyOf, tableOf} from '../study-file';
+import {REVEALED, addLog, groupsShown, logOf, parseStudy, studyOf, tableOf} from '../study-file';
 import {dateOf, dosingDays, emptyMeta, metaOf, parseMeta, setMetaOn, startFrom, weekdayOf} from '../study-meta';
 import {entryOf, libraryOf, matches} from '../library';
 import {spiderLines} from '../spider-chart';
@@ -178,5 +178,17 @@ category('Study table', () => {
     expect(matches(listed[0], 'cisplatin'), false);
     expect(parseMeta({id: 3, start: '2 Nov', groups: [{group: 'A', dose: 'ten'}]})!.groups[0].dose, null,
       'a damaged field is dropped, not trusted');
+    // blinded entry: the groups hidden until revealed; each mark says whether its author knew them
+    expect(groupsShown(df), true, 'not blinded: the groups are shown');
+    setMetaOn(df, {...meta, blinded: true});
+    expect(groupsShown(df), false);
+    mark(df, [0], 'flagged', 'odd shape', 'M1 on day 0');
+    addLog(df, REVEALED);
+    expect(groupsShown(df), true, 'revealed, for good');
+    mark(df, [0], null, '', 'M1 on day 0');
+    const said = logOf(df).map((e) => e.what);
+    expect(said.some((w) => w.startsWith('Flagged M1') && w.endsWith('(blinded)')), true);
+    expect(said[said.length - 1].endsWith('(groups revealed)'), true);
+    expect(metaOf(tableOf(parseStudy(JSON.stringify(studyOf(df, null)))))!.blinded, true);
   });
 });

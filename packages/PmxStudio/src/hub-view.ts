@@ -324,7 +324,7 @@ export function openStudyDialog(first?: File[]): void {
       const canMonitor = MONITOR_READY && !!plan;
       const dated = canMonitor && table.lastDay !== null && plan!.end !== null;
       return {question: 'Has the study finished?',
-        hint: dated ? `Day ${table.lastDay} of about ${plan!.end}, from the dates alone: the groups stay blind.` : '',
+        hint: dated ? `Day ${table.lastDay} of about ${plan!.end}, from the dates alone.` : '',
         list: [
           {stage: 'monitor', title: 'Still running', desc: 'Monitor', disabled: !canMonitor,
             note: !MONITOR_READY ? monitorNote : !plan ? 'Needs the plan it was run with' : ''},

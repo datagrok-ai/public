@@ -69,6 +69,12 @@ export function restoreFields(form: FuncCallForm, df: DG.DataFrame): void {
   }
 }
 
+export const REVEALED = 'Groups revealed';
+
+/** Whether the groups may be shown: always, unless the study is blinded and no one has revealed them yet. */
+export const groupsShown = (df: DG.DataFrame): boolean =>
+  !metaOf(df)?.blinded || logOf(df).some((e) => e.what === REVEALED);
+
 /** A log line, on the table it is about: when, who, what. */
 export function addLog(df: DG.DataFrame, what: string): LogEntry[] {
   const log = [...logOf(df), {when: new Date().toISOString(), who: grok.shell.user?.login ?? '', what}];

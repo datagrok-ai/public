@@ -16,7 +16,8 @@ import {DEFAULT_RULES, Finding, OutlierRules, RulesSource, canEditLabRules, find
   saveLabRules, saveUserRules, userRules} from './outlier-rules';
 import {StudyInputs as StudyNames} from './explore';
 import {ROLES, WEIGHT} from './open-study';
-import {EXCLUDED, FLAGGED, MARK_REASON, addLog, ticked} from './study-file';
+import {EXCLUDED, FLAGGED, MARK_REASON, addLog, groupsShown, ticked} from './study-file';
+import {metaOf} from './study-meta';
 
 /** The columns' roles of a study table, as JSON: what makes a table a study (detectors.js reads it too). */
 export const STUDY_TAG = 'pmx.study';
@@ -122,8 +123,10 @@ export function mark(df: DG.DataFrame, rows: number[], state: Mark | null, reaso
     }
   }
   df.fireValuesChanged();
-  addLog(df, state ? `${state === 'excluded' ? 'Excluded' : 'Flagged'} ${what}${reason ? `: ${reason}` : ''}` :
-    `Cleared the mark on ${what}`);
+  // in a blinded study, whether whoever marked them knew the groups (ARRIVE asks)
+  const how = !metaOf(df)?.blinded ? '' : groupsShown(df) ? ' (groups revealed)' : ' (blinded)';
+  addLog(df, (state ? `${state === 'excluded' ? 'Excluded' : 'Flagged'} ${what}${reason ? `: ${reason}` : ''}` :
+    `Cleared the mark on ${what}`) + how);
 }
 
 /** A context menu's item (detectors.js): flags or excludes the rows, asking why (required to exclude), or clears

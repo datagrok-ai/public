@@ -24,6 +24,8 @@ export interface StudyMeta {
   groups: GroupDetails[];
   /** the study's notebook: what happened on a day, by whom; it never changes the data */
   notes: DayNote[];
+  /** whoever enters the measurements must not see the groups: Monitor hides them until someone reveals them */
+  blinded: boolean;
 }
 
 export const NOTE_KINDS = ['Observation', 'Incident', 'Dose', 'Measurement'] as const;
@@ -38,7 +40,7 @@ export const META_TAG = 'pmx.meta';
 const PLAN_TAG = 'pmx.plan';
 
 export const emptyMeta = (): StudyMeta => ({id: '', description: '', owner: grok.shell.user?.login ?? '',
-  project: '', tags: [], start: null, groups: [], notes: []});
+  project: '', tags: [], start: null, groups: [], notes: [], blinded: false});
 
 /** Details read from a file or a tag someone may have edited: each field checked, the rest from emptyMeta. */
 export function parseMeta(x: unknown): StudyMeta | null {
@@ -54,7 +56,7 @@ export function parseMeta(x: unknown): StudyMeta | null {
       g.dose : null, unit: text(g.unit), route: text(g.route), schedule: text(g.schedule)})) : [],
   notes: Array.isArray(m.notes) ? m.notes.filter((n) => n && Number.isInteger(n.day) && typeof n.text === 'string')
     .map((n) => ({day: n.day, kind: NOTE_KINDS.includes(n.kind) ? n.kind : 'Observation', animal: text(n.animal),
-      text: n.text, who: text(n.who), when: text(n.when)})) : []};
+      text: n.text, who: text(n.who), when: text(n.when)})) : [], blinded: m.blinded === true};
 }
 
 /** The date of a study day, from day 0's (null: no date yet); UTC, so a day is a day wherever it is read. */
@@ -159,6 +161,8 @@ export function detailsDialog(name: string, meta: StudyMeta, groups: string[], s
   const start = ui.input.date('Day 0', {tooltipText: 'Randomization, the first day of treatment'});
   if (meta.start)
     start.stringValue = meta.start;
+  const blinded = ui.input.bool('Blinded entry', {value: meta.blinded, tooltipText: 'Whoever enters the ' +
+    'measurements must not see the groups: Monitor hides them until someone reveals them, and the log says so'});
   const rows = groupsOf(meta, groups);
   const table = DG.DataFrame.fromColumns([
     DG.Column.fromStrings('group', rows.map((g) => g.group)),
@@ -172,7 +176,7 @@ export function detailsDialog(name: string, meta: StudyMeta, groups: string[], s
   grid.root.style.width = '640px';
   grid.root.style.height = `${Math.min(8, rows.length + 1) * 30 + 8}px`;
   ui.dialog(`Study details: ${name}`)
-    .add(ui.inputs([id, description, owner, project, tags, start]))
+    .add(ui.inputs([id, description, owner, project, tags, start, blinded]))
     .add(ui.divText('What each group receives (the schedule as written in the protocol, e.g. Q3D×4 or QD×14):'))
     .add(grid.root)
     .onOK(() => {
@@ -182,6 +186,7 @@ export function detailsDialog(name: string, meta: StudyMeta, groups: string[], s
         project: project.value.trim(), tags: tags.value.split(',').map((t) => t.trim()).filter((t) => t),
         start: day, groups: rows.map((g, i) => ({group: g.group, compound: cell('compound', i),
           dose: table.col('dose')!.isNone(i) ? null : table.get('dose', i), unit: cell('unit', i),
-          route: cell('route', i), schedule: cell('schedule', i)})), notes: meta.notes});
+          route: cell('route', i), schedule: cell('schedule', i)})), notes: meta.notes,
+        blinded: blinded.value});
     }).show();
 }

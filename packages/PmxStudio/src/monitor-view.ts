@@ -1,5 +1,6 @@
 /* The Monitor view, built as Analyze is: the form generated from pmxMonitorStudy's signature, the results from its
-   outputs. The groups stay hidden until someone reveals them, and that goes in the study's log. A study's measurements
+   outputs. The groups are shown, unless the study is blinded (its details): then they stay hidden until someone
+   reveals them, and that goes in the study's log. A study's measurements
    are an ordinary table (paste into its grid): Monitor only reads it, and saving the study is a gesture of its own.
    Tabs by question: who needs attention today, how the groups will be formed, how the study is growing, and whether to
    go on, only on the reviews fixed at the start (MONITOR_DESIGN.md). */
@@ -19,8 +20,8 @@ import {allocateGroups, MonitorFrames, monitorFrames, MonitorInputs, outsideBand
 import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
 import {planInput} from './plan-vs-observed';
 import {NAMES, openStage, showStage} from './stages';
-import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, restoreFields, saveStudy,
-  studyOf, tableOf} from './study-file';
+import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
+  restoreFields, saveStudy, studyOf, tableOf} from './study-file';
 import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {emptyStudy, studyDataLine, tagStudy, withoutExcluded} from './study-table';
@@ -73,7 +74,8 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
   const error = signal<string | null>(null);
   const stale = signal(false);
   const busy = signal(false);
-  const revealed = signal(false);
+  // the log's version: what it records (a reveal, the blinding switched) changes what is shown
+  const logVersion = signal(0);
   let latest = 0;
   // no Run: each change forecasts again once the changes stop
   let preparing = false;
@@ -90,6 +92,13 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
     const v = call.getParamValue('study');
     return v instanceof DG.DataFrame ? v : null;
   };
+  // the groups, unless the study is blinded and no one has revealed them
+  const revealed = computed(() => {
+    void result.value;
+    void logVersion.value;
+    const df = studyTable();
+    return !df || groupsShown(df);
+  });
   const lockLooks = () => {
     const field = form.getInput('looks');
     if (field)
@@ -207,8 +216,9 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
       'it, and the forecasts update.'),
     divH([button('Follow an example study', () => void openExample()),
       span('An MC38 study as Plan predicts it, halfway through.')]),
-    infoNote('<b>The groups stay hidden.</b> Monitor shows each animal without its group, so that whoever measures ' +
-      'is not led by what they expect. Revealing them is a click, and it goes in the study\'s log.'),
+    infoNote('<b>Blinded entry.</b> When whoever enters the measurements must not know the groups, turn it on in ' +
+      'the study\'s details (click its name): Monitor then shows each animal without its group until someone ' +
+      'reveals them, and the log says so.'),
   ], 'pmx-monitor-start');
   Object.assign(start.style, {gap: 'var(--dg-space-m)', maxWidth: '760px'});
   (start.children[1] as HTMLElement).style.gap = 'var(--dg-space-m)';
@@ -373,7 +383,6 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
   // Decisions
   const decisionBody = div([], 'pmx-monitor-decisions');
   const logBox = div([], 'pmx-monitor-log');
-  const logVersion = signal(0);
   const record = (what: string) => {
     const df = studyTable();
     if (df) {
@@ -381,10 +390,7 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
       logVersion.value++;
     }
   };
-  const reveal = () => {
-    revealed.value = true;
-    record('Groups revealed');
-  };
+  const reveal = () => record(REVEALED);
   form.effect(() => {
     const r = result.value;
     if (!r)
@@ -404,7 +410,7 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
         'the start: looking between them would make it easier to stop on chance.'));
       return;
     }
-    fill(decisionBody, d, (a) => a.arm, [['Group', (a) => swatch(a.arm, armColors([a.arm])[a.arm])],
+    fill(decisionBody, d, (a) => a.arm, [['Group', (a) => swatch(a.arm, colorsOf(r)[a.arm])],
       // only the low end in words: on the atlas's real arms a low chance held, a high one was too hopeful
       // (MONITOR_DESIGN.md §8), so a high figure is not shown
       ['Chance of a clear result', (a) => a.success < FUTILITY ? `Low (under ${pct(FUTILITY)})` : 'Still open'],
@@ -466,13 +472,14 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
     if (!df)
       return;
     // Analyze shows the groups: that is revealing them
-    if (!revealed.value)
+    if (!revealed.peek())
       reveal();
     // in place of an Analyze view already open
     [...grok.shell.views].find((v) => v.name === NAMES.analyze)?.close();
     void analyzeView({study: df}).then((v) => showStage('analyze', v));
   });
-  analyzeButton.title = 'Analyze this table as planned; this reveals the groups, and the log says so';
+  analyzeButton.title = 'Analyze this table as planned; in a blinded study this reveals the groups, and the log ' +
+    'says so';
 
   // the three limits an animal is checked against, together, as the last run read them
   const limits = div([], 'pmx-monitor-limits');
@@ -553,7 +560,12 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
         Object.entries(colors).map(([name, color]) => ({name, color})) : [],
       status: [r.status.get('line', 0), day === undefined ? '' : dayText(day),
         revealed.value ? '' : 'groups hidden'].filter((x) => x).join(' · '),
-      meta: metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined};
+      meta: metaOf(df), setMeta: df ? (m) => {
+        const was = !!metaOf(df)?.blinded;
+        setMetaOn(df, m);
+        if (m.blinded !== was)
+          record(m.blinded ? 'Blinded entry on' : 'Blinded entry off: the groups are shown');
+      } : undefined};
     }), (s) => void openStage(s))]],
     path: '/monitor',
     status: computed(() => busy.value ? 'Forecasting the study…' : result.value ? String(status.value?.get('line', 0)) :
