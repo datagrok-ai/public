@@ -57,4 +57,4 @@ ENTRYPOINT exec celery -A Admetica worker \
     --loglevel=info \
     --hostname=$CELERY_HOSTNAME \
     --concurrency=1 \
-    -Q $TASK_QUEUE_NAME
+    -Q ${TASK_QUEUE_NAME:-celery}
