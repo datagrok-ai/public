@@ -220,7 +220,28 @@ interface ArmTables {plan: Row, power: Row[], duration: Row[], schedules: Row[],
 /** One arm's stats.tumor_study_design: one call, or `shards` calls (Crux's shard / shards) whose partial sums give
  *  the assurance curves the single call would; the rest of every shard's design is the single call's, the conditional
  *  power shard 0's. The n chosen, its level and its power by last day and schedule follow from the summed curves. */
-async function designArm(prior: object, params: Row, shards: number, power: number,
+function designArm(prior: object, params: Row, shards: number, power: number,
+  nFixed: number | null): Promise<ArmTables> {
+  // the seed is fixed: the same inputs give the same tables, so a change recomputes only the arms it touches
+  const key = JSON.stringify([prior, params, shards, power, nFixed],
+    (_, v) => ArrayBuffer.isView(v) ? Array.from(v as any) : v);
+  let r = armCache.get(key);
+  if (r)
+    armCache.delete(key); // re-inserted below: most recently used last
+  else {
+    r = designArmNow(prior, params, shards, power, nFixed);
+    r.catch(() => armCache.delete(key));
+    if (armCache.size >= 64) // ponytail: oldest-used out at 64 arms; a few MB of tables at most
+      armCache.delete(armCache.keys().next().value!);
+  }
+  armCache.set(key, r);
+  return r;
+}
+
+/** designArm's results by their inputs (read only by designStudy: never mutated once resolved). */
+const armCache = new Map<string, Promise<ArmTables>>();
+
+async function designArmNow(prior: object, params: Row, shards: number, power: number,
   nFixed: number | null): Promise<ArmTables> {
   const calls: CruxResult[] = await Promise.all(Array.from({length: shards}, (_, shard) =>
     crux('stats.tumor_study_design', prior, shards > 1 ? {...params, shard, shards} : params)));
