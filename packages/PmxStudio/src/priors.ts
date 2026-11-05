@@ -61,6 +61,26 @@ export interface EnginePriors {
   equation: string;
   provenance: {[k: string]: string};
   lines: {[line: string]: LinePrior};
+  /** v3: every line's tumor model, for picking one (class, search by tumor type or organ) */
+  models?: {[line: string]: TumorModel};
+}
+
+/** A line's tumor model in the atlas: its class (syngeneic: mouse line in immunocompetent mice; cdx: human cell line,
+ *  pdx: patient tumor, both in immunodeficient mice), the tumor type and organ it models, the host, the atlas tier its
+ *  priors come from (Full / Own spreads / Thin) and the papers and animals behind them. */
+export interface TumorModel {
+  class: 'syngeneic' | 'cdx' | 'pdx';
+  tumour_type: string;
+  organ: string;
+  host_class: string;
+  tier: string;
+  papers: number;
+  animals: number;
+}
+
+/** The atlas's tumor models by line, in the file's order. */
+export async function tumorModels(): Promise<{[line: string]: TumorModel}> {
+  return (await enginePriors()).models ?? {};
 }
 
 /** A package file's JSON, read once; a failed read is not kept, so the next call tries again. */
