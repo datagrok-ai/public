@@ -131,9 +131,10 @@ With a **Body weight** column (grams, weighed with the tumor, on the rows of the
 
 ## Files
 
-- `files/engine_priors_v2.json`: the priors, exported offline from the curated atlas, with the atlas hash and the
+- `files/engine_priors_v3.json`: the priors, exported offline from the curated atlas, with the atlas hash and the
   Crux commit they came from; per line, `twin` is the digital twin's own fit and its leave-one-control-out
-  validation.
+  validation. v3 keeps v2's MC38, CT26 and B16F10 verbatim and adds 4T1, LLC, Panc02, Hepa1-6, PDX-NSCLC and
+  PDX-PDAC (`provenance.v3`: each line's tier, and which fields are its own or pooled).
 - `files/tumour_density_v0.json`: the tumor's density per line and its spreads (between labs, groups and animals),
   exported offline from the atlas papers' excised tumors.
 - `files/SOURCES.md`: the papers the priors and the density were estimated from, with DOI and licence. The per-paper table in the
