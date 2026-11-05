@@ -164,7 +164,7 @@ RUN python${PYTHON_VERSION} -m venv --without-pip ${VIRTUAL_ENV} ; \
       -e 's/pkg_resources\.iter_entry_points(group=group)/importlib.metadata.entry_points(group=group)/' \
       ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/jupyter_contrib_core/application.py ; \
     echo "modules importing pkg_resources:" ; \
-    grep -rlE '^\s*(import|from) pkg_resources' ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages --include=*.py || true ; \
+    find ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages -name '*.py' -exec grep -lE '^\s*(import|from) pkg_resources' '{}' + || true ; \
     python -c "import cld3, gcld3, kyotocabinet" ; \
     find ${VIRTUAL_ENV} -type d \( -path *tensorflow \) -prune -false -depth \( \
       \( -type d -a \( -name test -o -name tests -o -name idle_test \) \) \
