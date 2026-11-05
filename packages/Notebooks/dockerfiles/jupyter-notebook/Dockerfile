@@ -9,7 +9,7 @@ FROM cgr.dev/chainguard/wolfi-base AS build_base
 
 ARG PYTHON_VERSION
 RUN apk add --no-cache \
-      bash build-base curl git patch xz \
+      bash build-base curl git patch xz posix-libc-utils glibc-iconv \
       zlib-dev gd-dev protobuf-dev protoc \
       python-${PYTHON_VERSION} python-${PYTHON_VERSION}-dev py${PYTHON_VERSION}-pip
 

@@ -1,5 +1,9 @@
 # Notebooks changelog
 
+## v.next
+
+* Docker: Moved the jupyter-notebook image from Ubuntu onto Wolfi (TeX Live, pandoc 3.13, antiword and gnuplot installed from upstream; moment 2.31.0 in the nbclassic static files)
+
 ## 1.6.4 (2026-11-03)
 
 * Docker: rebuilt the jupyter-notebook image with patched dependencies (underscore 1.13.8 in the nbclassic static files)
