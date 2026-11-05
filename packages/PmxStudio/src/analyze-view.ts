@@ -8,17 +8,18 @@
    analyzed. */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import {badge, BasicTable, button, computed, div, divH, divV, dot, loader, signal, span, Splitter, tableFromMap,
   Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {AnalysisFrames, AnalysisInputs, analysisDeclarationOf, analysisFrames, exampleStudy, median}
+import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analysisFrames, exampleStudy, median}
   from './analyze';
 import {armColors} from './frames';
 import {CorrectionInput} from './arms-input';
-import {askedOf, autoRun, axisAt, busyBar, busyOverlay, callInputs, cardGrid, copyRow, dayText, declarationPane,
+import {askedOf, autoRun, axisAt, busyBar, busyOverlay, callInputs, cardGrid, dayText, declarationPane,
   keepSame,
   onTableEdits, only, TABLE_EDITS,
   DECLARATION_MIN, guide,
@@ -45,7 +46,7 @@ const ANALYZE_LAYOUT: Slot[] = [{id: 'groups', span: 12}, {id: 'growth', span: 8
   {id: 'waterfall', span: 12}, {id: 'spider', span: 6}, {id: 'km', span: 6}, {id: 'animals', span: 12},
   {id: 'tolerability', span: 12},
   {id: 'plan', span: 12}, {id: 'controls', span: 6},
-  {id: 'explore', span: 6}, {id: 'report', span: 12}];
+  {id: 'explore', span: 6}];
 
 /** mRECIST's classes (Gao 2015), best first, in the colours of better and worse. */
 const MRECIST_COLORS: {[c: string]: string} = {mCR: '#1a7f37', mPR: '#4caf50', mSD: '#9aa5b1', mPD: '#d62728'};
@@ -410,6 +411,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const controlCheck = div([]);
   const protocol = div([]);
   let protocolText = '';
+  let statsCsv = '';
   const summary = divV([], 'pmx-results-summary');
   summary.style.gap = 'var(--dg-space-s)';
   let summaryText = '';
@@ -490,6 +492,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     st.root.style.width = '100%';
     wrapCells(st.root);
     statsTable.replaceChildren(st.root);
+    statsCsv = DG.DataFrame.fromObjects(stats.map((s) => Object.fromEntries(statHeaders.map((h, j) =>
+      [h, s.cells[j]]))))!.toCsv();
 
     // the controls against each other: how many measurements fall in their range, and the ones that grow apart
     const inBand = v('control_coverage');
@@ -540,7 +544,35 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     colorsOf);
 
   const growthAxis = volumeAxis();
-  const growth = new BandChart(computed(() => result.value?.volumes), {x: 'day', lower: 'lower', upper: 'upper',
+  // the plan over what was observed: the median control a study run as planned shows (the plan's, else the
+  // line's atlas), a grey band under the groups
+  const showPredicted = signal(true);
+  const predictedInput = ui.input.bool('Predicted controls', {value: true,
+    tooltipText: 'The range of a study\'s median control run as planned (95 of 100 labs): the plan\'s, or the ' +
+      'line\'s atlas without one', onValueChanged: (v) => showPredicted.value = v});
+  growthAxis.row.prepend(predictedInput.root);
+  const growthData = computed(() => {
+    const r = result.value;
+    if (!r)
+      return undefined;
+    const p = r.predicted;
+    const ahead = Array.from({length: p.rowCount}, (_, i) => i).filter((i) => p.get('series', i) === PREDICTED);
+    if (!showPredicted.value || ahead.length === 0)
+      return r.volumes;
+    const v = r.volumes;
+    const row = (df: DG.DataFrame, i: number, group: string) => ({group, day: df.get('day', i),
+      median: df.get('median', i), lower: df.get('lower', i), upper: df.get('upper', i)});
+    const df = DG.DataFrame.fromObjects([...ahead.map((i) => row(p, i, PREDICTED)),
+      ...Array.from({length: v.rowCount}, (_, i) => row(v, i, v.get('group', i)))])!;
+    for (const c of ['day', 'median', 'lower', 'upper']) {
+      df.col(c)!.meta.units = v.col(c)?.meta.units ?? '';
+      df.col(c)!.meta.format = v.col(c)?.meta.format ?? '';
+    }
+    df.col('group')!.meta.colors.setCategorical({[PREDICTED]: '#9aa5b1', ...colorsOf(r)});
+    df.meta.formulaLines.addAll(v.meta.formulaLines.items);
+    return df;
+  });
+  const growth = new BandChart(growthData, {x: 'day', lower: 'lower', upper: 'upper',
     line: 'median', split: 'group', xTitle: 'Day after randomization', yTitle: 'Tumor volume', log: growthAxis.log,
     markers: true});
 
@@ -805,7 +837,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     {id: 'groups', title: 'Experimental groups', hint: 'Each treated group against the control on the evaluation day',
       content: [groupsTable, groupNotes]},
     {id: 'growth', title: 'Observed tumor growth', hint: 'Median and range (smallest to largest tumor) ' +
-      'of each group, to the evaluation day', content: [growthAxis.row, sized(growth, 380), perDay]},
+      'of each group, to the evaluation day; in grey, the median control predicted by the plan',
+    content: [growthAxis.row, sized(growth, 380), perDay]},
     {id: 'rates', title: 'Growth rates', hint: 'The per-animal slope of log volume each test compares',
       content: [sized(slopes, 380)]},
     {id: 'waterfall', title: 'Best response', hint: 'Each treated animal\u2019s smallest volume from day 10, against ' +
@@ -830,11 +863,12 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       if (r && resultStudy)
         explore(which, r, resultStudy, colorsOf(r), self.view);
     })},
-    {id: 'report', title: 'For the report', hint: 'The results in words, the numbers behind them and the analysis ' +
-      'protocol, ready to paste', content: [copyRow(() => summaryText, 'Results summary'), summary, statsTable,
-      copyRow(() => protocolText, 'Analysis protocol'), protocol]},
   ], ANALYZE_LAYOUT, 'pmx-analyze-panels');
   const content = divV([dataLine.root, cards, panels], 'pmx-analyze-content');
+  const copied = (text: string, what: string) => {
+    studyNow();
+    return navigator.clipboard.writeText(text).then(() => grok.shell.info(`${what} copied`));
+  };
   const studyNow = () => {
     const df = call.getParamValue('study') as DG.DataFrame | null;
     const r = result.value;
@@ -846,8 +880,11 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     ['Report (PDF)…', async () => {
       const {df, r} = studyNow();
       printSheet(await reportHtml({title: r.analysis.name, stage: 'Analyze', meta: metaOf(df), content,
-        log: logOf(df)}));
+        log: logOf(df), annex: [['Results', summary], ['Statistics', statsTable], ['Analysis protocol', protocol]]}));
     }],
+    ['Copy the results summary', () => copied(summaryText, 'Results summary')],
+    ['Copy the analysis protocol', () => copied(protocolText, 'Analysis protocol')],
+    ['Statistics (CSV)', () => download(`${studyNow().df.name} - statistics.csv`, statsCsv, 'text/csv')],
     ['Measurements (CSV)', () => download(`${studyNow().df.name}.csv`, studyNow().df.toCsv(), 'text/csv')],
     ['Per-animal results (CSV)', () => download(`${studyNow().df.name} - animals.csv`, studyNow().r.animals.toCsv(),
       'text/csv')]);

@@ -72,7 +72,7 @@ const table = (head: string[], rows: unknown[][]) => `<table><tr>${head.map((h) 
 /** The report: `content` (the stage's results) as shown, its charts as images, after a title; then the study's
  *  details, its notes by day and its log. */
 export async function reportHtml(o: {title: string, stage: string, meta: StudyMeta | null, content: HTMLElement,
-  log?: LogEntry[]}): Promise<string> {
+  log?: LogEntry[], annex?: [string, HTMLElement][]}): Promise<string> {
   const charts = [...o.content.querySelectorAll<HTMLElement>('[_echarts_instance_], .d4-viewer')]
     .filter((el) => el.offsetParent !== null && !el.parentElement?.closest('[_echarts_instance_], .d4-viewer'));
   const images = await Promise.all(charts.map(imageOf));
@@ -107,6 +107,8 @@ export async function reportHtml(o: {title: string, stage: string, meta: StudyMe
       const d = dateOf(m.start, n.day);
       return [`${n.day}${d ? ` (${dateText(d)})` : ''}`, n.kind, n.animal, n.text, n.who];
     }));
+  // what the stage keeps off screen (text and tables, no charts): under its title
+  const annex = (o.annex ?? []).map(([h, el]) => `<h2>${esc(h)}</h2>${el.outerHTML}`).join('');
   const log = !o.log?.length ? '' : '<h2>Log</h2>' + table(['When', 'Who', 'What'],
     o.log.map((l) => [l.when.slice(0, 16).replace('T', ' '), l.who, l.what]));
   // the app's own styles, so the panels read as on screen
@@ -120,6 +122,6 @@ th{background:#f0f0f0}.pmx-panel{break-inside:avoid}img{break-inside:avoid}
 @media print{body{margin:0}}
 </style></head><body>
 <h1>${esc(o.title)}</h1><div class="pmx-report-sub">${sub.map(esc).join(' · ')}</div>
-${page.outerHTML}${details}${notes}${log}
+${page.outerHTML}${annex}${details}${notes}${log}
 </body></html>`;
 }
