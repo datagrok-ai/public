@@ -4,6 +4,7 @@
 
 * Docker: Moved the jupyter-notebook image from Ubuntu onto Wolfi (TeX Live, pandoc 3.13, antiword and gnuplot installed from upstream; moment 2.31.0 in the nbclassic static files)
 * Container: Fixed the PDF export of a notebook failing in LaTeX: the hide-input-pdf template's license header used HTML-template comments, which reached the .tex file
+* [public#4535](https://github.com/datagrok-ai/public/issues/4535): Notebooks: Jupyter editor opens unstyled, dist/styles/jupyter-styles.css returns 404
 
 ## 1.6.4 (2026-11-03)
 
