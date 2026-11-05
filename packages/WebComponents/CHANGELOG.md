@@ -2,6 +2,9 @@
 
 ## v.next
 
+- Viewer: An options change no longer re-sets the frame and fires `viewer-data-frame-changed` for frames created in JS
+- Viewer: A frame set on the viewer itself is kept on later options changes, and its `viewer-data-frame-changed` fires outside the Dart event
+- Viewer: Removed the unused `viewer-type-changed` event and `getViewerEventObservable`
 - Viewer: A failed viewer creation, or a throwing frame or options apply, no longer stops the element from applying later changes
 - InputForm: `destroy()` cancels a form still being built
 - ToggleInput: A value set by the host is no longer sent back as `value-changed`
