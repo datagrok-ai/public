@@ -1,6 +1,6 @@
 /// `grok s observe` (alias `grok s o`): problems, problem rules, logger settings, errors, the timeline and cloud logs,
 /// over `/problems`, `/admin/plugins/<key>/settings`, `/alerts/Test_rules`, `/log`, `/admin/metrics`, `/log/timeline`,
-/// `/log/cloud/*`, `/log/archive/*` and `/docker/containers`.
+/// `/log/cloud/*`, `/log/archive/*`, `/log/match`, `/log/activations` and `/docker/containers`.
 import * as fs from 'fs';
 import {randomUUID} from 'crypto';
 import {NodeDapi, UUID_RE, buildQuery, tryParseJson} from '../utils/node-dapi';
@@ -55,13 +55,17 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
                                        read them with timeline --session <id>
   logs capture stop <login|group>      Remove that expiring entry; one that holds other settings is left
                                        to logger set --remove
-  logs match ['<filter>'] [--level l1,l2] [--user <login>] [--package <p>] [--source <s>] [--type <t>] [--grep <text>] [--space <path>]
-             [--since 1h] [--limit 1000]
+  logs match ['<filter>'] [--level l1,l2] [--user <login>] [--package <p>] [--source <s>] [--type <t>]
+             [--function <f>] [--session <id>] [--grep <regex>] [--space <path>] [--since 1h] [--limit 1000]
                                        Saved and in-memory records a log filter matches, newest first: the
-                                       filter of a log group (Settings > Logger), e.g. 'level in (error, warning)
-                                       and not text ~ ResizeObserver'; the flags add conditions joined by and
+                                       filter of a log group (Settings > Logger), quoted as one argument, e.g.
+                                       'level in (error, warning) and not text ~ ResizeObserver'; the flags add
+                                       conditions joined by and; --grep and --space match case-sensitively
+                                       (--space: the space and its subspaces)
   logs activations [stop <group id> <key>]
                                        Triggered log groups that are on now; stop ends one
+  logs request <logId>                 What the requests of one command logged (grok s ... --log prints
+                                       its logId), gathered from every instance's memory; once only
   groups [list]                        Log groups (Settings > Logger): what is recorded and where it goes
   groups get <name|id>
   groups add --name <n> [--kind records|alerts|drop] [--levels error,warning] [--flags db,auth]
@@ -75,8 +79,6 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
   groups reset                         Back to the default log groups
   endpoints [list] | endpoints rm <name|id>
                                        Where log groups can send records (OTLP, CloudWatch, Google, ClickHouse)
-  logs request <logId>                 What the requests of one command logged (grok s ... --log prints
-                                       its logId), gathered from every instance's memory; once only
 
 Durations are 30m (minutes), 24h, 7d, 2w; times are ISO 8601 (UTC without an offset) or
 relative, written with = (--from=-2h).
@@ -316,7 +318,8 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
     if (argv.session === undefined)
       throw new Error('Usage: grok s observe timeline --session <id> [--from <ISO|-15m>] [--to <ISO>] [--limit 500]');
     needFrom(argv);
-    const window = argv.from === undefined ? {from: iso('-15m', '--from'), to: new Date().toISOString()}
+    const now = Date.now();
+    const window = argv.from === undefined ? {from: new Date(now - 15 * 60000).toISOString(), to: new Date(now).toISOString()}
       : {from: iso(argv.from, '--from'), to: iso(argv.to, '--to')};
     printOutput(await dapi.raw('GET', `/log/timeline${buildQuery({session: argv.session, ...window,
       limit: argv.limit})}`), output);
@@ -330,35 +333,64 @@ const needFrom = (argv: any) => {
     throw new Error('--to needs --from');
 };
 
-const list = (v: any): string[] => v === undefined || v === true ? [] : String(v).split(',').map((x) => x.trim()).filter(Boolean);
+const oneOf = (value: string, flag: string, choices?: string[]): string => {
+  if (choices && !choices.includes(value))
+    throw new Error(`${flag} is one of ${choices.join(', ')}, not '${value}'`);
+  return value;
+};
+
+/// The comma list of `--<flag>`, each value one of [choices] when given.
+const list = (argv: any, flag: string, choices?: string[]): string[] => {
+  if (argv[flag] === true)
+    throw new Error(`--${flag} needs a value`);
+  return String(argv[flag]).split(',').map((x) => x.trim()).filter(Boolean).map((v) => oneOf(v, `--${flag}`, choices));
+};
+
+const LEVELS = ['error', 'warning', 'info', 'debug', 'audit', 'usage'];
+const DEBUG_FLAGS = ['db', 'socket', 'query', 'hash', 'storage', 'credentials', 'balloon', 'startup', 'srcmaps', 'docker',
+  'auth', 'ai-indexing', 'email', 'all'];
+
+/// A duration in whole units of [unit] ms; 0 is allowed.
+const durationIn = (value: any, flag: string, unit: number, unitName: string): number => {
+  if (String(value).trim() === '0')
+    return 0;
+  const ms = parseDuration(value, flag);
+  if (ms % unit !== 0)
+    throw new Error(`${flag} expects whole ${unitName}, got '${value}'`);
+  return ms / unit;
+};
 
 /// A log group of the logger settings by id or name.
 function findGroup(groups: any[], ref: string): any {
-  const found = groups.find((g) => g.id === ref) ?? groups.filter((g) => g.name === ref);
-  if (Array.isArray(found)) {
-    if (found.length !== 1)
-      throw new Error(found.length ? `More than one log group is named '${ref}': use its id` : `No log group '${ref}'`);
-    return found[0];
-  }
-  return found;
+  const byId = groups.find((g) => g.id === ref);
+  if (byId)
+    return byId;
+  const named = groups.filter((g) => g.name === ref);
+  if (named.length !== 1)
+    throw new Error(named.length ? `More than one log group is named '${ref}': use its id` : `No log group '${ref}'`);
+  return named[0];
 }
 
 /// `groups add|set` flags applied to [g]; only the flags given change it.
-export function applyGroupFlags(g: any, argv: any): any {
+function applyGroupFlags(g: any, argv: any): any {
   if (argv.name !== undefined) g.name = String(argv.name);
-  if (argv.kind !== undefined) g.kind = String(argv.kind);
+  if (argv.kind !== undefined) g.kind = oneOf(String(argv.kind), '--kind', ['records', 'alerts', 'drop']);
   if (argv.enabled !== undefined) g.enabled = argv.enabled === true || argv.enabled === 'true';
-  if (argv.who !== undefined) g.who = list(argv.who);
-  if (argv.levels !== undefined) g.levels = list(argv.levels);
-  if (argv.flags !== undefined) g.debugFlags = list(argv.flags);
-  if (argv['audit-types'] !== undefined) g.auditTypes = list(argv['audit-types']);
-  if (argv['usage-types'] !== undefined) g.usageTypes = list(argv['usage-types']);
+  if (argv.who !== undefined) g.who = list(argv, 'who');
+  if (argv.levels !== undefined) g.levels = list(argv, 'levels', LEVELS);
+  if (argv.flags !== undefined) g.debugFlags = list(argv, 'flags', DEBUG_FLAGS);
+  if (argv['audit-types'] !== undefined) g.auditTypes = list(argv, 'audit-types');
+  if (argv['usage-types'] !== undefined) g.usageTypes = list(argv, 'usage-types');
   if (argv.filter !== undefined) g.filter = String(argv.filter) || null;
-  if (argv['alert-kinds'] !== undefined) g.alertKinds = list(argv['alert-kinds']);
-  if (argv['min-severity'] !== undefined) g.alertMinSeverity = String(argv['min-severity']);
+  if (argv['alert-kinds'] !== undefined) g.alertKinds = list(argv, 'alert-kinds');
+  if (argv['min-severity'] !== undefined)
+    g.alertMinSeverity = oneOf(String(argv['min-severity']), '--min-severity', ['info', 'warning', 'critical']);
   if (argv.to !== undefined) {
     const old: any[] = g.saveTo ?? [];
-    g.saveTo = list(argv.to).map((t) => {
+    const to = list(argv, 'to');
+    if (!to.length)
+      throw new Error('--to needs a value');
+    g.saveTo = to.map((t) => {
       const [destination, format] = t.split(':');
       return {...(old.find((x) => x.destination === destination) ?? {}), destination, ...(format ? {format} : {})};
     });
@@ -373,9 +405,9 @@ export function applyGroupFlags(g: any, argv: any): any {
     g.activation = 'triggered';
     g.triggerWhen = String(argv.when);
   }
-  if (argv.scope !== undefined) g.triggerScope = String(argv.scope);
-  if (argv.for !== undefined) g.activeMinutes = Math.round(parseDuration(String(argv.for), '--for') / 60000);
-  if (argv.before !== undefined) g.flushBeforeSeconds = Math.round(parseDuration(String(argv.before), '--before') / 1000);
+  if (argv.scope !== undefined) g.triggerScope = oneOf(String(argv.scope), '--scope', ['session', 'user', 'global']);
+  if (argv.for !== undefined) g.activeMinutes = durationIn(argv.for, '--for', 60000, 'minutes');
+  if (argv.before !== undefined) g.flushBeforeSeconds = durationIn(argv.before, '--before', 1000, 'seconds');
   if (argv.always) g.activation = 'always';
   return g;
 }
@@ -417,6 +449,15 @@ async function logGroups(dapi: NodeDapi, command: string, verb: string | undefin
     return true;
   }
   const groups: any[] = current.logGroups ?? [];
+  // A server older than the effective list answers null until groups are saved; starting from none would drop the defaults.
+  if (['add', 'set', 'rm'].includes(verb!) && !Array.isArray(current.logGroups))
+    throw new Error('The server does not return its default log groups, so they cannot be edited one by one: ' +
+      'replace them all with groups put --json <file>');
+  const ref = () => {
+    if (rest[0] === undefined)
+      throw new Error(`Usage: grok s observe groups ${verb} <name|id>`);
+    return findGroup(groups, String(rest[0]));
+  };
   switch (verb) {
     case undefined:
     case 'list':
@@ -426,7 +467,7 @@ async function logGroups(dapi: NodeDapi, command: string, verb: string | undefin
         id: g.id})) : groups, output);
       return true;
     case 'get':
-      printOutput(findGroup(groups, String(rest[0] ?? '')), output === 'table' ? 'json' : output);
+      printOutput(ref(), output === 'table' ? 'json' : output);
       return true;
     case 'add': {
       if (argv.name === undefined)
@@ -441,7 +482,7 @@ async function logGroups(dapi: NodeDapi, command: string, verb: string | undefin
       return true;
     }
     case 'set': {
-      const g = findGroup(groups, String(rest[0] ?? ''));
+      const g = ref();
       applyGroupFlags(g, argv);
       current.logGroups = groups;
       await save(current);
@@ -449,7 +490,9 @@ async function logGroups(dapi: NodeDapi, command: string, verb: string | undefin
       return true;
     }
     case 'rm': {
-      const g = findGroup(groups, String(rest[0] ?? ''));
+      const g = ref();
+      if (g.protected)
+        throw new Error(`'${g.name ?? g.id}' is the audit group: it can only be switched off (--enabled false), which needs EditAuditLogging`);
       current.logGroups = groups.filter((x) => x !== g);
       await save(current);
       printOutput({removed: g.name ?? g.id}, output);
@@ -461,9 +504,7 @@ async function logGroups(dapi: NodeDapi, command: string, verb: string | undefin
       printOutput({reset: 'the default log groups apply'}, output);
       return true;
     case 'put': {
-      if (argv.json === undefined)
-        throw new Error('Usage: grok s observe groups put --json groups.json   (a JSON array: replaces every log group)');
-      const replaced = JSON.parse(fs.readFileSync(String(argv.json), 'utf-8'));
+      const replaced = readBody(argv);
       if (!Array.isArray(replaced))
         throw new Error('groups put takes a JSON array of log groups');
       current.logGroups = replaced.map((g: any) => ({id: randomUUID(), ...g}));
@@ -478,17 +519,28 @@ async function logGroups(dapi: NodeDapi, command: string, verb: string | undefin
 /// The log filter text of `logs match`: the expression given, and a condition per flag, joined by `and`.
 export function matchFilter(rest: string[], argv: any): string {
   const parts: string[] = rest.length ? [rest.join(' ')] : [];
-  const word = (v: string) => /^[^\s=<>~!(),"']+$/.test(v) && !/^(and|or|not)$/i.test(v) ? v : JSON.stringify(v);
+  const word = (v: string) => /^[^\s=<>~!(),"']+$/.test(v) && !/^(and|or|not)$/i.test(v) ? v
+    : `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  const values = (flag: string, split: boolean) => {
+    const given = argv[flag] === true ? [] : split ? String(argv[flag]).split(',').map((x) => x.trim()).filter(Boolean)
+      : [String(argv[flag])].filter(Boolean);
+    if (!given.length)
+      throw new Error(`--${flag} needs a value`);
+    return given;
+  };
   for (const field of ['level', 'type', 'user', 'package', 'source', 'function', 'session']) {
     if (argv[field] === undefined)
       continue;
-    const values = String(argv[field]).split(',').map((x) => x.trim()).filter(Boolean);
-    parts.push(values.length > 1 ? `${field} in (${values.map(word).join(', ')})` : `${field} = ${word(values[0])}`);
+    const given = values(field, true);
+    parts.push(given.length > 1 ? `${field} in (${given.map(word).join(', ')})` : `${field} = ${word(given[0])}`);
   }
   if (argv.grep !== undefined)
-    parts.push(`text ~ ${word(String(argv.grep))}`);
-  if (argv.space !== undefined)
-    parts.push(`space = ${word(String(argv.space))} or space startsWith ${word(`${argv.space}:`)}`);
+    parts.push(`text =~ ${word(values('grep', false)[0])}`);
+  // = is case-sensitive and startsWith is not, so one anchored regex keeps the space and its subspaces alike.
+  if (argv.space !== undefined) {
+    const space = values('space', false)[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    parts.push(`space =~ ${word(`^${space}(:|$)`)}`);
+  }
   return parts.length > 1 ? parts.map((p) => `(${p})`).join(' and ') : parts[0] ?? '';
 }
 
@@ -512,7 +564,8 @@ async function logs(dapi: NodeDapi, verb: string | undefined, rest: string[], ar
     return containerLogs(dapi, rest[0], argv, output);
   if (verb === 'match') {
     const filter = matchFilter(rest, argv);
-    printOutput(await dapi.raw('GET', `/log/match${buildQuery({filter, since: argv.since ?? '1h', limit: argv.limit,
+    const since = `${Math.round(parseDuration(argv.since ?? '1h', '--since') / 1000)}s`;
+    printOutput(await dapi.raw('GET', `/log/match${buildQuery({filter, since, limit: argv.limit,
       format: 'json'})}`), output);
     return true;
   }
