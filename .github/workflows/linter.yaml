@@ -161,7 +161,8 @@ jobs:
           BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           url=https://github.com/datagrok-ai/help.git
-          git ls-remote --exit-code --heads "$url" "refs/heads/$BRANCH" > /dev/null || { [ $? -eq 2 ] && BRANCH=master; }
+          rc=0; git ls-remote --exit-code --heads "$url" "refs/heads/$BRANCH" > /dev/null || rc=$?
+          case $rc in 0) ;; 2) BRANCH=master ;; *) exit "$rc" ;; esac
           git clone --depth 1 --branch "$BRANCH" "$url" ../help
       - name: Check links in packages
         shell: bash
