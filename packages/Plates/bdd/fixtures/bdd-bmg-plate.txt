@@ -1,0 +1,14 @@
+User: USER
+Test ID: 1
+Test Name: BDD plate
+Date: 30/10/2026
+Time: 10:00:00
+ID1: bdd
+No. of Channels / Multichromatics: 2
+No. of Cycles: 1
+
+Well;Channel A;Channel B
+A01; 1000; 2000
+A02; 1100; 2100
+B01; 1200; 2200
+H12; 1300; 2300
