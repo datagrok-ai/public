@@ -34,7 +34,8 @@ WORKDIR /app
 COPY --from=builder /install/lib /usr/local/lib
 COPY --from=builder /install/bin /usr/local/bin
 
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+# pip is not used at runtime, and the setuptools copy vendored in it is flagged
+RUN pip install --no-cache-dir --upgrade setuptools wheel && pip uninstall -y pip
 RUN patchelf --clear-execstack /usr/local/lib/python3.11/site-packages/onnxruntime/capi/onnxruntime_pybind11_state.cpython-311-x86_64-linux-gnu.so
 RUN mkdir -p /app/configs/default && \
     python -c "import sys; import aizynthfinder; from aizynthfinder.tools.download_public_data import main; sys.argv = ['download_public_data', '/app/configs/default']; main()" && \
@@ -42,7 +43,6 @@ RUN mkdir -p /app/configs/default && \
 COPY app.py /app/
 
 RUN chown -R datagrok:datagrok /app
-RUN (find / -xdev \( -name '*.whl' -o -name 'vendor.txt' -o -iname 'setuptools*' -o -iname 'filelock*' -o -iname 'pillow*' \) 2>/dev/null | grep -v '^/proc'; grep -rl --include=METADATA -e '^Version: 70.3.0' /usr /opt /root /app /home 2>/dev/null | head -20) || true
 USER datagrok
 # grok_spawner expects port to be exposed
 EXPOSE 8000

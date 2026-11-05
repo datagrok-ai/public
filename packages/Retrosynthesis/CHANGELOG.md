@@ -1,5 +1,9 @@
 # Retrosynthesis changelog
 
+## v.next
+
+* Docker: moved the aizynthfinder image to Python 3.11 for pillow 13 and filelock 4.2 (both dropped 3.10) and removed the runtime-unused pip, whose vendored setuptools was flagged
+
 ## 1.1.1 (2026-11-03)
 
 * Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages and upgraded pip/setuptools/wheel in the build stage
