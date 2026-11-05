@@ -53,7 +53,8 @@ FROM debian:bookworm-slim AS texlive
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 RUN apt-get update ; \
-    apt-get install -y --no-install-recommends ca-certificates perl wget xz-utils ; \
+    # xetex links the system fontconfig; fmtutil runs it to build xelatex.fmt \
+    apt-get install -y --no-install-recommends ca-certificates libfontconfig1 perl wget xz-utils ; \
     mkdir /tmp/itl ; \
     wget -qO- https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz | tar -xz -C /tmp/itl --strip-components=1 ; \
     printf '%s\n' \
