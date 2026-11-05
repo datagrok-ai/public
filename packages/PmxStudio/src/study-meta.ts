@@ -22,7 +22,15 @@ export interface StudyMeta {
   /** day 0 (randomization), YYYY-MM-DD; null: not fixed yet */
   start: string | null;
   groups: GroupDetails[];
+  /** the study's notebook: what happened on a day, by whom; it never changes the data */
+  notes: DayNote[];
 }
+
+export const NOTE_KINDS = ['Observation', 'Incident', 'Dose', 'Measurement'] as const;
+export type NoteKind = typeof NOTE_KINDS[number];
+
+/** A note on a study day: its kind, the animal it is about (empty: the study), what, who and when. */
+export interface DayNote {day: number, kind: NoteKind, animal: string, text: string, who: string, when: string}
 
 /** The tag of a measurements table that carries its study's details (JSON). */
 export const META_TAG = 'pmx.meta';
@@ -30,7 +38,7 @@ export const META_TAG = 'pmx.meta';
 const PLAN_TAG = 'pmx.plan';
 
 export const emptyMeta = (): StudyMeta => ({id: '', description: '', owner: grok.shell.user?.login ?? '',
-  project: '', tags: [], start: null, groups: []});
+  project: '', tags: [], start: null, groups: [], notes: []});
 
 /** Details read from a file or a tag someone may have edited: each field checked, the rest from emptyMeta. */
 export function parseMeta(x: unknown): StudyMeta | null {
@@ -43,7 +51,63 @@ export function parseMeta(x: unknown): StudyMeta | null {
   start: typeof m.start === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.start) ? m.start : null,
   groups: Array.isArray(m.groups) ? m.groups.filter((g) => g && typeof g.group === 'string').map((g) => ({
     group: g.group, compound: text(g.compound), dose: typeof g.dose === 'number' && Number.isFinite(g.dose) ?
-      g.dose : null, unit: text(g.unit), route: text(g.route), schedule: text(g.schedule)})) : []};
+      g.dose : null, unit: text(g.unit), route: text(g.route), schedule: text(g.schedule)})) : [],
+  notes: Array.isArray(m.notes) ? m.notes.filter((n) => n && Number.isInteger(n.day) && typeof n.text === 'string')
+    .map((n) => ({day: n.day, kind: NOTE_KINDS.includes(n.kind) ? n.kind : 'Observation', animal: text(n.animal),
+      text: n.text, who: text(n.who), when: text(n.when)})) : []};
+}
+
+/** The date of a study day, from day 0's (null: no date yet); UTC, so a day is a day wherever it is read. */
+export function dateOf(start: string | null, day: number): Date | null {
+  if (!start)
+    return null;
+  const d = new Date(`${start}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + day);
+  return d;
+}
+
+/** A date as the calendar writes it: 12 Nov (and the year when `year`). */
+export const dateText = (d: Date, year = false) => d.toLocaleDateString(undefined,
+  {day: 'numeric', month: 'short', ...year ? {year: 'numeric'} : {}, timeZone: 'UTC'});
+
+/** The weekday of a date, Monday 0 (as Plan's weekdays). */
+export const weekdayOf = (iso: string) => (new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7;
+
+/** The study day 0 falls on when `day` is the date `iso`. */
+export function startFrom(iso: string, day: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - day);
+  return d.toISOString().slice(0, 10);
+}
+
+/** The days each group is dosed, up to `last`, from its schedule as protocols write it: QD×14, Q3D×4, QW×3, Q2W×2
+ *  (every k days or weeks, n doses, the first on day 0). A schedule written otherwise (BIW, "days 0-4") marks
+ *  nothing. ponytail: dosing always starts on day 0; a "from day N" needs a start field per group. */
+export function dosingDays(groups: GroupDetails[], last: number): Map<number, string[]> {
+  const days = new Map<number, string[]>();
+  for (const g of groups) {
+    const m = /^\s*Q(\d*)\s*(D|W)\s*[×xX*]\s*(\d+)\s*$/i.exec(g.schedule);
+    if (!m)
+      continue;
+    const every = (Number(m[1]) || 1) * (m[2].toUpperCase() === 'W' ? 7 : 1);
+    for (let k = 0; k < Number(m[3]) && k * every <= last; k++)
+      days.set(k * every, [...days.get(k * every) ?? [], g.group]);
+  }
+  return days;
+}
+
+/** A note on `day` (`label`: the day as the calendar names it), asked for in a dialog; `save` gets it. */
+export function noteDialog(day: number, label: string, animals: string[], save: (n: DayNote) => void): void {
+  const kind = ui.input.choice('Kind', {value: 'Observation', items: [...NOTE_KINDS], nullable: false});
+  const animal = ui.input.choice('Animal', {value: '', items: ['', ...animals], nullable: true,
+    tooltipText: 'Empty: the note is about the study'});
+  const text = ui.input.textArea('Note', {value: ''});
+  const d = ui.dialog(`Note on ${label}`).add(ui.inputs([kind, animal, text]));
+  const ok = () => d.getButton('OK');
+  text.onChanged.subscribe(() => ok().disabled = text.value.trim() === '');
+  d.onOK(() => save({day, kind: kind.value as NoteKind, animal: animal.value ?? '', text: text.value.trim(),
+    who: grok.shell.user?.login ?? '', when: new Date().toISOString()})).show();
+  ok().disabled = true;
 }
 
 /** A table's study details: its own, else its plan's (null: none yet). */
@@ -118,6 +182,6 @@ export function detailsDialog(name: string, meta: StudyMeta, groups: string[], s
         project: project.value.trim(), tags: tags.value.split(',').map((t) => t.trim()).filter((t) => t),
         start: day, groups: rows.map((g, i) => ({group: g.group, compound: cell('compound', i),
           dose: table.col('dose')!.isNone(i) ? null : table.get('dose', i), unit: cell('unit', i),
-          route: cell('route', i), schedule: cell('schedule', i)}))});
+          route: cell('route', i), schedule: cell('schedule', i)})), notes: meta.notes});
     }).show();
 }

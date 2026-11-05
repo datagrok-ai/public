@@ -5,7 +5,7 @@ import {DEFAULT_RULES, findOutliers, StudyColumns} from '../outlier-rules';
 import {EXCLUDED, FLAGGED, MARK_REASON, appendPasted, emptyStudy, exclusionsOf, mark, withoutExcluded}
   from '../study-table';
 import {parseStudy, studyOf, tableOf} from '../study-file';
-import {emptyMeta, metaOf, parseMeta, setMetaOn} from '../study-meta';
+import {dateOf, dosingDays, emptyMeta, metaOf, parseMeta, setMetaOn, startFrom, weekdayOf} from '../study-meta';
 import {entryOf, libraryOf, matches} from '../library';
 
 /** Six animals of one group on days 0, 3 and 7; M4's day 7 a caliper typo (2400 for ~240), M1 losing weight. */
@@ -93,6 +93,23 @@ category('Study table', () => {
     expect([...df.col(EXCLUDED)!.toList(), ...df.col(FLAGGED)!.toList()].every((v) => !v), true);
     expect(df.rowCount, 3, 'nothing deleted');
     expect(JSON.parse(df.getTag('pmx.log') || '[]').length, 3);
+  });
+
+  test('the calendar’s dates, doses and notes', async () => {
+    const g = (group: string, schedule: string) => ({group, compound: '', dose: null, unit: '', route: '', schedule});
+    const doses = dosingDays([g('A', 'Q3D×4'), g('B', 'qw x 3'), g('C', 'BIW'), g('D', 'QD×2')], 14);
+    expect([...doses.keys()].sort((a, b) => a - b).join(','), '0,1,3,6,7,9,14');
+    expect(doses.get(0)!.join(','), 'A,B,D', 'every group on day 0; BIW is not read');
+    expect(doses.get(9)!.join(','), 'A');
+    expect(dosingDays([g('A', 'Q7D×10')], 20).size, 3, 'nothing past the last day');
+    expect(dateOf('2026-11-09', 22)!.toISOString().slice(0, 10), '2026-12-01');
+    expect(dateOf(null, 3), null);
+    expect(startFrom('2026-11-12', 3), '2026-11-09');
+    expect(weekdayOf('2026-11-09'), 0, 'a Monday');
+    const notes = parseMeta({notes: [{day: 3, kind: 'Incident', animal: 'M4', text: 'ulcerated', who: 'x', when: ''},
+      {day: 'x', text: 'no day'}, {day: 5, kind: 'Party', text: 'odd kind'}]})!.notes;
+    expect(notes.length, 2, 'a note without a day is dropped');
+    expect(notes[1].kind, 'Observation', 'an unknown kind reads as an observation');
   });
 
   test('a saved study keeps its marks and its details', async () => {

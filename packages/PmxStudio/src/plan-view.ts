@@ -6,6 +6,7 @@
    group size, by end of study (platform line charts) and by measurement schedule, and the study protocol. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, loader, Reason, signal, span,
   Splitter, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
@@ -25,7 +26,8 @@ import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
-import {StudyMeta, emptyMeta, withId} from './study-meta';
+import {DayNote, StudyMeta, dateOf, dateText, dosingDays, emptyMeta, noteDialog, startFrom, weekdayOf, withId}
+  from './study-meta';
 import {LineInput, lastLine} from './line-input';
 import {BandChart} from './band-chart';
 
@@ -47,6 +49,9 @@ const UNREACHABLE = 'No group size up to 40 reaches the target power: lower it, 
 /** Where a study's total has no number: the limit is per group, and totals over 40 are common. */
 const OVER_40 = 'over 40 per group';
 
+/** Where a day's menu opens (DG.Menu.show's options): at the mouse, or next to the focused day. */
+type MenuAt = {causedBy?: MouseEvent, element?: HTMLElement, nextToElement?: boolean};
+
 /** A day's mark in the calendar: a short label in its kind's colour. */
 function mark(text: string, color: string, filled: boolean): HTMLElement {
   const el = span(text);
@@ -59,10 +64,13 @@ function mark(text: string, color: string, filled: boolean): HTMLElement {
 /** The study as a wall calendar: a row a week, Monday to Sunday, day 0 on the randomization weekday (the date is
  *  known only when the tumors reach the volume), each day with what is done and its details in the tooltip; its
  *  header the lab's measurement weekdays, each one clickable (`toggle`); above it, the randomization weekday
- *  (`startDay`, its picker) and what the weeks add up to. Built from u2's primitives (u2 has no calendar); call it
- *  in a scope, which owns the tooltips. */
+ *  (`startDay`, its picker) and what the weeks add up to. The study's details add each day's date once day 0 has
+ *  one, the doses its groups' schedules give and the notebook's notes; a day's menu (`onMenu`: right click, or the
+ *  Menu key on a focused day) and a double click (`onNote`) are the study's. Built from u2's primitives (u2 has no
+ *  calendar); call it in a scope, which owns the tooltips. */
 function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLElement,
-  toggle: (weekday: number) => void): HTMLElement {
+  toggle: (weekday: number) => void, study: {meta: StudyMeta, onMenu: (day: number, at: MenuAt) => void,
+    onNote: (day: number) => void}): HTMLElement {
   const v = (c: string) => p.get(c, 0);
   const end = v('study_end') as number;
   const endpointDay = v('endpoint_day') as number;
@@ -72,7 +80,13 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
     (_, i) => [calendar.get('day', i), calendar.get('activity', i)]));
   const measured = new Set(String(v('measurement_days')).split(', ').map(Number));
   const weekdays = new Set(weekdaysOf(v('measurement_weekdays')));
-  const [BLUE, SLATE, RED, DARK] = ['#2083d5', '#5b6b7f', '#c0504d', '#4d5261'];
+  const [BLUE, SLATE, RED, DARK, GREEN, AMBER] = ['#2083d5', '#5b6b7f', '#c0504d', '#4d5261', '#2e8b57', '#b7791f'];
+  const meta = study.meta;
+  const date = (day: number) => dateOf(meta.start, day);
+  const doses = dosingDays(meta.groups, end);
+  const notesOn = new Map<number, DayNote[]>();
+  for (const n of meta.notes)
+    notesOn.set(n.day, [...notesOn.get(n.day) ?? [], n]);
 
   // day 0 falls on the randomization weekday: the measurement weekdays are the lab's, seen from it
   const start = (v('start_weekday') ?? 0) as number;
@@ -83,7 +97,7 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
   const range = typeof q90 === 'number' && Number.isFinite(q90) ? `day ${Math.round(v('duration_q10'))} to ` +
     `${Math.round(q90)}` : `from day ${Math.round(v('duration_q10'))}`;
   const first = divH([mark('Randomize', BLUE, true), span('Randomize on a'), startDay,
-    span(`(day 0) · ${measured.size} measurement days.`)]);
+    span(`(day 0${meta.start ? `, ${dateText(date(0)!, true)}` : ''}) · ${measured.size} measurement days.`)]);
   Object.assign(first.style, {alignItems: 'center', gap: '6px', flexWrap: 'wrap'});
   const lines: HTMLElement[] = [first];
   // each line after the mark its day carries in the weeks below
@@ -105,6 +119,11 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
   if (watch !== null) {
     lines.push(marked(mark('Watch controls', RED, false), `From day ${watch}, check the controls more often: an ` +
       `animal over ${humane} mm³ is removed.`));
+  }
+  if (doses.size > 0) {
+    const dosed = meta.groups.filter((g) => [...doses.values()].some((gs) => gs.includes(g.group)));
+    lines.push(marked(mark('Dose', GREEN, false), dosed.map((g) => `${g.group} ${g.schedule}` +
+      (g.compound ? ` (${g.compound})` : '')).join('; ') + ', from day 0.'));
   }
   const summary = divV(lines, 'pmx-calendar-summary');
   Object.assign(summary.style, {gap: '4px', lineHeight: '1.45', marginBottom: 'var(--dg-space-m)'});
@@ -142,13 +161,19 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
         grid.append(cell);
         continue;
       }
-      const num = span(`Day ${day}`);
+      const on = date(day);
+      const num = span(`Day ${day}${on ? ` · ${dateText(on)}` : ''}`);
       Object.assign(num.style, {fontSize: '11px', color: 'var(--dg-text-color-muted, #68727f)'});
       cell.append(num);
       if (day === 0)
         cell.append(mark('Randomize', BLUE, true));
       if (measured.has(day))
         cell.append(mark('Measure', SLATE, false));
+      if (doses.has(day))
+        cell.append(mark('Dose', GREEN, false));
+      const notes = notesOn.get(day) ?? [];
+      if (notes.length > 0)
+        cell.append(mark(notes.length === 1 ? '1 note' : `${notes.length} notes`, AMBER, false));
       if (day === watch)
         cell.append(mark('Watch controls', RED, false));
       if (day === end) {
@@ -159,8 +184,23 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
       if (watch !== null && day >= watch)
         cell.style.background = `color-mix(in srgb, ${RED} 6%, transparent)`;
       const detail = details.get(day);
-      if (detail)
-        Tooltip.bind(cell, `Day ${day}: ${detail}`);
+      const tip = [`Day ${day}${on ? ` (${dateText(on, true)})` : ''}${detail ? `: ${detail}` : ''}`,
+        ...doses.has(day) ? [`Dose: ${doses.get(day)!.join(', ')}`] : [],
+        ...notes.map((n) => `${n.kind}${n.animal ? ` · ${n.animal}` : ''}: ${n.text} (${n.who})`)];
+      Tooltip.bind(cell, tip.join('\n'));
+      // the day's own menu, from the mouse or the keyboard; a double click notes what happened
+      cell.tabIndex = 0;
+      cell.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        study.onMenu(day, {causedBy: e});
+      });
+      cell.addEventListener('keydown', (e) => {
+        if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) {
+          e.preventDefault();
+          study.onMenu(day, {element: cell, nextToElement: true});
+        }
+      });
+      cell.addEventListener('dblclick', () => study.onNote(day));
       grid.append(cell);
     }
   }
@@ -251,6 +291,9 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     return planFrames(declarationOf(x), tgisOf(x.tgiScenarios));
   });
   const result = signal<PlanFrames | undefined>(undefined);
+  // the study's details (header's name, the calendar's dates, doses and notes); an ID once the plan leaves Plan
+  // (saved, downloaded or followed)
+  const meta = signal<StudyMeta>(initial?.study ?? emptyMeta());
   // the form's and the calendar's replans share the call, one run at a time: a change made during a run is planned
   // next, and the run it overtook is never shown
   let running: Promise<void> | null = null;
@@ -425,7 +468,56 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     if (days.size > 0)
       setField('measurementDays', weekdaysText([...days].sort()));
   };
-  const detectable = signal<{of: PlanFrames, mde: Map<string, number | null>} | null>(null);
+  // a dated day 0 sets the randomization weekday; the picker then follows the date
+  form.effect(() => {
+    const start = meta.value.start;
+    startDay.disabled = start ? 'Day 0 has a date: change it from a day\'s menu in the calendar, or in the ' +
+      'study\'s details' : null;
+    if (start && startDay.peek() !== WEEKDAY_NAMES[weekdayOf(start)])
+      startDay.value = WEEKDAY_NAMES[weekdayOf(start)];
+  });
+  const dayLabel = (day: number) => {
+    const d = dateOf(meta.peek().start, day);
+    return `day ${day}${d ? ` (${dateText(d)})` : ''}`;
+  };
+  const addNote = (day: number) => noteDialog(day, dayLabel(day), [],
+    (n) => meta.value = {...meta.peek(), notes: [...meta.peek().notes, n]});
+  const dateDay = (day: number) => {
+    const input = ui.input.date(`Date of day ${day}`);
+    ui.dialog(`Date ${dayLabel(day)}`).add(input).onOK(() => {
+      const iso = (input.value as unknown as {format(f: string): string} | null)?.format('YYYY-MM-DD');
+      if (iso)
+        meta.value = {...meta.peek(), start: startFrom(iso, day)};
+    }).show();
+  };
+  const dayMenu = (day: number, at: MenuAt) => {
+    const m = meta.peek();
+    const menu = DG.Menu.popup().item('Add a note…', () => addNote(day));
+    const own = m.notes.filter((n) => n.day === day);
+    if (own.length > 0) {
+      const remove = menu.group('Remove a note');
+      for (const n of own) {
+        remove.item(`${n.kind}: ${n.text.length > 40 ? `${n.text.slice(0, 40)}…` : n.text}`,
+          () => meta.value = {...meta.peek(), notes: meta.peek().notes.filter((x) => x !== n)});
+      }
+    }
+    menu.item(m.start ? `Change the date of day ${day}…` : `Set the date of day ${day}…`, () => dateDay(day));
+    const d = dateOf(m.start, day);
+    if (d)
+      menu.item('Copy the date', () => void navigator.clipboard.writeText(d.toISOString().slice(0, 10)));
+    menu.show(at);
+  };
+  // the calendar: the plan's days with the study's dates, doses and notes; built in its own scope, so its tooltips
+  // go with the next build
+  form.effect(() => {
+    const r = result.value;
+    const m = meta.value;
+    if (r) {
+      calendarBox.replaceChildren(calendarGrid(r.plan, r.calendar, startDay.root, toggleWeekday,
+        {meta: m, onMenu: dayMenu, onNote: addNote}));
+    }
+  });
+  const detectable =signal<{of: PlanFrames, mde: Map<string, number | null>} | null>(null);
   const endSummary = div([], 'pmx-plan-end-summary');
   Object.assign(endSummary.style, {margin: '0 0 var(--dg-space-s)', lineHeight: '1.45'});
   form.effect(() => {
@@ -501,8 +593,6 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
         `${e} to ${removedAt(last.day)}% on day ${last.day}.`;
     }
 
-    // built in this run's own scope, so its tooltips go with the next run
-    calendarBox.replaceChildren(calendarGrid(r.plan, r.calendar, startDay.root, toggleWeekday));
 
     // the study protocol, in the order of the ARRIVE essentials: design, sample size and its basis, animals,
     // randomization, outcome and analysis, multiplicity, end, humane limit, measurements
@@ -652,7 +742,8 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
       'to the end of the study', content: [growthNotes, scaleRow, sized(growth, 380)]},
     {id: 'power', title: 'Power by group size', hint: 'With more or fewer animals', content: [sized(power, 380)]},
     {id: 'calendar', title: 'Study calendar', hint: 'Week by week from randomization. Click a weekday to measure ' +
-      'on it or not', content: [calendarLoader, calendarStatus, calendarBox]},
+      'on it or not; double-click a day to note what happened, right-click it for more', content: [calendarLoader,
+      calendarStatus, calendarBox]},
     {id: 'end', title: 'Power by end of study', hint: 'Ending earlier or later', content: [endSummary,
       sized(byEnd, 280)]},
     {id: 'schedule', title: 'Measurement schedule', hint: 'Measuring more or less often', content: [scheduleBox]},
@@ -783,8 +874,6 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     return r;
   };
   const defaultName = (r: PlanFrames) => initial?.name ?? `${r.plan.get('line', 0)} plan`;
-  // the study's details (header's name); an ID once the plan leaves Plan (saved, downloaded or followed)
-  const meta = signal<StudyMeta>(initial?.study ?? emptyMeta());
   const stamped = () => meta.value = withId(meta.peek());
   const planFor = (name: string, r: PlanFrames) => planOf(name, call, r, stamped());
   const saveDialog = () => {
