@@ -59,7 +59,7 @@ async function getChangelog(filename, version) {
 }
 
 const rootDir = path.resolve('../');
-const helpDirLoc = `${rootDir}/help/deploy/releases/plugins`;
+const helpDirLoc = path.resolve('../../help/deploy/releases/plugins');
 const jsonTemplateLoc = `${helpDirLoc}/plugins.json`;
 
 async function getPackages() {
