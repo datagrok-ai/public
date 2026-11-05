@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Docker: Moved the image onto Wolfi, carrying over only the PostgreSQL/RDKit conda env, the database and the entrypoint scripts from the Ubuntu 22.04 demo parent (zero reported CVEs)
 * Docker: Removed the unused `/opt/py27` data-prep env (stale pip/setuptools/wheel/certifi with no py2.7 upgrades) (VEX)
 
 ## 1.1.3 (2026-04-08)
