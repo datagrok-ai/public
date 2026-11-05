@@ -243,7 +243,7 @@ export function volumeAxis(): {input: RadioInput, row: HTMLElement, log: Readonl
     value: grok.userSettings.getValue('PmxStudio', 'volumeAxis') === 'Log' ? 'Log' : 'Linear',
     itemTooltips: {Linear: 'Linear volume axis', Log: 'Logarithmic volume axis'},
     onInput: (v) => grok.userSettings.add('PmxStudio', 'volumeAxis', String(v))});
-  const row = divH([span('Volume axis'), input.root]);
+  const row = divH([span('Volume axis'), input.root], 'pmx-noprint');
   Object.assign(row.style, {justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--dg-space-m)'});
   return {input, row, log: computed(() => input.value === 'Log')};
 }

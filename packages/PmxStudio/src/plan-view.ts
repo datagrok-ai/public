@@ -28,6 +28,8 @@ import {followPlan} from './monitor-view';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
 import {StudyMeta, dateOf, dateText, dosingDays, emptyMeta, weekdayOf, withId} from './study-meta';
 import {CAL, MenuAt, WEEKDAYS, dayActions, mark, marked, weeksGrid} from './calendar';
+import {Exports, exportMenu, reportHtml} from './report';
+import {printSheet} from './sheet';
 import {LineInput, lastLine, tumorsOf} from './line-input';
 import {BandChart} from './band-chart';
 
@@ -202,11 +204,14 @@ export async function openPlanFile(content: string): Promise<DG.DataFrame[]> {
 
 /** The Plan view; given a saved plan, its declaration in the form and planned again. */
 export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
-  return ViewHost.create({name: 'PMX Studio · Plan', content: (self) => planContent(self, initial)}).view;
+  const exports: Exports = [];
+  const host = ViewHost.create({name: 'PMX Studio · Plan', content: (self) => planContent(self, initial, exports)});
+  exportMenu(host.view, exports);
+  return host.view;
 }
 
 /** What the view shows, built under its host, which owns it all. */
-function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
+function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Exports): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxPlanStudy').prepare();
   // the engine itself on the form's inputs (with `extra` over them), not the registered function's FuncCall (see
   // callInputs); a wrong field rejects, as the call did
@@ -804,6 +809,8 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
       .finally(() => saving.value = false);
   });
   downloadButton.title = 'Download the plan as a file, to send it to someone';
+  exports.push(['Report (PDF)…', async () => printSheet(await reportHtml({title: defaultName(ready()!) ?? 'Plan',
+    stage: 'Plan', meta: meta.peek(), content}))], ['Plan file (.pmxplan)', () => downloadButton.click()]);
   const followButton = buttonWithIcon('Follow this study', 'eye', () => {
     const r = ready();
     if (!r)

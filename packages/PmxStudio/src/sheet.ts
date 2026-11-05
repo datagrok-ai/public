@@ -67,8 +67,11 @@ export function printSheet(html: string): void {
   const w = window.open('', '_blank');
   if (!w)
     throw new Error('The browser blocked the sheet\'s tab: allow pop-ups for Datagrok and print again');
+  // printed once its images are in
+  w.addEventListener('load', () => {
+    w.focus();
+    w.print();
+  });
   w.document.write(html);
   w.document.close();
-  w.focus();
-  w.print();
 }

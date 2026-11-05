@@ -24,7 +24,7 @@ import {askedOf, autoRun, axisAt, busyBar, busyOverlay, callInputs, cardGrid, co
   DECLARATION_MIN, guide,
   infoNote, noteLine, notesBox, num, pct, pValue, RESULTS_MIN, resultsFrame, settleForm, signed,
   isBodyWeight, keepNamedColumns, sized, staleNote, statCard, swatch, volumeAxis, wrapCells} from './ui';
-import {restoreFields} from './study-file';
+import {logOf, restoreFields} from './study-file';
 import {openStage} from './stages';
 import {noEffectNote, observedCell, planInput, planTab} from './plan-vs-observed';
 import {nciReadings, NciReading, tolerabilityTab} from './tolerability';
@@ -34,6 +34,8 @@ import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {exclusionsOf, studyDataLine, tagStudy, withoutExcluded} from './study-table';
 import {metaOf, setMetaOn} from './study-meta';
+import {Exports, download, exportMenu, reportHtml} from './report';
+import {printSheet} from './sheet';
 import {SpiderChart, spiderLines} from './spider-chart';
 import {LineInput} from './line-input';
 import {KM, Survival, survivalOf} from './survival';
@@ -212,11 +214,15 @@ export interface AnalyzeStart {study?: DG.DataFrame, example?: boolean}
 
 /** The Analyze view; given a study, it analyzes it at once. */
 export async function analyzeView(opening?: AnalyzeStart): Promise<DG.ViewBase> {
-  return ViewHost.create({name: 'PMX Studio · Analyze', content: (self) => analyzeContent(self, opening)}).view;
+  const exports: Exports = [];
+  const host = ViewHost.create({name: 'PMX Studio · Analyze', content: (self) => analyzeContent(self, opening,
+    exports)});
+  exportMenu(host.view, exports);
+  return host.view;
 }
 
 /** What the view shows, built under its host, which owns it all. */
-function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
+function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, exports: Exports): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxAnalyzeStudy').prepare();
   // the engine itself on the form's inputs, not the registered function's FuncCall (see callInputs)
   const run = (extra: object) =>
@@ -829,6 +835,22 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
       copyRow(() => protocolText, 'Analysis protocol'), protocol]},
   ], ANALYZE_LAYOUT, 'pmx-analyze-panels');
   const content = divV([dataLine.root, cards, panels], 'pmx-analyze-content');
+  const studyNow = () => {
+    const df = call.getParamValue('study') as DG.DataFrame | null;
+    const r = result.value;
+    if (!df || !r)
+      throw new Error('Analyze a study first');
+    return {df, r};
+  };
+  exports.push(
+    ['Report (PDF)…', async () => {
+      const {df, r} = studyNow();
+      printSheet(await reportHtml({title: r.analysis.name, stage: 'Analyze', meta: metaOf(df), content,
+        log: logOf(df)}));
+    }],
+    ['Measurements (CSV)', () => download(`${studyNow().df.name}.csv`, studyNow().df.toCsv(), 'text/csv')],
+    ['Per-animal results (CSV)', () => download(`${studyNow().df.name} - animals.csv`, studyNow().r.animals.toCsv(),
+      'text/csv')]);
   Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
   form.effect(() => {
     content.hidden = !result.value;

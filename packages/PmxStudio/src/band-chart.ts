@@ -13,6 +13,8 @@ import {GridComponent, LegendComponent, MarkLineComponent, TooltipComponent} fro
 import {CanvasRenderer} from 'echarts/renderers';
 import type {EChartsOption} from 'echarts';
 
+import {chartMenu} from './report';
+
 echarts.use([CustomChart, LineChart, ScatterChart, GridComponent, LegendComponent, MarkLineComponent,
   TooltipComponent, CanvasRenderer]);
 
@@ -91,6 +93,8 @@ export class BandChart extends Control {
 export function initQuietly(host: HTMLElement): echarts.ECharts {
   const warn = console.warn;
   console.warn = () => {};
+  // its right-click menu: Save as PNG, Copy as image, as Datagrok's viewers have
+  chartMenu(host);
   try {
     return echarts.init(host);
   } finally {

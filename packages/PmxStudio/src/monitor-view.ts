@@ -29,6 +29,7 @@ import {StudyMeta, dateOf, dateText, emptyMeta, metaOf, setMetaOn, weekdayOf, wi
 import {CAL, DayLook, dayActions, dayToday, mark, marked, weeksGrid} from './calendar';
 import {LineInput} from './line-input';
 import {printSheet, sheetHtml} from './sheet';
+import {Exports, download, exportMenu, reportHtml} from './report';
 import {studyInputsOf} from './explore';
 import {tolerabilityTab} from './tolerability';
 import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, dayText, declarationPane, DECLARATION_MIN,
@@ -66,11 +67,15 @@ function fill<R>(host: HTMLElement, items: R[], key: (r: R) => string,
 
 /** The Monitor view; `initial`: the table of a study to follow. */
 export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> {
-  return ViewHost.create({name: 'PMX Studio · Monitor', content: (self) => monitorContent(self, initial)}).view;
+  const exports: Exports = [];
+  const host = ViewHost.create({name: 'PMX Studio · Monitor', content: (self) => monitorContent(self, initial,
+    exports)});
+  exportMenu(host.view, exports);
+  return host.view;
 }
 
 /** What the view shows, built under its host, which owns it all (the form, the charts, the panes). */
-function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
+function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, exports: Exports): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxMonitorStudy').prepare();
   const result = signal<MonitorFrames | undefined>(undefined);
   const error = signal<string | null>(null);
@@ -454,7 +459,7 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
     const lines: HTMLElement[] = [];
     const todayMark = mark('Today', CAL.blue, true);
     if (today === null) {
-      lines.push(marked(todayMark, `Day 0 has no date yet: the calendar stops at the last day measured, day ` +
+      lines.push(marked(todayMark, `Day 0 has no date yet: today is taken as the last day measured, day ` +
         `${latest}. Set the date from any day's menu (right click) and it follows today.`));
     } else if (today < 0)
       lines.push(marked(todayMark, `Day 0 is in ${-today} days, on ${dateText(dateOf(m.start, 0)!, true)}.`));
@@ -641,6 +646,21 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
   ], MONITOR_LAYOUT, 'pmx-monitor-panels');
 
   const content = divV([dataLine.root, cards, panels], 'pmx-monitor-content');
+  const needStudy = () => studyTable() ?? (() => {
+    throw new Error('Open a study first');
+  })();
+  exports.push(
+    ['Report (PDF)…', async () => {
+      const df = needStudy();
+      printSheet(await reportHtml({title: df.name, stage: 'Monitor', meta: metaOf(df), content, log: logOf(df)}));
+    }],
+    ['Study file (.pmxstudy)', () => {
+      const df = needStudy();
+      remember();
+      download(`${df.name}.pmxstudy`, JSON.stringify(studyOf(df, call.getParamValue('humane') ?? null,
+        call.getParamValue('weightLimit') ?? null)), 'application/json');
+    }],
+    ['Measurements (CSV)', () => download(`${needStudy().name}.csv`, needStudy().toCsv(), 'text/csv')]);
   Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
   form.effect(() => {
     content.hidden = !result.value;
