@@ -25,6 +25,9 @@
     "@codemirror/language": "^6.10.0",
     "@codemirror/legacy-modes": "^6.4.0"
   },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
   "devDependencies": {
     "@datagrok-libraries/bdd": "workspace:^",
     "@playwright/test": "^1.48.0",
