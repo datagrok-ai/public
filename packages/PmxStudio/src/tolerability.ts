@@ -300,7 +300,7 @@ export function tolerabilityTab<R extends TolerabilityFrames>(form: FuncCallForm
   ], 'pmx-tolerability');
   body.style.gap = 'var(--dg-space-l)';
   const missing = infoNote('<b>No body weight in this study.</b> Add a column with each animal’s body weight (g), ' +
-    'weighed with the tumor on the rows of its measurements, choose it in <b>Body weight</b> and run. This tab then ' +
+    'weighed with the tumor on the rows of its measurements, choose it in <b>Body weight</b>. This panel then ' +
     'shows each group’s weight change from day 0, the weight-loss grades and the animals removed early.');
   form.effect(() => {
     body.hidden = !has.value;

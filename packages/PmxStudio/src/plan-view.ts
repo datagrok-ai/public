@@ -12,11 +12,13 @@ import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {PlanFrames, WEEKDAY_NAMES, armColors, weekdaysOf, weekdaysText} from './frames';
+import {PlanFrames, PlanInputs, WEEKDAY_NAMES, armColors, declarationOf, planFrames, tgisOf, weekdaysOf,
+  weekdaysText} from './frames';
 import {ArmsInput, CorrectionInput, armsFrame} from './arms-input';
 import {MIN_GROUP, finite} from './engine';
-import {askedOf, autoRun, busyBar, busyOverlay, cardGrid, copyRow, declarationPane, DECLARATION_MIN, infoNote, notes,
-  notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
+import {askedOf, autoRun, busyBar, busyOverlay, callInputs, cardGrid, copyRow, declarationPane, DECLARATION_MIN,
+  infoNote, notes,
+  notesBox, num, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
   statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {openStage} from './stages';
 import {panelGrid, Slot} from './panels';
@@ -240,7 +242,12 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
 /** What the view shows, built under its host, which owns it all. */
 function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxPlanStudy').prepare();
-  const read = (c: DG.FuncCall) => outputsOf<PlanFrames>(c);
+  // the engine itself on the form's inputs (with `extra` over them), not the registered function's FuncCall (see
+  // callInputs); a wrong field rejects, as the call did
+  const designed = (extra: object = {}) => Promise.resolve().then(() => {
+    const x = callInputs<PlanInputs & {tgiScenarios?: string | null}>(call, extra);
+    return planFrames(declarationOf(x), tgisOf(x.tgiScenarios));
+  });
   const result = signal<PlanFrames | undefined>(undefined);
   // the form's and the calendar's replans share the call, one run at a time: a change made during a run is planned
   // next, and the run it overtook is never shown
@@ -282,12 +289,12 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
         again = false;
         return once();
       };
-      return call.call().then((c) => {
+      return designed().then((c) => {
         if (again)
           return next();
         error.value = null;
         stale.value = askedOf(call) !== sent;
-        result.value = read(c);
+        result.value = c;
       }, (e) => {
         if (again)
           return next();
@@ -627,7 +634,7 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
 
   const scenarioEnd = div([], 'pmx-plan-scenario-end');
   const scenarioBox = div([]);
-  const noScenarios = infoNote('<b>No TGIs to assume.</b> Enter them under Explore in the form, then run.');
+  const noScenarios = infoNote('<b>No TGIs to assume.</b> Enter them under Explore in the form.');
   form.effect(() => {
     const has = !!result.value?.scenarios.rowCount;
     noScenarios.hidden = has;
@@ -718,12 +725,10 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     const r = result.value;
     if (!scheduleOpen.value || schedules.value || !r || stale.value || busy.value)
       return;
-    const f = DG.Func.byName('PmxStudio:pmxPlanStudy');
-    const fill = f.prepare({...Object.fromEntries(f.inputs.map((p) => [p.name, call.getParamValue(p.name)])),
-      compareSchedules: true, tgiScenarios: null});
-    void fill.call().then((c) => {
+    const fill = designed({compareSchedules: true, tgiScenarios: null});
+    void fill.then((c) => {
       if (result.peek() === r)
-        schedules.value = c.outputs['schedules'];
+        schedules.value = c.schedules;
     }).catch((e) => error.value = String(e?.message ?? e));
   });
 
@@ -735,11 +740,9 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     if (!r || !r.plan.get('n_fixed', 0) || stale.value || busy.value || searching === r || detectable.peek()?.of === r)
       return;
     searching = r;
-    const f = DG.Func.byName('PmxStudio:pmxPlanStudy');
-    const fill = f.prepare({...Object.fromEntries(f.inputs.map((p) => [p.name, call.getParamValue(p.name)])),
-      compareSchedules: false, detectableEffect: true, tgiScenarios: null});
-    void fill.call().then((c) => {
-      const a: DG.DataFrame = c.outputs['armResults'];
+    const fill = designed({compareSchedules: false, detectableEffect: true, tgiScenarios: null});
+    void fill.then((c) => {
+      const a = c.armResults;
       detectable.value = {of: r, mde: new Map(Array.from({length: a.rowCount}, (_, i) =>
         [a.get('arm', i) as string, finite(a.get('mde', i))]))};
     }).catch((e) => error.value = String(e?.message ?? e)).finally(() => {
@@ -768,7 +771,8 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
   const ready = (): PlanFrames | null => {
     const r = result.peek();
     if (!r || stale.peek()) {
-      grok.shell.warning(r ? 'The inputs changed: run to update the plan first' : 'The plan is not ready yet');
+      grok.shell.warning(r ? 'The plan does not match the form yet: complete every field, or wait for it to update' :
+        'The plan is not ready yet');
       return null;
     }
     return r;

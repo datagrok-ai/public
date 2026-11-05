@@ -32,6 +32,22 @@
     "email": "gcbarreras@datagrok.ai"
   },
   "category": "Health",
+  "properties": [
+    {
+      "name": "labGroup",
+      "propertyType": "string",
+      "defaultValue": "",
+      "nullable": true,
+      "description": "The Datagrok group whose members may change the lab's outlier rules for everyone (Administrators always can)"
+    },
+    {
+      "name": "outlierRules",
+      "propertyType": "string",
+      "defaultValue": "",
+      "nullable": true,
+      "description": "The lab's outlier rules for the study table (JSON, written from the table's Rules dialog; empty: the defaults)"
+    }
+  ],
   "devDependencies": {
     "@datagrok-libraries/bdd": "workspace:^",
     "@playwright/test": "^1.62.1"

@@ -14,12 +14,15 @@ import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {AnalysisFrames, exampleStudy, median} from './analyze';
+import {AnalysisFrames, AnalysisInputs, analysisDeclarationOf, analysisFrames, exampleStudy, median}
+  from './analyze';
 import {armColors} from './frames';
 import {CorrectionInput} from './arms-input';
-import {askedOf, autoRun, keepSame, only, axisAt, busyBar, busyOverlay, cardGrid, copyRow, dayText, declarationPane,
+import {askedOf, autoRun, axisAt, busyBar, busyOverlay, callInputs, cardGrid, copyRow, dayText, declarationPane,
+  keepSame,
+  onTableEdits, only, TABLE_EDITS,
   DECLARATION_MIN, guide,
-  infoNote, noteLine, notesBox, num, outputsOf, pct, pValue, RESULTS_MIN, resultsFrame, settleForm, signed,
+  infoNote, noteLine, notesBox, num, pct, pValue, RESULTS_MIN, resultsFrame, settleForm, signed,
   isBodyWeight, keepNamedColumns, sized, staleNote, statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {restoreFields} from './study-file';
 import {openStage} from './stages';
@@ -29,11 +32,13 @@ import {BandChart} from './band-chart';
 import {explore, exploreContent, StudyInputs, studyInputsOf} from './explore';
 import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
+import {exclusionsOf, studyTablePanel, withoutExcluded} from './study-table';
 import {KM, Survival, survivalOf} from './survival';
 
 /** Analyze's panels, in order and width (twelfths): the answer, how the tumors grew, each animal, then the rest. */
 const ANALYZE_LAYOUT: Slot[] = [{id: 'groups', span: 12}, {id: 'growth', span: 8}, {id: 'rates', span: 4},
-  {id: 'waterfall', span: 12}, {id: 'km', span: 6}, {id: 'animals', span: 12}, {id: 'tolerability', span: 12},
+  {id: 'waterfall', span: 12}, {id: 'km', span: 6}, {id: 'animals', span: 12}, {id: 'data', span: 12},
+  {id: 'tolerability', span: 12},
   {id: 'plan', span: 12}, {id: 'controls', span: 6},
   {id: 'explore', span: 6}, {id: 'report', span: 12}];
 
@@ -210,10 +215,12 @@ export async function analyzeView(opening?: AnalyzeStart): Promise<DG.ViewBase> 
 /** What the view shows, built under its host, which owns it all. */
 function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxAnalyzeStudy').prepare();
-  const read = (c: DG.FuncCall) => outputsOf<AnalysisFrames>(c);
+  // the engine itself on the form's inputs, not the registered function's FuncCall (see callInputs)
+  const run = (extra: object) =>
+    analysisFrames(analysisDeclarationOf(withoutExcluded(callInputs<AnalysisInputs>(call, extra))));
   const result = signal<AnalysisFrames | undefined>(undefined);
-  // the newest run: Run and the example share the call, and a run that finishes after a newer one started
-  // is dropped
+  // the newest run: the form's changes and the example share the call, and a run that finishes after a newer one
+  // started is dropped
   let latest = 0;
   const error = signal<string | null>(null);
   // a result that no longer matches the form is dimmed until the next run
@@ -258,34 +265,30 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
       const twinSent = askedOf(call, TWIN_INPUTS);
       // the twin unchanged (cached): one call, with it
       if (twinsCached.includes(twinSent)) {
-        call.setParamValue('withTwin', true);
-        const c = await call.call();
+        const frames = await run({withTwin: true});
         if (mine !== latest)
           return;
         error.value = null;
         stale.value = askedOf(call) !== sent;
         resultStudy = reads;
-        result.value = keepSame(result.peek(), read(c));
+        result.value = keepSame(result.peek(), frames);
         return;
       }
       // else the analysis first; then the same inputs with the twins (seconds), whatever the form holds by then
-      call.setParamValue('withTwin', false);
-      const f = call.func;
-      const full = f.prepare({...Object.fromEntries(f.inputs.map((p) => [p.name, call.getParamValue(p.name)])),
-        withTwin: true});
-      const c = await call.call();
+      const withTwin = withoutExcluded(callInputs<AnalysisInputs>(call, {withTwin: true}));
+      const frames = await run({withTwin: false});
       if (mine !== latest)
         return;
       error.value = null;
       stale.value = askedOf(call) !== sent;
       resultStudy = reads;
-      result.value = keepSame(result.peek(), read(c));
-      void full.call().then((done) => {
+      result.value = keepSame(result.peek(), frames);
+      void analysisFrames(analysisDeclarationOf(withTwin)).then((done) => {
         if (mine !== latest)
           return;
         if (!twinsCached.includes(twinSent) && twinsCached.push(twinSent) > 8)
           twinsCached.shift();
-        result.value = keepSame(result.peek(), read(done));
+        result.value = keepSame(result.peek(), done);
       }, (e) => {
         if (mine === latest)
           error.value = String(e?.message ?? e);
@@ -344,7 +347,7 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
 
   const start = divV([
     span('Open your study table (one row per animal and measurement day, day 0 the randomization), check its ' +
-      'columns and run.'),
+      'columns: the analysis follows them, and any change you make to the table.'),
     divH([button('Analyze an example study', () => void openExample()),
       span('An MC38 study as Plan predicts it: a vehicle and two treated groups at TGI 40% and 70%, with the ' +
         'animals Plan asks for.')]),
@@ -510,6 +513,9 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
         'not replacing it',
       'Small tumors': `Volumes below ${num(v('v_lod'), 2)} mm³, the smallest a caliper records, are counted at it`,
     };
+    const excluded = exclusionsOf(studyInputsOf(call));
+    if (excluded)
+      rowsOf['Exclusions'] = excluded;
     protocol.replaceChildren(tableFromMap(rowsOf));
     protocolText = [`Analysis protocol (${r.analysis.name})`, ...Object.entries(rowsOf).map(([key, t]) =>
       `${key}: ${t}`)].join('\n');
@@ -768,6 +774,11 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   }), {valueColumnName: 'Growth rate (ln V per day)', categoryColumnNames: ['Group'], showPValue: false,
     showStatistics: false});
 
+  // the study's own table: its values to correct, add or paste, what the outlier rules find, and the marks
+  const data = studyTablePanel({names: () => studyInputsOf(call), result,
+    open: (df) => void openStudy(async () => df), effect: (fn) => form.effect(fn)});
+  self.own(data.dispose);
+
   // the figures answer the study's question; each panel, one closer question
   const panels = panelGrid([
     {id: 'groups', title: 'Experimental groups', hint: 'Each treated group against the control on the evaluation day',
@@ -783,6 +794,8 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
     content: [sized(km, 300), kmWords]},
     {id: 'animals', title: 'Each animal against its untreated twin', hint: 'How each treated tumor compares with ' +
       'what it would have measured untreated. Select an animal to see its growth', content: [animals]},
+    {id: 'data', title: 'Study data', hint: 'The measurements: edit, add or paste them; right-click a value or an ' +
+      'animal to flag it for review or exclude it from the analysis, with its reason', content: data.content},
     {id: 'tolerability', title: 'Tolerability', hint: 'Whether the treatments were well tolerated',
       content: tolerability.content},
     {id: 'plan', title: 'Plan vs observed', hint: 'Whether the study went as it was planned',
@@ -829,6 +842,8 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   const panes = new Splitter([declarationPane(form.root),
     resultsFrame([failure, outdated, start, content], overlay, bar)],
   {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
+  // an edit of the study table (a value corrected, rows added): analyzed again, after a pause
+  self.own(onTableEdits(form, result, () => call.getParamValue('study'), () => auto.changed(TABLE_EDITS)));
   return {
     root: panes,
     ribbon: [[studyHeader(form, 'analyze', computed(() => {

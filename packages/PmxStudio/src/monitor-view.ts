@@ -9,12 +9,13 @@ import {badge, BasicTable, button, buttonWithIcon, computed, div, divH, divV, si
   Splitter} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost} from '@datagrok-libraries/u2/dg';
+import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
 import {exampleStudy} from './analyze';
 import {analyzeView} from './analyze-view';
 import {BandChart} from './band-chart';
 import {armColors} from './frames';
-import {allocateGroups, MonitorFrames, outsideBand} from './monitor';
+import {allocateGroups, MonitorFrames, monitorFrames, MonitorInputs, outsideBand} from './monitor';
 import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
 import {planInput} from './plan-vs-observed';
 import {NAMES, openStage, showStage} from './stages';
@@ -22,14 +23,19 @@ import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseSt
   studyOf, tableOf} from './study-file';
 import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
+import {studyTablePanel, withoutExcluded} from './study-table';
+import {studyInputsOf} from './explore';
 import {tolerabilityTab} from './tolerability';
-import {askedOf, autoRun, block, busyBar, busyOverlay, cardGrid, dayText, declarationPane, DECLARATION_MIN, infoNote,
+import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, dayText, declarationPane, DECLARATION_MIN,
+  infoNote,
+  onTableEdits, TABLE_EDITS,
   isBodyWeight, keepNamedColumns, noteLine, notes,
-  notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
+  notesBox, num, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
   signed, statCard, swatch, volumeAxis, wrapCells} from './ui';
 
 /** Monitor's panels, in order and width (twelfths): today's work first, then the groups, then the start. */
 const MONITOR_LAYOUT: Slot[] = [{id: 'today', span: 4}, {id: 'growth', span: 8}, {id: 'sheet', span: 12},
+  {id: 'data', span: 12},
   {id: 'decisions', span: 6}, {id: 'welfare', span: 6}, {id: 'enrollment', span: 12}];
 
 /** Below this chance of success, on a planned review, Monitor suggests stopping the arm. A person decides. */
@@ -55,6 +61,11 @@ function fill<R>(host: HTMLElement, items: R[], key: (r: R) => string,
 
 /** The Monitor view; `initial`: the table of a study to follow. */
 export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> {
+  return ViewHost.create({name: 'PMX Studio · Monitor', content: (self) => monitorContent(self, initial)}).view;
+}
+
+/** What the view shows, built under its host, which owns it all (the form, the charts, the panes). */
+function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxMonitorStudy').prepare();
   const result = signal<MonitorFrames | undefined>(undefined);
   const error = signal<string | null>(null);
@@ -108,7 +119,7 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
       if (fixed)
         call.setParamValue('looks', fixed);
       const sent = askedOf(call);
-      const c = await call.call();
+      const frames = await monitorFrames(withoutExcluded(callInputs<MonitorInputs>(call)));
       if (mine !== latest)
         return;
       error.value = null;
@@ -119,7 +130,7 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
         df.setTag(LOOKS_TAG, String(call.getParamValue('looks') ?? ''));
       lockLooks();
       remember();
-      result.value = outputsOf<MonitorFrames>(c);
+      result.value = frames;
     } catch (e: any) {
       error.value = String(e?.message ?? e);
     } finally {
@@ -131,7 +142,7 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
 
   const setStudy = async (df: DG.DataFrame) => {
     grok.shell.addTableView(df);
-    grok.shell.v = view;
+    grok.shell.v = self.view;
     const study = form.getInput('study');
     if (study)
       study.value = df.name;
@@ -177,11 +188,12 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     if (initial)
       void setStudy(initial);
   });
-  const planField = planInput(form, call, planState);
+  planInput(form, call, planState);
 
   const start = divV([
     span('Open the study\'s measurements (one row per animal and day, day 0 the randomization), check the columns ' +
-      'and run. Paste each session\'s values into the table and run again.'),
+      'and the forecasts follow. Paste or type each session\'s values into the table: each is checked as you enter ' +
+      'it, and the forecasts update.'),
     divH([button('Follow an example study', () => void openExample()),
       span('An MC38 study as Plan predicts it, halfway through.')]),
     infoNote('<b>The groups stay hidden.</b> Monitor shows each animal without its group, so that whoever measures ' +
@@ -442,6 +454,10 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     limits.replaceChildren(noteLine(`Endpoint ${v('endpoint')} mm³ (median control) · humane limit ` +
       `${v('humane')} mm³ · weight loss ${v('weightLimit') ?? 20}%`));
   });
+  // the study's own table: its values to correct, add or paste, what the outlier rules find, and the marks
+  const data = studyTablePanel({names: () => studyInputsOf(call), result,
+    open: (df) => void run(() => setStudy(df)), effect: (fn) => form.effect(fn)});
+  self.own(data.dispose);
   const panels = panelGrid([
     {id: 'today', title: 'Needs attention', hint: 'Who needs attention today; a person decides what to do',
       content: [limits, entered, attention, noteBox]},
@@ -449,6 +465,8 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
       content: [growthHidden, growthAxis.row, sized(growth, 340)]},
     {id: 'sheet', title: 'Measurement sheet', hint: 'The range the next value of each animal should fall in: check ' +
       'each value as you measure it', content: [sheet]},
+    {id: 'data', title: 'Study data', hint: 'The measurements: edit, add or paste them; right-click a value or an ' +
+      'animal to flag it for review or exclude it from the forecasts, with its reason', content: data.content},
     {id: 'decisions', title: 'Decisions', hint: 'Whether each treated group is still worth continuing, and what was ' +
       'decided', content: [decisionBody, block('Log', 'Who did what, and when', logBox), divH([saveButton,
       analyzeButton])]},
@@ -487,7 +505,11 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
   const panes = new Splitter([declarationPane(form.root),
     resultsFrame([failure, outdated, start, content], overlay, bar)],
   {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
-  const host = ViewHost.create({name: 'PMX Studio · Monitor', content: () => ({
+  // a session's values pasted or typed into the table: the forecasts follow, after a pause (one value, then the next)
+  self.own(onTableEdits(form, result, studyTable, () => auto.changed(TABLE_EDITS)));
+  // the table's own subscriptions are not built under the host: dropped with it
+  self.own(stopWatching);
+  return {
     root: panes,
     ribbon: [[studyHeader(form, 'monitor', computed(() => {
       const r = result.value;
@@ -503,12 +525,7 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     path: '/monitor',
     status: computed(() => busy.value ? 'Forecasting the study…' : result.value ? String(status.value?.get('line', 0)) :
       ''),
-  })});
-  [form, planField, growthAxis.input, growth].forEach((c) => host.own(() => c.dispose()));
-  host.own(stopWatching);
-  welfare.own.forEach((c) => host.own(() => c.dispose()));
-  const view: DG.ViewBase = host.view;
-  return view;
+  };
 }
 
 /** Plan's "Follow this study": a new measurements table carrying the plan, opened in Monitor. */

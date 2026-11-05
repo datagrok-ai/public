@@ -70,24 +70,47 @@ export function copyRow(text: () => string, what: string): HTMLElement {
 }
 
 /** The view has no Run: each change of the form recomputes it once the changes stop for a moment (`DEBOUNCE` ms)
- *  and nothing is missing or invalid. `changed` goes in the form's onInputChanged; `cancel` drops a pending recompute
- *  (a view that runs by itself, after filling the form, calls it). Not u2's showRun, which also saves the call,
+ *  and nothing is missing or invalid. `changed` goes in the form's onInputChanged, and with `TABLE_EDITS` in the study
+ *  table's data events (values typed one by one: a longer pause); `cancel` drops a pending recompute (a view that
+ *  runs by itself, after filling the form, calls it). Not u2's showRun, which also saves the call,
  *  uploading its tables (the user's study) to the server. */
-export function autoRun(form: () => FuncCallForm, run: () => unknown): {changed: () => void, cancel: () => void} {
+export function autoRun(form: () => FuncCallForm, run: () => unknown):
+  {changed: (wait?: number) => void, cancel: () => void} {
   let timer = 0;
   const cancel = () => window.clearTimeout(timer);
-  const changed = () => {
+  const changed = (wait = DEBOUNCE) => {
     cancel();
     timer = window.setTimeout(() => {
       const f = form();
       if (f.missingRequired.peek().length === 0 && f.invalidFields.peek().length === 0)
         void run();
-    }, DEBOUNCE);
+    }, wait);
   };
   return {changed, cancel};
 }
 
 const DEBOUNCE = 150;
+/** The pause after an edit of the study table before the view recomputes (ms): one value typed, then the next. */
+export const TABLE_EDITS = 1000;
+
+/** Calls `edited` on each edit of the table the last result read (a value typed, rows pasted, added or removed): the
+ *  table is the same input, so the form does not see it change. Returns what stops listening. */
+export function onTableEdits(form: FuncCallForm, result: ReadonlySignal<unknown>, table: () => unknown,
+  edited: () => void): () => void {
+  let subs: {unsubscribe(): void}[] = [];
+  const stop = () => {
+    subs.forEach((s) => s.unsubscribe());
+    subs = [];
+  };
+  form.effect(() => {
+    void result.value;
+    stop();
+    const df = table();
+    if (df instanceof DG.DataFrame)
+      subs = [df.onDataChanged, df.onRowsAdded, df.onRowsRemoved].map((e) => e.subscribe(edited));
+  });
+  return stop;
+}
 
 /** What a call is asked, to tell whether a run still matches its form when it ends; `compareSchedules`,
  *  `detectableEffect` and `withTwin` say only how much the run computes, not what it is about. `only`: just those
@@ -129,6 +152,18 @@ export function only<R extends object>(result: ReadonlySignal<R | undefined>, ke
     [last, lastKey] = [r, key];
     return r;
   });
+}
+
+/** A call's inputs by name as its function's own code receives them (a column the call names, its table's column),
+ *  for a view to run the engine directly: the platform's FuncCall.call() then spends 100–200 ms of the main thread on
+ *  the call's table outputs, after every run. The function stays registered for Grokky, the API and the tests. */
+export function callInputs<T>(call: DG.FuncCall, extra: object = {}): T {
+  const tables = call.func.inputs.map((p) => call.getParamValue(p.name)).filter((v) => v instanceof DG.DataFrame);
+  return {...Object.fromEntries(call.func.inputs.map((p) => {
+    const v = call.getParamValue(p.name);
+    return [p.name, typeof v === 'string' && p.propertyType === DG.TYPE.COLUMN ?
+      tables.map((t: DG.DataFrame) => t.col(v)).find((c) => c) ?? null : v];
+  })), ...extra} as T;
 }
 
 /** A finished call's outputs by name. */

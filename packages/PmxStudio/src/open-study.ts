@@ -16,13 +16,13 @@ export interface StudyRead {kind: 'study', file: string, text: string}
 export type FileRead = MeasuredTable | PlanRead | StudyRead | {kind: 'bad', file: string};
 
 /** The columns Analyze needs, by the names a study table usually gives them. */
-const ROLES: [string, RegExp][] = [
+export const ROLES: [string, RegExp][] = [
   ['Animal', /^(animal|mouse|subject|id\b|tumou?r[ _]?id)/i],
   ['Group', /(group|arm|treatment|cohort)/i],
   ['Day', /^(day|days|study[ _]?day|time)\b/i],
   ['Volume', /vol/i],
 ];
-const WEIGHT = /(body[ _]?weight|^bw\b|^weight)/i;
+export const WEIGHT = /(body[ _]?weight|^bw\b|^weight)/i;
 
 const extOf = (name: string) => (name.split('.').pop() ?? '').toLowerCase();
 const baseOf = (name: string) => name.replace(/\.[^.]+$/, '');
