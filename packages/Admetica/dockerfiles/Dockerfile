@@ -9,10 +9,10 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /tmp/environment.yml
 RUN set -ex ; \
     micromamba env create -f /tmp/environment.yml -y ; \
     env=$MAMBA_ROOT_PREFIX/envs/myenv ; \
-    site=$(echo $env/lib/python3.*/site-packages) ; \
+    site=$env/lib/python3.11/site-packages ; \
     rm -rf $site/pip $site/pip-* $site/setuptools $site/setuptools-* $site/_distutils_hack \
         $site/distutils-precedence.pth $site/wheel $site/wheel-* $site/pkg_resources \
-        $site/padelpy/PaDEL-Descriptor $env/lib/python3.*/ensurepip/_bundled ; \
+        $site/padelpy/PaDEL-Descriptor $env/lib/python3.11/ensurepip/_bundled ; \
     find $env/conda-meta -name 'pip-*.json' -o -name 'setuptools-*.json' -o -name 'wheel-*.json' | xargs -r rm -f
 
 RUN mkdir /tmp/models && $MAMBA_ROOT_PREFIX/envs/myenv/bin/python -c "\
