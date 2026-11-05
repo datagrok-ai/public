@@ -17,7 +17,7 @@ import type {ViewContent} from '@datagrok-libraries/u2/dg';
 import {AnalysisFrames, exampleStudy, median} from './analyze';
 import {armColors} from './frames';
 import {CorrectionInput} from './arms-input';
-import {addRunButton, askedOf, axisAt, busyOverlay, cardGrid, copyRow, dayText, declarationPane,
+import {askedOf, autoRun, axisAt, busyBar, busyOverlay, cardGrid, copyRow, dayText, declarationPane,
   DECLARATION_MIN, guide,
   infoNote, noteLine, notesBox, num, outputsOf, pct, pValue, RESULTS_MIN, resultsFrame, settleForm, signed,
   isBodyWeight, keepNamedColumns, sized, staleNote, statCard, swatch, volumeAxis, wrapCells} from './ui';
@@ -217,8 +217,14 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   // the multiple comparisons as Plan asks for them, over the treated groups of the last analysis (two until then)
   const treatedGroups = signal(2);
   const correction = new CorrectionInput({label: 'Multiple comparisons', arms: treatedGroups});
+  // no Run: each change analyzes again once the changes stop
+  let preparing = false;
+  const auto = autoRun(() => form, () => preparing ? undefined : analyze());
   const form = funcForm(call, {layout: 'tall', overrides: {correction: {input: correction}},
-    onInputChanged: () => stale.value = result.peek() !== undefined});
+    onInputChanged: () => {
+      stale.value = result.peek() !== undefined;
+      auto.changed();
+    }});
   settleForm(form, {control: 'Auto (the vehicle group)', evaluationDay: 'Auto (endpoint reached)',
     density: 'Auto (the cell line’s in the atlas)'});
   keepNamedColumns(form, {
@@ -235,7 +241,11 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
     busy.value = true;
     const mine = ++latest;
     try {
+      // a study the view fills in changes the form as it goes: none of those changes runs by itself
+      preparing = prepare !== undefined;
       await prepare?.();
+      preparing = false;
+      auto.cancel();
       await planState.reading;
       const sent = askedOf(call);
       const reads = studyInputsOf(call);
@@ -261,10 +271,11 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
     } catch (e: any) {
       error.value = String(e?.message ?? e);
     } finally {
-      busy.value = false;
+      preparing = false;
+      if (mine === latest)
+        busy.value = false;
     }
   };
-  addRunButton(form, () => analyze(), busy);
 
   // the example: Plan's study opened in the workspace like any table (the form's table picker then offers it), this
   // view brought back and the study analyzed at once
@@ -765,22 +776,28 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
     start.hidden = !!result.value;
   });
 
+  // the first run under u2's loader; every later one under the thin bar, what was shown left in view
   const overlay = busyOverlay('Analyzing the study…');
+  const bar = busyBar();
   const failure = div([], 'pmx-analyze-error');
   Object.assign(failure.style, {color: 'var(--dg-error-color, #c62828)'});
-  form.effect(() => overlay.hidden = !busy.value);
+  form.effect(() => {
+    overlay.hidden = !busy.value || result.value !== undefined;
+    bar.hidden = !busy.value || result.value === undefined;
+  });
   form.effect(() => {
     failure.hidden = error.value === null;
     failure.replaceChildren(...(error.value === null ? [] : [noteLine(error.value, 'error')]));
   });
-  const outdated = staleNote('The inputs changed: run to update the analysis');
+  // the view follows the form by itself: what it shows is behind only while a field is missing or invalid
+  const outdated = staleNote('A field is missing or invalid: the analysis shown is for the last complete inputs');
   form.effect(() => {
-    outdated.hidden = !stale.value;
+    outdated.hidden = !stale.value || form.missingRequired.value.length + form.invalidFields.value.length === 0;
     content.style.opacity = stale.value ? '0.5' : '';
   });
 
   const panes = new Splitter([declarationPane(form.root),
-    resultsFrame([failure, outdated, start, content], overlay)],
+    resultsFrame([failure, outdated, start, content], overlay, bar)],
   {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
   return {
     root: panes,

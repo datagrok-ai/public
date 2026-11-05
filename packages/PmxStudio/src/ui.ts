@@ -4,7 +4,7 @@
    results. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {button, buttonWithIcon, computed, div, divH, divV, dot, icon, loader, RadioInput, Section, span,
+import {buttonWithIcon, computed, div, divH, divV, dot, icon, loader, RadioInput, Section, span,
   StatCard, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
@@ -69,18 +69,25 @@ export function copyRow(text: () => string, what: string): HTMLElement {
   return row;
 }
 
-/** The form's Run, which only computes: u2's showRun also saves the call, uploading its tables (the user's study) to
- *  the server. Blocked while a field is missing or invalid, and while `busy`. */
-export function addRunButton(form: FuncCallForm, run: () => unknown, busy: ReadonlySignal<boolean>): void {
-  const off = computed(() => {
-    const missing = form.missingRequired.value;
-    const invalid = form.invalidFields.value;
-    return missing.length > 0 ? `Missing: ${missing.join(', ')}` : invalid.length > 0 ?
-      `Invalid: ${invalid.join(', ')}` : busy.value ? 'Running' : null;
-  });
-  const b = form.runInScope(() => button('Run', () => void run(), {primary: true, disabled: off}));
-  form.addButtons((row) => row.append(b));
+/** The view has no Run: each change of the form recomputes it once the changes stop for a moment (`DEBOUNCE` ms)
+ *  and nothing is missing or invalid. `changed` goes in the form's onInputChanged; `cancel` drops a pending recompute
+ *  (a view that runs by itself, after filling the form, calls it). Not u2's showRun, which also saves the call,
+ *  uploading its tables (the user's study) to the server. */
+export function autoRun(form: () => FuncCallForm, run: () => unknown): {changed: () => void, cancel: () => void} {
+  let timer = 0;
+  const cancel = () => window.clearTimeout(timer);
+  const changed = () => {
+    cancel();
+    timer = window.setTimeout(() => {
+      const f = form();
+      if (f.missingRequired.peek().length === 0 && f.invalidFields.peek().length === 0)
+        void run();
+    }, DEBOUNCE);
+  };
+  return {changed, cancel};
 }
+
+const DEBOUNCE = 150;
 
 /** What a call is asked, to tell whether a run still matches its form when it ends; `compareSchedules`,
  *  `detectableEffect` and `withTwin` say only how much the run computes, not what it is about. */
@@ -252,12 +259,18 @@ export function busyOverlay(text: string): HTMLElement {
   return overlay;
 }
 
-/** The results pane, scrolling, in a frame that does not scroll: the loader always covers the visible part. */
-export function resultsFrame(content: HTMLElement[], overlay: HTMLElement): HTMLElement {
+/** A thin moving bar along the top of the results while they are recomputed, what was shown left in view. */
+export function busyBar(): HTMLElement {
+  return div([], 'pmx-busy-bar');
+}
+
+/** The results pane, scrolling, in a frame that does not scroll: the loader always covers the visible part, the bar
+ *  sits on its top edge. */
+export function resultsFrame(content: HTMLElement[], ...overlays: HTMLElement[]): HTMLElement {
   const results = div(content, 'pmx-results');
   Object.assign(results.style, {height: '100%', overflow: 'auto', boxSizing: 'border-box',
     padding: 'var(--dg-space-m) var(--dg-space-l) var(--dg-space-xl, 24px)'});
-  const frame = div([results, overlay], 'pmx-results-frame');
+  const frame = div([results, ...overlays], 'pmx-results-frame');
   Object.assign(frame.style, {position: 'relative', height: '100%', overflow: 'hidden',
     borderLeft: '1px solid var(--dg-border-color, #e1e6ec)'});
   return frame;

@@ -15,7 +15,7 @@ import type {ViewContent} from '@datagrok-libraries/u2/dg';
 import {PlanFrames, WEEKDAY_NAMES, armColors, weekdaysOf, weekdaysText} from './frames';
 import {ArmsInput, CorrectionInput, armsFrame} from './arms-input';
 import {MIN_GROUP, finite} from './engine';
-import {addRunButton, askedOf, busyOverlay, cardGrid, copyRow, declarationPane, DECLARATION_MIN, infoNote, notes,
+import {askedOf, autoRun, busyBar, busyOverlay, cardGrid, copyRow, declarationPane, DECLARATION_MIN, infoNote, notes,
   notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
   statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {openStage} from './stages';
@@ -242,8 +242,8 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxPlanStudy').prepare();
   const read = (c: DG.FuncCall) => outputsOf<PlanFrames>(c);
   const result = signal<PlanFrames | undefined>(undefined);
-  // Run and the calendar's replans share the call, one run at a time: a change made during a run is planned next, and
-  // the run it overtook is never shown
+  // the form's and the calendar's replans share the call, one run at a time: a change made during a run is planned
+  // next, and the run it overtook is never shown
   let running: Promise<void> | null = null;
   let again = false;
   const error = signal<string | null>(null);
@@ -252,13 +252,18 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
   // a plan that no longer matches the form is dimmed until the next run
   const stale = signal(false);
   // captions above every field: the panel reads top to bottom, left-aligned, at any width
+  // no Run: each change replans once the changes stop
+  const auto = autoRun(() => form, () => replan());
   const form = funcForm(call, {layout: 'tall',
     overrides: {arms: {input: armsInput}, correction: {input: correction}},
-    onInputChanged: () => stale.value = result.peek() !== undefined});
+    onInputChanged: () => {
+      stale.value = result.peek() !== undefined;
+      auto.changed();
+    }});
   settleForm(form, {n: 'Auto (target power)', lastDay: 'Auto (endpoint reached)',
     tgiScenarios: 'Off, or e.g. 30, 50, 70'});
 
-  // busy while the view plans (the first plan, Run, a change of randomization day)
+  // busy while the view plans (the first plan, a change of the form, a change of randomization day)
   const planning = signal(true);
   // a change made on the calendar replans the study too (the measurement days set the power and the animals), but
   // under a loader of the calendar's own, the page left in view
@@ -295,7 +300,6 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     });
     return running;
   };
-  addRunButton(form, () => replan(), busy);
 
   const plan = computed(() => result.value?.plan);
   const cell = <T = number>(name: string) => computed(() => (plan.value?.get(name, 0) ?? undefined) as T | undefined);
@@ -454,7 +458,7 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
   form.effect(() => {
     const sc = schedules.value;
     // (nothing comes for a plan out of date or a failed run: no loader then)
-    const waiting = stale.value || error.value !== null ? span('Run to compare the measurement schedules.') :
+    const waiting = stale.value || error.value !== null ? span('Compared once the plan is up to date.') :
       loader('Comparing measurement schedules…');
     scheduleBox.replaceChildren(!sc ? waiting : sc.rowCount > 0 ?
       schedulesTable(sc, plan.peek()?.get('per_week', 0)) : span(UNREACHABLE));
@@ -672,11 +676,15 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
   const content = divV([cards, panels], 'pmx-plan-content');
   Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
 
-  // the first plan, and every later run, under u2's loader; what was shown stays, dimmed, until the new plan is in
+  // the first plan under u2's loader; every later one under the thin bar, what was shown left in view
   const overlay = busyOverlay('Designing the study…');
+  const bar = busyBar();
   const failure = div([], 'pmx-plan-error');
   Object.assign(failure.style, {color: 'var(--dg-error-color, #c62828)'});
-  form.effect(() => overlay.hidden = !planning.value);
+  form.effect(() => {
+    overlay.hidden = !planning.value || result.value !== undefined;
+    bar.hidden = !planning.value || result.value === undefined;
+  });
   // a calendar change: its own loader, the calendar dimmed, the page in view; a plan from the form clears its note
   form.effect(() => {
     calendarLoader.hidden = !refreshing.value;
@@ -689,13 +697,14 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     failure.replaceChildren(...(error.value === null ? [] : [divH([dot('error'), span(error.value)])]));
   });
 
-  const outdated = staleNote('The inputs changed: run to update the plan');
+  // the view follows the form by itself: what it shows is behind only while a field is missing or invalid
+  const outdated = staleNote('A field is missing or invalid: the plan shown is for the last complete inputs');
   form.effect(() => {
-    outdated.hidden = !stale.value;
+    outdated.hidden = !stale.value || form.missingRequired.value.length + form.invalidFields.value.length === 0;
     content.style.opacity = stale.value ? '0.5' : '';
   });
 
-  const results = resultsFrame([failure, outdated, content], overlay);
+  const results = resultsFrame([failure, outdated, content], overlay, bar);
   const declaration = declarationPane(form.root);
 
   // the plan carries the schedules while their section is open; opened on a plan without them, they are computed
@@ -750,6 +759,7 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
         field.value = v;
       call.setParamValue(name, v);
     }
+    auto.cancel();
     return replan();
   });
 

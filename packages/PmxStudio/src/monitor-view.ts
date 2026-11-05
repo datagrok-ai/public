@@ -23,7 +23,7 @@ import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseSt
 import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {tolerabilityTab} from './tolerability';
-import {addRunButton, askedOf, block, busyOverlay, cardGrid, dayText, declarationPane, DECLARATION_MIN, infoNote,
+import {askedOf, autoRun, block, busyBar, busyOverlay, cardGrid, dayText, declarationPane, DECLARATION_MIN, infoNote,
   isBodyWeight, keepNamedColumns, noteLine, notes,
   notesBox, num, outputsOf, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
   signed, statCard, swatch, volumeAxis, wrapCells} from './ui';
@@ -62,7 +62,13 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
   const busy = signal(false);
   const revealed = signal(false);
   let latest = 0;
-  const form = funcForm(call, {layout: 'tall', onInputChanged: () => stale.value = result.peek() !== undefined});
+  // no Run: each change forecasts again once the changes stop
+  let preparing = false;
+  const auto = autoRun(() => form, () => preparing ? undefined : run());
+  const form = funcForm(call, {layout: 'tall', onInputChanged: () => {
+    stale.value = result.peek() !== undefined;
+    auto.changed();
+  }});
   settleForm(form, {control: 'Auto (the vehicle group)', evaluationDay: 'Auto (endpoint reached)'});
   keepNamedColumns(form, {bodyWeight: isBodyWeight});
 
@@ -91,7 +97,11 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     busy.value = true;
     const mine = ++latest;
     try {
+      // a study the view fills in changes the form as it goes: none of those changes runs by itself
+      preparing = prepare !== undefined;
       await prepare?.();
+      preparing = false;
+      auto.cancel();
       await planState.reading;
       // the reviews fixed at the start hold, whatever the field says
       const fixed = studyTable()?.getTag(LOOKS_TAG);
@@ -113,10 +123,11 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     } catch (e: any) {
       error.value = String(e?.message ?? e);
     } finally {
-      busy.value = false;
+      preparing = false;
+      if (mine === latest)
+        busy.value = false;
     }
   };
-  addRunButton(form, () => run(), busy);
 
   const setStudy = async (df: DG.DataFrame) => {
     grok.shell.addTableView(df);
@@ -453,22 +464,29 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
     content.hidden = !result.value;
     start.hidden = !!result.value;
   });
+  // the first run under u2's loader; every later one under the thin bar, what was shown left in view
   const overlay = busyOverlay('Forecasting the study…');
+  const bar = busyBar();
   const failure = div([], 'pmx-monitor-error');
   Object.assign(failure.style, {color: 'var(--dg-error-color, #c62828)'});
-  form.effect(() => overlay.hidden = !busy.value);
+  form.effect(() => {
+    overlay.hidden = !busy.value || result.value !== undefined;
+    bar.hidden = !busy.value || result.value === undefined;
+  });
   form.effect(() => {
     failure.hidden = error.value === null;
     failure.replaceChildren(...(error.value === null ? [] : [noteLine(error.value, 'error')]));
   });
-  const outdated = staleNote('The inputs changed: run to update the forecasts');
+  // the view follows the form by itself: what it shows is behind only while a field is missing or invalid
+  const outdated = staleNote('A field is missing or invalid: the forecasts shown are for the last complete inputs');
   form.effect(() => {
-    outdated.hidden = !stale.value;
+    outdated.hidden = !stale.value || form.missingRequired.value.length + form.invalidFields.value.length === 0;
     content.style.opacity = stale.value ? '0.5' : '';
   });
 
-  const panes = new Splitter([declarationPane(form.root), resultsFrame([failure, outdated, start, content], overlay)],
-    {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
+  const panes = new Splitter([declarationPane(form.root),
+    resultsFrame([failure, outdated, start, content], overlay, bar)],
+  {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
   const host = ViewHost.create({name: 'PMX Studio · Monitor', content: () => ({
     root: panes,
     ribbon: [[studyHeader(form, 'monitor', computed(() => {

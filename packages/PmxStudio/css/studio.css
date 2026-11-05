@@ -55,3 +55,12 @@
 .pmx-n-table th, .pmx-n-table td { padding: 1px 6px; text-align: center; white-space: nowrap; }
 .pmx-n-table th:first-child, .pmx-n-table td:first-child { text-align: left; }
 .pmx-n-table th { font-weight: 500; border-bottom: 1px solid var(--dg-border, #DBDCDF); }
+
+/* the results recomputing: a thin bar sliding along the top edge of the results pane */
+.pmx-busy-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; overflow: hidden; z-index: 3;
+  pointer-events: none; }
+.pmx-busy-bar::before { content: ''; position: absolute; top: 0; bottom: 0; width: 30%;
+  background: var(--dg-primary-color, #2083d5); animation: pmx-busy-slide 1s ease-in-out infinite; }
+.pmx-busy-bar[hidden] { display: none; }
+@keyframes pmx-busy-slide { from { left: -30%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .pmx-busy-bar::before { animation: none; left: 0; width: 100%; opacity: .5; } }
