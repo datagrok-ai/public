@@ -75,3 +75,27 @@
 
 /* the line on the study's data over Monitor's and Analyze's results (study-table.ts) */
 .pmx-study-line { align-items: center; flex-wrap: wrap; gap: var(--dg-space-s, 8px); }
+
+/* the tumor model picker (line-input.ts): a field, and in place under it the models by class */
+.pmx-line-input { display: flex; flex-direction: column; gap: 6px; height: auto; padding: 0; min-width: 0; }
+.pmx-line-field {
+  display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 4px 2px; background: none; border: none;
+  border-bottom: 1px solid var(--dg-border, #DBDCDF); font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.pmx-line-field:hover, .pmx-line-field[aria-expanded="true"] { border-bottom-color: var(--dg-accent, #2083D5); }
+.pmx-line-field:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; }
+.pmx-line-name { font-weight: 500; }
+.pmx-line-kind { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--dg-grey-5, #717581); }
+.pmx-line-chevron { color: var(--dg-grey-5, #717581); }
+.pmx-line-panel { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--dg-border, #DBDCDF); border-radius: 4px; }
+.pmx-line-panel[hidden] { display: none; }
+.pmx-line-search { width: 100%; box-sizing: border-box; padding: 4px 6px; border: 1px solid var(--dg-border, #DBDCDF); border-radius: 3px; font: inherit; }
+.pmx-line-list { display: flex; flex-direction: column; max-height: 280px; overflow-y: auto; }
+.pmx-line-group { margin: 6px 0 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--dg-grey-5, #717581); }
+.pmx-line-item { padding: 4px 6px; border-radius: 3px; cursor: pointer; }
+.pmx-line-item:hover, .pmx-line-item.is-active { background: var(--dg-grey-1, #f2f3f5); }
+.pmx-line-item[aria-selected="true"] .pmx-line-item-name { color: var(--dg-accent, #2083D5); }
+.pmx-line-item-name { font-weight: 500; margin-right: 8px; }
+.pmx-line-item-type { font-size: 12px; color: var(--dg-text-color, #4D5261); }
+.pmx-line-item-evidence { display: block; font-size: 11px; color: var(--dg-grey-5, #717581); }
+.pmx-line-empty { padding: 6px; font-size: 12px; color: var(--dg-grey-5, #717581); }

@@ -12,6 +12,7 @@ import {monitorView, openStudyFile} from './monitor-view';
 import {hubView} from './hub-view';
 import {quietContextPanel} from './stages';
 import {decorateStudyView, markRows} from './study-table';
+import {tumorModels} from './priors';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -39,6 +40,15 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    description: 'The tumor models in the atlas of historical controls (syngeneic lines and PDX): the choices of every ' +
+      '`line` input',
+    outputs: [{name: 'result', type: 'list<string>'}],
+  })
+  static async pmxLines(): Promise<string[]> {
+    return Object.keys(await tumorModels());
+  }
+
+  @grok.decorators.func({
     name: 'pmxMonitorStudy',
     description: 'Follows a running xenograft or syngeneic efficacy study with Crux stats.tumor_monitor, from every measurement so far, the cell line’s growth model from the atlas and the plan: for each animal the range of its next measurement, its chance of passing the humane limit and whether its last value was unexpected; for each group its median day by day to the end; the day the study is expected to end; and, on the reviews fixed at the start, each treated group’s chance that the final test finds it slower than the control.',
     outputs: [
@@ -60,7 +70,7 @@ export class PackageFunctions {
     // @ts-expect-error (the platform's `visible` rule, as in pmxPlanStudy)
     @grok.decorators.param({type: 'string', options: {category: 'Study', caption: 'Plan', optional: true, nullable: true, visible: 'false', description: 'The plan saved in Plan (its .pmxplan file’s contents).'}}) plan: string | null,
     @grok.decorators.param({options: {category: 'Study', caption: 'Planned reviews', optional: true, nullable: true, description: 'The study days fixed at the start to review each treated group, comma-separated, e.g. 7, 10.'}}) looks: string | null,
-    @grok.decorators.param({options: {category: 'Monitoring', caption: 'Cell line', choices: ['MC38', 'CT26', 'B16F10', '4T1', 'LLC', 'Panc02', 'Hepa1-6', 'PDX-NSCLC', 'PDX-PDAC'], initialValue: 'MC38', description: 'The tumor model: its growth model from the atlas of historical controls makes the forecasts.'}}) line: string,
+    @grok.decorators.param({options: {category: 'Monitoring', caption: 'Cell line', choices: 'PmxStudio:pmxLines()', initialValue: 'MC38', description: 'The tumor model: its growth model from the atlas of historical controls makes the forecasts.'}}) line: string,
     @grok.decorators.param({options: {category: 'Monitoring', caption: 'Control group', optional: true, nullable: true, description: 'The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).'}}) control: string,
     @grok.decorators.param({options: {category: 'Monitoring', caption: 'Endpoint volume', units: 'mm³', min: '500', max: '3000', initialValue: '1500', description: 'The study ends when the median control reaches it.'}}) endpoint: number,
     @grok.decorators.param({options: {category: 'Monitoring', caption: 'Humane limit', units: 'mm³', min: '500', max: '4000', initialValue: '2000', description: 'Your protocol’s limit: an animal near it is listed.'}}) humane: number,
@@ -115,7 +125,7 @@ export class PackageFunctions {
     description: 'Recomputes the MAP prior of a new study initial growth rate (log alpha) for a cell line with Crux stats.map_prior from the atlas per-paper estimates: one row per mixture component.',
   })
   static async pmxMapPrior(
-    @grok.decorators.param({options: {choices: ['MC38', 'CT26', 'B16F10', '4T1', 'LLC', 'Panc02', 'Hepa1-6', 'PDX-NSCLC', 'PDX-PDAC'], description: 'Tumor model (syngeneic cell line or PDX).'}}) line: string): Promise<DG.DataFrame> {
+    @grok.decorators.param({options: {choices: 'PmxStudio:pmxLines()', description: 'Tumor model (syngeneic cell line or PDX).'}}) line: string): Promise<DG.DataFrame> {
     return mapPriorFrame(line);
   }
 
@@ -134,7 +144,7 @@ export class PackageFunctions {
     ],
   })
   static async pmxPlanStudy(
-    @grok.decorators.param({options: {category: 'Tumor model', caption: 'Cell line', nullable: false, choices: ['MC38', 'CT26', 'B16F10', '4T1', 'LLC', 'Panc02', 'Hepa1-6', 'PDX-NSCLC', 'PDX-PDAC'], initialValue: 'MC38', description: 'Tumor model (syngeneic cell line or PDX): its growth prior comes from the atlas of historical controls.'}}) line: string,
+    @grok.decorators.param({options: {category: 'Tumor model', caption: 'Cell line', nullable: false, choices: 'PmxStudio:pmxLines()', initialValue: 'MC38', description: 'Tumor model (syngeneic cell line or PDX): its growth prior comes from the atlas of historical controls.'}}) line: string,
     @grok.decorators.param({options: {category: 'Tumor model', caption: 'Endpoint volume', nullable: false, units: 'mm³', min: '500', max: '3000', initialValue: '1500', description: 'The study ends when the median control reaches it.'}}) endpoint: number,
     @grok.decorators.param({options: {category: 'Treatment arms', caption: 'Arms', optional: true, description: 'The treated arms, each compared with the control: name, therapy (small_molecule, biologic, immunotherapy, immune_agonist, cell_therapy, vaccine_peptide, oligo_rna), metric (TGI or TC) and the expected effect in percent. Empty: one small-molecule arm at TGI 60%.'}}) arms: DG.DataFrame,
     @grok.decorators.param({options: {category: 'Design', caption: 'Target power', nullable: false, units: '%', min: '50', max: '99', initialValue: '80', description: 'Chance of detecting each arm’s effect.'}}) power: number,
@@ -196,7 +206,7 @@ export class PackageFunctions {
     // the plan's text, not a file: the Analyze view reads the file into it
     // @ts-expect-error (the platform's `visible` rule, as above)
     @grok.decorators.param({type: 'string', options: {category: 'Study', caption: 'Plan', optional: true, nullable: true, visible: 'false', description: 'The plan saved in Plan (its .pmxplan file’s contents), to compare the study with.'}}) plan: string | null,
-    @grok.decorators.param({options: {category: 'Analysis', caption: 'Cell line', nullable: false, choices: ['MC38', 'CT26', 'B16F10', '4T1', 'LLC', 'Panc02', 'Hepa1-6', 'PDX-NSCLC', 'PDX-PDAC'], initialValue: 'MC38', description: 'The tumor model: its growth model from the atlas of historical controls predicts each treated animal untreated.'}}) line: string,
+    @grok.decorators.param({options: {category: 'Analysis', caption: 'Cell line', nullable: false, choices: 'PmxStudio:pmxLines()', initialValue: 'MC38', description: 'The tumor model: its growth model from the atlas of historical controls predicts each treated animal untreated.'}}) line: string,
     @grok.decorators.param({options: {category: 'Analysis', caption: 'Control group', optional: true, nullable: true, description: 'The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).'}}) control: string,
     @grok.decorators.param({options: {category: 'Analysis', caption: 'Endpoint volume', nullable: false, units: 'mm³', min: '500', max: '3000', initialValue: '1500', description: 'The effects are read on the first measurement day the median control reaches this volume, as the design defines the end of the study.'}}) endpoint: number,
     @grok.decorators.param({options: {category: 'Analysis', caption: 'Multiple comparisons', nullable: false, choices: ['dunnett', 'bonferroni', 'none'], initialValue: 'dunnett', description: 'Correction over the arms compared with the control: Dunnett (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).'}}) correction: string,

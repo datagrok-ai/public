@@ -25,6 +25,7 @@ import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {emptyStudy, studyDataLine, tagStudy, withoutExcluded} from './study-table';
 import {emptyMeta, metaOf, setMetaOn, withId} from './study-meta';
+import {LineInput} from './line-input';
 import {studyInputsOf} from './explore';
 import {tolerabilityTab} from './tolerability';
 import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, dayText, declarationPane, DECLARATION_MIN,
@@ -76,10 +77,11 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
   // no Run: each change forecasts again once the changes stop
   let preparing = false;
   const auto = autoRun(() => form, () => preparing ? undefined : run());
-  const form = funcForm(call, {layout: 'tall', onInputChanged: () => {
-    stale.value = result.peek() !== undefined;
-    auto.changed();
-  }});
+  const form = funcForm(call, {layout: 'tall', overrides: {line: {input: new LineInput({label: 'Tumor model'})}},
+    onInputChanged: () => {
+      stale.value = result.peek() !== undefined;
+      auto.changed();
+    }});
   settleForm(form, {control: 'Auto (the vehicle group)', evaluationDay: 'Auto (endpoint reached)'});
   keepNamedColumns(form, {bodyWeight: isBodyWeight});
 

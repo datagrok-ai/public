@@ -26,6 +26,7 @@ import {studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
 import {StudyMeta, emptyMeta, withId} from './study-meta';
+import {LineInput, lastLine} from './line-input';
 import {BandChart} from './band-chart';
 
 /** Where the plan's first stage is run: Monitor takes the implanted pool to randomization. */
@@ -263,7 +264,8 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
   // no Run: each change replans once the changes stop
   const auto = autoRun(() => form, () => replan());
   const form = funcForm(call, {layout: 'tall',
-    overrides: {arms: {input: armsInput}, correction: {input: correction}},
+    overrides: {arms: {input: armsInput}, correction: {input: correction},
+      line: {input: new LineInput({label: 'Tumor model'})}},
     onInputChanged: () => {
       stale.value = result.peek() !== undefined;
       auto.changed();
@@ -756,7 +758,9 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
   // form has written its defaults into the call
   void form.settled.then(() => {
     call.setParamValue('detectableEffect', false);
-    for (const [name, value] of Object.entries(initial?.inputs ?? {})) {
+    // a new plan opens on the tumor model picked last
+    const last = initial ? null : lastLine();
+    for (const [name, value] of Object.entries(initial?.inputs ?? (last ? {line: last} : {}))) {
       const v = name === 'arms' ? armsFrame(value as SavedPlan['inputs']['arms']) : value;
       const field = form.getInput(name);
       if (field)

@@ -34,6 +34,7 @@ import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {exclusionsOf, studyDataLine, tagStudy, withoutExcluded} from './study-table';
 import {metaOf, setMetaOn} from './study-meta';
+import {LineInput} from './line-input';
 import {KM, Survival, survivalOf} from './survival';
 
 /** Analyze's panels, in order and width (twelfths): the answer, how the tumors grew, each animal, then the rest. */
@@ -232,11 +233,11 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   // no Run: each change analyzes again once the changes stop
   let preparing = false;
   const auto = autoRun(() => form, () => preparing ? undefined : analyze());
-  const form = funcForm(call, {layout: 'tall', overrides: {correction: {input: correction}},
-    onInputChanged: () => {
-      stale.value = result.peek() !== undefined;
-      auto.changed();
-    }});
+  const overrides = {correction: {input: correction}, line: {input: new LineInput({label: 'Tumor model'})}};
+  const form = funcForm(call, {layout: 'tall', overrides, onInputChanged: () => {
+    stale.value = result.peek() !== undefined;
+    auto.changed();
+  }});
   settleForm(form, {control: 'Auto (the vehicle group)', evaluationDay: 'Auto (endpoint reached)',
     density: 'Auto (the cell line’s in the atlas)'});
   keepNamedColumns(form, {
