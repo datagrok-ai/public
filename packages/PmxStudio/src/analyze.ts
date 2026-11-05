@@ -305,18 +305,23 @@ export async function warmTwin(): Promise<void> {
   }
 }
 
-/** The last study's twins: a rerun that only changes the correction, α or the limits keeps them (they depend on
- *  nothing else). */
-let lastTwin: {key: string, result: Promise<Twins>} | null = null;
+/** The last studies' twins by their inputs: a rerun that only changes the correction, α or the limits keeps them (they
+ *  depend on nothing else), and going back to an evaluation day or endpoint just seen finds its twins. */
+const twinCache = new Map<string, Promise<Twins>>();
 
 function twinOf(window: Window, params: object) {
   const key = JSON.stringify([window.animal, window.group, Array.from(window.day), Array.from(window.volume), params]);
-  if (lastTwin?.key !== key) {
-    const result = fastTwin(window, params);
-    lastTwin = {key, result};
-    result.catch(() => lastTwin = null);
+  let result = twinCache.get(key);
+  if (result)
+    twinCache.delete(key); // re-inserted below: most recently used last
+  else {
+    result = fastTwin(window, params);
+    result.catch(() => twinCache.delete(key));
+    if (twinCache.size >= 8) // ponytail: 8 twins, the least recently used out
+      twinCache.delete(twinCache.keys().next().value!);
   }
-  return lastTwin.result;
+  twinCache.set(key, result);
+  return result;
 }
 
 export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysis> {
