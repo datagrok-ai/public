@@ -18,6 +18,56 @@ export interface Survival {
   horizon?: number;
 }
 
+/** A treated group against the control with the animals removed for another reason as a competing event. */
+export interface Competing {group: string, shr: number, lower: number, upper: number, p: number, competing: number}
+
+/** Fine-Gray (Crux survival.fine_gray, as cmprsk's crr): the endpoint is the event, an animal removed before it for
+ *  another reason (`removal`: the column of the reason, any text) competes with it, the rest are censored at their
+ *  last measurement; each treated group against the control, its subdistribution hazard ratio (under 1: reaches
+ *  the endpoint less). null: no removal column, or no animal removed for another reason. */
+export async function competingOf(s: StudyInputs, removal: string | null, control: string, endpoint: number):
+  Promise<Competing[] | null> {
+  const why = removal ? s.study.col(removal) : null;
+  if (!why)
+    return null;
+  const [an, gr, dy, vol] = [s.animal, s.group, s.day, s.volume].map((c) => s.study.col(c)!);
+  type Animal = {group: string, last: number, reached: number | null, removed: boolean};
+  const animals = new Map<string, Animal>();
+  for (let i = 0; i < s.study.rowCount; i++) {
+    const d = dy.get(i);
+    if (!Number.isFinite(d))
+      continue;
+    const a = String(an.get(i));
+    const x = animals.get(a) ?? {group: String(gr.get(i)), last: -Infinity, reached: null, removed: false};
+    x.last = Math.max(x.last, d);
+    if (vol.get(i) >= endpoint)
+      x.reached = x.reached === null ? d : Math.min(x.reached, d);
+    const r = why.get(i);
+    if (r !== null && r !== undefined && String(r).trim() !== '')
+      x.removed = true;
+    animals.set(a, x);
+  }
+  const all = [...animals.values()];
+  const status = (x: Animal) => x.reached !== null ? '1' : x.removed ? '2' : '0';
+  if (!all.some((x) => status(x) === '2'))
+    return null;
+  const out: Competing[] = [];
+  for (const g of [...new Set(all.map((x) => x.group))].filter((g) => g !== control)) {
+    const sub = all.filter((x) => x.group === control || x.group === g);
+    try {
+      const r = await crux('survival.fine_gray', {duration: Float64Array.from(sub, (x) => x.reached ?? x.last),
+        status: sub.map(status), treated: Float64Array.from(sub, (x) => x.group === g ? 1 : 0)},
+      {failcode: '1', cencode: '0'});
+      const k = rows(r.main as any)[0];
+      out.push({group: g, shr: k.subdistribution_hazard_ratio, lower: k.shr_ci_lower, upper: k.shr_ci_upper, p: k.p,
+        competing: sub.filter((x) => status(x) === '2').length});
+    } catch {
+      // a pair the fit cannot take (no event in it): left out
+    }
+  }
+  return out;
+}
+
 /** A measurement row, as tumor_survival takes them. */
 export interface VolumeRow {animal: string, group: string, day: number, volume: number}
 

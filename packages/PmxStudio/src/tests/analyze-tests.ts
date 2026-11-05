@@ -4,7 +4,9 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {OBSERVED, PREDICTED, REANCHOR, exampleStudy} from '../analyze';
 import {PLAN_TAG, parsePlan, powerAt} from '../plan-file';
 import {noEffectNote} from '../plan-vs-observed';
-import {projectedRows} from '../survival';
+import {competingOf, projectedRows} from '../survival';
+import {synergyOf, synergyWords} from '../synergy';
+import {arriveItems} from '../arrive';
 
 const OUTPUTS = ['analysis', 'comparisons', 'animals', 'volumes', 'twins', 'effects', 'checks', 'versusPlan',
   'predicted', 'tolerability', 'weights'];
@@ -281,5 +283,38 @@ category('Analyze', () => {
     expect(out.some((x) => x.animal === 'C' || x.animal === 'D'), false, 'past the endpoint, or one measurement');
     const short = projectedRows(rows, 1600, 6).find((x) => x.animal === 'A')!;
     expect(short.day === 6 && near(short.volume, 800), true, 'A by an earlier horizon: under the endpoint');
+  });
+  test('synergy, competing risks and ARRIVE on a made-up study', async () => {
+    // four groups growing at known rates (ln V per day): A and B take 0.05 each off the control's 0.2, A+B 0.15
+    const rates: {[g: string]: number} = {'Control': 0.2, 'A': 0.15, 'B': 0.15, 'A+B': 0.05};
+    const rows: {[k: string]: any}[] = [];
+    let k = 0;
+    for (const [g, rate] of Object.entries(rates)) {
+      for (let a = 0; a < 6; a++, k++) {
+        const v0 = 100 * (1 + 0.1 * Math.sin(k));
+        for (let d = 0; d <= 20; d += 2) {
+          const v = v0 * Math.exp(rate * d + 0.02 * Math.sin(3 * k + d));
+          // a treated animal removed (ulceration) on day 10, its last measurement
+          const removed = g === 'A' && a < 2;
+          if (removed && d > 10)
+            break;
+          rows.push({animal: `${g}-${a}`, group: g, day: d, volume: v, why: removed && d === 10 ? 'ulceration' : ''});
+        }
+      }
+    }
+    const df = DG.DataFrame.fromObjects(rows)!;
+    const s = {study: df, animal: 'animal', group: 'group', day: 'day', volume: 'volume', bodyWeight: null};
+    const x = await synergyOf(s, {control: 'Control', a: 'A', b: 'B', ab: 'A+B'});
+    expect(Math.abs(x.dif - 0.05) < 0.01, true, `dif ${x.dif}`);
+    expect(x.p < 0.05 && synergyWords(x, 'A+B').startsWith('Synergy'), true, `p ${x.p}`);
+    const c = await competingOf(s, 'why', 'Control', 1500);
+    const a = c!.find((y) => y.group === 'A')!;
+    expect(a.competing, 2);
+    expect(a.shr < 1, true, `A against the control: SHR ${a.shr}`);
+    expect(await competingOf(s, null, 'Control', 1500), null);
+    const items = arriveItems({control: 'Control', arms: ['A', 'B', 'A+B'], plan: null, exclusions: null,
+      meta: null, randomized: false, endpoint: 1500, evaluationDay: 20, protocol: 'Slopes compared', analyzed: []});
+    expect(items.length, 10);
+    expect(items.filter((i) => !i.done).map((i) => i.n).join(','), '2,4,5,8,9,10');
   });
 });

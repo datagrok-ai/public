@@ -40,7 +40,9 @@ import {Exports, download, exportMenu, reportHtml} from './report';
 import {printSheet} from './sheet';
 import {SpiderChart, spiderLines} from './spider-chart';
 import {LineInput} from './line-input';
-import {KM, Survival, survivalOf} from './survival';
+import {Competing, KM, Survival, competingOf, survivalOf} from './survival';
+import {synergyDialog} from './synergy';
+import {arriveDialog, arriveItems} from './arrive';
 
 /** Analyze's panels, in order and width (twelfths): the answer, how the tumors grew, each animal, then the rest. */
 const ANALYZE_LAYOUT: Slot[] = [{id: 'groups', span: 12}, {id: 'growth', span: 8}, {id: 'rates', span: 4},
@@ -822,6 +824,22 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
           survival.value = k;
       }, () => survival.value = undefined);
   });
+  // the animals removed for another reason: competing with the endpoint (Fine-Gray), when the study has any
+  const competing = signal<Competing[] | null>(null);
+  form.effect(() => {
+    const r = kmOnly.value;
+    const s = resultStudy;
+    const removal = call.getParamValue('removalReason');
+    if (!r || !s) {
+      competing.value = null;
+      return;
+    }
+    void competingOf(s, removal instanceof DG.Column ? removal.name : null, r.analysis.get('control', 0),
+      r.analysis.get('endpoint', 0)).then((c) => {
+      if (kmOnly.peek() === r)
+        competing.value = c;
+    }, () => competing.value = null);
+  });
   // the slider from the last day measured to twice it
   form.effect(() => {
     const k = survival.value;
@@ -848,7 +866,11 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       'tests and the report\'s conclusions are the measured study\'s.', 'warning')] : []),
     ...(k?.medians ?? []).map((m) => noteLine(`${m.group}: ${on ? 'projected ' : ''}median ${m.median === null ?
       'not reached' : dayText(m.median)}, ${m.events} of ${m.n} ${on ? 'would reach' : 'reached'} the endpoint` +
-      (!on && p.has(m.group) ? `; log-rank against the control ${pValue(p.get(m.group))}` : ''))));
+      (!on && p.has(m.group) ? `; log-rank against the control ${pValue(p.get(m.group))}` : ''))),
+    ...(!on && competing.value?.length ? [noteLine('With the animals removed for another reason as a competing ' +
+      'event (Fine-Gray): ' + competing.value.map((c) => `${c.group}, subdistribution hazard ratio ` +
+      `${c.shr.toFixed(2)} (${c.lower.toFixed(2)}–${c.upper.toFixed(2)}), p ${pValue(c.p)}, ${c.competing} removed`)
+      .join('; '), 'success')] : []));
   });
 
   const slopes = viewers.boxPlot(computed(() => {
@@ -926,6 +948,24 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         log: logOf(df), annex: [['Results', summary], ['Statistics', statsTable], ['Analysis protocol', protocol]]}));
     }],
     ['Copy the results summary', () => copied(summaryText, 'Results summary')],
+    ['ARRIVE checklist…', () => {
+      const {df, r} = studyNow();
+      const c = r.comparisons;
+      const plan = r.analysis.get('plan', 0);
+      arriveDialog(arriveItems({control: r.analysis.get('control', 0), arms: c.col('arm')!.toList() as string[],
+        plan: plan ? String(plan) : null, exclusions: exclusionsOf(studyOf(df)), meta: metaOf(df),
+        randomized: !!plan || logOf(df).some((e) => /randomi[sz]|allocat/i.test(e.what)),
+        endpoint: r.analysis.get('endpoint', 0), evaluationDay: r.analysis.get('evaluation_day', 0),
+        protocol: protocolText, analyzed: [{group: r.analysis.get('control', 0), n: r.analysis.get('n_control', 0)},
+          ...Array.from({length: c.rowCount}, (_, i) => ({group: c.get('arm', i), n: c.get('n', i)}))]}));
+    }, 'Analyze'],
+    ['Combination synergy…', () => {
+      const {r} = studyNow();
+      if (!resultStudy)
+        throw new Error('Analyze a study first');
+      synergyDialog(resultStudy, r.analysis.get('control', 0), r.comparisons.col('arm')!.toList() as string[],
+        r.analysis.get('evaluation_day', 0));
+    }, 'Analyze'],
     ['Copy the analysis protocol', () => copied(protocolText, 'Analysis protocol')],
     ['Statistics (CSV)', () => download(`${studyNow().df.name} - statistics.csv`, statsCsv, 'text/csv')],
     ['Measurements (CSV)', () => download(`${studyNow().df.name}.csv`, studyNow().df.toCsv(), 'text/csv')],
