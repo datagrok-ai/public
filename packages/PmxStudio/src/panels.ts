@@ -95,7 +95,6 @@ function layoutDialog(stage: string, defaults: Slot[], now: Slot[], titles: Map<
   const board = div([], 'pmx-layout-board');
   const tray = div([], 'pmx-layout-tray');
   const status = span('', 'pmx-layout-status');
-  let dragged: string | null = null;
   const move = (id: string, to: number) => {
     const from = work.findIndex((x) => x.id === id);
     const [m] = work.splice(from, 1);
@@ -110,57 +109,157 @@ function layoutDialog(stage: string, defaults: Slot[], now: Slot[], titles: Map<
     b.addEventListener('click', run);
     return b;
   };
-  const draw = (focus?: string) => {
+  const tiles = new Map<string, HTMLElement>();
+  const showStatus = () => {
     const lab = labLayout(stage, defaults);
     status.textContent = same(work, lab ?? defaults) ? (lab ? 'The lab\'s layout' : 'The stage\'s own layout') :
       'Your layout';
+  };
+  const label = (s: Slot) => {
+    const tile = tiles.get(s.id)!;
+    tile.style.gridColumn = `span ${s.span}`;
+    tile.setAttribute('aria-label', `${titles.get(s.id)}, ${s.span} of 12 columns`);
+    tile.querySelector('.pmx-layout-span')!.textContent = `${s.span}/12`;
+  };
+  // the tiles put in `work`'s order, each sliding from where it was (FLIP), so a move shows what it displaces
+  const reflow = () => {
+    const was = new Map([...tiles].map(([id, t]) => [id, t.getBoundingClientRect()]));
+    board.append(...work.filter((s) => !s.hidden).map((s) => tiles.get(s.id)!));
+    for (const [id, t] of tiles) {
+      const a = was.get(id)!;
+      const b = t.getBoundingClientRect();
+      if (Math.abs(a.left - b.left) + Math.abs(a.top - b.top) > 1) {
+        t.animate([{transform: `translate(${a.left - b.left}px, ${a.top - b.top}px)`}, {transform: 'none'}],
+          {duration: 180, easing: 'cubic-bezier(.2,.8,.2,1)'});
+      }
+    }
+  };
+  // a drag: the tile stays in the flow as a dashed slot where it will land, the others making room as the pointer
+  // passes them; a ghost follows the pointer. Escape puts everything back.
+  const drag = (s: Slot, tile: HTMLElement, down: PointerEvent) => {
+    const before = work.map((x) => x.id);
+    let ghost: HTMLElement | null = null;
+    const r0 = tile.getBoundingClientRect();
+    const onMove = (e: PointerEvent) => {
+      if (!ghost) {
+        if (Math.hypot(e.clientX - down.clientX, e.clientY - down.clientY) < 4)
+          return;
+        ghost = tile.cloneNode(true) as HTMLElement;
+        ghost.className = 'pmx-layout-tile pmx-layout-ghost';
+        Object.assign(ghost.style, {width: `${r0.width}px`, height: `${r0.height}px`});
+        document.body.append(ghost);
+        tile.classList.add('is-dragged');
+        board.classList.add('is-moving');
+      }
+      ghost.style.transform = `translate(${e.clientX - down.clientX + r0.left}px, ` +
+        `${e.clientY - down.clientY + r0.top}px)`;
+      const over = [...tiles.values()].find((t) => {
+        const r = t.getBoundingClientRect();
+        return t !== tile && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      });
+      if (!over)
+        return;
+      const at = work.findIndex((x) => x.id === over.dataset.panel);
+      const from = work.findIndex((x) => x.id === s.id);
+      const r = over.getBoundingClientRect();
+      // past the middle of the tile ahead (or behind): the tile it displaces does not swing back under the pointer
+      if ((at > from && e.clientX > r.left + r.width / 2) || (at < from && e.clientX < r.left + r.width / 2)) {
+        move(s.id, at);
+        reflow();
+      }
+    };
+    const end = (keep: boolean) => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('keydown', onKey, true);
+      ghost?.remove();
+      tile.classList.remove('is-dragged');
+      board.classList.remove('is-moving');
+      if (!keep) {
+        work.sort((a, b) => before.indexOf(a.id) - before.indexOf(b.id));
+        reflow();
+      }
+      tile.focus();
+      showStatus();
+    };
+    const onUp = () => end(true);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        end(false);
+      }
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('keydown', onKey, true);
+  };
+  // the corner grip: the tile's width follows the pointer, snapped to a quarter, a third, a half, two thirds or the
+  // row; the twelve columns are drawn on the board meanwhile
+  const resize = (s: Slot, tile: HTMLElement) => {
+    const left = tile.getBoundingClientRect().left;
+    const style = getComputedStyle(board);
+    const gap = parseFloat(style.columnGap) || 8;
+    const col = (board.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) + gap) / 12;
+    board.classList.add('is-sizing');
+    tile.classList.add('is-sizing');
+    const onMove = (e: PointerEvent) => {
+      const want = (e.clientX - left + gap) / col;
+      const span = SPANS.reduce((a, b) => Math.abs(b - want) < Math.abs(a - want) ? b : a);
+      if (span !== s.span) {
+        s.span = span;
+        label(s);
+        reflow();
+      }
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      board.classList.remove('is-sizing');
+      tile.classList.remove('is-sizing');
+      showStatus();
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+  const draw = (focus?: string) => {
+    showStatus();
+    tiles.clear();
     board.replaceChildren(...work.filter((s) => !s.hidden).map((s) => {
       const tile = div([], 'pmx-layout-tile');
-      tile.style.gridColumn = `span ${s.span}`;
-      tile.draggable = true;
       tile.tabIndex = 0;
       tile.dataset.panel = s.id;
-      tile.setAttribute('aria-label', `${titles.get(s.id)}, ${s.span} of 12 columns`);
-      const widths = div(SPANS.map((n) => button(String(n), `${n} of 12 columns`,
-        `pmx-layout-w${n === s.span ? ' on' : ''}`, () => {
-          s.span = n;
-          draw(s.id);
-        })), 'pmx-layout-widths');
-      tile.append(span(titles.get(s.id) ?? s.id, 'pmx-layout-title'), widths,
+      const grip = span('', 'pmx-layout-grip');
+      grip.title = 'Drag to widen or narrow it: a quarter, a third, a half, two thirds or the row';
+      tile.append(span(titles.get(s.id) ?? s.id, 'pmx-layout-title'), span('', 'pmx-layout-span'),
         button('×', 'Hide this panel', 'pmx-layout-hide', () => {
           s.hidden = true;
           draw();
-        }));
-      tile.addEventListener('dragstart', (e) => {
-        dragged = s.id;
-        e.dataTransfer?.setData('text/plain', s.id);
-        tile.classList.add('dragging');
-      });
-      tile.addEventListener('dragend', () => {
-        dragged = null;
-        tile.classList.remove('dragging');
-      });
-      tile.addEventListener('dragover', (e) => {
-        if (dragged && dragged !== s.id)
-          e.preventDefault();
-      });
-      tile.addEventListener('drop', (e) => {
-        e.preventDefault();
-        if (!dragged || dragged === s.id)
+        }), grip);
+      tiles.set(s.id, tile);
+      label(s);
+      tile.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 || (e.target as HTMLElement).closest('button'))
           return;
-        const r = tile.getBoundingClientRect();
-        const id = dragged;
-        const at = work.findIndex((x) => x.id === s.id);
-        const from = work.findIndex((x) => x.id === id);
-        move(id, (e.clientX > r.left + r.width / 2 ? at + 1 : at) - (from < at ? 1 : 0));
-        draw(id);
+        e.preventDefault();
+        tile.focus();
+        if (e.target === grip)
+          resize(s, tile);
+        else
+          drag(s, tile, e);
       });
       tile.addEventListener('keydown', (e) => {
-        if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-          e.preventDefault();
-          move(s.id, work.findIndex((x) => x.id === s.id) + (e.key === 'ArrowLeft' ? -1 : 1));
-          draw(s.id);
-        }
+        if (!e.altKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight'))
+          return;
+        e.preventDefault();
+        const step = e.key === 'ArrowLeft' ? -1 : 1;
+        if (e.shiftKey) {
+          s.span = SPANS[Math.max(0, Math.min(SPANS.length - 1, SPANS.indexOf(s.span) + step))];
+          label(s);
+        } else
+          move(s.id, work.findIndex((x) => x.id === s.id) + step);
+        reflow();
+        tile.focus();
+        showStatus();
       });
       return tile;
     }));
@@ -171,11 +270,12 @@ function layoutDialog(stage: string, defaults: Slot[], now: Slot[], titles: Map<
         draw(s.id);
       })));
     if (focus)
-      board.querySelector<HTMLElement>(`[data-panel="${focus}"]`)?.focus();
+      tiles.get(focus)?.focus();
   };
   draw();
-  const help = span('Drag a panel to move it (Alt+arrows on a focused one); its numbers set its width in twelfths; ' +
-    '× hides it. The header and the figures stay on top.', 'pmx-layout-help');
+  const help = span('Drag a panel to move it, its corner to widen or narrow it; × hides it. On a focused panel, ' +
+    'Alt+arrows move it and Alt+Shift+arrows change its width. The header and the figures stay on top.',
+  'pmx-layout-help');
   const d = ui.dialog(`Layout of ${stage[0].toUpperCase()}${stage.slice(1)}`)
     .add(div([help, board, tray, status], 'pmx-layout'))
     .onOK(() => {
