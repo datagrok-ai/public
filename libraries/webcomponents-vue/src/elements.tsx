@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGIconImageT, DGToggleInputT} from '@datagrok-libraries/webcomponents';
+import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGToggleInputT} from '@datagrok-libraries/webcomponents';
 
 declare global {
   namespace JSX {
@@ -11,7 +11,6 @@ declare global {
       'dg-button': DGButtonT,
       'dg-big-button': DGBigButtonT,
       'dg-icon-fa': DGIconFAT,
-      'dg-icon-image': DGIconImageT,
       'dg-toggle-input': DGToggleInputT
       'dg-combo-popup': DGComboPopupT
     }
@@ -38,17 +37,10 @@ export const BigButton = Vue.defineComponent({
   },
   emits: ['click'],
   setup(props, {slots, emit}) {
-    const btn = Vue.shallowRef<HTMLElement | null>(null);
-
-    Vue.watch([() => props.isDisabled, btn] as const, ([isDisabled, btn]) => {
-      if (!btn) return;
-
-      btn.classList.toggle('d4-disabled', isDisabled);
-    }, {immediate: true});
-
+    // Vue rewrites className whenever a class is bound, so the element's own classes are repeated here
     return () => (<button
+      class={['ui-btn', 'ui-btn-ok', 'ui-btn-raised', {'d4-disabled': props.isDisabled}]}
       onClick={(p) => emit('click', p)}
-      ref={btn}
       is="dg-big-button"
     >
       {slots.default ? slots.default() : ''}
@@ -85,19 +77,13 @@ export const IconFA = Vue.defineComponent({
     'click',
   ],
   setup(props, {emit}) {
-    const icon = Vue.shallowRef<HTMLElement | null>(null);
     const instance = Vue.getCurrentInstance();
 
-    Vue.watch([() => props.isDisabled, icon] as const, ([isDisabled, btn]) => {
-      if (!btn) return;
-
-      btn.classList.toggle('d4-disabled', isDisabled);
-    }, {immediate: true});
-
     return () => {
+      // a class binding, so a parent's class change keeps the disabled state
       return (<dg-icon-fa
+        class={{'d4-disabled': props.isDisabled}}
         name={props.name}
-        ref={icon}
         cursor={props.cursor}
         animation={props.animation}
         tooltip={props.tooltip}
@@ -107,50 +93,6 @@ export const IconFA = Vue.defineComponent({
         onClick={(e: Event) => emit('click', e)}
       >
       </dg-icon-fa>);
-    };
-  },
-});
-
-export const IconImage = Vue.defineComponent({
-  name: 'IconImage',
-  props: {
-    name: String,
-    path: String,
-    cursor: {
-      type: String,
-      default: 'pointer',
-    },
-    tooltip: {
-      type: String as Vue.PropType<string | null>,
-      default: null,
-    },
-    isDisabled: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  emits: [
-    'click',
-  ],
-  setup(props, {emit}) {
-    const icon = Vue.shallowRef<HTMLElement | null>(null);
-
-    Vue.watch([() => props.isDisabled, icon] as const, ([isDisabled, btn]) => {
-      if (!btn) return;
-
-      btn.classList.toggle('d4-disabled', isDisabled);
-    }, {immediate: true});
-
-    return () => {
-      return (<dg-icon-image
-        name={props.name}
-        path={props.path}
-        ref={icon}
-        cursor={props.cursor}
-        tooltip={props.tooltip}
-        onClick={(e: Event) => emit('click', e)}
-      >
-      </dg-icon-image>);
     };
   },
 });
@@ -166,10 +108,6 @@ export const ToggleInput = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
-    nullable: {
-      type: Boolean,
-      default: false,
-    },
     tooltip: {
       type: String,
     },
@@ -181,7 +119,6 @@ export const ToggleInput = Vue.defineComponent({
     return () => <dg-toggle-input
       caption={props.caption}
       value={props.value}
-      nullable={props.nullable}
       tooltip={props.tooltip}
       onValueChanged={(event: any) => emit('update:value', event.detail)}
     />;

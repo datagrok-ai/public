@@ -2,6 +2,8 @@
 
 ## v.next
 
+* IconFA, BigButton: Fixed `isDisabled` and the button styling being lost when the parent sets or changes the class
+* Removed the unused `IconImage` component and the `nullable` prop of `ToggleInput`
 * DockManager: Removed `saveLayout`, `loadLayout` and `setActivePanel`; use `preferredPanelTitle` to pick the active tab
 * `provideDgViewService`: the service is disposed when the app unmounts, so callers no longer call `dispose()`
 * InputForm: Toggling `isReadonly` alone updates whether the inputs are enabled

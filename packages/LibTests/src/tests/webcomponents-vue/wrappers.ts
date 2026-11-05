@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as Vue from 'vue';
 import {category, test} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {ComboPopup, IconFA, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
+import {BigButton, ComboPopup, IconFA, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
 import {awaitWebComponents} from '../../test-utils';
 import {consistency, findLink, openPopover} from '../webcomponents/fixtures';
 
@@ -36,6 +36,47 @@ category('WebComponentsVue: element wrappers', () => {
       } finally {
         h.dispose();
       }
+    }
+  });
+
+  test('a disabled icon stays disabled when its class changes', async () => {
+    await awaitWebComponents();
+    const cls = Vue.ref('a');
+    const disabled = Vue.ref(true);
+    const h = mount(() => Vue.h(IconFA, {name: 'save', class: cls.value, isDisabled: disabled.value}));
+    const classes = () => h.root.querySelector('dg-icon-fa')!.className;
+    try {
+      await Vue.nextTick();
+      expectDeepEqual(classes().split(' ').sort(), ['a', 'd4-disabled'], {prefix: 'mounted'});
+      cls.value = 'b';
+      await Vue.nextTick();
+      expectDeepEqual(classes().split(' ').sort(), ['b', 'd4-disabled'], {prefix: 'class changed'});
+      disabled.value = false;
+      await Vue.nextTick();
+      expectDeepEqual(classes(), 'b', {prefix: 'enabled'});
+    } finally {
+      h.dispose();
+    }
+  });
+
+  test('a disabled big button keeps its button classes when its class changes', async () => {
+    await awaitWebComponents();
+    const cls = Vue.ref('a');
+    const disabled = Vue.ref(true);
+    const h = mount(() => Vue.h(BigButton, {class: cls.value, isDisabled: disabled.value}, () => 'Run'));
+    const classes = () => h.root.querySelector('button')!.className.split(' ').filter((c) => c).sort();
+    const base = ['ui-btn', 'ui-btn-ok', 'ui-btn-raised'];
+    try {
+      await Vue.nextTick();
+      expectDeepEqual(classes(), ['a', 'd4-disabled', ...base], {prefix: 'mounted'});
+      cls.value = 'b';
+      await Vue.nextTick();
+      expectDeepEqual(classes(), ['b', 'd4-disabled', ...base], {prefix: 'class changed'});
+      disabled.value = false;
+      await Vue.nextTick();
+      expectDeepEqual(classes(), ['b', ...base], {prefix: 'enabled'});
+    } finally {
+      h.dispose();
     }
   });
 
