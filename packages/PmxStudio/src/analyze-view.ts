@@ -32,7 +32,7 @@ import {nciReadings, NciReading, tolerabilityTab} from './tolerability';
 import {BandChart} from './band-chart';
 import {explore, exploreContent, StudyInputs, studyInputsOf} from './explore';
 import {panelGrid, Slot} from './panels';
-import {studyHeader} from './study-header';
+import {stagePage, studyHeader} from './study-header';
 import {exclusionsOf, studyDataLine, studyMenu, studyOf, tagStudy, withoutExcluded} from './study-table';
 import {metaOf, setMetaOn} from './study-meta';
 import {Exports, download, exportMenu, reportHtml} from './report';
@@ -216,7 +216,7 @@ export interface AnalyzeStart {study?: DG.DataFrame, example?: boolean}
 /** The Analyze view; given a study, it analyzes it at once. */
 export async function analyzeView(opening?: AnalyzeStart): Promise<DG.ViewBase> {
   const exports: Exports = [];
-  const host = ViewHost.create({name: 'PMX Studio · Analyze', content: (self) => analyzeContent(self, opening,
+  const host = ViewHost.create({name: 'PMX Studio', content: (self) => analyzeContent(self, opening,
     exports)});
   exportMenu(host.view, exports);
   return host.view;
@@ -921,25 +921,26 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
 
   const panes = new Splitter([declarationPane(form.root),
     resultsFrame([failure, outdated, start, content], overlay, bar)],
-  {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
+  {direction: 'horizontal', sizes: [0.2, 0.8], minSize: DECLARATION_MIN});
   // an edit of the study table (a value corrected, rows added): analyzed again, after a pause
   self.own(onTableEdits(form, computed(() => [result.value, error.value]),
     () => call.getParamValue('study'), () => auto.changed(TABLE_EDITS)));
+  const head = studyHeader(form, 'analyze', computed(() => {
+    const r = result.value;
+    if (!r)
+      return undefined;
+    const colors = colorsOf(r);
+    const control = r.analysis.get('control', 0) as string;
+    const arms = r.comparisons.col('arm')!.toList() as string[];
+    const df = call.getParamValue('study') as DG.DataFrame | null;
+    return {name: r.analysis.name, groups: [control, ...arms].map((name) => ({name, color: colors[name]})),
+      status: `${r.analysis.get('line', 0)} · evaluated on ${dayText(r.analysis.get('evaluation_day', 0))}`,
+      meta: metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined,
+      groupMenu: (g, e) => studyMenu(studyOf(df), 'group', g, {causedBy: e})};
+  }), (s) => void openStage(s));
   return {
-    root: panes,
-    ribbon: [[studyHeader(form, 'analyze', computed(() => {
-      const r = result.value;
-      if (!r)
-        return undefined;
-      const colors = colorsOf(r);
-      const control = r.analysis.get('control', 0) as string;
-      const arms = r.comparisons.col('arm')!.toList() as string[];
-      const df = call.getParamValue('study') as DG.DataFrame | null;
-      return {name: r.analysis.name, groups: [control, ...arms].map((name) => ({name, color: colors[name]})),
-        status: `${r.analysis.get('line', 0)} · evaluated on ${dayText(r.analysis.get('evaluation_day', 0))}`,
-        meta: metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined,
-        groupMenu: (g, e) => studyMenu(studyOf(df), 'group', g, {causedBy: e})};
-    }), (s) => void openStage(s))]],
+    root: stagePage(head.row, panes),
+    ribbon: [[head.steps]],
     path: '/analyze',
     status: computed(() => busy.value ? 'Analyzing the study…' : result.value ? result.value.analysis.name : ''),
   };

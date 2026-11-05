@@ -2,7 +2,8 @@
    gives them, where the study stands (Overview · Plan — Monitor — Analyze, the stages behind it filled) and a line of
    status. It takes the place of the stage strip at the top of the view; the view's actions stay in its ribbon. */
 import '../css/studio.css';
-import {div, span} from '@datagrok-libraries/u2';
+import {div, divV, span} from '@datagrok-libraries/u2';
+import type {Child} from '@datagrok-libraries/u2';
 import type {ReadonlySignal} from '@datagrok-libraries/u2';
 
 import {MONITOR_READY, Stage, STAGES} from './ui';
@@ -20,10 +21,12 @@ export interface StudyIdentity {
   groupMenu?: (group: string, e: MouseEvent) => void;
 }
 
-/** The header of `stage`'s view: `identity` once the view knows its study, `open` brings another stage up, `owner`
- *  (the view's form) re-draws it as the study changes. */
+/** The header of `stage`'s view: `steps` for the ribbon (where the study stands), `row` the study over the panes;
+ *  `identity` once the view knows its study, `open` brings another stage up, `owner` (the view's form) re-draws it
+ *  as the study changes. */
 export function studyHeader(owner: {effect: (fn: () => void) => unknown}, stage: Stage,
-  identity: ReadonlySignal<StudyIdentity | undefined>, open: (stage: Stage) => void): HTMLElement {
+  identity: ReadonlySignal<StudyIdentity | undefined>, open: (stage: Stage) => void):
+  {steps: HTMLElement, row: HTMLElement} {
   const id = span('', 'pmx-head-id');
   const name = document.createElement('button');
   name.type = 'button';
@@ -69,12 +72,24 @@ export function studyHeader(owner: {effect: (fn: () => void) => unknown}, stage:
     }));
     status.textContent = s?.status ?? '';
   });
-  const study = div([id, name, groups, status], 'pmx-head-study');
-  return div([steps(stage, open), study], 'pmx-head');
+  const details = document.createElement('button');
+  details.type = 'button';
+  details.className = 'pmx-head-details';
+  details.textContent = 'Study details';
+  details.addEventListener('click', () => name.click());
+  owner.effect(() => details.hidden = !identity.value?.setMeta);
+  const row = div([name, id, groups, status, span('', 'pmx-head-gap'), details], 'pmx-head-study');
+  owner.effect(() => row.hidden = !identity.value);
+  return {steps: div([steps(stage, open)], 'pmx-head'), row};
+}
+
+/** A stage's page: the study's row, then the panes, which take the rest. */
+export function stagePage(row: HTMLElement, panes: Child): HTMLElement {
+  return divV([row, panes], 'pmx-stage');
 }
 
 /** Overview, then the three stages joined by wires; the current one marked, the ones before it filled. */
-function steps(current: Stage, open: (stage: Stage) => void): HTMLElement {
+export function steps(current: Stage, open: (stage: Stage) => void): HTMLElement {
   const nav = div([], 'pmx-head-steps');
   nav.setAttribute('role', 'navigation');
   nav.setAttribute('aria-label', 'Study stages');

@@ -40,6 +40,36 @@
 .pmx-head-swatch { width: 8px; height: 8px; border-radius: 2px; flex: none; }
 .pmx-head-status { flex: none; font-size: 12px; color: var(--dg-grey-5, #717581); }
 
+/* the study's row, over the panes (the stages stay in the ribbon) */
+.pmx-stage { height: 100%; }
+.pmx-stage > :last-child { flex: 1 1 auto; min-height: 0; }
+.pmx-stage > .pmx-head-study {
+  flex: none; padding: 8px var(--dg-space-l, 16px); border-bottom: 1px solid var(--dg-border, #DBDCDF);
+  background: linear-gradient(90deg, var(--dg-grey-1, #f4f6f8), var(--dg-bg, #fff) 70%);
+  font-family: var(--dg-font-family, Roboto, sans-serif); font-size: 13px; color: var(--dg-text-color, #4D5261);
+}
+.pmx-head-study .pmx-head-name { font-size: 17px; }
+.pmx-head-gap { flex: 1 1 auto; }
+.pmx-head-details {
+  flex: none; border: 0; background: none; font: inherit; color: var(--dg-accent, #2083D5); cursor: pointer; padding: 2px 6px;
+}
+.pmx-head-details:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; border-radius: 3px; }
+
+/* the declaration: its sections titled as the demo's rail, small and quiet */
+.pmx-declaration .u2-form-category .u2-section-title {
+  font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; color: var(--dg-grey-5, #717581);
+}
+
+/* a KPI's change: a pill at the card's top right */
+/* compact, as the demo's: the figure, its label, its change */
+.pmx-stat { position: relative; padding: 8px 12px !important; gap: 2px !important; }
+.pmx-stat .u2-stat-value { font-size: 24px !important; line-height: 1.2 !important; }
+.pmx-stat .u2-stat-label { font-size: 12px; }
+.pmx-stat .u2-stat-delta {
+  position: absolute; top: 8px; right: 10px; padding: 1px 7px; border-radius: 9px; font-size: 11px; font-weight: 500;
+  background: color-mix(in srgb, var(--dg-accent, #2083D5) 12%, transparent);
+}
+
 /* the panels: twelve columns; half and then whole rows as the results pane narrows */
 .pmx-grid-host { container-type: inline-size; }
 .pmx-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; grid-auto-flow: row dense; }

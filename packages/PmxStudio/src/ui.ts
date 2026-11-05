@@ -27,7 +27,7 @@ export const signed = (x: number) => pct(x / 100).replace('-', '−');
 export const dayText = (d: unknown) => typeof d === 'number' && Number.isFinite(d) ? `Day ${Math.round(d)}` : '—';
 
 /** Narrowest the two panes get; below it the results pane scrolls instead of squeezing its charts. */
-export const DECLARATION_MIN = 300;
+export const DECLARATION_MIN = 260;
 export const RESULTS_MIN = 560;
 
 /** Where x (%, from `lo` to 100) falls on an effect axis, as a CSS length. */
@@ -296,35 +296,6 @@ export const STAGES: {stage: Stage, label: string, tip: string}[] = [
   {stage: 'analyze', label: 'Analyze', tip: 'Analyze the finished study as planned, each treated animal against its ' +
     'untreated twin'},
 ];
-
-/** The app's home and stages in order, the current one marked; `open` brings another one up (Monitor once it is
- *  built). A stage moves the whole page, so the strip goes in the view's ribbon, above the declaration and the
- *  results. */
-export function stageStrip(current: Stage, open: (stage: Stage) => void): HTMLElement {
-  const strip = divH([], 'pmx-stages');
-  strip.setAttribute('role', 'navigation');
-  strip.setAttribute('aria-label', 'Study stages');
-  Object.assign(strip.style, {alignItems: 'center', gap: 'var(--dg-space-s)', fontSize: '13px', flexWrap: 'wrap'});
-  STAGES.forEach(({stage, label, tip}, i) => {
-    if (i > 0)
-      strip.append(span('›'));
-    const on = stage === current;
-    const ready = stage !== 'monitor' || MONITOR_READY;
-    const step = document.createElement(on || !ready ? 'span' : 'button');
-    step.textContent = stage === 'home' ? label : `${i} ${label}`;
-    Object.assign(step.style, {border: '0', background: 'none', padding: '2px 4px', font: 'inherit',
-      borderBottom: on ? '2px solid var(--dg-accent, #2083d5)' : '2px solid transparent',
-      color: on ? 'var(--dg-text-color, #1f2a37)' : 'var(--dg-accent, #2083d5)', fontWeight: on ? '600' : '400',
-      cursor: on ? 'default' : 'pointer'});
-    if (on)
-      step.setAttribute('aria-current', 'step');
-    if (step instanceof HTMLButtonElement)
-      step.addEventListener('click', () => open(stage));
-    step.title = tip;
-    strip.append(step);
-  });
-  return strip;
-}
 
 /** An informative line (no warning): what the view shows no longer matches its form. */
 export function staleNote(text: string): HTMLElement {

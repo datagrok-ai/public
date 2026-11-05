@@ -23,7 +23,7 @@ import {NAMES, openStage, showStage} from './stages';
 import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
   restoreFields, saveStudy, studyOf, tableOf} from './study-file';
 import {panelGrid, Slot} from './panels';
-import {studyHeader} from './study-header';
+import {stagePage, studyHeader} from './study-header';
 import {emptyStudy, studyDataLine, studyMenu, studyOf as studyNamesOf, tagStudy, withoutExcluded} from './study-table';
 import {StudyMeta, dateOf, dateText, emptyMeta, metaOf, setMetaOn, weekdayOf, withId} from './study-meta';
 import {CAL, DayLook, dayActions, dayToday, icsOf, mark, marked, weeksGrid} from './calendar';
@@ -68,7 +68,7 @@ function fill<R>(host: HTMLElement, items: R[], key: (r: R) => string,
 /** The Monitor view; `initial`: the table of a study to follow. */
 export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> {
   const exports: Exports = [];
-  const host = ViewHost.create({name: 'PMX Studio · Monitor', content: (self) => monitorContent(self, initial,
+  const host = ViewHost.create({name: 'PMX Studio', content: (self) => monitorContent(self, initial,
     exports)});
   exportMenu(host.view, exports);
   return host.view;
@@ -707,32 +707,33 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
 
   const panes = new Splitter([declarationPane(form.root),
     resultsFrame([failure, outdated, start, content], overlay, bar)],
-  {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
+  {direction: 'horizontal', sizes: [0.2, 0.8], minSize: DECLARATION_MIN});
   // a session's values pasted or typed into the table: the forecasts follow, after a pause (one value, then the next)
   self.own(onTableEdits(form, computed(() => [result.value, error.value]),
     studyTable, () => auto.changed(TABLE_EDITS)));
   // the table's own subscriptions are not built under the host: dropped with it
   self.own(stopWatching);
+  const head = studyHeader(form, 'monitor', computed(() => {
+    const r = result.value;
+    if (!r)
+      return undefined;
+    const colors = colorsOf(r);
+    const day = cell('day').value;
+    const df = studyTable();
+    return {name: df?.name ?? '', groups: revealed.value ?
+      Object.entries(colors).map(([name, color]) => ({name, color})) : [],
+    status: [r.status.get('line', 0), day === undefined ? '' : dayText(day),
+      revealed.value ? '' : 'groups hidden'].filter((x) => x).join(' · '),
+    meta: metaOf(df), setMeta: df ? (m) => {
+      const was = !!metaOf(df)?.blinded;
+      setMeta(m);
+      if (m.blinded !== was)
+        record(m.blinded ? 'Blinded entry on' : 'Blinded entry off: the groups are shown');
+    } : undefined, groupMenu: (g, e) => studyMenu(studyNamesOf(df), 'group', g, {causedBy: e})};
+  }), (s) => void openStage(s));
   return {
-    root: panes,
-    ribbon: [[studyHeader(form, 'monitor', computed(() => {
-      const r = result.value;
-      if (!r)
-        return undefined;
-      const colors = colorsOf(r);
-      const day = cell('day').value;
-      const df = studyTable();
-      return {name: df?.name ?? '', groups: revealed.value ?
-        Object.entries(colors).map(([name, color]) => ({name, color})) : [],
-      status: [r.status.get('line', 0), day === undefined ? '' : dayText(day),
-        revealed.value ? '' : 'groups hidden'].filter((x) => x).join(' · '),
-      meta: metaOf(df), setMeta: df ? (m) => {
-        const was = !!metaOf(df)?.blinded;
-        setMeta(m);
-        if (m.blinded !== was)
-          record(m.blinded ? 'Blinded entry on' : 'Blinded entry off: the groups are shown');
-      } : undefined, groupMenu: (g, e) => studyMenu(studyNamesOf(df), 'group', g, {causedBy: e})};
-    }), (s) => void openStage(s))]],
+    root: stagePage(head.row, panes),
+    ribbon: [[head.steps]],
     path: '/monitor',
     status: computed(() => busy.value ? 'Forecasting the study…' : result.value ? String(status.value?.get('line', 0)) :
       ''),

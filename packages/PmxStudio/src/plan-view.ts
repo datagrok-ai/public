@@ -23,7 +23,7 @@ import {askedOf, autoRun, busyBar, busyOverlay, callInputs, cardGrid, copyRow, d
   statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {openStage} from './stages';
 import {panelGrid, Slot} from './panels';
-import {studyHeader} from './study-header';
+import {stagePage, studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
 import {StudyMeta, dateOf, dateText, dosingDays, emptyMeta, weekdayOf, withId} from './study-meta';
@@ -205,7 +205,7 @@ export async function openPlanFile(content: string): Promise<DG.DataFrame[]> {
 /** The Plan view; given a saved plan, its declaration in the form and planned again. */
 export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
   const exports: Exports = [];
-  const host = ViewHost.create({name: 'PMX Studio · Plan', content: (self) => planContent(self, initial, exports)});
+  const host = ViewHost.create({name: 'PMX Studio', content: (self) => planContent(self, initial, exports)});
   exportMenu(host.view, exports);
   return host.view;
 }
@@ -890,19 +890,20 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
     [saveButton, downloadButton, followButton].forEach((b) => Reason.apply(b, off));
   });
 
-  const panes = new Splitter([declaration, results], {direction: 'horizontal', sizes: [0.3, 0.7],
+  const panes = new Splitter([declaration, results], {direction: 'horizontal', sizes: [0.2, 0.8],
     minSize: DECLARATION_MIN});
+  const head = studyHeader(form, 'plan', computed(() => {
+    const r = result.value;
+    if (!r)
+      return undefined;
+    const arms = r.armResults.col('arm')!.toList() as string[];
+    const colors = armColors(arms);
+    return {name: defaultName(r), groups: ['Control', ...arms].map((name) => ({name, color: colors[name]})),
+      status: `${r.plan.get('line', 0)} · planned`, meta: meta.value, setMeta: (m) => meta.value = m};
+  }), (s) => void openStage(s));
   return {
-    root: panes,
-    ribbon: [[studyHeader(form, 'plan', computed(() => {
-      const r = result.value;
-      if (!r)
-        return undefined;
-      const arms = r.armResults.col('arm')!.toList() as string[];
-      const colors = armColors(arms);
-      return {name: defaultName(r), groups: ['Control', ...arms].map((name) => ({name, color: colors[name]})),
-        status: `${r.plan.get('line', 0)} · planned`, meta: meta.value, setMeta: (m) => meta.value = m};
-    }), (s) => void openStage(s))], [saveButton, downloadButton, followButton]],
+    root: stagePage(head.row, panes),
+    ribbon: [[head.steps], [saveButton, downloadButton, followButton]],
     path: '/plan',
     status: computed(() => busy.value ? 'Designing the study…' : result.value ? result.value.plan.name : ''),
   };

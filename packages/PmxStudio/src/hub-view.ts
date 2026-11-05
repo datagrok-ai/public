@@ -9,7 +9,8 @@ import {BasicTable, computed, signal} from '@datagrok-libraries/u2';
 import {ViewHost} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {MONITOR_READY, stageStrip} from './ui';
+import {MONITOR_READY} from './ui';
+import {steps} from './study-header';
 import type {Stage} from './ui';
 import {NAMES, openStage, pathOf, showStage} from './stages';
 import {planView} from './plan-view';
@@ -195,7 +196,7 @@ function hubContent(): ViewContent {
   const root = h('div', 'pmx-hub', [growthArt(), page, dropLayer]);
   takeDrops(root, (on) => dropLayer.classList.toggle('is-open', on), (files) => openStudyDialog(files));
 
-  return {root, ribbon: [[stageStrip('home', (s) => void openStage(s))]], path: pathOf('home')};
+  return {root, ribbon: [[h('div', 'pmx-head', [steps('home', (s) => void openStage(s))])]], path: pathOf('home')};
 }
 
 /** How far a study has gone: Plan — Monitor — Analyze, the stages behind it filled. */
