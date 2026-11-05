@@ -1,5 +1,9 @@
 # Clinical Case changelog
 
+## v.next
+
+* Docker: Rebuilt the clinical-case image on Wolfi (multi-stage, no pip or build tools in the final image) to clear the Debian CVEs; the worker starts with default queue and host names when TASK_QUEUE_NAME/CELERY_HOSTNAME are unset
+
 ## 1.4.2 (2026-11-03)
 
 * [public#4476](https://github.com/datagrok-ai/public/issues/4476): ClinicalCase: Import study... on the start page closes the app unless the tree node was expanded
