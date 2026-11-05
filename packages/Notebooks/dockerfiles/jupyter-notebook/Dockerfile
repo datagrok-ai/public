@@ -51,12 +51,15 @@ RUN curl -fsSL https://deb.debian.org/debian/pool/main/a/antiword/antiword_0.37.
 # TeX Live for nbconvert's PDF export (xelatex); the tree is self-contained, so any builder will do
 FROM debian:bookworm-slim AS texlive
 
+# one fixed mirror: mirror.ctan.org redirects to a random one, and some serve broken files
+ARG CTAN_TLNET=https://mirrors.mit.edu/CTAN/systems/texlive/tlnet
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 RUN apt-get update ; \
     # xetex links the system fontconfig; fmtutil runs it to build xelatex.fmt \
     apt-get install -y --no-install-recommends ca-certificates libfontconfig1 perl wget xz-utils ; \
     mkdir /tmp/itl ; \
-    wget -qO- https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz | tar -xz -C /tmp/itl --strip-components=1 ; \
+    wget -q --tries=5 ${CTAN_TLNET}/install-tl-unx.tar.gz -O /tmp/install-tl.tgz ; \
+    tar -xzf /tmp/install-tl.tgz -C /tmp/itl --strip-components=1 ; \
     printf '%s\n' \
       'selected_scheme scheme-basic' \
       'TEXDIR /usr/local/texlive' \
@@ -73,7 +76,7 @@ RUN apt-get update ; \
       'tlpdbopt_install_docfiles 0' \
       'tlpdbopt_install_srcfiles 0' \
       > /tmp/texlive.profile ; \
-    /tmp/itl/install-tl --profile /tmp/texlive.profile --repository https://mirror.ctan.org/systems/texlive/tlnet ; \
+    /tmp/itl/install-tl --profile /tmp/texlive.profile --repository ${CTAN_TLNET} ; \
     # what Debian's texlive-xetex, texlive-fonts-recommended and texlive-plain-generic bring, \
     # plus latex-extra for the packages nbconvert's latex template loads (tcolorbox, adjustbox, ...) \
     /usr/local/texlive/bin/x86_64-linux/tlmgr install \
