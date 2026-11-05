@@ -1,49 +1,39 @@
-# Version 3
-# Apply the workaround from the Microsoft ONNX Runtime issue 
-# (https://github.com/microsoft/onnxruntime/issues/24911) to fix the executable stack error.
-# This lets us continue using a pre-latest version of aizynthfinder while keeping the image smaller 
-# than a micromamba-based build. Note: this is just a workaround.
+# aizynthfinder Celery worker on Wolfi (glibc, near-zero CVEs). The venv is built in a builder stage
+# and copied into a minimal final stage without pip/setuptools/build tools.
+# onnxruntime<1.17 ships an executable-stack .so (https://github.com/microsoft/onnxruntime/issues/24911);
+# patchelf clears the flag so the pre-latest aizynthfinder keeps working.
 
-FROM python:3.11 as builder
+FROM cgr.dev/chainguard/wolfi-base AS builder
 
-ARG DEBIAN_FRONTEND=noninteractive
+RUN apk add --no-cache python-3.11 py3.11-pip patchelf
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    libgomp1 libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt /tmp/
+RUN python3.11 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt && \
+    /opt/venv/bin/pip install --no-cache-dir --no-deps aizynthfinder==4.3.2 && \
+    patchelf --clear-execstack /opt/venv/lib/python3.11/site-packages/onnxruntime/capi/onnxruntime_pybind11_state.cpython-311-x86_64-linux-gnu.so && \
+    /opt/venv/bin/pip uninstall -y pip wheel
 
-WORKDIR /app
+FROM cgr.dev/chainguard/wolfi-base
 
-COPY requirements.txt /app/
-RUN pip install --upgrade pip setuptools wheel && \
-    pip install --prefix=/install -r requirements.txt && \
-    pip install --prefix=/install --no-deps aizynthfinder==4.3.2
+RUN apk upgrade --no-cache && apk add --no-cache python-3.11 libgomp libstdc++ libxrender libxext && \
+    rm -rf /usr/lib/python3.11/ensurepip && \
+    adduser -D datagrok
 
-FROM python:3.11-slim
-
-ARG DEBIAN_FRONTEND=noninteractive
-
-RUN useradd -m datagrok
-
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    libgomp1 libpq5 libxrender1 libxext6 libsm6 libgl1 patchelf \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH=/opt/venv/bin:$PATH
 
 WORKDIR /app
 
-COPY --from=builder /install/lib /usr/local/lib
-COPY --from=builder /install/bin /usr/local/bin
-
-# pip is not used at runtime, and the setuptools copy vendored in it is flagged
-RUN pip install --no-cache-dir --upgrade setuptools wheel && pip uninstall -y pip
-RUN patchelf --clear-execstack /usr/local/lib/python3.11/site-packages/onnxruntime/capi/onnxruntime_pybind11_state.cpython-311-x86_64-linux-gnu.so
-RUN mkdir -p /app/configs/default && \
-    python -c "import sys; import aizynthfinder; from aizynthfinder.tools.download_public_data import main; sys.argv = ['download_public_data', '/app/configs/default']; main()" && \
+RUN python -c "import pyarrow, pandas, tables, onnxruntime, rdkit.Chem.Draw, datagrok_celery_task, datagrok_api" && \
+    mkdir -p /app/configs/default && \
+    python -c "import sys; from aizynthfinder.tools.download_public_data import main; sys.argv = ['download_public_data', '/app/configs/default']; main()" && \
     python -c "from aizynthfinder.aizynthfinder import AiZynthFinder; AiZynthFinder(configfile='/app/configs/default/config.yml')"
 COPY app.py /app/
 
 RUN chown -R datagrok:datagrok /app
 USER datagrok
+RUN python -c "import app"
 # grok_spawner expects port to be exposed
 EXPOSE 8000
 
@@ -51,6 +41,6 @@ EXPOSE 8000
 # Use concurrency=cpu in container.json
 CMD celery -A app worker \
     --loglevel=info \
-    --hostname=$CELERY_HOSTNAME \
+    --hostname=${CELERY_HOSTNAME:-aizynthfinder@%h} \
     --concurrency=1 \
-    -Q $TASK_QUEUE_NAME
+    -Q ${TASK_QUEUE_NAME:-celery}
