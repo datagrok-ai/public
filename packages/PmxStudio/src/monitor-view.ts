@@ -22,7 +22,7 @@ import {planInput} from './plan-vs-observed';
 import {openStage, showStage} from './stages';
 import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
   restoreFields, saveStudy, studyOf, tableOf} from './study-file';
-import {editLayout, panelGrid, Slot} from './panels';
+import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {emptyStudy, studyDataLine, studyMenu, studyOf as studyNamesOf, tagStudy, withoutExcluded} from './study-table';
 import {StudyMeta, dateOf, dateText, emptyMeta, metaOf, setMetaOn, weekdayOf, withId} from './study-meta';
@@ -39,10 +39,13 @@ import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, day
   notesBox, num, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
   markStage, signed, stageOf, statCard, swatch, volumeAxis, wrapCells} from './ui';
 
-/** Monitor's panels, in order and width (twelfths): today's work first, then the groups, then the start. */
-const MONITOR_LAYOUT: Slot[] = [{id: 'today', span: 4}, {id: 'growth', span: 8}, {id: 'calendar', span: 12},
-  {id: 'sheet', span: 12},
-  {id: 'decisions', span: 6}, {id: 'welfare', span: 6}, {id: 'enrollment', span: 12}];
+/** Monitor's tabs and their panels, in order and width (twelfths): today's work and how the groups grow; the
+ *  measurements and the groups formed; how the animals bear it; whether each group is worth continuing. */
+const MONITOR_TABS: Tab[] = [
+  {name: 'Today', layout: [{id: 'today', span: 4}, {id: 'growth', span: 8}, {id: 'calendar', span: 12}]},
+  {name: 'Measurements', layout: [{id: 'sheet', span: 12}, {id: 'enrollment', span: 12}]},
+  {name: 'Welfare', layout: [{id: 'welfare', span: 12}]},
+  {name: 'Decisions', layout: [{id: 'decisions', span: 12}]}];
 
 /** Below this chance of success, on a planned review, Monitor suggests stopping the arm. A person decides. */
 export const FUTILITY = 0.1;
@@ -650,7 +653,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     if (result.value)
       dataLine.refresh();
   });
-  const panels = panelGrid([
+  const panels = panelTabs([
     {id: 'today', title: 'Needs attention', hint: 'Who needs attention today; a person decides what to do',
       content: [limits, entered, attention, noteBox]},
     {id: 'growth', title: 'Growth', hint: 'Each group so far and what is expected up to the end',
@@ -667,17 +670,18 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       content: [welfareHidden, welfareBody]},
     {id: 'enrollment', title: 'Enrollment', hint: 'Random groups alike in their starting tumors',
       content: [divH([proposeButton, sheetButton]), allocationTable]},
-  ], MONITOR_LAYOUT, 'pmx-monitor-panels', 'monitor');
-  exports.push(['Layout…', () => editLayout(panels), 'View']);
+  ], MONITOR_TABS, 'pmx-monitor-panels', 'monitor');
+  exports.push(['Layout…', () => editLayout(panels.root), 'View']);
 
-  const content = divV([dataLine.root, cards, panels], 'pmx-monitor-content');
+  const content = divV([dataLine.root, cards, panels.root], 'pmx-monitor-content');
   const needStudy = () => studyTable() ?? (() => {
     throw new Error('Open a study first');
   })();
   exports.push(
     ['Report (PDF)…', async () => {
       const df = needStudy();
-      printSheet(await reportHtml({title: df.name, stage: 'Monitor', meta: metaOf(df), content, log: logOf(df)}));
+      printSheet(await panels.all(() => reportHtml({title: df.name, stage: 'Monitor', meta: metaOf(df), content,
+        log: logOf(df)})));
     }],
     ['Study file (.pmxstudy)', () => {
       const df = needStudy();

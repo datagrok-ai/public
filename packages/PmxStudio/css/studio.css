@@ -136,6 +136,17 @@
   .pmx-panel[data-span] { grid-column: span 12; }
 }
 
+/* a stage's tabs: one row under the study and its figures, each tab a grid of its own */
+.pmx-tabbed { display: flex; flex-direction: column; gap: 16px; }
+.pmx-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--dg-border, #DBDCDF); }
+.pmx-tab {
+  font: 500 13px var(--dg-font-family, Roboto, sans-serif); color: var(--dg-grey-5, #717581); background: none;
+  border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 6px 12px; cursor: pointer;
+}
+.pmx-tab:hover { color: var(--dg-text-color, #4D5261); }
+.pmx-tab.is-open { color: var(--dg-accent, #2083D5); border-bottom-color: var(--dg-accent, #2083D5); }
+.pmx-tab:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: -2px; }
+
 /* under a growth chart: the animals of each group on each day */
 .pmx-n-scroll { overflow-x: auto; margin-top: 8px; }
 .pmx-n-table { border-collapse: collapse; font-size: 11px; color: var(--dg-grey-5, #717581); }

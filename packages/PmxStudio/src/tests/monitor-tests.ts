@@ -6,6 +6,7 @@ import {allocateGroups, futureDays, outsideBand, parseLooks, reasonsOf, weightRe
 import {PLAN_TAG, parsePlan} from '../plan-file';
 import {LIMITS_TAG, LOG_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, studyOf, tableOf}
   from '../study-file';
+import {panelTabs} from '../panels';
 
 /** The example study up to `today`, as a follower has it. */
 async function upTo(today: number): Promise<DG.DataFrame> {
@@ -152,5 +153,17 @@ category('Monitor', () => {
       bad = true;
     }
     expect(bad, true);
+  });
+
+  test('A panel on another tab opens that tab; the report shows every tab, then the open one alone again', async () => {
+    const panel = (id: string) => ({id, title: id, hint: '', content: [document.createElement('div')]});
+    const t = panelTabs([panel('a'), panel('b')], [{name: 'One', layout: [{id: 'a', span: 12}]},
+      {name: 'Two', layout: [{id: 'b', span: 12}]}], 'pmx-test', 'test');
+    const shown = () => [...t.root.querySelectorAll<HTMLElement>('.pmx-grid-host')].map((g) => !g.hidden).join();
+    expect(shown(), 'true,false');
+    t.show('b');
+    expect(shown(), 'false,true');
+    expect(await t.all(async () => shown()), 'true,true');
+    expect(shown(), 'false,true');
   });
 });

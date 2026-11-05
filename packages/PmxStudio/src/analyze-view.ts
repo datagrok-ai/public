@@ -32,7 +32,7 @@ import {noEffectNote, observedCell, planInput, planTab} from './plan-vs-observed
 import {nciReadings, NciReading, tolerabilityTab} from './tolerability';
 import {BandChart} from './band-chart';
 import {explore, exploreContent, StudyInputs, studyInputsOf} from './explore';
-import {editLayout, panelGrid, Slot} from './panels';
+import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {AnimalSelection, exclusionsOf, mirrorSelection, studyDataLine, studyMenu, studyOf, tagStudy,
   withoutExcluded} from './study-table';
@@ -46,12 +46,14 @@ import {KmChart} from './km-chart';
 import {synergyDialog} from './synergy';
 import {arriveDialog, arriveItems} from './arrive';
 
-/** Analyze's panels, in order and width (twelfths): the answer, how the tumors grew, each animal, then the rest. */
-const ANALYZE_LAYOUT: Slot[] = [{id: 'groups', span: 12}, {id: 'growth', span: 8}, {id: 'rates', span: 4},
-  {id: 'waterfall', span: 12}, {id: 'spider', span: 6}, {id: 'km', span: 6}, {id: 'animals', span: 12},
-  {id: 'tolerability', span: 12},
-  {id: 'plan', span: 12}, {id: 'controls', span: 6},
-  {id: 'explore', span: 6}];
+/** Analyze's tabs and their panels, in order and width (twelfths): the answer and how the groups grew; each animal;
+ *  how the animals bore it; whether the study went as planned. */
+const ANALYZE_TABS: Tab[] = [
+  {name: 'Results', layout: [{id: 'groups', span: 12}, {id: 'growth', span: 8}, {id: 'rates', span: 4},
+    {id: 'km', span: 8}, {id: 'explore', span: 4}]},
+  {name: 'Each animal', layout: [{id: 'waterfall', span: 6}, {id: 'spider', span: 6}, {id: 'animals', span: 12}]},
+  {name: 'Tolerability', layout: [{id: 'tolerability', span: 12}]},
+  {name: 'Against the plan', layout: [{id: 'plan', span: 12}, {id: 'controls', span: 12}]}];
 
 /** Under a growth chart: how many animals each group had on each measurement day, so a thinning group shows. */
 function animalsPerDay(volumes: DG.DataFrame, groups: string[], colors: {[g: string]: string}): HTMLElement {
@@ -424,6 +426,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   let summaryText = '';
   // the Tolerability panel, at the groups against the NCI limits (the panels are built below)
   const showNci = () => {
+    panels.show('tolerability');
     requestAnimationFrame(() => tolerability.content.map((el) => el.querySelector('.pmx-nci')).find((el) => el)
       ?.scrollIntoView({behavior: 'smooth', block: 'center'}));
   };
@@ -921,7 +924,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   });
 
   // the figures answer the study's question; each panel, one closer question
-  const panels = panelGrid([
+  const panels = panelTabs([
     {id: 'groups', title: 'Experimental groups', hint: 'Each treated group against the control on the evaluation day',
       content: [groupsTable, groupNotes]},
     {id: 'growth', title: 'Observed tumor growth', hint: 'Median and range (smallest to largest tumor) ' +
@@ -952,9 +955,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       if (r && resultStudy)
         explore(which, r, resultStudy, colorsOf(r), self.view);
     })},
-  ], ANALYZE_LAYOUT, 'pmx-analyze-panels', 'analyze');
-  exports.push(['Layout…', () => editLayout(panels), 'View']);
-  const content = divV([dataLine.root, cards, panels], 'pmx-analyze-content');
+  ], ANALYZE_TABS, 'pmx-analyze-panels', 'analyze');
+  exports.push(['Layout…', () => editLayout(panels.root), 'View']);
+  const content = divV([dataLine.root, cards, panels.root], 'pmx-analyze-content');
   const copied = (text: string, what: string) => {
     studyNow();
     return navigator.clipboard.writeText(text).then(() => grok.shell.info(`${what} copied`));
@@ -969,8 +972,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   exports.push(
     ['Report (PDF)…', async () => {
       const {df, r} = studyNow();
-      printSheet(await reportHtml({title: r.analysis.name, stage: 'Analyze', meta: metaOf(df), content,
-        log: logOf(df), annex: [['Results', summary], ['Statistics', statsTable], ['Analysis protocol', protocol]]}));
+      printSheet(await panels.all(() => reportHtml({title: r.analysis.name, stage: 'Analyze', meta: metaOf(df),
+        content, log: logOf(df), annex: [['Results', summary], ['Statistics', statsTable],
+          ['Analysis protocol', protocol]]})));
     }],
     ['Copy the results summary', () => copied(summaryText, 'Results summary')],
     ['ARRIVE checklist…', () => {

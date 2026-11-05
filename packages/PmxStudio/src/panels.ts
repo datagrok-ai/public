@@ -82,9 +82,78 @@ export function panelGrid(panels: Panel[], layout: Slot[], cls: string, stage?: 
   return host;
 }
 
-/** Opens the layout editor of a grid panelGrid built with a stage. */
+/** Opens the layout editor of a grid panelGrid (or panelTabs: its open tab's) built with a stage. */
 export function editLayout(grid: HTMLElement): void {
   editors.get(grid)?.();
+}
+
+/** A tab: its name and its panels, in their default order and widths. */
+export interface Tab {name: string, layout: Slot[]}
+
+export interface Tabbed {
+  root: HTMLElement;
+  /** Opens the tab `panel` is on. */
+  show(panel: string): void;
+  /** Runs `f` with every tab shown (so its charts are drawn: the PDF report), then the open tab alone again. */
+  all<T>(f: () => Promise<T>): Promise<T>;
+}
+
+/** The stage's panels on tabs, each tab a grid of its own with its own layout (`${stage}-${tab}`); View > Layout…
+ *  edits the open tab's. The tabs are a row of their own, under what stays on top (the study, the figures). */
+export function panelTabs(panels: Panel[], tabs: Tab[], cls: string, stage: string): Tabbed {
+  const grids = tabs.map((t) => panelGrid(panels.filter((p) => t.layout.some((s) => s.id === p.id)), t.layout, cls,
+    `${stage}-${t.name.toLowerCase().replace(/\W+/g, '-')}`));
+  const heads = tabs.map((t, i) => {
+    const b = document.createElement('button');
+    b.className = 'pmx-tab';
+    b.textContent = t.name;
+    b.setAttribute('role', 'tab');
+    b.onclick = () => open(i);
+    return b;
+  });
+  const strip = div(heads, 'pmx-tabs pmx-noprint');
+  strip.setAttribute('role', 'tablist');
+  let current = 0;
+  const open = (i: number) => {
+    current = i;
+    grids.forEach((g, j) => g.hidden = j !== i);
+    heads.forEach((h, j) => {
+      h.classList.toggle('is-open', j === i);
+      h.setAttribute('aria-selected', String(j === i));
+      h.tabIndex = j === i ? 0 : -1;
+    });
+    window.dispatchEvent(new Event('resize'));
+  };
+  // arrows move between the tabs, as in any tab list
+  strip.addEventListener('keydown', (e) => {
+    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!step)
+      return;
+    const i = (current + step + tabs.length) % tabs.length;
+    open(i);
+    heads[i].focus();
+  });
+  open(0);
+  const root = div([strip, ...grids], 'pmx-tabbed');
+  editors.set(root, () => editLayout(grids[current]));
+  return {root,
+    show: (panel) => {
+      const i = tabs.findIndex((t) => t.layout.some((s) => s.id === panel));
+      if (i >= 0 && i !== current)
+        open(i);
+    },
+    all: async (f) => {
+      const was = current;
+      grids.forEach((g) => g.hidden = false);
+      window.dispatchEvent(new Event('resize'));
+      // the charts redraw at their width before they are pictured
+      await new Promise((r) => setTimeout(r, 300));
+      try {
+        return await f();
+      } finally {
+        open(was);
+      }
+    }};
 }
 
 /** The editor: the panels as tiles on the twelve columns, as they will sit; drag a tile to move it (or Alt+arrows on
