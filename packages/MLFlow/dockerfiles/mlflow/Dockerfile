@@ -33,7 +33,6 @@ RUN for v in /root/.pyenv/versions/*; do $v/bin/python -m pip install --upgrade 
 		/root/.pyenv/versions/*/lib/python*/test/wheeldata/*.whl \
 		/usr/local/lib/python*/ensurepip/_bundled/*.whl \
 		/usr/local/lib/python*/site-packages/virtualenv/seed/wheels/embed/pip-26.0.1-py3-none-any.whl
-RUN (find / -xdev \( -name '*.whl' -o -name 'vendor.txt' -o -iname 'setuptools-*' -o -iname 'filelock-*' -o -iname 'pillow-*' -o -iname 'cryptography-*' -o -iname 'mlflow-*' \) 2>/dev/null | grep -v '^/proc'; grep -rl --include=METADATA -e '^Version: 70.3.0' /usr /opt /root 2>/dev/null | head -20; mlflow models serve --help | head -40) || true
 
 EXPOSE 5001
 CMD ["./run.sh"]
