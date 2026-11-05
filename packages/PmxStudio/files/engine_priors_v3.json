@@ -3929,5 +3929,88 @@
    }
   ],
   "method": "Crux stats.tumor_measurement_error (crux-core f28bdf136): robust second-difference estimator on consecutive triples (<= 8 days) of base-pool controls"
+ },
+ "models": {
+  "MC38": {
+   "class": "syngeneic",
+   "tumour_type": "colon",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 37,
+   "animals": 760,
+   "organ": "colon"
+  },
+  "CT26": {
+   "class": "syngeneic",
+   "tumour_type": "colon",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 33,
+   "animals": 413,
+   "organ": "colon"
+  },
+  "B16F10": {
+   "class": "syngeneic",
+   "tumour_type": "melanoma",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 28,
+   "animals": 366,
+   "organ": "skin"
+  },
+  "4T1": {
+   "class": "syngeneic",
+   "tumour_type": "breast",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 36,
+   "animals": 444,
+   "organ": "breast"
+  },
+  "LLC": {
+   "class": "syngeneic",
+   "tumour_type": "lung",
+   "host_class": "immunocompetent",
+   "tier": "Own spreads",
+   "papers": 17,
+   "animals": 144,
+   "organ": "lung"
+  },
+  "Panc02": {
+   "class": "syngeneic",
+   "tumour_type": "pancreas",
+   "host_class": "immunocompetent",
+   "tier": "Thin",
+   "papers": 15,
+   "animals": 140,
+   "organ": "pancreas"
+  },
+  "Hepa1-6": {
+   "class": "syngeneic",
+   "tumour_type": "liver",
+   "host_class": "immunocompetent",
+   "tier": "Thin",
+   "papers": 9,
+   "animals": 150,
+   "organ": "liver"
+  },
+  "PDX-NSCLC": {
+   "class": "pdx",
+   "tumour_type": "NSCLC",
+   "host_class": "immunodeficient",
+   "tier": "Thin",
+   "papers": 15,
+   "animals": 67,
+   "organ": "lung"
+  },
+  "PDX-PDAC": {
+   "class": "pdx",
+   "tumour_type": "PDAC",
+   "host_class": "immunodeficient",
+   "tier": "Own spreads",
+   "papers": 26,
+   "animals": 155,
+   "organ": "pancreas"
+  }
  }
 }
