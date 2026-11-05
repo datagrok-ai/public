@@ -1,8 +1,7 @@
 'use strict';
 
-const {sourceOf} = require('../lib/u2-imports');
+const {DIRECTIVE, sourceOf} = require('../lib/u2-imports');
 
-const DIRECTIVE = /^[\s*]*(eslint|global|exported|istanbul|c8|@ts-|prettier|webpack|jshint|@license|copyright\b)/i;
 const MEMBERS = ['PropertyDefinition', 'MethodDefinition', 'AccessorProperty', 'TSAbstractPropertyDefinition',
   'TSAbstractMethodDefinition', 'TSAbstractAccessorProperty', 'TSParameterProperty'];
 
