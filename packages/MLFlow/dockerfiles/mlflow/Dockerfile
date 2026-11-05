@@ -14,7 +14,7 @@ RUN apk upgrade --no-cache && apk add --no-cache \
 
 # cryptography capped <51 to stay within mlflow's own cryptography<51 requirement
 RUN python3.11 -m venv --without-pip /opt/mlflow && \
-    python3.11 -m pip install --no-cache-dir --python /opt/mlflow/bin/python \
+    python3.11 -m pip --python /opt/mlflow/bin/python install --no-cache-dir \
       "mlflow[extras,azure,db,gateway,genai,auth]==3.17.2" boto3 "cryptography>=50.0.0,<51" && \
     python3.11 -m pip download --no-cache-dir --no-deps --only-binary=:all: -d /opt/python-wheels pip setuptools && \
     apk del --no-cache py3.11-pip && \
