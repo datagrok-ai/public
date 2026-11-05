@@ -405,6 +405,7 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   listing (`forum.dart` `_refreshChats`) for that account — it happened once on dev.
 - **A translated stack trace is not a second error**: the platform logs "… Look below, ID = X" and,
   seconds later, "Stack trace X"; the floor joins it to its error, or drops it once reported.
+  `no errors should have been logged` and the scenario-end errors audit wait for the stacks of what they are about to report (`stacksLogged`, 30 s at most).
 - **Model cards are not completion signals.** The Train Model preview reports `aria-busy` before
   debounce/queued training and `aria-invalid` for unavailable or failed results. `model preview
   should be ready` requires the latest completed training, predictions, charts and history.

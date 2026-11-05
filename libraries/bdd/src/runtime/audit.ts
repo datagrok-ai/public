@@ -279,7 +279,7 @@ export async function leakCheck(page: Page): Promise<AuditOutcome> {
 /** The layout audit and the console-error floor on the scenario's final state, when the current view or an overlay
  * over it shows u2; the balloon floor and the operability audit also when a step opened a u2 overlay. `errors` takes
  * the errors logged since the scenario's floor; the balloons are taken off the record. */
-export async function auditScenario(page: Page, errors: () => LoggedError[]): Promise<AuditOutcome> {
+export async function auditScenario(page: Page, errors: () => LoggedError[] | Promise<LoggedError[]>): Promise<AuditOutcome> {
   const {modes, allow} = auditSettings();
   const outcome: AuditOutcome = {ran: [], findings: []};
   const steps = stepFindings.get(page);
@@ -312,7 +312,7 @@ export async function auditScenario(page: Page, errors: () => LoggedError[]): Pr
   }
   if (u2 && modes.errors !== 'off') {
     outcome.ran.push('errors');
-    outcome.findings.push(...errorFindings(errors(), allow.errors));
+    outcome.findings.push(...errorFindings(await errors(), allow.errors));
   }
   const shown = u2 || steps !== undefined;
   if (shown && modes.balloons !== 'off') {

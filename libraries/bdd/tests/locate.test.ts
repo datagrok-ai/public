@@ -21,7 +21,7 @@ import '../bindings/platform/elements.js';
 import {noSpaceOnServer} from '../bindings/platform/steps.js';
 import {el} from '../src/runtime/args.js';
 import {clear, hover, keysOf, press, pressIn, readExpanded, select, setExpanded, typeInto, withKeys} from '../src/runtime/gestures.js';
-import {atFeatureEnd, feature, takeErrors, watchErrors} from '../src/runtime/harness.js';
+import {atFeatureEnd, feature, stacksLogged, takeErrors, watchErrors} from '../src/runtime/harness.js';
 import {expectState, expectText} from '../src/runtime/assertions.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
 import {locate, locateActionable} from '../src/runtime/locate.js';
@@ -442,6 +442,31 @@ test('the translated stack trace of a logged error is not a second error', () =>
   assert.deepEqual(takeErrors(fake), []);
   log('Stack trace Zz9\n\tpackages/d4/src/y.dart 1:1');
   assert.equal(takeErrors(fake).length, 1);
+});
+
+test('a check waits for the translated stack of an error it is about to report', async () => {
+  const listeners: ((m: unknown) => void)[] = [];
+  const fake = {on: (event: string, fn: (m: unknown) => void) => { if (event === 'console') listeners.push(fn); }} as unknown as Page;
+  const log = (text: string) => listeners.forEach((fn) => fn({type: () => 'error', text: () => text, location: () => ({url: ''})}));
+  watchErrors(fake);
+  const idle = Date.now();
+  await stacksLogged(fake, 50);
+  assert.ok(Date.now() - idle < 45, 'with no error awaiting its stack, the check does not wait');
+  log('NullError: y on null\nTranslating stack trace... Look below, ID = Cd2');
+  log('NullError: z on null\nTranslating stack trace... Look below, ID = Ef3');
+  const waited = stacksLogged(fake, 60000);
+  log('Stack trace Cd2\n\tpackages/d4/src/w.dart 1:1');
+  setImmediate(() => log('Stack trace Ef3\n\tpackages/d4/src/z.dart 1:1'));
+  await waited;
+  const reported = takeErrors(fake);
+  assert.match(reported[0], /w\.dart/);
+  assert.match(reported[1], /z\.dart/);
+
+  log('NullError: x on null\nTranslating stack trace... Look below, ID = Ab1');
+  const start = Date.now();
+  await stacksLogged(fake, 50);
+  assert.ok(Date.now() - start >= 45, 'a stack that never comes is waited for until the bound');
+  assert.match(takeErrors(fake)[0], /ID = Ab1/);
 });
 
 scenario('a "name = value" status line is a readout by its label, and its value part is the value alone', async () => {

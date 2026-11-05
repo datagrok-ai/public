@@ -3,7 +3,7 @@ import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Given, Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
 import {keysOf, withKeys} from '../../../src/runtime/gestures.js';
-import {atFeatureEnd, takeErrors} from '../../../src/runtime/harness.js';
+import {atFeatureEnd, stacksLogged, takeErrors} from '../../../src/runtime/harness.js';
 import {escapeRegExp} from '../../../src/runtime/locate.js';
 import {RUN_SUFFIX, deleteLayoutsAtEnd} from '../../../src/runtime/server.js';
 import * as v from '../../../src/runtime/viewers.js';
@@ -774,6 +774,7 @@ export const eventNotFired = Then('{string} event should not have fired on {widg
   v.expectNotFired(page, target, event), {description: 'not once since "listens for"; the subscription stays'});
 
 export const noErrors = Then('no errors should have been logged', async (page: Page) => {
+  await stacksLogged(page);
   expect(takeErrors(page), 'console errors and page errors since the last check').toEqual([]);
 }, {description: 'console errors and uncaught exceptions since the previous check, the scenario start or the login; checking clears them'});
 
