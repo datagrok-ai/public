@@ -45,7 +45,7 @@ RUN mkdir -p /data /var/log/clinicalcase && \
     chown -R datagrok:datagrok /app /data /var/log/clinicalcase
 
 USER datagrok
-RUN /app/core --version && python -c "import app"
+RUN /app/core --help && python -c "import app"
 
 EXPOSE 8000
 
