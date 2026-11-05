@@ -6,7 +6,7 @@ SHELL ["/bin/bash", "-c"]
 
 COPY requirements.txt /tmp/clinicalcase-requirements.txt
 RUN python3.12 -m venv --without-pip /opt/venv && \
-    python3.12 -m pip install --no-cache-dir --python /opt/venv/bin/python -r /tmp/clinicalcase-requirements.txt
+    python3.12 -m pip --python /opt/venv/bin/python install --no-cache-dir -r /tmp/clinicalcase-requirements.txt
 
 RUN set -euo pipefail \
     && LATEST_RELEASE_URL=$(curl -s --fail --retry 3 https://api.github.com/repos/cdisc-org/cdisc-rules-engine/releases/latest | jq -r '.assets[] | select(.name == "core-ubuntu-latest.zip") | .browser_download_url') \
