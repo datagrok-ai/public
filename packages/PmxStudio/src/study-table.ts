@@ -169,6 +169,41 @@ export function findingsOf(n: StudyNames): Map<number, Finding[]> {
   return found;
 }
 
+const ADD = '(add the column)';
+
+/** The tumor volume from caliper readings as a calculated column, length × width² / 2 (the modified ellipsoid,
+ *  mm³), recomputed by the platform as the readings are typed; the length and width columns are added when the
+ *  table has none. An empty volume column is replaced; one with values stays, the new one beside it. */
+export async function caliperVolume(df: DG.DataFrame, length: string, width: string): Promise<string> {
+  const l = length === ADD ? df.columns.getOrCreate('length', DG.TYPE.FLOAT).name : length;
+  const w = width === ADD ? df.columns.getOrCreate('width', DG.TYPE.FLOAT).name : width;
+  const old = df.col('volume');
+  const empty = !old || old.stats.missingValueCount === df.rowCount;
+  if (old && empty)
+    df.columns.remove('volume');
+  const name = empty ? 'volume' : df.columns.getUnusedName('volume (caliper)');
+  await df.columns.addNewCalculated(name, `\${${l}} * \${${w}} * \${${w}} / 2`);
+  addLog(df, `Volume from calipers: "${name}" = ${l} × ${w}² / 2`);
+  return name;
+}
+
+function caliperDialog(df: DG.DataFrame): void {
+  const nums = df.columns.toList().filter((c) => c.isNumerical && !/volume|day|weight/i.test(c.name))
+    .map((c) => c.name);
+  const guess = (re: RegExp) => nums.find((n) => re.test(n)) ?? ADD;
+  const length = ui.input.choice('Length (mm)', {items: [ADD, ...nums], value: guess(/^(l|len|length|long)/i),
+    nullable: false});
+  const width = ui.input.choice('Width (mm)', {items: [ADD, ...nums], value: guess(/^(w|wid|width|short)/i),
+    nullable: false});
+  ui.dialog('Volume from calipers')
+    .add(ui.divText('Volume = length × width² / 2 (mm³), recomputed as the readings are typed.'))
+    .add(ui.inputs([length, width]))
+    .onOK(() => void caliperVolume(df, length.value!, width.value!).then((name) => grok.shell.info(name ===
+      'volume' ? 'The volume now follows the caliper readings' : `Added "${name}": pick it as the volume in PMX ` +
+      'Studio, the study\'s own volume column has values'), (e) => grok.shell.error(String(e?.message ?? e))))
+    .show();
+}
+
 /** A new study typed by hand: its columns, no rows. */
 export function emptyStudy(): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([DG.Column.string('animal', 0), DG.Column.string('group', 0),
@@ -355,6 +390,7 @@ export function decorateStudyView(view: DG.TableView): void {
   view.ribbonMenu.group('PMX Studio')
     .item('Paste rows at the end', () => void paste())
     .item('Outlier rules…', () => void rulesDialog())
+    .item('Volume from calipers…', () => caliperDialog(df))
     .item('Back to PMX Studio', back);
   rerun();
 }

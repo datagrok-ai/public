@@ -2,7 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {DEFAULT_RULES, findOutliers, StudyColumns} from '../outlier-rules';
-import {EXCLUDED, FLAGGED, MARK_REASON, appendPasted, emptyStudy, exclusionsOf, mark, withoutExcluded}
+import {EXCLUDED, FLAGGED, MARK_REASON, appendPasted, caliperVolume, emptyStudy, exclusionsOf, mark,
+  withoutExcluded}
   from '../study-table';
 import {parseStudy, studyOf, tableOf} from '../study-file';
 import {dateOf, dosingDays, emptyMeta, metaOf, parseMeta, setMetaOn, startFrom, weekdayOf} from '../study-meta';
@@ -121,6 +122,20 @@ category('Study table', () => {
     expect(html.includes('S &lt;1&gt;'), true, 'names escaped');
     expect(html.includes('anti-PD-1 · 10 mg/kg · i.p. · Q3D×4'), true);
     expect(html.includes('Seed 42'), true);
+  });
+
+  test('caliper readings make the volume, live', async () => {
+    const df = emptyStudy();
+    df.rows.addNew(['M1', 'A', 0, null, 20], false);
+    expect(await caliperVolume(df, '(add the column)', '(add the column)'), 'volume', 'the empty volume replaced');
+    df.set('length', 0, 10);
+    df.set('width', 0, 6);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(df.get('volume', 0), 180, '10 × 6² / 2');
+    const kept = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'volume', [5]),
+      DG.Column.fromList('double', 'L', [4]), DG.Column.fromList('double', 'W', [2])]);
+    expect(await caliperVolume(kept, 'L', 'W'), 'volume (caliper)', 'a volume with values stays');
+    expect(kept.get('volume (caliper)', 0), 8);
   });
 
   test('the calendar’s dates, doses and notes', async () => {
