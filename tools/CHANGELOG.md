@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Added `grok s o groups list|get|add|set|rm|put|reset`, `endpoints list|rm`, `logs match '<filter>'` (with `--space`) and `logs activations [stop]`: log groups and endpoints of Settings > Logger
 * `grok publish`: A local container build that fails for the host platform on Apple Silicon is retried for linux/amd64, so a package whose base image has no arm64 variant (the Chembl ChEMBL database) builds
 * `grok test`: A package built on u2 or ems runs with u2 strict — a u2 misuse throws a `U2UsageError` naming the fix, and one the page caught and logged fails the run when it is the package's own (a stack frame in its bundle, or none to tell; another package's prints as a warning); `U2_STRICT=report` lists them instead without failing
 * `grok check`: A package built on u2 or ems fails on a problem of u2's consumer check whatever its version (a 0.x package only printed it), so a CSS rule over a new `.u2-*` class or `[data-u2…]` attribute fails the check
