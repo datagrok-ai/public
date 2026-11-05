@@ -2861,7 +2861,9 @@ export class FilesDataSource {
   async readFilesAsBlobs(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: Blob}> {
     const folderPath = this.setRoot(folder);
     const conn = folderPath.replace(":", ".").split('/')[0];
-    let url = `${api.grok_Dapi_Root()}/connectors/connections/${conn}/folder/${folderPath.substring(folderPath.indexOf('/') + 1)}?recursive=${recursive}`;
+    const slash = folderPath.indexOf('/');
+    const dir = slash < 0 ? '' : folderPath.substring(slash + 1);
+    let url = `${api.grok_Dapi_Root()}/connectors/connections/${conn}/folder/${dir}?recursive=${recursive}`;
     if (ext) {
       if (!ext.startsWith('.'))
         ext = `.${ext}`;
