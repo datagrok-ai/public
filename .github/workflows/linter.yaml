@@ -154,9 +154,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      # helpUrl links resolve against help/, a sibling of public in the datagrok umbrella
+      # helpUrl links resolve against help/, a sibling of public in the datagrok umbrella.
+      # Same-named help branch if it exists, else master (as in Jenkins).
       - name: Checkout help next to public
-        run: git clone --depth 1 https://github.com/datagrok-ai/help.git ../help
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          url=https://github.com/datagrok-ai/help.git
+          git ls-remote --exit-code --heads "$url" "refs/heads/$BRANCH" > /dev/null || { [ $? -eq 2 ] && BRANCH=master; }
+          git clone --depth 1 --branch "$BRANCH" "$url" ../help
       - name: Check links in packages
         shell: bash
         continue-on-error: true

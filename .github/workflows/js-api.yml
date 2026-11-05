@@ -127,9 +127,16 @@ jobs:
       - run: pnpm run check-links
         working-directory: ./js-api
       # The inventory counts API members mentioned in help/develop; help is a sibling of public
-      # in the datagrok umbrella (../help), same layout here.
-      - run: git clone --depth 1 https://github.com/datagrok-ai/help.git ../help
+      # in the datagrok umbrella (../help), same layout here. Same-named help branch if it
+      # exists, else master (as in Jenkins).
+      - name: Checkout help next to public
         if: github.event_name == 'pull_request'
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          url=https://github.com/datagrok-ai/help.git
+          git ls-remote --exit-code --heads "$url" "refs/heads/$BRANCH" > /dev/null || { [ $? -eq 2 ] && BRANCH=master; }
+          git clone --depth 1 --branch "$BRANCH" "$url" ../help
       # A ratchet guards what gets merged; once a regression is on master it must not block every publish.
       - run: pnpm run inventory
         if: github.event_name == 'pull_request'

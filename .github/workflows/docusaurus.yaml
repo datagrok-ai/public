@@ -85,9 +85,15 @@ jobs:
             package.json
             turbo.json
             .npmrc
-      # help is a sibling of public in the datagrok umbrella: same layout here
+      # help is a sibling of public in the datagrok umbrella: same layout here.
+      # Same-named help branch if it exists, else master (as in Jenkins).
       - name: Checkout help next to public
-        run: git clone --depth 1 https://github.com/datagrok-ai/help.git ../help
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          url=https://github.com/datagrok-ai/help.git
+          git ls-remote --exit-code --heads "$url" "refs/heads/$BRANCH" > /dev/null || { [ $? -eq 2 ] && BRANCH=master; }
+          git clone --depth 1 --branch "$BRANCH" "$url" ../help
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
