@@ -1,0 +1,17 @@
+npts 20 20 20
+gridfld rec.maps.fld
+spacing 0.375
+receptor_types A C N NA OA
+ligand_types A C N NA OA HD
+receptor rec.pdbqt
+gridcenter auto
+smooth 0.5
+map rec.A.map
+map rec.C.map
+map rec.N.map
+map rec.NA.map
+map rec.OA.map
+map rec.HD.map
+elecmap rec.e.map
+dsolvmap rec.d.map
+dielectric -0.1465
