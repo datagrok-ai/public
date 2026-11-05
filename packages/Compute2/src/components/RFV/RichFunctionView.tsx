@@ -196,7 +196,6 @@ export const RichFunctionView = Vue.defineComponent({
 
     const helpRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
     const formRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
-    const dockSpawnRef = Vue.shallowRef<InstanceType<typeof DockManager> | undefined>(undefined);
     const inputFormComponentRef = Vue.shallowRef<InstanceType<typeof InputForm> | undefined>(undefined);
 
     ////
@@ -617,7 +616,6 @@ export const RichFunctionView = Vue.defineComponent({
           preferredPanelTitle={preferredTab.value ?? undefined}
           onTabClicked={handleTabClicked}
           key={currentUuid.value}
-          ref={dockSpawnRef}
         >
           { !historyHidden.value && props.history &&
             <KeptAlive

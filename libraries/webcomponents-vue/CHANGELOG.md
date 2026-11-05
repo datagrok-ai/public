@@ -2,6 +2,7 @@
 
 ## v.next
 
+* DockManager: Removed `saveLayout`, `loadLayout` and `setActivePanel`; use `preferredPanelTitle` to pick the active tab
 * `provideDgViewService`: the service is disposed when the app unmounts, so callers no longer call `dispose()`
 * InputForm: Toggling `isReadonly` alone updates whether the inputs are enabled
 * InputForm: Clearing `callMeta` drops the meta of the previous call
