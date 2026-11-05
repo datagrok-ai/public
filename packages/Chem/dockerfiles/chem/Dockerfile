@@ -1,28 +1,26 @@
-FROM python:3.12-slim-trixie as pip_builder
+FROM cgr.dev/chainguard/wolfi-base AS pip_builder
 
 ARG VIRTUAL_ENV=/app/venv
-ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
+
+RUN apk add --no-cache python-3.12 py3.12-pip libstdc++
 
 COPY requirements.in ${VIRTUAL_ENV}/requirements.in
 
-RUN python -m venv ${VIRTUAL_ENV} && \
-    pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --timeout 3600 --no-cache-dir -r ${VIRTUAL_ENV}/requirements.in && \
-    rm -rf /tmp/*
+RUN python3.12 -m venv --without-pip ${VIRTUAL_ENV} && \
+    python3.12 -m pip --python ${VIRTUAL_ENV}/bin/python install --timeout 3600 --no-cache-dir \
+      -r ${VIRTUAL_ENV}/requirements.in && \
+    find ${VIRTUAL_ENV} -depth -type d \( -name __pycache__ -o -name tests \) -path '*/site-packages/*' -exec rm -rf {} +
 
 
-FROM python:3.12-slim-trixie
+# Wolfi (glibc) with only the interpreter: the venv is copied in without pip/setuptools/wheel.
+FROM cgr.dev/chainguard/wolfi-base
 
-ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-# Base-image system tooling ships vulnerable pip/setuptools/wheel (incl. vendored
-# jaraco.context/wheel); the app runs from the venv, but patch these so the image scans clean.
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN apk upgrade --no-cache && \
+    apk add --no-cache python-3.12 libstdc++ && \
+    rm -rf /usr/lib/python3.12/ensurepip
 
 ARG CHEM_USER=chem
-RUN adduser --system --group $CHEM_USER
-RUN dpkg --purge --force-remove-essential --force-depends perl-base
+RUN addgroup -S $CHEM_USER && adduser -S -G $CHEM_USER $CHEM_USER
 USER $CHEM_USER
 
 WORKDIR /app
@@ -31,14 +29,14 @@ ARG VIRTUAL_ENV=/app/venv
 
 COPY --from=pip_builder --chown=$CHEM_USER:$CHEM_USER $VIRTUAL_ENV $VIRTUAL_ENV
 
-ENV PATH ${VIRTUAL_ENV}/bin:$PATH
+ENV PATH=${VIRTUAL_ENV}/bin:$PATH
 ENV CHEM_HOST='0.0.0.0'
 ENV CHEM_PORT=45001
 ENV CHEM_NUM_CORES=4
 
 COPY --chown=$CHEM_USER:$CHEM_USER . .
+RUN python -c "import rdkit.Chem.Draw, app"
 EXPOSE 45001
-SHELL ["/bin/bash", "-c"]
 
 ENTRYPOINT gunicorn app:app \
              --timeout 900 \
