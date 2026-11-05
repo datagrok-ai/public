@@ -166,8 +166,6 @@ RUN python${PYTHON_VERSION} -m venv --without-pip ${VIRTUAL_ENV} ; \
     sed -i -e 's/^import pkg_resources$/import importlib.metadata/' \
       -e 's/pkg_resources\.iter_entry_points(group=group)/importlib.metadata.entry_points(group=group)/' \
       ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/jupyter_contrib_core/application.py ; \
-    echo "modules importing pkg_resources:" ; \
-    find ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages -name '*.py' -exec grep -lE '^\s*(import|from) pkg_resources' '{}' + || true ; \
     python -c "import cld3, gcld3, kyotocabinet" ; \
     find ${VIRTUAL_ENV} -type d \( -path *tensorflow \) -prune -false -depth \( \
       \( -type d -a \( -name test -o -name tests -o -name idle_test \) \) \
@@ -258,11 +256,6 @@ USER grok:grok
 # executed by the kernel and exported to PDF exactly as grok_helper's /notebooks/convert does
 RUN cd /tmp ; \
     command -v antiword unrtf pdftotext xelatex ; \
-    find / -xdev \( -name METADATA -o -name PKG-INFO \) -exec grep -l '^Name: setuptools' '{}' + 2>/dev/null || true ; \
-    find / -xdev -iname '*setuptools*' -not -path '*/setuptools/*' -not -path '*/site-packages/setuptools' 2>/dev/null || true ; \
-    find / -xdev \( -name '*.egg' -o -name '*.egg-info' \) 2>/dev/null || true ; \
-    grep -rn 'setuptools' ${VIRTUAL_ENV}/requirements.txt || true ; \
-    grep -rl '70\.3\.0' ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages 2>/dev/null | grep -iv '\.so' | head -20 || true ; \
     tesseract --list-langs ; gdalinfo --version ; gs --version ; pandoc --version > /dev/null ; \
     gnuplot -e 'set terminal dumb; plot sin(x)' > /dev/null ; \
     RESOLVER_ADDR=127.0.0.1 envsubst '${RESOLVER_ADDR}' < /etc/nginx/nginx.conf.template > /tmp/nginx.conf ; \
