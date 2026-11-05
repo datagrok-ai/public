@@ -112,8 +112,7 @@ signal would come from.
   px` sets the width, but nothing compares the tooltip's rectangle with the open menus. Needed: `the tooltip
   should not overlap the open menu` (tooltip and menu `getBoundingClientRect`, `tooltip.dart` /
   `menu.dart:244`).
-- **core#956, Chem and Bio missing from the top menu in a narrow window.** Possible with the current
-  steps (`the window is {int} by {int} px`, then `the top menu should list:` on a molecule table, with the
-  Tutorials, Browse and Context panels open), but the menus belong to Chem and Bio, so the claim goes in their
-  features (Bio `menu/top-menu.feature`), not in UsageAnalysis. Whether `the top menu should list:` follows
-  a group moved under the overflow button (`Menu.updateOverflow`) needs checking first.
+- **core#956, Chem and Bio missing from the top menu in a narrow window.** Claimed in Bio
+  `menu/top-menu.feature` (the first scenario: a 1024 by 600 px window with Browse and the Context Panel
+  open still lists Bio commands; `the top menu should list` walks the overflow "more" group). Chem's menu
+  and the Tutorials panel are not claimed.
