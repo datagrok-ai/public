@@ -29,10 +29,12 @@ and `pc-plot-ui.md`. What could be said is in `pc-plot-hover-and-layout.feature`
 - **Undock and dock again** ("Viewer basics", items 1-2): no step floats a viewer out of the dock
   manager (`user undocks {widget}` and `{widget} should be floating`, through the panel's title-bar
   menu, in `bindings/tiers/viewers/widgets.ts`). Docking along an edge is in `viewer-chrome.feature`.
-- **General > Save as PNG / Save to Gallery** ("Context menu: General"): both leave the page — a
-  download and a server entity. Needs `the download should be a PNG named {string}` (Playwright's
-  `download` event) and a gallery entry swept at feature end; `viewer-chrome.feature` claims only that
-  the items are offered.
+- **General > Save to Gallery** ("Context menu: General"): it leaves a server entity, which needs a
+  gallery entry swept at feature end. Save as PNG is claimed in `pc-plot.feature` (the last scenario:
+  a `.png` is downloaded), without the "no errors" floor after it: the picture logs three 404s for
+  `/font/MaterialIcons-Regular.woff2|woff|ttf` (the font-face of `google_fonts.css`, see
+  `scatter-plot/MISSING.md`, no ticket yet, measured 2026-11-05 on localhost). Once fixed, add
+  `And no errors should have been logged` after the download.
 
 ## Not a gap
 

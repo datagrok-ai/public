@@ -8,23 +8,11 @@ histogram's value axis on its finite ends, its 20 bins and no error).
 ## Still open
 
 - **The SPGI_v2_infinity table** (the md's step 1, "SPGI_v2_infinity.csv — add viewers + layouts").
-  The old spec opens `System:AppData/ApiTests/datasets/SPGI_v2_infinity.csv`, whose Chemical Space
-  X / Y columns hold Infinity values as the file stores them — parsed from the CSV, not written into
-  a cell afterwards. The library has no dataset for it (`bindings/platform/datasets.ts` lists
-  `spgi-linked1` / `spgi-linked2` from the same ApiTests folder, not this one). Needs a
-  `dataset('spgi-infinity', {path: 'System:AppData/ApiTests/datasets/SPGI_v2_infinity.csv', …})`
-  entry (the ApiTests package published, as for the linked tables), and then:
-
-  ```gherkin
-  Scenario: Infinity values read from the file leave the scatter plot and the histogram finite
-    Given user opens spgi-infinity dataset
-    And user adds a scatter plot viewer with:
-      | xColumnName | Chemical Space X |
-      | yColumnName | Chemical Space Y |
-    And user adds a histogram viewer with:
-      | valueColumnName | Chemical Space X |
-    Then the "x axis max" reading of scatter plot viewer should be a finite number
-    And the "axis max" reading of histogram viewer should be a finite number
-    And histogram viewer should report no error
-    And no errors should have been logged
-  ```
+  Reachable now (`System:AppData/ApiTests/datasets/SPGI_v2_infinity.csv` is on the local stand and
+  the Browse tree opens it), but not a BDD check: the claim is about the data, not a gesture (the
+  Chemical Space X / Y columns hold Infinity values parsed from the CSV, and the viewers' axes must
+  stay finite), and the file is 12 MB, 3624 rows with structures, against the smallest-dataset rule.
+  Requested from ApiTests: read the file, add a scatter plot on Chemical Space X / Y and a histogram
+  on Chemical Space X, and check that the scatter plot's x axis max and the histogram's axis max are
+  finite and neither viewer reports an error. A three-row CSV with `Infinity` / `-Infinity` cells
+  shows the same parse.

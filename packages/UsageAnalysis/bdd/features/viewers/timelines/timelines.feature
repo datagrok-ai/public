@@ -83,6 +83,31 @@ Feature: Timelines legend, legend visibility, legend clicks and Reset View
     Then "Split By" property of timelines viewer should be "USUBJID"
     And timelines viewer should have repainted
     And no errors should have been logged
+    When user clicks on "CARDIAC DISORDERS" item in the legend of timelines viewer
+    Then the "intervals" reading of timelines viewer should be 143
+    When user clicks on filter icon in toolbar
+    And user clicks on the "category SEVERE of AESEV" area of filter panel
+    Then 7 rows should pass the filter
+    And the filter should pass exactly the rows where "AESEV" is "SEVERE"
+    And the "intervals" reading of timelines viewer should be 7
+    And the "lanes" reading of timelines viewer should be 4
+    When user hovers over filter panel
+    And user clicks on reset icon of filter panel
+    Then the "intervals" reading of timelines viewer should be 143
+    And no errors should have been logged
+    Given the layouts named "ae" are deleted when the feature ends
+    And the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
+    When user clicks on Save button in layouts pane
+    Then "ae" layout card should be visible
+    When user selects "AESEV" in "Color" property in context panel
+    Then the legend of timelines viewer should list 3 items
+    When user clicks on "ae" layout card
+    Then "Color" property of timelines viewer should be "AESOC"
+    And "Split By" property of timelines viewer should be "USUBJID"
+    And the legend of timelines viewer should list 15 items
+    And the "intervals" reading of timelines viewer should be 143
+    And no errors should have been logged
 
   Scenario: Reset View brings back every interval after a zoom
     When user remembers the "intervals" reading of timelines viewer
