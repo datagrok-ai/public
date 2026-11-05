@@ -1,8 +1,8 @@
 # Wolfi (glibc, near-zero CVEs): the CDISC CORE binary is a glibc PyInstaller bundle.
 FROM cgr.dev/chainguard/wolfi-base AS build
 
-SHELL ["/bin/bash", "-c"]
 RUN apk add --no-cache bash python-3.12 py3.12-pip curl unzip jq
+SHELL ["/bin/bash", "-c"]
 
 COPY requirements.txt /tmp/clinicalcase-requirements.txt
 RUN python3.12 -m venv --without-pip /opt/venv && \
