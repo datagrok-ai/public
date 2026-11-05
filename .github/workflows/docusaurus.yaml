@@ -12,6 +12,10 @@ on:
           - 'yes'
           - 'no'
         default: 'no'
+      help_author:
+        description: 'GitHub login to notify on Slack after the deploy (set by help''s bump-public)'
+        required: false
+        type: string
   push:
     branches:
       - master
@@ -274,13 +278,12 @@ jobs:
             ./.github
       - name: Get help author
         id: help-author
+        if: inputs.help_author != ''
         env:
-          MESSAGE: ${{ github.event.head_commit.message }}
+          LOGIN: ${{ inputs.help_author }}
           MAPPING: ${{ secrets.EMAIL_SLACK_ID }}
         run: |
-          printf '%s\n' "$MESSAGE" | grep -q '^Help-Author:' || exit 0
-          login=$(printf '%s\n' "$MESSAGE" | sed -n 's/^Help-Author: *//p')
-          email=$(jq -r --arg l "$login" '.[$l] // empty' <<< "$MAPPING")
+          email=$(jq -r --arg l "$LOGIN" '.[$l] // empty' <<< "$MAPPING")
           echo "email=$email" >> "$GITHUB_OUTPUT"
           [ -n "$email" ] || echo "skip=true" >> "$GITHUB_OUTPUT"
       - name: Get actors slack
