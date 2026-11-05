@@ -26,6 +26,7 @@ import {studyHeader} from './study-header';
 import {emptyStudy, studyDataLine, tagStudy, withoutExcluded} from './study-table';
 import {emptyMeta, metaOf, setMetaOn, withId} from './study-meta';
 import {LineInput} from './line-input';
+import {printSheet, sheetHtml} from './sheet';
 import {studyInputsOf} from './explore';
 import {tolerabilityTab} from './tolerability';
 import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, dayText, declarationPane, DECLARATION_MIN,
@@ -327,6 +328,23 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
   const proposeButton = buttonWithIcon('Propose groups', 'random', () => void propose().catch((e) =>
     error.value = String(e?.message ?? e)));
   proposeButton.title = 'Fill the table\'s group column with random groups alike in their tumors';
+  // the animal room's sheet, from the groups in the table and the seed the log kept
+  const sheetButton = buttonWithIcon('Print randomization sheet', 'print', () => {
+    const df = studyTable();
+    if (!df?.col('group')) {
+      error.value = 'The sheet needs the study\'s groups: propose them, or open a table with a group column';
+      return;
+    }
+    const seed = [...logOf(df)].reverse().map((e) => /seed (\d+)/.exec(e.what)?.[1]).find((s) => s) ?? null;
+    try {
+      printSheet(sheetHtml(df.name, metaOf(df), df, seed));
+      addLog(df, 'Randomization sheet printed (it shows the groups)');
+    } catch (e: any) {
+      error.value = String(e?.message ?? e);
+    }
+  });
+  sheetButton.title = 'A page for the animal room: each animal, its group and its volume at randomization, ' +
+    'what each group receives, and lines to sign. It shows the groups.';
 
   // Growth: by group, once revealed
   const growthAxis = volumeAxis();
@@ -485,7 +503,7 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
     {id: 'welfare', title: 'Welfare', hint: 'Whether the treatments are being tolerated, from the body weights so far',
       content: [welfareHidden, welfareBody]},
     {id: 'enrollment', title: 'Enrollment', hint: 'Random groups alike in their starting tumors',
-      content: [divH([proposeButton]), allocationTable]},
+      content: [divH([proposeButton, sheetButton]), allocationTable]},
   ], MONITOR_LAYOUT, 'pmx-monitor-panels');
 
   const content = divV([dataLine.root, cards, panels], 'pmx-monitor-content');

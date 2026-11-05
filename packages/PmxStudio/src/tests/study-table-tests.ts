@@ -8,6 +8,7 @@ import {parseStudy, studyOf, tableOf} from '../study-file';
 import {dateOf, dosingDays, emptyMeta, metaOf, parseMeta, setMetaOn, startFrom, weekdayOf} from '../study-meta';
 import {entryOf, libraryOf, matches} from '../library';
 import {spiderLines} from '../spider-chart';
+import {sheetHtml, sheetRows} from '../sheet';
 
 /** Six animals of one group on days 0, 3 and 7; M4's day 7 a caliper typo (2400 for ~240), M1 losing weight. */
 function study(): StudyColumns {
@@ -106,6 +107,20 @@ category('Study table', () => {
     expect(lines.length, 1, 'M2 starts at 0 mm³: no line');
     expect(lines[0].days.join(','), '0,7', 'by day, day 3 excluded');
     expect(lines[0].change.join(','), '0,-50');
+  });
+
+  test('the randomization sheet: each animal once, at randomization, by group', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M2', 'M2', 'M10', 'M1', 'M3']),
+      DG.Column.fromStrings('group', ['B', 'B', 'A', 'A', 'B']), DG.Column.fromList('double', 'day', [-2, 0, 3, 0, 4]),
+      DG.Column.fromList('double', 'volume', [80, 101, 150, 99, 120])]);
+    const rows = sheetRows(df);
+    expect(rows.map((r) => `${r.group}:${r.animal}:${r.volume}`).join(','), 'A:M1:99,A:M10:150,B:M2:101,B:M3:120',
+      'day 0 over day -2; an animal first seen later keeps its first');
+    const html = sheetHtml('S <1>', {...emptyMeta(), id: 'PMX-2026-002', start: '2026-11-09', groups:
+      [{group: 'A', compound: 'anti-PD-1', dose: 10, unit: 'mg/kg', route: 'i.p.', schedule: 'Q3D×4'}]}, df, '42');
+    expect(html.includes('S &lt;1&gt;'), true, 'names escaped');
+    expect(html.includes('anti-PD-1 · 10 mg/kg · i.p. · Q3D×4'), true);
+    expect(html.includes('Seed 42'), true);
   });
 
   test('the calendar’s dates, doses and notes', async () => {
