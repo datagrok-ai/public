@@ -24,10 +24,12 @@ export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
   public currentCallsState$ = new BehaviorSubject<Record<string, Observable<FuncCallStateInfo | undefined>>>({});
   public currentValidations$ = new BehaviorSubject<Record<string, Observable<Record<string, ValidationResult>>>>({});
-  public currentPipelineValidations$ = new BehaviorSubject<Record<string, Observable<ValidationResult | undefined>>>({});
+  public currentPipelineValidations$ =
+    new BehaviorSubject<Record<string, Observable<ValidationResult | undefined>>>({});
   public currentConsistency$ = new BehaviorSubject<Record<string, Observable<Record<string, ConsistencyInfo>>>>({});
   public currentMeta$ = new BehaviorSubject<Record<string, Observable<Record<string, BehaviorSubject<any>>>>>({});
-  public nodesDescriptions$ = new BehaviorSubject<Record<string, Observable<Record<string, string | string[]> | undefined>>>({});
+  public nodesDescriptions$ =
+    new BehaviorSubject<Record<string, Observable<Record<string, string | string[]> | undefined>>>({});
   public currentLinks$ = new BehaviorSubject<LinksData[]>([]);
   public hiddenActions$ = new BehaviorSubject<ReadonlySet<string>>(new Set());
   public result$ = new Subject<any>();
