@@ -33,7 +33,8 @@ and `pc-plot-ui.md`. What could be said is in `pc-plot-hover-and-layout.feature`
   gallery entry swept at feature end. Save as PNG is claimed in `pc-plot.feature` (the last scenario:
   a `.png` is downloaded), without the "no errors" floor after it: the picture logs three 404s for
   `/font/MaterialIcons-Regular.woff2|woff|ttf` (the font-face of `google_fonts.css`, see
-  `scatter-plot/MISSING.md`, no ticket yet, measured 2026-11-05 on localhost). Once fixed, add
+  `scatter-plot/MISSING.md`, [core#1339](https://github.com/datagrok-ai/core/issues/1339), measured
+  2026-11-05 on localhost). Once fixed, add
   `And no errors should have been logged` after the download.
 
 ## Not a gap
