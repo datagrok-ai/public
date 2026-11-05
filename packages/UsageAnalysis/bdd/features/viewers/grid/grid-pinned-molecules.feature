@@ -16,7 +16,8 @@ Feature: Molecule cells of a pinned column, edited in Crux
     And the package autostarts have completed
 
   # HOST-051, a pinned SMILES column
-  Scenario: In a pinned SMILES column, a typed C1CCCCC1 and a drawn edit are written as SMILES, and the table keeps its rows
+  @realizes:public#3452
+  Scenario: In a pinned SMILES column every row draws its molecule, a typed C1CCCCC1 and a drawn edit are written as SMILES, and the table keeps its rows
     Given user opens a table "pinned-smiles" with:
       | id | molecule |
       | 1  | CCO      |
@@ -25,6 +26,8 @@ Feature: Molecule cells of a pinned column, edited in Crux
     And the semantic types of the current table are detected
     When user picks "Pin > Pin Column" from the context menu of the "header molecule" area of grid
     Then the grid should pin the columns "molecule"
+    And the "cell 2 of molecule" area of grid should be painted
+    And the "cell 3 of molecule" area of grid should be painted
     When user double-clicks on the "cell 1 of molecule" area of grid
     Then the "smiles" reading of crux sketcher widget should be the molecule "CCO"
     When user types "C1CCCCC1" into molecule input of sketcher dialog

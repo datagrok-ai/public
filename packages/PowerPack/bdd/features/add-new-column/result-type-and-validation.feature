@@ -28,6 +28,7 @@ Feature: Add New Column: the result type, a formula the dialog refuses, and a na
     When user clicks on "Add New Column..." icon
     Then "Add New Column" dialog should be visible
 
+  @realizes:public#4406
   Scenario: On auto, the Type choice names the type the formula computes
     When user types "${x} / 2" into formula editor
     Then the preview grid should show "${x} / 2" computed as numbers
@@ -35,6 +36,9 @@ Feature: Add New Column: the result type, a formula the dialog refuses, and a na
     When user clears formula editor
     And user types "${x} > 1" into formula editor
     Then column type input should have value "auto (bool)"
+    When user clears formula editor
+    And user types "Avg($[x])" into formula editor
+    Then column type input should have value "auto (double)"
     And no errors should have been logged
 
   Scenario: A type picked by hand is the type of the added column
@@ -61,10 +65,19 @@ Feature: Add New Column: the result type, a formula the dialog refuses, and a na
     Then "Add New Column" dialog should be hidden
     And no errors should have been logged
 
-  Scenario: A formula naming a column the table has not got is refused
+  @realizes:public#4404
+  Scenario: A formula naming a column or table the table has not got, as ${...} or as a string argument, is refused
     When user clicks on "Add New Column..." icon
     Then "Add New Column" dialog should be visible
     When user types "${nope} + 1" into formula editor
+    Then formula error should contain text "nope"
+    And OK button in "Add New Column" dialog should be disabled
+    When user clears formula editor
+    And user types "RowCount(\"nope\")" into formula editor
+    Then formula error should contain text "nope"
+    And OK button in "Add New Column" dialog should be disabled
+    When user clears formula editor
+    And user types "Avg(Column(\"nope\"))" into formula editor
     Then formula error should contain text "nope"
     And OK button in "Add New Column" dialog should be disabled
     When user clicks on CANCEL button in "Add New Column" dialog

@@ -4,7 +4,7 @@
 /* ---
 generated: features/browse/browse-routing.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [views.browse]
+sub_features_covered: [views.browse, public#3873]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -24,7 +24,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {counterMatchesFolder, openAddress, openRememberedAddress, rememberAddress} from '@datagrok-libraries/bdd/bindings/platform/browse';
 import {everyValueMatches} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {closeAllViews, noProjectOnServer, openDataset, openProject, saveAsProject, standHasReachableConnection, urlShouldContain, urlShouldNotContain, viewHoldsViewers, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {closeAllViews, currentViewType, noProjectOnServer, openDataset, openProject, saveAsProject, standHasReachableConnection, urlShouldContain, urlShouldNotContain, viewHoldsViewers, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, errorBalloonText, noBalloons, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -58,25 +58,27 @@ test.describe("Opening what the address names", () => {
     await session.step(43, "And no errors should have been logged", () => noErrors(page));
     await session.step(44, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
-  test("A query address runs the query with the parameter it carries", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
+  test("A query address runs the query with the parameter it carries", {tag: ["@browse", "@realizes:views.browse", "@realizes:public#3873"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
-    await session.step(48, "Given the stand has a reachable \"PostgresTest\" connection", () => standHasReachableConnection(page, "PostgresTest"));
-    await session.step(49, "When user opens the address \"/func/Dbtests.PostgresByStringChoices?shipCountry=%22Germany%22\"", () => openAddress(page, "/func/Dbtests.PostgresByStringChoices?shipCountry=%22Germany%22"));
-    await session.step(50, "Then the \"PostgresByStringChoices\" view should be current", () => viewIsCurrent(page, "PostgresByStringChoices"));
-    await session.step(51, "And the table should have 122 rows", () => rowCount(page, 122));
-    await session.step(52, "And every value of \"shipcountry\" column should match \"^Germany$\"", () => everyValueMatches(page, "shipcountry", "^Germany$"));
-    await session.step(53, "And no errors should have been logged", () => noErrors(page));
-    await session.step(54, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(49, "Given the stand has a reachable \"PostgresTest\" connection", () => standHasReachableConnection(page, "PostgresTest"));
+    await session.step(50, "When user opens the address \"/func/Dbtests.PostgresByStringChoices?shipCountry=%22Germany%22\"", () => openAddress(page, "/func/Dbtests.PostgresByStringChoices?shipCountry=%22Germany%22"));
+    await session.step(51, "Then the \"PostgresByStringChoices\" view should be current", () => viewIsCurrent(page, "PostgresByStringChoices"));
+    await session.step(52, "And the current view should be a TableView view", () => currentViewType(page, "TableView"));
+    await session.step(53, "And the page address should not contain \"preview\"", () => urlShouldNotContain(page, "preview"));
+    await session.step(54, "And the table should have 122 rows", () => rowCount(page, 122));
+    await session.step(55, "And every value of \"shipcountry\" column should match \"^Germany$\"", () => everyValueMatches(page, "shipcountry", "^Germany$"));
+    await session.step(56, "And no errors should have been logged", () => noErrors(page));
+    await session.step(57, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
   test("An address that names nothing says so and leaves the shell as it was", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
-    await session.step(57, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(58, "Then the \"demog-1000\" view should be current", () => viewIsCurrent(page, "demog-1000"));
-    await session.step(59, "When user opens the address \"/p/no.such_project/none\"", () => openAddress(page, "/p/no.such_project/none"));
-    await session.step(60, "Then an error balloon containing \"Unable to get project asset\" should have been shown", () => errorBalloonText(page, "Unable to get project asset"));
-    await session.step(61, "And the \"demog-1000\" view should be current", () => viewIsCurrent(page, "demog-1000"));
-    await session.step(62, "And no errors should have been logged", () => noErrors(page));
+    await session.step(60, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(61, "Then the \"demog-1000\" view should be current", () => viewIsCurrent(page, "demog-1000"));
+    await session.step(62, "When user opens the address \"/p/no.such_project/none\"", () => openAddress(page, "/p/no.such_project/none"));
+    await session.step(63, "Then an error balloon containing \"Unable to get project asset\" should have been shown", () => errorBalloonText(page, "Unable to get project asset"));
+    await session.step(64, "And the \"demog-1000\" view should be current", () => viewIsCurrent(page, "demog-1000"));
+    await session.step(65, "And no errors should have been logged", () => noErrors(page));
   });
 });

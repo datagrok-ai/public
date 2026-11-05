@@ -137,6 +137,7 @@ Feature: A project through its card in the Dashboards gallery
     When user picks "Copy > URL" from the context menu of BDDSmokeRenamed{time} gallery card
     Then the clipboard should contain text "/p/Admin.BDDSmokeRenamed{time}"
 
+  @realizes:core#938
   Scenario: The project is added to favorites and taken out again
     Given "BDDSmokeRenamed{time}" is not in favorites
     And "My stuff" tree node inside browse tree is expanded
@@ -147,6 +148,23 @@ Feature: A project through its card in the Dashboards gallery
     When user collapses "My stuff > Favorites" tree node inside browse tree
     And user expands "My stuff > Favorites" tree node inside browse tree
     Then "My stuff > Favorites > BDDSmokeRenamed{time}" tree node inside browse tree should be visible
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
+    When user clicks on favorites sidebar tab
+    Then favorites panel should be visible
+    And "BDDSmokeRenamed{time}" tree node in favorites panel should be visible
+    When user double-clicks on "BDDSmokeRenamed{time}" tree node in favorites panel and the project opens
+    Then the "cars" view should be current
+    And the open table views should be exactly "cars"
+    Given simple mode is off
+    Then the view tabs should be in the order "Home, cars"
+    And no errors should have been logged
+    When user clicks on favorites sidebar tab
+    Then favorites panel should be absent
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDSmokeRenamed{time}" into gallery search
+    Then BDDSmokeRenamed{time} gallery card should be visible
     When user picks "Add To Favorites > Only for me" from the context menu of BDDSmokeRenamed{time} gallery card
     Then "BDDSmokeRenamed{time}" should not be in favorites on the server
     When user collapses "My stuff > Favorites" tree node inside browse tree
@@ -174,6 +192,7 @@ Feature: A project through its card in the Dashboards gallery
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  @realizes:public#3752
   Scenario: The project is deleted from its card
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
@@ -189,3 +208,5 @@ Feature: A project through its card in the Dashboards gallery
     When user clicks on Refresh icon in gallery toolbar
     Then gallery counter should have text "0"
     And BDDSmokeRenamed{time} gallery card should be absent
+    And no errors should have been logged
+    And no error or warning balloon should have been shown

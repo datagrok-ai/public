@@ -22,7 +22,8 @@ Feature: The Bio top menu
     And user opens antibodies dataset keeping the first 40 rows as "antibodies"
     And the Bio package is initialized
 
-  Scenario: Every group lists its commands
+  @realizes:core#956
+  Scenario: Every group lists its commands, also in a narrow window with the side panels open
     Then the top menu should list:
       | Bio > Transform > Molecules to HELM...          |
       | Bio > Transform > To Atomic Level...            |
@@ -45,6 +46,12 @@ Feature: The Bio top menu
       | Bio > Search > Similarity Search                |
       | Bio > Search > Diversity Search                 |
       | Bio > Search > Subsequence Search ...           |
+    Given the browse panel is open
+    And the context panel is open
+    When the window is 1024 by 600 px
+    Then the top menu should list "Bio > Manage > Monomers" as enabled
+    And the top menu should list "Bio > Search > Similarity Search" as enabled
+    When the window is 1920 by 1080 px
 
   Scenario Outline: Bio > <group> > <leaf> opens the <dialog> dialog and cancels cleanly
     When user picks "Bio > <group> > <leaf>" from the top menu

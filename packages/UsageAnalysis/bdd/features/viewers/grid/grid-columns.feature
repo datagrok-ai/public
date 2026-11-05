@@ -82,11 +82,17 @@ Feature: Grid column geometry
     And the value of "AGE" column in row 1 should be "26"
     And no errors should have been logged
 
-  Scenario: The Sort dialog sorts by two levels
+  @realizes:core#417
+  Scenario: The Sort dialog sorts by two levels, and its column inputs follow a column renamed while it is open
     When user picks "Sort..." from the context menu of the "cell 4 of AGE" area of grid
     Then Sort Table dialog should be visible
     When user selects "SEX" in first column input in Sort Table dialog
     And user selects "AGE" in second column input in Sort Table dialog
+    When user renames "RACE" column to "ETHNICITY"
+    Then second column input in Sort Table dialog should offer the columns "USUBJID, AGE, SEX, ETHNICITY, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"
+    And second column input in Sort Table dialog should not offer the column "RACE"
+    When user renames "ETHNICITY" column to "RACE"
+    Then second column input in Sort Table dialog should offer the columns "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"
     And user clicks on OK button in Sort Table dialog
     Then Sort Table dialog should be hidden
     And the "sort column" reading of grid should be "SEX"
@@ -216,7 +222,7 @@ Feature: Grid column geometry
     Then all rows should pass the filter
     And no errors should have been logged
 
-  @GROK-19288 @known-failure:235
+  @GROK-19288 @known-failure:241
   Scenario: A coloring picked in the column popup shows in the Context Panel's Colors pane for that column
     When user clicks on the "header AGE" area of grid
     Given the context panel is open

@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/filter-panel/filter-panel-linked-tables.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.filters]
+sub_features_covered: [viewers.filters, public#1812]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -27,12 +27,13 @@ import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/command
 import {clearSelection, filterIsExactlyCategory, filterPasses, noneOfFiltered, openEmptyFilterPanel, selectFirstRows, selectedRowCount, tableFilterCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addCardFor} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
-import {clickArea, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {areaPainted, clickArea, noErrors, pickFromAreaContextMenu, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {gridPins} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Filter panel over linked tables", () => {
   const session = feature(test, "features/viewers/filter-panel/filter-panel-linked-tables.feature", import.meta.url);
-  test("Filter panel over linked tables", {tag: ["@journey", "@viewers", "@realizes:viewers.filters"]}, async ({browser}) => {
+  test("Filter panel over linked tables", {tag: ["@journey", "@viewers", "@realizes:viewers.filters", "@realizes:public#1812"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 4, page);
     await session.step(21, "Given user is logged in", () => loggedIn(page));
@@ -50,56 +51,64 @@ test.describe("Filter panel over linked tables", () => {
     await session.step(33, "Then 100 rows of table \"spgi-100\" should pass the filter", () => tableFilterCount(page, 100, "spgi-100"));
     await session.step(34, "And 175 rows of table \"SPGI-linked1\" should pass the filter", () => tableFilterCount(page, 175, "SPGI-linked1"));
     await session.step(35, "And 224 rows of table \"SPGI-linked2\" should pass the filter", () => tableFilterCount(page, 224, "SPGI-linked2"));
-    await run.scenario("Rows selected in spgi-100 become the filter of SPGI-linked1", async () => {
-      await session.step(38, "When user switches to the \"spgi-100\" table view", () => switchTableView(page, "spgi-100"));
-      await session.step(39, "And user selects the first 5 rows", () => selectFirstRows(page, 5));
-      await session.step(40, "Then 5 rows should be selected", () => selectedRowCount(page, 5));
-      await session.step(41, "And 100 rows of table \"spgi-100\" should pass the filter", () => tableFilterCount(page, 100, "spgi-100"));
-      await session.step(42, "And 9 rows of table \"SPGI-linked1\" should pass the filter", () => tableFilterCount(page, 9, "SPGI-linked1"));
-      await session.step(43, "And 224 rows of table \"SPGI-linked2\" should pass the filter", () => tableFilterCount(page, 224, "SPGI-linked2"));
-      await session.step(44, "And no errors should have been logged", () => noErrors(page));
+    await run.scenario("Rows selected in spgi-100 become the filter of SPGI-linked1, and a column pinned there follows it", async () => {
+      await session.step(39, "When user switches to the \"SPGI-linked1\" table view", () => switchTableView(page, "SPGI-linked1"));
+      await session.step(40, "And user picks \"Pin > Pin Column\" from the context menu of the \"header Concept Id\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Column", "header Concept Id", el("grid")));
+      await session.step(41, "Then the grid should pin the columns \"Concept Id\"", () => gridPins(page, "Concept Id"));
+      await session.step(42, "And the \"header Concept Id\" area of grid should be painted", () => areaPainted(page, "header Concept Id", el("grid")));
+      await session.step(43, "When user switches to the \"spgi-100\" table view", () => switchTableView(page, "spgi-100"));
+      await session.step(44, "And user selects the first 5 rows", () => selectFirstRows(page, 5));
+      await session.step(45, "Then 5 rows should be selected", () => selectedRowCount(page, 5));
+      await session.step(46, "And 100 rows of table \"spgi-100\" should pass the filter", () => tableFilterCount(page, 100, "spgi-100"));
+      await session.step(47, "And 9 rows of table \"SPGI-linked1\" should pass the filter", () => tableFilterCount(page, 9, "SPGI-linked1"));
+      await session.step(48, "And 224 rows of table \"SPGI-linked2\" should pass the filter", () => tableFilterCount(page, 224, "SPGI-linked2"));
+      await session.step(49, "When user switches to the \"SPGI-linked1\" table view", () => switchTableView(page, "SPGI-linked1"));
+      await session.step(50, "Then grid should show 9 rows", () => showsRows(page, el("grid"), 9));
+      await session.step(51, "And the grid should pin the columns \"Concept Id\"", () => gridPins(page, "Concept Id"));
+      await session.step(52, "And the \"header Concept Id\" area of grid should be painted", () => areaPainted(page, "header Concept Id", el("grid")));
+      await session.step(53, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A card of SPGI-linked2 narrows SPGI-linked1 and nothing comes back", async () => {
-      await session.step(47, "When user switches to the \"SPGI-linked2\" table view", () => switchTableView(page, "SPGI-linked2"));
-      await session.step(48, "And user opens an empty filter panel", () => openEmptyFilterPanel(page));
-      await session.step(49, "And user adds a card for \"link column 3\" to the filter panel", () => addCardFor(page, "link column 3"));
-      await session.step(50, "And user clicks on the \"category v ii of link column 3\" area of filter panel", () => clickArea(page, "category v ii of link column 3", el("filter panel")));
-      await session.step(51, "Then 148 rows should pass the filter", () => filterPasses(page, 148));
-      await session.step(52, "And the filter should pass exactly the rows where \"link column 3\" is \"v ii\"", () => filterIsExactlyCategory(page, "link column 3", "v ii"));
-      await session.step(53, "And 5 rows of table \"SPGI-linked1\" should pass the filter", () => tableFilterCount(page, 5, "SPGI-linked1"));
-      await session.step(54, "And 148 rows of table \"SPGI-linked2\" should pass the filter", () => tableFilterCount(page, 148, "SPGI-linked2"));
-      await session.step(55, "And 100 rows of table \"spgi-100\" should pass the filter", () => tableFilterCount(page, 100, "spgi-100"));
-      await session.step(56, "And no errors should have been logged", () => noErrors(page));
+      await session.step(56, "When user switches to the \"SPGI-linked2\" table view", () => switchTableView(page, "SPGI-linked2"));
+      await session.step(57, "And user opens an empty filter panel", () => openEmptyFilterPanel(page));
+      await session.step(58, "And user adds a card for \"link column 3\" to the filter panel", () => addCardFor(page, "link column 3"));
+      await session.step(59, "And user clicks on the \"category v ii of link column 3\" area of filter panel", () => clickArea(page, "category v ii of link column 3", el("filter panel")));
+      await session.step(60, "Then 148 rows should pass the filter", () => filterPasses(page, 148));
+      await session.step(61, "And the filter should pass exactly the rows where \"link column 3\" is \"v ii\"", () => filterIsExactlyCategory(page, "link column 3", "v ii"));
+      await session.step(62, "And 5 rows of table \"SPGI-linked1\" should pass the filter", () => tableFilterCount(page, 5, "SPGI-linked1"));
+      await session.step(63, "And 148 rows of table \"SPGI-linked2\" should pass the filter", () => tableFilterCount(page, 148, "SPGI-linked2"));
+      await session.step(64, "And 100 rows of table \"spgi-100\" should pass the filter", () => tableFilterCount(page, 100, "spgi-100"));
+      await session.step(65, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A card of SPGI-linked1 composes with what both links bring", async () => {
-      await session.step(59, "When user switches to the \"SPGI-linked1\" table view", () => switchTableView(page, "SPGI-linked1"));
-      await session.step(60, "And user opens an empty filter panel", () => openEmptyFilterPanel(page));
-      await session.step(61, "And user adds a card for \"PAMPA Classification\" to the filter panel", () => addCardFor(page, "PAMPA Classification"));
-      await session.step(62, "And user clicks on the \"category inconclusive of PAMPA Classification\" area of filter panel", () => clickArea(page, "category inconclusive of PAMPA Classification", el("filter panel")));
-      await session.step(63, "Then 2 rows should pass the filter", () => filterPasses(page, 2));
-      await session.step(64, "And no rows where \"PAMPA Classification\" is \"> -4.5 cm/s\" should pass the filter", () => noneOfFiltered(page, "PAMPA Classification", "> -4.5 cm/s"));
-      await session.step(65, "And no rows where \"PAMPA Classification\" is \"<= -5.3 cm/s\" should pass the filter", () => noneOfFiltered(page, "PAMPA Classification", "<= -5.3 cm/s"));
-      await session.step(66, "And 148 rows of table \"SPGI-linked2\" should pass the filter", () => tableFilterCount(page, 148, "SPGI-linked2"));
-      await session.step(67, "And 100 rows of table \"spgi-100\" should pass the filter", () => tableFilterCount(page, 100, "spgi-100"));
-      await session.step(68, "And no errors should have been logged", () => noErrors(page));
+      await session.step(68, "When user switches to the \"SPGI-linked1\" table view", () => switchTableView(page, "SPGI-linked1"));
+      await session.step(69, "And user opens an empty filter panel", () => openEmptyFilterPanel(page));
+      await session.step(70, "And user adds a card for \"PAMPA Classification\" to the filter panel", () => addCardFor(page, "PAMPA Classification"));
+      await session.step(71, "And user clicks on the \"category inconclusive of PAMPA Classification\" area of filter panel", () => clickArea(page, "category inconclusive of PAMPA Classification", el("filter panel")));
+      await session.step(72, "Then 2 rows should pass the filter", () => filterPasses(page, 2));
+      await session.step(73, "And no rows where \"PAMPA Classification\" is \"> -4.5 cm/s\" should pass the filter", () => noneOfFiltered(page, "PAMPA Classification", "> -4.5 cm/s"));
+      await session.step(74, "And no rows where \"PAMPA Classification\" is \"<= -5.3 cm/s\" should pass the filter", () => noneOfFiltered(page, "PAMPA Classification", "<= -5.3 cm/s"));
+      await session.step(75, "And 148 rows of table \"SPGI-linked2\" should pass the filter", () => tableFilterCount(page, 148, "SPGI-linked2"));
+      await session.step(76, "And 100 rows of table \"spgi-100\" should pass the filter", () => tableFilterCount(page, 100, "spgi-100"));
+      await session.step(77, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A link changed to selection-to-selection no longer narrows SPGI-linked1", async () => {
-      await session.step(71, "When user switches to the \"spgi-100\" table view", () => switchTableView(page, "spgi-100"));
-      await session.step(72, "And user clears the row selection", () => clearSelection(page));
-      await session.step(73, "Then 51 rows of table \"SPGI-linked1\" should pass the filter", () => tableFilterCount(page, 51, "SPGI-linked1"));
-      await session.step(74, "When user selects the first 5 rows", () => selectFirstRows(page, 5));
-      await session.step(75, "Then 2 rows of table \"SPGI-linked1\" should pass the filter", () => tableFilterCount(page, 2, "SPGI-linked1"));
-      await session.step(76, "When user picks \"Data > Link Tables...\" from the top menu", () => pickFromTopMenu(page, "Data > Link Tables..."));
-      await session.step(77, "And user clicks on \"spgi-100 -> SPGI-linked1\" text in \"Link Tables\" dialog", () => clickOn(page, el("\"spgi-100 -> SPGI-linked1\" text in \"Link Tables\" dialog")));
-      await session.step(78, "And user selects \"selection to selection\" in Link Type input in \"Link Tables\" dialog", () => selectIn(page, "selection to selection", el("Link Type input in \"Link Tables\" dialog")));
-      await session.step(79, "Then Link Type input in \"Link Tables\" dialog should have the value \"selection to selection\"", () => shouldHaveValue(page, el("Link Type input in \"Link Tables\" dialog"), "selection to selection"));
-      await session.step(80, "When user clicks on CLOSE button in \"Link Tables\" dialog", () => clickOn(page, el("CLOSE button in \"Link Tables\" dialog")));
-      await session.step(81, "Then 51 rows of table \"SPGI-linked1\" should pass the filter", () => tableFilterCount(page, 51, "SPGI-linked1"));
-      await session.step(82, "And 148 rows of table \"SPGI-linked2\" should pass the filter", () => tableFilterCount(page, 148, "SPGI-linked2"));
-      await session.step(83, "When user switches to the \"SPGI-linked1\" table view", () => switchTableView(page, "SPGI-linked1"));
-      await session.step(84, "Then 9 rows should be selected", () => selectedRowCount(page, 9));
-      await session.step(85, "And 51 rows should pass the filter", () => filterPasses(page, 51));
-      await session.step(86, "And no errors should have been logged", () => noErrors(page));
+      await session.step(80, "When user switches to the \"spgi-100\" table view", () => switchTableView(page, "spgi-100"));
+      await session.step(81, "And user clears the row selection", () => clearSelection(page));
+      await session.step(82, "Then 51 rows of table \"SPGI-linked1\" should pass the filter", () => tableFilterCount(page, 51, "SPGI-linked1"));
+      await session.step(83, "When user selects the first 5 rows", () => selectFirstRows(page, 5));
+      await session.step(84, "Then 2 rows of table \"SPGI-linked1\" should pass the filter", () => tableFilterCount(page, 2, "SPGI-linked1"));
+      await session.step(85, "When user picks \"Data > Link Tables...\" from the top menu", () => pickFromTopMenu(page, "Data > Link Tables..."));
+      await session.step(86, "And user clicks on \"spgi-100 -> SPGI-linked1\" text in \"Link Tables\" dialog", () => clickOn(page, el("\"spgi-100 -> SPGI-linked1\" text in \"Link Tables\" dialog")));
+      await session.step(87, "And user selects \"selection to selection\" in Link Type input in \"Link Tables\" dialog", () => selectIn(page, "selection to selection", el("Link Type input in \"Link Tables\" dialog")));
+      await session.step(88, "Then Link Type input in \"Link Tables\" dialog should have the value \"selection to selection\"", () => shouldHaveValue(page, el("Link Type input in \"Link Tables\" dialog"), "selection to selection"));
+      await session.step(89, "When user clicks on CLOSE button in \"Link Tables\" dialog", () => clickOn(page, el("CLOSE button in \"Link Tables\" dialog")));
+      await session.step(90, "Then 51 rows of table \"SPGI-linked1\" should pass the filter", () => tableFilterCount(page, 51, "SPGI-linked1"));
+      await session.step(91, "And 148 rows of table \"SPGI-linked2\" should pass the filter", () => tableFilterCount(page, 148, "SPGI-linked2"));
+      await session.step(92, "When user switches to the \"SPGI-linked1\" table view", () => switchTableView(page, "SPGI-linked1"));
+      await session.step(93, "Then 9 rows should be selected", () => selectedRowCount(page, 9));
+      await session.step(94, "And 51 rows should pass the filter", () => filterPasses(page, 51));
+      await session.step(95, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

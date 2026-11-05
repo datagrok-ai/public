@@ -115,7 +115,11 @@ Feature: The Predictive models gallery
     Then "Is applicable to..." tag should be hidden
     And no errors should have been logged
 
-  Scenario: Edit... changes the description the Details pane shows
+  @realizes:core#751
+  Scenario: The Details pane names the table the model was trained on, and Edit... changes the description it shows
+    When user clicks on "BDD-Kestrel-{run}" label in gallery
+    Then the context panel should show "BDD-Kestrel-{run}"
+    And "Details" pane in context panel should contain text "readings"
     When user picks "Edit..." from the context menu of "BDD-Kestrel-{run}" label in gallery
     Then "Predictive model" dialog should be visible
     And Name input in "Predictive model" dialog should have value "BDD-Kestrel-{run}"

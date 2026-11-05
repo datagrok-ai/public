@@ -93,3 +93,27 @@ Nothing planned.
 - Chemprop (chemprop-spec.ts): trains and predicts in the chem-chemprop Docker container.
 - Notebooks lifecycle (notebooks-lifecycle-jupyter-container): every step past the gallery runs the
   Jupyter container or is API-only.
+
+## Closed bugs without a regression step (closed-bugs round, 2026-11-05)
+
+Closed shell bugs that the current vocabulary cannot claim. Each names the step it needs and where the
+signal would come from.
+
+- **core#558, Recent shows "Filtered out N logs due to entities being deleted".** The Recent scenario of
+  `browse/browse-my-stuff.feature` would claim that the feed does not show the text. `the current view should
+  show the text {string}` has no negative form, and `{string} text should be hidden` matches whole text only,
+  so it could not fail on "Filtered out 52 logs ...". Needed: `the current view should not show the text
+  {string}` (the same `grok.shell.v.root.innerText` read, negated).
+- **core#557, Recent pushes the feed below the calendar.** A layout claim: the activity feed starts inside
+  the view's first screen, next to the calendar, not under it. Needed: a reading of the RecentActivity view
+  (feed and calendar rectangles), or `{element} should be inside the window` with a `recent feed` element
+  (`recent_activity_view.dart`).
+- **core#754, a top-menu item's tooltip covers the menus in a narrow window.** `the window is {int} by {int}
+  px` sets the width, but nothing compares the tooltip's rectangle with the open menus. Needed: `the tooltip
+  should not overlap the open menu` (tooltip and menu `getBoundingClientRect`, `tooltip.dart` /
+  `menu.dart:244`).
+- **core#956, Chem and Bio missing from the top menu in a narrow window.** Possible with the current
+  steps (`the window is {int} by {int} px`, then `the top menu should list:` on a molecule table, with the
+  Tutorials, Browse and Context panels open), but the menus belong to Chem and Bio, so the claim goes in their
+  features (Bio `menu/top-menu.feature`), not in UsageAnalysis. Whether `the top menu should list:` follows
+  a group moved under the overflow button (`Menu.updateOverflow`) needs checking first.

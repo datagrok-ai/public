@@ -41,3 +41,11 @@ file; what it holds is the layout API's test) and `molecule-categories.feature`.
     And the "blank cells" reading of trellis plot viewer should be 0
     And trellis plot viewer should report no error
   ```
+
+## Closed bugs round of 5 Nov 2026
+
+- **The tab drop preview highlights the target tab container (core#714).** While a viewer is dragged over
+  the centre item of a container that already holds tabs, dock-spawn draws its drop preview; the preview is a
+  bare element with no name, and nothing reports its box, so a feature cannot say it covers the tab container
+  and not the top left of the view. Needs a name on the preview (`dock-drop-preview`) and a step
+  `the dock drop preview should cover {widget}`, held before the drop in `viewers-docking.feature`.
