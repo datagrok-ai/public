@@ -866,6 +866,11 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
   downloadButton.title = 'Download the plan as a file, to send it to someone';
   exports.push(['Report (PDF)…', async () => printSheet(await reportHtml({title: defaultName(ready()!) ?? 'Plan',
     stage: 'Plan', meta: meta.peek(), content}))], ['Plan file (.pmxplan)', () => downloadButton.click()],
+  ['Copy the study protocol', () => {
+    if (!ready())
+      return;
+    return navigator.clipboard.writeText(protocolText).then(() => grok.shell.info('Study protocol copied'));
+  }],
   ['Calendar (.ics)', () => {
     const name = defaultName(ready()!) ?? 'Plan';
     download(`${name}.ics`, icsOf(name, meta.peek(), planEvents.last, planEvents.events), 'text/calendar');
