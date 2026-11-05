@@ -5,7 +5,7 @@ FROM postgres:17-alpine
 # Deleted, not overwritten: scanners keep reporting a lower-layer binary replaced in place.
 # The entrypoint finds gosu on PATH, where /usr/local/sbin comes first.
 RUN apk upgrade --no-cache && apk add --no-cache su-exec && \
-    rm /usr/local/bin/gosu && ln -s /sbin/su-exec /usr/local/sbin/gosu && \
+    rm /usr/local/bin/gosu && mkdir -p /usr/local/sbin && ln -s /sbin/su-exec /usr/local/sbin/gosu && \
     gosu postgres true
 
 ENV POSTGRES_PASSWORD datagrok
