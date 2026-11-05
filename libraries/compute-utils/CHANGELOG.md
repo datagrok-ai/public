@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Export: Fixed a failing Excel report rejecting with "Format is not supported" instead of its own error
 * Removed the unused root exports `getFuncCallDefaultFilename`, `delay`, `formatNumber`, `scalarsToSheet` and `getInputsHidden`
 * Export: Float inputs without a format export with the input form's default (`G7`), whether or not a form for the function was shown

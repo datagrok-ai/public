@@ -33,6 +33,9 @@
     "uuid": "^11.1.1",
     "wu": "catalog:"
   },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
   "devDependencies": {
     "@datagrok-libraries/codegen-async-to-sync": "workspace:^",
     "@types/lodash.isequal": "^4.5.8"
