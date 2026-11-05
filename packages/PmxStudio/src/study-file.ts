@@ -7,6 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
 import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
+import {StudyMeta, metaOf, parseMeta, setMetaOn} from './study-meta';
 
 export const STUDY_EXT = 'pmxstudy';
 const FORMAT = 'pmx-study';
@@ -16,6 +17,17 @@ export const LOG_TAG = 'pmx.log';
 /** The name of the table's body weight column, and the protocol's limits ({humane, weightLimit}). */
 export const WEIGHT_TAG = 'pmx.weight';
 export const LIMITS_TAG = 'pmx.limits';
+/** The marks, visible columns of the study table (study-table.ts sets them): ticked in Excluded, out of PMX Studio's
+ *  analysis (the row stays); ticked in Flagged, to look at; why, in Mark reason. */
+export const EXCLUDED = 'Excluded';
+export const FLAGGED = 'Flagged';
+export const MARK_REASON = 'Mark reason';
+
+/** Whether a mark column is ticked in a row (a bool column, or a file's own text: true, yes, y, 1, x). */
+export function ticked(col: DG.Column | null | undefined, i: number): boolean {
+  const v = col?.get(i);
+  return v === true || (typeof v === 'string' && /^(true|yes|y|1|x)$/i.test(v.trim())) || v === 1;
+}
 
 export interface LogEntry {when: string, who: string, what: string}
 
@@ -28,8 +40,11 @@ export interface SavedStudy {
   humane: number | null;
   /** the % of body weight lost at which an animal is removed (older files: none) */
   weightLimit?: number | null;
-  /** `weight`: only when the study has body weights */
-  rows: {animal: string, group: string | null, day: number, volume: number | null, weight?: number | null}[];
+  /** the study's ID, owner, dates and what each group receives (older files: none) */
+  meta?: StudyMeta;
+  /** `weight`: only when the study has body weights; the marks only on marked rows */
+  rows: {animal: string, group: string | null, day: number, volume: number | null, weight?: number | null,
+    excluded?: true, flagged?: true, reason?: string}[];
   log: LogEntry[];
 }
 
@@ -60,6 +75,8 @@ export function newStudyTable(plan: SavedPlan): DG.DataFrame {
     DG.Column.float('day', 0), DG.Column.float('volume', 0)]);
   df.name = plan.name;
   df.setTag(PLAN_TAG, JSON.stringify(plan));
+  if (plan.study)
+    setMetaOn(df, plan.study);
   return df;
 }
 
@@ -73,10 +90,14 @@ export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: nu
   });
   const weightName = df.getTag(WEIGHT_TAG);
   const w = weightName ? df.col(weightName) : null;
+  const [e, f, r] = [df.col(EXCLUDED), df.col(FLAGGED), df.col(MARK_REASON)];
+  const meta = metaOf(df);
   return {format: FORMAT, version: 1, name: df.name, plan: planText ? parsePlan(planText) : null,
-    looks: df.getTag(LOOKS_TAG) ?? '', humane, weightLimit, log: logOf(df),
+    looks: df.getTag(LOOKS_TAG) ?? '', humane, weightLimit, log: logOf(df), ...meta ? {meta} : {},
     rows: Array.from({length: df.rowCount}, (_, i) => ({animal: String(a.get(i)), group: g.isNone(i) ? null : g.get(i),
-      day: d.get(i), volume: v.isNone(i) ? null : v.get(i), ...w ? {weight: w.isNone(i) ? null : w.get(i)} : {}}))};
+      day: d.get(i), volume: v.isNone(i) ? null : v.get(i), ...w ? {weight: w.isNone(i) ? null : w.get(i)} : {},
+      ...ticked(e, i) ? {excluded: true as const} : {}, ...ticked(f, i) ? {flagged: true as const} : {},
+      ...r && !r.isNone(i) && String(r.get(i)).trim() ? {reason: String(r.get(i))} : {}}))};
 }
 
 /** A study read from a file someone may have edited or sent: checked before use. */
@@ -109,6 +130,14 @@ export function tableOf(s: SavedStudy): DG.DataFrame {
     df.columns.add(DG.Column.fromFloat64Array('body_weight', Float64Array.from(s.rows, (r) => r.weight ?? NaN)));
     df.setTag(WEIGHT_TAG, 'body_weight');
   }
+  if (s.rows.some((r) => r.excluded || r.flagged || r.reason)) {
+    df.columns.add(DG.Column.fromList(DG.TYPE.BOOL, EXCLUDED, s.rows.map((r) => r.excluded === true)));
+    df.columns.add(DG.Column.fromList(DG.TYPE.BOOL, FLAGGED, s.rows.map((r) => r.flagged === true)));
+    df.columns.add(DG.Column.fromStrings(MARK_REASON, s.rows.map((r) => r.reason ?? '')));
+  }
+  const meta = parseMeta(s.meta);
+  if (meta)
+    setMetaOn(df, meta);
   df.setTag(LIMITS_TAG, JSON.stringify({humane: s.humane, weightLimit: s.weightLimit ?? null}));
   df.name = s.name;
   if (s.plan)

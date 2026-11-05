@@ -33,6 +33,7 @@ import {explore, exploreContent, StudyInputs, studyInputsOf} from './explore';
 import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {exclusionsOf, studyDataLine, tagStudy, withoutExcluded} from './study-table';
+import {metaOf, setMetaOn} from './study-meta';
 import {KM, Survival, survivalOf} from './survival';
 
 /** Analyze's panels, in order and width (twelfths): the answer, how the tumors grew, each animal, then the rest. */
@@ -855,8 +856,10 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
       const colors = colorsOf(r);
       const control = r.analysis.get('control', 0) as string;
       const arms = r.comparisons.col('arm')!.toList() as string[];
+      const df = call.getParamValue('study') as DG.DataFrame | null;
       return {name: r.analysis.name, groups: [control, ...arms].map((name) => ({name, color: colors[name]})),
-        status: `${r.analysis.get('line', 0)} · evaluated on ${dayText(r.analysis.get('evaluation_day', 0))}`};
+        status: `${r.analysis.get('line', 0)} · evaluated on ${dayText(r.analysis.get('evaluation_day', 0))}`,
+        meta: metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined};
     }), (s) => void openStage(s))]],
     path: '/analyze',
     status: computed(() => busy.value ? 'Analyzing the study…' : result.value ? result.value.analysis.name : ''),

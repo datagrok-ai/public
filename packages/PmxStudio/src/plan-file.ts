@@ -9,6 +9,7 @@ import {Arm, armsOf} from './arms-input';
 import {PlanFrames, PlanInputs, declarationOf} from './frames';
 import {PlanChecks, planChecks} from './plan-checks';
 import {finite} from './engine';
+import {StudyMeta, parseMeta} from './study-meta';
 
 export const PLAN_EXT = 'pmxplan';
 /** The tag of a study table that carries its plan (the plan's JSON). */
@@ -22,6 +23,8 @@ export interface SavedPlan {
   /** ISO date and the login of who saved it */
   created: string;
   author: string;
+  /** the study's ID, owner, day 0 and what each group receives (older plans: none) */
+  study?: StudyMeta;
   /** pmxPlanStudy's inputs as its form gives them, the arms as a list: Plan reopens with them */
   inputs: {[param: string]: unknown, arms: Arm[]};
   /** what Plan predicted, as it was shown */
@@ -58,15 +61,16 @@ export function powerAt(curve: PowerAt[], n: number): number | null {
 
 /** A plan from its parts: the inputs (the arms as a table or a list) and what was predicted. */
 export function savedPlan(name: string, inputs: {[param: string]: unknown},
-  predicted: SavedPlan['predicted']): SavedPlan {
+  predicted: SavedPlan['predicted'], study?: StudyMeta): SavedPlan {
   const arms = Array.isArray(inputs.arms) ? inputs.arms as Arm[] : armsOf(inputs.arms as DG.DataFrame);
   return {format: FORMAT, version: 1, name, created: new Date().toISOString(),
-    author: grok.shell.user?.login ?? '', inputs: {...inputs, arms}, predicted};
+    author: grok.shell.user?.login ?? '', ...study ? {study} : {}, inputs: {...inputs, arms}, predicted};
 }
 
 /** The plan Plan shows: the form's inputs (`call`) and its outputs, with its predictive checks for the animals
  *  each group has (an arm that needs more than 40: 40). */
-export async function planOf(name: string, call: DG.FuncCall, f: PlanFrames): Promise<SavedPlan> {
+export async function planOf(name: string, call: DG.FuncCall, f: PlanFrames, study?: StudyMeta):
+  Promise<SavedPlan> {
   const inputs = Object.fromEntries(call.func.inputs
     .filter((p) => p.name !== 'compareSchedules' && p.name !== 'detectableEffect')
     .map((p) => [p.name, call.getParamValue(p.name)]));
@@ -88,7 +92,7 @@ export async function planOf(name: string, call: DG.FuncCall, f: PlanFrames): Pr
       n: arm.n ?? 40}))});
   return savedPlan(name, inputs, {line: v('line'), endpoint: v('endpoint'), vRand: v('v_rand'),
     studyEnd: v('study_end'), endpointDay: v('endpoint_day'), durationQ10: v('duration_q10'),
-    durationQ90: n('duration_q90'), nControl: n('n_control'), arms, checks});
+    durationQ90: n('duration_q90'), nControl: n('n_control'), arms, checks}, study);
 }
 
 /** A plan read from a file someone may have edited or sent: checked before use. */
@@ -115,6 +119,11 @@ export function parsePlan(text: string): SavedPlan {
     p.inputs && typeof p.inputs === 'object';
   if (!ok)
     throw new Error('The plan file is damaged: save it again from Plan');
+  const study = parseMeta(p.study);
+  if (study)
+    p.study = study;
+  else
+    delete p.study;
   return p as SavedPlan;
 }
 

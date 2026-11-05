@@ -16,23 +16,14 @@ import {DEFAULT_RULES, Finding, OutlierRules, RulesSource, canEditLabRules, find
   saveLabRules, saveUserRules, userRules} from './outlier-rules';
 import {StudyInputs as StudyNames} from './explore';
 import {ROLES, WEIGHT} from './open-study';
-import {addLog} from './study-file';
+import {EXCLUDED, FLAGGED, MARK_REASON, addLog, ticked} from './study-file';
 
 /** The columns' roles of a study table, as JSON: what makes a table a study (detectors.js reads it too). */
 export const STUDY_TAG = 'pmx.study';
-/** The marks, visible columns of the study table (created on first use): ticked in Excluded, out of PMX Studio's
- *  analysis and forecasts (the row stays in the table); ticked in Flagged, to look at; why, in Mark reason. A tick
- *  typed straight into the grid counts as well, and so does a study file's own Excluded column (true, yes, 1, x). */
-export const EXCLUDED = 'Excluded';
-export const FLAGGED = 'Flagged';
-export const MARK_REASON = 'Mark reason';
+/* The marks (study-file.ts's EXCLUDED, FLAGGED, MARK_REASON) are visible columns created on first use; a tick typed
+   straight into the grid counts as well, and so does a study file's own Excluded column (true, yes, 1, x). */
+export {EXCLUDED, FLAGGED, MARK_REASON};
 export type Mark = 'flagged' | 'excluded';
-
-/** Whether a mark column is ticked in a row (a bool column, or a file's own text: true, yes, y, 1, x). */
-function ticked(col: DG.Column | null | undefined, i: number): boolean {
-  const v = col?.get(i);
-  return v === true || (typeof v === 'string' && /^(true|yes|y|1|x)$/i.test(v.trim())) || v === 1;
-}
 
 const COLORS = {finding: DG.Color.fromHtml('#fff1c2'), flagged: DG.Color.fromHtml('#ffd8a8'),
   excluded: DG.Color.fromHtml('#9aa5b1')};

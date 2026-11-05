@@ -23,7 +23,15 @@
 .pmx-head-wire.lit { background: var(--dg-accent, #2083D5); }
 .pmx-head-dot { color: var(--dg-grey-5, #717581); }
 .pmx-head-study { display: flex; align-items: center; gap: 12px; min-width: 0; overflow: hidden; white-space: nowrap; }
-.pmx-head-name { overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 40px; font-size: 15px; font-weight: 500; color: var(--dg-text-color, #4D5261); }
+.pmx-head-name {
+  overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 40px; font-size: 15px; font-weight: 500;
+  color: var(--dg-text-color, #4D5261); background: none; border: none; padding: 0; font-family: inherit;
+}
+.pmx-head-name:not(:disabled) { cursor: pointer; text-decoration: underline dotted var(--dg-grey-4, #9aa5b1); text-underline-offset: 3px; }
+.pmx-head-name:not(:disabled):hover { color: var(--dg-accent, #2083D5); }
+.pmx-head-name:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; border-radius: 3px; }
+.pmx-head-id:empty { display: none; }
+.pmx-head-id { flex: none; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--dg-grey-5, #717581); }
 .pmx-head-groups { display: flex; gap: 6px; flex: 0 1 auto; min-width: 0; overflow: hidden; }
 .pmx-head-group {
   display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; border-radius: 10px;

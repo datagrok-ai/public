@@ -117,6 +117,17 @@
 .pmx-studies { margin-top: 44px; }
 .pmx-studies h3 { margin: 0 0 10px; font-size: 15px; font-weight: 500; color: var(--dg-text-color, #4D5261); }
 .pmx-studies .u2-table tr { transition: background-color .3s var(--pmx-ease); }
+.pmx-library-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 10px; }
+.pmx-library-head h3 { margin: 0 auto 0 0; }
+.pmx-library-head .ui-input-root { margin: 0; }
+.pmx-library-head .ui-input-string input { width: 260px; max-width: 100%; }
+.pmx-library { max-height: 360px; overflow-y: auto; }
+.pmx-muted { color: var(--dg-grey-5, #717581); }
+.pmx-tag { display: inline-block; margin-right: 4px; padding: 0 6px; border-radius: 8px; font-size: 11px;
+  background: var(--dg-grey-1, #f2f3f5); color: var(--dg-grey-6, #4d5261); }
+.pmx-stage-marker { display: inline-flex; gap: 3px; }
+.pmx-stage-marker span { width: 14px; height: 4px; border-radius: 2px; background: var(--dg-border, #DBDCDF); }
+.pmx-stage-marker span.on { background: var(--dg-accent, #2083D5); }
 
 /* a file dragged over the page */
 .pmx-drop { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;

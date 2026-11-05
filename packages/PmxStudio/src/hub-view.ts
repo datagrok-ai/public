@@ -5,7 +5,7 @@ import '../css/hub.css';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {BasicTable, signal} from '@datagrok-libraries/u2';
+import {BasicTable, computed, signal} from '@datagrok-libraries/u2';
 import {ViewHost} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
@@ -14,9 +14,10 @@ import type {Stage} from './ui';
 import {NAMES, openStage, pathOf, showStage} from './stages';
 import {planView} from './plan-view';
 import {analyzeView} from './analyze-view';
-import {monitorView} from './monitor-view';
+import {monitorView, openStudyFile} from './monitor-view';
 import {newStudyTable, parseStudy, tableOf} from './study-file';
 import {PLAN_TAG, myPlans, parsePlan} from './plan-file';
+import {LibraryEntry, matches, myLibrary} from './library';
 import {Brought, OPENED_EXTS, OpenStage, bring, readFile, suggestedStage} from './open-study';
 
 /** The home view. */
@@ -197,27 +198,60 @@ function hubContent(): ViewContent {
   return {root, ribbon: [[stageStrip('home', (s) => void openStage(s))]], path: pathOf('home')};
 }
 
-/** The user's saved plans, newest first, each opening in Plan; hidden while there are none. Built with the page
- *  (the view owns the table), filled once the folder is listed. */
+/** How far a study has gone: Plan — Monitor — Analyze, the stages behind it filled. */
+function stageMarker(e: LibraryEntry): HTMLElement {
+  const marker = h('span', 'pmx-stage-marker', [1, 2, 3].map((k) => h('span', k <= e.stage ? 'on' : '')));
+  marker.title = e.stage === 1 ? 'Planned' : 'Followed in Monitor';
+  return marker;
+}
+
+/** The user's plans and studies, newest first, found by any word of their ID, name, line, compounds, owner or tags;
+ *  a plan opens in Plan, a study in Monitor. Hidden while there are none. Built with the page (the view owns the
+ *  table), filled once the folders are read. */
 function yourStudies(): HTMLElement {
-  const items = signal<DG.FileInfo[]>([]);
+  const all = signal<LibraryEntry[]>([]);
+  const query = signal('');
+  const stage = signal('All');
+  const items = computed(() => all.value.filter((e) => matches(e, query.value) &&
+    (stage.value === 'All' || (stage.value === 'Planned') === (e.stage === 1))));
   const host = h('div', 'pmx-studies pmx-rise');
   host.hidden = true;
-  void myPlans().catch(() => [] as DG.FileInfo[]).then((files) => {
-    items.value = files.sort((a, b) => (b.updatedOn?.valueOf() ?? 0) - (a.updatedOn?.valueOf() ?? 0)).slice(0, 8);
-    host.hidden = items.value.length === 0;
+  const none = h('div', 'pmx-muted', ['No study matches']);
+  const showNone = () => none.hidden = items.peek().length > 0;
+  void myLibrary().catch(() => [] as LibraryEntry[]).then((entries) => {
+    all.value = entries;
+    host.hidden = entries.length === 0;
+    showNone();
   });
-  const table = new BasicTable<DG.FileInfo>({items, keyOf: (f) => f.fullPath,
+  const search = ui.input.string('', {placeholder: 'Search: ID, line, compound, owner, tag…',
+    onValueChanged: (v) => {
+      query.value = v ?? '';
+      showNone();
+    }});
+  const stages = ui.input.choice('', {value: 'All', items: ['All', 'Planned', 'Followed'],
+    onValueChanged: (v) => {
+      stage.value = v ?? 'All';
+      showNone();
+    }});
+  const muted = (s: string) => h('span', 'pmx-muted', [s]);
+  const table = new BasicTable<LibraryEntry>({items, keyOf: (e) => e.file?.fullPath ?? e.id + e.name,
     columns: [
-      {header: 'Study', render: (f) => f.fileName.replace(/\.[^.]+$/, '')},
-      {header: 'Stage', render: () => 'Plan'},
-      {header: 'Updated', render: (f) => f.updatedOn ? f.updatedOn.format('D MMM YYYY') : ''},
+      {header: 'ID', render: (e) => muted(e.id)},
+      {header: 'Study', render: (e) => e.name},
+      {header: 'Line', render: (e) => e.line},
+      {header: 'Groups receive', render: (e) => e.compounds},
+      {header: 'Stage', render: stageMarker},
+      {header: 'Owner', render: (e) => muted(e.owner)},
+      {header: 'Updated', render: (e) => muted(e.updated ? new Date(e.updated).toLocaleDateString(undefined,
+        {day: 'numeric', month: 'short', year: 'numeric'}) : '')},
+      {header: 'Tags', render: (e) => h('span', '', e.tags.map((t) => h('span', 'pmx-tag', [t])))},
     ],
-    onRowClick: (f) => void grok.dapi.files.readAsText(f).then(async (text) =>
-      showStage('plan', await planView(parsePlan(text))))});
+    onRowClick: (e) => void (e.kind === 'plan' ? planView(parsePlan(e.text)).then((v) => showStage('plan', v)) :
+      openStudyFile(e.text)).catch((err) => grok.shell.error(String(err?.message ?? err)))});
   table.root.style.width = '100%';
   table.root.style.cursor = 'pointer';
-  host.append(h('h3', '', ['Your studies']), table.root);
+  host.append(h('div', 'pmx-library-head', [h('h3', '', ['Your studies']), search.root, stages.root]),
+    h('div', 'pmx-library', [table.root, none]));
   return host;
 }
 

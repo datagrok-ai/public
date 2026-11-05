@@ -24,6 +24,7 @@ import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseSt
 import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {emptyStudy, studyDataLine, tagStudy, withoutExcluded} from './study-table';
+import {emptyMeta, metaOf, setMetaOn, withId} from './study-meta';
 import {studyInputsOf} from './explore';
 import {tolerabilityTab} from './tolerability';
 import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, dayText, declarationPane, DECLARATION_MIN,
@@ -435,6 +436,7 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
     if (!df)
       return;
     remember();
+    setMetaOn(df, withId(metaOf(df) ?? emptyMeta()));
     void saveStudy(studyOf(df, call.getParamValue('humane') ?? null, call.getParamValue('weightLimit') ?? null))
       .then((p) => grok.shell.info(`Study saved: ${p}`), (e) => error.value = String(e?.message ?? e));
   });
@@ -525,10 +527,12 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
         return undefined;
       const colors = colorsOf(r);
       const day = cell('day').value;
-      return {name: studyTable()?.name ?? '', groups: revealed.value ?
+      const df = studyTable();
+      return {name: df?.name ?? '', groups: revealed.value ?
         Object.entries(colors).map(([name, color]) => ({name, color})) : [],
       status: [r.status.get('line', 0), day === undefined ? '' : dayText(day),
-        revealed.value ? '' : 'groups hidden'].filter((x) => x).join(' · ')};
+        revealed.value ? '' : 'groups hidden'].filter((x) => x).join(' · '),
+      meta: metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined};
     }), (s) => void openStage(s))]],
     path: '/monitor',
     status: computed(() => busy.value ? 'Forecasting the study…' : result.value ? String(status.value?.get('line', 0)) :

@@ -25,6 +25,7 @@ import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
+import {StudyMeta, emptyMeta, withId} from './study-meta';
 import {BandChart} from './band-chart';
 
 /** Where the plan's first stage is run: Monitor takes the implanted pool to randomization. */
@@ -778,6 +779,10 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     return r;
   };
   const defaultName = (r: PlanFrames) => initial?.name ?? `${r.plan.get('line', 0)} plan`;
+  // the study's details (header's name); an ID once the plan leaves Plan (saved, downloaded or followed)
+  const meta = signal<StudyMeta>(initial?.study ?? emptyMeta());
+  const stamped = () => meta.value = withId(meta.peek());
+  const planFor = (name: string, r: PlanFrames) => planOf(name, call, r, stamped());
   const saveDialog = () => {
     const r = ready();
     if (!r)
@@ -794,7 +799,7 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
           replacing = chosen;
           throw new Error(`A plan named "${chosen}" is already saved: press Save again to replace it, or rename it`);
         }
-        const path = await savePlan(await planOf(chosen, call, r));
+        const path = await savePlan(await planFor(chosen, r));
         grok.shell.info(`Plan saved: ${path}`);
       }, {text: 'Save'});
     }));
@@ -807,7 +812,7 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     if (!r)
       return;
     saving.value = true;
-    void planOf(defaultName(r), call, r).then(downloadPlan).catch((e) => error.value = String(e?.message ?? e))
+    void planFor(defaultName(r), r).then(downloadPlan).catch((e) => error.value = String(e?.message ?? e))
       .finally(() => saving.value = false);
   });
   downloadButton.title = 'Download the plan as a file, to send it to someone';
@@ -816,7 +821,7 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
     if (!r)
       return;
     saving.value = true;
-    void planOf(defaultName(r), call, r).then(followPlan).catch((e) => error.value = String(e?.message ?? e))
+    void planFor(defaultName(r), r).then(followPlan).catch((e) => error.value = String(e?.message ?? e))
       .finally(() => saving.value = false);
   });
   followButton.title = 'Start following this study in Monitor, with this plan';
@@ -837,7 +842,7 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
       const arms = r.armResults.col('arm')!.toList() as string[];
       const colors = armColors(arms);
       return {name: defaultName(r), groups: ['Control', ...arms].map((name) => ({name, color: colors[name]})),
-        status: `${r.plan.get('line', 0)} · planned`};
+        status: `${r.plan.get('line', 0)} · planned`, meta: meta.value, setMeta: (m) => meta.value = m};
     }), (s) => void openStage(s))], [saveButton, downloadButton, followButton]],
     path: '/plan',
     status: computed(() => busy.value ? 'Designing the study…' : result.value ? result.value.plan.name : ''),

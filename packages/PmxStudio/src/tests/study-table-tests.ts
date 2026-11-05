@@ -4,6 +4,9 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {DEFAULT_RULES, findOutliers, StudyColumns} from '../outlier-rules';
 import {EXCLUDED, FLAGGED, MARK_REASON, appendPasted, emptyStudy, exclusionsOf, mark, withoutExcluded}
   from '../study-table';
+import {parseStudy, studyOf, tableOf} from '../study-file';
+import {emptyMeta, metaOf, parseMeta, setMetaOn} from '../study-meta';
+import {entryOf, libraryOf, matches} from '../library';
 
 /** Six animals of one group on days 0, 3 and 7; M4's day 7 a caliper typo (2400 for ~240), M1 losing weight. */
 function study(): StudyColumns {
@@ -90,5 +93,30 @@ category('Study table', () => {
     expect([...df.col(EXCLUDED)!.toList(), ...df.col(FLAGGED)!.toList()].every((v) => !v), true);
     expect(df.rowCount, 3, 'nothing deleted');
     expect(JSON.parse(df.getTag('pmx.log') || '[]').length, 3);
+  });
+
+  test('a saved study keeps its marks and its details', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1', 'M2']),
+      DG.Column.fromStrings('group', ['A', 'B']), DG.Column.fromList('double', 'day', [0, 0]),
+      DG.Column.fromList('double', 'volume', [100, 90])]);
+    mark(df, [1], 'excluded', 'misread', 'M2 on day 0');
+    const meta = {...emptyMeta(), id: 'PMX-2026-007', start: '2026-11-02', tags: ['IO'],
+      groups: [{group: 'B', compound: 'anti-PD-1', dose: 10, unit: 'mg/kg', route: 'i.p.', schedule: 'Q3D×4'}]};
+    setMetaOn(df, meta);
+    const back = tableOf(parseStudy(JSON.stringify(studyOf(df, null))));
+    expect(back.col(EXCLUDED)!.toList().join(','), 'false,true');
+    expect(back.get(MARK_REASON, 1), 'misread');
+    expect(withoutExcluded({study: back}).study.rowCount, 1);
+    expect(JSON.stringify(metaOf(back)), JSON.stringify(meta));
+    // the library: the study and a plan with the same ID are one entry, at the study's stage; found by a compound
+    const study = entryOf(JSON.stringify(studyOf(df, null)), 2)!;
+    const plan = {...study, kind: 'plan' as const, stage: 1 as const, updated: 3};
+    const listed = libraryOf([plan, study, null]);
+    expect(listed.length, 1);
+    expect(listed[0].kind, 'study');
+    expect(matches(listed[0], 'pd-1 pmx-2026'), true);
+    expect(matches(listed[0], 'cisplatin'), false);
+    expect(parseMeta({id: 3, start: '2 Nov', groups: [{group: 'A', dose: 'ten'}]})!.groups[0].dose, null,
+      'a damaged field is dropped, not trusted');
   });
 });
