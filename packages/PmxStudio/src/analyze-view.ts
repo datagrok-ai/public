@@ -717,7 +717,8 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
     const rows = Array.from({length: a.rowCount}, (_, i) => ({'Animal': String(a.get('animal', i)),
       'Group': a.get('group', i) as string, 'Best response (%)': a.get('best_response', i) as number | null,
       'mRECIST': a.get('mrecist', i) as string | null}))
-      .filter((x) => x['Group'] !== control && x['Best response (%)'] !== null && x['mRECIST'] !== null);
+      // a missing response may come back as null, undefined or NaN: only numbers make a bar
+      .filter((x) => x['Group'] !== control && Number.isFinite(x['Best response (%)']) && !!x['mRECIST']);
     if (rows.length === 0)
       return undefined;
     const df = DG.DataFrame.fromObjects(rows)!;

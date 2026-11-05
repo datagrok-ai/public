@@ -28,7 +28,7 @@ import {followPlan} from './monitor-view';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
 import {DayNote, StudyMeta, dateOf, dateText, dosingDays, emptyMeta, noteDialog, startFrom, weekdayOf, withId}
   from './study-meta';
-import {LineInput, lastLine} from './line-input';
+import {LineInput, lastLine, tumorsOf} from './line-input';
 import {BandChart} from './band-chart';
 
 /** Where the plan's first stage is run: Monitor takes the implanted pool to randomization. */
@@ -306,9 +306,9 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
   // captions above every field: the panel reads top to bottom, left-aligned, at any width
   // no Run: each change replans once the changes stop
   const auto = autoRun(() => form, () => replan());
+  const lineInput = new LineInput({label: 'Tumor model'});
   const form = funcForm(call, {layout: 'tall',
-    overrides: {arms: {input: armsInput}, correction: {input: correction},
-      line: {input: new LineInput({label: 'Tumor model'})}},
+    overrides: {arms: {input: armsInput}, correction: {input: correction}, line: {input: lineInput}},
     onInputChanged: () => {
       stale.value = result.peek() !== undefined;
       auto.changed();
@@ -603,8 +603,9 @@ function planContent(self: ViewHost, initial?: SavedPlan): ViewContent {
       therapy: String(ar.get('therapy', i)).toLowerCase(), effect: `${ar.get('metric', i) === 'TC' ? 'T/C' : 'TGI'} ` +
         `${num(ar.get('effect', i))}%`, n: finite(ar.get('n', i)), power: ar.get('assurance', i)}));
     const plan: {[row: string]: string} = {
-      'Design': `${v('line')} syngeneic tumors; ${k + 1} groups: a control and ` + armRows.map((x) =>
-        `${x.name} (${x.therapy}, expected ${x.effect})`).join(', ') + '; each treated group compared with the control',
+      'Design': `${tumorsOf(v('line'), lineInput.models.value?.[v('line')])}; ${k + 1} groups: a control and ` +
+        armRows.map((x) => `${x.name} (${x.therapy}, expected ${x.effect})`).join(', ') +
+        '; each treated group compared with the control',
       'Sample size': armRows.map((x) => x.n === null ? `${x.name}: more than 40 analyzable animals per group ` +
         `would be needed for ${x.effect}` : `${x.name}: ${x.n} analyzable animals per group give ${pct(x.power)} ` +
         `power for ${x.effect}`).join('; ') + `, two-sided α = ${num(v('alpha'), 2)}. ` +

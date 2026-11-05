@@ -67,7 +67,7 @@ export function dateOf(start: string | null, day: number): Date | null {
 }
 
 /** A date as the calendar writes it: 12 Nov (and the year when `year`). */
-export const dateText = (d: Date, year = false) => d.toLocaleDateString(undefined,
+export const dateText = (d: Date, year = false) => d.toLocaleDateString('en-GB',
   {day: 'numeric', month: 'short', ...year ? {year: 'numeric'} : {}, timeZone: 'UTC'});
 
 /** The weekday of a date, Monday 0 (as Plan's weekdays). */

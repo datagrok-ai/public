@@ -242,7 +242,7 @@ function yourStudies(): HTMLElement {
       {header: 'Groups receive', render: (e) => e.compounds},
       {header: 'Stage', render: stageMarker},
       {header: 'Owner', render: (e) => muted(e.owner)},
-      {header: 'Updated', render: (e) => muted(e.updated ? new Date(e.updated).toLocaleDateString(undefined,
+      {header: 'Updated', render: (e) => muted(e.updated ? new Date(e.updated).toLocaleDateString('en-GB',
         {day: 'numeric', month: 'short', year: 'numeric'}) : '')},
       {header: 'Tags', render: (e) => h('span', '', e.tags.map((t) => h('span', 'pmx-tag', [t])))},
     ],

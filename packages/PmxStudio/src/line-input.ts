@@ -3,6 +3,7 @@
    papers and animals its growth prior comes from. The value is the line's name, as the functions' `line` param. */
 import * as grok from 'datagrok-api/grok';
 import {ButtonGroup, div, Input, InputOptions, Reason, signal, span} from '@datagrok-libraries/u2';
+import type {ReadonlySignal} from '@datagrok-libraries/u2';
 
 import {TumorModel, tumorModels} from './priors';
 
@@ -32,8 +33,15 @@ const LAST = 'lastLine';
 /** The model the user picked last (Plan opens on it), or null. */
 export const lastLine = (): string | null => grok.userSettings.getValue('PmxStudio', LAST) || null;
 
+/** The tumors of `line` as a protocol names them: syngeneic tumors, or cell-line or patient-derived xenografts. */
+export const tumorsOf = (line: string, m?: TumorModel) => !m ? `${line} tumors` : m.class === 'syngeneic' ?
+  `${line} syngeneic tumors` : `${line} ${m.class === 'cdx' ? 'cell-line' : 'patient-derived'} xenografts ` +
+  `(${m.class.toUpperCase()}, ${m.tumour_type})`;
+
 export class LineInput extends Input<string | null, InputOptions<string | null>> {
   private declare _models: ReturnType<typeof signal<{[line: string]: TumorModel} | null>>;
+  /** The atlas's models, once read. */
+  get models(): ReadonlySignal<{[line: string]: TumorModel} | null | undefined> {return this._models;}
 
   constructor(options: InputOptions<string | null>) {
     super(options, 'MC38');
@@ -118,6 +126,8 @@ export class LineInput extends Input<string | null, InputOptions<string | null>>
         panel.hidden = !open.value;
         field.setAttribute('aria-expanded', String(open.value));
         if (open.value) {
+          search.value = '';
+          query.value = '';
           active.value = this.peek();
           search.focus();
         }

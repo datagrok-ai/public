@@ -1,7 +1,7 @@
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {tumorModels} from '../priors';
-import {LineInput, modelsFound} from '../line-input';
+import {LineInput, modelsFound, tumorsOf} from '../line-input';
 
 category('Tumor models', () => {
   test('the atlas’s models are found by class, name, tumor type or organ', async () => {
@@ -14,6 +14,9 @@ category('Tumor models', () => {
     expect(lines(null, 'pancrea').join(','), 'Panc02,PDX-PDAC');
     expect(lines(null, 'lung').includes('PDX-NSCLC'), true);
     expect(lines('cdx', '').length, 0);
+    expect(tumorsOf('MC38', models['MC38']), 'MC38 syngeneic tumors', 'the protocol names the model');
+    expect(tumorsOf('PDX-PDAC', models['PDX-PDAC']).startsWith('PDX-PDAC patient-derived xenografts (PDX'), true);
+    expect(tumorsOf('X'), 'X tumors');
   });
 
   test('the picker holds a line name, as the functions take it', async () => {
