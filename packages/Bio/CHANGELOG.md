@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Docker: Moved the PepSeA image onto Wolfi with mafft 7.525 built from source and no pip in the final image; it reports no known vulnerabilities (was 2797)
 
 ## 2.28.6 (2026-11-03)
