@@ -35,7 +35,7 @@ ENV CHEM_PORT=45001
 ENV CHEM_NUM_CORES=4
 
 COPY --chown=$CHEM_USER:$CHEM_USER . .
-RUN python -c "import rdkit.Chem.Draw, app"
+RUN python -c "import app"
 EXPOSE 45001
 
 ENTRYPOINT gunicorn app:app \
