@@ -33,7 +33,7 @@ import {BandChart} from './band-chart';
 import {explore, exploreContent, StudyInputs, studyInputsOf} from './explore';
 import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
-import {exclusionsOf, studyDataLine, tagStudy, withoutExcluded} from './study-table';
+import {exclusionsOf, studyDataLine, studyMenu, studyOf, tagStudy, withoutExcluded} from './study-table';
 import {metaOf, setMetaOn} from './study-meta';
 import {Exports, download, exportMenu, reportHtml} from './report';
 import {printSheet} from './sheet';
@@ -688,6 +688,11 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
           mark(a.animal);
         };
         row.addEventListener('click', pick);
+        row.addEventListener('contextmenu', (ev) => {
+          ev.preventDefault();
+          studyMenu(studyOf(call.getParamValue('study') as DG.DataFrame | null), 'animal', a.animal,
+            {causedBy: ev}, [['Show against its twin', pick]]);
+        });
         row.addEventListener('keydown', (ev) => {
           if (ev.key === 'Enter' || ev.key === ' ') {
             ev.preventDefault();
@@ -932,7 +937,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       const df = call.getParamValue('study') as DG.DataFrame | null;
       return {name: r.analysis.name, groups: [control, ...arms].map((name) => ({name, color: colors[name]})),
         status: `${r.analysis.get('line', 0)} · evaluated on ${dayText(r.analysis.get('evaluation_day', 0))}`,
-        meta: metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined};
+        meta: metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined,
+        groupMenu: (g, e) => studyMenu(studyOf(df), 'group', g, {causedBy: e})};
     }), (s) => void openStage(s))]],
     path: '/analyze',
     status: computed(() => busy.value ? 'Analyzing the study…' : result.value ? result.value.analysis.name : ''),

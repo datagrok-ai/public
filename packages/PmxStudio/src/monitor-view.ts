@@ -24,7 +24,7 @@ import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf,
   restoreFields, saveStudy, studyOf, tableOf} from './study-file';
 import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
-import {emptyStudy, studyDataLine, tagStudy, withoutExcluded} from './study-table';
+import {emptyStudy, studyDataLine, studyMenu, studyOf as studyNamesOf, tagStudy, withoutExcluded} from './study-table';
 import {StudyMeta, dateOf, dateText, emptyMeta, metaOf, setMetaOn, weekdayOf, withId} from './study-meta';
 import {CAL, DayLook, dayActions, dayToday, icsOf, mark, marked, weeksGrid} from './calendar';
 import {LineInput} from './line-input';
@@ -252,6 +252,14 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
 
   // Today
   const attention = div([], 'pmx-monitor-attention');
+  // an animal's menu on its row (its name, the first cell)
+  attention.addEventListener('contextmenu', (e) => {
+    const name = (e.target as HTMLElement).closest('.u2-table-row')?.querySelector('td')?.textContent?.trim();
+    if (!name)
+      return;
+    e.preventDefault();
+    studyMenu(studyNamesOf(studyTable()), 'animal', name, {causedBy: e});
+  });
   const sheet = div([], 'pmx-monitor-sheet');
   const noteBox = notesBox();
   // each value as it goes in, against what the last run expected: no run needed to hear "measure again"
@@ -723,7 +731,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
         setMeta(m);
         if (m.blinded !== was)
           record(m.blinded ? 'Blinded entry on' : 'Blinded entry off: the groups are shown');
-      } : undefined};
+      } : undefined, groupMenu: (g, e) => studyMenu(studyNamesOf(df), 'group', g, {causedBy: e})};
     }), (s) => void openStage(s))]],
     path: '/monitor',
     status: computed(() => busy.value ? 'Forecasting the study…' : result.value ? String(status.value?.get('line', 0)) :

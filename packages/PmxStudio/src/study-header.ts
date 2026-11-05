@@ -16,6 +16,8 @@ export interface StudyIdentity {
   status?: string;
   meta?: StudyMeta | null;
   setMeta?: (m: StudyMeta) => void;
+  /** a group's right-click menu */
+  groupMenu?: (group: string, e: MouseEvent) => void;
 }
 
 /** The header of `stage`'s view: `identity` once the view knows its study, `open` brings another stage up, `owner`
@@ -55,6 +57,14 @@ export function studyHeader(owner: {effect: (fn: () => void) => unknown}, stage:
       const box = span('', 'pmx-head-swatch');
       box.style.background = g.color;
       chip.append(box, span(g.name));
+      if (s?.groupMenu) {
+        chip.addEventListener('contextmenu', (e) => {
+          // the ribbon has a menu of its own
+          e.preventDefault();
+          e.stopPropagation();
+          s.groupMenu!(g.name, e);
+        });
+      }
       return chip;
     }));
     status.textContent = s?.status ?? '';

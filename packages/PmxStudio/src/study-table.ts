@@ -15,6 +15,7 @@ import {button, divH, span} from '@datagrok-libraries/u2';
 import {DEFAULT_RULES, Finding, OutlierRules, RulesSource, canEditLabRules, findOutliers, labRules, rulesInForce,
   saveLabRules, saveUserRules, userRules} from './outlier-rules';
 import {StudyInputs as StudyNames} from './explore';
+import type {MenuAt} from './calendar';
 import {ROLES, WEIGHT} from './open-study';
 import {EXCLUDED, FLAGGED, MARK_REASON, addLog, groupsShown, ticked} from './study-file';
 import {metaOf} from './study-meta';
@@ -127,6 +128,29 @@ export function mark(df: DG.DataFrame, rows: number[], state: Mark | null, reaso
   const how = !metaOf(df)?.blinded ? '' : groupsShown(df) ? ' (groups revealed)' : ' (blinded)';
   addLog(df, (state ? `${state === 'excluded' ? 'Excluded' : 'Flagged'} ${what}${reason ? `: ${reason}` : ''}` :
     `Cleared the mark on ${what}`) + how);
+}
+
+/** An animal's or a group's menu (a right click on it anywhere in a stage): `extra`, the stage's own items, then
+ *  its rows in the study table selected, flagged, excluded or cleared, and its name copied. */
+export function studyMenu(n: StudyNames | null, role: 'animal' | 'group', value: string, at: MenuAt,
+  extra: [string, () => void][] = []): void {
+  const popup = DG.Menu.popup();
+  for (const [name, run] of extra)
+    popup.item(name, run);
+  const col = n ? n.study.col(n[role]) : null;
+  if (n && col) {
+    const rows = Array.from({length: n.study.rowCount}, (_, i) => i).filter((i) => String(col.get(i)) === value);
+    const what = `${role} ${value} (${rows.length} row${rows.length === 1 ? '' : 's'})`;
+    const these = new Set(rows);
+    popup.item('Select its rows', () => n.study.selection.init((i) => these.has(i)));
+    popup.item(`Flag ${role === 'animal' ? 'this animal' : 'every animal of the group'}…`,
+      () => markRows(n.study, rows, 'flag', what));
+    popup.item(`Exclude ${role === 'animal' ? 'this animal' : 'the group'} from the analysis…`,
+      () => markRows(n.study, rows, 'exclude', what));
+    popup.item('Clear its marks', () => markRows(n.study, rows, 'clear', what));
+  }
+  popup.item('Copy the name', () => void navigator.clipboard.writeText(value));
+  popup.show(at);
 }
 
 /** A context menu's item (detectors.js): flags or excludes the rows, asking why (required to exclude), or clears
