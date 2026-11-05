@@ -1,79 +1,56 @@
-FROM ubuntu:20.04
-ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get -y upgrade \
-  && apt-get install -y \
-    apt-utils \
-    unzip \
-    tar \
-    curl \
-    xz-utils \
-    ocl-icd-libopencl1 \
-    opencl-headers \
-    clinfo \
-    libgomp1 \
-    wget \
-    bzip2 \
-    && rm -rf /var/lib/apt/lists/*
+FROM cgr.dev/chainguard/wolfi-base AS build
+RUN apk add --no-cache build-base opencl-dev curl unzip
+WORKDIR /build
+
+# AutoDockTools 1.5.7 ported to Python 3 (MolKit, PyBabel, mglutil): prepare_ligand4 / prepare_receptor4
+ARG ADT_PY3_SHA=a62a5d98116f1590183b58a9ad732b997cf2579c
+RUN curl -fsSL https://github.com/Valdes-Tresanco-MS/AutoDockTools_py3/archive/${ADT_PY3_SHA}.tar.gz | tar -xz \
+    && mkdir -p /out/adt \
+    && for p in AutoDockTools MolKit PyBabel mglutil; do cp -r AutoDockTools_py3-${ADT_PY3_SHA}/$p /out/adt/; done
+
+ARG CLINFO_TAG=3.0.25.02.14
+RUN curl -fsSL https://github.com/Oblomov/clinfo/archive/refs/tags/${CLINFO_TAG}.tar.gz | tar -xz \
+    && make -C clinfo-${CLINFO_TAG} \
+    && install -D -m 755 clinfo-${CLINFO_TAG}/clinfo /out/root/usr/local/bin/clinfo
+
+RUN curl -fsSL https://autodock.scripps.edu/wp-content/uploads/sites/56/2021/10/autodocksuite-4.2.6-x86_64Linux2.tar -o autodocksuite.tar \
+    && echo "d9f8bada0b0618da1b2c9e58aa65188bbde3ef5c36d278b7b8657169502cbb03  autodocksuite.tar" | sha256sum -c - \
+    && tar -xf autodocksuite.tar x86_64Linux2/autogrid4 \
+    && install -D -m 755 x86_64Linux2/autogrid4 /out/root/usr/local/x86_64Linux2/autogrid4 \
+    && curl -fsSL https://github.com/ccsb-scripps/AutoDock-GPU/releases/download/v1.5.3/adgpu-v1.5.3_linux_ocl_128wi -o autodock-gpu \
+    && echo "05a80fd91016d8c4e7b9e9072bc3a2071a83e16427066329f4e88a88a2fee25d  autodock-gpu" | sha256sum -c - \
+    && install -D -m 755 autodock-gpu /out/root/opt/autodock-gpu
+
+# Precomputed grids of the demo targets
+RUN s3=https://datagrok-data.s3.us-east-2.amazonaws.com && mkdir -p /out/root/app \
+    && for key in $(curl -fsSL "$s3/?list-type=2&prefix=autodock/" | grep -o '<Key>[^<]*\.zip</Key>' | sed -e 's/<Key>//' -e 's/<\/Key>//'); do \
+         curl -fsSL "$s3/$key" -o grids.zip && unzip -oq grids.zip -x '__MACOSX/*' '*.DS_Store' -d /out/root/app && rm grids.zip; \
+       done \
+    && ls /out/root/app
+
+FROM cgr.dev/chainguard/wolfi-base
+RUN apk upgrade --no-cache \
+    && apk add --no-cache python-3.13 py3.13-flask py3.13-numpy-2.4 libstdc++ libgcc libgomp opencl \
+    && rm -f /usr/bin/clinfo
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
-ENV NVIDIA_VISIBLE_DEVICES all
-ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
-RUN apt-get update && apt-get install -y clinfo
+COPY --from=build /out/adt/ /usr/lib/python3.13/site-packages/
+COPY --from=build /out/root/ /
+RUN python3 -m compileall -q /usr/lib/python3.13/site-packages/AutoDockTools /usr/lib/python3.13/site-packages/MolKit \
+      /usr/lib/python3.13/site-packages/PyBabel /usr/lib/python3.13/site-packages/mglutil > /dev/null 2>&1; \
+    for b in /opt/autodock-gpu /usr/local/x86_64Linux2/autogrid4 /usr/local/bin/clinfo; do \
+      if /lib64/ld-linux-x86-64.so.2 --list $b | grep 'not found'; then exit 1; fi; \
+    done
 
 WORKDIR /app
-
-RUN wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O /tmp/miniforge.sh \
-    && /bin/bash /tmp/miniforge.sh -b -p /usr/local/miniforge \
-    && rm /tmp/miniforge.sh
-
-ENV PATH="/usr/local/miniforge/bin:$PATH"
-
-RUN conda install -c conda-forge mamba
-
-RUN mamba create -n autodock python=2.7
-RUN echo "source activate autodock" > ~/.bashrc
-ENV PATH /usr/local/miniforge/envs/autodock/bin:$PATH
-RUN mamba install -n autodock -c insilichem autodocktools-prepare
-
-RUN wget https://autodock.scripps.edu/wp-content/uploads/sites/56/2021/10/autodocksuite-4.2.6-x86_64Linux2.tar -O /tmp/autodocksuite.tar \
-    && tar -xvf /tmp/autodocksuite.tar -C /usr/local/
-
-RUN wget https://github.com/ccsb-scripps/AutoDock-GPU/releases/download/v1.5.3/adgpu-v1.5.3_linux_ocl_128wi -O /opt/autodock-gpu
-RUN chmod +x /opt/autodock-gpu
-
-RUN curl -LJO https://raw.githubusercontent.com/MolecularFlipbook/FlipbookApp/master/mfb/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_dpf4.py \
-    && mv prepare_dpf4.py /usr/local/bin/ \
-    && chmod +x /usr/local/bin/prepare_dpf4.py
-
-RUN pip install Flask
-
-RUN pip install futures
-
-RUN mamba install -n base -c conda-forge awscli -y && \
-    mamba run -n base aws s3 cp s3://datagrok-data/autodock /app --no-sign-request --recursive --region us-east-2 && \
-    find /app -name '*.zip' -exec unzip -o {} -d /app \; && \
-    rm -rf /app/*.zip && \
-    mamba remove -n base awscli -y && \
-    mamba clean -afy
-
-# VEX: the runtime autodock env is Python 2.7 — its flask/werkzeug/jinja2/numpy have no
-# py2.7 upgrades and are tracked in VEX. Its install-only pip/setuptools/wheel/certifi are
-# removed, as are the py2.7 (and base) ensurepip bootstrap wheels; the floors of the
-# build-only base (py3.14) env, where the leftover awscli deps live, are raised; its pip is
-# removed too, as the vendored copies it ships (urllib3, msgpack, setuptools) are flagged.
-RUN mamba remove -n autodock --force -y pip setuptools wheel certifi && \
-    python -c "import flask, concurrent.futures; from MolKit import Read; from AutoDockTools.MoleculePreparation import AD4LigandPreparation, AD4ReceptorPreparation" && \
-    rm -f /usr/local/miniforge/envs/autodock/lib/python2.7/ensurepip/_bundled/*.whl \
-          /usr/local/miniforge/lib/python3.*/ensurepip/_bundled/*.whl && \
-    /usr/local/miniforge/bin/pip install --no-cache-dir --upgrade 'urllib3>=2.8' 'msgpack>=1.2.3' && \
-    mamba install -n base -c conda-forge -y 'py-rattler>=0.28.1' && \
-    mamba remove -n base --force -y pip && \
-    mamba clean -afy
-
 COPY autodock.py /app/autodock.py
+
+RUN --mount=type=bind,source=selftest,target=/selftest python3 /selftest/selftest.py
 
 EXPOSE 8000
 
-ENTRYPOINT ["python", "autodock.py", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["python3", "autodock.py", "--host", "0.0.0.0", "--port", "8000"]

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Docker: autodock moved from Ubuntu 20.04 and Python 2.7 MGLTools to Wolfi with Python 3.13 and the Python 3 port of AutoDockTools, keeping only what runs at runtime (zero CVEs)
 * Docker: autodock — raised build-only base env floors (urllib3>=2.8, msgpack>=1.2.3, py-rattler>=0.28.1 for the zip crate CVE) and removed the base env's pip with its vendored urllib3/msgpack/setuptools (VEX)
 
 ## 1.3.4 (2026-11-03)

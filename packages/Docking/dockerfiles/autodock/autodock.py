@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 import multiprocessing
 import signal
+import sys
 
 logging_level = logging.DEBUG
 logging.basicConfig(level=logging_level)
@@ -20,16 +21,12 @@ processes = {}
 
 def prepare_autogrid_config(folder_path, receptor_basename, autodock_gpf):
     config_path = "{}/{}.gpf".format(folder_path, receptor_basename)
-    if isinstance(autodock_gpf, unicode):
-        autodock_gpf = autodock_gpf.encode("utf-8")
     with open(config_path, "w") as config_file:
         config_file.write(autodock_gpf)
     return config_path
 
 def calculate_hash(data):
-    if isinstance(data, unicode):
-        data = data.encode('utf-8')
-    return hashlib.sha256(data).hexdigest()
+    return hashlib.sha256(data.encode('utf-8')).hexdigest()
 
 
 def run_process(command, folder_path, shell=False):
@@ -70,7 +67,7 @@ def run_docking(receptor_name, folder_path, autodock_gpf, ligand_value, ligand_f
         ligand_file.write(ligand_value)
 
     if 'pdbqt' not in ligand_format:
-        subprocess.call(['prepare_ligand4.py', '-F', '-l', ligand_path], cwd=folder_path)
+        subprocess.call([sys.executable, '-m', 'AutoDockTools.Utilities24.prepare_ligand4', '-F', '-l', ligand_path], cwd=folder_path)
 
     autodock_command = [
         '/opt/autodock-gpu',
@@ -89,7 +86,7 @@ def prepare_grids(folder_path, receptor_path, receptor_name, receptor_value, aut
             receptor_file.write(receptor_value)
 
         if 'pdbqt' not in receptor_path:
-            subprocess.call(['prepare_receptor4.py', '-r', receptor_path], cwd=folder_path)
+            subprocess.call([sys.executable, '-m', 'AutoDockTools.Utilities24.prepare_receptor4', '-r', receptor_path], cwd=folder_path)
 
         autogrid_config_path = prepare_autogrid_config(folder_path, receptor_name, autodock_gpf)
         subprocess_command = [
@@ -155,7 +152,7 @@ def check_opencl():
         process = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         output, _ = process.communicate()
         if process.returncode == 0:
-            return jsonify({'success': True, 'output': output})
+            return jsonify({'success': True, 'output': output.decode('utf-8', 'replace')})
         else:
             return jsonify({'success': False, 'error': 'clinfo execution failed'})
     except Exception as e:
@@ -219,9 +216,11 @@ def dock_ligand():
     Route to start docking in a separate process and return the result.
     """
     raw_data = request.data
-    result_queue = multiprocessing.Queue()
+    # the child reads the Flask request context, so it must be forked
+    mp = multiprocessing.get_context('fork')
+    result_queue = mp.Queue()
 
-    process = multiprocessing.Process(target=dock_ligand_process, args=(raw_data, result_queue))
+    process = mp.Process(target=dock_ligand_process, args=(raw_data, result_queue))
     process.start()
     processes[process.pid] = process
 
