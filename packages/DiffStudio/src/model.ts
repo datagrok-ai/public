@@ -26,7 +26,6 @@ export class Model {
     this.info = modelInfo.info;
   }
 
-  /** Show the model info in the help panel */
   private showHelpPanel(): void {
     const helpMD = ui.markdown(this.info);
     helpMD.classList.add('diff-studio-demo-app-div-md');

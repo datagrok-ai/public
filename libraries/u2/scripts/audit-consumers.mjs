@@ -11,7 +11,7 @@ const u2Root = fileURLToPath(new URL('..', import.meta.url));
 const publicRoot = join(u2Root, '..', '..');
 const baselineFile = join(u2Root, 'consumers-baseline.json');
 const ts = createRequire(import.meta.url)('typescript');
-const {INTERNAL_SELECTOR, PUBLIC_TAIL} = createRequire(join(publicRoot, 'libraries', 'eslint-plugin-u2', 'package.json'))(
+const {DIRECTIVE, INTERNAL_SELECTOR, PUBLIC_TAIL} =createRequire(join(publicRoot, 'libraries', 'eslint-plugin-u2', 'package.json'))(
   './lib/u2-imports.js');
 
 const args = process.argv.slice(2);
@@ -116,7 +116,7 @@ function commentCounts(text) {
     }
     if (t.startsWith('/*')) {
       comment++;
-      if (first && !t.startsWith('/**'))
+      if (first && !t.startsWith('/**') && !t.startsWith('/*!') && !DIRECTIVE.test(t.slice(2)))
         header++;
       if (t.startsWith('/**')) {
         let j = i;

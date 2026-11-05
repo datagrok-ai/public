@@ -10,6 +10,8 @@ const PUBLIC_TAIL = `(?!(?:${PUBLIC_CLASSES.map((c) => c.slice(3)).join('|')})(?
 const INTERNAL_SELECTOR = new RegExp(`\\.u2-${PUBLIC_TAIL}|\\[data-u2`);
 /** A u2 class name in a class list, the utility classes left out. */
 const INTERNAL_CLASS = new RegExp(`(^|\\s)u2-${PUBLIC_TAIL}`);
+/** A block comment that is a tool directive or a legal notice, not a file-header narrative. */
+const DIRECTIVE = /^[\s*]*(eslint|global|exported|istanbul|c8|@ts-|prettier|webpack|jshint|@license|copyright\b)/i;
 
 function libraryOf(source) {
   if (/^@datagrok-libraries\/ems(\/|$)/.test(source))
@@ -113,5 +115,5 @@ function valueOf(context, id) {
   return null;
 }
 
-module.exports = {DEFAULT_CONTROLS, INTERNAL_CLASS, INTERNAL_SELECTOR, PUBLIC_TAIL, U2Imports, calleeName, isFunction,
+module.exports = {DEFAULT_CONTROLS, DIRECTIVE, INTERNAL_CLASS, INTERNAL_SELECTOR, PUBLIC_TAIL, U2Imports, calleeName, isFunction,
   sourceOf, staticText, valueOf, walk};
