@@ -18,6 +18,7 @@ RUN apk upgrade --no-cache && apk add --no-cache \
 RUN python3.11 -m venv --without-pip /opt/mlflow && \
     python3.11 -m pip --python /opt/mlflow/bin/python install --no-cache-dir \
       "mlflow[extras,azure,db,gateway,genai,auth]==3.17.2" boto3 "cryptography>=50.0.0,<51" && \
+    python3.11 -m pip --python /opt/mlflow/bin/python install --no-cache-dir --no-deps "pyopenssl>=26.4.0,<27" && \
     python3.11 -m pip download --no-cache-dir --no-deps --only-binary=:all: -d /opt/python-wheels pip setuptools && \
     apk del --no-cache py3.11-pip && \
     rm -rf /usr/lib/python3.11/ensurepip
@@ -36,6 +37,8 @@ RUN git clone --depth 1 https://github.com/pyenv/pyenv.git /root/.pyenv && \
       $v/bin/python -m venv /tmp/venv-check && /tmp/venv-check/bin/python -m pip --version && rm -rf /tmp/venv-check || exit 1; \
     done && \
     mlflow --version
+
+RUN find / -xdev -iname "setuptools*" 2>/dev/null | grep -v "/setuptools/" ; grep -rls --include=PKG-INFO --include=METADATA "^Version: 70.3.0" / 2>/dev/null; true
 
 COPY run.sh run.sh
 RUN chmod +x run.sh
