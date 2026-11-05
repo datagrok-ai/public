@@ -5,7 +5,7 @@ RUN apk add --no-cache python-3.11 py3.11-pip
 
 COPY requirements.txt /tmp/requirements.txt
 RUN python3.11 -m venv --without-pip /opt/venv && \
-    python3.11 -m pip install --no-cache-dir --python /opt/venv/bin/python -r /tmp/requirements.txt
+    python3.11 -m pip --python /opt/venv/bin/python install --no-cache-dir -r /tmp/requirements.txt
 
 ENV PATH=/opt/venv/bin:$PATH
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
