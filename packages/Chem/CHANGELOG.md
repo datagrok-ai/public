@@ -22,6 +22,7 @@
 * Tests: Added the category `crux: biopolymer`
 * `Chem:drawMolecule`: Added the optional `cache` parameter (true by default): false keeps no picture or canvas in the renderer afterwards, for very large one-off drawings (Bio's full-screen molecule dialog, Chem's Enlarge dialog)
 * Rendering: One molecule renderer for every drawing (the grid, `Chem:rdKitCellRenderer`, so `drawMolecule` and the panels, the SAR Matrix): one set of caches and one subscription. `Chem:rdKitCellRenderer` made a new renderer per call, and each stayed alive through its event subscription with its canvas and pictures
+* [core#1311](https://github.com/datagrok-ai/core/issues/1311): mol2: Fixed the page hanging on a file whose atom lines have no charge column or that ends without a line break
 * [#2628](https://github.com/datagrok-ai/public/issues/2628): Substructure filter: Fixed Use as filter keeping the previous query's rows when the table was re-filtered within a second of it (e.g. after another view removed its Structure card)
 * [#2626](https://github.com/datagrok-ai/public/issues/2626): Scaffold Tree: Added a package test: the child dialog of a scaffold drawn with an explicit H opens with no warning
 * [#2628](https://github.com/datagrok-ai/public/issues/2628): Substructure filter: Added a package test: Use as filter filters after a second view removed its Structure card
