@@ -1,1 +1,1 @@
-crux-core pmx-modules-combined f30b19bb1 = spike tumor-twin-webgpu (f6475ca54 on main f329a9ab23) + spike tumor-monitor (32d155a0c); not landed: stats.tumor_twin variant webgpu, stats.tumor_monitor, stats.tumor_allocate; modules nonclinical and stats
+crux-core pmx-modules-combined 58024bc9e = spike tumor-twin-webgpu (f6475ca54 on main f329a9ab23) + spike tumor-monitor (32d155a0c) + stats.tumor_monitor variant webgpu; not landed: stats.tumor_twin / tumor_monitor variants webgpu, stats.tumor_monitor, stats.tumor_allocate; modules nonclinical and stats
