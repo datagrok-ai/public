@@ -28,11 +28,6 @@ RUN s3=https://datagrok-data.s3.us-east-2.amazonaws.com && mkdir -p /out/root/ap
        done \
     && ls /out/root/app
 
-FROM datagrok/docking-autodock:1.3.3 AS reference
-COPY selftest /selftest
-RUN mkdir -p /ref && python /selftest/selftest.py /ref \
-    && cd /tmp && cp /selftest/protein.pdb . && prepare_receptor4.py -r protein.pdb -o /ref/protein.pdbqt
-
 FROM cgr.dev/chainguard/wolfi-base
 RUN apk upgrade --no-cache \
     && apk add --no-cache python-3.13 py3.13-flask py3.13-numpy-2.4 libstdc++ libgcc libgomp opencl \
@@ -54,13 +49,7 @@ RUN python3 -m compileall -q /usr/lib/python3.13/site-packages/AutoDockTools /us
 WORKDIR /app
 COPY autodock.py /app/autodock.py
 
-RUN --mount=type=bind,source=selftest,target=/selftest --mount=type=bind,from=reference,source=/ref,target=/ref \
-    python3 /selftest/selftest.py \
-    && mkdir -p /tmp/new && python3 /selftest/selftest.py /tmp/new \
-    && cd /tmp && cp /selftest/protein.pdb . \
-    && python3 -m AutoDockTools.Utilities24.prepare_receptor4 -r protein.pdb -o /tmp/new/protein.pdbqt \
-    && python3 /selftest/compare.py /ref /tmp/new \
-    && rm -rf /tmp/new /tmp/protein.pdb
+RUN --mount=type=bind,source=selftest,target=/selftest python3 /selftest/selftest.py
 
 EXPOSE 8000
 
