@@ -37,6 +37,12 @@
     "marked": "^4.3.0",
     "utf-8-validate": "^5.0.2"
   },
+  "overrides": {
+    "url-parse": "^1.5.10",
+    "marked": "^4.3.0",
+    "sanitize-html": "^2.17.0",
+    "codemirror": "^5.58.2"
+  },
   "devDependencies": {
     "@playwright/test": "^1.48.0",
     "@types/codemirror": "^0.0.76",
