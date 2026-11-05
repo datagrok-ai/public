@@ -65,8 +65,5 @@
 @keyframes pmx-busy-slide { from { left: -30%; } to { left: 100%; } }
 @media (prefers-reduced-motion: reduce) { .pmx-busy-bar::before { animation: none; left: 0; width: 100%; opacity: .5; } }
 
-/* the study's own table (study-table.ts): its bar over Datagrok's grid */
-.pmx-study-bar { justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--dg-space-s, 8px);
-  margin-bottom: var(--dg-space-s, 8px); }
-.pmx-study-actions { gap: var(--dg-space-xs, 4px); flex-wrap: wrap; }
-.pmx-study-grid { height: 420px; position: relative; }
+/* the line on the study's data over Monitor's and Analyze's results (study-table.ts) */
+.pmx-study-line { align-items: center; flex-wrap: wrap; gap: var(--dg-space-s, 8px); }

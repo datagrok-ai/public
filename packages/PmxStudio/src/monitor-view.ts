@@ -23,7 +23,7 @@ import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseSt
   studyOf, tableOf} from './study-file';
 import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
-import {studyTablePanel, withoutExcluded} from './study-table';
+import {emptyStudy, studyDataLine, tagStudy, withoutExcluded} from './study-table';
 import {studyInputsOf} from './explore';
 import {tolerabilityTab} from './tolerability';
 import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, dayText, declarationPane, DECLARATION_MIN,
@@ -35,7 +35,6 @@ import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, day
 
 /** Monitor's panels, in order and width (twelfths): today's work first, then the groups, then the start. */
 const MONITOR_LAYOUT: Slot[] = [{id: 'today', span: 4}, {id: 'growth', span: 8}, {id: 'sheet', span: 12},
-  {id: 'data', span: 12},
   {id: 'decisions', span: 6}, {id: 'welfare', span: 6}, {id: 'enrollment', span: 12}];
 
 /** Below this chance of success, on a planned review, Monitor suggests stopping the arm. A person decides. */
@@ -119,6 +118,7 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
       if (fixed)
         call.setParamValue('looks', fixed);
       const sent = askedOf(call);
+      tagStudy(studyInputsOf(call));
       const frames = await monitorFrames(withoutExcluded(callInputs<MonitorInputs>(call)));
       if (mine !== latest)
         return;
@@ -178,12 +178,19 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
     df.setTag(WEIGHT_TAG, 'body_weight');
     await setStudy(df);
   });
+  const newStudy = () => run(async () => {
+    const df = emptyStudy();
+    await setStudy(df);
+    tagStudy({study: df, animal: 'animal', group: 'group', day: 'day', volume: 'volume', bodyWeight: 'body_weight'});
+    grok.shell.v = [...grok.shell.tableViews].find((v) => v.dataFrame.id === df.id) ?? grok.shell.v;
+  });
   void form.settled.then(() => {
     const study = form.getInput('study') as unknown as {actions?: {id: string, icon: string, tooltip: string,
       run: () => void}[]} | null;
     if (study?.actions) {
       study.actions = [...study.actions, {id: 'example', icon: 'flask', tooltip: 'Follow an example study: MC38 as ' +
-        'Plan predicts it, halfway through', run: () => void openExample()}];
+        'Plan predicts it, halfway through', run: () => void openExample()}, {id: 'new', icon: 'plus',
+        tooltip: 'Start an empty study table, to type or paste the measurements into', run: () => void newStudy()}];
     }
     if (initial)
       void setStudy(initial);
@@ -454,10 +461,13 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
     limits.replaceChildren(noteLine(`Endpoint ${v('endpoint')} mm³ (median control) · humane limit ` +
       `${v('humane')} mm³ · weight loss ${v('weightLimit') ?? 20}%`));
   });
-  // the study's own table: its values to correct, add or paste, what the outlier rules find, and the marks
-  const data = studyTablePanel({names: () => studyInputsOf(call), result,
-    open: (df) => void run(() => setStudy(df)), effect: (fn) => form.effect(fn)});
-  self.own(data.dispose);
+  // the study's data in Datagrok's own table view; here, one line on it and the way there
+  const dataLine = studyDataLine(() => studyInputsOf(call));
+  self.own(dataLine.dispose);
+  form.effect(() => {
+    if (result.value)
+      dataLine.refresh();
+  });
   const panels = panelGrid([
     {id: 'today', title: 'Needs attention', hint: 'Who needs attention today; a person decides what to do',
       content: [limits, entered, attention, noteBox]},
@@ -465,8 +475,6 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
       content: [growthHidden, growthAxis.row, sized(growth, 340)]},
     {id: 'sheet', title: 'Measurement sheet', hint: 'The range the next value of each animal should fall in: check ' +
       'each value as you measure it', content: [sheet]},
-    {id: 'data', title: 'Study data', hint: 'The measurements: edit, add or paste them; right-click a value or an ' +
-      'animal to flag it for review or exclude it from the forecasts, with its reason', content: data.content},
     {id: 'decisions', title: 'Decisions', hint: 'Whether each treated group is still worth continuing, and what was ' +
       'decided', content: [decisionBody, block('Log', 'Who did what, and when', logBox), divH([saveButton,
       analyzeButton])]},
@@ -476,7 +484,7 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
       content: [divH([proposeButton]), allocationTable]},
   ], MONITOR_LAYOUT, 'pmx-monitor-panels');
 
-  const content = divV([cards, panels], 'pmx-monitor-content');
+  const content = divV([dataLine.root, cards, panels], 'pmx-monitor-content');
   Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
   form.effect(() => {
     content.hidden = !result.value;

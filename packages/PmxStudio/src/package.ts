@@ -11,6 +11,7 @@ import {MonitorFrames, monitorFrames} from './monitor';
 import {monitorView, openStudyFile} from './monitor-view';
 import {hubView} from './hub-view';
 import {quietContextPanel} from './stages';
+import {decorateStudyView, markRows} from './study-table';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -77,6 +78,28 @@ export class PackageFunctions {
   static async pmxPlanFileHandler(content: string): Promise<DG.DataFrame[]> {
     quietContextPanel();
     return openPlanFile(content);
+  }
+
+  @grok.decorators.func({
+    name: 'pmxMarkStudyRows',
+    description: 'Flags rows of a study table to look at, excludes them from the analysis (the reason asked in a dialog, required to exclude) or clears their marks; PMX Studio\'s items in the grid\'s context menu call it.',
+  })
+  static pmxMarkStudyRows(
+    @grok.decorators.param({options: {description: 'The study table.'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'The rows, comma-separated indexes.'}}) rows: string,
+    @grok.decorators.param({options: {choices: ['flag', 'exclude', 'clear'], description: 'What to do with them.'}}) action: string,
+    @grok.decorators.param({options: {description: 'The rows in words, for the dialog and the study\'s log.'}}) what: string): void {
+    markRows(table, rows.split(',').map(Number), action, what);
+  }
+
+  @grok.decorators.func({
+    name: 'pmxStudyTableView',
+    description: 'Shows in a study\'s table view what PMX Studio\'s outlier rules find, the marks and their reasons, and PMX Studio\'s menu.',
+  })
+  static pmxStudyTableView(
+    @grok.decorators.param({type: 'view', options: {description: 'A table view of a study.'}}) view: DG.View): void {
+    if (view instanceof DG.TableView)
+      decorateStudyView(view);
   }
 
   @grok.decorators.func({

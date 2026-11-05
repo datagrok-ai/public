@@ -32,12 +32,12 @@ import {BandChart} from './band-chart';
 import {explore, exploreContent, StudyInputs, studyInputsOf} from './explore';
 import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
-import {exclusionsOf, studyTablePanel, withoutExcluded} from './study-table';
+import {exclusionsOf, studyDataLine, tagStudy, withoutExcluded} from './study-table';
 import {KM, Survival, survivalOf} from './survival';
 
 /** Analyze's panels, in order and width (twelfths): the answer, how the tumors grew, each animal, then the rest. */
 const ANALYZE_LAYOUT: Slot[] = [{id: 'groups', span: 12}, {id: 'growth', span: 8}, {id: 'rates', span: 4},
-  {id: 'waterfall', span: 12}, {id: 'km', span: 6}, {id: 'animals', span: 12}, {id: 'data', span: 12},
+  {id: 'waterfall', span: 12}, {id: 'km', span: 6}, {id: 'animals', span: 12},
   {id: 'tolerability', span: 12},
   {id: 'plan', span: 12}, {id: 'controls', span: 6},
   {id: 'explore', span: 6}, {id: 'report', span: 12}];
@@ -262,6 +262,7 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
       await planState.reading;
       const sent = askedOf(call);
       const reads = studyInputsOf(call);
+      tagStudy(reads);
       const twinSent = askedOf(call, TWIN_INPUTS);
       // the twin unchanged (cached): one call, with it
       if (twinsCached.includes(twinSent)) {
@@ -774,10 +775,13 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   }), {valueColumnName: 'Growth rate (ln V per day)', categoryColumnNames: ['Group'], showPValue: false,
     showStatistics: false});
 
-  // the study's own table: its values to correct, add or paste, what the outlier rules find, and the marks
-  const data = studyTablePanel({names: () => studyInputsOf(call), result,
-    open: (df) => void openStudy(async () => df), effect: (fn) => form.effect(fn)});
-  self.own(data.dispose);
+  // the study's data in Datagrok's own table view; here, one line on it and the way there
+  const dataLine = studyDataLine(() => studyInputsOf(call));
+  self.own(dataLine.dispose);
+  form.effect(() => {
+    if (result.value)
+      dataLine.refresh();
+  });
 
   // the figures answer the study's question; each panel, one closer question
   const panels = panelGrid([
@@ -794,8 +798,6 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
     content: [sized(km, 300), kmWords]},
     {id: 'animals', title: 'Each animal against its untreated twin', hint: 'How each treated tumor compares with ' +
       'what it would have measured untreated. Select an animal to see its growth', content: [animals]},
-    {id: 'data', title: 'Study data', hint: 'The measurements: edit, add or paste them; right-click a value or an ' +
-      'animal to flag it for review or exclude it from the analysis, with its reason', content: data.content},
     {id: 'tolerability', title: 'Tolerability', hint: 'Whether the treatments were well tolerated',
       content: tolerability.content},
     {id: 'plan', title: 'Plan vs observed', hint: 'Whether the study went as it was planned',
@@ -812,7 +814,7 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
       'protocol, ready to paste', content: [copyRow(() => summaryText, 'Results summary'), summary, statsTable,
       copyRow(() => protocolText, 'Analysis protocol'), protocol]},
   ], ANALYZE_LAYOUT, 'pmx-analyze-panels');
-  const content = divV([cards, panels], 'pmx-analyze-content');
+  const content = divV([dataLine.root, cards, panels], 'pmx-analyze-content');
   Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
   form.effect(() => {
     content.hidden = !result.value;

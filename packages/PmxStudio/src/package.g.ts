@@ -55,6 +55,21 @@ export async function pmxPlanFileHandler(content: string) : Promise<any> {
   return await PackageFunctions.pmxPlanFileHandler(content);
 }
 
+//description: Flags rows of a study table to look at, excludes them from the analysis (the reason asked in a dialog, required to exclude) or clears their marks; PMX Studio's items in the grid's context menu call it.
+//input: dataframe table { description: The study table. }
+//input: string rows { description: The rows, comma-separated indexes. }
+//input: string action { choices: ["flag","exclude","clear"]; description: What to do with them. }
+//input: string what { description: The rows in words, for the dialog and the study's log. }
+export function pmxMarkStudyRows(table: DG.DataFrame, rows: string, action: string, what: string) : void {
+  PackageFunctions.pmxMarkStudyRows(table, rows, action, what);
+}
+
+//description: Shows in a study's table view what PMX Studio's outlier rules find, the marks and their reasons, and PMX Studio's menu.
+//input: view view { description: A table view of a study. }
+export function pmxStudyTableView(view: DG.View) : void {
+  PackageFunctions.pmxStudyTableView(view);
+}
+
 //description: Control-growth priors of the PMX Studio atlas (reduced Gompertz) per syngeneic cell line: study-level initial growth rate alpha (median and 95% interval of a new study), deceleration beta, between-study tau, effective sample size, non-take rate, papers and animals behind each prior.
 //output: dataframe result
 export async function pmxPriors() : Promise<any> {

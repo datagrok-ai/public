@@ -2,7 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {DEFAULT_RULES, findOutliers, StudyColumns} from '../outlier-rules';
-import {FLAG, FLAG_REASON, appendPasted, emptyStudy, exclusionsOf, withoutExcluded} from '../study-table';
+import {EXCLUDED, FLAGGED, MARK_REASON, appendPasted, emptyStudy, exclusionsOf, mark, withoutExcluded}
+  from '../study-table';
 
 /** Six animals of one group on days 0, 3 and 7; M4's day 7 a caliper typo (2400 for ~240), M1 losing weight. */
 function study(): StudyColumns {
@@ -59,8 +60,9 @@ category('Study table', () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1', 'M1', 'M2', 'M2']),
       DG.Column.fromStrings('group', ['A', 'A', 'A', 'A']), DG.Column.fromList('double', 'day', [0, 3, 0, 3]),
       DG.Column.fromList('double', 'volume', [100, 150, 90, 900]),
-      DG.Column.fromStrings(FLAG, ['excluded', 'excluded', '', 'excluded']),
-      DG.Column.fromStrings(FLAG_REASON, ['dosing error', 'dosing error', '', 'misread'])]);
+      // a study file's own Excluded column, as a lab writes it
+      DG.Column.fromStrings(EXCLUDED, ['x', 'x', '', 'yes']),
+      DG.Column.fromStrings(MARK_REASON, ['dosing error', 'dosing error', '', 'misread'])]);
     const x = withoutExcluded({study: df, animal: df.col('animal')!, endpoint: 1500});
     expect(x.study.rowCount, 1);
     expect(x.animal.length, 1, 'columns come from the kept table');
@@ -72,5 +74,21 @@ category('Study table', () => {
     expect(text.includes('M2 on day 3 (misread)'), true, text);
     const clean = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1'])]);
     expect(withoutExcluded({study: clean}).study === clean, true, 'nothing excluded: the same table');
+  });
+
+  test('marks are ticks in visible columns; flagging keeps an exclusion; clearing removes it; all logged', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1', 'M1', 'M1'])]);
+    mark(df, [1], 'excluded', 'misread', 'M1 on day 3');
+    mark(df, [0, 1, 2], 'flagged', 'thin', 'animal M1');
+    expect(df.col(EXCLUDED)!.type, DG.TYPE.BOOL);
+    expect(df.col(EXCLUDED)!.toList().join(','), 'false,true,false');
+    expect(df.col(FLAGGED)!.toList().join(','), 'true,true,true');
+    expect(df.get(MARK_REASON, 1), 'misread', 'the exclusion keeps its reason');
+    expect(df.get(MARK_REASON, 0), 'thin');
+    expect(withoutExcluded({study: df}).study.rowCount, 2);
+    mark(df, [0, 1, 2], null, '', 'animal M1');
+    expect([...df.col(EXCLUDED)!.toList(), ...df.col(FLAGGED)!.toList()].every((v) => !v), true);
+    expect(df.rowCount, 3, 'nothing deleted');
+    expect(JSON.parse(df.getTag('pmx.log') || '[]').length, 3);
   });
 });

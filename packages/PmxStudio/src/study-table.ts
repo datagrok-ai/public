@@ -1,36 +1,76 @@
-/* The study's own table in Monitor and Analyze: Datagrok's grid on the measurements, to type, correct, add or paste
-   them, with what the outlier rules find painted on the cells (outlier-rules.ts) and a person's marks on them. A mark
-   is one of two: flagged, a value to look at that stays in the analysis, or excluded, a value or a whole animal left
-   out of it, always with its reason. Both live in the table itself, in two hidden columns (~flag, ~flag_reason), so
-   they travel with the study file, and each is written to the study's log (who, when, what). Files open here too:
-   .csv, .tsv, .txt, .xlsx (PowerPack's reader) and .pmxstudy; an .xls is asked to be saved as .xlsx. */
+/* A study's measurements live in Datagrok's own table view, as any table does; PMX Studio adds to it what it knows
+   of a study. What the outlier rules find (outlier-rules.ts) is painted on the cells, with its reasons on hover; the
+   grid's context menu gets PMX Studio's items (detectors.js) to flag a value or an animal, a value to look at that
+   stays in the analysis, or to exclude it, left out of the analysis with its reason; the view's menu gets the rules
+   and a paste that adds rows. The marks are columns of the table itself (Excluded, Flagged, Mark reason), visible,
+   filterable and editable like any other, so they travel with the study file; each one set from the menu is written
+   to the study's log (who, when, what). Nothing is ever deleted: an excluded row stays, greyed. A table is a study once
+   Monitor or Analyze has run on it: its columns' roles are kept on it (STUDY_TAG), which is what the menu and the
+   painting look for. */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {button, div, divH, span} from '@datagrok-libraries/u2';
-import type {ReadonlySignal} from '@datagrok-libraries/u2';
+import {button, divH, span} from '@datagrok-libraries/u2';
 
 import {DEFAULT_RULES, Finding, OutlierRules, RulesSource, canEditLabRules, findOutliers, labRules, rulesInForce,
   saveLabRules, saveUserRules, userRules} from './outlier-rules';
 import {StudyInputs as StudyNames} from './explore';
 import {ROLES, WEIGHT} from './open-study';
-import {STUDY_EXT, addLog, parseStudy, tableOf} from './study-file';
+import {addLog} from './study-file';
 
-export const FLAG = '~flag';
-export const FLAG_REASON = '~flag_reason';
+/** The columns' roles of a study table, as JSON: what makes a table a study (detectors.js reads it too). */
+export const STUDY_TAG = 'pmx.study';
+/** The marks, visible columns of the study table (created on first use): ticked in Excluded, out of PMX Studio's
+ *  analysis and forecasts (the row stays in the table); ticked in Flagged, to look at; why, in Mark reason. A tick
+ *  typed straight into the grid counts as well, and so does a study file's own Excluded column (true, yes, 1, x). */
+export const EXCLUDED = 'Excluded';
+export const FLAGGED = 'Flagged';
+export const MARK_REASON = 'Mark reason';
 export type Mark = 'flagged' | 'excluded';
+
+/** Whether a mark column is ticked in a row (a bool column, or a file's own text: true, yes, y, 1, x). */
+function ticked(col: DG.Column | null | undefined, i: number): boolean {
+  const v = col?.get(i);
+  return v === true || (typeof v === 'string' && /^(true|yes|y|1|x)$/i.test(v.trim())) || v === 1;
+}
 
 const COLORS = {finding: DG.Color.fromHtml('#fff1c2'), flagged: DG.Color.fromHtml('#ffd8a8'),
   excluded: DG.Color.fromHtml('#9aa5b1')};
+
+/** Keeps the columns' roles on the study table (a run of Monitor or Analyze) and decorates its open table views. */
+export function tagStudy(n: StudyNames | null): void {
+  if (!n)
+    return;
+  const roles = JSON.stringify({animal: n.animal, group: n.group, day: n.day, volume: n.volume,
+    bodyWeight: n.bodyWeight});
+  if (n.study.getTag(STUDY_TAG) !== roles)
+    n.study.setTag(STUDY_TAG, roles);
+  for (const v of grok.shell.tableViews)
+    decorateStudyView(v);
+}
+
+/** A table as a study: its columns by role (null: not a study, or a role's column gone). */
+export function studyOf(df: DG.DataFrame | null | undefined): StudyNames | null {
+  try {
+    const r = JSON.parse(df?.getTag(STUDY_TAG) || 'null');
+    return df && r && [r.animal, r.group, r.day, r.volume].every((c) => df.col(c)) ?
+      {study: df, ...r, bodyWeight: r.bodyWeight && df.col(r.bodyWeight) ? r.bodyWeight : null} : null;
+  } catch {
+    return null;
+  }
+}
 
 /** `x` (a call's inputs) with the excluded rows of its study left out: the engine never sees them. The columns among
  *  the inputs are taken from the kept table by name. */
 export function withoutExcluded<T extends object>(x: T): T {
   const study = (x as {study?: unknown}).study;
-  const flag = study instanceof DG.DataFrame ? study.col(FLAG) : null;
-  if (!(study instanceof DG.DataFrame) || !flag || !flag.toList().includes('excluded'))
+  if (!(study instanceof DG.DataFrame))
     return x;
-  const kept = study.clone(DG.BitSet.create(study.rowCount, (i) => flag.get(i) !== 'excluded'));
+  const excluded = study.col(EXCLUDED);
+  const out = DG.BitSet.create(study.rowCount, (i) => ticked(excluded, i));
+  if (out.trueCount === 0)
+    return x;
+  const kept = study.clone(out.invert());
   kept.name = study.name;
   return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, v === study ? kept :
     v instanceof DG.Column && kept.col(v.name) ? kept.col(v.name) : v])) as T;
@@ -59,51 +99,86 @@ export function exclusionsOf(n: StudyNames | null): string | null {
   return `Left out by the investigator, each with its reason (who and when in the study's log): ${parts.join('; ')}`;
 }
 
-/** The marks of a table, row by row. */
-function marksOf(df: DG.DataFrame): {state: Mark | '', reason: string}[] {
-  const f = df.col(FLAG);
-  const r = df.col(FLAG_REASON);
-  return Array.from({length: df.rowCount}, (_, i) => ({state: (f?.get(i) ?? '') as Mark | '',
-    reason: r?.get(i) ?? ''}));
+/** A row's mark (excluded over flagged) and its reason. */
+function markOf(df: DG.DataFrame, i: number): {state: Mark | '', reason: string} {
+  const r = df.col(MARK_REASON);
+  return {state: ticked(df.col(EXCLUDED), i) ? 'excluded' : ticked(df.col(FLAGGED), i) ? 'flagged' : '',
+    reason: !r || r.isNone(i) ? '' : String(r.get(i))};
 }
 
-/** Marks rows (or clears them, `state` null) and writes it to the study's log. */
-function mark(df: DG.DataFrame, rows: number[], state: Mark | null, reason: string, what: string): void {
-  const f = df.columns.getOrCreate(FLAG, DG.TYPE.STRING);
-  const r = df.columns.getOrCreate(FLAG_REASON, DG.TYPE.STRING);
+/** The marks of a table, row by row. */
+function marksOf(df: DG.DataFrame): {state: Mark | '', reason: string}[] {
+  return Array.from({length: df.rowCount}, (_, i) => markOf(df, i));
+}
+
+/** Marks rows (or clears them, `state` null) and writes it to the study's log. Flagging leaves an exclusion and its
+ *  reason as they are: only clearing brings a row back. */
+export function mark(df: DG.DataFrame, rows: number[], state: Mark | null, reason: string, what: string): void {
+  // the three columns together, in this order, the first time a row is marked
+  const [e, f, r] = state === null ? [df.col(EXCLUDED), df.col(FLAGGED), df.col(MARK_REASON)] :
+    [df.columns.getOrCreate(EXCLUDED, DG.TYPE.BOOL), df.columns.getOrCreate(FLAGGED, DG.TYPE.BOOL),
+      df.columns.getOrCreate(MARK_REASON, DG.TYPE.STRING)];
   for (const i of rows) {
-    f.set(i, state ?? '', false);
-    r.set(i, state ? reason : '', false);
+    const wasOut = ticked(e, i);
+    if (state === null) {
+      e?.set(i, false, false);
+      f?.set(i, false, false);
+      r?.set(i, '', false);
+    } else {
+      (state === 'excluded' ? e : f)!.set(i, true, false);
+      if (reason && !(state === 'flagged' && wasOut))
+        r!.set(i, reason, false);
+    }
   }
   df.fireValuesChanged();
   addLog(df, state ? `${state === 'excluded' ? 'Excluded' : 'Flagged'} ${what}${reason ? `: ${reason}` : ''}` :
     `Cleared the mark on ${what}`);
 }
 
-/** Asks why, then calls `done` with the reason (required to exclude, optional to flag). */
-function askReason(title: string, required: boolean, done: (reason: string) => void): void {
+/** A context menu's item (detectors.js): flags or excludes the rows, asking why (required to exclude), or clears
+ *  their marks. */
+export function markRows(df: DG.DataFrame, rows: number[], action: string, what: string): void {
+  if (action === 'clear') {
+    mark(df, rows, null, '', what);
+    return;
+  }
+  const exclude = action === 'exclude';
   const reason = ui.input.textArea('Reason', {value: ''});
-  ui.dialog(title).add(reason).onOK(() => {
-    const text = (reason.value ?? '').trim();
-    if (required && text === '')
-      grok.shell.warning('Write why: an exclusion is reported with its reason');
-    else
-      done(text);
-  }).show();
+  const d = ui.dialog(`${exclude ? 'Exclude' : 'Flag'} ${what}`)
+    .add(ui.divText(exclude ? 'Left out of the analysis and the forecasts, and reported with its reason.' :
+      'Marked to look at: it stays in the analysis.'))
+    .add(reason)
+    .onOK(() => {
+      const text = (reason.value ?? '').trim();
+      if (exclude && text === '')
+        grok.shell.warning('Write why: an exclusion is reported with its reason');
+      else
+        mark(df, rows, exclude ? 'excluded' : 'flagged', text, what);
+    }).show();
+  // an exclusion is reported with its reason: OK waits for one (the dialog would close on OK, losing what was typed)
+  if (exclude) {
+    const ok = d.getButton('OK');
+    const sync = () => ok.disabled = (reason.value ?? '').trim() === '';
+    reason.input.addEventListener('input', sync);
+    sync();
+  }
 }
 
-/** A table's rows as the rules read them. */
-function columnsOf(n: StudyNames) {
+/** What the rules in force find in a study, row by row. */
+export function findingsOf(n: StudyNames): Map<number, Finding[]> {
   const values = (name: string | null) => {
     const c = name ? n.study.col(name) : null;
     return c ? Array.from({length: n.study.rowCount}, (_, i) => c.isNone(i) ? null : c.get(i)) : null;
   };
   const text = (name: string) => (values(name) ?? []).map((a) => a === null ? null : String(a));
-  return {animal: text(n.animal), group: text(n.group), day: values(n.day) ?? [], volume: values(n.volume) ?? [],
-    weight: values(n.bodyWeight)};
+  const found = new Map<number, Finding[]>();
+  for (const f of findOutliers({animal: text(n.animal), group: text(n.group), day: values(n.day) ?? [],
+    volume: values(n.volume) ?? [], weight: values(n.bodyWeight)}, rulesInForce().rules))
+    found.set(f.row, [...(found.get(f.row) ?? []), f]);
+  return found;
 }
 
-/** A new study typed by hand: its columns, no rows (the grid's last row adds one). */
+/** A new study typed by hand: its columns, no rows. */
 export function emptyStudy(): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([DG.Column.string('animal', 0), DG.Column.string('group', 0),
     DG.Column.float('day', 0), DG.Column.float('volume', 0), DG.Column.float('body_weight', 0)]);
@@ -111,36 +186,9 @@ export function emptyStudy(): DG.DataFrame {
   return df;
 }
 
-/** A study file as a table: .csv, .tsv, .txt, .xlsx (the sheet that looks most like a study) or .pmxstudy. */
-export async function tableOfFile(file: File): Promise<DG.DataFrame | null> {
-  const ext = (file.name.split('.').pop() ?? '').toLowerCase();
-  let df: DG.DataFrame | null;
-  if (ext === 'xls') {
-    grok.shell.warning(`${file.name}: save it as .xlsx (in Excel, File, Save As) and open that`);
-    return null;
-  } else if (ext === 'csv' || ext === 'txt')
-    df = DG.DataFrame.fromCsv(await file.text());
-  else if (ext === 'tsv')
-    df = grok.data.parseCsv(await file.text(), {delimiter: '\t'});
-  else if (ext === STUDY_EXT)
-    return tableOf(parseStudy(await file.text()));
-  else if (ext === 'xlsx') {
-    const sheets: DG.DataFrame[] = await grok.functions.call('PowerPack:xlsxFileHandler',
-      {bytes: new Uint8Array(await file.arrayBuffer())});
-    const fit = (t: DG.DataFrame) => ROLES.filter(([, re]) => t.columns.names().some((c) => re.test(c))).length;
-    df = [...sheets].sort((a, b) => fit(b) - fit(a))[0] ?? null;
-  } else {
-    grok.shell.warning(`${file.name}: open a .csv, .tsv, .txt, .xlsx or .${STUDY_EXT} file`);
-    return null;
-  }
-  if (df)
-    df.name = file.name.replace(/\.[^.]+$/, '');
-  return df;
-}
-
-/** Rows pasted from a spreadsheet, added at the end of `df`: with a header row, each pasted column goes to the table's
- *  column of its name (or of its role: animal, group, day, volume, body weight); without one, in the table's order.
- *  Returns how many rows were added. */
+/** Rows pasted from a spreadsheet, added at the end of `df` (the grid's own paste writes over the cells there):
+ *  with a header row, each pasted column goes to the table's column of its name (or of its role: animal, group, day,
+ *  volume, body weight); without one, in the table's order. Returns how many rows were added. */
 export function appendPasted(df: DG.DataFrame, text: string): number {
   const lines = text.replace(/\r/g, '').split('\n').filter((l) => l.trim() !== '').map((l) => l.split('\t'));
   if (lines.length === 0)
@@ -171,9 +219,19 @@ export function appendPasted(df: DG.DataFrame, text: string): number {
   return body.length;
 }
 
+// whoever shows what the rules find, told when the rules in force change
+const rulesWatchers = new Set<() => void>();
+function rulesChanged(): void {
+  rulesWatchers.forEach((fn) => fn());
+}
+export function onRulesChanged(fn: () => void): () => void {
+  rulesWatchers.add(fn);
+  return () => rulesWatchers.delete(fn);
+}
+
 /** The rules dialog: each rule on or off with its threshold; saved as the user's own, or for the whole lab by who may,
  *  and back to the lab's. */
-async function rulesDialog(changed: () => void): Promise<void> {
+export async function rulesDialog(): Promise<void> {
   const {rules, from} = rulesInForce();
   const canLab = await canEditLabRules().catch(() => false);
   const impossible = ui.input.bool('Impossible values', {value: rules.impossible,
@@ -211,7 +269,7 @@ async function rulesDialog(changed: () => void): Promise<void> {
   if (userRules()) {
     d.addButton('Use the lab’s', () => {
       saveUserRules(null);
-      changed();
+      rulesChanged();
       d.close();
     });
   }
@@ -219,7 +277,7 @@ async function rulesDialog(changed: () => void): Promise<void> {
     d.addButton('Save for the lab', () => {
       saveLabRules(read()).then(() => {
         grok.shell.info('The lab’s rules are saved: everyone without rules of their own follows them');
-        changed();
+        rulesChanged();
         d.close();
       }, (e) => grok.shell.error(`The lab’s rules were not saved: ${e?.message ?? e}`));
     });
@@ -227,202 +285,116 @@ async function rulesDialog(changed: () => void): Promise<void> {
     d.add(ui.divText('The lab’s rules are changed by its responsible group.'));
   d.onOK(() => {
     saveUserRules(read());
-    changed();
+    rulesChanged();
   });
   d.show();
 }
 
-export interface StudyTableHost {
-  /** the study table and its columns as the form holds them (null: none yet) */
-  names: () => StudyNames | null;
-  /** fires when the form's study may have changed (each result) */
-  result: ReadonlySignal<unknown>;
-  /** makes a table the view's study (an imported file, a new table) */
-  open: (df: DG.DataFrame) => void;
-  /** runs `fn` again whenever a signal it reads changes, for as long as the view lives */
-  effect: (fn: () => void) => void;
+/** A study's table view as PMX Studio shows it: what the rules find painted, the marks, the reasons on hover, and
+ *  PMX Studio's menu (paste rows, the rules, back to the study's views). Once per view; a table that is not a study is
+ *  left alone. */
+export function decorateStudyView(view: DG.TableView): void {
+  const root = view.root;
+  const df = view.dataFrame;
+  if (root.dataset.pmxStudy || !studyOf(df))
+    return;
+  root.dataset.pmxStudy = '1';
+  const grid = view.grid;
+  let findings = new Map<number, Finding[]>();
+  let timer = 0;
+  const rerun = () => {
+    const n = studyOf(df);
+    findings = n ? findingsOf(n) : new Map();
+    grid.invalidate();
+  };
+  const later = () => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(rerun, 300);
+  };
+  const kindOf = (column: string): Finding['on'] | null => {
+    const n = studyOf(df);
+    return !n ? null : column === n.volume ? 'volume' : column === n.bodyWeight ? 'weight' :
+      [n.animal, n.group, n.day].includes(column) ? 'row' : null;
+  };
+  const subs = [grid.onCellPrepare((gc) => {
+    if (!gc.isTableCell || gc.tableRowIndex === null || !gc.tableColumn)
+      return;
+    const i = gc.tableRowIndex;
+    const state = markOf(df, i).state;
+    if (state === 'excluded')
+      gc.style.textColor = COLORS.excluded;
+    const kind = kindOf(gc.tableColumn.name);
+    if (state === 'flagged')
+      gc.style.backColor = COLORS.flagged;
+    else if (kind && findings.get(i)?.some((f) => f.on === kind || f.on === 'row'))
+      gc.style.backColor = COLORS.finding;
+  }), df.onDataChanged.subscribe(later)];
+  grid.onCellTooltip((gc, x, y) => {
+    if (!gc.isTableCell || gc.tableRowIndex === null)
+      return false;
+    const m = markOf(df, gc.tableRowIndex);
+    const lines = [...(m.state ? [`${m.state === 'excluded' ? 'Excluded from the analysis' : 'Flagged'}` +
+      `${m.reason ? `: ${m.reason}` : ''}`] : []), ...(findings.get(gc.tableRowIndex) ?? []).map((f) => f.reason)];
+    if (lines.length === 0)
+      return false;
+    ui.tooltip.show(ui.divV(lines.map((l) => ui.divText(l))), x, y);
+    return true;
+  });
+  const stopRules = onRulesChanged(rerun);
+  const removed = grok.events.onViewRemoved.subscribe((v) => {
+    if (v.root !== root)
+      return;
+    window.clearTimeout(timer);
+    subs.forEach((s) => s.unsubscribe());
+    stopRules();
+    removed.unsubscribe();
+  });
+
+  const paste = () => navigator.clipboard.readText().then((text) => {
+    const n = appendPasted(df, text);
+    grok.shell.info(n ? `${n} row${n === 1 ? '' : 's'} added from the clipboard` : 'Nothing to paste');
+  }, () => grok.shell.warning('The browser did not give the clipboard: allow it, then try again'));
+  const back = () => {
+    const pmx = [...grok.shell.views].filter((v) => v.name.startsWith('PMX Studio ·')).pop();
+    if (pmx)
+      setTimeout(() => grok.shell.v = pmx);
+    else
+      grok.shell.warning('No PMX Studio view is open');
+  };
+  view.ribbonMenu.group('PMX Studio')
+    .item('Paste rows at the end', () => void paste())
+    .item('Outlier rules…', () => void rulesDialog())
+    .item('Back to PMX Studio', back);
+  rerun();
 }
 
-/** The panel: its bar (what the rules found and the marks, and the actions) over the study's grid. */
-export function studyTablePanel(host: StudyTableHost): {content: HTMLElement[], dispose: () => void} {
-  const summary = span('');
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = `.csv,.tsv,.txt,.xlsx,.xls,.${STUDY_EXT}`;
-  fileInput.hidden = true;
-  fileInput.addEventListener('change', () => {
-    const f = fileInput.files?.[0];
-    fileInput.value = '';
-    if (f) {
-      tableOfFile(f).then((df) => df && host.open(df),
-        (e) => grok.shell.error(`${f.name} could not be read: ${e?.message ?? e}`));
-    }
-  });
-  const gridBox = div([], 'pmx-study-grid');
-
-  let grid: DG.Grid | null = null;
-  let subs: {unsubscribe(): void}[] = [];
-  let findings = new Map<number, Finding[]>();
-  let current: StudyNames | null = null;
-  let refresh = 0;
-
-  const recount = () => {
-    if (!current) {
-      summary.textContent = 'Open the study’s table, import a file or start a new one.';
+/** Where Monitor and Analyze show the study's data: one line, what the rules found and the marks, and the way to its
+ *  table view. `refresh` after each result. */
+export function studyDataLine(names: () => StudyNames | null): {root: HTMLElement, refresh: () => void,
+  dispose: () => void} {
+  const text = span('');
+  const open = () => {
+    const df = names()?.study;
+    if (!df)
       return;
-    }
-    const marks = marksOf(current.study);
+    const view = [...grok.shell.tableViews].find((v) => v.dataFrame.id === df.id) ?? grok.shell.addTableView(df);
+    decorateStudyView(view);
+    // after the click: the platform makes the clicked view current again once the click is handled (stages.ts)
+    setTimeout(() => grok.shell.v = view);
+  };
+  const root = divH([text, button('Open the table', open)], 'pmx-study-line');
+  const refresh = () => {
+    const n = names();
+    root.hidden = !n;
+    if (!n)
+      return;
+    const findings = findingsOf(n).size;
+    const marks = marksOf(n.study);
     const flagged = marks.filter((m) => m.state === 'flagged').length;
     const excluded = marks.filter((m) => m.state === 'excluded').length;
     const whose = {user: 'your rules', lab: 'the lab’s rules', default: 'the default rules'}[rulesInForce().from];
-    summary.textContent = `${findings.size} value${findings.size === 1 ? '' : 's'} to look at (${whose}) · ` +
-      `${flagged} flagged · ${excluded} excluded from the analysis`;
+    text.textContent = `Study data: ${n.study.rowCount} measurements · ${findings} to look at (${whose}) · ` +
+      `${flagged} flagged · ${excluded} excluded. Right-click a value in the table to flag or exclude it.`;
   };
-  const rerunRules = () => {
-    if (!current)
-      return;
-    findings = new Map();
-    for (const f of findOutliers(columnsOf(current), rulesInForce().rules))
-      findings.set(f.row, [...(findings.get(f.row) ?? []), f]);
-    recount();
-    grid?.invalidate();
-  };
-  const later = () => {
-    window.clearTimeout(refresh);
-    refresh = window.setTimeout(rerunRules, 300);
-  };
-
-  // what a cell is about: the volume, the body weight, or the row (animal, group, day)
-  const kindOf = (column: string): Finding['on'] | null => !current ? null : column === current.volume ? 'volume' :
-    column === current.bodyWeight ? 'weight' : [current.animal, current.group, current.day].includes(column) ?
-      'row' : null;
-
-  const menuAt = (n: StudyNames, i: number) => {
-    const df = n.study;
-    const animal = String(df.get(n.animal, i));
-    const selected = df.selection.get(i) && df.selection.trueCount > 1 ?
-      Array.from(df.selection.getSelectedIndexes()) : null;
-    const rowsOf = (a: string) => Array.from({length: df.rowCount}, (_, k) => k)
-      .filter((k) => String(df.get(n.animal, k)) === a);
-    const one = selected ? `${selected.length} selected measurements` : `${animal} on day ${df.get(n.day, i)}`;
-    const these = selected ?? [i];
-    const m = DG.Menu.popup();
-    m.item(`Flag ${one}…`, () => askReason(`Flag ${one}`, false, (r) => mark(df, these, 'flagged', r, one)));
-    m.item(`Exclude ${one}…`, () => askReason(`Exclude ${one}`, true,
-      (r) => mark(df, these, 'excluded', r, one)));
-    m.separator();
-    m.item(`Flag animal ${animal}…`, () => askReason(`Flag animal ${animal}`, false,
-      (r) => mark(df, rowsOf(animal), 'flagged', r, `animal ${animal}`)));
-    m.item(`Exclude animal ${animal}…`, () => askReason(`Exclude animal ${animal}`, true,
-      (r) => mark(df, rowsOf(animal), 'excluded', r, `animal ${animal}`)));
-    const marks = marksOf(df);
-    if (these.some((k) => marks[k].state !== ''))
-      m.item(`Clear the mark on ${one}`, () => mark(df, these, null, '', one));
-    if (rowsOf(animal).some((k) => marks[k].state !== ''))
-      m.item(`Clear the marks on animal ${animal}`, () => mark(df, rowsOf(animal), null, '', `animal ${animal}`));
-    m.show();
-  };
-
-  const stop = () => {
-    subs.forEach((s) => s.unsubscribe());
-    subs = [];
-    grid?.detach();
-    grid = null;
-  };
-  const show = (now: StudyNames | null) => {
-    // the same table and roles: the grid stays, only what the rules find may change
-    if (grid && now && current && now.study === current.study) {
-      const roles = (n: StudyNames) => [n.animal, n.group, n.day, n.volume, n.bodyWeight].join('\u0000');
-      const same = roles(now) === roles(current);
-      current = now;
-      if (!same)
-        rerunRules();
-      return;
-    }
-    stop();
-    current = now;
-    gridBox.replaceChildren();
-    if (!now) {
-      recount();
-      return;
-    }
-    const df = now.study;
-    const g = DG.Viewer.grid(df, {allowEdit: true, showAddNewRowIcon: true, showRemoveRowIcon: true});
-    grid = g;
-    g.root.style.width = '100%';
-    g.root.style.height = '100%';
-    gridBox.append(g.root);
-    subs.push(g.onCellPrepare((gc) => {
-      if (!gc.isTableCell || gc.tableRowIndex === null || !gc.tableColumn)
-        return;
-      const i = gc.tableRowIndex;
-      const state = df.col(FLAG)?.get(i);
-      if (state === 'excluded')
-        gc.style.textColor = COLORS.excluded;
-      const kind = kindOf(gc.tableColumn.name);
-      if (state === 'flagged')
-        gc.style.backColor = COLORS.flagged;
-      else if (kind && findings.get(i)?.some((f) => f.on === kind || f.on === 'row'))
-        gc.style.backColor = COLORS.finding;
-    }));
-    g.onCellTooltip((gc, x, y) => {
-      if (!gc.isTableCell || gc.tableRowIndex === null)
-        return false;
-      const i = gc.tableRowIndex;
-      const m = marksOf(df)[i];
-      const lines = [...(m.state ? [`${m.state === 'excluded' ? 'Excluded from the analysis' : 'Flagged'}` +
-        `${m.reason ? `: ${m.reason}` : ''}`] : []), ...(findings.get(i) ?? []).map((f) => f.reason)];
-      if (lines.length === 0)
-        return false;
-      ui.tooltip.show(ui.divV(lines.map((l) => ui.divText(l))), x, y);
-      return true;
-    });
-    const onMenu = (e: MouseEvent) => {
-      const box = g.root.getBoundingClientRect();
-      const cell = g.hitTest(e.clientX - box.left, e.clientY - box.top);
-      if (!current || !cell?.isTableCell || cell.tableRowIndex === null)
-        return;
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      menuAt(current, cell.tableRowIndex);
-    };
-    g.root.addEventListener('contextmenu', onMenu, true);
-    subs.push({unsubscribe: () => g.root.removeEventListener('contextmenu', onMenu, true)});
-    subs.push(df.onDataChanged.subscribe(later));
-    rerunRules();
-  };
-  host.effect(() => {
-    void host.result.value;
-    show(host.names());
-  });
-
-  const paste = () => {
-    const df = current?.study;
-    if (!df) {
-      grok.shell.warning('Open the study’s table or start a new one first');
-      return;
-    }
-    navigator.clipboard.readText().then((text) => {
-      const n = appendPasted(df, text);
-      grok.shell.info(n ? `${n} row${n === 1 ? '' : 's'} added from the clipboard` : 'Nothing to paste');
-    }, () => grok.shell.warning('The browser did not give the clipboard: allow it, or paste into the grid'));
-  };
-  const openInDatagrok = () => {
-    const df = current?.study;
-    if (!df)
-      return;
-    const open = Array.from(grok.shell.tableViews).find((v) => v.dataFrame === df);
-    if (open)
-      grok.shell.v = open;
-    else
-      grok.shell.addTableView(df);
-  };
-  const bar = divH([summary,
-    divH([button('Import file…', () => fileInput.click()), button('Paste rows', paste),
-      button('New table', () => host.open(emptyStudy())), button('Rules…', () => void rulesDialog(rerunRules)),
-      button('Open in Datagrok', openInDatagrok)], 'pmx-study-actions')], 'pmx-study-bar');
-  return {content: [bar, fileInput, gridBox], dispose: () => {
-    window.clearTimeout(refresh);
-    stop();
-  }};
+  return {root, refresh, dispose: onRulesChanged(refresh)};
 }
