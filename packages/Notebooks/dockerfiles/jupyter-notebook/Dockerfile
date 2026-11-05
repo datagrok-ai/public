@@ -258,7 +258,9 @@ USER grok:grok
 # executed by the kernel and exported to PDF exactly as grok_helper's /notebooks/convert does
 RUN cd /tmp ; \
     command -v antiword unrtf pdftotext xelatex ; \
-    find / -xdev \( -name 'setuptools*.dist-info' -o -name 'setuptools*.egg-info' -o -name 'setuptools*.whl' -o -name 'setuptools*.tar.gz' \) 2>/dev/null || true ; \
+    find / -xdev \( -name METADATA -o -name PKG-INFO \) -exec grep -l '^Name: setuptools' '{}' + 2>/dev/null || true ; \
+    find / -xdev -name '*.whl' 2>/dev/null || true ; \
+    apk info -r python-3.13 py3.13-setuptools 2>/dev/null || true ; \
     tesseract --list-langs ; gdalinfo --version ; gs --version ; pandoc --version > /dev/null ; \
     gnuplot -e 'set terminal dumb; plot sin(x)' > /dev/null ; \
     RESOLVER_ADDR=127.0.0.1 envsubst '${RESOLVER_ADDR}' < /etc/nginx/nginx.conf.template > /tmp/nginx.conf ; \
