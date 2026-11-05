@@ -414,6 +414,12 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 
 ## Facts that cost a run each
 
+- A step that times out with no page error may have a client exception the floor never read: the platform auto-reports
+  them, so `select created_on, error_message, error_stack_trace from reports order by created_on desc` gives the stack with
+  the time. Nginx's log has each request's upstream time; a request that never came is the page's, not the server's.
+- Chrome's HTTP cache lock: identical concurrent GETs wait for the first, up to 20 s. One hung request (a connect through
+  Docker Desktop timing out after 60 s, 1 in 175,000 on 2026-11-05) stalled every later file listing of the page by ~20 s, past
+  a 15 s step. A group filled without `loadChildren` has no `data-state` for `settleBrowseTree` to wait on (Files had none).
 - Dart names: viewers `viewer-<Type>`, inputs `input-host-<Caption>`, sections
   `div-section--<Name>`, on-canvas selectors `div-column-combobox-<bound property>` (hover-revealed,
   `X:AGE` with no space), menu items `div-Group---Item` with `aria-checked`, the close icon

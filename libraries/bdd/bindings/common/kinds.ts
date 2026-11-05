@@ -282,6 +282,12 @@ kind('dock panel', {
   labelSelector: '.panel-titlebar-text',
   description: 'a panel of the dock manager by the title its titlebar (or its tab handle) shows — "Activity cliffs"',
 });
+kind('floating panel', {
+  selector: '.dialog-floating .panel-base',
+  match: ['label'],
+  labelSelector: '.panel-titlebar-text',
+  description: 'a dock panel floating on its own, by its title — a pane dragged out of the context panel',
+});
 kind('splitter panel', {aliases: ['split pane'], selector: '.u2-splitter-panel', match: ['name']});
 kind('sash', {aliases: ['splitter sash', 'divider'], selector: '.u2-sash, .u2-splitter-sash', match: ['aria', 'name']});
 

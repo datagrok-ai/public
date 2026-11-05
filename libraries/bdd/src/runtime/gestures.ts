@@ -178,11 +178,11 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
     });
     await page.mouse.move(Math.max(0, before.x - 8), cy);
     await page.mouse.move(cx, cy);
-    const entered = await loc.evaluate((el) => new Promise<boolean>((resolve) => {
-      let frames = 0;
-      const tick = () => (el as any).__bddEntered || frames++ > 4 ? resolve((el as any).__bddEntered === true) : requestAnimationFrame(tick);
-      tick();
-    }));
+    const entered = await loc.evaluate(async (el) => {
+      for (let frames = 0; frames < 5 && !(el as any).__bddEntered; frames++)
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      return (el as any).__bddEntered === true;
+    });
     const after = await loc.boundingBox();
     if (entered && (!after || (before.x === after.x && before.y === after.y)))
       return;

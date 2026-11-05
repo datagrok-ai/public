@@ -5,7 +5,7 @@ Feature: A row added in Hit Design, drawn in Crux
   Chem's own, pinned as the session's sketcher: it opens empty and ready, and the molecule is drawn on its own controls.
 
   The campaign is a fixed fixture made once per stand and reused, since a campaign cannot be taken back from the
-  database (bindings/hit-design.ts); its files are put back at feature end as they were. Needs Chem on the stand. The
+  database (bindings/hit-design.ts); its files are written when the feature starts and again when it ends. Needs Chem on the stand. The
   feature drives Crux's own controls (@sketcher-controls): a run that pins another sketcher skips it.
 
   Background:
