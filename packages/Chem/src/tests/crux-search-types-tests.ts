@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {after, awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
@@ -147,7 +147,7 @@ category('crux substructure search: search types', () => {
     try {
       const result = await chemSubstructureSearchLibrary(col, query, query, FILTER_TYPES.substructure, false, false,
         T.INCLUDED_IN);
-      await awaitCheck(() => ended && completed, 'the search has not ended', 30000);
+      await waitUntil(() => ended && completed, 'the search has not ended', 30000);
       expect(result.equals(expected), true, `${result.trueCount()} rows, awaited ${expected.trueCount()}`);
     } finally {
       subs.forEach((s) => s.unsubscribe());

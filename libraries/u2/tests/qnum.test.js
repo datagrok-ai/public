@@ -7,7 +7,7 @@
    Dart's ByteData and the DOM's DataView both default to big-endian. The derivation of each
    fixture's last byte is written out where it is used. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
@@ -144,20 +144,20 @@ test('parse and format round-trip through each other', () => {
 
 smoke('QNumInput: typing a qualified number packs it into the value signal', async () => {
   const input = mount(new QNumInput({label: 'IC50'}));
-  assert.equal(input.value.value, null);
+  assert.equal(input.value, null);
   assert.equal(editor(input).value, '');
 
   type(input, '>10');
-  assert.equal(QNum.getQ(input.value.value), QNum.GREATER);
-  assert.equal(QNum.getValue(input.value.value), 10);
+  assert.equal(QNum.getQ(input.value), QNum.GREATER);
+  assert.equal(QNum.getValue(input.value), 10);
   assert.equal(input.validity.value, null);
 
   type(input, '<5.2');
-  assert.equal(QNum.getQ(input.value.value), QNum.LESS);
-  assert.equal(QNum.getValue(input.value.value), 5.199999999999999);
+  assert.equal(QNum.getQ(input.value), QNum.LESS);
+  assert.equal(QNum.getValue(input.value), 5.199999999999999);
 
   type(input, '');
-  assert.equal(input.value.value, null, 'blank text is null, as in Dart (qnum_input.dart:32)');
+  assert.equal(input.value, null, 'blank text is null, as in Dart (qnum_input.dart:32)');
   assert.equal(input.validity.value, null);
   input.dispose();
 });
@@ -169,14 +169,14 @@ smoke('QNumInput: unparseable text stays on screen and marks the input invalid',
   type(input, '<abc');
   assert.equal(input.validity.value, 'Not a qualified number');
   assert.equal(editor(input).value, '<abc', 'the text is not taken away');
-  assert.equal(QNum.getValue(input.value.value), 1, 'the value keeps the last good number');
+  assert.equal(QNum.getValue(input.value), 1, 'the value keeps the last good number');
 
   fire(editor(input), 'blur');
   assert.equal(editor(input).value, '<abc', 'blur does not overwrite text that is still invalid');
 
   type(input, '<2');
   assert.equal(input.validity.value, null);
-  assert.equal(QNum.getValue(input.value.value), 2);
+  assert.equal(QNum.getValue(input.value), 2);
   input.dispose();
 });
 
@@ -187,7 +187,7 @@ smoke('QNumInput: blur redraws the committed value, a write from code redraws it
   fire(editor(input), 'blur');
   assert.equal(editor(input).value, '>10');
 
-  input.value.value = QNum.create(0.25, QNum.LESS);
+  input.value = QNum.create(0.25, QNum.LESS);
   assert.equal(editor(input).value, '<0.25');
   assert.deepEqual(changes, ['>10', '<0.25']);
   input.dispose();
@@ -197,10 +197,10 @@ smoke('QNumInput: format drives the display, the value stays the packed double',
   const input = mount(new QNumInput({label: 'IC50', format: (v) => v.toFixed(1),
     value: QNum.create(5.2, QNum.LESS)}));
   assert.equal(editor(input).value, '<5.2');
-  assert.equal(QNum.getQ(input.value.value), QNum.LESS);
+  assert.equal(QNum.getQ(input.value), QNum.LESS);
 
   type(input, '>1.25');
-  assert.equal(QNum.getValue(input.value.value), 1.25, 'the typed number is not rounded');
+  assert.equal(QNum.getValue(input.value), 1.25, 'the typed number is not rounded');
   fire(editor(input), 'blur');
   assert.equal(editor(input).value, '>1.3', 'only the display is');
   input.dispose();
@@ -209,7 +209,7 @@ smoke('QNumInput: format drives the display, the value stays the packed double',
 smoke('QNumInput: two editors on one signal, and dispose kills the listeners', async () => {
   const before = Scope.liveCount;
   const first = mount(new QNumInput({label: 'From'}));
-  const second = mount(new QNumInput({label: 'Also from', bind: first.value}));
+  const second = mount(new QNumInput({label: 'Also from', bind: first.signal}));
 
   type(first, '<3');
   assert.equal(editor(second).value, '<3');
@@ -219,5 +219,5 @@ smoke('QNumInput: two editors on one signal, and dispose kills the listeners', a
   assert.equal(Scope.liveCount, before);
 
   type(first, '>9');
-  assert.equal(QNum.getValue(first.value.value), 3, 'listeners died with the scope');
+  assert.equal(QNum.getValue(first.value), 3, 'listeners died with the scope');
 });

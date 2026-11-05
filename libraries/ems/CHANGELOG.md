@@ -2,6 +2,35 @@
 
 ## v.next
 
+* History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
+* u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input
+* u2 v1: Moved onto u2's v1 API (plain `value`/`peek()`, `build`, owners as options, captions as `text`, `disabled` reasons, entry-point imports). Save and Discard say why they are off ("No changes to save", "Nothing to discard", "Wait for the batch being saved to finish"), as do the authoring dialogs' and the manifest editor's controls that are off, and New says "Loading…" until its table is loaded; `DomainAction` takes `disabled` (the reason) instead of `enabled`, and the `u2-domain-pick` tag's `enabled` prop is `disabled`
+* Forms: Fixed text a number, date or color field cannot read ("abc") not counting as an unsaved change: Discard drops it and the gates ask before leaving
+* Properties: Added an editor for users' own columns on a plugin's extensible tables, opened from Edit properties… on the list's ribbon (`domains.editProperties`); the plugin's columns stay read-only, and a save that deletes values asks first
+* Forms: Fixed a field left invalid going stale in the app: the breadcrumb and the entity page's status name the record as its fields read (an emptied title is "New issue" again, not the last valid one; a saved record's emptied name leaves the name it has, never a blank crumb), and a field over a cell already changed is no second unsaved change ("2 unsaved changes" for one edited title). `holdUnwritten` takes what the fields hold for their row (`UnwrittenEdits`); added `DomainSource.current(row)`
+* Import: Fixed writing the key back failing ("Column named 'Sku' already exists") when the source table has a column of that name in another case (`sku`): column names ignore case, so the key goes into a column of its own beside it, and the source's column keeps its values
+* Import: Fixed the key written back, and the report's key column, holding each row's caption ("Row 1", its name) instead of its key: a one-column key is its own value, as the column's format spells it (`DG-000060`)
+* Import: Fixed closing the dialog while the report reads the keys back building its rows table under the closed dialog (a u2 usage error); the key is still written back
+* Apps: Fixed browser Back or Forward inside an app's view (`domains.views`) opening a second view of the table: the app function the platform asks again answers no view, and the open one takes the address; with unsaved changes the gate asks once
+* Forms, Import: A required field is starred through the input's own `required`, so it is `aria-required` too (the asterisk was a class set by hand)
+* Apps: Fixed "Wait for the batch being saved to finish." showing when a record made with New is saved, then deleted from its own page and saved again: the saved delete no longer reads as a discarded draft, and the app goes back to the list once
+* Apps: An app's own parts are `DomainApp` options instead of a subclass — `ribbon(base, app)` and `menu(base, app)` extend the ribbon and the Actions menu the app builds, `setup(app, self)` wires the rest under the app's owner, beside `shortcuts`; removed the `app` class option of `DomainTable.app()`
+* Added `domains.configure(address, fn, {id})`: an app's rules apply to every handle over the table
+* Bulk edit: Redesigned the dialog as one form with a field picker
+* Bulk edit: Refusals and the table's validators show in the dialog
+* Import: The Preview button names what lands and says why it is held
+* Import: Refused cells are tinted and a skipped row says why
+* Child tabs: Grids fit two-line captions with units
+* Child tabs: A tab that fails to open shows its error
+* Data tables: Fixed a table stopping at its first page
+* Filters: An invalid query shows its reason under the box
+* Unsaved changes: The dialog reads CANCEL · DISCARD · SAVE
+* Trash: Restore uses the undo icon
+* Forms: Fixed touching one field of a new record showing every required field's error: a field shows its message once the user edited or left it, or a save validated the form (the form re-reading its row no longer counts)
+* Save: Off while the form or the writer refuses the batch, the reason as its tooltip ("Title is required"), and Tab from the last field reaches it; `DomainSource.guard(check, problem)` takes the verdict live
+* DomainApp: A read-only page — the trash until a restore is staged — shows no Save or Discard
+* Forms: Only a valid edit reaches the row; an invalid one stays in its field and still counts as an unsaved change (`DomainSource.holdUnwritten`): every gate asks before dropping it, Discard drops it, Save stays off saying why — the unsaved-changes prompt's SAVE too. The writer's verdict on the row's value no longer blocks a new value, and a constraint is re-judged on what the fields hold
+* Bulk edit: OK says why it is off in its tooltip
 * DomainSource: Added `hosted`: the app answers a host filter condition (a structure search) with the ids of its rows, sent as an id list before every read
 * DomainApp: Added `filters: {mode: 'builder', placement: 'left'}`: the condition builder in a pane beside the list
 * Import: Added `table.importer`: an app derives columns, keeps rows out (already there, repeated in the file, unreadable), maps its own columns and shapes the preview's and report's columns and messages; the report lists every row with its outcome and key, written back to the table on request

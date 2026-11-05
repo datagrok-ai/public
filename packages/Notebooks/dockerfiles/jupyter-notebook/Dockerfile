@@ -85,6 +85,14 @@ RUN set -ex ; \
     sed -i '1i import os' /tmp/kyotocabinet-python-1.23/setup.py ; \
     pip install --no-cache-dir --no-build-isolation /tmp/kyotocabinet-python-1.23 ; \
     rm -rf /tmp/kc.tgz /tmp/kyotocabinet-python-1.23 ; \
+    # nbclassic (latest 1.3.3) still bundles underscore 1.13.7 (CVE-2026-27601); swap in the 1.13.8 patch release \
+    python -c "import urllib.request; urllib.request.urlretrieve('https://registry.npmjs.org/underscore/-/underscore-1.13.8.tgz', '/tmp/underscore.tgz')" ; \
+    tar -xzf /tmp/underscore.tgz -C /tmp ; \
+    for d in $(find ${VIRTUAL_ENV} -type d -path '*/static/components/underscore') ; do \
+      cp /tmp/package/package.json /tmp/package/underscore-min.js "$d"/ ; \
+    done ; \
+    grep -q '"version": "1.13.8"' ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/nbclassic/static/components/underscore/package.json ; \
+    rm -rf /tmp/underscore.tgz /tmp/package ; \
     # explicit model-wheel URLs: `spacy download` resolves an empty version here \
     # (compatibility lookup fails in the build env) and 404s \
     pip install --no-cache-dir \

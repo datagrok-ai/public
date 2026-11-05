@@ -28,6 +28,7 @@ Commands:
     testall     Run packages tests
     migrate     Migrate legacy tags to meta.role
     server (s)  Manage a Datagrok server (list/get/delete entities, run functions)
+    connect-folder  Connect a local folder to Datagrok as a connection (runs a Docker container)
 
 To get help on a particular command, use:
     grok <command> --help
@@ -168,6 +169,37 @@ Options:
 
 For CI, set GROK_PRIVATE_KEY to the private key JWK (raw or base64) instead of a
 config file. Read more: https://datagrok.ai/help/govern/access-control/keypair-authentication
+`;
+
+const HELP_CONNECT_FOLDER = `
+Usage: grok connect-folder <folder> [--host <alias>] [--read-only] [--foreground] [--image <ref>] [--force]
+       grok connect-folder list [--host <alias>] [--output table|json|csv]
+       grok connect-folder start|stop|logs <connection> [-f]
+       grok connect-folder rm <connection> [--host <alias>]
+
+Connect a local folder to Datagrok as a connection. The folder agent runs in
+Docker, survives closing the terminal, and dials out to the server: no inbound
+port is opened. Connecting the same folder again resumes the same connection.
+
+grok connect-folder ~/data                Read-write, on the default server
+grok connect-folder D:\\data --read-only   Others with access can only read
+grok connect-folder list                  Your connected folders and their containers
+grok connect-folder stop "laptop data"    Stop serving; stays stopped after a reboot
+grok connect-folder rm 7ff0714e           Remove the container and delete the connection
+
+<connection> is the connection name, a connection id prefix (8+ characters), or
+the folder.
+
+Options:
+--host        Server alias from ~/.grok/config.yaml (default: the default server)
+--read-only   Mount the folder read-only; writes are refused
+--foreground  Run attached, removed on Ctrl+C (CI, debugging)
+--image       Agent image (default: the one the server names)
+--force       Allow a drive root or the home folder
+-f            With logs: follow
+
+Requires Docker and a keypair (grok login <server>), which never leaves this
+machine: the container holds a key of its own that can only serve this folder.
 `;
 
 const HELP_CONFIG = `
@@ -508,5 +540,6 @@ export const help = {
   server: HELP_SERVER,
   s: HELP_SERVER,
   setup: HELP_SETUP,
+  'connect-folder': HELP_CONNECT_FOLDER,
   help: HELP,
 };

@@ -1,10 +1,3 @@
-/* Viewer readers on the Playwright side, over the in-page runtime (`viewer-runtime.ts`): a
-   viewer's element, its hit areas, its properties, its size, its layout and the events it fires.
-   The pixel claims are in `viewer-pixels.ts`, the context menus in `viewer-menus.ts`, the legend
-   and the tooltip in `viewer-legend.ts`; all of them are re-exported here, so `import * as v`
-   reaches everything.
-   Roundtrips are the cost, not the page: a step is locate + one action, and the baseline a
-   "than before" claim compares with is taken inside the same in-page call as the change. */
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
@@ -13,6 +6,7 @@ import * as guide from './guide.js';
 import {locate, reachable} from './locate.js';
 import {Balloon, Box, evaluate, installViewerRuntime, Reading} from './viewer-runtime.js';
 
+// so `import * as v` reaches every viewer reader
 export * from './viewer-runtime.js';
 export * from './viewer-pixels.js';
 export * from './viewer-menus.js';

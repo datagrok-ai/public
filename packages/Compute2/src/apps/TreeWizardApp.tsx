@@ -44,7 +44,15 @@ export const TreeWizardApp = Vue.defineComponent({
       currentView.close();
     };
     return () => (
-      <TreeWizard providerFunc={props.providerFunc} version={props.version} instanceConfig={props.instanceConfig} initialRunId={props.initialRunId} modelName={props.modelName} showReturn={!!resolve.value} onReturn={onReturn}/>
+      <TreeWizard
+        providerFunc={props.providerFunc}
+        version={props.version}
+        instanceConfig={props.instanceConfig}
+        initialRunId={props.initialRunId}
+        modelName={props.modelName}
+        showReturn={!!resolve.value}
+        onReturn={onReturn}
+      />
     );
   },
 });

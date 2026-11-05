@@ -1,0 +1,10 @@
+{
+  "name": "async-build",
+  "entry": "campaigns-panel.ts",
+  "title": "A panel that builds its rows after an await",
+  "source": "'silent ownership', the guard gap ranked first: controls built after an await are owned by nobody and outlive the panel; a panel disposed while loading still builds",
+  "bad": {
+    "bad-after-await": ["dispose-releases", "dispose-while-loading", "live-count", "shows-rows"],
+    "bad-disposed-owner": ["dispose-while-loading"]
+  }
+}

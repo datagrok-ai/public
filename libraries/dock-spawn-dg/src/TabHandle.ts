@@ -185,6 +185,7 @@ export class TabHandle {
     }
 
     onMouseDown(e) {
+        if (this.elementCloseButton.contains(e.target)) return;
         e.preventDefault();
 
         this.parent.onSelected();

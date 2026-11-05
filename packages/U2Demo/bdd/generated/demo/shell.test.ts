@@ -15,8 +15,8 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {navigationShown, openDemoPage} from '../../bindings/demo.js';
 import {atLeastWidePx, leftOf, widePx, windowSize} from '@datagrok-libraries/bdd/bindings/common/geometry';
-import {clickOn, collapse, expand, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {switchView} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {clickOn, collapse, expand, shouldBe, shouldContainText, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {contextPanelOpen, switchView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The demo shell", () => {
@@ -59,16 +59,40 @@ test.describe("The demo shell", () => {
     enter(page, "U2 Demo");
     await session.step(36, "Then demo navigation should be 180 px wide", () => widePx(page, el("demo navigation"), 180));
   });
+  test("The context panel shows the source of the page, whatever file of the demo it lives in [page=Records, factory=recordsPage]", {tag: ["@demo", "@realizes:u2.app-view"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(39, "Given user opens the \"Records\" demo page", () => openDemoPage(page, "Records"));
+    enter(page, "U2 Demo");
+    await session.step(40, "And the context panel is open", () => contextPanelOpen(page));
+    await session.step(41, "Then context panel should contain text \"export function recordsPage(\"", () => shouldContainText(page, el("context panel"), "export function recordsPage("));
+    await session.step(42, "And context panel should not contain text \"Not bundled\"", () => shouldNotContainText(page, el("context panel"), "Not bundled"));
+  });
+  test("The context panel shows the source of the page, whatever file of the demo it lives in [page=TableView chrome, factory=tableChromePage]", {tag: ["@demo", "@realizes:u2.app-view"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(39, "Given user opens the \"TableView chrome\" demo page", () => openDemoPage(page, "TableView chrome"));
+    enter(page, "U2 Demo");
+    await session.step(40, "And the context panel is open", () => contextPanelOpen(page));
+    await session.step(41, "Then context panel should contain text \"export function tableChromePage(\"", () => shouldContainText(page, el("context panel"), "export function tableChromePage("));
+    await session.step(42, "And context panel should not contain text \"Not bundled\"", () => shouldNotContainText(page, el("context panel"), "Not bundled"));
+  });
+  test("The context panel shows the source of the page, whatever file of the demo it lives in [page=Tables, factory=tablesPage]", {tag: ["@demo", "@realizes:u2.app-view"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(39, "Given user opens the \"Tables\" demo page", () => openDemoPage(page, "Tables"));
+    enter(page, "U2 Demo");
+    await session.step(40, "And the context panel is open", () => contextPanelOpen(page));
+    await session.step(41, "Then context panel should contain text \"export function tablesPage(\"", () => shouldContainText(page, el("context panel"), "export function tablesPage("));
+    await session.step(42, "And context panel should not contain text \"Not bundled\"", () => shouldNotContainText(page, el("context panel"), "Not bundled"));
+  });
   test("The ribbon's demo tools open and close tables", {tag: ["@demo", "@realizes:u2.app-view"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(39, "Given user opens the \"Overview\" demo page", () => openDemoPage(page, "Overview"));
+    await session.step(51, "Given user opens the \"Overview\" demo page", () => openDemoPage(page, "Overview"));
     enter(page, "U2 Demo");
-    await session.step(40, "When user clicks on \"Demo tools\" dropdown button", () => clickOn(page, el("\"Demo tools\" dropdown button")));
-    await session.step(41, "And user clicks on \"Add demog table\" menu item", () => clickOn(page, el("\"Add demog table\" menu item")));
-    await session.step(42, "Then grid should be visible", () => shouldBe(page, el("grid"), "visible"));
-    await session.step(43, "When user switches to the \"U2 Demo\" view", () => switchView(page, "U2 Demo"));
-    await session.step(44, "And user clicks on \"Demo tools\" dropdown button", () => clickOn(page, el("\"Demo tools\" dropdown button")));
-    await session.step(45, "And user clicks on \"Close demo tables\" menu item", () => clickOn(page, el("\"Close demo tables\" menu item")));
-    await session.step(46, "Then grid should be hidden", () => shouldBe(page, el("grid"), "hidden"));
+    await session.step(52, "When user clicks on \"Demo tools\" dropdown button", () => clickOn(page, el("\"Demo tools\" dropdown button")));
+    await session.step(53, "And user clicks on \"Add demog table\" menu item", () => clickOn(page, el("\"Add demog table\" menu item")));
+    await session.step(54, "Then grid should be visible", () => shouldBe(page, el("grid"), "visible"));
+    await session.step(55, "When user switches to the \"U2 Demo\" view", () => switchView(page, "U2 Demo"));
+    await session.step(56, "And user clicks on \"Demo tools\" dropdown button", () => clickOn(page, el("\"Demo tools\" dropdown button")));
+    await session.step(57, "And user clicks on \"Close demo tables\" menu item", () => clickOn(page, el("\"Close demo tables\" menu item")));
+    await session.step(58, "Then grid should be hidden", () => shouldBe(page, el("grid"), "hidden"));
   });
 });

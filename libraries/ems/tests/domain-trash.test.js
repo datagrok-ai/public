@@ -1,11 +1,5 @@
-/* Trash over the memory backend (WO 3-5, R-c): a landed delete is soft, a `deleted: 'only'` source
-   is the trash — rows carrying `~is_deleted`, read-only, with the access narrowed as an upper bound
-   no row's own `~can_edit` can lift — a Restore is STAGED into the session's unit of work and rides
-   the next `save()` as one `restore` op, a trash source still refuses an edit, and a `deleted`
-   source over a backend that cannot restore is refused by name. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, Rows, notify} from '@datagrok-libraries/u2';
@@ -38,7 +32,7 @@ function source(name, body) {
 const env = () => ({designTime: false, subBinds: {}, resolve: () => null});
 
 async function rows(table, options = {}) {
-  const src = new DomainSource({table, ...options}, env());
+  const src = testOwner().build(() => new DomainSource({table, ...options}, env()));
   src.start();
   await flush();
   return src;

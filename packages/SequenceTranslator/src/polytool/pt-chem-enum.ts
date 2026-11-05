@@ -381,17 +381,16 @@ function tryParse(smi: string, rdkit: RDModule): string | null {
 }
 
 /**
- * Returns the canonical, H-stripped SMILES iff `smi` parses as exactly one
- * heavy atom — used to detect single-atom R-groups (`N`, `O`, `[N+]`, …) that
- * substitute into the core's `[*:N]` slot directly. Returns null otherwise.
+ * Returns the canonical SMILES iff `smi` parses as exactly one atom — used to
+ * detect single-atom R-groups (`N`, `O`, `[N+]`, `[H]`, …) that substitute into
+ * the core's `[*:N]` slot directly. Returns null otherwise.
  */
 function trySingleAtomCanonical(smi: string, rdkit: RDModule): string | null {
   let mol: RDMol | null = null;
   try {
     mol = rdkit.get_mol(smi);
     if (!mol || !mol.is_valid()) return null;
-    if (mol.get_num_atoms(true) !== 1) return null;
-    mol.remove_hs_in_place();
+    if (mol.get_num_atoms() !== 1) return null;
     const canon = mol.get_smiles();
     return canon && canon.length > 0 ? canon : null;
   } catch {
@@ -479,6 +478,8 @@ export function validateParams(params: ChemEnumParams): ChemEnumValidation {
 
 // ─── SMILES assembly ────────────────────────────────────────────────────────
 
+const HYDROGEN_R_GROUP = /^(?:\[\*:\d+\]-?(\[\d*H\])|(\[\d*H\])-?\[\*:\d+\])$/;
+
 /**
  * Pure-string join: core + one R-group per R-number share ring-closure digits
  * across a disconnected SMILES. Returns a SMILES that RDKit can parse, but
@@ -502,19 +503,23 @@ export function buildJoinedSmiles(
   const atomReps = new Map<number, string>();
   const labeled = new Map<number, string>();
   for (const [k, s] of rgSmilesByNum) {
-    if (extractRNumbers(s).includes(k)) labeled.set(k, s);
+    // RDKit misreads a stereo-defining H joined through a ring closure, so a hydrogen goes in as an atom.
+    const hydrogen = s.match(HYDROGEN_R_GROUP);
+    if (hydrogen) atomReps.set(k, hydrogen[1] ?? hydrogen[2]);
+    else if (extractRNumbers(s).includes(k)) labeled.set(k, s);
     else atomReps.set(k, s);
   }
 
-  let preparedCore = coreSmiles;
+  // The leading label goes into a branch before atoms are spliced in: RDKit misreads an H leading a stereo
+  // atom that opens a ring bond (`[H]/C1=…`).
+  let coreFixed = moveStartRLabelToBranch(coreSmiles);
   for (const [k, atom] of atomReps)
-    preparedCore = substituteRLabelWithAtom(preparedCore, k, atom);
+    coreFixed = substituteRLabelWithAtom(coreFixed, k, atom);
 
-  if (labeled.size === 0) return preparedCore;
+  if (labeled.size === 0) return coreFixed;
 
-  const coreFixed = moveStartRLabelToBranch(preparedCore);
   const rgsFixed = new Map<number, string>();
-  for (const [k, s] of labeled) rgsFixed.set(k, moveStartRLabelToBranch(s));
+  for (const [k, s] of labeled) rgsFixed.set(k, moveStartRLabelToBranch(alignJoinDirection(coreFixed, s, k)));
 
   const allPieces = [coreFixed, ...rgsFixed.values()];
   const digits = pickFreeRingDigits(allPieces, labeled.size);
@@ -576,15 +581,82 @@ export function moveStartRLabelToBranch(smi: string): string {
   const m = smi.match(/^(\[\*:\d+\])([-=#:/\\])?(\[[^\]]+\]|Br|Cl|[BCNOPSFIbcnops])(.*)$/s);
   if (!m) return smi;
   const [, rlab, bond, atom, rest] = m;
-  return `${atom}(${bond ?? ''}${rlab})${rest}`;
+  // Written from the atom's side now, a direction flips (`[*:1]/C=` is `C(\[*:1])=`), and the label moves
+  // behind the atom's implicit H, which inverts `@`/`@@` (`[*:1][C@@H](C)N` is `[C@H]([*:1])(C)N`).
+  const movedAtom = atom.replace(/@@?(?=H)/, (c) => c === '@' ? '@@' : '@');
+  return `${movedAtom}(${flipDirection(bond ?? '')}${rlab})${rest}`;
 }
 
-/** Replaces `[*:n]` and `([*:n])` in `smi` with a ring-closure token. */
+function flipDirection(bond: string): string {
+  return bond === '/' ? '\\' : bond === '\\' ? '/' : bond;
+}
+
+const SMILES_TOKEN = /\[[^\]]*\]|Br|Cl|%\d{2}|[A-Za-z*]|\d|[-=#$:/\\.()]/g;
+
+/**
+ * The `/` `\` directions, as seen from the atom bonded to `[*:n]`, of that atom's bond to the label and of
+ * its other bonds (non-directional ones left out). Null when `smi` has no `[*:n]`.
+ */
+function labelBondDirections(smi: string, n: number): {label: string, others: string[]} | null {
+  const atoms: string[] = [];
+  const bonds: {a: number, b: number, dir: string}[] = []; // dir as written from a to b
+  const branches: number[] = [];
+  const openRings = new Map<string, {atom: number, dir: string}>();
+  let prev = -1;
+  let bond = '';
+  for (const tok of smi.match(SMILES_TOKEN) ?? []) {
+    if (tok === '(') branches.push(prev);
+    else if (tok === ')') prev = branches.pop() ?? -1;
+    else if (tok === '.') prev = -1;
+    else if ('-=#$:/\\'.includes(tok)) bond = tok;
+    else if (/^(%\d{2}|\d)$/.test(tok)) {
+      const open = openRings.get(tok);
+      if (open) {
+        openRings.delete(tok);
+        bonds.push({a: open.atom, b: prev, dir: open.dir || flipDirection(bond)});
+      } else
+        openRings.set(tok, {atom: prev, dir: bond});
+      bond = '';
+    } else {
+      atoms.push(tok);
+      if (prev >= 0) bonds.push({a: prev, b: atoms.length - 1, dir: bond});
+      prev = atoms.length - 1;
+      bond = '';
+    }
+  }
+  const label = atoms.indexOf(`[*:${n}]`);
+  const labelBond = bonds.find((b) => b.a === label || b.b === label);
+  if (!labelBond) return null;
+  const x = labelBond.a === label ? labelBond.b : labelBond.a;
+  const fromX = (b: {a: number, dir: string}) => {
+    const dir = b.dir === '/' || b.dir === '\\' ? b.dir : '';
+    return b.a === x ? dir : flipDirection(dir);
+  };
+  const others = bonds.filter((b) => b !== labelBond && (b.a === x || b.b === x)).map(fromX).filter((d) => d);
+  return {label: fromX(labelBond), others};
+}
+
+/**
+ * The bond joining R-group `rg` to the core's `[*:k]` takes one direction, read by a stereo double bond on
+ * either side. When the core needs it one way and the R-group the other, every `/` `\` of the R-group flips,
+ * which keeps the R-group's own geometry and makes the two agree.
+ */
+function alignJoinDirection(core: string, rg: string, k: number): string {
+  const c = labelBondDirections(core, k);
+  const r = labelBondDirections(rg, k);
+  if (!c || !r || (!c.label && !r.label)) return rg;
+  const coreWants = c.label || flipDirection(c.others[0] ?? '');
+  const rgWants = flipDirection(r.label || flipDirection(r.others[0] ?? ''));
+  return coreWants && rgWants && coreWants !== rgWants ? rg.replace(/[/\\]/g, flipDirection) : rg;
+}
+
+/** Replaces `[*:n]` and `(<bond>[*:n])` in `smi` with a ring-closure token. */
 export function substituteRLabelWithRingDigit(smi: string, n: number, digitToken: string): string {
   const target = `[*:${n}]`;
-  // Collapse a lone-branch form first so `(` / `)` don't linger: X([*:n]) → X<digit>
-  const branchForm = new RegExp(`\\(\\s*\\[\\*:${n}\\]\\s*\\)`, 'g');
-  smi = smi.replace(branchForm, digitToken);
+  // A branch can't hold just a ring bond, so X(<bond>[*:n]) collapses to X<bond><digit>, keeping a
+  // stereo `/` `\` or a `=` on the ring bond.
+  const branchForm = new RegExp(`\\(\\s*([-=#:/\\\\]?)\\s*\\[\\*:${n}\\]\\s*\\)`, 'g');
+  smi = smi.replace(branchForm, (_m, bond: string) => bond + digitToken);
   return smi.split(target).join(digitToken);
 }
 

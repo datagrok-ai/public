@@ -384,8 +384,8 @@ category('Flow: curves nodes', () => {
   });
 
   test('the curve twins take a real fit column slot', async () => {
-    await expectTableAndColumn('Curves:addCurveStatistic', 'curves', 'fit', 'statistic');
-    await expectTableAndColumn('Curves:addAggrCurveStatistic', 'curves', 'fit', 'aggregation');
+    await expectTableAndColumn('Curves:addCurveStatistic', 'curvesCol', 'fit', 'statistic');
+    await expectTableAndColumn('Curves:addAggrCurveStatistic', 'curvesCol', 'fit', 'aggregation');
   });
 
   test('the free-text statistic and aggregation fields became choices', async () => {
@@ -450,7 +450,7 @@ category('Flow: curves nodes', () => {
 
     let col: DG.Column;
     try {
-      col = await func.apply({table, curves, statistic: 'rSquared', seriesNumber: 0});
+      col = await func.apply({table, curvesCol: curves, statistic: 'rSquared', seriesNumber: 0});
     } catch (e) {
       // Skip only when the package executes but the served bundle lacks this export
       // (a stand pinned to an older Curves build) — asserting further would test the stand.

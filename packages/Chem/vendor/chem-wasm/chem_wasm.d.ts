@@ -2,6 +2,40 @@
 /* eslint-disable */
 
 /**
+ * A monomer library read once (the effective Pistoia JSON Datagrok resolves with), assembling sequences (module docs).
+ */
+export class ChemMonomerLibrary {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * `assembleOne(sequence, options?)`: one `AsmSequence` (JSON) → `{molblock, layout, error}`, with
+     * `atomPosition` / `bondPosition` (`Int32Array`, per atom / bond of the block: the monomer's position, -1 none)
+     * when `options.map` and the row assembled. Throws where the text is no `AsmSequence` or the options are wrong.
+     */
+    assembleOne(sequence: string, options?: string | null): {molblock: string | null, layout: number, error: string | null, atomPosition?: Int32Array, bondPosition?: Int32Array};
+    /**
+     * `assemble(symbols, rowStart, monSymbol, monRole, monPosition, chainStart, rowChainStart, conn, rowConnStart,
+     * rowError, options?)`: chem-meta's `AsmBatch` (`symbols` as JSON), `AssembleResult` back (module docs). Throws
+     * where the arrays do not fit together or the options are wrong.
+     */
+    assemble(symbols: string, rowStart: Int32Array, monSymbol: Int32Array, monRole: Uint8Array, monPosition: Int32Array, chainStart: Int32Array, rowChainStart: Int32Array, conn: Int32Array, rowConnStart: Int32Array, rowError: (string | null)[], options?: string | null): {molblocks: (string | null)[], layouts: Uint8Array, errors: (string | null)[]};
+    /**
+     * `errors()`: JSON `[{polymerType, symbol, error} | {index, error}]`, the monomers without a template and the
+     * entries that are no monomer (compiles every template).
+     */
+    errors(): string;
+    /**
+     * `new ChemMonomerLibrary(json)`: the Pistoia library (a JSON array of monomers); the templates compile on first
+     * use. Throws when the text is no JSON array.
+     */
+    constructor(json: string);
+    /**
+     * The number of monomers (keys) read.
+     */
+    readonly size: number;
+}
+
+/**
  * Groups of SMARTS compiled once (Chem's structural alert rule sets, its pharmacophore families), matched against
  * many molecules (`match`; chem-wasm's chem_batch.rs docs).
  */
@@ -305,7 +339,9 @@ export class JSMol {
      */
     generate_aligned_coords(template: JSMol, details?: string | null): string;
     /**
-     * PORT(minilib.cpp `get_aromatic_form`): the MOL block of the aromatic form.
+     * PORT(minilib.cpp:360-369 `get_aromatic_form`): the MOL block of the aromatic form, written
+     * with its aromatic bonds (`MolToMolBlock(..., kekulize = false)`; Crux wrote it Kekulé, and
+     * failed where the molecule does not kekulize, `c1cccc1`).
      */
     get_aromatic_form(): string;
     get_atom_pair_fp_as_uint8array(details?: string | null): Uint8Array;
@@ -904,6 +940,13 @@ export function chemGasteigerMap(molecule: string, contours: number, width?: num
 export function chemInchiInputs(molecules: (string | null)[]): (Uint8Array | null)[];
 
 /**
+ * `chemMarkStereoAbsolute(molblocks)`: each block with every specified stereocentre in one ABS group, as V3000 (Bio's
+ * replacement of `OCL.fromMolfile(m).toMolfileV3().replace('STERAC1', 'STEABS')`); null where a block is null, not a
+ * string, or not read.
+ */
+export function chemMarkStereoAbsolute(molblocks: (string | null)[]): (string | null)[];
+
+/**
  * `chemMurckoScaffolds(molecules)`: the JSON list of the script's `scaffolds` per molecule (module docs).
  */
 export function chemMurckoScaffolds(molecules: (string | null)[]): string;
@@ -925,9 +968,15 @@ export function chemProperties(molecules: (string | null)[], names: string[]): s
 export function chemQed(molecules: (string | null)[]): string;
 
 /**
+ * `chemToV2000(molblock)`: the molecule as a V2000 MOL block (Bio's 3D panel: `OCL.Molecule.fromMolfile(m).toMolfile()`);
+ * throws where the block is not read or V2000 cannot hold the molecule (over 999 atoms or bonds).
+ */
+export function chemToV2000(molblock: string): string;
+
+/**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
  * is `"core,heavy,search,descriptors,scaffold-tree,inchi-input,chem-scripts,chem-conformers,chem-identifiers,chem-murcko,
- * chem-filter-catalogs,synthon-search"`.
+ * chem-filter-catalogs,synthon-search,biopolymer"`.
  */
 export function chemWasmModules(): string;
 
@@ -1121,6 +1170,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
+    readonly __wbg_chemmonomerlibrary_free: (a: number, b: number) => void;
     readonly __wbg_chemsmartsset_free: (a: number, b: number) => void;
     readonly __wbg_chemsynthonspace_free: (a: number, b: number) => void;
     readonly __wbg_collection_free: (a: number, b: number) => void;
@@ -1143,11 +1193,18 @@ export interface InitOutput {
     readonly chemFingerprints: (a: number, b: number, c: number, d: number, e: any, f: number) => [number, number, number];
     readonly chemGasteigerMap: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly chemInchiInputs: (a: any) => [number, number, number];
+    readonly chemMarkStereoAbsolute: (a: any) => any;
     readonly chemMurckoScaffolds: (a: any) => [number, number, number, number];
     readonly chemMutate: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly chemProperties: (a: any, b: number, c: number) => [number, number, number, number];
     readonly chemQed: (a: any) => [number, number];
+    readonly chemToV2000: (a: number, b: number) => [number, number, number, number];
     readonly chemWasmModules: () => [number, number];
+    readonly chemmonomerlibrary_assemble: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number, l: number, m: number, n: number, o: number, p: number, q: number, r: number, s: number, t: any, u: number, v: number) => [number, number, number];
+    readonly chemmonomerlibrary_assembleOne: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+    readonly chemmonomerlibrary_errors: (a: number) => [number, number];
+    readonly chemmonomerlibrary_new: (a: number, b: number) => [number, number, number];
+    readonly chemmonomerlibrary_size: (a: number) => number;
     readonly chemsmartsset_groups: (a: number) => number;
     readonly chemsmartsset_lastWork: (a: number) => [number, number];
     readonly chemsmartsset_match: (a: number, b: any) => [number, number, number];

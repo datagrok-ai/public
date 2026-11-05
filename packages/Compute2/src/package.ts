@@ -7,19 +7,19 @@ import {filter, take} from 'rxjs/operators';
 
 import {ViewerTestApp as ViewerAppInstance} from './apps/ViewerTestApp';
 import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
-import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
 import {provideDgViewService} from '@datagrok-libraries/webcomponents-vue';
-import {CustomFunctionView as CustomFunctionViewInst, historyUtils} from '@datagrok-libraries/compute-utils';
-import type {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
+import type {PipelineConfiguration} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
-import {HistoryApp} from './apps/HistoryApp';
+import {attachRunStorage} from './components/RunStorage/custom-function-view-runs';
+import {browseRuns} from './components/RunStorage/run-browser-dialog';
 import {setVueAppOptions} from './utils';
 import {openRunComparison} from './components/RunComparison/comparison-views';
-import {Subject} from 'rxjs';
 import {normalizePipelineInstanceConfig} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import type {
@@ -27,13 +27,13 @@ import type {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
+import {CUSTOM_VIEW_OPTION} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {runWorkflow, saveWorkflowRun} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import type {RunState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import type {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
 import {runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import type {OptimizerParams} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
-import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {ModelCatalogView,
   startModelCatalog,
   makeModelTreeBrowser,
@@ -42,10 +42,8 @@ import {ModelCatalogView,
   setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import dayjs from 'dayjs';
 
-// for compute-api pakage
-export const CFV = CustomFunctionViewInst;
-
 declare global {
+  // eslint-disable-next-line no-var
   var initialURLHandled: boolean;
 }
 
@@ -79,6 +77,7 @@ class Compute2ModelCatalogView extends ModelCatalogView {
   constructor(viewName: string, roleOnlyFilter = false) {
     super(viewName, roleOnlyFilter);
     this.ribbonMenu.group('Tools')
+      .item('Browse Runs...', () => grok.functions.call('Compute2:BrowseRuns'))
       .item('Compare Runs...', () => grok.functions.call('Compute2:CompareRuns'))
       .endGroup();
   }
@@ -98,7 +97,6 @@ const modelCatalogOptions = {
 const providerOf = (nqName: string) => DG.Func.byName(nqName)?.options.provider ?? nqName;
 
 export class PackageFunctions {
-
   @grok.decorators.init()
   static async init() {
     if (initRunned)
@@ -150,7 +148,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    meta: { role: ' ', app: ' '}
+    meta: {role: ' ', app: ' '},
   })
   static modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.ViewBase) {
     makeModelTreeBrowser(treeNode as any, modelCatalogOptions.roleOnlyFilter);
@@ -163,27 +161,18 @@ export class PackageFunctions {
     setViewHierarchyData(call, view);
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    const updateFCBus = new Subject<DG.FuncCall>();
-
-    const app = Vue.createApp(HistoryApp, {name: view.funcNqName, showHistory: view.showHistory, updateFCBus: Vue.markRaw(updateFCBus)});
-    setVueAppOptions(app);
-
-    const sub = updateFCBus.subscribe((fc) => {
-      view.linkFunccall(fc);
-      view.onAfterLoadRun(fc);
-    });
-
-    app.mount(view.historyRoot);
+    const detach = attachRunStorage(view, call.func);
+    if (call.aux.initialRunId) {
+      await view.loadRun(call.aux.initialRunId)
+        .catch((e) => grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`));
+    }
 
     grok.events.onViewRemoved.pipe(
       filter((closedView) => {
         return closedView === (view as any);
       }),
       take(1),
-    ).subscribe(() => {
-      sub.unsubscribe();
-      app.unmount();
-    });
+    ).subscribe(() => detach());
 
     return view;
   }
@@ -199,7 +188,7 @@ export class PackageFunctions {
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
-    const viewService = provideDgViewService(app, view);
+    provideDgViewService(app, view);
 
     app.mount(view.root);
 
@@ -210,10 +199,7 @@ export class PackageFunctions {
       take(1),
     ).subscribe(() => {
       app.unmount();
-      viewService.dispose();
     });
-
-    grok.shell.windows.showHelp = false;
 
     return view;
   }
@@ -237,11 +223,12 @@ export class PackageFunctions {
 
     const {resolve, initialRunId} = call.aux;
 
-    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, initialRunId});
+    const app = Vue.createApp(TreeWizardAppInstance,
+      {providerFunc, modelName, version, instanceConfig, resolve, initialRunId});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
-    const viewService = provideDgViewService(app, view);
+    provideDgViewService(app, view);
 
     app.mount(view.root);
 
@@ -252,12 +239,9 @@ export class PackageFunctions {
       take(1),
     ).subscribe(() => {
       app.unmount();
-      viewService.dispose();
       if (resolve)
         resolve();
     });
-
-    grok.shell.windows.showHelp = false;
 
     return view;
   }
@@ -269,9 +253,14 @@ export class PackageFunctions {
     outputs: [{type: 'object', name: 'result'}],
   })
   static async StartWorkflow(
-    @grok.decorators.param({options: {description: 'Qualified name of the workflow function to launch'}}) nqName: string,
+    @grok.decorators.param({
+      options: {description: 'Qualified name of the workflow function to launch'},
+    }) nqName: string,
     @grok.decorators.param({options: {description: 'Workflow version to run'}}) version: string,
-    @grok.decorators.param({'type': 'object', options: {description: 'Optional initial pipeline configuration'}}) instanceConfig?: PipelineInstanceConfig) {
+    @grok.decorators.param({
+      'type': 'object',
+      'options': {description: 'Optional initial pipeline configuration'},
+    }) instanceConfig?: PipelineInstanceConfig) {
     const func = DG.Func.byName(nqName);
     // @ts-ignore-next-line
     const {promise, resolve} = Promise.withResolvers();
@@ -319,14 +308,17 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'OpenWorkflowRun',
+    // eslint-disable-next-line max-len
     description: 'Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.',
   })
   static async OpenWorkflowRun(
     @grok.decorators.param({options: {description: 'Meta FuncCall id of the saved workflow run'}}) id: string) {
     const metaCall = await historyUtils.shallowLoadRun(id);
-    const call = metaCall.func.prepare({});
+    // a run saved from a custom view opens in it again, unless that view is gone
+    const customView = metaCall.options[CUSTOM_VIEW_OPTION];
+    const call = ((customView && DG.Func.byName(customView)) || metaCall.func).prepare({});
     call.aux.initialRunId = id;
-    if (`${metaCall.func.options['editor'] ?? ''}`.startsWith('Compute2:')) {
+    if (`${call.func.options['editor'] ?? ''}`.startsWith('Compute2:')) {
       call.edit();
       return;
     }
@@ -343,7 +335,10 @@ export class PackageFunctions {
     outputs: [{type: 'object', name: 'result'}],
   })
   static async RunOptimizer(
-    @grok.decorators.param({'type': 'object', options: {description: 'Optimizer parameters: target function, variables, and objective'}}) params: OptimizerParams,
+    @grok.decorators.param({
+      'type': 'object',
+      'options': {description: 'Optimizer parameters: target function, variables, and objective'},
+    }) params: OptimizerParams,
   ) {
     const fin = await runOptimizerFinalized(params);
     return fin.calls;
@@ -356,6 +351,14 @@ export class PackageFunctions {
   })
   static async CompareRuns() {
     openRunComparison();
+  }
+
+  @grok.decorators.func({
+    name: 'Browse Runs',
+    description: 'Browse saved runs of any model in My runs and in spaces, and open or compare them',
+  })
+  static async BrowseRuns() {
+    await browseRuns();
   }
 
 
@@ -382,17 +385,6 @@ export class PackageFunctions {
     grok.shell.addView(view);
   }
 
-
-  @grok.decorators.func()
-  static async HistoryTestApp() {
-    const view = new DG.ViewBase();
-    const app = Vue.createApp(HistoryAppInstance);
-    view.root.classList.remove('ui-panel');
-    setVueAppOptions(app);
-    app.mount(view.root);
-    view.name = 'HistoryTestApp';
-    grok.shell.addView(view);
-  }
 
   @grok.decorators.func({
     name: 'Mock Pipeline 1',
@@ -422,6 +414,14 @@ export class PackageFunctions {
         id: 'link1',
         from: 'in1:step1/res',
         to: 'out1:step2/a',
+      }, {
+        id: 'rootTitle',
+        type: 'nodemeta',
+        from: 'in:step1/a',
+        to: 'title:title',
+        handler({controller}) {
+          controller.setDescriptionItem('title', 'Pipeline 1 title');
+        },
       }],
     };
     return c;
@@ -802,106 +802,13 @@ export class PackageFunctions {
     name: 'Custom View (Compute 2 Test)',
     editor: 'Compute2:CustomFunctionViewEditor',
     // meta: { role: 'model' },
-    outputs: [{type: 'object', name: 'result'}]
+    outputs: [{type: 'object', name: 'result'}],
   })
   static async TestCustomView() {
     const view = new MyView();
     return view;
   }
 
-
-  @grok.decorators.func({
-    meta: {
-      features: '{"fitting": true, "sens-analysis": true}',
-      runOnOpen: 'true',
-      runOnInput: 'true',
-    },
-    outputs: [
-      {
-        name: 'integer',
-        type: 'int',
-      },
-      {
-        name: 'float1',
-        type: 'double',
-      },
-      {
-        name: 'float2',
-        type: 'double',
-      },
-      {
-        name: 'table1',
-        type: 'dataframe',
-        options: { viewer: 'Line chart(block:60) | Grid(block:40)' },
-      },
-      {
-        name: 'table2',
-        type: 'dataframe',
-        options: { viewer: 'Line chart(block:60) | Grid(block:40)' },
-      },
-    ],
-    description: 'Test for optimization: multiple scalars output',
-    editor: 'Compute2:RichFunctionViewEditor',
-  })
-  static fitTestFunc(
-    @grok.decorators.param({ options: { caption: 'param1', min: '-3', max: '3', initialValue: '1' } }) x1: number,
-    @grok.decorators.param({ options: { caption: 'param2', min: '-3', max: '3', initialValue: '-1' } }) x2: number,
-    @grok.decorators.param({ options: { caption: 'table' } }) y: DG.DataFrame,
-    bool: boolean) {
-    return {
-      integer: x1 ** 3 * (x1 - 1) * x2 ** 3 * (x2 - 1),
-      float1: (x2 - 1) ** 2 + (x1 - 1) ** 2,
-      float2: (x2 - 1) ** 4 + (x1 - 1) ** 4,
-      table1: DG.DataFrame.fromColumns([
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [x1 + x2 + 1, 4, 9, 16, 25]),
-      ]),
-      table2: DG.DataFrame.fromColumns([
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [x1 + x2 + 1, 8, 27, 64, 125]),
-      ]),
-    };
-  }
-
-
-  @grok.decorators.func({ description: 'Test for optimization: multiple scalars output' })
-  static async testFittingOutputs() {
-    const func = await grok.functions.find('Compute2:fitTestFunc');
-
-    if (func === null) {
-      grok.shell.error('The function "Compute:fitTestFunc" not found!');
-      return;
-    }
-
-    const targetDf1 = DG.DataFrame.fromColumns([
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [1, 4.3, 9.1, 16, 25]),
-    ]);
-    targetDf1.name = 'test-df1';
-
-    const targetDf2 = DG.DataFrame.fromColumns([
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [1, 8.5, 27.6, 64.9, 125]),
-    ]);
-    targetDf2.name = 'test-df2';
-
-    await FittingView.fromEmpty(func as any, {
-      targets: {
-        integer: { default: 123, enabled: true },
-        float1: { default: 456.789, enabled: true },
-        table1: {
-          default: targetDf1,
-          enabled: true,
-          argumentCol: 'arg',
-        },
-        table2: {
-          default: targetDf2,
-          enabled: true,
-          argumentCol: 'arg',
-        },
-      },
-    });
-  }
 
   // Fixtures for the custom-export report-handler test (see test/custom-export.ts).
   @grok.decorators.func({
@@ -914,21 +821,6 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean): Promise<string> {
     return `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}|${startDownload}`;
-  }
-
-  // Fixture for the URL-inputs parsing tests (see test/url-inputs.ts).
-  @grok.decorators.func()
-  static async TestUrlInputsFixture(
-    @grok.decorators.param({type: 'int'}) a: number,
-    b: number,
-    flag: boolean,
-    s: string,
-    @grok.decorators.param({type: 'datetime'}) when: dayjs.Dayjs,
-    df: DG.DataFrame,
-    @grok.decorators.param({options: {optional: true}}) opt: number,
-    @grok.decorators.param({type: 'int', options: {nullable: true}}) nul: number,
-  ): Promise<number> {
-    return a;
   }
 
   // Fixtures for the project-export data-prep tests (see test/project-export-data.ts);
@@ -958,7 +850,6 @@ export class PackageFunctions {
   ): Promise<DG.DataFrame> {
     return DG.DataFrame.create(x);
   }
-
 }
 
 

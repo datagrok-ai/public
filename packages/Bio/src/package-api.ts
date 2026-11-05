@@ -325,8 +325,8 @@ export namespace funcs {
    * @param {DG.DataFrame} table - Input data table
    * @param {DG.Column} seqCol
    *   semType: Macromolecule
-   * @param {boolean} nonlinear - Slower mode for cycling/branching HELM structures
-   * @param {boolean} highlight - Highlight monomers' substructures of the molecule
+   * @param {boolean} nonlinear - Draw every molecule as a 2D depiction. When off, plain chains are drawn straight and sequences with cycles or branches as a depiction
+   * @param {boolean} highlight - Color each molecule's atoms by the monomer they come from (the monomer's color in the library)
    */
   export async function toAtomicLevel(table: DG.DataFrame , seqCol: DG.Column , nonlinear: boolean , highlight: boolean ): Promise<void> {
     return await grok.functions.call('Bio:ToAtomicLevel', { table, seqCol, nonlinear, highlight });
@@ -484,8 +484,8 @@ export namespace funcs {
    * Converts sequences to molblocks, returning the molecule column.
    * @param {DG.Column} sequence
    *   semType: Macromolecule
-   * @param {boolean} nonlinear - Slower mode for cycling/branching HELM structures
-   * @param {boolean} highlight - Highlight monomers' substructures of the molecule
+   * @param {boolean} nonlinear - Draw every molecule as a 2D depiction. When off, plain chains are drawn straight and sequences with cycles or branches as a depiction
+   * @param {boolean} highlight - Color each molecule's atoms by the monomer they come from (the monomer's color in the library)
    */
   export async function toAtomicLevelColumn(table: DG.DataFrame , sequence: DG.Column , nonlinear: boolean , highlight: boolean ): Promise<DG.Column> {
     return await grok.functions.call('Bio:ToAtomicLevelColumn', { table, sequence, nonlinear, highlight });
@@ -774,9 +774,8 @@ export namespace funcs {
    * Converts a column of HELM sequences to atomic-level molecules (V3000 molblocks)
    * @param {DG.Column} helmCol - Column of HELM sequences to convert
    *   semType: Macromolecule
-   * @param {boolean} chiralityEngine - Preserve monomer stereochemistry using the chirality engine
    */
-  export async function getMolFromHelm(df: DG.DataFrame , helmCol: DG.Column , chiralityEngine: boolean ): Promise<DG.Column> {
-    return await grok.functions.call('Bio:GetMolFromHelm', { df, helmCol, chiralityEngine });
+  export async function getMolFromHelm(df: DG.DataFrame , helmCol: DG.Column ): Promise<DG.Column> {
+    return await grok.functions.call('Bio:GetMolFromHelm', { df, helmCol });
   }
 }

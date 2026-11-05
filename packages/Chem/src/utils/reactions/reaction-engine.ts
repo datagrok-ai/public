@@ -81,6 +81,12 @@ export class EngineReaction {
     return this.rdkitRxn;
   }
 
+  /** Whether {@link run} reacts on Crux (Crux mode, Crux read the reaction, its module is up), as the Crux workers
+   * would: a column can go to them. */
+  get onCrux(): boolean {
+    return this.crux !== null && !cruxLoadFailed() && unreadableForTests === null;
+  }
+
   /** `react(module, rxn)` on Crux in Crux mode, on RDKit when it throws there; RDKit's error propagates. */
   run<T>(react: (module: RDModule, rxn: RDReaction) => T): T {
     const rdkit = (): T => {

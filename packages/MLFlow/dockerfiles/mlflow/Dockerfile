@@ -1,13 +1,13 @@
-FROM python:3.10-slim-trixie as base
+FROM python:3.11-slim-trixie as base
 
 ENV MLFLOW_TRACKING_URI=http://192.168.1.101:5000
 ENV MODEL_NAME=datagrok-linear-regression
 ENV MODEL_VERSION=1
 
-# ghcr.io/mlflow/mlflow:latest (= v3.14.0 full) is still built on EOL Debian 11 bullseye,
+# ghcr.io/mlflow/mlflow:latest (full image) is still built on EOL Debian 11 bullseye,
 # so replicate its single mlflow layer on a supported Debian 13 python base instead
 RUN apt-get -y update && apt-get -y upgrade
-RUN pip install --no-cache-dir "mlflow[extras,azure,db,gateway,genai,auth]==3.14.0"
+RUN pip install --no-cache-dir "mlflow[extras,azure,db,gateway,genai,auth]==3.17.2"
 
 COPY run.sh run.sh
 RUN chmod +x run.sh
@@ -18,8 +18,8 @@ RUN apt-get install -y mecab-ipadic-utf8
 RUN python -v
 RUN curl https://pyenv.run | bash \
 	&& python -m  pip install virtualenv
-# cryptography capped <49 to stay within mlflow's own cryptography<49 requirement
-RUN python -m pip install --upgrade "pip>=26.1.2" "setuptools>=78.1.1" "wheel>=0.46.2" "cryptography>=48.0.1,<49"
+# cryptography capped <51 to stay within mlflow's own cryptography<51 requirement
+RUN python -m pip install --upgrade "pip>=26.1.2" "setuptools>=78.1.1" "wheel>=0.46.2" "cryptography>=50.0.0,<51"
 RUN python -m pip install boto3
 ENV PATH="/root/.pyenv/bin:${PATH}"
 RUN pyenv install 3.10.15

@@ -24,6 +24,7 @@ import {
 } from '../widgets/bio-substructure-filter';
 import {BioFilterProps} from '@datagrok-libraries/bio/src/substructure-filter/bio-substructure-filter-types';
 import {HelmBioFilter} from '../widgets/bio-substructure-filter-helm';
+import {linearSubstructureSearch} from '../substructure-search/substructure-search';
 
 import {_package} from '../package-test';
 
@@ -72,6 +73,22 @@ category('bio-substructure-filters', async () => {
       filter.detach();
     }
     await filter.awaitRendered();
+  });
+
+  test('literal-text', async () => {
+    const col = DG.Column.fromStrings('seq', ['MDY(K', 'MDYK', 'MAYK', 'M[Y']);
+    const count = (s: string) => linearSubstructureSearch(s, col).trueCount;
+    expect(count('('), 1);
+    expect(count('['), 1);
+    expect(count('M.Y'), 0);
+    expect(linearSubstructureSearch('M.Y', col, undefined, true).trueCount, 4, 'a motif stays a regular expression');
+    const sepCol = DG.Column.fromStrings('seq', ['A-B.C-D', 'A-BXC-D']);
+    expect(linearSubstructureSearch('B.C', sepCol, '-').trueCount, 1);
+
+    col.semType = DG.SEMTYPE.MACROMOLECULE;
+    const table = DG.DataFrame.fromColumns([col]);
+    const res: DG.DataFrame = await grok.functions.call('Bio:MotifSearch', {table, sequence: col, motif: '('});
+    expect(res.rowCount, 0, 'an invalid motif is reported, not thrown');
   });
 
   test('separator', async () => {

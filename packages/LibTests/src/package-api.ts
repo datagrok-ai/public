@@ -8,18 +8,6 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function testViewerComponent(): Promise<void> {
-    return await grok.functions.call('LibTests:TestViewerComponent', {});
-  }
-
-  export async function testFromComponent(): Promise<void> {
-    return await grok.functions.call('LibTests:TestFromComponent', {});
-  }
-
-  export async function testElements(): Promise<void> {
-    return await grok.functions.call('LibTests:TestElements', {});
-  }
-
   export async function testAdd2(a: number , b: number ): Promise<number> {
     return await grok.functions.call('LibTests:TestAdd2', { a, b });
   }

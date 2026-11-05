@@ -1,6 +1,3 @@
-/* The shell's workspace and what surrounds it: the tables and table views that are open, a project
-   reached by its direct link, and files on the server (the user's own files, a space's storage, a
-   file dropped onto the window or chosen from the open menu). */
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {type Page} from '@playwright/test';

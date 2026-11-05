@@ -31,53 +31,55 @@ export function readout(name: string, source: string | ReadonlySignal<unknown>):
  * it, the API that builds it beside the title, spanning every row and taking the grid's rows as
  * its own (css/u2demo.css): one container per side, whose cells still share a row with the other
  * side's. Every item carries its row as `--ab-row` and the CSS places it, so a narrow pane can
- * stack each u2 cell under its platform twin. Built inside the page's scope, which disposes the
- * sections. */
-export class AbGrid {
+ * stack each u2 cell under its platform twin. */
+export interface AbGrid {
+  readonly root: HTMLElement;
   readonly platform: Section;
   readonly u2: Section;
-  private _row = 1;
-
-  constructor(readonly root: HTMLElement, platformApi: string, u2Api: string) {
-    const corner = span('');
-    AbGrid._at(corner, 1);
-    this.platform = AbGrid._side('Platform', platformApi, 'u2demo-ab-platform');
-    this.u2 = AbGrid._side('u2', u2Api, 'u2demo-ab-u2');
-    root.append(this.platform.root, this.u2.root, corner);
-    this._span();
-  }
-
   /** The first column's cell, the platform's and u2's, on the next row. */
-  row(first: HTMLElement, platform: HTMLElement, u2: HTMLElement): void {
-    const row = ++this._row;
-    for (const cell of [first, platform, u2])
-      AbGrid._at(cell, row);
-    this.root.append(first);
-    this.platform.body.append(platform);
-    this.u2.body.append(u2);
-    this._span();
-  }
-
+  row(first: HTMLElement, platform: HTMLElement, u2: HTMLElement): void;
   /** A full-width row: a note or a category. */
-  full(el: HTMLElement): void {
-    el.classList.add('u2demo-ab-full');
-    AbGrid._at(el, ++this._row);
-    this.root.append(el);
-    this._span();
-  }
+  full(el: HTMLElement): void;
+}
 
-  private _span(): void {
-    this.root.style.setProperty('--ab-rows', String(this._row));
-  }
+/** Fills `root` with an {@link AbGrid}; built inside the page's scope, which disposes the sections. */
+export function abGrid(root: HTMLElement, platformApi: string, u2Api: string): AbGrid {
+  let rows = 1;
+  const spanRows = () => root.style.setProperty('--ab-rows', String(rows));
+  const corner = span('');
+  at(corner, 1);
+  const platform = side('Platform', platformApi, 'u2demo-ab-platform');
+  const u2 = side('u2', u2Api, 'u2demo-ab-u2');
+  root.append(platform.root, u2.root, corner);
+  spanRows();
+  return {root, platform, u2,
+    row: (first, platformCell, u2Cell) => {
+      const row = ++rows;
+      for (const cell of [first, platformCell, u2Cell])
+        at(cell, row);
+      root.append(first);
+      platform.body.append(platformCell);
+      u2.body.append(u2Cell);
+      spanRows();
+    },
+    full: (el) => {
+      el.classList.add('u2demo-ab-full');
+      at(el, ++rows);
+      root.append(el);
+      spanRows();
+    },
+  };
+}
 
-  private static _at(el: HTMLElement, row: number): void {
-    el.style.setProperty('--ab-row', String(row));
-  }
+function at(el: HTMLElement, row: number): void {
+  el.style.setProperty('--ab-row', String(row));
+}
 
-  private static _side(title: string, api: string, className: string): Section {
-    const side = new Section({title, collapsible: false});
-    side.root.classList.add('u2demo-ab-side', className);
-    side.header.append(span(api, 'u2demo-code'));
-    return side;
-  }
+function side(title: string, api: string, className: string): Section {
+  const section = new Section({title, collapsible: false});
+  section.root.classList.add('u2demo-ab-side', className);
+  section.header.classList.add('u2demo-ab-head');
+  section.body.classList.add('u2demo-ab-cells');
+  section.header.append(span(api, 'u2demo-code'));
+  return section;
 }

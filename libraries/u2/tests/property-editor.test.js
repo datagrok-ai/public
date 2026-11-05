@@ -2,7 +2,7 @@
    re-targeting. The control mirrors `DG.Property.propertyOptions` rather than reading it, so the
    whole suite runs off-platform, like the object-form one. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
@@ -166,7 +166,11 @@ editorTest('a caller\'s validator reports on the field, and survives a re-target
 
   editor.setTarget({name: 'weight', type: 'int'});
   await flush();
-  assert.equal(error(), 'Name is already taken', 'the rebuilt field validates the same way');
+  assert.equal(editor.getItems().list.find((item) => item.key === 'name').invalid, true,
+    'the rebuilt field validates the same way');
+  assert.equal(error(), '', 'a fresh record shows it once the field is touched');
+  fire(fieldOf(editor, 'Name'), 'change');
+  assert.equal(error(), 'Name is already taken');
   editor.dispose();
 });
 

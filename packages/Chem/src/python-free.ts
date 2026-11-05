@@ -17,7 +17,6 @@ import {byEngineAsync} from './engine/chem-engine';
 import {loadCrux} from './engine/crux-module';
 import {getCruxService} from './crux/crux-searches';
 import {cruxReadsCxExtension} from './crux/crux-service';
-import {inchisFromInputs, mapYielding} from './crux/crux-inchi';
 import {loadCruxSketch} from './crux/crux-sketcher';
 import {BUTINA_FP_WORDS, ButinaNeighbours} from './crux/jobs/python-free';
 import * as container from './docker/api';
@@ -174,6 +173,18 @@ function picture(url: string): HTMLElement {
   return div;
 }
 
+/** A script's graphics output as the picture's URL, null where the script drew nothing. The platform hands the output
+ * over as the element it shows the picture in (`div.grok-scripting-image-container`, the picture its background image),
+ * not as the PNG's base64; a base64 string is taken too. */
+function graphicsUrl(output: unknown): string | null {
+  if (typeof output === 'string')
+    return output ? `data:image/png;base64,${output}` : null;
+  if (!(output instanceof HTMLElement))
+    return null;
+  const url = /url\(["']?(.*?)["']?\)/.exec(output.style.backgroundImage)?.[1];
+  return url && !/,(null)?$/.test(url) ? url : null; // no picture: the platform's URL of a null value
+}
+
 /** gasteiger_charges.py's picture of `mol`'s Gasteiger charges (a similarity map, 400 x 400; a PNG, Crux's drawn from
  * its SVG), as an element; an empty one where the script draws nothing (the molecule does not read). */
 export function gasteigerPicture(mol: string, contours: number): Promise<HTMLElement> {
@@ -187,8 +198,8 @@ export function gasteigerPicture(mol: string, contours: number): Promise<HTMLEle
       return ui.div();
     return picture(await svgToPng(map.svg, 400, 400));
   }, async () => {
-    const png = await scriptOutput<string | null>(PYTHON_SCRIPTS.gasteiger, {mol, contours});
-    return png ? picture(`data:image/png;base64,${png}`) : ui.div();
+    const url = graphicsUrl(await scriptOutput<unknown>(PYTHON_SCRIPTS.gasteiger, {mol, contours}));
+    return url ? picture(url) : ui.div();
   });
 }
 
@@ -390,11 +401,10 @@ export function smilesToCanonical(smiles: string[]): Promise<string[]> {
     () => container.smilesToCanonical(smiles));
 }
 
-/** The InChIs (the keys when `keys`) of the molecules as the container writes them: InChI's input by the Crux
- * workers, the library by crux-sketch's InChI module (crux/crux-inchi.ts); '' where the molecule does not read. */
+/** The InChIs (the keys when `keys`) of the molecules as the container writes them: InChI's input and crux-sketch's
+ * InChI library, both in the Crux workers (crux/jobs/inchi.ts); '' where the molecule does not read. */
 async function inchisOf(molecules: (string | null)[], keys: boolean): Promise<string[]> {
-  const inputs = await onWorkers<Uint8Array | null>('chemInchiInputs', molecules, IDENTIFIERS_MS_PER_MOLECULE);
-  return (await inchisFromInputs(inputs.map((input) => input ?? ''), keys)).map((s) => s ?? '');
+  return onWorkers<string>('chemInchis', molecules, IDENTIFIERS_MS_PER_MOLECULE, [keys]);
 }
 
 /** The container's `/chem/molecules_to_inchi`: the standard InChI per molecule, '' where it does not read. */
@@ -409,34 +419,18 @@ export function smilesToInchiKey(smiles: string[]): Promise<string[]> {
     () => container.smilesToInchiKey(smiles));
 }
 
-/** Whether `e` is crux-sketch's refusal of an InChI (no structure, an InChIKey, a structure RDKit cannot sanitize), not
- * its module's failure to load or run (`code`, or not a `SketchError`): the caller's container runs then. */
-const refusedInchi = (e: any): boolean => !!e && typeof e === 'object' && e.format === 'inchi' && !e.code &&
-  !(e instanceof Error);
-
-/** `one` of each InChI by crux-sketch's InChI module (`none` for an empty one), yielding to the page now and then. */
-function eachInchi<R>(inchis: (string | null)[], one: (inchi: string) => Promise<R>, none: R): Promise<R[]> {
-  return mapYielding(inchis, (inchi) => inchi ? one(inchi) : none);
-}
-
 /** The container's `/chem/inchi_to_smiles`: `MolToSmiles(MolFromInchi(inchi))` per InChI, '' where RDKit makes no
  * molecule of it. In Crux mode crux-sketch's `inchiToMol` (RDKit's MolFromInchi on crux's InChI library; the SMILES
- * written under the new stereo perception, as Chem's: the container's legacy one writes a few otherwise). */
+ * written under the new stereo perception, as Chem's: the container's legacy one writes a few otherwise), in the Crux
+ * workers (crux/jobs/inchi.ts). */
 export function inchiToSmiles(inchi: string[]): Promise<string[]> {
-  return convert(inchi, false, async (inchis) => {
-    const sketch = await loadCruxSketch();
-    return eachInchi(inchis, (s) => sketch.inchiToMol(s).catch((e) => {
-      if (refusedInchi(e))
-        return '';
-      throw e;
-    }), '');
-  }, () => container.inchiToSmiles(inchi));
+  return convert(inchi, false, (inchis) => onWorkers<string>('inchiToSmiles', inchis, IDENTIFIERS_MS_PER_MOLECULE),
+    () => container.inchiToSmiles(inchi));
 }
 
-/** The container's `/chem/inchi_to_inchi_key`: the InChIKey per InChI, null for '' and where the library refuses it. */
+/** The container's `/chem/inchi_to_inchi_key`: the InChIKey per InChI, null for '' and where the library refuses it
+ * (crux-sketch's InChI module in the Crux workers: crux/jobs/inchi.ts). */
 export function inchiToInchiKey(inchi: string[]): Promise<string[]> {
-  return convert(inchi, false, async (inchis) => {
-    const sketch = await loadCruxSketch();
-    return eachInchi(inchis, async (s) => (await sketch.inchiKeyFromInchi(s)) || null, null) as Promise<string[]>;
-  }, () => container.inchiToInchiKey(inchi));
+  return convert(inchi, false, (inchis) => onWorkers<string>('inchiToInchiKey', inchis, IDENTIFIERS_MS_PER_MOLECULE),
+    () => container.inchiToInchiKey(inchi));
 }

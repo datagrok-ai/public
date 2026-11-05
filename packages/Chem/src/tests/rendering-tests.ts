@@ -1,4 +1,4 @@
-import {category, test, expect, expectArray, before, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, before, waitUntil} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {readDataframe} from './utils';
@@ -155,7 +155,7 @@ category('rendering', () => {
     try {
       const canvas = dialog.root.querySelector('canvas')!;
       expect(canvas.style.width, `${Math.max(200, window.innerWidth - 200)}px`);
-      await awaitCheck(() => {
+      await waitUntil(() => {
         const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
         return data.some((v, i) => i % 4 === 0 && v < 100 && data[i + 3] > 200); // a bond: dark and opaque
       }, 'nothing drawn', 5000);

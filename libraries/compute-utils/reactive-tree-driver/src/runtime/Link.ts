@@ -4,8 +4,8 @@ import {HandlerBase} from '../config/PipelineConfiguration';
 import {BaseTree, NodePath, NodePathSegment, TreeNode} from '../data/BaseTree';
 import {descriptionOutputs, isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, MatchedIO, MatchedNodePaths, MatchInfo} from './link-matching';
-import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapScheduler} from 'rxjs';
-import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, distinctUntilChanged, take} from 'rxjs/operators';
+import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapScheduler, timer} from 'rxjs';
+import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, debounce, distinctUntilChanged, take} from 'rxjs/operators';
 import {callHandler, copyDataFrame, indexFromEnd} from '../utils';
 import {defaultLinkHandler, Slot} from './default-handler';
 import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NodeMetaController, PipelineValidatorController, RuntimeReturnController, ValidatorController} from './LinkControllers';
@@ -58,8 +58,10 @@ export class Link {
   // the same ms/frame, reporting a link as not running while a handler is in flight
   private nextScheduled$ = new BehaviorSubject(0);
   private lastFinished$ = new BehaviorSubject(0);
-  public isRunning$ = combineLatest([this.nextScheduled$, this.lastFinished$]).pipe(
-    map(([next, last]) => next > last),
+  // inputs changed, the run is still waiting for its debounce or batch
+  private inputsPending$ = new BehaviorSubject(false);
+  public isRunning$ = combineLatest([this.inputsPending$, this.nextScheduled$, this.lastFinished$]).pipe(
+    map(([pending, next, last]) => pending || next > last),
     distinctUntilChanged(),
   );
 
@@ -110,12 +112,18 @@ export class Link {
     inputsChanges$.pipe(
       map((_, idx) => idx + 1),
       takeUntil(this.destroyed$),
-    ).subscribe(this.nextScheduled$);
+    ).subscribe((idx) => {
+      this.nextScheduled$.next(idx);
+      this.inputsPending$.next(false);
+    });
 
     inputsChanges$.pipe(
       switchMap(
         ([scope, inputs], runIdx) =>
-          defer(() => this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, baseNode, scope, state)).pipe(
+          defer(() => this.runHandler(
+            inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates,
+            baseNode, scope, state,
+          )).pipe(
             map((controller) => this.setHandlerResults(controller, state)),
             catchError((error) => {
               // emit on errors as well, otherwise lastFinished$ never advances,
@@ -185,20 +193,27 @@ export class Link {
     const toInputsChanges = ([scope, entries]: readonly [any, any]) =>
       [scope as ScopeInfo | undefined, Object.fromEntries(entries) as Record<string, any>] as const;
 
-    if (this.isBatchable && linksState?.batchLinks) {
-      inputsEntries$.pipe(
-        filter(() => this.isActive$.value),
-        takeUntil(this.destroyed$),
-      ).subscribe(() => linksState.scheduleBatch(this.uuid));
+    const isBatched = this.isBatchable && !!linksState?.batchLinks;
+    inputsEntries$.pipe(
+      filter(() => this.isActive$.value),
+      takeUntil(this.destroyed$),
+    ).subscribe(() => {
+      this.inputsPending$.next(true);
+      if (isBatched)
+        linksState!.scheduleBatch(this.uuid);
+    });
 
+    if (isBatched)
       return inputsTriggered$.pipe(map(toInputsChanges));
-    }
 
-    const debounceVal = this.customDebounceTime ?? ((this.isValidator || this.isPipelineValidator) ? VALIDATOR_DEBOUNCE_TIME : 0);
+    const debounceVal = this.customDebounceTime ??
+      ((this.isValidator || this.isPipelineValidator) ? VALIDATOR_DEBOUNCE_TIME : 0);
 
     const activeInputs$ = inputsEntries$.pipe(
       filter(() => this.isActive$.value),
-      debounceTime(debounceVal, debounceVal === 0 ? asapScheduler : undefined),
+      debounceVal === 0 ?
+        debounceTime(0, asapScheduler) :
+        debounce(() => linksState?.skipDebounce ? timer(0, asapScheduler) : timer(debounceVal)),
       map((obs) => [undefined, obs] as const),
     );
 
@@ -218,7 +233,8 @@ export class Link {
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
   ) {
-    const controller = this.getControllerInstance(inputs, inputSet, outputSet, callInputs, inputTemplates, outputTemplates, baseNode, scope, state);
+    const controller = this.getControllerInstance(
+      inputs, inputSet, outputSet, callInputs, inputTemplates, outputTemplates, baseNode, scope, state);
     if (this.logger) {
       this.logger.logLink('linkRunStarted', {
         prefix: this.prefix,
@@ -240,14 +256,17 @@ export class Link {
       );
     } else if (!this.isValidator && !this.isMeta) {
       return defer(() => of(
-        defaultLinkHandler(controller as LinkController, inputSlots, outputSlots, this.matchInfo.spec.defaultRestrictions),
+        defaultLinkHandler(
+          controller as LinkController, inputSlots, outputSlots, this.matchInfo.spec.defaultRestrictions),
       ).pipe(mapTo(controller)));
     }
 
     throw Error(`Unable to run handler for link ${this.matchInfo.spec.id}`);
   }
 
-  private resolveOutputNodes(state: BaseTree<StateTreeNode>): Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]> {
+  private resolveOutputNodes(
+    state: BaseTree<StateTreeNode>,
+  ): Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]> {
     const result: Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]> = {};
     for (const [outputAlias, outputItems] of Object.entries(this.matchInfo.outputs)) {
       result[outputAlias] = outputItems.map((output) => {
@@ -335,9 +354,8 @@ export class Link {
         }
         const lastSeg = indexFromEnd(io.segments) as LinkSelectorSegment;
         tpl.ios.push({ioName: io.name, scriptIoId: lastSeg.ids[0]});
-      } else {
+      } else
         slots.push({kind: 'bare', name: io.name});
-      }
     }
     return {slots, templates};
   }
@@ -358,7 +376,11 @@ export class Link {
     return p0;
   }
 
-  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NodeMetaController | FuncallActionController | RuntimeReturnController | PipelineValidatorController, state: BaseTree<StateTreeNode>) {
+  private setHandlerResults(
+    controller: LinkController | ValidatorController | MetaController | MutationController | NodeMetaController |
+      FuncallActionController | RuntimeReturnController | PipelineValidatorController,
+    state: BaseTree<StateTreeNode>,
+  ) {
     this.lastPipelineMutations = [];
     this.lastGranularMutations = [];
     if (this.logger) {
@@ -439,8 +461,10 @@ export class Link {
               item.instancesWrapper.setRestriction(ioName, state, restriction);
             else if (isFuncCallNode(item) && item.instancesWrapper.isReadonly)
               item.instancesWrapper.setState(ioName, state, restriction);
-            else
-              item.getStateStore().setState(ioName, state instanceof DG.DataFrame ? copyDataFrame(state) : state, restriction);
+            else {
+              item.getStateStore().setState(
+                ioName, state instanceof DG.DataFrame ? copyDataFrame(state) : state, restriction);
+            }
           }
           if (controller instanceof LinkController && controller.consistencyResets.has(outputAlias)) {
             const item = node.getItem();
@@ -467,7 +491,10 @@ function checkMutationOverlap(
   pipelineMutations?: Array<{path: NodePath}>,
   granularMutations?: Array<{path: NodePath}>,
 ) {
-  const all: NodePath[] = [...(pipelineMutations ?? []).map((m) => m.path), ...(granularMutations ?? []).map((m) => m.path)];
+  const all: NodePath[] = [
+    ...(pipelineMutations ?? []).map((m) => m.path),
+    ...(granularMutations ?? []).map((m) => m.path),
+  ];
   for (let i = 0; i < all.length; i++) {
     for (let j = i + 1; j < all.length; j++) {
       if (BaseTree.isNodeChildOrEq(all[i], all[j]) || BaseTree.isNodeChildOrEq(all[j], all[i]))

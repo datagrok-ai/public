@@ -9,8 +9,8 @@ import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 import {signal, Scope, FilterBuilder, FilterQueryInput, Filters, OperatorRegistry} from '@datagrok-libraries/u2';
 import type {FilterGroup as FilterTree, FilterOperatorSet} from '@datagrok-libraries/u2';
-import {FilterSchemas, toBitSet} from '@datagrok-libraries/u2/src/dg/index.js';
-import type {DataFrameFilterSchema} from '@datagrok-libraries/u2/src/dg/index.js';
+import {FilterSchemas, toBitSet} from '@datagrok-libraries/u2/dg';
+import type {DataFrameFilterSchema} from '@datagrok-libraries/u2/dg';
 
 const NOT_FILTERING = 'Not filtering: no complete condition';
 
@@ -144,8 +144,8 @@ export class FilterBuilderFilter extends DG.Filter {
     this._scope?.dispose();
     const scope = this._scope = new Scope();
     const common = {schema: this._schema!, bind: this._tree, inline: true, target: 'dataframe' as const};
-    const builder = this.builder = Scope.runWith(scope, () => new FilterBuilder(common));
-    const queryInput = this.queryInput = Scope.runWith(scope, () => new FilterQueryInput(common));
+    const builder = this.builder = scope.build(() => new FilterBuilder(common));
+    const queryInput = this.queryInput = scope.build(() => new FilterQueryInput(common));
     const show = () => {
       builder.root.hidden = this._showQuery;
       queryInput.root.hidden = !this._showQuery;

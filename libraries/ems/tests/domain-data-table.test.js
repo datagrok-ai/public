@@ -1,13 +1,9 @@
-/* `domains.dataTable` (WO 3-10) over the memory backend: the columns come from the table's
-   schema the way the grid's decoration derives them (the name column first, the system and `~`
-   service ones out, a hidden column absent), the cells carry the source writer's verdicts by ROW
-   KEY, and an edit repaints the window that is already rendered without swapping the items. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, signal, Registry, SpecContext, renderSpec, registerAll, timestamp, Rows} from '@datagrok-libraries/u2';
 import {backend} from './domain-fixtures.mjs';
 
@@ -37,18 +33,18 @@ function scoped(name, body) {
   });
 }
 
-const headers = (dt) => dt.root.querySelectorAll('.u2-data-table-head').map((el) => el.textContent);
+const headers = (dt) => [...dt.root.querySelectorAll('.u2-data-table-head')].map((el) => el.textContent);
 const row = (dt, i) => dt.root.querySelector(`.u2-data-table-row[data-index="${i}"]`);
 const cell = (dt, i, column) => row(dt, i).children[dt.columns().indexOf(column)];
 
 async function dataTable(options = {}) {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
-  const dt = domains.dataTable(src, options);
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  const dt = testOwner().build(() => domains.dataTable(src, options));
   document.body.append(dt.root);
   await flush();
-  dt.table.value.root.clientHeight = 400;
+  layout(dt.table.value.root, {clientHeight: 400});
   await flush();
   return {table, src, dt};
 }
@@ -85,7 +81,7 @@ scoped('columns and hiddenColumns narrow the selection', async () => {
 
 scoped('an edit through the source paints its cell, and a refusal paints and explains it', async () => {
   const {src, dt} = await dataTable();
-  const changed = () => dt.root.querySelectorAll('.u2-cell-changed').map((c) => c.textContent);
+  const changed = () => [...dt.root.querySelectorAll('.u2-cell-changed')].map((c) => c.textContent);
   assert.deepEqual(changed(), []);
 
   src.rows.items.peek()[1].priority = 'high';
@@ -107,17 +103,17 @@ scoped('an edit through the source paints its cell, and a refusal paints and exp
   src.dispose();
 });
 
-scoped('a cell the caller may not write reads as read-only', async () => {
+scoped('a read-only table greys no cell: one the caller may not write reads like any other', async () => {
   emsBackends.domain = backend({access: {can: {view: true, edit: true},
     fields: {id: 'readonly', title: 'editable', priority: 'readonly'}}});
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
-  const dt = domains.dataTable(src, {columns: ['title', 'priority']});
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  const dt = testOwner().build(() => domains.dataTable(src, {columns: ['title', 'priority']}));
   document.body.append(dt.root);
   await flush();
-  dt.table.value.root.clientHeight = 400;
+  layout(dt.table.value.root, {clientHeight: 400});
   await flush();
-  assert.equal(cell(dt, 0, 'priority').className.includes('u2-cell-readonly'), true);
+  assert.equal(cell(dt, 0, 'priority').className.includes('u2-cell-readonly'), false);
   assert.equal(cell(dt, 0, 'title').className.includes('u2-cell-readonly'), false);
   dt.dispose();
   src.dispose();
@@ -142,11 +138,12 @@ scoped('a reference cell shows the row it points at, not its uuid', async () => 
   const inner = backend();
   emsBackends.domain = {saveAll: (edits) => inner.saveAll(edits),
     table: (address) => address === 'grit.project' ? new Promise(() => {}) : inner.table(address)};
-  const early = (await domains.table('grit.issue')).source({pageSize: 10});
-  const first = domains.dataTable(early, {columns: ['project_id']});
+  const issues = await domains.table('grit.issue');
+  const early = testOwner().build(() => issues.source({pageSize: 10}));
+  const first = testOwner().build(() => domains.dataTable(early, {columns: ['project_id']}));
   document.body.append(first.root);
   await flush();
-  first.table.value.root.clientHeight = 400;
+  layout(first.table.value.root, {clientHeight: 400});
   // a scroller with no height defers its first window to the next frame (list.ts `_later`), and
   // the shim only settles those on a flush
   await flush();
@@ -155,11 +152,12 @@ scoped('a reference cell shows the row it points at, not its uuid', async () => 
 
   // with the captions off the one lookup stands in for them, and until it answers a placeholder,
   // never the id — a uuid flashing in the cell reads as the value of the column
-  const off = (await domains.table('grit.issue')).source({pageSize: 10, captions: []});
-  const none = domains.dataTable(off, {columns: ['project_id']});
+  const uncaptioned = await domains.table('grit.issue');
+  const off = testOwner().build(() => uncaptioned.source({pageSize: 10, captions: []}));
+  const none = testOwner().build(() => domains.dataTable(off, {columns: ['project_id']}));
   document.body.append(none.root);
   await flush();
-  none.table.value.root.clientHeight = 400;
+  layout(none.table.value.root, {clientHeight: 400});
   await flush();
   assert.equal(cell(none, 0, 'project_id').textContent, '…');
   none.dispose();
@@ -174,11 +172,12 @@ scoped('a reference cell shows the row it points at, not its uuid', async () => 
 
   // an id the target does not hold answers as itself, as the picker's resolve does — the lookup
   // path is the only one that ever sees a raw id
-  const loose = (await domains.table('grit.issue')).source({pageSize: 10, captions: []});
-  const lt = domains.dataTable(loose, {columns: ['project_id']});
+  const pointing = await domains.table('grit.issue');
+  const loose = testOwner().build(() => pointing.source({pageSize: 10, captions: []}));
+  const lt = testOwner().build(() => domains.dataTable(loose, {columns: ['project_id']}));
   document.body.append(lt.root);
   await flush();
-  lt.table.value.root.clientHeight = 400;
+  layout(lt.table.value.root, {clientHeight: 400});
   await flush();
   await flush();
   assert.equal(cell(lt, 0, 'project_id').textContent, 'Grit', 'the lookup answers the target\'s name');
@@ -239,7 +238,7 @@ scoped('the column tracks follow the column types, so a wide table is not a wall
 scoped('spec: u2-domain-data-table over a bound source', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
-  const src = table.source();
+  const src = testOwner().build(() => table.source());
   const reg = new Registry();
   registerAll(reg);
   registerDomainComponents(reg);
@@ -248,9 +247,9 @@ scoped('spec: u2-domain-data-table over a bound source', async () => {
   assert.deepEqual(meta.props.map((p) => p.name).slice(0, 4),
     ['source', 'columns', 'hiddenColumns', 'rowHeight']);
   assert.match(meta.usage, /u2-domain-grid/);
-  const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-domain-data-table', name: 'rows',
-    bind: {source: '$.issues'}, props: {columns: ['title', 'priority']}}},
-  new SpecContext({data: {issues: signal(src)}}), reg);
+  const instance = testOwner().build(() => renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-domain-data-table',
+    name: 'rows', bind: {source: '$.issues'}, props: {columns: ['title', 'priority']}}},
+  new SpecContext({data: {issues: signal(src)}}), reg));
   await flush();
   const dt = instance.node('rows');
   assert.equal(dt instanceof DomainDataTable, true);

@@ -1,8 +1,3 @@
-/* Binding discovery: every module under a binding source is imported for its side effects
-   (registrations) and inspected for exported step functions, so the compiler can emit a named
-   import for each step it uses and a side-effect import for each module that registers nouns.
-   Library bindings are the compiled `.js` of this build (or `.ts` from source); a project's own
-   bindings are TypeScript, loaded through tsx. */
 import {existsSync, readdirSync, statSync} from 'node:fs';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';

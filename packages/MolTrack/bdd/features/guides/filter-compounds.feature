@@ -1,5 +1,5 @@
 @guide
-Feature: MolTrack EMS: filter compounds by structure and properties
+Feature: MolTrack: filter compounds by structure and properties
   A guide: the answer to "how do I find the compounds that contain one substructure or another, but not some
   element?". The Filters pane left of every list builds the conditions row by row; Advanced nests groups, each
   with its own AND or OR. A structure column offers "has substructure", "is substructure of", "is similar to"
@@ -9,8 +9,8 @@ Feature: MolTrack EMS: filter compounds by structure and properties
   Scenario: Phenols or anilines, without chlorine
     Given user is logged in
     And simple mode is off
-    And the MolTrack EMS demo data is on the server
-    And user opens the "Compounds" view of MolTrack EMS
+    And the MolTrack demo data is on the server
+    And user opens the "Compounds" view of MolTrack
     When user remembers the text of compound count
     # caption: The filters are on the left; Advanced nests groups of conditions
     And user clicks on advanced mode in filters pane
@@ -41,7 +41,7 @@ Feature: MolTrack EMS: filter compounds by structure and properties
     And user types "Cl" into third condition value
     And user presses Tab in third condition value
     # caption: Phenols and anilines without chlorine: triclosan is gone
-    Then compound list should contain text "Bisphenol A"
+    Then compound list should contain text "Zearalenone"
     And compound list should not contain text "Triclosan"
     # caption: Remove the chlorine condition: triclosan is back
     When user clicks on third condition remove

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): Pareto Front: Fixed a 1 s check that ran for the rest of the session when the table was not applicable
 * Tests: `models/share-model` claims the second account's side: it finds the shared model under Shared with me and applies it (back in the serial lane, since it signs in as the second account)
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Menu: Reduce Dimensionality, PLS, Multivariate Analysis, T-test, ANOVA, Control Comparisons, Impute Missing Values, Pareto Front and MCL are disabled unless the current view is a table view, instead of failing or warning
 * GROK-20795: Tests: Added the package test of Control comparisons on a filtered table (the women of demog only); `analyze/filtered-group-comparison` keeps to the dialog
@@ -13,9 +14,6 @@
 * Tests: Added the BDD feature `models/apply-and-delete` — PLS and linear regression models saved, applied to new data and deleted from the gallery (from TestTrack General/predictive-models)
 * GROK-21061: Pareto front: Fixed result columns staying in the table after the viewer is closed
 * GROK-21017: Skip adding MVA viewers when the source table view was closed during the analysis
-
-## 1.9.1 (WIP)
-
 * Tests: Added BDD features for PCA, PLS, multivariate analysis, ANOVA, control comparisons, model training, sharing a model and the Pareto front viewer
 * Tests: Check completed training, rendered charts and fixture cleanup; isolate shared models per run
 * Pareto front: Corrected the viewer help link

@@ -4,7 +4,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {u2} from '@datagrok-libraries/utils/src/u2';
+import {AppHeader} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 import {MoleculeFieldSearch, queryVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows,
   querySavedSearches, SavedSearch, querySavedSearchById,
   queryMoleculesAsync, queryReadoutRowsAsync, ApiResponse,
@@ -89,17 +90,20 @@ export class PackageFunctions {
     @grok.decorators.param({'options': {'optional': true}}) _filter: string): Promise<DG.ViewBase> {
     const initialUrl = new URL(window.location.href);
 
-    const appHeader = u2.appHeader({
-      iconPath: _package.webRoot + '/images/cdd-icon-big.png',
-      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/CddVaultLink/README.md',
-      description: '- Integrate with your CDD Vault.\n' +
-        '- Analyze assay data.\n' +
-        '- Find contextual information on molecules.\n' +
-        '- Browse the vault content.\n',
-    });
+    const view = DG.View.create();
+    const appHeader = ViewHost.of(view).build(() => new AppHeader({
+      icon: _package.webRoot + '/images/cdd-icon-big.png',
+      learnMore: 'https://github.com/datagrok-ai/public/blob/master/packages/CddVaultLink/README.md',
+      items: [
+        'Integrate with your CDD Vault.',
+        'Analyze assay data.',
+        'Find contextual information on molecules.',
+        'Browse the vault content.',
+      ],
+    }));
 
     const statsDiv = ui.div('', {style: {position: 'relative'}});
-    const view = DG.View.fromRoot(ui.divV([appHeader, statsDiv]));
+    view.root.append(ui.divV([appHeader.root, statsDiv]));
     view.name = 'CDD Vault';
 
     if (path) {

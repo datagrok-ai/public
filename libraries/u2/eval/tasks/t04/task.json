@@ -1,0 +1,11 @@
+{
+  "name": "hidden-column",
+  "entry": "molecule-column-input.ts",
+  "title": "A column picker over a table with a hidden ~ column",
+  "source": "B-4: the default fell on the hidden ~Molecule.canonicalSmiles; u2 listings offered ~ columns",
+  "notes": "columnInput lists what the platform lists (Platform.listedColumns): bad-semtype-filter no longer offers the ~ column, and fails no-hidden-columns again if that guard goes; its default, read off columns.bySemType, still lands on one",
+  "bad": {
+    "bad-semtype-filter": ["preselects-molecule"],
+    "bad-default-bysemtype": ["preselects-molecule"]
+  }
+}

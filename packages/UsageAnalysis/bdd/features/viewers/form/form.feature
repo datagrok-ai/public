@@ -3,7 +3,11 @@ Feature: Form viewer
   One record as a form: every column of the current row as a labelled field, the toolbar that walks
   the rows and selects them, the track-row modes, editing a field, the field set and its
   persistence (a layout, and a form saved to a file and loaded back from it through the toolbar's
-  own icons), and the colour coding the grid gives a field. One journey on demog-1000; every
+  own icons), and the colour coding the grid gives a field. Closed issues claimed on the way: a
+  field keeps its own row's colour after the grid is sorted (public#940), the next-row arrow takes
+  the next row of the grid's order, not the table's (public#2644: sorted by HEIGHT descending, row 1
+  at 174.705 is followed by row 808 at 174.652), and an empty cell of an integer column shows an
+  empty field, not the integer null (public#3561). One journey on demog-1000; every
   scenario puts back what it changed. The viewer draws no canvas, so its claims are the readings
   and the hit areas it reports, never pixels. A default form orders its fields by a relevance
   score (a molecule first, then anything with a semantic type, constant columns last) and
@@ -77,15 +81,30 @@ Feature: Form viewer
     And the "fields shown" reading of form viewer should be 11
     And no errors should have been logged
 
-  Scenario: A column's colour coding reaches its field
+  @realizes:public#940
+  Scenario: A column's colour coding reaches its field, the field of its own row after a sort (public#940)
     Then the "background of AGE" reading of form viewer should be ""
     When user colors "AGE" column linearly from "#FF0000" to "#0000FF"
     Then the "background of AGE" reading of form viewer should differ from before
-    When user removes the coloring of "AGE" column
+    When user makes row 5 current
+    Then the "background of AGE" reading of form viewer should not be ""
+    When user remembers the "background of AGE" reading of form viewer
+    And user makes row 7 current
+    Then the "background of AGE" reading of form viewer should not be as remembered
+    When user double-clicks on the "header AGE" area of grid
+    Then the "sort column" reading of grid should be "AGE"
+    When user makes row 5 current
+    Then the "row" reading of form viewer should be 5
+    And the "background of AGE" reading of form viewer should be as remembered
+    When user picks "Sort > Reset" from the context menu of the "header AGE" area of grid
+    Then the "sort column" reading of grid should be ""
+    When user makes row 1 current
+    And user removes the coloring of "AGE" column
     Then the "background of AGE" reading of form viewer should be ""
     And no errors should have been logged
 
-  Scenario: The arrows walk the rows
+  @realizes:public#2644
+  Scenario: The arrows walk the rows, in the grid's order once it is sorted (public#2644)
     When user clicks on the "next row" area of form viewer
     Then row 2 should be current
     And the "USUBJID" reading of form viewer should be "X0273T21000300005"
@@ -93,6 +112,30 @@ Feature: Form viewer
     When user clicks on the "previous row" area of form viewer
     Then row 1 should be current
     And the "USUBJID" reading of form viewer should be "X0273T21000300003"
+    When user double-clicks on the "header HEIGHT" area of grid
+    Then the "sort column" reading of grid should be "HEIGHT"
+    And the "sort direction" reading of grid should be "descending"
+    When user makes row 1 current
+    Then the "HEIGHT" reading of form viewer should be "174.705"
+    When user clicks on the "next row" area of form viewer
+    Then row 808 should be current
+    And the "row" reading of form viewer should be 808
+    And the "HEIGHT" reading of form viewer should be "174.652"
+    When user picks "Sort > Reset" from the context menu of the "header HEIGHT" area of grid
+    Then the "sort column" reading of grid should be ""
+    When user makes row 1 current
+    Then no errors should have been logged
+
+  @realizes:public#3561
+  Scenario: An empty integer cell shows an empty field, not the integer null (public#3561)
+    Then "AGE" column should have type "int"
+    When user sets "AGE" column in row 2 to ""
+    And user makes row 2 current
+    Then the "row" reading of form viewer should be 2
+    And the "AGE" reading of form viewer should be ""
+    When user sets "AGE" column in row 2 to "30"
+    And user makes row 1 current
+    Then the "AGE" reading of form viewer should be "26"
     And no errors should have been logged
 
   Scenario: The form follows the grid's current row

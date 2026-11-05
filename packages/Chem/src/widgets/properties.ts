@@ -27,8 +27,8 @@ const DGTypeMap = {
  * widgets/drug-likeness.ts, widgets/toxicity.ts).
  */
 export const CRUX_PROPERTY_METHODS: {[name: string]: string} = {
-  'MW': 'Average molecular weight from the IUPAC standard atomic weights (RDKit MolWt). OpenChemLib\'s MW ' +
-    '(RDKit mode) is the monoisotopic mass. Reference: IUPAC standard atomic weights, as RDKit tabulates them',
+  'MW': 'Average molecular weight from the IUPAC standard atomic weights (RDKit MolWt; RDKit mode: OpenChemLib\'s ' +
+    'average weight, within 0.01 of it). Reference: IUPAC standard atomic weights, as RDKit tabulates them',
   'HBA': 'Lipinski\'s acceptors: N and O atoms (RDKit NumLipinskiHBA). Reference: Lipinski, Lombardo, Dominy & ' +
     'Feeney, Adv. Drug Deliv. Rev. 1997, 23, 3',
   'HBD': 'Donor atoms: N, O and S bearing an H (RDKit NumHDonors). Reference: RDKit\'s donor SMARTS (Lipinski.cpp)',

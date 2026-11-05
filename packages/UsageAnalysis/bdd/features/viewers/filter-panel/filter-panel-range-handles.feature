@@ -4,7 +4,8 @@ Feature: The range handles of a numeric filter card
   handles are the person's way to narrow the range: the min handle dragged onto a bin raises the
   card's min and filters out the rows below it, the max handle dragged onto a lower bin lowers its
   max (776 and then 730 of the 1000 rows are left — counts measured with the card's default bins
-  and its default range snapping, so other bins move them), and a reset brings every row back. The panel's
+  and its default range snapping, so other bins move them), and the handles dragged back past the
+  ends of the slider keep every row again (public#1343). The panel's
   other features set the range through the data step; this is the drag. The histogram inside the
   card reports its handles and bins (`range min handle`, `range max handle`, `bin <n>`), and the
   panel reports the card's `min of AGE` / `max of AGE`, so the drag is aimed at named areas and
@@ -18,7 +19,8 @@ Feature: The range handles of a numeric filter card
     Then all rows should pass the filter
     And the "type of AGE" reading of filter panel should be "histogram"
 
-  Scenario: The min and max handles narrow the range, and a reset brings every row back
+  @realizes:public#1343
+  Scenario: The min and max handles narrow the range, and dragged back past the ends they keep every row (public#1343)
     When user remembers the "min of AGE" reading of filter panel
     And user hovers over the "view" area of histogram viewer in filter panel
     And user drags the "range min handle" area of histogram viewer in filter panel to the "bin 5" area
@@ -31,6 +33,11 @@ Feature: The range handles of a numeric filter card
     Then the "max of AGE" reading of filter panel should be lower than remembered
     And 730 rows should pass the filter
     And the "filtering of AGE" reading of filter panel should be "true"
-    When user resets the filter
+    When user hovers over the "view" area of histogram viewer in filter panel
+    And user drags the "range min handle" area of histogram viewer in filter panel by 400 pixels to the left
+    And user hovers over the "view" area of histogram viewer in filter panel
+    And user drags the "range max handle" area of histogram viewer in filter panel by 400 pixels to the right
     Then all rows should pass the filter
+    And the "min of AGE" reading of filter panel should be 18
+    And the "max of AGE" reading of filter panel should be 89
     And no errors should have been logged

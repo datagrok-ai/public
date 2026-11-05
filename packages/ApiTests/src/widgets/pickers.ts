@@ -3,10 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {waitUntil, before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 
-// npm datagrok-api@1.27.9 typings predate the 1.28 ui.pickTableFrom* wrappers
-const pickers = ui as any;
-
-async function cancelPick(pick: () => Promise<DG.DataFrame | null>, title: string): Promise<void> {
+async function cancelPick(pick: () => Promise<unknown>, title: string): Promise<void> {
   const picked = pick();
   try {
     await waitUntil(() => DG.Dialog.getOpenDialogs().some((d) => d.title === title),
@@ -22,13 +19,128 @@ async function cancelPick(pick: () => Promise<DG.DataFrame | null>, title: strin
   }
 }
 
+async function openDialog(title: string): Promise<DG.Dialog> {
+  await waitUntil(() => DG.Dialog.getOpenDialogs().some((d) => d.title === title),
+    `the '${title}' dialog did not open`, 15000);
+  return DG.Dialog.getOpenDialogs().find((d) => d.title === title)!;
+}
+
+/** The label of the Demo share's node, once the dialog's tree shows it. */
+async function demoShare(dialog: DG.Dialog, selector: string): Promise<HTMLElement> {
+  await waitUntil(() => dialog.root.querySelector(selector) !== null, 'the Demo share is not in the tree', 15000);
+  return dialog.root.querySelector(selector) as HTMLElement;
+}
+
+function closeDialogs(title: string): void {
+  for (const d of DG.Dialog.getOpenDialogs()) {
+    if (d.title === title)
+      d.close();
+  }
+}
+
+function treeLabel(dialog: DG.Dialog, text: string): HTMLElement | undefined {
+  return Array.from(dialog.root.querySelectorAll<HTMLElement>('.d4-tree-view-item-label, .d4-tree-view-group-label'))
+    .find((e) => e.textContent === text);
+}
+
+/** Expands a tree group by its label, unless it is: the tree keeps the folders a previous dialog opened. */
+function expand(label: Element): void {
+  const expander = label.parentElement!.querySelector('.d4-tree-view-tri') as HTMLElement;
+  if (!expander.classList.contains('d4-tree-view-tri-expanded'))
+    expander.click();
+}
+
 category('Widgets: Table pickers', () => {
+  test('pickFileFromFiles cancel resolves null', async () => {
+    await cancelPick(() => ui.pickFileFromFiles(), 'Select a file');
+  });
+
+  test('pickFileFromFiles resolves the file selected on OK', async () => {
+    const picked = ui.pickFileFromFiles();
+    try {
+      const dialog = await openDialog('Select a file');
+      expand(await demoShare(dialog, '.d4-tree-view-group-label[data-namespace="System:"][data-name="DemoFiles"]'));
+      await waitUntil(() => treeLabel(dialog, 'demog.csv') !== undefined,
+        'demog.csv is not listed in the Demo share', 15000);
+      treeLabel(dialog, 'demog.csv')!.click();
+      (dialog.root.querySelector('[name="button-OK"]') as HTMLElement).click();
+      const file = await picked;
+      expect(file instanceof DG.FileInfo, true);
+      expect(file!.fullPath, 'System:DemoFiles/demog.csv');
+      expect(file!.isFile, true);
+    } finally {
+      closeDialogs('Select a file');
+    }
+  });
+
+  test('pickFileFromFiles with multiple resolves every file selected on OK', async () => {
+    const picked = ui.pickFileFromFiles({multiple: true});
+    try {
+      const dialog = await openDialog('Select a file');
+      expand(await demoShare(dialog, '.d4-tree-view-group-label[data-namespace="System:"][data-name="DemoFiles"]'));
+      await waitUntil(() => treeLabel(dialog, 'demog.csv') !== undefined && treeLabel(dialog, 'cars.csv') !== undefined,
+        'demog.csv and cars.csv are not listed in the Demo share', 15000);
+      treeLabel(dialog, 'demog.csv')!.click();
+      treeLabel(dialog, 'cars.csv')!.dispatchEvent(new MouseEvent('click', {bubbles: true, ctrlKey: true}));
+      (dialog.root.querySelector('[name="button-OK"]') as HTMLElement).click();
+      const files = await picked;
+      expect(Array.isArray(files), true);
+      expectArray(files!.map((f) => f.fullPath).sort(), ['System:DemoFiles/cars.csv', 'System:DemoFiles/demog.csv']);
+      expect(files!.every((f) => f instanceof DG.FileInfo && f.isFile), true);
+    } finally {
+      closeDialogs('Select a file');
+    }
+  });
+
+  test('pickFileFromFiles with a connection browses that share alone', async () => {
+    const demo = await grok.dapi.connections.filter('shortName = "DemoFiles"').first();
+    const picked = ui.pickFileFromFiles({connection: demo});
+    try {
+      const dialog = await openDialog('Select a file');
+      const share = await demoShare(dialog, '.d4-tree-view-group-label[data-name="DemoFiles"]');
+      expect(dialog.root.querySelectorAll('.d4-tree-view-group-label[data-name]').length, 1,
+        'only the connection\'s share');
+      expand(share);
+      await waitUntil(() => treeLabel(dialog, 'demog.csv') !== undefined,
+        'demog.csv is not listed in the Demo share', 15000);
+      treeLabel(dialog, 'demog.csv')!.click();
+      (dialog.root.querySelector('[name="button-OK"]') as HTMLElement).click();
+      const file = await picked;
+      expect(file instanceof DG.FileInfo, true);
+      expect(file!.fullPath, 'System:DemoFiles/demog.csv');
+      expect(file!.path, 'demog.csv');
+    } finally {
+      closeDialogs('Select a file');
+    }
+  });
+
+  test('pickFileFromFiles with a connection in folder mode lists folders and resolves the share\'s root', async () => {
+    const demo = await grok.dapi.connections.filter('shortName = "DemoFiles"').first();
+    const picked = ui.pickFileFromFiles({connection: demo, mode: 'folder'});
+    try {
+      const dialog = await openDialog('Select a directory');
+      const share = await demoShare(dialog, '.d4-tree-view-group-label[data-name="DemoFiles"]');
+      expand(share);
+      await waitUntil(() => treeLabel(dialog, 'geo') !== undefined,
+        'the geo folder is not listed in the Demo share', 15000);
+      expect(treeLabel(dialog, 'demog.csv') === undefined, true, 'a file listed in folder mode');
+      share.click();
+      (dialog.root.querySelector('[name="button-OK"]') as HTMLElement).click();
+      const folder = await picked;
+      expect(folder!.isDirectory, true);
+      expect(folder!.path, '');
+      expect(folder!.fullPath, 'System:DemoFiles');
+    } finally {
+      closeDialogs('Select a directory');
+    }
+  });
+
   test('pickTableFromFiles cancel resolves null', async () => {
-    await cancelPick(() => pickers.pickTableFromFiles(), 'Select a file');
+    await cancelPick(() => ui.pickTableFromFiles(), 'Select a file');
   });
 
   test('pickTableFromQuery cancel resolves null', async () => {
-    await cancelPick(() => pickers.pickTableFromQuery(), 'Select a database query');
+    await cancelPick(() => ui.pickTableFromQuery(), 'Select a database query');
   });
 }, {owner: 'askalkin@datagrok.ai'});
 

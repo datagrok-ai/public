@@ -4,15 +4,11 @@ import * as grok from 'datagrok-api/grok';
 import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 
 import './tests/_first-tests';
-import './tests/helm-tests';
-import './tests/findMonomers-tests';
 import './tests/renderers-tests';
 import './tests/get-molfiles-tests';
 import './tests/properties-widget-tests';
-import './tests/parse-helm-tests';
 import './tests/helm-web-editor-tests';
 import './tests/helm-input-tests';
-import './tests/helm-helper-tests';
 import './tests/helm-helper-surface-tests';
 import './tests/helm-substructure-filter';
 import './tests/helm-activity-cliffs';

@@ -1,5 +1,3 @@
-/* Gherkin → a flat model the compiler consumes: keyword types resolved (And/But inherit), outlines
-   expanded into one scenario per example row, rule backgrounds folded into their scenarios. */
 import {AstBuilder, GherkinClassicTokenMatcher, Parser} from '@cucumber/gherkin';
 import {IdGenerator} from '@cucumber/messages';
 import type * as messages from '@cucumber/messages';

@@ -38,7 +38,6 @@ export type MetaCallInfo = {
   id?: string,
   title?: string,
   description?: string,
-  isFavorite?: boolean,
   tags?: string[],
   started?: dayjs.Dayjs
 }
@@ -82,7 +81,8 @@ export class FuncCallNode implements IStoreProvider {
     public isReadonly: boolean,
     private logger?: DriverLogger,
   ) {
-    this.instancesWrapper = new FuncCallInstancesBridge(this.config.io!, this.config.states ?? [], this.isReadonly, this.logger);
+    this.instancesWrapper = new FuncCallInstancesBridge(
+      this.config.io!, this.config.states ?? [], this.isReadonly, this.logger);
     this.getConsistencyChanges().pipe(
       takeUntil(this.closed$),
     ).subscribe(this.consistencyInfo$);
@@ -402,7 +402,6 @@ export class PipelineNodeBase implements IStoreProvider {
     };
     return res;
   }
-
 }
 
 export class StaticPipelineNode extends PipelineNodeBase {
@@ -416,7 +415,9 @@ export class StaticPipelineNode extends PipelineNodeBase {
     super(config, isReadonly, logger);
   }
 
-  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData> {
+  toState(
+    options: StateTreeSerializationOptions, actions?: ViewAction[],
+  ): PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData> {
     const state = super.toState(options);
     return {
       ...state,
@@ -449,7 +450,9 @@ export class DynamicPipelineNode extends PipelineNodeBase {
     super(config, isReadonly, logger);
   }
 
-  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> {
+  toState(
+    options: StateTreeSerializationOptions, actions?: ViewAction[],
+  ): PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> {
     const state = super.toState(options);
     const res: PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> = {
       ...state,

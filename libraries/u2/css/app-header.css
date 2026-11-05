@@ -1,0 +1,107 @@
+/* App header skin — the icon, the bullet list and "Learn more" of an app's home. Tokens only;
+   css/tokens.css must be loaded alongside. The metrics are the platform app headers the class replaces:
+   30px from the icon to the list, 60px from a title, 6px between items. */
+.u2-app-header {
+  display: flex;
+  box-sizing: border-box;
+  gap: 30px;
+  padding: var(--dg-space-l);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color);
+}
+
+.u2-app-header-named {
+  gap: 60px;
+}
+
+.u2-app-header-rule {
+  border-bottom: var(--dg-border-width) solid var(--dg-border);
+}
+
+/* the icon gives way before the bullets wrap, as the platform header's did */
+.u2-app-header-lead {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.u2-app-header-icon {
+  --u2-app-header-icon: var(--u2-app-header-icon-size);
+  display: block;
+  min-width: 0;
+  width: var(--u2-app-header-icon);
+  height: var(--u2-app-header-icon);
+  object-fit: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+i.u2-app-header-icon {
+  font-size: calc(var(--u2-app-header-icon) * 0.8);
+  line-height: var(--u2-app-header-icon);
+  text-align: center;
+}
+
+.u2-app-header-names {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.u2-app-header-title {
+  font-size: 20px;
+  font-weight: var(--dg-font-weight-bold);
+}
+
+.u2-app-header-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  margin: 10px 0;
+  padding: var(--dg-space-l);
+}
+
+.u2-app-header-items {
+  margin: 0;
+  padding-left: 15px;
+  list-style: disc;
+}
+
+.u2-app-header-item + .u2-app-header-item {
+  margin-top: 6px;
+}
+
+.u2-app-header-learn-more {
+  align-self: flex-start;
+  margin-left: 15px;
+}
+
+/* the platform header kept Learn more's row, empty, where there is none: 10px under the bullets */
+.u2-app-header-body:not(:has(> .u2-app-header-learn-more))::after {
+  content: '';
+}
+
+.u2-app-header-external {
+  margin: 0 0.2em;
+  font-size: 0.8em;
+}
+
+/* the header's own width, measured (app-header.ts): under 480px, under 400px */
+.u2-app-header-compact .u2-app-header-icon {
+  --u2-app-header-icon: min(var(--u2-app-header-icon-size), 96px);
+}
+
+.u2-app-header.u2-app-header-narrow {
+  flex-direction: column;
+  gap: var(--dg-space-m);
+  padding-left: 0;
+}
+
+.u2-app-header-narrow .u2-app-header-icon {
+  --u2-app-header-icon: min(var(--u2-app-header-icon-size), 64px);
+}

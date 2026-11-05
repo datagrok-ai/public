@@ -2,7 +2,7 @@
    signal and update in place — one mechanism on the Input base (`liveOption`), flags flipped once
    in the shared inputProps block. Strictly one-way; literals keep plain-setter ownership. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Signal, signal} from '../src/core/signals.js';
@@ -33,16 +33,16 @@ function registry() {
   return reg;
 }
 
-const CHROME = ['label', 'postfix', 'tooltipText', 'enabled'];
+const CHROME = ['label', 'postfix', 'tooltipText', 'disabled'];
 
 spec('the five chrome props follow bound signals live, input element identity stable', () => {
   const reg = registry();
   const ctx = new SpecContext({data: {
-    l: 'Name', tt: 'A tip', en: true, px: 'mg', ph: 'Type here'}});
+    l: 'Name', tt: 'A tip', off: null, px: 'mg', ph: 'Type here'}});
   const instance = renderSpec({
     $schema: 'dg-ui/1',
     root: {tag: 'u2-text-input', name: 'driver',
-      bind: {label: '$.l', tooltipText: '$.tt', enabled: '$.en', postfix: '$.px', placeholder: '$.ph'}},
+      bind: {label: '$.l', tooltipText: '$.tt', disabled: '$.off', postfix: '$.px', placeholder: '$.ph'}},
   }, ctx, reg);
   const root = instance.node('driver').root;
   const editor = root.querySelector('input');
@@ -54,19 +54,20 @@ spec('the five chrome props follow bound signals live, input element identity st
 
   ctx.data.l.value = 'Renamed';
   ctx.data.tt.value = 'Another tip';
-  ctx.data.en.value = false;
+  ctx.data.off.value = 'Pick a driver first';
   ctx.data.px.value = 'kg';
   ctx.data.ph.value = 'Now here';
   assert.equal(root.querySelector('.u2-input-label').textContent, 'Renamed');
   assert.equal(editor.getAttribute('aria-description'), 'Another tip');
-  assert.equal(editor.disabled, true, 'enabled=false grays out live');
+  assert.equal(editor.disabled, true, 'a reason grays out live');
   assert.equal(root.classList.contains('u2-input-disabled'), true);
+  assert.equal(root.getAttribute('aria-description'), 'Pick a driver first', 'and says why');
   assert.equal(root.querySelector('.u2-input-postfix').textContent, 'kg');
   assert.equal(editor.placeholder, 'Now here');
   assert.equal(root.querySelector('input'), editor, 'the editor was never re-created');
   assert.equal(instance.node('driver').root, root, 'nor was the input');
 
-  ctx.data.en.value = true;
+  ctx.data.off.value = null;
   assert.equal(editor.disabled, false, 'and un-grays live');
   instance.dispose();
 });
@@ -141,10 +142,10 @@ spec('a deferred link wires chrome bound to a later node, through the _liveBinds
 
 spec('bindProps advertises the bound chrome — real type, never writable; bindStep answers its signal', () => {
   const reg = registry();
-  const ctx = new SpecContext({data: {l: 'Name', en: true}});
+  const ctx = new SpecContext({data: {l: 'Name', off: 'Not yet'}});
   const instance = renderSpec({
     $schema: 'dg-ui/1',
-    root: {tag: 'u2-text-input', name: 'driver', bind: {label: '$.l', enabled: '$.en'}},
+    root: {tag: 'u2-text-input', name: 'driver', bind: {label: '$.l', disabled: '$.off'}},
   }, ctx, reg);
   const input = instance.node('driver');
   const props = input.bindProps();
@@ -154,9 +155,9 @@ spec('bindProps advertises the bound chrome — real type, never writable; bindS
   const label = props.find((p) => p.name === 'label');
   assert.equal(label.type, 'string', 'the type comes from the signal\'s current value');
   assert.equal(label.writable, false, 'chrome binds are strictly one-way (UB-10)');
-  const enabled = props.find((p) => p.name === 'enabled');
-  assert.equal(enabled.type, 'bool');
-  assert.equal(enabled.writable, false);
+  const disabled = props.find((p) => p.name === 'disabled');
+  assert.equal(disabled.type, 'string');
+  assert.equal(disabled.writable, false);
   assert.equal(input.bindStep('label'), ctx.data.l, 'the bound signal itself answers the step');
   instance.dispose();
 });
@@ -175,17 +176,17 @@ spec('disposal: a source write after dispose is inert', () => {
 });
 
 spec('literal chrome installs no effect: the plain setter stays the sole owner', async () => {
-  const input = new TextInput({label: 'Lit', enabled: false, postfix: 'mg', tooltipText: 'tip'});
-  assert.equal(input.enabled, false, 'the literal applied');
-  assert.equal(input.bindStep('enabled'), null, 'no live bind registered for a literal');
+  const input = new TextInput({label: 'Lit', disabled: 'Not editable in this test', postfix: 'mg', tooltipText: 'tip'});
+  assert.equal(input.disabled === null, false, 'the literal applied');
+  assert.equal(input.bindStep('disabled'), null, 'no live bind registered for a literal');
   assert.equal(input.bindStep('label'), null);
   assert.equal(input.bindStep('postfix'), null);
   assert.equal(input.bindStep('tooltipText'), null);
 
-  input.enabled = true;
+  input.disabled = null;
   input.label = 'Renamed';
   await flush();
-  assert.equal(input.enabled, true, 'the imperative write sticks — nothing fights it');
+  assert.equal(input.disabled === null, true, 'the imperative write sticks — nothing fights it');
   assert.equal(input.root.querySelector('input').disabled, false);
   assert.equal(input.label, 'Renamed');
   input.dispose();
@@ -209,7 +210,7 @@ spec('a signal postfix materializes on the first non-empty value only', () => {
   input.dispose();
 });
 
-spec('literal enabled: true runs no sweep — createEditor-disabled internals survive', () => {
+spec('literal disabled: null runs no sweep — createEditor-disabled internals survive', () => {
   class Probe extends Input {
     createEditor() {
       const el = document.createElement('div');
@@ -219,14 +220,14 @@ spec('literal enabled: true runs no sweep — createEditor-disabled internals su
       return el;
     }
   }
-  const input = new Probe({enabled: true}, null);
+  const input = new Probe({disabled: null}, null);
   assert.equal(input.btn.disabled, true, 'the internal control stays as the editor built it');
-  assert.equal(input.enabled, true);
+  assert.equal(input.disabled === null, true);
   input.dispose();
 });
 
 spec('literal chrome advertises nothing: bindProps carries no chrome entries', () => {
-  const input = new TextInput({label: 'Lit', enabled: false, postfix: 'mg', tooltipText: 'tip'});
+  const input = new TextInput({label: 'Lit', disabled: 'Not editable in this test', postfix: 'mg', tooltipText: 'tip'});
   const names = input.bindProps().map((p) => p.name);
   for (const name of [...CHROME, 'placeholder'])
     assert.equal(names.includes(name), false, `${name} is not advertised for a literal`);

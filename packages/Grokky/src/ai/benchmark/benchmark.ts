@@ -15,6 +15,7 @@ import {_package} from '../../package';
 import {ClaudeRuntimeClient, TurnServerMetrics} from '../../claude/runtime-client';
 import {viewFunctionTools} from '../view-tools';
 import {executeSingleBlock, runVerification, buildWorkspaceContext} from '../../claude/exec-blocks';
+import {AiFeature} from '../../claude/ai-feature';
 
 interface SuitePrompt {
   category: string;
@@ -138,7 +139,7 @@ async function runTurn(client: ClaudeRuntimeClient, prompt: string, view: DG.Vie
   const viewTools = systemPromptMode === 'none' ? {defs: [], runners: new Map()} : viewFunctionTools();
   const ctx = view ? buildWorkspaceContext() : '';
   const full = ctx ? ctx + '\n---\n\n' + prompt : prompt;
-  const sid = `bench-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+  const sid = `${AiFeature.Benchmark}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
   const targetView = view ?? grok.shell.v;
 
   return new Promise<RepTurn>((resolve) => {
@@ -320,7 +321,7 @@ async function judge(client: ClaudeRuntimeClient, prompt: string, answer: string
   // flip a correct answer to failed on transient grounds.
   for (let attempt = 0; ; attempt++) {
     try {
-      const r = await client.query(jp, {outputSchema: JUDGE_SCHEMA, systemPromptMode: 'none'});
+      const r = await client.query(jp, {outputSchema: JUDGE_SCHEMA, systemPromptMode: 'none', feature: AiFeature.Benchmark});
       return {pass: !!r.pass, score: typeof r.score === 'number' ? r.score : (r.pass ? 1 : 0), reason: r.reason ?? ''};
     } catch (e: any) {
       if (attempt >= 1)

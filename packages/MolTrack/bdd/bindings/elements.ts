@@ -1,7 +1,7 @@
-/* The MolTrack EMS app as a context: only its own pieces; the rest resolves from the u2/EMS contract. */
+/* The MolTrack app as a context: only its own pieces; the rest resolves from the u2/EMS contract. */
 import {context} from '@datagrok-libraries/bdd';
 
-export const ems = context('MolTrack EMS', {selector: '[data-u2="domain-app"]'});
+export const ems = context('MolTrack', {selector: '[data-u2="domain-app"]'});
 
 ems.element('app ribbon', {selector: '.grok-view-container > .d4-ribbon',
   description: 'the view\'s ribbon (New, Save, Discard, ⋯), told apart from the New of the form\'s Batches tab'});
@@ -13,7 +13,7 @@ ems.element('save problem', {selector: '.u2-domain-status-problem',
   description: 'the problem slot of the status bar: why the last save was refused'});
 ems.element('molecule canvas', {selector: 'canvas.d4-input-molecule-canvas',
   description: 'the picture of a platform molecule input; a click opens the sketcher dialog'});
-ems.element('compound identity', {selector: '.moltrack-ems-identity',
+ems.element('compound identity', {selector: '.moltrack-identity',
   description: 'under a new compound\'s form: the parent, formula and InChIKey worked out from the structure, and why ' +
     'it cannot be registered'});
 ems.element('batches tab', {selector: '[data-u2="domain-children"]',

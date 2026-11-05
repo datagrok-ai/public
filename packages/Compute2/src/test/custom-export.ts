@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
-import {applyCustomExport} from '../utils';
+import {applyCustomExport} from '../components/TreeWizard/tree-export';
 
 // Headless check for the custom-export "report handler" contract: the function named in
 // `meta.customExports` (NOT the model itself) must run, and it must receive the step's funcCall.
@@ -22,6 +22,6 @@ category('Custom export: report handler', () => {
   test('throws for an unknown export name', async () => {
     const model = DG.Func.byName('Compute2:TestCustomExportModel');
     const fc = model.prepare({a: 1});
-    await expectExceptionAsync(async () => { await applyCustomExport(fc, 'missing', {}); });
+    await expectExceptionAsync(async () => {await applyCustomExport(fc, 'missing', {});});
   });
 });

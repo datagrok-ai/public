@@ -81,8 +81,6 @@ export class TreeViewer extends EChartViewer {
     ].filter((f) => f !== DG.AGG.KEY && f !== DG.AGG.PIVOT)),
   ];
   selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
-  applySizeAggr: boolean = false;
-  applyColorAggr: boolean = false;
   onClick: onClickOptions;
   includeNulls: boolean;
   labelRotate: number;
@@ -96,9 +94,6 @@ export class TreeViewer extends EChartViewer {
   private selectedPaths: string[] | null = null;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
   private moleculeRenderErrorLogged: boolean = false;
-  viewerFilter: DG.BitSet | null = null;
-  capturedFilterState: DG.BitSet | null = null;
-  initialDfFilter: DG.BitSet | null = null;
   // the branches animate into place for `animationDurationUpdate` (500 ms), past the default cap
   protected signals = new utils.RenderSignals(() => this.frameOwed(), 120);
 
@@ -176,14 +171,16 @@ export class TreeViewer extends EChartViewer {
     this.onPropertyChanged(null);
   }
 
-  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any): DG.BitSet {
-    bitset.handleClick((index: number) => {
-      return path.every((segment, j) => {
-        const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
-        return (columnValue !== null && columnValue.toString() === segment) || (columnValue == null && segment === ' ');
-      });
-    }, event);
-    return bitset;
+  matchesPath(index: number, path: string[]): boolean {
+    return path.every((segment, j) => {
+      const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
+      return (columnValue !== null && columnValue.toString() === segment) || (columnValue == null && segment === ' ');
+    });
+  }
+
+  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any): void {
+    bitset.handleClick((index: number) =>
+      (this.filter.get(index) || this.rowSource === 'Selected') && this.matchesPath(index, path), event);
   }
 
   initChartEventListeners(): void {
@@ -201,20 +198,9 @@ export class TreeViewer extends EChartViewer {
           selectedSectors.push(pathString);
       }
 
-      if (this.onClick === 'Filter') {
-        const filterClone = this.initialDfFilter!.clone();
-        const bitset = isMultiSelect ? this.viewerFilter ?? DG.BitSet.create(this.dataFrame.rowCount) : filterClone;
-        const viewerFilter = this.applySelectionFilter(bitset, path, event.event);
-        if (this.viewerFilter === null)
-          this.viewerFilter = viewerFilter.clone();
-        else
-          this.viewerFilter = viewerFilter;
-
-        if (this.viewerFilter.trueCount === 0)
-          this.viewerFilter.setAll(true);
-
-        this.dataFrame.filter.copyFrom(this.viewerFilter);
-      } else if (this.onClick === 'Select')
+      if (this.onClick === 'Filter')
+        this.filterByClick((index) => this.matchesPath(index, path), event.event);
+      else if (this.onClick === 'Select')
         this.applySelectionFilter(this.dataFrame.selection, path, event.event);
     };
 
@@ -491,6 +477,8 @@ export class TreeViewer extends EChartViewer {
       break;
 
     case 'onClick':
+      this.clearViewerFilter();
+      // falls through
     case 'rowSource':
       this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
       break;
@@ -502,13 +490,8 @@ export class TreeViewer extends EChartViewer {
 
     case 'colorColumnName':
     case 'colorAggrType':
-      this.applyColorAggr = this.shouldApplyAggregation(this.colorColumnName, this.colorAggrType);
-      this.render();
-      break;
-
     case 'sizeColumnName':
     case 'sizeAggrType':
-      this.applySizeAggr = this.shouldApplyAggregation(this.sizeColumnName, this.sizeAggrType);
       this.render();
       break;
 
@@ -597,6 +580,14 @@ export class TreeViewer extends EChartViewer {
     }
   }
 
+  get applySizeAggr(): boolean {
+    return this.shouldApplyAggregation(this.sizeColumnName, this.sizeAggrType);
+  }
+
+  get applyColorAggr(): boolean {
+    return this.shouldApplyAggregation(this.colorColumnName, this.colorAggrType);
+  }
+
   shouldApplyAggregation(columnName: string, aggrType: string): boolean {
     const column = this.dataFrame.col(columnName);
     if (!column) return false;
@@ -626,11 +617,10 @@ export class TreeViewer extends EChartViewer {
   addSubs(): void {
     if (!this.dataFrame) return;
     this.subs.push(this.signals.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
-      const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
-      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) => !columnNamesToRemove.includes(columnName));
-      this.setChartOption();
-      this.render();
+    this.subs.push(utils.subscribeToColumnRemoval(this, {
+      hierarchyColumnNames: () => this.defaultHierarchy(),
+      sizeColumnName: null,
+      colorColumnName: null,
     }));
     this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
       const release = this.signals.hold();
@@ -643,8 +633,7 @@ export class TreeViewer extends EChartViewer {
     this.subs.push(this.signals.debounce(grok.events.onResetFilterRequest, 10).subscribe(() => {
       if (this.filteredPaths)
         this.cleanTree(this.filteredPaths);
-      this.viewerFilter = null;
-      this.capturedFilterState = null;
+      this.clearViewerFilter();
       this.signals.settle();
     }));
     this.subs.push(this.dataFrame.selection.onChanged.subscribe(() => {
@@ -653,10 +642,7 @@ export class TreeViewer extends EChartViewer {
     this.subs.push(this.dataFrame.onFilterChanged.subscribe(() => {
       this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter, false, true);
     }));
-    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((args) => {
-      if (this.viewerFilter)
-        this.dataFrame.filter.and(this.viewerFilter);
-    }));
+    this.addViewerFilterSub();
   }
 
   applySelectionFilterChange(paths: string[] | null, bitset: DG.BitSet, changedProp: boolean = false, isFilter: boolean = false): void {
@@ -704,7 +690,7 @@ export class TreeViewer extends EChartViewer {
 
 
   getSelectionFilterData(bitset: DG.BitSet): SelectionData {
-    if (!this.eligibleHierarchyNames || this.eligibleHierarchyNames.length === 0)
+    if (!this.eligibleHierarchyNames?.length || !this.eligibleHierarchyNames.every((name) => this.dataFrame.col(name)))
       return {};
 
     const rowMask = bitset.clone();
@@ -725,20 +711,23 @@ export class TreeViewer extends EChartViewer {
     return treeData;
   }
 
-  onTableAttached(): void {
-    const categoricalColumns = [...this.dataFrame.columns.categorical]
+  defaultHierarchy(): string[] {
+    return [...this.dataFrame.columns.categorical]
       .filter((col) => !col.name.startsWith('~'))
       .sort((col1, col2) =>
         col1.categories.length - col2.categories.length || col1.name.localeCompare(col2.name),
-      );
+      )
+      .slice(0, 3).map((col) => col.name);
+  }
 
-    if (categoricalColumns.length < 1)
+  onTableAttached(): void {
+    const hierarchy = this.defaultHierarchy();
+    if (hierarchy.length < 1)
       return;
 
-    this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
+    this.hierarchyColumnNames = hierarchy;
     this.sizeColumnName = '';
     this.colorColumnName = '';
-    this.initialDfFilter = this.dataFrame.filter.clone();
 
     super.onTableAttached();
     this.addSubs();
@@ -918,13 +907,10 @@ export class TreeViewer extends EChartViewer {
       return;
 
     this.eligibleHierarchyNames = this.hierarchyColumnNames?.filter((name) => {
-      if (name.startsWith('~'))
+      const col = this.dataFrame.col(name);
+      if (!col || name.startsWith('~'))
         return false;
-      if (this.filter.trueCount >= CATEGORIES_NUMBER) {
-        const col = this.dataFrame.col(name);
-        return col ? col.categories.length <= CATEGORIES_NUMBER : false;
-      }
-      return true;
+      return this.filter.trueCount < CATEGORIES_NUMBER || col.categories.length <= CATEGORIES_NUMBER;
     }) ?? [];
 
     if (this.eligibleHierarchyNames == null || this.eligibleHierarchyNames.length === 0) {

@@ -8,7 +8,7 @@ Feature: A layout, shared and applied by the other user
   (on a query); the Advanced editor of block C is gone from the dialog (GROK-20322).
 
   The layout is this feature's own, ShareLayout-{time}, saved with Save in the Layouts pane from
-  demog's first 100 rows with a scatter plot of WEIGHT by HEIGHT (a layout saved through the JS API
+  demog-1000's first 100 rows with a scatter plot of WEIGHT by HEIGHT (a layout saved through the JS API
   is not offered in the pane), renamed in the context panel, and deleted when the feature ends. The
   second account is the library's sharing user; it signs in on the feature's page, and the share is
   made with Send notifications off.
@@ -21,9 +21,8 @@ Feature: A layout, shared and applied by the other user
   Background:
     Given user is logged in
     And the sharing user has no notifications, now and when the feature ends
-    And the layouts named "ShareLayout-{time}" are deleted when the feature ends
-    And the layouts named "share-layout-{time}" are deleted when the feature ends
-    And user opens demog dataset keeping the first 100 rows as "share-layout-{time}"
+    And the layouts named "ShareLayout-{time}, share-layout-{time}" are deleted when the feature ends
+    And user opens demog-1000 dataset keeping the first 100 rows as "share-layout-{time}"
     And user adds a scatter plot viewer with:
       | xColumnName | HEIGHT |
       | yColumnName | WEIGHT |
@@ -51,7 +50,7 @@ Feature: A layout, shared and applied by the other user
   Scenario: The second account gets the layout's card for a table of the same columns and applies it
     When user signs in as the sharing user
     Then the sharing user should be signed in
-    Given user opens demog dataset keeping the first 100 rows as "share-layout-{time}"
+    Given user opens demog-1000 dataset keeping the first 100 rows as "share-layout-{time}"
     And the toolbox pane is shown
     And Layouts accordion header in toolbox is expanded
     Then "ShareLayout-{time}" layout card should be visible

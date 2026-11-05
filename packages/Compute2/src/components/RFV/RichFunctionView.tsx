@@ -10,92 +10,34 @@ import {
   ifOverlapping,
   useUnwrappedCallMeta,
   useDgView,
-  DEFAULT_FLOAT_FORMAT,
   RibbonPanelItem, RibbonMenuItem,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {tryParseJson} from '@datagrok-libraries/utils/src/string-utils';
-import {History} from '../History/History';
+import {RunBrowser} from '../RunStorage/RunBrowser';
+import {KeptAlive} from '../KeptAlive/KeptAlive';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {buildDiffGrokFromFunc} from '@datagrok-libraries/compute-utils/function-views/src/fitting/diff-studio/diff-grok-meta';
-import {richFunctionViewReport, SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
+import {richFunctionViewReport} from '@datagrok-libraries/compute-utils/shared-utils/export';
+import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
-import {ScalarsPanel, ScalarsSection, ScalarState} from './ScalarsPanel';
+import {ScalarsPanel} from './ScalarsPanel';
 import {BehaviorSubject} from 'rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {useViewersHook} from '../../composables/use-viewers-hook';
-import {startWith, take, map} from 'rxjs/operators';
+import {take} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
-import {useObservable} from '@vueuse/rxjs';
+import {useHistoryPanel} from '../../composables/use-history-panel';
 import {_package} from '../../package-instance';
 import {applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
-import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
-import {getShareAction} from '../../sharing/sharing';
+import {saveCallToProject, DfExportEntry} from '../../project-export';
 import {getToggledInputs} from './input-toggles';
+import {RenderStateItem, getEmptyTabToProperties, tabToProperties} from './rfv-tabs';
 import {compareRibbonIcon} from '../RunComparison/comparison-views';
 
-
-interface ScalarsState {
-  type: 'scalars',
-  scalarsData: ScalarState[],
-  sections?: ScalarsSection[],
-}
-
-type OutputCategoryGroupSpec = ReadonlyArray<string | Record<string, OutputCategoryGroupSpec>>;
-type OutputCategoryGroups = Record<string, OutputCategoryGroupSpec>;
-
-function parseOutputCategoryGroups(func: DG.Func): OutputCategoryGroups | undefined {
-  const raw = func?.options?.['outputCategoryGroups'];
-  if (!raw) return undefined;
-  const parsed = typeof raw === 'string' ? tryParseJson(raw, {warning: 'outputCategoryGroups'}) : raw;
-  return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : undefined;
-}
-
-function applyOutputCategoryGroups(outputs: TabContent, spec: OutputCategoryGroups) {
-  const consume = (items: OutputCategoryGroupSpec, depth: number, sink: ScalarsSection[]) => {
-    for (const item of items) {
-      if (typeof item === 'string') {
-        const entry = outputs.get(item);
-        if (!entry || entry.type !== 'scalars' || entry.scalarsData.length === 0) continue;
-        sink.push({label: item, indent: depth, scalarsData: entry.scalarsData});
-        outputs.delete(item);
-      } else if (item && typeof item === 'object' && !Array.isArray(item)) {
-        for (const [label, nested] of Object.entries(item)) {
-          if (!Array.isArray(nested)) continue;
-          const start = sink.length;
-          consume(nested, depth + 1, sink);
-          if (sink.length > start)
-            sink.splice(start, 0, {label, indent: depth, scalarsData: []});
-        }
-      }
-    }
-  };
-
-  for (const [superLabel, items] of Object.entries(spec)) {
-    if (!Array.isArray(items)) continue;
-    const sections: ScalarsSection[] = [];
-    consume(items, 0, sections);
-    if (sections.length === 0) continue;
-    const flat = sections.flatMap((s) => s.scalarsData);
-    outputs.set(superLabel, {type: 'scalars', scalarsData: flat, sections});
-  }
-}
-
-interface DataFrameState {
-  name: string,
-  df: Vue.ShallowRef<DG.DataFrame>,
-  type: 'dataframe',
-  config: Record<string, any>,
-}
-
-interface GraphicsState {
-  name: string,
-  image: Vue.ShallowRef<string | null>,
-  type: 'graphics',
-}
 
 interface DockSpawnConfigItem {
   'dock-spawn-dock-type'?: 'left' | 'right' | 'up' | 'down',
@@ -112,134 +54,6 @@ interface ExportItem {
   name: string,
   handler: (arg?: any) => void,
 }
-
-type TabContent = Map<string, ScalarsState | DataFrameState | GraphicsState>;
-
-interface RenderStateItem {
-  tabLabel: string;
-  tabContent: ScalarsState | DataFrameState | GraphicsState;
-  isInput: boolean;
-}
-
-const getEmptyTabToProperties = () => ({
-  inputs: new Map() as TabContent,
-  outputs: new Map() as TabContent,
-});
-
-const isEmptyScalar = (v: any) =>
-  v == null || v === '' || v === DG.FLOAT_NULL || v === DG.INT_NULL;
-
-const isEmptyDataFrame = (df: any) =>
-  !df || (df instanceof DG.DataFrame && df.rowCount === 0);
-
-const isEmptyGraphics = (v: any) => v == null || v === '';
-
-const isHiddenOutput = (prop: DG.Property) => !!Utils.parseJsonOption(prop.options, 'hidden');
-
-const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
-  if (isHiddenOutput(prop))
-    return;
-  const scalarValue = funcCall.outputs[prop.name];
-  let formattedScalarValue = scalarValue;
-
-  if (prop.propertyType === DG.TYPE.FLOAT && scalarValue != null) {
-    if (prop.options.format)
-      formattedScalarValue = DG.format(scalarValue, prop.options.format);
-    else if (prop.options.precision)
-      formattedScalarValue = scalarValue.toPrecision(prop.options.precision);
-    else
-      formattedScalarValue = DG.format(scalarValue, DEFAULT_FLOAT_FORMAT);
-  } else if (typeof scalarValue === 'boolean')
-    formattedScalarValue = String(scalarValue);
-  const units = prop.options['units'] ? ` [${prop.options['units']}]`: ``;
-
-  return [scalarValue, formattedScalarValue, units] as const;
-};
-
-// Stable identity per content so Vue skips re-applying `options` (and a redundant Dart setOptions) on rebuilds.
-const viewerConfigIdentity = new Map<string, Record<string, string | boolean>>();
-const stabilizeViewerConfig = (config: Record<string, string | boolean>) => {
-  const key = JSON.stringify(config);
-  const cached = viewerConfigIdentity.get(key);
-  if (cached)
-    return cached;
-  viewerConfigIdentity.set(key, config);
-  return config;
-};
-
-const tabToProperties = (fc: DG.FuncCall) => {
-  const tabsToProps = getEmptyTabToProperties();
-  const hideEmpty = !Utils.getFeature(Utils.getFeatures(fc.func), 'show-empty-outputs', false);
-
-  // Dataframes (one panel per viewer annotation) and graphics (a single image panel)
-  const processVisual = (prop: DG.Property, isOutput: boolean) => {
-    const isGraphics = prop.propertyType === DG.TYPE.GRAPHICS;
-    let viewers = isGraphics ? [{}] : Utils.getPropViewers(prop).config;
-    // Outputs without a viewer annotation (e.g. queries) get a plain grid by default
-    const isDefaultGrid = !isGraphics && viewers.length === 0 && isOutput;
-    if (isDefaultGrid)
-      viewers = [{type: DG.VIEWER.GRID}];
-    if (viewers.length === 0) return;
-    const isEmpty = isGraphics ? isEmptyGraphics : isEmptyDataFrame;
-    if (hideEmpty && isOutput && isEmpty(fc.outputs[prop.name])) return;
-
-    viewers.forEach((viewer) => {
-      const blockTitle = viewer.title ?? prop.options['caption'] ?? prop.name ?? ' ';
-      const nameWithViewer = (isGraphics || isDefaultGrid) ? `${blockTitle}` : `${blockTitle} / ${viewer['type']}`;
-
-      const tabLabel = prop.category === 'Misc' ?
-        nameWithViewer: `${prop.category}: ${nameWithViewer}`;
-
-      const name = prop.name;
-      const source = isOutput ? fc.outputParams : fc.inputParams;
-      const changes$ = source[name].onChanged.pipe(
-        startWith(null),
-        map(() => source[name].value ? Vue.markRaw(source[name].value) : null),
-      );
-      const value = useObservable(changes$);
-      const content: DataFrameState | GraphicsState = isGraphics ?
-        {type: 'graphics', name, image: value} :
-        {type: 'dataframe', name, df: value, config: stabilizeViewerConfig(viewer)};
-      if (isOutput)
-        tabsToProps.outputs.set(tabLabel, content);
-      else
-        tabsToProps.inputs.set(tabLabel, content);
-    });
-    return;
-  };
-
-  [...fc.inputParams.values()].forEach(({ property }) => {
-    if (property.propertyType === DG.TYPE.DATA_FRAME) processVisual(property, false);
-  });
-
-  [...fc.outputParams.values()].forEach(({property}) => {
-    if (property.propertyType === DG.TYPE.DATA_FRAME || property.propertyType === DG.TYPE.GRAPHICS) {
-      if (!isHiddenOutput(property))
-        processVisual(property, true);
-      return;
-    }
-    const category = property.category === 'Misc' ? 'Output': property.category;
-
-    const categoryProps = tabsToProps.outputs.get(category);
-    const content = getScalarContent(fc, property);
-    if (!content)
-      return;
-    const [rawValue, formattedValue, units] = content;
-    if (hideEmpty && isEmptyScalar(rawValue))
-      return;
-    const scalarProp = {name: property.name, friendlyName: property.caption || property.name, rawValue, formattedValue, units};
-    if (categoryProps && categoryProps.type === 'scalars')
-      categoryProps.scalarsData.push(scalarProp);
-    else
-      tabsToProps.outputs.set(category, {type: 'scalars', scalarsData: [scalarProp]});
-  });
-
-  const groupsSpec = parseOutputCategoryGroups(fc.func);
-  if (groupsSpec)
-    applyOutputCategoryGroups(tabsToProps.outputs, groupsSpec);
-
-  return tabsToProps;
-};
 
 export const RichFunctionView = Vue.defineComponent({
   name: 'RichFunctionView',
@@ -278,16 +92,12 @@ export const RichFunctionView = Vue.defineComponent({
     },
     // run history and the save icon: 'function' lists the function's runs, 'step' only runs saved
     // for this step (emits `saveToHistory`), 'workflow' the provider's saved runs (row emits
-    // `historyRunChosen`). The share icon follows the sharingMethod setting whenever history is on.
+    // `historyRunChosen`).
     history: {
-      type: Object as Vue.PropType<{mode: 'function' | 'step' | 'workflow', func?: DG.Func, version?: string}>,
+      type: Object as Vue.PropType<{mode: 'function' | 'step' | 'workflow', func?: DG.Func}>,
     },
     viewersHook: {
       type: Function as Vue.PropType<ViewersHook>,
-    },
-    // standalone hosts that support URL inputs pass a handler; adds a "Copy link with inputs" export
-    urlExportHandler: {
-      type: Function as Vue.PropType<() => void>,
     },
     hideDefaultExport: {
       type: Boolean,
@@ -299,7 +109,6 @@ export const RichFunctionView = Vue.defineComponent({
     'historyRunChosen': (_call: DG.FuncCall) => true,
     'stepRunChosen': (_call: DG.FuncCall, _readonly: boolean) => true,
     'saveToHistory': (_call: DG.FuncCall) => true,
-    'publishRun': (_call: DG.FuncCall) => true,
     'compareRequested': () => true,
     'runClicked': () => true,
     'actionRequested': (_actionUuid: string, _additionalParams?: Record<string, any>) => true,
@@ -356,7 +165,6 @@ export const RichFunctionView = Vue.defineComponent({
 
     const historyMode = Vue.computed(() => props.history?.mode);
     const isWorkflowHistory = Vue.computed(() => historyMode.value === 'workflow');
-    const shareAction = getShareAction();
 
     const formHidden = Vue.ref(false);
     const inputToggles = Vue.shallowRef<Utils.InputToggle[]>([]);
@@ -369,8 +177,8 @@ export const RichFunctionView = Vue.defineComponent({
       shownToggles.value = shown;
       sessionStorage.setItem(shownTogglesKey(), JSON.stringify([...shown]));
     };
-    const historyHidden = Vue.ref(true);
-    const historyReadonly = Vue.ref(false);
+    const historyFunc = () => props.history?.func ?? currentCall.value.func;
+    const {historyHidden, historyReadonly} = useHistoryPanel(() => historyFunc().nqName);
     const toggleHistory = (readonly: boolean) => {
       if (!historyHidden.value && historyReadonly.value === readonly)
         historyHidden.value = true;
@@ -380,7 +188,12 @@ export const RichFunctionView = Vue.defineComponent({
       }
     };
 
-    const historyRef = Vue.shallowRef<InstanceType<typeof History> | undefined>(undefined);
+    const historyRef = Vue.shallowRef<InstanceType<typeof KeptAlive> | undefined>(undefined);
+
+    const onHistoryRunChosen = (chosenCall: DG.FuncCall, readonly: boolean) => isWorkflowHistory.value ?
+      emit('historyRunChosen', chosenCall) :
+      emit('stepRunChosen', chosenCall, readonly);
+
     const helpRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
     const formRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
     const dockSpawnRef = Vue.shallowRef<InstanceType<typeof DockManager> | undefined>(undefined);
@@ -501,7 +314,9 @@ export const RichFunctionView = Vue.defineComponent({
       shownToggles.value = new Set(tryParseJson(sessionStorage.getItem(shownTogglesKey()) ?? '[]') ?? []);
     }, {immediate: true});
 
-    Vue.watch([currentCall, () => props.callState, visibleTabLabels], ([call, callState, labels], [prevCall, prevCallState, prevLabels]) => {
+    Vue.watch([currentCall, () => props.callState, visibleTabLabels], (
+      [call, callState, labels], [prevCall, prevCallState, prevLabels],
+    ) => {
       if (prevCall === call && prevCallState === callState && prevLabels === labels)
         return;
       // Re-run mutates outputs in place; refresh tabToPropertiesMap and tabLabels so
@@ -544,7 +359,7 @@ export const RichFunctionView = Vue.defineComponent({
       } catch (e: any) {
         grok.shell.error(e);
       }
-    }
+    };
 
     const exports = Vue.computed(() => {
       const activeExports: ExportItem[] = [];
@@ -565,14 +380,15 @@ export const RichFunctionView = Vue.defineComponent({
           } catch (e: any) {
             grok.shell.error(e);
           }
-        }
+        };
         activeExports.push({name, handler});
       }
-      activeExports.push(...customExports.value.filter(x => x.function && x.name).map(x => ({...x, handler: () => reportHandler(x.function)})));
-      if (canSaveProject())
-        activeExports.push({name: 'Save as project...', handler: () => saveCallToProject(currentCall.value, collectDfExportEntries())});
-      if (props.urlExportHandler)
-        activeExports.push({name: 'Copy link with inputs', handler: () => props.urlExportHandler!()});
+      activeExports.push(...customExports.value.filter((x) => x.function && x.name)
+        .map((x) => ({...x, handler: () => reportHandler(x.function)})));
+      activeExports.push({
+        name: 'Save as project...',
+        handler: () => saveCallToProject(currentCall.value, collectDfExportEntries()),
+      });
       return activeExports;
     });
 
@@ -676,7 +492,8 @@ export const RichFunctionView = Vue.defineComponent({
         const ranges = getRanges('rangeSA');
         const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
         const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
-        SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok, inputsLookup, disableLookupDefault: true});
+        SensitivityAnalysisView.fromEmpty(currentCall.value.func,
+          {ranges, diffGrok, inputsLookup, disableLookupDefault: true});
       } catch (e: any) {
         grok.shell.error(e);
       }
@@ -693,7 +510,8 @@ export const RichFunctionView = Vue.defineComponent({
         const targets = getTargets();
         const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
         const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
-        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, acceptMode: true, diffGrok, inputsLookup, disableLookupDefault: true});
+        const view = await FittingView.fromEmpty(currentCall.value.func,
+          {ranges, targets, acceptMode: true, diffGrok, inputsLookup, disableLookupDefault: true});
         const call = await view.acceptedFitting$.pipe(take(1)).toPromise();
         grok.shell.v = currentView;
         if (call)
@@ -763,18 +581,13 @@ export const RichFunctionView = Vue.defineComponent({
       }] : []),
       ...(props.history && (historyMode.value !== 'step' || exportsVisible.value) && !uiBlocked.value ? [{
         icon: historyMode.value === 'step' ? 'cloud-upload-alt' : 'save',
-        tooltip: 'Save run to history',
+        tooltip: 'Save run',
         onClick: () => emit('saveToHistory', currentCall.value),
       }] : []),
       ...(isComparable.value ? [compareRibbonIcon(() => emit('compareRequested'))] : []),
-      ...(props.history && shareAction && !uiBlocked.value ? [{
-        icon: 'share-alt',
-        tooltip: shareAction.tooltip,
-        onClick: () => emit('publishRun', currentCall.value),
-      }] : []),
       ...(props.history ? [{
         icon: 'history',
-        tooltip: 'Open history panel',
+        tooltip: 'Open runs panel',
         active: !historyHidden.value && !historyReadonly.value,
         onClick: () => toggleHistory(false),
       }] : []),
@@ -807,25 +620,24 @@ export const RichFunctionView = Vue.defineComponent({
           ref={dockSpawnRef}
         >
           { !historyHidden.value && props.history &&
-            <History
+            <KeptAlive
               key="__HISTORY__"
-              func={props.history.func ?? currentCall.value.func}
-              version={props.history.version}
-              allowOtherVersions={isWorkflowHistory.value}
-              savedOnly={historyMode.value === 'step'}
-              onRunChosen={(chosenCall) => isWorkflowHistory.value ?
-                emit('historyRunChosen', chosenCall) :
-                emit('stepRunChosen', chosenCall, historyReadonly.value)}
-              allowCompare={!isWorkflowHistory.value}
-              forceHideInputs={isWorkflowHistory.value}
-              showIsComplete={!isWorkflowHistory.value}
               dock-spawn-dock-type='right'
-              dock-spawn-dock-ratio={0.2}
-              dock-spawn-title={historyReadonly.value ? 'History (read-only load)' : 'History'}
+              dock-spawn-dock-ratio={0.3}
+              dock-spawn-title={historyReadonly.value ? 'Runs (read-only load)' : 'Runs'}
               dock-spawn-panel-icon='history'
               ref={historyRef}
-              class='overflow-scroll h-full'
-            /> }
+              class='h-full'
+            >
+              <RunBrowser
+                key={historyFunc().nqName}
+                model={historyFunc()}
+                stepHistory={historyMode.value === 'step'}
+                openLabel={historyReadonly.value ? 'Open read-only' : 'Open'}
+                onOpen={(chosenCall: DG.FuncCall) => onHistoryRunChosen(chosenCall, historyReadonly.value)}
+                class='h-full'
+              />
+            </KeptAlive> }
           { !formHidden.value &&
               <div
                 key="__FORM__"
@@ -856,7 +668,8 @@ export const RichFunctionView = Vue.defineComponent({
                   callMeta={callMeta.value}
                   validationStates={validationState.value}
                   consistencyStates={consistencyState.value}
-                  onActionRequested={(actionUuid, additionalParams) => emit('actionRequested', actionUuid, additionalParams)}
+                  onActionRequested={(actionUuid, additionalParams) =>
+                    emit('actionRequested', actionUuid, additionalParams)}
                   onConsistencyReset={(ioName) => emit('consistencyReset', ioName)}
                   onFormReplaced={(ev) => emit('formReplaced', ev)}
                   onInputChanged={(ev) => emit('formInputChanged', ev)}
@@ -960,7 +773,9 @@ export const RichFunctionView = Vue.defineComponent({
             </div>: null
           }
         </DockManager>
-      </div>, [[ifOverlapping, isFittingActive.value, 'Fitting is active, either close it or use Apply fitted parameters']])
+      </div>, [[
+        ifOverlapping, isFittingActive.value, 'Fitting is active, either close it or use Apply fitted parameters',
+      ]])
     );
   },
 });

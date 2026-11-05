@@ -131,4 +131,24 @@ category('AI: Viewers: JsViewer', () => {
       expect(v.onSourceRowsChangedCount >= 1, true);
     });
   });
+
+  test('a property keeps a value inside its declared min and max', async () => {
+    class BoundedViewer extends DG.JsViewer {
+      depth: number;
+      constructor() {
+        super();
+        this.depth = this.int('depth', 5, {min: 1, max: 10});
+      }
+    }
+    const v = new BoundedViewer();
+    v.props['depth'] = 99;
+    expect(v.depth, 10);
+    v.props['depth'] = 0;
+    expect(v.depth, 1);
+    const prop = v.getProperties().find((p) => p.name === 'depth')!;
+    prop.set(v, 42);
+    expect(v.depth, 10);
+    prop.set(v, 7);
+    expect(v.depth, 7);
+  });
 });

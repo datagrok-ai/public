@@ -26,9 +26,9 @@ export async function render(main) {
   main.append(el('h1', null, 'Notifications'));
   const intro = el('p');
   intro.innerHTML = 'The u2 counterpart of the platform\'s <code>Balloon</code>: ' +
-    '<code>notify.info / warning / error</code> stack in the top-right corner. Info balloons ' +
-    'auto-hide after 5 s — hovering pauses the countdown; warnings and errors stay until ' +
-    'closed. Hover a balloon for the copy and close icons; a click anywhere dismisses it. ' +
+    '<code>notify.info / warning / error</code> stack in the top-right corner. Info and warning ' +
+    'balloons auto-hide after 10 s — hovering pauses the countdown; errors stay until the user ' +
+    'closes them. Hover a balloon for the copy and close icons; a click anywhere dismisses it. ' +
     'String content always renders as text, never as markup.';
   main.append(intro);
 

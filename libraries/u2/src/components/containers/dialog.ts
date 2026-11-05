@@ -6,12 +6,17 @@
 
 import {signal, computed, batch, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
-import {Scope} from '../../core/scope.js';
+import {Scope, Usage} from '../../core/scope.js';
+import {Ownership} from '../../core/owner.js';
+import type {Owner} from '../../core/owner.js';
 import {Overlay, OverlayDialog} from '../../core/overlay.js';
 import {Tooltip} from '../../core/tooltip.js';
 import {button} from '../../core/elements.js';
+import type {ButtonOptions} from '../../core/elements.js';
+import {Reason} from '../../core/reason.js';
 import {icon} from '../display/icon.js';
 import {Form} from '../forms/form.js';
+import {statusLine} from '../display/badge.js';
 
 export interface DialogOptions {
   /** The automation id (`data-u2-name`). */
@@ -19,6 +24,10 @@ export interface DialogOptions {
   /** Keep the dialog and its content alive after close, to show it again; it then stays owned by the
    * scope that built it. Default: closing disposes. */
   keepAlive?: boolean;
+  /** One way out: a CLOSE button, never a CANCEL — for a dialog whose work applies as it is done (a tracker),
+   * where there is nothing to take back. CLOSE, ✕ and Escape all close it as OK does (`onOK` runs if given) — while
+   * CLOSE is off (`okDisabled`, a form in it not valid), ✕ and Escape close it as a cancel, without `onOK`. */
+  closeOnly?: boolean;
 }
 
 export interface DialogShowOptions {
@@ -26,7 +35,15 @@ export interface DialogShowOptions {
   x?: number;
   y?: number;
   width?: number;
+  /** A fixed height: the body fills it, the footer stays at the bottom. */
   height?: number;
+  /** The user resizes it by its bottom-right corner; the body fills whatever size it has. */
+  resizable?: boolean;
+  /** Hidden — not closed — while false, a modal's backdrop too: a dialog pinned to a view hides while another
+   * view is current (u2/dg `ViewHost.show`). */
+  visible?: ReadonlySignal<boolean>;
+  /** Closes the dialog when it is disposed: a dialog that must not outlive a view or a session. */
+  owner?: Owner;
 }
 
 /** Why a dialog closed: OK (the button or Enter), cancel (CANCEL, ✕ or Escape), or `close()`. */
@@ -46,6 +63,9 @@ const ENTER_OWNERS = 'button, a, input[type="checkbox"], input[type="radio"], se
   '.u2-chips-chip, [role="button"], [role="checkbox"], [role="option"]';
 
 export class Dialog extends Control implements OverlayDialog {
+  static isRoot = true;
+  /** Why the footer waits while an OK runs. */
+  static readonly WAITING = 'Wait for OK to finish';
   private static _seq = 0;
 
   readonly isOpen: ReadonlySignal<boolean>;
@@ -71,22 +91,17 @@ export class Dialog extends Control implements OverlayDialog {
   private readonly _onClose: ((reason: DialogCloseReason) => void)[] = [];
   private _okBtn: HTMLButtonElement | undefined;
   private _cancelBtn: HTMLButtonElement | undefined;
-  private readonly _okOn = signal<ReadonlySignal<boolean> | undefined>(undefined);
-  private readonly _okOff = signal<ReadonlySignal<boolean | string | null> | undefined>(undefined);
+  private _reasonLine: HTMLElement | undefined;
+  /** The footer line's quiet text, while OK can run: what it will do. */
+  private readonly _quiet = signal<ReadonlySignal<string | null> | string | null>(null);
+  private readonly _okOff = signal<Reason | undefined>(undefined);
   /** The form in the body, found on show: OK waits for its verdict, as the platform's does. */
   private readonly _form = signal<Form | undefined>(undefined);
-  /** Why OK is off — '' when it is off for no stated reason; null while it is on. */
-  private readonly _okReason = computed<string | null>(() => {
+  /** Why OK is off; null while it is on. */
+  private readonly _okReason = computed<string | null>(() =>
     // the form's fields first: the reasons read top to bottom, as the user fills the dialog in
-    const field = this._form.value?.problem.value ?? null;
-    if (field !== null)
-      return field;
-    const off = this._okOff.value?.value;
-    if (typeof off === 'string' && off !== '')
-      return off;
-    return off === true || this._okOn.value?.value === false ? '' : null;
-  });
-  private readonly _okAllowed = computed(() => this._okReason.value === null);
+    this._form.value?.problem.value ?? Reason.read(this._okOff.value));
+  private readonly _closeOnly: boolean;
   private _onOK: ((ctx: DialogOkContext) => unknown) | undefined;
   private _onCancel: (() => unknown) | undefined;
   private _closeGuard: (() => boolean) | undefined;
@@ -103,6 +118,8 @@ export class Dialog extends Control implements OverlayDialog {
   /** Where the dialog was put — an axis left undefined stays centred, through window resizes too. */
   private _at: {x?: number, y?: number} = {};
   private _modal = false;
+  /** What one showing owns (the `visible` follow, the link to an `owner`): disposed on close. */
+  private _showing: Scope | undefined;
 
   constructor(title: string, options: DialogOptions = {}) {
     super();
@@ -110,6 +127,7 @@ export class Dialog extends Control implements OverlayDialog {
     this.busy = this._busy;
     this.error = this._error;
     this._keepAlive = options.keepAlive === true;
+    this._closeOnly = options.closeOnly === true;
     if (options.name !== undefined)
       this.name = options.name;
     this.root.classList.add('u2-dialog');
@@ -165,14 +183,17 @@ export class Dialog extends Control implements OverlayDialog {
       this._errorRow.textContent = message ?? '';
       this._errorRow.hidden = message === null;
     });
+    if (this._closeOnly)
+      this._okButton('CLOSE');
   }
 
   static create(title: string, options?: DialogOptions): Dialog {
     return new Dialog(title, options);
   }
 
+  /** Shown modal and not hidden by `visible`: a hidden dialog blocks nothing and takes no Escape. */
   get modal(): boolean {
-    return this._modal;
+    return this._modal && !this.root.hidden;
   }
 
   /** Content handed to the dialog is the dialog's: a control built where the dialog is being filled
@@ -181,7 +202,7 @@ export class Dialog extends Control implements OverlayDialog {
    * scope that built them: content built in a short-lived scope (a row, an effect run) is better
    * passed as `add(() => …)`, which builds it owned by the dialog. */
   add(el: HTMLElement | Control | string | (() => HTMLElement | Control | string)): this {
-    const built = typeof el === 'function' ? this.runInScope(el) : el;
+    const built = typeof el === 'function' ? this.build(el) : el;
     const node = Control.is(built) ? built.root : built;
     if (typeof node !== 'string')
       this._adopt(node);
@@ -190,10 +211,17 @@ export class Dialog extends Control implements OverlayDialog {
   }
 
   /** A footer button. `onClick` gets the event and the dialog and runs owned by whoever added the
-   * button; it does not close the dialog. */
-  addButton(text: string, onClick: (e: MouseEvent, dialog: Dialog) => unknown, options?: {primary?: boolean}): this {
+   * button; it does not close the dialog. `disabled` is `button()`'s: off while it says why. `start`
+   * puts it at the footer's start, away from the outcomes: a tool of the dialog ("Modify Stages"). */
+  addButton(text: string, onClick: (e: MouseEvent, dialog: Dialog) => unknown,
+    options?: {primary?: boolean, disabled?: ButtonOptions['disabled'], start?: boolean}): this {
     const run = Dialog._owned(onClick);
-    this._buttons.insertBefore(this._button(text, (e) => run(e, this), options?.primary), this._okBtn ?? null);
+    const el = this._button(text, (e) => run(e, this), options?.primary, options?.disabled);
+    if (options?.start === true) {
+      el.classList.add('u2-dialog-start');
+      this._buttons.insertBefore(el, Dialog._firstAction(this._buttons, true));
+    } else
+      this._buttons.insertBefore(el, this._okBtn ?? null);
     this._cancelButton();
     return this;
   }
@@ -210,39 +238,65 @@ export class Dialog extends Control implements OverlayDialog {
   }
 
   /** A button by its caption, case-insensitive: the footer's, OK and CANCEL included, and the ✕
-   * (`Close`) and ? (`Help`). */
+   * (`Close`) and ? (`Help`). The footer comes first: in a close-only dialog `Close` is its CLOSE. */
   getButton(text: string): HTMLButtonElement | undefined {
     const wanted = text.trim().toLowerCase();
-    return [...this._bar.querySelectorAll<HTMLButtonElement>('button'),
-      ...this._buttons.querySelectorAll<HTMLButtonElement>('button')].find((b) =>
+    return [...this._buttons.querySelectorAll<HTMLButtonElement>('button'),
+      ...this._bar.querySelectorAll<HTMLButtonElement>('button')].find((b) =>
       (b.textContent ?? '').trim().toLowerCase() === wanted || b.getAttribute('aria-label')?.toLowerCase() === wanted);
   }
 
   /** The OK action — the button and Enter alike. Answering `false` keeps the dialog open (a pick
    * that is not one yet). A promise keeps it open and busy until it settles: it closes unless the
    * promise answers `false`; a rejection, like a throw, stays open with the message in the error
-   * row. Escape or ✕ while busy aborts `signal`. `text` is the button's caption. */
-  onOK(fn: (ctx: DialogOkContext) => unknown, options?: {text?: string}): this {
+   * row. Escape or ✕ while busy aborts `signal`. `text` is the button's caption; `primary` raises
+   * it, for an OK that commits something. */
+  onOK(fn: (ctx: DialogOkContext) => unknown, options?: {text?: string, primary?: boolean}): this {
     this._onOK = Dialog._owned(fn);
-    this._okButton(options?.text);
+    const ok = this._okButton(options?.text);
+    if (options?.primary !== undefined)
+      ok.classList.toggle('u2-btn-primary', options.primary);
     return this;
   }
 
-  /** OK — the button and Enter alike — follows `on`: a pick the dialog cannot finish without. A
-   * form in the body gates OK by itself: it is enabled while the form is valid. */
-  okEnabled(on: ReadonlySignal<boolean>): this {
-    this._okButton();
-    this._okOn.value = on;
-    return this;
-  }
-
-  /** OK is off while `reason` says why — a string becomes the button's tooltip, so the user learns
-   * what is missing (`'Select at least one monomer'`); `true` turns it off without a reason, `null`
-   * or `false` leave it on. A form in the body adds its own: "Name: Value can't be empty". */
-  okDisabled(reason: ReadonlySignal<boolean | string | null>): this {
+  /** OK — the button and Enter alike — is off while `reason` says why: it becomes the button's tooltip, so
+   * the user learns what is missing (`'Select at least one monomer'`); `null` leaves it on. A form in the body
+   * adds its own: "Name: Value can't be empty". `footer` also shows the reason as a warning beside the buttons. */
+  okDisabled(reason: Reason, options?: {footer?: boolean}): this {
     this._okButton();
     this._okOff.value = reason;
+    if (options?.footer === true)
+      this._footerLine();
     return this;
+  }
+
+  /** A quiet line at the footer's start saying what the dialog's action will do ("Submits 260 molecules to Demo
+   * File Submit"); while OK is off, the line says why instead, as `okDisabled(reason, {footer: true})` does. */
+  status(text: ReadonlySignal<string | null> | string): this {
+    this._quiet.value = text;
+    this._footerLine().classList.add('u2-dialog-status');
+    return this;
+  }
+
+  private _footerLine(): HTMLElement {
+    if (this._reasonLine === undefined) {
+      const quiet = computed(() => {
+        const text = this._quiet.value;
+        return text === null || typeof text === 'string' ? text : text.value;
+      });
+      const line = this._reasonLine = this.build(() =>
+        statusLine(computed(() => this._okReason.value || null), quiet));
+      line.classList.add('u2-dialog-reason', 'u2-status-line-warning');
+      line.dataset.u2Part = 'reason';
+      this._buttons.insertBefore(line, Dialog._firstAction(this._buttons, false));
+    }
+    return this._reasonLine;
+  }
+
+  /** Where the footer's actions begin: after the start buttons (and, unless `beforeLine`, the status line). */
+  private static _firstAction(footer: HTMLElement, beforeLine: boolean): Element | null {
+    return Array.from(footer.children).find((el) => !el.classList.contains('u2-dialog-start') &&
+      (beforeLine || !el.classList.contains('u2-dialog-reason'))) ?? null;
   }
 
   /** Vetoes every close — ✕, Esc and the buttons — while `fn` answers false: work in flight the
@@ -254,17 +308,22 @@ export class Dialog extends Control implements OverlayDialog {
 
   /** CANCEL, ✕ and Escape; answering `false` keeps the dialog open. */
   onCancel(fn: () => void): this {
+    if (this._closeOnly) {
+      Usage.report('close-only-cancel', 'onCancel() on a close-only dialog: it has no CANCEL, and CLOSE, ✕ and ' +
+        'Escape close it as OK does — put the work in onOK, or in onClose to run on every close.');
+    }
     this._onCancel = Dialog._owned(fn);
     this._cancelButton();
     return this;
   }
 
-  /** CANCEL comes with the first action, as in every platform dialog (`dialog.dart` commandBar.onCancel). */
+  /** CANCEL comes with the first action, as in every platform dialog (`dialog.dart` commandBar.onCancel); a
+   * close-only dialog has none. */
   private _cancelButton(): void {
-    if (this._cancelBtn)
+    if (this._cancelBtn || this._closeOnly)
       return;
     this._cancelBtn = this._button('CANCEL', () => this._dismiss());
-    this._buttons.prepend(this._cancelBtn);
+    this._buttons.insertBefore(this._cancelBtn, Dialog._firstAction(this._buttons, false));
   }
 
   /** Runs on every close, with the reason. */
@@ -292,6 +351,9 @@ export class Dialog extends Control implements OverlayDialog {
       this.root.style.width = `${options.width}px`;
     if (options.height !== undefined)
       this.root.style.height = `${options.height}px`;
+    // under a fixed or a user-set height the body fills the dialog instead of stopping at its own cap
+    this.root.classList.toggle('u2-dialog-sized', options.height !== undefined || options.resizable === true);
+    this.root.classList.toggle('u2-dialog-resizable', options.resizable === true);
     this._modal = options.modal === true;
     const z = Overlay.nextDialogZ();
     if (this._modal) {
@@ -310,11 +372,44 @@ export class Dialog extends Control implements OverlayDialog {
     this._alignLabels();
     this._at = {x: options.x, y: options.y};
     this._place(options.x, options.y);
-    const first = Dialog._focusable(this._content)[0];
+    if (options.resizable === true) {
+      // the corner changes the size, not the place: a dialog kept centred would slide under the pointer
+      const rect = this.root.getBoundingClientRect();
+      this._at = {x: rect.left, y: rect.top};
+    }
+    const first = Dialog._focusable(this._content).find((el) => !Dialog._readOnly(el));
     (first ?? this._okBtn ?? this.root).focus();
     if (first instanceof HTMLInputElement || first instanceof HTMLTextAreaElement)
       first.select();
+    this._pin(options.visible, options.owner);
     return this;
+  }
+
+  /** What this showing follows: `visible` hides it, a disposed `owner` closes it; both end with it. */
+  private _pin(visible?: ReadonlySignal<boolean>, owner?: Owner): void {
+    if (visible === undefined && owner === undefined)
+      return;
+    const showing = this._showing = this.scope.child('dialog-showing');
+    if (visible !== undefined)
+      showing.effect(() => this._hide(!visible.value));
+    if (owner !== undefined)
+      showing.own(Ownership.adopt(owner, () => this.close()));
+  }
+
+  private _hide(hidden: boolean): void {
+    if (this.root.hidden === hidden)
+      return;
+    this.root.hidden = hidden;
+    this._backdrop.hidden = hidden;
+    if (!hidden)
+      this._place(this._at.x, this._at.y);
+  }
+
+  /** A field shown for reading — a native `readOnly`, `aria-readonly`, or inside a read-only u2 input: the first
+   * focus passes it by, so a dialog opening on a summary does not select the summary's text. */
+  private static _readOnly(el: HTMLElement): boolean {
+    return (el as HTMLInputElement).readOnly === true || el.getAttribute('aria-readonly') === 'true' ||
+      el.closest('.u2-input-readonly') !== null;
   }
 
   /** Hides the dialog and, unless `keepAlive`, disposes it with its content. A pending OK is aborted. */
@@ -327,6 +422,9 @@ export class Dialog extends Control implements OverlayDialog {
     this._pending?.abort();
     this._setBusy(undefined);
     this._drag = undefined;
+    this._showing?.dispose();
+    this._showing = undefined;
+    this._hide(false);
     this._backdrop.remove();
     this.root.remove();
     this._open.value = false;
@@ -347,6 +445,7 @@ export class Dialog extends Control implements OverlayDialog {
         this.scope.reportError(e);
       }
     }
+    this.fireEvent('close', why);
     if (!this._keepAlive)
       this.dispose();
   }
@@ -356,10 +455,12 @@ export class Dialog extends Control implements OverlayDialog {
     super.dispose();
   }
 
-  /** Escape and ✕: aborts a pending OK, else cancels. */
+  /** Escape and ✕: aborts a pending OK, else cancels — in a close-only dialog, closes as OK does unless CLOSE is off. */
   cancelByKey(): void {
     if (this._pending !== undefined)
       this._pending.abort();
+    else if (this._closeOnly && this._okBtn?.disabled !== true)
+      this._accept();
     else
       this._dismiss();
   }
@@ -385,21 +486,22 @@ export class Dialog extends Control implements OverlayDialog {
   private _okButton(text?: string): HTMLButtonElement {
     if (!this._okBtn) {
       const ok = this._okBtn = this._button(text ?? 'OK', () => this._accept());
-      Tooltip.bind(ok, () => this._okReason.peek() ?? '', this.scope);
+      Tooltip.bind(ok, () => Reason.of(ok) ?? '', {owner: this.scope});
       this._buttons.append(ok);
       this._cancelButton();
       this.effect(() => {
-        const allowed = this._okAllowed.value;
+        const reason = this._okReason.value;
         if (!this._busy.peek())
-          ok.disabled = !allowed;
+          Reason.apply(ok, reason);
       });
     } else if (text !== undefined)
       this._okBtn.textContent = text;
     return this._okBtn;
   }
 
-  private _button(text: string, onClick: (e: MouseEvent) => void, primary?: boolean): HTMLButtonElement {
-    return this.runInScope(() => button(text, onClick, {primary}));
+  private _button(text: string, onClick: (e: MouseEvent) => void, primary?: boolean,
+    disabled?: ButtonOptions['disabled']): HTMLButtonElement {
+    return this.build(() => button(text, onClick, {primary, disabled}));
   }
 
   private _accept(): void {
@@ -419,8 +521,9 @@ export class Dialog extends Control implements OverlayDialog {
     }
     if (this._unstack === undefined)
       return;
-    if (typeof (answer as PromiseLike<unknown> | null)?.then === 'function')
-      void this._await(answer as PromiseLike<unknown>, abort);
+    const work = Scope.thenable(answer);
+    if (work !== undefined)
+      void this._await(work, abort);
     else if (answer !== false)
       this.close('ok');
   }
@@ -474,22 +577,25 @@ export class Dialog extends Control implements OverlayDialog {
     this._busy.value = busy;
     const ok = this._okBtn;
     if (busy) {
-      // a disabled button drops the focus onto the page, where Escape and the Tab trap cannot reach
+      // the dialog holds the focus while busy, not a footer button a key could press again
       if (this._buttons.contains(document.activeElement))
         this.root.focus();
       this._held = [...this._buttons.querySelectorAll<HTMLButtonElement>('button')].filter((b) => !b.disabled);
       for (const b of this._held)
-        b.disabled = true;
+        Reason.apply(b, Dialog.WAITING);
       this.root.setAttribute('aria-busy', 'true');
       ok?.setAttribute('aria-busy', 'true');
       ok?.append(this._spinner);
       return;
     }
-    for (const b of this._held)
-      b.disabled = false;
+    // a button whose own reason turned on meanwhile keeps it
+    for (const b of this._held) {
+      if (Reason.of(b) === Dialog.WAITING)
+        Reason.apply(b, null);
+    }
     this._held = [];
     if (ok !== undefined)
-      ok.disabled = !this._okAllowed.peek();
+      Reason.apply(ok, this._okReason.peek());
     this.root.removeAttribute('aria-busy');
     ok?.removeAttribute('aria-busy');
     this._spinner.remove();
@@ -572,12 +678,8 @@ export class Dialog extends Control implements OverlayDialog {
     for (const label of labels)
       width = Math.max(width, Math.ceil(label.getBoundingClientRect().width));
     this._content.style.setProperty('--u2-dialog-label-width', `${width}px`);
-    for (const label of labels) {
-      if (label.scrollWidth > label.clientWidth)
-        label.title = label.textContent ?? '';
-      else
-        label.removeAttribute('title');
-    }
+    for (const label of labels)
+      Tooltip.titleIfCut(label);
   }
 
   private _endDrag(): void {
@@ -595,8 +697,12 @@ export class Dialog extends Control implements OverlayDialog {
       this.cancelByKey();
     } else if (this._okBtn && Dialog.entersDefault(e)) {
       e.preventDefault();
+      // an OK held off never runs: Enter shows every field's verdict instead, or — the fields all
+      // valid — focuses OK, whose tooltip says why
       if (!this._okBtn.disabled)
         this._accept();
+      else if (!this._busy.peek() && this._form.peek()?.validate() !== false)
+        this._okBtn.focus();
     } else if (e.key === 'Tab')
       this._trapTab(e);
   }
@@ -619,7 +725,8 @@ export class Dialog extends Control implements OverlayDialog {
   private static _topmost(): HTMLElement | undefined {
     let top: HTMLElement | undefined;
     for (const el of Array.from(document.querySelectorAll<HTMLElement>('.u2-dialog'))) {
-      if (el.isConnected && (top === undefined || Number(el.style.zIndex || 0) >= Number(top.style.zIndex || 0)))
+      if (el.isConnected && !el.hidden &&
+        (top === undefined || Number(el.style.zIndex || 0) >= Number(top.style.zIndex || 0)))
         top = el;
     }
     return top;

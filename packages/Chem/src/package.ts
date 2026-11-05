@@ -129,6 +129,8 @@ import {byEngineAsync, byEngineModule, cruxReady, onEngineSwitch, requestedEngin
 import {noteCruxError} from './engine/crux-module';
 import {getCruxService} from './crux/crux-searches';
 import {clusterMcsByEngine, molzip as molzipOnCrux, MolzipParams} from './engine/analysis-jobs';
+import {getMacromoleculeAssembler as cruxMacromoleculeAssembler} from './engine/biopolymer';
+import type {IMacromoleculeAssembler} from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
 import {atomsColumnByEngine, beautifyMolsByEngine, coordGenCoordsByEngine, flattenMoleculesByEngine}
   from './engine/molecule-jobs';
 import * as pythonFree from './python-free';
@@ -193,14 +195,15 @@ const MOLECULE_FILTER_OPERATORS: [SubstructureSearchType, string][] = [
 ];
 export let _properties: any;
 
-let _rdRenderer: RDKitCellRenderer;
+let _rdRenderer: RDKitCellRenderer | undefined;
 export let renderer: GridCellRendererProxy;
 
-/** The one molecule cell renderer the platform uses for every Molecule column, so callers that draw
- *  molecules onto their own canvases (e.g. the SAR Matrix viewer) reuse its shared mol + raster LRU
- *  caches instead of standing up a private one. Undefined until `initChemInt` has run. */
-export function getMoleculeRenderer(): RDKitCellRenderer | undefined {
-  return _rdRenderer;
+/** The one molecule renderer for every drawing: the platform's Molecule cells, `Chem:rdKitCellRenderer`
+ *  (`drawMolecule`, the panels and dialogs), the SAR Matrix viewer: one set of caches and one subscription. Made by
+ *  `initChemInt`, or on first use where the package's init has not run (the test bundle); RDKit's module must be
+ *  ready. */
+export function getMoleculeRenderer(): RDKitCellRenderer {
+  return _rdRenderer ??= new RDKitCellRenderer(PackageFunctions.getRdKitModule());
 }
 let _initChemPromise: Promise<void> | null = null;
 
@@ -219,8 +222,7 @@ async function initChemInt(): Promise<void> {
   cruxReady();
   await chemCommonRdKit.initRdKitModuleLocal();
   _properties = _package.settings;
-  _rdRenderer = new RDKitCellRenderer(PackageFunctions.getRdKitModule());
-  renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
+  renderer = new GridCellRendererProxy(getMoleculeRenderer(), 'Molecule');
   let storedSketcherType = grok.userSettings.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY) ?? '';
   if (PREVIOUS_SKETCHER_NAMES[storedSketcherType])
     storedSketcherType = PREVIOUS_SKETCHER_NAMES[storedSketcherType];
@@ -358,8 +360,11 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'int', options: {optional: true}}) w?: number,
     @grok.decorators.param({type: 'int', options: {optional: true}}) h?: number,
     @grok.decorators.param({type: 'bool', options: {optional: true}}) popupMenu?: boolean,
+    @grok.decorators.param({type: 'bool', options: {optional: true, initialValue: 'true',
+      description: 'Keep the drawing in the renderer\'s caches. False keeps nothing, for very large one-off drawings'}})
+      cache?: boolean,
   ): HTMLElement {
-    return renderMolecule(molStr, {width: w, height: h, popupMenu: popupMenu});
+    return renderMolecule(molStr, {width: w, height: h, popupMenu: popupMenu, cache: cache});
   }
 
   @grok.decorators.func()
@@ -386,7 +391,7 @@ export class PackageFunctions {
     meta: {chemRendererName: 'RDKit'},
   })
   static async rdKitCellRenderer(): Promise<RDKitCellRenderer> {
-    return new RDKitCellRenderer(PackageFunctions.getRdKitModule());
+    return getMoleculeRenderer();
   }
 
   @grok.decorators.func({
@@ -820,12 +825,23 @@ export class PackageFunctions {
     const filterHeader = Array.from(fg.root!.getElementsByClassName('d4-filter-header'))
       .find((el) => Array.from(el!.getElementsByTagName('label')).find((it) => it.textContent === molecules.name));
     if (filterHeader) {
-      setTimeout(() => {
-        const sketchLink = (filterHeader.parentElement as HTMLElement).getElementsByClassName('sketch-link')[0];
-        const element = sketchLink ?? (filterHeader.parentElement as HTMLElement)
-          .getElementsByClassName('chem-canvas')[0];
-        (element as HTMLElement).click();
-      }, 500);
+      // the filter builds its sketch link once it is attached; open it as soon as it is there
+      const host = filterHeader.parentElement as HTMLElement;
+      const target = () => (host.getElementsByClassName('sketch-link')[0] ??
+        host.getElementsByClassName('chem-canvas')[0]) as HTMLElement | undefined;
+      const existing = target();
+      if (existing)
+        existing.click();
+      else {
+        const observer = new MutationObserver(() => {
+          const element = target();
+          if (element) {
+            observer.disconnect();
+            element.click();
+          }
+        });
+        observer.observe(host, {childList: true, subtree: true});
+      }
     }
   }
 
@@ -915,6 +931,19 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'list<string>', options: {description: 'Molecules that each hold their pieces'}}) molecules: string[],
     @grok.decorators.param({type: 'object', options: {optional: true, description: 'RDKit\'s MolzipParams by name (Label, AtomSymbols, AtomProperty, EnforceValenceRules)'}}) params?: MolzipParams): Promise<string[]> {
     return molzipOnCrux(molecules, params ?? {});
+  }
+
+  /**
+   * Bio's macromolecule assembler (chem-meta's IMacromoleculeAssembler): sequences parsed by Datagrok assembled from a
+   * monomer library's templates into V3000 MOL blocks, with monomer maps per row, by Crux in both chemical engines
+   * (engine/biopolymer.ts). Usage:
+   * const assembler = await grok.functions.call('Chem:getMacromoleculeAssembler');
+   * await assembler.setLibrary(key, json);
+   * const {molblocks, layouts, errors} = await assembler.assemble(batch, key, {layout: 'linear'});
+   */
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static async getMacromoleculeAssembler(): Promise<IMacromoleculeAssembler> {
+    return cruxMacromoleculeAssembler();
   }
 
   @grok.decorators.func({
@@ -2370,7 +2399,7 @@ export class PackageFunctions {
 
     const width = 600;
     const height = bounds.height * (width / bounds.width);
-    const svg = _rdRenderer.toSvg(gridCell, width, height);
+    const svg = getMoleculeRenderer().toSvg(gridCell, width, height);
     if (!svg) {
       grok.shell.warning('Failed to export structure as SVG');
       return;
@@ -2458,7 +2487,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'Chemical Properties (OCL)',
     'friendlyName': 'Chemical Properties',
-    'description': 'Calculates chemical properties and adds them as columns to the input table. With the Chemical Engine setting on RDKit (the default) OpenChemLib calculates them, with Crux they follow RDKit\'s definitions (MW is then the average molecular weight, not the monoisotopic mass). Properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
+    'description': 'Calculates chemical properties and adds them as columns to the input table. With the Chemical Engine setting on Crux (the default) they follow RDKit\'s definitions, on RDKit OpenChemLib calculates them; MW is the average molecular weight in both. Properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
     'meta': {'function_family': 'biochem-calculator', 'method_info.author': 'Open Chem Lib Team', 'method_info.year': '2024', 'method_info.github': 'https://github.com/actelion/openchemlib', 'method_info.crux_author': 'RDKit\'s definitions, calculated by Crux', 'method_info.crux_github': 'https://github.com/rdkit/rdkit', 'role': 'hitTriageFunction,transform'},
   })
   static async addChemPropertiesColumns(
@@ -2629,14 +2658,15 @@ export class PackageFunctions {
   static async mmpAnalysis(
     table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'column_list', options: {type: 'numerical'}}) activities: DG.Column[],
+    @grok.decorators.param({type: 'column_list', options: {type: 'numerical'}}) activities: DG.ColumnList,
     @grok.decorators.param({type: 'string_list'}) diffTypes: MmpDiffTypes[],
     @grok.decorators.param({type: 'string_list'}) scalings: SCALING_METHODS[],
     @grok.decorators.param({
       type: 'double',
       options: {description: 'Maximum fragment size relative to core', initialValue: '0.4'},
     }) fragmentCutoff: number = 0.4, @grok.decorators.param({options: {optional: true, nullable: true}}) runOnFilteredData: boolean = true): Promise<void> {
-    if (activities.length < 1) {
+    let activityCols = Array.from(activities);
+    if (activityCols.length < 1) {
       grok.shell.warning('MMP analysis requires at least one activity');
       return;
     }
@@ -2648,7 +2678,7 @@ export class PackageFunctions {
       grok.shell.addTableView(table);
       // these two must exist, so they will throw if not
       molecules = table.getCol(molecules.name);
-      activities = activities.map((col) => table.getCol(col.name));
+      activityCols = activityCols.map((col) => table.getCol(col.name));
     }
 
     checkCurrentView(table);
@@ -2658,9 +2688,9 @@ export class PackageFunctions {
     const activityColsNames = [];
     for (let i = 0; i < scalings.length; i++) {
       if (scalings[i] === SCALING_METHODS.NONE)
-        activityColsNames.push(activities[i].name);
+        activityColsNames.push(activityCols[i].name);
       else {
-        const scaledCol = scaleActivity(activities[i], scalings[i]);
+        const scaledCol = scaleActivity(activityCols[i], scalings[i]);
         const name = table.columns.getUnusedName(scaledCol.name);
         scaledCol.name = name;
         table.columns.add(scaledCol);
@@ -2673,7 +2703,7 @@ export class PackageFunctions {
       moleculesColumnName: molecules.name, activities: activityColsNames, diffTypes: diffTypes,
       scalings: scalings, fragmentCutoff,
     });
-    viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
+    viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/help/refs/heads/master/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
   }
 
   @grok.decorators.func({
@@ -2767,7 +2797,7 @@ export class PackageFunctions {
       type: 'column_list',
       options: {nullable: true, caption: 'R-groups',
         description: 'Columns with the substituent at each attachment point of the core'},
-    }) rGroupColumns: DG.Column[] = [],
+    }) rGroupColumns: DG.ColumnList | DG.Column[] = [],
     @grok.decorators.param({
       type: 'string',
       options: {nullable: true, caption: 'Matrix columns',
@@ -2792,7 +2822,7 @@ export class PackageFunctions {
         'Pick a series column from that table, or leave it empty to group by structure.');
       return;
     }
-    const rgroups = rGroupColumns ?? [];
+    const rgroups = Array.from(rGroupColumns ?? []);
     const axis = matrixColumns ?? '';
     const named = coreColumn !== null || rgroups.length > 0;
     if (coreColumn !== null && rgroups.some((c) => c.name === coreColumn.name)) {
@@ -3239,7 +3269,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {semType: 'Molecule', initialValue: 'O=C(OCC1c2ccccc2-c2ccccc21)[*:1]'}}) fragment: string): Promise<void> {
     const rdModule = PackageFunctions.getRdKitModule();
-    addDeprotectedColumn(table, molecules, fragment, rdModule);
+    await addDeprotectedColumn(table, molecules, fragment, rdModule);
   }
 
   @grok.decorators.editor({
@@ -3294,7 +3324,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Score column', description: 'Name of the resulting score column, e.g. "MPO <profile name>". The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name'}}) profileName: string,
     @grok.decorators.param({type: 'string', options: {initialValue: 'Average', choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
     createDesirabilityColumns: boolean = false,
-    @grok.decorators.param({options: {description: 'Add a column counting non-empty properties per row'}}) createCoverageColumn: boolean = false,
+    @grok.decorators.param({options: {optional: true, description: 'Add a column counting non-empty properties per row'}}) createCoverageColumn: boolean = false,
   ): DG.DataFrame | null {
     if (columns.length === 0)
       return null;

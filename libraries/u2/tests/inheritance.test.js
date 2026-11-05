@@ -199,8 +199,8 @@ inherited('a JS-owned viewer detaches both ways, once', () => {
 
 inherited('ambient adoption is the factory\'s, not the constructor\'s', () => {
   const s = new Scope();
-  const bare = Scope.runWith(s, () => Viewer.grid(demog()));
-  const built = Scope.runWith(s, () => viewerControl('Grid', {table: demog()}));
+  const bare = s.build(() => Viewer.grid(demog()));
+  const built = s.build(() => viewerControl('Grid', {table: demog()}));
   assert.ok(built.root.classList.contains('u2-viewer'));
   s.dispose();
   assert.equal(bare.scope.isDisposed, false, 'a bare construction is never ambient-adopted');

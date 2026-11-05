@@ -2,7 +2,7 @@
 // objects: the only file in the comparison pipeline with server calls.
 
 import * as DG from 'datagrok-api/dg';
-import {historyUtils} from '@datagrok-libraries/compute-utils';
+import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {tryParseJson} from '@datagrok-libraries/utils/src/string-utils';
 import {readOutputOutdated} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
@@ -14,7 +14,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {buildTraverseD} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/graph-traverse-utils';
 import type {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
-import {STEP_HISTORY_OPTION} from '../History/History';
+import {STEP_HISTORY_OPTION} from '../RunStorage/run-storage';
 import {
   ComparisonEntry, EntrySnapshot, EntrySourceKind, ScalarNodeInfo, TableNodeInfo, AxisMode, TimeUnit, TIME_UNITS,
 } from './types';
@@ -257,11 +257,12 @@ export function entryFromSnapshot(state: StateSnapshot, name: string, {
   };
   if (isFuncCallState(state)) {
     return state.funcCall ?
-      callEntry(id, name, state.funcCall, state.isOutputOutdated, {metadata, save: saveable ? save : undefined}) :
+      callEntry(id, name, state.funcCall, state.isOutputOutdated,
+        {metadata, save: saveable ? save : undefined, model: state.funcCall.func}) :
       makeEntry(id, name, 'function', '', mergeNodes([]), {}, {metadata});
   }
   return workflowEntry(id, name, state.friendlyName ?? state.nqName ?? '', state,
-    {metadata, save: state.nqName ? save : undefined});
+    {metadata, save: state.nqName ? save : undefined, model: state.nqName ? DG.Func.byName(state.nqName) : undefined});
 }
 
 /** Snapshot of a standalone call; like the RFV's own save, outdated or failed results can't be saved. */

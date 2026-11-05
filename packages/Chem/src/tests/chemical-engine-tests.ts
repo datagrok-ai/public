@@ -11,7 +11,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {_package} from '../package-test';
 import {PackageFunctions, _package as chemPackage} from '../package';
@@ -58,6 +58,9 @@ interface RendererInternals {
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, alignByFirstSubstructure: boolean,
     details?: object): ImageData;
   cachedMoleculeCount: number;
+  canvasReused: OffscreenCanvas;
+  rendersCache: unknown;
+  renderUncached(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, molString: string): void;
   _molToSvg(molString: string, w: number, h: number): string | null;
 }
 
@@ -451,7 +454,7 @@ category('chemical engine', () => {
         'canvasMol inked');
       const host = PackageFunctions.drawMolecule(ASPIRIN, 200, 100, false);
       const drawn = (host instanceof HTMLCanvasElement ? host : host.querySelector('canvas'))!;
-      await awaitCheck(() => inked(drawn.getContext('2d')!.getImageData(0, 0, drawn.width, drawn.height)) > 0,
+      await waitUntil(() => inked(drawn.getContext('2d')!.getImageData(0, 0, drawn.width, drawn.height)) > 0,
         'drawMolecule did not ink its canvas', 10000);
       const renderer = newRenderer();
       expect(renderer._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.Crux);
@@ -515,6 +518,32 @@ category('chemical engine', () => {
     expect(info.engine, ChemicalEngine.Crux);
     expect(renderer.cachedMoleculeCount, 1);
     expect(rdkitInfos.every((i) => i.molCtx.mol === null), true, 'the RDKit molecules are freed');
+  });
+
+  // Chem:drawMolecule's `cache: false` (Bio's full-screen molecule dialog, twice the screen's resolution)
+  test('an uncached drawing keeps no picture', async () => {
+    await inBothEngines(async (engine) => {
+      const renderer = newRenderer();
+      const canvasSize = [renderer.canvasReused.width, renderer.canvasReused.height].join('x');
+      const pictures = () => (renderer.rendersCache as unknown as {size: number}).size;
+      const picturesBefore = pictures();
+      const r = window.devicePixelRatio;
+      const canvas = ui.canvas(Math.round(1600 * r), Math.round(1200 * r));
+      const g = canvas.getContext('2d')!;
+      renderer.renderUncached(g, 0, 0, 1600, 1200, 'CC(C)CC(NC(=O)C(N)Cc1ccccc1)C(=O)NC(Cc1ccc(O)cc1)C(=O)O');
+      expect(inked(g.getImageData(0, 0, canvas.width, canvas.height)) > 0, true, `${engine}: nothing drawn`);
+      expect(pictures(), picturesBefore, `${engine}: the picture was cached`);
+      expect([renderer.canvasReused.width, renderer.canvasReused.height].join('x'), canvasSize,
+        `${engine}: the reused canvas grew`);
+    });
+  });
+
+  // drawMolecule, the panels and the grid share one renderer: one set of caches, one subscription (a renderer per
+  // call stayed alive through its subscription, with its canvas and pictures)
+  test('one molecule renderer', async () => {
+    const a = await grok.functions.call('Chem:rdKitCellRenderer');
+    const b = await grok.functions.call('Chem:rdKitCellRenderer');
+    expect(a === b, true, 'Chem:rdKitCellRenderer made a new renderer');
   });
 
   test('evicted molecules are freed and drawn again', async () => {
@@ -654,8 +683,9 @@ category('chemical engine', () => {
       const dialog = ui.dialog().add(host).show();
       let drawn = '';
       try {
-        await host.sketcherReady();
-        await delay(300);
+        const crux = await host.sketcherReady();
+        await waitUntil(() => !crux.isRenderPending && crux.molV3000.includes('V3000'),
+          'the Crux sketcher did not show the molecule set', 5000);
         drawn = host.sketcher!.molV3000;
       } finally {
         dialog.close();

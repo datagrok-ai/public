@@ -28,11 +28,13 @@ export type FuncCallIODescription = {
 }
 
 type PipelineStepConfigurationInitial = PipelineStepConfiguration<never>;
-type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial | AbstractPipelineActionConfiguration;
+type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial |
+  AbstractPipelineActionConfiguration;
 
 export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<FuncCallIODescription[]>;
 export type PipelineConfigurationDynamicProcessed = AbstractPipelineDynamicConfiguration<FuncCallIODescription[]>;
-export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationDynamicProcessed;
+export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed |
+  PipelineConfigurationDynamicProcessed;
 
 export type IOType = 'input' | 'output' | 'base' | 'actions' | 'not' | 'showWhen' | 'hideWhen';
 
@@ -53,14 +55,19 @@ function isActionConfigInitial(c: ConfigInitialTraverseItem): c is AbstractPipel
 }
 
 function isStepConfigInitial(c: ConfigInitialTraverseItem): c is PipelineStepConfigurationInitial {
-  return !isPipelineStaticInitial(c) && !isPipelineDynamicInitial(c) && !isPipelineRefInitial(c) && !isActionConfigInitial(c);
+  return !isPipelineStaticInitial(c) && !isPipelineDynamicInitial(c) && !isPipelineRefInitial(c) &&
+    !isActionConfigInitial(c);
 }
 
-function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial {
+function isPipelineConfigInitial(
+  c: ConfigInitialTraverseItem,
+): c is PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial {
   return isPipelineStaticInitial(c) || isPipelineDynamicInitial(c);
 }
 
-export async function getProcessedConfig(conf: PipelineConfigurationInitial, logger?: DriverLogger): Promise<PipelineConfigurationProcessed> {
+export async function getProcessedConfig(
+  conf: PipelineConfigurationInitial, logger?: DriverLogger,
+): Promise<PipelineConfigurationProcessed> {
   const pconf = await configProcessing(conf, new Map(), logger);
   return pconf as PipelineConfigurationProcessed;
 }
@@ -74,7 +81,9 @@ export function addPipelineRef<T>(store: PipelineRefStore<T>, nqName: string, ve
   versionsStore.set(version, item);
 }
 
-export function getPipelineRef<T>(store: PipelineRefStore<T>, nqName: string, version: string | undefined): T | undefined {
+export function getPipelineRef<T>(
+  store: PipelineRefStore<T>, nqName: string, version: string | undefined,
+): T | undefined {
   if (store.has(nqName))
     return store.get(nqName)!.get(version);
 }
@@ -118,9 +127,9 @@ async function processConfigItem(
   if (isPipelineConfigInitial(conf) && conf.nqName)
     addPipelineRef(loadedPipelines, conf.nqName, conf.version, null);
 
-  if (isActionConfigInitial(conf)) {
+  if (isActionConfigInitial(conf))
     return processActionConfig(conf);
-  } else if (isStepConfigInitial(conf)) {
+  else if (isStepConfigInitial(conf)) {
     const pconf = await processStepConfig(conf, logger);
     return pconf;
   } else if (isPipelineStaticInitial(conf)) {
@@ -197,7 +206,9 @@ async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?
   return {...conf, viewersHook, io, links, actions, states};
 }
 
-function processActionConfig(conf: AbstractPipelineActionConfiguration & NestedItemContext): PipelineConfigurationStaticProcessed {
+function processActionConfig(
+  conf: AbstractPipelineActionConfiguration & NestedItemContext,
+): PipelineConfigurationStaticProcessed {
   return {
     id: conf.id,
     type: 'static',

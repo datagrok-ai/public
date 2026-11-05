@@ -5,6 +5,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
+import {Tooltip} from '@datagrok-libraries/u2';
 import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
 import {newContainerAt, stockroomLocations} from '../package';
 
@@ -26,7 +27,11 @@ category('Stockroom: locations', () => {
       const add = button();
       expect(add !== null, true, 'the button is in the view ribbon');
       expect(add!.disabled, true, 'and disabled while the tree has no node selected');
-      expect(add!.title, 'Select a location first', 'which says what to do first');
+      expect(add!.getAttribute('aria-disabled'), 'true', 'never natively: the keyboard still reaches it');
+      add!.dispatchEvent(new PointerEvent('pointerenter'));
+      await waitUntil(() => Tooltip.isVisible, 'the tooltip did not show');
+      expect(Tooltip.root.textContent, 'Select a location first', 'which says what to do first');
+      Tooltip.hide();
     } finally {
       view.close();
     }

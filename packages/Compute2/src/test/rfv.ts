@@ -1,7 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
+import * as Vue from 'vue';
+import {category, test, expect, waitUntil, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {closeViewsAfter, awaitWebComponents, deleteSavedWorkflow} from './utils';
+import {DAY_CALCULATION, uniqueName, withRunStorage} from './run-storage';
 
 /** Find and click a button by exact label text. */
 async function clickBigButton(root: HTMLElement, label: string, timeout = 10000): Promise<void> {
@@ -144,10 +147,88 @@ category('RFV: run ObjectCooling2', () => {
   });
 });
 
+category('RFV: core validation', () => {
+  const track = closeViewsAfter();
+
+  const open = async (preset: Record<string, any>) => {
+    await awaitWebComponents();
+    const call = DG.Script.create(`//name: RfvCoreValidation
+//language: javascript
+//input: int ranged = 5 {min: 0; max: 10}
+//input: string code = "12ab" {validator: startsWith(value, "12")}
+//input: string req
+//output: int res
+res = ranged;`).prepare(preset);
+    const view = track(await grok.functions.call(
+      'Compute2:RichFunctionViewEditor', {call},
+    ) as unknown as DG.ViewBase);
+    // the form reports its validity to the view before the instance becomes readable here
+    const formOf = () => (view.root.querySelector('dg-input-form') as any)?.formInst as DG.InputForm | undefined;
+    await waitUntil(() => !!formOf(), 'Form not rendered', 15000);
+    const runDisabled = () => Array.from(view.root.querySelectorAll('button'))
+      .find((b) => b.textContent?.trim() === 'Run')!.classList.contains('d4-disabled');
+    return {view, call, form: formOf()!, runDisabled};
+  };
+
+  test('Opened with valid values can run', async () => {
+    const {form, runDisabled} = await open({ranged: 5, code: '12ab', req: 'x'});
+    expect(form.isValid, true);
+    expect(runDisabled(), false);
+  });
+
+  test('Opened with invalid values blocks the run until fixed', async () => {
+    const {view, call, form, runDisabled} = await open({ranged: 50, code: 'xyz', req: 'x'});
+    expect(form.isValid, false);
+    expect(runDisabled(), true);
+
+    form.getInput('ranged').value = 3;
+    form.getInput('code').value = '12cd';
+    await waitUntil(() => !runDisabled(), 'Run should be enabled once inputs are fixed', 5000);
+    await clickBigButton(view.root, 'Run');
+    await awaitRunComplete(view.root);
+    expect(call.outputs.get('res'), 3);
+  });
+
+  test('Opened with an empty required input blocks the run', async () => {
+    const {form, runDisabled} = await open({ranged: 5, code: '12ab'});
+    expect(form.isValid, false);
+    expect(runDisabled(), true);
+  });
+});
+
 // ---- Pipeline tests ----
 
 category('Pipeline: MockPipeline1 static', () => {
   const track = closeViewsAfter();
+
+  test('A never saved workflow shows its root title until it is saved under its own name', async () => {
+    await awaitWebComponents();
+    const call = DG.Func.byName('Compute2:MockPipeline1').prepare();
+    const view = track(await grok.functions.call(
+      'Compute2:TreeWizardEditor', {call},
+    ) as unknown as DG.ViewBase);
+    const model = call.func.friendlyName;
+    await waitUntil(() => view.name === `${model} - Pipeline 1 title`, 'View should show the root title', 5000);
+
+    await waitUntil(() => ribbonIcons(view, 'save').length > 0, 'Expected a save icon', 5000);
+    (ribbonIcons(view, 'save')[0] as HTMLElement).click();
+    await waitUntil(() => document.querySelector('.d4-dialog .c2-runs-field input') !== null,
+      'Save dialog not shown', 5000);
+    const name = uniqueName('Own name');
+    const input = document.querySelector<HTMLInputElement>('.d4-dialog .c2-runs-field input')!;
+    expect(input.value, 'Pipeline 1 title');
+    input.value = name;
+    input.dispatchEvent(new Event('input'));
+    await Vue.nextTick();
+    Array.from(document.querySelectorAll<HTMLElement>('.d4-dialog button'))
+      .find((b) => b.textContent?.trim() === 'Save')!.click();
+    await waitUntil(() => savedRunId(view) != null, 'URL should carry the saved run id', 5000);
+    try {
+      await waitUntil(() => view.name === `${model} - ${name}`, 'View should show the saved name', 5000);
+    } finally {
+      await deleteSavedWorkflow(savedRunId(view)!);
+    }
+  });
 
   test('Renders tree with steps and Next button', async () => {
     await awaitWebComponents();
@@ -193,9 +274,9 @@ category('Pipeline: MockPipeline2 sequential', () => {
     await waitUntil(() => {
       const labels = view.root.querySelectorAll('.mtl-tree .mtl-ml');
       const texts = Array.from(labels).map((l) => l.textContent?.trim());
-      const count = (texts.some((t) => t === 'add') ? 1 : 0)
-        + (texts.some((t) => t === 'mul') ? 1 : 0)
-        + (texts.some((t) => t?.includes('cooling')) ? 1 : 0);
+      const count = (texts.some((t) => t === 'add') ? 1 : 0) +
+        (texts.some((t) => t === 'mul') ? 1 : 0) +
+        (texts.some((t) => t?.includes('cooling')) ? 1 : 0);
       return count >= 2;
     }, 'Tree should show at least 2 of: add, mul, cooling', 10000);
 
@@ -268,3 +349,30 @@ for (const nqName of ['Compute2:MockSingleStepPipeline', 'Compute2:MockSingleSte
     });
   });
 }
+
+category('Editors: RFV saved runs', () => {
+  const track = closeViewsAfter();
+
+  test('Opening two runs quickly leaves the second one in the form', () => withRunStorage(async (f) => {
+    await awaitWebComponents();
+    const name = uniqueName('Quick open');
+    // a run with an output table takes longer to load than one without
+    const slow = await f.save(await f.dayRun({called: true}), {metadata: {name: `${name} slow`}});
+    const fast = await f.saveDayRun(`${name} fast`);
+    const view = track(await grok.functions.call('Compute2:RichFunctionViewEditor',
+      {call: DG.Func.byName(DAY_CALCULATION).prepare()}) as unknown as DG.ViewBase);
+    await awaitCheck(() => ribbonIcons(view, 'history').length > 0, 'Runs panel icon not shown', 15000);
+    (ribbonIcons(view, 'history')[0] as HTMLElement).click();
+    const row = (suffix: string) => Array.from(view.root.querySelectorAll<HTMLElement>('.c2-runs-list .c2-runs-row'))
+      .find((el) => el.textContent?.includes(`${name} ${suffix}`));
+    await awaitCheck(() => !!row('slow') && !!row('fast'), 'both runs should be listed', 15000);
+    for (const suffix of ['slow', 'fast']) {
+      for (const detail of [1, 2])
+        row(suffix)!.dispatchEvent(new MouseEvent('click', {bubbles: true, detail}));
+    }
+    await awaitCheck(() => [slow.id, fast.id].includes(savedRunId(view) ?? ''), 'a run should open', 15000);
+    // a load sent now comes back after the slower one that started before it
+    await historyUtils.loadRun(slow.id);
+    expect(savedRunId(view), fast.id);
+  }));
+});

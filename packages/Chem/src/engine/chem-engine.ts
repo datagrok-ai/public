@@ -20,7 +20,7 @@ const ENGINE_PROPERTY = 'ChemicalEngine';
 const SETTING_REFRESH_MS = 1000;
 
 let engineOverride: ChemicalEngine | null = null;
-let settingValue: ChemicalEngine = ChemicalEngine.RDKit;
+let settingValue: ChemicalEngine = ChemicalEngine.Crux;
 let settingReadAt = -Infinity;
 /** Changes whenever the engine in effect changes (a switch, Crux ready, Crux failed): caches keyed by engine compare
  * it to know they must be emptied. */
@@ -54,14 +54,14 @@ export function setChemicalEngine(engine: ChemicalEngine | null): void {
   engineInEffect();
 }
 
-/** The engine the setting (or the override) asks for. */
+/** The engine the setting (or the override) asks for: Crux by default, RDKit only when the setting says so. */
 export function requestedEngine(): ChemicalEngine {
   if (engineOverride)
     return engineOverride;
   const now = performance.now();
   if (now - settingReadAt >= SETTING_REFRESH_MS) {
     settingReadAt = now;
-    settingValue = chemSetting(ENGINE_PROPERTY) === ChemicalEngine.Crux ? ChemicalEngine.Crux : ChemicalEngine.RDKit;
+    settingValue = chemSetting(ENGINE_PROPERTY) === ChemicalEngine.RDKit ? ChemicalEngine.RDKit : ChemicalEngine.Crux;
   }
   return settingValue;
 }

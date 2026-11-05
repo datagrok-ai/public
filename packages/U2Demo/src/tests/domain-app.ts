@@ -96,8 +96,9 @@ category('U2: domain app', () => {
     await ready(source);
     await until(() => app.form.value?.input('name') !== undefined, 'the form');
     expect(source.session === app.session, true, 'the entity source shares the session');
-    app.form.value!.input('name')!.value.value = 'Alpha A';
-    const kids = eventTable.source({query: `item_id = "${alphaId}"`, defaults: {item_id: alphaId}, session: app.session});
+    app.form.value!.input('name')!.value = 'Alpha A';
+    const kids = app.build(() =>
+      eventTable.source({query: `item_id = "${alphaId}"`, defaults: {item_id: alphaId}, session: app.session}));
     try {
       await ready(kids);
       const event = kids.newRow({kind: 'made', amount: 5});
@@ -121,7 +122,7 @@ category('U2: domain app', () => {
   test('Back through the gate: cancel keeps the page and the dirty state; the history pane lists the update', async () => {
     expect(app.page.value, 'entity');
     await until(() => app.form.value?.input('name') !== undefined, 'the form');
-    app.form.value!.input('name')!.value.value = 'Alpha B';
+    app.form.value!.input('name')!.value = 'Alpha B';
     expect(app.session.isDirty.value, true);
     const back = app.goTo('list');
     await until(() => dialog() !== null, 'the unsaved-changes dialog');
@@ -129,7 +130,7 @@ category('U2: domain app', () => {
     expect(await back, false);
     expect(app.page.value, 'entity');
     expect(app.session.isDirty.value, true);
-    expect(app.form.value!.input('name')!.value.value, 'Alpha B');
+    expect(app.form.value!.input('name')!.value, 'Alpha B');
     app.session.discard();
     expect(app.session.isDirty.value, false);
     const history = app.panes.querySelector('[data-u2="domain-history"]')!;
@@ -155,7 +156,7 @@ category('U2: domain app', () => {
 
   test('closing with pending changes asks first; dismiss keeps the view', async () => {
     await until(() => app.form.value?.input('name') !== undefined, 'the form');
-    app.form.value!.input('name')!.value.value = 'Alpha C';
+    app.form.value!.input('name')!.value = 'Alpha C';
     expect(app.session.isDirty.value, true);
     view.close();
     await until(() => dialog() !== null, 'the unsaved-changes dialog on close');

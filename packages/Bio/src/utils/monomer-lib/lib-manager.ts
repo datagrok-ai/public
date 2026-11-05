@@ -47,9 +47,6 @@ export class MonomerLibManager implements IMonomerLibHelper {
   }
 
   private _selectionChanged = new Subject<void>();
-  public get librarySelectionChanged(): Observable<void> {
-    return this._selectionChanged;
-  }
   public notifyLibrarySelectionChanged(): void {
     this._selectionChanged.next();
   }
@@ -84,6 +81,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
 
   public async awaitLoaded(timeout: number = Infinity): Promise<void> {
     timeout = timeout === Infinity ? 1 * 60000 : timeout; // Limit the max lib loaded timeout
+    let timer: ReturnType<typeof setTimeout> | undefined;
     return await Promise.race([
       (async () => {
         const providers = await this.getProviders();
@@ -91,11 +89,9 @@ export class MonomerLibManager implements IMonomerLibHelper {
         await this.loadLibrariesPromise;
         return true;
       })(),
-      (async () => {
-        await DG.delay(timeout);
-        return false;
-      })(),
+      new Promise<boolean>((resolve) => timer = setTimeout(() => resolve(false), timeout)),
     ]).then((res) => {
+      clearTimeout(timer);
       if (!res)
         throw new Error(`Loading monomer libraries timeout ${timeout} ms.`);
     });
@@ -391,27 +387,6 @@ export class MonomerLibManager implements IMonomerLibHelper {
       return null;
     }
     return this.readSingleLibrary(provider.name, libraryName);
-  }
-
-  async readSingleSet(providerName: string, setName: string): Promise<IMonomerSet | null> {
-    const providers = await this.getProviders();
-    const provider = providers.find((p) => p.name === providerName);
-    if (!provider) {
-      this.logger.error(`Provider '${providerName}' not found.`);
-      return null;
-    }
-    try {
-      const setDatas = await provider.loadSets([setName]);
-      if (setDatas.length === 0) {
-        this.logger.error(`Set '${setName}' not found in provider '${providerName}'.`);
-        return null;
-      }
-      return setDatas[0];
-    } catch (err: any) {
-      this.logger.error(`Loading monomer set '${setName}' from provider '${provider.name}' failed: ` +
-      `${err instanceof Error ? err.message : err.toString()}`);
-      return null;
-    }
   }
 
   async listMonomerCollections(): Promise<string[]> {

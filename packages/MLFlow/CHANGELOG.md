@@ -3,6 +3,7 @@
 ## v.next
 
 * Docker: rebased the mlflow container on Debian 13 with pinned mlflow 3.14.0 (was unpinned ghcr.io :latest on EOL Debian 11) and raised pip/setuptools/wheel/cryptography security floors (VEX)
+* Docker: upgraded the mlflow container to mlflow 3.17.2 (RCE fix), cryptography 50 and Python 3.11 (needed by pillow 13 and filelock 4.2)
 
 ## 1.1.1 (2025-04-24)
 

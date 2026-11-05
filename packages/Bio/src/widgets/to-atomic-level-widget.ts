@@ -1,14 +1,22 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib/full';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {_package, PackageFunctions} from '../package';
+import {getMacromoleculeAssembler} from '@datagrok-libraries/bio/src/monomer-works/assembler';
+import {getAsmMonomerCount} from '@datagrok-libraries/bio/src/monomer-works/assembly-input';
+import {_package, PackageFunctions, toAtomicLevelDo} from '../package';
 import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {nglStageOnPage} from '@datagrok-libraries/utils/src/ngl-stage';
 
 
+/** One sequence cell to a molblock. The linear layout by default: the assembler falls back per row to the
+ * non-linear one for rows that are not plain chains (cycles, cross-links, CHEM monomers, mixed polymer types).
+ * @param {DG.SemanticValue} sequence a cell of a Macromolecule column
+ * @param {[number, number]} range a window of a long FASTA/separator sequence (0-based, inclusive)
+ * @param {boolean} nonlinear the non-linear layout regardless of the row */
 export async function toAtomicLevelSingle(sequence: DG.SemanticValue,
-  range?: [number, number]): Promise<{mol: string, errorText: string, scrollableLength?: number}> {
+  range?: [number, number], nonlinear: boolean = false,
+): Promise<{mol: string, errorText: string, scrollableLength?: number}> {
   let errorText = '';
   try {
     if (!sequence || !sequence.value) {
@@ -27,16 +35,14 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue,
     }
 
     const seqSplitted = seqSh.getSplitted(sequence.cell.rowIndex);
-    let maxLength = 35;
+    // Converting and drawing 200 monomers takes about 300 ms; the full-screen dialog (a click on the molecule) shows
+    // the details of a long one. An all-RNA HELM row counts sugar, base and phosphate as three positions, so 360 is
+    // about 120 nucleotides. HELM's fixed repeats count expanded (`A'3000'` is 3000 monomers in one position)
+    let maxLength = 120;
     if (seqSh.isHelm() && !seqSplitted.graphInfo?.polymerTypes?.some((pt) => pt !== 'RNA'))
-      maxLength = 105;
+      maxLength = 360;
 
-    // helm and biln will have cyclization marks, so we need to use POM to convert them
-    const shouldUsePOM = (seqSplitted.graphInfo?.connections?.length ?? 0) > 0 || seqSh.units === NOTATION.CUSTOM;
-    const isHelmWithMultiplePolymerTypes = seqSh.isHelm() &&
-      (new Set((seqSplitted.graphInfo?.polymerTypes ?? []))).size > 1;
-
-    if (!range && (seqSplitted?.length ?? 100) > maxLength) {
+    if (!range && (seqSplitted ? getAsmMonomerCount(seqSplitted) : 100) > maxLength) {
       errorText = 'Maximum number of monomers for molecular conversion is ' + maxLength;
       // fasta/separator sequences are single linear chains, so they can still be viewed in scrollable windows;
       // isSeparator() is true for BILN columns too (they carry a separator tag), so check the notation strictly
@@ -63,16 +69,17 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue,
     }
     const sDf = DG.DataFrame.fromColumns([singleValCol]);
 
-    await PackageFunctions.toAtomicLevel(sDf, singleValCol,
-      shouldUsePOM || isHelmWithMultiplePolymerTypes, false);
+    // Linear unless asked otherwise: rows with connections, custom notations or mixed polymer types fall back to the
+    // non-linear layout in the assembler, per row. No warning balloon: the panel shows the error itself
+    const talRes = await toAtomicLevelDo(sDf, singleValCol, nonlinear, false, false);
     if (sDf.columns.length < 2) {
-      errorText = 'No structure generated';
+      errorText = noStructureText(talRes.warnings);
       return {errorText, mol: ''};
     }
     const molCol = sDf.columns.byIndex(1);
     const molfile = molCol.get(0);
     if (!molfile) {
-      errorText = 'No structure generated';
+      errorText = noStructureText(talRes.warnings);
       return {errorText, mol: ''};
     }
     return {errorText: '', mol: molfile as string};
@@ -82,6 +89,14 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue,
 
   errorText = 'No Structure generated';
   return {errorText, mol: ''};
+}
+
+/** The panels' message for a sequence that gave no molecule, with the row's reason (`unknown monomer PEPTIDE:Xyz`,
+ * hwe's error, ...) when the conversion reported one: 'Cannot get molfile of row #0: <reason>.' from the column
+ * conversion */
+function noStructureText(warnings: string[]): string {
+  const reason = /^Cannot get molfile of row #\d+: ([\s\S]*?)\.?$/.exec(warnings[0] ?? '')?.[1];
+  return reason ? `No structure generated: ${reason}` : 'No structure generated';
 }
 
 function drawMoleculeHost(mol: string, sequence: DG.SemanticValue): HTMLElement {
@@ -98,15 +113,79 @@ function drawMoleculeHost(mol: string, sequence: DG.SemanticValue): HTMLElement 
   root.style.cursor = 'pointer';
   ui.tooltip.bind(root, 'Click to expand');
   root.onclick = () => {
-    const width = window.innerWidth - 200;
-    const height = window.innerHeight - 200;
-    const bigMol = grok.chem.drawMolecule(mol, width, height, false);
-    ui.dialog({title: 'Molecule'}).add(bigMol).showModal(true);
+    showMoleculeDialog(mol).catch((err) => _package.logger.error(err));
   };
   return root;
 }
 
-const SCROLL_WINDOW_SIZE = 35;
+/** The full-screen dialog draws the molecule at this many times the resolution it shows it at */
+const DIALOG_RESOLUTION = 2;
+/** At most this many canvas pixels for that drawing (4 bytes each; Chem draws it uncached, so the memory goes with
+ * the dialog) */
+const DIALOG_MAX_PIXELS = 25_000_000;
+const LENS_MAGNIFICATION = 3;
+/** The lens' width and height, as a fraction of the dialog's molecule view */
+const LENS_FRACTION = 1 / 3;
+
+/** The molecule in a full-screen dialog, drawn at {@link DIALOG_RESOLUTION} times the shown resolution, with a
+ * magnifying lens under the mouse: the part around the pointer {@link LENS_MAGNIFICATION} times larger. */
+export async function showMoleculeDialog(mol: string): Promise<DG.Dialog> {
+  const width = Math.max(200, window.innerWidth - 200);
+  const height = Math.max(100, window.innerHeight - 200);
+  const view = ui.div([], {style: {position: 'relative', width: `${width}px`, height: `${height}px`,
+    overflow: 'hidden', cursor: 'crosshair'}});
+  const dialog = ui.dialog({title: 'Molecule'}).add(view).showModal(true);
+
+  const dpr = window.devicePixelRatio || 1;
+  const k = Math.min(DIALOG_RESOLUTION, Math.sqrt(DIALOG_MAX_PIXELS / (width * height * dpr * dpr)));
+  // uncached: Chem's renderer would otherwise keep a canvas and a picture this large for the session (Chem's own call,
+  // not grok.chem.drawMolecule: a platform's js-api older than the `cache` argument would drop it)
+  const molBox = await grok.functions.call('Chem:drawMolecule',
+    {molStr: mol, w: Math.round(width * k), h: Math.round(height * k), popupMenu: false, cache: false}) as HTMLElement;
+  const source = molBox.querySelector('canvas');
+  if (!source)
+    throw new Error('Chem:drawMolecule returned no canvas');
+  source.style.width = `${width}px`;
+  source.style.height = `${height}px`;
+
+  const lensW = Math.round(width * LENS_FRACTION);
+  const lensH = Math.round(height * LENS_FRACTION);
+  const lens = ui.canvas(Math.round(lensW * dpr), Math.round(lensH * dpr));
+  Object.assign(lens.style, {position: 'absolute', width: `${lensW}px`, height: `${lensH}px`, pointerEvents: 'none',
+    border: '1px solid var(--grey-4)', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)', display: 'none'});
+  view.append(molBox, lens);
+
+  // the lens follows the pointer: the source canvas' pixels around it, scaled up (the drawing may still be under way;
+  // the lens reads whatever is drawn)
+  const drawLens = (e: MouseEvent) => {
+    const viewRect = view.getBoundingClientRect();
+    const srcRect = source.getBoundingClientRect();
+    lens.style.left = `${e.clientX - viewRect.left - lensW / 2}px`;
+    lens.style.top = `${e.clientY - viewRect.top - lensH / 2}px`;
+    lens.style.display = '';
+    const s = source.width / srcRect.width; // source pixels per shown pixel
+    const sw = lensW / LENS_MAGNIFICATION * s;
+    const sh = lensH / LENS_MAGNIFICATION * s;
+    const g = lens.getContext('2d')!;
+    g.fillStyle = 'white';
+    g.fillRect(0, 0, lens.width, lens.height);
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(source, (e.clientX - srcRect.left) * s - sw / 2, (e.clientY - srcRect.top) * s - sh / 2, sw, sh,
+      0, 0, lens.width, lens.height);
+  };
+  let frame = 0;
+  view.addEventListener('mousemove', (e) => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => drawLens(e));
+  });
+  view.addEventListener('mouseleave', () => {
+    cancelAnimationFrame(frame);
+    lens.style.display = 'none';
+  });
+  return dialog;
+}
+
+const SCROLL_WINDOW_SIZE = 30;
 const SCROLL_RENDER_DEBOUNCE_MS = 300;
 
 /** For long linear single-chain sequences: shows the structure of a {@link SCROLL_WINDOW_SIZE}-monomer
@@ -185,6 +264,45 @@ export async function toAtomicLevelWidget(sequence: DG.SemanticValue): Promise<D
   return DG.Widget.fromRoot(ui.divText('No structure generated'));
 }
 
+/** The 3D panel's message when the embedding gives no 3D structure */
+export const EMBED_3D_FAILED = 'Couldn\'t get 3D structure: the 3D embedding failed';
+/** The 3D panel's message when the embedding has not finished within {@link EMBED_3D_LIMIT_MS} */
+export const EMBED_3D_TOO_LONG = 'Couldn\'t get 3D structure: the 3D embedding takes too long';
+/** The 3D panel waits this long for the embedding (Crux mode gives up after 10 s itself; RDKit mode's server script
+ * has no deadline, and ETKDG may never finish on a big peptide) */
+const EMBED_3D_LIMIT_MS = 60000;
+
+/** The 3D MOL block of a 2D one by Chem's one entry point for 3D coordinates (`Chem:embed3d`, which follows Chem's
+ * engine setting), or the panel's message when the embedding fails, times out or gives nothing: the panel shows the
+ * message, not an empty viewer or an endless wait.
+ * @param {string} molBlock2D
+ * @param {Function} embed the embedding (tests pass their own)
+ * @param {number} limitMs how long to wait for it
+ * @return {Promise<{molBlock3D: string, error: null} | {molBlock3D: null, error: string}>} */
+export async function embedMolecule3d(molBlock2D: string,
+  embed: (molecule: string) => Promise<string> = async (molecule) =>
+    (await grok.functions.call('Chem:embed3d', {molecule})) as unknown as string,
+  limitMs: number = EMBED_3D_LIMIT_MS,
+): Promise<{molBlock3D: string, error: null} | {molBlock3D: null, error: string}> {
+  let molBlock3D: string;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const tooLong = new Promise<null>((resolve) => timer = setTimeout(() => resolve(null), limitMs));
+  try {
+    const res = await Promise.race([embed(molBlock2D), tooLong]);
+    if (res === null)
+      return {molBlock3D: null, error: EMBED_3D_TOO_LONG};
+    molBlock3D = res;
+  } catch (err: any) {
+    _package.logger.warning(`Molecular 3D Structure: ${err instanceof Error ? err.message : String(err)}`);
+    return {molBlock3D: null, error: EMBED_3D_FAILED};
+  } finally {
+    clearTimeout(timer);
+  }
+  if (typeof molBlock3D !== 'string' || !molBlock3D.trim())
+    return {molBlock3D: null, error: EMBED_3D_FAILED};
+  return {molBlock3D, error: null};
+}
+
 /**
  * 3D representation widget of macromolecule.
  *
@@ -192,7 +310,7 @@ export async function toAtomicLevelWidget(sequence: DG.SemanticValue): Promise<D
  * @return {Promise<DG.Widget>} Widget.
  */
 export async function molecular3DStructureWidget(
-  sequence: DG.SemanticValue
+  sequence: DG.SemanticValue,
 ): Promise<DG.Widget> {
   const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
   let widgetHost;
@@ -208,14 +326,19 @@ export async function molecular3DStructureWidget(
         return new DG.Widget(widgetHost);
       }
       const molBlock2D = result.mol;
-      // Chem's one entry point for 3D coordinates (it follows Chem's engine setting)
-      molBlock3D = (await grok.functions.call('Chem:embed3d', {molecule: molBlock2D})) as unknown as string;
-      // rdfkit sometimes fails to convert molv3 to molv2, so we try to convert it via the OCL
-      const OCLMol = OCL.Molecule.fromMolfile(molBlock3D);
-      if (OCLMol)
-        molBlock3D = OCLMol.toMolfile();
-      else
-        console.warn('Failed to convert molv3 to molv2');
+      const embedded = await embedMolecule3d(molBlock2D);
+      if (embedded.error !== null) {
+        pi.close();
+        return new DG.Widget(ui.divText(embedded.error));
+      }
+      molBlock3D = embedded.molBlock3D;
+      // NGL reads V2000 (sdf); the assembler's module converts it (no OCL)
+      try {
+        const assembler = await getMacromoleculeAssembler();
+        molBlock3D = await assembler.toV2000(molBlock3D);
+      } catch (err: any) {
+        console.warn('Failed to convert molv3 to molv2', err);
+      }
 
       //molBlock3D = grok.chem.convert(molBlock3D, grok.chem.Notation.Unknown, grok.chem.Notation.MolBlock);
     } catch (e) {
@@ -227,20 +350,29 @@ export async function molecular3DStructureWidget(
       const stringBlob = new Blob([molBlock3D], {type: 'text/plain'});
       const nglHost = ui.div([], {classes: 'd4-ngl-viewer', id: 'ngl-3d-host'});
       nglHost.style.setProperty('height', '100%', 'important');
-      //@ts-ignore
-      const stage = new NGL.Stage(nglHost, {backgroundColor: 'white'});
-      //@ts-ignore
-      stage.loadFile(stringBlob, {ext: 'sdf'}).then(function(comp: NGL.StructureComponent) {
-        stage.setSize(300, 300);
-        comp.addRepresentation('ball+stick');
-        comp.autoView();
-      });
+      const unreadable = () => nglHost.replaceChildren(ui.divText('Couldn\'t get 3D structure'));
+      // the stage while the panel is on the page (WebGL contexts are few)
+      nglStageOnPage(nglHost, (host) => {
+        //@ts-ignore
+        const stage = new NGL.Stage(host, {backgroundColor: 'white'});
+        //@ts-ignore
+        stage.loadFile(stringBlob, {ext: 'sdf'}).then(function(comp: NGL.StructureComponent) {
+          if (!comp?.structure?.atomCount) // NGL loads a V3000 block as no atoms
+            return unreadable();
+          stage.handleResize();
+          comp.addRepresentation('ball+stick');
+          comp.autoView();
+        }, unreadable);
+        return stage;
+      }).catch(unreadable);
       widgetHost = ui.div([nglHost], {style: {aspectRatio: '1'}});
     } catch (e) {
       widgetHost = ui.divText('Couldn\'t get 3D structure');
+      console.error(e);
     }
   } catch (e) {
     widgetHost = ui.divText('Couldn\'t get 3D structure');
+    console.error(e);
   }
   pi.close();
   return new DG.Widget(widgetHost);

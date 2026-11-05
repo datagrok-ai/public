@@ -116,6 +116,21 @@ category('Summary columns', () => {
     }
   });
 
+  test('A removed source column brought back rejoins its Tags column (#4378)', async () => {
+    const df = flagsTable();
+    const grid = grok.shell.addTableView(df).grid;
+    const tags = grid.columns.add({gridColumnName: 'Tags', cellType: 'Tags'});
+    tags.settings = {Tags: {columnNames: ['flag']}};
+    await waitUntil(() => tags.renderer?.cellType === 'Tags', 'the Tags renderer did not load', 5000);
+    const flag = df.col('flag')!.clone();
+    df.columns.remove('flag');
+    expectArray(tags.settings['Tags'].columnNames, []);
+    df.columns.insert(flag, 1);
+    expectArray(tags.settings['Tags'].columnNames, ['flag']);
+    grid.invalidate();
+    await waitUntil(() => chipPixels(grid, 'Tags', 1) > 0, 'the flagged row shows no chip after the column came back', 5000);
+  });
+
   test('Tags and Bar fill only their own shapes (GROK-20888)', async () => {
     const grid = grok.shell.addTableView(flagsTable()).grid;
     grid.columns.add({gridColumnName: 'Tags', cellType: 'Tags'});

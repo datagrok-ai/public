@@ -56,7 +56,7 @@ export class ChipsInput extends Input<string[], ChipsInputOptions> {
   setItems(items: ChoiceItem[]): void {
     this._items.value = items;
     const keep = new Set(items.map(itemValue));
-    const value = this.value.peek() ?? [];
+    const value = this.peek() ?? [];
     const pruned = value.filter((v) => keep.has(v));
     if (pruned.length !== value.length)
       this.systemWrite(pruned);
@@ -64,14 +64,14 @@ export class ChipsInput extends Input<string[], ChipsInputOptions> {
 
   /** One item per chip, keyed by its value; the pressed ones are the selection. */
   getItems(opts?: {all?: boolean}): IItemsState {
-    const picked = new Set(this.value.peek());
+    const picked = new Set(this.peek());
     return Input.itemsState(this._items.peek().map((item, index) => ({key: itemValue(item), label: itemLabel(item),
       index, selected: picked.has(itemValue(item)), rendered: true})), opts?.all);
   }
 
   /** The pressed captions, in item order. */
   protected displayText(): string {
-    const picked = new Set(this.value.peek());
+    const picked = new Set(this.peek());
     return this._items.peek().filter((i) => picked.has(itemValue(i))).map(itemLabel).join(', ');
   }
 
@@ -82,7 +82,7 @@ export class ChipsInput extends Input<string[], ChipsInputOptions> {
     host.setAttribute('role', 'group');
     this.scope.listen(host, 'click', (e) => {
       const chip = (e.target as Element).closest('.u2-chips-chip') as HTMLElement | null;
-      if (chip !== null && this.enabled)
+      if (chip !== null && (this.disabled === null))
         this._toggle(chip.dataset.value!);
     });
     each(host, this._items, (item) => itemValue(item), (item) => this._chip(item), {
@@ -97,7 +97,7 @@ export class ChipsInput extends Input<string[], ChipsInputOptions> {
       },
     });
     this.effect(() => {
-      const picked = new Set(this.value.value);
+      const picked = new Set(this.value);
       for (const chip of host.querySelectorAll<HTMLElement>('.u2-chips-chip'))
         ChipsInput._press(chip, picked.has(chip.dataset.value!));
     });
@@ -114,18 +114,18 @@ export class ChipsInput extends Input<string[], ChipsInputOptions> {
     text.dataset.u2Part = 'item-label';
     text.textContent = itemLabel(item);
     chip.append(text);
-    chip.disabled = !this.enabled;
-    ChipsInput._press(chip, new Set(this.value.peek()).has(itemValue(item)));
+    chip.disabled = this.disabled !== null;
+    ChipsInput._press(chip, new Set(this.peek()).has(itemValue(item)));
     return chip;
   }
 
   private _toggle(value: string): void {
-    const picked = new Set(this.value.peek());
+    const picked = new Set(this.peek());
     if (picked.has(value))
       picked.delete(value);
     else
       picked.add(value);
-    this.value.value = this._items.peek().map(itemValue).filter((v) => picked.has(v));
+    this.value = this._items.peek().map(itemValue).filter((v) => picked.has(v));
   }
 
   private static _press(chip: HTMLElement, on: boolean): void {

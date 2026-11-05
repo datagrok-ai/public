@@ -1,14 +1,13 @@
 /* eslint-disable max-len */
 import {
-  App, Point, HelmAtom, HelmMol, MonomersFuncs,
-  IHelmEditorOptions,
+  App, HelmAtom, HelmMol, MonomersFuncs,
+  IHelmEditorOptions, IHelmWebEditor,
 } from '@datagrok-libraries/bio/src/helm/types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {
-  HelmConvertRes, HelmInputBase, IHelmHelper, IHelmInputInitOptions
+  HelmInputBase, IHelmHelper, IHelmInputInitOptions,
 } from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLib, IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -28,7 +27,7 @@ import {_package} from './package';
 // Editor (`org.helm.webeditor` / JSDraw2 / Dojo) is gone — this class no longer
 // touches any of those globals.
 import {HelmHelperAdapter, bridgeMonomerLib, HelmService, PolymerTypes} from '@datagrok-libraries/hwe';
-import type {IMonomerLibBaseLike, MonomersFuncsLike} from '@datagrok-libraries/hwe';
+import type {IMonomerLibBaseLike} from '@datagrok-libraries/hwe';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
@@ -101,25 +100,7 @@ export class HelmHelper implements IHelmHelper {
     return this.editorAdapter.createWebEditorApp(host, helm) as unknown as App;
   }
 
-  // -- GetMonomer (monomer-funcs hooks) --
-  // Delegated to the adapter. The legacy implementation patched the global
-  // `org.helm.webeditor.Monomers` registry so the forked editor used Bio's
-  // library; the hwe editor reads `bridgeMonomerLib(...)` directly, so these
-  // are now thin pass-throughs kept for the `IHelmHelper` contract.
-
-  public get originalMonomersFuncs(): MonomersFuncs | null {
-    return this.editorAdapter.originalMonomersFuncs as unknown as MonomersFuncs | null;
-  }
-
-  public revertOriginalMonomersFuncs(): MonomersFuncs {
-    return this.editorAdapter.revertOriginalMonomersFuncs() as unknown as MonomersFuncs;
-  }
-
-  public overrideMonomersFuncs(monomersFuncs: MonomersFuncs): MonomersFuncs {
-    return this.editorAdapter.overrideMonomersFuncs(
-      monomersFuncs as unknown as MonomersFuncsLike) as unknown as MonomersFuncs;
-  }
-
+  /** Monomer lookup funcs over {@link monomerLib} (SequenceTranslator's PolyTool enumeration uses them). */
   public buildMonomersFuncsFromLib(monomerLib: IMonomerLib): MonomersFuncs {
     return this.editorAdapter.buildMonomersFuncsFromLib(
       monomerLib as unknown as IMonomerLibBaseLike) as unknown as MonomersFuncs;
@@ -131,14 +112,6 @@ export class HelmHelper implements IHelmHelper {
 
   public getMolfiles(helmStrList: string[]): string[] {
     return this.editorAdapter.getMolfiles(helmStrList);
-  }
-
-  public parse(helm: string, origin?: Point): HelmMol {
-    return this.editorAdapter.parse(helm, origin) as unknown as HelmMol;
-  }
-
-  removeGaps(srcHelm: string): HelmConvertRes {
-    return this.editorAdapter.removeGaps(srcHelm);
   }
 
   private _singeHelmDf: DG.DataFrame | null = null;

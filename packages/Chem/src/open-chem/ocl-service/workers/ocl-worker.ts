@@ -132,7 +132,7 @@ function getDrugLikeliness(molList: Array<string>, notationType: string): OCLWor
 
 // duplication required for webpack to separate the worker OCL context from main thread context
 const CHEM_PROP_MAP: {[k: string]: IChemProperty} = {
-  'MW': {name: 'MW', type: 'float', valueFunc: (m: OCL.Molecule) => m.getMolecularFormula().absoluteWeight},
+  'MW': {name: 'MW', type: 'float', valueFunc: (m: OCL.Molecule) => m.getMolecularFormula().relativeWeight},
   'HBA': {name: 'HBA', type: 'int', valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).acceptorCount},
   'HBD': {name: 'HBD', type: 'int', valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).donorCount},
   'LogP': {name: 'LogP', type: 'float', valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).logP},

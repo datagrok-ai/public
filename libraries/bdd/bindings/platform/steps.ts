@@ -1,5 +1,4 @@
-/* Platform base steps: setup through the JS API (the openers of @datagrok-libraries/test keep the
-   provenance tags the UI would set). Viewer steps live in the `viewers` tier. */
+// setup goes through @datagrok-libraries/test's openers: they keep the provenance tags the UI would set
 import {type Locator, type Page, test} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
@@ -1606,7 +1605,7 @@ export const standServesHelp = Given('the stand serves the help pages', async (p
 /** The answer of the connection's Grok Connect test, or "N connections named ..." when the name does not
  * resolve to one connection. */
 async function connectionTestAnswer(page: Page, name: string): Promise<string> {
-  return page.evaluate(async (n) => {
+  return page.evaluate(async ([n, ms]) => {
     let found = (await grok.dapi.connections.list({pageSize: 5000})).filter((c: any) => c.friendlyName === n || c.name === n);
     // a name learners share (a tutorial's connection) lists other users' copies too: the running user's own is the fixture
     if (found.length > 1) {
@@ -1616,12 +1615,14 @@ async function connectionTestAnswer(page: Page, name: string): Promise<string> {
     if (found.length !== 1)
       return `${found.length} connections named "${n}"`;
     try {
-      return String(await (await grok.dapi.connections.find(found[0].id)).test());
+      const connection = await grok.dapi.connections.find(found[0].id);
+      return String(await Promise.race([connection.test(),
+        new Promise((resolve) => setTimeout(() => resolve(`no answer to the connection test in ${ms / 1000} s`), ms))]));
     }
     catch (error: any) {
       return error?.message ?? String(error);
     }
-  }, name);
+  }, [name, pollMs(30000)] as [string, number]);
 }
 
 export const standReachesConnection = Given('the stand can reach the database of the {string} connection', async (page: Page, name: string) => {
@@ -1724,7 +1725,7 @@ export const dbMetaOnServer = Then('the Database meta of {string} in the {string
 export const standHasReachableConnection = Given('the stand has a reachable {string} connection', async (page: Page, name: string) => {
   const answer = await connectionTestAnswer(page, name);
   test.skip(answer.trim().toLowerCase() !== 'ok', `the stand has no reachable "${name}" connection (${answer.slice(0, 200)}) — the rest of this test needs it`);
-}, {tier: 'api', description: 'a capability gate for a connection a package brings rather than the feature: absent or unreachable, the rest of the test is skipped with the reason'});
+}, {tier: 'api', description: 'a capability gate for a connection a package brings rather than the feature: absent, unreachable or silent for 30 s, the rest of the test is skipped with the reason'});
 
 export const noModelOnServer = Given('no predictive model named {string} is on the server', async (page: Page, name: string) => {
   const cleanup = namedCleanup(page, 'models', 'predictive models', namesOf(name));

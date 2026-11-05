@@ -49,7 +49,7 @@ Feature: Basic inputs
     And editor of Targets input should be at least 150 px wide
 
   Scenario: Validation shows on the input and aggregates into a readout
-    Then error of Code input should have text "Value is required"
+    Then error of Code input should be hidden
     And value of "code validity" readout should have text "Value is required"
     When user types "ABC-123" into Code input
     Then error of Code input should be hidden

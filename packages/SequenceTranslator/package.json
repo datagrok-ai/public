@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "1.11.5",
+  "version": "1.11.6",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -30,7 +30,7 @@
   "dependencies": {
     "@datagrok-libraries/bio": "workspace:^",
     "@datagrok-libraries/chem-meta": "workspace:^",
-    "@datagrok-libraries/hwe": "^1.0.0",
+    "@datagrok-libraries/hwe": "^1.1.1",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/tutorials": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",

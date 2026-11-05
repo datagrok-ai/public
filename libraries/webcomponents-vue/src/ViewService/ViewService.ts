@@ -43,6 +43,7 @@ export function createDgViewService(view: DG.ViewBase): DgViewService {
 export function provideDgViewService(app: Vue.App<any>, view: DG.ViewBase): DgViewService {
   const service = createDgViewService(view);
   app.provide(DG_VIEW_SERVICE_KEY, service);
+  app.onUnmount(() => service.dispose());
   return service;
 }
 

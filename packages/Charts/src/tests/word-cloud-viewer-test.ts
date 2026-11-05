@@ -28,6 +28,22 @@ category('Word cloud', () => {
     expect((await getOptions(restored!)).wordColumnName, 'race');
   });
 
+  test('Removed word column', async () => {
+    const table = grok.data.demo.demog(100);
+    const view = grok.shell.addTableView(table);
+    try {
+      const viewer = view.addViewer(TYPE, {wordColumnName: 'race'});
+      await waitUntil(() => viewer.getOptions(true).look['wordColumnName'] === 'race', 'option not applied', 3000);
+      table.columns.remove('race');
+      await waitUntil(() => viewer.props['wordColumnName'] !== 'race', 'removed column kept', 3000);
+      expect(table.col(viewer.props['wordColumnName']) !== null, true);
+    }
+    finally {
+      view.close();
+      grok.shell.closeTable(table);
+    }
+  });
+
   after(async () => {
     tv.close();
     grok.shell.closeTable(df);

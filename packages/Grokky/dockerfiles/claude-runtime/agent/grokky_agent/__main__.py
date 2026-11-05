@@ -1,6 +1,5 @@
 """python -m grokky_agent: one chat session. The first stdin line is the init command (credentials and settings, so no
-secret is in this process's environment); every later line is a command, every stdout line an event. With --check it
-instead makes one short call to the model, prints a `checked` event and exits: the runtime's connection test."""
+secret is in this process's environment); every later line is a command, every stdout line an event."""
 import ctypes
 import json
 import os
@@ -14,7 +13,7 @@ ctypes.CDLL(None).prctl(PR_SET_DUMPABLE, 0, 0, 0, 0)
 
 from pathlib import Path  # noqa: E402
 
-from . import config, hermes, providers, session  # noqa: E402
+from . import config, hermes, providers, session, skills  # noqa: E402
 from .protocol import Command, ContinueCommand, Event, InitCommand, TurnCommand  # noqa: E402
 
 TurnQueue = queue.Queue[tuple[TurnCommand | ContinueCommand, session.Turn]]
@@ -56,14 +55,10 @@ def main() -> int:
         emit({'type': 'fatal', 'message': 'the Grokky plugin did not load'})
         return 1
     hermes.send_keys_by_type()
-    hermes.refuse_aws_sdk()
-    if '--check' in sys.argv:
-        try:
-            error = s.check()
-        except Exception as e:
-            error = f'{type(e).__name__}: {e}'
-        emit({'type': 'checked', 'error': error})
-        return 0
+    s.skills = skills.index(settings['skillsDir'])
+    hermes.describe_skills(s.skills)
+    if provider.format.mode == 'bedrock_converse':
+        hermes.use_bedrock_key(provider.key)
     if settings['warm']:
         s.build_agent()
     emit({'type': 'ready'})

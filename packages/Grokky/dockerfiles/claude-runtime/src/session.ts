@@ -1,5 +1,5 @@
 import {randomUUID} from 'node:crypto';
-import type {AbortMessage, AgentEvent, InputResponseMessage, UserMessage} from './types';
+import type {AbortMessage, AgentEvent, InputResponseMessage, UserMessage, TurnMetrics} from './types';
 import {raceIdle, IDLE} from './watchdog';
 import {emit, emitFiltered, flushFenceState, clearFenceState,
   isRevising, beginRevision, endRevision} from './stream-filter';
@@ -14,6 +14,7 @@ import {WORKSPACE, apiUrlFromMcpUrl, rewriteForDocker} from './constants';
 import {waitForClaim, endTask} from './tasks';
 import {runTurn as runAgentTurn} from './agent/turn';
 import {hasSession, parkSession} from './agent/pool';
+import type {ProviderCredentials} from './credentials';
 
 // Longest a turn may emit nothing before it is treated as wedged. Bounds silence between events,
 // not total turn length.
@@ -30,7 +31,7 @@ const TURN_LIMITS = {
 
 const NO_REVISION_RE = /^`?NO_REVISION`?\.?$/;
 
-function forwardEvent(ws: WsSender, sid: string, event: AgentEvent, verifier?: Verifier): void {
+function forwardEvent(ws: WsSender, sid: string, event: AgentEvent, verifier?: Verifier, metrics?: TurnMetrics): void {
   if (event.type === 'text') {
     if (!isRevising(sid))
       turnText.set(sid, (turnText.get(sid) ?? '') + event.text);
@@ -38,7 +39,7 @@ function forwardEvent(ws: WsSender, sid: string, event: AgentEvent, verifier?: V
   }
   if (event.type === 'tool_activity')
     return emit(ws, {type: 'tool_activity', sessionId: sid, name: event.name, summary: event.summary});
-  if (event.type === 'activity')
+  if (event.type === 'activity' || event.type === 'usage')
     return;
   const revising = endRevision(sid);
   flushFenceState(ws, sid);
@@ -56,11 +57,11 @@ function forwardEvent(ws: WsSender, sid: string, event: AgentEvent, verifier?: V
     case 'limit':
       return emit(ws, {type: 'error', sessionId: sid,
         message: `This request hit its ${event.kind === 'turns' ? 'turn' : 'cost'} limit and was stopped. ` +
-          'Try a narrower request.'});
+          'Try a narrower request.', metrics});
     case 'session_reset':
       return emit(ws, {type: 'session_reset', sessionId: sid});
     case 'error':
-      return emit(ws, {type: 'error', sessionId: sid, message: event.message});
+      return emit(ws, {type: 'error', sessionId: sid, message: event.message, metrics});
   }
 }
 
@@ -70,6 +71,8 @@ interface ActiveQuery {
   ws: WsSender;
   // requestId → resolver, so parallel tool calls each await their own browser reply.
   pendingInputs: Map<string, (value: unknown) => void>;
+  /** The turn's usage so far, reported when it ends without a result of its own. */
+  metrics?: TurnMetrics;
 }
 
 // Round-trips a tool call to the browser: emits input_request, resolves on the matching
@@ -129,7 +132,8 @@ const QUEUED_HEARTBEAT_MS = 60_000;
 
 const sessionChains = new Map<string, Promise<void>>();
 
-export async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
+export async function handleMessage(ws: WsSender, data: UserMessage,
+  credentials: Promise<ProviderCredentials>): Promise<void> {
   const sid = data.sessionId ?? '';
   const message = data.message ?? '';
   const images = data.images;
@@ -153,7 +157,7 @@ export async function handleMessage(ws: WsSender, data: UserMessage): Promise<vo
         clearInterval(heartbeat);
       }
     }
-    await runTurn(ws, data, sid, message);
+    await runTurn(ws, data, sid, message, credentials);
   } finally {
     release();
     if (sessionChains.get(sid) === tail)
@@ -161,7 +165,8 @@ export async function handleMessage(ws: WsSender, data: UserMessage): Promise<vo
   }
 }
 
-async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: string): Promise<void> {
+async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: string,
+  credentials: Promise<ProviderCredentials>): Promise<void> {
   // Registered before anything is awaited, so an abort that arrives at any point reaches this turn.
   const abortController = new AbortController();
   const active: ActiveQuery = {abortController, ws, pendingInputs: new Map()};
@@ -174,6 +179,7 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
     if (data.resumeExpected && !hasSession(sid))
       return emit(ws, {type: 'session_reset', sessionId: sid});
     const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
+    const turnCredentials = await credentials;
     // Admission: wait for the celery claim (when the queued route is deployed) — the
     // queue container's concurrency limit is the only cap on concurrent turns.
     if (data.taskId) {
@@ -230,6 +236,7 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       gates: [verifier, groundingGate].filter((g) => g !== undefined),
       awaitBrowser: (toolName, input, timeoutMs) => awaitBrowserInput(sid, active, toolName, input, timeoutMs),
       signal: abortController.signal,
+      credentials: turnCredentials,
     });
     // Each event is raced against the idle timeout, so a turn that goes silent is bounded (see
     // watchdog.ts): a wedged agent emits nothing at all, which a plain await would wait on forever.
@@ -244,7 +251,8 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
           continue;
         console.warn(`watchdog[${sid}]: no agent event for ${TURN_IDLE_TIMEOUT_MS / 1000}s — killing turn`);
         emit(ws, {type: 'error', sessionId: sid,
-          message: 'The assistant stopped responding and the turn was cancelled. Please try again.'});
+          message: 'The assistant stopped responding and the turn was cancelled. Please try again.',
+          metrics: active.metrics});
         abortController.abort();
         parkSession(sid, `turn ${sid} went silent`);
         break;
@@ -255,11 +263,13 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       // A command's answer is its output, the final message: models remark before the tool call despite the prompt.
       if (mode === 'bash' && step.value.type === 'text')
         continue;
-      forwardEvent(ws, sid, step.value, verifier);
+      if (step.value.type === 'usage')
+        active.metrics = step.value.metrics;
+      forwardEvent(ws, sid, step.value, verifier, active.metrics);
     }
   } catch (e: any) {
     if (!abortController.signal.aborted)
-      emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
+      emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e), metrics: active.metrics});
   } finally {
     // Every terminal path — final, error, abort, disconnect, watchdog kill — ends the
     // admission task here, so the celery slot can never outlive the turn it admitted.
@@ -294,15 +304,19 @@ function abortSessionQuery(sid: string, ws?: WsSender): boolean {
 }
 
 export function handleAbort(ws: WsSender, data: AbortMessage): void {
-  if (activeQueries.get(data.sessionId)?.ws === ws && abortSessionQuery(data.sessionId, ws))
-    emit(ws, {type: 'aborted', sessionId: data.sessionId});
+  const active = activeQueries.get(data.sessionId);
+  if (active?.ws === ws && abortSessionQuery(data.sessionId, ws))
+    emit(ws, {type: 'aborted', sessionId: data.sessionId, metrics: active.metrics});
 }
 
 /** Stops the turns of these sessions that `ws` sent (all of them without `ws`: a revoked admission task). A dropped
  * connection can never receive results, and a turn nobody waits for would hold the workspace sync. */
 export function handleDisconnect(sessionIds: Iterable<string>, ws?: WsSender): void {
   for (const sid of sessionIds) {
-    if (!ws || activeQueries.get(sid)?.ws === ws)
+    const active = activeQueries.get(sid);
+    if (!ws && active && abortSessionQuery(sid))
+      emit(active.ws, {type: 'aborted', sessionId: sid, metrics: active.metrics});
+    else if (ws && active?.ws === ws)
       abortSessionQuery(sid);
   }
 }

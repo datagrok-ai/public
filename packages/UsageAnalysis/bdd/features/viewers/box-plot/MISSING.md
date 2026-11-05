@@ -51,3 +51,27 @@ into claims added to `box-plot.feature` (category selector, the month and quarte
     Then the "faded groups" reading of box plot viewer should be ""
     And no errors should have been logged
   ```
+
+## Closed issues the regression round of 26 Oct 2026 could not claim
+
+Written while folding the closed box plot issues into the box plot journeys.
+
+- **The violin style over a value column holding a real NaN (core#960)** is an ApiTests case, not a feature:
+  a raw NaN (not a missing value) only comes from the JS API (`DG.Column.fromList`).
+
+- **The statistics strip lines up under each box and uses the column's format (public#3693,
+  public#3773).** The status reports one `stats` area for the whole strip and no per-category cell or
+  text. Needs `stats <category>` areas (one per category column of the strip) and a `stats <category>`
+  reading of the text drawn there:
+
+  ```gherkin
+  Scenario: Each category's statistics sit under its own box in the column's format (public#3693)
+    Given user opens demog-1000 dataset
+    And user adds a box plot viewer with:
+      | Category 1      | RACE |
+      | Value           | AGE  |
+      | Show Statistics | true |
+    Then the "stats Caucasian" area of box plot viewer should lie below the "Caucasian values" area
+    And the "stats Caucasian" area of box plot viewer should lie to the right of the "stats Black" area
+    And no errors should have been logged
+  ```

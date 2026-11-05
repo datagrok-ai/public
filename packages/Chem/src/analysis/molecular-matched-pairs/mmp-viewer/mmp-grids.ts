@@ -267,7 +267,7 @@ export class MmpPairedGrids {
           ui.empty(this.moleculePairsContextPanelDiv);
           this.moleculePairsContextPanelDiv.append(pairInfo);
           this.showContextPanel();
-        }, 500);
+        });
       }
     });
 

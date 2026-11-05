@@ -54,17 +54,6 @@ const COLORS = {
   SLIDER_MARKER: '#3CB173',
 } as const;
 
-// Tooltip Style Template
-const TOOLTIP_STYLE = {
-  color: '#4A4A49',
-  background: '#FFFBCC',
-  borderRadius: '3px',
-  padding: '8px',
-  fontSize: '12px',
-  fontFamily: 'Roboto, Roboto Local',
-  minWidth: '120px'
-} as const;
-
 // Position range interface
 interface WindowRange {
   start: number;

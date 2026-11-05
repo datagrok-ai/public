@@ -30,10 +30,10 @@ export class ImageInput extends Input<string, ImageInputOptions> {
     remove.type = 'button';
     remove.className = 'u2-image-remove';
     remove.textContent = 'REMOVE';
-    this.scope.listen(remove, 'click', () => this.value.value = '');
+    this.scope.listen(remove, 'click', () => this.value = '');
 
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       image.src = value;
       image.hidden = value === '';
       remove.hidden = value === '';

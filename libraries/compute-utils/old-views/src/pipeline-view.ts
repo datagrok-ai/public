@@ -8,7 +8,8 @@ import {debounceTime, filter, map, mapTo, startWith, switchMap, take, withLatest
 import $ from 'cash-dom';
 import type ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
-import {CARD_VIEW_TYPE, storageName} from '../../shared-utils/consts';
+import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
+import {storageName} from '../../old-components/src/consts';
 import {RichFunctionView} from './rich-function-view';
 import {FunctionView} from './function-view';
 import '../css/pipeline-view.css';
@@ -41,6 +42,17 @@ const getVisibleStepName = (step: StepState) => {
 };
 
 const getStepId = (stepConfig: StepConfig) => stepConfig.customId ?? stepConfig.funcName;
+
+async function loadChildRuns(
+  funcCallId: string,
+): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
+  const parentRun = await historyUtils.loadRun(funcCallId);
+
+  const childRuns = await grok.dapi.functions.calls.allPackageVersions()
+    .include('func, func.package').filter(`options.parentCallId="${funcCallId}"`).list();
+
+  return {parentRun, childRuns};
+}
 
 export class PipelineView extends FunctionView {
   public steps = {} as {[stepId: string]: StepState};
@@ -456,7 +468,7 @@ export class PipelineView extends FunctionView {
     const parentCall = grok.shell.v.parentCall;
 
     const childFuncCalls = await Promise.all(
-      funcCalls.map((funcCall) => historyUtils.loadChildRuns(funcCall.id)),
+      funcCalls.map((funcCall) => loadChildRuns(funcCall.id)),
     );
 
     // Main child function should habe `meta.isMain: true` tag or the last function is used
@@ -728,7 +740,7 @@ export class PipelineView extends FunctionView {
    * @returns Parent FuncCall
    */
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
-    const {parentRun: pulledParentRun, childRuns: pulledChildRuns} = await historyUtils.loadChildRuns(funcCallId);
+    const {parentRun: pulledParentRun, childRuns: pulledChildRuns} = await loadChildRuns(funcCallId);
 
     const stepIdxBeforeLoad = Object.values(this.steps)
       .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)

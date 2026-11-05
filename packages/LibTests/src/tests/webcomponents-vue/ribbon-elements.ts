@@ -82,4 +82,11 @@ category('WebComponentsVue: Ribbon elements', () => {
     expect(withIcon.el.textContent?.includes('Run'));
     expect(withIcon.el.querySelector('i')?.classList.contains('fa-play'));
   });
+
+  test('names an icon by its tooltip and drops the name with it', async () => {
+    const state = createPanelItem(panelItem({icon: 'save', tooltip: 'Save'}), 'fa:save', deps());
+    expectDeepEqual(state.el.getAttribute('aria-label'), 'Save');
+    updatePanelItem(state, panelItem({icon: 'save'}));
+    expectDeepEqual(state.el.getAttribute('aria-label'), null);
+  });
 });

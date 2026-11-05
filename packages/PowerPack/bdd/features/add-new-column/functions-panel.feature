@@ -29,6 +29,7 @@ Feature: The functions and columns of Add New Column on SPGI: insertion, auto-bo
     When user clicks on "Add New Column..." icon
     Then "Add New Column" dialog should be visible
     And functions list should be visible
+    And formula editor should be visible
 
   Scenario: With no column picked, the plus icon and a drag insert a function with its parameters
     When user hovers over name of "Abs" function entry

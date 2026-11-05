@@ -22,7 +22,9 @@ export const Button = Vue.defineComponent({
   name: 'Button',
   emits: ['click'],
   setup(_props, {slots, attrs, emit}) {
-    return () => (<button v-bind={attrs} onClick={(p) => emit('click', p)} is="dg-button">{slots.default ? slots.default() : ''}</button>);
+    return () => (<button v-bind={attrs} onClick={(p) => emit('click', p)} is="dg-button">
+      {slots.default ? slots.default() : ''}
+    </button>);
   },
 });
 
@@ -190,12 +192,12 @@ export const ComboPopup = Vue.defineComponent({
   name: 'ComboPopup',
   props: {
     caption: {
-      type: Object as Vue.PropType<String | HTMLElement>,
+      type: [String, HTMLElement] as Vue.PropType<string | HTMLElement>,
       required: true,
     },
     items: {
-      type: Array<String>,
-      default: [],
+      type: Array as Vue.PropType<string[]>,
+      default: () => [],
     },
     rightAligned: {
       type: Boolean,

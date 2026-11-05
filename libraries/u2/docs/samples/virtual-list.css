@@ -1,0 +1,5 @@
+.report-list { height: 320px; }
+.report { flex: 1; min-width: 0; padding: 4px 8px; }
+.report-line { justify-content: space-between; }
+.report-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.report-author { flex-shrink: 0; color: var(--dg-text-color-light); }

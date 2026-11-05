@@ -18,8 +18,8 @@ declare global {
 export const DockManager = Vue.defineComponent({
   name: 'DockManager',
   props: {
-    activePanelTitle: Object as Vue.PropType<String>,
-    preferredPanelTitle: Object as Vue.PropType<String>,
+    activePanelTitle: String,
+    preferredPanelTitle: String,
   },
   slots: Object as Vue.SlotsType<{
     default?: Vue.VNode[],
@@ -36,10 +36,6 @@ export const DockManager = Vue.defineComponent({
     'setActivePanel': (_t: string | null | undefined) => void(0),
   },
   setup(props, {slots, emit, expose}) {
-    Vue.onRenderTriggered((event) => {
-      console.log('DockManager onRenderTriggered', event);
-    });
-
     const dockSpawnRef = Vue.shallowRef<DockSpawnTsWebcomponent | undefined>(undefined);
     const activePanelTitle = Vue.computed(() => props.activePanelTitle);
     const preferredPanelTitle = Vue.computed(() => props.preferredPanelTitle);
@@ -70,7 +66,7 @@ export const DockManager = Vue.defineComponent({
           title: state.element!,
         };
       };
-    }
+    };
 
     return () => (
       <dock-spawn-ts
@@ -79,7 +75,8 @@ export const DockManager = Vue.defineComponent({
         preferredPanelTitle={preferredPanelTitle.value}
         onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
         onPanelOpened={(ev: {detail: any}) => emit('panelOpened', ev.detail)}
-        onActivePanelChanged={(ev: {detail: {newPanel: string | null, prevPanel: string | null}}) => emit('update:activePanelTitle', ev.detail.newPanel, ev.detail.prevPanel)}
+        onActivePanelChanged={(ev: {detail: {newPanel: string | null, prevPanel: string | null}}) =>
+          emit('update:activePanelTitle', ev.detail.newPanel, ev.detail.prevPanel)}
         onTabClicked={(ev: {detail: {title: string | null}}) => emit('tabClicked', ev.detail.title)}
         onManagerInitFinished={onManagerInitFinished}
         ref={dockSpawnRef}
@@ -87,5 +84,5 @@ export const DockManager = Vue.defineComponent({
         { slots.default?.() }
       </dock-spawn-ts>
     );
-  }
+  },
 });

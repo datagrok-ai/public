@@ -4,6 +4,8 @@
 
 * [core#860](https://github.com/datagrok-ai/core/issues/860): DB Explorer: Fixed an error when expanding the Links pane for a ChEMBL entry whose query columns carry no DbColumn tags
 * Chembl: Enrichments: Fixed the "Add assay info" and "Add alerts" samples, which named columns ChEMBL does not have (the organism of an assay is `assay_organism`, and `set_name` belongs to `structural_alert_sets`), and added a test that applies every shipped enrichment
+* Chembl: Replaced the FRAC classification searches, broken since ChEMBL 36 flattened `frac_classification`, with `AtcClassification` and `AtcClassificationWithSubstructure`: four WHO ATC levels, each with choices depending on the level above
+* Chembl: Fixed the container never becoming healthy on a Docker host where the spawner attaches it to two networks
 
 ## 37.0.0 (2026-08-31)
 

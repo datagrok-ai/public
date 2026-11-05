@@ -75,7 +75,7 @@ export class EntityChip extends Control {
       this.root.dataset.entityId = x.id;
     this.root.append(renderer.markup ? renderer.markup(x) : renderer.caption(x));
     if (renderer.tooltip)
-      Tooltip.bind(this.root, () => renderer.tooltip!(x), this.scope);
+      Tooltip.bind(this.root, () => renderer.tooltip!(x), {owner: this.scope});
     if (options.currentOnClick ?? true) {
       const onClick = () => grok.shell.o = x;
       this.root.addEventListener('click', onClick);

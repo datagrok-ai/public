@@ -174,7 +174,8 @@ Feature: Crux in Datagrok's hosts
   # The product owner (2026-10-19): in the context panel, a stroke made the drawing the current object, so the panel
   # showed the molecule instead of the column, and the Filter pane, its sketcher with it, went at every stroke; the
   # filtering it started could also make the filtered rows current. There neither happens. Core keeps the current object
-  # for 2 s after a mousedown in the pane: the hotkey edit, 3 s after the last click, is one that guard does not cover.
+  # for 2 s after the pane is expanded: the hotkey edit, after a click on the column's header ended that guard, is one it
+  # does not cover.
   Scenario: Strokes in a molecule column's Filter pane leave the column the current object
     Given user opens a table "molecules" with:
       | molecule |
@@ -194,8 +195,9 @@ Feature: Crux in Datagrok's hosts
     And fewer than 3 rows should pass the filter
     And a molecule should have become the current object 0 times
     And the context panel should show "molecule"
-    When user waits 3 seconds
-    And user presses the "n" key over the "atom 0" area of crux sketcher widget
+    When user clicks on the "header molecule" area of grid
+    Then the context panel should show "molecule"
+    When user presses the "n" key over the "atom 0" area of crux sketcher widget
     Then 0 rows should pass the filter
     And a molecule should have become the current object 0 times
     And the context panel should show "molecule"

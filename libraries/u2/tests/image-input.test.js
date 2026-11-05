@@ -1,6 +1,6 @@
 /* ImageInput: the value is the source, REMOVE clears it, and an empty value hides both. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -46,7 +46,7 @@ smoke('the value drives the preview; REMOVE clears it', async () => {
   assert.equal(remove(input).hidden, false);
 
   fire(remove(input), 'click');
-  assert.equal(input.value.value, '');
+  assert.equal(input.value, '');
   assert.deepEqual(changes, ['']);
   assert.equal(image(input).src, '');
   assert.equal(image(input).hidden, true, 'nothing to preview, nothing shown');
@@ -56,10 +56,10 @@ smoke('the value drives the preview; REMOVE clears it', async () => {
 
 smoke('an empty input starts hidden and shows up on a programmatic write', async () => {
   const input = mount(new ImageInput({label: 'Logo'}));
-  assert.equal(input.value.value, '');
+  assert.equal(input.value, '');
   assert.equal(remove(input).hidden, true);
 
-  input.value.value = LOGO;
+  input.value = LOGO;
   assert.equal(image(input).src, LOGO);
   assert.equal(image(input).hidden, false);
   assert.equal(remove(input).hidden, false);
@@ -71,15 +71,17 @@ smoke('validators come from the input base; dispose kills the listeners', async 
   const input = mount(new ImageInput({label: 'Logo'}));
   input.addValidator((v) => v === '' ? 'Pick an image' : null);
   assert.equal(input.validity.value, 'Pick an image');
+  assert.equal(input.root.querySelector('.u2-input-error').textContent, '', 'shown once touched');
+  input.touch();
   assert.equal(input.root.querySelector('.u2-input-error').textContent, 'Pick an image');
 
-  input.value.value = LOGO;
+  input.value = LOGO;
   assert.equal(input.validity.value, null);
 
   input.dispose();
   assert.equal(Scope.liveCount, before);
   fire(remove(input), 'click');
-  assert.equal(input.value.value, LOGO, 'listeners died with the scope');
+  assert.equal(input.value, LOGO, 'listeners died with the scope');
 });
 
 smoke('the caption sits on the preview\'s first line, not the middle of the 200px box', async () => {

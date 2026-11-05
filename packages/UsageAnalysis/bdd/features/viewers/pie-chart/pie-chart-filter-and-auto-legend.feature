@@ -2,7 +2,8 @@
 Feature: Pie chart's own filter and the Auto legend
   The Filter formula of the Data section narrows what the pie draws and leaves the table alone:
   under `${AGE} > 40` the pie counts 635 of demog-1000's rows (Caucasian 562, Other 48, Black 19,
-  Asian 6) while all 1000 still pass the table's filter. Under Legend Visibility Auto the legend is
+  Asian 6) while all 1000 still pass the table's filter, and a wedge click under On Click = Filter
+  filters the table to that wedge's category alone (core#982). Under Legend Visibility Auto the legend is
   shown while the wedges carry only their percentages and is put away once every wedge is labelled
   with its category, since it would only repeat them (GROK-20793). One journey on demog-1000 with
   a pie chart of RACE; every scenario puts back what it changed.
@@ -15,7 +16,8 @@ Feature: Pie chart's own filter and the Auto legend
     Then the "slices" reading of pie chart viewer should be 4
     And pie chart viewer should show 1000 rows
 
-  Scenario: The pie's own Filter narrows the wedges and leaves the table filter alone
+  @realizes:core#982
+  Scenario: The pie's own Filter narrows the wedges and leaves the table filter alone, and a wedge click under it filters the table to that category alone (core#982)
     Then the "angle value of Caucasian" reading of pie chart viewer should be 896
     When user sets "Filter" property of pie chart viewer to "${AGE} > 40"
     Then pie chart viewer should show 635 rows
@@ -25,7 +27,14 @@ Feature: Pie chart's own filter and the Auto legend
     And the "angle value of Black" reading of pie chart viewer should be 19
     And the "angle value of Asian" reading of pie chart viewer should be 6
     And all rows should pass the filter
-    When user sets "Filter" property of pie chart viewer to ""
+    When user sets "On Click" property of pie chart viewer to "Filter"
+    And user clicks on the "slice Caucasian" area of pie chart viewer
+    Then the filter should pass exactly the rows where "RACE" is "Caucasian"
+    And no rows where "RACE" is "Asian" should pass the filter
+    When user clicks on the "empty space" area of pie chart viewer
+    Then all rows should pass the filter
+    When user sets "On Click" property of pie chart viewer to "Select"
+    And user sets "Filter" property of pie chart viewer to ""
     Then pie chart viewer should show 1000 rows
     And the "angle value of Caucasian" reading of pie chart viewer should be 896
     And no errors should have been logged

@@ -2,59 +2,21 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {Observable} from 'rxjs';
-import {getDefaultFloatFormat} from '@datagrok-libraries/utils/src/format-version-utils';
-import type {ValidationIcon} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
+import {G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
+import type {
+  ConsistencyInfo, ValidationIcon, ValidationIconInput,
+} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
 
-//
-// TODO: probably a separate type lib (?)
-//
-export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
+export type {
+  RestrictionType, ConsistencyInfo, ActionItem, Advice, ValidationItem, ValidationResult, ValidationIconInput,
+} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
 
-export type ConsistencyInfo = {
-  restriction: RestrictionType,
-  inconsistent: boolean,
-  assignedValue: any,
-}
+type StatusInput = DG.InputBase & {setStatus?: (status: ValidationIconInput) => void};
 
-export interface ActionItem {
-  actionName: string;
-  action: string;
-  additionalParams?: Record<string, any>;
-}
-
-export interface Advice {
-  description: string;
-  actions?: ActionItem[];
-}
-
-export type ValidationItem = string | Advice;
-
-export interface ValidationResult {
-  errors?: ValidationItem[];
-  warnings?: ValidationItem[];
-  notifications?: ValidationItem[];
-}
-
-export type ValidationIconInput = {
-  validation?: ValidationResult,
-  consistency?: ConsistencyInfo,
-};
-
-export interface SubscriptionLike {
-  unsubscribe(): void;
-}
-
-export interface FuncCallInput<T = any> {
-  root: HTMLElement;
-  value: T | null | undefined;
-  notify: boolean;
-  enabled: boolean;
-  onInput: ((cb: Function) => SubscriptionLike) | Observable<T>;
-}
-
-
-export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.InputBase) => {
+// the setter lives on the input: getInput returns the same cached wrapper on every call
+export const injectInputBaseStatus = (emit: Function, ioName: string, t: StatusInput) => {
+  if (t.setStatus)
+    return t.setStatus;
   const icon = new (customElements.get('dg-validation-icon')!)() as ValidationIcon;
   icon.isScalar = DG.TYPES_SCALAR.has(t.property.type);
   icon.isDataFrame = t.property.type === DG.TYPE.DATA_FRAME;
@@ -67,10 +29,7 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
   wrapper.appendChild(icon);
   t.addOptions(wrapper);
 
-  function setStatus(status: {
-    validation?: ValidationResult,
-    consistency?: ConsistencyInfo,
-  }) {
+  return t.setStatus = (status: ValidationIconInput) => {
     const {validation} = status;
 
     icon.validationStatus = status;
@@ -81,9 +40,7 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
       marked.addClass('d4-invalid');
     else if (validation?.warnings && validation.warnings.length)
       marked.addClass('d4-partially-invalid');
-  }
-
-  (t as any).setStatus = setStatus;
+  };
 };
 
 // mutateOnly: the dataframe is edited in its viewers, so the input that replaces it is locked
@@ -92,13 +49,10 @@ export const isInputEnabled = (prop: DG.Property, consistency?: ConsistencyInfo,
   !(prop.propertyType === DG.TYPE.DATA_FRAME && prop.options['mutateOnly'] === 'true' &&
     (consistency?.restriction === 'restricted' || consistency?.restriction === 'info'));
 
-export type VisibilityTarget = Pick<DG.InputBase, 'visible' | 'root'>;
+export type VisibilityTarget = Pick<DG.InputBase, 'visible'>;
 
-// InputBase.visible also hides an emptied category header; older clients lack it
 export function setInputVisible(input: VisibilityTarget, visible: boolean) {
-  if ((input as any).visible == null)
-    input.root.style.display = visible ? 'flex' : 'none';
-  else if (input.visible !== visible)
+  if (input.visible !== visible)
     input.visible = visible;
 }
 
@@ -115,40 +69,24 @@ export function applyInputsVisibility(
   }
 }
 
-export interface FuncCallInputStatusable<T = any> extends FuncCallInput<T> {
-  setStatus: (status: {
-    validation?: ValidationResult,
-    consistency?: ConsistencyInfo,
-  }) => void;
-}
-
-export function isFuncCallInput<T = any>(arg: any): arg is FuncCallInput<T> {
-  return arg && arg.root && arg.onInput;
-}
-
-export function isInputInjected(arg: any): arg is FuncCallInputStatusable {
-  return arg?.setStatus && isFuncCallInput(arg);
-}
-
-export {DEFAULT_FLOAT_FORMAT, G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
+export {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
 
 export function applyDefaultFloatFormats(call: DG.FuncCall): void {
-  const format = getDefaultFloatFormat();
   for (const param of call.inputParams.values()) {
     const prop = param.property as any;
     if (prop?.propertyType === DG.TYPE.FLOAT && !prop.format)
-      prop.format = format;
+      prop.format = G7_FLOAT_FORMAT;
   }
 }
 
 function showDFDiff(df1?: DG.DataFrame, df2?: DG.DataFrame) {
-  const idxName = '__compare_idx_col__'
+  const idxName = '__compare_idx_col__';
   if (!df1 || !df2) {
     grok.shell.warning('One of dataframes is empty');
     return;
   }
-  const cols1 = df1.columns.toList().map(col => col.name);
-  const cols2 = df2.columns.toList().map(col => col.name);
+  const cols1 = df1.columns.toList().map((col) => col.name);
+  const cols2 = df2.columns.toList().map((col) => col.name);
   const commonCols = getCommonValueCols(cols1, cols2);
   const df1c = df1.clone();
   df1c.columns.addNew(idxName, 'int').init((idx) => idx);

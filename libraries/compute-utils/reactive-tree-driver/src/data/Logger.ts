@@ -123,7 +123,7 @@ export class DriverLogger {
   private _errors: ErrorLogItem[] = [];
   public errors$ = new Subject<ErrorLogItem>();
 
-  get errors(): readonly ErrorLogItem[] { return this._errors; }
+  get errors(): readonly ErrorLogItem[] {return this._errors;}
 
   logLink(type: LinkLogType, data: LinkLogPayload) {
     const uuid = uuidv4();
@@ -176,7 +176,9 @@ export function reportErrorToUI(severity: ErrorSeverity, context: string, error:
     grok.shell.warning(msg);
 }
 
-export function reportError(severity: ErrorSeverity, context: string, error: Error | string, logger?: DriverLogger, links?: string[]) {
+export function reportError(
+  severity: ErrorSeverity, context: string, error: Error | string, logger?: DriverLogger, links?: string[],
+) {
   const err = error instanceof Error ? error : new Error(error);
   if (logger)
     logger.logError(severity, context, err, links);

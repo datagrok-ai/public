@@ -19,7 +19,7 @@ SUBSCRIPTION_TOKEN = re.compile(r'^(sk-ant-(?!api|usr|svc|admin)|eyJ|cc-)')
 
 
 class ProviderError(ValueError):
-    """The container credentials cannot be used with this provider."""
+    """The Grokky credentials cannot be used with this provider."""
 
 
 class Route(NamedTuple):
@@ -31,7 +31,7 @@ class Route(NamedTuple):
 
 
 class Provider(ABC):
-    """A model API the agent runs on: the container credentials it takes, the wire formats it serves and where, and
+    """A model API the agent runs on: the Grokky credentials it takes, the wire formats it serves and where, and
     the one model every turn runs on, named by the `model` credential as the provider names it."""
 
     name: ClassVar[str]
@@ -47,17 +47,20 @@ class Provider(ABC):
         self.test_upstream = credentials.get('TEST_UPSTREAM')
         self.model = self._model(credentials)
         routes = self.routes(credentials)
-        mode = next(iter(routes)) if len(routes) == 1 else \
-            'anthropic_messages' if CLAUDE.search(self.model) else 'codex_responses'
+        mode = next(iter(routes)) if len(routes) == 1 else self.mode()
         self.format: ApiFormat = FORMATS[mode]
         self.route = routes[mode]
         key = credentials.get('apiKey')
         if not key:
-            raise ProviderError(f'The apiKey container credential is not set: set {self.key_kind}')
+            raise ProviderError(f'The apiKey Grokky credential is not set: set {self.key_kind}')
         if re.search(r'[^\x21-\x7e]', key):
-            raise ProviderError('The apiKey container credential contains whitespace or control characters')
+            raise ProviderError('The apiKey Grokky credential contains whitespace or control characters')
         self.check_key(key)
         self.key = key
+
+    def mode(self) -> ApiMode:
+        """The format of the model on a provider that serves several."""
+        return 'anthropic_messages' if CLAUDE.search(self.model) else 'codex_responses'
 
     @abstractmethod
     def routes(self, credentials: Credentials) -> dict[ApiMode, Route]:
@@ -111,14 +114,14 @@ class Provider(ABC):
     def refuse_subscription_token(key: str, url: str) -> None:
         """Refuses a Claude subscription token bound for api.anthropic.com; other hosts take JWTs (Entra ID, OAuth)."""
         if urlsplit(url).hostname == 'api.anthropic.com' and SUBSCRIPTION_TOKEN.match(key.strip()):
-            raise ProviderError('The apiKey container credential is a Claude subscription token: '
+            raise ProviderError('The apiKey Grokky credential is a Claude subscription token: '
                                 'set an Anthropic Console API key')
 
     def _model(self, credentials: Credentials) -> str:
         model = (credentials.get('model') or '').strip()
         if not model:
-            raise ProviderError(f'The model container credential is not set: name the model as {self.name} names '
+            raise ProviderError(f'The model Grokky credential is not set: name the model as {self.name} names '
                                 f'it, such as {self.model_example}')
         if re.search(r'\s', model):
-            raise ProviderError('The model container credential contains whitespace')
+            raise ProviderError('The model Grokky credential contains whitespace')
         return model

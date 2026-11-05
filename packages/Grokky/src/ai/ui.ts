@@ -17,6 +17,8 @@ import {sendChatTurn} from '../claude/queue-task';
 import {UsageLimiter} from './usage-limiter';
 import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
+import {AiFeature} from '../claude/ai-feature';
+import {contentLoggingNotice} from '../claude/turn-log';
 
 interface ExecutionPlan {
   plan: string[];
@@ -43,7 +45,7 @@ const executionPlanSchema = {
 const MAX_ACTIVITY_LINES = 5;
 
 interface StreamingOpts {
-  sessionPrefix?: string;
+  sessionPrefix: AiFeature;
   sessionId?: string;
   outputSchema?: object;
   onFinal: (evt: FinalEvent, host: HTMLElement) => void | Promise<void>;
@@ -55,11 +57,12 @@ export const RENDERED_EVENT = 'grokky-rendered';
 async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.Widget> {
   const client = ClaudeRuntimeClient.getInstance();
   await client.ensureConnected();
-  const sessionId = opts.sessionId ?? `${opts.sessionPrefix ?? 'stream'}-${crypto.randomUUID()}`;
+  const sessionId = opts.sessionId ?? `${opts.sessionPrefix}-${crypto.randomUUID()}`;
 
   const activityHost = ui.divV([], 'grokky-stream-activity');
   const contentHost = ui.div([], 'grokky-stream-content');
-  const container = ui.divV([activityHost, contentHost], 'grokky-stream');
+  const notice = opts.sessionId ? null : contentLoggingNotice();
+  const container = ui.divV([activityHost, contentHost, ...(notice ? [notice] : [])], 'grokky-stream');
 
   let onFirstEvent: () => void = () => {};
   const firstEvent = new Promise<void>((res) => { onFirstEvent = res; });
@@ -110,14 +113,14 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     stopListening();
   });
 
-  client.send(sessionId, prompt, opts.outputSchema ? {outputSchema: opts.outputSchema} : undefined);
+  client.send(sessionId, prompt, {logPrompt: prompt, outputSchema: opts.outputSchema});
   return widget;
 }
 
 export async function smartExecution(prompt: string, sessionId?: string): Promise<DG.Widget> {
   return streamingWidget(prompt, {
     sessionId,
-    sessionPrefix: 'execute',
+    sessionPrefix: AiFeature.Execute,
     outputSchema: executionPlanSchema,
     onFinal: async (evt, host) => {
       const result = evt.structured_output as ExecutionPlan | undefined;
@@ -155,7 +158,7 @@ export async function smartExecution(prompt: string, sessionId?: string): Promis
 export async function askWiki(question: string, sessionId?: string): Promise<DG.Widget> {
   return streamingWidget(question, {
     sessionId,
-    sessionPrefix: 'help',
+    sessionPrefix: AiFeature.Help,
     onFinal: (evt, host) => {
       const md = ui.markdown(evt.content || '');
       md.style.userSelect = 'text';
@@ -252,7 +255,7 @@ export async function runPromptWithLifecycle(
     prompt = prompt.slice(1); // !!cmd → !cmd, falls through to normal pipeline
   else if (prompt.startsWith('!')) {
     const command = prompt.slice(1).trimStart();
-    if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, command))
+    if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory))
       return;
     await runClaudeStreaming(panel, command, view, 'bash');
     return;
@@ -281,7 +284,7 @@ export async function runPromptWithLifecycle(
       return;
     }
   }
-  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt)) {
+  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory)) {
     session?.endSession();
     return;
   }
@@ -541,6 +544,7 @@ async function streamOnce(
         const options = {
           ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
           ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
+          logPrompt: userPrompt,
         };
         // Queued-task admission (queue-task.ts): the queued call only holds the turn's
         // admission slot; the turn itself streams over this socket as usual.
