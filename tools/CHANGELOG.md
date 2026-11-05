@@ -7,6 +7,7 @@
 * `grok check`: A package built on u2 or ems fails on a problem of u2's consumer check whatever its version (a 0.x package only printed it), so a CSS rule over a new `.u2-*` class or `[data-u2…]` attribute fails the check
 * Added `grok s o problems severity <id|kind:key> <info|warning|critical|none>`: pins the severity a problem's raises use (`none` unpins it)
 * Added `grok connect-folder`: connects a local folder as a connection, served from a Docker container; the agent image tag is pulled on every connect, so a moved tag replaces a stale local agent
+* `grok connect-folder`: Runs only the Docker Hub `datagrok/proxy_storage` agent image whatever image the server names; `--image` runs another, such as a copy in a private registry
 * Added `grok s ... --log [<spec>]` on every `grok s` command (`grok s o` included): its requests share a `datlas-log-id`, every server instance keeps what they log at the spec (`verbose`, `standard`, levels, debug flags or `all`) in memory only, and at the end the command gathers it and prints it to stderr
 * Added `grok s functions run ... --debug`: a debug call (`?debug=true`) whose own log, a query's stages as the query debugger shows them, is kept and printed the same way
 * Added `grok s o logs request <logId>`: gathers what the requests of one `--log` command logged
