@@ -631,9 +631,57 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
     legendVisibility: 'Always', showXAxis: true, showYAxis: true,
     showTopPanel: false, showAggrSelectors: false, showSplitSelector: false});
 
+  // the animals the study needs as the assumed TGI goes, always drawn: after the plan, a design per TGI (the form's
+  // own inputs, the plan unchanged); a plan given TGIs through the API draws its own
+  const SWEEP = '30, 40, 50, 60, 70, 80, 90';
+  const sensitivity = signal<{of: PlanFrames, sc: DG.DataFrame} | undefined>(undefined);
+  let sweeping: PlanFrames | null = null;
+  form.effect(() => {
+    const r = result.value;
+    if (!r || stale.value || busy.value || sweeping === r || sensitivity.peek()?.of === r)
+      return;
+    if (r.scenarios.rowCount > 0) {
+      sensitivity.value = {of: r, sc: r.scenarios};
+      return;
+    }
+    sweeping = r;
+    void designed({compareSchedules: false, tgiScenarios: SWEEP}).then((c) => {
+      if (result.peek() === r)
+        sensitivity.value = {of: r, sc: c.scenarios};
+    }).catch((e) => error.value = String(e?.message ?? e)).finally(() => {
+      if (sweeping === r)
+        sweeping = null;
+    });
+  });
+  const sensitivityChart = viewers.lineChart(computed(() => {
+    const s = sensitivity.value;
+    if (!s || s.of !== result.value)
+      return undefined;
+    const own = s.of.plan.get('per_week', 0);
+    const rows = Array.from({length: s.sc.rowCount}, (_, i) => i).filter((i) => s.sc.get('per_week', i) === own)
+      .flatMap((i) => [['To implant', finite(s.sc.get('implant_total', i))], ['Analyzable', finite(s.sc.get('n_total',
+        i))]].filter(([, n]) => n !== null).map(([what, n]) => ({'Assumed TGI': s.sc.get('tgi', i), 'Animals': n,
+        'Animals of the study': what})));
+    if (rows.length === 0)
+      return undefined;
+    const df = DG.DataFrame.fromObjects(rows)!;
+    df.col('Assumed TGI')!.meta.units = '%';
+    df.col('Animals of the study')!.meta.colors.setCategorical({'To implant': '#2083d5', 'Analyzable': '#5b6b7f'});
+    return df;
+  }), {xColumnName: 'Assumed TGI', yColumnNames: ['Animals'], splitColumnNames: ['Animals of the study'],
+    legendVisibility: 'Always', showXAxis: true, showYAxis: true, markerType: 'circle', showMarkers: 'Always',
+    showTopPanel: false, showAggrSelectors: false, showSplitSelector: false} as any);
+  const sweepNote = div([], 'pmx-plan-sweep-note');
+  form.effect(() => {
+    const s = sensitivity.value;
+    const r = result.value;
+    sweepNote.textContent = !r ? '' : !s || s.of !== r ? 'Sizing the study for each TGI…' : 'The whole study with ' +
+      'every arm at the TGI on the axis, sized for the target power: a smaller effect costs animals fast. Scenarios ' +
+      'to read across, not predictions.';
+  });
   const scenarioEnd = div([], 'pmx-plan-scenario-end');
   const scenarioBox = div([]);
-  const noScenarios = infoNote('<b>No TGIs to assume.</b> Enter them under Explore in the form.');
+  const noScenarios = div([]);
   form.effect(() => {
     const has = !!result.value?.scenarios.rowCount;
     noScenarios.hidden = has;
@@ -655,7 +703,8 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
     {id: 'schedule', title: 'Measurement schedule', hint: 'Measuring more or less often', content: [scheduleBox]},
     {id: 'scenarios', title: 'Assumed TGI', hint: 'What the study would need if the treatment had each TGI: ' +
       'scenarios you read across, not predictions. The animals of the whole study with every arm at that TGI, ' +
-      'sized for the target power whatever animals per arm is set', content: [noScenarios, scenarioEnd, scenarioBox]},
+      'sized for the target power whatever animals per arm is set', content: [sweepNote,
+      sized(sensitivityChart, 280), noScenarios, scenarioEnd, scenarioBox]},
     {id: 'protocol', title: 'Study protocol', hint: 'Design, sample size and analysis, ready to paste',
       content: [copyRow(() => protocolText, 'Study protocol'), analysis]},
   ], PLAN_LAYOUT, 'pmx-plan-panels');
