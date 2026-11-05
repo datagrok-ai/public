@@ -27,8 +27,8 @@ import {studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
 import {StudyMeta, dateOf, dateText, dosingDays, emptyMeta, weekdayOf, withId} from './study-meta';
-import {CAL, MenuAt, WEEKDAYS, dayActions, mark, marked, weeksGrid} from './calendar';
-import {Exports, exportMenu, reportHtml} from './report';
+import {CAL, MenuAt, WEEKDAYS, dayActions, icsOf, mark, marked, weeksGrid} from './calendar';
+import {Exports, download, exportMenu, reportHtml} from './report';
 import {printSheet} from './sheet';
 import {LineInput, lastLine, tumorsOf} from './line-input';
 import {BandChart} from './band-chart';
@@ -408,10 +408,16 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
   const {addNote, menu: dayMenu} = dayActions(() => meta.peek(), (m) => meta.value = m);
   // the calendar: the plan's days with the study's dates, doses and notes; built in its own scope, so its tooltips
   // go with the next build
+  // the calendar's events, for the .ics export: randomization, the measurement days and the end
+  let planEvents: {last: number, events: [number, string][]} = {last: 0, events: []};
   form.effect(() => {
     const r = result.value;
     const m = meta.value;
     if (r) {
+      const end = r.plan.get('study_end', 0) as number;
+      planEvents = {last: end, events: [[0, 'Randomize'], ...String(r.plan.get('measurement_days', 0)).split(', ')
+        .map(Number).filter((d) => d > 0 && d < end).map((d): [number, string] => [d, 'Measure tumors']),
+      [end, 'End of study (measure)']]};
       calendarBox.replaceChildren(calendarGrid(r.plan, r.calendar, startDay.root, toggleWeekday,
         {meta: m, onMenu: dayMenu, onNote: addNote}));
     }
@@ -810,7 +816,11 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
   });
   downloadButton.title = 'Download the plan as a file, to send it to someone';
   exports.push(['Report (PDF)…', async () => printSheet(await reportHtml({title: defaultName(ready()!) ?? 'Plan',
-    stage: 'Plan', meta: meta.peek(), content}))], ['Plan file (.pmxplan)', () => downloadButton.click()]);
+    stage: 'Plan', meta: meta.peek(), content}))], ['Plan file (.pmxplan)', () => downloadButton.click()],
+  ['Calendar (.ics)', () => {
+    const name = defaultName(ready()!) ?? 'Plan';
+    download(`${name}.ics`, icsOf(name, meta.peek(), planEvents.last, planEvents.events), 'text/calendar');
+  }]);
   const followButton = buttonWithIcon('Follow this study', 'eye', () => {
     const r = ready();
     if (!r)

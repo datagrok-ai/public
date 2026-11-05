@@ -141,6 +141,25 @@ export function dayActions(get: () => StudyMeta, set: (m: StudyMeta) => void, an
   return {addNote, menu};
 }
 
+/** The study's days as an iCalendar file of all-day events (`events`: day and what is done, with the doses its
+ *  groups' schedules give), for Google, Outlook or Apple Calendar to import. Needs day 0's date. */
+export function icsOf(name: string, meta: StudyMeta, last: number, events: [number, string][]): string {
+  if (!meta.start)
+    throw new Error('Set the date of day 0 first: right-click a day in the calendar');
+  const ymd = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
+  const text = (s: string) => s.replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\n/g, '\\n');
+  const stamp = `${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`;
+  const all = [...events, ...[...dosingDays(meta.groups, last)].map(([d, g]) => [d, `Dose: ${g.join(', ')}`])]
+    .sort((a, b) => (a[0] as number) - (b[0] as number)) as [number, string][];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Datagrok//PMX Studio//EN', 'CALSCALE:GREGORIAN'];
+  all.forEach(([day, what], i) => lines.push('BEGIN:VEVENT', `UID:${meta.id || name}-${day}-${i}@pmxstudio`,
+    `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${ymd(dateOf(meta.start, day)!)}`,
+    `DTEND;VALUE=DATE:${ymd(dateOf(meta.start, day + 1)!)}`, `SUMMARY:${text(`${name}: ${what} (day ${day})`)}`,
+    'END:VEVENT'));
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
 /** The study day of `now` (local calendar date) from day 0's date; null: day 0 has no date. */
 export function dayToday(start: string | null, now = new Date()): number | null {
   if (!start)

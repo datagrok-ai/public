@@ -9,7 +9,7 @@ import {REVEALED, addLog, groupsShown, logOf, parseStudy, studyOf, tableOf} from
 import {dateOf, dosingDays, emptyMeta, metaOf, parseMeta, setMetaOn, startFrom, weekdayOf} from '../study-meta';
 import {entryOf, libraryOf, matches} from '../library';
 import {spiderLines} from '../spider-chart';
-import {dayToday} from '../calendar';
+import {dayToday, icsOf} from '../calendar';
 import {sheetHtml, sheetRows} from '../sheet';
 
 /** Six animals of one group on days 0, 3 and 7; M4's day 7 a caliper typo (2400 for ~240), M1 losing weight. */
@@ -153,6 +153,9 @@ category('Study table', () => {
     expect(dayToday('2026-11-09', new Date(2026, 10, 21, 23, 30)), 12, 'today, by the local date');
     expect(dayToday('2026-11-09', new Date(2026, 10, 2)), -7, 'before day 0');
     expect(dayToday(null), null);
+    const ics = icsOf('S', {...emptyMeta(), start: '2026-11-09', groups: [g('A', 'QD×2')]}, 3, [[0, 'Randomize']]);
+    expect(ics.split('BEGIN:VEVENT').length - 1, 3, 'randomize and two doses, all-day');
+    expect(ics.includes('DTSTART;VALUE=DATE:20261110'), true);
     const notes = parseMeta({notes: [{day: 3, kind: 'Incident', animal: 'M4', text: 'ulcerated', who: 'x', when: ''},
       {day: 'x', text: 'no day'}, {day: 5, kind: 'Party', text: 'odd kind'}]})!.notes;
     expect(notes.length, 2, 'a note without a day is dropped');

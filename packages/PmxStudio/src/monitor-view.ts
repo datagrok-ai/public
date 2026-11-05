@@ -26,7 +26,7 @@ import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {emptyStudy, studyDataLine, tagStudy, withoutExcluded} from './study-table';
 import {StudyMeta, dateOf, dateText, emptyMeta, metaOf, setMetaOn, weekdayOf, withId} from './study-meta';
-import {CAL, DayLook, dayActions, dayToday, mark, marked, weeksGrid} from './calendar';
+import {CAL, DayLook, dayActions, dayToday, icsOf, mark, marked, weeksGrid} from './calendar';
 import {LineInput} from './line-input';
 import {printSheet, sheetHtml} from './sheet';
 import {Exports, download, exportMenu, reportHtml} from './report';
@@ -422,6 +422,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   const calendarSummary = divV([], 'pmx-calendar-summary');
   Object.assign(calendarSummary.style, {gap: '4px', lineHeight: '1.45', marginBottom: 'var(--dg-space-m)'});
   const calendarBox = div([]);
+  let monitorEvents: {last: number, events: [number, string][]} = {last: 0, events: []};
   form.effect(() => {
     const r = result.value;
     const m = meta.value;
@@ -505,6 +506,11 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
           `color-mix(in srgb, ${CAL.dark} 6%, transparent)` : d < now ?
             `color-mix(in srgb, ${CAL.slate} 4%, transparent)` : undefined};
     };
+    // from today (or the last day measured) on: what is still to do, for the .ics export
+    monitorEvents = {last, events: Array.from({length: last - Math.max(0, now) + 1}, (_, i) => Math.max(0, now) + i)
+      .flatMap((d): [number, string][] => [...planned(d) && !measured.has(d) ? [[d, 'Measure tumors'] as [number,
+        string]] : [], ...looks.has(d) ? [[d, 'Planned review'] as [number, string]] : [],
+      ...d === end ? [[d, 'Expected end of study'] as [number, string]] : []])};
     calendarBox.replaceChildren(weeksGrid({meta: m, startWeekday, last, day: look, onMenu: calendarDays.menu,
       onNote: calendarDays.addNote}));
   });
@@ -660,7 +666,12 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       download(`${df.name}.pmxstudy`, JSON.stringify(studyOf(df, call.getParamValue('humane') ?? null,
         call.getParamValue('weightLimit') ?? null)), 'application/json');
     }],
-    ['Measurements (CSV)', () => download(`${needStudy().name}.csv`, needStudy().toCsv(), 'text/csv')]);
+    ['Measurements (CSV)', () => download(`${needStudy().name}.csv`, needStudy().toCsv(), 'text/csv')],
+    ['Calendar (.ics)', () => {
+      const df = needStudy();
+      download(`${df.name}.ics`, icsOf(df.name, meta.peek(), monitorEvents.last, monitorEvents.events),
+        'text/calendar');
+    }]);
   Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
   form.effect(() => {
     content.hidden = !result.value;
