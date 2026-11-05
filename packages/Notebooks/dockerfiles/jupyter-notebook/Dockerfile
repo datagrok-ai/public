@@ -112,7 +112,7 @@ COPY --chown=root:root --from=requirements_builder /tmp/requirements.txt ${VIRTU
 # although we can not add textract to requirments file
 RUN python${PYTHON_VERSION} -m venv --without-pip ${VIRTUAL_ENV} ; \
     # pip stays in the venv: notebook users install packages with %pip \
-    python${PYTHON_VERSION} -m pip --python ${VIRTUAL_ENV}/bin/python install --no-cache-dir --upgrade pip setuptools wheel ; \
+    /usr/bin/python${PYTHON_VERSION} -m pip --python ${VIRTUAL_ENV}/bin/python install --no-cache-dir --upgrade pip setuptools wheel ; \
     pip install --no-cache-dir textract==1.6.3 ; \
     pip install --timeout 3600 --no-cache-dir \
       --requirement ${VIRTUAL_ENV}/requirements.txt ; \
