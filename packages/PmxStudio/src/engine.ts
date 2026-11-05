@@ -1,6 +1,6 @@
 /*
  * The Plan engine: Crux's stats.tumor_study_design (crate tgi, [decision:tumor-study-design]), called once per
- * treated arm. This file only translates and combines: the cell line's prior (files/engine_priors_v2.json: the labs'
+ * treated arm. This file only translates and combines: the cell line's prior (files/engine_priors_v3.json: the labs'
  * joint distribution of a new study's log alpha and log beta, and the heavy-tailed observation error; an older file's
  * MAP prior of log alpha, Crux stats.map_prior) and the arm's therapy (archetypes.ts) become the
  * function's table and parameters; every arm is designed with the same seed, so the studies drawn, the study end

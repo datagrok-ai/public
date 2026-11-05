@@ -115,7 +115,7 @@ export class PackageFunctions {
     description: 'Recomputes the MAP prior of a new study initial growth rate (log alpha) for a cell line with Crux stats.map_prior from the atlas per-paper estimates: one row per mixture component.',
   })
   static async pmxMapPrior(
-    @grok.decorators.param({options: {choices: ['MC38', 'CT26', 'B16F10'], description: 'Syngeneic cell line.'}}) line: string): Promise<DG.DataFrame> {
+    @grok.decorators.param({options: {choices: ['MC38', 'CT26', 'B16F10', '4T1', 'LLC', 'Panc02', 'Hepa1-6', 'PDX-NSCLC', 'PDX-PDAC'], description: 'Tumor model (syngeneic cell line or PDX).'}}) line: string): Promise<DG.DataFrame> {
     return mapPriorFrame(line);
   }
 
@@ -134,7 +134,7 @@ export class PackageFunctions {
     ],
   })
   static async pmxPlanStudy(
-    @grok.decorators.param({options: {category: 'Tumor model', caption: 'Cell line', nullable: false, choices: ['MC38', 'CT26', 'B16F10'], initialValue: 'MC38', description: 'Syngeneic cell line: its growth prior comes from the atlas of historical controls.'}}) line: string,
+    @grok.decorators.param({options: {category: 'Tumor model', caption: 'Cell line', nullable: false, choices: ['MC38', 'CT26', 'B16F10', '4T1', 'LLC', 'Panc02', 'Hepa1-6', 'PDX-NSCLC', 'PDX-PDAC'], initialValue: 'MC38', description: 'Tumor model (syngeneic cell line or PDX): its growth prior comes from the atlas of historical controls.'}}) line: string,
     @grok.decorators.param({options: {category: 'Tumor model', caption: 'Endpoint volume', nullable: false, units: 'mm³', min: '500', max: '3000', initialValue: '1500', description: 'The study ends when the median control reaches it.'}}) endpoint: number,
     @grok.decorators.param({options: {category: 'Treatment arms', caption: 'Arms', optional: true, description: 'The treated arms, each compared with the control: name, therapy (small_molecule, biologic, immunotherapy, immune_agonist, cell_therapy, vaccine_peptide, oligo_rna), metric (TGI or TC) and the expected effect in percent. Empty: one small-molecule arm at TGI 60%.'}}) arms: DG.DataFrame,
     @grok.decorators.param({options: {category: 'Design', caption: 'Target power', nullable: false, units: '%', min: '50', max: '99', initialValue: '80', description: 'Chance of detecting each arm’s effect.'}}) power: number,
@@ -196,7 +196,7 @@ export class PackageFunctions {
     // the plan's text, not a file: the Analyze view reads the file into it
     // @ts-expect-error (the platform's `visible` rule, as above)
     @grok.decorators.param({type: 'string', options: {category: 'Study', caption: 'Plan', optional: true, nullable: true, visible: 'false', description: 'The plan saved in Plan (its .pmxplan file’s contents), to compare the study with.'}}) plan: string | null,
-    @grok.decorators.param({options: {category: 'Analysis', caption: 'Cell line', nullable: false, choices: ['MC38', 'CT26', 'B16F10'], initialValue: 'MC38', description: 'The tumor model: its growth model from the atlas of historical controls predicts each treated animal untreated.'}}) line: string,
+    @grok.decorators.param({options: {category: 'Analysis', caption: 'Cell line', nullable: false, choices: ['MC38', 'CT26', 'B16F10', '4T1', 'LLC', 'Panc02', 'Hepa1-6', 'PDX-NSCLC', 'PDX-PDAC'], initialValue: 'MC38', description: 'The tumor model: its growth model from the atlas of historical controls predicts each treated animal untreated.'}}) line: string,
     @grok.decorators.param({options: {category: 'Analysis', caption: 'Control group', optional: true, nullable: true, description: 'The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).'}}) control: string,
     @grok.decorators.param({options: {category: 'Analysis', caption: 'Endpoint volume', nullable: false, units: 'mm³', min: '500', max: '3000', initialValue: '1500', description: 'The effects are read on the first measurement day the median control reaches this volume, as the design defines the end of the study.'}}) endpoint: number,
     @grok.decorators.param({options: {category: 'Analysis', caption: 'Multiple comparisons', nullable: false, choices: ['dunnett', 'bonferroni', 'none'], initialValue: 'dunnett', description: 'Correction over the arms compared with the control: Dunnett (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).'}}) correction: string,

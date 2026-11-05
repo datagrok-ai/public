@@ -83,8 +83,8 @@ export namespace funcs {
 
   /**
    * Recomputes the MAP prior of a new study initial growth rate (log alpha) for a cell line with Crux stats.map_prior from the atlas per-paper estimates: one row per mixture component.
-   * @param {string} line - Syngeneic cell line.
-   *   choices: ["MC38","CT26","B16F10"]
+   * @param {string} line - Tumor model (syngeneic cell line or PDX).
+   *   choices: ["MC38","CT26","B16F10","4T1","LLC","Panc02","Hepa1-6","PDX-NSCLC","PDX-PDAC"]
    */
   export async function pmxMapPrior(line: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('PMXStudio:PmxMapPrior', { line });
@@ -92,8 +92,8 @@ export namespace funcs {
 
   /**
    * Designs a xenograft or syngeneic efficacy study de novo with Crux stats.tumor_study_design: from the cell line, the endpoint volume and the treated arms (each with its kind of therapy and expected TGI or T/C), predicts the end of the study (when the median control reaches the endpoint) and its uncertainty, each arm’s kill rate, the analysable animals per arm for the declared assurance (power over the historical-control prior) with the multiplicity correction chosen (Dunnett by default), the animals to implant for them, the power curves and the predicted control and treated arms. Given a number of animals per arm, the power there and each arm’s minimum detectable effect. Given an end of study, the study is evaluated that day; the power by end of study shows what ending earlier or later costs, and the power by measurement schedule what measuring less often costs.
-   * @param {string} line - Syngeneic cell line: its growth prior comes from the atlas of historical controls.
-   *   choices: ["MC38","CT26","B16F10"]
+   * @param {string} line - Tumor model (syngeneic cell line or PDX): its growth prior comes from the atlas of historical controls.
+   *   choices: ["MC38","CT26","B16F10","4T1","LLC","Panc02","Hepa1-6","PDX-NSCLC","PDX-PDAC"]
    * @param {number} endpoint - The study ends when the median control reaches it.
    * @param {DG.DataFrame} arms - The treated arms, each compared with the control: name, therapy (small_molecule, biologic, immunotherapy, immune_agonist, cell_therapy, vaccine_peptide, oligo_rna), metric (TGI or TC) and the expected effect in percent. Empty: one small-molecule arm at TGI 60%.
    * @param {number} power - Chance of detecting each arm’s effect.
@@ -132,7 +132,7 @@ export namespace funcs {
    * @param {DG.Column} removalReason - Why an animal left the study (found dead, moribund, weight, tumor, ulceration, other), on any of its rows.
    * @param {string} plan - The plan saved in Plan (its .pmxplan file’s contents), to compare the study with.
    * @param {string} line - The tumor model: its growth model from the atlas of historical controls predicts each treated animal untreated.
-   *   choices: ["MC38","CT26","B16F10"]
+   *   choices: ["MC38","CT26","B16F10","4T1","LLC","Panc02","Hepa1-6","PDX-NSCLC","PDX-PDAC"]
    * @param {string} control - The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).
    * @param {number} endpoint - The effects are read on the first measurement day the median control reaches this volume, as the design defines the end of the study.
    * @param {string} correction - Correction over the arms compared with the control: Dunnett (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).
