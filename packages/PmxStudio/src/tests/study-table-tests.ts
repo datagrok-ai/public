@@ -201,8 +201,8 @@ category('Study table', () => {
 
   test('an animal picked in one chart is selected in the study, and in every table of animals', async () => {
     const s = study();
-    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', s.animal),
-      DG.Column.fromStrings('group', s.group), DG.Column.fromList('double', 'day', s.day),
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', s.animal as string[]),
+      DG.Column.fromStrings('group', s.group as string[]), DG.Column.fromList('double', 'day', s.day),
       DG.Column.fromList('double', 'volume', s.volume)]);
     const sel = new AnimalSelection();
     sel.attach({study: df, animal: 'animal', group: 'group', day: 'day', volume: 'volume', bodyWeight: null});
