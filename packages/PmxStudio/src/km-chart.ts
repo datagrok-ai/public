@@ -1,7 +1,7 @@
 /* Analyze's Kaplan-Meier: the share of each group's animals still under the endpoint, day by day, in the groups'
-   colours, on an axis fixed from day 0 to twice the last day measured, so following further never rescales it. One
-   control: under the axis, from the last day measured to the axis' end, a slider whose handle sits under the day the
-   study is followed to; past the last day measured, the chart is shaded as projected. echarts, as the band chart. */
+   colours, from day 0 to the day the study is followed to, the chart always its full width. One control, under the
+   plot and as wide: a slider from the last day measured (as measured) to twice it; dragged right, the axis widens
+   with it and what lies past the last day measured is shaded as projected. echarts, as the band chart. */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {Control, Tooltip} from '@datagrok-libraries/u2';
@@ -11,9 +11,9 @@ import * as echarts from 'echarts/core';
 import {initQuietly} from './band-chart';
 import {KM, Survival} from './survival';
 
-const GRID = {left: 48, right: 16, top: 32, bottom: 62};
-/** half the width of the range input's handle: the input overhangs the axis by it, so the handle's centre is the day */
-const THUMB = 8;
+const GRID = {left: 48, right: 16, top: 32, bottom: 40};
+/** the slider's row under the chart */
+const ROW = 26;
 
 export class KmChart extends Control {
   private readonly chart: echarts.ECharts;
@@ -23,7 +23,7 @@ export class KmChart extends Control {
     super();
     this.root.classList.add('pmx-km-chart');
     this.root.style.position = 'relative';
-    const host = ui.div([], {style: {position: 'absolute', inset: '0'}});
+    const host = ui.div([], {style: {position: 'absolute', inset: `0 0 ${ROW}px 0`}});
     const slider = document.createElement('input');
     slider.type = 'range';
     slider.step = '1';
@@ -32,32 +32,23 @@ export class KmChart extends Control {
     Tooltip.bind(slider, 'Drag right to carry each animal still under the endpoint on at the rate of its last three ' +
       'measurements, to that day: a projection, not a result. Back to the left end: as measured.');
     const measured = ui.div([], 'pmx-km-measured');
-    this.root.append(host, slider, measured);
+    const row = ui.div([ui.span(['Followed to']), slider, measured], 'pmx-km-row pmx-noprint');
+    Object.assign(row.style, {left: `${GRID.left}px`, right: `${GRID.right}px`, height: `${ROW}px`});
+    this.root.append(host, row);
     this.chart = initQuietly(host);
     let last = 0;
-    // the slider under the axis' second half: its ends at the last day measured and at the axis' end
-    const place = () => {
-      if (!last)
-        return;
-      const [x0, x1] = [last, 2 * last].map((d) => this.chart.convertToPixel({xAxisIndex: 0}, d) as number);
-      Object.assign(slider.style, {left: `${x0 - THUMB}px`, width: `${x1 - x0 + 2 * THUMB}px`});
-      Object.assign(measured.style, {left: `${GRID.left}px`, width: `${x0 - GRID.left - THUMB - 6}px`});
-    };
     slider.addEventListener('input', () => {
       const v = Number(slider.value);
       horizon.value = v > last ? v : null;
     });
-    const size = ui.onSizeChanged(host).subscribe(() => {
-      this.chart.resize();
-      place();
-    });
+    const size = ui.onSizeChanged(host).subscribe(() => this.chart.resize());
     this.own(() => {
       size.unsubscribe();
       this.chart.dispose();
     });
     this.effect(() => {
       const k = survival.value;
-      slider.hidden = measured.hidden = !k;
+      row.hidden = !k;
       if (!k) {
         this.chart.clear();
         return;
@@ -67,8 +58,8 @@ export class KmChart extends Control {
       slider.max = String(2 * last);
       if (horizon.peek() === null)
         slider.value = String(last);
-      measured.textContent = k.horizon === undefined ? `Measured to day ${last}` : `Measured to day ${last} · ` +
-        `projected to day ${k.horizon}`;
+      measured.textContent = k.horizon === undefined ? `day ${last}, as measured` : `day ${k.horizon}, projected` +
+        ` from day ${last}`;
       measured.classList.toggle('is-projected', k.horizon !== undefined);
       const df = k.steps;
       const [day, share, group] = [KM.day, KM.share, KM.group].map((c) => df.col(c)!);
@@ -82,7 +73,7 @@ export class KmChart extends Control {
         grid: GRID,
         legend: {top: 0, data: groups},
         tooltip: {trigger: 'axis', valueFormatter: (v: number) => `${Math.round(v)}%`},
-        xAxis: {type: 'value', min: 0, max: 2 * last, name: 'Day after randomization', nameLocation: 'middle',
+        xAxis: {type: 'value', min: 0, max: k.horizon ?? last, name: 'Day after randomization', nameLocation: 'middle',
           nameGap: 24},
         yAxis: {type: 'value', min: 0, max: 100, name: 'Under the endpoint (%)', nameLocation: 'middle',
           nameGap: 34},
@@ -95,7 +86,6 @@ export class KmChart extends Control {
         markArea: {silent: true, itemStyle: {color: 'rgba(183, 121, 31, 0.16)'},
           label: {color: '#b7791f', fontSize: 10, position: 'insideTop'}, data: projected}} : {})})),
       }, true);
-      place();
     });
   }
 }

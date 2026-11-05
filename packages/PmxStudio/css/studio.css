@@ -183,14 +183,13 @@
 .pmx-stat .u2-stat-delta-up, .pmx-stat .u2-stat-delta-down {color: var(--dg-accent, #2083d5);}
 .pmx-pinned .pmx-stat {outline: 1px dashed var(--dg-accent, #2083d5); outline-offset: -1px;}
 
-/* Kaplan-Meier: the one slider, under the axis from the last day measured to its end; the measured part labelled */
-.pmx-km-slider {
-  position: absolute; bottom: 4px; height: 16px; margin: 0; accent-color: var(--dg-accent, #2083D5); cursor: ew-resize;
+/* Kaplan-Meier: the one slider, under the plot and as wide, between what it is followed to and its words */
+.pmx-km-row {
+  position: absolute; bottom: 0; display: flex; align-items: center; gap: 8px; font-size: 11px;
+  color: var(--dg-grey-5, #717581);
 }
-.pmx-km-measured {
-  position: absolute; bottom: 4px; height: 16px; line-height: 16px; font-size: 11px; text-align: right;
-  color: var(--dg-grey-5, #717581); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+.pmx-km-slider { flex: 1; min-width: 0; margin: 0; accent-color: var(--dg-accent, #2083D5); cursor: ew-resize; }
+.pmx-km-measured { white-space: nowrap; min-width: 150px; }
 .pmx-km-measured.is-projected { color: #b7791f; }
 
 /* an animal selected anywhere (the study table's selection), outlined in the twin list */
