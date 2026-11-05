@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#342](https://github.com/datagrok-ai/core/issues/342): Excel import: Fixed an unreadable .xlsx file leaving its loading indicator spinning forever; it now reports the error
 * Chat: Fixed the compose box building its u2 input with no owner, which threw in strict mode (tests, dev) and leaked the input; it now lives on a root of its own that the chat disposes
 * [public#4445](https://github.com/datagrok-ai/public/issues/4445): Add New Column: Fixed the preview wrapping a long double onto two lines when the column name is short
 * [public#4404](https://github.com/datagrok-ai/public/issues/4404): Add New Column: Fixed an unknown table or column passed by name (`RowCount("nope")`, `Column("nope")`) showing no error and adding an empty column
