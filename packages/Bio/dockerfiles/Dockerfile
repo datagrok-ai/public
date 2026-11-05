@@ -1,38 +1,40 @@
-# Add ability to easily change python version
 ARG PYTHON_VERSION=3.11
+ARG HOME_DIR=/home/grok
+ARG VIRTUAL_ENV=${HOME_DIR}/venv
+ARG MAFFT_VERSION=7.525
 
-# Use our base image which is optimised and secured by our flow
-FROM datagrok/python:${PYTHON_VERSION}
+# Wolfi (glibc, near-zero CVEs): mafft is built from source and the venv is built here,
+# then only they, PepSeA and the interpreter reach the final stage
+FROM cgr.dev/chainguard/wolfi-base AS builder
 
-MAINTAINER Volodymyr Dyma <vdyma@datagrok.ai>
+ARG PYTHON_VERSION
+ARG VIRTUAL_ENV
+ARG MAFFT_VERSION
 
-# Use pipefail to avoid errors after piping
+RUN apk add --no-cache bash build-base curl unzip python-${PYTHON_VERSION} py${PYTHON_VERSION}-pip
+
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-ARG HOME_DIR=/home/grok
-# It is important to run docker container as user and not as root
-RUN groupadd --gid 2001 grok ; \
-    useradd --system --create-home --home ${HOME_DIR} --gid grok --uid 1001 grok
+RUN curl -fsSL https://mafft.cbrc.jp/alignment/software/mafft-${MAFFT_VERSION}-without-extensions-src.tgz -o /tmp/mafft.tgz ; \
+    echo "edb34ae9b26d6b55328c18fa060ed741bca8cd599c2f4f8fad0e0871c8082265  /tmp/mafft.tgz" | sha256sum -c - ; \
+    tar -xzf /tmp/mafft.tgz -C /tmp ; \
+    make -C /tmp/mafft-${MAFFT_VERSION}-without-extensions/core PREFIX=/usr/lib/mafft install ; \
+    rm -rf /usr/lib/mafft/share /usr/lib/mafft/bin/*.rb /tmp/*
 
-# Remove unzip after unpacking
-ARG DEBIAN_FRONTEND=noninteractive
-RUN savedAptMark="$(apt-mark showmanual)" ; \
-    apt-get update ; \
-    apt-get upgrade -y ; \
-    apt-get install -y --no-install-recommends \
-      unzip \
-      wget \
-    ; \
-    apt-mark auto '.*' > /dev/null ; \
-    [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark ; \
-    apt-get install -y --no-install-recommends mafft; \
-    wget https://github.com/Merck/PepSeA/archive/refs/heads/main.zip -O PepSeA.zip; \
-    unzip -q PepSeA.zip -d /opt ; \
-    rm -rf PepSeA.zip; \
-    chown -R grok:grok /opt/PepSeA-main ; \
-    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false ; \
-    apt-get clean ; \
-    rm -rf /var/lib/apt/lists/* /var/cache/* /var/tmp/* /tmp/* /opt/PepSeA-main/alignment/mafft /opt/PepSeA-main/local.env; \
+# PepSeA's requirements.txt pins 2021 versions that do not install on python 3.11; only what alignment/ imports is installed.
+# pip stays in the builder: the venv is created without it
+RUN python${PYTHON_VERSION} -m venv --without-pip ${VIRTUAL_ENV} ; \
+    python${PYTHON_VERSION} -m pip --python ${VIRTUAL_ENV}/bin/python install --timeout 3600 --no-cache-dir \
+      'fastapi>=0.133' 'starlette>=1.3.1' 'pydantic>=2.7,<3' \
+      'uvicorn[standard]>=0.34' 'h11>=0.16' 'ujson>=5.12.1' 'pymsa==0.8.1' ; \
+    find ${VIRTUAL_ENV} -depth \( \
+      \( -type d -a \( -name test -o -name tests -o -name idle_test \) \) \
+          -o \( -type f -a \( -name '*.pyc' -o -name '*.pyo' \) \) \
+      \) -exec rm -rf '{}' +
+
+RUN curl -fsSL https://github.com/Merck/PepSeA/archive/refs/heads/main.zip -o /tmp/PepSeA.zip ; \
+    unzip -q /tmp/PepSeA.zip -d /opt ; \
+    rm -rf /tmp/PepSeA.zip /opt/PepSeA-main/alignment/mafft /opt/PepSeA-main/local.env ; \
     sed -i "s/files = glob.glob(f'\*{timestamp}\*')/files = glob.glob(f'\*{timestamp}\*.txt')/" /opt/PepSeA-main/alignment/AlignSubPeptides.py; \
     echo $'\n\
 @api.get("/distout", response_class=PlainTextResponse)\n\
@@ -106,37 +108,36 @@ async def base_exception_handler(request: Request, ex: Exception):\n\
     return pepsea_json_response(err_msg)\n\
 \n' >> /opt/PepSeA-main/alignment/api.py;
 
+FROM cgr.dev/chainguard/wolfi-base
+
+LABEL maintainer="Volodymyr Dyma <vdyma@datagrok.ai>"
+
+ARG PYTHON_VERSION
+ARG HOME_DIR
+ARG VIRTUAL_ENV
+
+# bash: the mafft driver scripts are bash
+RUN apk upgrade --no-cache ;     apk add --no-cache bash python-${PYTHON_VERSION} ;     rm -rf /usr/lib/python3*/ensurepip ;     addgroup -g 2001 grok ;     adduser -D -h ${HOME_DIR} -G grok -u 1001 grok
+
+COPY --from=builder /usr/lib/mafft /usr/lib/mafft
+COPY --from=builder --chown=grok:grok ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+COPY --from=builder --chown=grok:grok /opt/PepSeA-main /opt/PepSeA-main
+
 # It is important to run docker container as user and not as root
 USER grok:grok
 
-
-# Command source does not work for Docker, cause it will apply only to one layer
-# The PATH works better for Docker
-ARG VIRTUAL_ENV=${HOME_DIR}/venv
-ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
-# PepSeA's requirements.txt pins 2021 versions that do not install on python 3.11; only what alignment/ imports is installed.
-RUN mkdir -p ${VIRTUAL_ENV} ; \
-    python -m venv ${VIRTUAL_ENV} ; \
-    pip install --no-cache-dir --upgrade pip 'setuptools>=78.1.1' 'wheel>=0.46.2' ; \
-    pip install --timeout 3600 --no-cache-dir \
-      'fastapi>=0.133' 'starlette>=1.3.1' 'pydantic>=2.7,<3' \
-      'uvicorn[standard]>=0.34' 'h11>=0.16' 'ujson>=5.12.1' 'pymsa==0.8.1' ; \
-    find ${VIRTUAL_ENV} -type d \( -path *tensorflow \) -prune -false -depth \( \
-      \( -type d -a \( -name test -o -name tests -o -name idle_test \) \) \
-          -o \( -type f -a \( -name '*.pyc' -o -name '*.pyo' \) \) \
-      \) -exec rm -rf '{}' + ; \
-    rm -rf /var/cache/* /var/tmp/* /tmp/*
-
-USER root
-RUN rm -f /usr/lib/python3*/ensurepip/_bundled/*.whl
-USER grok:grok
+ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
 
 WORKDIR /opt/PepSeA-main
 
 ENV ADD_HTTPS_MIDDLEWARE=""
 ENV MAFFT_DIR="/usr/lib/mafft/bin/"
 
-RUN "${MAFFT_DIR}ginsi" --version && python -c "import alignment.api"
+RUN "${MAFFT_DIR}ginsi" --version && python -c "import alignment.api, uvloop, httptools, ujson, pymsa" &&     printf '>a
+MKVLA
+>b
+MKVA
+' > /tmp/t.fa && "${MAFFT_DIR}mafft" --quiet /tmp/t.fa && rm -f /tmp/t.fa
 
 # CMD can be changed easially, you need ENTRYPOINT in this case
 ENTRYPOINT ["uvicorn", "--host", "0.0.0.0", "alignment.api:api"]
