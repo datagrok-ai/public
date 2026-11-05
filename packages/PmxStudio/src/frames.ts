@@ -99,6 +99,14 @@ export function armColors(arms: string[]): {[arm: string]: string} {
     ...arms.map((a, k) => [a, DG.Color.toHtml(DG.Color.getCategoricalColor(k))])]);
 }
 
+/** A study's groups in the colours every stage gives them: the control (named `control`) in the control's grey, the
+ *  treated groups in order, as Plan colours its arms, whether or not `groups` lists the control among them. */
+export function groupColors(groups: string[], control: string): {[group: string]: string} {
+  const colors = armColors(groups.filter((g) => g !== control));
+  colors[control] = colors['Control'];
+  return colors;
+}
+
 /** The study (one row), its arms (one row each), the power curves (per arm and n), the predicted volumes (per
  *  day and arm: the control, then each treated arm), the power by last day (per arm and day) and by measurement
  *  schedule (per arm and measurements a week), the study calendar (per day from randomization) and the assumed-TGI

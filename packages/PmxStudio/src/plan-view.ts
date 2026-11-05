@@ -20,7 +20,7 @@ import {MIN_GROUP, finite} from './engine';
 import {askedOf, autoRun, busyBar, busyOverlay, callInputs, cardGrid, copyRow, declarationPane, DECLARATION_MIN,
   infoNote, notes,
   notesBox, num, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
-  statCard, swatch, volumeAxis, wrapCells} from './ui';
+  markStage, statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {openStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
@@ -207,7 +207,7 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
   const exports: Exports = [];
   const host = ViewHost.create({name: 'PMX Studio', content: (self) => planContent(self, initial, exports)});
   exportMenu(host.view, exports);
-  return host.view;
+  return markStage(host.view, 'plan');
 }
 
 /** What the view shows, built under its host, which owns it all. */
@@ -550,7 +550,7 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
 
   const {row: scaleRow, log} = volumeAxis();
   const growth = new BandChart(computed(() => result.value?.curves), {x: 'day', lower: 'q05', upper: 'q95',
-    line: 'median', split: 'arm', xTitle: 'Day after randomization', yTitle: 'Tumor volume', log});
+    line: 'median', split: 'arm', xTitle: 'Day after randomization', yTitle: 'Tumor volume', log, fit: true});
 
 
   // the assurance of every arm on one value column split by arm (several Y columns would each get an axis), each

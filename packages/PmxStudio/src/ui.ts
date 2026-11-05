@@ -290,6 +290,12 @@ export function volumeAxis(): {input: RadioInput, row: HTMLElement, log: Readonl
 }
 
 export type Stage = 'home' | 'plan' | 'monitor' | 'analyze';
+/** Marks `view` as `stage`'s: every stage's view is named after the app, so the app finds its own by this mark. */
+export function markStage<V extends DG.ViewBase>(view: V, stage: Stage): V {
+  view.root.dataset.pmxStage = stage;
+  return view;
+}
+export const stageOf = (view: DG.ViewBase | null | undefined) => view?.root?.dataset.pmxStage as Stage | undefined;
 /** Whether Monitor is built in this package: its card, its step and the studies it opens. */
 export const MONITOR_READY = true;
 export const STAGES: {stage: Stage, label: string, tip: string}[] = [

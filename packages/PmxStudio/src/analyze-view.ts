@@ -18,14 +18,14 @@ import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
 import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analysisFrames, exampleStudy, median}
   from './analyze';
-import {armColors} from './frames';
+import {groupColors} from './frames';
 import {CorrectionInput} from './arms-input';
 import {askedOf, autoRun, axisAt, busyBar, busyOverlay, callInputs, cardGrid, dayText, declarationPane,
   keepSame,
   onTableEdits, only, TABLE_EDITS,
   DECLARATION_MIN, guide,
   infoNote, noteLine, notesBox, num, pct, pValue, RESULTS_MIN, resultsFrame, settleForm, signed,
-  isBodyWeight, keepNamedColumns, sized, staleNote, statCard, swatch, volumeAxis, wrapCells} from './ui';
+  isBodyWeight, keepNamedColumns, sized, markStage, staleNote, statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {logOf, restoreFields} from './study-file';
 import {openStage} from './stages';
 import {noEffectNote, observedCell, planInput, planTab} from './plan-vs-observed';
@@ -221,7 +221,7 @@ export async function analyzeView(opening?: AnalyzeStart): Promise<DG.ViewBase> 
   const host = ViewHost.create({name: 'PMX Studio', content: (self) => analyzeContent(self, opening,
     exports)});
   exportMenu(host.view, exports);
-  return host.view;
+  return markStage(host.view, 'analyze');
 }
 
 /** What the view shows, built under its host, which owns it all. */
@@ -431,9 +431,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const groupsOf = (r: AnalysisFrames) => [r.analysis.get('control', 0),
     r.comparisons.col('arm')!.toList().join('\u0000')];
   const colorsOf = (r: AnalysisFrames) => {
-    const colors = armColors(r.comparisons.col('arm')!.toList());
-    colors[r.analysis.get('control', 0)] = colors['Control'];
-    return colors;
+    return groupColors(r.comparisons.col('arm')!.toList(), r.analysis.get('control', 0));
   };
   form.effect(() => {
     const r = result.value;

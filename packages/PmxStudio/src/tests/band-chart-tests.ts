@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {Scope, signal} from '@datagrok-libraries/u2';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {BandChart, axisTitle, collectBands, refLines} from '../band-chart';
+import {BandChart, axisTitle, collectBands, niceCeil, refLines} from '../band-chart';
 
 // The Plan and Analyze views' band chart: its bands by category and X, the table's reference lines, the axis titles,
 // and the chart drawn over a table signal and its Log switch.
@@ -46,6 +46,10 @@ category('Band chart', () => {
     expect(lines[0].dashed, true);
     expect(lines[1].vertical, true);
     expect(lines[1].dashed, false);
+  });
+
+  test('A forecast axis tops at a round number', async () => {
+    expect([1950, 2000, 2001, 1, 0.3, 74000].map(niceCeil).join(','), '2000,2000,2500,1,0.5,100000');
   });
 
   test('Axis titles carry the units once', async () => {

@@ -9,10 +9,10 @@ import {BasicTable, computed, signal} from '@datagrok-libraries/u2';
 import {ViewHost} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {MONITOR_READY} from './ui';
+import {MONITOR_READY, markStage} from './ui';
 import {steps} from './study-header';
 import type {Stage} from './ui';
-import {NAMES, openStage, pathOf, showStage} from './stages';
+import {openStage, showStage} from './stages';
 import {planView} from './plan-view';
 import {analyzeView} from './analyze-view';
 import {monitorView, openStudyFile} from './monitor-view';
@@ -23,7 +23,7 @@ import {Brought, OPENED_EXTS, OpenStage, bring, readFile, suggestedStage} from '
 
 /** The home view. */
 export async function hubView(): Promise<DG.ViewBase> {
-  return ViewHost.create({name: NAMES.home!, content: () => hubContent()}).view;
+  return markStage(ViewHost.create({name: 'PMX Studio', content: () => hubContent()}).view, 'home');
 }
 
 // ---- small builders: the page is static markup with a few listeners, so plain elements do -------------------------
@@ -196,7 +196,8 @@ function hubContent(): ViewContent {
   const root = h('div', 'pmx-hub', [growthArt(), page, dropLayer]);
   takeDrops(root, (on) => dropLayer.classList.toggle('is-open', on), (files) => openStudyDialog(files));
 
-  return {root, ribbon: [[h('div', 'pmx-head', [steps('home', (s) => void openStage(s))])]], path: pathOf('home')};
+  // no path of its own: opened as the app, the platform gives it the app's; opened later, showStage does
+  return {root, ribbon: [[h('div', 'pmx-head', [steps('home', (s) => void openStage(s))])]]};
 }
 
 /** How far a study has gone: Plan — Monitor — Analyze, the stages behind it filled. */

@@ -15,11 +15,11 @@ import type {ViewContent} from '@datagrok-libraries/u2/dg';
 import {exampleStudy} from './analyze';
 import {analyzeView} from './analyze-view';
 import {BandChart} from './band-chart';
-import {WEEKDAY_NAMES, armColors, weekdaysOf} from './frames';
+import {WEEKDAY_NAMES, groupColors, weekdaysOf} from './frames';
 import {allocateGroups, MonitorFrames, monitorFrames, MonitorInputs, outsideBand} from './monitor';
 import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
 import {planInput} from './plan-vs-observed';
-import {NAMES, openStage, showStage} from './stages';
+import {openStage, showStage} from './stages';
 import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
   restoreFields, saveStudy, studyOf, tableOf} from './study-file';
 import {editLayout, panelGrid, Slot} from './panels';
@@ -37,7 +37,7 @@ import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, day
   onTableEdits, TABLE_EDITS,
   isBodyWeight, keepNamedColumns, noteLine, notes,
   notesBox, num, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
-  signed, statCard, swatch, volumeAxis, wrapCells} from './ui';
+  markStage, signed, stageOf, statCard, swatch, volumeAxis, wrapCells} from './ui';
 
 /** Monitor's panels, in order and width (twelfths): today's work first, then the groups, then the start. */
 const MONITOR_LAYOUT: Slot[] = [{id: 'today', span: 4}, {id: 'growth', span: 8}, {id: 'calendar', span: 12},
@@ -71,7 +71,7 @@ export async function monitorView(initial?: DG.DataFrame): Promise<DG.ViewBase> 
   const host = ViewHost.create({name: 'PMX Studio', content: (self) => monitorContent(self, initial,
     exports)});
   exportMenu(host.view, exports);
-  return host.view;
+  return markStage(host.view, 'monitor');
 }
 
 /** What the view shows, built under its host, which owns it all (the form, the charts, the panes). */
@@ -375,8 +375,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   const growthAxis = volumeAxis();
   const colorsOf = (r: MonitorFrames) => {
     const names = [...new Set(r.days.col('group')!.toList() as string[])];
-    const colors = armColors(names);
-    colors[r.status.get('control', 0)] = colors['Control'];
+    const colors = groupColors(names, r.status.get('control', 0));
     return Object.fromEntries(names.map((n) => [n, colors[n]]));
   };
   const growthData = computed(() => {
@@ -384,10 +383,21 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     if (!r || !revealed.value)
       return undefined;
     r.days.col('group')!.meta.colors.setCategorical(colorsOf(r));
+    // what the study is read against: the endpoint, today and the expected end (the chart's scale follows them)
+    const lines = r.days.meta.formulaLines;
+    lines.clear();
+    const endpoint = Number(call.getParamValue('endpoint'));
+    if (endpoint > 0)
+      lines.addLine({title: `Endpoint ${endpoint} mm³`, formula: `\${median} = ${endpoint}`});
+    lines.addLine({title: `Today, day ${r.status.get('day', 0)}`, formula: `\${day} = ${r.status.get('day', 0)}`,
+      color: '#2083d5'});
+    const end = r.status.get('end_median', 0);
+    if (Number.isFinite(end) && end !== null)
+      lines.addLine({title: `Expected end, day ${end}`, formula: `\${day} = ${end}`, color: '#9aa5b1'});
     return r.days;
   });
   const growth = new BandChart(growthData, {x: 'day', lower: 'lower', upper: 'upper', line: 'median', split: 'group',
-    xTitle: 'Study day', yTitle: 'Median volume (mm³)', log: growthAxis.log, markers: true});
+    xTitle: 'Study day', yTitle: 'Median volume (mm³)', log: growthAxis.log, markers: true, fit: true});
   const growthHidden = infoNote('<b>The groups are hidden.</b> Reveal them to see each group\'s growth.');
   form.effect(() => {
     growth.root.hidden = !revealed.value;
@@ -618,7 +628,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     if (!revealed.peek())
       reveal();
     // in place of an Analyze view already open
-    [...grok.shell.views].find((v) => v.name === NAMES.analyze)?.close();
+    [...grok.shell.views].find((v) => stageOf(v) === 'analyze')?.close();
     void analyzeView({study: df}).then((v) => showStage('analyze', v));
   });
   analyzeButton.title = 'Analyze this table as planned; in a blinded study this reveals the groups, and the log ' +

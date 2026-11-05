@@ -33,6 +33,8 @@ export interface BandChartOptions {
   log?: ReadonlySignal<boolean>;
   /** markers on the line */
   markers?: boolean;
+  /** a forecast's chart: its scale set by the reference lines (see chartOption), not by how far its range reaches */
+  fit?: boolean;
 }
 
 /** One category's points, sorted by X; `row` is one of its rows, where its colour is read. */
@@ -86,7 +88,7 @@ export class BandChart extends Control {
     const colors = this.bands.map((b, k) =>
       DG.Color.toHtml(coded ? DG.Color.getRowColor(coded, b.row) : DG.Color.getCategoricalColor(k)));
     this.chart.setOption(chartOption(this.bands, colors, refLines(df.meta.formulaLines.items, x.name),
-      {xTitle, yTitle, log, markers: o.markers ?? false, fmt}), true);
+      {xTitle, yTitle, log, markers: o.markers ?? false, fit: o.fit ?? false, fmt}), true);
   }
 }
 
@@ -103,7 +105,7 @@ export function initQuietly(host: HTMLElement): echarts.ECharts {
   }
 }
 
-type Look = {xTitle: string, yTitle: string, log: boolean, markers: boolean,
+type Look = {xTitle: string, yTitle: string, log: boolean, markers: boolean, fit: boolean,
   fmt: {xUnits: string, yUnits: string, x: string, y: string, xTitle: string}};
 
 function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Look): EChartsOption {
@@ -136,6 +138,15 @@ function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Loo
       }))}});
   }
   const axisName = {nameLocation: 'middle', nameTextStyle: {color: TEXT}} as const;
+  // what the study is read against sets the scale, not how far a forecast's range reaches: on a linear axis up to a
+  // little above the highest level (the endpoint, the humane limit) unless a median rises above it, and to a little
+  // past the last day marked (the end of the study); the bands are clipped there
+  const levels = look.fit ? refs.filter((r) => !r.vertical).map((r) => r.value) : [];
+  const days = look.fit ? refs.filter((r) => r.vertical).map((r) => r.value) : [];
+  const medians = bands.flatMap((b) => b.line ?? []);
+  const yMax = !look.log && levels.length && Math.max(...levels) > 0 ?
+    Math.max(1.3 * Math.max(...levels), ...medians.filter(Number.isFinite)) : undefined;
+  const xMax = days.length ? Math.ceil(Math.max(...days) * 1.08) : undefined;
   return {
     animation: false,
     // containLabel holds the tick labels, not the axis names: room for the Y name, the X name and a vertical
@@ -144,13 +155,23 @@ function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Loo
       bottom: 36, containLabel: true},
     legend: {show: bands.length > 1, type: 'scroll', top: 4},
     tooltip: {trigger: 'axis', formatter: (params: any) => tooltip(params as any[], bands, look.fmt)},
-    xAxis: {type: 'value', scale: true, name: look.xTitle, nameGap: 26, ...axisName},
+    xAxis: {type: 'value', scale: true, name: look.xTitle, nameGap: 26, ...axisName,
+      ...(xMax !== undefined ? {max: (e: {max: number}) => Math.min(e.max, xMax)} : {})},
     // on a log axis the minor ticks are labelled too (2, 5 per decade): a decade alone reads as a linear axis
     yAxis: {type: look.log ? 'log' : 'value', scale: true, name: look.yTitle, nameGap: 52, ...axisName,
+      ...(yMax !== undefined ? {max: (e: {max: number}) => niceCeil(Math.min(e.max, yMax))} : {}),
       ...(look.log ? {minorTick: {show: true, splitNumber: 2},
         minorSplitLine: {show: true, lineStyle: {opacity: 0.4}}} : {})},
     series,
   } as EChartsOption;
+}
+
+/** A round number at or above `v` (1, 2, 2.5 or 5 times a power of ten): an axis' top. */
+export function niceCeil(v: number): number {
+  if (!(v > 0))
+    return v;
+  const p = 10 ** Math.floor(Math.log10(v));
+  return [1, 2, 2.5, 5, 10].map((m) => m * p).find((x) => x >= v - 1e-9)!;
 }
 
 /** X, then lower / line / upper of every band at that point (each series at its own index: bands of different

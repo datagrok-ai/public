@@ -7,24 +7,28 @@ import {planView} from './plan-view';
 import {analyzeView} from './analyze-view';
 import {monitorView} from './monitor-view';
 import {hubView} from './hub-view';
+import {STAGES, stageOf} from './ui';
 import type {Stage} from './ui';
-
-export const NAMES: {[stage in Stage]: string} = {home: 'PMX Studio', plan: 'PMX Studio · Plan',
-  monitor: 'PMX Studio · Monitor', analyze: 'PMX Studio · Analyze'};
 
 /** The URL path of a stage's view; the home's is the app's own. */
 export const pathOf = (stage: Stage) => stage === 'home' ? '/apps/PmxStudio' : `/apps/PmxStudio/${stage}`;
 
 export async function openStage(stage: Stage): Promise<void> {
-  const open = [...grok.shell.views].find((v) => v.name === NAMES[stage]);
+  const open = [...grok.shell.views].find((v) => stageOf(v) === stage);
   // after the click that asked for it: the platform makes the clicked view current once the click is handled
   if (open) {
     setTimeout(() => grok.shell.v = open);
     return;
   }
-  const view = stage === 'plan' ? await planView() : stage === 'analyze' ? await analyzeView() :
-    stage === 'monitor' ? await monitorView() : await hubView();
-  showStage(stage, view);
+  // a stage's first opening takes a moment (its engine, its data): said in the task bar meanwhile
+  const progress = DG.TaskBarProgressIndicator.create(`Opening ${STAGES.find((s) => s.stage === stage)?.label}...`);
+  try {
+    const view = stage === 'plan' ? await planView() : stage === 'analyze' ? await analyzeView() :
+      stage === 'monitor' ? await monitorView() : await hubView();
+    showStage(stage, view);
+  } finally {
+    progress.close();
+  }
 }
 
 /** A stage's view opened with something in it (a study, a plan): always a view of its own. */
@@ -53,8 +57,8 @@ export function quietContextPanel(): void {
   watching = true;
   const apply = () => {
     const w = grok.shell.windows;
-    const name = grok.shell.v?.name ?? '';
-    const hide = name === NAMES.home ? QUIET_OVERVIEW : name.startsWith('PMX Studio') ? QUIET : [];
+    const stage = stageOf(grok.shell.v);
+    const hide = stage === 'home' ? QUIET_OVERVIEW : stage ? QUIET : [];
     for (const [p, on] of [...before]) {
       if (!hide.includes(p)) {
         w[p] = on;
