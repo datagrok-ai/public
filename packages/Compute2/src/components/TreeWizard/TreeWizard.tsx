@@ -150,8 +150,7 @@ export const TreeWizard = Vue.defineComponent({
       if (!isResultPending)
         return;
       isResultPending = false;
-      // the result comes out of a deep ref: hand the caller the raw value, not a proxy of its DG objects
-      emit('return', Vue.toRaw(result));
+      emit('return', result);
     });
 
     ////

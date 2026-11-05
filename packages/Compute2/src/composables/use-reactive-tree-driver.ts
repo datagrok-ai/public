@@ -48,7 +48,7 @@ export function useReactiveTreeDriver(
   const logs = useObservable(driver.logger.logs$.pipe(bufferDuringLock(globalLock$)));
   const links = useObservable(driver.currentLinks$.pipe(bufferDuringLock(globalLock$)));
   const hiddenActions = useObservable(driver.hiddenActions$.pipe(bufferDuringLock(globalLock$)));
-  const result = useObservable(driver.result$);
+  const result = useObservable(driver.result$.pipe(map((x) => Vue.markRaw(x))));
 
   if (overlayService) {
     Vue.watch(isGlobalLocked, (locked) => {
