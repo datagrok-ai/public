@@ -751,9 +751,6 @@ importers:
       '@datagrok-libraries/utils':
         specifier: workspace:^
         version: link:../utils
-      cash-dom:
-        specifier: 'catalog:'
-        version: 8.1.5
       datagrok-api:
         specifier: workspace:^
         version: link:../../js-api
