@@ -8,15 +8,16 @@ import * as ui from 'datagrok-api/ui';
 import {Control} from '@datagrok-libraries/u2';
 import type {ReadonlySignal} from '@datagrok-libraries/u2';
 import * as echarts from 'echarts/core';
-import {CustomChart, LineChart, ScatterChart} from 'echarts/charts';
-import {GridComponent, LegendComponent, MarkLineComponent, TooltipComponent} from 'echarts/components';
+import {BarChart, CustomChart, LineChart, ScatterChart} from 'echarts/charts';
+import {GridComponent, LegendComponent, MarkAreaComponent, MarkLineComponent, TooltipComponent}
+  from 'echarts/components';
 import {CanvasRenderer} from 'echarts/renderers';
 import type {EChartsOption} from 'echarts';
 
 import {chartMenu} from './report';
 
-echarts.use([CustomChart, LineChart, ScatterChart, GridComponent, LegendComponent, MarkLineComponent,
-  TooltipComponent, CanvasRenderer]);
+echarts.use([BarChart, CustomChart, LineChart, ScatterChart, GridComponent, LegendComponent, MarkAreaComponent,
+  MarkLineComponent, TooltipComponent, CanvasRenderer]);
 
 export interface BandChartOptions {
   x: string;

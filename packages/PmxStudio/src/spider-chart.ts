@@ -77,3 +77,56 @@ export class SpiderChart extends Control {
     });
   }
 }
+
+/** A waterfall bar: an animal, its group and its value. */
+export interface Bar {animal: string, group: string, value: number}
+
+/** Every animal as a thin bar in its group's colour, sorted (`order`: desc, the largest first), the animal in the
+ *  tooltip; a group's legend entry shows or hides its bars; `onMenu`: an animal's right click. */
+export class WaterfallChart extends Control {
+  private readonly chart: echarts.ECharts;
+
+  constructor(data: ReadonlySignal<{bars: Bar[], colors: {[group: string]: string}, title: string,
+    order: 'asc' | 'desc', groups: string[]} | undefined>, onMenu?: (animal: string, e: MouseEvent) => void) {
+    super();
+    this.root.classList.add('pmx-waterfall-chart');
+    this.root.style.position = 'relative';
+    const host = ui.div([], {style: {position: 'absolute', inset: '0'}});
+    this.root.append(host);
+    this.chart = initQuietly(host);
+    const size = ui.onSizeChanged(host).subscribe(() => this.chart.resize());
+    this.own(() => {
+      size.unsubscribe();
+      this.chart.dispose();
+    });
+    if (onMenu) {
+      this.chart.on('contextmenu', (p: any) => {
+        p.event?.event?.preventDefault();
+        if (p.data?.animal)
+          onMenu(p.data.animal, p.event.event);
+      });
+    }
+    this.effect(() => {
+      const x = data.value;
+      if (!x) {
+        this.chart.clear();
+        return;
+      }
+      const sorted = [...x.bars].sort((a, b) => x.order === 'desc' ? b.value - a.value : a.value - b.value);
+      const fmt = (v: number) => Math.abs(v) >= 10 ? v.toFixed(0) : v.toPrecision(2);
+      // a series per group, stacked on one category per animal: each bar in its group's colour, the legend toggling
+      this.chart.setOption({
+        animation: false,
+        grid: {left: 56, right: 16, top: 32, bottom: 12},
+        legend: {top: 0, data: x.groups},
+        tooltip: {trigger: 'item', formatter: (p: any) => `${p.data.animal} (${p.seriesName})<br>${x.title}: ` +
+          `${fmt(p.data.value)}`},
+        xAxis: {type: 'category', data: sorted.map((b) => b.animal), axisLabel: {show: false},
+          axisTick: {show: false}},
+        yAxis: {type: 'value', name: x.title, nameLocation: 'middle', nameGap: 42},
+        series: x.groups.map((g) => ({type: 'bar', name: g, stack: 'all', color: x.colors[g], barCategoryGap: '20%',
+          data: sorted.map((b) => b.group === g ? {value: b.value, animal: b.animal} : null)})),
+      }, true);
+    });
+  }
+}

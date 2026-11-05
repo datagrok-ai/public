@@ -182,3 +182,13 @@
 /* the KPI cards' change (statCard): one colour, as more is not always better; pinned figures, a dashed edge */
 .pmx-stat .u2-stat-delta-up, .pmx-stat .u2-stat-delta-down {color: var(--dg-accent, #2083d5);}
 .pmx-pinned .pmx-stat {outline: 1px dashed var(--dg-accent, #2083d5); outline-offset: -1px;}
+
+/* Kaplan-Meier: the one slider, under the axis from the last day measured to its end; the measured part labelled */
+.pmx-km-slider {
+  position: absolute; bottom: 4px; height: 16px; margin: 0; accent-color: var(--dg-accent, #2083D5); cursor: ew-resize;
+}
+.pmx-km-measured {
+  position: absolute; bottom: 4px; height: 16px; line-height: 16px; font-size: 11px; text-align: right;
+  color: var(--dg-grey-5, #717581); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pmx-km-measured.is-projected { color: #b7791f; }

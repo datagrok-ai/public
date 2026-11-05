@@ -16,6 +16,9 @@ export interface Survival {
   /** the last day measured; projected: the horizon followed to */
   lastDay: number;
   horizon?: number;
+  /** the groups, the control first, and their colours */
+  groups: string[];
+  colors: {[g: string]: string};
 }
 
 /** A treated group against the control with the animals removed for another reason as a competing event. */
@@ -137,11 +140,12 @@ export async function survivalOf(s: StudyInputs, control: string, endpoint: numb
   }
   const steps = DG.DataFrame.fromObjects(out)!;
   steps.col(KM.group)!.meta.colors.setCategorical(colors);
-  steps.col(KM.group)!.setCategoryOrder([control, ...Object.keys(colors).filter((g) => g !== control)]);
+  const groups = [control, ...Object.keys(colors).filter((g) => g !== control)];
+  steps.col(KM.group)!.setCategoryOrder(groups);
   steps.col(KM.share)!.meta.format = '0';
   // what lies beyond it is projected
   if (horizon !== undefined)
     steps.meta.formulaLines.addLine({title: `Last measured, day ${lastDay}`, formula: `\${${KM.day}} = ${lastDay}`});
   return {steps, medians: named(r, 'medians') as Survival['medians'],
-    logrank: named(r, 'logrank') as Survival['logrank'], lastDay, horizon};
+    logrank: named(r, 'logrank') as Survival['logrank'], lastDay, horizon, groups, colors};
 }

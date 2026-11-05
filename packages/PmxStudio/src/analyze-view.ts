@@ -38,9 +38,10 @@ import {exclusionsOf, studyDataLine, studyMenu, studyOf, tagStudy, withoutExclud
 import {metaOf, setMetaOn} from './study-meta';
 import {Exports, download, exportMenu, reportHtml} from './report';
 import {printSheet} from './sheet';
-import {SpiderChart, spiderLines} from './spider-chart';
+import {SpiderChart, WaterfallChart, spiderLines} from './spider-chart';
 import {LineInput} from './line-input';
-import {Competing, KM, Survival, competingOf, survivalOf} from './survival';
+import {Competing, Survival, competingOf, survivalOf} from './survival';
+import {KmChart} from './km-chart';
 import {synergyDialog} from './synergy';
 import {arriveDialog, arriveItems} from './arrive';
 
@@ -50,9 +51,6 @@ const ANALYZE_LAYOUT: Slot[] = [{id: 'groups', span: 12}, {id: 'growth', span: 8
   {id: 'tolerability', span: 12},
   {id: 'plan', span: 12}, {id: 'controls', span: 6},
   {id: 'explore', span: 6}];
-
-/** mRECIST's classes (Gao 2015), best first, in the colours of better and worse. */
-const MRECIST_COLORS: {[c: string]: string} = {mCR: '#1a7f37', mPR: '#4caf50', mSD: '#9aa5b1', mPD: '#d62728'};
 
 /** Under a growth chart: how many animals each group had on each measurement day, so a thinning group shows. */
 function animalsPerDay(volumes: DG.DataFrame, groups: string[], colors: {[g: string]: string}): HTMLElement {
@@ -751,35 +749,47 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       ...r.comparisons.col('arm')!.toList()], colorsOf(r))] : []));
   });
 
-  // each treated animal's best response (mRECIST's BestResponse, % from its volume at randomization), largest
-  // growth first, coloured by its mRECIST class
-  const animalsOnly = only(result, ['animals'], groupsOf);
+  // each animal as a bar in its group's colour, on what the scientist compares them by: its growth rate (the slope of
+  // log volume the test compares), its best response (mRECIST's, % from randomization) or how much smaller it is than
+  // its untreated twin; sorted so the better animals end on the right
+  const WATERFALL = {
+    'Growth rate': {col: 'slope_per_day', title: 'Growth rate (log volume per day)', order: 'desc', control: true,
+      none: '<b>No growth rates.</b> Each animal needs two measurements or more.'},
+    'Best response': {col: 'best_response', title: 'Best response (%)', order: 'desc', control: true,
+      none: '<b>No best response.</b> Each animal needs measurements from day 10 on for its mRECIST class.'},
+    'Against its twin': {col: 'effect', title: 'Smaller than its twin (%)', order: 'asc', control: false,
+      none: '<b>No twins.</b> The twin needs the cell line’s growth and each animal’s volume at ' +
+        'randomization.'},
+  } as const;
+  type WaterfallBy = keyof typeof WATERFALL;
+  const waterfallBy = signal<WaterfallBy>('Growth rate');
+  const byInput = ui.input.choice('Compare by', {value: 'Growth rate', items: Object.keys(WATERFALL),
+    onValueChanged: (v) => waterfallBy.value = (v ?? 'Growth rate') as WaterfallBy,
+    tooltipText: 'Growth rate: the slope of log volume each test compares. Best response: mRECIST’s smallest ' +
+      'volume from day 10 against randomization. Against its twin: how much smaller than its untreated twin.'});
+  const animalsOnly = only(result, ['animals', 'effects'], groupsOf);
   const waterfallData = computed(() => {
     const r = animalsOnly.value;
-    const a = r?.animals;
-    if (!r || !a?.col('best_response'))
+    const by = WATERFALL[waterfallBy.value];
+    const t = by.col === 'effect' ? r?.effects : r?.animals;
+    if (!r || !t?.col(by.col))
       return undefined;
     const control = r.analysis.get('control', 0);
-    const rows = Array.from({length: a.rowCount}, (_, i) => ({'Animal': String(a.get('animal', i)),
-      'Group': a.get('group', i) as string, 'Best response (%)': a.get('best_response', i) as number | null,
-      'mRECIST': a.get('mrecist', i) as string | null}))
-      // a missing response may come back as null, undefined or NaN: only numbers make a bar
-      .filter((x) => x['Group'] !== control && Number.isFinite(x['Best response (%)']) && !!x['mRECIST']);
-    if (rows.length === 0)
-      return undefined;
-    const df = DG.DataFrame.fromObjects(rows)!;
-    df.col('mRECIST')!.meta.colors.setCategorical(MRECIST_COLORS);
-    return df;
+    const bars = Array.from({length: t.rowCount}, (_, i) => ({animal: String(t.get('animal', i)),
+      group: String(t.get('group', i)), value: t.get(by.col, i) as number}))
+      // a missing value may come back as null, undefined or NaN: only numbers make a bar
+      .filter((x) => (by.control || x.group !== control) && Number.isFinite(x.value));
+    const groups = [control, ...r.comparisons.col('arm')!.toList()].filter((g) => bars.some((b) => b.group === g));
+    return bars.length ? {bars, colors: colorsOf(r), title: by.title, order: by.order, groups} : undefined;
   });
-  const waterfall = viewers.barChart(waterfallData, {splitColumnName: 'Animal', valueColumnName: 'Best response (%)',
-    valueAggrType: 'sum', stackColumnName: 'mRECIST', orientation: 'vertical', barSortType: 'by value',
-    barSortOrder: 'desc', showCategorySelector: false, showValueSelector: false, showStackSelector: false} as any);
-  const waterfallMissing = infoNote('<b>No best response.</b> Each animal needs measurements from day 10 on for ' +
-    'its mRECIST class.');
+  const waterfall = new WaterfallChart(waterfallData, (animal, e) =>
+    studyMenu(studyOf(call.getParamValue('study') as DG.DataFrame | null), 'animal', animal, {causedBy: e}));
+  const waterfallMissing = infoNote('');
   form.effect(() => {
     const has = !!waterfallData.value;
     waterfall.root.hidden = !has;
     waterfallMissing.hidden = has || !result.value;
+    waterfallMissing.querySelector('span')!.innerHTML = WATERFALL[waterfallBy.value].none;
   });
 
   // each animal's growth as a % change from randomization, in its group's colour (the study's own rows, as analyzed)
@@ -795,34 +805,37 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const survival = signal<Survival | undefined>(undefined);
   const kmOnly = only(result, ['volumes'], (r) => [...groupsOf(r), r.analysis.get('endpoint', 0)]);
   const horizon = signal<number | null>(null);
-  const slider = document.createElement('input');
-  slider.type = 'range';
-  slider.step = '1';
-  slider.setAttribute('aria-label', 'Followed to day');
-  Object.assign(slider.style, {width: '180px', accentColor: 'var(--dg-accent, #2083d5)'});
-  slider.addEventListener('input', () => {
-    const v = Number(slider.value);
-    horizon.value = v > Number(slider.min) ? v : null;
-  });
-  Tooltip.bind(slider, 'Drag right to carry each animal still under the endpoint on at the rate of its last three ' +
-    'measurements, to that day: a projection, not a result');
-  const sliderText = span('');
-  const kmControls = divH([span('Followed to'), slider, sliderText], 'pmx-noprint');
-  Object.assign(kmControls.style, {justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--dg-space-m)'});
-  form.effect(() => {
-    const r = kmOnly.value;
-    const s = resultStudy;
-    const h = horizon.value;
-    if (!r || !s) {
-      survival.value = undefined;
+  // one computation at a time, of the latest day asked for: a slider dragged fast asks for many, and answers
+  // arriving out of order made the curves jump
+  let computing = false;
+  const compute = async () => {
+    if (computing)
       return;
-    }
-    void survivalOf(s, r.analysis.get('control', 0), r.analysis.get('endpoint', 0), colorsOf(r),
-      h === null ? undefined : {horizon: h})
-      .then((k) => {
-        if (kmOnly.peek() === r && horizon.peek() === h)
+    computing = true;
+    try {
+      for (;;) {
+        const r = kmOnly.peek();
+        const s = resultStudy;
+        const h = horizon.peek();
+        if (!r || !s) {
+          survival.value = undefined;
+          return;
+        }
+        const k = await survivalOf(s, r.analysis.get('control', 0), r.analysis.get('endpoint', 0), colorsOf(r),
+          h === null ? undefined : {horizon: h}).catch(() => undefined);
+        if (kmOnly.peek() === r && horizon.peek() === h) {
           survival.value = k;
-      }, () => survival.value = undefined);
+          return;
+        }
+      }
+    } finally {
+      computing = false;
+    }
+  };
+  form.effect(() => {
+    void kmOnly.value;
+    void horizon.value;
+    void compute();
   });
   // the animals removed for another reason: competing with the endpoint (Fine-Gray), when the study has any
   const competing = signal<Competing[] | null>(null);
@@ -840,21 +853,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         competing.value = c;
     }, () => competing.value = null);
   });
-  // the slider from the last day measured to twice it
-  form.effect(() => {
-    const k = survival.value;
-    if (!k)
-      return;
-    slider.min = String(k.lastDay);
-    slider.max = String(2 * k.lastDay);
-    if (horizon.peek() === null)
-      slider.value = String(k.lastDay);
-    sliderText.textContent = k.horizon === undefined ? `day ${k.lastDay}, as measured` :
-      `day ${k.horizon}, projected`;
-  });
-  const km = viewers.lineChart(computed(() => survival.value?.steps), {xColumnName: KM.day,
-    yColumnNames: [KM.share], splitColumnNames: [KM.group], legendVisibility: 'Always', showTopPanel: false,
-    showAggrSelectors: false, showSplitSelector: false});
+  const km = new KmChart(survival, horizon);
   const kmWords = div([], 'pmx-km-words');
   form.effect(() => {
     const k = survival.value;
@@ -905,14 +904,15 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     content: [growthAxis.row, sized(growth, 380), perDay]},
     {id: 'rates', title: 'Growth rates', hint: 'The per-animal slope of log volume each test compares',
       content: [sized(slopes, 380)]},
-    {id: 'waterfall', title: 'Best response', hint: 'Each treated animal\u2019s smallest volume from day 10, against ' +
-      'its volume at randomization, coloured by its mRECIST class', content: [waterfallMissing, sized(waterfall, 300)]},
+    {id: 'waterfall', title: 'Each animal compared', hint: 'Every animal as a bar in its group\u2019s colour, on its ' +
+      'growth rate, its best response or its effect against its twin; the better animals on the right',
+    content: [byInput.root, waterfallMissing, sized(waterfall, 300)]},
     {id: 'spider', title: 'Each tumor over time', hint: 'Every animal’s volume as a % change from ' +
       'randomization, in its group’s colour; click a group in the legend to hide or show its animals',
     content: [sized(spider, 300)]},
     {id: 'km', title: 'Time to endpoint', hint: 'Kaplan-Meier: the animals of each group still below the ' +
       'endpoint volume, day by day, as measured; an animal that never reached it counts until its last measurement',
-    content: [kmControls, sized(km, 300), kmWords]},
+    content: [sized(km, 320), kmWords]},
     {id: 'animals', title: 'Each animal against its untreated twin', hint: 'How each treated tumor compares with ' +
       'what it would have measured untreated. Select an animal to see its growth', content: [animals]},
     {id: 'tolerability', title: 'Tolerability', hint: 'Whether the treatments were well tolerated',
