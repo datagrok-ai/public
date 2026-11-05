@@ -190,7 +190,8 @@ RUN set -e ; \
       # NLP \
       tesseract tesseract-eng tesseract-osd unrtf poppler-utils \
       # NLP END \
-      gdal gdal-tools ghostscript libgd \
+      # gdal needs GEOS >= 3.14, but apk resolves its libgeos_c to the oldest provider \
+      gdal gdal-tools geos-3.15 ghostscript libgd \
       cairo pango poppler-glib proj gmp glib \
       libx11 libxext libxrender libsm libice libglvnd mesa-gl \
       fontconfig freetype ttf-dejavu \
