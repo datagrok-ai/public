@@ -107,6 +107,34 @@ category('WebComponents: ValidationIcon', () => {
     }
   });
 
+  test('the popover lists validation by severity, then the inconsistency', async () => {
+    const sections = (popover: HTMLElement) => Array.from(popover.firstElementChild!.children).map((section) => {
+      const header = section.firstElementChild as HTMLElement;
+      const icon = header.querySelector('i')!;
+      return [icon.className.match(/fa-([a-z-]+)/)?.[1], icon.style.getPropertyValue('color'),
+        header.textContent!.trim()];
+    });
+    const validation = {notifications: ['n'], errors: ['e'], warnings: ['w']};
+    const severities = [
+      ['exclamation-circle', 'var(--red-3)', 'e'],
+      ['exclamation-circle', 'var(--orange-2)', 'w'],
+      ['info-circle', 'var(--blue-1)', 'n'],
+    ];
+    for (const [restriction, isScalar, color, computed] of [
+      ['restricted', false, 'var(--red-3)', 'different'],
+      ['info', true, 'var(--blue-1)', 'computed'],
+    ] as const) {
+      const {host, icon, dispose} = await mountIcon((icon) => icon.isScalar = isScalar);
+      try {
+        icon.validationStatus = {validation, consistency: consistency(restriction, true, 'computed')};
+        expectDeepEqual(sections(await openPopover(host)), [...severities,
+          ['handshake-slash', color, `Current value is inconsistent. Computed value was ${computed}`]]);
+      } finally {
+        dispose();
+      }
+    }
+  });
+
   test('hover mode shows a tooltip instead of a popover', async () => {
     const {host, icon, dispose} = await mountIcon((icon) => icon.useHover = true);
     try {

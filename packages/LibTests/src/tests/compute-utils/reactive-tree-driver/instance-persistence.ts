@@ -58,10 +58,14 @@ category('ComputeUtils: Driver state tree persistence', async () => {
       expectDeepEqual(!!(lc as any).steps[1].funcCallId, true, {prefix: 'pipeline step2 saved funcCall uuid'});
 
       expectDeepEqual(sc.uuid !== lc.uuid, true, {prefix: 'pipeline different node uuid'});
-      expectDeepEqual((sc as any).steps[0].uuid !== (lc as any).steps[0].uuid, true, {prefix: 'pipeline step1 different node uuid'});
-      expectDeepEqual((sc as any).steps[1].uuid !== (lc as any).steps[1].uuid, true, {prefix: 'pipeline step2 different node uuid'});
-      expectDeepEqual((sc as any).steps[0].funcCallId !== (lc as any).steps[0].funcCallId, true, {prefix: 'pipeline step1 different funcCall uuid'});
-      expectDeepEqual((sc as any).steps[1].funcCallId !== (lc as any).steps[1].funcCallId, true, {prefix: 'pipeline step2 different funcCall uuid'});
+      expectDeepEqual((sc as any).steps[0].uuid !== (lc as any).steps[0].uuid, true,
+        {prefix: 'pipeline step1 different node uuid'});
+      expectDeepEqual((sc as any).steps[1].uuid !== (lc as any).steps[1].uuid, true,
+        {prefix: 'pipeline step2 different node uuid'});
+      expectDeepEqual((sc as any).steps[0].funcCallId !== (lc as any).steps[0].funcCallId, true,
+        {prefix: 'pipeline step1 different funcCall uuid'});
+      expectDeepEqual((sc as any).steps[1].funcCallId !== (lc as any).steps[1].funcCallId, true,
+        {prefix: 'pipeline step2 different funcCall uuid'});
     } finally {
       await deleteRuns([metaCall?.id, ...savedCallIds(tree.toSerializedState())]);
     }
@@ -77,7 +81,8 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const metaCall = await tree.save().toPromise();
     try {
       // create outer pipeline
-      const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockWrapper3', {version: '1.0'}).toPromise();
+      const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockWrapper3', {version: '1.0'})
+        .toPromise();
       const outerPconf = await getProcessedConfig(outerConfig);
       const outerTree = StateTree.fromPipelineConfig({config: outerPconf});
       await outerTree.init().toPromise();
@@ -158,7 +163,8 @@ category('ComputeUtils: Driver state tree persistence', async () => {
       // the reference resolves back to the original dataframe
       const restored = await deserializeRestrictions(blob);
       expectDeepEqual(restored['df']?.type, 'restricted', {prefix: 'restored restriction type'});
-      expectDeepEqual(restored['df']?.assignedValue instanceof DG.DataFrame, true, {prefix: 'restored assignedValue is a dataframe'});
+      expectDeepEqual(restored['df']?.assignedValue instanceof DG.DataFrame, true,
+        {prefix: 'restored assignedValue is a dataframe'});
       expectDeepEqual(restored['df']?.assignedValue?.rowCount, 3, {prefix: 'restored dataframe content'});
     } finally {
       await deleteRuns([metaCall?.id, ...savedCallIds(tree.toSerializedState())]);

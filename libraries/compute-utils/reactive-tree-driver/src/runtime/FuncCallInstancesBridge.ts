@@ -68,7 +68,12 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
   private closed$ = new Subject<true>();
   private initialData?: BridgePreInitData;
 
-  constructor(private io: FuncCallIODescription[], private states: StateItem[], public readonly isReadonly: boolean, private logger?: DriverLogger) {
+  constructor(
+    private io: FuncCallIODescription[],
+    private states: StateItem[],
+    public readonly isReadonly: boolean,
+    private logger?: DriverLogger,
+  ) {
     for (const item of this.io)
       this.metaStates[item.id] = new BehaviorSubject<any>(undefined);
 
@@ -177,7 +182,9 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
       this.inputRestrictionsUpdates$.next([id, restrictionPayload] as const);
 
     // equal values might not trigger updates with real FuncCalls
-    if (currentInstance instanceof FuncCallAdapter && currentInstance.getState(id) === assignedValue && !this.isReadonly)
+    if (
+      currentInstance instanceof FuncCallAdapter && currentInstance.getState(id) === assignedValue && !this.isReadonly
+    )
       this.inputRestrictionsUpdates$.next([id, restrictionPayload] as const);
   }
 

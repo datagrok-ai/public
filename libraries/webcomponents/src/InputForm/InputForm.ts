@@ -7,7 +7,7 @@ import {distinctUntilChanged, map, mapTo, startWith, switchMap, takeUntil} from 
 
 export class InputForm extends HTMLElement {
   private formInst?: DG.InputForm;
-  private skipDefaultInit = true;
+  skipInit = true;
   skipTableAutoFill = false;
   skipLogic = false;
   private formChanges$ = new Subject<DG.InputForm | undefined>();
@@ -33,12 +33,6 @@ export class InputForm extends HTMLElement {
     ).subscribe((ev) => this.dispatchEvent(new CustomEvent('validation-changed', {detail: ev})));
   }
 
-  connectedCallback() {
-  }
-
-  disconnectedCallback() {
-  }
-
   get funcCall() {
     return this.formInst?.source;
   }
@@ -46,14 +40,6 @@ export class InputForm extends HTMLElement {
   set funcCall(fc: DG.FuncCall | undefined) {
     ui.empty(this);
     this.replaceFunc(fc);
-  }
-
-  set skipInit(val: boolean) {
-    this.skipDefaultInit = val;
-  }
-
-  get skipInit() {
-    return this.skipDefaultInit;
   }
 
   public destroy() {
@@ -69,7 +55,7 @@ export class InputForm extends HTMLElement {
     if (!funcCall)
       this.formInst = undefined;
     else {
-      const form = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: this.skipDefaultInit,
+      const form = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: this.skipInit,
         skipTableAutoFill: this.skipTableAutoFill, skipLogic: this.skipLogic} as any);
       if (generation !== this.formGeneration)
         return;

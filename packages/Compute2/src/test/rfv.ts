@@ -274,9 +274,9 @@ category('Pipeline: MockPipeline2 sequential', () => {
     await waitUntil(() => {
       const labels = view.root.querySelectorAll('.mtl-tree .mtl-ml');
       const texts = Array.from(labels).map((l) => l.textContent?.trim());
-      const count = (texts.some((t) => t === 'add') ? 1 : 0)
-        + (texts.some((t) => t === 'mul') ? 1 : 0)
-        + (texts.some((t) => t?.includes('cooling')) ? 1 : 0);
+      const count = (texts.some((t) => t === 'add') ? 1 : 0) +
+        (texts.some((t) => t === 'mul') ? 1 : 0) +
+        (texts.some((t) => t?.includes('cooling')) ? 1 : 0);
       return count >= 2;
     }, 'Tree should show at least 2 of: add, mul, cooling', 10000);
 

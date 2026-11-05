@@ -1,0 +1,131 @@
+name: Package Docker rebuild
+# Rebuilds the Docker images of one package from packages/<package>/dockerfiles at `ref`,
+# optionally taking the dependency/build files from `overlay_ref`, and (with push) overwrites
+# datagrok/<image>:<tag> on Docker Hub. Used to ship CVE fixes into already-released tags.
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package directory under packages/ (e.g. Chem)'
+        required: true
+        type: string
+      tag:
+        description: 'Docker Hub tag to write (e.g. 1.17.18)'
+        required: true
+        type: string
+      ref:
+        description: 'Git ref/SHA whose packages/<package>/dockerfiles are built'
+        required: true
+        type: string
+        default: master
+      overlay_ref:
+        description: 'Optional ref whose Dockerfile/requirements*/environment*.y*ml/*.lock/package*.json under dockerfiles are copied over `ref`'
+        required: false
+        type: string
+        default: ''
+      push:
+        description: 'Push datagrok/<image>:<tag> (false = build + scan only)'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    name: "${{ inputs.package }}:${{ inputs.tag }} (${{ inputs.ref }}${{ inputs.overlay_ref && format(' + {0}', inputs.overlay_ref) || '' }})"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    env:
+      PKG: ${{ inputs.package }}
+      TAG: ${{ inputs.tag }}
+      OVERLAY_REF: ${{ inputs.overlay_ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Apply overlay
+        if: inputs.overlay_ref != ''
+        run: |
+          dir="packages/$PKG/dockerfiles"
+          src=$(git rev-parse --verify -q "origin/$OVERLAY_REF^{commit}" || git rev-parse --verify "$OVERLAY_REF^{commit}")
+          files=$(git ls-tree -r --name-only "$src" -- "$dir" | grep -E '/(Dockerfile|requirements[^/]*|environment[^/]*\.ya?ml|[^/]*\.lock|package[^/]*\.json)$' || true)
+          [ -n "$files" ] || { echo "No overlay files in $dir at $OVERLAY_REF"; exit 1; }
+          git checkout "$src" -- $files
+          git status --short
+          git diff --cached --stat
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune -af >/dev/null
+          df -h /
+
+      - name: Build images
+        id: build
+        run: |
+          [ -d "packages/$PKG/dockerfiles" ] || { echo "packages/$PKG/dockerfiles does not exist at this ref"; exit 1; }
+          package_name=$(jq -r .name "packages/$PKG/package.json" | sed -e 's,@datagrok/,,g')
+          docker buildx create --use 2>/dev/null || true
+          images=""
+          for dockerfile in $(find "packages/$PKG/dockerfiles" -type f -name Dockerfile); do
+            image_name=$package_name
+            if [[ $(dirname $dockerfile) != *"dockerfiles" ]]; then
+              image_name+="-$(dirname $dockerfile | awk -F/ '{print $NF}')"
+            fi
+            echo "::group::Build datagrok/${image_name}:${TAG} from $dockerfile"
+            docker buildx build $(dirname $dockerfile) --platform linux/amd64 --pull --load \
+              --tag datagrok/${image_name}:${TAG}
+            echo "::endgroup::"
+            images+=" datagrok/${image_name}:${TAG}"
+          done
+          echo "images=$images" >> $GITHUB_OUTPUT
+          docker images
+
+      - name: Trivy scan
+        continue-on-error: true
+        run: |
+          for image in ${{ steps.build.outputs.images }}; do
+            echo "::group::Trivy $image"
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache/ \
+              aquasec/trivy:0.75.0 image --scanners vuln --timeout 30m "$image" || true
+            echo "::endgroup::"
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache/ \
+              aquasec/trivy:0.75.0 image --scanners vuln --skip-db-update --format json --quiet "$image" \
+              | jq -r --arg i "$image" '[.Results[]?.Vulnerabilities[]?] as $v
+                  | "\($i): total=\($v|length) CRITICAL=\([$v[]|select(.Severity=="CRITICAL")]|length) HIGH=\([$v[]|select(.Severity=="HIGH")]|length) MEDIUM=\([$v[]|select(.Severity=="MEDIUM")]|length) LOW=\([$v[]|select(.Severity=="LOW")]|length) fixable=\([$v[]|select(.FixedVersion!=null and .FixedVersion!="")]|length)"' \
+              | tee -a $GITHUB_STEP_SUMMARY || true
+          done
+
+      - name: Smoke run
+        run: |
+          # A long-running service must still be up after 60 s; a one-shot image must exit 0.
+          for image in ${{ steps.build.outputs.images }}; do
+            cid=$(docker run -d "$image")
+            sleep 60
+            state=$(docker inspect --format '{{.State.Status}} {{.State.ExitCode}}' "$cid")
+            echo "::group::Smoke $image: $state"
+            docker logs --tail 80 "$cid" 2>&1
+            echo "::endgroup::"
+            echo "$image smoke: $state" | tee -a $GITHUB_STEP_SUMMARY
+            docker rm -f "$cid" >/dev/null
+            case "$state" in running*|"exited 0") ;; *) exit 1 ;; esac
+          done
+
+      - name: Login to DockerHub
+        if: inputs.push
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push images
+        if: inputs.push
+        run: |
+          for image in ${{ steps.build.outputs.images }}; do
+            docker push "$image"
+            echo "pushed $image $(docker inspect --format '{{index .RepoDigests 0}}' "$image")" | tee -a $GITHUB_STEP_SUMMARY
+          done

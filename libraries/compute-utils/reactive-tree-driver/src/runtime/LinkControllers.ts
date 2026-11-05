@@ -209,7 +209,8 @@ export class LinkController extends ControllerBase<[any, RestrictionType]> imple
   }
 }
 
-export class ValidatorController extends ControllerBase<ValidationResult | undefined> implements IRuntimeValidatorController {
+export class ValidatorController extends ControllerBase<ValidationResult | undefined>
+  implements IRuntimeValidatorController {
   public actions: ActionsUUID;
   public baseNode?: TreeNode<StateTreeNode>;
 
@@ -232,7 +233,8 @@ export class ValidatorController extends ControllerBase<ValidationResult | undef
   }
 }
 
-export class PipelineValidatorController extends ControllerBase<ValidationResult | undefined> implements IRuntimePipelineValidatorController {
+export class PipelineValidatorController extends ControllerBase<ValidationResult | undefined>
+  implements IRuntimePipelineValidatorController {
   public outline: PipelineOutline;
 
   constructor(args: PipelineValidatorControllerArgs) {
@@ -260,7 +262,8 @@ export class MetaController extends ControllerBase<any | undefined> implements I
   }
 }
 
-export class MutationController extends ControllerBase<PipelineInstanceConfig | undefined> implements IRuntimePipelineMutationController {
+export class MutationController extends ControllerBase<PipelineInstanceConfig | undefined>
+  implements IRuntimePipelineMutationController {
   public granularOps: Record<string, GranularMutationOp[]> = {};
   private removedUuids = new Set<string>();
   public outputNodes: Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]>;

@@ -266,6 +266,20 @@ describe('grok connect-folder <folder>', () => {
     expect(c.labels['ai.datagrok.folder.key']).toBe(keys[0].id);
   });
 
+  it('refuses an agent image from another repository unless --image names it', async () => {
+    stands[A].agentImage = 'evil/agent:1.0';
+    docker.remote.set('evil/agent:1.0', 'sha256:evil');
+    const errors = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    expect(await share(args(folder, {host: A}))).toBe(false);
+    expect(errors.mock.calls.map((c) => `${c[0]}`).join('')).toContain('--image evil/agent:1.0');
+    expect(docker.calls.map((c) => c[0])).not.toContain('pull');
+    expect(ran()).toHaveLength(0);
+    expect(stands[A].keys).toHaveLength(0);
+
+    expect(await share(args(folder, {host: A, image: 'evil/agent:1.0'}))).toBe(true);
+    expect(ran()).toHaveLength(1);
+  });
+
   it('resumes a running container, starts a stopped one, and restarts one whose share was deleted', async () => {
     await share(args(folder, {host: A}));
     const key = stands[A].keys[0].id;

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Export: Fixed float inputs of workflow steps never opened in the session exporting with fewer digits than the form shows (0.0001 as 0)
 * Run compare: Fixed the chart's "Ctrl + scroll to zoom" hint never showing
 * Requires platform 1.28.0 or later: removed the fallbacks for older platforms

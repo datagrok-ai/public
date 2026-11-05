@@ -72,6 +72,9 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
   });
   const conn = created.connection;
   const name = conn.friendlyName ?? conn.name;
+  if (!opts.image && !dk.isAgentImage(created.agentImage))
+    throw new Error(`${new URL(cred.url).host} asks to run the folder agent from ${created.agentImage}, not ${dk.AGENT_REPOSITORY}. ` +
+      `Pass --image ${created.agentImage} to run it anyway.`);
   const spec: dk.RunSpec = {
     image: opts.image ?? created.agentImage, connectionId: conn.id, alias, apiRoot: cred.url, name, folder,
     hostLabel: os.hostname(), readOnly: opts.readOnly, envFile: '', foreground: opts.foreground, user: dk.linuxUser(),

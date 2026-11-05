@@ -183,7 +183,8 @@ export function getRelevantGlobalActions(data: PipelineState, currentStepUuid: s
     currentState = currentState.steps[segments[idx]];
     states.push(currentState);
   }
-  const globalActions = states.flatMap((state) => state?.actions?.filter((action) => action.position === 'globalmenu') ?? []);
+  const globalActions = states.flatMap((state) =>
+    state?.actions?.filter((action) => action.position === 'globalmenu') ?? []);
   return globalActions;
 }
 

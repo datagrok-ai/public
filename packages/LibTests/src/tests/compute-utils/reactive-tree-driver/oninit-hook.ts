@@ -94,7 +94,8 @@ category('ComputeUtils: Driver hooks running', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const rnode = tree.nodeTree.root;
-      expectObservable(rnode.getItem().getStateStore().getStateChanges('meta1')).toBe('a 249ms b', {a: undefined, b: 10});
+      expectObservable(rnode.getItem().getStateStore().getStateChanges('meta1'))
+        .toBe('a 249ms b', {a: undefined, b: 10});
     });
   });
 
@@ -157,7 +158,8 @@ category('ComputeUtils: Driver hooks running', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const rnode = tree.nodeTree.root;
-      expectObservable(rnode.getItem().getStateStore().getStateChanges('meta1')).toBe('a 249ms b', {a: undefined, b: 10});
+      expectObservable(rnode.getItem().getStateStore().getStateChanges('meta1'))
+        .toBe('a 249ms b', {a: undefined, b: 10});
     });
   });
 

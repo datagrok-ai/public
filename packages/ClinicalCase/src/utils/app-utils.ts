@@ -190,8 +190,12 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
   const importStudyDiv = ui.div('', {style: {position: 'relative'}});
   const importStudyButton = ui.button('Import study...', () => {
     currentOpenedView?.close();
+    // The 'Import study' tree item exists only once the app node has been expanded
     const item = clinicalCaseNode.items.find((it) => it.text === 'Import study');
-    clinicalCaseNode.currentItem = item;
+    if (item)
+      clinicalCaseNode.currentItem = item;
+    else
+      createImportStudyView(standard);
   });
   importStudyButton.classList.add('clinical-case-import-study-button');
   importStudyDiv.append(importStudyButton);

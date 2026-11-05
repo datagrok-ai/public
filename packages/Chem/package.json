@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.17.15",
+  "version": "1.17.19",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
@@ -93,6 +93,9 @@
     "typescript-lru-cache": "^2.0.0",
     "worker-loader": "^3.0.8",
     "wu": "catalog:"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",

@@ -1,5 +1,9 @@
 # Scripting changelog
 
+## 1.1.4 (2026-11-04)
+
+* Rebuilt the jkg_* kernel images with zero vulnerability findings: tornado 6.6 from PyPI in the gateway and Python environments (conda-forge stops at 6.5.10); the Octave kernel runs from the gateway's Python 3.11 instead of the Octave prefix's 3.10; the Node.js kernel moved from Node 18 (end of life) to Node 22, with a small zeromq 6 kernel replacing ijavascript's jmp/zeromq 5 transport (nel still runs the code, so scripts behave the same)
+
 ## 1.1.3 (2026-11-03)
 
 * Rebuilt the jkg_* kernel images from master: jkg_octave clears its tornado HIGHs (tornado 6.5.10 from PyPI; conda-forge has no Python 3.10 build past 6.5.8), the other images pick up current base and dependency patches

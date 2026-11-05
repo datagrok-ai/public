@@ -523,7 +523,9 @@ export const RunComparison = Vue.defineComponent({
           max={900}
           onUpdate:size={(size) => sidebarWidth.value = size}
         />
-        <div style={{flex: '1', display: 'flex', flexDirection: 'column', padding: '8px', overflow: 'auto', minWidth: '0px'}}>
+        <div style={{
+          flex: '1', display: 'flex', flexDirection: 'column', padding: '8px', overflow: 'auto', minWidth: '0px',
+        }}>
           { entries.value.length < 2 &&
             <div style={{color: 'var(--grey-4)'}}>Add at least two runs (or tables) to compare</div> }
           { /* hidden, not unmounted, so the tabs keep their state while runs are swapped */ }

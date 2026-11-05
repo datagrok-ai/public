@@ -84,7 +84,7 @@ export const Logger = Vue.defineComponent({
             </div>,
             <div key={item.uuid + '2'}>
               {item.type}
-              </div>,
+            </div>,
             <div key={item.uuid + '3'}>
               {pathString}
             </div>,
@@ -97,7 +97,7 @@ export const Logger = Vue.defineComponent({
             </div>,
             <div key={item.uuid + '2'}>
               {item.type} ({item.severity})
-              </div>,
+            </div>,
             <div key={item.uuid + '3'}>
               <span>{item.context}: {item.message}</span>
               {links.length > 0 && (
@@ -120,7 +120,7 @@ export const Logger = Vue.defineComponent({
             </div>,
             <div key={item.uuid + '2'}>
               {item.type}
-              </div>,
+            </div>,
             <div key={item.uuid + '3'}>
               <span style={linkStyle} onClick={() => emit('linkClicked', [item.id])}>{pathString}</span>
             </div>,
@@ -129,7 +129,10 @@ export const Logger = Vue.defineComponent({
       });
       return (
         <>
-          <div style={{display: 'flex', flexDirection: 'row', marginBottom: '10px', alignItems: 'center', flexWrap: 'wrap', gap: '5px'}}>
+          <div style={{
+            display: 'flex', flexDirection: 'row', marginBottom: '10px',
+            alignItems: 'center', flexWrap: 'wrap', gap: '5px',
+          }}>
             <div style={{marginRight: '2px'}}>Events:</div>
             <FilterDropdown
               options={eventTypeOptions}
@@ -144,7 +147,10 @@ export const Logger = Vue.defineComponent({
               onUpdate:modelValue={(v: string[]) => linksFilter.value = v}
             />
           </div>
-          <div style={{overflow: 'scroll', display: 'grid', gridTemplateColumns: 'auto auto auto', columnGap: '10px', rowGap: '5px'}}>
+          <div style={{
+            overflow: 'scroll', display: 'grid', gridTemplateColumns: 'auto auto auto',
+            columnGap: '10px', rowGap: '5px',
+          }}>
             {logs}
           </div>
         </>

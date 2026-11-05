@@ -2,7 +2,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {NodeDapi} from '../utils/node-dapi';
 import {OutputFormat} from '../utils/server-output';
 import {ALL_USERS} from '../utils/migrate/walker';
-import {handleObserve, parseDuration, parseTime, setPath} from '../commands/server-observe';
+import {handleObserve, matchFilter, parseDuration, parseTime, setPath} from '../commands/server-observe';
 
 type Call = {method: string; path: string; body: any};
 
@@ -364,5 +364,129 @@ describe('logs', () => {
 describe('an unknown command', () => {
   it('fails with the usage', async () => {
     await expect(observe('problem', 'list', [], {})).rejects.toThrow(/Unknown command 'problem list'\nUsage: grok s observe/);
+  });
+});
+
+describe('logs match', () => {
+  it('joins the expression and the flags into one log filter', () => {
+    expect(matchFilter(['level', 'in', '(error,', 'warning)'], {})).toBe('level in (error, warning)');
+    expect(matchFilter([], {level: 'error,warning', package: 'Chembl', grep: 'Resize Observer'}))
+      .toBe('(level in (error, warning)) and (package = Chembl) and (text =~ "Resize Observer")');
+    expect(matchFilter(['not text ~ probe'], {user: 'alice'})).toBe('(not text ~ probe) and (user = alice)');
+    expect(matchFilter([], {})).toBe('');
+    expect(matchFilter([], {type: 'query-edited', space: 'Chem'}))
+      .toBe('(type = query-edited) and (space =~ "^Chem(:|$)")');
+    expect(matchFilter([], {function: 'Chem:smiles', session: 's1'})).toBe('(function = Chem:smiles) and (session = s1)');
+  });
+
+  it('quotes values as the server does and escapes a space for its regex', () => {
+    expect(matchFilter([], {grep: 'a "b" \\d+'})).toBe('text =~ "a \\"b\\" \\\\d+"');
+    expect(matchFilter([], {user: 'and'})).toBe('user = "and"');
+    expect(matchFilter([], {space: 'A.B'})).toBe('space =~ "^A\\\\.B(:|$)"');
+  });
+
+  it('refuses an empty or bare flag', () => {
+    for (const v of ['', ',', true])
+      expect(() => matchFilter([], {level: v})).toThrow('--level needs a value');
+    expect(() => matchFilter([], {grep: true})).toThrow('--grep needs a value');
+    expect(() => matchFilter([], {space: ''})).toThrow('--space needs a value');
+  });
+
+  it('asks the server for what the filter matches', async () => {
+    const {calls} = await observe('logs', 'match', ['level = error'], {since: '2h', limit: 50});
+    expect(calls[0].method).toBe('GET');
+    expect(calls[0].path).toContain('/log/match?');
+    expect(decodeURIComponent(calls[0].path)).toContain('filter=level = error');
+    expect(calls[0].path).toContain('since=7200s');
+    expect((await observe('logs', 'match', [], {})).calls[0].path).toContain('since=3600s');
+    await expect(observe('logs', 'match', [], {since: '2 hours'})).rejects.toThrow('--since expects a duration');
+  });
+});
+
+describe('groups', () => {
+  const current = () => ({logGroups: [{id: 'g1', name: 'Errors', kind: 'records', levels: ['error'], saveTo: [{destination: 'db'}]}],
+    exportSettings: [{'#type': 'OpenTelemetrySettings', id: 'e1', name: 'grafana', endpoint: 'http://otel:4318/v1/logs'}]});
+  const answer = (settings: any) => (method: string) => method === 'GET' ? JSON.stringify({settings}) : null;
+  const posted = (calls: any[]) => calls.find((c) => c.method === 'POST')?.body;
+
+  it('adds a group from flags, the filter as text', async () => {
+    const {calls} = await observe('groups', 'add', [], {name: 'Chembl', levels: 'error,warning',
+      filter: 'package = Chembl and not text ~ probe', to: 'db,grafana:otlp'}, answer(current()));
+    const g = posted(calls).logGroups[1];
+    expect(g).toMatchObject({name: 'Chembl', levels: ['error', 'warning'], filter: 'package = Chembl and not text ~ probe',
+      saveTo: [{destination: 'db'}, {destination: 'grafana', format: 'otlp'}], activation: 'always'});
+    expect(g.id).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('changes only the flags given, by name', async () => {
+    const {calls} = await observe('groups', 'set', ['Errors'], {enabled: 'false', when: 'level = error', for: '15m', before: '60s'},
+      answer(current()));
+    expect(posted(calls).logGroups[0]).toMatchObject({name: 'Errors', enabled: false, levels: ['error'], activation: 'triggered',
+      triggerWhen: 'level = error', activeMinutes: 15, flushBeforeSeconds: 60});
+  });
+
+  it('removes a group, and an endpoint with the ticks that name it', async () => {
+    expect(posted((await observe('groups', 'rm', ['Errors'], {}, answer(current()))).calls).logGroups).toEqual([]);
+    const settings = current();
+    settings.logGroups[0].saveTo.push({destination: 'grafana'});
+    const body = posted((await observe('endpoints', 'rm', ['grafana'], {}, answer(settings))).calls);
+    expect(body.exportSettings).toEqual([]);
+    expect(body.logGroups[0].saveTo).toEqual([{destination: 'db'}]);
+  });
+
+  it('resets to the default groups', async () => {
+    expect(posted((await observe('groups', 'reset', [], {}, answer(current()))).calls).logGroups).toBeNull();
+  });
+
+  it('lists groups as a table', async () => {
+    const {printed} = await observe('groups', 'list', [], {}, answer(current()), 'table');
+    expect(printed).toContain('Errors');
+    expect(printed).toContain('db');
+  });
+
+  it('refuses to edit groups one by one when the server does not return its defaults', async () => {
+    const old = {logGroups: null, exportSettings: []};
+    for (const [verb, rest, argv] of [['add', [], {name: 'X'}], ['set', ['Errors'], {kind: 'drop'}], ['rm', ['Errors'], {}]] as const) {
+      const run = observe('groups', verb, [...rest], argv, answer(old));
+      await expect(run).rejects.toThrow('does not return its default log groups');
+    }
+    const {calls} = await observe('groups', 'list', [], {}, answer(old));
+    expect(calls.filter((c) => c.method === 'POST')).toEqual([]);
+  });
+
+  it('refuses to remove the audit group', async () => {
+    const settings = current();
+    settings.logGroups.unshift({id: 'a1', name: 'Audit export', protected: true, levels: ['audit'], saveTo: []} as any);
+    await expect(observe('groups', 'rm', ['Audit export'], {}, answer(settings)))
+      .rejects.toThrow('can only be switched off (--enabled false), which needs EditAuditLogging');
+  });
+
+  it('checks flag values before saving', async () => {
+    const set = (argv: any) => observe('groups', 'set', ['Errors'], argv, answer(current()));
+    await expect(set({kind: 'record'})).rejects.toThrow('--kind is one of records, alerts, drop');
+    await expect(set({scope: 'team'})).rejects.toThrow('--scope is one of session, user, global');
+    await expect(set({'min-severity': 'error'})).rejects.toThrow('--min-severity is one of info, warning, critical');
+    await expect(set({levels: 'error,fatal'})).rejects.toThrow('--levels is one of');
+    await expect(set({flags: 'db,sql'})).rejects.toThrow('--flags is one of');
+    await expect(set({to: true})).rejects.toThrow('--to needs a value');
+    await expect(set({to: ','})).rejects.toThrow('--to needs a value');
+    await expect(set({for: '90s'})).rejects.toThrow('--for expects whole minutes');
+    const {calls} = await set({for: '0', before: 0, flags: 'all'});
+    expect(posted(calls).logGroups[0]).toMatchObject({activeMinutes: 0, flushBeforeSeconds: 0, debugFlags: ['all']});
+  });
+
+  it('finds a group by id before name, and needs one', async () => {
+    const settings = current();
+    settings.logGroups.push({id: 'Errors', name: 'Other', kind: 'records', levels: [], saveTo: []});
+    const {printed} = await observe('groups', 'get', ['Errors'], {}, answer(settings));
+    expect(JSON.parse(printed).name).toBe('Other');
+    for (const verb of ['get', 'set', 'rm'])
+      await expect(observe('groups', verb, [], {}, answer(current()))).rejects.toThrow(`Usage: grok s observe groups ${verb} <name|id>`);
+  });
+
+  it('replaces the groups from a JSON array', async () => {
+    const {calls} = await observe('groups', 'put', [], {data: '[{"name": "Errors", "levels": ["error"]}]'}, answer(current()));
+    expect(posted(calls).logGroups).toMatchObject([{name: 'Errors', levels: ['error']}]);
+    await expect(observe('groups', 'put', [], {data: '{}'}, answer(current()))).rejects.toThrow('a JSON array');
   });
 });

@@ -21,48 +21,34 @@ export class DGBigButton extends HTMLButtonElement {
 export interface DGBigButtonT extends DGBigButton {};
 
 export class DGToggleInput extends HTMLElement {
-  private _caption: string = 'Caption';
+  private innerEditor?: DG.InputBase<boolean>;
 
-  private innerEditor = null as null | DG.InputBase<boolean>;
-
-  constructor() {
-    super();
-  }
-
-  private render() {
-    ui.empty(this);
-    this.innerEditor = ui.input.toggle(this._caption);
-    this.appendChild(this.innerEditor.root);
-
-    this.innerEditor.onChanged.subscribe(() =>
-      this.dispatchEvent(new CustomEvent('value-changed', {detail: this.innerEditor!.value})),
-    );
+  private get editor() {
+    if (!this.innerEditor) {
+      const editor = this.innerEditor = ui.input.toggle('Caption');
+      this.appendChild(editor.root);
+      editor.onChanged.subscribe(() => this.dispatchEvent(new CustomEvent('value-changed', {detail: editor.value})));
+    }
+    return this.innerEditor;
   }
 
   set caption(caption: string) {
-    if (!this.innerEditor) this.render();
-
-    this.innerEditor!.caption = caption;
+    this.editor.caption = caption;
   }
 
   set nullable(nullable: boolean) {
-    if (!this.innerEditor) this.render();
-
-    this.innerEditor!.nullable = nullable;
+    this.editor.nullable = nullable;
   }
 
   set value(value: boolean) {
-    if (!this.innerEditor) this.render();
-
-    this.innerEditor!.notify = false;
-    this.innerEditor!.value = value;
-    this.innerEditor!.notify = true;
+    const editor = this.editor;
+    editor.notify = false;
+    editor.value = value;
+    editor.notify = true;
   }
 
   set tooltip(tooltip: string) {
-    if (!this.innerEditor) this.render();
-
-    this.innerEditor!.setTooltip(tooltip);
+    this.editor.setTooltip(tooltip);
   }
 }
 
@@ -74,10 +60,6 @@ export class DGIconFA extends HTMLElement {
   _animation = null as null | string;
   _tooltip = null as null | string;
   _faStyle = 'fal' as 'fal' | 'fas' | 'far' | 'fad';
-
-  constructor() {
-    super();
-  }
 
   private render() {
     ui.empty(this);
@@ -123,10 +105,6 @@ export class DGIconImage extends HTMLElement {
   _path = null as null | string;
   _tooltip = null as null | string;
 
-  constructor() {
-    super();
-  }
-
   private render() {
     ui.empty(this);
     if (!this._path)
@@ -167,10 +145,6 @@ export class DGComboPopup extends HTMLElement {
   private _items = [] as string[];
   private _tooltip: string | null = null;
   private _rightAligned: boolean = false;
-
-  constructor() {
-    super();
-  }
 
   public set caption(val: string | HTMLElement) {
     this._caption = val;

@@ -161,7 +161,7 @@ export const tabToProperties = (fc: DG.FuncCall) => {
     return;
   };
 
-  [...fc.inputParams.values()].forEach(({ property }) => {
+  [...fc.inputParams.values()].forEach(({property}) => {
     if (property.propertyType === DG.TYPE.DATA_FRAME) processVisual(property, false);
   });
 
@@ -180,7 +180,9 @@ export const tabToProperties = (fc: DG.FuncCall) => {
     const [rawValue, formattedValue, units] = content;
     if (hideEmpty && isEmptyScalar(rawValue))
       return;
-    const scalarProp = {name: property.name, friendlyName: property.caption || property.name, rawValue, formattedValue, units};
+    const scalarProp = {
+      name: property.name, friendlyName: property.caption || property.name, rawValue, formattedValue, units,
+    };
     if (categoryProps && categoryProps.type === 'scalars')
       categoryProps.scalarsData.push(scalarProp);
     else

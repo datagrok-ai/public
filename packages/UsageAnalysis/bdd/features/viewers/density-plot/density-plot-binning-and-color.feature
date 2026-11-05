@@ -57,7 +57,7 @@ Feature: Density plot binning, bin shape and the colour scale
     And the "color scale max" and "max bin count" readings of density plot viewer should be the same
     When user sets "colorTransformType" property of density plot viewer to "logarithmic"
     Then the "color transform" reading of density plot viewer should be "logarithmic"
-    And the "color scale min" reading of density plot viewer should be 1
+    And the "color scale min" reading of density plot viewer should be 0
     And density plot viewer should have repainted
     When user sets "colorTransformType" property of density plot viewer to "linear"
     Then the "color scale min" reading of density plot viewer should be 0

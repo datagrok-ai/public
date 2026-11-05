@@ -246,7 +246,9 @@ export const PipelineView = Vue.defineComponent({
                               <IconFA style={{'padding-right': '3px'}} name='folder-tree' />
                             }
                             <div>
-                              <span class='text-[color:var(--blue-1)]'> {stepType.friendlyName ?? stepType.configId} </span>
+                              <span class='text-[color:var(--blue-1)]'>
+                                {' '}{stepType.friendlyName ?? stepType.configId}{' '}
+                              </span>
                             </div>
                           </div>
                           <div class='flex flex-row'>

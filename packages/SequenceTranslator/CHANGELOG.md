@@ -1,7 +1,8 @@
 # Sequence Translator changelog
 
-## v.next
+## 1.11.7 (2026-11-05)
 
+* Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Edit HELM (oligonucleotide cells): The HELM editor is destroyed when its dialog closes, however it closes (it kept its document listeners, and after Escape the monomer that follows the mouse stayed on the page)
 * Dependencies: `@datagrok-libraries/hwe` 1.1.1 (`parseHelm` about 15-20% faster with the same results; a `trailing-monomer-separator` warning)
 * PolyTool: Enumerate: Fixed Highlight monomers applying unseen: the box was hidden for macromolecules, where its value (restored from the dialog's history) was used, and ignored for templates, where it showed; it now shows whenever To atomic level is on and applies to both

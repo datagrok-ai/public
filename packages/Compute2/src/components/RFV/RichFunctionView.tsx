@@ -196,7 +196,6 @@ export const RichFunctionView = Vue.defineComponent({
 
     const helpRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
     const formRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
-    const dockSpawnRef = Vue.shallowRef<InstanceType<typeof DockManager> | undefined>(undefined);
     const inputFormComponentRef = Vue.shallowRef<InstanceType<typeof InputForm> | undefined>(undefined);
 
     ////
@@ -314,7 +313,9 @@ export const RichFunctionView = Vue.defineComponent({
       shownToggles.value = new Set(tryParseJson(sessionStorage.getItem(shownTogglesKey()) ?? '[]') ?? []);
     }, {immediate: true});
 
-    Vue.watch([currentCall, () => props.callState, visibleTabLabels], ([call, callState, labels], [prevCall, prevCallState, prevLabels]) => {
+    Vue.watch([currentCall, () => props.callState, visibleTabLabels], (
+      [call, callState, labels], [prevCall, prevCallState, prevLabels],
+    ) => {
       if (prevCall === call && prevCallState === callState && prevLabels === labels)
         return;
       // Re-run mutates outputs in place; refresh tabToPropertiesMap and tabLabels so
@@ -357,7 +358,7 @@ export const RichFunctionView = Vue.defineComponent({
       } catch (e: any) {
         grok.shell.error(e);
       }
-    }
+    };
 
     const exports = Vue.computed(() => {
       const activeExports: ExportItem[] = [];
@@ -378,11 +379,15 @@ export const RichFunctionView = Vue.defineComponent({
           } catch (e: any) {
             grok.shell.error(e);
           }
-        }
+        };
         activeExports.push({name, handler});
       }
-      activeExports.push(...customExports.value.filter(x => x.function && x.name).map(x => ({...x, handler: () => reportHandler(x.function)})));
-      activeExports.push({name: 'Save as project...', handler: () => saveCallToProject(currentCall.value, collectDfExportEntries())});
+      activeExports.push(...customExports.value.filter((x) => x.function && x.name)
+        .map((x) => ({...x, handler: () => reportHandler(x.function)})));
+      activeExports.push({
+        name: 'Save as project...',
+        handler: () => saveCallToProject(currentCall.value, collectDfExportEntries()),
+      });
       return activeExports;
     });
 
@@ -486,7 +491,8 @@ export const RichFunctionView = Vue.defineComponent({
         const ranges = getRanges('rangeSA');
         const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
         const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
-        SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok, inputsLookup, disableLookupDefault: true});
+        SensitivityAnalysisView.fromEmpty(currentCall.value.func,
+          {ranges, diffGrok, inputsLookup, disableLookupDefault: true});
       } catch (e: any) {
         grok.shell.error(e);
       }
@@ -503,7 +509,8 @@ export const RichFunctionView = Vue.defineComponent({
         const targets = getTargets();
         const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
         const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
-        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, acceptMode: true, diffGrok, inputsLookup, disableLookupDefault: true});
+        const view = await FittingView.fromEmpty(currentCall.value.func,
+          {ranges, targets, acceptMode: true, diffGrok, inputsLookup, disableLookupDefault: true});
         const call = await view.acceptedFitting$.pipe(take(1)).toPromise();
         grok.shell.v = currentView;
         if (call)
@@ -609,7 +616,6 @@ export const RichFunctionView = Vue.defineComponent({
           preferredPanelTitle={preferredTab.value ?? undefined}
           onTabClicked={handleTabClicked}
           key={currentUuid.value}
-          ref={dockSpawnRef}
         >
           { !historyHidden.value && props.history &&
             <KeptAlive
@@ -660,7 +666,8 @@ export const RichFunctionView = Vue.defineComponent({
                   callMeta={callMeta.value}
                   validationStates={validationState.value}
                   consistencyStates={consistencyState.value}
-                  onActionRequested={(actionUuid, additionalParams) => emit('actionRequested', actionUuid, additionalParams)}
+                  onActionRequested={(actionUuid, additionalParams) =>
+                    emit('actionRequested', actionUuid, additionalParams)}
                   onConsistencyReset={(ioName) => emit('consistencyReset', ioName)}
                   onFormReplaced={(ev) => emit('formReplaced', ev)}
                   onInputChanged={(ev) => emit('formInputChanged', ev)}
@@ -764,7 +771,9 @@ export const RichFunctionView = Vue.defineComponent({
             </div>: null
           }
         </DockManager>
-      </div>, [[ifOverlapping, isFittingActive.value, 'Fitting is active, either close it or use Apply fitted parameters']])
+      </div>, [[
+        ifOverlapping, isFittingActive.value, 'Fitting is active, either close it or use Apply fitted parameters',
+      ]])
     );
   },
 });
