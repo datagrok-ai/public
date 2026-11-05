@@ -1,3 +1,4 @@
+import {WORKGROUP_DIM} from '../workgroup';
 
 /**
  * colwise normalize the knn similarities
@@ -14,7 +15,7 @@ export async function sparseKNNNoralizeColwise(
   nRows: number
 ) {
   const neededThreads = nRows;
-  const workGroupThreadsPerDim = 10;
+  const workGroupThreadsPerDim = WORKGROUP_DIM;
   const totalWorkgroupThreads = workGroupThreadsPerDim * workGroupThreadsPerDim;
   const neededWorkGroups = Math.ceil(neededThreads / totalWorkgroupThreads);
   const workGroupDim = Math.ceil(Math.sqrt(neededWorkGroups));

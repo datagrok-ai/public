@@ -55,7 +55,12 @@ test('Map viewer', async ({page}) => {
 
   const pageErrors: string[] = [];
   const onPageError = (e: Error) => pageErrors.push(e.message);
-  const onConsole = (m: any) => { if (m.type() === 'error') pageErrors.push(m.text()); };
+  const onConsole = (m: any) => {
+    // the viewer's help page is not served by every stand
+    if (m.type() !== 'error' || /Failed to load resource/.test(m.text()) && /\/help\/.*\.md$/.test(m.location().url))
+      return;
+    pageErrors.push(m.text());
+  };
   page.on('pageerror', onPageError);
   page.on('console', onConsole);
 

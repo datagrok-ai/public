@@ -7,14 +7,19 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.box-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/biostructure.js';
 import '../../../bindings/connections.js';
+import '../../../bindings/file-formats.js';
+import '../../../bindings/flow.js';
 import '../../../bindings/grid.js';
+import '../../../bindings/queries.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, selectIn, shouldBe, shouldContainText, shouldHaveText, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {addCalculated, removeColumn, tableColumnComplete, tableColumns, tableOpen, tableRows} from '@datagrok-libraries/bdd/bindings/platform/data';
@@ -153,6 +158,9 @@ test.describe("Box plot group comparison", () => {
       await session.step(151, "Then \"Adjust By\" property of box plot viewer should be \"\"", () => propertyShouldBe(page, "Adjust By", el("box plot viewer"), ""));
       await session.step(152, "And \"Adjustment\" property of box plot viewer should be \"\"", () => propertyShouldBe(page, "Adjustment", el("box plot viewer"), ""));
       await session.step(153, "And \"Method\" property of box plot viewer should be \"\"", () => propertyShouldBe(page, "Method", el("box plot viewer"), ""));
+      await session.step(154, "When user hovers over box plot viewer", () => hoverOver(page, el("box plot viewer")));
+      await session.step(155, "Then \"Adjust by\" column input in box plot viewer should be hidden", () => shouldBe(page, el("\"Adjust by\" column input in box plot viewer"), "hidden"));
+      await session.step(156, "And Value column input in box plot viewer should be visible", () => shouldBe(page, el("Value column input in box plot viewer"), "visible"));
     });
     run.finish();
   });

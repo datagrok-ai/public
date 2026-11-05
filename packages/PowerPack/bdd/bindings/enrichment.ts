@@ -5,7 +5,7 @@
    a feature makes are deleted when it ends, with the directories their saving made. */
 import {Page} from '@playwright/test';
 import {Given, Then, When, element, kind} from '@datagrok-libraries/bdd';
-import {type ElementRef, atFeatureEnd, escapeRegExp, expect, fixtureFamilies, gestures, isStaleFixture, locate, pollMs}
+import {type ElementRef, atFeatureEnd, escapeRegExp, expect, fixtureFamilies, gestures, isStaleFixture, locate}
   from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
@@ -135,42 +135,3 @@ export const enrichmentNotJoins = Then('the enrichment {string} on the server sh
     return fields.length === 1 && fields[0].includes('enrichment files named') ? fields : fields.filter((f) => namesColumn(column).test(f));
   }, {message: `the fields the enrichment ${name} selects that name ${column}, as saved`}).toEqual([]);
 }, {tier: 'api', description: 'a column taken out in the editor is out of the saved configuration too'});
-
-/* What an enrichment put into each row, against the table it joined, read through the connection the
-   current table's query ran on: the joined table's row whose key is the row's key, value for value.
-   A join that put another session's values into a row fails; a column no row got fails too. */
-export const joinedValues = Then('the {string} column should hold, row by row, the {string} of the {string} table matched on {string} = {string}',
-  async (page: Page, column: string, sourceColumn: string, table: string, key: string, sourceKey: string) => {
-    let seen = '';
-    await expect.poll(async () => (seen = await page.evaluate(async ([c, sc, t, k, sk]) => {
-      const df = grok.shell.t;
-      const target = df?.col(c);
-      const keys = df?.col(k);
-      if (!target || !keys)
-        return `the current table has no "${target ? k : c}" column`;
-      const conn = await grok.dapi.connections.find(df.getTag('.data-connection-id'));
-      if (!conn)
-        return 'the current table did not come from a connection';
-      const values = [...new Set(Array.from({length: df.rowCount}, (_, i) => keys.isNone(i) ? null : String(keys.get(i))).filter((v) => v !== null))];
-      if (values.length === 0)
-        return 'no row has a key';
-      const quoted = values.map((v) => `'${String(v).replace(/'/g, '\'\'')}'`).join(', ');
-      const source = await conn.query('bdd-enrichment-check', `select "${sk}", "${sc}" from ${t} where "${sk}" in (${quoted})`).executeTable();
-      const plain = (col: any, i: number): string => col.isNone(i) ? '' : col.type === 'datetime' ? String(col.get(i).valueOf()) : String(col.get(i));
-      const byKey = new Map<string, string>();
-      for (let i = 0; i < source.rowCount; i++)
-        byKey.set(String(source.col(sk).get(i)), plain(source.col(sc), i));
-      const wrong: string[] = [];
-      for (let i = 0; i < df.rowCount; i++) {
-        if (keys.isNone(i))
-          continue;
-        const want = byKey.get(String(keys.get(i))) ?? '(no joined row)';
-        if (plain(target, i) !== want)
-          wrong.push(`row ${i + 1}: ${plain(target, i) || '(empty)'}, ${t}.${sc} is ${want || '(empty)'}`);
-      }
-      return wrong.length === 0 ? 'matches' : `${wrong.length} rows differ: ${wrong.slice(0, 5).join('; ')}`;
-    }, [column, sourceColumn, table, key, sourceKey] as [string, string, string, string, string])) === 'matches',
-    {message: `"${column}" against ${table}.${sourceColumn} by ${key} = ${sourceKey}`, timeout: pollMs(30000)}).toBe(true).catch(() => {
-      throw new Error(`"${column}" against ${table}.${sourceColumn} by ${key} = ${sourceKey}: ${seen}`);
-    });
-  }, {tier: 'api', description: 'every row with a key holds the value the joined table has for that key, read through the table\'s own connection; dates compared to the millisecond'});

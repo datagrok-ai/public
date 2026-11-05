@@ -182,6 +182,15 @@ export namespace decorators {
     cacheInvalidateOn?: string;
     ['top-menu']?: string;
     topMenu?: string;
+    /** Disables the menu item while no table is open. For a function that picks a table itself
+     * rather than taking one. */
+    requiresTable?: boolean;
+    /** Disables the menu item unless the current view is a table view. For a function that works on the
+     * current table rather than on a table it takes. */
+    requiresTableView?: boolean;
+    /** Disables the menu item unless the table has a column of this semantic type, such as `Molecule`: the
+     * current table view's, or any open table's with {@link requiresTable} or a table input. */
+    requiresSemType?: string;
     condition?: string;
     helpUrl?: string;
     ['help-url']?: string;

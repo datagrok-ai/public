@@ -38,9 +38,9 @@ function scoped(name, body) {
 
 function sampleActions(log) {
   return [
-    {name: 'Copy', icon: 'copy', run: () => log.push('copy')},
-    {name: 'Open ticket', icon: 'external-link-alt', run: () => log.push('open')},
-    {name: 'Copy id', run: () => log.push('id')},
+    {text: 'Copy', icon: 'copy', run: () => log.push('copy')},
+    {text: 'Open ticket', icon: 'external-link-alt', run: () => log.push('open')},
+    {text: 'Copy id', run: () => log.push('id')},
   ];
 }
 
@@ -69,15 +69,16 @@ scoped('actionsMenu: every action becomes an item, picking one runs it and close
 
 scoped('VirtualList contextActions: right-click selects the row and opens the full menu', () => {
   const log = [];
-  const list = new VirtualList({
+  const owner = Scope.root('test');
+  const list = owner.build(() => new VirtualList({
     itemHeight: 20,
     render: (item) => {
       const el = document.createElement('span');
       el.textContent = item;
       return el;
     },
-    contextActions: (item) => [{name: `Act on ${item}`, run: () => log.push(item)}],
-  });
+    contextActions: (item) => [{text: `Act on ${item}`, run: () => log.push(item)}],
+  }));
   document.body.append(list.root);
   list.setItems(['a', 'b', 'c']);
 
@@ -88,7 +89,7 @@ scoped('VirtualList contextActions: right-click selects the row and opens the fu
   assert.equal(item.textContent.trim(), 'Act on b');
   fire(item, 'click');
   assert.deepEqual(log, ['b']);
-  list.dispose();
+  owner.dispose();
 });
 
 scoped('timestamp: the year always, the time when the value carries one, empty when invalid', () => {
@@ -133,8 +134,8 @@ function designer(name, body) {
     const reg = new Registry();
     registerPlatformComponents(reg);
     const scope = new Scope();
-    const filters = (node, df) => renderSpec({$schema: 'dg-ui/1', root: node},
-      new SpecContext({data: df ? {orders: dfBindings(signal(df), scope)} : {}}), reg);
+    const filters = (node, df) => scope.build(() => renderSpec({$schema: 'dg-ui/1', root: node},
+      new SpecContext({data: df ? {orders: dfBindings(signal(df), scope)} : {}}), reg));
     try {
       await body({reg, scope, warnings, filters});
     } finally {
@@ -251,7 +252,7 @@ designer('REMOVE_FILTER: the picked entry leaves the document\'s filters as a se
       props: {filters: [{type: 'categorical', column: 'city'}, {type: 'histogram', column: 'total'}]}}, df);
     const node = instance.spec.root;
     const fg = instance.node('filters');
-    assert.deepEqual(reg.get('u2-viewer-filters').designerActions.map((a) => a.name),
+    assert.deepEqual(reg.get('u2-viewer-filters').designerActions.map((a) => a.text),
       ['Add filter for column…', 'Remove filter…'], 'beside Add');
 
     const pending = REMOVE_FILTER.produce(node, fg);

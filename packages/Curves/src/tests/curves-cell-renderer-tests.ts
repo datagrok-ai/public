@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 import {createSigmoidPoints, createDemoDataFrame} from '../fit/fit-demo';
-import {category, test, delay} from '@datagrok-libraries/test/src/test';
+import {category, test, settled} from '@datagrok-libraries/test/src/test';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
@@ -36,10 +36,10 @@ chartData.series![0] = {
 return chartData;
 }
 
-export async function scrollTable(el: HTMLElement, delta: number, cycles: number, secDelay: number) {
+export async function scrollTable(grid: DG.Grid, el: HTMLElement, delta: number, cycles: number) {
   for (let i = 0; i < cycles; i++) {
     el.dispatchEvent(new WheelEvent('wheel', {deltaY: delta}));
-    await delay(secDelay);
+    await settled(grid);
   }
 }
 
@@ -68,7 +68,7 @@ category('rendering', () => {
   test('rendering same fitChartData on canvas', async () => {
     const canvasWidth = 160;
     const canvasHeight = 120;
-    const renderingTimesAmount = 1000;
+    const renderingTimesAmount = DG.Test.isInBenchmark ? 1000 : 100;
 
     const canvas = ui.canvas(canvasWidth, canvasHeight);
     grok.shell.newView('canvas', [canvas]);
@@ -89,7 +89,7 @@ category('rendering', () => {
   test('rendering different fitChartData on canvas', async () => {
     const canvasWidth = 160;
     const canvasHeight = 120;
-    const renderingTimesAmount = 1000;
+    const renderingTimesAmount = DG.Test.isInBenchmark ? 1000 : 100;
 
     const canvas = ui.canvas(canvasWidth, canvasHeight);
     grok.shell.newView('canvas', [canvas]);
@@ -114,14 +114,14 @@ category('rendering', () => {
     const scrollCycles = 10;
     const scrollDeltaPlus = 300;
     const scrollDeltaMinus = -300;
-    await delay(100);
+    await settled(tv.grid);
     const canvas = tv.grid.root.getElementsByTagName('canvas')[2];
     const func = async (chartData?: IFitChartData | null) => {
-      await scrollTable(canvas, scrollDeltaPlus, scrollCycles, 1);
-      await scrollTable(canvas, scrollDeltaMinus, scrollCycles, 1);
-      await scrollTable(canvas, scrollDeltaPlus, scrollCycles, 1);
+      await scrollTable(tv.grid, canvas, scrollDeltaPlus, scrollCycles);
+      await scrollTable(tv.grid, canvas, scrollDeltaMinus, scrollCycles);
+      await scrollTable(tv.grid, canvas, scrollDeltaPlus, scrollCycles);
     };
-    const time = await getTime(func, null) - 30;
+    const time = await getTime(func, null);
     console.log(`curves rendering took ${time} ms`);
     return time;
   }, {benchmark: true});

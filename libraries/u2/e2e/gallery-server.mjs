@@ -1,6 +1,7 @@
 /* Static file server for the gallery-hosted checks (tour, message-input): those behaviours are
    platform-free, so they run against the plain gallery instead of the app — and the gallery is
-   ES modules over the built `src/`, which needs a real origin, not file://. */
+   ES modules over `src/` as `npm test` compiles it into `.test-build/src/`, which needs a real
+   origin, not file://. */
 import {createReadStream} from 'node:fs';
 import {stat} from 'node:fs/promises';
 import {createServer} from 'node:http';
@@ -16,15 +17,15 @@ const MIME = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; char
   '.woff2': 'font/woff2', '.svg': 'image/svg+xml'};
 
 /** Listens on a free loopback port; `close()` resolves once the port is actually released. */
-export function startGalleryServer() {
+export function startGalleryServer(root = ROOT, served = SERVED) {
   const server = createServer(async (req, res) => {
     try {
       let path = decodeURIComponent(req.url.split(/[?#]/)[0]).replace(/^\/+/, '');
       if (path === '' || path.endsWith('/'))
         path += 'index.html';
       const rel = normalize(path).split('\\').join('/');
-      const file = join(ROOT, rel);
-      if (!file.startsWith(ROOT) || !SERVED.some((dir) => rel === dir || rel.startsWith(`${dir}/`)))
+      const file = join(root, /\.(js|map)$/.test(rel) ? rel.replace(/^([^/]+\/)?src\//, '$1.test-build/src/') : rel);
+      if (!file.startsWith(root) || !served.some((dir) => rel === dir || rel.startsWith(`${dir}/`)))
         return void res.writeHead(403).end('forbidden');
       try {
         await stat(file);

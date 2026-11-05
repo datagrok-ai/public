@@ -78,6 +78,9 @@ declare module 'NGL' {
   export class Stage {
     viewer: Viewer;
 
+    /** Loading and building representations in progress, some of it in a worker after loadFile has resolved */
+    tasks: Counter;
+
     get compList(): Component[];
 
     //TODO: Find out is host arg mandatory
@@ -92,6 +95,12 @@ declare module 'NGL' {
     loadFile(path: String | File | Blob, params: Partial<LoaderParameters>): Promise<void>;
 
     dispose(): undefined;
+  }
+
+  export class Counter {
+    count: number;
+
+    onZeroOnce(callback: () => void, context?: any): undefined;
   }
 
   export class Viewer {

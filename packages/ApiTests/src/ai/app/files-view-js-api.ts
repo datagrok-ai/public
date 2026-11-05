@@ -6,7 +6,7 @@ import {expectBoolGetSet, withAttachedView} from '../helpers';
 // getters throw on a null context — withAttachedView gives each test a freshly-attached view.
 category('AI: App: FilesView JS API', () => {
   const withFilesView = (body: (fv: DG.FilesView) => void | Promise<void>): Promise<void> =>
-    withAttachedView<DG.FilesView>(() => DG.FilesView.create({}), body, false);
+    withAttachedView<DG.FilesView>(() => DG.FilesView.create({}), body);
 
   test('create() returns a FilesView instance', async () => {
     await withFilesView((fv) => expect(fv instanceof DG.FilesView, true));

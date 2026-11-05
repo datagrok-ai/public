@@ -35,15 +35,15 @@ export class RefInput extends Input<FilterRef | null, RefInputOptions> {
       placeholder: this.options.placeholder,
       debounceMs: this.options.debounceMs,
     });
-    typeAhead.selected.value = item(this.value.peek());
+    typeAhead.selected.value = item(this.peek());
     this.effect(() => {
       const picked = typeAhead.selected.value;
       const value = picked === null ? null : picked.value as FilterRef;
-      if (!valueEquals(value ?? undefined, this.value.peek() ?? undefined))
-        this.value.value = value;
+      if (!valueEquals(value ?? undefined, this.peek() ?? undefined))
+        this.value = value;
     });
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       const current = typeAhead.selected.peek()?.value as FilterRef | undefined;
       if (!valueEquals(value ?? undefined, current))
         typeAhead.selected.value = item(value);

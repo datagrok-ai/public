@@ -4,8 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
 import {VIEWER_PATH, viewerTypesMapping} from './consts';
-import {deserialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {OUTPUT_OUTDATED_PATH} from '../reactive-tree-driver/src/runtime/funccall-utils';
+import {tryParseJson} from '@datagrok-libraries/utils/src/string-utils';
+import {readOutputOutdated} from '../reactive-tree-driver/src/runtime/funccall-utils';
+import dayjs from 'dayjs';
 
 export const replaceForWindowsPath = (rawName: string, stringToInsert?: string) => {
   const regExpForWindowsPath = /(\/|\\|\:|\*|\?|\"|\<|\>|\|)/g;
@@ -61,12 +62,25 @@ export const isRunningOnInput = (func: DG.Func) => {
   return func.options['runOnInput'] === 'true';
 };
 
+export const parseJsonOption = (options: Record<string, any>, name: string) => {
+  const raw = options[name];
+  return raw ? tryParseJson(raw, {warning: name}) : null;
+};
+
+const parseJsonArrayOption = (options: Record<string, any>, name: string): any[] | null => {
+  const parsed = parseJsonOption(options, name);
+  if (parsed == null || Array.isArray(parsed))
+    return parsed;
+  console.warn(`${name}: expected an array: ${options[name]}`);
+  return null;
+};
+
 export const getFeatures = (func: DG.Func) => {
-  return JSON.parse(func.options['features'] ?? '{}');
+  return parseJsonOption(func.options, 'features') ?? {};
 };
 
 export const getDockSpawnConfig = (func: DG.Func) => {
-  return JSON.parse(func.options['dockSpawnConfig'] ?? '{}');
+  return parseJsonOption(func.options, 'dockSpawnConfig') ?? {};
 };
 
 export const getRunLabel = (func: DG.Func) => {
@@ -77,12 +91,27 @@ export const getFormAsTab = (func: DG.Func): boolean => {
   return func.options['formAsTab'] === 'true';
 };
 
-export const getInputsHidden = (func: DG.Func): boolean => {
+const getInputsHidden = (func: DG.Func): boolean => {
   return func.options['inputsHidden'] === 'true';
 };
 
+export type InputToggle = {
+  caption: string,
+  categories?: string[],
+  inputs?: string[],
+  linked?: boolean,
+};
+
+export const DEFAULT_INPUT_TOGGLES: InputToggle[] = [{caption: 'linked inputs', linked: true}];
+export const ALL_INPUTS_TOGGLES: InputToggle[] = [{caption: 'linked inputs'}];
+
+export const getInputToggles = (func: DG.Func): InputToggle[] => {
+  return parseJsonArrayOption(func.options, 'inputToggles') ??
+    (getInputsHidden(func) ? ALL_INPUTS_TOGGLES : DEFAULT_INPUT_TOGGLES);
+};
+
 export const getCustomExports = (func: DG.Func): {name: string, function: string}[] => {
-  return JSON.parse(func.options['customExports'] ?? '[]');
+  return parseJsonArrayOption(func.options, 'customExports') ?? [];
 };
 
 export const getViewersHook = (func: DG.Func): string | undefined => {
@@ -108,8 +137,7 @@ export const getStartedOrNull = (run?: DG.FuncCall) => {
 };
 
 export const isIncomplete = (run: DG.FuncCall) => {
-  const isOutputOutdated = deserialize(run.options[OUTPUT_OUTDATED_PATH] ?? 'false');
-  return isOutputOutdated || !getStartedOrNull(run) || !run.id;
+  return readOutputOutdated(run) || !getStartedOrNull(run) || !run.id;
 };
 
 export const deepCopy = (call: DG.FuncCall) => {
@@ -148,7 +176,7 @@ export const getPropViewers = (prop: DG.Property): {name: string, config: Record
   const viewersRawConfig = prop.options[VIEWER_PATH];
   return viewersRawConfig ?
   // true and false values are retrieved as string, so we parse them separately
-    {name: prop.name, config: JSON.parse(viewersRawConfig, (k, v) => {
+    {name: prop.name, config: tryParseJson(viewersRawConfig, {warning: `${prop.name} viewer`, reviver: (k, v) => {
       if (v === 'true') return true;
       if (v === 'false') return false;
       // Converting internal Dart labels to JS DG.VIEWER labels
@@ -162,13 +190,16 @@ export const getPropViewers = (prop: DG.Property): {name: string, config: Record
       }
 
       return v;
-    })}:
+    }}) ?? []}:
     {name: prop.name, config: []};
 };
 
-export const getFuncCallDefaultFilename = (funcCall: DG.FuncCall) => {
-  return `${funcCall.func.nqName} - ${getStartedOrNull(funcCall) ?? 'Not completed'}.xlsx`;
-};
+// Graphics values are either a base64 PNG or SVG markup; '<' is outside the base64 alphabet
+export const isSvgGraphics = (value: string) => value.trimStart().startsWith('<');
+
+export const graphicsDataUrl = (value: string) => isSvgGraphics(value) ?
+  `data:image/svg+xml;charset=utf-8,${encodeURIComponent(value)}` :
+  `data:image/png;base64,${value}`;
 
 export const getStarted = (call: DG.FuncCall) => {
   try {
@@ -179,33 +210,42 @@ export const getStarted = (call: DG.FuncCall) => {
   }
 };
 
-/** Display title of a run: the user-given title, or the function name with the start time. */
+// who first saved an entity and when (user id, ISO time): an edit keeps them, while the platform's author becomes
+// the editor; server filters never match options.createdBy, hence the id suffix
+export const CREATED_BY_OPTION = 'createdById';
+export const CREATED_AT_OPTION = 'createdAt';
+// the function whose custom view saved the run, so the run lists under it and opens in that view again
+export const CUSTOM_VIEW_OPTION = 'customView';
+// "true" on a run saved as part of another one, such as a workflow step; other runs don't have it
+export const NESTED_ENTITY_OPTION = 'nestedEntity';
+
+/** The id of the user who saved the run; runs saved before the option existed fall back to the platform author. */
+export const getRunAuthorId = (call: DG.FuncCall): string | undefined => {
+  if (call.options?.[CREATED_BY_OPTION])
+    return call.options[CREATED_BY_OPTION];
+  try {
+    return call.author?.id;
+  } catch {
+    // space listings come without the author
+    return;
+  }
+};
+
+/** When the run was saved; runs saved before the option existed fall back to their start time. */
+export const getRunCreated = (call: DG.FuncCall): dayjs.Dayjs | undefined => {
+  const saved = call.options?.[CREATED_BY_OPTION] ? call.options?.[CREATED_AT_OPTION] : undefined;
+  const created = saved ? dayjs(saved) : getStartedOrNull(call);
+  return created?.isValid() ? created : undefined;
+};
+
+/** A run's name: the legacy options.title when set, otherwise friendlyName. */
+export const getRunName = (call: DG.FuncCall): string => call.options?.['title'] || call.friendlyName || '';
+
+/** Display title of a run: its name, or the function name with the start time. */
 export const getRunTitle = (call: DG.FuncCall) => {
-  const title = call.options?.['title'];
-  if (title)
-    return title;
+  const name = getRunName(call);
+  if (name)
+    return name;
   const funcName = call.func?.friendlyName ?? call.func?.name ?? 'Run';
   return `${funcName} — ${getStarted(call)}`;
 };
-
-export const delay = (delayInms: number) => {
-  return new Promise((resolve) => setTimeout(resolve, delayInms));
-};
-
-// Compatible with both the new js-api (GROK-14159 `currentUserGroups`) and older
-// API versions that lack it; remove the fetch fallback once datagrok-api ships the method.
-export async function getCurrentUserGroups(): Promise<DG.Group[]> {
-  const groupsApi = grok.dapi.groups as any;
-  if (typeof groupsApi.currentUserGroups === 'function')
-    return await groupsApi.currentUserGroups();
-  return await (await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[];
-}
-
-// Compatible with both the new js-api (GROK-14160 `requestMembership`) and older
-// API versions that lack it; remove the fetch fallback once datagrok-api ships the method.
-export async function requestGroupMembership(group: DG.Group, requester: DG.Group): Promise<void> {
-  const groupsApi = grok.dapi.groups as any;
-  if (typeof groupsApi.requestMembership === 'function')
-    return await groupsApi.requestMembership(group, requester);
-  await fetch(`${window.location.origin}/api/groups/${group.id}/requests/${requester.id}`, {method: 'POST'});
-}

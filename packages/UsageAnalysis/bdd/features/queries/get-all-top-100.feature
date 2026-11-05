@@ -12,6 +12,7 @@ Feature: Get All and Get Top 100 on a table of the schema
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
 
   Scenario: Get All opens the whole table, Get Top 100 its first hundred rows

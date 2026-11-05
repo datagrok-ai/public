@@ -24,7 +24,7 @@ import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {names, SparklineType, sparklineTypes, SummarySettingsBase} from './sparklines/shared';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
-import {scWebGPUPointHitTest, scWebGPURender} from './webgpu/scatterplot';
+import {gpuPointHitTest, gpuRender, isGpuAvailable, isGpuRenderValid, setGPUDevice} from './scatterplot-gpu';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {TagsCellRenderer, TAGS_CELL_TYPE} from './cell-types/tags-cell-renderer';
 import {ConfidenceIntervalCellRenderer} from './cell-types/confidence-interval-cell-renderer';
@@ -32,9 +32,6 @@ import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
 // import {isValidColor} from './cell-types/color-cell-renderer';
 export * from './package.g';
 export const _package = new DG.Package();
-
-let gpuDevice: GPUDevice | null = null;
-let gpuErrorCounter = 0;
 
 export class PackageFunctions {
   @grok.decorators.func({
@@ -365,13 +362,32 @@ export class PackageFunctions {
         return summaryCols;
       };
 
+      // names pruned on removal, per summary column, so that a column brought back (Ctrl+Z) rejoins its summary
+      const pruned = new Map<string, {name: string, index: number}[]>();
       const colsRemovedSub = dataFrame.onColumnsRemoved.subscribe((args: DG.ColumnsArgs) => {
         const summaryCols = findSummaryCols(args.columns);
         for (const col of args.columns) {
           for (const summaryCol of summaryCols) {
             const sparklineSettings = getSparklineSettings(summaryCol);
-            if (sparklineSettings.columnNames.includes(col.name))
-              sparklineSettings.columnNames = sparklineSettings.columnNames.filter((name) => name !== col.name);
+            const index = sparklineSettings.columnNames.indexOf(col.name);
+            if (index === -1)
+              continue;
+            sparklineSettings.columnNames = sparklineSettings.columnNames.filter((name) => name !== col.name);
+            pruned.set(summaryCol.name, [...pruned.get(summaryCol.name) ?? [], {name: col.name, index}]);
+          }
+        }
+      });
+      const colsAddedSub = dataFrame.onColumnsAdded.subscribe((args: DG.ColumnsArgs) => {
+        for (const col of args.columns) {
+          for (const [summaryName, names] of pruned) {
+            const i = names.findIndex((n) => n.name === col.name);
+            if (i === -1)
+              continue;
+            const [entry] = names.splice(i, 1);
+            const summaryCol = grid.columns.byName(summaryName);
+            const sparklineSettings = summaryCol ? getSparklineSettings(summaryCol) : undefined;
+            if (sparklineSettings?.columnNames && !sparklineSettings.columnNames.includes(col.name))
+              sparklineSettings.columnNames.splice(entry.index, 0, col.name);
           }
         }
       });
@@ -386,6 +402,7 @@ export class PackageFunctions {
       });
       const gridDetachedSub = grid.onDetached.subscribe(() => grid.detach());
       grid.sub(colsRemovedSub);
+      grid.sub(colsAddedSub);
       grid.sub(colsRenamedSub);
       grid.sub(gridDetachedSub);
     };
@@ -400,7 +417,14 @@ export class PackageFunctions {
         attachSummaryColumnHandlers(view.grid);
 
     if (navigator.gpu)
-      gpuDevice = await getGPUDevice();
+      setGPUDevice(await getGPUDevice());
+    // scatter plots drawn on the CPU before this autostart landed switch to the GPU
+    for (const view of grok.shell.tableViews) {
+      for (const viewer of view.viewers ?? []) {
+        if (viewer.type == DG.VIEWER.SCATTER_PLOT)
+          (viewer as DG.ScatterPlotViewer).invalidateCanvas();
+      }
+    }
   }
 
 
@@ -457,11 +481,7 @@ export class PackageFunctions {
   static async _scWebGPURender(
     sc: DG.ScatterPlotViewer,
     show: boolean) {
-    try {
-      await scWebGPURender(sc, show);
-    } catch (error) {
-      gpuErrorCounter++;
-    }
+    await gpuRender(sc, show);
   }
 
 
@@ -471,29 +491,19 @@ export class PackageFunctions {
   static async _scWebGPUPointHitTest(
     sc: DG.ScatterPlotViewer,
     pt: DG.Point) {
-    let result = -1;
-    try {
-      result = await scWebGPUPointHitTest(sc, pt);
-    } catch (error) {
-      gpuErrorCounter++;
-      throw error;
-    }
-
-    return result;
+    return await gpuPointHitTest(sc, pt);
   }
 
 
   @grok.decorators.func()
   static isWebGPUAvailable() : boolean {
-    return gpuDevice != null && !gpuErrorCounter;
+    return isGpuAvailable();
   }
 
 
   @grok.decorators.func()
   static isWebGPURenderValid(sc: DG.ScatterPlotViewer) : boolean {
-    return sc.props.zoomAndFilter != 'pack and zoom by filter' &&
-      !sc.props.markersColumnName &&// different markers not yet supported YET
-      (sc.props.jitterSize ?? 0) == 0 && (sc.props.jitterSizeY ?? 0) == 0; // jittering not supported yet
+    return isGpuRenderValid(sc);
   }
 }
 export {_ImageCellRenderer};

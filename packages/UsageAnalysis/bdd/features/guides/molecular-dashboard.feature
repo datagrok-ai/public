@@ -28,7 +28,8 @@ Feature: Build a dashboard on molecular data
     And user picks "Stereo Category" in the "category" column selector of pie chart viewer
     And user clicks on filter icon in toolbar
     Then filter panel should be visible
-    When user clicks on settings icon of bar chart viewer
+    When user hovers over bar chart viewer
+    And user clicks on settings icon of bar chart viewer
     Given "Y Axis" category in context panel is expanded
     When user selects "avg" in "Value Aggr Type" property in context panel
     And user selects "Average Mass" in "Value" property in context panel

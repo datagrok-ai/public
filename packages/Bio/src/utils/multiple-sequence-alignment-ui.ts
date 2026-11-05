@@ -18,12 +18,19 @@ import {kalignVersion, MSA_ENGINE_ROLE} from './constants';
 import {_package} from '../package';
 
 import '../../css/msa.css';
+import {bindEngineDescription, setEngineDescription} from './engine-description';
 
 type AlignmentMode = 'kalign' | 'engine';
+
+/** The built-in aligner's entry in the engine list of canonical columns. */
+const KALIGN = 'Kalign';
 
 /** State holder for the MSA dialog, avoids TypeScript narrowing issues with closures. */
 class MsaDialogState {
   mode: AlignmentMode = 'kalign';
+  /** The column is canonical (DNA/RNA/protein FASTA or separator): Kalign, or an
+   *  engine declaring `meta.acceptsCanonical`, which then receives FASTA. */
+  canonical = false;
   currentFunc: DG.Func | null = null;
   currentFuncCall: DG.FuncCall | null = null;
 }
@@ -110,12 +117,23 @@ export async function multipleSequenceAlignmentUI(
         return bDefault - aDefault;
       });
 
+      // Engines that also align canonical sequences (offered next to Kalign).
+      const canonicalEngines = msaEngines.filter((f) => f.options['acceptsCanonical'] === 'true');
       const engineInput = ui.input.choice('Engine', {
         value: msaEngines.length > 0 ? msaEngines[0].friendlyName : '',
         items: msaEngines.map((f) => f.friendlyName),
       });
+      const setEngineItems = (canonical: boolean): void => {
+        const items = canonical ? [KALIGN, ...canonicalEngines.map((f) => f.friendlyName)] :
+          msaEngines.map((f) => f.friendlyName);
+        engineInput.items = items;
+        engineInput.value = items[0] ?? '';
+      };
 
-      const engineDescDiv = ui.div('', {style: {fontSize: '12px', opacity: '0.7', marginBottom: '6px'}});
+      // Wraps: a long engine description must not widen the dialog.
+      const engineDescDiv = ui.div('', {style: {fontSize: '12px', opacity: '0.7', marginBottom: '6px',
+        maxWidth: '460px', whiteSpace: 'normal', overflowWrap: 'break-word'}});
+      bindEngineDescription(engineDescDiv);
       const engineParamsDiv = ui.div();
       const engineParamsButton = ui.button('Alignment parameters', () => {
         engineParamsDiv.hidden = !engineParamsDiv.hidden;
@@ -140,7 +158,7 @@ export async function multipleSequenceAlignmentUI(
 
         const selectedName = engineInput.value;
         state.currentFunc = msaEngines.find((f) => f.friendlyName === selectedName) ?? null;
-        engineDescDiv.textContent = state.currentFunc?.description ?? '';
+        setEngineDescription(engineDescDiv, state.currentFunc?.description ?? '');
         if (!state.currentFunc) return;
 
         state.currentFuncCall = state.currentFunc.prepare({});
@@ -151,7 +169,13 @@ export async function multipleSequenceAlignmentUI(
           inputs[0].root.style.display = 'none';
       }
 
-      const _engineSub: Subscription = engineInput.onChanged.subscribe(() => updateEngineEditor());
+      const _engineSub: Subscription = engineInput.onChanged.subscribe(async () => {
+        if (state.canonical) {
+          switchMode(engineInput.value === KALIGN ? 'kalign' : 'engine');
+          if (state.mode === 'kalign') return;
+        }
+        await updateEngineEditor();
+      });
 
       function switchMode(newMode: AlignmentMode): void {
         state.mode = newMode;
@@ -159,6 +183,11 @@ export async function multipleSequenceAlignmentUI(
           el.style.display = newMode === 'kalign' ? '' : 'none';
         for (const el of engineElements)
           el.style.display = newMode === 'engine' ? '' : 'none';
+        // Canonical columns choose between Kalign and canonical engines (no HELM involved).
+        if (state.canonical && canonicalEngines.length > 0) {
+          engineInput.root.style.display = '';
+          includeHelmInput.root.style.display = 'none';
+        }
         updateKalignParamsVisibility();
       }
 
@@ -175,6 +204,8 @@ export async function multipleSequenceAlignmentUI(
             col, col.name, seqHelper, [NOTATION.SEPARATOR, NOTATION.CUSTOM, NOTATION.BILN], [ALPHABET.UN],
           )[0];
 
+          state.canonical = isCanonical;
+          setEngineItems(isCanonical);
           if (isCanonical) {
             switchMode('kalign');
             kalignGapOpen.value = null;
@@ -231,8 +262,19 @@ export async function multipleSequenceAlignmentUI(
         if (!state.currentFunc || !state.currentFuncCall)
           throw new Error('No MSA engine selected');
 
-        // Convert to HELM if needed - prefer notation provider's toHelm if available
+        // Canonical engines get FASTA and return their own aligned column.
         const sh = seqHelper.getSeqHandler(col);
+        if (state.canonical) {
+          const fastaCol = sh.isFasta() ? col : sh.convert(NOTATION.FASTA);
+          const func = state.currentFunc;
+          const configParams: Record<string, any> = {};
+          for (let i = 1; i < func.inputs.length; i++)
+            configParams[func.inputs[i].name] = state.currentFuncCall.inputs[func.inputs[i].name];
+          return runEngineWithClustering(func, func.inputs[0].name, configParams, fastaCol,
+            clustersColInput.value, onlySelectedInput.value, df);
+        }
+
+        // Convert to HELM if needed - prefer notation provider's toHelm if available
         let srcCol: DG.Column<string>;
         if (sh.isHelm())
           srcCol = col;
@@ -288,14 +330,15 @@ export async function multipleSequenceAlignmentUI(
 
       /** Apply engine and params from options (for programmatic/test use). */
       async function applyEngineOptions(): Promise<void> {
-        if (!options.engine || state.mode !== 'engine') return;
-
-        const engine = msaEngines.find(
+        if (!options.engine) return;
+        const engines = state.canonical ? canonicalEngines : state.mode === 'engine' ? msaEngines : [];
+        const engine = engines.find(
           (f) => f.name === options.engine || f.friendlyName === options.engine,
         );
         if (!engine) return;
 
         engineInput.value = engine.friendlyName;
+        if (state.canonical) switchMode('engine');
         await updateEngineEditor();
         if (options.engineParams && state.currentFuncCall) {
           for (const [key, value] of Object.entries(options.engineParams))

@@ -19,7 +19,10 @@ Feature: Progress, notifications and the guided tour
     And user clicks on Error button
     Then "Two structures could not be parsed." notification should be visible
     And "Connection refused." notification should be visible
-    When user closes "Connection refused." notification
+    And a warning balloon containing "Two structures could not be parsed." should have been shown
+    And an error balloon containing "Connection refused." should have been shown
+    When user hovers over "Connection refused." notification
+    And user closes "Connection refused." notification
     Then "Connection refused." notification should be hidden
     When user clicks on "Close all" button
     Then "Two structures could not be parsed." notification should be hidden
@@ -27,10 +30,10 @@ Feature: Progress, notifications and the guided tour
   Scenario: The tour runs to its end and skips a missing target
     When user clicks on "Start tour" button
     Then tour should be visible
-    And "1 / 4" text should be visible
+    And "1 / 3" text should be visible
     When user clicks on NEXT button
     And user clicks on NEXT button
-    And user clicks on NEXT button
+    And user clicks on DONE button
     Then tour should be hidden
     And value of tour readout should have text "done"
     When user clicks on "Start tour" button

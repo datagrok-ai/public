@@ -238,16 +238,15 @@ test.describe.serial('Connections / Browser (Postgres / browser_new_test_postgre
 
     const { paneTextContent } = await clickContextPanelSection(page, 'Chats');
 
-    // Real-UI typing into the chat textarea (last visible textarea inside the Chats pane).
-    const textarea = page.locator('.d4-accordion-pane:has(.d4-accordion-pane-header:has-text("Chats")) textarea').last();
-    await textarea.waitFor({ state: 'visible', timeout: 10_000 });
-    await textarea.click();
+    // The compose box is PowerPack's contenteditable editor, or a textarea without PowerPack
+    const postBox = page.locator('.d4-accordion-pane:has(.d4-accordion-pane-header:has-text("Chats")) .grok-comments-post')
+      .locator('.u2-msg-editor, textarea').last();
+    await postBox.waitFor({ state: 'visible', timeout: 10_000 });
+    await postBox.click();
     await page.keyboard.type(CHAT_MESSAGE);
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(1500);
 
-    const text = await paneTextContent();
-    expect(text).toContain(CHAT_MESSAGE);
+    await expect.poll(paneTextContent, { timeout: 15_000 }).toContain(CHAT_MESSAGE);
   });
 
   test('6. Context dropdown — menu items include Edit and Delete', async ({ page }) => {

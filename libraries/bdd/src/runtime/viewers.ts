@@ -1,17 +1,12 @@
-/* Viewer readers on the Playwright side, over the in-page runtime (`viewer-runtime.ts`): a
-   viewer's element, its hit areas, its properties, its size, its layout and the events it fires.
-   The pixel claims are in `viewer-pixels.ts`, the context menus in `viewer-menus.ts`, the legend
-   and the tooltip in `viewer-legend.ts`; all of them are re-exported here, so `import * as v`
-   reaches everything.
-   Roundtrips are the cost, not the page: a step is locate + one action, and the baseline a
-   "than before" claim compares with is taken inside the same in-page call as the change. */
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
 import {typeVerified, withKeys} from './gestures.js';
+import * as guide from './guide.js';
 import {locate, reachable} from './locate.js';
 import {Balloon, Box, evaluate, installViewerRuntime, Reading} from './viewer-runtime.js';
 
+// so `import * as v` reaches every viewer reader
 export * from './viewer-runtime.js';
 export * from './viewer-pixels.js';
 export * from './viewer-menus.js';
@@ -62,7 +57,18 @@ async function awaitArea(page: Page, target: ElementRef, name: string, negate: b
 export async function hitArea(page: Page, target: ElementRef, name: string, beforeChange = false): Promise<Box> {
   if (beforeChange)
     await onViewer(page, target, (el) => (window as any).__bdd.settle(el, 300), undefined).catch(() => undefined);
-  return (await awaitArea(page, target, name, false, beforeChange))!;
+  let box = (await awaitArea(page, target, name, false, beforeChange))!;
+  if (beforeChange) {
+    const c = centerOf(box);
+    // an area outside the visible part of a scrolling panel is scrolled into it first, and read again there
+    if (await onViewer(page, target, (el, [x, y]) => (window as any).__bdd.revealArea(el, x, y), [c.x, c.y] as [number, number])) {
+      await onViewer(page, target, (el) => (window as any).__bdd.settle(el, 300), undefined).catch(() => undefined);
+      box = (await awaitArea(page, target, name, false, beforeChange))!;
+    }
+    // a gesture follows: a guide lights the area it aims at, not the viewer round it
+    guide.locatedArea(page, box);
+  }
+  return box;
 }
 
 export async function expectHasArea(page: Page, target: ElementRef, name: string, negate = false): Promise<void> {
@@ -179,8 +185,13 @@ export async function expectReading(page: Page, target: ElementRef, name: string
       return last.now === value;
     if (last.before === undefined || last.before === null)
       return `no "${name}" reading at the snapshot`;
-    if (compare === 'differ' || compare === 'same')
-      return (last.now !== last.before) === (compare === 'differ');
+    if (compare === 'differ' || compare === 'same') {
+      // numbers that went through a world-to-screen round trip differ in the last digits
+      const same = typeof last.now === 'number' && typeof last.before === 'number' ?
+        Math.abs(last.now - last.before) <= 1e-9 * Math.max(1, Math.abs(last.now), Math.abs(last.before)) :
+        last.now === last.before;
+      return same !== (compare === 'differ');
+    }
     if (typeof last.now !== 'number' || typeof last.before !== 'number')
       return `"${name}" is not a number`;
     return compare === 'lower' ? last.now < last.before : last.now > last.before;

@@ -3,7 +3,7 @@
    `DG.ObjectHandler` come from tests/dg-stub.mjs — per its contract everything on `dapi` is a field
    a test replaces, and the handler registry gets its lookup installed here. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from './dom-shim.js';

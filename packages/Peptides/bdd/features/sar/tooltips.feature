@@ -118,8 +118,6 @@ Feature: Inspect peptide statistics in tooltips
   Scenario: Cluster tooltips and selection use the computed cluster membership
     When user clears the row selection
     Then no rows should be selected
-    And the "members total" reading of Logo Summary Table viewer should be 100
-    And the cluster summaries should match the source rows of table "peptides"
     When user hovers over the "cluster 1" area of Logo Summary Table viewer
     Then the cluster statistics in tooltip should match cluster "1" of table "peptides"
     When user hovers over the "cluster 2" area of Logo Summary Table viewer

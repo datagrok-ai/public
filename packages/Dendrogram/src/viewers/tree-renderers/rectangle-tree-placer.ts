@@ -76,11 +76,11 @@ export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreeP
       const minIndex: number = (node.minIndex ?? node.index) - 0.25;
       const maxIndex: number = (node.maxIndex ?? node.index) + 0.25;
       const leftTop: DG.Point = treeToCanvas(new DG.Point(currentHeight, minIndex));
-      const rightBottomP: DG.Point = treeToCanvas(new DG.Point(currentHeight + node.branch_length!, maxIndex));
+      const rightBottomP: DG.Point = treeToCanvas(new DG.Point(currentHeight + (node.branch_length ?? 0), maxIndex));
       if (leftTop.y <= canvasPoint.y && canvasPoint.y <= rightBottomP.y) {
         let res: RectangleTreeHoverType<TNode> | null = null;
         //const beginP: DG.Point = treeToCanvas(new DG.Point(currentHeight, node.index));
-        const endP: DG.Point = treeToCanvas(new DG.Point(currentHeight + node.branch_length!, node.index));
+        const endP: DG.Point = treeToCanvas(new DG.Point(currentHeight + (node.branch_length ?? 0), node.index));
         const nodeR: number = nodeSize * dpr / 2; // in canvas pixels
         //const lineR: number = lineWidth * 1.5 * dpr / 2;
         // if (
@@ -108,7 +108,7 @@ export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreeP
 
         if (!res) {
           for (const childNode of (node.children ?? [])) {
-            res = getNodeInt(childNode, canvasPoint, currentHeight + node.branch_length!);
+            res = getNodeInt(childNode, canvasPoint, currentHeight + (node.branch_length ?? 0));
             if (res) break;
           }
         }
@@ -132,7 +132,7 @@ export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreeP
         res = currentHeight;
       } else {
         for (const childNode of (currentNode.children ?? [])) {
-          res = getNodeHeightInt(childNode, node, currentHeight + currentNode.branch_length!);
+          res = getNodeHeightInt(childNode, node, currentHeight + (currentNode.branch_length ?? 0));
           if (res !== undefined) break;
         }
       }

@@ -1,4 +1,6 @@
 import {signal, Signal, ReadonlySignal, batch} from './signals.js';
+import {Ownership} from './owner.js';
+import type {Owner} from './owner.js';
 
 export type PagerState = 'idle' | 'loading' | 'done' | 'error';
 
@@ -7,23 +9,30 @@ export interface AsyncPagerOptions<T> {
   fetchPage: (page: number, abort: AbortSignal) => Promise<T[]>;
   count?: (abort: AbortSignal) => Promise<number>;
   pageSize?: number;
+  /** Disposes the pager with it: whoever is building by default. */
+  owner?: Owner;
 }
 
 /** The paged twin of `AsyncSource`: pages accumulate into one array signal, a short page ends
  * the collection, and responses a `reset()` outran are dropped — written once so no browse-style
  * list hand-rolls page counters, end-of-data checks or racing. `reset()` also starts a collection:
- * it is what reads the total and loads the first page. */
+ * it is what reads the total and loads the first page. Disposed with its `owner`, as `AsyncValue` and
+ * `AsyncSource` are; after an `await` nobody is building: pass the owner. */
 export class AsyncPager<T> {
   readonly items: ReadonlySignal<T[]>;
   readonly state: ReadonlySignal<PagerState>;
   readonly total: ReadonlySignal<number | null>;
+  /** Why the last page failed, while {@link state} is `'error'`; null otherwise. */
+  readonly error: ReadonlySignal<string | null>;
 
   private readonly _items: Signal<T[]>;
   private readonly _state: Signal<PagerState>;
   private readonly _total: Signal<number | null>;
+  private readonly _error = signal<string | null>(null);
   private readonly _fetchPage: (page: number, abort: AbortSignal) => Promise<T[]>;
   private readonly _count: ((abort: AbortSignal) => Promise<number>) | undefined;
   private readonly _pageSize: number;
+  private readonly _release: (() => void) | undefined;
   private _page = 0;
   private _abort: AbortController | undefined;
   private _disposed = false;
@@ -38,6 +47,8 @@ export class AsyncPager<T> {
     this.items = this._items;
     this.state = this._state;
     this.total = this._total;
+    this.error = this._error;
+    this._release = Ownership.adopt(options.owner, () => this.dispose());
   }
 
   /** Loads the next page; a no-op while one is in flight and once the last one arrived. After an
@@ -46,7 +57,10 @@ export class AsyncPager<T> {
     const state = this._state.peek();
     if (this._disposed || state === 'loading' || state === 'done')
       return;
-    this._state.value = 'loading';
+    batch(() => {
+      this._state.value = 'loading';
+      this._error.value = null;
+    });
     void this._load(this._abortSignal());
   }
 
@@ -59,6 +73,7 @@ export class AsyncPager<T> {
       this._items.value = [];
       this._total.value = null;
       this._state.value = 'idle';
+      this._error.value = null;
     });
     if (this._count)
       void this._recount(this._abortSignal());
@@ -68,6 +83,7 @@ export class AsyncPager<T> {
   dispose(): void {
     this._disposed = true;
     this._cancel();
+    this._release?.();
   }
 
   /** One controller per generation: everything in flight is invalidated together by `reset()`. */
@@ -96,10 +112,14 @@ export class AsyncPager<T> {
         if (done && this._total.peek() === null)
           this._total.value = this._items.peek().length;
       });
-    } catch (_) {
+    }
+    catch (e) {
       if (abort.aborted || this._disposed)
         return;
-      this._state.value = 'error';
+      batch(() => {
+        this._error.value = e instanceof Error ? e.message : String(e);
+        this._state.value = 'error';
+      });
     }
   }
 

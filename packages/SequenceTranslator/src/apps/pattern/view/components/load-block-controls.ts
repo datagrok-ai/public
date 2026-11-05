@@ -188,6 +188,7 @@ export class PatternLoadControlsManager {
       }
     );
 
+    button.setAttribute('aria-label', 'Delete pattern');
     ui.tooltip.bind(button, 'Delete pattern from user storage');
 
     const subscription = this.eventBus.userSelection$.subscribe(() => {

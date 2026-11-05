@@ -1,6 +1,3 @@
-/* The gestures steps are made of. Each one takes an element phrase and encodes the platform's
-   quirks once: real pointer clicks for canvases, key-by-key typing (Dart change listeners ignore
-   `fill`), native `<select>` first for choices, the editor part of a composite input. */
 import {resolve} from 'node:path';
 import {type Locator, type Page} from '@playwright/test';
 import {expect} from './patience.js';
@@ -18,7 +15,8 @@ const EDITOR = '.ui-input-editor';
 const EDITOR_PART = '[data-u2-part="editor"]';
 const OPTION = '[role="option"], .u2-menu-item, .u2-combobox-option, .d4-menu-item, .u2-list-row';
 const OPTION_LABEL = '.u2-fb-label, .u2-typeahead-text, .u2-typeahead-user-name, .u2-multi-select-text, .u2-menu-label';
-const CLOSE = '.u2-dialog-close, [aria-label="Close"], [name="icon-times"], .d4-dialog-close';
+/** The close icon of a dialog of either UI generation. */
+export const DIALOG_CLOSE = '.u2-dialog-close, [aria-label="Close"], [name="icon-times"], .d4-dialog-close';
 const TWISTIE = '.u2-tree-twistie, .d4-tree-view-tri';
 
 function gestureOf(page: Page, target: ElementRef): {click?: 'mouse' | 'dom'; type?: 'keyboard' | 'fill'} {
@@ -141,9 +139,10 @@ export async function readClipboard(page: Page): Promise<string> {
 
 /** Leaves the element first, to its left on the same line — a pointer already resting on it (the
  * previous click) produces no pointerenter, and tooltips listen for that; leaving upwards would
- * cross a neighbouring menu row and close the submenu the element sits in — then lands on its
- * centre in one move and checks that the element is still where it was: a shift under the
- * pointer right after the move (a view still docking) leaves it again, unseen. The browser
+ * cross a neighbouring menu row and close the submenu the element sits in — then lands on the
+ * centre of its part the panels around it do not clip (a tree row as wide as its longest name) in
+ * one move and checks that the element is still where it was: a shift under the pointer right
+ * after the move (a view still docking) leaves it again, unseen. The browser
  * coalesces mouse moves queued while its main thread is busy, so the pair can collapse into the
  * last move alone — one that enters nothing when the pointer already rested inside; the gesture
  * therefore waits, in the page and for a few frames at most, for the element's own `mouseenter`,
@@ -162,12 +161,23 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
       return;
     }
     const cy = before.y + before.height / 2;
-    await loc.evaluate((el) => {
+    const cx = await loc.evaluate((el) => {
       (el as any).__bddEntered = false;
       el.addEventListener('mouseenter', () => { (el as any).__bddEntered = true; }, {once: true});
+      const r = el.getBoundingClientRect();
+      let left = r.left;
+      let right = r.right;
+      for (let p = el.parentElement; p; p = p.parentElement) {
+        if (getComputedStyle(p).overflowX === 'visible')
+          continue;
+        const c = p.getBoundingClientRect();
+        left = Math.max(left, c.left);
+        right = Math.min(right, c.right);
+      }
+      return right > left ? (left + right) / 2 : r.left + r.width / 2;
     });
     await page.mouse.move(Math.max(0, before.x - 8), cy);
-    await page.mouse.move(before.x + before.width / 2, cy);
+    await page.mouse.move(cx, cy);
     const entered = await loc.evaluate((el) => new Promise<boolean>((resolve) => {
       let frames = 0;
       const tick = () => (el as any).__bddEntered || frames++ > 4 ? resolve((el as any).__bddEntered === true) : requestAnimationFrame(tick);
@@ -181,7 +191,7 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
 
 /** A Dart property grid row shows its value as a label and builds its editor (a select, an input)
  * only when the value cell is clicked: open it first, so the gesture finds the editor. */
-async function openPropertyEditor(loc: Locator): Promise<void> {
+export async function openPropertyEditor(loc: Locator): Promise<void> {
   const row = loc.first();
   if (!await row.evaluate((e) => e.matches('tr.property-grid-item')).catch(() => false))
     return;
@@ -243,6 +253,7 @@ export async function typeInto(page: Page, target: ElementRef, text: string, com
   // clicked: a click is what would blur it, and a blurred cell editor commits and closes
   if (!await hasFocus(editor))
     await editor.click();
+  // key by key unless the kind says `fill`: Dart change listeners ignore `fill`
   if (gestureOf(page, target).type === 'fill')
     await editor.fill(text);
   else
@@ -373,17 +384,26 @@ export async function pickInColumnGrid(page: Page, option: string, what: string,
 }
 
 /** A mouse-down on a Dart column selector opens its column grid; the pointer then leaves it, since
- * the row it rests on is previewed onto the selector. */
+ * the row it rests on is previewed onto the selector. A form that rebuilds its rows around the press
+ * (Edit Aggregated Tooltip redraws every row when one is added or changed) can swallow it, so a
+ * press that opened no column grid is made again on the selector as it is now. */
 export async function openColumnSelector(page: Page, selector: Locator, leave = true): Promise<void> {
-  const box = await selector.boundingBox();
-  if (!box)
-    throw new Error('the column selector has no box');
-  await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
-  await page.mouse.down();
-  await page.mouse.up();
-  if (leave) {
-    const away = guide.guideDir() ? await besidePicker(page, box) : {x: 2, y: 2};
-    await page.mouse.move(away.x, away.y);
+  const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').filter({visible: true});
+  for (let attempt = 1; ; attempt++) {
+    const box = await selector.boundingBox();
+    if (!box)
+      throw new Error('the column selector has no box');
+    await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.up();
+    const opened = attempt === 3 || await popup.first().waitFor({state: 'visible', timeout: 2000}).then(() => true, () => false);
+    if (!opened)
+      continue;
+    if (leave) {
+      const away = guide.guideDir() ? await besidePicker(page, box) : {x: 2, y: 2};
+      await page.mouse.move(away.x, away.y);
+    }
+    return;
   }
 }
 
@@ -400,6 +420,51 @@ async function besidePicker(page: Page, box: guide.GuideBox): Promise<{x: number
     (!picker || p.x < picker.x - 4 || p.x > picker.x + picker.width + 4 || p.y < picker.y - 4 || p.y > picker.y + picker.height + 4);
   return [{x: box.x - 16, y: cy}, {x: cx, y: box.y - 16}, {x: box.x + box.width + 16, y: cy}, {x: cx, y: box.y + box.height + 16}]
     .find(clear) ?? {x: 2, y: 2};
+}
+
+/** The column names a column grid (a picker's, a column list's) holds in its row order — the rows its
+ * search leaves, scrolled into view or not — read from its own table, since only rows on screen
+ * report areas. */
+export function columnGridNames(grid: Locator): Promise<string[]> {
+  return grid.evaluate((el) => {
+    const w = (window as any).DG.Widget.find(el);
+    const names: string[] = [];
+    for (let r = 0; r < w.dataFrame.filter.trueCount; r++)
+      names.push(w.dataFrame.col('__name').get(w.gridRowToTable(r)));
+    return names;
+  });
+}
+
+/** Whether an open column picker hears Escape: it listens from the task after it opened, which puts the focus on
+ * its search box when it has one (over 20 columns) and on the selector otherwise (`column_combo_box.dart`). The
+ * check runs a task later than whatever the page has queued, so a picker's own task has run by then. */
+function pickerListens(selector: Locator): Promise<boolean> {
+  return selector.evaluate((sel) => new Promise<boolean>((resolve) => setTimeout(() => {
+    const active = document.activeElement;
+    resolve(active !== null && (sel.contains(active) || active.matches('.d4-column-selector-search-input')));
+  }, 0))).catch(() => false);
+}
+
+/** The columns a Dart column selector offers, in its order: the picker is opened, its column grid
+ * read and the picker dismissed with Escape. */
+export async function columnSelectorChoices(page: Page, target: ElementRef): Promise<string[]> {
+  const loc = await locate(page, target);
+  await openPropertyEditor(loc);
+  const selector = await loc.first().evaluate((e) => e.classList.contains('d4-column-selector')) ?
+    loc.first() : loc.locator('.d4-column-selector').filter({visible: true}).first();
+  if (await selector.count() === 0)
+    throw new Error(`${target.phrase} has no column selector`);
+  await openColumnSelector(page, selector);
+  const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').filter({visible: true}).last();
+  await popup.waitFor({state: 'visible', timeout: 10000});
+  const names = await columnGridNames(popup.locator('[name="viewer-Grid"]').first());
+  await expect.poll(() => pickerListens(selector), {message: `the column picker of ${target.phrase} focused`})
+    .toBe(true);
+  await page.keyboard.press('Escape');
+  await popup.waitFor({state: 'detached', timeout: 5000}).catch(() => {
+    throw new Error(`the column picker of ${target.phrase} is still open after Escape`);
+  });
+  return names;
 }
 
 export async function select(page: Page, target: ElementRef, option: string): Promise<void> {
@@ -467,9 +532,15 @@ async function selectNative(page: Page, select: Locator, option: string): Promis
   await page.keyboard.type(option);
   await page.waitForTimeout(300);
   await guide.hop(page, select);
-  await page.keyboard.press('Enter');
-  const taken = await select.evaluate((e) => (e as HTMLSelectElement).selectedOptions[0]?.label ?? '');
-  if (taken !== option)
+  // a list that did not open takes the option on the typing itself, and an Enter then reaches the
+  // page: a dialog around the select takes it as its OK
+  const typed = await select.evaluate((e) => (e as HTMLSelectElement).selectedOptions[0]?.label ?? '');
+  if (typed !== option)
+    await page.keyboard.press('Enter');
+  // a property grid closes its editor on Enter and shows the value as text again: nothing left to correct
+  const taken = await select.evaluate((e) => (e as HTMLSelectElement).selectedOptions[0]?.label ?? '', undefined, {timeout: 1000})
+    .catch(() => null);
+  if (taken !== null && taken !== option)
     await select.selectOption({label: option});
 }
 
@@ -514,7 +585,7 @@ export async function toggle(page: Page, target: ElementRef): Promise<void> {
 
 export async function close(page: Page, target: ElementRef): Promise<void> {
   const loc = await locate(page, target);
-  const button = loc.locator(CLOSE).first();
+  const button = loc.locator(DIALOG_CLOSE).first();
   if (await button.count() > 0)
     await button.click();
   else
@@ -538,8 +609,104 @@ export async function pressIn(page: Page, target: ElementRef, key: string): Prom
   await (await editorOf(page, target)).press(normalizeKey(key));
 }
 
+const PRESS_EVENTS = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click', 'dblclick'];
+
+/** The mouse pressed on [from] and nowhere else. Playwright's `dragTo`, when the source moves between its check
+ * and its press (a gallery reflowing as a panel opens), presses again with the first press still down, and a
+ * Dart drag begun that way never drops. Here a hover aims the press (it retries until the source is under the
+ * pointer), and a press that still lands off the source is kept from the page and released before the next try. */
+async function pressOn(page: Page, from: Locator, phrase: string): Promise<void> {
+  // a press that hit takes its guard down at once; one that missed keeps it through the release it is kept from
+  const unguard = (onlyIfHit: boolean): Promise<true | string> => page.evaluate(([types, onlyIfHit]) => {
+    const w = window as any;
+    const guard = w.__bddPressGuard;
+    const hit = guard.hit ?? 'nothing';
+    if (onlyIfHit && hit !== true)
+      return hit;
+    for (const type of types)
+      window.removeEventListener(type, guard.listener, true);
+    delete w.__bddPressGuard;
+    return hit;
+  }, [PRESS_EVENTS, onlyIfHit] as [string[], boolean]);
+  for (let attempt = 1; ; attempt++) {
+    await approach(page, from);
+    await from.hover();
+    await from.evaluate((source, types) => {
+      const guard: {hit?: true | string; listener?: (e: Event) => void} = {};
+      guard.listener = (e: Event) => {
+        if (guard.hit === undefined) {
+          const t = e.target as Element;
+          const named = t.closest?.('[name]');
+          const what = named ? `[name="${named.getAttribute('name')}"]` : t.tagName?.toLowerCase();
+          guard.hit = e.composedPath().includes(source) || `${what} "${(t.textContent ?? '').trim().slice(0, 40)}"`;
+        }
+        if (guard.hit !== true) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      };
+      for (const type of types)
+        window.addEventListener(type, guard.listener, true);
+      (window as any).__bddPressGuard = guard;
+    }, PRESS_EVENTS);
+    await page.mouse.down();
+    const hit = await unguard(true);
+    if (hit === true)
+      return;
+    await page.mouse.up();
+    await unguard(false);
+    if (attempt === 5)
+      throw new Error(`the press that starts the drag of ${phrase} reached ${hit} instead, five times`);
+  }
+}
+
+/** `dragTo` for a test, with the press guarded (`pressOn`) and the drop where `dragTo` drops: one move to the
+ * middle of the target's visible part once nothing covers it there (the drag has not begun, so no drop zone
+ * does yet), then the release; a drop that cannot be made releases the press before it fails. A guide pictures
+ * a drag from the page's mouse, which a locator's own gestures never pass through, so it presses the middle of
+ * what the source shows (a label is a full-width row) and moves in steps; the source is located last, so it is
+ * what the step lights. */
 export async function drag(page: Page, source: ElementRef, target: ElementRef): Promise<void> {
-  await (await locate(page, source)).dragTo(await locate(page, target));
+  if (!guide.guideDir()) {
+    const from = await locate(page, source);
+    const to = await locate(page, target);
+    await pressOn(page, from, source.phrase);
+    try {
+      await to.scrollIntoViewIfNeeded();
+      const b = await to.boundingBox();
+      const view = page.viewportSize() ?? {width: Infinity, height: Infinity};
+      const [left, right] = b == null ? [0, 0] : [Math.max(b.x, 0), Math.min(b.x + b.width, view.width)];
+      const [top, bottom] = b == null ? [0, 0] : [Math.max(b.y, 0), Math.min(b.y + b.height, view.height)];
+      if (left >= right || top >= bottom)
+        throw new Error(`${target.phrase} is outside the viewport: nothing to drop on`);
+      const point = {x: (left + right) / 2, y: (top + bottom) / 2};
+      await expect.poll(() => to.evaluate((el, p) => el.contains(document.elementFromPoint(p.x, p.y)), point),
+        {message: `${target.phrase} under the drop point, with nothing over it`}).toBe(true);
+      await page.mouse.move(point.x, point.y);
+      await page.mouse.up();
+    }
+    catch (e) {
+      await page.mouse.up();
+      throw e;
+    }
+    return;
+  }
+  const to = await locate(page, target);
+  const from = await locate(page, source);
+  await from.scrollIntoViewIfNeeded();
+  const a = await from.evaluate((e) => {
+    const range = document.createRange();
+    range.selectNodeContents(e);
+    const text = range.getBoundingClientRect();
+    const b = text.width > 0 ? text : e.getBoundingClientRect();
+    return {x: b.x + b.width / 2, y: b.y + b.height / 2};
+  });
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(a.x + 6, a.y + 6, {steps: 2});
+  const b = (await to.boundingBox())!;
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, {steps: 10});
+  await page.mouse.up();
 }
 
 /** Where an element says it is open: `aria-expanded` on itself or on its header/trigger inside;

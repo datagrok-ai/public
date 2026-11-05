@@ -2,12 +2,12 @@
 Feature: An Excel workbook opens from every entry path
   PowerPack's .xlsx handler opens a workbook as one table view per sheet (GROK-19329: in 1.27.0 no
   entry path opened a workbook at all). The workbook is the project's own fixture,
-  fixtures/xlsx-open-test.xlsx: three sheets, Customers (5 rows: CustomerID, Name, Country, Since —
-  a date), Orders (6 rows: OrderID, CustomerID, Amount, Shipped) and Products (4 rows: ProductID,
-  Product, Price, InStock). Every path ends in exactly three table views, Customers, Orders and
-  Products, in the workbook's order, the last one current, each with its sheet's rows, columns and
-  values, and nothing logged and no balloon shown. Translated from TestTrack PowerPack/xlsx-open.md;
+  fixtures/xlsx-open-test.xlsx: three sheets, Customers, Orders and Products. Every path ends in
+  exactly three table views, Customers, Orders and Products, in the workbook's order, the last one
+  current, and nothing logged and no balloon shown. Translated from TestTrack PowerPack/xlsx-open.md;
   the path through Shared with me, which needs the second account, is xlsx-shared-with-me.feature.
+  What each sheet holds (its columns, their types and its values) is PowerPack's package test, Excel:
+  Import "three sheets" (src/tests/excel.ts), over a copy of the fixture in files/tests.
 
   File > Open > File... of the top menu (the "Open local file" command, also Ctrl+O and the "Open
   local file" icon of the Browse toolbar) opens the browser's file chooser, and the feature answers
@@ -36,17 +36,6 @@ Feature: An Excel workbook opens from every entry path
     When user double-clicks on Files---My-files---xlsx-open-{time}.xlsx tree node inside browse tree
     Then the open table views should be exactly "Customers, Orders, Products"
     And the "Products" view should be current
-    And table "Customers" should have 5 rows
-    And table "Customers" should have columns "CustomerID, Name, Country, Since"
-    And the "Name" cell of row 2 of table "Customers" should be displayed as "Bottom Dollar"
-    And "Since" column of table "Customers" should have type "datetime"
-    And table "Orders" should have 6 rows
-    And table "Orders" should have columns "OrderID, CustomerID, Amount, Shipped"
-    And the "Amount" cell of row 3 of table "Orders" should be displayed as "1200.00"
-    And table "Products" should have 4 rows
-    And table "Products" should have columns "ProductID, Product, Price, InStock"
-    And the "Product" cell of row 1 of table "Products" should be displayed as "Chai"
-    And grid should show 4 rows
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -55,12 +44,6 @@ Feature: An Excel workbook opens from every entry path
     When user drops the "fixtures/xlsx-open-test.xlsx" file of the project onto home widgets panel
     Then the open table views should be exactly "Customers, Orders, Products"
     And the "Products" view should be current
-    And table "Customers" should have 5 rows
-    And the "Country" cell of row 3 of table "Customers" should be displayed as "Switzerland"
-    And table "Orders" should have 6 rows
-    And table "Products" should have 4 rows
-    And the "Price" cell of row 4 of table "Products" should be displayed as "23.25"
-    And grid should show 4 rows
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -70,11 +53,6 @@ Feature: An Excel workbook opens from every entry path
     When user uploads "fixtures/xlsx-open-test.xlsx" through "Open local file" icon in browse toolbar
     Then the open table views should be exactly "Customers, Orders, Products"
     And the "Products" view should be current
-    And table "Customers" should have 5 rows
-    And table "Orders" should have 6 rows
-    And the "Shipped" cell of row 2 of table "Orders" should be displayed as "no"
-    And table "Products" should have 4 rows
-    And grid should show 4 rows
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -84,9 +62,5 @@ Feature: An Excel workbook opens from every entry path
     And user picks "File > Open > File..." from the open menu and chooses the "fixtures/xlsx-open-test.xlsx" file of the project
     Then the open table views should be exactly "Customers, Orders, Products"
     And the "Products" view should be current
-    And table "Customers" should have 5 rows
-    And table "Orders" should have 6 rows
-    And table "Products" should have 4 rows
-    And the "Product" cell of row 2 of table "Products" should be displayed as "Chang"
     And no errors should have been logged
     And no error or warning balloon should have been shown

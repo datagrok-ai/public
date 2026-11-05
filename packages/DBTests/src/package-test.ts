@@ -7,6 +7,7 @@ import './benchmarks/benchmark';
 import './cache/cache-test';
 import './connections/table-query-test';
 import './db-annotations/db-annotations';
+import './expected-rows-test';
 
 export const _package = new DG.Package();
 export {tests};

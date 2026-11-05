@@ -12,12 +12,18 @@ Feature: Forms viewer renderers, renderer size and the twenty-field cap
   The twenty-field cap is silent: spgi-100 has far more than twenty columns and the viewer takes
   the first twenty in table order with no message and no balloon. `COLS_LIMIT_EXCEEDED_WARNING` is
   still declared in the source but nothing reads it, the message having been removed deliberately.
+  A substructure filter drawn on the Structure card of the filter panel drives the cards as any
+  filter does (GROK-18814): of four selected rows, the two whose structure holds a pyridine keep
+  their cards, each with its molecule canvas, and the other two lose theirs. The molecules and the
+  filter card are Chem's: a stand without the Chem package skips the feature.
   The last scenario is the fit renderer on curves.csv, where the semantic type promotes Renderer
   Size to `normal` without anyone setting it — the same claim the old Step 4a made by re-deriving
   the ladder, made here by reading the property and the canvas box.
 
   Background:
     Given user is logged in
+    And the "Chem" package is installed
+    And the molecule sketcher is "OpenChemLib"
     And user opens spgi dataset
     And user adds a forms viewer
     And user makes row 1 current
@@ -77,6 +83,29 @@ Feature: Forms viewer renderers, renderer size and the twenty-field cap
     And every record card of forms viewer should show "Pyrrolidines" in "Primary Series Name"
     When user hovers over "Primary Series Name" filter card
     And user clicks on close of "Primary Series Name" filter card
+    And user clears the row selection
+    Then 100 rows should pass the filter
+    And no errors should have been logged
+
+  @GROK-18814
+  Scenario: A substructure filter on the Structure card keeps the cards of the selected rows that hold it
+    When user sets "fieldsColumnNames" property of forms viewer to "Structure, Core, Primary Series Name"
+    And user selects rows where "Id" is one of "CAST-634790, CAST-634791, CAST-634802, CAST-634803"
+    Then the record cards of forms viewer should show rows "8, 9, 20, 21"
+    When user opens the filter panel
+    And user adds a card for "Structure" to the filter panel
+    And user clicks on "Sketch" text in "Structure" filter card
+    Then sketcher dialog should be visible
+    When user types "c1ccncc1" into molecule input of sketcher dialog
+    And user presses Enter in molecule input of sketcher dialog
+    And user clicks on OK button in sketcher dialog
+    Then 17 rows should pass the filter
+    And the record cards of forms viewer should show rows "9, 21"
+    And the record cards of forms viewer should be exactly the selected rows that pass the filter
+    And every record card of forms viewer should show "canvas" in "Structure"
+    And every record card of forms viewer should show "canvas" in "Core"
+    When user hovers over "Structure" filter card
+    And user clicks on close of "Structure" filter card
     And user clears the row selection
     Then 100 rows should pass the filter
     And no errors should have been logged

@@ -26,10 +26,15 @@ export interface ControllerBaseArgs {
   sourceCache?: Map<string, any>;
 }
 
+type ActionsUUID = ReadonlyMap<string, ReadonlyMap<string, string[]>>;
+
 export interface ValidatorControllerArgs extends ControllerBaseArgs {
-  actions: Record<string, Map<string, string>>;
-  actionsVisibility: ReadonlyMap<string, boolean>;
+  actions: ActionsUUID;
   baseNode?: TreeNode<StateTreeNode>;
+}
+
+export interface NodeMetaControllerArgs extends ControllerBaseArgs {
+  actions: ActionsUUID;
 }
 
 export interface PipelineValidatorControllerArgs extends ControllerBaseArgs {
@@ -205,30 +210,20 @@ export class LinkController extends ControllerBase<[any, RestrictionType]> imple
 }
 
 export class ValidatorController extends ControllerBase<ValidationResult | undefined> implements IRuntimeValidatorController {
-  public actions: Record<string, Map<string, string>>;
-  public actionsVisibility: ReadonlyMap<string, boolean>;
+  public actions: ActionsUUID;
   public baseNode?: TreeNode<StateTreeNode>;
 
   constructor(args: ValidatorControllerArgs) {
     super(args);
     this.actions = args.actions;
-    this.actionsVisibility = args.actionsVisibility;
     this.baseNode = args.baseNode;
   }
 
   getValidationAction(name: string, actionId: string): string | undefined {
     this.checkIsClosed();
-    const actions = this.actions[name];
-    const actionUUID = actions?.get(actionId);
-    return actionUUID;
+    return this.actions.get(name)?.get(actionId)?.at(-1);
   }
 
-  isActionVisible(name: string, actionId: string): boolean {
-    this.checkIsClosed();
-    const uuid = this.actions[name]?.get(actionId);
-    if (!uuid) return false;
-    return this.actionsVisibility.get(uuid) ?? true;
-  }
 
   setValidation(name: string, validation?: ValidationResult | undefined) {
     this.checkIsClosed();
@@ -327,9 +322,26 @@ export class MutationController extends ControllerBase<PipelineInstanceConfig | 
 }
 
 export class NodeMetaController extends ControllerBase<any | undefined> implements INameSelectorController {
+  public actionsVisibility = new Map<string, boolean>();
+  private actions: ActionsUUID;
+
+  constructor(args: NodeMetaControllerArgs) {
+    super(args);
+    this.actions = args.actions;
+  }
+
   setDescriptionItem(name: string, val: string) {
     this.checkIsClosed();
     this.outputs[name] = val;
+  }
+
+  setActionVisible(name: string, actionId: string, visible: boolean) {
+    this.checkIsClosed();
+    const ids = this.actions.get(name);
+    if (!ids)
+      throw new Error(`Handler for Link ${this.id} is trying to set visibility through an unknown actions ${name}`);
+    for (const uuid of ids.get(actionId) ?? [])
+      this.actionsVisibility.set(uuid, visible);
   }
 }
 

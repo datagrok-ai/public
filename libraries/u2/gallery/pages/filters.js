@@ -148,7 +148,7 @@ export async function render(main) {
     };
     const fb = new FilterBuilder({schema: SCHEMA, template, value: Filters.applyTemplate(template),
       showQuery: true, name: 'template'});
-    return [fb, readout('diff', computed(() => JSON.stringify(Filters.diff(template.root, fb.value.value))))];
+    return [fb, readout('diff', computed(() => JSON.stringify(Filters.diff(template.root, fb.value))))];
   });
 
   section('Locked template, advanced — a locked group keeps its shape, the free group is yours', () => {
@@ -164,7 +164,7 @@ export async function render(main) {
     };
     const fb = new FilterBuilder({schema: SCHEMA, mode: 'advanced', template, value: Filters.applyTemplate(template),
       showQuery: true, name: 'templateAdvanced'});
-    return [fb, readout('diff', computed(() => JSON.stringify(Filters.diff(template.root, fb.value.value)))),
+    return [fb, readout('diff', computed(() => JSON.stringify(Filters.diff(template.root, fb.value)))),
       readout('problems', computed(() => fb.problems.value.map((p) => p.message).join('; ') || 'none'))];
   });
   main.append(el('p', 'u2-gallery-status',

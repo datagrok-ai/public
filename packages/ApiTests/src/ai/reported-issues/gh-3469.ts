@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectLook, look, until, wait, withTableView} from '../helpers';
+import {category, settled, test} from '@datagrok-libraries/test/src/test';
+import {demog, expectLook, look, until, withTableView} from '../helpers';
 
 // Regression coverage for #3469: Box plot color column auto-sync vs. manual override.
 category('AI: gh-3469: Box plot color column auto-sync vs. manual override', () => {
@@ -25,7 +25,7 @@ category('AI: gh-3469: Box plot color column auto-sync vs. manual override', () 
       await until(() => look(v)['markerColorColumnName'] === 'sex');
       expectLook(v, {markerColorColumnName: 'sex'});
       v.setOptions({category1ColumnName: 'started'});
-      await wait();
+      await settled(v);
       expectLook(v, {category1ColumnName: 'started', markerColorColumnName: 'sex'});
     });
   });
@@ -39,7 +39,7 @@ category('AI: gh-3469: Box plot color column auto-sync vs. manual override', () 
       await until(() => look(v)['markerColorColumnName'] === 'started');
       expectLook(v, {markerColorColumnName: 'started'});
       v.setOptions({category2ColumnName: 'disease'});
-      await wait();
+      await settled(v);
       expectLook(v, {category2ColumnName: 'disease', markerColorColumnName: 'started'});
     });
   });
@@ -51,9 +51,8 @@ category('AI: gh-3469: Box plot color column auto-sync vs. manual override', () 
       await until(() => look(v)['markerColorColumnName'] === 'race');
       expectLook(v, {markerColorColumnName: 'race'});
       v.setOptions({allowColorSynchronization: false});
-      await wait(100);
       v.setOptions({category1ColumnName: 'sex'});
-      await wait();
+      await settled(v);
       expectLook(v, {category1ColumnName: 'sex', markerColorColumnName: 'race'});
     });
   });

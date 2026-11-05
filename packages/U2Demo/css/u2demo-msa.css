@@ -1,5 +1,6 @@
 .u2demo-msa {
   gap: var(--dg-space-l);
+  max-width: 960px;
 }
 
 .u2demo-msa-header {
@@ -15,7 +16,7 @@
 
 .u2demo-msa-layout {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
   gap: var(--dg-space-xl);
   align-items: start;
 }
@@ -27,6 +28,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--dg-space-m);
+}
+
+/* the Settings card is a section the toolbar toggle hides: the flex above would defeat [hidden] */
+.u2demo-msa-card[hidden] {
+  display: none;
 }
 
 .u2demo-msa-card h2 {
@@ -57,4 +63,8 @@
 
 .u2demo-msa-sequence {
   font-family: var(--dg-font-family-mono, monospace);
+}
+
+.u2demo-msa-column {
+  gap: var(--dg-space-xl);
 }

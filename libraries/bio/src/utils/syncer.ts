@@ -5,8 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {errInfo} from './err-info';
 import {ILogger} from './logger';
 
-export enum LogLevel { error = 0, warning = 1, info = 2, debug = 3}
-
 export class PromiseSyncer {
   private promise: Promise<void> = Promise.resolve();
   private errors: any[] = [];

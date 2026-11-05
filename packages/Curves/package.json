@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "workspace:^",
-    "@datagrok-libraries/test": "1.4.1",
+    "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@types/wu": "catalog:",
     "cash-dom": "catalog:",
@@ -18,6 +18,10 @@
     "exceljs": "catalog:",
     "jstat": "^1.9.6",
     "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.48.0"
   },
   "scripts": {
     "build": "grok build",

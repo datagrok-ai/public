@@ -1,16 +1,14 @@
 import {MonomerType, PolymerType} from '../helm/types';
-import {MonomerTypes, PolymerTypes} from '../helm/consts';
+import {PolymerTypes} from '../helm/consts';
 import {RGroup} from '../types/monomer-library';
 
 // hwe exports the HELM type vocabulary as `as const` objects (value-only), not
 // TS enums, so we re-create the value+type duality the old `import X = Enum`
-// aliases provided — consumers use these both as a value (`.RNA`) and as a type.
+// alias provided — consumers use it both as a value (`.RNA`) and as a type.
 const HELM_POLYMER_TYPE = PolymerTypes;
 type HELM_POLYMER_TYPE = PolymerType;
-const HELM_MONOMER_TYPE = MonomerTypes;
-type HELM_MONOMER_TYPE = MonomerType;
 
-export {HELM_POLYMER_TYPE, HELM_MONOMER_TYPE};
+export {HELM_POLYMER_TYPE};
 
 /** Required HELM library monomer fields:
  * https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
@@ -57,16 +55,6 @@ export const enum HELM_FIELDS {
   SYMBOL = 'symbol'
 }
 
-// core fields of HELM library object used in toAtomicLevel function
-export const HELM_CORE_FIELDS = [
-  HELM_FIELDS.SYMBOL,
-  HELM_FIELDS.MOLFILE,
-  HELM_FIELDS.RGROUPS,
-  HELM_FIELDS.NAME,
-  // HELM_FIELDS.MONOMER_TYPE, // add if terminal monomers for PEPTIDEs to be
-  // supported
-];
-
 export const SDF_MONOMER_NAME = 'MonomerName';
 
 // todo: ideally, keys should be expressed via constants
@@ -97,10 +85,6 @@ export const DUMMY_MONOMER = {
   'polymerType': 'PEPTIDE' as PolymerType,
   'symbol': ''
 } as const;
-
-// range of hex nubers used in PepSea library to endode monomers
-export const MONOMER_ENCODE_MIN = 0x100;
-export const MONOMER_ENCODE_MAX = 0x40A;
 
 export const RIBOSE_SYMBOL = 'r';
 export const DEOXYRIBOSE_SYMBOL = 'd';

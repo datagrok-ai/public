@@ -29,4 +29,8 @@ export namespace funcs {
   export async function issuesApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('Grit:IssuesApp', { path });
   }
+
+  export async function issuesTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('Grit:IssuesTreeBrowser', { treeNode });
+  }
 }

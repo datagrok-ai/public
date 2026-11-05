@@ -19,6 +19,7 @@ Feature: A SQL query from creation to deletion
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
     And no query named "BDD-Q-life-{time}" is on the server
     And no query named "BDD-Q-life-renamed-{time}" is on the server

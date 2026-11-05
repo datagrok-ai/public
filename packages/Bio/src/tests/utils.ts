@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {delay, expect, testEvent} from '@datagrok-libraries/test/src/test';
+import {expect, settled, testEvent} from '@datagrok-libraries/test/src/test';
 import {asRenderer, IRenderer, isRenderer} from '@datagrok-libraries/bio/src/types/renderer';
 
 import {_package} from '../package-test';
@@ -35,7 +35,7 @@ export function _testTableIsNotEmpty(table: DG.DataFrame): void {
 }
 
 export async function awaitGrid(grid: DG.Grid, timeout: number = 5000): Promise<void> {
-  await delay(0);
+  await settled(grid);
   await testEvent(grid.onAfterDrawContent, () => {},
     () => { grid.invalidate(); }, timeout);
 

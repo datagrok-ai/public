@@ -2163,7 +2163,7 @@ export class FormulaLinesDialog {
         return;
 
       this.tabs.currentPane = this.tabs.getPane(this.showValueOnOpen.isDataFrame ? ITEM_SOURCE.DATAFRAME : ITEM_SOURCE.VIEWER);
-      if (this.showValueOnOpen.index !== undefined) {
+      if (this.showValueOnOpen.index != null) {
         const isFormulaLine = !this.showValueOnOpen.isAnnotationArea;
         this.currentTable.update(this.showValueOnOpen.index, isFormulaLine);
       } else {
@@ -2230,7 +2230,9 @@ export class FormulaLinesDialog {
         return this.preview.update(itemIdx, isFormulaLine);
       },
       (isValid: boolean): void => {
-        isValid ? this.dialog.getButton('OK').classList.remove('disabled') : this.dialog.getButton('OK').classList.add('disabled');
+        const ok = this.dialog.getButton('OK');
+        ok.classList.toggle('disabled', !isValid);
+        isValid ? ok.removeAttribute('aria-disabled') : ok.setAttribute('aria-disabled', 'true');
       },
       singleAxisColumnNameForHost(src),
       defaultItemZIndexForHost(src),

@@ -87,6 +87,22 @@ test('invalid-value: per kind, list elements individually, choices, min/max', ()
   assert.match(p.message, /at most 150/);
 });
 
+test('invalid-value: a regex operator refuses a pattern that does not compile, saying why; parse refuses it too', () => {
+  const bad = problems([Filters.cond('name', 'matches', '(')]);
+  assert.deepEqual(bad.map((p) => p.code), ['invalid-value']);
+  assert.match(bad[0].message, /^"\(" is not a regular expression: Unterminated group$/);
+  assert.deepEqual(codes([Filters.cond('name', '!matches', '[a-')]), ['invalid-value']);
+  assert.deepEqual(codes([Filters.cond('name', 'matches', '^a.*(b|c)$')]), []);
+  assert.deepEqual(codes([Filters.cond('name', 'like', '(')]), [], 'a contains is text, not a pattern');
+  assert.deepEqual(codes([Filters.cond('name', 'matches', '(')], 'domain'), ['invalid-value'],
+    'a domain query (Postgres ~*) is refused before it reaches the server');
+  assert.deepEqual(Filters.pruneInvalid(Filters.group('and', [Filters.cond('name', 'matches', '(')]), schema,
+    'domain').nodes, []);
+  assert.deepEqual(Filters.parse('name matches "("', schema).problems.map((p) => p.code), ['invalid-value']);
+  assert.deepEqual(Filters.pruneInvalid(Filters.group('and', [Filters.cond('name', 'matches', '(')]), schema).nodes, [],
+    'what a host evaluates while it is being edited leaves it out');
+});
+
 test('dotted paths: the head must exist; a ref hop skips the operator and value checks', () => {
   assert.deepEqual(codes([Filters.cond('author.login', 'like', 5)]), []);
   assert.deepEqual(codes([Filters.cond('name.x', '>', 'y')]), []);

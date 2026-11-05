@@ -120,6 +120,9 @@ export class ViewBase extends Widget {
   get parentCall(): FuncCall | undefined { return toJs(api.grok_View_Get_ParentCall(this.dart)); }
   set parentCall(s: FuncCall | undefined) { api.grok_View_Set_ParentCall(this.dart, toDart(s)); }
 
+  /** The view this one was opened from. While it is open, the ribbon shows it before this view's name as a link that
+   * makes it current (a {@link TableView} only with {@link TableView.showParentCrumb}), and closing this view while it
+   * is current makes the parent current. */
   get parentView(): ViewBase { return toJs(api.grok_View_Get_ParentView(this.dart)); }
   set parentView(s: ViewBase) { api.grok_View_Set_ParentView(this.dart, toDart(s)); }
 
@@ -393,7 +396,7 @@ export class View extends ViewBase {
   static readonly QUERIES = 'queries';
   static readonly SCRIPTS = 'scripts';
   static readonly USERS = 'users';
-  static readonly PACKAGES = 'packages';
+  static readonly PACKAGES = 'Plugins';
   static readonly PACKAGE_REPOSITORIES = 'repositories';
   static readonly JS_EDITOR = 'js';
   static readonly BROWSE = 'browse';
@@ -403,7 +406,7 @@ export class View extends ViewBase {
     View.FORUM, View.PROJECTS, View.NOTEBOOKS, View.HELP, View.OPEN_TEXT, View.DATABASES,
     View.WEB_SERVICES, View.VIEW_LAYOUTS, View.FUNCTIONS, View.DATA_CONNECTIONS, View.DATA_JOB_RUNS,
     View.FILES, View.EMAILS, View.GROUPS, View.MODELS, View.QUERIES,
-    View.SCRIPTS, View.USERS, View.PACKAGES, View.PACKAGE_REPOSITORIES, View.JS_EDITOR, View.BROWSE, View.DOCKERS];
+    View.SCRIPTS, View.USERS, View.PACKAGES, View.PACKAGE_REPOSITORIES, View.JS_EDITOR, View.DOCKERS];
 }
 
 
@@ -642,6 +645,26 @@ export class TableView extends View {
   get syncCurrentObject(): boolean { return api.grok_TableView_Get_SyncCurrentObject(this.dart); }
   set syncCurrentObject(x: boolean) { api.grok_TableView_Set_SyncCurrentObject(this.dart, x); }
 
+  /** Whether the ribbon shows {@link parentView} as a crumb before the table's name: "Parent › Table", the
+   * parent a link as in {@link ui.breadcrumbs}, the table's name as the ribbon shows it, and a click on the parent
+   * makes it current. Off by default, since a table opened from a view's tree inherits that view as its parent.
+   * Takes effect at once, also on the current view.
+   * @example
+   * const home = grok.shell.newView('Home');
+   * const tv = grok.shell.addTableView(grok.data.demo.demog());
+   * tv.parentView = home;
+   * tv.showParentCrumb = true;
+   * @see {@link https://public.datagrok.ai/js/samples/ui/views/table-view-parent-crumb} */
+  get showParentCrumb(): boolean { return api.grok_TableView_Get_ShowParentCrumb(this.dart); }
+  set showParentCrumb(x: boolean) { api.grok_TableView_Set_ShowParentCrumb(this.dart, x); }
+
+  /** Whether the ribbon shows the Save button, which saves the table's project (on by default). An app that
+   * saves the data its own way turns it off; the rest of the ribbon, `getRibbonPanels()` /
+   * `setRibbonPanels()` round-trips included, stays as it is.
+   * @see {@link https://public.datagrok.ai/js/samples/ui/views/table-view-no-save} */
+  get showSaveButton(): boolean { return api.grok_TableView_Get_ShowSaveButton(this.dart); }
+  set showSaveButton(x: boolean) { api.grok_TableView_Set_ShowSaveButton(this.dart, x); }
+
   saveState(): string {
     return api.grok_TableView_SaveState(this.dart);
   }
@@ -722,6 +745,8 @@ export class BrowsePanel extends DartWidget {
   get localTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_LocalTree(this.dart); }
   get mainTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_MainTree(this.dart); }
   bindItemTooltip(content: string | Element | (() => string | Element), el: Element): void { api.grok_BrowsePanel_BindItemTooltip(this.dart, content, el); }
+  /** Expands the groups along a slash-separated path of node texts (`Platform/Domains/northwind`) and selects the node at its end; a path the tree does not hold is ignored. */
+  async expandPath(path: string): Promise<void> { await api.grok_BrowsePanel_ExpandPath(this.dart, path); }
 }
 
 /** Represents a virtual view, where visual elements are created only when user

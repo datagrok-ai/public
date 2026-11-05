@@ -2,6 +2,21 @@
 
 ## v.next
 
+* [#4437](https://github.com/datagrok-ai/public/issues/4437): Tutorials: Show both Windows and Mac keyboard shortcuts in step instructions
+* [#4444](https://github.com/datagrok-ai/public/issues/4444): Tutorials: Dashboards: saving the project before renaming it gets the project name step stuck, and skipping the next step throws NullError
+* [#4438](https://github.com/datagrok-ai/public/issues/4438): Tutorials: Filters: Esc disables the filter panel instead of resetting, steps 6, 13 and 17 get stuck
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): Sticky Meta waits for the type dialog on its shown event instead of polling every 50 ms with no deadline; Dashboards, Scripting and Virtual Screening wait for the element a step needs instead of a fixed second and a single lookup that skipped the step on a slow page
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): Tutorials: Removed fixed 0.5-2 s waits before steps whose actions already wait for their inputs, and checked completion at once instead of after 1-3 s
+* [#4374](https://github.com/datagrok-ai/public/issues/4374): Sticky Meta: The tutorial can be passed again, and by several users on one server: each learner gets their own entity type and schema, removed when the tutorial finishes or is closed
+* [core#964](https://github.com/datagrok-ai/core/issues/964): Sticky Meta tutorial: Fixed the annotation step failing with "the schema for tutorial section never appeared" after clicking a molecule cell
+* [core#662](https://github.com/datagrok-ai/core/issues/662): Sticky Meta: Fixed an error when hovering the row header in the last tutorial step
+* [core#672](https://github.com/datagrok-ai/core/issues/672): Differential equations tutorial: Fixed the "This tutorial can't continue" failure when the Lotka-Volterra model opens slowly
+* Tutorials: Fixed tutorial steps showing up twice: reopening the Tutorials app while a tutorial is running now closes that tutorial instead of leaving it running in the background
+* Filters: Fixed the "Save the current filter as a column" step not completing when Filter to Column is run from the top menu or the context panel
+* Differential Equations, Parameter Optimization, Sensitivity Analysis: Report the missing Diff Studio or Compute2 package before starting instead of stopping silently at step 2
+* GROK-20298: The plugin-declared Northwind domain schema is `northwind_demo` (was `northwind`): the name `northwind` is the EXTERNAL binding of the same data (a domain schema over the Northwind connection), and two packages may not ship one schema name
+* Activity Cliffs: Fixed the OK step's text, which had become 'Click "OK"' with the step-skipping change; it is "Click OK" again, as in the other Chem tutorials
+* Tests: Data Aggregation and Multivariate Analysis wait for the package autostarts before their top-menu pick
 * GROK-20153: Tutorials | Sticky meta: Stuck on annotate dataset step in some cases
 * Tutorials: Fixed the step counters of Scatter Plot, Embedded Viewers, Filters, Grid Customization, Calculated Columns and Data Aggregation (each declared one step more than it lists), so "Step N of M" names the step in progress
 * Tutorials: Fixed hints captured when their step began: they follow their element now, so one that appears later is still highlighted — the new connection's tree node and the query's row (Dashboards, Data Connectors), the New Entity Type and New Schema buttons (Sticky Meta), the Chem and ML menus (Activity Cliffs, R-Groups Analysis, Multivariate Analysis)

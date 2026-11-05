@@ -2,7 +2,7 @@
    collection, reset() invalidates whatever is in flight and re-reads the total, and an error
    keeps the pages already loaded. Platform-free — no DOM, no datagrok-api. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {AsyncPager} from '../src/core/pager.js';
 import {Scope} from '../src/core/scope.js';

@@ -1,10 +1,3 @@
-/* The current table's rows and columns through the JS API: selection, filter, the current row,
-   deleting rows, calculated columns, column colors, and the tables the workspace holds. A step
-   that changes rows or colors takes every open viewer's baseline first, so the viewer checks that
-   follow ("should have repainted", "a narrower value range than before") read against the state
-   before the change, and returns once every viewer has drawn the change, so the next step's
-   baseline is the state after it. The in-page runtime's `table`, `col`, `rowFacts` and `setRows`
-   do the lookups and the row scans, and say which column or category is missing. */
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
@@ -140,6 +133,13 @@ export const selectedPassFilter = Then('every selected row should pass the filte
   });
   expect(off, 'selected rows the filter drops').toBe(0);
 });
+
+export const selectedPassingCount = Then('{int} selected row(s) should pass the filter', async (page: Page, count: number) => {
+  await expect.poll(() => page.evaluate(() => {
+    const df = grok.shell.t;
+    return df.selection.clone().and(df.filter).trueCount;
+  }), {message: 'rows both selected and passing the filter'}).toBe(count);
+}, {description: 'what the status bar\'s "filtered and selected" counts: a selection the filter partly hides'});
 
 /** The names of the selected grid columns of the current table view, in grid order. */
 const selectedColumns = (page: Page): Promise<string[]> => page.evaluate(() => {
@@ -335,7 +335,8 @@ export const cellIsCurrentObject = Given('the {string} cell of row {int} is the 
     if (!col)
       throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
     grok.shell.t.currentCell = grok.shell.t.cell(Number(r) - 1, c as string);
-    grok.shell.setCurrentObject(DG.SemanticValue.fromTableCell(grok.shell.t.currentCell), true, true);
+    // not frozen: a click does not freeze the current object, and a frozen one drops the next gesture's change for 1 s
+    grok.shell.setCurrentObject(DG.SemanticValue.fromTableCell(grok.shell.t.currentCell), false, true);
     return grok.shell.t.name;
   }, [column, row] as [string, number]);
   await expect.poll(() => page.evaluate(() => {
@@ -513,6 +514,10 @@ export const colorLinkedTo = Then('the coloring of {string} column should be lin
 export const textColorCoded = Then('the text of {string} column should be color-coded', async (page: Page, column: string) => {
   await expect.poll(() => textColorCoding(page, column), {message: `"${column}" paints its text`}).toBe(true);
 }, {description: 'the grid column applies its coloring to the letters, not the cell background'});
+
+export const textNotColorCoded = Then('the text of {string} column should not be color-coded', async (page: Page, column: string) => {
+  await expect.poll(() => textColorCoding(page, column), {message: `"${column}" paints the cell background`}).toBe(false);
+}, {description: 'the grid column applies its coloring to the cell background, not the letters'});
 
 export const colorSchemeIs = Then('the color scheme of {string} column should be {string}', async (page: Page, column: string, colors: string) => {
   const want = list(colors).map((c) => c.replace(/^#/, '').toUpperCase());

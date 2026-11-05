@@ -21,13 +21,13 @@ Feature: Nested spaces and moving between them
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Hier-Root" should be on the server
     And the "Create Space" dialog should close
-    When user picks "Create Child Space..." from the context menu of BDD-Hier-Root tree node inside browse tree
+    When user picks "Create Child Space..." from the context menu of Spaces---BDD-Hier-Root tree node inside browse tree
     And user enters "BDD-Hier-Child" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then BDD-Hier-Child tree node inside browse tree should be visible
 
   Scenario: The parent's view lists the child
-    When user double-clicks on BDD-Hier-Root tree node inside browse tree
+    When user double-clicks on Spaces---BDD-Hier-Root tree node inside browse tree
     Then the "BDD-Hier-Root" view should be current
     And gallery should be visible
     And BDD-Hier-Child link in gallery should be visible
@@ -51,7 +51,7 @@ Feature: Nested spaces and moving between them
     And BDD-Hier-Grand link in gallery should be absent
 
   Scenario: Going back up the tree finds the content again
-    When user double-clicks on BDD-Hier-Root tree node inside browse tree
+    When user double-clicks on Spaces---BDD-Hier-Root tree node inside browse tree
     Then the "BDD-Hier-Root" view should be current
     And BDD-Hier-Child link in gallery should be visible
     When user double-clicks on BDD-Hier-Child link in gallery

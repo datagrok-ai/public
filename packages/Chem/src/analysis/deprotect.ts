@@ -1,11 +1,38 @@
 /* eslint-disable max-len */
-import {MolList, RDModule, RDMol, RDReactionResult} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {Observable, Subject} from 'rxjs';
 import {hasNewLines} from '../utils/chem-common';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
+import {EngineReaction} from '../utils/reactions/reaction-engine';
+import {byEngineModule} from '../engine/chem-engine';
+import {deprotectOne} from '../crux/jobs/reactions';
+import {getCruxService} from '../crux/crux-searches';
+
+/** A Deprotect job's time per molecule on the Crux workers (ms; CruxService.jobInChunks). */
+const DEPROTECT_MS_PER_MOLECULE = 20;
+/** Tests (benchmarks): false runs the column on the main thread, as before. */
+let deprotectOnWorkers = true;
+
+/** Tests (benchmarks): Deprotect's column on the Crux workers (true, the default) or on the main thread. */
+export function setDeprotectOnWorkersForTests(on: boolean): void {
+  deprotectOnWorkers = on;
+}
+
+/** The molecules' results on the Crux workers (crux/jobs/reactions.ts), null where the main thread is to react one
+ * (an empty cell, a molecule Crux threw on); null for all when the workers fail. */
+async function deprotectByWorkers(molecules: (string | null)[], smirks: string): Promise<(string | null)[] | null> {
+  try {
+    const parts = await (await getCruxService()).jobInChunks<(string | null)[]>('deprotect', molecules,
+      DEPROTECT_MS_PER_MOLECULE, [smirks]);
+    return parts.flat();
+  } catch (e) {
+    console.warn(`Chem | Deprotect on the Crux workers failed, the column is deprotected here: ${e}`);
+    return null;
+  }
+}
 
 function correctRGroups(smiles: string): string {
   const elementRGroupRegex = /\[R[1-9]\]/g;
@@ -39,7 +66,7 @@ function radicalToRgroupForm(smiles: string): string {
   });
 }
 
-const defaultFragment = 'O=C(N[*:1])OCC1c2ccccc2-c2ccccc21';
+export const defaultFragment = 'O=C([*:1])OCC1c2ccccc2-c2ccccc21';
 export class DeprotectEditor extends DG.FuncCallEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;
   columnInput!: DG.InputBase<DG.Column | null>;
@@ -118,51 +145,44 @@ export class DeprotectEditor extends DG.FuncCallEditor {
   }
 }
 
-export function addDeprotectedColumn(table: DG.DataFrame, molColumn: DG.Column, fragment: string, rdModule: RDModule): DG.Column | null {
+/** In Crux mode the reaction runs on the Crux module, the column on the Crux workers, and on RDKit's (`rdModule`) per
+ * molecule Crux cannot do. */
+export async function addDeprotectedColumn(table: DG.DataFrame, molColumn: DG.Column, fragment: string, rdModule: RDModule): Promise<DG.Column | null> {
   try {
-    const fragmentMol = rdModule.get_mol(fragment);
-    if (!fragmentMol)
+    // "Chemical engine": the fragment by the main thread's module (Crux's in Crux mode, which runs the reaction), RDKit's
+    // where Crux reads none
+    const hFragmentSmiles = byEngineModule('deprotection fragment', rdModule, (module) => {
+      const fragmentMol = module.get_mol(fragment);
+      if (!fragmentMol)
+        return null;
+      try {
+        // we need to add explicit hydrogens to the fragment to make sure the reaction works correctly
+        fragmentMol.add_hs_in_place();
+        return fragmentMol.get_smiles();
+      } finally {
+        fragmentMol.delete();
+      }
+    });
+    if (hFragmentSmiles === null)
       throw new Error('Invalid fragment molecule');
-    // we need to add explicit hydrogens to the fragment to make sure the reaction works correctly
-    fragmentMol.add_hs_in_place();
-    const hFragmentSmiles = fragmentMol.get_smiles();
-    fragmentMol.delete();
     if (!hFragmentSmiles)
       throw new Error('Invalid fragment molecule after adding hydrogens');
     const reactionSmirks = `${hFragmentSmiles}>>[*:1]`;
-    const reaction = rdModule.get_rxn(reactionSmirks);
+    const reaction = EngineReaction.create('deprotection', rdModule, reactionSmirks);
     if (!reaction)
       throw new Error('Failed to create reaction from fragment');
     const molList = molColumn.toList();
-    const deprotectedSmiles = molList.map((molSmiles) => {
-      let mols: MolList | null = null;
-      let mol: RDMol | null = null;
-      let rctns: RDReactionResult | null = null;
+    // in Crux mode the column on the Crux workers; the molecules they leave, and the column where they fail, here
+    const byWorkers = deprotectOnWorkers && reaction.onCrux ? await deprotectByWorkers(molList, reactionSmirks) : null;
+    const deprotectedSmiles = molList.map((molSmiles, i) => {
+      if (byWorkers?.[i] != null)
+        return byWorkers[i];
       try {
         if (molSmiles && !hasNewLines(molSmiles) && molSmiles.length > MAX_SMILES_LENGTH)
           return molSmiles; // do not attempt to parse very long SMILES, will cause MOB.
-        mol = rdModule.get_mol(molSmiles);
-        if (!mol)
-          return molSmiles;
-        mol.add_hs_in_place();
-        mols = new rdModule.MolList();
-        mols.append(mol);
-        rctns = reaction.run_reactants(mols, 1);
-        const size = rctns.size();
-        if (size === 0)
-          return molSmiles;
-        const firstProduct = rctns.get(0).next();
-        if (!firstProduct)
-          return molSmiles;
-        firstProduct.remove_hs_in_place();
-        const deprotectedBlock = firstProduct.get_molblock();
-        return deprotectedBlock ?? molSmiles;
+        return reaction.run((module, rxn) => deprotectOne(module, rxn, molSmiles));
       } catch (_err) {
         return molSmiles;
-      } finally {
-        mols?.delete();
-        mol?.delete();
-        rctns?.delete();
       }
     });
     reaction.delete();

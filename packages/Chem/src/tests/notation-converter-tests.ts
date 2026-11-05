@@ -1,4 +1,4 @@
-import {category, expectArray, test, before, awaitCheck, expect} from '@datagrok-libraries/test/src/test';
+import {category, expectArray, test, before, waitUntil, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
@@ -74,7 +74,7 @@ category('converters', async () => {
     if (chemblPackInstalled) {
       const df = await readDataframe('tests/names_to_smiles.csv');
       await PackageFunctions.namesToSmiles(df, df.col('Name')!);
-      await awaitCheck(() => df.columns.names().includes(`canonical_smiles`),
+      await waitUntil(() => df.columns.names().includes(`canonical_smiles`),
         `Column with names has not been converted to smiles`, 5000);
       expect(df.get('canonical_smiles', 4) === '');
       let mol1; let mol2; let smiles1; let smiles2;
@@ -90,13 +90,54 @@ category('converters', async () => {
       expect(smiles1 === smiles2);
     }
   });
+  test('Convert notation round trip', async () => {
+    const df = await readDataframe('smiles.csv');
+    await grok.data.detectSemanticTypes(df);
+    const smiles = df.col('canonical_smiles')!;
+    await PackageFunctions.convertNotation(df, smiles, DG.chem.Notation.MolBlock);
+    const molblocks = df.col('canonical_smiles_molblock')!;
+    expect(molblocks.semType, DG.SEMTYPE.MOLECULE);
+    expect(molblocks.toList().every((m) => m.includes('V2000') && m.includes('M  END')), true);
+    await PackageFunctions.convertNotation(df, molblocks, DG.chem.Notation.Smiles);
+    await PackageFunctions.recalculateCoords(df, smiles, 'CoordGen');
+    const recalculated = df.col('canonical_smiles_recalcCoords')!;
+    expect(recalculated.toList().every((m, i) => m.includes('M  END') && m !== molblocks.get(i)), true,
+      'CoordGen kept the coordinates of a converted molblock');
+
+    const canonical = (col: DG.Column, flat: boolean) => col.toList().map((s) => {
+      const mol = rdkitModule.get_mol(s);
+      const bare = flat ? rdkitModule.get_mol(mol.get_smiles().replace(/[@\/\\]/g, '')) : null;
+      try {
+        return (bare ?? mol).get_smiles();
+      } finally {
+        mol.delete();
+        bare?.delete();
+      }
+    });
+    // GROK-20956: RDKit 2024.09's molblock round trip inverts the vinyl stereocentre of rows 477, 486 and 487
+    const molblockFlips = [477, 486, 487];
+    // RDKit's CoordGen flips the C=N geometry of row 832
+    const coordGenFlips = [832];
+    const converted: [DG.Column, number[]][] = [[molblocks, molblockFlips],
+      [df.col('canonical_smiles_molblock_smiles')!, molblockFlips], [recalculated, coordGenFlips]];
+    for (const flat of [true, false]) {
+      const original = canonical(smiles, flat);
+      for (const [col, flips] of converted) {
+        const values = canonical(col, flat);
+        const differ = values.map((_, i) => i).filter((i) => values[i] !== original[i] && (flat || !flips.includes(i)));
+        expect(differ.length, 0, `${col.name} holds other molecules${flat ? ' ignoring stereochemistry' : ''} ` +
+          `in rows ${differ.slice(0, 10).join(', ')}`);
+      }
+    }
+  }, {timeout: 60000});
+
   test('Convert notations for column', async () => {
     const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') :
       await readDataframe('tests/Test_smiles_with_empty_and_malformed.csv');
 
     const testColumnAdded = async (colName: string, convertFrom: DG.chem.Notation, convertTo: DG.chem.Notation) => {
       await PackageFunctions.convertNotation(df, df.col(colName)!, convertTo, false);
-      await awaitCheck(() => df.columns.names().includes(`${colName}_${convertTo}`),
+      await waitUntil(() => df.columns.names().includes(`${colName}_${convertTo}`),
         `Column with ${convertFrom} has not been converted to ${convertTo}`, 5000);
     };
 

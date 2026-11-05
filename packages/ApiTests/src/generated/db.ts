@@ -148,18 +148,23 @@ export type ApitestsTransactionOp =
   {op: 'insert'; table: 'item'; ref?: string; values: DG.DomainTxValues<ItemInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'item'; id: string; values: DG.DomainTxValues<ItemUpdate>; expectedVersion?: number} |
   {op: 'delete'; table: 'item'; id: string} |
+  {op: 'restore'; table: 'item'; id: string} |
   {op: 'insert'; table: 'tag'; ref?: string; values: DG.DomainTxValues<TagInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'tag'; id: string; values: DG.DomainTxValues<Partial<TagRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'tag'; id: string} |
+  {op: 'restore'; table: 'tag'; id: string} |
   {op: 'insert'; table: 'item_tag'; ref?: string; values: DG.DomainTxValues<ItemTagInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'item_tag'; id: string; values: DG.DomainTxValues<Partial<ItemTagRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'item_tag'; id: string} |
+  {op: 'restore'; table: 'item_tag'; id: string} |
   {op: 'insert'; table: 'item_event'; ref?: string; values: DG.DomainTxValues<ItemEventInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'item_event'; id: string; values: DG.DomainTxValues<Partial<ItemEventRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'item_event'; id: string} |
+  {op: 'restore'; table: 'item_event'; id: string} |
   {op: 'insert'; table: 'hidden_item'; ref?: string; values: DG.DomainTxValues<HiddenItemInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'hidden_item'; id: string; values: DG.DomainTxValues<Partial<HiddenItemRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'hidden_item'; id: string};
+  {op: 'delete'; table: 'hidden_item'; id: string} |
+  {op: 'restore'; table: 'hidden_item'; id: string};
 
 /** Typed clients for the `apitests` domain schema tables (lazy — no import-time side effects). */
 export const apitestsDb = {

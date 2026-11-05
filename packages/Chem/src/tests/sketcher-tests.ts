@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
-import {category, expect, test, before, after, testEvent, delay, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, before, after, testEvent, delay, waitUntil} from '@datagrok-libraries/test/src/test';
 import {malformedMolblock, molV2000, molV3000} from './utils';
 
 
@@ -54,7 +54,194 @@ category('sketcher testing', () => {
   test('malformed input', async () => {
     await testMolblock(rdkitModule, funcs, 'V2000', false, true);
   });
+
+  // With an empty browser cache, applying Ketcher's function loads its whole package, for seconds; a sketcher chosen
+  // meanwhile (the options menu) is shown first, and Ketcher, when it arrived, replaced it in the host.
+  test('a sketcher chosen while Ketcher loads stays', async () => {
+    const ketcher = funcs.find((f) => f.name === 'ketcherSketcher');
+    if (!ketcher)
+      return;
+    let release = () => {};
+    const held = new Promise<void>((resolve) => release = resolve);
+    let applying = false;
+    let applied: Promise<chem.SketcherBase> | null = null;
+    const [s, d] = await sketcherSwitchingFrom(ketcher, (f) => async () => {
+      applying = true;
+      await held;
+      applied = f.apply();
+      return applied;
+    });
+    await waitUntil(() => applying, 'the function of Ketcher has not been applied', 10000);
+    const chosen = await switchSketcher(s, 'OpenChemLib');
+    release();
+    await waitUntil(() => applied !== null, 'the function of Ketcher was not applied after the release');
+    const late = await (applied as unknown as Promise<chem.SketcherBase>);
+    await waitUntil(() => late.isDetached, 'Ketcher, ready after the choice, has not been let go');
+    expect(s.sketcher === chosen, true);
+    expect(s.host.contains(chosen.root), true);
+    expect(s.host.querySelector('.ketcher-host') === null, true);
+    d.close();
+  });
+
+  // The same while Ketcher initializes (its editor's first load): once it was ready, it took the host's change
+  // subscription from the sketcher chosen meanwhile, and set the molecule it started with over that one's.
+  test('a sketcher chosen while Ketcher initializes keeps its molecule', async () => {
+    const ketcher = funcs.find((f) => f.name === 'ketcherSketcher');
+    if (!ketcher)
+      return;
+    let release = () => {};
+    const held = new Promise<void>((resolve) => release = resolve);
+    let initializing = false;
+    let initialized: Promise<void> | null = null;
+    const [s, d] = await sketcherSwitchingFrom(ketcher, (f) => async () => {
+      const implementation: chem.SketcherBase = await f.apply();
+      const init = implementation.init.bind(implementation);
+      implementation.init = async (host: chem.Sketcher) => {
+        initializing = true;
+        await held;
+        initialized = init(host);
+        return initialized;
+      };
+      return implementation;
+    });
+    await waitUntil(() => initializing, 'Ketcher has not begun to initialize', 10000);
+    const chosen = await switchSketcher(s, 'OpenChemLib');
+    let changes = 0;
+    s.onChanged.subscribe(() => changes++);
+    s.setSmiles(exampleInchiSmiles);
+    await waitUntil(() => compareTwoMols(rdkitModule, rdkitModule.get_mol(exampleInchiSmiles), s.getMolFile()),
+      'the chosen sketcher does not show its molecule', 5000);
+    release();
+    await initialized;
+    // the host's handling of the init it awaited runs in microtasks after it: a task later it has run
+    await delay(0);
+    expect(s.sketcher === chosen, true);
+    expect(s.host.contains(chosen.root), true);
+    expect(compareTwoMols(rdkitModule, rdkitModule.get_mol(exampleInchiSmiles), s.getMolFile()), true);
+    const before = changes;
+    s.setSmiles(exampleSmiles);
+    await waitUntil(() => changes > before, 'the host hears no change of the chosen sketcher', 5000);
+    expect(changes - before, 1);
+    d.close();
+  });
+
+  // The product owner's report (2026-10-14): a margin under the sketcher in its dialog. The in-place sketcher's column
+  // was 90% as tall as its parent, a fudge for the input row above the sketcher: in a dialog sized from outside it left
+  // the bottom of the dialog's body empty (at 100% the row pushed the sketcher's bottom under the footer), and the
+  // invalid-molecule warning, drawn over the sketcher, left its line blank under it. Every sketcher, in a dialog as it
+  // opens, in one shown with a size and with the warning shown, reaches the bottom of the dialog's body and is not
+  // covered there; ChemDraw needs a licence, as in the tests above.
+  test('a sketcher fills its dialog', async () => {
+    const cases: {size: {width: number, height: number} | null, invalid: boolean}[] =
+      [{size: null, invalid: false}, {size: {width: 700, height: 700}, invalid: false}, {size: null, invalid: true}];
+    for (const func of funcs) {
+      if (func.name === 'chemDrawSketcher')
+        continue;
+      for (const {size, invalid} of cases) {
+        chem.currentSketcherType = func.friendlyName;
+        const s = invalid ? new Sketcher(undefined, () => 'Malformed molecule') : new Sketcher();
+        s.setSmiles(exampleSmiles);
+        const d = ui.dialog().add(s).show(size ? {...size, resizable: true} : {resizable: true});
+        try {
+          await s.sketcherReady();
+          const where = `${func.friendlyName} in a dialog ` +
+            `${size ? `of ${size.width} x ${size.height}` : 'as it opens'}${invalid ? ', the molecule invalid' : ''}`;
+          const fits = (m: ReturnType<typeof sketcherInDialog>) => Math.abs(m.gap) <= 2 && m.bodyScroll === 0 &&
+            Math.abs(m.sketcherGap) <= 2 && m.onTop === 'sketcher' && (!invalid || m.warning);
+          await waitUntil(() => fits(sketcherInDialog(s, d)),
+            () => `${where}: ${JSON.stringify(sketcherInDialog(s, d))}`);
+          const {gap, bodyScroll, sketcherGap, onTop, warning} = sketcherInDialog(s, d);
+          expect(Math.abs(gap) <= 2, true, `${where}: the sketcher's bottom is ${gap} px above the body's`);
+          expect(bodyScroll, 0, `${where}: the dialog's body scrolls by`);
+          expect(Math.abs(sketcherGap) <= 2, true, `${where}: the sketcher ends ${sketcherGap} px above its host`);
+          expect(onTop, 'sketcher', `${where}: above the sketcher's bottom edge`);
+          if (invalid)
+            expect(warning, true, `${where}: the warning is seen`);
+        } finally {
+          d.close();
+        }
+      }
+    }
+  }, {timeout: 180000});
+
+  // The product owner (2026-10-14): Ketcher stayed 500 px wide in a dialog shown with a size, until the dialog was
+  // resized by hand. Its editor reaches the host's right edge in a dialog of 700 x 700, and in one as it opens (500 px).
+  test('Ketcher fills the width of its dialog', async () => {
+    const type = chem.currentSketcherType;
+    try {
+      for (const size of [{width: 700, height: 700}, null]) {
+        chem.currentSketcherType = 'Ketcher';
+        const s = new Sketcher();
+        s.setSmiles(exampleSmiles);
+        const d = ui.dialog().add(s).show(size ? {...size, resizable: true} : {resizable: true});
+        try {
+          await s.sketcherReady();
+          const where = `Ketcher in a dialog ${size ? `of ${size.width} x ${size.height}` : 'as it opens'}`;
+          const gap = () => {
+            const editor = s.host.querySelector('.Ketcher-root')?.getBoundingClientRect();
+            return editor ? Math.round(s.host.getBoundingClientRect().right - editor.right) : null;
+          };
+          await waitUntil(() => gap() !== null && Math.abs(gap()!) <= 2,
+            () => `${where}: the editor ends ${gap()} px before the host`);
+          const editor = s.host.querySelector('.Ketcher-root')?.getBoundingClientRect();
+          const host = s.host.getBoundingClientRect();
+          expect(editor !== undefined, true, `${where}: no Ketcher editor in the host`);
+          expect(Math.abs(host.right - editor!.right) <= 2, true,
+            `${where}: the editor (${Math.round(editor!.width)} px wide) ends ${Math.round(host.right - editor!.right)} px ` +
+            `before the host (${Math.round(host.width)} px wide)`);
+        } finally {
+          d.close();
+        }
+      }
+    } finally {
+      chem.currentSketcherType = type;
+    }
+  }, {timeout: 120000});
 });
+
+/** Where the sketcher ends in its dialog: the gap between its host's bottom and the dialog's body's (padding aside),
+ * how far the body scrolls, the gap between the implementation's root and its host, what is on top just above the
+ * host's bottom edge, in its middle ('sketcher' for the sketcher itself, else the element's class), and whether the
+ * invalid-molecule warning's text is on top where it is drawn. */
+function sketcherInDialog(s: Sketcher, d: DG.Dialog):
+  {gap: number, bodyScroll: number, sketcherGap: number, onTop: string, warning: boolean} {
+  const body = d.root.querySelector('.d4-dialog-contents') as HTMLElement;
+  const style = getComputedStyle(body);
+  const bodyBottom = body.getBoundingClientRect().bottom - parseFloat(style.paddingBottom) -
+    parseFloat(style.borderBottomWidth);
+  const host = s.host.getBoundingClientRect();
+  const at = document.elementFromPoint(host.left + host.width / 2, host.bottom - 4);
+  const text = s.invalidMoleculeWarning.firstElementChild?.getBoundingClientRect();
+  const atText = text ?
+    document.elementFromPoint(text.left + Math.min(10, text.width / 2), text.top + text.height / 2) : null;
+  return {
+    gap: Math.round(bodyBottom - host.bottom),
+    bodyScroll: Math.max(0, body.scrollHeight - body.clientHeight),
+    sketcherGap: Math.round(host.bottom - s.sketcher!.root.getBoundingClientRect().bottom),
+    onTop: at && s.host.contains(at) ? 'sketcher' : String(at?.className ?? at),
+    warning: !!atText && s.invalidMoleculeWarning.contains(atText),
+  };
+}
+
+/** A host in a dialog, switching to `from` (as the session's sketcher), whose function's apply is `apply(from)`. */
+async function sketcherSwitchingFrom(from: DG.Func, apply: (f: DG.Func) => () => Promise<chem.SketcherBase>):
+  Promise<[Sketcher, DG.Dialog]> {
+  chem.currentSketcherType = from.friendlyName;
+  const s = new Sketcher();
+  s.createSketcher();
+  // the switch looks its function up after a turn: replaced here, before it does
+  s.sketcherFunctions = s.sketcherFunctions.map((f) => f.name !== from.name ? f :
+    ({name: f.name, friendlyName: f.friendlyName, apply: apply(f)} as unknown as DG.Func));
+  const d = ui.dialog().add(s).show();
+  return [s, d];
+}
+
+/** Chooses `friendlyName` as the options menu does, and resolves to its implementation once ready. */
+async function switchSketcher(s: Sketcher, friendlyName: string): Promise<chem.SketcherBase> {
+  chem.currentSketcherType = friendlyName;
+  s.sketcherType = friendlyName;
+  return await s.sketcherReady();
+}
 
 
 function compareTwoMols(rdkitModule: any, mol: any, resMolfile: any): boolean {
@@ -73,7 +260,7 @@ async function testSmarts(rdkitModule: any, funcs: DG.Func[]) {
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher !== null, undefined, 5000);
+    await s.sketcherReady();
     const t = new Promise((resolve, reject) => {
       s.sketcher!.onChanged.subscribe(async (_: any) => {
         try {
@@ -84,7 +271,7 @@ async function testSmarts(rdkitModule: any, funcs: DG.Func[]) {
         }
       });
     });
-    setTimeout(()=> {s.setSmarts(convertedSmarts);}, 1000);
+    s.setSmarts(convertedSmarts);
     const resSmarts = await t;
     const qmol2 = rdkitModule.get_qmol(resSmarts);
     const match1 = mol.get_substruct_match(qmol2);
@@ -113,21 +300,19 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean, m
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher(undefined, validationFunc);
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher?.isInitialized === true, `${chem.currentSketcherType} has not been created`, 20000);
+    await s.sketcherReady();
     if (input) {
-      setTimeout(() => {
-        s.molInput.value = exampleSmiles;
-        s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
-      }, 1000);
+      s.molInput.value = exampleSmiles;
+      s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
     } else
-      setTimeout(() => s.setSmiles(exampleSmiles), 1000);
+      s.setSmiles(exampleSmiles);
     if (malformed) {
-      await awaitCheck(() => {
+      await waitUntil(() => {
         const elements = d.root.getElementsByClassName('chem-invalid-molecule-warning');
         return elements.length > 0 && elements[0].children.length > 0 && elements[0].children[0].textContent === 'Malformed molecule';
-      }, 'error div has not been created', 10000, 500);
+      }, 'error div has not been created', 10000);
     } else {
-      await awaitCheck(() => {
+      await waitUntil(() => {
         const resMolblock = input ? s.getMolFile() : s.getSmiles();
         return compareTwoMols(rdkitModule, mol, resMolblock);
       }, 'mols are not equal', 3000);
@@ -146,25 +331,23 @@ async function testMolblock(rdkitModule: any, funcs: DG.Func[], ver: string, inp
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher(undefined, validationFunc);
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher?.isInitialized === true, undefined, 5000);
+    await s.sketcherReady();
     if (input) {
-      setTimeout(() => {
-        let dT = null;
-        try {dT = new DataTransfer();} catch (e) { }
-        const evt = new ClipboardEvent('paste', {clipboardData: dT});
-        evt.clipboardData!.setData('text/plain', molfile);
-        s.molInput.value = molfile;
-        s.molInput.dispatchEvent(evt);
-      }, 1000);
+      let dT = null;
+      try {dT = new DataTransfer();} catch (e) { }
+      const evt = new ClipboardEvent('paste', {clipboardData: dT});
+      evt.clipboardData!.setData('text/plain', molfile);
+      s.molInput.value = molfile;
+      s.molInput.dispatchEvent(evt);
     } else
-      setTimeout(() => s.setMolFile(malformed ? malformedMolblock : molfile), 1000);
+      s.setMolFile(malformed ? malformedMolblock : molfile);
     if (malformed) {
-      await awaitCheck(() => {
+      await waitUntil(() => {
         const elements = d.root.getElementsByClassName('chem-invalid-molecule-warning');
         return elements.length > 0 && elements[0].children.length > 0 && elements[0].children[0].textContent === 'Malformed molecule';
-      }, 'error div has not been created', 10000, 500);
+      }, 'error div has not been created', 10000);
     } else {
-      await awaitCheck(() => {
+      await waitUntil(() => {
         const resMolblock = s.getMolFile();
         return compareTwoMols(rdkitModule, mol, resMolblock);
       }, 'mols are not equal', 3000);
@@ -182,13 +365,14 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher?.isInitialized === true, undefined, 5000);
+    await s.sketcherReady();
     s.molInput.value = exampleInchi;
     s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
-    await awaitCheck(() => {
+    // InChI is read by a Python script (inchiToMol), whose first call may start a kernel
+    await waitUntil(() => {
       const resMolblock = s.getMolFile();
       return compareTwoMols(rdkitModule, mol, resMolblock);
-    }, 'mols are not equal', 3000);
+    }, `${func.friendlyName}: mols are not equal`, 20000);
     d.close();
   }
   mol?.delete();
@@ -201,7 +385,7 @@ export async function sketchersWarmUp(funcs: DG.Func[]) {
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', 10000);
+    await s.sketcherReady();
   }
   chem.currentSketcherType = 'OpenChemLib';
 }

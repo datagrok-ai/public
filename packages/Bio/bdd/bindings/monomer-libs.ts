@@ -1,6 +1,8 @@
 /* The monomer library as Bio holds it: the selection of libraries in the user's settings, what
    the loaded library knows, and the library and collection files on the server that a feature
    creates and removes. Everything is read through Bio's own helper (`Bio:getMonomerLibHelper`). */
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
 import type {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
 import {atFeatureEnd, el, expect, pollMs} from '@datagrok-libraries/bdd/runtime';
@@ -75,14 +77,40 @@ export const allLibrariesSelected = Given('all monomer libraries are selected', 
   atFeatureEnd(page, () => selectAllLibraries(page));
 }, {tier: 'api', description: 'nothing excluded in the user\'s library settings and the library reloaded — the state the feature starts from and leaves behind, whatever a scenario toggled'});
 
+/* Deletes the library from every provider holding it; with `reload`, reloads the libraries and tells whether a
+   provider still lists it. */
+const deleteLibrary = (page: Page, name: string, reload = false) => page.evaluate(async ([n, r]) => {
+  const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+  for (const provider of await helper.getProviders())
+    if ((await provider.listLibraries()).includes(n))
+      await provider.deleteLibrary(n);
+  if (!r)
+    return false;
+  await helper.loadMonomerLib(true);
+  return (await Promise.all((await helper.getProviders()).map((p: any) => p.listLibraries()))).flat().includes(n);
+}, [name, reload] as [string, boolean]);
+
 export const noLibraryOnServer = Given('no {string} monomer library is on the server', async (page: Page, name: string) => {
-  await page.evaluate(async (n) => {
-    const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
-    for (const provider of await helper.getProviders())
-      if ((await provider.listLibraries()).includes(n))
-        await provider.deleteLibrary(n);
-  }, name);
+  await deleteLibrary(page, name);
 }, {tier: 'api', description: 'deletes the library file left by an earlier run through its provider'});
+
+/* A library file of the project put on the server under a name of the feature's, through the storage the
+   Add button would choose (Files when there are several), and loaded; removed again, and the library
+   reloaded without it, when the feature ends. */
+export const libraryOnServer = Given('the {string} file of the project is the {string} monomer library on the server',
+  async (page: Page, file: string, name: string) => {
+    const content = readFileSync(resolve(process.env.BDD_ROOT ?? process.cwd(), file), 'utf8');
+    const remove = () => deleteLibrary(page, name, true);
+    atFeatureEnd(page, async () => { expect(await remove(), `the monomer library ${name} on the server`).toBe(false); });
+    await remove();
+    await page.evaluate(async ([n, text]) => {
+      const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+      const providers = await helper.getProviders();
+      const provider = providers.find((p: any) => p.name === 'Files') ?? providers[0];
+      await provider.addOrUpdateLibraryString(n, text);
+      await helper.loadMonomerLib(true);
+    }, [name, content] as [string, string]);
+  }, {tier: 'api', description: 'a HELM JSON library of the bdd project written under that name and loaded; deleted, and the library reloaded, at feature end'});
 
 export const noCollectionOnServer = Given('no {string} monomer collection is on the server', async (page: Page, name: string) => {
   await page.evaluate(async (n) => {

@@ -25,7 +25,7 @@ export function markupNode(
   function markupNodeInt(node: MarkupNodeType, currentLeafIndex: number) {
     if (isLeaf(node)) {
       node.index = currentLeafIndex;
-      node.subtreeLength = node.branch_length!;
+      node.subtreeLength = node.branch_length ?? 0;
 
       return currentLeafIndex + 1;
     } else {
@@ -40,7 +40,7 @@ export function markupNode(
       node.maxIndex = leafIndex - 1; // leafIndex points to the next leaf already
       node.index = node.children.map((n) => (n as MarkupNodeType).index)
         .reduce((a, b) => a + b) / node.children.length;
-      node.subtreeLength = maxSubtreeLength + node.branch_length!;
+      node.subtreeLength = maxSubtreeLength + (node.branch_length ?? 0);
 
       return leafIndex;
     }
@@ -320,7 +320,7 @@ export function renderNode<TNode extends MarkupNodeType>(
       const currentLength = nodeInfo.currentLength;
 
       const beginX = currentLength * opts.lengthRatio + opts.leftPadding * dpr;
-      const endX = (currentLength + node.branch_length!) * opts.lengthRatio + opts.leftPadding * dpr;
+      const endX = (currentLength + (node.branch_length ?? 0)) * opts.lengthRatio + opts.leftPadding * dpr;
       const posY = (node.index - opts.firstRowIndex) * opts.stepRatio;
       const zoomFactor = opts.xZoomFactor ?? 1;
       const actualEndX = endX * zoomFactor - (zoomFactor - 1) * ctx.canvas.width;
@@ -336,7 +336,7 @@ export function renderNode<TNode extends MarkupNodeType>(
         //#region Plot join
         const joinMinIndex = node.children[0].index;
         const joinMaxIndex = node.children[node.children.length - 1].index;
-        const posX = (currentLength + node.branch_length!) * opts.lengthRatio + opts.leftPadding * dpr;
+        const posX = (currentLength + (node.branch_length ?? 0)) * opts.lengthRatio + opts.leftPadding * dpr;
         const minY = Math.max((joinMinIndex - opts.firstRowIndex) * opts.stepRatio, 0);
         const maxY = Math.min((joinMaxIndex - opts.firstRowIndex) * opts.stepRatio, opts.ctx.canvas.height);
         // const actualPosX = posX - (zoomFactor - 1) * ctx.canvas.width;
@@ -475,7 +475,7 @@ export function getAllNodes<TNode extends MarkupNodeType>(
         });
         queue.push({
           node: childNode as TNode,
-          currentLength: nodeInfo.currentLength + (nodeInfo.node.branch_length! ?? 0),
+          currentLength: nodeInfo.currentLength + (nodeInfo.node.branch_length ?? 0),
           traceList: childTraceList, parent: nodeInfo});
       }
     }

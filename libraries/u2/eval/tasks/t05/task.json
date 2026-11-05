@@ -1,0 +1,10 @@
+{
+  "name": "nameless-table",
+  "entry": "settings-dialog.ts",
+  "title": "A function's settings form while a table without a name is open",
+  "source": "B-3 / N-2: \"Cannot read properties of null (reading 'label')\" from a table picker fed grok.shell.tableNames with a nameless table open",
+  "bad": {
+    "bad-shell-names": ["nameless-table-open"]
+  },
+  "notes": "Graded strict (the engine throws on a misuse): ChoiceInput's `item-null` for the `undefined` the shell lists for the nameless table throws, so the bug is loud again; in production (report) it is skipped and the rest render"
+}

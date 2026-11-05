@@ -1,10 +1,3 @@
-/* The three vocabularies a feature file binds to — steps (verbs), elements and kinds (nouns),
-   datasets (data) — plus the custom parameter types that carry them through cucumber
-   expressions. Binding modules under `bindings/` call these at import time; the compiler and the
-   runtime import the same modules, so both sides read one registry.
-   Element names are global and unique: bindings/platform registers the Datagrok shell (toolbox,
-   browse tab, grid …) and those names are reserved everywhere; an app registers its own names on a
-   context — a named region whose vocabulary applies once a step `enters` it. */
 import type {Page} from '@playwright/test';
 
 export type StepKeyword = 'Given' | 'When' | 'Then' | 'Step';
@@ -83,16 +76,22 @@ export interface ContextEntry extends ElementEntry {
 }
 
 /** `exact-text` is Playwright's own text engine (the innermost element whose text is the qualifier),
- * independent of the kind's selector. */
-export type MatchStrategy = 'name' | 'label' | 'text' | 'exact-text' | 'title' | 'aria' | 'placeholder' | 'dart';
+ * independent of the kind's selector. `accessible` is the label the browser associates (`<label for>`,
+ * aria-labelledby, aria-label) with the root or an element inside it; `item` is a u2 item key
+ * (`data-u2-item`). */
+export type MatchStrategy = 'name' | 'label' | 'text' | 'exact-text' | 'title' | 'aria' | 'placeholder' | 'dart' |
+  'accessible' | 'item';
 
 export interface KindDef {
   /** Base locator for candidates of this kind. */
   selector: string;
   aliases?: string[];
-  /** How the qualifier ("sequence column" in "sequence column input") narrows the candidates,
-   * in priority order — the first strategy that finds something wins. */
+  /** How the qualifier ("sequence column" in "sequence column input") narrows the candidates —
+   * the first strategy that finds something wins. Applied in the R9 order (`effectiveOrder` in
+   * runtime/locate.ts): what the user sees first, `name` after it, `dart` where it is declared. */
   match: MatchStrategy[];
+  /** Items of a u2 collection: matched by data-u2-item, revealed for a gesture when not rendered. */
+  items?: boolean;
   /** Where the kind keeps its caption (the input label, the dialog title) for `label`/`title`. */
   labelSelector?: string;
   /** Dart `name=` conventions for the qualifier; `{q}` is the qualifier with spaces as dashes.

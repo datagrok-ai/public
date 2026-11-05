@@ -43,7 +43,9 @@ export function icon(name: string, options?: IconOptions): HTMLElement {
   const el = document.createElement('i');
   // a brand exists in one face only, so a bare name renders it instead of an empty light glyph
   const variant = options?.variant ?? (BRANDS.has(name) ? 'brands' : 'light');
-  el.className = ['grok-icon', 'u2-icon', VARIANT_CLASS[variant], `fa-${name}`,
+  // a platform picture (`svg-view-layout`), drawn as `ui.iconSvg('view-layout')` draws it
+  const face = name.startsWith('svg-') ? ['svg-icon', name] : [VARIANT_CLASS[variant], `fa-${name}`];
+  el.className = ['grok-icon', 'u2-icon', ...face,
     options?.size ? `u2-icon-${options.size}` : undefined, options?.cls]
     .filter((c) => c).join(' ');
   el.dataset.u2 = 'icon';
@@ -52,7 +54,7 @@ export function icon(name: string, options?: IconOptions): HTMLElement {
     el.setAttribute('aria-label', tooltip);
     const scope = Scope.ambient;
     if (scope)
-      Tooltip.bind(el, tooltip, scope);
+      Tooltip.bind(el, tooltip, {owner: scope});
     else
       el.title = tooltip;
   }

@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {Observable} from 'rxjs';
 
-import type {Point, App, HelmType, IHelmEditorOptions} from './types';
+import type {App, HelmType, IHelmEditorOptions} from './types';
 import {
   GetMonomerFunc, MonomersFuncs, HelmMol, HelmString, IHelmWebEditor, HelmAtom, IHelmDrawOptions
 } from './types';
@@ -30,15 +30,6 @@ export abstract class HelmInputBase extends DG.JsInputBase<SeqValueBase> {
   abstract showTooltip(content: HTMLElement | string, a: HelmAtom): void;
 }
 
-/**
- * @property {Map<number, number>} monomerMap srcPosIdx -> resPosIdx
- */
-export type HelmConvertRes = {
-  srcHelm: string;
-  resHelm: string;
-  monomerMap: Map<number, number> | null;
-}
-
 export const HelmNotSupportedErrorType = 'HelmNotSupportedError';
 
 export class HelmNotSupportedError extends Error {
@@ -58,20 +49,12 @@ export interface IHelmHelper {
 
   createWebEditorApp(host: HTMLDivElement, helm?: string): App;
 
-  get originalMonomersFuncs(): MonomersFuncs | null;
-
   buildMonomersFuncsFromLib(monomerLib: IMonomerLibBase): MonomersFuncs;
-
-  overrideMonomersFuncs(monomersFuncs: MonomersFuncs): MonomersFuncs;
-  revertOriginalMonomersFuncs(): MonomersFuncs;
 
   getHoveredAtom(x: number, y: number, mol: HelmMol, height: number): HelmAtom | null;
 
   /** Gets pseudo molfiles with monomers as atoms */
   getMolfiles(helmStrList: string[]): string[];
-
-  parse(helm: string, origin?: Point): HelmMol;
-  removeGaps(helm: string): HelmConvertRes;
 }
 
 export async function getHelmHelper(): Promise<IHelmHelper> {

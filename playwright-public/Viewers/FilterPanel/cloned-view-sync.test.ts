@@ -77,7 +77,7 @@ const MV_LEAVES: [string, string][] = [
 ];
 
 function ageCard(page: import('@playwright/test').Page) {
-  return page.locator('[name="viewer-Filters"]:visible .d4-filter')
+  return page.locator('[name="viewer-Filters"]:visible .d4-filter:not(.d4-filter-single-values)')
     .filter({has: page.locator('.d4-filter-column-name', {hasText: /^AGE$/})});
 }
 

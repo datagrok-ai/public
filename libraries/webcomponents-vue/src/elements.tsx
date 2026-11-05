@@ -84,6 +84,7 @@ export const IconFA = Vue.defineComponent({
   ],
   setup(props, {emit}) {
     const icon = Vue.shallowRef<HTMLElement | null>(null);
+    const instance = Vue.getCurrentInstance();
 
     Vue.watch([() => props.isDisabled, icon] as const, ([isDisabled, btn]) => {
       if (!btn) return;
@@ -98,6 +99,8 @@ export const IconFA = Vue.defineComponent({
         cursor={props.cursor}
         animation={props.animation}
         tooltip={props.tooltip}
+        role={props.tooltip ? (instance?.vnode.props?.onClick ? 'button' : 'img') : undefined}
+        aria-label={props.tooltip ?? undefined}
         faStyle={props.faStyle}
         onClick={(e: Event) => emit('click', e)}
       >
@@ -187,12 +190,12 @@ export const ComboPopup = Vue.defineComponent({
   name: 'ComboPopup',
   props: {
     caption: {
-      type: Object as Vue.PropType<String | HTMLElement>,
+      type: [String, HTMLElement] as Vue.PropType<string | HTMLElement>,
       required: true,
     },
     items: {
-      type: Array<String>,
-      default: [],
+      type: Array as Vue.PropType<string[]>,
+      default: () => [],
     },
     rightAligned: {
       type: Boolean,
@@ -210,6 +213,8 @@ export const ComboPopup = Vue.defineComponent({
       caption={props.caption}
       items={props.items}
       tooltip={props.tooltip}
+      role={props.tooltip ? 'button' : undefined}
+      aria-label={props.tooltip}
       rightAligned={props.rightAligned}
       onSelected={(e: any) => emit('selected', e.detail)}
     />;

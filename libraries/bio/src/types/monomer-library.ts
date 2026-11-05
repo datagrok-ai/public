@@ -10,7 +10,10 @@ import {
 import {errInfo} from '../utils/err-info';
 
 export type RGroup = {
-  [RGP.CAP_GROUP_SMILES]: string,
+  /** The cap's SMILES under the key HELM's monomer schema and the monomer libraries use. */
+  [RGP.CAP_GROUP_SMILES_UPPERCASE]?: string,
+  /** The same under the key older Datagrok code writes; a reader takes either. */
+  [RGP.CAP_GROUP_SMILES]?: string,
   [RGP.ALTERNATE_ID]: string,
   [RGP.CAP_GROUP_NAME]: string,
   [RGP.LABEL]: string,
@@ -87,7 +90,6 @@ export interface IMonomerLib extends IMonomerLibBase {
   get duplicateMonomers(): { [polymerType: string]: { [monomerSymbol: string]: Monomer[] } };
 
   getMonomerMolsByPolymerType(polymerType: PolymerType): { [monomerSymbol: string]: string } | null;
-  getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: PolymerType, element?: string): string[];
   getPolymerTypes(): PolymerType[];
   toJSON(): Monomer[];
   toString(): string;
@@ -99,9 +101,6 @@ export interface IMonomerLib extends IMonomerLibBase {
   /** Summary with lib monomer count by type */
   getSummaryObj(): MonomerLibSummaryType;
 
-  /** Gets dataframe with columns 'polymerType', 'count'. */
-  getSummaryDf(): DG.DataFrame;
-
   // For monomer palettes
   getMonomerSet(biotype: HelmType): MonomerSetType | null;
 
@@ -112,11 +111,6 @@ export interface IMonomerLinkData {
   source: string;
   symbol: string;
   notes: string;
-}
-
-export interface IMonomerLink {
-  get lib(): IMonomerLib;
-  get symbol(): string;
 }
 
 export const DEFAULT_FILES_LIB_PROVIDER_NAME = 'Files';
@@ -194,7 +188,6 @@ export interface IMonomerLibHelper {
   /** Reads single library by finding suitable provider itself. Condition must be met that there are no overlapping library names */
   readSingleLibraryByName(libraryName: string): Promise<IMonomerLib | null>;
 
-  readSingleSet(providerName: string, setName: string): Promise<IMonomerSet | null>;
   // -- Settings --
   refreshValidLibraryLists(): Promise<void>;
   /** Changes user lib settings. */
@@ -202,7 +195,6 @@ export interface IMonomerLibHelper {
 
   get fileUploadRequested(): Observable<void>;
   requestFileUpload(): void;
-  get librarySelectionChanged(): Observable<void>;
   notifyLibrarySelectionChanged(): void;
 
   /** Use default file provider to read monomer library. just a shorthand */

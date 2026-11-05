@@ -53,7 +53,7 @@ Feature: The Filters tutorial
     And 2550 rows should pass the filter
 
     When user picks "Invert all" from the indicator menu of the "DIS_POP" filter card
-    Then the tutorial step "Invert the category set for the \"DIS_POP\" filter" should be done
+    Then the tutorial step "Invert the \"RA\" selection in the \"DIS_POP\" filter" should be done
     And the filter should pass exactly the rows where "DIS_POP" is one of "AS, Indigestion, PsA, Psoriasis, UC"
 
     When user clicks on the "count AS of DIS_POP" area of filter panel
@@ -62,7 +62,10 @@ Feature: The Filters tutorial
 
     When user clicks on the "category F of SEX" area of filter panel
     And user clicks on the "category Asian of RACE" area of filter panel
-    And user clicks on the "checkbox Black of RACE" area of filter panel
+    # a name click applies "only this one" on a debounce that reads the card's row when it fires: claimed
+    # before the next click on the same card moves that row
+    Then the "selected categories of RACE" reading of filter panel should be "Asian"
+    When user clicks on the "checkbox Black of RACE" area of filter panel
     Then the tutorial step "Filter the dataset to only females of Asian or Black origin" should be done
     And the "selected categories of SEX" reading of filter panel should be "F"
     And the "selected categories of RACE" reading of filter panel should be "Asian, Black"
@@ -100,13 +103,14 @@ Feature: The Filters tutorial
     And no rows where "AGE" is "39" should pass the filter
     And no rows where "AGE" is "61" should pass the filter
 
+    # the step is done once the column is made, from the menu or any other entry point
     When user picks "Filter to Column..." from the filter panel menu
+    And user clicks on OK button in dialog
     Then the tutorial step "Save the current filter as a column" should be done
-    When user clicks on OK button in dialog
-    Then the table should have a column "AGE: [40,60]"
+    And the table should have a column "AGE: [40,60]"
 
     When user picks "Save or Apply > Save..." from the filter panel menu
-    Then the tutorial step "Save the filter configuration as \"AGE: [40,60]\"" should be done
+    Then the tutorial step "Save the filter configuration" should be done
     When user clicks on OK button in dialog
 
     When user hovers over filter panel

@@ -1,10 +1,11 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import $, { Cash } from 'cash-dom';
-import { filter } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
+import $, {Cash} from 'cash-dom';
+import {merge} from 'rxjs';
+import {filter} from 'rxjs/operators';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import wu from 'wu';
-import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
 import {selectionMade} from './utils';
 
 
@@ -17,14 +18,13 @@ export class FiltersTutorial extends Tutorial {
       'and visual assessment of column values';
   }
 
-  get steps() { return 17; }
+  get steps() {return 17;}
 
   get icon() {
     return '🔍🎚️';
   }
 
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/filters';
-  platform: Platform = getPlatform();
 
   findFilterHeaderByColName(columnName: string) {
     return $('div.d4-flex-row.d4-filter-header').filter((idx, el) => $(el)
@@ -67,55 +67,66 @@ export class FiltersTutorial extends Tutorial {
       this.t!.onFilterChanged.pipe(filter(() => {
         const filters = this.t!.rows.filters;
         return filters.length === 1 && filters.get(0) === 'DIS_POP: AS';
-      })), null, catFilterInfo);
+      })), null, catFilterInfo, () => grok.shell.tv.getFiltersGroup()
+        .updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'DIS_POP', selected: ['AS']}));
 
     const keysToSwitch = 'A convenient way to quickly browse data by categories is to click ' +
       'on any of them, and then use the up and down cursor keys to move between the categories ' +
       'in the filter. Pay attention to the row counts, it seems that rheumatoid arthritis (RA) ' +
-      'occurs quite often.';
+      'occurs quite often. Keep <b>RA</b> selected for the next step.';
     await this.action('Filter the dataset by the most common disease',
     this.t!.onFilterChanged.pipe(filter(() => {
       const filters = this.t!.rows.filters;
       return filters.length === 1 && filters.get(0) === 'DIS_POP: RA';
-    })), null, keysToSwitch);
+    })), null, keysToSwitch, () => grok.shell.tv.getFiltersGroup()
+      .updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'DIS_POP', selected: ['RA']}));
 
-    const indicatorInfo = 'To filter by multiple categories, either check each label manually ' +
-      'or right-click the indicator beside the column name and choose <b>Invert all</b>.';
-    await this.action('Invert the category set for the "DIS_POP" filter',
+    const indicatorInfo = 'To filter by multiple categories, you can check each label manually, but often it is ' +
+      'faster to select the ones you want to exclude and invert the selection. Let\'s look at all patients ' +
+      'except those with <b>RA</b>: right-click the indicator beside the column name and choose <b>Invert all</b>.';
+    await this.action('Invert the "RA" selection in the "DIS_POP" filter',
       this.t!.onFilterChanged.pipe(filter(() => {
         const filters = this.t!.rows.filters;
         return filters.length === 1 &&
           filters.get(0) === 'DIS_POP: AS, Indigestion, PsA, Psoriasis, UC';
       })), () => this.findIndicator(this.findFilterHeaderByColName('DIS_POP')),
-      indicatorInfo);
+      indicatorInfo, () => grok.shell.tv.getFiltersGroup().updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL,
+        column: 'DIS_POP', selected: ['AS', 'Indigestion', 'PsA', 'Psoriasis', 'UC']}));
 
     const rowCountSelect = 'When you click on a row count, the corresponding rows ' +
       'get selected, taking into account the current filter. They are highlighted ' +
       'in orange both in filters and other viewers.';
     await this.action('Click on a non-empty row count',
-      selectionMade(this.t!), null, rowCountSelect);
+      selectionMade(this.t!), null, rowCountSelect, () => this.t!.selection.copyFrom(this.t!.filter));
 
     await this.action('Filter the dataset to only females of Asian or Black origin',
       this.t!.onFilterChanged.pipe(filter(() => {
-        let rMatch, sMatch;
+        let rMatch; let sMatch;
         rMatch = sMatch = false;
         wu(this.t!.rows.filters).forEach((f) => {
-          if (f === 'RACE: Asian, Black') {
+          if (f === 'RACE: Asian, Black')
             rMatch = true;
-          } else if (f === 'SEX: F') {
+          else if (f === 'SEX: F')
             sMatch = true;
-          }
         });
         return rMatch && sMatch;
       })),
       $('label.d4-filter-column-name').filter((idx, el) =>
         el.textContent === 'SEX' || el.textContent === 'RACE').get(),
-      'Combine two filters: <b>SEX</b> and <b>RACE</b>.');
+      'Combine two filters: <b>SEX</b> and <b>RACE</b>.', () => {
+        const group = grok.shell.tv.getFiltersGroup();
+        group.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: ['F']});
+        group.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: ['Asian', 'Black']});
+      });
 
-    await this.action('Reset the filter',
-      this.t!.onFilterChanged.pipe(filter((_) => this.t!.filter.trueCount === this.t!.rowCount)),
-      () => $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0] ?? null,
-      'Press <b>Esc</b> or click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.');
+    const resetIcon = () => $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0] ?? null;
+    const resetFilter = () => this.action('Reset the filter',
+      merge(this.t!.onFilterChanged, this.t!.onRowsFiltered).pipe(filter(() =>
+        this.t!.filter.trueCount === this.t!.rowCount && !filters.root.classList.contains('d4-filters-disabled'))),
+      resetIcon,
+      'Click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.',
+      () => resetIcon()!.click());
+    await resetFilter();
 
     this.title('Numerical filters');
 
@@ -124,45 +135,55 @@ export class FiltersTutorial extends Tutorial {
     await this.action('Hover over the histogram bins', this.t!.onMouseOverRowGroupChanged, null, hoverInfo);
 
     const selectionInfo = 'Click on a bin to select it. To select multiple bins, hold <b>Shift</b> and ' +
-      `either pick bins one by one or drag a rectangle to form a group. If you hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while ` +
+      'either pick bins one by one or drag a rectangle to form a group. ' +
+      'If you hold <kbd>Ctrl</kbd> while ' +
       'clicking, you will toggle the bin\'s selection. Note that other filters reflect the proportion ' +
       'of the selected rows.';
     await this.action('Select one of the histogram bins',
-      selectionMade(this.t!), null, selectionInfo);
+      selectionMade(this.t!), null, selectionInfo, () => this.t!.selection.init((i) => this.t!.get('AGE', i) < 30));
 
     const indicatorsInfo = 'Current and mouse-over records are shown below the histogram ' +
       'bins as green and gray circles. These indicators can be used for quick data profiling.';
-    await this.action('Change the current row in the spreadsheet', this.t!.onCurrentRowChanged, null, indicatorsInfo);
+    await this.action('Change the current row in the spreadsheet', this.t!.onCurrentRowChanged, null, indicatorsInfo,
+      () => this.t!.currentRowIdx++);
 
     const rangeInputInfo = 'When the mouse is over a histogram, a range slider appears at the bottom. ' +
       'By dragging the handles at the edges of the slider or panning it, you can define the range of ' +
       'the values that pass filter. For more accurate results, click on the indicator next to the filter ' +
       'name in the header to open the menu, then enable <b>Min / max</b> option and use input fields ' +
       'to specify the exact values for the filter.';
-    await this.action('Find records for people aged 40 to 60',
-      this.t!.onFilterChanged.pipe(filter(() => wu(this.t!.rows.filters).some((s) => s === 'AGE: [40,60]'))),
-      () => this.findIndicator(this.findFilterHeaderByColName('AGE')),
-      rangeInputInfo);
+    const ageFiltered = () =>
+      this.t!.onFilterChanged.pipe(filter(() => wu(this.t!.rows.filters).some((s) => s === 'AGE: [40,60]')));
+    const filterAge = () => grok.shell.tv.getFiltersGroup()
+      .updateOrAdd({type: DG.FILTER_TYPE.HISTOGRAM, column: 'AGE', min: 40, max: 60});
+    await this.action('Find records for people aged 40 to 60', ageFiltered(),
+      () => this.findIndicator(this.findFilterHeaderByColName('AGE')), rangeInputInfo, filterAge);
 
     this.title('Saving filter state');
 
-    await this.contextMenuAction('Save the current filter as a column', 'Filter to Column...', null,
-      'To save the current filter state into a boolean column, use the <b>Filter to column...</b>' +
+    await this.action('Save the current filter as a column', grok.functions.onAfterRunAction.pipe(
+      filter((call: DG.FuncCall) => call.func.name === 'FilterToColumn')), null,
+    'To save the current filter state into a boolean column, use the <b>Filter to Column...</b>' +
       ' command in the context menu. A new column will be added to the dataframe. By default, ' +
       'its name corresponds to the applied filters, for example, <b>AGE: [40,60]</b>, but you ' +
-      'can change it from the dialog when saving.');
+      'can change it from the dialog when saving.', Tutorial.apiSkip(async () => {
+      await Tutorial.runContextMenu(filters.root, 'Filter to Column...');
+        (await Tutorial.waitFor(() => DG.Dialog.getOpenDialogs().find((d) => d.title === 'Filter to Column')))!
+          .getButton('OK').click();
+    }));
 
-    await this.contextMenuAction('Save the filter configuration as "AGE: [40,60]"', 'Save...', null,
-      'Choose <b>Save or apply | Save...</b> in the context menu ' +
-      'and keep the default name <b>AGE: [40,60]</b>.');
+    await this.contextMenuAction('Save the filter configuration', 'Save...', null,
+      'Choose <b>Save or Apply | Save...</b> in the context menu ' +
+      'and save it under any name.', async () => {
+        await Tutorial.runContextMenu(filters.root, 'Save...');
+        (await Tutorial.waitFor(() => DG.Dialog.getOpenDialogs().find((d) => d.title?.startsWith('Save filter'))))!
+          .getButton('OK').click();
+      });
 
-    await this.action('Reset the filter',
-      this.t!.onFilterChanged.pipe(filter((_) => this.t!.filter.trueCount === this.t!.rowCount)),
-      () => $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0] ?? null,
-      'Press <b>Esc</b> or click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.');
+    await resetFilter();
 
-    await this.contextMenuAction('Restore the filter state', 'AGE: [40,60]', null,
-      'Find the saved filter state in <b>Save or apply</b> and click on its name. You should ' +
-      'see that the dataset is filtered to patients between the ages of 40 and 60 again.');
+    await this.action('Restore the filter state', ageFiltered(), null,
+      'Find the saved filter state in <b>Save or Apply</b> and click on its name. You should ' +
+      'see that the dataset is filtered to patients between the ages of 40 and 60 again.', filterAge);
   }
 }

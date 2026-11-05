@@ -22,13 +22,18 @@ import './shell/shell';
 import './shell/undo';
 import './shell/ml';
 import './shell/settings';
+import './shell/table-view-ribbon';
+import './shell/view-layout';
 import './dapi/files';
 import './dapi/files-list';
 import './dapi/functions';
 import './dapi/fetch';
 import './dapi/groups';
+import './dapi/chats';
 import './dapi/dapi';
 import './dapi/cloud-logs';
+import './dapi/log-timeline';
+import './dapi/problems';
 import './dapi/domains';
 import './dapi/domains-batch';
 import './dapi/domain-errors';
@@ -47,6 +52,10 @@ import './dapi/domain-hierarchy';
 import './dapi/domain-live';
 import './dapi/domain-search';
 import './dapi/domain-visual-queries';
+import './dapi/domain-external-write';
+import './dapi/domain-external';
+import './dapi/domain-authoring';
+import './dapi/domain-editing';
 import './dapi/entity-properties';
 import './dapi/connector-writes';
 import './dapi/connector-ddl';
@@ -54,7 +63,10 @@ import './dapi/connection';
 import './dapi/entities';
 import './dapi/entities-save';
 import './dapi/layouts';
+import './dapi/models';
 import './dapi/packages';
+import './dapi/permissions';
+import './dapi/projects';
 import './dapi/tables';
 import './dapi/sticky_meta';
 import './dapi/users';
@@ -67,6 +79,7 @@ import './widgets/pickers';
 import './widgets/viewer-rendering';
 import './widgets/widget-status-providers';
 import './widgets/tree-view';
+import './widgets/containers';
 import './utils/color';
 import './utils/string-utils';
 import './db/db-browser-tests';
@@ -111,11 +124,12 @@ export { tests };
 //input: string skipToCategory {optional: true}
 //input: string skipToTest {optional: true}
 //input: bool returnOnFail {optional: true}
+//input: list<string> exclude {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean,
-                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean): Promise<DG.DataFrame> {
-    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail);
-  const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail });
+                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean, exclude?: string[]): Promise<DG.DataFrame> {
+    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail, exclude);
+  const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail, exclude });
   return DG.DataFrame.fromObjects(data)!;
 }
 

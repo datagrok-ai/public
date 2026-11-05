@@ -11,6 +11,17 @@
   color: var(--dg-text-color);
 }
 
+/* in a dialog the wizard fills the body, so its buttons sit at the bottom like the dialog's footer
+   instead of floating under a short step */
+.u2-dialog-content > .u2-wizard {
+  height: 100%;
+}
+
+/* the wizard pads its own rail, body and footer */
+.u2-dialog-content:has(> .u2-wizard) {
+  padding: 0;
+}
+
 .u2-wizard-steps {
   display: flex;
   align-items: center;
@@ -20,10 +31,12 @@
   list-style: none;
 }
 
+/* margin: the platform's `li + li` top margin would drop every step but the first */
 .u2-wizard-step {
   display: flex;
   align-items: center;
   gap: var(--dg-space-s);
+  margin: 0;
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
   outline: none;
@@ -43,9 +56,10 @@
   background: var(--dg-border);
 }
 
-.u2-wizard-step:focus-visible {
+/* the ring goes on the circle: the step element also carries the connector line before it */
+.u2-wizard-step:focus-visible .u2-wizard-marker {
   outline: var(--dg-focus-ring);
-  outline-offset: var(--dg-space-xs);
+  outline-offset: 0;
 }
 
 .u2-wizard-marker {
@@ -74,10 +88,15 @@
   cursor: pointer;
 }
 
+/* a committed step stays behind: what it registered cannot be undone from the rail */
+.u2-wizard-step-done[aria-disabled='true'] {
+  cursor: default;
+}
+
 .u2-wizard-step-done .u2-wizard-marker {
-  color: var(--dg-white);
-  background: var(--dg-success);
-  border-color: var(--dg-success);
+  color: var(--dg-accent);
+  background: var(--dg-bg);
+  border-color: var(--dg-accent);
 }
 
 .u2-wizard-step-current {
@@ -91,28 +110,67 @@
   border-color: var(--dg-accent);
 }
 
+.u2-wizard-step-failed .u2-wizard-marker {
+  color: var(--dg-white);
+  background: var(--dg-error);
+  border-color: var(--dg-error);
+}
+
+.u2-wizard-busy .u2-wizard-steps {
+  pointer-events: none;
+  color: var(--dg-text-color-disabled);
+}
+
 .u2-wizard-content {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
   padding: var(--dg-space-l);
+  overflow-wrap: anywhere;
 }
 
+/* as the dialog's footer (dialog.css .u2-dialog-buttons) */
 .u2-wizard-buttons {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
   gap: var(--dg-space-m);
-  padding: 0 var(--dg-space-l) var(--dg-space-l);
+  padding: var(--dg-space-m) var(--dg-space-l);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
 }
 
-.u2-wizard-reason {
-  margin-right: auto;
+/* CANCEL stands apart from BACK and NEXT */
+.u2-wizard-cancel {
+  margin-right: var(--dg-space-l);
+}
+
+/* the host's status line and the gate's reason, centred as a platform dialog's footer warning */
+.u2-wizard-left {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dg-space-m);
+  min-width: 0;
+  text-align: center;
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
 }
 
-.u2-wizard-reason:empty {
+.u2-wizard-status {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  min-width: 0;
+}
+
+.u2-wizard-status-error,
+.u2-wizard-error {
+  color: var(--dg-error);
+}
+
+.u2-wizard-reason:not(.u2-status-line-problem),
+.u2-wizard-status:empty {
   display: none;
 }

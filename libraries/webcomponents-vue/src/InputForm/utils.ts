@@ -3,43 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {Observable} from 'rxjs';
-import {getDefaultFloatFormat} from '@datagrok-libraries/utils/src/format-version-utils';
-import type {ValidationIcon} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
+import {G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
+import type {
+  ConsistencyInfo, ValidationIcon, ValidationResult,
+} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
 
-//
-// TODO: probably a separate type lib (?)
-//
-export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
-
-export type ConsistencyInfo = {
-  restriction: RestrictionType,
-  inconsistent: boolean,
-  assignedValue: any,
-}
-
-export interface ActionItem {
-  actionName: string;
-  action: string;
-  additionalParams?: Record<string, any>;
-}
-
-export interface Advice {
-  description: string;
-  actions?: ActionItem[];
-}
-
-export type ValidationItem = string | Advice;
-
-export interface ValidationResult {
-  errors?: ValidationItem[];
-  warnings?: ValidationItem[];
-  notifications?: ValidationItem[];
-}
-
-export type ValidationIconInput = {
-  validation?: ValidationResult,
-  consistency?: ConsistencyInfo,
-};
+export type {
+  RestrictionType, ConsistencyInfo, ActionItem, Advice, ValidationItem, ValidationResult, ValidationIconInput,
+} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
 
 export interface SubscriptionLike {
   unsubscribe(): void;
@@ -59,7 +30,7 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
   icon.isScalar = DG.TYPES_SCALAR.has(t.property.type);
   icon.isDataFrame = t.property.type === DG.TYPE.DATA_FRAME;
   icon.addEventListener('consistency-reset', () => emit('consistencyReset', ioName));
-  icon.addEventListener('action-request', (ev: any) => emit('actionRequested', ev.detail));
+  icon.addEventListener('action-request', (ev: any) => emit('actionRequested', ev.detail, ev.additionalParams));
   icon.addEventListener('show-dataframe-diff', (ev: any) => showDFDiff(t.value, ev.detail));
 
   const wrapper = ui.element('i') as HTMLElement;
@@ -86,6 +57,32 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
   (t as any).setStatus = setStatus;
 };
 
+// mutateOnly: the dataframe is edited in its viewers, so the input that replaces it is locked
+export const isInputEnabled = (prop: DG.Property, consistency?: ConsistencyInfo, isReadonly = false) =>
+  !isReadonly && consistency?.restriction !== 'disabled' &&
+  !(prop.propertyType === DG.TYPE.DATA_FRAME && prop.options['mutateOnly'] === 'true' &&
+    (consistency?.restriction === 'restricted' || consistency?.restriction === 'info'));
+
+export type VisibilityTarget = Pick<DG.InputBase, 'visible'>;
+
+export function setInputVisible(input: VisibilityTarget, visible: boolean) {
+  if (input.visible !== visible)
+    input.visible = visible;
+}
+
+export function applyInputsVisibility(
+  names: Iterable<string>,
+  getInput: (name: string) => VisibilityTarget | undefined,
+  meta: Record<string, any>,
+  hiddenInputs?: Set<string>,
+) {
+  for (const name of names) {
+    const input = getInput(name);
+    if (input)
+      setInputVisible(input, !meta[name]?.['hidden'] && !hiddenInputs?.has(name));
+  }
+}
+
 export interface FuncCallInputStatusable<T = any> extends FuncCallInput<T> {
   setStatus: (status: {
     validation?: ValidationResult,
@@ -104,11 +101,10 @@ export function isInputInjected(arg: any): arg is FuncCallInputStatusable {
 export {DEFAULT_FLOAT_FORMAT, G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
 
 export function applyDefaultFloatFormats(call: DG.FuncCall): void {
-  const format = getDefaultFloatFormat();
   for (const param of call.inputParams.values()) {
     const prop = param.property as any;
     if (prop?.propertyType === DG.TYPE.FLOAT && !prop.format)
-      prop.format = format;
+      prop.format = G7_FLOAT_FORMAT;
   }
 }
 

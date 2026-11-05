@@ -47,7 +47,7 @@ export function bulkTranslate(eventBus: EventBus): void {
     const terminals = eventBus.getTerminalModifications()[strand];
     const ptoFlags = eventBus.getPhosphorothioateLinkageFlags()[strand];
 
-    const outputColName = `${eventBus.getPatternName()}(${inputCol.name})`;
+    const outputColName = df.columns.getUnusedName(`${eventBus.getPatternName()}(${inputCol.name})`);
     df.columns.addNewString(outputColName).init((i) => {
       const input = inputCol.get(i);
       return applyPatternToRawSequence(

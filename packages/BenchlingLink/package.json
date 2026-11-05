@@ -11,7 +11,7 @@
     "datagrok-api": "workspace:^",
     "cash-dom": "catalog:",
     "dayjs": "catalog:",
-    "@datagrok-libraries/utils": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/test": "workspace:^"
   },
   "scripts": {

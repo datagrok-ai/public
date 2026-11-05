@@ -85,6 +85,7 @@ export interface IDartApi {
   grok_View_Get_Temp(v: any): any;
   grok_View_Load_Layout(v: any, l: any, pickupColumnsTags: Bool): any;
   grok_View_Save_Layout(v: any, saveWithData: Bool): any;
+  grok_ViewLayout_Get_BoundColumnNames(layout: any): any;
   grok_View_Get_Info(v: any): any;
   grok_View_Get_DockNode(v: any): any;
   grok_View_Get_RibbonMenu(v: any): any;
@@ -118,6 +119,10 @@ export interface IDartApi {
   grok_TableView_Set_DataFrame(v: any, d: any): any;
   grok_TableView_Get_SyncCurrentObject(tv: any): any;
   grok_TableView_Set_SyncCurrentObject(tv: any, x: Bool): any;
+  grok_TableView_Get_ShowParentCrumb(tv: any): any;
+  grok_TableView_Set_ShowParentCrumb(tv: any, x: Bool): any;
+  grok_TableView_Get_ShowSaveButton(tv: any): any;
+  grok_TableView_Set_ShowSaveButton(tv: any, x: Bool): any;
   grok_TableView_GetFilters(tv: any, addDefaultFilters: Bool): any;
   grok_TableView_LoadState(v: any, state: String, pickupColumnsTags: Bool): any;
   grok_TableView_SaveState(v: any): any;
@@ -756,7 +761,7 @@ export interface IDartApi {
   grok_TreeViewNode_Get_Value(node: any): any;
   grok_TreeViewNode_Set_Value(node: any, value: any): any;
   grok_TreeViewNode_Parent(node: any): any;
-  grok_TreeViewNode_Remove(node: any): any;
+  grok_TreeViewNode_Remove(node: any, kill?: Bool): any;
   grok_TreeViewNode_CaptionLabel(node: any): any;
   grok_TreeViewNode_CheckBox(node: any): any;
   grok_TreeViewNode_Get_Checked(node: any): any;
@@ -781,6 +786,8 @@ export interface IDartApi {
   grok_TreeViewNode_Get_Expanded(node: any): any;
   grok_TreeViewNode_Set_Expanded(node: any, expanded: Bool): any;
   grok_FilesWidget(options: any): any;
+  grok_ChatWidget(chat: any, onServer: Bool): any;
+  grok_EntityChatsWidget(entity: any): any;
   grok_Test_RunViewerTest(viewerName: String): Promise<any>;
   grok_ClickUtils_GetFullPath(x: any): any;
   grok_ClickUtils_GetElementLoggingName(x: any): any;
@@ -927,6 +934,7 @@ export interface IDartApi {
   grok_UI_ToggleButtonGroup(buttons: any, toggleFirst: Bool): any;
   grok_UI_ComboPopup(caption: any, items: any, handler: any, renderer: any): any;
   grok_UI_TableFromMap(x: any, showCopyValue: Bool): any;
+  grok_UI_PickFileFromFiles(multiple: Bool, connection: any, mode: String): Promise<any>;
   grok_UI_PickTableFromFiles(): Promise<any>;
   grok_UI_PickTableFromQuery(): Promise<any>;
   grok_UI_List(items: any, maxRows: Num): any;
@@ -1047,6 +1055,7 @@ export interface IDartApi {
   grok_BrowsePanel_Get_LocalTree(view: any): any;
   grok_BrowsePanel_Get_MainTree(view: any): any;
   grok_BrowsePanel_BindItemTooltip(view: any, content: any, el: any): any;
+  grok_BrowsePanel_ExpandPath(view: any, path: String): Promise<any>;
   grok_InfoPanels_GetAccordion(x: any): any;
   grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
   grok_ReportsRule_Add_Dialog(): Promise<any>;
@@ -1177,6 +1186,7 @@ export interface IDartApi {
   grok_Dapi_Log_CloudLogEvents(connection: String, group: String, start: any, end: any, filter: String, limit: Num): Promise<any>;
   grok_Dapi_Log_ArchiveObjects(connection: String, prefix: String, limit: Num): Promise<any>;
   grok_Dapi_Log_ArchiveEvents(connection: String, key: String): Promise<any>;
+  grok_Dapi_Log_Timeline(query: String): Promise<any>;
   grok_Dapi_LogTypes(): any;
   grok_Dapi_Dockers(): any;
   grok_Dapi_DockerImages(): any;
@@ -1188,6 +1198,15 @@ export interface IDartApi {
   grok_Dapi_Notifications_CountUnread(): Promise<any>;
   grok_Dapi_Notifications_MarkAllAsRead(): Promise<any>;
   grok_Dapi_Notifications_MarkAsRead(notificationId: String): Promise<any>;
+  grok_Dapi_Notifications_Send(userId: String, text: String, data: String): Promise<any>;
+  grok_Dapi_Chats_List(entityId: String, ref: String): Promise<any>;
+  grok_Dapi_Chats_Find(chatId: String): Promise<any>;
+  grok_Dapi_Chats_Comments(chatId: String): Promise<any>;
+  grok_Dapi_Chats_Post(chatId: String, comment: any, chat: any): Promise<any>;
+  grok_Dapi_Chats_Import(chatId: String, comment: any): Promise<any>;
+  grok_Dapi_Chats_DeleteComment(commentId: String): Promise<any>;
+  grok_Dapi_Chats_Watch(chatId: String, watch: Bool): Promise<any>;
+  grok_Dapi_Chats_IsWatched(chatId: String): Promise<any>;
   grok_Dapi_Activity(): any;
   grok_Dapi_Activity_Where(activityClient: any, userId: String, start: any, end: any): any;
   grok_DataSource_Find(s: any, id: String): Promise<any>;
@@ -1229,6 +1248,7 @@ export interface IDartApi {
   grok_Dapi_Get_CurrentUserGroups(): Promise<any>;
   grok_Dapi_Get_Permissions(e: any): Promise<any>;
   grok_Dapi_Check_Permissions(e: any, permission: String): Promise<any>;
+  grok_Dapi_Check_Global_Permission(permission: String): Promise<any>;
   grok_Dapi_Set_Permission(e: any, g: any, edit: Bool): Promise<any>;
   grok_Dapi_Delete_Permission(e: any, g: any): Promise<any>;
   grok_LayoutsDataSource_Applicable(s: any, t: any): Promise<any>;
@@ -1264,13 +1284,13 @@ export interface IDartApi {
   grok_Dapi_Domains_Query(c: any, schema: String, table: String, spec: any): Promise<any>;
   grok_Dapi_Domains_GetRow(c: any, schema: String, table: String, id: String, withAccess: Bool, deleted: String): Promise<any>;
   grok_Dapi_Domains_Insert(c: any, schema: String, table: String, rows: any, errorOnDuplicate: Bool): Promise<any>;
-  grok_Dapi_Domains_Patch(c: any, schema: String, table: String, id: String, values: any, version: Num): Promise<any>;
+  grok_Dapi_Domains_Patch(c: any, schema: String, table: String, id: String, values: any, options: any): Promise<any>;
   grok_Dapi_Domains_Delete(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_Restore(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_DeleteWhere(c: any, schema: String, table: String, filter: any, limit: any): Promise<any>;
   grok_Dapi_Domains_UpdateWhere(c: any, schema: String, table: String, filter: any, values: any, limit: any): Promise<any>;
   grok_Dapi_Domains_Promote(c: any, schema: String, table: String, id: String): Promise<any>;
-  grok_Dapi_Domains_RowAudit(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_RowAudit(c: any, schema: String, table: String, id: String, limit: any, before: any): Promise<any>;
   grok_Dapi_Domains_PathTo(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_QueryDf(c: any, schema: String, table: String, spec: any): Promise<any>;
   grok_Dapi_Domains_Aggregate(c: any, schema: String, table: String, spec: any): Promise<any>;
@@ -1286,11 +1306,17 @@ export interface IDartApi {
   grok_Dapi_Domains_Watch(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_Unwatch(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_IsWatching(c: any, schema: String, table: String, id: String): Promise<any>;
-  grok_Dapi_Domains_CreateSchema(c: any, name: String, friendlyName: String, description: String): Promise<any>;
+  grok_Dapi_Domains_CreateSchema(c: any, name: String, friendlyName: String, description: String, options: any): Promise<any>;
+  grok_Dapi_Domains_DraftSchema(c: any, body: any): Promise<any>;
+  grok_Dapi_Domains_DraftFor(c: any, schema: String, tables: any): Promise<any>;
+  grok_Dapi_Domains_SchemaAccess(c: any, schema: String): Promise<any>;
+  grok_Dapi_Domains_ValidateSchema(c: any, schema: String): Promise<any>;
   grok_Dapi_Domains_GetManifest(c: any, schema: String): Promise<any>;
   grok_Dapi_Domains_ApplySchema(c: any, schema: String, body: any, dryRun: Bool): Promise<any>;
   grok_Dapi_Domains_SchemaAudit(c: any, schema: String, limit: any): Promise<any>;
-  grok_Dapi_Domains_DeleteSchema(c: any, schema: String): Promise<any>;
+  grok_Dapi_Domains_DeleteSchema(c: any, schema: String, ifIncarnation: String): Promise<any>;
+  grok_Dapi_Domains_SchemaCreated(c: any, name: String): any;
+  grok_Dapi_Domains_SchemaAltered(c: any, name: String): any;
   grok_Dapi_Domains_TableGrants(c: any, schema: String, table: String): Promise<any>;
   grok_Dapi_Domains_TableGrant(c: any, schema: String, table: String, group: String, permission: String): Promise<any>;
   grok_Dapi_Domains_TableRevoke(c: any, schema: String, table: String, group: String, permission: String): Promise<any>;
@@ -1307,6 +1333,7 @@ export interface IDartApi {
   grok_DomainSchema_Get_PgSchema(s: any): any;
   grok_DomainSchema_Get_ManagedBy(s: any): any;
   grok_DomainSchema_Get_Version(s: any): any;
+  grok_DomainSchema_Get_Description(s: any): any;
   grok_DomainSchema_Get_Tables(s: any): any;
   grok_DomainTable_Get_Schema(t: any): any;
   grok_DomainTable_Get_SecurityMode(t: any): any;
@@ -1850,6 +1877,7 @@ export interface IDartApi {
   grok_DataConnection_Query(c: any, name: String, sql: String): any;
   grok_DataConnection_Get_Credentials(c: any): any;
   grok_DataConnection_Get_DataSource(c: any): any;
+  grok_DataConnection_Get_IsDatabase(c: any): any;
   grok_DataConnection_Test(c: any): Promise<any>;
   grok_Credentials_Parameters(c: any): any;
   grok_Credentials_OpenParameters(c: any): any;

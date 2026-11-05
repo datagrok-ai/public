@@ -486,7 +486,9 @@ test('Chem: project save and reopen with Chem state (GROK-17595)', async ({page}
           .find((x) => x.querySelector('input[placeholder*="SMILES" i]'));
         if (!d) return false;
         return (d.querySelector('.Ketcher-root')?.querySelectorAll('button').length ?? 0) > 5
-          || !!d.querySelector('canvas');
+          || !!d.querySelector('canvas')
+          // Crux draws in its shadow root; its element is busy until it is ready
+          || !!d.querySelector('crux-sketch[aria-busy="false"]');
       }, null, {timeout: 60_000});
       await page.evaluate(async () => {
         const dlg = Array.from(document.querySelectorAll('.d4-dialog'))

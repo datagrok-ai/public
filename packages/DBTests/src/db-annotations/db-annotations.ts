@@ -1,4 +1,4 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -206,12 +206,100 @@ category('Database Meta: DbSchemaInfo', async () => {
         expect(c3.tags[DG.Tags.DbComment], props.comment);
     });
 
+    test('A deleted table field leaves the others', async () => {
+        const publicSchema = (await dbInfo.getSchemas()).find((s) => s.name === 'public')!;
+        const comment = 'cars-comment-' + Date.now();
+        await publicSchema.annotateTable('cars', {comment: comment, llmComment: comment + '-llm', rowCount: 30});
+        await grok.dapi.entities.deleteProperties([{entityId: await dbEntityId(conn, publicSchema, 'cars'),
+            property: `db-table:${DG.Tags.DbTableRowCount}`}] as any);
+
+        const t = await readTable(conn, 'public', 'cars');
+        expect(t.tags.get(DG.Tags.DbTableRowCount) ?? null, null);
+        expect(t.tags.get(DG.Tags.DbComment), comment);
+        expect(t.tags.get(DG.Tags.LlmComment), comment + '-llm');
+    });
+
+    test('A deleted column field leaves the others', async () => {
+        const publicSchema = (await dbInfo.getSchemas()).find((s) => s.name === 'public')!;
+        const comment = 'brand-comment-' + Date.now();
+        await publicSchema.annotateColumn('cars', 'brand',
+            {comment: comment, quality: 'good', uniqueCount: 5, values: ['Audi', 'BMW']});
+        await grok.dapi.entities.deleteProperties([{entityId: await dbEntityId(conn, publicSchema, 'cars', 'brand'),
+            property: `db-column:${DG.Tags.Quality}`}] as any);
+
+        const c = (await readTable(conn, 'public', 'cars')).columns.find((x) => x.name === 'brand')!;
+        expect(c.tags.get(DG.Tags.Quality) ?? null, null);
+        expect(c.tags.get(DG.Tags.DbComment), comment);
+        expect(c.tags.get(DG.Tags.DbColumnUniqueCount), 5);
+        expectArray(c.tags.get(DG.Tags.DbColumnValues), ['Audi', 'BMW']);
+    });
+
+    test('Column values round trip', async () => {
+        const publicSchema = (await dbInfo.getSchemas()).find((s) => s.name === 'public')!;
+        const values = ['Audi', 'BMW', 'Ford ' + Date.now()];
+        await publicSchema.annotateColumn('cars', 'brand', {values: values, sampleValues: ['Audi']});
+
+        const c = (await readTable(conn, 'public', 'cars')).columns.find((x) => x.name === 'brand')!;
+        expectArray(c.tags.get(DG.Tags.DbColumnValues), values);
+        expectArray(c.tags.get(DG.Tags.DbColumnSampleValues), ['Audi']);
+    });
+
+    test('A table annotation is absent on its namesakes', async () => {
+        const schemas = await dbInfo.getSchemas();
+        const publicSchema = schemas.find((s) => s.name === 'public')!;
+        const otherSchema = schemas.find((s) => s.name !== 'public')!;
+        const comment = 'cars-table-' + Date.now();
+        await publicSchema.annotateTable('cars', {comment: comment});
+        await otherSchema.annotateTable('cars', {comment: comment + '-namesake'});
+
+        expect((await readTable(conn, 'public', 'cars')).tags.get(DG.Tags.DbComment), comment);
+        const otherTable = await readTable(conn, 'public', 'cars_big');
+        expect(otherTable.tags.get(DG.Tags.DbComment) !== comment, true);
+    });
+
+    test('A column annotation is absent on its namesakes', async () => {
+        const publicSchema = (await dbInfo.getSchemas()).find((s) => s.name === 'public')!;
+        const comment = 'brand-column-' + Date.now();
+        await publicSchema.annotateColumn('cars', 'brand', {comment: comment, quality: comment});
+
+        const cars = await readTable(conn, 'public', 'cars');
+        expect(cars.columns.find((x) => x.name === 'brand')!.tags.get(DG.Tags.DbComment), comment);
+        const sameTableColumn = cars.columns.find((x) => x.name === 'id')!;
+        const sameNameColumn = (await readTable(conn, 'public', 'cars_big')).columns.find((x) => x.name === 'brand')!;
+        for (const c of [sameTableColumn, sameNameColumn]) {
+            expect(c.tags.get(DG.Tags.DbComment) !== comment, true);
+            expect(c.tags.get(DG.Tags.Quality) !== comment, true);
+        }
+    });
+
     after(async () => {
         try {
             await dbInfo?.clearProperties();
         } catch (_) {}
     });
 });
+
+/** A table of a schema read afresh from the server, with the Database meta Datagrok keeps for it. */
+async function readTable(conn: DG.DataConnection, schema: string, table: string): Promise<DG.TableInfo> {
+    const info = (await grok.data.db.getInfo(conn, 'public'))[0];
+    const s = (await info.getSchemas()).find((x) => x.name === schema)!;
+    return (await s.getTables()).find((t) => t.friendlyName === table)!;
+}
+
+/** The id of the entity a table's or a column's Database meta hangs on, as the platform derives it
+ * (NamedModel.getHashId: a v5 UUID of `connection:catalog:schema:table[:column]`); the Database meta
+ * pane deletes a cleared field by it, and the JS API has no other way to delete one field. */
+async function dbEntityId(conn: DG.DataConnection, schema: DG.DbSchemaInfo, ...path: string[]): Promise<string> {
+    const namespace = '0bb1a16e-df07-45f5-99e0-8e67000ecc22'.replace(/-/g, '').match(/../g)!
+        .map((h) => parseInt(h, 16));
+    const name = new TextEncoder().encode([conn.id, schema.catalog ?? '', schema.name, ...path].join(':'));
+    const digest = await crypto.subtle.digest('SHA-1', new Uint8Array([...namespace, ...name]));
+    const hash = new Uint8Array(digest).slice(0, 16);
+    hash[6] = (hash[6] & 0x0f) | 0x50;
+    hash[8] = (hash[8] & 0x3f) | 0x80;
+    const hex = Array.from(hash, (b) => b.toString(16).padStart(2, '0')).join('');
+    return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join('-');
+}
 
 category('Database Meta: DbRelationInfo', async () => {
     let conn: DG.DataConnection;

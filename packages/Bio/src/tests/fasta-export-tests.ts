@@ -2,11 +2,11 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, expectArray, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
-import {saveAsFastaDo, wrapSequence} from '../utils/save-as-fasta';
+import {saveAsFastaDo, saveAsFastaUI, wrapSequence} from '../utils/save-as-fasta';
 
 type SaveAsFastaTestArgs = { srcCsv: string, idCols: string [], seqCol: string, lineWidth: number, tgtFasta: string };
 
@@ -92,6 +92,25 @@ MRGGL
 
   test('saveAsFastaTest2', async () => {
     _testSaveAsFasta(saveAsFastaData[SaveAsFastaTests.test2]);
+  });
+
+  test('saveAsFastaUINoSeqColumn', async () => {
+    const df = DG.DataFrame.fromCsv('id,value\n1,a\n2,b');
+    const tv = grok.shell.addTableView(df);
+    grok.shell.clearLastError();
+    try {
+      saveAsFastaUI();
+      const dlg = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Save as FASTA')!;
+      dlg.getButton('OK').click();
+      await waitUntil(() => Array.from(document.querySelectorAll('.d4-balloon.warning'))
+        .some((b) => b.textContent?.includes('Seq column is mandatory')), 'the missing column warning has not shown');
+      const lastError = await grok.shell.lastError;
+      expect(!lastError, true, `Unexpected error: ${lastError}`);
+    } finally {
+      for (const d of DG.Dialog.getOpenDialogs())
+        d.close();
+      tv.close();
+    }
   });
 
   function _testWrapSequence(testKey: string, lineWidth: number = 10) {

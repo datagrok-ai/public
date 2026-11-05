@@ -66,6 +66,57 @@
   text-overflow: ellipsis;
 }
 
+/* the platform's open pane (.d4-accordion-pane-content.expanded): 2px under the header, 10px over
+   the next one, 20px in, in the grey-5 body colour */
 .u2-accordion-content {
-  padding: 0 0 var(--dg-space-s) var(--dg-space-xxl);
+  padding: 2px 0 10px 20px;
+  color: var(--dg-grey-5);
+}
+
+/* what a folded pane holds, after its title; the error a fold would hide, in the error color */
+.u2-accordion-hint {
+  /* it gives way before the title does */
+  flex-shrink: 100;
+  min-width: 0;
+  margin-left: var(--dg-space-s);
+  overflow: hidden;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-accordion-hint > [hidden] {
+  display: none !important;
+}
+
+.u2-accordion-hint:empty,
+.u2-accordion-header[aria-expanded='true'] > .u2-accordion-hint {
+  display: none;
+}
+
+.u2-accordion-pane-invalid > .u2-accordion-header > .u2-accordion-title,
+.u2-accordion-pane-invalid > .u2-accordion-header > .u2-accordion-hint {
+  color: var(--dg-error);
+}
+
+/* flush: the title and the content start at the left edge, in line with a form's captions; the
+   chevron sits at the header's end, pointing down while folded and up while open */
+.u2-accordion-flush > .u2-accordion-pane > .u2-accordion-header {
+  padding: 0 var(--dg-space-xxl) 0 0;
+}
+
+.u2-accordion-flush > .u2-accordion-pane > .u2-accordion-header > .u2-accordion-chevron {
+  left: auto;
+  right: 3px;
+  transform: none;
+}
+
+.u2-accordion-flush > .u2-accordion-pane > .u2-accordion-header[aria-expanded='true'] > .u2-accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.u2-accordion-flush > .u2-accordion-pane > .u2-accordion-content {
+  padding: 0 0 var(--dg-space-m);
+  color: inherit;
 }

@@ -7,8 +7,8 @@ It provides molecule rendering, substructure/similarity search, fingerprint comp
 calculation, R-group analysis, scaffold trees, activity cliffs, matched molecular pair analysis,
 multi-parameter optimization (MPO), reaction enumeration and transformation, BitBIRCH/MCS
 clustering, pharmacophore features, structural alerts, ChemProp ML, and chemical space
-visualization — all running in the browser via RDKit WASM with optional Docker-based server
-computation. Handles datasets of up to 10 million molecules.
+visualization — all running in the browser (RDKit's WebAssembly, or Crux's in Crux mode: "Chemical engine" below)
+with optional Docker-based server computation. Handles datasets of up to 10 million molecules.
 
 User documentation: [Cheminformatics](../../help/datagrok/solutions/domains/chem/chem.md)
 
@@ -26,7 +26,6 @@ User documentation: [Cheminformatics](../../help/datagrok/solutions/domains/chem
 | `src/rendering/rdkit-cell-renderer.ts`                   | RDKit-based grid cell renderer with LRU caching        |
 | `src/rendering/rdkit-reaction-renderer.ts`               | Reaction rendering — multi-step routes, branched/convergent paths via `BRANCH_DELIMITER` and `parseMultiStepReaction` |
 | `src/rendering/render-molecule.ts`                       | High-level molecule rendering helper                   |
-| `src/rendering/molecule-label.ts`                        | Molecule label overlays                                |
 | `src/rendering/mixture-cell-renderer.ts`                 | Cell renderer for chemical mixtures                    |
 | `src/rendering/mol3d-hover-handler.ts`                   | 3D molecule hover/preview handler                      |
 | `src/rendering/atom-picker-controller.ts`                | Atom picker controller (interactive atom selection)    |
@@ -67,8 +66,10 @@ User documentation: [Cheminformatics](../../help/datagrok/solutions/domains/chem
 | `src/rdkit-service/rdkit-service-worker-substructure.ts` | Substructure search worker                             |
 | `src/rdkit-service/rdkit-service-worker-similarity.ts`   | Fingerprint computation worker                         |
 | `src/crux/crux-searches.ts`                              | Crux engine switch + Crux counterpart of `chemSubstructureSearchLibrary` |
-| `src/crux/crux-service.ts`, `src/crux/crux.worker.ts`    | Crux column indexes, segmented over a worker pool      |
-| `src/crux/crux-smarts.ts`                                | RDKit query mol → SMARTS crux matches the same way (null → RDKit) |
+| `src/crux/crux-search-types.ts`                          | Crux's Exact, Stereo agnostic, (Not) included in and Similar searches (jobs: `src/crux/jobs/search-types.ts`) |
+| `src/crux/crux-service.ts`, `src/crux/crux.worker.ts`    | The Crux worker pool: column indexes in segments, and the moved features' column jobs (`src/crux/jobs/`, one file per area) |
+| `src/engine/`                                            | The Chemical Engine switch: the setting (`chem-engine.ts`), the Crux file's loader (`crux-module.ts`), the fallback to RDKit (`fallback.ts`), jobs by engine (`worker-jobs.ts`, `analysis-jobs.ts`, `molecule-jobs.ts`); `README.md` maps every feature |
+| `src/python-free.ts`                                     | Chem's Python scripts and the container's conversions on Crux in Crux mode; the scripts (suffixed `Python`) are the RDKit side |
 | `src/crux/crux-sketcher.ts`                              | The Crux sketcher: `SketcherBase` over the vendored Crux Sketch |
 | `src/open-chem/ocl-sketcher.ts`                          | OpenChemLib sketcher wrapper                           |
 | `src/open-chem/sdf-importer.ts`                          | SDF file import                                        |
@@ -93,23 +94,57 @@ User documentation: [Cheminformatics](../../help/datagrok/solutions/domains/chem
 
 ### Web worker architecture
 
-`RdKitService` manages `hardwareConcurrency - 2` web workers (at least one). Work is distributed in striped batches
+`RdKitService` manages `hardwareConcurrency - 2` web workers (at least one, at most 16: a page holds only ~120
+WebAssembly memories). Work is distributed in striped batches
 (worker 1 gets rows 0, n, 2n…; worker 2 gets rows 1, n+1, 2n+1…). Progress is tracked via events
 with termination signals. The RDKit wasm is fetched and compiled once on the main thread and handed to every worker
-(`initRdKitFrom` in `rdkit-service-worker-api.ts`), so workers neither download nor compile it.
+(`initRdKitFrom` in `rdkit-service-worker-api.ts`), so workers neither download nor compile it. `CruxService`
+(`src/crux/crux-service.ts`) is Crux's pool of as many workers, each handed its next chunk when the last is done.
+
+### Chemical engine (RDKit | Crux)
+
+The `ChemicalEngine` package property ("Chemical Engine": `RDKit` default, `Crux`) picks the engine behind Chem's own
+chemistry; `src/engine/` is the one place that reads it (`chem-engine.ts`). Crux is one wasm file, `vendor/chem-wasm/`
+(crux-core's `crates/chem-wasm`; `VERSION.chem-wasm` names its revision and build, `NOTICE.chem-wasm` its licences,
+both emitted to `dist/`), answering RDKit.js's calls: fetched and compiled once, on first use (`crux-module.ts`; RDKit
+mode fetches it only for `molzip`, the macromolecule assembler and FCFP or chiral fingerprints, Crux's in both modes), instantiated on the main
+thread for one molecule's work and handed to the Crux workers (`src/crux/`) for a column's. In Crux mode nearly all of
+Chem's chemistry runs on Crux (drawing, conversions, every search type, fingerprints, descriptors, properties, alerts,
+MMPA, R-groups, MCS, reactions, 3D, InChI, the scaffold tree, synthon search, the Python scripts), each with its RDKit,
+script or container path behind it per molecule or per call (`fallback.ts`, logged once per call name). Every engine
+branch is at a feature's entry, through `cruxOrRdKit` / `cruxOrRdKitAsync` or the main-thread helpers
+(`byEngineModule`, `renderingModule`), so removing RDKit means deleting those branches. What runs where, feature by
+feature, and how a feature moves behind the setting: [`src/engine/README.md`](src/engine/README.md). Other packages get
+RDKit objects in both modes (`getRdKitModule`, `getRdKitService`); in Crux mode the moved functions' pictures and values
+come from Crux. Tests: `chemical engine` (and its `: column jobs`, `: python scripts`), `crux analyses`, `crux
+substructure search` (and `: search types`), `crux: biopolymer`. Whole suites in Crux mode on a stand: `misc/crux/engine-setting.sh set
+Crux` (the package settings on the server), `restore` after.
 
 ### Crux substructure engine
 
-The `SubstructureSearchEngine` package property (`RDKit` default, `Crux`) picks the engine of Contains /
-Not contains searches inside `chemSubstructureSearchLibrary` — every caller (filter, scaffold tree,
-`searchSubstructure`, filter operators) goes through it; tests switch it with `setSubstructureSearchEngine`.
+The Chemical Engine (`ChemicalEngine`) picks the engine of Contains / Not contains searches inside
+`chemSubstructureSearchLibrary` (`getSubstructureSearchEngine`: Crux in Crux mode, RDKit in RDKit mode; a value a
+server saved for the retired `SubstructureSearchEngine` property is not read) — every
+caller (filter, scaffold tree, `searchSubstructure`, filter operators) goes through it; tests override it with
+`setSubstructureSearchEngine`.
 Crux ([crux-core](https://github.com/datagrok-ai/crux-core), Rust → wasm) indexes a column once, in
-segments that double in size per round over `hardwareConcurrency - 2` workers and are built by the first
-search that reaches them; a changed column rebuilds only the segments whose molecules changed. The query goes
-through `getQueryMolSafe` as for RDKit (a typed query whose SMILES reading has radicals, like `[OH]` or `[CH3]`, is
-read as SMARTS by both engines) and is written as SMARTS without H counts of molecule atoms and without stereo (RDKit
-matches neither); molblock radicals, isotopes and `v`/`x`/`h`/`r`/`Rn`/`z`/`^` primitives, other search types and
-anything crux fails to parse run on RDKit. Molblock columns are converted to SMILES by RDKit first. crux reads
+segments that double in size per round over `hardwareConcurrency - 2` workers (at most 16, `MAX_WORKERS`: each holds
+a WebAssembly memory, and a page has room for about 120 of them) and are built by the first
+search that reaches them; a changed column rebuilds only the segments whose molecules changed. The query is the
+molecule `getQueryMolSafe` builds, as for RDKit (a typed query whose SMILES reading has radicals, like `[OH]` or
+`[CH3]`, is read as SMARTS by both engines): each crux worker builds it on Chem's Crux module and searches with
+`Collection.substructureSearchMol`, which matches what RDKit's `get_substruct_match` matches (explicit H, `R`/`r`/`v`/
+`h`/`x`, isotopes, radicals; rings are the SSSR of the sanitized molecule; stereo ignored, as there). Crux searches every
+query its module reads (`CruxService.readsQuery`, on the main thread); one it does not read, a CXSMILES whose
+extension holds query features its reader skips (query atom labels, `m:`, `rb:`, `u:`, `s:`, ...) runs on RDKit.
+The other search types run on Crux too (`src/crux/crux-search-types.ts`, the workers' jobs
+`src/crux/jobs/search-types.ts`): Exact, Stereo agnostic, Included in and Not included in over the same index segments,
+each segment's worker keeping per row what RDKit mode's search reads from the molecule `getMolSafe` reads (its
+canonical SMILES, its SMILES without stereo, its pattern fingerprint), RDKit on the main thread for the rows Crux cannot
+read; Similar by the engine's fingerprints (`chemGetFingerprints`) and Chem's Tanimoto. Tests: `crux substructure
+search: search types`. A molblock column's molecules are read by the crux worker that indexes them, as Chem's `getMolSafe` reads
+them (H atoms kept), so a crux search starts no RDKit worker; the RDKit pool starts only for a query that falls back to
+RDKit or a failed search. crux reads
 molecules like Chem's RDKit, including its `kekulize: false` retry (`setLenient(true)` in `crux.worker.ts`); rows it
 still cannot parse are matched by RDKit on the main thread. Crux searches do not queue on the chem critical section,
 so a filter search replaced by a newer one on the column stops itself (the RDKit path drops it when it gets the
@@ -122,16 +157,6 @@ Working notes — setup on a new machine, verification scripts, measurements, op
 in [`misc/crux/README.md`](misc/crux/README.md); parity with RDKit, dataset by dataset and query set by query set, in
 [`misc/crux/PARITY.md`](misc/crux/PARITY.md).
 
-`src/crux/crux_wasm*` is the `wasm-pack` build of `crux-core/crates/crux-wasm` (crux-core `078ca7c`, branch
-`spike/rdkit-parity-gaps` rebased on crux-core main a7e2f26), done the way crux-js does it — into crux-js (wasm-pack
-writes a `*` `.gitignore` into its out dir), then copied:
-
-```bash
-cd crux/crux-js   # beside crux-core, Rust toolchain from crux-core/rust-toolchain.toml
-npx wasm-pack@0.13.1 build ../crux-core/crates/crux-wasm --target web --release --out-name crux_wasm --out-dir ../../../crux-js/src/wasm
-cp src/wasm/crux_wasm.js src/wasm/crux_wasm.d.ts src/wasm/crux_wasm_bg.wasm <reddata>/public/packages/Chem/src/crux/
-```
-
 ### Crux sketcher
 
 `Crux` is a molecule sketcher (`meta.role: moleculeSketcher`), a choice of the Sketcher setting, never the default.
@@ -140,10 +165,11 @@ mode where the host is the substructure filter (`isSubstructureFilter`). Crux Sk
 `vendor/crux-sketch/`: the files of crux-sketch's `packages/sketch/dist/` as they are (its `VERSION` names the crux-sketch
 and crux-core revisions), bundled like any dependency, the sketcher a chunk of its own loaded at its first use, its
 WebAssembly (the sketch engine, and the CDXML and InChI modules, each lazy) emitted beside Chem's chunks; nothing of it
-loads until a Crux sketcher opens. It is a different module from `src/crux/crux_wasm*` (the substructure engine), built
+loads until a Crux sketcher opens. It is a different module from `vendor/chem-wasm/` (Chem's Crux engine), built
 from another crux-core crate. To update it: copy the new dist into `vendor/crux-sketch/` (keep `VERSION`, update it),
-regenerate the Crux Sketch block of `CREDITS.md` from crux-sketch's notices, build, and run the `Crux sketcher` and
-`sketcher testing` categories. Tests: `src/tests/crux-sketcher-tests.ts`.
+regenerate the Crux Sketch block of `CREDITS.md` from crux-sketch's notices, set the InChI module's file name
+(`inchi-<hash>.js`) in `src/crux/jobs/inchi.ts`, which the Crux workers load for a column's InChIs, build, and run the
+`Crux sketcher`, `sketcher testing` and `chemical engine` categories. Tests: `src/tests/crux-sketcher-tests.ts`.
 
 ### Docker integration
 
@@ -156,7 +182,8 @@ The `chem-chem` Docker container provides server-side computation:
 - `/chem/inchi_to_smiles` — InChI to SMILES
 - `/chem/inchi_to_inchi_key` — InChI → InChI Key
 
-Requests are gzipped for efficiency. See `src/docker/api.ts`.
+Requests are gzipped for efficiency. See `src/docker/api.ts`. In Crux mode descriptors and Map Identifiers'
+conversions run on Crux; the container is their RDKit-mode path and fallback.
 
 ### JS API
 
@@ -272,11 +299,18 @@ const molblock = grok.chem.convert('CCO', DG.chem.Notation.Smiles, DG.chem.Notat
 
 ## Tests
 
-Test files are in `src/tests/` (~40 files). Coverage includes: rendering, substructure/similarity
+Test files are in `src/tests/` (~55 files). Coverage includes: rendering, substructure/similarity
 search and filters, MMPA, SDF / MOL2 importers, notation conversion, scaffold tree (incl. node
 reordering), reaction enumeration, atom picker (2D + 3D hover, escape), pharmacophore features,
 synthon search, ChemProp, vector functions, save-as-SDF, sketcher, projects/clone-layout, and
 top-menu/menu test suites for chem-space, cliffs, R-groups, similarity/diversity, etc.
+
+Engine tests switch engines through `src/tests/engine-utils.ts` (only the tests of the switch itself call
+`setChemicalEngine`): `inEngine(ChemicalEngine.Crux, ...)` for a Crux leg against pinned values; `inEngine(ChemicalEngine.RDKit, ...)` and `inBothEngines(...)` for RDKit legs and parity;
+`expectNoFallback`, `withCruxUnreadable` and the `...ForTests` failure hooks for fallback tests. When RDKit goes, the
+RDKit legs, the parity comparisons and the fallback tests go (its header says how). `setChemicalEngine` reaches the
+test bundle's code only: call `PackageFunctions`, not `grok.functions.call` (the published package, in the stand's
+engine). Timing tests run with `--benchmark` only (`if (!DG.Test.isInBenchmark) return;` and `{benchmark: true}`).
 
 ## Reaction enumeration
 

@@ -277,7 +277,13 @@ async function clickMenuItemInGroup(page: Page, group: string, item: string): Pr
 
 async function clickTopLevelMenuItem(page: Page, item: string): Promise<void> {
   await page.locator('.d4-menu-popup').last().waitFor({timeout: 10000});
-  await page.evaluate((l) => (window as any).__menuLeaf(null, l), item);
+  // __menuLeaf scans nested labels too, and the inner scatter plot nests its own "Reset View"
+  await page.evaluate(async (l) => {
+    const find = () => Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
+      .find((e) => (e as HTMLElement).innerText.trim() === l && !e.parentElement?.parentElement?.closest('.d4-menu-item'));
+    const target = await (window as any).__poll(find, (e: Element | undefined) => !!e, 5000);
+    (target?.closest('.d4-menu-item') as HTMLElement | null)?.click();
+  }, item);
 }
 
 async function ensureStyleExpanded(page: Page): Promise<void> {
@@ -868,7 +874,7 @@ test('Trellis plot — global scale, axes visibility, range sliders', async ({pa
       expect(after[1]).not.toBe(before[1]);
 
       await page.locator(CELLS).first().click({button: 'right', position: {x: 6, y: 6}});
-      await clickTopLevelMenuItem(page, 'Reset Inner Range Sliders');
+      await clickTopLevelMenuItem(page, 'Reset View');
       const resetH = await v.pollValue(() => v.trellisCellHashes(page, [idxA, idxB]),
         (h) => h[0] === before[0] && h[1] === before[1], 1500, 50);
       expect(resetH[0] === before[0]).toBe(true);
@@ -1244,8 +1250,7 @@ test('Trellis plot — on click, keyboard navigation, filter formula, undo/redo'
     });
     expect(filterAfterClick.count).toBe(filterExpected);
     expect(filterAfterClick.count).toBeLessThan(fullRowCount);
-    expect(filterAfterClick.filters).toContain('SEX: F');
-    expect(filterAfterClick.filters).toContain('RACE: Caucasian');
+    expect(filterAfterClick.filters).toContain('SEX: F, RACE: Caucasian');
 
     const filterAfterType = await page.evaluate(async () => {
       const w = window as any;
@@ -1272,8 +1277,7 @@ test('Trellis plot — on click, keyboard navigation, filter formula, undo/redo'
       return {count: df.filter.trueCount, filters};
     });
     expect(filterAfterOther.count).toBe(mBlackFilter);
-    expect(filterAfterOther.filters).toContain('SEX: M');
-    expect(filterAfterOther.filters).toContain('RACE: Black');
+    expect(filterAfterOther.filters).toContain('SEX: M, RACE: Black');
 
     const filterAfterAxis = await page.evaluate(async () => {
       const w = window as any;

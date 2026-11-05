@@ -63,6 +63,7 @@ result back.
 | `DATAGROK_PARAM_TIMEOUT` | no | `5` | Total budget for receiving one param, minutes |
 | `DATAGROK_WS_MESSAGE_TIMEOUT` | no | `30` | Per-message pipe wait timeout, seconds |
 | `HEALTH_PORT` | no | `8000` | Port of the `{"status":"ok"}` health endpoint |
+| `GROK_JSON_LOGS` | no | `false` | `true` → one JSON line per record (`v`, `time`, `level`, `service`, `message`, `params`), secrets redacted |
 | `DATAGROK_MAX_CONCURRENT_TASKS` | no | `1` | Max tasks executed concurrently (invalid values fall back to `1`). Node runs them on one event loop, so raising it helps I/O-bound functions; CPU-bound functions still serialize |
 
 ## Local run

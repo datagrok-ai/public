@@ -1,6 +1,3 @@
-/* The legend a viewer hosts — read from the `data-legend-*` attributes it publishes on every
-   commit, never from its render path — and the row tooltip, which is one element hidden between
-   hovers (so every read matches the visible one only). */
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
@@ -10,6 +7,7 @@ import {LegendState} from './viewer-runtime.js';
 import {near, parseHex} from './viewer-pixels.js';
 import {centerOf, dragDelta, dragFrom, onViewer, settle, snapshot, viewerLocator} from './viewers.js';
 
+// the row tooltip is one element hidden between hovers: every read matches the visible one only
 const TOOLTIP_ROWS = '.d4-tooltip:visible table.d4-row-tooltip-table tr';
 const TOOLTIP_COLUMNS = TOOLTIP_ROWS + ' td:first-child';
 const LEGEND_MODES: Record<string, string> = {docked: 'docked', corner: 'corner', 'mini icon': 'miniIcon', tooltip: 'tooltip', hidden: 'hidden'};
@@ -302,6 +300,13 @@ export async function tooltipColumns(page: Page): Promise<string[]> {
 
 export async function expectTooltipColumns(page: Page, list: string, negate = false): Promise<void> {
   const want = [...new Set(list.split(/\s*,\s*/).map((c) => c.trim().toUpperCase()).filter((c) => c.length > 0))].sort();
-  const poll = expect.poll(() => tooltipColumns(page), {timeout: pollMs(5000), message: negate ? 'the tooltip shows exactly these columns' : 'the tooltip does not show these columns'});
+  const poll = expect.poll(() => tooltipColumns(page), {timeout: pollMs(5000), message: negate ? 'the tooltip does not show exactly these columns' : 'the tooltip shows exactly these columns'});
   await (negate ? poll.not : poll).toEqual(want);
+}
+
+/** The tooltip's columns top to bottom as they come, a column listed twice twice; case aside. */
+export async function expectTooltipColumnsInOrder(page: Page, list: string): Promise<void> {
+  const want = list.split(/\s*,\s*/).map((c) => c.trim().toUpperCase()).filter((c) => c.length > 0);
+  await expect.poll(async () => (await page.locator(TOOLTIP_COLUMNS).allTextContents()).map((c) => c.trim().toUpperCase()).filter((c) => c.length > 0),
+    {timeout: pollMs(5000), message: 'the columns of the tooltip, top to bottom'}).toEqual(want);
 }

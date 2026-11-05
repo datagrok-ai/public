@@ -12,7 +12,7 @@ import {CellRendererBackBase} from './cell-renderer-back-base';
 import {ILogger} from './logger';
 import {getMonomerLibHelper} from '../types/monomer-library';
 import {errInfo} from './err-info';
-import {DrawStyle, printLeftOrCentered, TAGS as mmcrTAGS, PrintOptions} from './cell-renderer';
+import {DrawStyle, getPrintColumnTemps, printLeftOrCentered, TAGS as mmcrTAGS, PrintOptions} from './cell-renderer';
 import {MmcrTemps, rendererSettingsChangedState, tempTAGS} from './cell-renderer-consts';
 import {AnnotationRenderer} from './cell-renderer-annotations';
 import {IMonomerLibBase} from '../types/monomer-library';
@@ -314,10 +314,9 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   // entry that includes that position. Uses the entry's `fillColor` (alpha forced) or the
   // default fill color. Called from both single-line and multi-line render paths.
   private drawHighlightBackground(
-    g: CanvasRenderingContext2D, rowIdx: number | null, posIdx: number,
+    g: CanvasRenderingContext2D, entry: MacromoleculeHighlightEntry | null, posIdx: number,
     rectX: number, rectY: number, rectW: number, rectH: number,
   ): void {
-    const entry = this.getHighlightForRow(rowIdx);
     if (!entry || !entry.monomers || entry.monomers.length === 0) return;
     if (!entry.monomers.includes(posIdx)) return;
     const fillCss = macromoleculeHighlightColorToCss(entry.fillColor ?? DEFAULT_MACROMOLECULE_HIGHLIGHT_FILL);
@@ -581,10 +580,22 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         tableCol.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.false;
         this.dirty = true;
       }
+      // The reset reads the props anew (the font among them) and empties the monomers' text metrics: before the font is
+      // set, so this cell prints and measures in the new font. After it, this cell printed in the old font and its
+      // monomers kept the old metrics, by which every later cell placed them above or below the others.
+      if (this.dirty) {
+        try { this.reset(); } catch (err) {
+          const [errMsg, errStack] = errInfo(err);
+          this.logger.error(errMsg, undefined, errStack);
+        }
+      }
 
 
       const rowIdx = gridCell.cell.rowIndex;
       const value: any = gridCell.cell.value;
+      // The cell's own width: the multiline layout wraps at the cell's bounds, so its lines stay put while the grid
+      // scrolls horizontally. Below, `w` is cut to the grid's visible edge, which is enough for the single line.
+      const cellW = w;
       if (isRenderedOnGrid)
         w = getUpdatedWidth(gridCell.grid, g, x, w, window.devicePixelRatio);
 
@@ -613,6 +624,24 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         return wu.count(0).take(seqSS.length).slice(positionShift).map((posIdx) => seqSS.getCanonical(posIdx)).toArray();
       })();
       const selectedPosition = Number.parseInt(tableCol.getTag(bioTAGS.selectedPosition) ?? '-200');
+      // Read once per cell, not per monomer (each is a call into the platform): the row, its highlight entry and, at
+      // the first monomer that asks, whether it is the current row (they do not change mid-render)
+      const tableRowIdx = gridCell.tableRowIndex;
+      const highlightEntry = this.getHighlightForRow(tableRowIdx);
+      let notCurrentRow: boolean | undefined = undefined;
+      // A monomer's text colour, once per monomer symbol in this cell (the library does not change mid-render)
+      const textColors = new Map<string, string>();
+      const monomerTextColor = (cm: string): string => {
+        let color = textColors.get(cm);
+        if (color === undefined) {
+          color = undefinedColor;
+          const lib = this.getMonomerLib();
+          if (lib)
+            color = lib.getMonomerTextColor(sh.defaultBiotype, cm);
+          textColors.set(cm, color);
+        }
+        return color;
+      };
 
 
       const shouldUseMultiLine = this.shouldUseMultilineRendering(tableCol);
@@ -621,7 +650,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
       if (shouldUseMultiLine) {
         const currentCellBounds: IMonomerLayoutData[] = [];
-        const layout = this.calculateMultiLineLayoutDynamic(g, w, h, subParts, positionShift, maxLengthOfMonomer);
+        const layout = this.calculateMultiLineLayoutDynamic(g, cellW, h, subParts, positionShift, maxLengthOfMonomer);
 
         // --- NEW: Vertical Centering Logic for Single Lines ---
         // Default to top-aligned layout
@@ -643,13 +672,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
             const monomerIndex = monomer.posIdx!;
             const cm = subParts.getCanonical(monomerIndex);
 
-            let color = undefinedColor;
-            const monomerLib = this.getMonomerLib();
-            if (monomerLib)
-              color = monomerLib.getMonomerTextColor(sh.defaultBiotype, cm);
+            const color = monomerTextColor(cm);
 
             let transparencyRate = 0.0;
-            if (gridCell.tableRowIndex !== tableCol.dataFrame.currentRowIdx && referenceSequence.length > 0) {
+            if ((notCurrentRow ??= tableRowIdx !== tableCol.dataFrame.currentRowIdx) && referenceSequence.length > 0) {
               const refIndex = monomerIndex - positionShift;
               if (refIndex >= 0 && refIndex < referenceSequence.length) {
                 const currentMonomerCanonical = cm;
@@ -666,10 +692,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
             });
 
             if (annotRenderer)
-              annotRenderer.drawPositionBackground(g, elementX, lineY, element.width + 2, layout.lineHeight, monomerIndex, gridCell.tableRowIndex!);
+              annotRenderer.drawPositionBackground(g, elementX, lineY, element.width + 2, layout.lineHeight, monomerIndex, tableRowIdx!);
 
             this.drawHighlightBackground(
-              g, gridCell.tableRowIndex, monomerIndex,
+              g, highlightEntry, monomerIndex,
               elementX, lineY, element.width + 2, layout.lineHeight);
 
             printLeftOrCentered(g, monomer.om, elementX, lineY, element.width, layout.lineHeight, {
@@ -696,6 +722,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         let textBottomY: number | undefined;
         // Compute a monomer-sized highlight rect (a little taller than the glyph itself) so the
         // background doesn't span the whole cell height.
+        // the column temps every printed monomer of this cell reads, once
+        const columnTemps = getPrintColumnTemps(gridCell);
         const monomerMetrics = g.measureText('M');
         const monomerTextHeight = monomerMetrics.fontBoundingBoxAscent + monomerMetrics.fontBoundingBoxDescent;
         const hlPadding = 4;
@@ -710,9 +738,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           const om: string = posIdx < subParts.length ? subParts.getOriginal(posIdx) : sh.defaultGapOriginal;
           const cm: string = posIdx < subParts.length ? subParts.getCanonical(posIdx) : sh.defaultGapOriginal;
 
-          let color = undefinedColor;
-          if (this.getMonomerLib())
-            color = this.getMonomerLib()!.getMonomerTextColor(sh.defaultBiotype, cm);
+          const color = monomerTextColor(cm);
 
           const last = posIdx === subParts.length - 1;
           // here, the first index of disjointSeqStarts is always 0, so we check from position 1, and also, next index
@@ -726,14 +752,14 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
             (maxLengthWordsSum[wordIdx + 1] ?? 0) - (maxLengthWordsSum[0] ?? 0) : placeX + this.props.fontCharWidth;
           const monomerW = nextPlaceX - placeX;
           const monomerLeftX = x + this.padding + this._leftThreeDotsPadding + placeX;
-          if (annotRenderer && gridCell.tableRowIndex != null) {
+          if (annotRenderer && tableRowIdx != null) {
             annotRenderer.drawPositionBackground(
               g, monomerLeftX, y, monomerW, h,
-              posIdx, gridCell.tableRowIndex, textBottomY,
+              posIdx, tableRowIdx, textBottomY,
             );
           }
 
-          this.drawHighlightBackground(g, gridCell.tableRowIndex, posIdx,
+          this.drawHighlightBackground(g, highlightEntry, posIdx,
             monomerLeftX, hlRectY, monomerW, hlRectHeight);
 
           const opts: Partial<PrintOptions> = {
@@ -743,6 +769,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
             referenceSequence: referenceSequence, maxLengthOfMonomer: maxLengthOfMonomer,
             monomerTextSizeMap: this._monomerLengthMap, logger: this.logger,
             selectedPosition: isNaN(selectedPosition) || selectedPosition < 1 ? undefined : selectedPosition - positionShift,
+            columnTemps,
           };
           printLeftOrCentered(g, om, x + this.padding + this._leftThreeDotsPadding, y, w, h, opts);
         }
@@ -751,7 +778,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
             color: undefinedColor, pivot: 0, left: true, transparencyRate: 0, separator: separator, last: false,
             drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: 0, gridCell: gridCell,
             maxLengthOfMonomer: maxLengthOfMonomer,
-            monomerTextSizeMap: this._monomerLengthMap, logger: this.logger,
+            monomerTextSizeMap: this._monomerLengthMap, logger: this.logger, columnTemps,
           };
           printLeftOrCentered(g, shiftedLeftPaddingText, x + this.padding, y, w, h, opts);
         }
@@ -854,5 +881,5 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 export function getUpdatedWidth(
   grid: DG.Grid | null | undefined, g: CanvasRenderingContext2D, x: number, w: number, dpr: number
 ): number {
-  return !!grid ? Math.max(Math.min(grid.canvas.width / dpr - x, w)) : Math.max(g.canvas.width / dpr - x, 0);
+  return grid?.dart ? Math.max(Math.min(grid.canvas.width / dpr - x, w)) : Math.max(g.canvas.width / dpr - x, 0);
 }

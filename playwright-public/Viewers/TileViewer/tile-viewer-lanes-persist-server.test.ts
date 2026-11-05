@@ -5,7 +5,6 @@ import {test, expect} from '@datagrok-libraries/test/src/playwright/shared-page'
 import {openDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 import {saveProjectViaApi, deleteProjectWithCleanup} from '@datagrok-libraries/test/src/playwright/projects';
-import {knownOpenBug} from '@datagrok-libraries/test/src/playwright/known-open-bug';
 
 declare const grok: any;
 
@@ -144,10 +143,9 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
       await expect.poll(() => page.evaluate(() =>
         grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram').length), {timeout: 15_000, ...POLL}).toBe(0);
       const afterClose = await readLane();
-      await knownOpenBug('GROK-20912', () => {
-        expect(Math.abs(afterClose.scrollTop - after.scrollTop)).toBeLessThan(after.rowPitch);
-        expect(afterClose.age).toBe(after.age);
-      });
+      expect(Math.abs(afterClose.scrollTop - after.scrollTop), 'GROK-20912: scroll position kept after closing a neighbour')
+        .toBeLessThan(after.rowPitch);
+      expect(afterClose.age, 'GROK-20912: the lane keeps its rows').toBe(after.age);
     }
     finally {
       await page.evaluate(() => grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram')?.close());

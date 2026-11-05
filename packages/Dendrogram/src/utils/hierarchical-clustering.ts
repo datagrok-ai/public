@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as rxjs from 'rxjs';
 
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
 import {DistanceMetric, isLeaf, LinkageMethod, NodeType} from '@datagrok-libraries/bio/src/trees';
@@ -19,7 +20,7 @@ export async function hierarchicalClusteringDialog(getDefaultCoulumn: (t: DG.Dat
     return;
   }
 
-  let currentTableView = grok.shell.tv.table;
+  let currentTableView: DG.DataFrame | null = grok.shell.tv.table;
   let currentSelectedColNames: string[] = [];
 
   const availableColNames = (table: DG.DataFrame): string[] => {
@@ -34,7 +35,13 @@ export async function hierarchicalClusteringDialog(getDefaultCoulumn: (t: DG.Dat
     currentSelectedColNames = columns.map((c) => c.name);
   };
 
-  const onTableInputChanged = (table: DG.DataFrame) => {
+  const onTableInputChanged = (table: DG.DataFrame | null) => {
+    if (!table) {
+      ui.empty(columnsInputDiv);
+      currentTableView = null;
+      currentSelectedColNames = [];
+      return;
+    }
     const defaultCol = getDefaultCoulumn(table);
     const defaultVal = defaultCol ? [defaultCol] : [];
     const newColInput = ui.input.columns('Features', {table: table,
@@ -63,7 +70,14 @@ export async function hierarchicalClusteringDialog(getDefaultCoulumn: (t: DG.Dat
 
   onTableInputChanged(currentTableView!);
 
-  ui.dialog('Hierarchical Clustering')
+  const tablesSub = rxjs.merge(grok.events.onTableAdded, grok.events.onTableRemoved).subscribe(() => {
+    if (tableInput.value !== currentTableView)
+      onTableInputChanged(tableInput.value);
+  });
+
+  const dialog = ui.dialog('Hierarchical Clustering');
+  dialog.onClose.subscribe(() => tablesSub.unsubscribe());
+  dialog
     .add(verticalDiv)
     .show()
     .onOK(async () => {
@@ -97,7 +111,8 @@ export async function hierarchicalClusteringUI(
     hierarchicalClusteringFilterDfForNulls(df, colNameSet);
   const th: ITreeHelper = new TreeHelper();
 
-  let tv: DG.TableView = options ? options.tableView ?? grok.shell.tableView(df.name) : grok.shell.tableView(df.name);
+  let tv: DG.TableView = options?.tableView ??
+    Array.from(grok.shell.tableViews).find((v) => v.dataFrame?.dart === df.dart)!;
   if (filteredDf.rowCount != df.rowCount) {
     grok.shell.warning('Hierarchical clustering analysis on data filtered out for nulls.');
     tv = grok.shell.addTableView(filteredDf);
@@ -121,6 +136,7 @@ export async function hierarchicalClusteringUI(
 
   const loaderNB = attachLoaderDivToGrid(tv.grid, neighborWidth);
   let loaderClosed = false;
+  loaderNB.onClosed.subscribe(() => loaderClosed = true);
   const closeLoader = () => {
     if (loaderClosed) return;
     loaderClosed = true;
@@ -156,6 +172,8 @@ export async function hierarchicalClusteringUI(
        distanceMatrix!.data, preparedDf.rowCount, linkageCode
     );
     const clusterMatrix = await clusterMatrixWorker;
+    if (loaderClosed)
+      return;
 
     // const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
     // Replace rows indexes with filtered
@@ -182,14 +200,18 @@ export async function hierarchicalClusteringUI(
     // bail out if the table view was disposed while we were awaiting compute
     if (!tv?.grid || !tv?.grid?.dataFrame)
       return;
+    // `v` is the grid the layout restores; clustering runs only while the view of its table is that grid's,
+    // since hierarchicalClustering finds its view by the table, and that view may have closed or be another
     tv.grid.props.onInitializedScript = `
       setTimeout(async () => {
-        const t = grok.shell.table('${tv.dataFrame.name}');
-        if (!t)
+        const t = v.dataFrame;
+        const hosted = () => t != null &&
+          Array.from(grok.shell.tableViews).find((tv) => tv.dataFrame?.dart === t.dart)?.grid?.root === v.root;
+        if (!hosted())
           return;
         await t.meta.detectSemanticTypes();
         const func = DG.Func.find({name: 'hierarchicalClustering'})[0];
-        if (!func)
+        if (!func || !hosted())
           return;
         const cols = ${JSON.stringify(colNameList)};
         func.apply({

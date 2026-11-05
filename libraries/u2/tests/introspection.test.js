@@ -2,7 +2,7 @@
    getProperties() (the context-panel/automation door), signal-backed ones stay writable as
    before, and construction-only options stay read-only. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {Scope, registry, registerAll, TextInput, ChoiceInput, TabStrip, RangeSlider}
@@ -46,15 +46,15 @@ smoke('accessor-backed props are writable; construction-only options stay read-o
   placeholder.set(input, 'e.g. aspirin');
   assert.equal(input.root.querySelector('input').placeholder, 'e.g. aspirin');
 
-  const enabled = prop(input, 'enabled');
-  assert.equal(enabled.get(input), true);
-  enabled.set(input, false);
+  const disabled = prop(input, 'disabled');
+  assert.equal(disabled.get(input), null);
+  disabled.set(input, 'Locked by the template');
   assert.ok(input.root.classList.contains('u2-input-disabled'));
   assert.ok(input.root.querySelector('input').disabled);
 
   assert.equal(prop(input, 'inline').set, undefined, 'a plain option has no live setter');
   prop(input, 'value').set(input, 'aspirin');
-  assert.equal(input.value.value, 'aspirin', 'signal-backed props write as before');
+  assert.equal(input.value, 'aspirin', 'signal-backed props write as before');
   input.dispose();
 });
 
@@ -73,7 +73,7 @@ smoke('a label set on an input created without one materializes the element', as
 });
 
 smoke('enabled arrives as a construction option too', async () => {
-  const input = new TextInput({label: 'Off', enabled: false});
+  const input = new TextInput({label: 'Off', disabled: 'Not editable in this test'});
   document.body.append(input.root);
   assert.ok(input.root.querySelector('input').disabled);
   input.dispose();
@@ -85,15 +85,15 @@ smoke('choice items rewrite the select and prune a vanished value as a system wr
   prop(input, 'items').set(input, ['a', 'c']);
   const values = [...input.root.querySelectorAll('option')].map((o) => o.value);
   assert.deepEqual(values, ['', 'a', 'c']);
-  assert.equal(input.value.value, null, 'the vanished value was pruned');
+  assert.equal(input.value, null, 'the vanished value was pruned');
   assert.deepEqual(prop(input, 'items').get(input), ['a', 'c']);
   input.dispose();
 });
 
 smoke('activeTab is a declared, two-way property of the tab strip', async () => {
   const tabs = stamped(new TabStrip({tabs: [
-    {id: 'data', label: 'Data', content: document.createElement('div')},
-    {id: 'style', label: 'Style', content: document.createElement('div')},
+    {id: 'data', title: 'Data', content: document.createElement('div')},
+    {id: 'style', title: 'Style', content: document.createElement('div')},
   ]}), 'u2-tabs');
   await flush();
 

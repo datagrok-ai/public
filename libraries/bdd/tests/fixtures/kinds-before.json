@@ -1,0 +1,2837 @@
+{
+  "accordion": {
+    "name": "accordion",
+    "selector": "[data-u2=\"accordion\"], .d4-accordion",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "accordion header": {
+    "name": "accordion header",
+    "selector": "[data-u2=\"accordion\"] [role=\"button\"], .d4-accordion-pane-header",
+    "match": [
+      "dart",
+      "text",
+      "aria"
+    ],
+    "dartNames": [
+      "div-section--{q}"
+    ]
+  },
+  "accordion pane": {
+    "name": "section",
+    "selector": "[data-u2=\"section\"], .u2-section, .u2-accordion-pane, [name^=\"div-section--\"], .d4-accordion-pane",
+    "match": [
+      "name",
+      "title",
+      "dart"
+    ],
+    "labelSelector": ".u2-section-title, .u2-section-header, .u2-accordion-title, .d4-accordion-pane-header",
+    "dartNames": [
+      "div-section--{q}",
+      "pane-{q}"
+    ]
+  },
+  "action": {
+    "name": "action",
+    "selector": ".d4-link-action",
+    "match": [
+      "exact-text",
+      "text"
+    ]
+  },
+  "action link": {
+    "name": "action",
+    "selector": ".d4-link-action",
+    "match": [
+      "exact-text",
+      "text"
+    ]
+  },
+  "actions": {
+    "name": "row actions",
+    "selector": "[data-u2=\"row-actions\"]",
+    "match": [
+      "name"
+    ]
+  },
+  "area": {
+    "name": "element",
+    "selector": "[data-u2-name], [data-widget]",
+    "match": [
+      "name",
+      "dart"
+    ],
+    "dartNames": [
+      "{q}"
+    ]
+  },
+  "async view": {
+    "name": "async view",
+    "selector": "[data-u2=\"async-view\"]",
+    "match": [
+      "name"
+    ]
+  },
+  "autocomplete": {
+    "name": "suggest input",
+    "selector": "[data-u2=\"suggest-input\"], [data-u2=\"typeahead\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "badge": {
+    "name": "badge",
+    "selector": "[data-u2=\"badge\"], [data-u2=\"count-badge\"], [data-u2=\"dot\"]",
+    "match": [
+      "text",
+      "name",
+      "aria"
+    ]
+  },
+  "balloon": {
+    "name": "notification",
+    "selector": "[data-u2=\"notify\"] .u2-notify, .d4-balloon",
+    "match": [
+      "text"
+    ]
+  },
+  "bool input": {
+    "name": "checkbox",
+    "selector": "[data-u2=\"bool-input\"], .ui-input-bool, .ui-input-bool-switch, .u2-multi-choice-item, .u2-columns-option, input[type=\"checkbox\"][aria-label]:not(.ui-input-root *)",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart",
+      "text",
+      "aria"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "breadcrumb": {
+    "name": "breadcrumb",
+    "selector": ".u2-breadcrumbs-item, .u2-breadcrumbs-current, [data-u2=\"breadcrumbs\"] a",
+    "match": [
+      "text",
+      "aria"
+    ]
+  },
+  "breadcrumb bar": {
+    "name": "breadcrumbs",
+    "selector": "[data-u2=\"breadcrumbs\"]",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "breadcrumbs": {
+    "name": "breadcrumbs",
+    "selector": "[data-u2=\"breadcrumbs\"]",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "bridged input": {
+    "name": "dart input",
+    "selector": "[data-u2=\"dart-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "button": {
+    "name": "button",
+    "selector": "button, [role=\"button\"], .u2-btn, .ui-btn",
+    "match": [
+      "name",
+      "text",
+      "aria",
+      "dart"
+    ],
+    "dartNames": [
+      "button-{q}"
+    ]
+  },
+  "button group": {
+    "name": "button group",
+    "selector": "[data-u2=\"button-group\"]",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "card": {
+    "name": "card",
+    "selector": "[data-u2=\"card\"], [data-u2=\"stat-card\"], [data-u2=\"entity-card\"], .d4-item-card",
+    "match": [
+      "name",
+      "title",
+      "text"
+    ],
+    "labelSelector": ".u2-card-title, .card-label"
+  },
+  "category": {
+    "name": "category",
+    "selector": ".u2-propgrid-category, tr.property-grid-item[name^=\"prop-category-\"]",
+    "match": [
+      "title",
+      "dart",
+      "text"
+    ],
+    "labelSelector": ".u2-propgrid-category-title, .property-grid-item-name-text",
+    "dartNames": [
+      "prop-category-{q}"
+    ]
+  },
+  "cell grid": {
+    "name": "grid",
+    "selector": "[data-u2=\"grid\"], .d4-grid",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "chat input": {
+    "name": "message input",
+    "selector": "[data-u2=\"message-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "checkbox": {
+    "name": "checkbox",
+    "selector": "[data-u2=\"bool-input\"], .ui-input-bool, .ui-input-bool-switch, .u2-multi-choice-item, .u2-columns-option, input[type=\"checkbox\"][aria-label]:not(.ui-input-root *)",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart",
+      "text",
+      "aria"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "chip": {
+    "name": "chip",
+    "selector": "[data-u2=\"chip\"], [data-u2=\"bind-chip\"], [data-u2=\"msg-chip\"]",
+    "match": [
+      "text",
+      "name"
+    ]
+  },
+  "choice": {
+    "name": "choice input",
+    "selector": "[data-u2=\"choice-input\"], .ui-input-choice",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "choice input": {
+    "name": "choice input",
+    "selector": "[data-u2=\"choice-input\"], .ui-input-choice",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "color input": {
+    "name": "color input",
+    "selector": "[data-u2=\"color-input\"], .ui-input-color",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "color picker": {
+    "name": "color input",
+    "selector": "[data-u2=\"color-input\"], .ui-input-color",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "column combobox": {
+    "name": "column input",
+    "selector": "[data-u2=\"column-combo\"], [data-u2=\"column-picker\"], .d4-column-selector",
+    "match": [
+      "name",
+      "label",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "div-column-combobox-{q}",
+      "div-column-combobox-{q}-",
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    },
+    "gestures": {
+      "open": "mousedown"
+    }
+  },
+  "column input": {
+    "name": "column input",
+    "selector": "[data-u2=\"column-combo\"], [data-u2=\"column-picker\"], .d4-column-selector",
+    "match": [
+      "name",
+      "label",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "div-column-combobox-{q}",
+      "div-column-combobox-{q}-",
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    },
+    "gestures": {
+      "open": "mousedown"
+    }
+  },
+  "column picker": {
+    "name": "column input",
+    "selector": "[data-u2=\"column-combo\"], [data-u2=\"column-picker\"], .d4-column-selector",
+    "match": [
+      "name",
+      "label",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "div-column-combobox-{q}",
+      "div-column-combobox-{q}-",
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    },
+    "gestures": {
+      "open": "mousedown"
+    }
+  },
+  "column selector": {
+    "name": "column input",
+    "selector": "[data-u2=\"column-combo\"], [data-u2=\"column-picker\"], .d4-column-selector",
+    "match": [
+      "name",
+      "label",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "div-column-combobox-{q}",
+      "div-column-combobox-{q}-",
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    },
+    "gestures": {
+      "open": "mousedown"
+    }
+  },
+  "columns input": {
+    "name": "columns input",
+    "selector": "[data-u2=\"columns-input\"], [data-u2=\"columns-map-input\"], [data-u2=\"aggregated-columns-input\"], .ui-input-columns",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "columns picker": {
+    "name": "columns input",
+    "selector": "[data-u2=\"columns-input\"], [data-u2=\"columns-map-input\"], [data-u2=\"aggregated-columns-input\"], .ui-input-columns",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "combo box": {
+    "name": "combobox",
+    "selector": "[data-u2=\"combobox\"], .ui-input-editable-choice",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "combobox": {
+    "name": "combobox",
+    "selector": "[data-u2=\"combobox\"], .ui-input-editable-choice",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "component": {
+    "name": "element",
+    "selector": "[data-u2-name], [data-widget]",
+    "match": [
+      "name",
+      "dart"
+    ],
+    "dartNames": [
+      "{q}"
+    ]
+  },
+  "container": {
+    "name": "element",
+    "selector": "[data-u2-name], [data-widget]",
+    "match": [
+      "name",
+      "dart"
+    ],
+    "dartNames": [
+      "{q}"
+    ]
+  },
+  "control": {
+    "name": "element",
+    "selector": "[data-u2-name], [data-widget]",
+    "match": [
+      "name",
+      "dart"
+    ],
+    "dartNames": [
+      "{q}"
+    ]
+  },
+  "crumb": {
+    "name": "breadcrumb",
+    "selector": ".u2-breadcrumbs-item, .u2-breadcrumbs-current, [data-u2=\"breadcrumbs\"] a",
+    "match": [
+      "text",
+      "aria"
+    ]
+  },
+  "dart input": {
+    "name": "dart input",
+    "selector": "[data-u2=\"dart-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "date field": {
+    "name": "date input",
+    "selector": "[data-u2=\"date-input\"], [data-u2=\"datetime-input\"], .ui-input-date",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "date input": {
+    "name": "date input",
+    "selector": "[data-u2=\"date-input\"], [data-u2=\"datetime-input\"], .ui-input-date",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "date picker": {
+    "name": "date input",
+    "selector": "[data-u2=\"date-input\"], [data-u2=\"datetime-input\"], .ui-input-date",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "datetime input": {
+    "name": "date input",
+    "selector": "[data-u2=\"date-input\"], [data-u2=\"datetime-input\"], .ui-input-date",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "designer": {
+    "name": "designer",
+    "selector": "[data-u2=\"designer\"]",
+    "match": [
+      "name"
+    ]
+  },
+  "dialog": {
+    "name": "dialog",
+    "selector": "[data-u2=\"dialog\"], .d4-dialog, [role=\"dialog\"]",
+    "match": [
+      "name",
+      "title",
+      "dart"
+    ],
+    "labelSelector": ".u2-dialog-title-text, .d4-dialog-title",
+    "dartNames": [
+      "dialog-{q}"
+    ],
+    "parts": {
+      "title": ".u2-dialog-title, .d4-dialog-title",
+      "close button": ".u2-dialog-close, .d4-dialog-close",
+      "footer": ".u2-dialog-footer, .d4-dialog-footer"
+    }
+  },
+  "divider": {
+    "name": "sash",
+    "selector": ".u2-sash, .u2-splitter-sash",
+    "match": [
+      "aria",
+      "name"
+    ]
+  },
+  "dock panel": {
+    "name": "dock panel",
+    "selector": ".panel-base",
+    "match": [
+      "label",
+      "text"
+    ],
+    "labelSelector": ".panel-titlebar-text"
+  },
+  "dropdown": {
+    "name": "choice input",
+    "selector": "[data-u2=\"choice-input\"], .ui-input-choice",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "dropdown button": {
+    "name": "dropdown button",
+    "selector": "[data-u2=\"dropdown-button\"]",
+    "match": [
+      "name",
+      "text",
+      "aria"
+    ]
+  },
+  "dynamic input": {
+    "name": "dynamic input",
+    "selector": "[data-u2=\"dynamic-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "editable choice": {
+    "name": "combobox",
+    "selector": "[data-u2=\"combobox\"], .ui-input-editable-choice",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "element": {
+    "name": "element",
+    "selector": "[data-u2-name], [data-widget]",
+    "match": [
+      "name",
+      "dart"
+    ],
+    "dartNames": [
+      "{q}"
+    ]
+  },
+  "entity": {
+    "name": "entity card",
+    "selector": "[data-u2=\"entity-card\"]",
+    "match": [
+      "name",
+      "title",
+      "text"
+    ]
+  },
+  "entity card": {
+    "name": "entity card",
+    "selector": "[data-u2=\"entity-card\"]",
+    "match": [
+      "name",
+      "title",
+      "text"
+    ]
+  },
+  "entry": {
+    "name": "item",
+    "selector": "[data-u2=\"item\"], .u2-list-row, [role=\"option\"], [role=\"row\"], .d4-list-item, li",
+    "match": [
+      "text",
+      "label",
+      "aria",
+      "name"
+    ],
+    "labelSelector": ".u2-fb-label, .u2-tree-label, .u2-typeahead-text, .u2-typeahead-user-name, .u2-multi-select-text, .u2-menu-label, .u2-card-title, .d4-tree-view-node-label"
+  },
+  "field": {
+    "name": "input",
+    "selector": "[data-u2$=\"-input\"], [data-u2=\"combobox\"], [data-u2=\"multi-select\"], [data-u2=\"column-picker\"], [data-u2=\"column-combo\"], [data-u2=\"range-slider\"], [data-u2=\"typeahead\"], .ui-input-root",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "file field": {
+    "name": "file input",
+    "selector": "[data-u2=\"file-input\"], [data-u2=\"files-input\"], .ui-input-file",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "file input": {
+    "name": "file input",
+    "selector": "[data-u2=\"file-input\"], [data-u2=\"files-input\"], .ui-input-file",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "files input": {
+    "name": "file input",
+    "selector": "[data-u2=\"file-input\"], [data-u2=\"files-input\"], .ui-input-file",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "filter card": {
+    "name": "filter card",
+    "selector": ".d4-filter",
+    "match": [
+      "label",
+      "dart"
+    ],
+    "labelSelector": ".d4-filter-column-name",
+    "dartNames": [
+      "filter-card-{q}"
+    ],
+    "parts": {
+      "caption": ".d4-filter-column-name",
+      "checkbox": ".d4-filter-bool-input",
+      "indicator": ".d4-filter-indicator",
+      "mode": "[name=\"filter-mode-toggle\"]",
+      "summary": ".d4-filter-summary",
+      "body": ".d4-filter-element",
+      "close": "[name=\"icon-times\"]",
+      "search icon": "[name=\"icon-search\"]",
+      "search": ".d4-filter-element input.d4-search-input"
+    }
+  },
+  "font input": {
+    "name": "font input",
+    "selector": "[data-u2=\"font-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "font picker": {
+    "name": "font input",
+    "selector": "[data-u2=\"font-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "form": {
+    "name": "form",
+    "selector": "[data-u2=\"form\"], [data-u2=\"object-form\"], [data-u2=\"func-form\"], .ui-form",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "func call history browser": {
+    "name": "history browser",
+    "selector": "[data-u2=\"func-call-history-browser\"]",
+    "match": [
+      "name"
+    ],
+    "parts": {
+      "list": "[data-u2=\"fch-list\"]",
+      "retry button": "[data-u2=\"fch-retry\"]",
+      "state": "[data-u2=\"fch-state\"]"
+    }
+  },
+  "func form": {
+    "name": "function form",
+    "selector": "[data-u2=\"func-form\"]",
+    "match": [
+      "name",
+      "aria"
+    ],
+    "parts": {
+      "run button": "[data-u2=\"ff-run\"]",
+      "history icon": "[data-u2=\"ff-history-icon\"]"
+    }
+  },
+  "func input": {
+    "name": "function input",
+    "selector": "[data-u2=\"function-input\"], [data-u2=\"func-call-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "function form": {
+    "name": "function form",
+    "selector": "[data-u2=\"func-form\"]",
+    "match": [
+      "name",
+      "aria"
+    ],
+    "parts": {
+      "run button": "[data-u2=\"ff-run\"]",
+      "history icon": "[data-u2=\"ff-history-icon\"]"
+    }
+  },
+  "function input": {
+    "name": "function input",
+    "selector": "[data-u2=\"function-input\"], [data-u2=\"func-call-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "functions browser": {
+    "name": "functions browser",
+    "selector": "[data-u2=\"functions-browser\"]",
+    "match": [
+      "name"
+    ],
+    "parts": {
+      "search": "[data-u2=\"fb-search\"]",
+      "list": "[data-u2=\"fb-list\"]",
+      "status": "[data-u2=\"fb-status\"]",
+      "clear button": "[data-u2=\"fb-clear\"]",
+      "roles": "[data-u2=\"fb-roles\"]",
+      "tags": "[data-u2=\"fb-tags\"]",
+      "empty message": "[data-u2=\"fb-empty\"]"
+    }
+  },
+  "gallery card": {
+    "name": "gallery card",
+    "selector": ".d4-gallery-card, .grok-app-card",
+    "match": [
+      "dart",
+      "label",
+      "text"
+    ],
+    "labelSelector": ".grok-gallery-grid-item-title, .grok-package-name > div:first-child",
+    "dartNames": [
+      "div-{q}"
+    ]
+  },
+  "grid": {
+    "name": "grid",
+    "selector": "[data-u2=\"grid\"], .d4-grid",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "handle": {
+    "name": "slider handle",
+    "selector": "[role=\"slider\"], svg[type=\"range-slider\"] [name$=\"-handle\"]",
+    "match": [
+      "aria",
+      "name",
+      "text",
+      "dart"
+    ],
+    "dartNames": [
+      "{q}-handle",
+      "{q}"
+    ]
+  },
+  "header": {
+    "name": "heading",
+    "selector": "h1, h2, h3, h4, h5, h6",
+    "match": [
+      "text"
+    ]
+  },
+  "heading": {
+    "name": "heading",
+    "selector": "h1, h2, h3, h4, h5, h6",
+    "match": [
+      "text"
+    ]
+  },
+  "history browser": {
+    "name": "history browser",
+    "selector": "[data-u2=\"func-call-history-browser\"]",
+    "match": [
+      "name"
+    ],
+    "parts": {
+      "list": "[data-u2=\"fch-list\"]",
+      "retry button": "[data-u2=\"fch-retry\"]",
+      "state": "[data-u2=\"fch-state\"]"
+    }
+  },
+  "icon": {
+    "name": "icon",
+    "selector": "[data-u2=\"icon\"], .u2-icon, .grok-icon, [name^=\"icon-\"], i[class*=\"fa-\"]",
+    "match": [
+      "aria",
+      "name",
+      "dart"
+    ],
+    "dartNames": [
+      "icon-{q}",
+      "{q}"
+    ]
+  },
+  "icon button": {
+    "name": "icon button",
+    "selector": "[data-u2=\"icon-button\"], button.u2-icon-btn",
+    "match": [
+      "name",
+      "aria",
+      "dart"
+    ],
+    "dartNames": [
+      "icon-{q}"
+    ]
+  },
+  "icon input": {
+    "name": "icon input",
+    "selector": "[data-u2=\"icon-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "icon picker": {
+    "name": "icon input",
+    "selector": "[data-u2=\"icon-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "image input": {
+    "name": "image input",
+    "selector": "[data-u2=\"image-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "image picker": {
+    "name": "image input",
+    "selector": "[data-u2=\"image-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "input": {
+    "name": "input",
+    "selector": "[data-u2$=\"-input\"], [data-u2=\"combobox\"], [data-u2=\"multi-select\"], [data-u2=\"column-picker\"], [data-u2=\"column-combo\"], [data-u2=\"range-slider\"], [data-u2=\"typeahead\"], .ui-input-root",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "item": {
+    "name": "item",
+    "selector": "[data-u2=\"item\"], .u2-list-row, [role=\"option\"], [role=\"row\"], .d4-list-item, li",
+    "match": [
+      "text",
+      "label",
+      "aria",
+      "name"
+    ],
+    "labelSelector": ".u2-fb-label, .u2-tree-label, .u2-typeahead-text, .u2-typeahead-user-name, .u2-multi-select-text, .u2-menu-label, .u2-card-title, .d4-tree-view-node-label"
+  },
+  "key input": {
+    "name": "rsa input",
+    "selector": "[data-u2=\"rsa-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "key value input": {
+    "name": "map input",
+    "selector": "[data-u2=\"map-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "label": {
+    "name": "text",
+    "selector": "*",
+    "match": [
+      "exact-text"
+    ]
+  },
+  "legend entry": {
+    "name": "legend item",
+    "selector": "[name=\"legend-item\"]",
+    "match": [
+      "aria",
+      "label",
+      "text"
+    ],
+    "labelSelector": ".d4-legend-value",
+    "parts": {
+      "label": ".d4-legend-value",
+      "cross": ".d4-legend-cross",
+      "thumbnail": "canvas.d4-legend-value",
+      "marker": "[name=\"legend-item-marker\"]"
+    }
+  },
+  "legend item": {
+    "name": "legend item",
+    "selector": "[name=\"legend-item\"]",
+    "match": [
+      "aria",
+      "label",
+      "text"
+    ],
+    "labelSelector": ".d4-legend-value",
+    "parts": {
+      "label": ".d4-legend-value",
+      "cross": ".d4-legend-cross",
+      "thumbnail": "canvas.d4-legend-value",
+      "marker": "[name=\"legend-item-marker\"]"
+    }
+  },
+  "link": {
+    "name": "link",
+    "selector": "a, .d4-link-label",
+    "match": [
+      "text",
+      "name",
+      "aria",
+      "dart"
+    ],
+    "dartNames": [
+      "label-{q}"
+    ]
+  },
+  "list": {
+    "name": "list",
+    "selector": "[data-u2=\"list\"]:not([role=\"tree\"]), [role=\"listbox\"], .u2-list:not([role=\"tree\"]), .d4-list",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "list input": {
+    "name": "list input",
+    "selector": "[data-u2=\"list-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "list item": {
+    "name": "item",
+    "selector": "[data-u2=\"item\"], .u2-list-row, [role=\"option\"], [role=\"row\"], .d4-list-item, li",
+    "match": [
+      "text",
+      "label",
+      "aria",
+      "name"
+    ],
+    "labelSelector": ".u2-fb-label, .u2-tree-label, .u2-typeahead-text, .u2-typeahead-user-name, .u2-multi-select-text, .u2-menu-label, .u2-card-title, .d4-tree-view-node-label"
+  },
+  "loading view": {
+    "name": "async view",
+    "selector": "[data-u2=\"async-view\"]",
+    "match": [
+      "name"
+    ]
+  },
+  "map input": {
+    "name": "map input",
+    "selector": "[data-u2=\"map-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "member candidate": {
+    "name": "membership candidate",
+    "selector": ".membership-add-row",
+    "match": [
+      "label"
+    ],
+    "labelSelector": ".d4-user-selector-user-name",
+    "parts": {
+      "checkbox": ".membership-row-admin input",
+      "checkbox label": ".membership-row-admin",
+      "add button": "[name=\"button-Add\"]"
+    }
+  },
+  "member row": {
+    "name": "membership row",
+    "selector": ".membership-row",
+    "match": [
+      "label"
+    ],
+    "labelSelector": ".d4-user-selector-user-name",
+    "parts": {
+      "checkbox": ".membership-row-admin input",
+      "checkbox label": ".membership-row-admin",
+      "remove button": "[name=\"button-Remove\"]"
+    }
+  },
+  "membership candidate": {
+    "name": "membership candidate",
+    "selector": ".membership-add-row",
+    "match": [
+      "label"
+    ],
+    "labelSelector": ".d4-user-selector-user-name",
+    "parts": {
+      "checkbox": ".membership-row-admin input",
+      "checkbox label": ".membership-row-admin",
+      "add button": "[name=\"button-Add\"]"
+    }
+  },
+  "membership row": {
+    "name": "membership row",
+    "selector": ".membership-row",
+    "match": [
+      "label"
+    ],
+    "labelSelector": ".d4-user-selector-user-name",
+    "parts": {
+      "checkbox": ".membership-row-admin input",
+      "checkbox label": ".membership-row-admin",
+      "remove button": "[name=\"button-Remove\"]"
+    }
+  },
+  "menu": {
+    "name": "menu",
+    "selector": "[data-u2=\"menu\"], .d4-menu-popup, [role=\"menu\"]:not(.d4-menu-item-container)",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "menu bar": {
+    "name": "menu bar",
+    "selector": "[data-u2=\"menu-bar\"], [role=\"menubar\"]",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "menu button": {
+    "name": "dropdown button",
+    "selector": "[data-u2=\"dropdown-button\"]",
+    "match": [
+      "name",
+      "text",
+      "aria"
+    ]
+  },
+  "menu item": {
+    "name": "menu item",
+    "selector": ".u2-menu-item, [role=\"menuitem\"], .d4-menu-item",
+    "match": [
+      "label",
+      "text",
+      "name",
+      "dart"
+    ],
+    "labelSelector": ":scope > .u2-menu-label, :scope > .d4-menu-item-label",
+    "dartNames": [
+      "div-{q}"
+    ]
+  },
+  "message": {
+    "name": "notification",
+    "selector": "[data-u2=\"notify\"] .u2-notify, .d4-balloon",
+    "match": [
+      "text"
+    ]
+  },
+  "message input": {
+    "name": "message input",
+    "selector": "[data-u2=\"message-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "multi choice": {
+    "name": "multi choice input",
+    "selector": "[data-u2=\"multi-choice-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "multi choice input": {
+    "name": "multi choice input",
+    "selector": "[data-u2=\"multi-choice-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "multi select": {
+    "name": "multi select",
+    "selector": "[data-u2=\"multi-select\"], .ui-input-multi-choice",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "multi select input": {
+    "name": "multi select",
+    "selector": "[data-u2=\"multi-select\"], .ui-input-multi-choice",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "multiline input": {
+    "name": "text area",
+    "selector": "[data-u2=\"text-area\"], .ui-input-textarea",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "node": {
+    "name": "tree node",
+    "selector": "[role=\"tree\"] .u2-list-row, [role=\"treeitem\"]:not(.d4-tree-view-group), .d4-tree-view-node",
+    "match": [
+      "dart",
+      "label",
+      "text",
+      "name"
+    ],
+    "labelSelector": ".u2-tree-label, .d4-tree-view-node-label, .d4-tree-view-group-label, .d4-tree-view-item-label",
+    "dartNames": [
+      "tree-{q}"
+    ]
+  },
+  "notification": {
+    "name": "notification",
+    "selector": "[data-u2=\"notify\"] .u2-notify, .d4-balloon",
+    "match": [
+      "text"
+    ]
+  },
+  "number field": {
+    "name": "number input",
+    "selector": "[data-u2=\"number-input\"], [data-u2=\"bigint-input\"], [data-u2=\"qnum-input\"], .ui-input-int, .ui-input-float",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "number input": {
+    "name": "number input",
+    "selector": "[data-u2=\"number-input\"], [data-u2=\"bigint-input\"], [data-u2=\"qnum-input\"], .ui-input-int, .ui-input-float",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "numeric input": {
+    "name": "number input",
+    "selector": "[data-u2=\"number-input\"], [data-u2=\"bigint-input\"], [data-u2=\"qnum-input\"], .ui-input-int, .ui-input-float",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "object form": {
+    "name": "object form",
+    "selector": "[data-u2=\"object-form\"]",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "option": {
+    "name": "item",
+    "selector": "[data-u2=\"item\"], .u2-list-row, [role=\"option\"], [role=\"row\"], .d4-list-item, li",
+    "match": [
+      "text",
+      "label",
+      "aria",
+      "name"
+    ],
+    "labelSelector": ".u2-fb-label, .u2-tree-label, .u2-typeahead-text, .u2-typeahead-user-name, .u2-multi-select-text, .u2-menu-label, .u2-card-title, .d4-tree-view-node-label"
+  },
+  "palette": {
+    "name": "palette",
+    "selector": "[data-u2=\"palette\"]",
+    "match": [
+      "name"
+    ]
+  },
+  "pane": {
+    "name": "section",
+    "selector": "[data-u2=\"section\"], .u2-section, .u2-accordion-pane, [name^=\"div-section--\"], .d4-accordion-pane",
+    "match": [
+      "name",
+      "title",
+      "dart"
+    ],
+    "labelSelector": ".u2-section-title, .u2-section-header, .u2-accordion-title, .d4-accordion-pane-header",
+    "dartNames": [
+      "div-section--{q}",
+      "pane-{q}"
+    ]
+  },
+  "pane header": {
+    "name": "accordion header",
+    "selector": "[data-u2=\"accordion\"] [role=\"button\"], .d4-accordion-pane-header",
+    "match": [
+      "dart",
+      "text",
+      "aria"
+    ],
+    "dartNames": [
+      "div-section--{q}"
+    ]
+  },
+  "panel": {
+    "name": "element",
+    "selector": "[data-u2-name], [data-widget]",
+    "match": [
+      "name",
+      "dart"
+    ],
+    "dartNames": [
+      "{q}"
+    ]
+  },
+  "progress": {
+    "name": "progress bar",
+    "selector": "[data-u2=\"progress-bar\"], [role=\"progressbar\"]",
+    "match": [
+      "name",
+      "label",
+      "aria"
+    ],
+    "labelSelector": ".u2-progress-description"
+  },
+  "progress bar": {
+    "name": "progress bar",
+    "selector": "[data-u2=\"progress-bar\"], [role=\"progressbar\"]",
+    "match": [
+      "name",
+      "label",
+      "aria"
+    ],
+    "labelSelector": ".u2-progress-description"
+  },
+  "project table": {
+    "name": "project table",
+    "selector": ".grok-project-move-entity-row",
+    "match": [
+      "dart"
+    ],
+    "dartNames": [
+      "project-table-{q}"
+    ]
+  },
+  "prompt input": {
+    "name": "message input",
+    "selector": "[data-u2=\"message-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "property": {
+    "name": "property",
+    "selector": ".u2-propgrid-row, tr.property-grid-item",
+    "match": [
+      "label",
+      "name",
+      "aria",
+      "dart"
+    ],
+    "labelSelector": ".u2-propgrid-name, .property-grid-item-name-text",
+    "dartNames": [
+      "prop-{q}"
+    ],
+    "parts": {
+      "label": ".u2-propgrid-name, .property-grid-item-name",
+      "value": ".u2-propgrid-value, .property-grid-item-value",
+      "editor": "[name^=\"prop-view-\"]"
+    }
+  },
+  "property category": {
+    "name": "category",
+    "selector": ".u2-propgrid-category, tr.property-grid-item[name^=\"prop-category-\"]",
+    "match": [
+      "title",
+      "dart",
+      "text"
+    ],
+    "labelSelector": ".u2-propgrid-category-title, .property-grid-item-name-text",
+    "dartNames": [
+      "prop-category-{q}"
+    ]
+  },
+  "property editor": {
+    "name": "property grid",
+    "selector": "[data-u2=\"property-grid\"], [data-u2=\"property-editor\"]",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "property grid": {
+    "name": "property grid",
+    "selector": "[data-u2=\"property-grid\"], [data-u2=\"property-editor\"]",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "property row": {
+    "name": "property",
+    "selector": ".u2-propgrid-row, tr.property-grid-item",
+    "match": [
+      "label",
+      "name",
+      "aria",
+      "dart"
+    ],
+    "labelSelector": ".u2-propgrid-name, .property-grid-item-name-text",
+    "dartNames": [
+      "prop-{q}"
+    ],
+    "parts": {
+      "label": ".u2-propgrid-name, .property-grid-item-name",
+      "value": ".u2-propgrid-value, .property-grid-item-value",
+      "editor": "[name^=\"prop-view-\"]"
+    }
+  },
+  "radio": {
+    "name": "radio input",
+    "selector": "[data-u2=\"radio-input\"], .ui-input-radio",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "radio group": {
+    "name": "radio input",
+    "selector": "[data-u2=\"radio-input\"], .ui-input-radio",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "radio input": {
+    "name": "radio input",
+    "selector": "[data-u2=\"radio-input\"], .ui-input-radio",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "range input": {
+    "name": "range slider",
+    "selector": "[data-u2=\"range-slider\"], svg[type=\"range-slider\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}",
+      "{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "range slider": {
+    "name": "range slider",
+    "selector": "[data-u2=\"range-slider\"], svg[type=\"range-slider\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}",
+      "{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "ribbon command": {
+    "name": "ribbon item",
+    "selector": ".d4-ribbon-item",
+    "match": [
+      "text",
+      "name",
+      "aria"
+    ]
+  },
+  "ribbon item": {
+    "name": "ribbon item",
+    "selector": ".d4-ribbon-item",
+    "match": [
+      "text",
+      "name",
+      "aria"
+    ]
+  },
+  "row": {
+    "name": "item",
+    "selector": "[data-u2=\"item\"], .u2-list-row, [role=\"option\"], [role=\"row\"], .d4-list-item, li",
+    "match": [
+      "text",
+      "label",
+      "aria",
+      "name"
+    ],
+    "labelSelector": ".u2-fb-label, .u2-tree-label, .u2-typeahead-text, .u2-typeahead-user-name, .u2-multi-select-text, .u2-menu-label, .u2-card-title, .d4-tree-view-node-label"
+  },
+  "row actions": {
+    "name": "row actions",
+    "selector": "[data-u2=\"row-actions\"]",
+    "match": [
+      "name"
+    ]
+  },
+  "rsa input": {
+    "name": "rsa input",
+    "selector": "[data-u2=\"rsa-input\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "run history": {
+    "name": "history browser",
+    "selector": "[data-u2=\"func-call-history-browser\"]",
+    "match": [
+      "name"
+    ],
+    "parts": {
+      "list": "[data-u2=\"fch-list\"]",
+      "retry button": "[data-u2=\"fch-retry\"]",
+      "state": "[data-u2=\"fch-state\"]"
+    }
+  },
+  "sash": {
+    "name": "sash",
+    "selector": ".u2-sash, .u2-splitter-sash",
+    "match": [
+      "aria",
+      "name"
+    ]
+  },
+  "saved table": {
+    "name": "project table",
+    "selector": ".grok-project-move-entity-row",
+    "match": [
+      "dart"
+    ],
+    "dartNames": [
+      "project-table-{q}"
+    ]
+  },
+  "section": {
+    "name": "section",
+    "selector": "[data-u2=\"section\"], .u2-section, .u2-accordion-pane, [name^=\"div-section--\"], .d4-accordion-pane",
+    "match": [
+      "name",
+      "title",
+      "dart"
+    ],
+    "labelSelector": ".u2-section-title, .u2-section-header, .u2-accordion-title, .d4-accordion-pane-header",
+    "dartNames": [
+      "div-section--{q}",
+      "pane-{q}"
+    ]
+  },
+  "segmented control": {
+    "name": "button group",
+    "selector": "[data-u2=\"button-group\"]",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "select": {
+    "name": "choice input",
+    "selector": "[data-u2=\"choice-input\"], .ui-input-choice",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "slider": {
+    "name": "slider",
+    "selector": "[data-u2=\"slider-input\"], .ui-input-slider",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "slider handle": {
+    "name": "slider handle",
+    "selector": "[role=\"slider\"], svg[type=\"range-slider\"] [name$=\"-handle\"]",
+    "match": [
+      "aria",
+      "name",
+      "text",
+      "dart"
+    ],
+    "dartNames": [
+      "{q}-handle",
+      "{q}"
+    ]
+  },
+  "slider input": {
+    "name": "slider",
+    "selector": "[data-u2=\"slider-input\"], .ui-input-slider",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "split button": {
+    "name": "dropdown button",
+    "selector": "[data-u2=\"dropdown-button\"]",
+    "match": [
+      "name",
+      "text",
+      "aria"
+    ]
+  },
+  "split pane": {
+    "name": "splitter panel",
+    "selector": ".u2-splitter-panel",
+    "match": [
+      "name"
+    ]
+  },
+  "split panel": {
+    "name": "splitter",
+    "selector": "[data-u2=\"splitter\"]",
+    "match": [
+      "name"
+    ]
+  },
+  "splitter": {
+    "name": "splitter",
+    "selector": "[data-u2=\"splitter\"]",
+    "match": [
+      "name"
+    ]
+  },
+  "splitter panel": {
+    "name": "splitter panel",
+    "selector": ".u2-splitter-panel",
+    "match": [
+      "name"
+    ]
+  },
+  "splitter sash": {
+    "name": "sash",
+    "selector": ".u2-sash, .u2-splitter-sash",
+    "match": [
+      "aria",
+      "name"
+    ]
+  },
+  "stat": {
+    "name": "stat card",
+    "selector": "[data-u2=\"stat-card\"]",
+    "match": [
+      "name",
+      "label",
+      "text"
+    ],
+    "labelSelector": ".u2-stat-label"
+  },
+  "stat card": {
+    "name": "stat card",
+    "selector": "[data-u2=\"stat-card\"]",
+    "match": [
+      "name",
+      "label",
+      "text"
+    ],
+    "labelSelector": ".u2-stat-label"
+  },
+  "status bar toggle": {
+    "name": "status bar toggle",
+    "selector": ".layout-status-bar [name^=\"toggle-\"]",
+    "match": [
+      "aria"
+    ]
+  },
+  "step": {
+    "name": "wizard step",
+    "selector": ".u2-wizard-step",
+    "match": [
+      "label",
+      "text"
+    ],
+    "labelSelector": ".u2-wizard-title"
+  },
+  "suggest input": {
+    "name": "suggest input",
+    "selector": "[data-u2=\"suggest-input\"], [data-u2=\"typeahead\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "switch": {
+    "name": "checkbox",
+    "selector": "[data-u2=\"bool-input\"], .ui-input-bool, .ui-input-bool-switch, .u2-multi-choice-item, .u2-columns-option, input[type=\"checkbox\"][aria-label]:not(.ui-input-root *)",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart",
+      "text",
+      "aria"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "tab": {
+    "name": "tab",
+    "selector": "[role=\"tab\"], .d4-tab-header, .tab-handle, .dockspan-tab-handle",
+    "match": [
+      "name",
+      "label",
+      "text",
+      "aria",
+      "dart"
+    ],
+    "labelSelector": ".tab-handle-text, .dockspan-tab-handle-text",
+    "dartNames": [
+      "{q}",
+      "tab-{q}"
+    ]
+  },
+  "tab control": {
+    "name": "tabs",
+    "selector": "[data-u2=\"tabs\"], .d4-tab-control",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "tab page": {
+    "name": "tab panel",
+    "selector": "[role=\"tabpanel\"], .d4-tab-content",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "tab panel": {
+    "name": "tab panel",
+    "selector": "[role=\"tabpanel\"], .d4-tab-content",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "tab strip": {
+    "name": "tabs",
+    "selector": "[data-u2=\"tabs\"], .d4-tab-control",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "table": {
+    "name": "table",
+    "selector": "[data-u2=\"table\"], table",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "table row": {
+    "name": "table row",
+    "selector": "[data-u2=\"table\"] tbody tr, table tbody tr",
+    "match": [
+      "label",
+      "text"
+    ],
+    "labelSelector": "td:first-child, th:first-child"
+  },
+  "tabs": {
+    "name": "tabs",
+    "selector": "[data-u2=\"tabs\"], .d4-tab-control",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "tag": {
+    "name": "tag",
+    "selector": "[data-u2=\"tag\"], .d4-tag",
+    "match": [
+      "text",
+      "name"
+    ]
+  },
+  "tags field": {
+    "name": "tags input",
+    "selector": "[data-u2=\"tags-input\"], .ui-input-tags",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "tags input": {
+    "name": "tags input",
+    "selector": "[data-u2=\"tags-input\"], .ui-input-tags",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "text": {
+    "name": "text",
+    "selector": "*",
+    "match": [
+      "exact-text"
+    ]
+  },
+  "text area": {
+    "name": "text area",
+    "selector": "[data-u2=\"text-area\"], .ui-input-textarea",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "text field": {
+    "name": "text input",
+    "selector": "[data-u2=\"text-input\"], .ui-input-text, input[aria-label]:not([type=\"checkbox\"]):not(.ui-input-root *)",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart",
+      "aria"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "text input": {
+    "name": "text input",
+    "selector": "[data-u2=\"text-input\"], .ui-input-text, input[aria-label]:not([type=\"checkbox\"]):not(.ui-input-root *)",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart",
+      "aria"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "textarea": {
+    "name": "text area",
+    "selector": "[data-u2=\"text-area\"], .ui-input-textarea",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "textbox": {
+    "name": "text input",
+    "selector": "[data-u2=\"text-input\"], .ui-input-text, input[aria-label]:not([type=\"checkbox\"]):not(.ui-input-root *)",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart",
+      "aria"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "thumb": {
+    "name": "slider handle",
+    "selector": "[role=\"slider\"], svg[type=\"range-slider\"] [name$=\"-handle\"]",
+    "match": [
+      "aria",
+      "name",
+      "text",
+      "dart"
+    ],
+    "dartNames": [
+      "{q}-handle",
+      "{q}"
+    ]
+  },
+  "title": {
+    "name": "heading",
+    "selector": "h1, h2, h3, h4, h5, h6",
+    "match": [
+      "text"
+    ]
+  },
+  "toast": {
+    "name": "notification",
+    "selector": "[data-u2=\"notify\"] .u2-notify, .d4-balloon",
+    "match": [
+      "text"
+    ]
+  },
+  "toggle": {
+    "name": "checkbox",
+    "selector": "[data-u2=\"bool-input\"], .ui-input-bool, .ui-input-bool-switch, .u2-multi-choice-item, .u2-columns-option, input[type=\"checkbox\"][aria-label]:not(.ui-input-root *)",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart",
+      "text",
+      "aria"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "toolbar": {
+    "name": "toolbar",
+    "selector": "[data-u2=\"toolbar\"], [role=\"toolbar\"], .d4-ribbon",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "tooltip": {
+    "name": "tooltip",
+    "selector": "[data-u2=\"tooltip\"], [role=\"tooltip\"], .d4-tooltip",
+    "match": [
+      "text"
+    ]
+  },
+  "tour": {
+    "name": "tour",
+    "selector": "[data-u2=\"tour\"]",
+    "match": [
+      "name"
+    ]
+  },
+  "tray": {
+    "name": "tray",
+    "selector": "[data-u2=\"tray\"]",
+    "match": [
+      "name"
+    ]
+  },
+  "tree": {
+    "name": "tree",
+    "selector": "[data-u2=\"tree\"], [role=\"tree\"], .d4-tree-view",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "tree item": {
+    "name": "tree node",
+    "selector": "[role=\"tree\"] .u2-list-row, [role=\"treeitem\"]:not(.d4-tree-view-group), .d4-tree-view-node",
+    "match": [
+      "dart",
+      "label",
+      "text",
+      "name"
+    ],
+    "labelSelector": ".u2-tree-label, .d4-tree-view-node-label, .d4-tree-view-group-label, .d4-tree-view-item-label",
+    "dartNames": [
+      "tree-{q}"
+    ]
+  },
+  "tree node": {
+    "name": "tree node",
+    "selector": "[role=\"tree\"] .u2-list-row, [role=\"treeitem\"]:not(.d4-tree-view-group), .d4-tree-view-node",
+    "match": [
+      "dart",
+      "label",
+      "text",
+      "name"
+    ],
+    "labelSelector": ".u2-tree-label, .d4-tree-view-node-label, .d4-tree-view-group-label, .d4-tree-view-item-label",
+    "dartNames": [
+      "tree-{q}"
+    ]
+  },
+  "typeahead": {
+    "name": "suggest input",
+    "selector": "[data-u2=\"suggest-input\"], [data-u2=\"typeahead\"]",
+    "match": [
+      "name",
+      "label",
+      "placeholder",
+      "dart"
+    ],
+    "labelSelector": "[data-u2-part=\"label\"], .u2-input-label, .ui-input-label",
+    "dartNames": [
+      "input-host-{q}"
+    ],
+    "editorSelector": "[data-u2-part=\"editor\"] input, [data-u2-part=\"editor\"] select, [data-u2-part=\"editor\"] textarea, [data-u2-part=\"editor\"] [contenteditable], .ui-input-editor",
+    "parts": {
+      "label": "[data-u2-part=\"label\"], .ui-input-label",
+      "editor": "[data-u2-part=\"editor\"], .ui-input-editor",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    }
+  },
+  "view": {
+    "name": "view",
+    "selector": ".d4-view-handle, [name^=\"view-handle: \"]",
+    "match": [
+      "dart",
+      "text"
+    ],
+    "dartNames": [
+      "view-handle: {q}"
+    ]
+  },
+  "view tab": {
+    "name": "view tab",
+    "selector": ".tab-handle[name^=\"view-handle: \"]",
+    "match": [
+      "label",
+      "text"
+    ],
+    "labelSelector": ".tab-handle-text"
+  },
+  "viewer": {
+    "name": "viewer",
+    "selector": "[name^=\"viewer-\"], .d4-viewer",
+    "match": [
+      "dart",
+      "name"
+    ],
+    "dartNames": [
+      "viewer-{q}"
+    ],
+    "parts": {
+      "title": "xpath=ancestor::*[contains(concat(\" \", normalize-space(@class), \" \"), \" panel-base \")][1]//*[contains(@class, \"panel-titlebar-text\")]",
+      "settings icon": "xpath=ancestor::*[contains(concat(\" \", normalize-space(@class), \" \"), \" panel-base \")][1]//*[contains(@class, \"panel-titlebar\")]//*[@name=\"icon-font-icon-settings\"]",
+      "help icon": "xpath=ancestor::*[contains(concat(\" \", normalize-space(@class), \" \"), \" panel-base \")][1]//*[contains(@class, \"panel-titlebar\")]//*[@name=\"icon-font-icon-help\"]",
+      "menu icon": "xpath=ancestor::*[contains(concat(\" \", normalize-space(@class), \" \"), \" panel-base \")][1]//*[contains(@class, \"panel-titlebar\")]//*[@name=\"icon-font-icon-menu\"]",
+      "close icon": "xpath=ancestor::*[contains(concat(\" \", normalize-space(@class), \" \"), \" panel-base \")][1]//*[contains(@class, \"panel-titlebar\")]//*[@name=\"Close\" or @name=\"icon-font-icon-close\"]",
+      "description": ".d4-viewer-description",
+      "canvas": "canvas[name=\"canvas\"]",
+      "legend": "[name=\"legend\"]",
+      "mini legend icon": "[name=\"mini-legend-icon\"]",
+      "legend splitter": "[name=\"legend-splitter\"]",
+      "legend inner splitter": "[name=\"legend-inner-splitter\"]",
+      "legend close chevron": "[name=\"icon-hide-corner-legend\"]",
+      "legend markers selector": "[name=\"legend\"] [name^=\"div-column-combobox-\"]",
+      "legend markers map": "[name=\"legend\"] select[name^=\"input-aggr-selector-\"]"
+    },
+    "gestures": {
+      "click": "mouse"
+    }
+  },
+  "virtual grid": {
+    "name": "grid",
+    "selector": "[data-u2=\"grid\"], .d4-grid",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "widget": {
+    "name": "element",
+    "selector": "[data-u2-name], [data-widget]",
+    "match": [
+      "name",
+      "dart"
+    ],
+    "dartNames": [
+      "{q}"
+    ]
+  },
+  "wizard": {
+    "name": "wizard",
+    "selector": "[data-u2=\"wizard\"]",
+    "match": [
+      "name",
+      "aria"
+    ]
+  },
+  "wizard step": {
+    "name": "wizard step",
+    "selector": ".u2-wizard-step",
+    "match": [
+      "label",
+      "text"
+    ],
+    "labelSelector": ".u2-wizard-title"
+  }
+}

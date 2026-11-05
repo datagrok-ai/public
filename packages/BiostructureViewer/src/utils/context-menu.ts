@@ -52,7 +52,7 @@ export async function showBiostructureViewer(gridCell: DG.GridCell): Promise<voi
       const viewer = await gridCell.tableColumn?.dataFrame.plot.fromType('Biostructure', {
         dataJson: BiostructureDataJson.fromData(valueData),
       });
-      if (viewer) view.dockManager.dock(viewer.root);
+      if (viewer) view.dockManager.dock(viewer);
     }
   } catch (err: any) {
     defaultErrorHandler(err);
@@ -73,7 +73,7 @@ export async function showNglViewer(gridCell: DG.GridCell): Promise<void> {
       const viewer = await gridCell.tableColumn?.dataFrame.plot.fromType('NGL', {
         dataJson: BiostructureDataJson.fromData(valueData),
       });
-      if (viewer) view.dockManager.dock(viewer.root);
+      if (viewer) view.dockManager.dock(viewer);
     }
   } catch (err: any) {
     defaultErrorHandler(err);

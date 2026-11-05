@@ -63,7 +63,7 @@ export class FuncCallHistoryBrowser extends Control {
     this.own(() => this._pager.dispose());
 
     const itemHeight = options.itemHeight ?? 36;
-    this._list = this.runInScope(() => new VirtualList<DG.FuncCall>({
+    this._list = this.build(() => new VirtualList<DG.FuncCall>({
       itemHeight,
       keyOf: (call) => call.id,
       render: (call, _index, row) => this._renderRow(call, row),
@@ -79,7 +79,7 @@ export class FuncCallHistoryBrowser extends Control {
     this.own(() => this._list.root.removeEventListener('scroll', onScroll));
 
     const emptyMessage = span('', 'u2-fch-empty-message');
-    const retry = this.runInScope(() => button('Retry', () => this._pager.loadMore()));
+    const retry = this.build(() => button('Retry', () => this._pager.loadMore()));
     retry.dataset.u2 = 'fch-retry';
     const stateArea = divV([emptyMessage, retry], 'u2-async-empty u2-fch-state');
     stateArea.dataset.u2 = 'fch-state';
@@ -143,13 +143,13 @@ export class FuncCallHistoryBrowser extends Control {
       this.fireEvent('change', call);
     });
 
-    this._listen(this._list.root, 'dblclick', (e) => {
+    this.scope.listen(this._list.root, 'dblclick', (e) => {
       const target = e.target as Element | null;
       const row = target?.closest('.u2-list-row') as HTMLElement | null;
       if (row)
         this._activate(this._pager.items.peek()[Number(row.dataset.index)]);
     });
-    this._listen(this._list.root, 'keydown', (e) => {
+    this.scope.listen(this._list.root, 'keydown', (e) => {
       if ((e as KeyboardEvent).key === 'Enter')
         this._activate(this.selected.peek() ?? undefined);
     });
@@ -197,7 +197,7 @@ export class FuncCallHistoryBrowser extends Control {
       scope.dispose();
       onPick(call);
     };
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       const browser = new FuncCallHistoryBrowser({setCurrentObject: false, ...options,
         onActivate: pick});
       const popup = div([browser.root], popupClass);
@@ -210,7 +210,7 @@ export class FuncCallHistoryBrowser extends Control {
           pick(browser.call(id));
       });
       popup.addEventListener(OVERLAY_CLOSE_EVENT, () => scope.dispose());
-      Overlay.show(anchor, popup, scope);
+      Overlay.show(anchor, popup, {owner: scope});
     });
     return scope;
   }
@@ -255,11 +255,6 @@ export class FuncCallHistoryBrowser extends Control {
     if (custom)
       return custom(call, row);
     return div([this._renderer.listItem(call)], 'u2-fch-row');
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }
 

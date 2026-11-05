@@ -2,49 +2,95 @@
    component (L2) and core may not import upwards — both factories compose the core `button()`,
    so the plain and the icon-bearing button stay one skin. */
 import {Signal} from '../../core/signals.js';
-import {Scope} from '../../core/scope.js';
+import {Scope, debug} from '../../core/scope.js';
 import {Tooltip} from '../../core/tooltip.js';
 import {button, div, span, Text} from '../../core/elements.js';
+import type {Reason} from '../../core/reason.js';
 import {icon, IconVariant} from '../display/icon.js';
 import {Menu} from '../navigation/menu.js';
 
 export interface IconButtonOptions {
   variant?: IconVariant;
-  tooltip?: string;
+  /** Hover text and accessible name; a signal is followed by both ("Group by. Current: Status"). */
+  tooltip?: Text;
   /** Pressed state: the click writes it and an effect mirrors it into `aria-pressed`, so a
    * toggling button needs an ambient Scope. */
   toggle?: Signal<boolean>;
+  /** A menu built on every press and shown under the button; pressed again, it closes. */
+  menu?: () => Menu;
+  /** As {@link button}'s: why it is off (shown as its tooltip), `null` while on; a signal is followed. */
+  disabled?: Reason;
 }
 
-const NO_OWNER = 'u2: signal binding needs an owner — ' +
-  'wrap the code in Control.build(...) or component.runInScope(...)';
+const NO_OWNER = 'u2: signal binding needs an owner — build under `owner.build(…)` or ' +
+  '`component((self) => …)`; after an `await`, inside `owner.task(async (t) => … t.build(…))`';
 
-/** Hover text in the icon.ts convention: the tooltip service when there is a scope to own it,
- * the native `title` otherwise. The tooltip doubles as the accessible name — the u2 tooltip
- * leaves no `title` attribute, so without `aria-label` an icon-only button would be nameless. */
-function tip(el: HTMLElement, text: string): void {
-  el.setAttribute('aria-label', text);
+const warned = new Set<string>();
+
+/** Builds under a scope of the factory's own: a child of the ambient one, so it goes with whoever
+ * built it, releases its listeners and popups together and is named in leak reports; none outside
+ * any scope (the element's own listeners then live as long as the element). */
+export function ownScope<T>(label: string, build: (scope: Scope | undefined) => T): T {
+  const ambient = Scope.ambient;
+  const scope = ambient === undefined ? undefined : new Scope(ambient, {label, lazy: true});
+  return Scope.runWith(scope, () => build(scope));
+}
+
+/** The tooltip as the accessible name — the u2 tooltip leaves no `title` attribute, so without `aria-label` an
+ * icon-only button would be nameless — following a signal. */
+function accessibleName(el: HTMLElement, text: Text): void {
+  if (typeof text === 'string') {
+    el.setAttribute('aria-label', text);
+    return;
+  }
+  const scope = Scope.ambient;
+  if (!scope)
+    throw new Error(NO_OWNER);
+  scope.effect(() => el.setAttribute('aria-label', String(text.value ?? '')));
+}
+
+/** Hover text in the icon.ts convention — the tooltip service when there is a scope to own it, the native `title`
+ * otherwise — and the accessible name. */
+function tip(el: HTMLElement, text: Text): void {
+  accessibleName(el, text);
+  const now = () => typeof text === 'string' ? text : String(text.peek() ?? '');
   const scope = Scope.ambient;
   if (scope)
-    Tooltip.bind(el, text, scope);
+    Tooltip.bind(el, now, {owner: scope});
   else
-    el.title = text;
+    el.title = now();
 }
 
 /** Square icon-only button — flat until hover, sized by its context (the form metric standalone,
  * the inline metric inside a toolbar or a flat button group). */
-export function iconButton(name: string, onClick: () => void,
+export function iconButton(name: string, onClick: (e: MouseEvent) => void,
   options?: IconButtonOptions): HTMLButtonElement {
   const toggle = options?.toggle;
-  const el = button(icon(name, {variant: options?.variant}), () => {
+  let menu: Menu | undefined;
+  const disabled = options?.disabled;
+  // with `disabled`, button() owns the tooltip (the reason while disabled, the tooltip otherwise)
+  const el = button(icon(name, {variant: options?.variant}), (e) => {
     if (toggle)
       toggle.value = !toggle.peek();
-    onClick();
-  });
+    if (options?.menu !== undefined) {
+      const open = menu?.isOpen.peek() === true;
+      menu?.close();
+      menu = open ? undefined : options.menu();
+      menu?.show({anchor: el});
+    }
+    return onClick(e);
+  }, disabled === undefined ? undefined : {disabled, tooltip: options?.tooltip});
   el.classList.add('u2-icon-btn');
   el.dataset.u2 = 'icon-button';
-  if (options?.tooltip)
-    tip(el, options.tooltip);
+  const tooltip = options?.tooltip;
+  if (tooltip && disabled !== undefined)
+    accessibleName(el, tooltip);
+  else if (tooltip)
+    tip(el, tooltip);
+  else if (debug.enabled && !warned.has(name)) {
+    warned.add(name);
+    console.warn(`u2: iconButton("${name}") has no tooltip — an icon-only button needs one for its accessible name`);
+  }
   if (!toggle)
     return el;
   const scope = Scope.ambient;
@@ -60,16 +106,22 @@ export function iconButton(name: string, onClick: () => void,
 
 /** Text button with a leading (or trailing) icon. The label is its own span so a signal-bound
  * caption rewrites the label alone and never the icon. */
-export function buttonWithIcon(text: Text, iconName: string, onClick: () => void,
-  options?: {primary?: boolean, iconRight?: boolean, tooltip?: string}): HTMLButtonElement {
-  const el = button(icon(iconName), onClick, {primary: options?.primary});
+export function buttonWithIcon(text: Text, iconName: string, onClick: (e: MouseEvent) => void,
+  options?: {primary?: boolean, iconRight?: boolean, tooltip?: string,
+    disabled?: Reason}): HTMLButtonElement {
+  const disabled = options?.disabled;
+  // with `disabled`, button() owns the tooltip (the reason while disabled, the tooltip otherwise)
+  const el = button(icon(iconName), onClick, {primary: options?.primary,
+    ...(disabled === undefined ? {} : {disabled, tooltip: options?.tooltip})});
   const label = span(text, 'u2-btn-label');
   if (options?.iconRight)
     el.prepend(label);
   else
     el.append(label);
   el.dataset.u2 = 'button';
-  if (options?.tooltip)
+  if (options?.tooltip && disabled !== undefined)
+    el.setAttribute('aria-label', options.tooltip);
+  else if (options?.tooltip)
     tip(el, options.tooltip);
   return el;
 }
@@ -79,86 +131,86 @@ export interface DropDownButtonOptions {
   primary?: boolean;
   tooltip?: string;
   /** Split mode: the main part fires this, and only the arrow segment opens the menu. */
-  split?: () => void;
+  split?: (e: MouseEvent) => void;
 }
 
 /** Button that opens a menu, or — with `split` — a main action plus an attached arrow that opens
- * it. `buildMenu` runs on every open, so checked items never show stale state.
+ * it. `buildMenu` runs on every open, so checked items never show stale state. Built under a scope
+ * of its own (see {@link ownScope}): its listeners and an open menu go together.
  * `aria-expanded` follows the menu through a per-open Scope holding one effect on `isOpen`, which
- * that same effect disposes on close: no ambient scope needed, and nothing outlives the menu. */
+ * that same effect disposes on close, so nothing outlives the menu. */
 export function dropDownButton(text: Text, buildMenu: (menu: Menu) => void,
   options?: DropDownButtonOptions): HTMLElement {
-  const split = options?.split;
-  const primary = options?.primary;
-  let root: HTMLElement;
-  let trigger: HTMLElement;
-  let current: Menu | undefined;
+  return ownScope('dropdown-button', (scope) => {
+    const split = options?.split;
+    const primary = options?.primary;
+    let root: HTMLElement;
+    let trigger: HTMLElement;
+    let current: Menu | undefined;
 
-  const close = (): boolean => {
-    if (!current)
-      return false;
-    current.close();
-    return true;
-  };
+    const close = (): boolean => {
+      if (!current)
+        return false;
+      current.close();
+      return true;
+    };
 
-  const toggle = (): void => {
-    if (close())
-      return;
-    const menu = Menu.popup();
-    buildMenu(menu);
-    current = menu;
-    menu.show({anchor: root});
-    const watch = new Scope();
-    watch.effect(() => {
-      const open = menu.isOpen.value;
-      trigger.setAttribute('aria-expanded', String(open));
-      if (open)
+    const toggle = (): void => {
+      if (close())
         return;
-      if (current === menu)
-        current = undefined;
-      watch.dispose();
-    });
-  };
+      const menu = Menu.popup();
+      buildMenu(menu);
+      current = menu;
+      menu.show({anchor: root});
+      const watch = new Scope(undefined, {label: 'dropdown-menu'});
+      watch.effect(() => {
+        const open = menu.isOpen.value;
+        trigger.setAttribute('aria-expanded', String(open));
+        if (open)
+          return;
+        if (current === menu)
+          current = undefined;
+        watch.dispose();
+      });
+    };
 
-  const onMain = split ? () => {
-    close();
-    split();
-  } : toggle;
-  const main = options?.icon ?
-    buttonWithIcon(text, options.icon, onMain, {primary}) :
-    button(span(text, 'u2-btn-label'), onMain, {primary});
-  if (options?.tooltip)
-    tip(main, options.tooltip);
-
-  if (split) {
-    const arrow = button(icon('chevron-down', {cls: 'u2-dropdown-chevron'}), toggle, {primary});
-    arrow.classList.add('u2-dropdown-arrow');
-    arrow.setAttribute('aria-label', 'More');
-    root = div([main, arrow], 'u2-dropdown-split');
-    trigger = arrow;
-  } else {
-    main.append(icon('chevron-down', {cls: 'u2-dropdown-chevron'}));
-    main.classList.add('u2-dropdown-btn');
-    root = main;
-    trigger = main;
-  }
-  root.dataset.u2 = 'dropdown-button';
-  trigger.setAttribute('aria-haspopup', 'menu');
-  trigger.setAttribute('aria-expanded', 'false');
-
-  const onKeyDown = (e: Event) => {
-    if ((e as KeyboardEvent).key !== 'ArrowDown' || current)
-      return;
-    e.preventDefault();
-    toggle();
-  };
-  root.addEventListener('keydown', onKeyDown);
-  const scope = Scope.ambient;
-  if (scope) {
-    scope.own(() => {
-      root.removeEventListener('keydown', onKeyDown);
+    const onMain = split ? (e: MouseEvent) => {
       close();
-    });
-  }
-  return root;
+      split(e);
+    } : toggle;
+    const main = options?.icon ?
+      buttonWithIcon(text, options.icon, onMain, {primary}) :
+      button(span(text, 'u2-btn-label'), onMain, {primary});
+    if (options?.tooltip)
+      tip(main, options.tooltip);
+
+    if (split) {
+      const arrow = button(icon('chevron-down', {cls: 'u2-dropdown-chevron'}), toggle, {primary});
+      arrow.classList.add('u2-dropdown-arrow');
+      arrow.setAttribute('aria-label', 'More');
+      root = div([main, arrow], 'u2-dropdown-split');
+      trigger = arrow;
+    } else {
+      main.append(icon('chevron-down', {cls: 'u2-dropdown-chevron'}));
+      main.classList.add('u2-dropdown-btn');
+      root = main;
+      trigger = main;
+    }
+    root.dataset.u2 = 'dropdown-button';
+    trigger.setAttribute('aria-haspopup', 'menu');
+    trigger.setAttribute('aria-expanded', 'false');
+
+    const onKeyDown = (e: Event) => {
+      if ((e as KeyboardEvent).key !== 'ArrowDown' || current)
+        return;
+      e.preventDefault();
+      toggle();
+    };
+    if (scope) {
+      scope.listen(root, 'keydown', onKeyDown);
+      scope.own(close);
+    } else
+      root.addEventListener('keydown', onKeyDown);
+    return root;
+  });
 }

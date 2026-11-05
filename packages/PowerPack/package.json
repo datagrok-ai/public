@@ -23,6 +23,7 @@
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.26.3",
     "@datagrok-libraries/db-explorer": "workspace:^",
+    "@datagrok-libraries/ems": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",

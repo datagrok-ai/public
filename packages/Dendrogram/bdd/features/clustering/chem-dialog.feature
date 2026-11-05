@@ -6,10 +6,9 @@ Feature: Hierarchical clustering from the Chem menu
   linkage attaches a tree of another height. The task bar shows "Creating dendrogram ..." while the
   tree is built.
 
-  Centroid linkage on the numeric columns attaches a tree too (GROK-19595, fixed 2026-09-21): the
-  clustering wasm sorted the centroid merges by height while their cluster references kept the
-  merge order, so an inversion pointed at a cluster not built yet; centroid merges now come out in
-  merge order, as median's do.
+  Centroid and median linkage over data whose merges invert (GROK-19595) are tested in Dendrogram
+  src/tests/hierarchical-clustering-tests.ts 'hierarchicalClusteringWasmCentroidInversion' and
+  'UI-centroid-inversions'.
 
   Background:
     Given user is logged in
@@ -76,21 +75,4 @@ Feature: Hierarchical clustering from the Chem menu
     Then the task bar should have finished "Creating dendrogram"
     And the "tree leaves" reading of grid should be 1000
     And the "tree height" reading of grid should not be as remembered
-    And no errors should have been logged
-
-  @GROK-19595
-  Scenario: Numeric columns with centroid linkage attach a tree with a leaf for every row
-    When user clicks on "Remove Dendrogram" icon
-    And user picks "Chem > Analyze > Hierarchical Clustering..." from the top menu
-    And user clicks on editor of Features input in "Hierarchical Clustering" dialog
-    And user clicks on None label in "Select columns..." dialog
-    And user clicks on the "cell 4 of x" area of grid viewer in "Select columns..." dialog
-    And user clicks on the "cell 5 of x" area of grid viewer in "Select columns..." dialog
-    And user clicks on OK button in "Select columns..." dialog
-    And user selects "centroid" in Linkage input in "Hierarchical Clustering" dialog
-    Then Linkage input in "Hierarchical Clustering" dialog should have value "centroid"
-    When user clicks on OK button in "Hierarchical Clustering" dialog
-    Then "Hierarchical Clustering" dialog should be hidden
-    And the task bar should have finished "Creating dendrogram"
-    And the "tree leaves" reading of grid should be 1000
     And no errors should have been logged

@@ -1,6 +1,42 @@
 # API Tests changelog
 
+## v.next
+
+* Viewers: Added regression tests moved from BDD: a layout with a logarithmic scatter plot saves and loads after its X column is removed ([public#2867](https://github.com/datagrok-ai/public/issues/2867)), a histogram renders on a table with no rows ([core#998](https://github.com/datagrok-ai/core/issues/998)), a datetime Split with Split Map month comes back from a layout ([public#2562](https://github.com/datagrok-ai/public/issues/2562)), a pie chart moved to a table with the same columns keeps its Category and angle aggregation ([core#982](https://github.com/datagrok-ai/core/issues/982)), a violin over a double column holding NaN draws and takes a hover without an error ([core#960](https://github.com/datagrok-ai/core/issues/960)), the trellis plot's inner box plot look survives the view's table being replaced ([public#3692](https://github.com/datagrok-ai/public/issues/3692)), and a grid viewer bound to a second table keeps its table and sort through a project (`Dapi: projects: viewers`, [public#2718](https://github.com/datagrok-ai/public/issues/2718))
+* DataFrame: Added a `compareTables` test of the rows the diff holds and its counters (changed values and columns, the rows each table misses), which the core now fills
+* U2: Added `Usage` (report once per site with a count, throw a `U2UsageError`, off), the owner verbs (`Scope.root`, `build`, `task` with a serial queue and a skip after dispose, `subscribe`), `lens` and `afterFlush`, `operability` (the six rules on a real layout, with the old read-only rail rule), `component` (a handle, a name, the owner verbs on the control, the `Control.build` alias) and `disabledReason`, and `reserved-key` (a field taking a control member is reported, a subclass of a library class is not); `version` checks 1.2
+* U2: Added `version` (`DG.U2.version` is 1.1 or newer), `Scope.thenable` (a promise and a thenable are, a `DG.Row` and a proxy throwing on every name are not, and `Scope.bind` reports nothing for either) and "a static control holds no live scope"
+* UI: Added `Widgets: Table pickers` tests for `ui.pickFileFromFiles` with `multiple` (Ctrl+click) and `connection` (one share alone; folder mode lists folders and resolves the share's root), and `Shell: ViewLayout` tests for `boundColumnNames` (a scatter plot and a Filters viewer, a stored layout with no open view, a grid alone, a name in two cases, a viewer type nothing registered)
+* TableView: Added `TableView: Ribbon` tests for `showParentCrumb` (the crumb is a link as in `ui.breadcrumbs`) and `showSaveButton`, and for closing a table view: its open parent becomes current, a parent closed before is not brought back
+* [core#1128](https://github.com/datagrok-ai/core/issues/1128): Calculated columns: Added a check that a formula naming its column as a string (`Avg(Column("x"))`, `Value("x", 0)`) recalculates after an edit
+* [core#1050](https://github.com/datagrok-ai/core/issues/1050): Replaced fixed delays and short `awaitCheck` polls with event and state waits, unskipped the kml/kmz format tests, and added an `exclude` input to `test`
+* Chats: Added tests for `grok.dapi.chats`, `DG.ChatWidget` and `grok.dapi.users.notifications.send`
+* Permissions: Added `Dapi: permissions` checks that the owner keeps every privilege once every grant is revoked, that a space shared for viewing cannot be changed, deleted or shared further by the grantee, and that a connection shared on its own shares none of its queries
+* Permissions: Extended `Dapi: permissions` with View-and-use / Full-access coverage for database connections, queries, tables, layouts and models (the grantee reads but cannot edit, delete or re-share), and a check that a share with notifications reaches the grantee while a silent one does not
+* Grid: Color Coding: Added checks that a layout keeps a coloring applied to the text (GROK-13668) and that a text coloring switched off leaves no `.color-coding-text` tag behind
+* [core#857](https://github.com/datagrok-ai/core/issues/857): Fixed `View.createByType` failing for the packages view type
+* GROK-21087: Read rows without a backing item as empty and create the item on edit
+* GROK-21058: Resolve renderers of grid-less value cells without dereferencing a null grid column
+
 ## 1.10.3 (WIP)
+
+U2: `u2/u2.ts` covers `DG.U2.debug` snapshot/diff, `Scope.bind` after dispose, `DG.U2.state` of a control, the state a `DG.Widget` status carries, and `Widget.onEvent` seeing `fireEvent`
+
+Domains: new `Dapi: domain editing` (6 cases over a throwaway binding cloned from the `extwlive` fixture — the access snapshot's shape and tokens; access deltas in a dry run and a commit, idempotent on repeat, restrict and unrestrict; a stale `ifVersion` and a stale `ifIncarnation` after delete + re-create as typed conflicts; an Edit-only editor's `null` snapshot and `access-forbidden`; the schema-scoped `draft()` gated by the connection share; self-skipping without the fixture or the privilege); `Dapi: domain live` and `Dapi: domain hierarchy` send the required `ifVersion` on their fixture apply
+
+Domains: `Dapi: domain lifecycle` sends the required `ifVersion` on every user-schema apply, pins the `version-required` refusal without it, and edits a throwaway external binding over the extwlive tables (friendlyName, description, `storage.writable`; `storage-immutable` / `storage-conversion` refusals)
+
+Domains: new `Dapi: domain authoring` (4 cases over the stand's `NorthwindBinding:PostgresNorthwind` connection, a throwaway `auth_<random>` schema — the draft's names, keys and one ref; dry run → create → `manifest()` → `validate()` → `delete()` with `schema-name-taken` on a second dry run; `external-identifier` and `invalid-storage` refusals by path; a restricted user's 403 from `draft`; self-skipping without the connection or the privilege)
+
+Domains: `Dapi: domain access` pins the fifteen `support` keys; new `Dapi: domain external` (read, over the `northwind` binding) and `Dapi: domain external write` (over the `extwlive` scratch binding — `update(id, values, {expected})` 200/409/422, self-skipping when the binding is absent); `Dapi: domain frame editor` covers `'immutable'` keys; `withRestrictedUser` blocks its probe user with the `{user, transfers}` body the route reads
+
+Permissions: new `Dapi: permissions` (6 cases, read as a kept grantee account — View and use lets it see and use but not change, delete or share further; Full access gives everything; a revoke, leaving a group and removing All users take the access back; a space shared for viewing passes View and use to its content and takes no new content from the grantee)
+Projects: new `Dapi: projects: data sync` (4 cases — a table saved with data sync keeps its creation script and reopens rebuilt by it (`.data-sync = success`), a snapshot reopens from the uploaded data with no mark and, with data sync turned on, rebuilt, and a calculated-column chain over a file and over a query result surviving a data-sync round trip, the edited cell reread from the source, and a rename before and after the reopen)
+Entities: new `Dapi: entities: recent` — `getRecentEntities` lists a project the account saved, once it is opened
+Sticky meta: new `Dapi: sticky meta: molecules` (3 cases — values written for molecules read back on a clone, after a CSV round trip, and through another SMILES of the same molecule, none for another molecule)
+Models: new `Dapi: models` (4 cases — every `meta.mlrole: train` function has an `apply` of the same `mlname`; a saved model found, listed and suggested only for a table with its inputs; blobs and images round-trip and `/ml/zip/{id}` is a zip holding them and the model; a deleted model takes its blobs and images)
+
+GROK-21114: `Benchmarks: Calculated columns and layouts` limits set to the goal: 1 s for applying a layout with 200 formula columns, 0.9 s for calculating them, about 1.4x the quiet-machine times for the rest; a run over a limit fails until the goal is met
 
 GROK-21035: Added the `Benchmarks: Calculated columns and layouts` category: 7 benchmarks on a synthetic table (50k rows in benchmark mode) with limits set from the 5 s goal for applying a layout with 200 formula columns and one failing formula
 

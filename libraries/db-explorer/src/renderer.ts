@@ -98,7 +98,6 @@ export function helmRenderer(value: string): HTMLElement {
       editable: false,
     });
     helmInput.setStringValue(value);
-    await DG.delay(200); // wait for proper sizing
     helmInput.getInput().addEventListener('click', () => {
       grok.shell.o = helmInput.getValue();
     });
@@ -534,7 +533,7 @@ export class DBExplorerRenderer {
       refTables.forEach((ref) => {
         const prefix = `${ref.schemaQualTable}.`;
         Object.entries(ref.refBys).forEach(([refedColumn, refInfo]) => {
-          const tableColActName = dbNameToActColNameMap[ref.schemaQualTable][refedColumn] ?? refedColumn;
+          const tableColActName = dbNameToActColNameMap[ref.schemaQualTable]?.[refedColumn] ?? refedColumn;
           const val = curDf.col(tableColActName)?.get(0);
           if (!val) return;
           const _pane = linksAcc.addPane(prefix + refedColumn, () => {

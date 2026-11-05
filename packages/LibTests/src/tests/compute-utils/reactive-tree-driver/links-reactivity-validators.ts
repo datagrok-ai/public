@@ -60,7 +60,7 @@ category('ComputeUtils: Driver links reactivity: validators', async () => {
         link.setActive();
         inNode.getItem().getStateStore().setState('a', 1);
       });
-      expectObservable(link.isRunning$, '^ 1000ms !').toBe('a 250ms (bc)', {a: false, b: true, c: false});
+      expectObservable(link.isRunning$, '^ 1000ms !').toBe('a b 249ms c', {a: false, b: true, c: false});
       expectObservable((inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$).toBe('a 250ms b', {
         a: {},
         b: {
@@ -191,7 +191,7 @@ category('ComputeUtils: Driver links reactivity: validators', async () => {
     });
   });
 
-  test('Run default validators', async () => {
+  test('Run annotation checks', async () => {
     const pconf = await getProcessedConfig({
       id: 'pipeline1',
       type: 'static',
@@ -209,7 +209,7 @@ category('ComputeUtils: Driver links reactivity: validators', async () => {
 
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const n1 = tree.nodeTree.getNode([{idx: 0}]);

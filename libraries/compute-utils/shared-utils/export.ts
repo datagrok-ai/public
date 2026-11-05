@@ -3,8 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import type ExcelJS from 'exceljs';
 import type html2canvas from 'html2canvas';
-import {DEFAULT_FLOAT_FORMAT, viewerTypesMapping} from './consts';
-import {delay, getPropViewers} from './utils';
+import {DEFAULT_FLOAT_FORMAT, G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
+import {viewerTypesMapping} from './consts';
+import {getPropViewers, graphicsDataUrl, isSvgGraphics} from './utils';
 import type {ValidationResult} from '../reactive-tree-driver/src/data/common-types';
 import type {ConsistencyInfo} from '../reactive-tree-driver/src/runtime/StateTreeNodes';
 
@@ -90,7 +91,7 @@ export const richFunctionViewReport = async (
         viewerBox.classList.add('ui-box');
         viewerBox.classList.remove('ui-div');
         grok.shell.v.root.insertAdjacentElement('afterend', viewerBox);
-        await delay(1000);
+        await DG.delay(1000);
         const imageDataUrl = (await loadedHtml2canvas(viewerBox)).toDataURL();
 
         viewerBox.remove();
@@ -141,7 +142,9 @@ export const richFunctionViewReport = async (
             caption: scalarInput.options['caption'] ?? scalarInput.name,
             value: lastCall.inputs[scalarInput.name] ?? '',
             units: scalarInput.options['units'] ?? '',
-            format: scalarInput.format || DEFAULT_FLOAT_FORMAT,
+            // the form's default, so the export matches it whether or not the form was shown
+            format: scalarInput.format ||
+              (scalarInput.propertyType === DG.TYPE.FLOAT ? G7_FLOAT_FORMAT : DEFAULT_FLOAT_FORMAT),
           })),
           validationStates,
           consistencyStates,
@@ -178,6 +181,19 @@ export const richFunctionViewReport = async (
           validationStates,
           consistencyStates,
         );
+      }
+
+      for (const graphicsOutput of func.outputs.filter((output) => output.propertyType === DG.TYPE.GRAPHICS)) {
+        const value = lastCall.outputs[graphicsOutput.name];
+        if (value == null || value === '')
+          continue;
+        const visibleTitle = graphicsOutput.options.caption || graphicsOutput.name;
+        const sheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, exportWorkbook));
+        const {dataUrl, width, height} = await graphicsToPng(value);
+        sheet.addImage(exportWorkbook.addImage({base64: dataUrl, extension: 'png'}), {
+          tl: {col: 0, row: 0},
+          ext: {width, height},
+        });
       }
 
       for (const inputProp of func.inputs.filter((prop) => isDataFrame(prop))) {
@@ -248,8 +264,6 @@ export const richFunctionViewReport = async (
       const blob = new Blob([buffer], {type: BLOB_TYPE});
 
       return [blob, exportWorkbook] as const;
-    } catch (e) {
-      console.log(e);
     } finally {
       ui.setDisplay(grok.shell.v.root, true);
       updateIndicatorWithText(grok.shell.v.root.parentElement!, false);
@@ -259,7 +273,7 @@ export const richFunctionViewReport = async (
   throw new Error('Format is not supported');
 };
 
-export const formatNumber = (val: any, format?: string) => {
+const formatNumber = (val: any, format?: string) => {
   try {
     return (Number.isFinite(val) && format) ? DG.format(val, format) : val;
   } catch {
@@ -267,7 +281,7 @@ export const formatNumber = (val: any, format?: string) => {
   }
 };
 
-export const scalarsToSheet = (sheet: ExcelJS.Worksheet,
+const scalarsToSheet = (sheet: ExcelJS.Worksheet,
   scalars: { name: string, caption: string, value: string, units: string, format?: string }[],
   validationStates?: Record<string, ValidationResult>,
   consistencyStates?: Record<string, ConsistencyInfo>,
@@ -374,6 +388,45 @@ const dfToSheet = (
 }
 
 const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
+
+const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+  const img = new Image();
+  img.onload = () => resolve(img);
+  img.onerror = () => reject(new Error('Failed to load a graphics output'));
+  img.src = src;
+});
+
+const svgSize = (markup: string) => {
+  const svg = new DOMParser().parseFromString(markup, 'image/svg+xml').documentElement;
+  const px = (attr: string) => /^\s*[\d.]+(px)?\s*$/.test(svg.getAttribute(attr) ?? '') ?
+    parseFloat(svg.getAttribute(attr)!) : NaN;
+  const [width, height] = [px('width'), px('height')];
+  if (width > 0 && height > 0)
+    return {width, height};
+  const [, , vbWidth, vbHeight] = (svg.getAttribute('viewBox') ?? '').trim().split(/[\s,]+/).map(Number);
+  if (vbWidth > 0 && vbHeight > 0)
+    return {width: vbWidth, height: vbHeight};
+  // no intrinsic proportions: square rather than stretched to the chart box
+  return {width: 1, height: 1};
+};
+
+// Raster graphics keep their native pixel size; SVG is rasterized into the chart box, keeping its aspect ratio
+const graphicsToPng = async (value: string) => {
+  const dataUrl = graphicsDataUrl(value);
+  const img = await loadImage(dataUrl);
+  if (!isSvgGraphics(value))
+    return {dataUrl, width: img.naturalWidth, height: img.naturalHeight};
+
+  const size = svgSize(value);
+  const scale = Math.min(EXPORT_VIEWER_WIDTH / size.width, EXPORT_VIEWER_HEIGHT / size.height);
+  const width = Math.round(size.width * scale);
+  const height = Math.round(size.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+  return {dataUrl: canvas.toDataURL('image/png'), width, height};
+};
 
 const isEmptyDf = (df?: DG.DataFrame) => !df || df.rowCount === 0;
 

@@ -563,7 +563,7 @@ export class GisViewer extends DG.JsViewer {
 
     //rows selecting
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 100).subscribe((_) => {
-      const selcount = this.dataFrame.selection.getSelectedIndexes();
+      const selcount = this.coordinates.length ? this.dataFrame.selection.getSelectedIndexes() : [];
       if (!this.ol.olMarkersSelLayerGL)
         return;
       if (this.ol.olMarkersSelSource)

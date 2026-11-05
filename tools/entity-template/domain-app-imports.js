@@ -1,4 +1,4 @@
-import {domains} from '@datagrok-libraries/u2/src/dg/index.js';
+import {domains} from '@datagrok-libraries/ems/src/dg';
 
 // the skins of everything the u2 domain stack renders
-import '@datagrok-libraries/u2/src/dg/domain/styles.js';
+import '@datagrok-libraries/ems/src/dg/styles.js';

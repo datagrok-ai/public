@@ -6,14 +6,19 @@ generated: features/guides/grid-reorder-and-hide-columns.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
+import '../../bindings/file-formats.js';
+import '../../bindings/flow.js';
 import '../../bindings/grid.js';
+import '../../bindings/queries.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset, simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
@@ -27,7 +32,7 @@ test.describe("Reorder columns by dragging and hide the ones you do not need", (
     const page = await session.page(browser);
     await session.step(11, "Given user is logged in", () => loggedIn(page));
     await session.step(12, "And simple mode is off", () => simpleModeOff(page));
-    await session.step(13, "And user opens demog dataset", () => openDataset(page, ds("demog")));
+    await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(14, "When user drags the \"header HEIGHT\" area of grid to the \"header AGE\" area", () => dragAreaToArea(page, "header HEIGHT", el("grid"), "header AGE"));
     await session.step(15, "Then the \"column order\" reading of grid should include the text \"AGE, HEIGHT, SEX\"", () => readingIncludes(page, "column order", el("grid"), "AGE, HEIGHT, SEX"));
     await session.step(16, "When user picks \"Hide\" from the context menu of the \"header WEIGHT\" area of grid", () => pickFromAreaContextMenu(page, "Hide", "header WEIGHT", el("grid")));

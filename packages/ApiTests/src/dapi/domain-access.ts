@@ -50,12 +50,22 @@ category('Dapi: domain access', () => {
     expect(support.probe, true, 'apitests.item carries updated_on');
     expect(support.version, true, 'an engine-written table keeps its change token');
     expect(support.watch, true, 'the platform backend has subscriptions');
+    expect(support.updateWhere, true, 'a plugin-owned table takes a bulk update');
+    expect(support.captions, true, 'the platform projects ~caption_<col> with the rows');
+    expect(support.transaction, true, 'a plugin-owned table lands in /transaction');
+    expect(support.concurrency, 'version', 'the platform guards an edit by the row version');
+    expect(support.filters, 'full', 'the platform answers the whole filter grammar');
+    expect(Object.keys(support.batch).sort().join(','), 'partial,skipDuplicates,upsert,validate',
+      `the batch descriptor names its four options: ${JSON.stringify(support.batch)}`);
+    for (const option of Object.values(support.batch))
+      expect(typeof option, 'boolean', 'every batch option is a boolean');
     expect(support.systemColumns.join(','), [...DG.DOMAIN_SYSTEM_COLUMNS].join(','),
       `a full registration lists all five system columns: ${JSON.stringify(support.systemColumns)}`);
     // Support is the TABLE's storage, `can` is this caller's permission: an admin with every
     // right on a table that cannot do a thing still cannot do it.
     expect(Object.keys(support).sort().join(','),
-      'ancestors,audit,deleted,probe,restore,systemColumns,version,watch,writes',
+      'ancestors,audit,batch,captions,concurrency,deleted,filters,probe,restore,systemColumns,transaction,' +
+      'updateWhere,version,watch,writes',
       `unexpected support keys: ${JSON.stringify(support)}`);
   });
 

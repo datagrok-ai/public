@@ -1,5 +1,11 @@
 # compute-api changelog
 
+## v.next
+
+* Removed `createCFV`: it read `window.compute.CFV`, which no package sets, and `CustomFunctionView` is abstract, so it could never create a working view; `CustomFunctionView` is now exported as the class, so a custom view subclasses it and is returned by a function with `editor: 'Compute2:CustomFunctionViewEditor'`
+* Added `runWorkflow`, which runs a workflow without UI, and `saveWorkflowRun`, which saves its result to history
+* Exported the `isFuncCallState`, `isStaticPipelineState` and `isDynamicPipelineState` guards; the newly exported workflow types come through with the type re-export
+
 ## 0.8.0 (2026-09-23)
 
 * Removed `testPipeline` (the Compute test-runner feature was removed)

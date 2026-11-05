@@ -2,9 +2,9 @@ import {ComparisonEntryNodes, EntrySourceKind} from '../components/RunComparison
 
 export function makeEntry(
   entryId: string,
-  scalars: {name: string, valueType?: string, units?: string, value?: number | null}[] = [],
+  scalars: {name: string, valueType?: string, units?: string, value?: number | null, friendlyPath?: string}[] = [],
   tables: {
-    path: string, name?: string, nqName?: string, defaultIndexColumn?: string,
+    path: string, name?: string, friendlyPath?: string, nqName?: string, defaultIndexColumn?: string,
     columns: {name: string, type?: string, units?: string}[],
   }[] = [],
   sourceKind?: EntrySourceKind,
@@ -16,6 +16,7 @@ export function makeEntry(
     scalars: scalars.map((s, i) => ({
       path: `io${i}`,
       name: s.name,
+      friendlyPath: s.friendlyPath,
       valueType: s.valueType ?? 'double',
       units: s.units,
       value: s.value === undefined ? 0 : s.value,
@@ -23,6 +24,7 @@ export function makeEntry(
     tables: tables.map((t) => ({
       path: t.path,
       name: t.name ?? t.path,
+      friendlyPath: t.friendlyPath,
       nqName: t.nqName,
       defaultIndexColumn: t.defaultIndexColumn,
       columns: t.columns.map((c) => ({name: c.name, type: c.type ?? 'double', units: c.units})),

@@ -57,6 +57,7 @@ export class InputForm extends HTMLElement {
   }
 
   public destroy() {
+    this.formGeneration++;
     this.destroyed$.next(true);
     ui.empty(this);
   }
@@ -73,6 +74,8 @@ export class InputForm extends HTMLElement {
       if (generation !== this.formGeneration)
         return;
       this.formInst = form;
+      // the core marks invalid inputs on creation but leaves isValid true until a validation run
+      form.validateInputs();
       form.root.style.overflowY = 'hidden';
       form.root.style.paddingBottom = '10px';
       this.appendChild(form.root);

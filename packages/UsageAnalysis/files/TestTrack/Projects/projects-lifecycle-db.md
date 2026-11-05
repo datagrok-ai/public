@@ -3,8 +3,8 @@ feature: projects
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [projects.op.share_with_recipient_open, projects.op.rename_project]
-realizes: [views.projects]
+realizes_atlas: [projects.op.share_with_recipient_open]
+realizes: [views.projects, sharing.share-dialog]
 realized_as:
   - projects-lifecycle-db-spec.ts
 pyramid_layer: proactive-lifecycle
@@ -19,15 +19,23 @@ related_bugs: []
 # Projects — lifecycle of a database-based project
 
 Two projects built from a database: one from a saved query and one
-from a database table opened directly. Each is saved with Data sync,
-reopened, shared with a second user and renamed. On reopening, the
-data must be re-read from the database.
+from a database table opened directly. Each is saved with Data sync and
+reopened; the reopened project must still carry Data sync and its
+creation script. The table project is also shared: sharing a project
+of a database table brings its connection along, so the recipient sees
+the connection and opens the project with the data (intended, operator
+2026-10-05; a project of a saved query does not bring its connection —
+see `projects-lifecycle-query.md`).
 
 ## Setup
 
-1. Two accounts: the **owner** (test user) and a **second user** who
-   can access the **NorthwindTest** Postgres connection.
-2. Projects in this test: `lifecycleDbQuery` and `lifecycleDbTable`.
+1. Two accounts: the **owner** (test user) and a **second user**.
+2. **NorthwindTest** exists only on dev.
+3. Before the test, the second user has no access to the
+   **NorthwindTest** Postgres connection: signed in as the second user,
+   **Browse > Databases > Postgres** does not list **NorthwindTest**. The
+   connection is not shared by hand in this test.
+4. Projects in this test: `lifecycleDbQuery` and `lifecycleDbTable`.
 
 ## Scenario
 
@@ -57,46 +65,14 @@ data must be re-read from the database.
    - Double-click the `lifecycleDbQuery` tile.
    - **Verify:** the table opens with 830 rows.
    - **Verify:** no error balloon appears.
+   - Click **SAVE** on the ribbon.
+   - **Verify:** **Data sync** is ON for the table, and **CREATION
+     SCRIPT** shows the call of **PostgresAll**.
+   - Click **CANCEL**.
    - Right-click the left sidebar and select **Close All**.
 
-4. **Share.**
-   - Go to **Browse > Dashboards**.
-   - Type `lifecycleDbQuery` into the search box.
-   - Right-click the `lifecycleDbQuery` tile and choose **Share...**.
-   - Type the second user into **User, group, or email**.
-   - Pick the second user from the suggestion list.
-   - Leave **View and use** selected.
-   - Click **OK**.
-
-5. **The recipient opens it.**
-   - Click your avatar at the bottom of the left sidebar.
-   - Click **Logout** in the profile view.
-   - Sign in with the second user's credentials.
-   - Go to **Browse > Dashboards**.
-   - Type `lifecycleDbQuery` into the search box.
-   - Click the refresh icon.
-   - Double-click the `lifecycleDbQuery` tile.
-   - **Verify:** the `PostgresAll` table opens with 830 rows.
-   - **Verify:** no error dialog appears.
-   - Right-click the left sidebar and select **Close All**.
-   - Click your avatar at the bottom of the left sidebar.
-   - Click **Logout** in the profile view.
-   - Sign in with the owner's credentials.
-
-6. **Rename.**
-   - Go to **Browse > Dashboards**.
-   - Right-click the `lifecycleDbQuery` tile and choose **Rename...**.
-   - Change the name to `lifecycleDbQueryRenamed`.
-   - Click **OK**.
-   - Go to **Browse > Dashboards**.
-   - Type `lifecycleDbQueryRenamed` into the search box.
-   - Click the refresh icon.
-   - Double-click the `lifecycleDbQueryRenamed` tile.
-   - **Verify:** the table opens with 830 rows.
-   - Right-click the left sidebar and select **Close All**.
-
-7. **Cleanup.**
-   - Right-click the `lifecycleDbQueryRenamed` tile and choose **Delete
+4. **Cleanup.**
+   - Right-click the `lifecycleDbQuery` tile and choose **Delete
      Project**.
    - Click **DELETE**.
    - Wait until the dialog closes.
@@ -126,9 +102,13 @@ data must be re-read from the database.
    - Click the refresh icon.
    - Double-click the `lifecycleDbTable` tile.
    - **Verify:** the `orders` table opens with 830 rows.
+   - Click **SAVE** on the ribbon.
+   - **Verify:** **Data sync** is ON for `orders`, and **CREATION
+     SCRIPT** shows the `DbQuery(...)` call.
+   - Click **CANCEL**.
    - Right-click the left sidebar and select **Close All**.
 
-4. **Share.**
+4. **Share the project only.**
    - Go to **Browse > Dashboards**.
    - Type `lifecycleDbTable` into the search box.
    - Right-click the `lifecycleDbTable` tile and choose **Share...**.
@@ -137,21 +117,27 @@ data must be re-read from the database.
    - Leave **View and use** selected.
    - Click **OK**.
 
-5. **The recipient opens it.**
+5. **The recipient sees the connection and opens the project.**
    - Click your avatar at the bottom of the left sidebar.
    - Click **Logout** in the profile view.
    - Sign in with the second user's credentials.
+   - Go to **Browse > Databases > Postgres**.
+   - **Verify:** **NorthwindTest** is listed now: the share of the
+     table project brought its connection along.
    - Go to **Browse > Dashboards**.
    - Type `lifecycleDbTable` into the search box.
    - Click the refresh icon.
    - Double-click the `lifecycleDbTable` tile.
-   - **Verify:** the `orders` table opens with 830 rows.
+   - **Verify:** the `orders` table opens with 830 rows, and no error
+     dialog appears.
    - Right-click the left sidebar and select **Close All**.
    - Click your avatar at the bottom of the left sidebar.
    - Click **Logout** in the profile view.
    - Sign in with the owner's credentials.
 
 6. **Cleanup.**
+   - In **Browse > Dashboards**, type `lifecycleDbTable` into the search
+     box.
    - Right-click the `lifecycleDbTable` tile and choose **Delete
      Project**.
    - Click **DELETE**.
@@ -159,7 +145,23 @@ data must be re-read from the database.
 
 ## Expected results
 
-- A project with a query or a database table reopens and reloads its
-  data from the database.
-- The recipient can open the shared project.
-- Renaming the project does not break it.
+- A project with a query or a database table reopens with its data and
+  keeps Data sync and its creation script.
+- Sharing a database-table project brings its connection along: the
+  recipient, who could not see the connection before, sees it and opens
+  the project with its data.
+
+## Automation notes
+
+- The tests cannot change the NorthwindTest data, so they do not prove
+  that the reopened table was read from the database again rather than
+  from a snapshot; the Save dialog of the reopened project is the
+  closest observable check. `projects-lifecycle-query.md` proves the
+  re-read by changing its own query's SQL.
+- The help page `help/datagrok/concepts/project/dashboard.md` says that
+  a recipient without the connection permission cannot run the query;
+  that is the saved-query case (`projects-lifecycle-query.md`). On dev
+  (2026-10-12) the second user, with no grant of its own on NorthwindTest,
+  does not see the connection before the share of Test 2 and sees it
+  after; the project opens with its 830 rows (intended, operator
+  2026-10-05).

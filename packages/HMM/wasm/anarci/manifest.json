@@ -1,0 +1,45 @@
+{
+  "source": "ANARCI 79f6c57 build pipeline on IMGT/GENE-DB data downloaded 2026-10-07T15:26:24Z (CC BY 4.0); HMMER 3.4 hmmbuild/hmmpress",
+  "files": {
+    "germlines-A.json": {
+      "bytes": 57431,
+      "sha256": "5f8e9857fed305bdcd8dd0c2320e2faf096e3a1be0e942cd7741297a5c962178"
+    },
+    "germlines-B.json": {
+      "bytes": 23261,
+      "sha256": "4c5be13ebbe90919eacd81607939952b6b52f11117abb715268ea9042c6311ca"
+    },
+    "germlines-D.json": {
+      "bytes": 8814,
+      "sha256": "fb5dc22ce1917378658fec5aeeb10e6f8f574179846b5bb361937373a3758f61"
+    },
+    "germlines-G.json": {
+      "bytes": 5536,
+      "sha256": "ff98b389d63785b1a2d1edf11a089037b082eaf3b444abd3ba812d42bb45757c"
+    },
+    "germlines-H.json": {
+      "bytes": 161584,
+      "sha256": "ff444b5b0d185eb07a61fe0a74201f479ccb80596a5fec99e6f66a20344caca6"
+    },
+    "germlines-K.json": {
+      "bytes": 61143,
+      "sha256": "010dbe9db920343cb76e36fa57ed3143647c4a9470adaf192de3e3875e236794"
+    },
+    "germlines-L.json": {
+      "bytes": 43832,
+      "sha256": "3b9922639f0af3204a521e8bfc6b456f82ee5cf58940f142fc48057916847a61"
+    },
+    "species.json": {
+      "bytes": 69,
+      "sha256": "06f4364d7cc3fe9db5053fa546b95a732774a571ec63196817bf5b982eca5ae6"
+    },
+    "hmm-lengths.json": {
+      "bytes": 398,
+      "sha256": "a0402be343c933ab47dd2e9497aa937c6364c21c2b3648f0c96abaeb45f4c02e"
+    },
+    "ALL.hmm.h3m.gz": {
+      "bytes": 221467,
+      "sha256": "04798b629b79746685c7a507303fe2522ec233254e90576afbb72942e164e940"
+    }
+  }
+}

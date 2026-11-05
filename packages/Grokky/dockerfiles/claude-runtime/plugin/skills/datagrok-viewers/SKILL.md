@@ -15,6 +15,7 @@ Add, configure, find, and close viewers on a `DG.TableView` via the
 |--------------------------------------|-----------------------------------------------------------------------|
 | Add a viewer                         | `view.addViewer(DG.VIEWER.SCATTER_PLOT, {xColumnName: 'a', ...})`     |
 | Configure an existing viewer         | `viewer.setOptions({colorColumnName: 'logP'})`                         |
+| Read a viewer's current setting      | `viewer.props.splitColumnName` (any property name; also for verifying) |
 | All non-grid viewers                 | `Array.from(view.viewers).slice(1)`                                    |
 | First viewer of a type               | `Array.from(view.viewers).slice(1).find((v) => v.type === DG.VIEWER.SCATTER_PLOT)` |
 | Close one viewer                     | `viewer.close()` (wrap in try/catch — throws if never attached)        |
@@ -84,7 +85,7 @@ Always use the `DG.VIEWER.*` constants, never literal strings:
 | `DG.VIEWER.LINE_CHART`         | `'Line chart'`       | `xColumnName`, `yColumnNames` (array)                                             |
 | `DG.VIEWER.BAR_CHART`          | `'Bar chart'`        | `splitColumnName`, `valueColumnName`, `valueAggrType`                             |
 | `DG.VIEWER.PIE_CHART`          | `'Pie chart'`        | `categoryColumnName`                                                              |
-| `DG.VIEWER.BOX_PLOT`           | `'Box plot'`         | `valueColumnName`, `categoryColumnName`                                           |
+| `DG.VIEWER.BOX_PLOT`           | `'Box plot'`         | `valueColumnName`, `category1ColumnName`, `category2ColumnName` (no `categoryColumnName`) |
 | `DG.VIEWER.HEAT_MAP`           | `'Heat map'`         | (returns a Grid subclass — column tag-driven color coding)                        |
 | `DG.VIEWER.STATISTICS`         | `'Statistics'`       | `columnNames`                                                                     |
 | `DG.VIEWER.CORR_PLOT`          | `'Correlation plot'` | `columnNames` (or `xs` / `ys`)                                                    |
@@ -100,7 +101,7 @@ Always use the `DG.VIEWER.*` constants, never literal strings:
 | `DG.VIEWER.NETWORK_DIAGRAM`    | `'Network diagram'`  | `node1ColumnName`, `node2ColumnName`                                              |
 | `DG.VIEWER.WORD_CLOUD`         | `'Word cloud'`       | column                                                                            |
 | `DG.VIEWER.TILE_VIEWER`        | `'Tile Viewer'`      | per-row cards                                                                     |
-| `DG.VIEWER.PIVOT_TABLE`        | `'Pivot table'`      | grouped aggregates                                                                |
+| `DG.VIEWER.PIVOT_TABLE`        | `'Pivot table'`      | `groupByColumnNames`, `pivotColumnNames`, `aggregateColumnNames`, `aggregateAggTypes` (arrays, e.g. `['avg']`) |
 | `DG.VIEWER.SHAPE_MAP`          | `'Shape Map'`        | choropleth                                                                        |
 | `DG.VIEWER.CALENDAR`           | `'Calendar'`         | `dateColumnName`                                                                  |
 | `DG.VIEWER.GLOBE`              | `'Globe'`            | `latitudeColumnName`, `longitudeColumnName`                                       |

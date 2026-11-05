@@ -4,8 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, test} from '@datagrok-libraries/test/src/test';
 import {readDataframe} from './utils';
-import {_testSequenceSpaceReturnsResult} from './sequence-space-utils';
+import {_testSequenceSpaceOnNotation, _testSequenceSpaceReturnsResult} from './sequence-space-utils';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 category('sequenceSpace', async () => {
   let testFastaDf: DG.DataFrame;
@@ -30,5 +31,13 @@ category('sequenceSpace', async () => {
     await _testSequenceSpaceReturnsResult(testHelmWithEmptyRows, DimReductionMethods.UMAP, 'sequence');
     //grok.shell.closeTable(testHelmWithEmptyRows);
     //testHelmWithEmptyRowsTableView.close();
+  });
+
+  test('sequenceSpaceHelm', async () => {
+    await _testSequenceSpaceOnNotation('samples/HELM.csv', 'HELM', NOTATION.HELM);
+  });
+
+  test('sequenceSpaceMsa', async () => {
+    await _testSequenceSpaceOnNotation('samples/MSA.csv', 'MSA', NOTATION.SEPARATOR);
   });
 });

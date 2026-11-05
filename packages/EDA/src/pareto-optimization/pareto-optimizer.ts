@@ -51,7 +51,6 @@ export class ParetoOptimizer {
     this.toUpdatePcCols = this.numColNames.length > PC_MAX_COLS;
 
     this.resultColName = this.df.columns.getUnusedName(COL_NAME.OPT);
-    this.showResultOptCol();
 
     this.view.subs.push(...this.getSubscriptions());
   } // constructor
@@ -74,6 +73,7 @@ export class ParetoOptimizer {
     if (!this.isApplicable())
       return;
 
+    this.showResultOptCol();
     this.buildInputsForm();
     this.computeParetoFront();
     this.updateVisualization();

@@ -1,16 +1,17 @@
-/* Menu skin (see src/components/menu.ts). Tokens only — css/tokens.css must be loaded alongside. */
+/* Menu skin (see src/components/menu.ts). Tokens only — css/tokens.css must be loaded alongside.
+   Metrics codify the platform's popup menu (d4 menu.css .d4-menu-popup / .d4-menu-item). */
 .u2-menu {
   box-sizing: border-box;
-  min-width: 140px;
-  padding: var(--dg-space-xs) 0;
+  min-width: 160px;
+  padding: 5px 0;
   font-family: var(--dg-font-family);
   font-size: var(--dg-font-size);
   line-height: var(--dg-line-height);
-  color: var(--dg-text-color);
-  background: var(--dg-bg);
-  border: var(--dg-overlay-border);
-  border-radius: var(--dg-radius-l);
-  box-shadow: var(--dg-shadow-1);
+  color: var(--dg-steel-5);
+  background: var(--dg-steel-1);
+  border: none;
+  border-radius: 0;
+  box-shadow: 0 0 2px var(--dg-steel-5);
   outline: none;
 }
 
@@ -18,17 +19,17 @@
   display: grid;
   grid-template-columns: 16px 1fr auto;
   align-items: center;
-  gap: var(--dg-space-m);
-  height: var(--dg-inline-control-height);
-  padding: 0 var(--dg-space-m);
+  gap: var(--dg-space-s);
+  height: 24px;
+  padding: 0 var(--dg-space-m) 0 6px;
   cursor: pointer;
   user-select: none;
 }
 
 .u2-menu-item-active,
 .u2-menu-item-open {
-  color: var(--dg-selection-text);
-  background: var(--dg-selection-bg);
+  color: var(--dg-steel-5);
+  background: var(--dg-steel-2);
 }
 
 .u2-menu-item[aria-disabled='true'],
@@ -53,18 +54,63 @@
 }
 
 .u2-menu-shortcut {
-  color: var(--dg-text-color-light);
-  font-size: var(--dg-font-size-small);
+  color: var(--dg-steel-4);
+  font-size: var(--dg-font-size);
   text-align: right;
 }
 
-.u2-menu-arrow {
-  font-size: var(--dg-font-size-small);
-  text-align: right;
+.u2-menu-shortcut:not(:empty) {
+  margin-left: var(--dg-space-xl);
+}
+
+/* the platform's submenu chevron */
+.u2-menu-arrow::after {
+  content: '';
+  display: block;
+  width: 5px;
+  height: 5px;
+  margin-right: var(--dg-space-xs);
+  border: solid var(--dg-steel-4);
+  border-width: 0 var(--dg-border-width) var(--dg-border-width) 0;
+  transform: rotate(-45deg);
 }
 
 .u2-menu-separator {
   height: var(--dg-border-width);
-  margin: var(--dg-space-xs) 0;
-  background: var(--dg-border);
+  margin: 5px 0;
+  background: var(--dg-steel-3);
+}
+
+/* a menu whose items carry details (MenuItemOptions.detail) is one table: the icon, the label, the
+   details starting in one column, the shortcut */
+.u2-menu.u2-menu-detailed {
+  display: grid;
+  grid-template-columns: 16px auto minmax(0, 1fr) auto;
+  column-gap: var(--dg-space-s);
+}
+
+.u2-menu-detailed > .u2-menu-item {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.u2-menu-detailed > .u2-menu-separator {
+  grid-column: 1 / -1;
+}
+
+/* spanning the flexible details' column, such a label never widens the labels' own */
+.u2-menu-detailed .u2-menu-label-wide {
+  grid-column: 2 / 4;
+}
+
+.u2-menu-detail {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-menu-detail:not(:empty) {
+  padding-left: var(--dg-space-m);
 }

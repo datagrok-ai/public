@@ -375,7 +375,7 @@ export async function getActivityCliffsEmbeddings(df: DG.DataFrame, seqCol: DG.C
   if (embeddingsMatrix.length !== axesNames.length)
     throw new Error('Number of axes names should be equal to number of embedding dimensions');
   for (let i = 0; i < embeddingsMatrix.length; ++i)
-    df.columns.addNewFloat(axesNames[i]).init((idx) => embeddingsMatrix[i][idx]);
+    df.columns.getOrCreate(axesNames[i], DG.TYPE.FLOAT).init((idx) => embeddingsMatrix[i][idx]);
 }
 
 

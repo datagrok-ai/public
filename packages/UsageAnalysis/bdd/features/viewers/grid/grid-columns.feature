@@ -8,7 +8,9 @@ Feature: Grid column geometry
   until the grid scrolls sideways (GROK-19753), and the Order or Hide Columns dialog: its type
   filter, Reset filter (GROK-19333) and its title after both (GROK-20167), and the column manager
   the status bar docks - a click on "Columns: 11" - keeping its type filter while it rebinds from
-  one table to another and back (GROK-19332). Pinning lives in
+  one table to another and back (GROK-19332). Sync New Columns off keeps a new calculated column out
+  of the grid, on lets it in (public#2348), and a column narrowed below its name still shows its
+  header tooltip, which the header menu takes away (public#1130). Pinning lives in
   `grid-pinning.feature`. The grid reports its own geometry - `column width of <col>`, `column
   order`, `sort column`, `sort direction`, `x scroll span` - and the drag handles as the hit areas
   `column resizer <col>`, `row resizer <row>` and `x scroll handle`, so nothing is measured from
@@ -28,10 +30,18 @@ Feature: Grid column geometry
   content - `text of cell` stays the value and nothing reports how a cell is drawn; both need a
   reading in the core. The row-height drag stays as before: one row header dragged by 12 px, the
   cell taller than before. From
-  `grid-dialogs-groups.md` scenario 3 and `grid-ui.md` "Context Panel - Column Hamburger Menu
-  Inline Filter": the hamburger icon a header shows on hover is painted on the grid's canvas and is
-  neither a hit area nor an element, so its popup, its inline filter, Add filter and the colour
-  sync with the Context Panel (GROK-19288) need a `header menu icon <col>` area in the core.
+  `grid-ui.md` "Context Panel - Column Hamburger Menu Inline Filter": the category click in a
+  categorical column's popup filter (the numeric one, its range dragged, and Add filter are claimed:
+  the drag is pixels, so the rows it leaves are claimed as fewer, and the panel card as holding the
+  same bound and the same rows).
+  The Column options icon a header shows on hover (`grid-dialogs-groups.md` scenario 3) opens the
+  column's popup; a coloring picked in its Colors pane must show in the Context Panel's Colors pane
+  for the same column (GROK-19288).
+  Known failure, GROK-19288: with the Context Panel on AGE and its Colors pane open, Linear picked in
+  the popup colors the column, but the panel's Type still reads Off, and a click on the AGE header
+  does not refresh it (the panel drops a change to the object already current, and the Colors pane
+  does not listen to the coloring). Reproduced twice in the suite on 2026-10-13. Take the mark off
+  when the panel follows the coloring.
 
   Background:
     Given user is logged in
@@ -182,6 +192,77 @@ Feature: Grid column geometry
     When user picks "Column Sizing > Optimal" from the context menu of the "cell 4 of SEVERITY" area of grid
     Then grid should not have an "x scroll handle" area
     And no errors should have been logged
+
+  Scenario: The header's Column options icon opens the column popup, whose filter Add filter moves to the panel
+    Then grid should have a "header AGE" area
+    When user hovers over the "header AGE" area of grid
+    And user clicks on "Column options" icon in grid
+    Then column popup should be visible
+    And title of column popup should have text "AGE"
+    And all rows should pass the filter
+    When user hovers over the "view" area of histogram viewer in column popup
+    And user drags the "range min handle" area of histogram viewer in column popup to the "bin 10" area
+    Then the "range min" reading of histogram viewer in column popup should be higher than before
+    And 326 rows should pass the filter
+    When user remembers how many rows pass the filter
+    And user remembers the "range min" reading of histogram viewer in column popup
+    And user clicks on "Add filter" action in column popup
+    Then "AGE" filter card should be visible
+    And as many rows as remembered should pass the filter
+    And the "range min" reading of histogram viewer in filter panel should be as remembered
+    When user presses Escape
+    Then column popup should be absent
+    When user clicks on close icon of filters viewer
+    Then all rows should pass the filter
+    And no errors should have been logged
+
+  @GROK-19288 @known-failure:235
+  Scenario: A coloring picked in the column popup shows in the Context Panel's Colors pane for that column
+    When user clicks on the "header AGE" area of grid
+    Given the context panel is open
+    Then the context panel should show "AGE"
+    Given Colors accordion header in context panel is expanded
+    Then Type input in context panel should have value "Off"
+    When user hovers over the "header AGE" area of grid
+    And user clicks on "Column options" icon in grid
+    Then column popup should be visible
+    When user clicks on Colors accordion header in column popup
+    And user selects "Linear" in Type input in column popup
+    Then "AGE" column should be color-coded linearly
+    When user clicks on the "header AGE" area of grid
+    Then column popup should be absent
+    And the context panel should show "AGE"
+    And Type input in context panel should have value "Linear"
+    When user removes the coloring of "AGE" column
+    Then no errors should have been logged
+
+  @realizes:public#2348
+  Scenario: Sync New Columns decides whether a new calculated column is drawn (public#2348)
+    When user sets "Sync New Columns" property of grid to "false"
+    And user adds a calculated column "H2" with formula "${HEIGHT} * 2"
+    Then the table should have a column "H2"
+    And the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"
+    When user sets "Sync New Columns" property of grid to "true"
+    And user adds a calculated column "H3" with formula "${HEIGHT} * 3"
+    Then the table should have a column "H3"
+    And the "column order" reading of grid should include the text "H3"
+    And the "column order" reading of grid should not include the text "H2"
+    When user removes "H2" column
+    And user removes "H3" column
+    Then no errors should have been logged
+
+  @realizes:public#1130
+  Scenario: A column narrowed below its name still shows its header tooltip, and the header menu hides it (public#1130)
+    When user drags the "column resizer RACE" area of grid by 60 pixels to the left
+    Then the "column width of RACE" reading of grid should be lower than before
+    When user hovers over the "header RACE" area of grid
+    Then tooltip should be visible
+    And tooltip should contain text "RACE"
+    When user right-clicks on the "header RACE" area of grid
+    Then tooltip should be hidden
+    When user closes the context menu
+    And user drags the "column resizer RACE" area of grid by 60 pixels to the right
+    Then no errors should have been logged
 
   Scenario: The column manager keeps its type filter while it rebinds to another table and back (GROK-19332)
     When user opens demog-1000 dataset keeping the first 100 rows as "demog-100"

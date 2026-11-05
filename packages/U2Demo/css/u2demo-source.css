@@ -38,3 +38,10 @@
   overflow-wrap: anywhere;
   margin: 0;
 }
+
+/* a page's own code (sourceOf) keeps its lines and scrolls sideways: the page is wide enough to read them whole */
+.u2demo-source-text.u2demo-source-lines {
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}

@@ -51,9 +51,6 @@ Feature: The Similarity and Diversity Search tutorial
     When user clicks on card 3 of Chem Diversity Search viewer beside its drawing
     Then the tutorial step "Now, click any molecule in the diversity viewer" should be done
     And the current row should be the row of the clicked card
-    # the table view puts the moved current cell into the panel 750 ms later, over a viewer made current meanwhile;
-    # after another molecule nothing changes that a claim could read (the shell keeps an object of the same type)
-    When user waits 1 second
 
     When user hovers over Chem Similarity Search viewer
     And user clicks on settings icon of Chem Similarity Search viewer

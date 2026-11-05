@@ -13,6 +13,7 @@ const PAGE = `<body style="margin:0">
   <button name="button-A" style="position:absolute;left:40px;top:40px;width:120px;height:30px">A</button>
   <button name="button-B" style="position:absolute;left:40px;top:120px;width:120px;height:30px">B</button>
   <div name="div-C" style="position:absolute;left:300px;top:300px;width:200px;height:40px;background:#ddd">C</div>
+  <input name="input-D" style="position:absolute;left:40px;top:200px;width:200px">
 </body>`;
 
 let browser: Browser | undefined;
@@ -41,7 +42,7 @@ after(async () => {
   rmSync(dir, {recursive: true, force: true});
 });
 
-const info = {titlePath: ['capture.test.ts', 'Capture', 'Every press'], tags: []} as unknown as TestInfo;
+const info = {titlePath: ['capture.test.ts', 'Capture', 'Every press'], tags: [], project: {use: {}}} as unknown as TestInfo;
 
 function manifest(): GuideManifest {
   return JSON.parse(readFileSync(join(dir, 'capture', 'every-press', 'steps.json'), 'utf8'));
@@ -94,4 +95,20 @@ test('a drag keeps the points the button was held over, and pictures the page al
   assert.deepEqual([held[held.length - 1].x, held[held.length - 1].y], [640, 540]);
   assert.ok(held.some((p) => p.shot?.endsWith('-drag1.png')), 'a picture of what the drag drew');
   assert.equal(pointer[pointer.length - 1].type, 'up');
+});
+
+test('typing through a locator is pictured as the text goes in', async (t) => {
+  if (!page) {
+    t.skip(missing);
+    return;
+  }
+  await begin(page, info, 3, 'When user types into D');
+  const input = page.locator('[name="input-D"]');
+  await input.fill('twelve chars');
+  await input.pressSequentially(' more');
+  await end(page);
+  const stills = manifest().steps[2].legs.flatMap((l) => l.pointer).filter((p) => p.type === 'still');
+  assert.ok(stills.length >= 7, `a picture after each piece of the text, ${stills.length} taken`);
+  assert.ok(stills.every((p) => p.shot?.startsWith('03-beat')));
+  assert.equal(await input.inputValue(), 'twelve chars more');
 });

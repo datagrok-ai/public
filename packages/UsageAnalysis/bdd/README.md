@@ -4,7 +4,8 @@ Gherkin features under `features/`, compiled by `@datagrok-libraries/bdd` (`publ
 into the Playwright specs under `generated/` — committed, never edited by hand. `features/viewers/`
 holds one folder per platform viewer (every TestTrack viewer spec translated, most as `@journey`
 features: the data and the viewer opened once, the scenarios in order as soft steps) plus
-`viewer-chrome.feature`, the outline over the title and description every viewer shares;
+`viewer-chrome.feature`, the outline over the title and description every viewer shares, and
+`molecule-categories.feature`, a molecule column as the category axis of five viewers (needs Chem);
 `viewers/grid/grid-context-menu.feature` is not a translation but the reproduction of a bug
 (2026-09-22: a right click put the current row back where it was and scrolled there), kept as the
 proof that a right-clicked cell becomes current and that the Current Value actions of Chem and Helm
@@ -43,8 +44,9 @@ there lists the questions answered. They run with the suite, so an answer that s
 fails. `bindings/` keeps the steps only one
 viewer can define (the bar chart's bar order and lengths, the pie chart's slices, the pivot's
 aggregation against a `groupBy`, the correlation plot's coefficient against `DG.Stats`, the
-Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the
-rest of the vocabulary is the library's (`npx grok-bdd list-steps`).
+Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card, the
+Mol* overlay buttons of the Biostructure viewer, the saved Oligo Pattern patterns a feature removes);
+the rest of the vocabulary is the library's (`npx grok-bdd list-steps`).
 
 `features/queries/`, `features/scripts/` and `features/connections/` are the TestTrack Queries,
 Scripts and Connections cases: the query editor (typed, visual, Transformations, Post-Process,
@@ -59,6 +61,12 @@ an external provider's writes); the MS SQL catalogs case needs a connection set 
 catalogs, which the Dbtests one is not. Every query, script, connection, layout, project and chat
 a feature makes is deleted at its end and swept at its start; the features that save into the
 shared NorthwindTest connection or search the Scripts view (an account setting) are `@serial`.
+
+`features/general/` is the TestTrack General section: logout and the login form, a profile's name,
+the Table Manager, the table view's Search box, molecules exported to CSV as SMILES, and the tab
+order through a project. What the section asks that a UI test should not claim went elsewhere: the
+search syntax to ddt's matcher tests, the export's content to Chem's; the credential matrix belongs
+to the server's tests. `features/general/MISSING.md` keeps the gaps still open.
 
 The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the current defects,
 their observed failures and causes. The line-chart lasso scenario now passes without a tag:
@@ -177,7 +185,8 @@ node history/history.mjs record --note "after the chem-gaps review"
 node history/history.mjs html
 ```
 
-`record` keeps each project's last report as one dated file in `history/runs/` (commit it): every
+`record` keeps each project's last report as one dated file in `history/runs/` (commit it), and removes the
+oldest records past the 15 newest, so the folder stays small: every
 test with its outcome, time, worker and start, a journey's scenarios with theirs, the failed step
 and error of a failure, and where the run ran — the machine (host, CPU, threads, memory, OS), the
 stand and the branch and commit. A project whose last report is more than 12 hours older than the

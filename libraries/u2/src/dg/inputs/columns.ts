@@ -14,6 +14,8 @@ import {ChoiceInput} from '../../components/inputs/choice-input.js';
 import {columnInput, onColumnRenamed} from './pickers.js';
 import {platformColumnGrid} from './column-combo.js';
 import {columnRenderer} from '../entities/column-renderer.js';
+import type {IItemsState} from '../../core/widget-like.js';
+import {Platform} from '../shell/platform.js';
 
 const ROW_HEIGHT = 24;
 
@@ -71,12 +73,12 @@ export interface ColumnsInputOptions extends InputOptions<string[]> {
  * click or Esc cancels, OK commits, and clicking the control again closes it. A column dropped
  * from the table leaves the value with it. */
 export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
-  private _table!: DG.DataFrame | null;
-  private _filter: ((column: DG.Column) => boolean) | undefined;
-  private _control!: HTMLElement;
-  private _summary!: HTMLElement;
-  private _unfollow: (() => void) | undefined;
-  private _popupScope: Scope | undefined;
+  private declare _table: DG.DataFrame | null;
+  private declare _filter: ((column: DG.Column) => boolean) | undefined;
+  private declare _control: HTMLElement;
+  private declare _summary: HTMLElement;
+  private declare _unfollow: (() => void) | undefined;
+  private declare _popupScope: Scope | undefined;
 
   constructor(options: ColumnsInputOptions) {
     super(options, []);
@@ -85,6 +87,18 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
 
   get table(): DG.DataFrame | null {
     return this._table;
+  }
+
+  /** Whether the picker is open. */
+  getState(): ReturnType<Input<string[]>['getState']> {
+    return {...super.getState(), open: this._popupScope !== undefined};
+  }
+
+  /** The columns on offer, the picked ones selected. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const picked = new Set(this.peek());
+    return Input.itemsState(this._names().map((name, index) => ({key: name, label: name, index,
+      selected: picked.has(name), rendered: false})), opts?.all);
   }
 
   /** Swaps the source table, and the filter with it (omit it to select from every column): the
@@ -97,8 +111,8 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     this._filter = filter;
     this._reflectTable();
     this._follow();
-    this.value.value = [];
-    this._renderSummary(this.value.peek());
+    this.value = [];
+    this._renderSummary(this.peek());
   }
 
   protected createEditor(): HTMLElement {
@@ -109,14 +123,15 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     editor.className = 'u2-columns';
     editor.tabIndex = 0;
     editor.setAttribute('role', 'button');
-    editor.setAttribute('aria-haspopup', 'listbox');
+    // the popup is a dialog: a checklist with OK / CANCEL, not a listbox that commits on pick
+    editor.setAttribute('aria-haspopup', 'dialog');
     editor.setAttribute('aria-expanded', 'false');
     this._summary = span('', 'u2-columns-summary');
     editor.append(this._summary, span('', 'u2-columns-chevron'));
     this._reflectTable();
-    this._listen(editor, 'click', () => this._togglePopup());
-    this._listen(editor, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
-    this.effect(() => this._renderSummary(this.value.value));
+    this.scope.listen(editor, 'click', () => this._togglePopup());
+    this.scope.listen(editor, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.effect(() => this._renderSummary(this.value));
     this._follow();
     this.own(() => {
       this._closePopup();
@@ -138,10 +153,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
   }
 
   private _names(): string[] {
-    if (this._table === null)
-      return [];
-    const columns = this._table.columns;
-    return this._filter ? columns.toList().filter(this._filter).map((c) => c.name) : columns.names();
+    return this._table === null ? [] : Platform.listedColumns(this._table, this._filter).map((c) => c.name);
   }
 
   private _renderSummary(names: string[]): void {
@@ -166,21 +178,21 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
   }
 
   private _rename(oldName: string, newName: string): void {
-    const value = this.value.peek();
+    const value = this.peek();
     const index = value.indexOf(oldName);
     if (index < 0)
       return;
     const renamed = value.slice();
     renamed[index] = newName;
-    Input.system(() => this.value.value = renamed);
+    this.systemWrite(renamed);
   }
 
   private _prune(): void {
     const available = this._names();
-    const value = this.value.peek();
+    const value = this.peek();
     const kept = value.filter((name) => available.includes(name));
     if (kept.length !== value.length)
-      Input.system(() => this.value.value = kept);
+      this.systemWrite(kept);
     else
       this._renderSummary(value); // the 'All' threshold moves with the column count
   }
@@ -193,7 +205,8 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
   }
 
   private _togglePopup(): void {
-    if (!this.enabled || this._table === null) // the editor is a div, so the base's disabled sweep never reaches it
+    // the editor is a div, so the base's disabled sweep never reaches it
+    if (this.disabled !== null || this._table === null)
       return;
     if (this._popupScope)
       this._closePopup();
@@ -204,7 +217,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
   private _openPopup(): void {
     const scope = new Scope();
     this._popupScope = scope;
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       const platform = platformColumnGrid('columnSelector');
       if (platform !== null)
         this._openPlatform(scope, platform);
@@ -223,7 +236,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
   private _openPlatform(scope: Scope,
     platform: {[k: string]: (table: unknown, options: unknown) => any}): void {
     const cg = platform.columnSelector(this._table, {filter: this._filter});
-    cg.setSelectedColumns(this.value.peek());
+    cg.setSelectedColumns(this.peek());
     cg.showSearch = true;
     const ok = () => {
       const picked = new Set<string>(cg.getCheckedColumnNames());
@@ -256,7 +269,9 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
       host.removeEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
       cg.close();
     });
-    Overlay.show(this._control, host, scope);
+    host.setAttribute('role', 'dialog');
+    host.setAttribute('aria-label', 'Choose columns');
+    Overlay.show(this._control, host, {owner: scope});
     cg.grid.autoSize(600, 300);
     const width = this._control.getBoundingClientRect().width;
     if (cg.grid.root.getBoundingClientRect().width < width)
@@ -265,7 +280,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
   }
 
   private _openNative(scope: Scope): void {
-    const picked = new Set(this.value.peek());
+    const picked = new Set(this.peek());
     const order = this._ordered();
     const renderer = columnRenderer(this._table!);
     const search = new TextInput({placeholder: 'Search…', search: true, inline: true});
@@ -290,34 +305,36 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     });
     list.root.classList.add('u2-columns-list');
     const count = span('', 'u2-columns-count');
-    const refresh = (query = search.value.peek()) => {
+    const refresh = (query = search.peek()) => {
       list.setItems(filtered(query));
       count.textContent = `${picked.size} selected`;
     };
     const toggle = (index: number) => {
-      const name = filtered(search.value.peek())[index];
+      const name = filtered(search.peek())[index];
       if (name === undefined)
         return;
       if (!picked.delete(name))
         picked.add(name);
       refresh();
+      list.refresh(name);
     };
     // All and None act on what the search left visible, so they read as 'all of these'
     const setAll = (on: boolean) => {
-      for (const name of filtered(search.value.peek())) {
+      for (const name of filtered(search.peek())) {
         if (on)
           picked.add(name);
         else
           picked.delete(name);
       }
       refresh();
+      list.refresh();
     };
     const ok = () => {
       this._commit(order.filter((name) => picked.has(name)));
       this._closePopup();
     };
     const move = (delta: number) => {
-      const rows = filtered(search.value.peek()).length;
+      const rows = filtered(search.peek()).length;
       if (rows === 0)
         return;
       const next = Math.min(Math.max(list.selectedIndex.peek() + delta, 0), rows - 1);
@@ -342,7 +359,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
       list.root.removeEventListener('click', onClick);
       list.root.removeEventListener('keydown', onKeyDown);
     });
-    scope.effect(() => refresh(search.value.value));
+    scope.effect(() => refresh(search.value));
 
     const popup = divV([search,
       divH([link('All', () => setAll(true)), link('None', () => setAll(false)), count],
@@ -383,7 +400,9 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
       popup.removeEventListener('keydown', onPopupKeyDown);
       popup.removeEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
     });
-    Overlay.show(this._control, popup, scope);
+    popup.setAttribute('role', 'dialog');
+    popup.setAttribute('aria-label', 'Choose columns');
+    Overlay.show(this._control, popup, {owner: scope});
     search.root.querySelector<HTMLElement>('input')?.focus();
   }
 
@@ -391,14 +410,14 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
    * Dart hands the selector as `order` (`columns_input.dart:56-61`). */
   private _ordered(): string[] {
     const available = this._names();
-    const selected = this.value.peek().filter((name) => available.includes(name));
+    const selected = this.peek().filter((name) => available.includes(name));
     return [...selected, ...available.filter((name) => !selected.includes(name))];
   }
 
   private _commit(names: string[]): void {
-    const value = this.value.peek();
+    const value = this.peek();
     if (names.length !== value.length || names.some((name, i) => name !== value[i]))
-      this.value.value = names;
+      this.value = names;
   }
 
   private _closePopup(): void {
@@ -408,11 +427,6 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
       return;
     scope.dispose();
     this._control.setAttribute('aria-expanded', 'false');
-  }
-
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }
 
@@ -437,7 +451,7 @@ export interface ColumnsMapInputOptions extends InputOptions<Record<string, stri
  * with its modal unrolled into a row per key, since there is nothing else in that modal. Unmapped
  * keys stay out of the value (Dart keeps them as nulls and labels the button `(mapped/total)`). */
 export class ColumnsMapInput extends Input<Record<string, string>, ColumnsMapInputOptions> {
-  private _pickers!: {key: string, input: ChoiceInput}[];
+  private declare _pickers: {key: string, input: ChoiceInput}[];
 
   constructor(options: ColumnsMapInputOptions) {
     super(options, {});
@@ -459,15 +473,15 @@ export class ColumnsMapInput extends Input<Record<string, string>, ColumnsMapInp
       body.append(input.root);
       return {key: name, input};
     });
-    this._load(this.value.peek());
-    this.effect(() => this._commit(this._pickers.map((p) => p.input.value.value)));
-    this.effect(() => this._load(this.value.value));
+    this._load(this.peek());
+    this.effect(() => this._commit(this._pickers.map((p) => p.input.value)));
+    this.effect(() => this._load(this.value));
     return body;
   }
 
   private _load(value: Record<string, string>): void {
     for (const picker of this._pickers)
-      picker.input.value.value = value[picker.key] ?? null;
+      picker.input.value = value[picker.key] ?? null;
   }
 
   /** Rewrites the value from the pickers, and only when it actually changed — the two effects
@@ -479,11 +493,11 @@ export class ColumnsMapInput extends Input<Record<string, string>, ColumnsMapInp
       if (name !== null)
         value[this._pickers[i].key] = name;
     }
-    const current = this.value.peek();
+    const current = this.peek();
     const keys = Object.keys(value);
     if (keys.length === Object.keys(current).length && keys.every((key) => current[key] === value[key]))
       return;
-    this.value.value = value;
+    this.value = value;
   }
 }
 
@@ -506,11 +520,11 @@ export interface AggregatedColumnsInputOptions extends InputOptions<ColumnAggreg
  * follows the column's type ({@link aggregationsFor}); a column change that invalidates the row's
  * aggregation resets it to the type's default, as Dart does (`:49-52`). */
 export class AggregatedColumnsInput extends Input<ColumnAggregation[], AggregatedColumnsInputOptions> {
-  private _rows!: ColumnAggregation[];
-  private _body!: HTMLElement;
+  private declare _rows: ColumnAggregation[];
+  private declare _body: HTMLElement;
   // the row editors are rebuilt whenever rows are added or removed; each generation owns its
   // inputs and tooltips, and is released before the next one is built
-  private _rowScope: Scope | undefined;
+  private declare _rowScope: Scope | undefined;
 
   constructor(options: AggregatedColumnsInputOptions) {
     super(options, []);
@@ -521,12 +535,12 @@ export class AggregatedColumnsInput extends Input<ColumnAggregation[], Aggregate
     const body = document.createElement('div');
     this._body = body;
     body.className = 'u2-aggregations';
-    this._rows = AggregatedColumnsInput._copy(this.value.peek());
+    this._rows = AggregatedColumnsInput._copy(this.peek());
     this._render();
     // echo suppression by comparison, not by a flag: a row editor writes the value from inside its
     // own effect, and this one is flushed only after that write returns
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (AggregatedColumnsInput._same(value, this._rows))
         return;
       this._rows = AggregatedColumnsInput._copy(value);
@@ -553,13 +567,13 @@ export class AggregatedColumnsInput extends Input<ColumnAggregation[], Aggregate
     const scope = new Scope();
     this._rowScope = scope;
     this._body.textContent = '';
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       if (this._rows.length === 0)
         this._body.append(divH([this._addButton(0)], 'u2-aggregations-row'));
       for (let i = 0; i < this._rows.length; i++)
         this._body.append(this._row(i));
     });
-    this.refreshEnabled();
+    this.refreshDisabled();
   }
 
   private _row(index: number): HTMLElement {
@@ -571,8 +585,11 @@ export class AggregatedColumnsInput extends Input<ColumnAggregation[], Aggregate
         this._commit();
       }});
     const column = new ChoiceInput({inline: true, nullable: false,
-      items: this.options.table.columns.names(), value: row.column,
+      items: Platform.listedColumns(this.options.table).map((c) => c.name), value: row.column,
       onChanged: (value) => this._onColumn(row, value!, aggregation)});
+    // a row's choices share it, not the width a form around the input gives its own choices
+    column.root.classList.add('u2-input-fill');
+    aggregation.root.classList.add('u2-input-fill');
     return divH([column.root, aggregation.root, this._addButton(index + 1),
       iconButton('minus', () => this._remove(index), {tooltip: 'Remove aggregation'})],
     'u2-aggregations-row');
@@ -590,7 +607,7 @@ export class AggregatedColumnsInput extends Input<ColumnAggregation[], Aggregate
     if (!available.includes(row.aggregation))
       row.aggregation = defaultAggregation(this.options.table.columns.byName(name));
     aggregation.setItems(available);
-    aggregation.value.value = row.aggregation;
+    aggregation.value = row.aggregation;
     this._commit();
   }
 
@@ -617,14 +634,14 @@ export class AggregatedColumnsInput extends Input<ColumnAggregation[], Aggregate
   /** The first numerical column, else the first one — Dart's `_newRow`
    * (`aggregated_columns_input.dart:28-30`). Null for a table with no columns. */
   private _newRow(): ColumnAggregation | null {
-    const columns = this.options.table.columns.toList();
+    const columns = Platform.listedColumns(this.options.table);
     const column = columns.find((c) => c.isNumerical) ?? columns[0];
     return column === undefined ? null : {column: column.name, aggregation: defaultAggregation(column)};
   }
 
   private _commit(): void {
-    if (!AggregatedColumnsInput._same(this.value.peek(), this._rows))
-      this.value.value = AggregatedColumnsInput._copy(this._rows);
+    if (!AggregatedColumnsInput._same(this.peek(), this._rows))
+      this.value = AggregatedColumnsInput._copy(this._rows);
   }
 
   private static _copy(rows: ColumnAggregation[]): ColumnAggregation[] {

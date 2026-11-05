@@ -517,7 +517,7 @@ test('6. Favorites: add and remove space from favorites', async () => {
     await uiCreateRootSpace(page, FAV);
 
     await rightClickSpace(page, FAV);
-    await clickMenuItem(page, 'Add to favorites');
+    await clickMenuItem(page, 'Add To Favorites');
 
     await page.evaluate(() => {
       const el = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))

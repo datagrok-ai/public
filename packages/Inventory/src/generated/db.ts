@@ -85,12 +85,14 @@ export type StockMovementExpand = {
 };
 
 export type InventoryTransactionOp =
-  {op: 'insert'; table: 'item'; ref?: string; values: DG.DomainTxValues<ItemInsert>} |
+  {op: 'insert'; table: 'item'; ref?: string; values: DG.DomainTxValues<ItemInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'item'; id: string; values: DG.DomainTxValues<Partial<ItemRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'item'; id: string} |
-  {op: 'insert'; table: 'stock_movement'; ref?: string; values: DG.DomainTxValues<StockMovementInsert>} |
+  {op: 'restore'; table: 'item'; id: string} |
+  {op: 'insert'; table: 'stock_movement'; ref?: string; values: DG.DomainTxValues<StockMovementInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'stock_movement'; id: string; values: DG.DomainTxValues<Partial<StockMovementRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'stock_movement'; id: string};
+  {op: 'delete'; table: 'stock_movement'; id: string} |
+  {op: 'restore'; table: 'stock_movement'; id: string};
 
 /** Typed clients for the `inventory` domain schema tables (lazy — no import-time side effects). */
 export const inventoryDb = {

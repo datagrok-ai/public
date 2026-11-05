@@ -6,10 +6,7 @@ import wu from 'wu';
 
 import {ISubstructProvider} from '@datagrok-libraries/chem-meta/src/types';
 
-import {PolymerType} from '../helm/types';
 import {ISeqMonomer} from '../helm/types';
-import {HELM_POLYMER_TYPE} from '../utils/const';
-import {ALPHABET} from '../utils/macromolecule';
 
 export type MonomerHoverLink = {
   targetCol: DG.Column,
@@ -23,20 +20,6 @@ export function getUnusedColName(df: DG.DataFrame | undefined, colName: string):
 
 export function getMolColName(df: DG.DataFrame | undefined, seqColName: string): string {
   return getUnusedColName(df, `molfile(${seqColName})`);
-}
-
-export function alphabetToPolymerType(alphabet: ALPHABET): PolymerType {
-  // determine the polymer type according to HELM specifications
-  let resPolymerType: HELM_POLYMER_TYPE;
-  // todo: an exception from dart comes before this check if the alphabet is UN
-  if (alphabet === ALPHABET.PT || alphabet === ALPHABET.UN)
-    resPolymerType = HELM_POLYMER_TYPE.PEPTIDE;
-  else if (alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA)
-    resPolymerType = HELM_POLYMER_TYPE.RNA;
-  else
-    throw new Error(`Unexpected alphabet '${alphabet}'.`);
-
-  return resPolymerType;
 }
 
 /** @deprecated Use DG.Color.hexToPercentRgb */

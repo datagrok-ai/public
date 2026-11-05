@@ -10,8 +10,10 @@ Feature: The Files section of the Browse tree
   Browse-Files-04 (a file written on the server appears after Refresh, GROK-19844) is claimed with a
   file the feature writes into its own package's App Data folder and deletes again: Refresh reports
   when it is done, so the tree is read after it. Browse-Files-06 (download from a file's menu) is
-  claimed on the file that arrives. Browse-Files-05 (Shared with me grouped by sharer) needs the
-  second account to own and share something first, which no step can make it do.
+  claimed on the file that arrives. Browse-Files-05 (a shared folder under My stuff > Shared with me,
+  in the group of the account that shared it) is sharing/sharing-folder.feature's "The second account
+  finds the folder under Shared with me": the running account shares a folder, and the second
+  account opens it from the node of the running account under Shared with me.
 
   The shares claimed are the two every stand is provisioned with, App Data and Demo. The user's
   own home share is named by the stand ("My files" on dev) and a stand whose users have no home

@@ -13,6 +13,7 @@ import {
   PropertyDesirability,
   WeightedAggregation,
   createDefaultNumerical,
+  getMpoCoverageColumnName,
   getMpoScoreColumnName,
   isMpoNumericColumn,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
@@ -57,8 +58,10 @@ export async function computeMpo(
   silent: boolean = false,
   processed: boolean = false,
   createDesirabilityColumns: boolean = false,
+  createCoverageColumn: boolean = false,
   preview: boolean = false,
   calculator?: MpoCalculator,
+  profileName: string = getMpoScoreColumnName(profile.name),
 ): Promise<string[]> {
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
@@ -66,11 +69,13 @@ export async function computeMpo(
     mappedProperties[columnName] = prop;
   }
 
-  const profileName = getMpoScoreColumnName(profile.name);
   if (!processed) {
-    const existingCol = df.col(profileName);
-    if (existingCol)
-      df.columns.remove(existingCol, false);
+    const names = createCoverageColumn ? [profileName, getMpoCoverageColumnName(profileName)] : [profileName];
+    for (const name of names) {
+      const existingCol = df.col(name);
+      if (existingCol)
+        df.columns.remove(existingCol, false);
+    }
   }
 
   const resolvedAggregation = aggregation ?? profile.aggregation ?? DEFAULT_AGGREGATION;
@@ -82,7 +87,8 @@ export async function computeMpo(
     if (columns.length > 0) {
       const isDifferent = df.rowCount !== columns[0].length;
       const result = (calculator ?? new MpoCalculator())
-        .compute(df, columns, profileName, resolvedAggregation, isDifferent, createDesirabilityColumns);
+        .compute(df, columns, profileName, resolvedAggregation, isDifferent, createDesirabilityColumns,
+          createCoverageColumn);
       for (const c of collectMpoResultColumns(df, result, isDifferent)) {
         const existing = df.col(c.name);
         if (existing)
@@ -104,7 +110,7 @@ export async function computeMpo(
   const result = call.getOutputParamValue() as DG.Column[];
 
   await DG.Func.find({package: 'Chem', name: 'mpoCalculate'})[0].prepare({
-    df, columns: result, profileName, aggregation: resolvedAggregation, createDesirabilityColumns,
+    df, columns: result, profileName, aggregation: resolvedAggregation, createDesirabilityColumns, createCoverageColumn,
   }).call(undefined, undefined, {processed});
 
   return df.col(profileName) ? [profileName] : [];
@@ -142,6 +148,8 @@ export function collectMpoResultColumns(df: DG.DataFrame, result: MpoResult, isD
     columns.push(result.scoreColumn);
   if (result.desirabilityColumns)
     columns.push(...result.desirabilityColumns);
+  if (result.coverageColumn)
+    columns.push(result.coverageColumn);
   return columns;
 }
 
@@ -207,7 +215,7 @@ export function createProfileForDf(df: DG.DataFrame): DesirabilityProfile {
   const props: {[key: string]: PropertyDesirability} = {};
   let count = 0;
   for (const col of df.columns.numerical) {
-    if (!isMpoNumericColumn(col))
+    if (!isMpoNumericColumn(col) || col.name.startsWith('~'))
       continue;
     if (count >= MAX_MPO_PROPERTIES)
       break;
@@ -254,8 +262,10 @@ export function deepEqual<T>(current: T, original: T): boolean {
     return true;
   }
 
-  for (const key in original) {
-    if (!deepEqual(current[key], original[key]))
+  const cur = current as Record<string, unknown>;
+  const orig = original as Record<string, unknown>;
+  for (const key of new Set([...Object.keys(cur), ...Object.keys(orig)])) {
+    if (!deepEqual(cur[key], orig[key]))
       return false;
   }
   return true;

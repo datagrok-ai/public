@@ -24,29 +24,34 @@ export const searchListsCategories = Then('the search results should list the ca
   }, {message: `the result categories ${list}`}).toBe('all there');
 }, {description: 'each named category has a header and a list in the results (others may be there too)'});
 
-export const searchShowsNothing = Then('the search results should show nothing', async (page: Page) => {
-  const shown = await page.evaluate(() => {
-    const host = (window as any).grok.shell.v.root.querySelector('.power-pack-search-host') as HTMLElement;
-    const text = (host.innerText ?? '').trim();
-    // every path appends to the host; the only child an empty answer leaves is the empty holder of the category lists
-    const others = [...host.children].filter((c) => !(c.classList.contains('power-search-lists-host') && c.childElementCount === 0))
-      .map((c) => `<${c.tagName.toLowerCase()} class="${c.className}">${(c.textContent ?? '').trim().slice(0, 60)}`);
-    return [...(text ? [`text: ${text.slice(0, 120)}`] : []), ...others];
-  });
-  expect(shown, 'what the finished search shows').toEqual([]);
-}, {description: 'read once the search is over (after "the search should have finished"): no visible text in the results and no element but the empty holder of the category lists — a category, a widget, an evaluated formula or an entity card would each be there'});
+/* An entity a category lists is a link labelled with its friendly name, which the platform may capitalize
+   ("bdd-x" is listed as "Bdd-x"): the entity's own name is in the link's `name` attribute. */
+export const categoryLists = Then('the {string} search results should list {string}', async (page: Page, category: string, name: string) => {
+  await expect.poll(() => page.evaluate(([c, n]) => {
+    const container = [...document.querySelectorAll('.power-pack-search-host .power-pack-search-list-container')]
+      .filter((e) => (e as HTMLElement).offsetParent !== null)
+      .find((e) => (e.querySelector('.power-pack-search-list-header')?.textContent ?? '').trim() === c);
+    if (!container)
+      return `no ${c} results`;
+    const links = [...container.querySelectorAll('.d4-link-label')];
+    return links.some((l) => l.getAttribute('name') === `span-${n}` || (l.textContent ?? '').trim() === n) ?
+      'listed' : `${c} lists: ${links.map((l) => (l.textContent ?? '').trim()).join(', ')}`;
+  }, [category, name] as [string, string]), {message: `"${name}" among the ${category} results`}).toBe('listed');
+}, {description: 'a link to the entity in the list under that category header'});
+
+export const noResults = Then('the search results should be empty', async (page: Page) => {
+  expect(await page.evaluate(() => {
+    const host = (window as any).grok.shell.v?.root?.querySelector('.power-pack-search-host') as HTMLElement | null;
+    if (!host)
+      return 'no search results on the current view';
+    const pictures = [...host.querySelectorAll('canvas, img, svg')].filter((e) => (e as HTMLElement).getBoundingClientRect().width > 0);
+    return [host.innerText.trim().slice(0, 80), ...pictures.map((e) => e.tagName)].filter(Boolean).join(' | ');
+  }), 'what the finished search shows').toBe('');
+}, {description: 'read after the search has finished: no text, list or picture of any search path is shown (empty hosts the answers would go into stay)'});
 
 export const noSuggestions = Then('no search suggestion should be shown', async (page: Page) => {
   expect(await menuItems(page), 'the suggestions under the search box').toEqual([]);
 }, {description: 'read after the search has finished, when the suggestions of that text would have been shown'});
-
-export const categoryListsItem = Then('the {string} category of the search results should list {string}', async (page: Page, category: string, item: string) => {
-  await expect.poll(() => page.evaluate((c) => {
-    const container = [...document.querySelectorAll('.power-pack-search-host .power-pack-search-list-container')]
-      .find((x) => (x.querySelector('.power-pack-search-list-header')?.textContent ?? '').trim() === c);
-    return container ? [...container.querySelectorAll('.power-pack-search-list > *')].map((i) => (i.textContent ?? '').trim()) : [];
-  }, category), {message: `the items of the ${category} category`}).toContain(item);
-});
 
 function menuItems(page: Page): Promise<string[]> {
   return page.evaluate(() => [...document.querySelectorAll('.ui-input-type-ahead .d4-menu-item')]

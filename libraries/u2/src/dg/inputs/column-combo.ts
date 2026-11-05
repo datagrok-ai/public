@@ -13,6 +13,8 @@ import {VirtualList} from '../../components/collections/list.js';
 import {TextInput} from '../../components/inputs/text-input.js';
 import {onColumnRenamed} from './pickers.js';
 import {columnRenderer} from '../entities/column-renderer.js';
+import type {IItemsState} from '../../core/widget-like.js';
+import {Platform} from '../shell/platform.js';
 
 const ROW_HEIGHT = 24;
 
@@ -39,12 +41,12 @@ export interface ColumnInputOptions2 extends InputOptions<string | null> {
  * (`column_combo_box.dart:203-220`) — no mouse-wheel cycling and no hover-preview writes
  * (divergences #17/#14). */
 export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
-  private _table!: DG.DataFrame | null;
-  private _filter: ((column: DG.Column) => boolean) | undefined;
-  private _control!: HTMLElement;
-  private _summary!: HTMLElement;
-  private _unfollow: (() => void) | undefined;
-  private _popupScope: Scope | undefined;
+  private declare _table: DG.DataFrame | null;
+  private declare _filter: ((column: DG.Column) => boolean) | undefined;
+  private declare _control: HTMLElement;
+  private declare _summary: HTMLElement;
+  private declare _unfollow: (() => void) | undefined;
+  private declare _popupScope: Scope | undefined;
 
   constructor(options: ColumnInputOptions2) {
     super(options, null);
@@ -55,12 +57,21 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
     return this._table;
   }
 
-  /** The filtered column names of the bound table. */
+  /** Whether the dropdown is open. */
+  getState(): ReturnType<Input<string | null>['getState']> {
+    return {...super.getState(), open: this._popupScope !== undefined};
+  }
+
+  /** The columns on offer, the picked one selected. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const value = this.peek();
+    return Input.itemsState(this.names().map((name, index) => ({key: name, label: name, index,
+      selected: name === value, rendered: false})), opts?.all);
+  }
+
+  /** The names of the bound table's listed columns ({@link Platform.listedColumns}) that pass the filter. */
   names(): string[] {
-    if (this._table === null)
-      return [];
-    const columns = this._table.columns;
-    return this._filter ? columns.toList().filter(this._filter).map((c) => c.name) : columns.names();
+    return this._table === null ? [] : Platform.listedColumns(this._table, this._filter).map((c) => c.name);
   }
 
   /** Swaps the source table, and the filter with it: closes the popup, retargets the follow
@@ -72,7 +83,7 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
     this._filter = filter;
     this._reflectTable();
     this._follow();
-    this.value.value = null;
+    this.value = null;
   }
 
   protected createEditor(): HTMLElement {
@@ -88,9 +99,9 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
     this._summary = span('', 'u2-columns-summary');
     editor.append(this._summary, span('', 'u2-columns-chevron'));
     this._reflectTable();
-    this._listen(editor, 'click', () => this._togglePopup());
-    this._listen(editor, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
-    this.effect(() => this._renderSummary(this.value.value));
+    this.scope.listen(editor, 'click', () => this._togglePopup());
+    this.scope.listen(editor, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.effect(() => this._renderSummary(this.value));
     this._follow();
     this.own(() => {
       this._closePopup();
@@ -123,8 +134,8 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
     const subs = [
       this._table.onColumnsChanged.subscribe(() => this._prune()),
       onColumnRenamed(this._table, (oldName, newName) => {
-        if (this.value.peek() === oldName)
-          Input.system(() => this.value.value = newName);
+        if (this.peek() === oldName)
+          this.systemWrite(newName);
       }),
     ];
     this._unfollow = () => {
@@ -134,17 +145,17 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
   }
 
   private _prune(): void {
-    const value = this.value.peek();
+    const value = this.peek();
     if (value !== null && !this.names().includes(value))
-      Input.system(() => this.value.value = null);
+      this.systemWrite(null);
   }
 
   /** A pick is a USER edit: the signal write plus the native `change` a select would have
    * dispatched — what the auto-badge's user-edit detection listens for. The `change` fires even
    * for a same-value pick: confirming an auto-guess is still a user touch. */
   private _commit(name: string | null): void {
-    if (name !== this.value.peek())
-      this.value.value = name;
+    if (name !== this.peek())
+      this.value = name;
     this._control.dispatchEvent(new Event('change', {bubbles: true}));
   }
 
@@ -154,7 +165,7 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
     const names = this.names();
     if (names.length === 0)
       return;
-    const value = this.value.peek();
+    const value = this.peek();
     const idx = value === null ? -1 : names.indexOf(value);
     if (delta < 0 && idx === -1)
       return;
@@ -184,7 +195,8 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
   }
 
   private _togglePopup(): void {
-    if (!this.enabled || this._table === null) // the editor is a div, so the base's disabled sweep never reaches it
+    // the editor is a div, so the base's disabled sweep never reaches it
+    if (this.disabled !== null || this._table === null)
       return;
     if (this._popupScope)
       this._closePopup();
@@ -193,11 +205,11 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
   }
 
   private _openPopup(seed?: string): void {
-    if (!this.enabled || this._table === null || this._popupScope)
+    if (this.disabled !== null || this._table === null || this._popupScope)
       return;
     const scope = new Scope();
     this._popupScope = scope;
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       const platform = platformColumnGrid('popup');
       if (platform !== null)
         this._openPlatform(scope, platform, seed);
@@ -234,7 +246,7 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
       host.removeEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
       cg.close();
     });
-    Overlay.show(this.box, host, scope);
+    Overlay.show(this.box, host, {owner: scope});
     try {
       cg.grid.props.backColor = 0;
       cg.grid.props.rowHeaderBackColor = 0;
@@ -243,7 +255,7 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
     const width = this.box.getBoundingClientRect().width;
     if (cg.grid.root.getBoundingClientRect().width < width)
       cg.grid.root.style.width = `${width}px`;
-    const current = this.value.peek();
+    const current = this.peek();
     if (current !== null) {
       try {
         cg.dfColumns.selection.init((i: number) => cg.nameCol.get(i) === current);
@@ -287,7 +299,7 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
     const text = (host.querySelector('input') as HTMLInputElement | null)?.value.trim() ?? '';
     if (text === '')
       return;
-    const matches = this._table!.columns.toList().filter((c) => cg.passesFilter(c));
+    const matches = Platform.listedColumns(this._table!, (c) => cg.passesFilter(c));
     if (matches.length === 1) {
       this._commit(matches[0].name);
       this._closePopup();
@@ -299,7 +311,7 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
    * value highlighted. Click or Enter picks and closes, Esc closes without a write. */
   private _openNative(scope: Scope, seed?: string): void {
     const renderer = columnRenderer(this._table!);
-    const current = this.value.peek();
+    const current = this.peek();
     const search = new TextInput({placeholder: 'Search…', search: true, inline: true});
     const all = (): (string | null)[] => this.nullable ? [null, ...this.names()] : this.names();
     const filtered = (query: string): (string | null)[] => {
@@ -317,14 +329,14 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
     });
     list.root.classList.add('u2-columns-list');
     const pick = (index: number) => {
-      const name = filtered(search.value.peek())[index];
+      const name = filtered(search.peek())[index];
       if (name === undefined)
         return;
       this._commit(name);
       this._closePopup();
     };
     const move = (delta: number) => {
-      const rows = filtered(search.value.peek()).length;
+      const rows = filtered(search.peek()).length;
       if (rows === 0)
         return;
       const next = Math.min(Math.max(list.selectedIndex.peek() + delta, 0), rows - 1);
@@ -339,12 +351,12 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
     list.root.addEventListener('click', onClick);
     scope.own(() => list.root.removeEventListener('click', onClick));
     scope.effect(() => {
-      list.setItems(filtered(search.value.value));
+      list.setItems(filtered(search.value));
       // a re-filter drops the walked highlight (the rows under it moved), so Enter falls back
       // to the unique match instead of picking a dead index
       list.selectedIndex.value = -1;
     });
-    const at = current === null ? -1 : filtered(search.value.peek()).indexOf(current);
+    const at = current === null ? -1 : filtered(search.peek()).indexOf(current);
     if (at >= 0) {
       list.selectedIndex.value = at;
       list.scrollToIndex(at);
@@ -361,7 +373,7 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
           pick(index);
           return;
         }
-        const rows = filtered(search.value.peek());
+        const rows = filtered(search.peek());
         const matches = rows.filter((n) => n !== null);
         if (matches.length === 1)
           pick(rows.indexOf(matches[0]));
@@ -381,9 +393,9 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
       popup.removeEventListener('keydown', onPopupKeyDown);
       popup.removeEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
     });
-    Overlay.show(this.box, popup, scope);
+    Overlay.show(this.box, popup, {owner: scope});
     if (seed !== undefined)
-      search.value.value = seed;
+      search.value = seed;
     search.root.querySelector<HTMLElement>('input')?.focus();
   }
 
@@ -394,10 +406,5 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
       return;
     scope.dispose();
     this._control.setAttribute('aria-expanded', 'false');
-  }
-
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

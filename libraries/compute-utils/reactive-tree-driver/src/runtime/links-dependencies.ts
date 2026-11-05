@@ -1,13 +1,9 @@
-import * as grok from 'datagrok-api/grok';
-import {v4 as uuidv4} from 'uuid';
-import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
-import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
-import {LinkSpec, MatchedIO, MatchInfo} from './link-matching';
+import {BaseTree, NodePathSegment} from '../data/BaseTree';
+import {StateTreeNode} from './StateTreeNodes';
+import {MatchedIO} from './link-matching';
 import {DriverLogger, reportError} from '../data/Logger';
 import {Link} from './Link';
-import {parseLinkIO} from '../config/LinkSpec';
-import {ruleMetaHandler, ruleValidatorHandler} from './rule-handlers';
-import {CALL, CheckOptions, expandChecks, TARGET, VALUE} from '../config/checks';
+import {getOriginalConfig} from '../config/config-processing-utils';
 
 export class DependenciesData {
   nodes: Set<string> = new Set();
@@ -23,15 +19,20 @@ export type IoDeps = Record<string, IoDep>;
 export function calculateStepsDependencies(state: BaseTree<StateTreeNode>, links: Link[]) {
   const deps: Map<string, DependenciesData> = new Map();
   for (const link of links) {
-    const inputInfos = Object.values(link.matchInfo.inputs);
-    for (const infosIn of inputInfos) {
-      for (const infoIn of infosIn) {
-        const inPathFull = [...link.prefix, ...infoIn.path];
-        addOutputDeps(state, deps, link, inPathFull);
-      }
-    }
+    // a count reads no step's data, so it adds no step dependency
+    const inputInfos = Object.values(link.matchInfo.inputs).flat().filter((info) => info.count === undefined);
+    for (const infoIn of inputInfos)
+      addOutputDeps(state, deps, link, [...link.prefix, ...infoIn.path]);
     if (inputInfos.length === 0)
       addOutputDeps(state, deps, link);
+    // a node meta link that only sets actions visibility has no outputs to schedule it by
+    const {spec, outputs, actionsUUID} = link.matchInfo;
+    if (spec.type === 'nodemeta' && Object.keys(outputs).length === 0 && actionsUUID.size) {
+      const uuid = state.getNode(link.prefix).getItem().uuid;
+      const depData = deps.get(uuid) ?? new DependenciesData();
+      depData.links.add(link.uuid);
+      deps.set(uuid, depData);
+    }
   }
   return deps;
 }
@@ -66,9 +67,12 @@ export function calculateIoDependencies(state: BaseTree<StateTreeNode>, links: L
         if (depsData[ioName] == null)
           depsData[ioName] = {};
         if (depType === 'data') {
-          if (depsData[ioName][depType]) {
-            const prevUuid = depsData[ioName][depType] as string;
-            const prevSpecId = links.find((l) => l.uuid === prevUuid)?.matchInfo.spec.id ?? prevUuid;
+          const prevUuid = depsData[ioName][depType] as string | undefined;
+          const prev = prevUuid ? links.find((l) => l.uuid === prevUuid) : undefined;
+          // the separate effects of one rule may write the same io, as the rule's own effects do
+          const sameRule = !!prev && getOriginalConfig(prev.matchInfo.spec) === getOriginalConfig(link.matchInfo.spec);
+          if (prevUuid && !sameRule) {
+            const prevSpecId = prev?.matchInfo.spec.id ?? prevUuid;
             const newSpecId = link.matchInfo.spec.id;
             reportError(
               'warning',
@@ -128,67 +132,4 @@ export function pruneLinkedTargets(state: BaseTree<StateTreeNode>, links: Link[]
       }
     }
   }
-}
-
-export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?: DriverLogger) {
-  const defaultValidators = state.traverse(state.root, (acc, node, path) => {
-    const item = node.getItem();
-    if (!isFuncCallNode(item))
-      return acc;
-    const ios = item.config.io ?? [];
-    const validators = ios.flatMap((io) => {
-      if (io.direction === 'output')
-        return [];
-      const options: CheckOptions = {...io.checks, nullable: io.nullable};
-      // the annotation's validators are run by the platform, through the step's FuncCall
-      const annotationValidators = options.validators;
-      delete options.validators;
-      const expanded = expandChecks(options);
-      if (annotationValidators?.length) {
-        expanded.push({
-          key: 'validators', family: 'validator', needsTable: false, needsCall: true, needsInputs: false,
-          params: {
-            when: {'!': {missing: [VALUE]}},
-            sources: {$verdicts: {validators: {input: VALUE, call: CALL}}},
-            effects: [{effect: 'verdicts', targets: [TARGET], source: '$verdicts'}],
-          },
-        });
-      }
-      // a GrokScript expression sees every input of the step under its own name; `value` is the checked one
-      const stepInputs = ios.filter((other) => other.direction === 'input' && other.id !== VALUE);
-      return expanded.map(({key, family, needsCall, needsInputs, params}) => {
-        const spec: LinkSpec = {
-          id: `::${io.id}:${key}`,
-          from: [
-            ...parseLinkIO(`${VALUE}:${io.id}`, 'input'),
-            ...(needsCall ? parseLinkIO(`${CALL}(call,optional):.`, 'input') : []),
-            ...(needsInputs ? stepInputs.flatMap((other) => parseLinkIO(`${other.id}:${other.id}`, 'input')) : []),
-          ],
-          to: parseLinkIO(`${TARGET}:${io.id}`, 'output'),
-          type: family,
-          handler: family === 'meta' ? ruleMetaHandler : ruleValidatorHandler,
-          params,
-        } as LinkSpec;
-        const inputs: MatchInfo['inputs'] = {[VALUE]: [{path: [], ioName: io.id}]};
-        if (needsCall)
-          inputs[CALL] = [{path: []}];
-        if (needsInputs) {
-          for (const other of stepInputs)
-            inputs[other.id] = [{path: [], ioName: other.id}];
-        }
-        const minfo: MatchInfo = {
-          spec,
-          inputs,
-          outputs: {[TARGET]: [{path: [], ioName: io.id}]},
-          actions: {},
-          inputsUUID: new Map(),
-          outputsUUID: new Map(),
-          isDefaultValidator: true,
-        };
-        return new Link(path, minfo, 0, logger);
-      });
-    });
-    return [...acc, ...validators];
-  }, [] as Link[]);
-  return defaultValidators;
 }

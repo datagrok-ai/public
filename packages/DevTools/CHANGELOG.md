@@ -2,6 +2,10 @@
 
 ## v.next
 
+* core#1291: Scripts: Signature Editor removes parameter defaults and options and renames the script without any changes
+* Test Manager: Fixed the search box throwing on regular-expression characters such as "(" or "["; it now matches the typed text
+* Test Manager: Fixed "Column 'package' not found" after running tests of a package built with an older test library
+* GROK-21071: Fill the unhandled-exception results row by column name
 * Scripts: Fixed the Signature Editor icon missing from a script view opened before the package started, or whose editor was built a moment after the view opened
 * GROK-20621: Scripts: Error on adding a tag in the Signature Editor
 * GROK-20620: Scripts: SAVE stays permanently disabled after editing a script via the Signature Editor

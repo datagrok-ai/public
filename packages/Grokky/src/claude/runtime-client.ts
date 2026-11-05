@@ -1,22 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
-
-export const ClaudeModel = {
-  Haiku: 'haiku',
-  Sonnet: 'sonnet',
-  Opus: 'opus',
-} as const;
-export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
+import {AiFeature} from './ai-feature';
+import {TurnLog} from './turn-log';
 
 export type ChunkEvent = {sessionId: string, content: string};
 export type ImageAttachment = {mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp', data: string};
-/** `name` is the bare tool name (mcp prefix stripped); absent for progress-only activity. */
-export type ToolActivityEvent = {sessionId: string, summary: string, name?: string};
+/** `name` is the bare tool name (mcp prefix stripped). */
+export type ToolActivityEvent = {sessionId: string, summary: string, name: string};
 /** A runtime gate blocked the turn's Stop — a revision is being generated behind the visible
  * answer; `FinalEvent.revision` will say whether it replaces the original or the original stands. */
 export type RevisionStartEvent = {sessionId: string};
-/** Per-turn metrics the runtime forwards from the SDK `result` message (see docs/BENCHMARK.md). */
+/** Per-turn token, cost and timing metrics the runtime reports on `final` (see docs/BENCHMARK.md). */
 export type TurnServerMetrics = {
+  model?: string,
   inputTokens: number | null, outputTokens: number | null,
   cacheReadTokens: number | null, cacheCreationTokens: number | null,
   costUsd: number | null, numTurns: number | null,
@@ -27,8 +23,6 @@ export type ErrorEvent = {sessionId: string, message: string};
 export type SessionResetEvent = {sessionId: string};
 export type AbortedEvent = {sessionId: string};
 export type InputRequestEvent = {sessionId: string, requestId: string, toolName: string, input: any};
-export type AuthUrlEvent = {url: string};
-export type AuthErrorEvent = {message: string};
 
 export class ClaudeRuntimeClient {
   private static instance: ClaudeRuntimeClient | null = null;
@@ -49,12 +43,9 @@ export class ClaudeRuntimeClient {
   public onInputRequest = new rxjs.Subject<InputRequestEvent>();
   public onSyncStatus = new rxjs.Subject<{status: string; message?: string; files?: string[]}>();
   public onClose = new rxjs.Subject<void>();
-  public onAuthUrl = new rxjs.Subject<AuthUrlEvent>();
-  public onAuthDone = new rxjs.Subject<void>();
-  public onAuthError = new rxjs.Subject<AuthErrorEvent>();
-  public onAuthRequired = new rxjs.Subject<{sessionId: string}>();
   private _skillNames: string[] | null = null;
   private _resumable = new Set<string>();
+  private _turnLog = new TurnLog();
 
   private constructor() {}
 
@@ -123,7 +114,7 @@ export class ClaudeRuntimeClient {
     }
 
     if (!this.ws)
-      throw new Error('Claude runtime container is not running');
+      throw new Error('AI runtime container is not running');
 
     this.ws.onmessage = (event: MessageEvent) => {
       let data: any;
@@ -136,34 +127,43 @@ export class ClaudeRuntimeClient {
 
       switch (data.type) {
       case 'chunk':
+        this._turnLog.chunk(data.sessionId, data.content);
         this.onChunk.next({sessionId: data.sessionId, content: data.content});
         break;
       case 'tool_activity':
-        this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary,
-          ...(data.name ? {name: data.name} : {})});
+        this._turnLog.toolActivity(data.sessionId, data.name, data.summary);
+        this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary, name: data.name});
         break;
       case 'revision_start':
+        this._turnLog.revisionStart(data.sessionId);
         this.onRevisionStart.next({sessionId: data.sessionId});
         break;
       case 'final':
         this._resumable.add(data.sessionId);
-        this.onFinal.next({
+        const final: FinalEvent = {
           sessionId: data.sessionId, content: data.content,
           ...(data.structured_output ? {structured_output: data.structured_output} : {}),
           ...(data.unverified ? {unverified: true} : {}),
           ...(data.metrics ? {metrics: data.metrics} : {}),
           ...(data.revision ? {revision: data.revision} : {}),
-        });
+        };
+        this.onFinal.next(final);
+        this._turnLog.finish(final, 'ok');
         break;
       case 'error':
+        this._resumable.add(data.sessionId);
         this.onError.next({sessionId: data.sessionId, message: data.message});
+        this._turnLog.finish({sessionId: data.sessionId, content: '', metrics: data.metrics}, 'error');
         break;
       case 'session_reset':
         this._resumable.delete(data.sessionId);
+        this._turnLog.drop(data.sessionId);
         this.onSessionReset.next({sessionId: data.sessionId});
         break;
       case 'aborted':
+        this._resumable.add(data.sessionId);
         this.onAborted.next({sessionId: data.sessionId});
+        this._turnLog.finish({sessionId: data.sessionId, content: '', metrics: data.metrics}, 'aborted');
         break;
       case 'input_request':
         this.onInputRequest.next({sessionId: data.sessionId, requestId: data.requestId, toolName: data.toolName, input: data.input});
@@ -173,23 +173,12 @@ export class ClaudeRuntimeClient {
           this._skillNames = data.files.map((f: string) => f.replace(/\.[^.]+$/, ''));
         this.onSyncStatus.next({status: data.status, message: data.message, files: data.files});
         break;
-      case 'auth_url':
-        this.onAuthUrl.next({url: data.url});
-        break;
-      case 'auth_done':
-        this.onAuthDone.next();
-        break;
-      case 'auth_error':
-        this.onAuthError.next({message: data.message});
-        break;
-      case 'auth_required':
-        this.onAuthRequired.next({sessionId: data.sessionId});
-        break;
       }
     };
 
     this.ws.onclose = () => {
       this.ws = null;
+      this._turnLog.clear();
       this.onClose.next();
     };
 
@@ -202,9 +191,14 @@ export class ClaudeRuntimeClient {
     return this._resumable.has(sessionId);
   }
 
-  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel;
+  /** The runtime may still hold this session (a chat reopened from its history): the next turn resumes it. */
+  expectResume(sessionId: string): void {
+    this._resumable.add(sessionId);
+  }
+
+  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string;
     taskId?: string; clientTools?: {name: string; description: string; inputSchema?: object}[];
-    images?: ImageAttachment[]}): void {
+    images?: ImageAttachment[]; logPrompt?: string}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
     this.ws.send(JSON.stringify({
@@ -214,11 +208,11 @@ export class ClaudeRuntimeClient {
       ...(this._resumable.has(sessionId) ? {resumeExpected: true} : {}),
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
-      ...(options?.model ? {model: options.model} : {}),
       ...(options?.taskId ? {taskId: options.taskId} : {}),
       ...(options?.clientTools?.length ? {clientTools: options.clientTools} : {}),
       ...(options?.images?.length ? {images: options.images} : {}),
     }));
+    this._turnLog.start(sessionId, options?.logPrompt);
   }
 
   async syncUserFiles(
@@ -245,16 +239,6 @@ export class ClaudeRuntimeClient {
     this.ws.send(JSON.stringify({type: 'abort', sessionId}));
   }
 
-  startAuth(): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
-      throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
-    this.ws.send(JSON.stringify({type: 'auth_start'}));
-  }
-
-  sendAuthCode(code: string): void {
-    this.ws?.send(JSON.stringify({type: 'auth_code', code}));
-  }
-
   respondToInput(sessionId: string, requestId: string, value: any): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       return;
@@ -269,15 +253,12 @@ export class ClaudeRuntimeClient {
     this.ws.send(payload);
   }
 
-  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel,
-    systemPromptMode?: string, timeoutMs?: number}): Promise<any> {
+  async query(message: string, options: {feature: AiFeature, sessionId?: string, outputSchema?: object,
+    systemPromptMode?: string, timeoutMs?: number, logPrompt?: string}): Promise<any> {
     await this.ensureConnected();
-    const sid = options?.sessionId ?? `query-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
-    // Never wait forever: if the runtime's watchdog kills a wedged turn, no final/error for this
-    // sid ever arrives, and an untimed query() then hangs its caller permanently (this hung a
-    // full benchmark arm in its judging phase). The default comfortably exceeds the runtime's own
-    // 90s idle watchdog, so it only fires when the turn is truly gone.
-    const timeoutMs = options?.timeoutMs ?? 120_000;
+    const sid = options.sessionId ?? `${options.feature}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    // Bounds a turn whose socket or runtime vanished: no final or error arrives then.
+    const timeoutMs = options.timeoutMs ?? 120_000;
     return new Promise((resolve, reject) => {
       const subs: {unsubscribe: () => void}[] = [];
       const timer = window.setTimeout(() => {
@@ -292,7 +273,7 @@ export class ClaudeRuntimeClient {
       subs.push(this.onFinal.subscribe((evt) => {
         if (evt.sessionId !== sid) return;
         cleanup();
-        resolve(options?.outputSchema && evt.structured_output ? evt.structured_output : evt.content);
+        resolve(options.outputSchema && evt.structured_output ? evt.structured_output : evt.content);
       }));
       subs.push(this.onError.subscribe((evt) => {
         if (evt.sessionId !== sid) return;
@@ -300,9 +281,9 @@ export class ClaudeRuntimeClient {
         reject(new Error(evt.message));
       }));
       this.send(sid, message, {
-        ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
-        ...(options?.model ? {model: options.model} : {}),
-        ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
+        ...(options.outputSchema ? {outputSchema: options.outputSchema} : {}),
+        ...(options.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
+        logPrompt: options.logPrompt,
       });
     });
   }
@@ -322,10 +303,6 @@ export class ClaudeRuntimeClient {
     this.onInputRequest.complete();
     this.onSyncStatus.complete();
     this.onClose.complete();
-    this.onAuthUrl.complete();
-    this.onAuthDone.complete();
-    this.onAuthError.complete();
-    this.onAuthRequired.complete();
     this.onChunk = new rxjs.Subject<ChunkEvent>();
     this.onToolActivity = new rxjs.Subject<ToolActivityEvent>();
     this.onRevisionStart = new rxjs.Subject<RevisionStartEvent>();
@@ -336,9 +313,5 @@ export class ClaudeRuntimeClient {
     this.onInputRequest = new rxjs.Subject<InputRequestEvent>();
     this.onSyncStatus = new rxjs.Subject<{status: string; message?: string}>();
     this.onClose = new rxjs.Subject<void>();
-    this.onAuthUrl = new rxjs.Subject<AuthUrlEvent>();
-    this.onAuthDone = new rxjs.Subject<void>();
-    this.onAuthError = new rxjs.Subject<AuthErrorEvent>();
-    this.onAuthRequired = new rxjs.Subject<{sessionId: string}>();
   }
 }

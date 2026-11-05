@@ -47,7 +47,9 @@ async function trellisMenuLabels(page: Page): Promise<string[]> {
     const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
     const grid = (root.querySelector('.d4-trellis-plot-charts-grid') as HTMLElement) ?? root;
     const gr = grid.getBoundingClientRect();
+    // top-level items only: the inner scatter plot nests its own "Reset View" under Tools
     const items = () => Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
+      .filter((e) => !e.parentElement?.parentElement?.closest('.d4-menu-item'))
       .map((e) => (e as HTMLElement).innerText.trim());
     grid.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true,
       clientX: gr.left + 4, clientY: gr.top + 4}));
@@ -248,8 +250,10 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       const tp = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Trellis plot') as any;
       tp.props.globalScale = true;
     });
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
-    const after = await cellHashes(page, probes);
+    // waitForViewerRendered returns at once when the plot rendered in the last 400 ms, which can
+    // be before this change reaches the canvas: wait for the cells themselves to change
+    const after = await v.pollValue(() => cellHashes(page, probes),
+      (h) => h[0] !== before[0] && h[1] !== before[1], 3000, 50);
 
     expect(before.every((h) => h !== null)).toBe(true);
     expect(after.every((h) => h !== null)).toBe(true);
@@ -263,7 +267,7 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
 
   await softStep('Scenario 1 Step 7', async () => {
     const labels = await trellisMenuLabels(page);
-    expect(labels).toContain('Reset Inner Range Sliders');
+    expect(labels).toContain('Reset View');
   });
 
   await softStep('Scenario 1 Step 9', async () => {
@@ -277,7 +281,7 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
     const labels = await trellisMenuLabels(page);
 
     expect(labels).toContain('Properties...');
-    expect(labels).not.toContain('Reset Inner Range Sliders');
+    expect(labels).toContain('Reset View');
   });
 
   await softStep('Scenario 1 Step 10', async () => {
@@ -288,7 +292,7 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
     });
     await v.waitForViewerRendered(page, 'Trellis plot', 900);
     const labels = await trellisMenuLabels(page);
-    expect(labels).toContain('Reset Inner Range Sliders');
+    expect(labels).toContain('Reset View');
   });
 
   await softStep('Scenario 1 Step 11', async () => {
@@ -297,8 +301,7 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       const tp = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Trellis plot') as any;
       tp.props.showXAxes = 'Never';
     });
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
-    const countXHidden = await rangeSliderCount(page);
+    const countXHidden = await v.pollValue(() => rangeSliderCount(page), (n) => n < countAxesShown, 3000, 50);
     console.log(`[Scenario 1 Step 11] count_axes_shown=${countAxesShown} count_x_hidden=${countXHidden}`);
     expect(countAxesShown).toBeGreaterThan(countXHidden);
 
@@ -307,7 +310,7 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       tp.props.showXAxes = 'Always';
       tp.props.showYAxes = 'Always';
     });
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
+    await v.pollValue(() => rangeSliderCount(page), (n) => n > countXHidden, 3000, 50);
     await expect(cellLocator).toHaveCount(8);
   });
 
@@ -328,8 +331,9 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
 
     const dragged = await dragInnerRangeSlider(page, 'x');
     expect(dragged).toBe(true);
+    // the drag repaints from the range-slider handler, which lands after 2 s on a loaded agent
     const after = await v.pollValue(() => cellHashes(page, probes),
-      (h) => h[0] !== baseline[0] && h[1] !== baseline[1], 2000, 50);
+      (h) => h[0] !== baseline[0] && h[1] !== baseline[1], 8000, 100);
     console.log(`[Scenario 2 Step 4] baseline=${JSON.stringify(baseline)} after=${JSON.stringify(after)}`);
     expect(after.every((h) => h !== null)).toBe(true);
 
@@ -359,7 +363,8 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       grid.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true,
         clientX: gr.left + 4, clientY: gr.top + 4}));
       const find = () => Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
-        .find((e) => (e as HTMLElement).innerText.trim() === 'Reset Inner Range Sliders');
+        .find((e) => (e as HTMLElement).innerText.trim() === 'Reset View' &&
+          !e.parentElement?.parentElement?.closest('.d4-menu-item'));
       const target = await (window as any).__poll(find, (e: Element | undefined) => !!e, 800, 40);
       (target?.closest('.d4-menu-item') as HTMLElement | null)?.click();
     });

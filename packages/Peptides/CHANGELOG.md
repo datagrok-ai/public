@@ -2,6 +2,14 @@
 
 ## v.next
 
+* Tests: The BDD scenario "Clicking a WebLogo glyph selects exactly the peptides carrying that monomer" waits a second after the selection before it clicks the column header. The table view shows a new selection in the context panel 100 ms after it unless the current object changed meanwhile, and a click on the header of the column already current is no change: a click within those 100 ms had the selection replace the column and the Peptides pane with it, and the scenario failed now and then in both modes ("no readings")
+* Tests: The Most Potent Residues and Logo Summary Table viewer categories load the package's components in `before`, as the other viewer categories do, so they pass when run on their own (they failed with "SeqHelper is not initialized")
+* Sequence Variability Map: Fixed the Mutation Cliffs mode switch being cut off by the left edge of a narrow viewer, where it could not be clicked
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): SAR demo: subscribes to the grid's first draw at once instead of 50 ms later, so it no longer misses it and waits its 3 s cap
+* App: The landing header is u2's `AppHeader` (moved out of `@datagrok-libraries/utils`): the same icon, bullets and Learn more
+* [core#1010](https://github.com/datagrok-ai/core/issues/1010): Logo Summary Table: Fixed WebLogo cells failing with "row counts differ" when the table is filtered and Web Logo Aggregation Type is not count
+* [public#4226](https://github.com/datagrok-ai/public/issues/4226): Bio | Analyze | SAR is disabled until the current table has a macromolecule column, instead of warning
+* Tests: Added package tests for the invariant-map and mutation-cliff exports, the mutation-cliff counts and position chart on 200 peptides, and the MCL cluster counts with the Logo Summary Table statistics at thresholds 10, 75 and 96; they replace the counts and oracles of the export, mutation-cliffs and similarity-threshold BDD features
 * Settings: The Dendrogram box reads the tree that is actually shown: the tree is a grid neighbour, a sibling of the grid rather than a child, so its close button is looked for in the whole analysis view (the box stayed unchecked on reopen after GROK-20640's narrower lookup)
 * GROK-20640: Settings: Fixed the Dendrogram box reopening unchecked while the tree is shown, and unchecking it leaving the tree in place — the tree is attached beside the grid, not docked as a viewer
 * Tests: BDD suite closed its gaps against the TestTrack cases and the old Playwright specs: similarity thresholds 10-96, a launch at the default settings, the dock layout, selection after a project reopen, Mutation Cliffs glyphs, statistics after Manual Alignment; every feature states what it does not translate

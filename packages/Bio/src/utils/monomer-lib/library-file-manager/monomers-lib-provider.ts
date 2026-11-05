@@ -111,11 +111,13 @@ export class MonomerLibFromFilesProvider implements IMonomerLibProvider {
     });
     const paths = isFullPath ? names : names.map((n) => this.LIB_PATH + n);
     const libs: MonomerLibData[] = [];
+    // the files are fetched at once, then read in order as before (a failed fetch fails its file only)
+    const files = readTextFiles(paths);
 
     for (let i = 0; i < paths.length; i++) {
       const formatedLib: MonomerLibData = {};
       try {
-        const file = await grok.dapi.files.readAsText(paths[i]);
+        const file = await files[i];
         rawLibData = JSON.parse(file);
         rawLibData.forEach((monomer) => {
           const polymerType = monomer[REQ.POLYMER_TYPE];
@@ -138,11 +140,13 @@ export class MonomerLibFromFilesProvider implements IMonomerLibProvider {
   async loadSets(names: string[]): Promise<IMonomerSet[]> {
     const sets: IMonomerSet[] = [];
     const lib = this.libHelper.getMonomerLib();
-    for (const name of names) {
-      const correctedName = name.endsWith('.json') ? name : `${name}.json`;
-      const path = this.SETS_PATH + correctedName;
+    const paths = names.map((name) => this.SETS_PATH + (name.endsWith('.json') ? name : `${name}.json`));
+    // the files are fetched at once, then read in order as before (a failed fetch fails its set only)
+    const files = readTextFiles(paths);
+    for (let i = 0; i < paths.length; i++) {
+      const path = paths[i];
       try {
-        const file = await grok.dapi.files.readAsText(path);
+        const file = await files[i];
         const raw = JSON.parse(file);
         const description = raw['description'];
         const placeholders = Object.entries(raw['placeholders']).map(([k, v]: [string, any]) => {
@@ -257,13 +261,19 @@ export class MonomerLibFromFilesProvider implements IMonomerLibProvider {
         return;
       }
 
+      // the .json files are fetched at once, then validated in order as before
+      const contents = new Map<string, Promise<string>>();
+      for (const path of libPathList) {
+        if (path.endsWith('.json') && !contents.has(path))
+          contents.set(path, readTextFiles([this.LIB_PATH + `${path}`])[0]);
+      }
       for (const path of libPathList) {
         if (!path.endsWith('.json')) {
           invalidFiles.push(path);
           continue;
         }
 
-        const fileContent = await grok.dapi.files.readAsText(this.LIB_PATH + `${path}`);
+        const fileContent = await contents.get(path)!;
         if (!this.isValidHELMLibrary(fileContent, path))
           invalidFiles.push(path);
       }
@@ -375,4 +385,14 @@ export class MonomerLibFromFilesProvider implements IMonomerLibProvider {
 
     return existingSetPaths.map((p) => /* relative to SET_PATH */ p.substring(this.SETS_PATH.length));
   }
+}
+
+/** Fetches the files at once: the results in the order of {@link paths}. A failed fetch rejects its own promise only
+ * (handled where it is awaited), so the others are not left unhandled. */
+function readTextFiles(paths: string[]): Promise<string>[] {
+  return paths.map((path) => {
+    const res = grok.dapi.files.readAsText(path);
+    res.catch(() => {}); // seen by its own await
+    return res;
+  });
 }

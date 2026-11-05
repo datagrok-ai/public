@@ -6,8 +6,10 @@ Feature: Sequence Activity Cliffs
   cliffs themselves are claimed by the plot's "cliffs" reading (what its "N cliffs" button shows):
   the sali column and the plot are there even when no pair qualifies.
 
-  Not translated, and why: the HELM and MSA runs of the manual cases are in other-notations; the
-  empty current row (GROK-16111) is in empty-current-row. The "Show only cliffs" switch and the
+  The HELM and MSA runs of the manual cases are tested in Bio src/tests/activity-cliffs-tests.ts
+  ('activityCliffsHelm', 'activityCliffsMsa').
+
+  Not translated, and why: the empty current row (GROK-16111) is in empty-current-row. The "Show only cliffs" switch and the
   cliffs grid it opens are not claimed here, and neither did the old spec.
 
   Background:
@@ -16,14 +18,14 @@ Feature: Sequence Activity Cliffs
     And the Bio package is initialized
     Then "Sequence" column should have semantic type "Macromolecule"
 
-  Scenario: The editor opens with the sequence column, the first numeric column as the activity, and a cutoff
+  Scenario: The editor opens with the sequence column, the column named like an activity, and a cutoff
     When user picks "Bio > Analyze > Activity Cliffs..." from the top menu
     Then "Sequence Activity Cliffs" dialog should be visible
     And editor of Column input in "Sequence Activity Cliffs" dialog should have text "Sequence"
     And Method input in "Sequence Activity Cliffs" dialog should have value "UMAP"
     And Similarity input in "Sequence Activity Cliffs" dialog should have value "Hamming"
     And "Similarity cutoff" input in "Sequence Activity Cliffs" dialog should have value "80"
-    And editor of Activities input in "Sequence Activity Cliffs" dialog should have text "Length"
+    And editor of Activities input in "Sequence Activity Cliffs" dialog should have text "Activity"
 
   Scenario: Running on the Activity column docks a cliff scatter plot
     When user selects "Activity" in Activities input in "Sequence Activity Cliffs" dialog

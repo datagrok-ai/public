@@ -8,8 +8,8 @@ Feature: Activity Cliffs on a table with no numeric column
   The click is the pointer landing on the button as soon as the button is on screen, not the
   library's click, which waits for an enabled target and so would wait out the very seconds the
   defect lived in. OK's state is recorded in the task it enters the page and again as the click
-  lands, together with whether the click point is on OK (a dialog still laying itself out moves it),
-  and the absence of a balloon and of an error is held over two seconds, not read once.
+  lands, together with whether the click point is on OK (a dialog still laying itself out moves it):
+  a click on a disabled OK runs nothing, so the error floor is read once, after the dialog is claimed.
 
   Background:
     Given user is logged in
@@ -22,8 +22,9 @@ Feature: Activity Cliffs on a table with no numeric column
     When user picks "Chem > Analyze > Activity Cliffs..." from the top menu
     And user clicks on OK button in "Activity Cliffs" dialog at once
     Then the OK button should have been disabled when it appeared and when it was clicked
-    And no error or warning balloon and no error should appear for 2 seconds
     And "Activity Cliffs" dialog should be visible
     And OK button in "Activity Cliffs" dialog should be disabled
     And no new column should have been added
     And the table should have 1000 rows
+    And no errors should have been logged
+    And no error or warning balloon should have been shown

@@ -1,10 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {category, test, before, awaitCheck, delay, expect} from '@datagrok-libraries/test/src/test';
+import {category, test, before, waitUntil, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {ScaffoldTreeViewer, updateVisibleNodes, value} from '../widgets/scaffold-tree';
+import {SCAFFOLD_TREE_MAX_MOLECULES, ScaffoldTreeViewer, scaffoldTreeSampleRows, updateVisibleNodes, value}
+  from '../widgets/scaffold-tree';
+import {ChemicalEngine} from '../engine/chem-engine';
+import {inEngine} from './engine-utils';
+import {PackageFunctions} from '../package';
 
 category('scaffold tree', () => {
   let mol1K: DG.DataFrame;
@@ -19,6 +23,11 @@ category('scaffold tree', () => {
     scaffoldTree.molCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
     tv.dockManager.dock(scaffoldTree.root);
     return {tv, scaffoldTree, table};
+  }
+
+  async function frameAttached(scaffoldTree: ScaffoldTreeViewer): Promise<void> {
+    await waitUntil(() => scaffoldTree.root.querySelector('.chem-scaffold-tree-toolbar') !== null,
+      'scaffold tree hasn\'t been attached to its table');
   }
 
   before(async () => {
@@ -41,23 +50,23 @@ category('scaffold tree', () => {
       df.rows.removeAt(5, df.rowCount - 5);
     await grok.data.detectSemanticTypes(df);
     const tv = grok.shell.addTableView(df);
-    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    await waitUntil(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     tv.addViewer(ScaffoldTreeViewer.TYPE);
-    await awaitCheck(() => Array.from(tv.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE).length > 0,
+    await waitUntil(() => Array.from(tv.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE).length > 0,
       'cannot create viewer', 3000);
     const generateLink = document.querySelector('.chem-scaffold-tree-generate-hint') as HTMLElement;
     if (generateLink)
       generateLink.click();
     const stviewer = Array.from(tv.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE)[0] as ScaffoldTreeViewer;
-    await awaitCheck(() => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0].children.length > 0,
+    const host = () => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0];
+    await waitUntil(() => (host()?.children.length ?? 0) > 0 && !stviewer.progressBar,
       'scaffold tree has not been generated', DG.Test.isInBenchmark ? 3600000 : 180000);
-    await delay(2000); //need to scaffold to finish generation
     tv.close();
   }, {timeout: 190000, benchmark: true, stressTest: true, benchmarkTimeout: 300000, skipReason: 'GROK-17648'});
 
   test('parent node contains H atom', async () => {
     const {tv, scaffoldTree} = openScaffoldTree(mol1K);
-    await delay(1000);
+    await frameAttached(scaffoldTree);
 
     const molStr = 'Nc1ccccc1';
     const rootGroup = await scaffoldTree.createGroup(molStr, scaffoldTree.tree);
@@ -77,6 +86,34 @@ category('scaffold tree', () => {
     expect(warningExists, false);
     expect(isRedLabel, false);
     tv.close();
+  });
+
+  // #2626: the child dialog of a scaffold drawn with an explicit H warned that the parent's own molecule was not a
+  // superstructure of it
+  test('parent node drawn with an explicit H opens its child with no warning', async () => {
+    const {tv, scaffoldTree} = openScaffoldTree(mol1K);
+    try {
+      await frameAttached(scaffoldTree);
+      const parent = '[H]c1ccccc1';
+      const rootGroup = scaffoldTree.createGroup(parent, scaffoldTree.tree);
+      expect(rootGroup !== null, true, 'the scaffold was not added');
+      scaffoldTree.openAddSketcher(rootGroup!);
+      const wrapper = scaffoldTree.wrapper!;
+      await wrapper.sketcher.sketcherReady();
+      await waitUntil(() => !wrapper.sketcher.isEmpty(), 'the child dialog did not load the parent molecule');
+      const held = wrapper.normalizeMolStr(wrapper.sketcher.getMolFile());
+      expect(ScaffoldTreeViewer.validateNodes(held, parent), true,
+        'the parent molecule the dialog opens with is not taken as a superstructure of the parent');
+      const label = wrapper.dialog.root.querySelector('.ui-label') as HTMLElement;
+      await waitUntil(() => label.innerText === '', () => `the child dialog warns: ${label.innerText}`);
+      expect(ScaffoldTreeViewer.validateNodes('Cc1ccccc1', parent), true, 'toluene is not taken as a child of it');
+      expect(ScaffoldTreeViewer.validateNodes('C1CCNCC1', parent), false, 'piperidine is taken as a child of it');
+      wrapper.dialog.close();
+      scaffoldTree.wrapper = null;
+    }
+    finally {
+      tv.close();
+    }
   });
 
   test('edit invalid structure', async () => {
@@ -112,6 +149,88 @@ category('scaffold tree', () => {
     expect(scaffoldTree.isBitsetStale(group), false);
     tv.close();
   });
+
+  test('opens when the current view is not a table view', async () => {
+    grok.shell.addView(DG.View.create());
+    const table = sarSmall.clone();
+    const viewer = DG.Viewer.fromType(ScaffoldTreeViewer.TYPE, table);
+    // the package's viewer brings the property: before it attaches, reading it throws
+    await waitUntil(() => viewer.getProperties().some((p) => p.name === 'moleculeColumnName') &&
+      viewer.props.moleculeColumnName === 'smiles', 'molecule column is not set', 3000);
+    expect(viewer.props.Table, table.name);
+    grok.shell.closeAll();
+  });
+
+  /** smiles.csv's 1,000 molecules `times` times over, every 100th row empty: a large molecule table. */
+  async function largeTable(times: number): Promise<DG.DataFrame> {
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList() as string[];
+    const values = Array.from({length: smiles.length * times},
+      (_, i) => i % 100 === 99 ? '' : smiles[i % smiles.length]);
+    const col = DG.Column.fromStrings('smiles', values);
+    col.semType = DG.SEMTYPE.MOLECULE;
+    return DG.DataFrame.fromColumns([col]);
+  }
+
+  test('a large column is sampled to 750 molecules spread over it', async () => {
+    const values = (await largeTable(5)).col('smiles')!.toList() as string[];
+    const readable = (m: string) => !!m;
+    const rows = scaffoldTreeSampleRows(values, SCAFFOLD_TREE_MAX_MOLECULES, readable);
+    expect(rows.length, 750);
+    expect(rows.every((r, i) => i === 0 || r > rows[i - 1]), true, 'rows in order, none twice');
+    expect(rows.every((r) => values[r] !== ''), true, 'no empty molecule');
+    // the first and the last stretch (each values.length / 750 rows) give the first and the last row
+    const stretch = Math.ceil(values.length / SCAFFOLD_TREE_MAX_MOLECULES);
+    expect(rows[0] < stretch && rows[rows.length - 1] >= values.length - stretch, true,
+      `spread from ${rows[0]} to ${rows.at(-1)}`);
+    expect(scaffoldTreeSampleRows(values, SCAFFOLD_TREE_MAX_MOLECULES, readable).join(), rows.join(), 'deterministic');
+    const small = values.slice(0, 700);
+    expect(scaffoldTreeSampleRows(small, SCAFFOLD_TREE_MAX_MOLECULES, readable).length, 700,
+      'a small column: all rows');
+  });
+
+  test('Generate is open on a large table, from a 750-molecule sample its tooltip names', async () => {
+    const {tv, scaffoldTree} = openScaffoldTree(await largeTable(5));
+    await frameAttached(scaffoldTree);
+    expect(scaffoldTree.generateBlockedReason(), null);
+    expect(scaffoldTree.generateHint(), 'Generate from a sample of 750 of 4,950 molecules');
+    expect(scaffoldTree._iconGenerate?.classList.contains('inactive'), false, 'Generate is enabled');
+    // the tree is generated from the sample (the script is not run here: the generated table is caught)
+    let generatedRows = -1;
+    scaffoldTree.finishGenerateTree = async (df: DG.DataFrame) => {
+      generatedRows = df.rowCount;
+    };
+    await scaffoldTree.generateTree();
+    expect(generatedRows, 750);
+    expect(scaffoldTree.generatedFrom, 'a sample of 750 of 4,950 molecules');
+    tv.close();
+    // a table of at most 750 molecules: as before, all of them
+    const small = openScaffoldTree(sarSmall);
+    await frameAttached(small.scaffoldTree);
+    expect(small.scaffoldTree.generateBlockedReason(), null);
+    expect(small.scaffoldTree.generateHint(), 'Generate from molecular column');
+    small.tv.close();
+  });
+
+  test('the Python script on a 750-molecule sample', async () => {
+    // timing (the stand's Python): the tree the RDKit engine builds from the sample of a 4,950-molecule table. A
+    // measurement: with --benchmark only (chemical engine's "scaffold tree: Crux against the Python script" checks
+    // the script's tree node by node)
+    if (!DG.Test.isInBenchmark)
+      return;
+    const values = (await largeTable(5)).col('smiles')!.toList() as string[];
+    const rows = scaffoldTreeSampleRows(values, SCAFFOLD_TREE_MAX_MOLECULES, (m) => !!m);
+    const sample = DG.Column.fromStrings('smiles', rows.map((r) => values[r]));
+    sample.semType = DG.SEMTYPE.MOLECULE;
+    const df = DG.DataFrame.fromColumns([sample]);
+    await inEngine(ChemicalEngine.RDKit, async () => {
+      const started = performance.now();
+      const tree = JSON.parse(await PackageFunctions.getScaffoldTree(df, 10, false));
+      const seconds = (performance.now() - started) / 1000;
+      console.log(`scaffold tree | the Python script on ${df.rowCount} molecules: ${seconds.toFixed(1)} s, ` +
+        `${tree.length} root scaffolds`);
+      expect(tree.length > 0, true);
+    });
+  }, {timeout: 900000, benchmark: true});
 
   async function editStructure(scaffoldTree: ScaffoldTreeViewer, group: DG.TreeViewGroup, smiles: string) {
     await scaffoldTree.openEditSketcher(group);

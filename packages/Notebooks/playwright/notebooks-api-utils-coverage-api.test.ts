@@ -39,14 +39,15 @@ test('Notebooks API Utilities and Route Coverage (apitest) — count route, edit
         try {
           const cmd = (window as any).DG.Func.find({name: 'CmdNewNotebook'})[0];
           if (!cmd) throw new Error('CmdNewNotebook command function not registered (Notebooks plugin not installed?)');
-          const before = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10});
-          const beforeIds = new Set(before.map((n: any) => n.id));
+          // The command makes the new notebook the current object of this page. Taking the newest one on
+          // the server instead picks up notebooks the other specs create in parallel workers.
+          const prevId = grok.shell.o?.id;
           try { await cmd.apply(); } catch (e: any) { result.applyErr = String(e?.message ?? e).slice(0, 300); }
           let fresh: any = null;
           for (let i = 0; i < 40 && !fresh; i++) {
             await new Promise((r) => setTimeout(r, 500));
-            const cur = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10}).catch(() => [] as any[]);
-            fresh = cur.find((n: any) => !beforeIds.has(n.id));
+            const id = grok.shell.o?.id;
+            if (id && id !== prevId) fresh = await grok.dapi.notebooks.find(id).catch(() => null);
           }
           if (fresh) { result.seeded = true; result.seedId = fresh.id; }
         } catch (e: any) { result.err = String(e?.message ?? e).slice(0, 400); }
@@ -67,15 +68,14 @@ test('Notebooks API Utilities and Route Coverage (apitest) — count route, edit
           result.before = before;
           result.beforeIsInt = typeof before === 'number' && Number.isInteger(before) && before >= 0;
           // Seed one more notebook and confirm the count grows by at least 1.
-          const top = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10});
-          const topIds = new Set(top.map((n: any) => n.id));
+          const prevId = grok.shell.o?.id;
           const cmd = (window as any).DG.Func.find({name: 'CmdNewNotebook'})[0];
           await cmd.apply().catch(() => {});
           let nb2: any = null;
           for (let i = 0; i < 40 && !nb2; i++) {
             await new Promise((r) => setTimeout(r, 500));
-            const cur = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10}).catch(() => [] as any[]);
-            nb2 = cur.find((n: any) => !topIds.has(n.id));
+            const id = grok.shell.o?.id;
+            if (id && id !== prevId) nb2 = await grok.dapi.notebooks.find(id).catch(() => null);
           }
           // count() may lag the freshly-committed seed by a poll on a cold server;
           // poll until it reflects the +1.

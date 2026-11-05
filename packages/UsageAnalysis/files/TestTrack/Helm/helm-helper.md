@@ -13,15 +13,16 @@ related_bugs: []
 # Helm — HelmHelper accessor + factory + hit-test API surface
 
 Exercises the `IHelmHelper` singleton returned by `Helm:getHelmHelper` — the
-JS API surface plugins use to parse HELM sequences, build the HELM input and
-editor widgets, and hit-test a point against a drawn structure. Confirms the
+JS API surface plugins use to build the HELM input and editor widgets, convert
+HELM to molfiles, and hit-test a point against a drawn structure. Confirms the
 singleton and its full method set are present, that `createHelmInput` and
 `createHelmWebEditor` build working widgets bound to the active monomer
 library, and that `getHoveredAtom` returns the correct atom (or `null`) for a
 given point. This targets the API after the 2026 rewrite that replaced the
-JSDraw2/Dojo editor with a native SVG one — the public method surface is
-unchanged, but `createHelmWebEditor().editor` is now a plain adapter object
-rather than a JSDraw2 instance; see grok-browser `references/helm.md`.
+JSDraw2/Dojo editor with a native SVG one — `createHelmWebEditor().editor` is
+now a plain adapter object rather than a JSDraw2 instance, and `parse`,
+`removeGaps` and the monomer-funcs override trio are gone from the interface;
+see grok-browser `references/helm.md`.
 
 ## Setup
 
@@ -35,11 +36,9 @@ rather than a JSDraw2 instance; see grok-browser `references/helm.md`.
    is sufficient. The widget factories pull the lib via
    `_package._libHelper!.getMonomerLib()` so the lib MUST be present or
    `createHelmInput` will throw.
-4. Test fixture HELM strings (deterministic, atom-count-checkable):
-   - peptide linear:
-     `PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et}$$$$`
-     (9 monomers → 9 atoms, 8 bonds).
-   - RNA short: `RNA1{r(A)p.r(C)p.r(G)p.r(U)p}$$$$` (→ 12 atoms, 11 bonds).
+4. Test fixture HELM string (deterministic, atom-count-checkable):
+   peptide linear `PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et}$$$$`
+   (9 monomers → 9 atoms, 8 bonds).
 
 ## Scenarios
 
@@ -53,17 +52,16 @@ Steps:
    `const hh2 = await grok.functions.call('Helm:getHelmHelper');
    assert(hh === hh2);`.
 3. Inspect the returned object: it MUST carry the methods declared on the
-   `IHelmHelper` interface — `parse`, `removeGaps`, `getMolfiles`,
-   `getHoveredAtom`, `createHelmInput`, `createHelmWebEditor`,
-   `createWebEditorApp`, `overrideMonomersFuncs`,
-   `revertOriginalMonomersFuncs`, `buildMonomersFuncsFromLib`.
+   `IHelmHelper` interface — `getMolfiles`, `getHoveredAtom`,
+   `createHelmInput`, `createHelmWebEditor`, `createWebEditorApp`,
+   `buildMonomersFuncsFromLib`.
 
 Expected:
 - `Helm:getHelmHelper` resolves without throwing; the returned object is
   non-null.
 - The singleton invariant holds — every call returns the same reference.
 - Every method listed above is present as a function on the returned object.
-  No method is `undefined`. (Verified live: all 10 present.)
+  No method is `undefined`.
 
 ### Scenario 2: HelmHelper.createHelmInput builds a HelmInput widget bound to the monomer lib
 
@@ -121,8 +119,11 @@ Expected:
 ### Scenario 4: HelmHelper.getHoveredAtom hit-tests a point against a HelmMol and returns the nearest atom
 
 Steps:
-1. With `hh` from Scenario 1, parse a deterministic fixture to a `HelmMol`:
-   `const mol = hh.parse('PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et}$$$$');`.
+1. With `hh` from Scenario 1, draw the fixture in a view-only editor and take
+   its laid-out `HelmMol` (the molecule `HelmInput` hit-tests):
+   `const editor = hh.createHelmWebEditor(ui.div(), {}).editor;
+   editor.setHelm('PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et}$$$$');
+   const mol = editor.m;`.
 2. Assert `mol != null`; record `mol.atoms.length` (expected 9 for the
    linear 9-monomer chain).
 3. Pick atom 0 and read its coordinate:

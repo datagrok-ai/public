@@ -2,6 +2,14 @@
 
 ## v.next
 
+* HELM editor: Fixed the monomer that follows the mouse after a click on a palette tile staying on the page once Escape closed the editor. The cell editor (a double click) and the HELM input's editor destroy the editor when their dialog closes, however it closes; it kept its document listeners after every edit. Test: `helm-web-editor`, cell editor Escape
+* Dependencies: `@datagrok-libraries/hwe` 1.1.1 (`parseHelm` about 15-20% faster with the same results; a `trailing-monomer-separator` warning)
+* Renderer: Keeps the hover data of the last 1,000 values drawn, not of every value ever drawn (memory grew while scrolling large tables), and builds a cell's hover view only when the cell is hovered or highlighted
+* Molecular Structure pane: Bio's panel, now linear by default with the assembler's per-row non-linear fallback
+* Removed dead code: HelmHelper's `parse`, `removeGaps` and monomer-funcs override (gone from `IHelmHelper`), the old `parseHelm` / `findMonomers` utils, unused constants, renderer shims and the unused dayjs, lru-cache and wu dependencies, with their tests and Playwright steps
+* Tests: The non-linear To Atomic Level test counts the heavy atoms and bonds of the molblock instead of calling RDKit
+* Tests: Added the package test 'Bio functions: HELM showcase' — Composition, Sequence Space, Hierarchical Clustering, Convert Sequence Notation, Extract Region, Similarity, Diversity and Subsequence Search and Split to Monomers run on the HELM showcase through their functions, each result and the HELM column checked; the `integration/bio-menu` feature now keeps only Scan Liabilities and the column check
+* Tests: Added the BDD feature `integration/bio-menu` — every Bio command that takes a standalone HELM column run on the HELM showcase, and the column still painted by Helm afterwards (from TestTrack General/helm-bio-menu-integration)
 * Edit Helm...: Fixed the action opening the current cell's peptide instead of the right-clicked one; the current cell stays the fallback for a value that comes without a cell
 * Tests: Added the BDD suite (renderer, HELM editor, notation, palette, Properties pane, service surface) and package tests for getHoveredAtom and the monomer functions override
 

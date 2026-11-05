@@ -7,6 +7,8 @@ Feature: Histogram property surface
   through a layout round-trip on the server. Bins, selection and the range filter have features of
   their own. One journey on demog-1000 with a histogram of AGE; every scenario puts back what it
   changed.
+  Closed issues (core#998): a logarithmic X axis over a column with no positive value and a Y Min
+  above the Y Max are reported in the viewer's error instead of throwing on every frame.
 
   Background:
     Given user is logged in
@@ -21,7 +23,7 @@ Feature: Histogram property surface
     And histogram viewer should have an "x axis" area
     And histogram viewer should have a "y axis" area
 
-  Scenario: The value column and the bin count, from the panel and from the plot
+  Scenario: The value column and the bin count, from the panel and from the plot (github-2296)
     When user sets "Value" property of histogram viewer to "WEIGHT"
     Then Value column input in histogram viewer should contain text "WEIGHT"
     And the "axis min" reading of histogram viewer should be higher than before
@@ -39,8 +41,8 @@ Feature: Histogram property surface
     And user hovers over histogram viewer
     Then histogram viewer should have a "bins slider" area
     When user drags the "bins slider" area of histogram viewer by 40 pixels to the right
-    Then "Bins" property of histogram viewer should not be "50"
-    And the "bins shown" reading of histogram viewer should be higher than before
+    Then "Bins" property of histogram viewer should be "169"
+    And the "bins shown" reading of histogram viewer should be 169
     And histogram viewer should have repainted by at least 2000 pixels
     When user sets "Bins" property of histogram viewer to "20"
     Then the "bins shown" reading of histogram viewer should be 20
@@ -140,6 +142,39 @@ Feature: Histogram property surface
       | Y Max                       |      |
     Then the "y axis max" reading of histogram viewer should be 99
     And the "clipped bins" reading of histogram viewer should be 0
+    And no errors should have been logged
+
+  @realizes:core#998
+  Scenario: A logarithmic X axis over a column with no positive value is reported, not thrown (core#998)
+    When user adds a calculated column "NEG_AGE" with formula "0 - ${AGE}"
+    And user sets "Value" property of histogram viewer to "NEG_AGE"
+    Then histogram viewer should have a "bin 1" area
+    When user sets "X Axis Type" property of histogram viewer to "logarithmic"
+    Then the "error" reading of histogram viewer should be "no positive values to show on the logarithmic X axis"
+    And histogram viewer should not have a "bin 1" area
+    When user hovers over the "view" area of histogram viewer
+    Then no errors should have been logged
+    When user sets "X Axis Type" property of histogram viewer to "linear"
+    Then the "error" reading of histogram viewer should be ""
+    And histogram viewer should have a "bin 1" area
+    When user sets "Value" property of histogram viewer to "AGE"
+    And user removes "NEG_AGE" column
+    Then no errors should have been logged
+
+  @realizes:core#998
+  Scenario: A Y Min above the Y Max is reported, not thrown (core#998)
+    When user sets properties of histogram viewer:
+      | Y Min | 80 |
+      | Y Max | 20 |
+    Then the "error" reading of histogram viewer should be "Y Max should be at least 80"
+    And histogram viewer should not have a "bin 8" area
+    When user hovers over the "view" area of histogram viewer
+    Then no errors should have been logged
+    When user sets properties of histogram viewer:
+      | Y Min |  |
+      | Y Max |  |
+    Then the "error" reading of histogram viewer should be ""
+    And histogram viewer should have a "bin 8" area
     And no errors should have been logged
 
   Scenario: A split brings a legend

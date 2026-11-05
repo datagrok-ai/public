@@ -1,10 +1,12 @@
 {
   "$schema": "dg-ui/1",
+  "components": [
+    {"tag": "u2-domain-source", "name": "substances", "props": {"table": "stockroom.substance", "pageSize": 50}}
+  ],
   "root": {
     "tag": "u2-panel",
     "name": "app",
     "children": [
-      {"tag": "u2-domain-source", "name": "substances", "props": {"table": "stockroom.substance", "pageSize": 50}},
       {"tag": "u2-splitter", "name": "layout", "props": {"direction": "horizontal", "sizes": [0.35, 0.65]}, "children": [
         {"tag": "u2-panel", "name": "left", "children": [
           {"tag": "u2-domain-search", "name": "search", "bind": {"source": "$.substances.source"}, "props": {"placeholder": "Name or CAS"}},

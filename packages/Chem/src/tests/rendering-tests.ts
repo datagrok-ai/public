@@ -1,10 +1,11 @@
-import {category, test, expectArray, before} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, before, waitUntil} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {readDataframe} from './utils';
 import {scrollTable} from '../utils/demo-utils';
 import * as DG from 'datagrok-api/dg';
 import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
+import {showEnlargedMolecule} from '../rendering/render-molecule';
 import {FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG, SCAFFOLD_TREE_HIGHLIGHT} from '../constants';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 
@@ -109,6 +110,37 @@ category('rendering', () => {
     console.log(`rendering of ${rowCount} molecules with highlight took ${performance.now() - start} milliseconds`);
   }, {timeout: 180000, benchmark: true});
 
+  test('mixture cell renderer', async () => {
+    const df = await readDataframe('test_mixtures.csv');
+    await grok.data.detectSemanticTypes(df);
+    expect(df.col('mixture')!.semType, 'ChemicalMixture');
+    const grid = df.plot.grid();
+    const renderer: DG.GridCellRenderer =
+      await DG.Func.find({package: 'Chem', meta: {cellType: 'ChemicalMixture', role: 'cellRenderer'}})[0].apply();
+    const r = window.devicePixelRatio;
+    // the renderer works in device pixels: a fixed device-pixel canvas gets the same picture at any devicePixelRatio
+    const [w, h, margin] = [600, 200, 4];
+    const leafComponents = [2, 3, 3, 3];
+    for (let row = 0; row < df.rowCount; row++) {
+      const canvas = ui.canvas(w, h);
+      const g = canvas.getContext('2d')!;
+      const cell = grid.cell('mixture', row);
+      renderer.render(g, 0, 0, w / r, h / r, cell, cell.style);
+      const pixels = g.getImageData(0, 0, w, h).data;
+      const slot = (w - 2 * margin) / leafComponents[row];
+      const ink = new Array(leafComponents[row]).fill(0);
+      for (let y = 0; y < h; y++) {
+        for (let x = margin; x < w - margin; x++) {
+          const i = (y * w + x) * 4;
+          if (pixels[i + 3] < 128 || Math.min(pixels[i], pixels[i + 1], pixels[i + 2]) > 230)
+            continue;
+          ink[Math.min(Math.floor((x - margin) / slot), ink.length - 1)]++;
+        }
+      }
+      expect(ink.every((n) => n > 10), true, `row ${row}: a component drew no ink (${ink.join(', ')})`);
+    }
+  });
+
   test('stereochemistry', async () => {
     const df = await readDataframe('tests/stereochemistry.csv');
     const smiles = df.getCol('smiles').toList();
@@ -116,5 +148,19 @@ category('rendering', () => {
     const res = smiles.map((s) => rdKitCellRenderer
       ._fetchMol(s, [], false, false, {}, true).molCtx.useMolBlockWedging);
     expectArray(res, new Array(5).fill(false));
+  });
+
+  test('Enlarge draws the molecule again at the window\'s size', async () => {
+    const dialog = showEnlargedMolecule('O=C(O)c1ccccc1');
+    try {
+      const canvas = dialog.root.querySelector('canvas')!;
+      expect(canvas.style.width, `${Math.max(200, window.innerWidth - 200)}px`);
+      await waitUntil(() => {
+        const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+        return data.some((v, i) => i % 4 === 0 && v < 100 && data[i + 3] > 200); // a bond: dark and opaque
+      }, 'nothing drawn', 5000);
+    } finally {
+      dialog.close();
+    }
   });
 });

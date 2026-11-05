@@ -72,7 +72,7 @@ export async function render(main) {
 
   section('Coarse step', () => {
     const input = new SliderInput({label: 'Bins', min: 0, max: 100, step: 10, value: 30});
-    return [input, readout('bins', computed(() => shown(input.value.value)))];
+    return [input, readout('bins', computed(() => shown(input.value)))];
   });
 
   const shared = signal(3);

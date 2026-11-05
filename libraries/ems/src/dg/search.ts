@@ -1,0 +1,96 @@
+import {computed, TextInput} from '@datagrok-libraries/u2';
+import type {DomainSource} from '../core/domain-source.js';
+import {nounOf} from '../core/domain-backend.js';
+import {confirmDiscard} from '../core/session.js';
+import {DomainTable} from './facade.js';
+
+export interface DomainSearchOptions {
+  placeholder?: string;
+  /** How long the box waits after the last keystroke before it searches (default 300 ms). */
+  debounceMs?: number;
+}
+
+/** The longest column list the placeholder spells out. */
+const PLACEHOLDER_CHARS = 20;
+
+/** The ribbon search box, two-way with `source.search`. A search the user makes goes through the unsaved gate,
+ * as the filters do, and a cancel puts the previous text back. */
+export class DomainSearch extends TextInput {
+  private _timer: ReturnType<typeof setTimeout> | undefined;
+
+  constructor(readonly source: DomainSource, options: DomainSearchOptions = {}) {
+    super({search: true, inline: true, name: 'search', value: source.search.peek(),
+      placeholder: options.placeholder ?? computed(() => {
+        source.state.value;
+        const columns = DomainSearch.columns(source).join(', ');
+        // a list too long for the box is left to the tooltip
+        return columns === '' || columns.length > PLACEHOLDER_CHARS ? `Search ${nounOf(source.schema.info)}…` :
+          `Search ${columns}…`;
+      })});
+    this.root.classList.add('u2-domain-search');
+    this.root.dataset.u2 = 'domain-search';
+    const box = this.root.querySelector('input')!;
+    this.effect(() => {
+      source.state.value;
+      const columns = DomainSearch.columns(source);
+      box.title = columns.length === 0 ? '' : `Finds the ${nounOf(source.schema.info)} whose ` +
+        `${columns.join(', ')} contain the text — within what the filter shows`;
+    });
+    const wait = options.debounceMs ?? 300;
+    const write = () => {
+      this._cancel();
+      const text = this.peek();
+      if (source.search.peek() === text)
+        return;
+      void confirmDiscard(source.session, {action: 'change the search'}).then((ok) => {
+        if (ok)
+          source.search.value = text;
+        else
+          this.value = source.search.peek();
+      });
+    };
+    this.effect(() => {
+      const text = this.value;
+      this._cancel();
+      if (text !== source.search.peek())
+        this._timer = setTimeout(write, wait);
+    });
+    this.effect(() => {
+      const text = source.search.value;
+      if (this.peek() !== text) {
+        this._cancel();
+        this.value = text;
+      }
+    });
+    const input = this.root.querySelector('input')!;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter')
+        write();
+      else if (e.key === 'Escape') {
+        this.value = '';
+        write();
+      } else
+        return;
+      e.preventDefault();
+    };
+    input.addEventListener('keydown', onKeyDown);
+    this.own(() => {
+      input.removeEventListener('keydown', onKeyDown);
+      this._cancel();
+    });
+  }
+
+  private static columns(source: DomainSource): string[] {
+    const props = source.schema.properties;
+    return source.schema.info.searchableColumns.map((name) => {
+      const prop = props.find((p) => p.name === name);
+      return DomainTable.captionOf(prop ?? {name}).toLowerCase();
+    });
+  }
+
+  private _cancel(): void {
+    if (this._timer !== undefined)
+      clearTimeout(this._timer);
+    this._timer = undefined;
+  }
+}

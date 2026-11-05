@@ -594,13 +594,13 @@ export class TestTrack extends DG.ViewBase {
 
   private searchTreeItems(stringToSearch: string) {
     const dom = this.tree.root.getElementsByClassName('d4-tree-view-node');
-    const regExpToSearch = new RegExp(stringToSearch.toLowerCase());
+    const searchString = stringToSearch.toLowerCase();
     const listToShow: HTMLElement[] = [];
 
     function isFitsSearchString(stringToCheck: string, description?: string): boolean {
-      var result = regExpToSearch.test(stringToCheck.toLocaleLowerCase());
+      var result = stringToCheck.toLocaleLowerCase().includes(searchString);
       if (description) {
-        result = result || regExpToSearch.test(description.toLocaleLowerCase())
+        result = result || description.toLocaleLowerCase().includes(searchString)
       }
       return result;
     }

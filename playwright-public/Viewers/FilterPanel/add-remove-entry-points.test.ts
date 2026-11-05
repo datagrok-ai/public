@@ -88,7 +88,7 @@ async function dragCaptionAboveCard(page: Page, fromCaption: string, targetIndex
   const pts = await page.evaluate(({cap, ti}) => {
     const caps = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter-column-name')];
     const src = caps.find((e) => (e.textContent ?? '').trim() === cap) as HTMLElement;
-    const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')];
+    const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')];
     const target = cards[ti] as HTMLElement;
     if (!src || !target) return null;
     const targetCap = (target.querySelector('.d4-filter-column-name') ?? target) as HTMLElement;
@@ -446,7 +446,7 @@ async function openCleanDemogView(page: Page, path: string): Promise<void> {
     await new Promise((r) => setTimeout(r, 800));
     grok.shell.tv.getFiltersGroup();
   }, path);
-  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 30_000});
+  await page.locator('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').first().waitFor({timeout: 30_000});
   await expect.poll(async () => page.evaluate(() =>
     document.querySelectorAll('[name="viewer-Filters"]').length),
   {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
@@ -507,7 +507,7 @@ async function multiValueCardState(page: Page): Promise<MultiValueCardState | nu
 
 async function clickMultiValueRow(page: Page, rowIndex: number): Promise<MultiValueCardState> {
   const res = await page.evaluate(async ({col, ft, ri, cx, band, pitch, centre}) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col);
     const overlay = card?.querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement | null;
     if (!overlay) return null;
@@ -553,7 +553,7 @@ async function clickMultiValueRow(page: Page, rowIndex: number): Promise<MultiVa
 
 async function toggleMultiValueMode(page: Page): Promise<{text: string; state: MultiValueCardState}> {
   const res = await page.evaluate(async ({col, ft}) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col);
     const header = card?.querySelector('.d4-filter-header');
     const el = [...(header?.children ?? [])]
@@ -720,7 +720,7 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
 
     const disabled = await page.evaluate(async () => {
       const fg = grok.shell.tv.getFiltersGroup();
-      const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')] as HTMLElement[];
+      const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')] as HTMLElement[];
       const card = cards.find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === 'DIS_POP')!;
       const cb = (card.querySelector('input[type="checkbox"].ui-input-editor')
         ?? card.querySelector('input[type="checkbox"]')) as HTMLInputElement;
@@ -742,7 +742,7 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
     expect(await cardCount(page)).toBe(5);
 
     const rechecked = await page.evaluate(async () => {
-      const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')] as HTMLElement[];
+      const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')] as HTMLElement[];
       const card = cards.find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === 'DIS_POP')!;
       const cb = (card.querySelector('input[type="checkbox"].ui-input-editor')
         ?? card.querySelector('input[type="checkbox"]')) as HTMLInputElement;
@@ -802,9 +802,9 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
     const before = await cardCount(page);
     const beforeCount = await trueCount(page);
     await page.evaluate(async () => {
-      const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')] as HTMLElement[];
+      const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')] as HTMLElement[];
       const exprCard = cards.find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === 'Expression')!;
-      const cards2 = () => document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length;
+      const cards2 = () => document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').length;
       const was = cards2();
       (exprCard.querySelector('[name="icon-times"]') as HTMLElement)?.click();
       await (window as any).__poll(cards2, (n: number) => n < was, 600, 25);
@@ -913,14 +913,14 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
     persistedTrueCount = filtered;
 
     const state = await page.evaluate(async () => {
-      const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')] as HTMLElement[];
+      const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')] as HTMLElement[];
       const byName = (n: string) => cards.find((c) =>
         (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === n);
       const age = byName('AGE')!;
       const cb = (age.querySelector('input[type="checkbox"].ui-input-editor')
         ?? age.querySelector('input[type="checkbox"]')) as HTMLInputElement;
       const w = window as any;
-      const cardsNow = () => document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length;
+      const cardsNow = () => document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').length;
       await w.__filtered(() => cb.click(), 700);
       const was = cardsNow();
       (byName('SEX')!.querySelector('[name="icon-times"]') as HTMLElement)?.click();
@@ -949,7 +949,7 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
     expect(captions, 'the SEX card was removed and must NOT be recreated on reopen').not.toContain('SEX');
 
     const restored = await page.evaluate(() => {
-      const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')] as HTMLElement[];
+      const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')] as HTMLElement[];
       const age = cards.find((c) =>
         (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === 'AGE');
       const cb = (age?.querySelector('input[type="checkbox"].ui-input-editor')

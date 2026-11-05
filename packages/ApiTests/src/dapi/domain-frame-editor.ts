@@ -754,6 +754,45 @@ category('Dapi: domain frame editor', () => {
     }
   });
 
+  test('immutable keys: typed on a new row, never patched on a persisted one', async () => {
+    const prefix = `fe-imm-${stamp()}`;
+    await seed(prefix, 1);
+    try {
+      const access = await items().access();
+      // The key of an external table: the server marks it 'immutable' — access is an INPUT of
+      // the editor, so the shape is exercised over the platform-stored fixture.
+      const keyed: _DG.DomainAccess = {...access, fields: {...access.fields, sku: 'immutable'}};
+      expect(DomainFrameEditor.writableColumns(keyed).includes('sku'), false,
+        'an immutable column is writable off a draft');
+      expect(DomainFrameEditor.writableColumns(keyed, {draft: true}).includes('sku'), true,
+        'a draft cannot type its key');
+      const editor = await DomainFrameEditor.create(items() as any, {query: specFor(prefix), access: keyed});
+      expect(editor.writableColumns?.includes('sku'), true, 'the grid locks the key column for the drafts too');
+      expect(editor.canEdit(0, 'sku'), false, 'a persisted row may change its key');
+      expect(/cannot change once the row exists$/.test(editor.refusalOf(0, 'sku') ?? ''), true,
+        `the refusal does not say the key was typed once: ${editor.refusalOf(0, 'sku')}`);
+
+      const added = editor.addRow({sku: `${prefix}-new`, name: 'Keyed', quantity: 1});
+      expect(editor.canEdit(added, 'sku'), true, 'a new row cannot type its key');
+      expect(editor.errorOf(added, 'sku'), null, 'the key of a new row was marked as dropped');
+      editor.setValue(0, 'name', 'Renamed');
+      editor.setValue(0, 'sku', `${prefix}-changed`);
+      expect(editor.errorOf(0, 'sku')?.kind, 'error', 'a key change on a persisted row was not marked');
+
+      const ops = editor.buildOps().map((p) => p.op);
+      expect((ops.find((o) => o.op === 'insert')!.values as any).sku, `${prefix}-new`, 'the insert dropped the key');
+      expect('sku' in ops.find((o) => o.op === 'update')!.values!, false, 'the key change reached the update');
+
+      editor.revertCell(0, 'sku');
+      expect(await editor.save(), true, 'the batch did not save');
+      expect(await items().count({property: 'sku', operator: '=', value: `${prefix}-new`} as any), 1,
+        'the keyed row never reached the server');
+      editor.detach();
+    } finally {
+      await cleanup(prefix);
+    }
+  });
+
   test('deleted rows stay hidden across a filter recompute', async () => {
     const prefix = `fe-filter-${stamp()}`;
     await seed(prefix, 3);

@@ -312,10 +312,9 @@ function getSearchView(viewName: string,
 
   mainView.root.appendChild(splitter);
 
+  // 'None' is selected: no analysis inputs, and the template's search below is the only one
+  analysisForm = DG.InputForm.forInputs([]);
   setTemplate(plateTemplates[0]);
-  setTimeout(() => {
-    refreshAnalysisUI();
-  }, 1500);
   return mainView;
 }
 

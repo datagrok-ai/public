@@ -1,13 +1,3 @@
-/* The `viewers` tier: viewers on the current table view — adding them, their properties by
-   caption, their context menus and hit areas, their canvas, their events, and the page's error
-   floor. A project opts in with `{"tiers": ["viewers"]}` in its bdd.config.json.
-   A step that reads or changes a viewer takes `{widget}` — a phrase naming a viewer or a widget —
-   so the general shapes ("X of Y should be Z") stay free for what they say; the context menu and
-   the pointer steps take any element.
-   Every step here asks the platform (properties, hit areas, render and menu events) instead of
-   guessing pixels or sleeping; viewers render immediately (no debounce) on a bdd page.
-   `widgets.ts` next to this file holds the tier's other half: the steps a package wrote for one
-   viewer that a second viewer then wanted. */
 import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Given, Then, When} from '../../../src/registry.js';
@@ -145,11 +135,22 @@ export const menuLists = Then('the open menu should list {string}', async (page:
   await expect.poll(() => v.menuLabels(page, parts.join(' > ')), {message: `the items under "${parts.join(' > ') || 'the menu'}"`}).toContain(item);
 }, {tier: 'ui', description: `the last segment of ${PATH} is among the items, the ones before it are the groups opened to reach them — the menu must already be open`});
 
+export const menuListsEnabled = Then('the open menu should list {string} as enabled', async (page: Page, path: string) => {
+  await expect.poll(() => v.menuItemState(page, path), {message: `the item "${path}" of the open menu`}).toBe('enabled');
+}, {tier: 'ui', description: `the last segment of ${PATH} is listed and can be picked (no aria-disabled) — the menu must already be open`});
+
+export const menuListsDisabled = Then('the open menu should list {string} as disabled', async (page: Page, path: string) => {
+  await expect.poll(() => v.menuItemState(page, path), {message: `the item "${path}" of the open menu`}).toBe('disabled');
+}, {tier: 'ui', description: `the last segment of ${PATH} is listed greyed out (aria-disabled) — the menu must already be open`});
+
 export const menuDoesNotList = Then('the open menu should not list {string}', async (page: Page, path: string) => {
   const parts = path.split(/\s*[>|]\s*/).filter((s) => s.length > 0);
   const item = parts.pop();
-  // the group is opened first, so "not listed" cannot pass on a menu that never opened
-  await expect.poll(() => v.menuLabels(page, parts.join(' > ')), {message: `the items under "${parts.join(' > ') || 'the menu'}"`}).not.toContain(item);
+  // a group hovered a moment ago shows no items yet: "not listed" is read on a group that lists something
+  await expect.poll(async () => {
+    const labels = await v.menuLabels(page, parts.join(' > '));
+    return labels.length === 0 ? 'nothing shown yet' : labels.includes(item!) ? `lists "${item}": ${labels.join(' | ')}` : 'not listed';
+  }, {message: `the items under "${parts.join(' > ') || 'the menu'}"`}).toBe('not listed');
 }, {tier: 'ui'});
 
 export const clickArea = When('user clicks on the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {
@@ -174,12 +175,13 @@ export const hoverArea = When('user hovers over the {string} area of {widget}', 
    reports now, in its own order; the step remembers which it took, so a later step can act on it. */
 const firstAreaTaken = new WeakMap<Page, string>();
 
+const overlaps = (a: {x: number; y: number; width: number; height: number}, b: typeof a) =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
 /* "free" skips an area whose box another kind of area overlaps: a label drawn over a line takes the
    pointer, so hovering that line raises the label's tooltip instead. */
 async function firstAreaOf(page: Page, target: ElementRef, kind: string, free = false): Promise<string> {
   let name: string | undefined;
-  const overlaps = (a: {x: number; y: number; width: number; height: number}, b: typeof a) =>
-    a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
   // the names are read off a finished frame, as every other area step reads its area
   await v.settle(page, target);
   await expect.poll(async () => {
@@ -321,11 +323,11 @@ export const areaColor = Then('the {string} area of {widget} should contain the 
 
 export const areasDiffer = Then('the {string} and {string} areas of {widget} should be painted in different colors',
   (page: Page, a: string, b: string, target: ElementRef) => v.expectAreaColorsAlike(page, target, a, b, false),
-  {description: 'one area has a color the other does not — per-category coloring, not chrome'});
+  {description: 'one area has a hue the other does not — per-category coloring; greys (text, gridlines, edges) do not count'});
 
 export const areasSame = Then('the {string} and {string} areas of {widget} should be painted in the same colors',
   (page: Page, a: string, b: string, target: ElementRef) => v.expectAreaColorsAlike(page, target, a, b, true),
-  {description: 'every significant color of either area has a match in the other — a linked color coding, a swatch and its category'});
+  {description: 'every significant hue of either area has a match in the other — a linked color coding, a swatch and its category; greys do not count'});
 
 export const areaNotColor = Then('the {string} area of {widget} should not contain the color {string}', (page: Page, area: string, target: ElementRef, color: string) =>
   v.expectAreaNotColor(page, target, area, color), {description: 'no pixel of the #rrggbb color (nor a shade of it) inside the hit area, read once'});
@@ -634,6 +636,36 @@ export const legendInCorner = Then('the legend of {widget} should be in a corner
 export const legendMiniIcon = Then('the legend of {widget} should be collapsed to the mini icon', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'mini icon'),
   {description: 'the mode the legend publishes: folded into the small legend icon (a viewer too small under Visibility Auto, or a corner legend closed by its chevron); hovering the icon shows it in the tooltip'});
 
+export const legendInTooltip = Then('the legend of {widget} should be shown in the tooltip', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'tooltip'),
+  {description: 'the mode the legend publishes: re-parented into the tooltip the mini icon opens on hover; its items are then reached as "\\"X\\" legend item in tooltip"'});
+
+export const legendClearOfArea = Then('the legend of {widget} should not cover the {string} area', async (page: Page, target: ElementRef, area: string) => {
+  const legend = (await v.viewerLocator(page, target)).locator('[name="legend"]').filter({visible: true}).first();
+  let last = '';
+  await expect.poll(async () => {
+    let a;
+    try {
+      a = await v.hitArea(page, target, area);
+    }
+    catch (e) {
+      last = (e as Error).message;
+      return false;
+    }
+    const b = await legend.boundingBox();
+    if (!b) {
+      last = 'the legend is not shown';
+      return false;
+    }
+    const covers = overlaps(a, b);
+    const box = (r: {x: number; y: number; width: number; height: number}) =>
+      `${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}x${Math.round(r.height)}`;
+    last = covers ? `the legend (${box(b)}) covers the "${area}" area (${box(a)})` : '';
+    return !covers;
+  }, {message: `the legend of ${target.phrase} clear of its "${area}" area`}).toBe(true).catch(() => {
+    throw new Error(`the legend of ${target.phrase} is not clear of its "${area}" area: ${last}`);
+  });
+}, {description: 'the legend\'s box, wherever it is placed, shares no pixel with the hit area — a corner legend never lands on what the viewer draws there (the regression equation)'});
+
 export const legendPlacedNowhere = Then('the legend of {widget} should be placed nowhere', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'hidden'),
   {description: 'the mode the legend publishes: no place at all — Visibility Never, nothing to list, or a viewer too small even for the mini icon; unlike "legend of … should be hidden" it reads the decision, not the DOM'});
 
@@ -761,7 +793,12 @@ async function expectBalloon(page: Page, types: string[], text: string | RegExp,
     await expect.poll(async () => {
       shown = shown.concat(await v.takeBalloons(page));
       return shown.some(matches);
-    }, {timeout: pollMs(capMs), message: `an ${types.join(' or ')} balloon ${what}; balloons since the last check: ${shown.map((b) => `${b.type}: ${b.message}`).join(' | ') || 'none'}`}).toBe(true);
+    }, {timeout: pollMs(capMs), message: `an ${types.join(' or ')} balloon ${what}`}).toBe(true);
+  }
+  catch (e) {
+    // what the poll saw, which the message could not know when it was written
+    (e as Error).message += `\nballoons since the last check: ${shown.map((b) => `${b.type}: ${b.message}`).join(' | ') || 'none'}`;
+    throw e;
   }
   finally {
     // the read is destructive, so a balloon this claim did not want goes back on the floor: a
@@ -790,6 +827,9 @@ export const infoBalloon = Then('an info balloon should have been shown', (page:
 
 export const tooltipColumns = Then('the tooltip should show columns {string}', (page: Page, list: string) => v.expectTooltipColumns(page, list),
   {description: 'the row tooltip lists exactly these columns (comma-separated, any order)'});
+
+export const tooltipColumnsInOrder = Then('the tooltip should show columns in the order {string}', (page: Page, list: string) => v.expectTooltipColumnsInOrder(page, list),
+  {description: 'the row tooltip lists exactly these columns, top to bottom (comma-separated, case aside) — a column listed twice counts twice'});
 
 export const tooltipNotColumns = Then('the tooltip should not show columns {string}', (page: Page, list: string) => v.expectTooltipColumns(page, list, true),
   {description: 'the row tooltip lists a different set of columns'});

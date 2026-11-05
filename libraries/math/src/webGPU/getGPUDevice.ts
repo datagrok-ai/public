@@ -15,14 +15,7 @@ export async function getGPUDevice() {
       return null;
   }
 
-  let isLost = false;
-  if (gpuDevice) {
-    gpuDevice.lost.then(() => {
-      isLost = true;
-    });
-    await new Promise((r) => setTimeout(r, 10)); // wait to see if the device is lost
-  }
-  if (!gpuDevice || isLost) {
+  if (!gpuDevice) {
     const requiredBufferSize = 1_000_000_000; // ~1000MB
     const adapterLimits = gpuAdapter.limits;
     const buffferSizeLimit = adapterLimits.maxBufferSize;
@@ -32,12 +25,18 @@ export async function getGPUDevice() {
         maxBufferSize: Math.min(buffferSizeLimit, requiredBufferSize),
         maxStorageBufferBindingSize: Math.min(storageBufferSizeLimit, requiredBufferSize)
       }});
-      return gpuDevice;
     } catch (e) {
       console.error('Failed to create device with required limits', e);
       gpuDevice = await gpuAdapter.requestDevice();
-      return gpuDevice;
     }
+    // a lost device is replaced on the next call; an adapter gives out one device only, so it goes too
+    const device = gpuDevice;
+    device.lost.then(() => {
+      if (gpuDevice === device) {
+        gpuDevice = null;
+        gpuAdapter = null;
+      }
+    });
   }
   return gpuDevice;
 }

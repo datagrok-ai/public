@@ -879,7 +879,7 @@ export class ConnectionDataSource {
    * Use {@link DataConnection#dataSource} as input.
    */
   static byType(type: string): ConnectionDataSource | undefined {
-    return api.grok_ConnectionDataSource_ByType(type);
+    return toJs(api.grok_ConnectionDataSource_ByType(type));
   }
 
   /**

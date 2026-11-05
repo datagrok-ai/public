@@ -14,6 +14,7 @@ Feature: A SQL query started from a table of the schema
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
     And no query named "BDD-Q-sql-{time}" is on the server
 

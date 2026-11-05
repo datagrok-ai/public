@@ -1,17 +1,17 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { Observable } from 'rxjs';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
+import {Observable} from 'rxjs';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 
 
 export class MultivariateAnalysisTutorial extends Tutorial {
-  get name() { return 'Multivariate Analysis'; }
+  get name() {return 'Multivariate Analysis';}
   get description() {
     return `Multivariate analysis models a response variable from many predictors at once, including predictors
     that correlate with each other. Learn to run partial least squares (PLS) regression and interpret its results.`;
   }
-  get steps() { return 7; }
+  get steps() {return 7;}
 
   get icon() {
     return '📊🔀';
@@ -34,7 +34,8 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
     const plsDlg = await this.openDialog('Click on "ML | Analyze | Multivariate Analysis..."',
-      'Multivariate Analysis (PLS)', () => this.getMenuItem('ML', true));
+      'Multivariate Analysis (PLS)', () => this.getMenuItem('ML', true), '',
+      () => grok.shell.v.ribbonMenu.find('ML | Analyze | Multivariate Analysis...').click());
 
     plsDlg.root.hidden = true;
 
@@ -42,19 +43,20 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     const dlg = ui.dialog({title: 'Multivariate Analysis (PLS)', helpUrl: this.helpUrl});
 
     dlg.add(ui.input.column('Predict', {table: this.t!,
-      filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)
+      filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT),
     }));
 
     dlg.add(ui.input.columns('Using', {table: this.t!,
       value: [], available: this.t!.columns.toList().filter((col) =>
-        (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)
+        (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT),
       ).map((col) => col.name),
     }));
 
     dlg.add(ui.input.int('Components'));
     dlg.add(ui.input.bool('Quadratic', {value: false}));
 
-    dlg.add(ui.input.column('Names', {table: this.t!, filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.STRING)}));
+    dlg.add(ui.input.column('Names',
+      {table: this.t!, filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.STRING)}));
 
     dlg.addButton('RUN', () => {
       dlg.close();
@@ -68,7 +70,8 @@ export class MultivariateAnalysisTutorial extends Tutorial {
 
     await this.dlgInputAction(dlg, 'Select all columns, except "price", as "Using"', 'Using',
       this.t!.columns.names().filter((n: string) => n !== 'model' && n !== 'price').join(','),
-      `The predictors - the columns the model learns from. Click "All" in the column selection dialog, then uncheck "price".`);
+      `The predictors - the columns the model learns from. Click "All" in the column selection dialog, ` +
+      `then uncheck "price".`);
 
     await this.dlgInputAction(dlg, 'Set the number of components to "3"', 'Components', '3',
       'The number of latent factors. Too few underfit the data, too many fit the noise.');
@@ -76,7 +79,8 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Names" to "model"', 'Names', 'model',
       'The column that labels the points on the plots. Here, each row is a car model.');
 
-    await this.action('Click "RUN" and wait for the analysis to complete', dlg.onClose);
+    await this.action('Click "RUN" and wait for the analysis to complete', dlg.onClose, undefined, '',
+      () => dlg.getButton('RUN').click());
 
     let viewerRoots: HTMLElement[];
 
@@ -155,6 +159,10 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     await this.action('Explore each viewer', new Observable((subscriber: any) => {
       //@ts-ignore
       $(doneBtn).one('click', () => subscriber.next(true));
-    }), undefined, 'Click "Next" to switch to the next viewer');
+    }), undefined, 'Click "Next" to switch to the next viewer', async () => {
+      await Tutorial.waitFor(() => hint);
+      idx = viewerRoots.length - 1;
+      doneBtn.click();
+    });
   }
 }

@@ -2,7 +2,14 @@
 
 ## v.next
 
+- Viewer: A failed viewer creation, or a throwing frame or options apply, no longer stops the element from applying later changes
+- InputForm: `destroy()` cancels a form still being built
+- ToggleInput: A value set by the host is no longer sent back as `value-changed`
+- ValidationIcon: A `disabled` or `restricted` input whose value is consistent shows a link icon
 - InputForm: Added the `skipLogic` property
+- DockManager: Fixed views opened, or re-rendered, in the background splitting their panels evenly instead of by the declared ratios
+- ValidationIcon: Advice actions send their `additionalParams` with the action request
+- InputForm: Fixed a form opened with invalid or missing required values reporting itself valid
 
 ## 1.4.6 (2026-09-23)
 

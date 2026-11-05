@@ -1,6 +1,3 @@
-/* Endpoints the JS API does not wrap (chats, global permissions), called with the page's session —
-   shared by the platform bindings and by a package's own bindings, so a suite never hand-rolls a
-   fetch against the server. */
 import {Page} from '@playwright/test';
 import {atFeatureEnd} from './harness.js';
 import {expect, pollMs} from './patience.js';
@@ -143,8 +140,9 @@ export const reportedServices = (page: Page): Promise<{name: string; enabled: bo
     .map((s: any) => ({name: String(s.name), enabled: !!s.enabled, status: String(s.status)})));
 
 /* A fixture name ends in its run's {run} or {time}. A run that was killed never reached its
-   feature-end cleanup, so the fixtures of the same family that are older than any live feature go too. */
-export const RUN_SUFFIX = /-(\d{13,}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+   feature-end cleanup, so the fixtures of the same family that are older than any live feature go too.
+   {time} may follow the name with no dash: a script a formula calls by name must be an identifier. */
+export const RUN_SUFFIX = /(?:-?(\d{13,})|-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
 export const STALE_AFTER_MS = 60 * 60 * 1000;
 
 export const fixtureFamilies = (names: string[]): string[] =>

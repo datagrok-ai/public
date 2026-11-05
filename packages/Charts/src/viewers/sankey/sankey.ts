@@ -20,8 +20,11 @@ import {
   SankeyNode,
 } from 'd3-sankey';
 
+import {Observable} from 'rxjs';
+
 import '../../../css/sankey-viewer.css';
-import {MessageHandler, unsubscribeAll} from '../../utils/utils';
+import {MessageHandler, RenderSignals, subscribeToColumnRemoval, unsubscribeAll} from '../../utils/utils';
+import {sankeyStatus} from './sankey-status';
 
 interface Node {
   node: number,
@@ -74,6 +77,16 @@ export class SankeyViewer extends DG.JsViewer {
   nodeColorColumnName: string;
   linkColorColumnName: string;
 
+  private signals = new RenderSignals();
+
+  get onRendered(): Observable<void> {return this.signals.rendered;}
+
+  get isRenderPending(): boolean {return this.signals.pending;}
+
+  get renderError(): string | null {return MessageHandler._getMessage(this.root);}
+
+  getWidgetStatus(): DG.IWidgetStatus {return sankeyStatus(this);}
+
   constructor() {
     super();
     // Properties
@@ -101,11 +114,22 @@ export class SankeyViewer extends DG.JsViewer {
     this.initialized = true;
   }
 
+  strColumnNames(): string[] {
+    return this.dataFrame.columns.toList()
+      .filter((col) => col.type === 'string' && col.categories.length <= 50).map((col) => col.name);
+  }
+
+  numColumnNames(): string[] {
+    return this.dataFrame.columns.toList().filter((col) => ['double', 'int'].includes(col.type)).map((col) => col.name);
+  }
+
+  hasColumns(): boolean {
+    return [this.sourceColumnName, this.targetColumnName, this.valueColumnName]
+      .every((name) => this.dataFrame.col(name));
+  }
+
   _testColumns() {
-    const columns = this.dataFrame.columns.toList();
-    const strColumns = columns.filter((col) => col.type === 'string' && col.categories.length <= 50);
-    const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
-    return (strColumns!.length >= 2 && numColumns!.length >= 1);
+    return this.strColumnNames().length >= 2 && this.numColumnNames().length >= 1;
   }
 
   onTableAttached() {
@@ -114,13 +138,10 @@ export class SankeyViewer extends DG.JsViewer {
     this.init();
 
     if (this._testColumns()) {
-      const columns = this.dataFrame.columns.toList();
-      const strColumns = columns.filter((col) => col.type === 'string' && col.categories.length <= 50);
-      const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
-
-      this.sourceColumnName = strColumns[0].name;
-      this.targetColumnName = strColumns[1].name;
-      this.valueColumnName = numColumns[0].name;
+      const strColumns = this.strColumnNames();
+      this.sourceColumnName = strColumns[0];
+      this.targetColumnName = strColumns[1];
+      this.valueColumnName = this.numColumnNames()[0];
     }
 
     this.prepareData();
@@ -128,9 +149,21 @@ export class SankeyViewer extends DG.JsViewer {
   }
 
   addSubs() {
-    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
+    this.subs.push(this.signals.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(this.signals.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
+    this.subs.push(subscribeToColumnRemoval(this, {
+      sourceColumnName: () => this.strColumnNames().find((name) => name !== this.targetColumnName),
+      targetColumnName: () => this.strColumnNames().find((name) => name !== this.sourceColumnName),
+      valueColumnName: () => this.numColumnNames()[0],
+      nodeColorColumnName: null,
+      linkColorColumnName: null,
+    }));
+  }
+
+  detach() {
+    this.signals.reset();
+    super.detach();
   }
 
   onSourceRowsChanged() {
@@ -153,7 +186,8 @@ export class SankeyViewer extends DG.JsViewer {
     for (let i = 0; i < filteredIndexList.length; i++) {
       sourceList[i] = dataFrameSourceColumn.get(filteredIndexList[i]);
       targetList[i] = dataFrameTargetColumn.get(filteredIndexList[i]);
-      valueList[i] = dataFrameValueColumn.get(filteredIndexList[i]);
+      // a missing value reads as the int null (-2^31), which would sink both nodes of the row
+      valueList[i] = dataFrameValueColumn.isNone(filteredIndexList[i]) ? 0 : dataFrameValueColumn.get(filteredIndexList[i]);
     }
 
     this.sourceCol = DG.Column.fromList('string', this.sourceColumnName, sourceList);
@@ -212,10 +246,8 @@ export class SankeyViewer extends DG.JsViewer {
 
   onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
-    if (this.initialized) {
-      this.prepareData();
+    if (this.initialized)
       this.render();
-    }
   }
 
   rowMatchesColumnValues(sourceCol: DG.Column | null, targetCol: DG.Column | null,
@@ -234,16 +266,34 @@ export class SankeyViewer extends DG.JsViewer {
   }
 
   render() {
+    this.signals.render(() => this.draw());
+  }
+
+  private draw() {
     $(this.root).empty();
     if (!this._testColumns()) {
       MessageHandler._showMessage(this.root, 'The Sankey viewer requires a minimum of 2 categorical (less than 50 unique categories) and 1 numerical columns.', 'd4-viewer-error');
       return;
     }
+    if (!this.hasColumns()) {
+      MessageHandler._showMessage(this.root, 'Select the Source, Target and Value columns.', 'd4-viewer-error');
+      return;
+    }
 
     this.prepareData();
 
-    if (this.graph.nodes.length === 0)
+    // d3-sankey sizes the nodes by their links: with none it throws (no rows) or yields NaN heights
+    if (this.graph.links.length === 0)
       return;
+
+    if (this.graph.links.some((link: Link) => link.value < 0)) {
+      MessageHandler._showMessage(this.root, `${this.valueColumnName} contains negative values`, 'd4-viewer-error');
+      return;
+    }
+    if (this.graph.links.every((link: Link) => link.value === 0)) {
+      MessageHandler._showMessage(this.root, `${this.valueColumnName}: all values are 0`, 'd4-viewer-error');
+      return;
+    }
 
     const cycles = this.detectGraphCycles(this.graph);
     if (cycles.length > 0) {

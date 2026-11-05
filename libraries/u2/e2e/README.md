@@ -11,11 +11,11 @@ constant token, so there is no login, no publish and no stand. Two commands:
 grok-core local watch U2Demo        # re-stages dist/ on every webpack build (+ `npm run watch` in the package)
 npm run e2e:local                   # from libraries/u2 — Playwright against http://localhost:63343
 npm run e2e:local -- --only editing # one feature (substring of the check-file name); the results file is shared, last run wins
-npm run e2e:local -- --lane domain,session   # exactly these lanes (a lane is a check file — the prefix its PASS/FAIL lines print)
-npm run e2e:local:domain            # the same two lanes, named
+npm run e2e:local -- --lane filters,leak   # exactly these lanes (a lane is a check file — the prefix its PASS/FAIL lines print)
 ```
 
-`U2_E2E_LANES=domain,session` does what `--lane` does; an unknown lane exits 2 and lists them all.
+`--checks <dir>` runs another library's check files in the same booted client — EMS's `npm run e2e:local`
+is this runner over `libraries/ems/e2e/checks`. `U2_E2E_LANES=filters,leak` does what `--lane` does; an unknown lane exits 2 and lists them all.
 
 `grok-core local up` starts pub serve if nothing is serving yet — **only one pub serve may run**;
 if `http://localhost:63343` already answers, use it, never start a second.

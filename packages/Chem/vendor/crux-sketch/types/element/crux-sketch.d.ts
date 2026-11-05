@@ -1,7 +1,7 @@
-import { LitElement } from 'lit';
 import { type SketcherSettings } from '../core/settings.js';
 import { type SketcherStrings } from '../core/strings.js';
-import type { HostKeys, AnalysisPanel, AtomColours, ChangeDetail, KeymapProfile, MethylLabels, Density, SetValueOptions, SketcherFormat, SketchAnalysis, SketchError, SketchWarning, WarningMarks, SketcherApi, SketcherEventType, SketcherListener, SketcherMode, StereoDisplay, ToolbarConfig, UnspecifiedDoubleBonds } from '../core/types.js';
+import { type ReadoutItem } from '../core/readout-items.js';
+import type { HostKeys, DrawnPositions, RenderDetail, SketcherLayout, SketcherTool, SketchSelection, SketchNotice, AnalysisPanel, AtomColours, ChangeDetail, KeymapProfile, MethylLabels, Density, SetValueOptions, PngOptions, SketcherFormat, SketchAnalysis, SketchError, SketchWarning, WarningMarks, SketcherApi, SketcherEventType, SketcherListener, SketcherMode, StereoDisplay, StereoLabelStyle, StereoPanel, SketchStereo, ToolbarConfig, UnspecifiedDoubleBonds } from '../core/types.js';
 export declare const TAG = "crux-sketch";
 /**
  * The events of `<crux-sketch>`: an element's, with `change` and `error` as CustomEvents whose
@@ -12,37 +12,37 @@ export interface CruxSketchEventMap extends Omit<HTMLElementEventMap, 'change' |
     error: CustomEvent<SketchError>;
     /** A user's Apply in the Settings dialog changed the settings (spike settings-touch, K6): the settings in force. */
     settings: CustomEvent<SketcherSettings>;
+    /** The canvas shows a new drawing (API-061; spike datagrok-platform, R5): its render count. */
+    render: CustomEvent<RenderDetail>;
+    /** What the user has selected changed (API-017; spike later-quick): the selection as `selection` reads it now. */
+    selection: CustomEvent<SketchSelection>;
+    /** The status line said a refusal or a notice to the user (API-047; spike later-quick). */
+    notice: CustomEvent<SketchNotice>;
 }
+/** `<crux-sketch>`'s listeners, typed by its events (`CruxSketchEventMap`): `change`, `error`, `settings`, `render`, `selection`, `notice`. */
 export interface CruxSketchElement {
     addEventListener<K extends keyof CruxSketchEventMap>(type: K, listener: (this: CruxSketchElement, event: CruxSketchEventMap[K]) => unknown, options?: boolean | AddEventListenerOptions): void;
     addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
     removeEventListener<K extends keyof CruxSketchEventMap>(type: K, listener: (this: CruxSketchElement, event: CruxSketchEventMap[K]) => unknown, options?: boolean | EventListenerOptions): void;
     removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
 }
-export declare class CruxSketchElement extends LitElement implements SketcherApi {
+/**
+ * `<crux-sketch>` (H29; API-002), defined when the module is imported: the sketcher as a custom element, with every member
+ * of the handle `createSketcher` gives (`SketcherApi`), and `ready`, which resolves once it is ready, and `toolbar`, its
+ * toolbars' configuration. Its attributes are `value`, `mode`, `atom-colours`, `keymap`, `warning-marks`, `analysis-panel`,
+ * `stereo-labels`, `stereo-label-style`, `stereo-flag`, `unspecified-double-bonds`, `locale`, `methyl-labels`,
+ * `cxsmiles-coordinates`, `density` and `persist-settings`, each setting the property of its name; changes made before it is ready are applied in order
+ * once it is (API-003). Its events are DOM events too (`change`, `error`, `settings`, `render`, `selection`, `notice`; API-053, API-061, API-017, API-047). Its
+ * typings declare it an `HTMLElement` with this API: Lit, which it is built with and which is bundled, is no part of its
+ * type, so that a host type-checks it with nothing installed (spike api-v1, R1).
+ */
+export declare class CruxSketchElement extends HTMLElement implements SketcherApi {
     #private;
-    static styles: import("lit").CSSResult;
-    static get observedAttributes(): string[];
     /**
      * Resolves once the sketcher is ready: the engine loaded, the value applied and drawn. Rejects if
      * the engine cannot be loaded (which is also reported as an `error` event).
      */
     readonly ready: Promise<void>;
-    constructor();
-    connectedCallback(): void;
-    disconnectedCallback(): void;
-    attributeChangedCallback(name: string, old: string | null, value: string | null): void;
-    protected shouldUpdate(): boolean;
-    /**
-     * The shadow root, Lit's, with the listeners that keep in it the events the sketcher consumes (I3), and the context
-     * menu's: a key pressed in the menu stops at the menu (its keydown is the menu's alone), so the shadow root notes it first
-     * and keeps its release, wherever focus went meanwhile (a menu closed by Escape). The lifetime takes them all off at
-     * destroy, so that none stays on the element the page keeps.
-     */
-    protected createRenderRoot(): HTMLElement | DocumentFragment;
-    /** After each render: the tooltips and palettes that should be open are shown and placed, and the top bar fitted (R2). */
-    protected updated(): void;
-    protected render(): unknown;
     /**
      * How atoms are coloured: `'element'` (the default) or `'black'` (H36). It reads back the value in
      * force, by HTML's rule for enumerated attributes (fix round 3): `'black'` only when set to that
@@ -60,6 +60,14 @@ export declare class CruxSketchElement extends LitElement implements SketcherApi
      */
     get stereoLabels(): StereoDisplay;
     set stereoLabels(value: StereoDisplay);
+    /**
+     * How the stereo labels are written (spike labels-2; STEREO-010): `'standard'` (the default) or `'registration'` (an ABS
+     * centre its CIP label bare, an OR centre its group and CIP label, an AND centre its group alone), read back as the value
+     * in force by HTML's rule for enumerated attributes. Setting it redraws at once: no change event, no undo step, and the
+     * getters as they were. The `stereo-label-style` attribute sets it too, and so does the Settings dialog.
+     */
+    get stereoLabelStyle(): StereoLabelStyle;
+    set stereoLabelStyle(value: StereoLabelStyle);
     /**
      * The stereo flag (S8, STEREO-018): `'shown'` (the default) or `'hidden'`, read back as the value in force. Setting it
      * redraws at once, and is no edit. The `stereo-flag` attribute sets it too.
@@ -101,9 +109,18 @@ export declare class CruxSketchElement extends LitElement implements SketcherApi
     get molfile(): string;
     get molV3000(): string;
     get cxsmiles(): string;
+    /** RDKit's `CanonicalizeStereoGroups` form of `smiles` (spike canonical-arom, API-064): the core's. */
+    get canonicalSmiles(): string;
+    /** RDKit's `CanonicalizeStereoGroups` form of `cxsmiles`, never with coordinates (API-064): the core's. */
+    get canonicalCxsmiles(): string;
     get smarts(): string;
     /** The drawing as SVG (spike copy-as, P5; API-022, IO-032): the core's, its ids new with each read. */
     get svg(): string;
+    /**
+     * The drawing as a PNG (spike later-quick-2, API-023, IO-033): the `svg` getter's drawing rasterised in this page, at
+     * `scale` times its natural size; `null` for an empty drawing.
+     */
+    png(options?: PngOptions): Promise<Blob | null>;
     /** The drawing as CDXML (spike cdxml, X4; API-008): the core's. It throws while the page's CDXML module loads: `loadFormat('cdxml')`. */
     get cdxml(): string;
     /** The drawing as standard InChI (spike inchi, N1; API-008): the core's. It throws while the page's InChI module loads: `loadFormat('inchi')`. */
@@ -128,15 +145,17 @@ export declare class CruxSketchElement extends LitElement implements SketcherApi
     get keys(): HostKeys;
     set keys(value: HostKeys);
     /**
-     * Terminal carbons labelled CH₃ (K6, P10): `'hidden'` (the default) or `'shown'`, read back as the value in force by
-     * HTML's rule for enumerated attributes. Setting it redraws at once, and is no edit. The `methyl-labels` attribute sets it too.
+     * Terminal carbons labelled CH₃ (K6, P10): `'hidden'` (the default) or `'shown'`, or every carbon labelled, `'all'` (spike
+     * later-quick-2, ATOM-025), read back as the value in force by HTML's rule for enumerated attributes. Setting it redraws
+     * at once, and is no edit. The `methyl-labels` attribute sets it too.
      */
     get methylLabels(): MethylLabels;
     set methylLabels(value: MethylLabels);
     /**
-     * How large the toolbars' controls are (spike bar-fit, B1): `'auto'` (the default), `'regular'` or `'compact'`, read back as
-     * the value in force by HTML's rule for enumerated attributes. Setting it redraws the bars at once, and is no edit: no
-     * change event, no undo step, no getter changes. The `density` attribute sets it too.
+     * How large the toolbars' controls are (spike bar-fit, B1; spike compact-default): `'compact'` (the default, in a box of any
+     * size), `'regular'` or `'auto'` (compact under 720 by 600 px, regular otherwise), read back as the value in force by HTML's
+     * rule for enumerated attributes, compact being the missing and invalid value default. Setting it redraws the bars at once,
+     * and is no edit: no change event, no undo step, no getter changes. The `density` attribute sets it too.
      */
     get density(): Density;
     set density(value: Density);
@@ -173,6 +192,12 @@ export declare class CruxSketchElement extends LitElement implements SketcherApi
     get value(): string;
     set value(text: string);
     setValue(text: string, options?: SetValueOptions): void;
+    /**
+     * Adds the molecule `text` holds without replacing the drawing (API-025; spike later-quick): the editor's `addMolecule`,
+     * placed as a paste is, one edit with `source: 'api'`; what it cannot read is refused as a write is (`lastError`,
+     * `error`). Before ready, it waits until the sketcher is. Throws on a destroyed sketcher (API-037).
+     */
+    addMolecule(text: string, options?: Pick<SetValueOptions, 'format'>): void;
     get lastError(): SketchError | null;
     get warnings(): readonly SketchWarning[];
     /** What the last accepted write, paste or drop dropped on reading (spike formats, F10, F11; IO-030): the core's. */
@@ -210,6 +235,43 @@ export declare class CruxSketchElement extends LitElement implements SketcherApi
      */
     get analysisPanel(): AnalysisPanel;
     set analysisPanel(value: AnalysisPanel);
+    /**
+     * What the readout shows (spike readout-config; INFO-016): the items checked, by id, in the readout's order, the
+     * formula and the two masses by default. Written as a list or a text of ids apart by spaces or commas, ids it does not
+     * know left out; the readout's menu, the Settings dialog and the `readout-items` attribute set it too. A setting, the
+     * host's value winning over a kept one (R5). No edit: no change event, no undo step.
+     */
+    get readoutItems(): readonly ReadoutItem[];
+    set readoutItems(value: readonly ReadoutItem[]);
+    /**
+     * The stereochemistry panel (spike stereo-panel; the product owner's ruling 2): `'closed'` (the default), `'open'` or
+     * `'hidden'`, which takes its button and its menu item away and never shows it. Its button and the canvas menu's item set
+     * it too, for this sketcher only, never kept nor shared (spike reports-oct14, report 3); and so does the `stereo-panel`
+     * attribute. It reads back the value
+     * in force, by HTML's rule for enumerated attributes. A look: no edit, no event.
+     */
+    get stereoPanel(): StereoPanel;
+    set stereoPanel(value: StereoPanel);
+    /**
+     * The drawing's stereo as the panel lists it (spike stereo-panel): its elements, the stereoisomers its annotation stands
+     * for and its flag; read once per state of the molecule. Empty before the canvas shows a drawing and for a query; after
+     * destroy(), what it read last.
+     */
+    get stereo(): SketchStereo;
+    /**
+     * View-only mode (API-029; spike later-quick): `false`, the default, or `true`, switched at any time. While it is on, the
+     * user selects (by mouse, keyboard and touch), copies, zooms and pans, and edits nothing: the tools but the selection
+     * tools and the editing actions are disabled, saying so, a selection tool is chosen (the tool chosen before is given back
+     * when it ends), editing keys are left to the page, and there is no context menu, no rotation handle, no floating
+     * action, no long-press menu, no paste, cut or drop. The host's own calls still act. Switching it is no edit: no change
+     * event, no undo step; the drawing and the selection stay.
+     */
+    get viewOnly(): boolean;
+    set viewOnly(on: boolean);
+    /** Whether the drawing is as the host last marked it saved (API-045; spike later-quick): the core's. */
+    get isSaved(): boolean;
+    /** Marks the drawing shown saved (API-045): the core's; no edit, no event. */
+    markSaved(): void;
     get isEmpty(): boolean;
     get mode(): SketcherMode;
     /**
@@ -221,6 +283,32 @@ export declare class CruxSketchElement extends LitElement implements SketcherApi
     get version(): string;
     get engineRev(): string;
     get renderCount(): number;
+    /**
+     * Where the canvas draws each atom and bond now (API-056; spike datagrok-chem, R1): the editor's drawing, in CSS px from
+     * this element's top-left corner (core/positions.ts). Empty before the sketcher is ready, for an empty drawing and after
+     * `destroy()`. A read: it renders and emits nothing.
+     */
+    get positions(): DrawnPositions;
+    /**
+     * Whether something is on its way (API-057; spike datagrok-chem, R1): a press or a drag held on the canvas (the editor's
+     * or the view's), or a frame, a task, a timer or a wait the sketcher's lifetime holds (a preview, a view change, a
+     * tooltip's rest, a clipboard read); a notice's time aside. False after `destroy()`.
+     */
+    get isPending(): boolean;
+    /**
+     * Where the sketcher shows its parts now (API-058; spike datagrok-platform, R3, R4): the canvas, each toolbar, each
+     * control a toolbar shows (by its name in a configuration, its test id without `toolbar.`) and the label editor while it
+     * is open, in CSS px from this element's top-left corner (core/parts.ts). Empty before the sketcher is ready, out of the
+     * page and after `destroy()`. A read: it renders and emits nothing.
+     */
+    get layout(): SketcherLayout;
+    /**
+     * The atoms and bonds the user has selected (API-059; spike datagrok-platform, R4), by index, ascending: the editor's
+     * selection in the drawing shown. None before the sketcher is ready and after `destroy()`. A read.
+     */
+    get selection(): SketchSelection;
+    /** The tool chosen now (API-060; spike datagrok-platform, R4), as a configuration names it; after `destroy()`, the last one. */
+    get tool(): SketcherTool;
     undo(): boolean;
     redo(): boolean;
     get canUndo(): boolean;

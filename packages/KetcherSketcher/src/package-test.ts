@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 
 import './tests/ketcher-tests'
+import './tests/query-molfile-tests'
 
 export const _package = new DG.Package();
 export {tests};

@@ -15,7 +15,7 @@ const DATA_STORAGE_KEY = 'tutorials';
  * closes its table) and the Tutorials panel with it: the panel is not a view, so the shell reset
  * leaves it — and a tutorial left running keeps listening to the platform's events and would take
  * the next feature's gestures as its steps. */
-const TUTORIAL_CLOSE = '.tutorials-root-header button:has(.fa-times-circle)';
+const TUTORIAL_CLOSE = '.tutorials-bar button:has(.fa-times-circle), .tutorials-root-header button:has(.fa-times-circle)';
 
 async function closeTutorials(page: Page): Promise<void> {
   await page.evaluate((selector) => {
@@ -63,9 +63,20 @@ export const startTutorial = When('user starts the {string} tutorial', async (pa
     await page.evaluate(() => grok.functions.call('Tutorials:trackOverview'));
   }
   await card.click({timeout: pollMs(30000)});
-  await expect(page.locator('.tutorials-root-header h1'), 'the running tutorial\'s title').toHaveText(name, {timeout: pollMs(60000)});
+  await expect(page.locator('.tutorials-bar-title'), 'the running tutorial\'s title').toHaveText(name, {timeout: pollMs(60000)});
+  await expect(page.locator('.tutorials-bar-step'), 'the first step in the tutorial bar')
+    .toHaveText(/\S/, {timeout: pollMs(60000)});
+  await page.locator('.tutorials-bar .fa-list').click();
   await expect(page.locator('.grok-tutorial-entry[aria-current="step"]').first(), 'the first step of the tutorial').toBeVisible({timeout: pollMs(60000)});
-}, {tier: 'ui', description: 'clicks the tutorial\'s card in the Tutorials panel (opening the panel first if needed) and waits for its first step'});
+}, {tier: 'ui', description: 'clicks the tutorial\'s card in the Tutorials panel (opening the panel first if needed), waits for its first step and opens its step list'});
+
+/** Opens the step list from the bar; clicked in the page, so a dialog a step opened does not block it. */
+async function showStepList(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    if (document.querySelector('.tutorials-root') == null)
+      (document.querySelector('.tutorials-bar .fa-list') as HTMLElement | null)?.click();
+  });
+}
 
 /* A tutorial with a service prerequisite reads the service health the stand reports before it starts
    (Tutorial.checkService) and refuses to start unless the service is reported running, so a dev stack,
@@ -85,15 +96,17 @@ export const tutorialNotCompleted = Given('the {string} tutorial is not complete
 
 export const tutorialProgress = Then('the tutorial progress should be {int} of {int}', async (page: Page, value: number, max: number) => {
   const read = () => page.evaluate(() => {
-    const bar = document.querySelector('.tutorials-root-progress [role="progressbar"]');
-    const caption = document.querySelector('.tutorials-root-progress > div')?.textContent ?? '';
-    return bar ? `${bar.getAttribute('aria-valuenow')} of ${bar.getAttribute('aria-valuemax')} | ${caption}` : 'no progress bar';
+    const ring = document.querySelector('.tutorials-bar [role="progressbar"]');
+    const count = document.querySelector('.tutorials-bar-count')?.textContent ?? '';
+    return ring ? `${ring.getAttribute('aria-valuenow')} of ${ring.getAttribute('aria-valuemax')} | ${count}` : 'no progress ring';
   });
-  await expect.poll(read, {message: 'the tutorial progress (bar | caption)'}).toBe(`${value} of ${max} | Step: ${value} of ${max}`);
-}, {description: 'the progress bar\'s value and maximum and the "Step: N of M" caption agree on N of M'});
+  await expect.poll(read, {message: 'the tutorial progress (ring | count)'}).toBe(`${value} of ${max} | ${value}/${max}`);
+}, {description: 'the bar\'s progress ring and its "N/M" count agree on N of M'});
 
 export const tutorialCompleted = Then('the {string} tutorial should be completed', async (page: Page, name: string) => {
-  await expect(page.locator('.tutorials-root h3', {hasText: 'Congratulations!'}), 'the congratulations').toBeVisible();
+  await expect(page.locator('.tutorials-bar-section'), 'the congratulations in the tutorial bar')
+    .toHaveText('Congratulations!');
+  await showStepList(page);
   await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.grok-tutorial-entry[role="checkbox"]'))
     .filter((e) => e.getAttribute('aria-checked') !== 'true').map((e) => e.getAttribute('aria-label'))), {message: 'steps not done'}).toEqual([]);
   await expect.poll(() => page.evaluate(([key, n]) => {
@@ -103,6 +116,7 @@ export const tutorialCompleted = Then('the {string} tutorial should be completed
 }, {description: 'the congratulations are shown, every step listed is done, and the tutorial\'s record says completed'});
 
 export const tutorialStepsListed = Then('the tutorial should have listed {int} steps', async (page: Page, count: number) => {
+  await showStepList(page);
   await expect.poll(() => page.locator('.grok-tutorial-entry[role="checkbox"]').count(), {message: 'step entries listed'}).toBe(count);
 }, {description: 'the number of step entries the running tutorial has shown so far'});
 
@@ -118,27 +132,52 @@ export const closeTutorial = When('user closes the tutorial', async (page: Page)
 
 
 /** A step entry by its instruction exactly as shown — a {string}, since instructions quote what the
- * learner types ('Name a column "BMI"'), which an element phrase cannot hold. */
-function stepEntry(page: Page, instruction: string) {
-  return page.locator(`.grok-tutorial-entry[role="checkbox"][aria-label="${instruction.replace(/"/g, '\\"')}"]`);
+ * learner types ('Name a column "BMI"'), which an element phrase cannot hold. A tutorial names a
+ * modifier as the learner's keyboard labels it (`platformKeyMap`, src/tracks/shortcuts.ts), so on a Mac
+ * the Ctrl and Alt a feature writes read Command and Option. */
+async function stepEntry(page: Page, instruction: string) {
+  await showStepList(page);
+  const mac = await page.evaluate(() => navigator.platform.toLowerCase().includes('mac'));
+  const shown = mac ? instruction.replace(/\bCtrl\b/g, 'Command').replace(/\bAlt\b/g, 'Option') : instruction;
+  return page.locator(`.grok-tutorial-entry[role="checkbox"][aria-label="${shown.replace(/"/g, '\\"')}"]`);
 }
 
 export const stepDone = Then('the tutorial step {string} should be done', async (page: Page, instruction: string) => {
-  const entries = stepEntry(page, instruction);
+  const entries = await stepEntry(page, instruction);
   await expect.poll(async () => {
     const states = await entries.evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-checked')}${e.getAttribute('aria-invalid') === 'true' ? ' invalid' : ''}`));
     return states.length === 0 ? 'not listed' : states.includes('true') ? 'done' : states.join(', ');
   }, {message: `the tutorial step "${instruction}"`}).toBe('done');
-}, {description: 'the entry with exactly this instruction is listed and checked (aria-checked) — not shown as could-not-complete'});
+  // A step listens only while it is listed (Tutorial.action lists it and subscribes in one task), and after a
+  // step is done the tutorial runs its own code before it lists the next one: a gesture made in that gap — a
+  // hover, a current-row change — is lost. So the claim also waits until the next step is listed.
+  await expect.poll(() => entries.first().evaluate((entry) => {
+    const done = Array.from(document.querySelectorAll('.grok-tutorial-entry[role="checkbox"]'))
+      .filter((e) => e.getAttribute('aria-label') === entry.getAttribute('aria-label') && e.getAttribute('aria-checked') === 'true')
+      .map((e) => Number((e as HTMLElement).dataset.step));
+    const next = Math.max(...done) + 1;
+    const max = Number(document.querySelector('.tutorials-bar [role="progressbar"]')?.getAttribute('aria-valuemax'));
+    if (next >= max || document.querySelector('.tutorials-bar-section')?.textContent === 'Congratulations!' ||
+        document.querySelector(`.grok-tutorial-entry[role="checkbox"][data-step="${next}"]`))
+      return 'listed';
+    return `step ${next + 1} of ${max} not listed yet`;
+  }), {message: `the step after "${instruction}"`, timeout: pollMs(60000)}).toBe('listed');
+}, {description: 'the entry with exactly this instruction is listed and checked (aria-checked) — not shown as could-not-complete — and the tutorial has listed the step after it, so a gesture for that step is heard'});
+
+export const stepCurrent = Then('the tutorial step {string} should be current', async (page: Page, instruction: string) => {
+  const entries = await stepEntry(page, instruction);
+  await expect.poll(() => entries.evaluateAll((els) => els.length === 0 ? 'not listed' : els.some((e) => e.getAttribute('aria-current') === 'step') ? 'current' : 'not current'),
+    {message: `the tutorial step "${instruction}"`}).toBe('current');
+}, {description: 'the entry the tutorial is waiting on (aria-current): a step listens only once it is current, so a gesture it checks comes after this'});
 
 export const stepDoneTimes = Then('the tutorial step {string} should be done {int} times', async (page: Page, instruction: string, times: number) => {
-  const entries = stepEntry(page, instruction);
+  const entries = await stepEntry(page, instruction);
   await expect.poll(() => entries.evaluateAll((els) => els.filter((e) => e.getAttribute('aria-checked') === 'true').length),
     {message: `checked entries "${instruction}"`}).toBe(times);
 }, {description: 'for an instruction a tutorial repeats ("Open scatter plot"): that many of its entries are checked'});
 
 export const stepNotDone = Then('the tutorial step {string} should not be done yet', async (page: Page, instruction: string) => {
-  const entries = stepEntry(page, instruction);
+  const entries = await stepEntry(page, instruction);
   await expect.poll(() => entries.evaluateAll((els) => els.length === 0 ? 'not listed' : els.every((e) => e.getAttribute('aria-checked') === 'false') ? 'pending' : 'done'),
     {message: `the tutorial step "${instruction}"`}).toBe('pending');
 }, {description: 'the entry is listed and still unchecked — the claim that pairs with a gesture which must not tick it'});
@@ -162,7 +201,7 @@ export const walkTour = When('user goes through the tour to its end', async (pag
 }, {tier: 'ui', description: '"next" on every page of the guided tour, then "done" — the tour closes'});
 
 export const stepListedTimes = Then('the tutorial step {string} should be listed {int} times', async (page: Page, instruction: string, times: number) => {
-  const entries = stepEntry(page, instruction);
+  const entries = await stepEntry(page, instruction);
   await expect.poll(() => entries.count(), {message: `entries "${instruction}"`}).toBe(times);
 }, {description: 'for an instruction a tutorial repeats: its Nth entry is on the list — the tutorial has prepared that step'});
 

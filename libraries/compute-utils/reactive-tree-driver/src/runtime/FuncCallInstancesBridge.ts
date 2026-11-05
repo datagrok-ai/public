@@ -2,9 +2,12 @@ import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge, EMPTY} from 'rxjs';
 import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter, catchError, tap} from 'rxjs/operators';
 import {deepEqual} from 'fast-equals';
-import {FuncCallAdapter, IFuncCallAdapter, IRunnableWrapper, IStateStore, MemoryStore} from './FuncCallAdapters';
+import {
+  FuncCallAdapter, IFuncCallAdapter, IRunnableWrapper, IStateStore, MemoryStore, MockResults,
+} from './FuncCallAdapters';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {FuncCallIODescription} from '../config/config-processing-utils';
+import {copyDataFrame} from '../utils';
 import {StateItem} from '../config/PipelineConfiguration';
 import {DriverLogger, reportError} from '../data/Logger';
 
@@ -101,7 +104,8 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
       throw new Error(`Double funcCall bridge instance init`);
     if (data.initValues) {
       for (const [key, val] of Object.entries(this.initialValues)) {
-        if (data.restrictions[key]?.assignedValue == null)
+        const isInput = this.io.some((item) => item.id === key && item.direction === 'input');
+        if (isInput && data.restrictions[key]?.assignedValue == null)
           data.adapter.setState(key, val);
       }
       for (const [key, val] of Object.entries(data.restrictions)) {
@@ -160,7 +164,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
-    const assignedValue = val instanceof DG.DataFrame ? val.clone() : val;
+    const assignedValue = val instanceof DG.DataFrame && restrictionType !== 'none' ? val.clone() : val;
     const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue, type: restrictionType};
     this.inputRestrictions$.next({
       ...this.inputRestrictions$.value,
@@ -212,7 +216,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set restriction on an empty FuncCallInstancesBridge`);
-    const assignedValue = val instanceof DG.DataFrame ? val.clone() : val;
+    const assignedValue = val instanceof DG.DataFrame && restrictionType !== 'none' ? val.clone() : val;
     const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue, type: restrictionType};
     this.inputRestrictions$.next({
       ...this.inputRestrictions$.value,
@@ -228,7 +232,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     const currentRestriction = this.inputRestrictions$.value?.[id];
     if (!this.isReadonly && currentRestriction) {
       const consistentVal = currentRestriction.assignedValue instanceof DG.DataFrame ?
-        currentRestriction.assignedValue.clone() :
+        copyDataFrame(currentRestriction.assignedValue) :
         currentRestriction.assignedValue;
       currentInstance.setState(id, consistentVal, currentRestriction.type);
     }
@@ -256,7 +260,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     this.outdatedChanged$.next(isOutdated);
   }
 
-  run(mockResults?: Record<string, any>, mockDelay?: number) {
+  run(mockResults?: MockResults, mockDelay?: number) {
     return defer(() => {
       const currentInstance = this.instance$.value?.adapter;
       if (!currentInstance)
@@ -266,6 +270,10 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
       if (!this.isRunable$.value)
         throw new Error(`Attempting to run FuncCallInstancesBridge with validation errors`);
       this.isRunning$.next(true);
+      const stopRunning = () => {
+        if (this.isRunning$.value)
+          this.isRunning$.next(false);
+      };
       return currentInstance.run(mockResults, mockDelay).pipe(
         tap(() => {
           if (this.runError$.value)
@@ -278,9 +286,9 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
           reportError('recoverable', 'bridge:run', e instanceof Error ? e : new Error(String(e)), this.logger);
           return EMPTY;
         }),
-        finalize(() => {
-          this.isRunning$.next(false);
-        }),
+        // stopped before the completion is passed on, so whoever waits for the run sees it done
+        tap({complete: stopRunning}),
+        finalize(stopRunning),
       );
     });
   }
@@ -291,7 +299,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
         if (!restriction) continue;
         const t = restriction.type;
         if (t === 'restricted' || t === 'disabled' || (includeInfo && t === 'info'))
-          this.setState(name, restriction.assignedValue, t);
+          this.setToConsistent(name);
       }
       return of(undefined);
     });

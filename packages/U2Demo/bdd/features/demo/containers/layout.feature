@@ -8,6 +8,7 @@ Feature: Layout containers
 
   Scenario: Accordion panes expand and collapse
     Then General pane should be expanded
+    And General pane should be 58 px tall
     And Advanced pane should be collapsed
     When user expands Advanced pane
     Then Advanced pane should be expanded
@@ -34,6 +35,6 @@ Feature: Layout containers
     Then value of toolbar readout should contain text "u2: next-gen Datagrok UI library"
 
   Scenario: The splitter reports its sizes
-    Then value of sizes readout should have text "0.3 / 0.7"
+    Then value of sizes readout should have text "30% / 70%"
     When user drags sash in splitter to Content heading
-    Then value of sizes readout should not contain text "0.3 / 0.7"
+    Then value of sizes readout should not contain text "30% / 70%"

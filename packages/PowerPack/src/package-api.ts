@@ -78,6 +78,27 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:DomainRouteView', { address });
   }
 
+  /**
+   * The "Create domain schema" dialog over an external database: Connection › Design › Review (u2)
+   */
+  export async function createDomainBinding(connection?: any , schema?: string , table?: string , catalog?: string ): Promise<string> {
+    return await grok.functions.call('PowerPack:CreateDomainBinding', { connection, schema, table, catalog });
+  }
+
+  /**
+   * The "Edit binding" dialog over a registered external binding: Design › Review › Saved (u2)
+   */
+  export async function editDomainBinding(schema: string ): Promise<boolean> {
+    return await grok.functions.call('PowerPack:EditDomainBinding', { schema });
+  }
+
+  /**
+   * The chat compose box with @-mentions of users (u2)
+   */
+  export async function chatMessageInput(value?: string , placeholder?: string , sendOnEnter?: boolean , draftKey?: string ): Promise<any> {
+    return await grok.functions.call('PowerPack:ChatMessageInput', { value, placeholder, sendOnEnter, draftKey });
+  }
+
   export async function isFormulaColumn(col: DG.Column ): Promise<boolean> {
     return await grok.functions.call('PowerPack:IsFormulaColumn', { col });
   }

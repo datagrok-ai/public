@@ -1,34 +1,9 @@
-/* u2 icons — sizing hooks plus the standalone Font Awesome fallback.
+/* u2 icons — the standalone Font Awesome fallback, for hosts outside the platform.
 
    INVARIANT: the fallback is gated behind `.u2-standalone`, a marker class standalone hosts set
    on <html>. In the platform that class never appears, so `fal`/`far`/`fas` keep resolving
-   through the app's own Font Awesome 5 Pro sheet and this file contributes nothing but the
-   `.u2-icon` rules below. */
-
-.u2-icon {
-  color: currentColor;
-}
-
-.u2-icon-small {
-  font-size: 12px;
-}
-
-.u2-icon-medium {
-  font-size: 16px;
-}
-
-.u2-icon-large {
-  font-size: 20px;
-}
-
-.u2-icon-action {
-  color: var(--dg-text-color-light);
-  cursor: pointer;
-}
-
-.u2-icon-action:hover {
-  color: var(--dg-accent);
-}
+   through the app's own Font Awesome 5 Pro sheet and this file contributes nothing. The `.u2-icon`
+   sizing hooks live in elements.css, which every page gets. */
 
 /* Vendored Font Awesome Pro 5.15.4 (vendor/fontawesome-pro), copied from the platform's own
    assets (core/client/xamgle/web/font/font-awesome) — Datagrok holds a Pro license; the same

@@ -354,15 +354,17 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   /** Reflective property form over the writable columns of [x] (a new row when
    * omitted) — inputs come from {@link getProperties}, and non-writable columns
    * are excluded from the form AND from any payload built off it, mirroring
-   * column security. Callers without the corresponding table right
+   * column security; an `immutable` column (a key typed once) is an input of a
+   * new row only. Callers without the corresponding table right
    * (`can.insert` for a new row, `can.edit` for an existing one) get a read-only
    * explanation instead: column security alone is NOT table Edit. A richer form
    * (async validation, reference pickers, error mapping) is u2's `domainForm`. */
   async renderEditor(x?: T): Promise<HTMLElement> {
     const [properties, access] = await Promise.all([this.getProperties(), this.access()]);
-    const inputs = properties.filter((p) => access.fields[p.name] === 'editable');
     const row = (x == null ? null : this.rowOf(x)) ?? this.newRow();
     const creating = row.id == null;
+    const inputs = properties.filter((p) => access.fields[p.name] === 'editable' ||
+      (creating && access.fields[p.name] === 'immutable'));
     if (!(creating ? access.can.insert : access.can.edit) || inputs.length === 0)
       return ui.divText(creating ? `You cannot create ${this.table} rows.`
         : `You cannot edit ${this.table} rows.`);

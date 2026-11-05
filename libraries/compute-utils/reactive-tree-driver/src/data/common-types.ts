@@ -1,6 +1,10 @@
 
 export type ItemId = string;
 export type LinkSpecString = string | string[];
+
+/** What a link generated from function annotations stands for: choices and lookup rules, value checks, or the
+ *  missing-value check of a non-optional input. */
+export type AnnotationLinkKind = 'rule' | 'check' | 'required';
 export type ItemPathArray = string[];
 export type NqName = string;
 export type TypeKey = string;

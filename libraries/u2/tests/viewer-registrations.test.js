@@ -4,7 +4,7 @@
    through the `sample` policy (VP-15/16). The core registry stays platform-free: the global one
    after `registerAll()` alone carries no viewer tag, which is what keeps the manifest gate green. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from './dom-shim.js';
@@ -151,7 +151,7 @@ scoped('every descriptor becomes a u2-viewer-* tag with table, look and its user
   assert.deepEqual(plot.props.find((p) => p.name === 'markerType').choices, ['circle', 'square']);
   assert.deepEqual(plot.events, ['d4-data-event']);
   assert.ok(plot.props.slice(2).every((p) => p.bindable), 'every property bindable; look is the literal escape hatch');
-  assert.equal(reg.get('u2-viewer-filters').designerActions[0].name, 'Add filter for column…');
+  assert.equal(reg.get('u2-viewer-filters').designerActions[0].text, 'Add filter for column…');
   assert.equal(reg.get('u2-viewer-filters').designerActions[0].icon, 'filter');
   assert.equal(reg.get('u2-viewer-form').props.length, 2);
 
@@ -196,12 +196,12 @@ scoped('registerPlatformComponents is the core registry plus the viewers; the co
   registerAll(core);
   assert.deepEqual(core.metas().map((m) => m.tag).filter((tag) => !tags.includes(tag)), [],
     'the whole core registry is in');
-  const required = ['u2-domain-form', 'u2-domain-list', 'u2-domain-pick', 'u2-domain-grid', 'u2-domain-data-table',
-    'u2-domain-tree', 'u2-domain-history', 'u2-domain-children', 'u2-domain-search', 'u2-domain-filters',
-    'u2-functions-browser', 'u2-function-input', 'u2-func-call-history-browser', 'u2-func-call-input', 'u2-func-form',
-    'u2-viewer-grid', 'u2-viewer-scatter-plot'];
+  const required = ['u2-functions-browser', 'u2-function-input', 'u2-func-call-history-browser',
+    'u2-func-call-input', 'u2-func-form', 'u2-viewer-grid', 'u2-viewer-scatter-plot'];
   assert.deepEqual(required.filter((tag) => !tags.includes(tag)), [],
-    'the dg entity controls, the ten domain tags and the viewers on top');
+    'the dg entity controls and the viewers on top');
+  assert.deepEqual(tags.filter((tag) => tag.startsWith('u2-domain-')), [],
+    'EMS registers its own tags: u2 knows none of them');
   registerPlatformComponents(reg);
   assert.deepEqual(reg.metas().map((m) => m.tag), tags, 'a second call leaves the registry as it was');
 
@@ -211,7 +211,7 @@ scoped('registerPlatformComponents is the core registry plus the viewers; the co
   assert.equal(fci.props.find((p) => p.name === 'value').twoWay, true);
   assert.equal(fci.props.find((p) => p.name === 'functionName').bindable, true);
   const ff = reg.get('u2-func-form');
-  assert.notEqual(ff.props.find((p) => p.name === 'functionName').bindable, true, 're-render tier');
+  assert.equal(ff.props.find((p) => p.name === 'functionName').structural, true, 'read once');
   assert.equal(ff.props.find((p) => p.name === 'callId').bindable, true);
   assert.equal(ff.props.find((p) => p.name === 'showHistory').bindable, true);
   assert.equal(ff.props.find((p) => p.name === 'showRun').bindable, true);
@@ -303,7 +303,7 @@ scoped('the viewer sample renders zero-broken at design time over real sample ro
   assert.equal(grid.props.allowEdit, false);
   assert.deepEqual(instance.node('filters').props.columnNames, ['city', 'total']);
   assert.equal(instance.node('form').dataFrame, grid.dataFrame);
-  assert.equal(instance.node('customerField').value.peek(), 'Aspirin Labs');
+  assert.equal(instance.node('customerField').peek(), 'Aspirin Labs');
   assert.equal(runner.calls.length, 0, 'DD9: nothing ran');
   instance.dispose();
   assert.equal(platform.kills.length, 3);

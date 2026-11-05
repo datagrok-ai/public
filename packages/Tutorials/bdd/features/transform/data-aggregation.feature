@@ -17,6 +17,7 @@ Feature: The Data Aggregation tutorial
 
   Background:
     Given user is logged in
+    And the package autostarts have completed
     And the "tutorials" user settings are put back at feature end
     And the "achievement-badges" user settings are put back at feature end
     And the "Data Aggregation" tutorial is not completed yet

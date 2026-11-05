@@ -1,7 +1,6 @@
-#name: inchiToMol
+#name: InchiToMolPython
+#description: The InChI's molecule (inchiToMol's RDKit side: the converter Chem:InchiToMol calls this script, or Crux in Crux mode)
 #language: python
-#meta.role: converter
-#meta.inputRegexp: (InChI\=.+)
 #connection: Chem
 #input: string id
 #output: string smiles { semType: Molecule }

@@ -4,7 +4,7 @@
    item names (div-Library---Bioreactor), so its entries are plain menu items. */
 import type {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, expect, savedScriptOf, takeErrors} from '@datagrok-libraries/bdd/runtime';
+import {atFeatureEnd, expect, pollMs, savedScriptOf, takeErrors} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -45,25 +45,63 @@ export const openLibraryModel = Given('user opens the {string} model of the Diff
   }, {tier: 'ui', description: 'the app\'s own route for a library model; done when the ribbon, the view name and the model inputs are all there'});
 
 /* Saving writes a new .ivp into System:AppData/DiffStudio/library under a name the app picks
-   ("PK-PD(14).ivp" — the count is how many earlier runs left theirs behind), and announces it on
-   the platform's event bus. The step notes what the folder held first and deletes exactly what the
-   save added when the feature ends, so a run leaves the library as it found it. */
-export const saveToLibrary = When('user saves the model to the Diff Studio library', async (page: Page) => {
-  const folder = 'System:AppData/DiffStudio/library';
-  const before: string[] = await page.evaluate(async (f) =>
-    (await grok.dapi.files.list(f)).map((x: any) => String(x.name)), folder);
-  await page.locator('.diff-studio-ribbon-save-to-model-catalog-icon').first().click();
-  await expect.poll(async () => (await page.evaluate(async (f) =>
-    (await grok.dapi.files.list(f)).map((x: any) => String(x.name)), folder)).length,
-  {message: 'files in the Diff Studio library after the save', timeout: 60000}).toBeGreaterThan(before.length);
+   ("PK-PD(14).ivp" — the count is how many earlier runs left theirs behind), registers it in the
+   library's manifest (external-models.json) and announces it on the platform's event bus. The first
+   save of a feature notes what the folder and the manifest held — a manifest entry whose file is gone,
+   which a killed run leaves, is dropped first — and the feature's end deletes exactly the files the
+   saves added, writes the manifest back, announces the change so an open library list drops the
+   entry, and reads both back. */
+const LIBRARY_FOLDER = 'System:AppData/DiffStudio/library';
+const libraryBefore = new WeakMap<Page, {files: string[]; manifest: string | null}>();
+
+async function noteLibrary(page: Page): Promise<void> {
+  if (libraryBefore.has(page))
+    return;
+  const before: {files: string[]; manifest: string | null} = await page.evaluate(async (f) => {
+    const path = `${f}/external-models.json`;
+    let manifest: string | null = await grok.dapi.files.exists(path) ? await grok.dapi.files.readAsText(path) : null;
+    if (manifest !== null) {
+      const parsed = JSON.parse(manifest);
+      const models: any[] = Array.isArray(parsed?.models) ? parsed.models : [];
+      const kept: any[] = [];
+      for (const m of models)
+        if (typeof m?.path !== 'string' || await grok.dapi.files.exists(m.path))
+          kept.push(m);
+      if (kept.length < models.length) {
+        manifest = JSON.stringify({...parsed, models: kept}, null, 2);
+        await grok.dapi.files.writeAsText(path, manifest);
+      }
+    }
+    return {files: (await grok.dapi.files.list(f)).map((x: any) => String(x.name)), manifest};
+  }, LIBRARY_FOLDER);
+  libraryBefore.set(page, before);
   atFeatureEnd(page, async () => {
-    await page.evaluate(async ([f, known]) => {
+    libraryBefore.delete(page);
+    const left = await page.evaluate(async ([f, known, manifest]) => {
+      const path = `${f}/external-models.json`;
+      if (manifest === null)
+        await grok.dapi.files.delete(path).catch(() => undefined);
+      else
+        await grok.dapi.files.writeAsText(path, manifest);
       for (const file of await grok.dapi.files.list(f))
         if (!(known as string[]).includes(String(file.name)))
           await grok.dapi.files.delete(`${f}/${file.name}`).catch(() => undefined);
-    }, [folder, before] as [string, string[]]);
+      grok.events.fireCustomEvent('diff-studio:library-changed', null);
+      const now = (await grok.dapi.files.list(f)).map((x: any) => String(x.name)).filter((n: string) => !(known as string[]).includes(n));
+      const text = await grok.dapi.files.exists(path) ? await grok.dapi.files.readAsText(path) : null;
+      return {files: now, manifestBack: text === manifest};
+    }, [LIBRARY_FOLDER, before.files, before.manifest] as [string, string[], string | null]);
+    expect(left, 'the Diff Studio library after the feature').toEqual({files: [], manifestBack: true});
   });
-}, {tier: 'ui', description: 'the ribbon icon; the file it creates is deleted when the feature ends'});
+}
+
+export const saveToLibrary = When('user saves the model to the Diff Studio library', async (page: Page) => {
+  await noteLibrary(page);
+  const count = () => page.evaluate(async (f) => (await grok.dapi.files.list(f)).length, LIBRARY_FOLDER);
+  const before = await count();
+  await page.locator('.diff-studio-ribbon-save-to-model-catalog-icon').first().click();
+  await expect.poll(count, {message: 'files in the Diff Studio library after the save', timeout: pollMs(60000)}).toBeGreaterThan(before);
+}, {tier: 'ui', description: 'the ribbon icon; the files the feature\'s saves create are deleted and the library manifest put back when the feature ends, both read back'});
 
 /* The Model Hub is Compute2's catalog view, not a plain #app of the registry, so "user opens the
    … app" does not find it — the browse tree node runs Compute2:modelCatalog, and so does this. */

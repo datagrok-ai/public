@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, uiSettled} from '@datagrok-libraries/test/src/test';
 import {Plate} from '../plate/plate';
 
 // @ts-ignore
@@ -20,6 +20,18 @@ function getPlate(): Plate {
   const readout = Plate.fromCsvTable(readoutCsv, 'readout');
 
   return Plate.fromPlates([concentration, layout, readout]);
+}
+
+/** Shows the plate's detailed view in a dialog until it has drawn, then closes it. */
+async function showPlate(plate: Plate): Promise<void> {
+  const dialog = ui.dialog({title: 'Inspect plate'})
+    .add(PlateWidget.detailedView(plate).root)
+    .show({width: 500, height: 500});
+  try {
+    await uiSettled('the plate widget');
+  } finally {
+    dialog.close();
+  }
 }
 
 category('plates', () => {
@@ -48,10 +60,7 @@ category('plates', () => {
 
   test('fromExcel', async () => {
     const plate = await Plate.fromExcelPath('System:DemoFiles/hts/xlsx_plates/plate1.xlsx');
-    ui.dialog({title: 'Inspect plate'})
-      .add(PlateWidget.detailedView(plate).root)
-      .show({width: 500, height: 500});
-    await DG.delay(10000);
+    await showPlate(plate);
   });
 
   test('normalization', async () => {
@@ -74,11 +83,7 @@ category('plates', () => {
   });
 
   test('render', async () => {
-    const plate = getPlate();
-    ui.dialog({title: 'Inspect plate'})
-      .add(PlateWidget.detailedView(plate).root)
-      .show({width: 500, height: 500});
-    await DG.delay(10000);
+    await showPlate(getPlate());
   });
 
   test('numToExcel', async () => {

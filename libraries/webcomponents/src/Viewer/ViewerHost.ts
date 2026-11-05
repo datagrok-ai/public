@@ -1,5 +1,5 @@
-import {BehaviorSubject, Subject, Observable, SchedulerLike, EMPTY, asapScheduler, combineLatest} from 'rxjs';
-import {concatMap, debounceTime, takeUntil, tap} from 'rxjs/operators';
+import {BehaviorSubject, Subject, Observable, SchedulerLike, EMPTY, asapScheduler, combineLatest, defer} from 'rxjs';
+import {catchError, concatMap, debounceTime, takeUntil, tap} from 'rxjs/operators';
 
 export interface ViewerLike {
   type: string;
@@ -37,7 +37,11 @@ export class ViewerHost<V extends ViewerLike> {
   ) {
     combineLatest([this.typeSetted$, this.dfSetted$, this.optionsSetted$]).pipe(
       debounceTime(0, scheduler),
-      concatMap(() => this.applyTransition()),
+      // a failed transition (unknown type, a throwing frame or options apply) must not end the stream
+      concatMap(() => defer(() => this.applyTransition()).pipe(catchError((e) => {
+        console.error(e);
+        return EMPTY;
+      }))),
       takeUntil(this.destroyed$),
     ).subscribe();
   }

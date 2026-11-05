@@ -262,9 +262,17 @@ export function normalizeMarkdownTables(text: string): string {
   return out.join('\n');
 }
 
+/** The platform's markdown links `[text](url)` and `<url>` but not a bare URL, which models still write
+ * (`Documentation: https://datagrok.ai/help/…`). Outside code, a bare http(s) URL at a line's start or after a
+ * space becomes `<url>`, with trailing punctuation left outside it. */
+export function linkBareUrls(text: string): string {
+  return text.split(/(```[\s\S]*?```|`[^`\n]*`)/).map((part, i) => i % 2 ? part :
+    part.replace(/(^|\s)(https?:\/\/[^\s<>()[\]`]*[^\s<>()[\]`.,;:!?'"*_])/g, '$1<$2>')).join('');
+}
+
 /** Renders markdown content with copy-on-code-blocks behavior and selectable text. */
 export function createStyledMarkdown(content: string): HTMLElement {
-  const markDown = ui.markdown(normalizeMarkdownTables(content));
+  const markDown = ui.markdown(normalizeMarkdownTables(linkBareUrls(content)));
   markDown.style.position = 'relative';
   dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
   if (markDown.querySelector('pre > code')) {

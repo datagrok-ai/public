@@ -11,10 +11,12 @@ import {baseConfig} from '@datagrok-libraries/test/src/playwright/base-config.js
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(process.env.BDD_ROOT ?? (basename(here) === 'dist' ? dirname(here) : here));
 const url = (process.env.DATAGROK_URL ?? 'http://localhost:8888').replace(/\/$/, '');
-function guideViewport(spec = ''): {width: number; height: number} {
+function viewportOf(spec = ''): {width: number; height: number} | undefined {
   const m = /^(\d+)x(\d+)$/.exec(spec);
-  return m ? {width: Number(m[1]), height: Number(m[2])} : {width: 1920, height: 1080};
+  return m ? {width: Number(m[1]), height: Number(m[2])} : undefined;
 }
+const guideView = viewportOf(process.env.BDD_GUIDE_VIEWPORT) ?? {width: 1920, height: 1080};
+const runView = viewportOf(process.env.BDD_VIEWPORT);
 
 const globalSetup =['global-setup.js', 'global-setup.ts'].map((f) => join(here, 'src', 'runtime', f)).find(existsSync)!;
 
@@ -38,7 +40,11 @@ export default defineConfig({
     storageState: join(root, 'e2e', '.auth.json'),
     // a guide run (`grok-bdd guide`) is filmed at 1080p: below 1920 px the top menu bar folds its
     // last groups (Chem, Bio) into "more"; BDD_GUIDE_VIEWPORT=<w>x<h> chooses another
-    ...(process.env.BDD_GUIDE ? {viewport: guideViewport(process.env.BDD_GUIDE_VIEWPORT)} : {}),
+    // a window narrower than the 1600 px video is filmed at twice its density, so its text stays sharp
+    // BDD_VIEWPORT=<w>x<h> runs a suite at another screen size (the base is 1920×1080): the layout
+    // audit then checks every scenario's end state at that size
+    ...(process.env.BDD_GUIDE ? {viewport: guideView, deviceScaleFactor: guideView.width < 1600 ? 2 : 1} :
+      runView ? {viewport: runView} : {}),
     // a failed run keeps its trace (actions, console, network) and the failure screenshot, but
     // neither DOM snapshots (serializing the shell's DOM around every action was ~45% of a
     // feature's time) nor a screenshot per action (~12 s over six features, only a filmstrip);
@@ -53,6 +59,8 @@ export default defineConfig({
   // shared 15 s once two workers share it: BDD_EXPECT_TIMEOUT raises what every check waits
   expect: {...baseConfig.expect, timeout: Number(process.env.BDD_EXPECT_TIMEOUT ?? baseConfig.expect?.timeout ?? 15000)},
   // @serial features share server state another worker would change under them (a fuzzy gallery
-  // search over fixtures the others create and delete): they take turns, beside everything else
-  projects: [{name: 'bdd', grepInvert: /@serial(\s|$)/}, {name: 'bdd-serial', grep: /@serial(\s|$)/, workers: 1}],
+  // search over fixtures the others create and delete): they take turns, beside everything else.
+  // Listed first so their lane starts with the run: a free worker takes the first runnable job in
+  // project order, and a serial lane queued last ran alone after the other workers were done
+  projects: [{name: 'bdd-serial', grep: /@serial(\s|$)/, workers: 1}, {name: 'bdd', grepInvert: /@serial(\s|$)/}],
 });

@@ -1,9 +1,8 @@
-#name: Mutate
-#description: Generates the new dataset based on the given structure. Generated table has a column named 'mutations' with mutated structures.
+#name: MutatePython
+#description: Generates the new dataset based on the given structure. Generated table has a column named 'mutations' with mutated structures. (Mutate's RDKit side: Chem:Mutate calls this script, or Crux in Crux mode)
 #help-url: https://datagrok.ai/help/domains/chem/functions/mutate
 #language: python
 #meta.domain: chem
-#top-menu: Chem | Transform | Mutate...
 #input: string molecule = "CN1C(CC(O)C1=O)C1=CN=CC=C1" {semType: Molecule}
 #input: int steps = 1 [Number of mutation steps]
 #input: bool randomize = true [Randomize mutations]

@@ -39,7 +39,7 @@ import {__obs, DragDropArgs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
 import {CanvasRenderer, Grid, GridCell, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
-import {Entity, FileInfo, Group, Property, User} from './src/entities';
+import {DataConnection, Entity, FileInfo, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
@@ -514,6 +514,36 @@ export function tableFromMap(map: { [key: string]: any }, showCopyValue: boolean
   return api.grok_UI_TableFromMap(map, showCopyValue);
 }
 
+/** Options for {@link pickFileFromFiles}. */
+export interface IPickFileOptions {
+  /** Several files at once: every file and folder selected on OK (Ctrl+click, Shift+click), as a list. */
+  multiple?: boolean;
+  /** Browses this file share alone, as the platform's file input bound to a connection does; its root is a pick too,
+   * as a folder. A file is then picked on OK only, not by a double-click. */
+  connection?: DataConnection;
+  /** What the dialog asks for: a `file` (the default), a `folder`, or `all` (either). It names it in the title, and
+   * inside a {@link connection} `folder` lists folders only; the pick itself is not checked against it. */
+  mode?: 'file' | 'folder' | 'all';
+}
+
+/** Opens the platform's 'Select a file' dialog over the file shares tree, or over the files of one share.
+ * Resolves with the file double-clicked, or the file or folder selected on OK
+ * (its {@link FileInfo.fullPath} names it on the share) — with `multiple`, with all of
+ * them — or null when the dialog is closed without a pick.
+ * @example
+ * const file = await ui.pickFileFromFiles();
+ * if (file !== null)
+ *   grok.shell.info(file.fullPath);
+ * const files = await ui.pickFileFromFiles({multiple: true});
+ * @see {@link https://public.datagrok.ai/js/samples/ui/dialogs/pick-file} */
+export function pickFileFromFiles(options: IPickFileOptions & {multiple: true}): Promise<FileInfo[] | null>;
+export function pickFileFromFiles(options?: IPickFileOptions & {multiple?: false}): Promise<FileInfo | null>;
+export function pickFileFromFiles(options?: IPickFileOptions): Promise<FileInfo | FileInfo[] | null>;
+export async function pickFileFromFiles(options: IPickFileOptions = {}): Promise<FileInfo | FileInfo[] | null> {
+  return toJs(await api.grok_UI_PickFileFromFiles(options.multiple === true, toDart(options.connection),
+    options.mode ?? 'file')) ?? null;
+}
+
 /** Opens the platform's 'Select a file' dialog over the file shares tree.
  * Resolves with the first dataframe of the picked file, or null when the dialog
  * is closed without a pick. */
@@ -522,7 +552,8 @@ export async function pickTableFromFiles(): Promise<DataFrame | null> {
 }
 
 /** Opens the platform's 'Select a database query' dialog; running a query that
- * produces a dataframe resolves with it, closing without one resolves with null. */
+ * produces a dataframe resolves with it once all its rows have arrived, closing
+ * without one resolves with null. */
 export async function pickTableFromQuery(): Promise<DataFrame | null> {
   return toJs(await api.grok_UI_PickTableFromQuery()) ?? null;
 }

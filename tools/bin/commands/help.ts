@@ -28,6 +28,7 @@ Commands:
     testall     Run packages tests
     migrate     Migrate legacy tags to meta.role
     server (s)  Manage a Datagrok server (list/get/delete entities, run functions)
+    connect-folder  Connect a local folder to Datagrok as a connection (runs a Docker container)
 
 To get help on a particular command, use:
     grok <command> --help
@@ -95,7 +96,7 @@ grok add tests
 Please note that entity names may only include letters and numbers
 
 --domain scaffolds a working browse/CRUD app over an entity-mapped domain table
-(\`grok.dapi.domains\`) from the u2 defaults (\`@datagrok-libraries/u2\`): a three-line
+(\`grok.dapi.domains\`) from the EMS defaults (\`@datagrok-libraries/ems\`): a three-line
 app function, a \`src/app.spec.json\` the designer edits, and — for a schema the package
 does not declare yet — a one-table starter \`databases/<schema>/schema.json\`. Give it
 one table (\`--domain tracker.issue\`), a whole schema the package declares in
@@ -141,7 +142,7 @@ Options:
 --verbose         Print detailed output
 --ui              Also generate \`src/generated/db-ui.ts\` — typed u2 handles
                   (\`get<Schema>Db()\` → a \`DomainTable<Row>\` per table, opened in
-                  parallel behind one await) over \`@datagrok-libraries/u2\`. Once the
+                  parallel behind one await) over \`@datagrok-libraries/ems\`. Once the
                   file exists, plain \`grok api\` keeps it up to date; delete it to
                   opt out again
 `;
@@ -168,6 +169,37 @@ Options:
 
 For CI, set GROK_PRIVATE_KEY to the private key JWK (raw or base64) instead of a
 config file. Read more: https://datagrok.ai/help/govern/access-control/keypair-authentication
+`;
+
+const HELP_CONNECT_FOLDER = `
+Usage: grok connect-folder <folder> [--host <alias>] [--read-only] [--foreground] [--image <ref>] [--force]
+       grok connect-folder list [--host <alias>] [--output table|json|csv]
+       grok connect-folder start|stop|logs <connection> [-f]
+       grok connect-folder rm <connection> [--host <alias>]
+
+Connect a local folder to Datagrok as a connection. The folder agent runs in
+Docker, survives closing the terminal, and dials out to the server: no inbound
+port is opened. Connecting the same folder again resumes the same connection.
+
+grok connect-folder ~/data                Read-write, on the default server
+grok connect-folder D:\\data --read-only   Others with access can only read
+grok connect-folder list                  Your connected folders and their containers
+grok connect-folder stop "laptop data"    Stop serving; stays stopped after a reboot
+grok connect-folder rm 7ff0714e           Remove the container and delete the connection
+
+<connection> is the connection name, a connection id prefix (8+ characters), or
+the folder.
+
+Options:
+--host        Server alias from ~/.grok/config.yaml (default: the default server)
+--read-only   Mount the folder read-only; writes are refused
+--foreground  Run attached, removed on Ctrl+C (CI, debugging)
+--image       Agent image (default: the one the server names)
+--force       Allow a drive root or the home folder
+-f            With logs: follow
+
+Requires Docker and a keypair (grok login <server>), which never leaves this
+machine: the container holds a key of its own that can only serve this folder.
 `;
 
 const HELP_CONFIG = `
@@ -264,6 +296,7 @@ Options:
 --skip-puppeteer    Skip the Puppeteer/DG.Test pass; only run Playwright (for playwright-only test directories)
 --skip-playwright   Skip the Playwright pass; only run Puppeteer/DG.Test
 --skip-node         Skip the Node (browserless) pass; run all tests in the browser
+--skip-gc           Do not collect garbage after each test (faster for suites of small unit tests)
 --node-only         Run only tests annotated {node: true} headless under Node, no browser
 --link  	        Link the package to local utils (no effect in a pnpm workspace checkout)
 --record            Records the test execution process in mp4 format
@@ -507,5 +540,6 @@ export const help = {
   server: HELP_SERVER,
   s: HELP_SERVER,
   setup: HELP_SETUP,
+  'connect-folder': HELP_CONNECT_FOLDER,
   help: HELP,
 };

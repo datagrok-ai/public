@@ -7,7 +7,8 @@
 //             filtercatalog (RDKit's FilterCatalog SMARTS), zinc-50 (SMILES)
 // DATASET     SMILES csv or .smi (default: <reddata>/data/demo/chem/chembl/chembl-100k.csv)
 // CRUX_BENCH  crux-bench checkout, for its query sets
-// CRUX_WASM   a wasm-pack out dir to test instead of the build vendored in Chem
+// CRUX_WASM   a chem-wasm build's out dir to test instead of the build vendored in Chem (the search builds the query
+//             with getQueryMolSafe on it: a search-only crux-wasm build has no get_qmol)
 // PURE=1      leave out the RDKit verdict Chem gives the molecules crux cannot parse (shows crux's own results)
 // VERBOSE=1   print every query, not only fallbacks and differences
 import {existsSync, readFileSync} from 'fs';
@@ -33,7 +34,7 @@ const SMILES_QUERIES = ['c1ccccc1', 'c1ccncc1', 'C1CC1', 'C1CCCCC1', 'C1CCNCC1',
 
 const rdkit = await loadRdkit();
 const {crux, dir: cruxDir} = await loadCrux();
-const {getMolSafe, getQueryMolSafe, getCruxSmarts} = await loadChemQueryCode();
+const {getMolSafe, getQueryMolSafe} = await loadChemQueryCode();
 const mols = readSmilesCsv(DATASET, N);
 console.log(`${mols.length} molecules from ${DATASET}\ncrux build: ${cruxDir}${PURE ? ' (PURE)' : ''}`);
 
@@ -82,8 +83,8 @@ function rdkitSearch(query) {
   }
 }
 
-// Chem's crux engine: the index over the column (CXSMILES extensions cut), getCruxQuery, and the RDKit verdict
-// for the molecules crux cannot parse
+// Chem's crux engine: the index over the column (CXSMILES extensions cut), the query getQueryMolSafe builds on the
+// crux module (CruxService.readsQuery, the worker's search), and the RDKit verdict for the molecules crux cannot parse
 t = performance.now();
 const builder = new crux.CollectionBuilder(true);
 builder.setLenient?.(true);
@@ -101,27 +102,21 @@ const unparsedMolecules = unparsed.filter((i) => {
 });
 console.log(`crux: indexed in ${(performance.now() - t).toFixed(0)} ms, ${unparsed.length} rows not parsed, ` +
   `${unparsedMolecules.length} of them molecules for RDKit: ${unparsedMolecules.slice(0, 5).map((i) => mols[i]).join(' ')}`);
-const validator = new crux.CollectionBuilder(true).finish();
+if (!crux.get_qmol)
+  throw new Error(`${cruxDir} is not a chem-wasm build: Chem builds the query on the Crux module (get_qmol)`);
 
+/** The query molecule Crux searches with, or null (Chem then searches on RDKit). */
 function cruxQuery(query) {
-  const qmol = getQueryMolSafe(query, '', rdkit);
-  if (!qmol)
-    return null;
   try {
-    const smarts = getCruxSmarts(qmol);
-    if (!smarts)
-      return null;
-    validator.substructureSearch(smarts, 0);
-    return smarts;
+    return getQueryMolSafe(query, '', crux);
   } catch (e) {
     return null;
-  } finally {
-    qmol.delete();
   }
 }
 
-function cruxSearch(query, smarts) {
-  const hits = new Set(collection.substructureSearch(smarts, 0));
+function cruxSearch(query, cruxQmol) {
+  // a query of no atoms matches no molecule in RDKit (crux.worker.ts search)
+  const hits = new Set(cruxQmol.get_num_atoms() === 0 ? [] : collection.substructureSearchMol(cruxQmol, 0));
   if (!PURE && unparsedMolecules.length > 0) {
     const qmol = getQueryMolSafe(query, '', rdkit);
     for (const i of unparsedMolecules) {
@@ -180,10 +175,12 @@ for (const {set, q, label} of queries) {
   const rdkitHits = rdkitSearch(q);
   const rdkitMs = performance.now() - t;
   total.rdkit += rdkitMs;
-  const smarts = cruxQuery(q);
+  const cruxQmol = cruxQuery(q);
   t = performance.now();
-  const cruxHits = smarts === null ? rdkitHits : cruxSearch(q, smarts);
+  const cruxHits = cruxQmol === null ? rdkitHits : cruxSearch(q, cruxQmol);
   const cruxMs = performance.now() - t;
+  const cruxSmarts = cruxQmol === null ? null : cruxQmol.get_smarts();
+  cruxQmol?.delete();
   total.crux += cruxMs;
   const inCrux = new Set(cruxHits ?? []);
   const inRdkit = new Set(rdkitHits ?? []);
@@ -191,13 +188,13 @@ for (const {set, q, label} of queries) {
   const onlyCrux = (cruxHits ?? []).filter((i) => !inRdkit.has(i));
   const differs = onlyRdkit.length + onlyCrux.length > 0;
   differences += differs ? 1 : 0;
-  fallbacks += smarts === null ? 1 : 0;
-  if (!differs && smarts !== null && process.env.VERBOSE !== '1')
+  fallbacks += cruxSmarts === null ? 1 : 0;
+  if (!differs && cruxSmarts !== null && process.env.VERBOSE !== '1')
     continue;
-  const flag = differs ? '!!' : smarts === null ? 'RD' : '  ';
+  const flag = differs ? '!!' : cruxSmarts === null ? 'RD' : '  ';
   console.log(`${flag} [${set}] ${label.slice(0, 36).padEnd(36)} rdkit ${String(rdkitHits?.length).padStart(7)} ` +
     `crux ${String(cruxHits?.length).padStart(7)}  ${rdkitMs.toFixed(0).padStart(5)} / ${cruxMs.toFixed(1).padStart(6)} ms  ` +
-    `${smarts ?? '(RDKit)'}`.slice(0, 250));
+    `${cruxSmarts ?? '(RDKit)'}`.slice(0, 250));
   if (differs) {
     console.log(`     only RDKit: ${onlyRdkit.slice(0, 3).map((i) => mols[i]).join(' ')}`);
     console.log(`     only crux:  ${onlyCrux.slice(0, 3).map((i) => mols[i]).join(' ')}`);

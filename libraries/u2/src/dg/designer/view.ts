@@ -7,6 +7,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {Control} from '../../core/component.js';
+import {Reason} from '../../core/reason.js';
 import {signal, ReadonlySignal} from '../../core/signals.js';
 import {div, divV, h3} from '../../core/elements.js';
 import type {Action} from '../../components/actions/actions.js';
@@ -19,7 +20,7 @@ import {registry as globalRegistry} from '../../spec/registry.js';
 import type {Registry} from '../../spec/registry.js';
 import {SpecEditor} from '../../spec/editor.js';
 import type {AppliedPatch, SpecPatch} from '../../spec/editor.js';
-import {appView} from '../shell/app-view.js';
+import {ViewHost} from '../shell/view-host.js';
 import {disposePanel} from './handler.js';
 import {accepts} from './dnd.js';
 import {makeDesignerDroppable} from './drop.js';
@@ -43,6 +44,9 @@ export interface DesignerViewOptions {
 
 /** The canvas: a rendered spec plus the design-mode chrome over it. */
 export class SpecDesigner extends Control {
+  /** Why the canvas controls do not work in Design mode, where a click selects what is under the glass pane. */
+  static readonly DESIGNING = 'Switch to Run to use the controls';
+
   readonly status: ReadonlySignal<string>;
   readonly toolbox: HTMLElement;
 
@@ -78,7 +82,7 @@ export class SpecDesigner extends Control {
     this.root.dataset.u2 = 'designer';
     // the shortcuts below are the view's own: the root has to be able to hold focus for them
     this.root.tabIndex = 0;
-    this._tray = this.runInScope(() => new Tray({
+    this._tray = this.build(() => new Tray({
       onSelect: (node) => this._select(node),
       onContext: (node, x, y) => {
         this._select(node);
@@ -86,12 +90,12 @@ export class SpecDesigner extends Control {
       },
       onAdd: (base, seed) => this._dragLayer.addComponent(base, seed),
     }));
-    this._tree = this.runInScope(() => new VirtualTree<SpecNode>({
+    this._tree = this.build(() => new VirtualTree<SpecNode>({
       onRename: (node, label) => this._rename(node, label),
       contextActions: (node) => this._rowActions(node),
     }));
-    this._mode = this.runInScope(() => new ButtonGroup({
-      items: [{id: 'design', label: 'Design'}, {id: 'run', label: 'Run'}],
+    this._mode = this.build(() => new ButtonGroup({
+      items: [{id: 'design', text: 'Design'}, {id: 'run', text: 'Run'}],
       toggle: 'single',
       density: 'ribbon',
     }));
@@ -156,7 +160,7 @@ export class SpecDesigner extends Control {
     // a click on the row that is already selected moves no signal, so the selection effect below
     // never re-fires — the click itself has to re-assert it, past the guard that effect needs;
     // a modifier click is a multi-selection gesture, and re-asserting would collapse the set (F5)
-    this._listen(this._tree.root, 'click', (e) => {
+    this.scope.listen(this._tree.root, 'click', (e) => {
       const me = e as MouseEvent;
       if (me.ctrlKey || me.metaKey || me.shiftKey)
         return;
@@ -164,51 +168,51 @@ export class SpecDesigner extends Control {
       if (node)
         this._select(node);
     });
-    this._listen(this._pane, 'click', (e) => this._selection.onCanvasClick(e as MouseEvent));
-    this._listen(this._pane, 'mousedown', (e) => this._dragLayer.onPaneDown(e as MouseEvent));
-    this._listen(this._pane, 'contextmenu',
+    this.scope.listen(this._pane, 'click', (e) => this._selection.onCanvasClick(e as MouseEvent));
+    this.scope.listen(this._pane, 'mousedown', (e) => this._dragLayer.onPaneDown(e as MouseEvent));
+    this.scope.listen(this._pane, 'contextmenu',
       (e) => this._verbs.onContextMenu(e as MouseEvent, this._selection.hit(e as MouseEvent)));
-    this._listen(this._pane, 'mousemove',
+    this.scope.listen(this._pane, 'mousemove',
       (e) => this._selection.setHovered(this._dragging ? null : this._selection.hit(e as MouseEvent)));
-    this._listen(this._pane, 'mouseleave', () => this._selection.setHovered(null));
+    this.scope.listen(this._pane, 'mouseleave', () => this._selection.setHovered(null));
     // the second hover source: a tree row highlights its node on the canvas (run mode draws
     // nothing — `reposition` suppresses the adorners while the pane is detached)
-    this._listen(this._tree.root, 'mouseover', (e) =>
+    this.scope.listen(this._tree.root, 'mouseover', (e) =>
       this._selection.setHovered(this._dragging ? null : this._tree.nodeForRow(e.target)?.data ?? null));
-    this._listen(this._tree.root, 'mouseleave', () => this._selection.setHovered(null));
+    this.scope.listen(this._tree.root, 'mouseleave', () => this._selection.setHovered(null));
     // the platform wraps every JS view in a widget whose ancestor-level bubble contextmenu
     // listener opens its own 'Properties...' menu — nothing may propagate past the designer
     // while it is designing; Run mode keeps the platform menu
     // preventDefault too: a KEYBOARD contextmenu (Shift+F10) targets the focused designer root
     // itself, below the pane's own handler, and would otherwise pop the browser menu
-    this._listen(this.root, 'contextmenu', (e) => {
+    this.scope.listen(this.root, 'contextmenu', (e) => {
       if (this._pane.isConnected) {
         e.preventDefault();
         e.stopPropagation();
       }
     });
-    this._listen(this._surface, 'scroll', () => this._selection.reposition(), true);
-    this._listen(window, 'resize', () => this._selection.reposition());
+    this.scope.listen(this._surface, 'scroll', () => this._selection.reposition(), {capture: true});
+    this.scope.listen(window, 'resize', () => this._selection.reposition());
     // a drag that starts on a palette row leaves the pane at once, and Escape has to reach it
     // wherever the focus is; all three do nothing while no drag is in flight
-    this._listen(document, 'mousemove', (e) => this._dragLayer.onMove(e as MouseEvent));
-    this._listen(document, 'mouseup', () => this._endDrag(true));
-    this._listen(document, 'keydown', (e) => dragKey(e as KeyboardEvent, host));
+    this.scope.listen(document, 'mousemove', (e) => this._dragLayer.onMove(e as MouseEvent));
+    this.scope.listen(document, 'mouseup', () => this._endDrag(true));
+    this.scope.listen(document, 'keydown', (e) => dragKey(e as KeyboardEvent, host));
 
     this.open(spec);
 
-    this._palette = this.runInScope(() => new Palette(this._instance?.registry ?? this._registry));
+    this._palette = this.build(() => new Palette(this._instance?.registry ?? this._registry));
     this.toolbox = divV([h3('Palette'), this._palette.root, h3('Structure'), this._tree.root],
       'u2-designer-toolbox');
-    this._listen(this._palette.root, 'mousedown', (e) => this._dragLayer.onPaletteDown(e as MouseEvent));
-    this._listen(this.toolbox, 'contextmenu', (e) => {
+    this.scope.listen(this._palette.root, 'mousedown', (e) => this._dragLayer.onPaletteDown(e as MouseEvent));
+    this.scope.listen(this.toolbox, 'contextmenu', (e) => {
       // keyboard contextmenu with focus on the tree/palette chrome — no menu of any kind
       e.preventDefault();
       e.stopPropagation();
     });
-    this._listen(this._mode.root, 'click', () => this._refocus());
-    this._listen(this.root, 'keydown', (e) => keyDown(e as KeyboardEvent, host));
-    this._listen(this.toolbox, 'keydown', (e) => keyDown(e as KeyboardEvent, host));
+    this.scope.listen(this._mode.root, 'click', () => this._refocus());
+    this.scope.listen(this.root, 'keydown', (e) => keyDown(e as KeyboardEvent, host));
+    this.scope.listen(this.toolbox, 'keydown', (e) => keyDown(e as KeyboardEvent, host));
 
     this.effect(() => {
       const rows = this._tree.selectedNodes.value;
@@ -231,7 +235,7 @@ export class SpecDesigner extends Control {
   }
 
   ribbon(): HTMLElement[] {
-    return this.runInScope(() => this._ribbon.build());
+    return this.build(() => this._ribbon.build());
   }
 
   /** Renders `spec` in place of what the canvas holds, with a fresh editor — an instance and its
@@ -255,7 +259,7 @@ export class SpecDesigner extends Control {
     this._selection.multi = [];
     this._hovered = null;
     this._pendingSelect = null;
-    this._instance = this.runInScope(() => renderSpec(parsed, this._ctx, this._registry,
+    this._instance = this.build(() => renderSpec(parsed, this._ctx, this._registry,
       {designTime: this._mode.selected.peek()[0] !== 'run'}));
     this._surface.append(this._instance.root);
     this._editor.value = new SpecEditor(this._instance);
@@ -395,6 +399,7 @@ export class SpecDesigner extends Control {
       this._pane.remove();
       this._hovered = null;
     }
+    Reason.apply(this._surface, design ? SpecDesigner.DESIGNING : null);
     this.root.classList.toggle('u2-designer-running', !design);
     // the sources build for the mode they are in (DD9) — and everything bound to one is rendered
     // again with it, so the toggle really does swap in the live context
@@ -425,22 +430,13 @@ export class SpecDesigner extends Control {
       parts.push('modified');
     this._status.value = parts.join(' · ');
   }
-
-  private _listen(target: EventTarget, type: string, handler: (e: Event) => void, capture = false): void {
-    target.addEventListener(type, handler, capture);
-    this.own(() => target.removeEventListener(type, handler, capture));
-  }
 }
 
 /** The designer as a platform view: canvas as content, palette and structure tree in the toolbox,
  * actions and the Design/Run toggle in the ribbon, selection path in the status bar. */
 export function designerView(spec: string | object, options: DesignerViewOptions = {}): DG.ViewBase {
-  const designer = new SpecDesigner(spec, options.ctx, options.registry);
-  return appView({
-    name: options.name ?? 'Designer',
-    content: designer,
-    toolbox: designer.toolbox,
-    ribbon: [designer.ribbon()],
-    status: designer.status,
-  });
+  return ViewHost.create({name: options.name ?? 'Designer', content: () => {
+    const designer = new SpecDesigner(spec, options.ctx, options.registry);
+    return {root: designer, toolbox: designer.toolbox, ribbon: [designer.ribbon()], status: designer.status};
+  }}).view;
 }

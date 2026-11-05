@@ -20,7 +20,7 @@ import '../bindings/common/kinds.js';
 import '../bindings/platform/elements.js';
 import {noSpaceOnServer} from '../bindings/platform/steps.js';
 import {el} from '../src/runtime/args.js';
-import {clear, keysOf, press, pressIn, readExpanded, select, setExpanded, typeInto, withKeys} from '../src/runtime/gestures.js';
+import {clear, hover, keysOf, press, pressIn, readExpanded, select, setExpanded, typeInto, withKeys} from '../src/runtime/gestures.js';
 import {atFeatureEnd, feature, takeErrors, watchErrors} from '../src/runtime/harness.js';
 import {expectState, expectText} from '../src/runtime/assertions.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
@@ -49,6 +49,7 @@ const PAGE = `
   </div>
 </div>
 <div class="ui-input-root ui-input-text" name="input-host-Caption"><label class="ui-input-label">Caption</label><input class="ui-input-editor" value="x"></div>
+<div class="bare-boxes"><input type="checkbox" aria-label="Show side chains"><input aria-label="Name" value="n"></div>
 <div data-u2="list" data-u2-name="results">
   <div class="u2-list-row" role="option">alpha</div>
   <div class="u2-list-row" role="option" aria-selected="true">beta</div>
@@ -98,6 +99,12 @@ scenario('a kind by its data-u2-name, and by its label', async () => {
   assert.equal(await count('org input'), 1);
   assert.equal(await count('organization text input'), 1);
   assert.equal(await count('"First name" input'), 1);
+});
+
+scenario('a bare box named by its aria-label is a checkbox, a bare field a text input', async () => {
+  assert.equal(await count('"Show side chains" checkbox'), 1);
+  assert.equal(await count('"Show side chains" text input'), 0);
+  assert.equal(await count('Name text input'), 1);
 });
 
 scenario('a part of an input, and a part of a dialog', async () => {
@@ -252,6 +259,23 @@ scenario('Delete and Del follow Datagrok commands while ForwardDelete and Backsp
 });
 
 
+scenario('a host input does not go by the label of an input nested in it; a u2 bridge goes by its inner root\'s', async () => {
+  await page!.setContent(`<div class="ui-input-root ui-input-tables-multi-choice" name="input-host-Tables">
+      <label class="ui-input-label">Tables</label>
+      <div class="ui-input-editor">
+        <div class="ui-input-root ui-input-bool" id="first"><input type="checkbox"><label class="ui-input-label">first</label></div>
+        <div class="ui-input-root ui-input-bool" id="second"><input type="checkbox"><label class="ui-input-label">second</label></div>
+      </div>
+    </div>
+    <div data-u2="dart-input" id="bridge"><div class="ui-input-root"><label class="ui-input-label">Bridged</label><input class="ui-input-editor"></div></div>
+    <div class="ui-input-root ui-input-map"><table><tr><td><input class="ui-input-editor" aria-label="Pattern 1"></td></tr></table></div>`);
+  assert.equal(await count('"second" input'), 1);
+  assert.equal(await (await locate(page!, el('"second" input'))).getAttribute('id'), 'second');
+  assert.equal(await count('Tables input'), 1);
+  assert.equal(await (await locate(page!, el('Bridged input'))).getAttribute('id'), 'bridge');
+  assert.equal(await count('"Pattern 1" text input'), 1);
+});
+
 scenario('select handles both a named native select and a host with a select inside', async () => {
   await page!.setContent(`<select class="ui-input-root" name="input-host-Engine"><option>A</option><option>B</option></select>
     <div class="ui-input-root" name="input-host-Mode"><select><option>C</option><option>D</option></select></div>`);
@@ -296,6 +320,16 @@ scenario('tooltip text assertions ignore hidden content retained between hovers'
   await assert.rejects(whileExpectedToFail(() => expectText(page!, el('tooltip'), 'Pearson R', {negate: true})));
   await page!.locator('.d4-tooltip').evaluate((e) => e.remove());
   await expectText(page!, el('tooltip'), 'Pearson R', {negate: true});
+});
+
+scenario('a hover enters a row wider than the panel that clips it', async () => {
+  await page!.setContent('<div style="width:200px;overflow:hidden"><div data-u2="list" data-u2-name="clipped">' +
+    '<div class="u2-list-row" role="option" style="width:900px">wide</div></div></div>' +
+    '<div style="position:absolute;left:200px;top:0;width:900px;height:400px"></div>');
+  await page!.locator('.u2-list-row').evaluate((e) =>
+    e.addEventListener('mouseenter', () => (window as any).__rowEntered = true));
+  await hover(page!, el('item in clipped list'));
+  assert.equal(await page!.evaluate(() => (window as any).__rowEntered), true);
 });
 
 scenario('space cleanup deletes existing fixtures even when server filters return no matches', async () => {
@@ -379,6 +413,17 @@ test('a run suffix is stable within a feature and distinct across feature instan
   assert.equal(a.text('u{time}.{time}').split('.')[0], `u${a.text('{time}')}`);
   assert.match(a.text('{time}'), /^\d{13,}$/);
   assert.notEqual(a.text('{time}'), b.text('{time}'));
+  const was = process.env.DATAGROK_RUN_LOGIN;
+  process.env.DATAGROK_RUN_LOGIN = 'someone';
+  try {
+    assert.equal(a.text('type-{login}'), 'type-someone');
+  }
+  finally {
+    if (was === undefined)
+      delete process.env.DATAGROK_RUN_LOGIN;
+    else
+      process.env.DATAGROK_RUN_LOGIN = was;
+  }
 });
 
 test('the translated stack trace of a logged error is not a second error', () => {
@@ -397,4 +442,24 @@ test('the translated stack trace of a logged error is not a second error', () =>
   assert.deepEqual(takeErrors(fake), []);
   log('Stack trace Zz9\n\tpackages/d4/src/y.dart 1:1');
   assert.equal(takeErrors(fake).length, 1);
+});
+
+scenario('a "name = value" status line is a readout by its label, and its value part is the value alone', async () => {
+  await page!.setContent('<div role="status"><label>search = </label><output>Kinase</output></div>');
+  assert.equal(await text('value of search readout'), 'Kinase');
+  const readout = await locate(page!, el('search readout'));
+  assert.equal(await readout.count(), 1);
+  assert.equal(await readout.evaluate((e) => e.getAttribute('role')), 'status');
+});
+
+scenario('a parent crumb is one link: the crumb itself, or the link an app\'s crumb holds', async () => {
+  await page!.setContent('<div class="d4-view-ribbon">' +
+    '<span class="d4-ribbon-name"><a class="ui-link">Hit Design</a></span>' +
+    '<span class="d4-ribbon-name grok-ns-entity-name">DMT1-1</span></div>' +
+    '<div class="d4-view-ribbon"><span class="d4-ribbon-name">Projects</span></div>');
+  assert.equal(await count('"Hit Design" link'), 1);
+  assert.equal(await text('"Hit Design" link'), 'Hit Design');
+  assert.equal(await (await locate(page!, el('"Hit Design" link'))).evaluate((e) => e.tagName), 'A');
+  assert.equal(await count('"Projects" link'), 1);
+  assert.equal(await count('"DMT1-1" link'), 0);
 });

@@ -73,7 +73,7 @@ async function waitForMutations(tree: StateTree) {
 category('ComputeUtils: Driver run steps sequence', async () => {
   test('Should run ready sequence', async () => {
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromPipelineConfig({config: pconf, defaultValidators: true});
+    const tree = StateTree.fromPipelineConfig({config: pconf, annotationChecks: true});
     await tree.init().toPromise();
     const node1 = tree.nodeTree.getNode([{idx: 0}]);
     const fcnode1 = node1.getItem() as FuncCallNode;
@@ -96,7 +96,7 @@ category('ComputeUtils: Driver run steps sequence', async () => {
 
   test('Should stop on not ready steps', async () => {
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromPipelineConfig({config: pconf, defaultValidators: true});
+    const tree = StateTree.fromPipelineConfig({config: pconf, annotationChecks: true});
     await tree.init().toPromise();
     const node1 = tree.nodeTree.getNode([{idx: 0}]);
     const fcnode1 = node1.getItem() as FuncCallNode;
@@ -119,7 +119,7 @@ category('ComputeUtils: Driver run steps sequence', async () => {
 
   test('Should skip runned steps', async () => {
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromPipelineConfig({config: pconf, defaultValidators: true});
+    const tree = StateTree.fromPipelineConfig({config: pconf, annotationChecks: true});
     await tree.init().toPromise();
     const node1 = tree.nodeTree.getNode([{idx: 0}]);
     const fcnode1 = node1.getItem() as FuncCallNode;
@@ -145,7 +145,7 @@ category('ComputeUtils: Driver run steps sequence', async () => {
 
   test('Should rerun steps with consistent data', async () => {
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromPipelineConfig({config: pconf, defaultValidators: true});
+    const tree = StateTree.fromPipelineConfig({config: pconf, annotationChecks: true});
     await tree.init().toPromise();
     const node1 = tree.nodeTree.getNode([{idx: 0}]);
     const fcnode1 = node1.getItem() as FuncCallNode;
@@ -197,7 +197,7 @@ const configMixedRestrictions: PipelineConfiguration = {
 category('ComputeUtils: Driver run steps sequence includeInfo', async () => {
   test('Should preserve info inputs when includeInfo is false', async () => {
     const pconf = await getProcessedConfig(configMixedRestrictions);
-    const tree = StateTree.fromPipelineConfig({config: pconf, defaultValidators: true});
+    const tree = StateTree.fromPipelineConfig({config: pconf, annotationChecks: true});
     await tree.init().toPromise();
     const src1 = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
     const src2 = tree.nodeTree.getNode([{idx: 1}]).getItem() as FuncCallNode;
@@ -222,7 +222,7 @@ category('ComputeUtils: Driver run steps sequence includeInfo', async () => {
 
   test('Should also reset info inputs when includeInfo is true', async () => {
     const pconf = await getProcessedConfig(configMixedRestrictions);
-    const tree = StateTree.fromPipelineConfig({config: pconf, defaultValidators: true});
+    const tree = StateTree.fromPipelineConfig({config: pconf, annotationChecks: true});
     await tree.init().toPromise();
     const src1 = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
     const src2 = tree.nodeTree.getNode([{idx: 1}]).getItem() as FuncCallNode;

@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {EChartViewer} from '../echart/echart-viewer';
+import {subscribeToColumnRemoval} from '../../utils/utils';
 import 'echarts-gl';
 
 type AxisArray = {data: number[], min: number, max: number, type: string}
@@ -151,6 +152,15 @@ export class SurfacePlot extends EChartViewer {
     }
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(() => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe(() => this.render()));
+    const column = () => {
+      const names = Object.keys(this.colsDict).filter((name) => this.dataFrame.col(name));
+      return names.find((name) => ![this.XColumnName, this.YColumnName, this.ZColumnName].includes(name)) ?? names[0];
+    };
+    this.subs.push(subscribeToColumnRemoval(this, {
+      XColumnName: column,
+      YColumnName: column,
+      ZColumnName: column,
+    }));
     this.colsDict = {};
     const num = Array.from(this.dataFrame.columns);
     num.forEach((c) => {
@@ -198,17 +208,14 @@ export class SurfacePlot extends EChartViewer {
       case 'XColumnName':
         this.XColumnName = newVal;
         this.XArr = col;
-        this.option.xAxis3D.axisLabel.formatter = col.type === 'time' ? undefined : formatter;
         break;
       case 'YColumnName':
         this.YColumnName = newVal;
         this.YArr = col;
-        this.option.yAxis3D.axisLabel.formatter = col.type === 'time' ? undefined : formatter;
         break;
       case 'ZColumnName':
         this.ZColumnName = newVal;
         this.ZArr = col;
-        this.option.zAxis3D.axisLabel.formatter = col.type === 'time' ? undefined : formatter;
         break;
       }
       this.render(true);
@@ -269,6 +276,8 @@ export class SurfacePlot extends EChartViewer {
       this.option.xAxis3D.type = this.XArr.type;
       this.option.yAxis3D.type = this.YArr.type;
       this.option.zAxis3D.type = this.ZArr.type;
+      for (const axis of [this.option.xAxis3D, this.option.yAxis3D, this.option.zAxis3D])
+        axis.axisLabel.formatter = axis.type === 'time' ? undefined : formatter;
       this.rawData = this.zip(this.XArr.data, this.YArr.data, this.ZArr.data);
     }
 

@@ -19,6 +19,7 @@ import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-
 import {doPolyToolConvert} from '../polytool/conversion/pt-conversion';
 import {getOverriddenLibrary} from '../polytool/conversion/pt-synthetic';
 import {getRules} from '../polytool/conversion/pt-rules';
+import {polyToolConvert} from '../polytool/pt-dialog';
 
 
 import {_package} from '../package-test';
@@ -174,5 +175,19 @@ category('PolyTool: Convert', () => {
       tv.grid.invalidate();
     }, 15000);
     expect(helmCol.getTag(DG.TAGS.CELL_RENDERER), 'helm');
+  });
+
+  test('cyclized.csv', async () => {
+    const df = DG.DataFrame.fromCsv(await _package.files.readAsText('samples/cyclized.csv'));
+    await grok.data.detectSemanticTypes(df);
+    // the Convert dialog's defaults: Get HELM, linearize, chirality engine and highlighting on
+    const [helmCol, molCol] = await polyToolConvert(df.getCol('seqs'), true, true, true, true, ['rules_example.json']);
+    expectArray(df.columns.names(), ['n', 'seqs', 'transformed(seqs)', 'molfile(seqs)']);
+    expect(helmCol.semType, DG.SEMTYPE.MACROMOLECULE);
+    expect(helmCol.meta.units, NOTATION.HELM);
+    expect(molCol.semType, DG.SEMTYPE.MOLECULE);
+    expect(helmCol.get(0), 'PEPTIDE1{R.F.C.T.G.H.F.Y.G.H.F.Y.G.H.F.Y.P.C.[meI]}$PEPTIDE1,PEPTIDE1,3:R3-18:R3$$$V2.0');
+    expect(helmCol.stats.missingValueCount, 0);
+    expect(molCol.toList().filter((molfile) => !molfile?.includes('V3000')).length, 0, 'molfiles that are not V3000');
   });
 });

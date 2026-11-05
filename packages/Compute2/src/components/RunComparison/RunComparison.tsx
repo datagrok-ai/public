@@ -2,38 +2,35 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {onClickOutside} from '@vueuse/core';
+import {COMPARISON_SERVICE, ComparisonAddition} from './comparison-service';
+import {showAddToComparisonDialog} from './comparison-views';
+
+import {IconFA, ResizeHandle, ToggleInput, Tabs, ifOverlapping} from '@datagrok-libraries/webcomponents-vue';
+import {getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {openSaveRunDialog} from '../RunStorage/SaveRunDialog';
+import {asItemMetadata, defaultRunName} from '../RunStorage/run-storage';
+import {RunBrowser} from '../RunStorage/RunBrowser';
 
 import {
-  IconFA, Viewer, ResizeHandle, ToggleInput, ifOverlapping, wheelGuard,
-} from '@datagrok-libraries/webcomponents-vue';
-import {historyUtils} from '@datagrok-libraries/compute-utils';
-import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/src/model-handler';
-
-import {History} from '../History/History';
-import {
-  ComparisonTarget, ScalarTarget, ColumnTarget, ColumnCandidate, CandidateOverrides, MatchConfidence,
-  ComparisonEntry, EntrySourceKind, NameMapping, RUN_COLUMN, candidateId,
-  AxisModeSelection, AxisModeConfig, AxisMode, TimeUnit, TIME_UNITS, isIndexCandidateType,
+  ComparisonTarget, ColumnTarget, ColumnCandidate, CandidateOverrides,
+  ComparisonEntry, NameMapping, UnitMapping,
+  AxisModeSelection, AxisModeConfig, AxisMode, TimeUnit, TIME_UNITS, isIndexCandidateType, isNumericType,
 } from './types';
-import {matchScalarTargets, matchColumnTargets, buildAliasGroups} from './matching';
 import {
-  getEntryStatuses, matchesFilter, compatibleTargetsFor, multiValueOverlap,
-  isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
+  matchScalarTargets, matchColumnTargets, buildAliasGroups, buildUnitConverter,
+} from './matching';
+import {
+  matchesFilter, unmatchedItems, isSplitCandidate, selectionToMap, computeIndexRows,
+  equalTargetKeys as findEqualTargets, resolveAxisModes, targetContexts, withDefaultPicks, uniqueEntryName,
+  withEntryName, withoutOutdatedOutputs,
 } from './selection';
-import {entryFromFuncCall, entryFromDataFrame} from './entry-extraction';
-import {canSaveProject, captureTableLayout, showProjectSaveDialog} from '../../project-export';
-import {
-  buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildMultiColumnComparison,
-} from './comparison-builders';
+import {entryFromDataFrame, loadRunEntries} from './entry-extraction';
+import {pruneOverrides, withCandidateEnabled, withoutTargetOverrides} from './target-selection';
+import {columnPrimitives} from './comparison-builders';
+import {showMappingsDialog} from './mappings-dialog';
+import {ComparisonTab, SharedComparison} from './ComparisonTab';
+import {renderListFilter, sourceBadge} from './list-ui';
 import './RunComparison.css';
-
-// chip styling lives in RunComparison.css (c2-comparison-badge + these modifiers)
-const sourceBadge = (kind: EntrySourceKind) =>
-  <span class={`c2-comparison-badge c2-badge-${kind}`}>{kind}</span>;
-
-const confidenceBadge = (confidence: MatchConfidence) =>
-  <span class={`c2-comparison-badge c2-confidence-${confidence}`}>{confidence}</span>;
 
 export const RunComparison = Vue.defineComponent({
   name: 'RunComparison',
@@ -44,16 +41,14 @@ export const RunComparison = Vue.defineComponent({
     },
   },
   setup(props) {
-    const isLoadingModels = Vue.ref(true);
     const isAddingRuns = Vue.ref(false);
-    const models = Vue.shallowRef<DG.Func[]>([]);
+    const isSaving = Vue.ref(false);
     const selectedModel = Vue.shallowRef<DG.Func | undefined>(undefined);
-    const modelSearch = Vue.ref('');
-    const modelDropdownOpen = Vue.ref(false);
-    const modelDropdownRef = Vue.ref<HTMLElement>();
+    // models of compared snapshots that the model filter leaves out (no model role)
+    const extraModels = Vue.shallowRef<DG.Func[]>([]);
 
     const mergeSameFuncs = Vue.ref(true);
-    const hideEqual = Vue.ref(true);
+    const hideOutdated = Vue.ref(false);
 
     const historySelection = Vue.shallowRef<DG.FuncCall[]>([]);
     const entries = Vue.shallowRef<ComparisonEntry[]>([]);
@@ -63,33 +58,53 @@ export const RunComparison = Vue.defineComponent({
     const splitSelection = Vue.ref<Record<string, Record<string, string>>>({});
     // entryId -> tablePath -> axis-mode pick; stale picks are ignored, not deleted
     const axisModeSelection = Vue.ref<AxisModeSelection>({});
-    const selectedTargetKey = Vue.ref('');
     const candidateOverrides = Vue.ref<CandidateOverrides>({});
-    const expandedTargetKeys = Vue.ref<Record<string, boolean>>({});
 
-    const historyHeight = Vue.ref(320);
+    // a tab's number names it until it charts a value
+    const tabs = Vue.ref([{key: '1', number: 1}]);
+    const activeTab = Vue.ref('1');
+    const tabTitles = Vue.ref<Record<string, string>>({});
+    let lastTabNumber = 1;
+
+    const historyHeight = Vue.ref(440);
     const sidebarWidth = Vue.ref(360);
-    // user override for the results chart height; the per-type minimum still applies
-    const chartHeight = Vue.ref(0);
 
-    Vue.onMounted(async () => {
+
+    const addRunsById = async (ids: string[], names = new Map<string, string>()) => {
+      isAddingRuns.value = true;
       try {
-        const list = await grok.dapi.functions.filter(getModelFilter(props.roleOnlyFilter)).list();
-        models.value = list.map((f) => Vue.markRaw(f));
-      } catch (e: any) {
-        grok.shell.error(e);
+        const {entries: loaded, failed} = await loadRunEntries(ids);
+        for (const entry of loaded) {
+          addEntry(withEntryName(entry, names.get(entry.id) ?? entry.name));
+          if (entry.failedSteps)
+            grok.shell.warning(`${entry.name}: could not load ${entry.failedSteps.join(', ')}`);
+        }
+        if (failed.length > 0)
+          grok.shell.error(`Could not load ${failed.map((id) => names.get(id) ?? `run ${id}`).join(', ')}`);
       } finally {
-        isLoadingModels.value = false;
+        isAddingRuns.value = false;
       }
-    });
+    };
 
-    onClickOutside(modelDropdownRef, () => modelDropdownOpen.value = false);
+    const add = async (
+      {runIds = [], runNames, entries: added = [], model, selectModel = false}: ComparisonAddition,
+    ) => {
+      if (model && !extraModels.value.some((f) => f.nqName === model.nqName))
+        extraModels.value = [...extraModels.value, Vue.markRaw(model)];
+      if (model && selectModel)
+        selectedModel.value = Vue.markRaw(model);
+      const present = entries.value.filter((entry) => runIds.includes(entry.id) || runIds.includes(entry.runId ?? ''));
+      if (present.length > 0)
+        grok.shell.warning(`Already in this comparison: ${present.map((entry) => entry.name).join(', ')}`);
+      const newRunIds = runIds.filter((id) => !hasEntry(id));
+      if (newRunIds.length > 0)
+        await addRunsById(newRunIds, runNames);
+      added.forEach(addEntry);
+    };
 
-    const modelLabel = (f: DG.Func) => f.friendlyName ?? f.name;
-    const filteredModels = Vue.computed(() => {
-      const query = modelSearch.value.toLowerCase();
-      return models.value.filter((f) => !query || modelLabel(f).toLowerCase().includes(query));
-    });
+    const service = Vue.inject(COMPARISON_SERVICE)!;
+    service.connect({add, entryNames: () => entries.value.map((entry) => entry.name)});
+
 
     const tableInput = ui.input.table('Add table');
     const tableInputSub = tableInput.onChanged.subscribe(() => {
@@ -107,38 +122,26 @@ export const RunComparison = Vue.defineComponent({
       ui.remove(tableInput.root);
     });
 
-    // pre-fill pickers from {comparisonIndex}/{comparisonSplit} output annotations;
-    // stored (user) selections always win
-    const applyAnnotatedDefaults = (entry: ComparisonEntry) => {
-      for (const table of entry.nodes.tables) {
-        const member = [{entryId: entry.id, tablePath: table.path}];
-        const indexDefault = table.defaultIndexColumn;
-        if (indexDefault && !indexSelection.value[entry.id]?.[table.path] &&
-          table.columns.some((col) => col.name === indexDefault))
-          setIndexColumn(member, indexDefault);
-        const splitDefault = table.defaultSplitColumn;
-        const splitColumn = table.columns.find((col) => col.name === splitDefault);
-        if (splitDefault && !splitSelection.value[entry.id]?.[table.path] &&
-          splitColumn && isSplitCandidate(splitColumn, indexSelection.value[entry.id]?.[table.path] ?? ''))
-          setSplitColumn(member, splitDefault);
-        const modeDefault = table.defaultAxisMode;
-        if (modeDefault && !axisModeSelection.value[entry.id]?.[table.path]) {
-          setAxisMode(member, {
-            mode: modeDefault,
-            // units matter only on the elapsed axis; storing them elsewhere would let a
-            // unit the user never saw outrank the column-meta prefill later
-            ...modeDefault === 'timeseries' && table.defaultTimeUnits ?
-              {units: table.defaultTimeUnits} : {},
-          });
-        }
-      }
+    // pre-fill pickers from the same function's picks in the other runs, then from
+    // {comparisonIndex}/{comparisonSplit} output annotations; stored (user) selections always win
+    const applyDefaultPicks = (entry: ComparisonEntry, others: ComparisonEntry[]) => {
+      const next = withDefaultPicks(entry.nodes,
+        {index: indexSelection.value, split: splitSelection.value, axis: axisModeSelection.value},
+        others.map((other) => other.nodes));
+      indexSelection.value = next.index;
+      splitSelection.value = next.split;
+      axisModeSelection.value = next.axis;
     };
 
+    // a saved snapshot keeps its id, so its run is known by runId
+    const hasEntry = (id: string) => entries.value.some((existing) => existing.id === id || existing.runId === id);
+
     const addEntry = (entry: ComparisonEntry) => {
-      if (entries.value.some((existing) => existing.id === entry.id))
+      if (hasEntry(entry.id))
         return;
-      entries.value = [...entries.value, Vue.markRaw(entry)];
-      applyAnnotatedDefaults(entry);
+      const added = withEntryName(entry, uniqueEntryName(entry.name, entries.value.map((existing) => existing.name)));
+      applyDefaultPicks(added, entries.value);
+      entries.value = [...entries.value, Vue.markRaw(added)];
     };
 
     const removeEntry = (id: string) => {
@@ -151,22 +154,45 @@ export const RunComparison = Vue.defineComponent({
       axisModeSelection.value = restAxis;
     };
 
-    const addSelectedRuns = async () => {
+    const addSelectedRuns = () => {
       if (isAddingRuns.value || historySelection.value.length === 0)
         return;
-      isAddingRuns.value = true;
+      const calls = historySelection.value.filter((call) => !hasEntry(call.id));
+      if (calls.length > 0)
+        showAddToComparisonDialog(calls.map((call) => ({runId: call.id, name: getRunTitle(call)})), {into: service});
+    };
+
+    const saveSnapshot = async (entry: ComparisonEntry) => {
+      const {metadata, model} = entry.snapshot!;
+      if (!model)
+        return;
+      const result = await openSaveRunDialog({func: model, name: defaultRunName(model, undefined, metadata.title),
+        description: metadata.description, tags: metadata.tags});
+      if (!result)
+        return;
+      isSaving.value = true;
       try {
-        for (const call of historySelection.value) {
-          if (entries.value.some((entry) => entry.id === call.id))
-            continue;
-          const fullCall = await historyUtils.loadRun(call.id);
-          addEntry(await entryFromFuncCall(fullCall));
-        }
+        const run = await entry.snapshot!.save!(asItemMetadata(result));
+        const others = entries.value.filter((item) => item.id !== entry.id).map((item) => item.name);
+        const named = withEntryName(entry, uniqueEntryName(getRunTitle(run), others));
+        const saved: ComparisonEntry = {...named, runId: run.id, snapshot: undefined};
+        entries.value = entries.value.map((item) => item.id === entry.id ? Vue.markRaw(saved) : item);
       } catch (e: any) {
         grok.shell.error(e);
       } finally {
-        isAddingRuns.value = false;
+        isSaving.value = false;
       }
+    };
+
+    const removeWithConfirm = (entry: ComparisonEntry) => {
+      if (!entry.snapshot) {
+        removeEntry(entry.id);
+        return;
+      }
+      ui.dialog('Remove confirmation')
+        .add(ui.divText(`'${entry.name}' is not stored in history, so it cannot be added back. Remove it?`))
+        .onOK(() => removeEntry(entry.id))
+        .show({center: true, modal: true});
     };
 
     const updatedSelection = <T, >(
@@ -192,16 +218,19 @@ export const RunComparison = Vue.defineComponent({
       axisModeSelection.value = updatedSelection(axisModeSelection.value, members, config);
     };
 
-    const indexColumnType = (entryId: string, tablePath: string, columnName: string) => {
-      const entry = entries.value.find((item) => item.id === entryId);
-      const table = entry?.nodes.tables.find((item) => item.path === tablePath);
-      return table?.columns.find((col) => col.name === columnName)?.type;
-    };
+    const entriesById = Vue.computed(() => new Map(entries.value.map((entry) => [entry.id, entry])));
 
-    const defaultIndexOf = (entryId: string, tablePath: string) => {
-      const entry = entries.value.find((item) => item.id === entryId);
-      return entry?.nodes.tables.find((item) => item.path === tablePath)?.defaultIndexColumn;
-    };
+    const hasOutdated = Vue.computed(() => entries.value.some((entry) => entry.outdatedSteps));
+    const entryNodes = Vue.computed(() => entries.value.map((entry) =>
+      hideOutdated.value ? withoutOutdatedOutputs(entry.nodes) : entry.nodes));
+
+    const tableNode = (entryId: string, tablePath: string) =>
+      entriesById.value.get(entryId)?.nodes.tables.find((table) => table.path === tablePath);
+
+    const indexColumnType = (entryId: string, tablePath: string, columnName: string) =>
+      tableNode(entryId, tablePath)?.columns.find((col) => col.name === columnName)?.type;
+
+    const defaultIndexOf = (entryId: string, tablePath: string) => tableNode(entryId, tablePath)?.defaultIndexColumn;
 
     const indexColumnsMap = Vue.computed(() => selectionToMap(indexSelection.value,
       (entryId, tablePath, columnName) =>
@@ -215,317 +244,94 @@ export const RunComparison = Vue.defineComponent({
 
     const nameMappings = Vue.ref<NameMapping[]>([]);
     const aliasGroups = Vue.computed(() => buildAliasGroups(nameMappings.value));
+    const unitMappings = Vue.ref<UnitMapping[]>([]);
+    const unitConverter = Vue.computed(() => buildUnitConverter(unitMappings.value));
+    const mappingCount = Vue.computed(() => nameMappings.value.length + unitMappings.value.length);
 
     const targets = Vue.computed<ComparisonTarget[]>(() => {
-      const nodes = entries.value.map((entry) => entry.nodes);
+      const nodes = entryNodes.value;
       return [
-        ...matchScalarTargets(nodes, aliasGroups.value),
+        ...matchScalarTargets(nodes, aliasGroups.value, unitConverter.value),
         ...matchColumnTargets(nodes, indexColumnsMap.value, splitColumnsMap.value, candidateOverrides.value,
-          aliasGroups.value),
+          aliasGroups.value, unitConverter.value),
       ].sort((a, b) => a.kind !== b.kind ?
         (a.kind === 'scalar' ? -1 : 1) :
         a.displayName.localeCompare(b.displayName));
     });
 
+    const contexts = Vue.computed(() => targetContexts(targets.value));
+
     // radio semantics: checking an item makes it the run's pick and unchecks the
     // run's current one; unchecking excludes the run from the target
     const setCandidateEnabled = (target: ColumnTarget, candidate: ColumnCandidate, enabled: boolean) => {
-      const next = {...candidateOverrides.value[target.key]};
-      if (enabled) {
-        for (const other of target.candidates) {
-          if (other !== candidate && other.enabled && other.binding.entryId === candidate.binding.entryId)
-            next[candidateId(other.binding)] = false;
-        }
-      }
-      next[candidateId(candidate.binding)] = enabled;
-      candidateOverrides.value = {...candidateOverrides.value, [target.key]: next};
+      candidateOverrides.value = withCandidateEnabled(candidateOverrides.value, target, candidate, enabled);
     };
 
     const resetTargetOverrides = (targetKey: string) => {
-      const {[targetKey]: _removed, ...rest} = candidateOverrides.value;
-      candidateOverrides.value = rest;
+      candidateOverrides.value = withoutTargetOverrides(candidateOverrides.value, targetKey);
     };
 
-    const toggleExpanded = (targetKey: string) => {
-      expandedTargetKeys.value = {
-        ...expandedTargetKeys.value,
-        [targetKey]: !expandedTargetKeys.value[targetKey],
-      };
-    };
-
-    // drop overrides that no longer resolve (entry removed, index changed, cluster reshaped);
-    // removed entries are not consumed by matching, so the rewrite converges in one cycle
+    // removed entries are not consumed by matching, so the override rewrite converges in one cycle
     Vue.watch(targets, (list) => {
-      const validIds = new Map(list
-        .filter((target): target is ColumnTarget => target.kind === 'column')
-        .map((target) => [target.key,
-          new Set(target.candidates.map((candidate) => candidateId(candidate.binding)))]));
-      let changed = false;
-      const next: CandidateOverrides = {};
-      for (const [key, ids] of Object.entries(candidateOverrides.value)) {
-        const valid = validIds.get(key);
-        const kept = valid ? Object.entries(ids).filter(([id]) => valid.has(id)) : [];
-        if (kept.length !== Object.keys(ids).length)
-          changed = true;
-        if (kept.length > 0)
-          next[key] = Object.fromEntries(kept);
-      }
-      if (changed)
-        candidateOverrides.value = next;
-      // drop multi-value selections whose target vanished (structural change);
-      // merely-conflicting targets keep their keys so reverting an edit restores them
-      const keys = new Set(list.map((target) => target.key));
-      const keptKeys = multiKeys.value.filter((key) => keys.has(key));
-      if (keptKeys.length !== multiKeys.value.length) {
-        multiKeys.value = keptKeys;
-        if (keptKeys.length === 0)
-          multiMode.value = false;
-      }
+      candidateOverrides.value = pruneOverrides(candidateOverrides.value, list);
     });
 
     const indexFilter = Vue.ref('');
-    const targetFilter = Vue.ref('');
 
-    // dayjs and other value objects collapse to primitives so cross-run compares work
     const columnValues = (entryId: string, tablePath: string, columnName: string) => {
-      const entry = entries.value.find((item) => item.id === entryId);
-      const col = entry?.dataFrames.get(tablePath)?.col(columnName);
-      if (!col)
-        return undefined;
-      const values = new Array(col.length);
-      for (let i = 0; i < col.length; i++) {
-        const value = col.isNone(i) ? null : col.get(i);
-        values[i] = value instanceof Object ? value.valueOf() : value;
-      }
-      return values;
+      const col = entriesById.value.get(entryId)?.dataFrames.get(tablePath)?.col(columnName);
+      return col ? columnPrimitives(col) : undefined;
     };
 
-    const equalTargetKeys = Vue.computed(() => {
-      if (!hideEqual.value)
-        return new Set<string>();
-      const cache = new Map<string, unknown[] | undefined>();
-      const cached = (entryId: string, tablePath: string, columnName: string) => {
-        const key = `${entryId}|${tablePath}|${columnName}`;
-        if (!cache.has(key))
-          cache.set(key, columnValues(entryId, tablePath, columnName));
-        return cache.get(key);
-      };
-      return new Set(targets.value
-        .filter((target) => isTargetEqualAcrossRuns(target, cached, indexColumnType))
-        .map((target) => target.key));
+    const equalKeys = Vue.computed(() => findEqualTargets(targets.value, columnValues, indexColumnType));
+
+    const editMappings = () => showMappingsDialog(nameMappings.value, unitMappings.value, unmatchedItems(
+      entryNodes.value, targets.value, indexColumnsMap.value,
+    ), (names, units) => {
+      nameMappings.value = names;
+      unitMappings.value = units;
     });
-
-    // in multi mode: suggestions plus everything already selected — a selected target
-    // that became conflicting must stay visible so it can be unchecked
-    const filteredTargets = Vue.computed(() => {
-      const listed: ComparisonTarget[] = multiMode.value ?
-        targets.value.filter((target) =>
-          multiKeys.value.includes(target.key) ||
-            compatibleTargets.value.some((item) => item.key === target.key)) :
-        targets.value;
-      return listed.filter((target) =>
-        (!equalTargetKeys.value.has(target.key) ||
-          (multiMode.value && multiKeys.value.includes(target.key))) &&
-        matchesFilter(targetFilter.value, target.displayName));
-    });
-
-    const selectedTarget = Vue.computed(() =>
-      targets.value.find((target) => target.key === selectedTargetKey.value) ?? null);
-
-    const multiMode = Vue.ref(false);
-    const multiKeys = Vue.ref<string[]>([]);
-
-    const scalarChartType = Vue.ref<'radar' | 'pcplot'>('radar');
-    const radarAvailable = DG.Func.find({meta: {role: DG.FUNC_TYPES.VIEWER}})
-      .some((f) => f.friendlyName === 'Radar');
-
-    const compatibleTargets = Vue.computed(() =>
-      compatibleTargetsFor(selectedTarget.value, targets.value, indexColumnType));
-
-    const chartViewer = Vue.shallowRef<DG.Viewer | null>(null);
-    const onChartViewerChanged = (viewer: DG.Viewer | undefined) => {
-      chartViewer.value = viewer ? Vue.markRaw(viewer) : null;
-      // JsViewer roots (ui.box) expect the host to size them; without this the
-      // radar collapses to 0x0 and echarts renders an empty chart
-      if (viewer) {
-        viewer.root.style.width = '100%';
-        viewer.root.style.height = '100%';
-      }
-    };
-
-    // snapshot export: clone of the chart data plus the chart with its current options;
-    // null when the comparison went away behind the non-modal export dialog
-    const snapshotData = (name: string) => {
-      const current = comparison.value;
-      if (!current)
-        return null;
-      const df = current.chartDf.clone();
-      df.name = name;
-      const options = chartViewer.value?.getOptions();
-      return {df, viewers: options ? [{type: options.type as string, options: options.look}] : []};
-    };
-
-    const snapshotView = (name: string) => {
-      const snap = snapshotData(name);
-      if (!snap)
-        return;
-      const {df, viewers} = snap;
-      const view = grok.shell.addTableView(df);
-      for (const {type, options} of viewers)
-        view.addViewer(type, options);
-      return view;
-    };
-
-    const saveAndShare = async (name: string) => {
-      const snap = snapshotData(name);
-      if (!snap)
-        return;
-      const {df, viewers} = snap;
-      const layout = captureTableLayout(df, viewers);
-      try {
-        await showProjectSaveDialog([df], [layout], name);
-      } catch (e: any) {
-        grok.shell.error(e);
-      } finally {
-        grok.shell.closeTable(df);
-      }
-    };
-
-    const exportComparison = () => {
-      const currentComparison = comparison.value;
-      if (!currentComparison || currentComparison.chartDf.rowCount === 0)
-        return;
-      const nameInput = ui.input.string('Name', {value: currentComparison.chartDf.name || 'Comparison'});
-      const dlg = ui.dialog('Export comparison').add(nameInput.root);
-      const openLabel = 'OPEN IN WORKSPACE';
-      if (canSaveProject()) {
-        dlg.addButton(openLabel, () => {
-          dlg.close();
-          snapshotView(nameInput.value || 'Comparison');
-        });
-        dlg.onOK(() => saveAndShare(nameInput.value || 'Comparison'));
-        dlg.show({center: true});
-        dlg.getButton('OK').innerText = 'SAVE & SHARE';
-      } else {
-        dlg.onOK(() => snapshotView(nameInput.value || 'Comparison'));
-        dlg.show({center: true});
-        dlg.getButton('OK').innerText = openLabel;
-      }
-    };
-
-    const editNameMappings = () => {
-      const rows: {from: DG.InputBase<string>, to: DG.InputBase<string>}[] = [];
-      const list = ui.divV([], {style: {gap: '4px'}});
-      const addRow = (from = '', to = '') => {
-        const fromInput = ui.input.string('', {value: from});
-        const toInput = ui.input.string('', {value: to});
-        (fromInput.input as HTMLInputElement).placeholder = 'name';
-        (toInput.input as HTMLInputElement).placeholder = 'same as';
-        const row = {from: fromInput, to: toInput};
-        rows.push(row);
-        const rowDiv = ui.divH([fromInput.root, toInput.root, ui.icons.delete(() => {
-          rows.splice(rows.indexOf(row), 1);
-          rowDiv.remove();
-        }, 'Remove mapping')], {style: {alignItems: 'center', gap: '6px'}});
-        list.append(rowDiv);
-      };
-      for (const {from, to} of nameMappings.value)
-        addRow(from, to);
-      if (rows.length === 0)
-        addRow();
-      ui.dialog('Name mappings')
-        .add(ui.divText('Mapped names match as the same value, ignoring case and separators.',
-          {style: {color: 'var(--grey-4)'}}))
-        .add(list)
-        .add(ui.button('Add', () => addRow()))
-        .onOK(() => {
-          nameMappings.value = rows
-            .map((row) => ({from: row.from.value.trim(), to: row.to.value.trim()}))
-            .filter((row) => row.from && row.to);
-        })
-        .show({center: true});
-    };
-
-    // DG inputs fire onChanged on programmatic sets too, so rendering a new mode value
-    // echoes back through the toggle — a no-op update must not clobber multiKeys
-    const setMultiMode = (val: boolean) => {
-      if (val === multiMode.value)
-        return;
-      if (val)
-        multiKeys.value = selectedTargetKey.value ? [selectedTargetKey.value] : [];
-      else if (multiKeys.value.length > 0)
-        selectedTargetKey.value = multiKeys.value[0];
-      multiMode.value = val;
-    };
 
     // non-default axis modes only; tables whose index moved off a time type drop out
     const resolvedAxisModes = Vue.computed(() => resolveAxisModes(
-      entries.value.map((entry) => entry.nodes),
+      entryNodes.value,
       indexColumnsMap.value,
       axisModeSelection.value,
     ));
 
-    const entryStatuses = Vue.computed(() => getEntryStatuses(
-      entries.value.map((entry) => entry.nodes),
-      selectedTarget.value,
-      indexColumnsMap.value,
-      resolvedAxisModes.value,
-    ));
+    const shared: SharedComparison = {
+      entries, entriesById, entryNodes, targets, contexts, equalKeys, indexColumnsMap, resolvedAxisModes,
+      aliasGroups, unitConverter, candidateOverrides, mappingCount, hasOutdated, hideOutdated,
+      indexColumnType, setCandidateEnabled, resetTargetOverrides, editMappings,
+    };
 
-    const comparison = Vue.computed(() => {
-      const target = selectedTarget.value;
-      if (!target || entries.value.length < 2)
-        return null;
-      if (target.kind === 'scalar') {
-        if (multiMode.value) {
-          const selected = targets.value.filter((item): item is ScalarTarget =>
-            item.kind === 'scalar' && multiKeys.value.includes(item.key));
-          const anchorIndex = selected.findIndex((item) => item.key === target.key);
-          if (anchorIndex > 0)
-            selected.unshift(...selected.splice(anchorIndex, 1));
-          if (selected.length === 0)
-            return null;
-          if (selected.length > 1) {
-            const result = buildMultiScalarComparison(selected, entries.value);
-            return result ? Vue.markRaw({kind: 'multi-scalar' as const, target, ...result}) : null;
-          }
-          const result = buildScalarComparison(selected[0], entries.value);
-          return Vue.markRaw({kind: 'scalar' as const, target: selected[0], ...result});
-        }
-        const result = buildScalarComparison(target, entries.value);
-        return Vue.markRaw({kind: 'scalar' as const, target, ...result});
-      }
-      if (multiMode.value) {
-        const selected = targets.value.filter((item): item is ColumnTarget =>
-          item.kind === 'column' && multiKeys.value.includes(item.key));
-        const anchorIndex = selected.findIndex((item) => item.key === target.key);
-        if (anchorIndex > 0)
-          selected.unshift(...selected.splice(anchorIndex, 1));
-        if (selected.length === 0)
-          return null;
-        if (selected.length > 1) {
-          const result = buildMultiColumnComparison(selected, entries.value, resolvedAxisModes.value);
-          return result ? Vue.markRaw({kind: 'column' as const, target, ...result}) : null;
-        }
-        const result = buildColumnComparison(selected[0], entries.value, resolvedAxisModes.value);
-        return result ? Vue.markRaw({kind: 'column' as const, target: selected[0], ...result}) : null;
-      }
-      const result = buildColumnComparison(target, entries.value, resolvedAxisModes.value);
-      return result ? Vue.markRaw({kind: 'column' as const, target, ...result}) : null;
-    });
+    const addTab = () => {
+      const number = ++lastTabNumber;
+      tabs.value = [...tabs.value, {key: String(number), number}];
+      activeTab.value = String(number);
+    };
 
-    // a 2-axis radar degenerates to a line; force the PC plot (a slopegraph) until a 3rd value is added
-    const radarEligible = Vue.computed(() => {
-      const current = comparison.value;
-      return radarAvailable && current?.kind === 'multi-scalar' && current.valueColumnNames.length >= 3;
-    });
-    const effectiveScalarChartType = Vue.computed(() =>
-      radarEligible.value ? scalarChartType.value : 'pcplot');
+    // closing the shown tab shows its right neighbor, or the left one for the last tab
+    const closeTab = (key: string) => {
+      const index = tabs.value.findIndex((tab) => tab.key === key);
+      const rest = tabs.value.filter((tab) => tab.key !== key);
+      if (activeTab.value === key)
+        activeTab.value = rest[Math.min(index, rest.length - 1)].key;
+      tabs.value = rest;
+      const {[key]: _removed, ...titles} = tabTitles.value;
+      tabTitles.value = titles;
+    };
+
+    const tabItems = Vue.computed(() => tabs.value.map((tab) => ({
+      key: tab.key,
+      title: tabTitles.value[tab.key] || `Comparison ${tab.number}`,
+      closable: tabs.value.length > 1,
+    })));
 
     // tables that could participate in column comparison and need an index choice;
     // with merging on, same-function outputs (by nqName) collapse into one row
     const indexRows = Vue.computed(() => computeIndexRows(
-      entries.value.map((entry) => entry.nodes),
+      entryNodes.value,
       indexSelection.value,
       splitSelection.value,
       mergeSameFuncs.value,
@@ -537,8 +343,7 @@ export const RunComparison = Vue.defineComponent({
 
     const suggestedIndex = (columns: {name: string, type: string}[]) =>
       columns.find((col) => col.type === DG.COLUMN_TYPE.DATE_TIME)?.name ??
-      columns.find((col) => col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT ||
-        col.type === DG.COLUMN_TYPE.BIG_INT)?.name;
+      columns.find((col) => isNumericType(col.type))?.name;
 
     const renderColumnSelect = (
       current: string,
@@ -561,59 +366,6 @@ export const RunComparison = Vue.defineComponent({
       </select>
     );
 
-    const renderListFilter = (value: Vue.Ref<string>, placeholder: string) => (
-      <input
-        type='text'
-        placeholder={placeholder}
-        value={value.value}
-        onInput={(e: Event) => value.value = (e.target as HTMLInputElement).value}
-        style={{
-          border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 6px',
-          outline: 'none', width: '160px',
-        }}
-      />
-    );
-
-    const renderModelSelector = () => (
-      <div ref={modelDropdownRef} style={{position: 'relative'}}>
-        <div
-          style={{
-            padding: '4px 8px', cursor: 'pointer', border: '1px solid var(--grey-2)',
-            borderRadius: '3px', userSelect: 'none', display: 'flex', justifyContent: 'space-between',
-          }}
-          onClick={() => { modelDropdownOpen.value = !modelDropdownOpen.value; modelSearch.value = ''; }}
-        >
-          <span>{selectedModel.value ? modelLabel(selectedModel.value) : 'Select model...'}</span>
-          <span>&#9662;</span>
-        </div>
-        { modelDropdownOpen.value &&
-          <div style={{
-            position: 'absolute', top: '100%', left: '0', right: '0', zIndex: '100',
-            background: 'var(--white)', border: '1px solid var(--grey-2)',
-            borderRadius: '3px', maxHeight: '300px', overflow: 'auto', boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          }}>
-            <input
-              type='text'
-              placeholder='Filter models...'
-              value={modelSearch.value}
-              onInput={(e: Event) => modelSearch.value = (e.target as HTMLInputElement).value}
-              style={{width: '100%', padding: '4px 8px', border: 'none', borderBottom: '1px solid var(--grey-2)', outline: 'none'}}
-            />
-            { filteredModels.value.map((f) =>
-              <div
-                key={f.id}
-                style={{padding: '4px 8px', cursor: 'pointer'}}
-                class='hover:bg-slate-100'
-                onClick={() => { selectedModel.value = Vue.markRaw(f); modelDropdownOpen.value = false; }}
-              >{modelLabel(f)}</div>,
-            )}
-            { filteredModels.value.length === 0 &&
-              <div style={{padding: '4px 8px', color: 'var(--grey-4)'}}>No models found</div> }
-          </div>
-        }
-      </div>
-    );
-
     const renderBasket = () => (
       <div style={{display: 'flex', flexDirection: 'column'}}>
         <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Comparison set</div>
@@ -624,11 +376,19 @@ export const RunComparison = Vue.defineComponent({
             <div key={entry.id} class='c2-comparison-row'
               style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 6px'}}>
               { sourceBadge(entry.sourceKind) }
+              { entry.snapshot &&
+                <span class='c2-comparison-badge c2-badge-unsaved' title='Current state, not stored in history'>
+                  unsaved
+                </span> }
               <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1'}}
                 title={entry.modelName ? `${entry.modelName}: ${entry.name}` : entry.name}>
                 {entry.name}
               </span>
-              <IconFA name='times' tooltip='Remove from comparison' onClick={() => removeEntry(entry.id)}/>
+              { entry.outdatedSteps &&
+                <IconFA name='clock' tooltip={`Outdated outputs: ${entry.outdatedSteps.join(', ')}`}/> }
+              { entry.snapshot?.save &&
+                <IconFA name='save' tooltip='Save to history' onClick={() => saveSnapshot(entry)}/> }
+              <IconFA name='times' tooltip='Remove from comparison' onClick={() => removeWithConfirm(entry)}/>
             </div>,
           )}
         </div>
@@ -660,441 +420,53 @@ export const RunComparison = Vue.defineComponent({
             const suggestion = suggestedIndex(row.candidates);
             const axis = row.axis;
             return <div key={row.key} class='c2-comparison-row' style={{padding: '2px 6px'}}>
-            <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
-              title={row.title}>
-              { row.coverage ?
-                <span style={{fontSize: '11px', color: 'var(--grey-4)'}}>
-                  {row.coverage.count}/{row.coverage.total}
-                </span> :
-                row.entryName
-              } · <span style={{color: 'var(--grey-5)'}}>{row.label}</span>
-            </span>
-            { renderColumnSelect(row.current, row.candidates, '— index —',
-              (value) => setIndexColumn(row.members, value), suggestion) }
-            { row.splitCandidates.length > 0 ?
-              renderColumnSelect(row.currentSplit, row.splitCandidates, '— split —',
-                (value) => setSplitColumn(row.members, value)) :
-              <span></span> }
-            { axis ?
-              <select
-                value={axis.mode}
-                onChange={(e: Event) => setAxisMode(row.members,
-                  {mode: (e.target as HTMLSelectElement).value as AxisMode, units: axis.units})}
-                title={'How the table rows relate across runs: an indexed series, a timeseries ' +
-                  'relative to each run\'s start, or independent points'}
-                style={{border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 4px'}}
-              >
-                <option value='series'>series</option>
-                <option value='timeseries'>relative timeseries</option>
-                <option value='points'>independent points</option>
-              </select> :
-              <span></span> }
-            { axis?.mode === 'timeseries' && axis.units != null ?
-              <select
-                value={axis.units}
-                onChange={(e: Event) => setAxisMode(row.members,
-                  {mode: 'timeseries', units: (e.target as HTMLSelectElement).value as TimeUnit})}
-                title='Time units of the index column values'
-                style={{border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 4px'}}
-              >
-                { TIME_UNITS.map((unit) =>
-                  <option key={unit} value={unit}>{unit}</option>,
-                )}
-              </select> :
-              <span></span> }
-          </div>;
-          })}
-        </div>
-      </div>
-    );
-
-    const renderCandidateRow = (target: ColumnTarget, candidate: ColumnCandidate) => {
-      const id = candidateId(candidate.binding);
-      return <label
-        key={id}
-        style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '1px 0px 1px 14px', cursor: 'pointer'}}
-      >
-        <input
-          type='checkbox'
-          checked={candidate.enabled}
-          onChange={(e: Event) => setCandidateEnabled(target, candidate, (e.target as HTMLInputElement).checked)}
-        />
-        <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
-          title={candidate.binding.tablePath}>
-          {candidate.binding.tableFriendlyPath ?? candidate.binding.tableName}
-        </span>
-        <span style={{color: 'var(--grey-5)', flexShrink: '0'}}>{candidate.binding.columnName}</span>
-        { confidenceBadge(candidate.confidence) }
-        { candidate.unitsWarn &&
-          <IconFA name='exclamation-triangle' tooltip='Units are missing on some items'/> }
-        { candidate.auto &&
-          <span style={{fontSize: '11px', color: 'var(--grey-4)', flexShrink: '0'}}>(auto)</span> }
-      </label>;
-    };
-
-    const renderCandidatePanel = (target: ColumnTarget) => {
-      const groups: {entry: ComparisonEntry, candidates: ColumnCandidate[]}[] = [];
-      for (const candidate of target.candidates) {
-        const last = groups[groups.length - 1];
-        if (last && last.entry.id === candidate.binding.entryId) {
-          last.candidates.push(candidate);
-          continue;
-        }
-        const entry = entries.value.find((item) => item.id === candidate.binding.entryId);
-        if (entry)
-          groups.push({entry, candidates: [candidate]});
-      }
-      return <div
-        key={`${target.key}:candidates`}
-        class='c2-comparison-expansion'
-        style={{gridColumn: '1 / -1', padding: '2px 6px 6px 26px'}}
-        onClick={(e: MouseEvent) => e.stopPropagation()}
-      >
-        { candidateOverrides.value[target.key] &&
-          <span
-            style={{fontSize: '11px', color: 'var(--blue-1)', cursor: 'pointer'}}
-            onClick={() => resetTargetOverrides(target.key)}
-          >Reset to auto</span> }
-        { groups.map(({entry, candidates}) =>
-          <div key={entry.id}>
-            <div style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 0px'}}>
-              { sourceBadge(entry.sourceKind) }
               <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
-                title={entry.name}>{entry.name}</span>
-            </div>
-            { candidates.map((candidate) => renderCandidateRow(target, candidate)) }
-          </div>,
-        )}
-      </div>;
-    };
-
-    const renderTargets = () => (
-      <div>
-        <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 50px'}}>
-          <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Compare</div>
-          <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 12px'}}>
-            { renderListFilter(targetFilter, 'Filter values...') }
-            <ToggleInput
-              caption='Hide equal values'
-              value={hideEqual.value}
-              onUpdate:value={(val) => hideEqual.value = val}
-            />
-            <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
-              <IconFA name='exchange-alt' tooltip='Edit name mappings' onClick={editNameMappings}/>
-              { nameMappings.value.length > 0 &&
-                <span style={{fontSize: '11px', color: 'var(--grey-4)'}}>{nameMappings.value.length}</span> }
-            </div>
-          </div>
-        </div>
-        { targets.value.length === 0 &&
-          <div style={{color: 'var(--grey-4)'}}>
-            No comparable data found across the selected runs.
-            Add more runs, or set index columns to compare table columns.
-          </div> }
-        { targets.value.length > 0 && filteredTargets.value.length === 0 &&
-          <div style={{color: 'var(--grey-4)'}}>
-            { !targetFilter.value && equalTargetKeys.value.size > 0 ?
-              'All values are equal across the selected runs' : 'No values match the filter' }
-          </div> }
-        <div class='c2-comparison-rows c2-comparison-table'
-          style={{
-            gridTemplateColumns: 'max-content max-content fit-content(400px) max-content max-content max-content 1fr',
-          }}>
-          { filteredTargets.value.map((target) => {
-            const isSelected = multiMode.value ?
-              multiKeys.value.includes(target.key) : target.key === selectedTargetKey.value;
-            const onRowClick = (e: MouseEvent) => {
-              if (!multiMode.value) {
-                // grid-like shift+click: select and enter multi-value mode when applicable.
-                // Compatible with the current selection -> keep it and add the clicked one;
-                // otherwise the clicked target becomes the selection (and the anchor).
-                if (e.shiftKey) {
-                  if (selectedTargetKey.value &&
-                    compatibleTargets.value.some((item) => item.key === target.key)) {
-                    multiKeys.value = [...new Set([selectedTargetKey.value, target.key])];
-                    multiMode.value = true;
-                    return;
-                  }
-                  selectedTargetKey.value = target.key;
-                  if (compatibleTargetsFor(target, targets.value, indexColumnType).length > 1) {
-                    multiKeys.value = [target.key];
-                    multiMode.value = true;
-                  }
-                  return;
-                }
-                selectedTargetKey.value = target.key;
-                return;
-              }
-              const next = multiKeys.value.includes(target.key) ?
-                multiKeys.value.filter((key) => key !== target.key) : [...multiKeys.value, target.key];
-              multiKeys.value = next;
-              // unchecking the last value exits the mode (matching the initial
-              // no-selection state, where the toggle is not even shown) and keeps
-              // that value selected, so the chart stays put
-              if (next.length === 0) {
-                selectedTargetKey.value = target.key;
-                multiMode.value = false;
-              } else if (selectedTargetKey.value != null && !next.includes(selectedTargetKey.value)) {
-                // unchecking the anchor moves it to a still-charted target, so the
-                // status chips and gap badges match what the chart shows
-                selectedTargetKey.value = next[0];
-              }
-            };
-            const isExpanded = target.kind === 'column' && !!expandedTargetKeys.value[target.key];
-            const anchor = selectedTarget.value;
-            const overlap = multiMode.value && anchor && target.kind === anchor.kind &&
-              target.key !== anchor.key ?
-              multiValueOverlap(anchor, target) : null;
-            const gapRuns = overlap ? [...overlap.missing, ...overlap.conflicting]
-              .map((id) => entries.value.find((entry) => entry.id === id)?.name ?? id) : [];
-            const row = <div
-              key={target.key}
-              class={isSelected ? 'c2-comparison-row c2-comparison-row-selected' : 'c2-comparison-row'}
-              style={{
-                padding: '3px 6px', cursor: 'pointer',
-                borderLeft: `3px solid ${isSelected ? 'var(--blue-1)' : 'transparent'}`,
-              }}
-              onClick={onRowClick}
-              onMousedown={(e: MouseEvent) => { if (e.shiftKey) e.preventDefault(); }}
-            >
-            { target.kind === 'column' ?
-              <IconFA
-                name={isExpanded ? 'chevron-down' : 'chevron-right'}
-                tooltip='Show matched items'
-                onClick={(e: Event) => {e.stopPropagation(); toggleExpanded(target.key);}}
-              /> :
-              <span></span> }
-            <IconFA name={target.kind === 'scalar' ? 'hashtag' : 'table'} tooltip={target.kind}/>
-            <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
-              title={target.displayName}>
-              {target.displayName}
-            </span>
-            { target.unitsWarning ?
-              <IconFA name='exclamation-triangle' tooltip='Units are missing on some runs'/> :
-              <span></span> }
-            { confidenceBadge(target.confidence) }
-            <span style={{fontSize: '11px', color: 'var(--grey-4)', flexShrink: '0'}}>
-              {target.coverage}/{target.total}
-            </span>
-            { gapRuns.length > 0 ?
-              <span
-                class='c2-comparison-badge c2-badge-partial'
-                title={anchor!.kind === 'scalar' ?
-                  `Missing value on: ${gapRuns.join(', ')}` :
-                  `Shown as gaps (no shared rows with ${anchor!.displayName}): ${gapRuns.join(', ')}`}
-              >partial</span> :
-              <span></span> }
-          </div>;
-            return isExpanded ? [row, renderCandidatePanel(target as ColumnTarget)] : row;
+                title={row.title}>
+                { row.coverage ?
+                  <span style={{fontSize: '11px', color: 'var(--grey-4)'}}>
+                    {row.coverage.count}/{row.coverage.total}
+                  </span> :
+                  row.entryName
+                } · <span style={{color: 'var(--grey-5)'}}>{row.label}</span>
+              </span>
+              { renderColumnSelect(row.current, row.candidates, '— index —',
+                (value) => setIndexColumn(row.members, value), suggestion) }
+              { row.splitCandidates.length > 0 ?
+                renderColumnSelect(row.currentSplit, row.splitCandidates, '— split —',
+                  (value) => setSplitColumn(row.members, value)) :
+                <span></span> }
+              { axis ?
+                <select
+                  value={axis.mode}
+                  onChange={(e: Event) => setAxisMode(row.members,
+                    {mode: (e.target as HTMLSelectElement).value as AxisMode, units: axis.units})}
+                  title={'How the table rows relate across runs: an indexed series, a timeseries ' +
+                  'relative to each run\'s start, or independent points'}
+                  style={{border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 4px'}}
+                >
+                  <option value='series'>series</option>
+                  <option value='timeseries'>relative timeseries</option>
+                  <option value='points'>independent points</option>
+                </select> :
+                <span></span> }
+              { axis?.mode === 'timeseries' && axis.units != null ?
+                <select
+                  value={axis.units}
+                  onChange={(e: Event) => setAxisMode(row.members,
+                    {mode: 'timeseries', units: (e.target as HTMLSelectElement).value as TimeUnit})}
+                  title='Time units of the index column values'
+                  style={{border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 4px'}}
+                >
+                  { TIME_UNITS.map((unit) =>
+                    <option key={unit} value={unit}>{unit}</option>,
+                  )}
+                </select> :
+                <span></span> }
+            </div>;
           })}
         </div>
       </div>
     );
-
-    const renderResultsHeader = () => (
-      <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 50px'}}>
-        <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Results</div>
-        <div style={{display: 'flex', alignItems: 'center', gap: '4px 12px', flexWrap: 'wrap'}}>
-          { (multiMode.value || compatibleTargets.value.length > 1) &&
-            <ToggleInput
-              caption='Multiple values'
-              value={multiMode.value}
-              onUpdate:value={setMultiMode}
-            />
-          }
-          { comparison.value && comparison.value.chartDf.rowCount > 0 &&
-            <span
-              style={{
-                display: 'flex', alignItems: 'center', gap: '4px',
-                cursor: 'pointer', color: 'var(--blue-1)',
-              }}
-              onClick={exportComparison}
-            >
-              <IconFA
-                name='external-link'
-                tooltip='Open a snapshot of the data and chart in the workspace, or save and share it as a project'
-              />
-              <span>Export...</span>
-            </span>
-          }
-        </div>
-      </div>
-    );
-
-    const renderStatuses = () => {
-      const target = selectedTarget.value;
-      if (!target)
-        return null;
-      // excluded runs get red chips; matched runs on a partially-configured axis-mode
-      // target get amber ones — they still chart, just as a plain series
-      const chips = entryStatuses.value
-        .map((status) => {
-          const entry = entries.value.find((item) => item.id === status.entryId);
-          if (!entry)
-            return null;
-          if (!status.matched)
-            return {entry, text: status.reason, warning: false};
-          if (status.warning)
-            return {entry, text: status.warning, warning: true};
-          return null;
-        })
-        .filter((item) => item != null);
-      if (chips.length === 0)
-        return null;
-      return <div style={{display: 'flex', gap: '6px', flexWrap: 'wrap', padding: '4px 0px'}}>
-        { chips.map(({entry, text, warning}) =>
-          <span
-            key={entry.id}
-            class={`c2-comparison-status ${warning ? 'c2-status-warning' : 'c2-status-error'}`}
-            title={warning ?
-              `The value charts as a plain series until every participating table has the ` +
-              `${text === 'independent points not set' ? 'independent points' : 'relative timeseries'} mode set` :
-              entry.name}>
-            {entry.name}: {text}
-          </span>,
-        )}
-      </div>;
-    };
-
-    const renderComparison = () => {
-      const currentComparison = comparison.value;
-      if (!selectedTarget.value)
-        return <div style={{color: 'var(--grey-4)', padding: '8px 0px'}}>Select what to compare above</div>;
-      if (!currentComparison || currentComparison.chartDf.rowCount === 0) {
-        return <div style={{color: 'var(--grey-4)', padding: '8px 0px'}}>
-          Nothing to show: no data points across the selected runs
-        </div>;
-      }
-      // multi-value needs a line-chartable index (suggestions are gated on it), but an index
-      // switched to a string column after selection would land the frame on a line chart
-      if (currentComparison.kind === 'column' && currentComparison.isKeyIndex &&
-        'valueColumnNames' in currentComparison) {
-        return <div style={{color: 'var(--grey-4)', padding: '8px 0px'}}>
-          Multiple values cannot chart over a categorical index — pick a numeric or datetime
-          index, or select a single value
-        </div>;
-      }
-      const chartMinHeight = currentComparison.kind === 'multi-scalar' ? 300 :
-        currentComparison.kind === 'column' && currentComparison.isScatter ? 300 :
-          'valueColumnNames' in currentComparison ?
-            250 * Math.max(1, (currentComparison.valueColumnNames as string[]).length) : 250;
-      const effectiveChartHeight = Math.max(chartMinHeight, chartHeight.value);
-      const chartStyle = {width: '100%', height: `${effectiveChartHeight}px`, flexShrink: '0'};
-      let chart;
-      if (currentComparison.kind === 'multi-scalar') {
-        chart = effectiveScalarChartType.value === 'radar' ?
-          <Viewer
-            type='Radar'
-            dataFrame={currentComparison.chartDf}
-            style={chartStyle}
-            onViewerChanged={onChartViewerChanged}
-            options={{
-              valuesColumnNames: currentComparison.valueColumnNames,
-              colorColumnName: RUN_COLUMN,
-              showCurrentRow: false,
-            }}
-          /> :
-          <Viewer
-            type={DG.VIEWER.PC_PLOT}
-            dataFrame={currentComparison.chartDf}
-            style={chartStyle}
-            onViewerChanged={onChartViewerChanged}
-            options={{
-              columnNames: currentComparison.valueColumnNames,
-              colorColumnName: RUN_COLUMN,
-            }}
-          />;
-      } else if (currentComparison.kind === 'scalar') {
-        chart = <Viewer
-          type={DG.VIEWER.BAR_CHART}
-          dataFrame={currentComparison.chartDf}
-          style={chartStyle}
-          onViewerChanged={onChartViewerChanged}
-          options={{
-            valueColumnName: currentComparison.valueColumnName,
-            valueAggrType: 'avg',
-            splitColumnName: RUN_COLUMN,
-          }}
-        />;
-      } else if (currentComparison.isKeyIndex) {
-        chart = <Viewer
-          type={DG.VIEWER.BAR_CHART}
-          dataFrame={currentComparison.chartDf}
-          style={chartStyle}
-          onViewerChanged={onChartViewerChanged}
-          options={{
-            valueColumnName: currentComparison.valueColumnName,
-            valueAggrType: 'avg',
-            splitColumnName: currentComparison.indexColumnName,
-            stackColumnName: RUN_COLUMN,
-          }}
-        />;
-      } else if (currentComparison.isScatter) {
-        // color: value name (multi-value melt) > split > Run; run identity moves to
-        // marker shapes whenever color is taken
-        const melted = currentComparison.melted;
-        const splitColumnName = currentComparison.splitColumnName;
-        chart = <Viewer
-          type={DG.VIEWER.SCATTER_PLOT}
-          dataFrame={currentComparison.chartDf}
-          style={chartStyle}
-          onViewerChanged={onChartViewerChanged}
-          options={ melted ? {
-            xColumnName: currentComparison.indexColumnName,
-            yColumnName: melted.valueColumnName,
-            colorColumnName: melted.seriesColumnName,
-            markersColumnName: RUN_COLUMN,
-          } : {
-            xColumnName: currentComparison.indexColumnName,
-            yColumnName: currentComparison.valueColumnName,
-            colorColumnName: splitColumnName ?? RUN_COLUMN,
-            ...splitColumnName ? {markersColumnName: RUN_COLUMN} : {},
-          }}
-        />;
-      } else {
-        const yColumnNames = 'valueColumnNames' in currentComparison ?
-          currentComparison.valueColumnNames as string[] : [currentComparison.valueColumnName];
-        chart = <Viewer
-          type={DG.VIEWER.LINE_CHART}
-          dataFrame={currentComparison.chartDf}
-          style={chartStyle}
-          onViewerChanged={onChartViewerChanged}
-          options={{
-            xColumnName: currentComparison.indexColumnName,
-            yColumnNames,
-            splitColumnNames: currentComparison.splitColumnName ?
-              [RUN_COLUMN, currentComparison.splitColumnName] : [RUN_COLUMN],
-            multiAxis: false,
-          }}
-        />;
-      }
-      return <div style={{display: 'flex', flexDirection: 'column', flex: '1', minHeight: '0px'}}>
-        <ResizeHandle
-          axis='y'
-          size={effectiveChartHeight}
-          min={chartMinHeight}
-          reverse={true}
-          onUpdate:size={(size) => chartHeight.value = size}
-        />
-        { currentComparison.kind === 'multi-scalar' && radarEligible.value &&
-          <div style={{display: 'flex', gap: '4px', padding: '2px 0px', flexShrink: '0'}}>
-            { ([['radar', 'Radar'], ['pcplot', 'PC Plot']] as const).map(([value, label]) =>
-              <span
-                key={value}
-                onClick={() => scalarChartType.value = value}
-                style={{
-                  cursor: 'pointer', fontSize: '11px', borderRadius: '3px', padding: '1px 8px',
-                  border: '1px solid var(--grey-2)',
-                  background: effectiveScalarChartType.value === value ?
-                    'var(--blue-1)' : 'transparent',
-                  color: effectiveScalarChartType.value === value ? 'var(--white)' : 'var(--grey-5)',
-                }}
-              >{label}</span>,
-            )}
-          </div> }
-        { Vue.withDirectives(chart, [[wheelGuard]]) }
-      </div>;
-    };
 
     return () => Vue.withDirectives(
       <div style={{display: 'flex', height: '100%', width: '100%', overflow: 'hidden'}}>
@@ -1103,43 +475,41 @@ export const RunComparison = Vue.defineComponent({
           gap: '8px', padding: '8px', overflow: 'auto',
         }}>
           <div style={{fontWeight: 'bold'}}>Model</div>
-          { renderModelSelector() }
-          { selectedModel.value &&
-            <div style={{
-              height: `${historyHeight.value}px`, flexShrink: '0',
-              border: '1px solid var(--grey-1)', borderRadius: '3px',
-            }}>
-              <History
-                func={selectedModel.value}
-                allowCompare={false}
-                showIsComplete={true}
-                fallbackText='No runs found for this model'
-                onSelectionChanged={(calls: DG.FuncCall[]) => historySelection.value = calls.map((c) => Vue.markRaw(c))}
-              />
-            </div>
-          }
-          { selectedModel.value &&
-            <ResizeHandle
-              axis='y'
-              size={historyHeight.value}
-              min={150}
-              max={800}
-              onUpdate:size={(size) => historyHeight.value = size}
+          <div style={{
+            height: `${historyHeight.value}px`, flexShrink: '0',
+            border: '1px solid var(--grey-1)', borderRadius: '3px',
+          }}>
+            <RunBrowser
+              model={selectedModel.value}
+              onUpdate:model={(func?: DG.Func) => selectedModel.value = func && Vue.markRaw(func)}
+              selectModel={true}
+              allowAllModels={true}
+              extraModels={extraModels.value}
+              roleOnlyFilter={props.roleOnlyFilter}
+              allowCompare={false}
+              allowOpen={false}
+              showDetails={false}
+              onSelectionChanged={(calls: DG.FuncCall[]) => historySelection.value = calls.map((c) => Vue.markRaw(c))}
             />
-          }
-          { selectedModel.value &&
-            <button
-              onClick={addSelectedRuns}
-              disabled={historySelection.value.length === 0 || isAddingRuns.value}
-              style={{
-                padding: '4px 8px', cursor: 'pointer', borderRadius: '3px',
-                border: '1px solid var(--grey-2)',
-              }}
-            >
-              {isAddingRuns.value ? 'Adding...' :
-                `Add selected runs${historySelection.value.length ? ` (${historySelection.value.length})` : ''}`}
-            </button>
-          }
+          </div>
+          <ResizeHandle
+            axis='y'
+            size={historyHeight.value}
+            min={150}
+            max={800}
+            onUpdate:size={(size) => historyHeight.value = size}
+          />
+          <button
+            onClick={addSelectedRuns}
+            disabled={historySelection.value.length === 0 || isAddingRuns.value}
+            style={{
+              padding: '4px 8px', cursor: 'pointer', borderRadius: '3px',
+              border: '1px solid var(--grey-2)',
+            }}
+          >
+            {isAddingRuns.value ? 'Adding...' :
+              `Add selected runs${historySelection.value.length ? ` (${historySelection.value.length})` : ''}`}
+          </button>
           <div ref={(el) => {
             if (el && !(el as HTMLElement).contains(tableInput.root))
               (el as HTMLElement).appendChild(tableInput.root);
@@ -1154,19 +524,33 @@ export const RunComparison = Vue.defineComponent({
           onUpdate:size={(size) => sidebarWidth.value = size}
         />
         <div style={{flex: '1', display: 'flex', flexDirection: 'column', padding: '8px', overflow: 'auto', minWidth: '0px'}}>
-          { entries.value.length < 2 ?
-            <div style={{color: 'var(--grey-4)'}}>Add at least two runs (or tables) to compare</div> :
-            <div style={{display: 'flex', flexDirection: 'column', flex: '1', minHeight: '0px', gap: '12px'}}>
-              { renderIndexPickers() }
-              { renderTargets() }
-              { renderResultsHeader() }
-              { renderStatuses() }
-              { renderComparison() }
-            </div>
-          }
+          { entries.value.length < 2 &&
+            <div style={{color: 'var(--grey-4)'}}>Add at least two runs (or tables) to compare</div> }
+          { /* hidden, not unmounted, so the tabs keep their state while runs are swapped */ }
+          <div style={{
+            display: entries.value.length < 2 ? 'none' : 'flex',
+            flexDirection: 'column', flex: '1', minHeight: '0px', gap: '12px',
+          }}>
+            { renderIndexPickers() }
+            <Tabs
+              items={tabItems.value}
+              activeKey={activeTab.value}
+              addable={true}
+              style={{flexShrink: '1', minHeight: '300px'}}
+              onUpdate:activeKey={(key: string) => activeTab.value = key}
+              onClose={closeTab}
+              onAdd={addTab}
+            >
+              {{pane: ({item}: {item: {key: string}}) =>
+                <ComparisonTab
+                  shared={shared}
+                  onTitle={(title: string) => tabTitles.value = {...tabTitles.value, [item.key]: title}}
+                />}}
+            </Tabs>
+          </div>
         </div>
       </div>,
-      [[ifOverlapping, isLoadingModels.value, 'Loading models...']],
+      [[ifOverlapping, isAddingRuns.value || isSaving.value, 'Loading...']],
     );
   },
 });

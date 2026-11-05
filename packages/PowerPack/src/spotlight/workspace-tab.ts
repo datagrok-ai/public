@@ -83,6 +83,10 @@ export class WorkspaceTab {
   private activeSpaceSub?: rxjs.Subscription;
   /** Project currently opened in preview mode for the bottom preview — closed when we move on / open it. */
   private previewedProject?: DG.Project;
+  // never added to the shell: closed when we move on, so what the app built for it goes too
+  private previewedAppView?: DG.ViewBase;
+  // moved out of the view into the details pane, where the view's closing does not reach it
+  private previewedAppHeader?: DG.U2.Control;
   /** In-flight project preview — a project can only be closed once its preview has finished opening it. */
   private previewOpening?: Promise<void>;
 
@@ -142,11 +146,34 @@ export class WorkspaceTab {
       this.renderGroupSections(groupContainer, freshFavorites, freshAdminGroups);
       this.rebuildOverlayZones(freshAdminGroups);
 
-      // If the current selection was unpinned, clear it.
-      if (this.selectedEntity && !this.listPane.querySelector(
-          `.pp-workspace-item[data-entity-id="${this.selectedEntity.id}"]`))
+      if (!this.selectedEntity || this.listPane.contains(this.selectedRow!))
+        return;
+      const row = this.listPane.querySelector<HTMLElement>(
+        `.pp-workspace-item[data-entity-id="${this.selectedEntity.id}"]`);
+      if (row) {
+        this.selectedRow = row;
+        row.classList.add('pp-workspace-item-selected');
+      }
+      else
         this.clearSelection();
     };
+
+    // Favorites change from anywhere in the platform (the star, Browse, the Favorites panel); a hidden
+    // Workspace is detached from the DOM, so it re-fetches once it is shown again.
+    let stale = false;
+    const refresh = (): void => {
+      stale = !root.isConnected;
+      if (!stale)
+        this.rebuildSections!();
+    };
+    const favoritesChanged = rxjs.merge(
+      grok.events.onEvent('d4-entity-added'), grok.events.onEvent('d4-entity-removed'));
+    this.spotlight.subs.push(
+      DG.debounce(favoritesChanged, 300).subscribe(refresh),
+      ui.onSizeChanged(root).subscribe(() => {
+        if (stale)
+          refresh();
+      }));
 
     this.renderPersonalSection(personalContainer, personalFavorites);
     this.renderGroupSections(groupContainer, groupFavorites, adminGroups);
@@ -188,7 +215,6 @@ export class WorkspaceTab {
     groupFavorites: GroupFavorites[],
     adminGroups: DG.Group[],
   ): void {
-    const rebuild = this.rebuildSections!;
     const displayedGroupIds = new Set<string>();
 
     if (groupFavorites.length > 0) {
@@ -197,7 +223,7 @@ export class WorkspaceTab {
         if (entities.length > 0) {
           displayedGroupIds.add(group.id);
           const onEdit = isAdmin ? () => {
-            showManageFavoritesDialog(group, [...entities], rebuild);
+            showManageFavoritesDialog(group, [...entities]);
           } : undefined;
           container.appendChild(
             this.renderSection(group.friendlyName, 'star', entities, isAdmin ? group : undefined, onEdit),
@@ -212,7 +238,7 @@ export class WorkspaceTab {
     //     const menu = DG.Menu.popup();
     //     for (const g of extraGroups) {
     //       menu.item(g.friendlyName || g.name, () => {
-    //         showManageFavoritesDialog(g, [], rebuild);
+    //         showManageFavoritesDialog(g, []);
     //       });
     //     }
     //     menu.show();
@@ -266,10 +292,7 @@ export class WorkspaceTab {
     this.bindRow(entity, row);
 
     if (group) {
-      const removeBtn = ui.icons.close(async () => {
-        await DG.Favorites.remove(entity, group);
-        await this.rebuildSections?.();
-      }, `Unpin from ${group.friendlyName}`);
+      const removeBtn = ui.icons.close(() => DG.Favorites.remove(entity, group), `Unpin from ${group.friendlyName}`);
       removeBtn.classList.add('pp-workspace-item-remove');
       removeBtn.addEventListener('click', (e: MouseEvent) => e.stopPropagation());
       row.appendChild(removeBtn);
@@ -329,6 +352,7 @@ export class WorkspaceTab {
     this.statusEl = undefined;
     this.detachSpaceView();
     this.closePreviewedProject();
+    this.closePreviewedAppView();
     clearWorkspacePreview();
     this.renderEmptyEditor();
   }
@@ -346,6 +370,32 @@ export class WorkspaceTab {
     const project = this.previewedProject;
     this.previewedProject = undefined;
     this.closeProject(project);
+  }
+
+  private closePreviewedAppView(): void {
+    const view = this.previewedAppView;
+    const header = this.previewedAppHeader;
+    this.previewedAppView = undefined;
+    this.previewedAppHeader = undefined;
+    WorkspaceTab.closeAppPreview(view, header);
+  }
+
+  private static closeAppPreview(view: DG.ViewBase | undefined, header?: DG.U2.Control): void {
+    // an app may answer a view it already has open in the shell: that one stays
+    if (view && ![...grok.shell.views].some((v) => v.dart === view.dart)) {
+      header?.dispose();
+      view.close();
+    }
+  }
+
+  private static u2AppHeader(root: HTMLElement): DG.U2.Control | undefined {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+    for (let el = walker.nextNode() as Element | null; el !== null; el = walker.nextNode() as Element | null) {
+      const control = DG.U2.control(el);
+      if (control?.root === el && DG.U2.state(el)?.kind === 'app-header')
+        return control;
+    }
+    return undefined;
   }
 
   private closeProject(project?: DG.Project): void {
@@ -400,6 +450,7 @@ export class WorkspaceTab {
     this.previewOpening = undefined;
     this.detachSpaceView();
     this.closePreviewedProject();
+    this.closePreviewedAppView();
     clearWorkspacePreview();
 
     const title = ui.divH([
@@ -547,17 +598,24 @@ export class WorkspaceTab {
       const fc = func.prepare();
       fc.adHoc = true;
       await fc.call(false, undefined, {processed: true, report: false});
-      if (token !== this.activePreviewToken)
-        return;
       const view = fc.getOutputParamValue();
+      if (token !== this.activePreviewToken) {
+        WorkspaceTab.closeAppPreview(view instanceof DG.ViewBase ? view : undefined);
+        return;
+      }
+      if (view instanceof DG.ViewBase)
+        this.previewedAppView = view;
       if (view?.root instanceof HTMLElement) {
         (<HTMLElement>view.root).classList.remove('ui-box');
-        const appHeader = view.root.querySelector('.ui-app-header');
+        const header = WorkspaceTab.u2AppHeader(view.root);
+        // .ui-app-header: an app built before its header moved to u2's AppHeader
+        const appHeader = header?.root ?? view.root.querySelector('.ui-app-header');
         if (appHeader) {
           appHeader.remove();
           detailsSlot.innerHTML = '';
           detailsSlot.appendChild(appHeader);
         }
+        this.previewedAppHeader = header;
         showWorkspacePreview(ui.div([view.root], 'pp-workspace-preview-app'), func.friendlyName, () => this.open(func));
       }
       else
@@ -801,7 +859,6 @@ export class WorkspaceTab {
             else {
               await pinEntityToGroup(entity, group);
               grok.shell.info(`Pinned "${entity.friendlyName}" to ${label}`);
-              await this.rebuildSections!();
             }
           }
           catch (e) {

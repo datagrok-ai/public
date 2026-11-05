@@ -3,13 +3,17 @@ import * as grok from 'datagrok-api/grok';
 import {readDataframe, _testSearchSubstructure, _testSearchSubstructureAllParameters,
   _testSearchSubstructureSARSmall,
   checkBitSetIndices} from './utils';
-import {before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {_package} from '../package-test';
 import {PackageFunctions} from '../package';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
 import { SubstructureSearchType } from '../constants';
 import { Fingerprint } from '../utils/chem-common';
+import {SubstructureSearchEngine, setSubstructureSearchEngine} from '../crux/crux-searches';
+import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
+import {queryNeedsSanitizedMolecules} from '../rdkit-service/query-features';
 
 export const testSubstructure = 'C1CC1';
 //csv with C1CC1 as substructure in pos 0 and 2
@@ -221,6 +225,20 @@ M  END
     await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O');
   }, {benchmark: true});
 
+  test('rdkitReinitKeepsWorkerPool', async () => {
+    // a second init (another category's before) used to start a new pool and leave the old one's workers running, each
+    // holding an RDKit WebAssembly instance, until the page had room for no more ("Out of memory")
+    const service = await chemCommonRdKit.getRdKitService();
+    await chemCommonRdKit.initRdKitModuleLocal();
+    expect(await chemCommonRdKit.getRdKitService() === service, true, 'the RDKit worker pool after a second init');
+  });
+
+  test('rdkitWorkerPoolIsBounded', async () => {
+    // each worker holds an RDKit WebAssembly instance, and a page has room for only so many WebAssembly memories
+    const service = await chemCommonRdKit.getRdKitService();
+    expect(service.workerCount, Math.max(1, Math.min(navigator.hardwareConcurrency - 2, 16)), 'RDKit workers');
+  });
+
 });
 
 category('substructure search: search types', () => { 
@@ -328,6 +346,128 @@ category('substructure search: filter operators', () => {
     expect(actual.trueCount > 0 && actual.trueCount < col.length, true);
     expect(actual.toBinaryString(), expected.toBinaryString());
   });
+});
+
+const BMS_304 = '[#6;r16,r17,r18]~[#6]1~[#6]~[#6]~[#6](~[#6])~[#7]1';
+/** Molecules the RDKit search answered ring, hybridization and radical queries for otherwise than RDKit does when it
+ * read them unsanitized (their rings from a depth-first search, no hybridization, no radicals). */
+const RING_CASES = [
+  'CCOc1ccc2ccccc2c1', 'NCCc1cccc2ccccc12', // naphthalenes: a 10-ring and a 6-ring to the search, two 6-rings to RDKit
+  'OC1CC2CCC1C2', // norbornane: a 6-ring and a 5-ring to the search, two 5-rings to RDKit
+  'OCC12C3C4C1C5C2C3C45', // cubane: RDKit's six 4-rings (symmetrized SSSR), each atom in three
+  'CCCCCCOC(=O)c1ccncc1', // sp3 carbons
+  '[CH2]CCOC(=O)c1ccccc1', // a radical
+  // BMS 304 (a structural alert): a true hit (ChEMBL-10k's row 8751) and a molecule only the search's rings hit (5418)
+  'C=Cc1c(C)c2cc3nc(cc4[nH]c(cc5nc(cc1[nH]2)C(C)=C5C(C)OCCCCCC)c(C)c4CCC(=O)O)C(CCC(=O)O)=C3C',
+  'c1ccc(-c2c3nc4ccccc4c-3[nH]c3ccccc23)cc1',
+];
+/** A query of a radical: the MOL block of an ethyl radical. */
+function radicalQuery(): string {
+  const mol = chemCommonRdKit.getRdKitModule().get_mol('[CH2]C');
+  try {
+    return mol.get_molblock();
+  } finally {
+    mol.delete();
+  }
+}
+/** The rows of RING_CASES each query hits in RDKit (the pinned RDKit 2026.03 and Chem's RDKit.js agree; molecules
+ * sanitized); the search answered [0,1], [0,1,2,3,4,5,7], [0,1,2,3,6,7], [3,6,7], [], [6,7] and [] for the first seven. */
+const ringCasesHits = (): [string, number[]][] => [
+  ['[c;r10]', []], ['[#6;r6]', [0, 1, 4, 5, 7]], ['[#6;R2]', [0, 1, 2, 6, 7]], ['[#6;R3]', [3]],
+  ['[C^3]', [0, 1, 2, 3, 4, 5, 6]], [BMS_304, [6]], [radicalQuery(), [5]],
+  // the search's answer was RDKit's for these: ring membership, ring bonds, no ring property at all
+  ['[c;R2]', [0, 1, 6, 7]], ['[#6;R]', [0, 1, 2, 3, 4, 5, 6, 7]], ['[#6;x3]', [0, 1, 2, 3, 6, 7]], ['C1CCCC1', [2]],
+  ['c1ccccc1', [0, 1, 5, 7]],
+];
+
+const hitRows = (hits: BitArray): number[] => Array.from({length: hits.length}, (_, i) => i).filter((i) => hits.getBit(i));
+const queryLabel = (query: string): string => query.includes('M  END') ? 'a radical (MOL block)' : query;
+
+category('substructure search: ring queries', () => {
+  before(async () => {
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
+    setSubstructureSearchEngine(SubstructureSearchEngine.RDKit);
+  });
+
+  after(async () => setSubstructureSearchEngine(null));
+
+  const rdkitSearch = (col: DG.Column, query: string) =>
+    chemSubstructureSearchLibrary(col, query, '', FILTER_TYPES.substructure, false, true);
+
+  test('queryNeedsSanitizedMolecules', async () => {
+    // decided from the query molecule (its RDKit JSON, recursive SMARTS included): ring counts and sizes, hybridization
+    // and radicals need the molecules sanitized; ring membership (R, R0, r, x, @) does not
+    const cases: [string, boolean][] = [['[c;r10]', true], ['[#6;R2]', true], ['[#6;R{2-}]', true], ['[#6;!R1]', true],
+      ['[C^3]', true], ['[$([#6;r6])]N', true], [BMS_304, true], [radicalQuery(), true], ['[#6;R]', false],
+      ['[#6;R0]', false], ['[#6;!R]', false], ['[#6;r]', false], ['[#6;x2]', false], ['C@C', false], ['c1ccccc1', false],
+      ['[CH2]', false], ['[N+](=O)[O-]', false], ['[$([#7;x2])]C', false]];
+    for (const [query, needs] of cases) {
+      const queryMol = getQueryMolSafe(query, '', chemCommonRdKit.getRdKitModule());
+      try {
+        expect(queryNeedsSanitizedMolecules(queryMol!), needs, queryLabel(query));
+      } finally {
+        queryMol?.delete();
+      }
+    }
+  });
+
+  test('editedRowsHitAsInRdkit', async () => {
+    // an edited row's fingerprint comes from one RDKit worker (the last one, for one row) and the search reads the row on
+    // another (the first one, for a small table), which does not hold the row's molecule: it read it unsanitized
+    const col = DG.Column.fromStrings('smiles', RING_CASES.map(() => 'CC'));
+    col.semType = DG.SEMTYPE.MOLECULE;
+    DG.DataFrame.fromColumns([col]);
+    await rdkitSearch(col, '[#6]');
+    for (let i = 0; i < RING_CASES.length; i++) {
+      col.set(i, RING_CASES[i]);
+      await rdkitSearch(col, '[#6]');
+    }
+    for (const [query, rows] of ringCasesHits())
+      expect(JSON.stringify(hitRows(await rdkitSearch(col, query))), JSON.stringify(rows), queryLabel(query));
+  });
+
+  test('workerHitsAsInRdkit', async () => {
+    // the RDKit worker's search, on molecules its cache does not hold (canonical SMILES, as the search passes them)
+    const rdkit = chemCommonRdKit.getRdKitModule();
+    const molecules = ['COc1ccc2cc(CCC(C)=O)ccc2c1', 'Cc1ccc2cc(Br)ccc2c1', 'C12C3C4C1C5C2C3C45', 'CCCOC(=O)c1ccccc1']
+      .map((smiles) => {
+        const mol = getMolSafe(smiles, {}, rdkit).mol!;
+        try {
+          return mol.get_smiles();
+        } finally {
+          mol.delete();
+        }
+      });
+    // RDKit's rows; the worker answered [0,1], [0,1,2] and [] for the first three
+    const expected: [string, number[]][] = [['[c;r10]', []], ['[#6;R2]', [0, 1]], ['[C^3]', [0, 1, 2, 3]],
+      ['[#6;R3]', [2]], ['c1ccccc1', [0, 1, 3]]];
+    const worker = (await chemCommonRdKit.getRdKitService()).parallelWorkers[0];
+    for (const [query, rows] of expected) {
+      const hits = BitArray.fromUint32Array(molecules.length,
+        await worker.searchSubstructure(query, '', molecules, SubstructureSearchType.CONTAINS));
+      expect(JSON.stringify(hitRows(hits)), JSON.stringify(rows), query);
+    }
+  });
+
+  test('ringQuerySpeed', async () => {
+    // a plain query and a ring query on a fresh table (fingerprints, then the search), then again (fingerprints saved)
+    const rows = DG.Test.isInBenchmark ? 100000 : 5000;
+    const times: string[] = [];
+    for (const query of ['c1ccccc1', '[#6;R2]', BMS_304]) {
+      const col = grok.data.demo.molecules(rows).col('smiles')!;
+      col.semType = DG.SEMTYPE.MOLECULE;
+      const t0 = performance.now();
+      const hits = await rdkitSearch(col, query);
+      const t1 = performance.now();
+      await rdkitSearch(col, query);
+      const t2 = performance.now();
+      times.push(`${query}: ${hits.trueCount()} hits, ${Math.round(t1 - t0)} + ${Math.round(t2 - t1)} ms`);
+    }
+    return `${rows} rows; ${times.join('; ')}`;
+  }, {benchmark: true, timeout: 120000, benchmarkTimeout: 600000});
 });
 
 

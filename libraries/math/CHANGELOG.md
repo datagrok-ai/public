@@ -1,5 +1,15 @@
 # math changelog
 
+## 1.2.10
+
+* WebGPU: Every compute shader runs 8 x 8 = 64-invocation workgroups (`WORKGROUP_DIM`) instead of 10 x 10 = 100, a whole number of subgroups on any GPU: on Intel's Windows driver the last, partly filled subgroup of a 100-invocation workgroup (invocations 96-99) did not run once the same pipeline was created again in a page, so any kernel could lose those threads' work (MMP, generations, UMAP, KNN, sparse matrix, MCL)
+* webGPUMMP: Fixed the second MMP analysis in a page finding no pairs and dispatching forever (the lost invocations above held the work of a small table); the dispatch loop now stops after the most passes the data can need and throws, so that the caller falls back to the CPU
+* webGPUMMP: Fixed the last two molecules never being compared: the last thread's range ended at the last pair instead of past it
+
+## 1.2.9
+
+* getGPUDevice: Returns the device at once instead of waiting 10 ms on every call to see if it was lost; a lost device, and its adapter, are replaced on the next call
+
 ## 1.2.6 (2024-12-17)
 
 * Vector distance functions support on webGPU

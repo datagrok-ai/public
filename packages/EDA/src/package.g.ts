@@ -6,12 +6,6 @@ export function info() : void {
   PackageFunctions.info();
 }
 
-//tags: init
-//meta.role: init
-export async function init() : Promise<void> {
-  await PackageFunctions.init();
-}
-
 //name: DBSCAN
 //description: Density-based spatial clustering of applications with noise (DBSCAN)
 //input: dataframe df 
@@ -75,6 +69,7 @@ export function stringPreprocessingFunction(col: DG.Column, _metric: string) {
 
 //name: Multi Column Dimensionality Reduction
 //top-menu: ML | Reduce Dimensionality...
+//meta.requiresTableView: true
 export async function reduceDimensionality() : Promise<void> {
   await PackageFunctions.reduceDimensionality();
 }
@@ -101,6 +96,7 @@ export function GetMCLEditor(call: DG.FuncCall) : void {
 //input: double inflate = 2 { description: Inflation factor controlling cluster granularity: higher values yield more, smaller clusters. }
 //input: int minClusterSize = 5 { description: Clusters smaller than this are merged into noise. }
 //top-menu: ML | Cluster | MCL...
+//meta.requiresTableView: true
 //editor: EDA:GetMCLEditor
 export async function MCLClustering(df: DG.DataFrame, cols: DG.Column[], metrics: any, weights: number[], aggregationMethod: any, preprocessingFuncs: any[], preprocessingFuncArgs: any[], threshold: number, maxIterations: number, useWebGPU: boolean, inflate: number, minClusterSize: number) : Promise<any> {
   return await PackageFunctions.MCLClustering(df, cols, metrics, weights, aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations, useWebGPU, inflate, minClusterSize);
@@ -129,6 +125,7 @@ export async function PLS(table: DG.DataFrame, features: DG.ColumnList, predict:
 
 //description: Compute partial least squares (PLS) regression components. They maximally summarize the variation of the predictors while maximizing correlation with the response variable.
 //top-menu: ML | Analyze | PLS...
+//meta.requiresTableView: true
 export async function topMenuPLS() : Promise<void> {
   await PackageFunctions.topMenuPLS();
 }
@@ -136,6 +133,7 @@ export async function topMenuPLS() : Promise<void> {
 //name: multivariateAnalysis
 //description: Multidimensional data analysis using partial least squares (PLS) regression.
 //top-menu: ML | Analyze | Multivariate Analysis...
+//meta.requiresTableView: true
 export async function MVA() : Promise<void> {
   await PackageFunctions.MVA();
 }
@@ -166,13 +164,14 @@ export function mvaModelInitFunction(viewer: any) : void {
 //name: MVA demo
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.
 //meta.demoPath: Compute | Multivariate Analysis
-export async function demoMultivariateAnalysis() : Promise<void> {
-  await PackageFunctions.demoMultivariateAnalysis();
+export function demoMultivariateAnalysis() : void {
+  PackageFunctions.demoMultivariateAnalysis();
 }
 
 //name: T-test
 //description: Two-sample t-test (Welch or Student) compares the means of a feature between two groups.
 //top-menu: ML | Analyze | Group Comparison | T-test...
+//meta.requiresTableView: true
 export function tTest() : void {
   PackageFunctions.tTest();
 }
@@ -180,6 +179,7 @@ export function tTest() : void {
 //name: ANOVA
 //description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.
 //top-menu: ML | Analyze | Group Comparison | ANOVA...
+//meta.requiresTableView: true
 export function anova() : void {
   PackageFunctions.anova();
 }
@@ -187,6 +187,7 @@ export function anova() : void {
 //name: Control comparisons
 //description: Compare several groups against a single control (Dunnett's test or Holm-corrected Welch's t-tests).
 //top-menu: ML | Analyze | Group Comparison | Control Comparisons...
+//meta.requiresTableView: true
 export function controlComparisons() : void {
   PackageFunctions.controlComparisons();
 }
@@ -194,6 +195,7 @@ export function controlComparisons() : void {
 //name: KNN impute
 //description: Missing values imputation using the k-nearest neighbors method (KNN)
 //top-menu: ML | Impute Missing Values...
+//meta.requiresTableView: true
 export function kNNImputation() : void {
   PackageFunctions.kNNImputation();
 }
@@ -360,8 +362,8 @@ export async function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column,
 //output: dataframe result
 //meta.mlname: XGBoost
 //meta.mlrole: apply
-export function applyXGBooster(df: DG.DataFrame, model: any) : any {
-  return PackageFunctions.applyXGBooster(df, model);
+export async function applyXGBooster(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyXGBooster(df, model);
 }
 
 //input: dataframe df 
@@ -404,8 +406,8 @@ export async function trainSVM(df: DG.DataFrame, predictColumn: DG.Column, kerne
 //output: dataframe result
 //meta.mlname: SVM
 //meta.mlrole: apply
-export function applySVM(df: DG.DataFrame, model: any) : any {
-  return PackageFunctions.applySVM(df, model);
+export async function applySVM(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applySVM(df, model);
 }
 
 //input: dataframe df 
@@ -429,6 +431,7 @@ export function isInteractiveSVM(df: DG.DataFrame, predictColumn: DG.Column) : b
 //name: Pareto Front
 //description: Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.
 //top-menu: ML | Pareto Front...
+//meta.requiresTableView: true
 export function paretoFront() : void {
   PackageFunctions.paretoFront();
 }

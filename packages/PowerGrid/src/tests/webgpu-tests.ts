@@ -1,22 +1,22 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, category, expect, expectArray, test, testEvent} from '@datagrok-libraries/test/src/test';
+import {category, test} from '@datagrok-libraries/test/src/test';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 
 const sizes = [10000, 1000000, 10000000];
 const types = ['dot', 'circle'];
 const consecutiveLaunches = 3;
 
-category('webgpu', async () => {
+// registers its tests synchronously: tests a category body registers after an await land in a later category
+category('webgpu', () => {
   const render = DG.Func.byName('_scWebGPURender');
   const hitTest = DG.Func.byName('_scWebGPUPointHitTest');
-  const gpuDevice = await getGPUDevice();
 
   types.forEach((t) => {
     sizes.forEach((s) => {
       test(`GPURender: ${s / 1000000.0}m ${t}s`, async () => {
-        if (!gpuDevice || !DG.Test.isInBenchmark)
+        if (!DG.Test.isInBenchmark || !(await getGPUDevice()))
           return;
         const view = grok.shell.addTableView(grok.data.demo.randomWalk(s, 2));
         const sp: DG.ScatterPlotViewer = view.scatterPlot();
@@ -29,7 +29,7 @@ category('webgpu', async () => {
       }, {benchmarkTimeout: 10000, benchmark: true, skipReason: 'Run manually in "Run Skipped" mode'});
 
       test(`GPURender Size: ${s / 1000000.0}m ${t}s`, async () => {
-        if (!gpuDevice || !DG.Test.isInBenchmark)
+        if (!DG.Test.isInBenchmark || !(await getGPUDevice()))
           return;
         const view = grok.shell.addTableView(grok.data.demo.randomWalk(s, 2));
         const sp: DG.ScatterPlotViewer = view.scatterPlot();
@@ -43,7 +43,7 @@ category('webgpu', async () => {
       }, {benchmarkTimeout: 10000, benchmark: true, skipReason: 'Run manually in "Run Skipped" mode'});
 
       test(`GPURender Color: ${s / 1000000.0}m ${t}s`, async () => {
-        if (!gpuDevice || !DG.Test.isInBenchmark)
+        if (!DG.Test.isInBenchmark || !(await getGPUDevice()))
           return;
         const view = grok.shell.addTableView(grok.data.demo.randomWalk(s, 2));
         const sp: DG.ScatterPlotViewer = view.scatterPlot();
@@ -57,7 +57,7 @@ category('webgpu', async () => {
       }, {benchmarkTimeout: 10000, benchmark: true, skipReason: 'Run manually in "Run Skipped" mode'});
 
       test(`GPUHitTest: ${s / 1000000.0}m ${t}s`, async () => {
-        if (!gpuDevice || !DG.Test.isInBenchmark)
+        if (!DG.Test.isInBenchmark || !(await getGPUDevice()))
           return;
         const view = grok.shell.addTableView(grok.data.demo.randomWalk(s, 2));
         const sp: DG.ScatterPlotViewer = view.scatterPlot();

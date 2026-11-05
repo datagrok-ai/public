@@ -1,8 +1,12 @@
-import {signal, Signal} from '../../core/signals.js';
+import {signal, untracked, Signal} from '../../core/signals.js';
+import type {ReadonlySignal} from '../../core/signals.js';
+import {Usage} from '../../core/scope.js';
 import {Input, InputOptions} from '../../core/input-base.js';
 import {iconOf} from '../display/icon.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
-export type ChoiceItem = string | {value: string, label: string};
+/** `group` puts the item under that heading; items of one group are listed together. */
+export type ChoiceItem = string | {value: string, label: string, group?: string};
 
 function itemValue(item: ChoiceItem): string {
   return typeof item === 'string' ? item : item.value;
@@ -12,8 +16,20 @@ function itemLabel(item: ChoiceItem): string {
   return typeof item === 'string' ? item : item.label;
 }
 
+/** The items less any null one — `grok.shell.tableNames` lists a nameless table as `undefined` (SEAM S-23) —
+ * which is reported and skipped, so the rest still render. */
+function present(items: ChoiceItem[]): ChoiceItem[] {
+  if (items.every((item) => item != null))
+    return items;
+  Usage.report('item-null', 'a choice list holds a null item, which is skipped: pass strings or {value, label} ' +
+    'items (for open tables, `Platform.tableNames()`)');
+  return items.filter((item) => item != null);
+}
+
 export interface ChoiceInputOptions extends InputOptions<string | null> {
-  items: ChoiceItem[];
+  /** The choices — a list, or a signal followed live (each change is {@link ChoiceInput.setItems}). The
+   * value may arrive before or after the item it names: it stays selected once both are there. */
+  items: ChoiceItem[] | ReadonlySignal<ChoiceItem[]>;
   /** Shown as a disabled placeholder option while the item list is empty, so a picker over a
    * live collection reads as empty rather than broken. */
   emptyText?: string;
@@ -22,13 +38,22 @@ export interface ChoiceInputOptions extends InputOptions<string | null> {
 /** Single choice over a styled native `<select>`, as `ui.input.choice` does — the platform look
  * comes free and the picker is the OS one. Combobox covers the custom-popup case. */
 export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
-  private _select!: HTMLSelectElement;
-  private _items!: ChoiceItem[];
-  private _echo = false;
+  private declare _select: HTMLSelectElement;
+  private declare _items: ChoiceItem[];
 
   constructor(options: ChoiceInputOptions) {
     super(options, null);
     this.root.dataset.u2 = 'choice-input';
+    const items = options.items;
+    if (items instanceof Signal) {
+      let first = true;
+      this.effect(() => {
+        const list = items.value;
+        if (!first)
+          untracked(() => this.setItems(list));
+        first = false;
+      });
+    }
   }
 
   get items(): ChoiceItem[] {
@@ -42,34 +67,28 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
   /** Replaces the item list, keeping the current value if it is still one of the items. Dropping
    * a value whose item vanished is a {@link Input.system} write, not a user edit. */
   setItems(items: ChoiceItem[]): void {
-    this._items = items;
+    this._items = present(items);
     this._fill();
-    const value = this.value.peek();
-    Input.system(() => this.value.value =
-      value !== null && items.some((i) => itemValue(i) === value) ? value : null);
-    this._select.value = this.value.peek() ?? '';
+    const value = this.peek();
+    this.systemWrite(value !== null && this._items.some((i) => itemValue(i) === value) ? value : null);
+    this._select.value = this.peek() ?? '';
+  }
+
+  /** One item per choice (the empty option is none), keyed by its value, the chosen one selected. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const value = this.peek();
+    return Input.itemsState(this._items.map((item, index) => ({key: itemValue(item), label: itemLabel(item),
+      index, selected: itemValue(item) === value, rendered: true})), opts?.all);
   }
 
   protected createEditor(): HTMLElement {
     const select = document.createElement('select');
     this._select = select;
-    this._items = this.options.items;
+    const items = this.options.items;
+    this._items = present(items instanceof Signal ? items.peek() : items);
     this._fill();
-    const onChange = () => {
-      this._echo = true;
-      try {
-        this.value.value = select.value === '' ? null : select.value;
-      } finally {
-        this._echo = false;
-      }
-    };
-    select.addEventListener('change', onChange);
-    this.own(() => select.removeEventListener('change', onChange));
-    this.effect(() => {
-      const value = this.value.value;
-      if (!this._echo)
-        select.value = value ?? '';
-    });
+    this.scope.listen(select, 'change', () => this.value = select.value === '' ? null : select.value);
+    this.effect(() => select.value = this.value ?? '');
     return select;
   }
 
@@ -85,8 +104,18 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
     }
     if (this.nullable)
       select.append(new Option('', ''));
-    for (const item of this._items)
-      select.append(new Option(itemLabel(item), itemValue(item)));
+    let parent: HTMLElement = select;
+    let heading: string | undefined;
+    for (const item of this._items) {
+      const name = typeof item === 'string' ? undefined : item.group;
+      if (name !== heading) {
+        heading = name;
+        parent = name === undefined ? select : Object.assign(document.createElement('optgroup'), {label: name});
+        if (parent !== select)
+          select.append(parent);
+      }
+      parent.append(new Option(itemLabel(item), itemValue(item)));
+    }
   }
 }
 
@@ -105,25 +134,37 @@ let summaryCount = 0;
 /** Compact checkbox list; the value holds the checked items in item order. */
 export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
   // built by createEditor(), which the base constructor calls before subclass initializers
-  // would run — none of these may carry an inline initializer (see multi-select.ts)
-  private _itemsHost!: HTMLElement;
-  private _boxes!: HTMLInputElement[];
-  private _items!: ChoiceItem[];
-  private _summaryBox: HTMLInputElement | undefined;
-  private _summaryText: HTMLElement | undefined;
-  private _summaryToggle: HTMLElement | undefined;
-  private _expanded: Signal<boolean> | undefined;
+  // would run — `declare` keeps them out of the emitted class fields
+  private declare _itemsHost: HTMLElement;
+  private declare _boxes: HTMLInputElement[];
+  private declare _items: ChoiceItem[];
+  private declare _summaryBox: HTMLInputElement | undefined;
+  private declare _summaryText: HTMLElement | undefined;
+  private declare _summaryToggle: HTMLElement | undefined;
+  private declare _expanded: Signal<boolean> | undefined;
 
-  get enabled(): boolean {
-    return super.enabled;
+  /** What stands in for an empty item list. */
+  get emptyText(): string {
+    return this.options.emptyText ?? 'No items';
+  }
+
+  set emptyText(x: string) {
+    this.options.emptyText = x ?? undefined;
+    const empty = this._itemsHost.querySelector('.u2-multi-choice-empty');
+    if (empty !== null)
+      empty.textContent = this.emptyText;
+  }
+
+  get disabled(): string | null {
+    return super.disabled;
   }
 
   // the base sweep disables the native controls; the collapse toggle is a span and must give up
   // its tab stop and gestures itself
-  set enabled(x: boolean) {
-    super.enabled = x;
+  set disabled(reason: string | null) {
+    super.disabled = reason;
     if (this._summaryToggle !== undefined)
-      this._summaryToggle.tabIndex = x ? 0 : -1;
+      this._summaryToggle.tabIndex = this.disabled === null ? 0 : -1;
   }
 
   constructor(options: MultiChoiceInputOptions) {
@@ -139,6 +180,21 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
     this.setItems(x);
   }
 
+  /** One item per choice, keyed by its value; the checked ones are the selection. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const checked = new Set(this.peek() ?? []);
+    return Input.itemsState(this._items.map((item, index) => {
+      const on = checked.has(itemValue(item));
+      return {key: itemValue(item), label: itemLabel(item), index, checked: on, selected: on, rendered: true};
+    }), opts?.all);
+  }
+
+  /** The checked captions, in item order. */
+  protected displayText(): string {
+    const checked = new Set(this.peek() ?? []);
+    return this._items.filter((i) => checked.has(itemValue(i))).map(itemLabel).join(', ');
+  }
+
   /** Collapse state of the item list; present only with {@link MultiChoiceInputOptions.showSummaryCheckbox}. */
   get expanded(): Signal<boolean> | undefined {
     return this._expanded;
@@ -151,10 +207,10 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
    * can neither see nor uncheck. */
   setItems(items: ChoiceItem[]): void {
     this._fill(items);
-    const current = new Set(this.value.peek());
-    const pruned = items.filter((i) => current.has(itemValue(i))).map(itemValue);
+    const current = new Set(this.peek() ?? []);
+    const pruned = this._items.filter((i) => current.has(itemValue(i))).map(itemValue);
     if (pruned.length !== current.size)
-      Input.system(() => this.value.value = pruned);
+      this.systemWrite(pruned);
   }
 
   protected createEditor(): HTMLElement {
@@ -165,20 +221,18 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
     if (this.options.showSummaryCheckbox)
       this._buildSummary(list);
     this._fill(this.options.items);
-    const onChange = (e: Event) => {
+    this.scope.listen(list, 'change', (e) => {
       if (this._summaryBox && e.target === this._summaryBox) {
         if (this._items.length === 0)
           this._updateSummary();
         else
-          this.value.value = this._summaryBox.checked ? this._items.map(itemValue) : [];
+          this.value = this._summaryBox.checked ? this._items.map(itemValue) : [];
         return;
       }
-      this.value.value = this._boxes.filter((b) => b.checked).map((b) => b.value);
-    };
-    list.addEventListener('change', onChange);
-    this.own(() => list.removeEventListener('change', onChange));
+      this.value = this._boxes.filter((b) => b.checked).map((b) => b.value);
+    });
     this.effect(() => {
-      const selected = new Set(this.value.value);
+      const selected = new Set(this.value ?? []);
       for (const box of this._boxes)
         box.checked = selected.has(box.value);
       this._updateSummary();
@@ -217,7 +271,7 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
     const expanded = signal(true);
     this._expanded = expanded;
     const flip = () => {
-      if (this.enabled)
+      if (this.disabled === null)
         expanded.value = !expanded.peek();
     };
     const onKeyDown = (e: Event) => {
@@ -227,12 +281,8 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
         flip();
       }
     };
-    toggle.addEventListener('click', flip);
-    toggle.addEventListener('keydown', onKeyDown);
-    this.own(() => {
-      toggle.removeEventListener('click', flip);
-      toggle.removeEventListener('keydown', onKeyDown);
-    });
+    this.scope.listen(toggle, 'click', flip);
+    this.scope.listen(toggle, 'keydown', onKeyDown);
     this.effect(() => {
       const on = expanded.value;
       toggle.setAttribute('aria-expanded', String(on));
@@ -251,9 +301,10 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
     this._summaryText!.textContent = `${checked} of ${total}`;
   }
 
-  private _fill(items: ChoiceItem[]): void {
+  private _fill(list: ChoiceItem[]): void {
+    const items = present(list);
     this._items = items;
-    const selected = new Set(this.value.peek());
+    const selected = new Set(this.peek() ?? []);
     this._itemsHost.textContent = '';
     this._boxes = [];
     if (items.length === 0) {
@@ -267,18 +318,21 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
     for (const item of items) {
       const row = document.createElement('label');
       row.className = 'u2-multi-choice-item';
+      row.dataset.u2Item = itemValue(item);
+      row.dataset.value = itemValue(item);
       const box = document.createElement('input');
       box.type = 'checkbox';
       box.className = 'u2-input-checkbox';
       box.value = itemValue(item);
       box.checked = selected.has(box.value);
       const text = document.createElement('span');
+      text.dataset.u2Part = 'item-label';
       text.textContent = itemLabel(item);
       row.append(box, text);
       this._itemsHost.append(row);
       this._boxes.push(box);
     }
     this._updateSummary();
-    this.refreshEnabled();
+    this.refreshDisabled();
   }
 }

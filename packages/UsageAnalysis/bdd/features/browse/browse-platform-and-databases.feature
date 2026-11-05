@@ -24,11 +24,12 @@ Feature: The Platform and Databases sections of the Browse tree
   every other feature uses and are not written; local-deploy-ui.md 1-3, 5 and 6 are what a fresh
   deployment does once, not something a shared stand can repeat.
 
-  Browse-Tree-07 (a node the user may not read) is claimed through the second account: the first
-  account's own connection is not in that user's tree at all, beside the shared Datagrok one.
-  Browse-Platform-03 (Platform is hidden from a user without the privilege) is not: the second
-  account holds whatever the stand gives users — the local stand gives them Platform — so the
-  claim would describe the stand's defaults, not the rule.
+  Browse-Tree-07 (a node the user may not read) is tested in datlas
+  users_groups/read_routes_authorization_test.dart ('Browse-Tree-07: a connection nobody shared is
+  neither listed nor read for another user').
+  Browse-Platform-03 (Platform is hidden from a user without the privilege) is not written: the
+  second account holds whatever the stand gives users — the local stand gives them Platform — so
+  the claim would describe the stand's defaults, not the rule.
 
   A node below the top level is named by its full tree path ("Files---Demo"), which is what the
   platform writes into its own `name` attribute. Several sections carry a node called Demo, Files
@@ -145,24 +146,6 @@ Feature: The Platform and Databases sections of the Browse tree
     Then the "Notebooks" view should be current
     And no errors should have been logged
     And no error or warning balloon should have been shown
-
-  # Browse-Tree-07, through the second account: a plain user who was given nothing of what the
-  # first account owns does not get the first account's connection in the tree at all
-  Scenario: Another user does not see a connection nobody shared with them
-    Given a "Postgres" connection named "BDD-Browse-Private-{run}" is on the server
-    And Databases tree node inside browse tree is expanded
-    And Databases---Postgres tree node inside browse tree is expanded
-    Then Databases---Postgres---BDD-Browse-Private-{run} tree node inside browse tree should be visible
-    When user signs in as the sharing user
-    And the browse panel is open
-    Then the sharing user should be signed in
-    When Databases tree node inside browse tree is expanded
-    And Databases---Postgres tree node inside browse tree is expanded
-    Then Databases---Postgres---Datagrok tree node inside browse tree should be visible
-    And Databases---Postgres---BDD-Browse-Private-{run} tree node inside browse tree should be absent
-    And no errors should have been logged
-    When user signs in as themselves again
-    Then the running account should be signed in
 
   Scenario: The Plugins view lists the installed packages and offers no Delete for one
     Given the "PowerPack" package is installed

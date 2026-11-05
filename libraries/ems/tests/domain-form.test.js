@@ -1,0 +1,1201 @@
+import {emsBackends} from '../src/core/domain-backend.js';
+import {mock} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
+import assert from 'node:assert/strict';
+import {register} from 'node:module';
+import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {backends, Scope, signal, Registry, SpecContext, renderSpec, registerAll, notify, Tooltip}
+  from '@datagrok-libraries/u2';
+import {registerDomainSources} from '../src/core/registrations.js';
+import {DomainSource} from '../src/core/domain-source.js';
+import {confirmDiscard} from '../src/core/session.js';
+import {MemoryDomainBackend} from '../src/core/memory-domain.js';
+import {backend} from './domain-fixtures.mjs';
+
+register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
+const {domains} = await import('../src/dg/facade.js');
+const {DomainForm} = await import('../src/dg/form.js');
+const {DomainPick} = await import('../src/dg/pick.js');
+const {Rows} = await import('@datagrok-libraries/u2');
+const {registerDomainComponents} = await import('../src/dg/registrations.js');
+const grok = await import('datagrok-api/grok');
+
+function scoped(name, body) {
+  test(name, async () => {
+    const live = Scope.liveCount;
+    const saved = {...backends};
+    const savedEms = {...emsBackends};
+    try {
+      await body();
+    } finally {
+      for (const key of Object.keys(backends))
+        delete backends[key];
+      Object.assign(backends, saved);
+      for (const key of Object.keys(emsBackends))
+        delete emsBackends[key];
+      Object.assign(emsBackends, savedEms);
+      notify.closeAll();
+      resetDom();
+      await flush();
+    }
+    assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
+  });
+}
+
+const CAN = {view: true, insert: true, edit: true, delete: true, share: true};
+
+/** Runs `body` with a counter of the lookups the domain path makes — every one of them goes
+ * through `DomainPick.resolve`, and a caption that rides with the row costs none. */
+async function counting(body) {
+  const resolve = DomainPick.resolve;
+  const lookups = {calls: 0};
+  DomainPick.resolve = (...args) => {
+    lookups.calls++;
+    return resolve.apply(DomainPick, args);
+  };
+  try {
+    await body(lookups);
+  } finally {
+    DomainPick.resolve = resolve;
+  }
+}
+
+/** A started source over the issues, through the handle, with its first page loaded — over the
+ * memory backend the test installed, or a fresh one (importing dg installs the platform one). */
+async function issues(options = {}) {
+  if (!(emsBackends.domain instanceof MemoryDomainBackend))
+    emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const src = testOwner().build(() => table.source({pageSize: 10, ...options}));
+  await flush();
+  return {table, src};
+}
+
+scoped('fields follow the access: hidden absent, readonly text, editable an input', async () => {
+  emsBackends.domain = backend({access: {can: CAN,
+    fields: {id: 'readonly', title: 'editable', number: 'readonly', project_id: 'editable'}}});
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  assert.equal(form.root.dataset.u2, 'domain-form');
+  assert.deepEqual(form.form.getWidgetStatus().inputs.map((f) => [f.name, f.access]),
+    [['project_id', 'editable'], ['number', 'readonly'], ['title', 'editable']],
+    'the system columns are not fields');
+  assert.equal(form.input('number'), undefined, 'readonly is text, not an input');
+  assert.equal(form.root.querySelector('[data-u2-name="number"] [data-u2-part="readonly-value"]').textContent, '1');
+  assert.equal(form.input('title').value, 'Aspirin');
+  assert.equal(form.form.root.dataset.u2Row, 'i1');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a row the caller may not edit renders as text; a draft is written under insert', async () => {
+  const rows = backend().tableSync('grit.issue').rows.map((r) => ({...r}));
+  rows[1]['~can_edit'] = false;
+  emsBackends.domain = backend({rows: {issue: rows, project: backend().tableSync('grit.project').rows},
+    access: {can: {...CAN, edit: false}, fields: {title: 'editable', number: 'editable'}}});
+  const {table, src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  assert.deepEqual(form.form.getWidgetStatus().inputs.map((f) => f.access), ['readonly', 'readonly'],
+    'no table-wide edit and no row saying otherwise: text');
+  src.currentRow.value = src.rows.byKey('i2');
+  await flush();
+  assert.deepEqual(form.form.getWidgetStatus().inputs.map((f) => f.access), ['readonly', 'readonly'],
+    'a row narrowing edit to false');
+  form.dispose();
+  src.dispose();
+  const draft = testOwner().build(() => table.draft({title: 'New'}));
+  await flush();
+  const create = testOwner().build(() => domains.form(draft));
+  await flush();
+  assert.deepEqual(create.form.getWidgetStatus().inputs.map((f) => f.access), ['editable', 'editable'],
+    'insert is granted: the draft is editable');
+  create.dispose();
+  draft.dispose();
+});
+
+scoped('an immutable field is text on a saved row and an input on a draft', async () => {
+  emsBackends.domain = backend({access: {can: CAN, fields: {title: 'editable', number: 'immutable'}}});
+  const {table, src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  assert.deepEqual(form.form.getWidgetStatus().inputs.map((f) => [f.name, f.access]),
+    [['number', 'readonly'], ['title', 'editable']], 'a saved row: the key was typed once');
+  form.dispose();
+  src.dispose();
+  const draft = testOwner().build(() => table.draft({title: 'New'}));
+  await flush();
+  const create = testOwner().build(() => domains.form(draft));
+  await flush();
+  assert.deepEqual(create.form.getWidgetStatus().inputs.map((f) => [f.name, f.access]),
+    [['number', 'editable'], ['title', 'editable']], 'a draft: the key is an input');
+  create.dispose();
+  draft.dispose();
+});
+
+scoped('an edit writes through the source; discard restores the field', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  form.input('title').value = 'Aspirin 100';
+  await flush();
+  assert.equal(src.isDirty.value, true);
+  assert.equal(src.changeCount.value, 1);
+  assert.equal(src.rows.byKey('i1').title, 'Aspirin 100');
+  assert.equal(src.edit.value.isChanged('i1', 'title'), true);
+  src.discard();
+  await flush();
+  assert.equal(src.isDirty.value, false);
+  assert.equal(form.input('title').value, 'Aspirin', 'the form re-read the row');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('the form follows the current row; without one it says so', async () => {
+  const {src} = await issues();
+  const form = testOwner().build(() => domains.form(src.currentRow));
+  await flush();
+  assert.equal(form.form, null);
+  assert.equal(form.root.querySelector('[data-u2-part="empty"]').textContent, 'Select an issue to edit.');
+  src.currentRow.value = src.rows.byKey('i1');
+  await flush();
+  const first = form.form;
+  assert.equal(form.input('title').value, 'Aspirin');
+  src.currentRow.value = src.rows.byKey('i2');
+  await flush();
+  assert.notEqual(form.form, first, 'a new row is a new form');
+  assert.equal(form.input('title').value, 'Ibuprofen');
+  assert.equal(form.form.root.dataset.u2Row, 'i2');
+  src.currentRow.value = null;
+  await flush();
+  assert.equal(form.form, null);
+  assert.equal(form.validity.value, null);
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a bare row or a foreign signal needs its source', async () => {
+  emsBackends.domain = backend();
+  const src = new DomainSource({table: 'grit.issue'});
+  src.start();
+  await flush();
+  assert.throws(() => domains.form(src.currentRow), /pass `source`/);
+  const row = src.rows.byKey('i3');
+  assert.throws(() => domains.form(row), /pass `source`/);
+  const form = testOwner().build(() => domains.form(row, {source: src}));
+  await flush();
+  assert.equal(form.input('title').value, 'Naproxen');
+  const bound = testOwner().build(() => domains.form(src.currentRow, {source: src}));
+  assert.equal(bound.source, src);
+  bound.dispose();
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a create form: the draft is pristine until touched, save inserts it', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const draft = testOwner().build(() => table.draft({project_id: 'p1', title: 'Draft'}));
+  await flush();
+  assert.equal(draft.state.value, 'ready');
+  assert.equal(draft.isDraft, true);
+  assert.equal(draft.rows.items.value.length, 1, 'the draft alone: nothing is loaded');
+  assert.notEqual(draft.currentRow.value, null);
+  assert.equal(draft.isDirty.value, false, 'pristine');
+  const form = testOwner().build(() => domains.form(draft));
+  await flush();
+  assert.equal(form.input('title').value, 'Draft');
+  form.input('number').value = 4;
+  await flush();
+  assert.equal(draft.isDirty.value, true);
+  assert.equal(await draft.save(), true);
+  const store = emsBackends.domain.tableSync('grit.issue').rows;
+  assert.equal(store.length, 4);
+  assert.equal(store[3].title, 'Draft');
+  assert.equal(store[3].number, 4);
+  assert.equal(store[3].project_id, 'p1');
+  form.dispose();
+  draft.dispose();
+});
+
+scoped('the table\'s validators reach the field, after the form\'s own rules', async () => {
+  const {table, src} = await issues();
+  table.validators.add('title', (v) => String(v ?? '').length < 5 ? 'At least 5 characters' : null);
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  assert.equal(form.validity.value, null);
+  form.input('title').value = 'Abc';
+  await flush();
+  assert.equal(form.input('title').validity.value, 'At least 5 characters');
+  assert.equal(form.validity.value, 'At least 5 characters');
+  assert.equal(form.validate(), false);
+  form.input('title').value = '';
+  await flush();
+  assert.equal(form.input('title').validity.value, 'Value can\'t be empty', 'required first');
+  form.input('title').value = 'Abcdef';
+  await flush();
+  assert.equal(form.validity.value, null);
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a refused save is one balloon; a failed load is the hint\'s to show, not a balloon', async () => {
+  const {src} = await issues();
+  emsBackends.domain.transaction = async () => {
+    throw Object.assign(new Error('Row rejected'), {code: 'validation'});
+  };
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  form.input('title').value = 'Ab';
+  await flush();
+  assert.equal(await src.save(), false);
+  await flush();
+  assert.match(document.body.querySelector('.u2-notify-error').textContent, /Row rejected/);
+  assert.equal(form.input('title').value, 'Ab', 'the edit stays pending');
+  assert.equal(src.isDirty.value, true);
+  form.input('title').value = 'Abc';
+  await flush();
+  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'the next edit settles the refusal, and its balloon goes');
+  form.dispose();
+  src.dispose();
+  notify.closeAll();
+
+  emsBackends.domain = backend();
+  const broken = testOwner().build(() => new DomainSource({table: 'grit.nope'}));
+  const hint = testOwner().build(() => domains.form(broken));
+  broken.start();
+  await flush();
+  assert.match(hint.root.querySelector('[data-u2-part="empty"]').textContent, /Unknown table/);
+  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'no balloon for a load failure');
+  hint.dispose();
+  broken.dispose();
+});
+
+scoped('a 403 drops the access caches on top of the balloon', async () => {
+  const {src} = await issues();
+  emsBackends.domain.transaction = async () => {
+    throw Object.assign(new Error('Forbidden'), {code: 'forbidden'});
+  };
+  const form = testOwner().build(() => domains.form(src));
+  const before = grok.dapi.domains.invalidated;
+  src.rows.byKey('i1').title = 'Ab';
+  assert.equal(await src.save(), false);
+  await flush();
+  assert.equal(grok.dapi.domains.invalidated, before + 1, 'the form reports the refused save');
+  assert.match(document.body.querySelector('.u2-notify-error').textContent, /Forbidden/);
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a reference column is picked from its table, a user column through the user picker', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  const pick = form.input('project_id');
+  assert.equal(pick.root.dataset.u2, 'domain-pick');
+  assert.equal(pick.value, 'p1');
+  await flush();
+  assert.equal(pick.root.querySelector('input').value, 'Grit', 'the id resolved to the project\'s name');
+  const reporter = form.input('reporter');
+  assert.equal(reporter.root.dataset.u2, 'pick-input');
+  assert.equal(reporter.value ?? '', '', 'the form seeds an empty string cell with ""');
+  assert.equal(reporter.typeAhead.selected.value, null);
+  assert.equal(src.isDirty.value, false, 'rendering the form writes nothing');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('New: hidden without insert, off "Loading…" until loaded, the draft made current counts as a change', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const src = testOwner().build(() => table.source());
+  const add = domains.newButton(src, {project_id: 'p1', title: 'Fresh'});
+  assert.equal(add.root.dataset.u2, 'new-button');
+  assert.equal(add.root.disabled, true, 'nothing to add to until the table is loaded');
+  assert.equal(add.root.getAttribute('aria-description'), 'Loading…', 'the reason New carries');
+  await flush();
+  assert.equal(add.root.disabled, false);
+  assert.equal(add.root.hasAttribute('aria-description'), false);
+  assert.equal(add.root.hidden, false);
+  fire(add.root, 'click');
+  await flush();
+  const draft = src.currentRow.value;
+  assert.equal(draft.title, 'Fresh');
+  assert.equal(src.isDirty.value, true, 'the press is a change of its own: Save and the leave gate see it');
+  assert.equal(src.summary.value, '1 unsaved change');
+  assert.equal(src.rows.items.value.length, 4);
+  add.dispose();
+  src.dispose();
+
+  emsBackends.domain = backend({access: {can: {view: true, insert: false, edit: true, delete: true, share: true},
+    fields: {title: 'editable'}}});
+  const readable = await domains.table('grit.issue');
+  const reader = testOwner().build(() => readable.source());
+  const denied = domains.newButton(reader);
+  await flush();
+  assert.equal(denied.root.hidden, true, 'permission ⇒ hidden');
+  denied.dispose();
+  reader.dispose();
+});
+
+scoped('Save and Discard follow the state: disabled while clean, while saving, and after', async () => {
+  const {src} = await issues();
+  const save = domains.saveButton(src);
+  const discard = domains.discardButton(src);
+  await flush();
+  assert.equal(save.root.dataset.u2, 'save-button');
+  assert.equal(save.button.textContent, 'Save');
+  assert.equal(save.button.disabled, true);
+  assert.equal(discard.button.disabled, true);
+  src.rows.byKey('i1').title = 'X';
+  await flush();
+  assert.equal(save.button.disabled, false);
+  assert.equal(discard.button.disabled, false);
+  const store = emsBackends.domain.tableSync('grit.issue');
+  const real = emsBackends.domain.transaction.bind(emsBackends.domain);
+  let release;
+  emsBackends.domain.transaction = (ops) => new Promise((resolve) => release = () => resolve(real(ops)));
+  fire(save.button, 'click');
+  await flush();
+  assert.equal(save.button.disabled, true, 'a save in flight');
+  assert.equal(discard.button.disabled, true, 'locked together');
+  release();
+  await flush();
+  await flush();
+  assert.equal(src.isDirty.value, false);
+  assert.equal(save.button.disabled, true);
+  assert.equal(store.rows[0].title, 'X');
+  src.rows.byKey('i1').title = 'Y';
+  await flush();
+  fire(discard.button, 'click');
+  await flush();
+  assert.equal(src.isDirty.value, false);
+  assert.equal(src.rows.byKey('i1').title, 'X');
+  save.dispose();
+  discard.dispose();
+  src.dispose();
+});
+
+scoped('spec: u2-domain-form over a bound source edits its current row; unbound it is a placeholder', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const reg = new Registry();
+  registerAll(reg);
+  registerDomainSources(reg);
+  registerDomainComponents(reg);
+  assert.equal(reg.get('u2-domain-form').usage.length > 0, true);
+  const ctx = new SpecContext({data: {issues: signal(src)}});
+  const instance = testOwner().build(() => renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-splitter', children: [
+    {tag: 'u2-domain-form', name: 'form', bind: {source: '$.issues'}, props: {include: ['title', 'number']}},
+    {tag: 'u2-domain-form', name: 'orphan'},
+  ]}}, ctx, reg));
+  await flush();
+  const form = instance.node('form');
+  assert.equal(form instanceof DomainForm, true);
+  assert.deepEqual(form.form.properties.map((p) => p.name), ['title', 'number']);
+  form.input('title').value = 'Spec';
+  await flush();
+  assert.equal(src.rows.byKey('i1').title, 'Spec');
+  assert.match(instance.root.querySelector('.u2-spec-error').textContent, /bind "source"/);
+  instance.dispose();
+  src.dispose();
+});
+
+scoped('spec round trip: a form and a list bound through `$.issues.source` over a `u2-domain-source`', async () => {
+  emsBackends.domain = backend();
+  const reg = new Registry();
+  registerAll(reg);
+  registerDomainSources(reg);
+  registerDomainComponents(reg);
+  const spec = {
+    $schema: 'dg-ui/1',
+    components: [{tag: 'u2-domain-source', name: 'issues', props: {table: 'grit.issue', pageSize: 10}}],
+    root: {tag: 'u2-splitter', name: 'page', children: [
+      {tag: 'u2-domain-list', name: 'list', bind: {source: '$.issues.source'}, props: {mode: 'brief'}},
+      {tag: 'u2-domain-form', name: 'form', bind: {source: '$.issues.source'}, props: {include: ['title', 'number']}},
+    ]},
+  };
+  const instance = renderSpec(spec, new SpecContext(), reg);
+  document.body.append(instance.root);
+  await flush();
+  assert.deepEqual(instance.dump(), spec);
+  const src = instance.node('issues');
+  const list = instance.node('list');
+  const form = instance.node('form');
+  assert.equal(list.source, src);
+  assert.equal(form.source, src);
+  assert.equal(instance.root.querySelector('.u2-spec-error'), null, 'both bound, nothing placeholdered');
+  list.list.selectedIndex.value = 2;
+  await flush();
+  assert.equal(form.input('title').value, 'Naproxen', 'the list\'s selection is the form\'s row');
+  form.input('title').value = 'Naproxen 500';
+  await flush();
+  assert.equal(src.rows.byKey('i3').title, 'Naproxen 500');
+  assert.equal(src.isDirty.value, true);
+  instance.dispose();
+});
+
+scoped('a readonly reference shows the target\'s name, not its uuid — off the frame, and after a refresh', async () => {
+  await counting(async (lookups) => {
+    emsBackends.domain = backend({access: {can: CAN,
+      fields: {title: 'editable', project_id: 'readonly', reporter: 'readonly'}}});
+    const {src} = await issues();
+    src.currentRow.value = src.rows.byKey('i1');
+    const form = testOwner().build(() => domains.form(src));
+    const value = () =>
+      form.root.querySelector('[data-u2-name="project_id"] [data-u2-part="readonly-value"]').textContent;
+    assert.equal(value(), 'Grit', 'the caption the query projected, on the first paint');
+    await flush();
+    assert.equal(value(), 'Grit', 'the project\'s name column');
+    form.input('title').value = 'Aspirin 100';
+    await flush();
+    assert.equal(value(), 'Grit', 'a refresh re-reads the row and the caption is put back');
+    assert.equal(form.root.querySelector('[data-u2-name="reporter"] [data-u2-part="readonly-value"]').textContent, '',
+      'an empty reference stays empty');
+    src.currentRow.value = src.rows.byKey('i3');
+    await flush();
+    assert.equal(value(), 'Datagrok', 'a new row carries its own');
+    assert.equal(lookups.calls, 0, 'and none of it cost a request');
+    form.dispose();
+    src.dispose();
+
+    // where the frame carries no caption — turned off here, a draft or a `User` over the platform —
+    // the id stands in until the one lookup answers
+    const {src: bare} = await issues({captions: []});
+    bare.currentRow.value = bare.rows.byKey('i1');
+    const lookup = testOwner().build(() => domains.form(bare));
+    const shown = () =>
+      lookup.root.querySelector('[data-u2-name="project_id"] [data-u2-part="readonly-value"]').textContent;
+    assert.equal(shown(), 'p1', 'the id stands in until the name arrives');
+    await flush();
+    assert.equal(shown(), 'Grit');
+    assert.equal(lookups.calls, 1, 'one lookup for the one reference the frame did not carry');
+    lookup.dispose();
+    bare.dispose();
+  });
+});
+
+scoped('system columns: out by default, one muted line on request — local times, the author, never a draft\'s key', async () => {
+  const {table, src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const plain = testOwner().build(() => domains.form(src));
+  await flush();
+  assert.equal(plain.root.querySelector('[data-u2-part="system"]'), null);
+  assert.equal(plain.form.properties.some((p) => ['id', 'version', 'created_on'].includes(p.name)), false);
+  plain.dispose();
+  const form = testOwner().build(() => domains.form(src, {system: 'footer'}));
+  await flush();
+  const footer = form.root.querySelector('[data-u2-part="system"]');
+  const row = (name) => footer.querySelector(`[data-u2-name="${name}"]`);
+  assert.deepEqual([...footer.querySelectorAll('.u2-domain-form-system-item')].map((el) => el.textContent.split(' ')[0]),
+    ['Created', 'Updated', 'v1', 'Id']);
+  assert.deepEqual([...footer.querySelectorAll('[data-u2-name]')].map((el) => el.dataset.u2Name),
+    ['created_on', 'author_id', 'updated_on', 'version']);
+  assert.equal(footer.querySelector('.u2-domain-form-system-copy').getAttribute('aria-label'), 'Copy id i1');
+  assert.equal(row('version').querySelector('[data-u2-part="readonly-value"]').textContent, '1');
+  assert.equal(row('created_on').querySelector('.u2-timestamp') !== null, true, 'a local short date, the full one on hover');
+  src.currentRow.value = null;
+  form.dispose();
+  const draft = testOwner().build(() => table.draft({title: 'Draft'}));
+  await flush();
+  const create = testOwner().build(() => domains.form(draft, {system: 'footer'}));
+  await flush();
+  assert.equal(create.root.querySelector('[data-u2-part="system"]').hidden, true,
+    'a draft has no id, version, times or author yet');
+  assert.equal(create.input('title').root.classList.contains('u2-input-required'), true,
+    'a column that must hold a value is marked on its caption');
+  assert.equal(create.input('description').root.classList.contains('u2-input-required'), false);
+  create.dispose();
+  draft.dispose();
+  src.dispose();
+});
+
+scoped('a pristine draft is not red: verdicts show once a field is edited or left, or on validate()', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const draft = testOwner().build(() => table.draft({project_id: 'p1'}));
+  await flush();
+  const form = testOwner().build(() => domains.form(draft));
+  document.body.append(form.root);
+  await flush();
+  const title = form.input('title');
+  const shown = (input) => input.root.querySelector('[data-u2-part="error"]').textContent;
+  assert.equal(title.validity.value, 'Value can\'t be empty', 'the verdict exists');
+  assert.equal(shown(title), '', 'but is not shown yet');
+  // DOM doubles are cyclic: compare identity as a boolean, never hand them to assert's inspector
+  assert.equal(document.activeElement === title.root.querySelector('input'), true,
+    'the draft starts with its first empty required field focused');
+  fire(title.root.querySelector('input'), 'focusout');
+  assert.equal(shown(title), '', 'focused by the form and left, the user was never in it');
+  fire(title.root.querySelector('input'), 'keydown', {key: 'Tab'});
+  fire(title.root.querySelector('input'), 'focusout');
+  assert.equal(shown(title), 'Value can\'t be empty', 'leaving the field shows it');
+  const number = form.input('number');
+  number.value = 3;
+  await flush();
+  assert.equal(number.touched.value, false, 'a write from code — the form re-reading its row — is no touch');
+  const editor = number.root.querySelector('input');
+  editor.value = '4';
+  fire(editor, 'input');
+  await flush();
+  assert.equal(number.touched.value, true, 'editing the field shows its verdict');
+  const due = form.input('due');
+  assert.equal(due.touched.value, false);
+  assert.equal(form.validate(), false);
+  assert.equal(due.touched.value, true, 'validate() shows every verdict');
+  form.dispose();
+  draft.dispose();
+});
+
+scoped('a draft: touching one required field shows only its verdict, and Save is off saying why', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const src = testOwner().build(() => table.draft({project_id: 'p1'}));
+  await flush();
+  const form = testOwner().build(() => domains.form(src));
+  const save = domains.saveButton(src);
+  document.body.append(save.root);
+  await flush();
+  const title = form.input('title');
+  const shown = (input) => input.root.querySelector('[data-u2-part="error"]').textContent;
+  const editor = title.root.querySelector('input');
+  editor.value = 'x';
+  fire(editor, 'input');
+  editor.value = '';
+  fire(editor, 'input');
+  fire(editor, 'keydown', {key: 'Tab'});
+  fire(editor, 'focusout');
+  await flush();
+  assert.equal(shown(title), 'Value can\'t be empty');
+  const others = form.form.inputs.filter((input) => input !== title && input.validity.peek() !== null);
+  assert.deepEqual(others.map(shown).filter((text) => text !== ''), [], 'no field the user did not touch speaks');
+  assert.equal(save.button.getAttribute('aria-disabled'), 'true', 'Save is off on an invalid form');
+  assert.equal(src.session.validity.value, 'Title is required', 'and its tooltip says why');
+  editor.value = 'Aspirin';
+  fire(editor, 'input');
+  await flush();
+  assert.equal(save.button.hasAttribute('aria-disabled'), false, 'a valid dirty form saves');
+  save.dispose();
+  form.dispose();
+  src.dispose();
+});
+
+scoped('only a valid edit reaches the row; an invalid one is still an unsaved change: the gates ask, Discard drops it', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  const discard = domains.discardButton(src);
+  await flush();
+  const row = src.rows.byKey('i1');
+  const title = form.input('title').root.querySelector('input');
+  title.value = '';
+  fire(title, 'input');
+  await flush();
+  assert.equal(row.title, 'Aspirin', 'an empty required title is not written');
+  assert.equal(src.isDirty.value, true, 'but it is the user\'s unsaved change');
+  assert.equal(src.summary.value, '1 unsaved change');
+  assert.equal(discard.button.hasAttribute('aria-disabled'), false, 'Discard can drop it');
+  assert.equal(src.session.validity.value, 'Title is required', 'and Save says why it is off');
+  let answered;
+  const gate = confirmDiscard(src.session, {action: 'leave this page'}).then((ok) => answered = ok);
+  await flush();
+  assert.equal(document.querySelector('[data-u2-name="unsaved-changes"]') !== null, true, 'leaving asks first');
+  [...document.querySelectorAll('[data-u2-name="unsaved-changes"] button')].find((b) => b.textContent === 'CANCEL').click();
+  await gate;
+  assert.equal(answered, false, 'and a cancel keeps the edit');
+  assert.equal(form.input('title').value, '');
+  const weight = form.input('weight').root.querySelector('input');
+  weight.value = '2.5';
+  fire(weight, 'input');
+  await flush();
+  assert.equal(row.weight, 2.5, 'a valid edit is');
+  assert.equal(form.input('title').value, '', 'the row\'s write-back keeps the invalid edit in its field');
+  src.discard();
+  await flush();
+  assert.equal(form.input('title').value, 'Aspirin', 'Discard drops it');
+  assert.equal(form.input('title').touched.value, false);
+  assert.equal(row.weight, 1.5);
+  assert.equal(src.isDirty.value, false, 'nothing is left pending');
+  discard.dispose();
+  form.dispose();
+  src.dispose();
+});
+
+scoped('text a number field cannot read is an unsaved change too: the gates ask, Discard drops it', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  const discard = domains.discardButton(src);
+  await flush();
+  const weight = form.input('weight');
+  const box = weight.root.querySelector('input');
+  box.value = 'abc';
+  fire(box, 'input');
+  await flush();
+  assert.equal(weight.validity.value, 'Not a number');
+  assert.equal(src.rows.byKey('i1').weight, 1.5, 'the row keeps its number');
+  assert.equal(src.isDirty.value, true, 'the text is the user\'s unsaved change');
+  assert.equal(src.summary.value, '1 unsaved change');
+  assert.equal(discard.button.hasAttribute('aria-disabled'), false, 'Discard can drop it');
+  src.discard();
+  await flush();
+  assert.notEqual(box.value, 'abc', 'Discard drops the text');
+  assert.equal(weight.validity.value, null);
+  assert.equal(src.isDirty.value, false);
+  discard.dispose();
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a field left invalid over a changed cell is one change, and the row reads as the field holds it', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  const row = src.rows.byKey('i1');
+  const title = form.input('title').root.querySelector('input');
+  const type = async (text) => {
+    title.value = text;
+    fire(title, 'input');
+    await flush();
+  };
+  await type('Aspirin x');
+  assert.equal(row.title, 'Aspirin x');
+  assert.equal(src.summary.value, '1 unsaved change');
+  await type('');
+  assert.equal(row.title, 'Aspirin x', 'the row keeps the last valid title');
+  assert.equal(src.summary.value, '1 unsaved change', 'the title is one change whatever its field holds');
+  assert.equal(src.current(row).title, '', 'the row as the form shows it');
+  assert.equal(src.current(row).id, 'i1');
+  assert.equal(src.current(src.rows.byKey('i2')), src.rows.byKey('i2'), 'a row no field holds anything for is itself');
+  form.input('weight').addValidator((v) => v < 0 ? 'Weight is positive' : null);
+  const weight = form.input('weight').root.querySelector('input');
+  weight.value = '-1';
+  fire(weight, 'input');
+  await flush();
+  assert.equal(row.weight, 1.5);
+  assert.equal(src.summary.value, '2 unsaved changes', 'a clean cell left invalid is a change of its own');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('the unsaved-changes prompt holds SAVE off while the save would be refused, saying why, live', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  const title = form.input('title').root.querySelector('input');
+  const type = async (text) => {
+    title.value = text;
+    fire(title, 'input');
+    await flush();
+  };
+  await type('');
+  let answered;
+  const gate = confirmDiscard(src.session, {action: 'leave this page'}).then((ok) => answered = ok);
+  await flush();
+  const button = (text) => [...document.querySelectorAll('[data-u2-name="unsaved-changes"] button')]
+    .find((b) => b.textContent === text);
+  const save = button('SAVE');
+  assert.equal(save.getAttribute('aria-disabled'), 'true');
+  assert.equal(save.getAttribute('aria-description'), 'Title is required', 'the reason Save carries');
+  assert.equal(button('DISCARD').hasAttribute('aria-disabled'), false);
+  assert.equal(button('CANCEL').hasAttribute('aria-disabled'), false);
+  save.click();
+  await flush();
+  assert.equal(answered, undefined, 'a press on it does nothing');
+  assert.equal(document.querySelector('.u2-notify-error'), null, 'and raises no refusal');
+  await type('Aspirin 2');
+  assert.equal(save.hasAttribute('aria-disabled'), false, 'a fix made under the prompt turns it on');
+  assert.equal(save.hasAttribute('aria-description'), false);
+  await type('');
+  assert.equal(save.getAttribute('aria-disabled'), 'true');
+  button('DISCARD').click();
+  await gate;
+  assert.equal(answered, true);
+  assert.equal(form.input('title').value, 'Aspirin', 'DISCARD drops the edit');
+  assert.equal(src.isDirty.value, false);
+  form.dispose();
+  src.dispose();
+});
+
+scoped('the writer\'s verdict on the row\'s value never blocks a new value from being written', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  const row = src.rows.byKey('i1');
+  row.number = 0;
+  form.refresh();
+  await flush();
+  assert.match(form.input('number').validity.value ?? '', /at least 1/, 'the row holds what the writer refuses');
+  const number = form.input('number').root.querySelector('input');
+  number.value = '5';
+  fire(number, 'input');
+  await flush();
+  assert.equal(form.input('number').validity.value, null);
+  assert.equal(row.number, 5, 'the fix is written');
+  src.discard();
+  form.dispose();
+  src.dispose();
+});
+
+scoped('an edited field carries the amber edge until the change is saved or discarded', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  const title = form.input('title');
+  assert.equal(title.root.classList.contains('u2-input-changed'), false);
+  title.value = 'Aspirin 100';
+  await flush();
+  assert.equal(title.root.classList.contains('u2-input-changed'), true);
+  assert.equal(form.input('number').root.classList.contains('u2-input-changed'), false);
+  src.discard();
+  await flush();
+  assert.equal(title.root.classList.contains('u2-input-changed'), false);
+  form.dispose();
+  src.dispose();
+});
+
+scoped('Save names what it saved and returns the focus to the form; Discard returns it too', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  const save = domains.saveButton(src);
+  const discard = domains.discardButton(src);
+  assert.equal(save.session, src.session, 'paired through the source: nothing is passed twice');
+  await flush();
+  form.input('title').value = 'Aspirin 100';
+  await flush();
+  document.body.append(save.root, discard.root, form.root);
+  save.button.focus();
+  fire(save.button, 'click');
+  await flush();
+  await flush();
+  assert.equal(src.isDirty.value, false);
+  assert.match(document.body.querySelector('.u2-notify-info')?.textContent ?? '', /Issue saved/);
+  assert.equal(document.activeElement === form.input('project_id').root.querySelector('input'), true,
+    'the focus is back on the first field');
+  form.input('title').value = 'Zzz';
+  await flush();
+  discard.button.focus();
+  fire(discard.button, 'click');
+  await flush();
+  assert.equal(src.isDirty.value, false);
+  assert.equal(document.activeElement === form.input('project_id').root.querySelector('input'), true);
+  save.button.focus();
+  src.activate.value++;
+  await flush();
+  assert.equal(document.activeElement === form.input('project_id').root.querySelector('input'), true,
+    'a list\'s Enter, through the source, focuses the form');
+  save.dispose();
+  discard.dispose();
+  form.dispose();
+  src.dispose();
+});
+
+scoped('the focus goes to the first empty required field after New and after Save, not to a pre-filled picker', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const draft = testOwner().build(() => table.draft({project_id: 'p1'}));
+  await flush();
+  const form = testOwner().build(() => domains.form(draft));
+  document.body.append(form.root);
+  await flush();
+  await flush();
+  const focused = () => [...form.form.inputs].find((i) => i.root.contains(document.activeElement))?.name;
+  assert.equal(focused(), 'title', 'the project is filled by the defaults: the title is what needs typing');
+  form.input('title').value = 'Typed';
+  await flush();
+  assert.equal(await draft.save(), true);
+  await flush();
+  await flush();
+  assert.equal(focused(), 'project_id', 'every required field filled: the first one');
+  draft.newRow({project_id: 'p2'}, {pristine: true});
+  await flush();
+  await flush();
+  assert.equal(focused(), 'title', 'New: past the pre-filled picker again');
+  form.dispose();
+  draft.dispose();
+});
+
+scoped('Save carries its shortcut as the tooltip and is the session\'s primary button; Tab from the last field lands on it',
+  async () => {
+    const {src} = await issues();
+    src.currentRow.value = src.rows.byKey('i1');
+    const form = testOwner().build(() => domains.form(src));
+    const save = domains.saveButton(src);
+    const discard = domains.discardButton(src);
+    document.body.append(form.root, save.root, discard.root);
+    await flush();
+    // the hover delay run on fake timers
+    const tooltip = (el) => {
+      mock.timers.enable({apis: ['setTimeout']});
+      try {
+        fire(el, 'pointerenter');
+        mock.timers.tick(300);
+        return Tooltip.root.textContent;
+      } finally {
+        fire(el, 'pointerleave');
+        mock.timers.reset();
+      }
+    };
+    assert.equal(await tooltip(save.button), 'No changes to save', 'a clean page: off, saying why');
+    assert.equal(await tooltip(discard.button), 'Nothing to discard');
+    assert.equal(src.session.primaryButton, save.button);
+    const last = form.form.inputs.at(-1);
+    const editor = last.root.querySelector('.u2-input-editor');
+    const focusable = editor.matches('input, select, textarea, button') ? editor :
+      editor.querySelector('input, select, textarea, button') ?? editor;
+    focusable.focus();
+    let prevented = !fire(focusable, 'keydown', {key: 'Tab', cancelable: true});
+    assert.equal(prevented, false, 'nothing to save: Tab goes where the browser takes it');
+    form.input('title').value = 'Aspirin 100';
+    await flush();
+    assert.equal(await tooltip(save.button), 'Save (Ctrl+S)');
+    assert.equal(await tooltip(discard.button), 'Discard changes');
+    prevented = !fire(focusable, 'keydown', {key: 'Tab', cancelable: true});
+    assert.equal(prevented, true);
+    assert.equal(document.activeElement, save.button, 'Tab from the last field reaches Save');
+    focusable.focus();
+    prevented = !fire(focusable, 'keydown', {key: 'Tab', shiftKey: true, cancelable: true});
+    assert.equal(prevented, false, 'Shift+Tab walks back through the fields');
+    const first = form.form.inputs[0].root.querySelector('.u2-input-editor');
+    prevented = !fire(first, 'keydown', {key: 'Tab', cancelable: true});
+    assert.equal(prevented, false, 'only the last field hands over');
+    form.input('title').value = '';
+    await flush();
+    assert.equal(save.button.getAttribute('aria-disabled'), 'true', 'an invalid form holds Save off');
+    assert.equal(await tooltip(save.button), 'Title is required', 'saying why');
+    focusable.focus();
+    prevented = !fire(focusable, 'keydown', {key: 'Tab', cancelable: true});
+    assert.equal(prevented, true);
+    assert.equal(document.activeElement, save.button, 'Tab still reaches it, so the keyboard reads the reason');
+    save.dispose();
+    assert.equal(src.session.primaryButton, undefined, 'released with the button');
+    discard.dispose();
+    form.dispose();
+    src.dispose();
+  });
+
+scoped('a form built after the list bumped activate does not steal the focus; a later bump moves it', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  src.activate.value++;
+  const other = document.createElement('button');
+  document.body.append(other);
+  other.focus();
+  const form = testOwner().build(() => domains.form(src));
+  document.body.append(form.root);
+  await flush();
+  await flush();
+  assert.equal(document.activeElement === other, true, 'the earlier bump is not a request to this form');
+  src.activate.value++;
+  await flush();
+  assert.equal(document.activeElement === form.input('project_id').root.querySelector('input'), true);
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a refused save names the field by its caption; the verdicts are shown', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const draft = testOwner().build(() => table.draft({project_id: 'p1'}));
+  await flush();
+  const form = testOwner().build(() => domains.form(draft));
+  const save = domains.saveButton(draft);
+  await flush();
+  draft.currentRow.value.number = 2;
+  await flush();
+  assert.equal(form.problem.value, 'Title is required');
+  assert.equal(save.button.getAttribute('aria-disabled'), 'true', 'Save is off, its tooltip saying why');
+  fire(save.button, 'click');
+  await flush();
+  assert.equal(draft.summary.value === 'Cannot save: Title is required', false, 'and a press on it does nothing');
+  fire(form.root, 'keydown', {key: 's', ctrlKey: true});
+  await flush();
+  await flush();
+  assert.equal(document.body.querySelector('.u2-notify-error')?.textContent, 'Fix Title to save',
+    'the field says what is wrong; the balloon does not say it again');
+  assert.equal(draft.summary.value, 'Cannot save: Title is required', 'the guard\'s refusal is the source\'s error');
+  assert.equal(form.input('title').root.querySelector('[data-u2-part="error"]').textContent, 'Value can\'t be empty',
+    'the verdict is shown');
+  assert.equal(emsBackends.domain.tableSync('grit.issue').rows.length, 3, 'nothing was written');
+  form.input('title').value = 'Titled';
+  await flush();
+  assert.equal(form.problem.value, null);
+  form.dispose();
+  assert.equal(await draft.save(), true, 'the guard left with the form');
+  save.dispose();
+  draft.dispose();
+});
+
+scoped('a refusal by the table\'s validators shows every verdict too, the failing field focused', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const unregister = table.validators.add('number', (v) => v === 2 ? 'Two is taken' : null);
+  const draft = testOwner().build(() => table.draft({project_id: 'p1'}));
+  await flush();
+  const form = testOwner().build(() => domains.form(draft));
+  document.body.append(form.root);
+  await flush();
+  draft.currentRow.value.number = 2;
+  await flush();
+  assert.equal(await draft.save(), false);
+  await flush();
+  assert.match(draft.summary.value, /Two is taken/, 'the table\'s guard refused before the form\'s');
+  assert.equal(form.input('title').root.classList.contains('u2-input-untouched'), false, 'the untouched Title says it is required');
+  assert.equal(form.input('number').root.contains(document.activeElement), true);
+  unregister();
+  form.dispose();
+  draft.dispose();
+});
+
+scoped('the keyboard path: Ctrl+S and Ctrl+Enter save a dirty, valid form; Esc does nothing destructive', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  assert.deepEqual(form.getWidgetStatus().shortcuts, {'Ctrl+S': 'Save', 'Ctrl+Enter': 'Save'});
+  const store = emsBackends.domain.tableSync('grit.issue');
+  form.input('title').value = 'Aspirin 100';
+  await flush();
+  fire(form.root, 'keydown', {key: 'Escape'});
+  await flush();
+  assert.equal(src.isDirty.value, true, 'Esc discards nothing');
+  const notPrevented = fire(form.root, 'keydown', {key: 's', ctrlKey: true, cancelable: true});
+  assert.equal(notPrevented, false, 'the browser\'s Save page is not what was meant');
+  await flush();
+  await flush();
+  assert.equal(src.isDirty.value, false);
+  assert.equal(store.rows[0].title, 'Aspirin 100');
+  form.input('title').value = 'Aspirin 200';
+  await flush();
+  fire(form.root, 'keydown', {key: 'Enter', ctrlKey: true, cancelable: true});
+  await flush();
+  await flush();
+  assert.equal(store.rows[0].title, 'Aspirin 200');
+  assert.match(document.body.querySelector('.u2-notify-info')?.textContent ?? '', /Issue saved/);
+  form.dispose();
+  src.dispose();
+});
+
+scoped('New with a function carries fields over from the row that was current', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i3');
+  const add = domains.newButton(src, (last) => ({project_id: last?.project_id ?? 'p1', title: ''}));
+  await flush();
+  fire(add.root, 'click');
+  await flush();
+  assert.equal(src.currentRow.value.project_id, 'p2', 'Naproxen\'s project');
+  add.dispose();
+  src.dispose();
+});
+
+scoped('a schema constraint refuses Save with its message; fixing the value clears it; an empty cell passes', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  assert.equal(form.validity.value, null);
+  form.input('weight').value = -1;
+  await flush();
+  assert.equal(form.input('weight').validity.value, 'Weight is positive', 'on the first column the expr names');
+  assert.equal(form.problem.value, 'Weight: Weight is positive');
+  assert.equal(await src.save(), false);
+  assert.match(src.error.value.message, /Weight is positive/);
+  assert.equal(src.isDirty.value, true);
+  form.input('weight').value = 2;
+  await flush();
+  assert.equal(form.input('weight').validity.value, null);
+  assert.equal(form.problem.value, null);
+  form.input('weight').value = null;
+  await flush();
+  assert.equal(form.problem.value, null, 'NULL passes a CHECK');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a constraint naming a column the caller may not see is left to the server', async () => {
+  emsBackends.domain = backend({access: {can: CAN, fields: {title: 'editable', number: 'editable', project_id: 'editable'}}});
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  src.rows.byKey('i1').weight = -5;
+  await flush();
+  assert.equal(form.problem.value, null);
+  assert.equal(form.validate(), true);
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a ref column with a schema filter picks among the rows its siblings allow', async () => {
+  emsBackends.domain = new MemoryDomainBackend({name: 'grit', tables: {
+    project: {friendlyName: 'Projects', columns: {name: {type: 'string', isName: true}}},
+    issue: {friendlyName: 'Issues', columns: {
+      project_id: {type: 'ref', ref: 'project', friendlyName: 'Project'},
+      title: {type: 'string', isName: true},
+      parent_id: {type: 'ref', ref: 'issue', filter: 'project_id = $project_id', friendlyName: 'Parent'},
+    }},
+  }}, {rows: {
+    project: [{id: 'p1', name: 'Grit'}, {id: 'p2', name: 'Datagrok'}],
+    issue: [{id: 'i1', project_id: 'p1', title: 'Aspirin'}, {id: 'i2', project_id: 'p1', title: 'Ibuprofen'},
+      {id: 'i3', project_id: 'p2', title: 'Naproxen'}],
+  }});
+  const table = await domains.table('grit.issue');
+  assert.deepEqual(table.info.refFilters, {parent_id: 'project_id = $project_id'});
+  const src = testOwner().build(() => table.source());
+  await flush();
+  src.currentRow.value = src.rows.byKey('i3');
+  const form = testOwner().build(() => domains.form(src, {overrides: {parent_id: {debounceMs: 0}}}));
+  document.body.append(form.root);
+  await flush();
+  const input = form.input('parent_id').root.querySelector('input');
+  input.focus();
+  await flush();
+  await flush();
+  const options = () => [...document.body.querySelectorAll('.u2-typeahead-option')].map((el) => el.textContent);
+  assert.deepEqual(options(), ['Naproxen'], 'the issues of the row\'s project');
+  input.blur();
+  form.input('project_id').value = null;
+  await flush();
+  input.focus();
+  await flush();
+  await flush();
+  assert.deepEqual(options(), []);
+  assert.equal(document.body.querySelector('.u2-typeahead-empty')?.textContent, 'Pick a project first');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('the system footer follows the row: a saved draft shows the number, version, times and author', async () => {
+  emsBackends.domain = backend();
+  const find = grok.dapi.users.find;
+  grok.dapi.users.find = async (id) => ({id, friendlyName: 'Ada Lovelace'});
+  try {
+    const table = await domains.table('grit.issue');
+    const draft = testOwner().build(() => table.draft({project_id: 'p1', title: 'Fresh'}));
+    await flush();
+    const form = testOwner().build(() => domains.form(draft, {system: 'footer'}));
+    await flush();
+    const labels = () => [...form.root.querySelectorAll('[data-u2-part="system"] [data-u2-name]')]
+      .map((el) => el.dataset.u2Name);
+    assert.deepEqual(labels(), [], 'a draft has none of them yet');
+    form.input('title').value = 'Fresh issue';
+    await flush();
+    assert.equal(await draft.save(), true);
+    await flush();
+    await flush();
+    assert.equal(Rows.isDraft(draft.currentRow.value), false, 'the draft is a saved row now');
+    assert.deepEqual(labels(), ['created_on', 'author_id', 'updated_on', 'version'],
+      'and the footer says so without the form being rebuilt');
+    assert.equal(form.root.querySelector('.u2-domain-form-system-copy').getAttribute('aria-label'),
+      `Copy id ${draft.currentRow.value.id}`);
+    const value = (name) => form.root
+      .querySelector(`[data-u2-part="system"] [data-u2-name="${name}"] [data-u2-part="readonly-value"]`).textContent;
+    // the insert answers `{id, version}` alone: the rest is the writer's post-save re-read, and it
+    // has to be in the frame before the footer is built
+    const row = draft.currentRow.value;
+    assert.equal(row.version, 1);
+    assert.equal(typeof row.created_on, 'string');
+    assert.equal(row.author_id, 'me');
+    assert.equal(value('version'), '1');
+    const full = {month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'};
+    assert.equal(value('created_on'), new Date(row.created_on).toLocaleString(undefined, full),
+      'the full date, the way a grid cell spells it — never a bare "Sep 13"');
+    await flush();
+    assert.equal(value('author_id'), 'Ada Lovelace', 'the author is a name, not the uuid the insert stamped');
+    form.dispose();
+    draft.dispose();
+  } finally {
+    grok.dapi.users.find = find;
+  }
+});
+
+scoped('a create form arrives with the first field focused and no dropdown over it', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const draft = testOwner().build(() => table.draft());
+  await flush();
+  const form = testOwner().build(() => domains.form(draft, {system: 'footer'}));
+  document.body.append(form.root);
+  await flush();
+  await flush();
+  const pick = form.input('project_id');
+  assert.equal(document.activeElement, pick.typeAhead.root.querySelector('input'),
+    'the first field still empty is where typing starts');
+  assert.equal(pick.typeAhead.isOpen.value, false, 'a dropdown the user did not open is in the way');
+  form.dispose();
+  draft.dispose();
+});
+
+scoped('a save closes the picker its Ctrl+S came from, so nothing covers the form that comes back', async () => {
+  const {table, src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  document.body.append(form.root);
+  await flush();
+  const pick = form.input('project_id');
+  pick.typeAhead.root.querySelector('input').focus();
+  await flush();
+  assert.equal(pick.typeAhead.isOpen.value, true, 'a focused ref picker offers its rows');
+  src.rows.byKey('i1').title = 'Aspirin 100';
+  await flush();
+  assert.equal(await src.session.save(), true);
+  await flush();
+  await flush();
+  assert.equal(pick.typeAhead.isOpen.value, false);
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a constraint over two columns is read with SQL null semantics: an empty column is not a free pass', async () => {
+  emsBackends.domain = new MemoryDomainBackend({name: 'grit', tables: {
+    issue: {friendlyName: 'Issues',
+      constraints: {span: {expr: 'low >= 0 and high >= 0', message: 'Both bounds must be positive'}},
+      columns: {title: {type: 'string', isName: true}, low: {type: 'int'}, high: {type: 'int'}}},
+  }}, {rows: {issue: [{id: 'i1', title: 'A', low: 1, high: 1}]}});
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  assert.equal(form.problem.value, null);
+  form.input('high').value = null;
+  await flush();
+  assert.equal(form.problem.value, null, 'one bound empty, the other true: unknown, and admitted');
+  form.input('low').value = -1;
+  await flush();
+  assert.equal(form.problem.value, 'Low: Both bounds must be positive', 'false and unknown is false, as Postgres reads it');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a draft shows the column defaults, so a required column with one is already filled', async () => {
+  emsBackends.domain = new MemoryDomainBackend({name: 'desk', tables: {
+    ticket: {businessKey: ['code'], columns: {
+      code: {type: 'string', required: true},
+      status: {type: 'string', required: true, default: 'open', friendlyName: 'Status'},
+    }},
+  }});
+  const table = await domains.table('desk.ticket');
+  const draft = testOwner().build(() => table.draft({}));
+  await flush();
+  const create = testOwner().build(() => domains.form(draft));
+  await flush();
+  assert.equal(create.input('status').value, 'open');
+  create.input('code').value = 'T2';
+  await flush();
+  assert.equal(create.validate(), true, 'the draft with only its key typed is ready to save');
+  create.dispose();
+  draft.dispose();
+});

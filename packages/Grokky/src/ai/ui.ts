@@ -11,12 +11,14 @@ import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEven
   copyToClipboard} from '../utils';
 import {AIPanel, StreamingPanel} from './panel';
 import {AIWindowManager} from './ai-window';
-import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent, AuthUrlEvent, AuthErrorEvent} from '../claude/runtime-client';
+import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
 import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
 import {sendChatTurn} from '../claude/queue-task';
 import {UsageLimiter} from './usage-limiter';
 import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
+import {AiFeature} from '../claude/ai-feature';
+import {contentLoggingNotice} from '../claude/turn-log';
 
 interface ExecutionPlan {
   plan: string[];
@@ -43,7 +45,7 @@ const executionPlanSchema = {
 const MAX_ACTIVITY_LINES = 5;
 
 interface StreamingOpts {
-  sessionPrefix?: string;
+  sessionPrefix: AiFeature;
   sessionId?: string;
   outputSchema?: object;
   onFinal: (evt: FinalEvent, host: HTMLElement) => void | Promise<void>;
@@ -55,11 +57,12 @@ export const RENDERED_EVENT = 'grokky-rendered';
 async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.Widget> {
   const client = ClaudeRuntimeClient.getInstance();
   await client.ensureConnected();
-  const sessionId = opts.sessionId ?? `${opts.sessionPrefix ?? 'stream'}-${crypto.randomUUID()}`;
+  const sessionId = opts.sessionId ?? `${opts.sessionPrefix}-${crypto.randomUUID()}`;
 
   const activityHost = ui.divV([], 'grokky-stream-activity');
   const contentHost = ui.div([], 'grokky-stream-content');
-  const container = ui.divV([activityHost, contentHost], 'grokky-stream');
+  const notice = opts.sessionId ? null : contentLoggingNotice();
+  const container = ui.divV([activityHost, contentHost, ...(notice ? [notice] : [])], 'grokky-stream');
 
   let onFirstEvent: () => void = () => {};
   const firstEvent = new Promise<void>((res) => { onFirstEvent = res; });
@@ -110,14 +113,14 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     stopListening();
   });
 
-  client.send(sessionId, prompt, {model: ClaudeModel.Sonnet, ...(opts.outputSchema ? {outputSchema: opts.outputSchema} : {})});
+  client.send(sessionId, prompt, {logPrompt: prompt, outputSchema: opts.outputSchema});
   return widget;
 }
 
 export async function smartExecution(prompt: string, sessionId?: string): Promise<DG.Widget> {
   return streamingWidget(prompt, {
     sessionId,
-    sessionPrefix: 'execute',
+    sessionPrefix: AiFeature.Execute,
     outputSchema: executionPlanSchema,
     onFinal: async (evt, host) => {
       const result = evt.structured_output as ExecutionPlan | undefined;
@@ -155,7 +158,7 @@ export async function smartExecution(prompt: string, sessionId?: string): Promis
 export async function askWiki(question: string, sessionId?: string): Promise<DG.Widget> {
   return streamingWidget(question, {
     sessionId,
-    sessionPrefix: 'help',
+    sessionPrefix: AiFeature.Help,
     onFinal: (evt, host) => {
       const md = ui.markdown(evt.content || '');
       md.style.userSelect = 'text';
@@ -252,7 +255,7 @@ export async function runPromptWithLifecycle(
     prompt = prompt.slice(1); // !!cmd → !cmd, falls through to normal pipeline
   else if (prompt.startsWith('!')) {
     const command = prompt.slice(1).trimStart();
-    if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, command))
+    if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory))
       return;
     await runClaudeStreaming(panel, command, view, 'bash');
     return;
@@ -281,7 +284,7 @@ export async function runPromptWithLifecycle(
       return;
     }
   }
-  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt)) {
+  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory)) {
     session?.endSession();
     return;
   }
@@ -304,89 +307,8 @@ function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HT
         ui.bigButton('OK', () => resolve(true)),
         ui.button('CANCEL', () => resolve(false)),
       ]),
-    ], 'grokky-auth-body'),
-  ], 'grokky-auth-widget');
-}
-
-function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
-  const errorDiv = ui.divText('', 'grokky-auth-error');
-
-  const submitBtn = ui.button('Submit', () => submitCode()) as HTMLButtonElement;
-  submitBtn.disabled = true;
-
-  const codeInput = ui.input.string('Authorization code', {
-    placeholder: 'Paste code here',
-    onValueChanged: () => {
-      submitBtn.disabled = !codeInput.value?.trim();
-      errorDiv.classList.add('grokky-auth-error');
-    },
-  });
-
-  const subs: rxjs.Subscription[] = [];
-  const cleanupSubs = () => subs.forEach((s) => s.unsubscribe());
-
-  const openLink = ui.link('Open authorization page', () => {
-    if (openLink.getAttribute('href'))
-      return;
-    const sub = client.onAuthUrl.subscribe((evt) => {
-      openLink.setAttribute('href', evt.url);
-      openLink.setAttribute('target', '_blank');
-      window.open(evt.url, '_blank');
-      sub.unsubscribe();
-    });
-    subs.push(sub);
-    client.startAuth();
-  });
-
-  const pendingStrip = ui.divV([
-    ui.divText('Session expired'),
-    ui.divText('Open the auth page and paste the code below'),
-  ], 'grokky-strip grokky-strip-pending');
-
-  const successStrip = ui.divV([
-    ui.divText('Session renewed'),
-    ui.divText('Re-send your message to continue'),
-  ], 'grokky-strip grokky-strip-success');
-  successStrip.style.display = 'none';
-
-  const pendingBody = ui.divV([openLink, codeInput.root, errorDiv, submitBtn], 'grokky-auth-body');
-
-  const widget = ui.div([pendingStrip, pendingBody, successStrip], 'grokky-auth-widget');
-
-  subs.push(
-    client.onAuthDone.subscribe(() => {
-      if (!widget.isConnected) {
-        cleanupSubs();
-        return;
-      }
-      pendingStrip.remove();
-      pendingBody.remove();
-      successStrip.style.display = '';
-      cleanupSubs();
-    }),
-    client.onAuthError.subscribe((evt) => {
-      if (!widget.isConnected) {
-        cleanupSubs();
-        return;
-      }
-      errorDiv.textContent = evt.message;
-      errorDiv.classList.remove('grokky-auth-error');
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Submit';
-      codeInput.input.focus();
-    }),
-  );
-
-  function submitCode(): void {
-    const code = codeInput.value?.trim();
-    if (!code)
-      return;
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Verifying…';
-    client.sendAuthCode(code);
-  }
-
-  return widget;
+    ], 'grokky-confirm-body'),
+  ], 'grokky-confirm-card');
 }
 
 async function runClaudeStreaming(
@@ -514,15 +436,7 @@ async function streamOnce(
 
       forSession(client.onError, (evt) => {
         panel.cancelInputRequest();
-        endWithError(`Claude: ${evt.message}`);
-      });
-
-      forSession(client.onAuthRequired, () => {
-        panel.cancelInputRequest();
-        panel.clearStreaming();
-        panel.appendStreamedElement(buildAuthRenewalWidget(client));
-        cleanup();
-        resolve();
+        endWithError(`AI assistant: ${evt.message}`);
       });
 
       forSession(client.onAborted, async () => {
@@ -617,7 +531,7 @@ async function streamOnce(
         }
       });
 
-      subs.push(client.onClose.subscribe(() => endWithError('Claude: connection lost')));
+      subs.push(client.onClose.subscribe(() => endWithError('AI assistant: connection lost')));
 
       subs.push(getAIAbortSubscription().subscribe(() => {
         client.abort(sessionId);
@@ -630,16 +544,17 @@ async function streamOnce(
         const options = {
           ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
           ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
+          logPrompt: userPrompt,
         };
         // Queued-task admission (queue-task.ts): the queued call only holds the turn's
         // admission slot; the turn itself streams over this socket as usual.
         sendChatTurn(client, sessionId, message, options)
-          .catch((e: any) => endWithError(`Claude: ${e?.message ?? e}`));
+          .catch((e: any) => endWithError(`AI assistant: ${e?.message ?? e}`));
       };
 
       forSession(client.onSessionReset, () => {
         if (resentAfterReset)
-          return endWithError('Claude: the session was lost and could not be restored');
+          return endWithError('AI assistant: the session was lost and could not be restored');
         resentAfterReset = true;
         sendPrompt();
       });
@@ -647,7 +562,7 @@ async function streamOnce(
       sendPrompt();
     } catch (e: any) {
       panel.clearStreaming();
-      grok.shell.error(`Claude runtime: ${e.message}`);
+      grok.shell.error(`AI runtime: ${e.message}`);
       console.error('Claude runtime error:', e);
       cleanup();
       resolve();

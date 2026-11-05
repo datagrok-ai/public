@@ -1,25 +1,33 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, expectFloat, before} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, test, expect, expectFloat, before} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package-test';
+import {readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc';
-import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/sar-matrix-clustering';
-import {assembleSinglePositionMatrix, fitAdditiveModel, linkStaged} from '../analysis/sar-matrix/sar-matrix-assemble';
+import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/build/sar-matrix-clustering';
+import {assembleSinglePositionMatrix, fitAdditiveModel, linkStaged}
+  from '../analysis/sar-matrix/build/sar-matrix-assemble';
 import {checkAgainstMolecules, cutWarning, decomposeByColumns, defaultAxis, holdsFragments, SarFragmentColumns,
   standardizeFragment}
-  from '../analysis/sar-matrix/sar-matrix-columns';
-import {cellPossible, LinkStages, planLink} from '../analysis/sar-matrix/sar-matrix-link';
-import {computeMatrixConfidence} from '../analysis/sar-matrix/sar-matrix-confidence';
-import {matrixCore} from '../analysis/sar-matrix/sar-matrix-depict';
-import {SarRankScheme} from '../analysis/sar-matrix/sar-matrix-ranking';
-import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/sar-matrix-run';
+  from '../analysis/sar-matrix/build/sar-matrix-columns';
+import {cellPossible, LinkStages, planLink} from '../analysis/sar-matrix/build/sar-matrix-link';
+import {computeMatrixConfidence} from '../analysis/sar-matrix/build/sar-matrix-confidence';
+import {alignToTemplate, buildAlignmentTemplate, drawDepiction, matrixCore}
+  from '../analysis/sar-matrix/render/sar-matrix-depict';
+import {rankMatrices, SarRankScheme} from '../analysis/sar-matrix/build/sar-matrix-ranking';
+import {fitRoleEffects, RoleDesign, RoleFit, RoleSummary, ROLE_FIT_MAX_SWEEPS}
+  from '../analysis/sar-matrix/summary/sar-matrix-role-fit';
+import {mergeTwinRoles, SummaryCollector, SummaryHost} from '../analysis/sar-matrix/summary/sar-matrix-summary-data';
+import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/build/sar-matrix-run';
 import {SCALING_METHODS} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
-import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/sar-matrix-transfer';
+import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/transfer/sar-matrix-transfer';
 import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixColumn, SarMatrixRow}
   from '../analysis/sar-matrix/sar-matrix-types';
+import {SarMatrixViewer} from '../analysis/sar-matrix/sar-matrix-viewer';
+import {MakeListPanel, MAKELIST_STRUCTURE} from '../analysis/sar-matrix/sar-matrix-make-list';
 
 /** Minimal fake fragmentation: ids 1=CoreA, 2=CoreB, 3=Me, 4=Et (0 is the empty fragment). */
 function fakeFrags(): MmpFragments {
@@ -150,6 +158,35 @@ function mixedCoverage(): {molecules: DG.Column, activity: DG.Column<number>} {
     smiles.map((_s, i) => 5 + (i % 5) * 0.4))};
 }
 
+function molColumn(smiles: string[], name = 'smiles'): DG.Column {
+  const column = DG.Column.fromStrings(name, smiles);
+  column.semType = DG.SEMTYPE.MOLECULE;
+  return column;
+}
+
+function activityColumn(values: (number | null)[]): DG.Column<number> {
+  return DG.Column.fromList('double', 'activity', values) as DG.Column<number>;
+}
+
+function cellsOf(matrices: SarMatrix[]): SarMatrixCell[] {
+  return matrices.flatMap((m) => m.cells.flat());
+}
+
+/** Para-disubstituted benzenes, four substituents on each side, measured but for the 4-chlorophenol: the
+ *  grid of the BDD's sar-matrix-para.csv. Its row and its column each keep three measured compounds. */
+const PARA_UNTESTED = 9;
+function paraGrid(): {molecules: DG.Column, activity: DG.Column<number>, columns: SarFragmentColumns} {
+  const xs = ['F', 'Cl', 'Br', 'I'];
+  const ys = ['C', 'N#C', 'O', 'N'];
+  const pairs = ys.flatMap((y) => xs.map((x) => [x, y]));
+  return {molecules: molColumn(pairs.map(([x, y]) => `${y}c1ccc(${x})cc1`)),
+    activity: activityColumn([5.03, 5.48, 5.81, 5.96, 5.62, 6.1, 6.39, 6.64, 6.17, null, 7.02, 7.18, 5.3, 5.83, 6.09,
+      6.32]),
+    columns: {core: DG.Column.fromStrings('Core', pairs.map(() => '[*:1]c1ccc([*:2])cc1')),
+      rows: [DG.Column.fromStrings('R2', pairs.map(([, y]) => `${y}[*:2]`))],
+      column: DG.Column.fromStrings('R1', pairs.map(([x]) => `${x}[*:1]`))}};
+}
+
 /** Three cores x two substituents with every slot occupied but CoreC/Et, so the additive model can
  *  predict both blanks. A-Et is in the set and never assayed; only CoreC/Et is genuinely unmade. */
 function unmeasuredMatrix(predictUnmeasured = false):
@@ -173,6 +210,38 @@ category('SAR Matrix', () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
+    }
+  });
+
+  test('cells align to their row\'s core with RDKit\'s depictor, not CoordGen', async () => {
+    // the matrix's cells are laid out by RDKit's depictor before the rigid fit to the row's template: CoordGen's
+    // layout cost ~20x more per cell and froze a 1,000-cell series (the demo's Series 174, 2026-10-23)
+    const core = 'O=C(N[*:1])c1ccc2[nH]ccc2c1';
+    const template = buildAlignmentTemplate(core)!;
+    const rdkit = chemCommonRdKit.getRdKitModule();
+    const coords = (molblock: string) => molblock.split('\n').slice(4)
+      .filter((l) => /^\s+-?\d+\.\d+\s+-?\d+\.\d+/.test(l))
+      .map((l) => [Number(l.substring(0, 10)), Number(l.substring(10, 20))]);
+    const templateXy = coords(template);
+    for (const smiles of ['O=C(NCCN(C)C)c1ccc2[nH]ccc2c1', 'O=C(NC1CCN(Cc2ccccc2)CC1)c1ccc2[nH]ccc2c1']) {
+      const aligned = alignToTemplate(smiles, template);
+      expect(aligned.includes('M  END'), true, `${smiles}: aligned`);
+      // the cell's core lies on the template (a rigid fit of the cell's own layout: within a small RMSD)
+      const cellXy = coords(aligned);
+      const match = JSON.parse((() => {
+        const m = rdkit.get_mol(aligned);
+        const q = rdkit.get_mol(template);
+        try {
+          return m.get_substruct_match(q);
+        } finally {
+          m.delete();
+          q.delete();
+        }
+      })()).atoms as number[];
+      const rmsd = Math.sqrt(match.reduce((sum, cellAtom, i) => sum + (cellXy[cellAtom][0] - templateXy[i][0]) ** 2 +
+        (cellXy[cellAtom][1] - templateXy[i][1]) ** 2, 0) / match.length);
+      expect(match.length, templateXy.length, `${smiles}: the whole core matches`);
+      expect(rmsd < 0.3, true, `${smiles}: the core on the template (RMSD ${rmsd.toFixed(3)})`);
     }
   });
 
@@ -1151,4 +1220,706 @@ category('SAR Matrix: R-group columns', () => {
     expect(bridged!.rows.every((row) => !row.keySmiles.includes('[*:100]') && !row.keySmiles.includes('[*:101]')),
       true, 'their bridge is closed in every row');
   }, {timeout: 300000});
+
+  test('columns that read alike in every compound are one component, unless blank in all', async () => {
+    const {names, sources} = mergeTwinRoles(['Core', 'R1', 'R2', 'R3', 'R100', 'R101'],
+      [['c', 'c', 'd'], ['A', 'B', 'A'], ['', '', ''], ['', '', ''], ['', 'br', 'br'], ['', 'br', 'br']]);
+    expect(names.join(' | '), 'Core | R1 | R2 | R3 | R100 + R101',
+      'a bridge written in two columns is one component; columns holding no value are not twins');
+    expect(sources.join(','), '0,1,2,3,4', 'the merged component reads its first column');
+  });
+
+  // ---- One additive fit over every role column ---------------------------------------------------
+
+  const CORE_EFFECT: {[value: string]: number} = {C1: 0.3, C2: 0.0, C3: -0.3};
+  const WARHEAD_EFFECT: {[value: string]: number} = {W1: 0.2, W2: 0.0, W3: -0.2};
+  const LIGAND_EFFECT: {[value: string]: number} = {L1: 0.1, L2: -0.1};
+
+  /** One compound of a role design: its value in each role, its activity and its source row. */
+  type DesignRow = [string[], number, number];
+  const design = (names: string[], rows: DesignRow[]): RoleDesign => ({names,
+    values: names.map((_name, r) => rows.map(([values]) => values[r])),
+    activity: rows.map(([, activity]) => activity), molIdx: rows.map(([, , mol]) => mol),
+    minSupport: 3, higherIsBetter: true});
+
+  /**
+   * 3 cores x 3 warheads x 2 ligands, `y = 6.0 + core + warhead + ligand`, no noise, molIdx 0..17.
+   * Balanced and count-centred, so the least-squares solution is exactly those effects, and the
+   * count-prior of 1 then shrinks each by `n/(n+1)`: 6/7 for a core or warhead, 9/10 for a ligand.
+   */
+  const roleFixture = (drop: number[] = []): RoleDesign => design(['Core', 'Warhead', 'Ligand'],
+    Object.keys(CORE_EFFECT).flatMap((core) => Object.keys(WARHEAD_EFFECT).flatMap((warhead) =>
+      Object.keys(LIGAND_EFFECT).map((ligand) => [core, warhead, ligand])))
+      .map(([core, warhead, ligand], k): DesignRow => [[core, warhead, ligand],
+        6.0 + CORE_EFFECT[core] + WARHEAD_EFFECT[warhead] + LIGAND_EFFECT[ligand], k])
+      .filter(([, , k]) => !drop.includes(k)));
+
+  const roleOf = (fit: RoleFit, name: string): RoleSummary => fit.roles.find((r) => r.name === name)!;
+  const coefOf = (fit: RoleFit, name: string, value: string): number =>
+    roleOf(fit, name).levels.find((l) => l.value === value)!.coef;
+  const average = (values: number[]): number => values.reduce((sum, v) => sum + v, 0) / values.length;
+  /** A seeded draw on [-0.5, 0.5), so a noisy fixture is the same on every run. */
+  const noise = (seed: number): (() => number) => {
+    let state = seed;
+    return () => {
+      state = (state * 1103515245 + 12345) & 0x7fffffff;
+      return state / 0x7fffffff - 0.5;
+    };
+  };
+
+  /** The same penalised backfit written the slow way and run far past the module's own tolerance: the
+   *  fixed point the shipped fit has to land on, however many sweeps that takes. */
+  const longRunFit = (design: RoleDesign, passes: number): {[value: string]: number} => {
+    const levels = design.values.map((column) => Array.from(new Set(column)));
+    const codes = design.values.map((column, r) => column.map((v) => levels[r].indexOf(v)));
+    const counts = levels.map((values, r) => values.map((_v, i) => codes[r].filter((code) => code === i).length));
+    const theta = levels.map((values) => values.map(() => 0));
+    let mu = average(design.activity);
+    for (let pass = 0; pass < passes; pass++) {
+      for (let r = 0; r < levels.length; r++) {
+        const acc = levels[r].map(() => 0);
+        design.activity.forEach((y, k) => {
+          acc[codes[r][k]] += theta.reduce((rest, t, q) => q === r ? rest : rest - t[codes[q][k]], y - mu);
+        });
+        const next = acc.map((a, v) => a / (counts[r][v] + 1));
+        const shift = next.reduce((sum, t, v) => sum + counts[r][v] * t, 0) / design.activity.length;
+        mu += shift;
+        theta[r] = next.map((t) => t - shift);
+      }
+    }
+    return Object.fromEntries(levels.flatMap((values, r) => values.map((v, i) => [v, theta[r][i]])));
+  };
+
+  test('fitRoleEffects recovers a balanced and an unbalanced design', async () => {
+    const fit = fitRoleEffects(roleFixture())!;
+    expect(fit !== null, true, 'three roles with three, three and two levels are rankable');
+    expect(`${fit.converged} ${fit.compounds} ${fit.dropped}`, 'true 18 0');
+    // Raw group means answer 0.3 exactly and centring inside a core block answers 0.15; neither is the
+    // penalised least-squares solution that reproduces all 18 values.
+    for (const [name, effects, shrink] of [['Core', CORE_EFFECT, 6 / 7], ['Warhead', WARHEAD_EFFECT, 6 / 7],
+      ['Ligand', LIGAND_EFFECT, 9 / 10]] as const) {
+      for (const [value, effect] of Object.entries(effects))
+        expectFloat(coefOf(fit, name, value), effect * shrink, 1e-5, `${name} ${value}`);
+    }
+    expectFloat(fit.mean, 6.0, 1e-6, 'the library average every offset is read against');
+    expect(fit.roles.map((r) => r.name).join(','), 'Core,Warhead,Ligand',
+      'roles come back ordered by noise-corrected spread, widest first');
+    expect(roleOf(fit, 'Core').repeat! > 0.99, true,
+      `a noiseless design has to refit to the same offsets on each half, got ${roleOf(fit, 'Core').repeat}`);
+    // Two points correlate at exactly ±1 whatever they are, so a two-value role reporting r 1.00 would
+    // wear the strongest repeatability chip on the screen on no evidence at all.
+    expect(roleOf(fit, 'Ligand').repeat, null, 'two comparable levels are not a repeatability check');
+
+    const holed = roleFixture([4, 9, 15]);
+    const unbalanced = fitRoleEffects(holed)!;
+    expect(unbalanced.converged, true, 'a fit that stops short suppresses the whole breakdown silently');
+    // The prior leaves each role off centre by a constant on every pass. Measured before that shift is
+    // taken back out, the movement plateaus at the constant and no sweep cap ever clears it.
+    expect(unbalanced.sweeps < ROLE_FIT_MAX_SWEEPS / 4, true, `${unbalanced.sweeps} sweeps`);
+    const reference = longRunFit(holed, 4000);
+    let offFixedPoint = 0;
+    let offOnePass = 0;
+    holed.names.forEach((name, r) => roleOf(unbalanced, name).levels.forEach((level) => {
+      const own = holed.activity.filter((_y, k) => holed.values[r][k] === level.value);
+      offFixedPoint = Math.max(offFixedPoint, Math.abs(level.coef - reference[level.value]));
+      offOnePass = Math.max(offOnePass, Math.abs(level.coef - (average(own) - average(holed.activity))));
+    }));
+    expect(offFixedPoint < 1e-5, true, `off the long-run fixed point by ${offFixedPoint}`);
+    // With holes a level's own group mean carries whatever it happened to be paired with: W2 is
+    // measured mostly on the strongest core and reads +0.105 that way against +0.005 adjusted.
+    // Averaging the margins in one pass is a different and worse estimator, not a shortcut to this one.
+    expect(offOnePass > 0.05, true, `one-pass margins differ by only ${offOnePass}`);
+    // Σ n_v·θ_v = 0 per role is what makes an offset a difference from the library average, and what
+    // makes a level no training fold saw predict at that average instead of at nothing.
+    for (const role of unbalanced.roles) {
+      expectFloat(role.levels.reduce((sum, level) => sum + level.n * level.coef, 0), 0, 1e-6,
+        `${role.name} is not count-centred`);
+    }
+  });
+
+  test('levels below the support floor are fitted but not ranked, the rest in the activity direction', async () => {
+    const design = roleFixture();
+    const plain = fitRoleEffects(design)!;
+    const up = roleOf(plain, 'Warhead').levels;
+    const down = roleOf(fitRoleEffects({...design, higherIsBetter: false})!, 'Warhead').levels;
+    expect(up.length > 1, true, 'the role has levels to order');
+    expect(up[0].coef > up[up.length - 1].coef, true, 'higher is better puts the largest offset first');
+    expect(down[0].value, up[up.length - 1].value,
+      'lower is better puts the same role\'s worst-on-the-other-reading level first');
+    // The fit itself is in the column's own units either way: only the order changes.
+    expect(down.map((l) => l.value).sort().join(), up.map((l) => l.value).sort().join());
+    for (const level of down)
+      expectFloat(level.coef, up.find((l) => l.value === level.value)!.coef, 1e-9);
+
+    // Two compounds carrying a fourth warhead a full log unit above everything else, on opposite cores
+    // and opposite ligands so the pair adds no core or ligand imbalance of its own.
+    design.values[0].push('C1', 'C3');
+    design.values[1].push('W4', 'W4');
+    design.values[2].push('L1', 'L2');
+    design.activity.push(6.0 + 0.3 + 0.1 + 1.0, 6.0 - 0.3 - 0.1 + 1.0);
+    design.molIdx.push(18, 19);
+    const fit = fitRoleEffects(design)!;
+    const warhead = roleOf(fit, 'Warhead');
+    expect(warhead.fitted, 4, 'the thin level stays in the fit — its compounds inform the other roles');
+    expect(warhead.thin, 1);
+    expect(warhead.levels.some((l) => l.value === 'W4'), false, 'but carries no readable offset');
+    // Ungated it absorbs its own two rows whole and tops the leaderboard at three times the widest
+    // offset any well-sampled warhead has.
+    expect(roleOf(fitRoleEffects({...design, minSupport: 2})!, 'Warhead').levels[0].value, 'W4');
+    // The other roles only feel the warhead role being re-centred over one more level; the pair's own
+    // residual does not reach them.
+    let moved = 0;
+    for (const name of ['Core', 'Ligand']) {
+      for (const level of roleOf(fit, name).levels)
+        moved = Math.max(moved, Math.abs(level.coef - coefOf(plain, name, level.value)));
+    }
+    expect(moved < 0.05, true, `the other roles moved by ${moved}`);
+  });
+
+  test('disconnected blocks are not ranked together', async () => {
+    const design = roleFixture();
+    // Two cores x three warheads on one ligand, sharing no value in any role with the block above.
+    ['X1', 'X2'].flatMap((core) => ['Y1', 'Y2', 'Y3'].map((warhead) => [core, warhead, 'Z1'])).forEach((values, i) => {
+      values.forEach((value, r) => design.values[r].push(value));
+      design.activity.push(9.0 + (i % 2) * 0.2);
+      design.molIdx.push(18 + i);
+    });
+    const fit = fitRoleEffects(design)!;
+    expect(fit.compounds, 18, 'only the largest connected block is fitted');
+    expect(fit.dropped, 6);
+    const listed = fit.roles.flatMap((role) => role.levels.map((level) => level.value));
+    expect(listed.some((v) => v.startsWith('X') || v.startsWith('Y') || v === 'Z1'), false,
+      'an offset from a separate block rests on an unrelated baseline, so it is never listed beside these');
+    for (const role of fit.roles)
+      expect(role.fitted, role.name === 'Ligand' ? 2 : 3, `${role.name} counts only the kept set`);
+  });
+
+  const SOLID_EFFECT = [0.035, 0.0105, -0.0105, -0.035];
+
+  /** Four well-sampled values carrying a real effect, crossed with sixty values seen three times each
+   *  carrying none — the shape where a raw count-weighted sd ranks the roles the wrong way round. */
+  const spreadFixture = (): RoleDesign => {
+    const rows: DesignRow[] = [];
+    const rnd = noise(4242);
+    for (let t = 0; t < 60; t++) {
+      for (let c = 0; c < 3; c++)
+        rows.push([[`S${(t * 3 + c) % 4}`, `T${t}`], 6.0 + SOLID_EFFECT[(t * 3 + c) % 4] + 0.5 * rnd(), rows.length]);
+    }
+    return design(['Solid', 'Thin'], rows);
+  };
+
+  test('the spread subtracts the estimation noise it is comparing across', async () => {
+    const fit = fitRoleEffects(spreadFixture())!;
+    const rawSd = (role: RoleSummary): number => Math.sqrt(
+      role.levels.reduce((sum, l) => sum + l.n * l.coef * l.coef, 0) / role.levels.reduce((sum, l) => sum + l.n, 0));
+    const solid = roleOf(fit, 'Solid');
+    const thin = roleOf(fit, 'Thin');
+    // Sixty values seen three times each carry no effect here, and still scatter: fitting each from
+    // three compounds leaves a σ²·levels/observations term in the raw count-weighted sd that a
+    // four-value role does not pay. Raw, that term alone outranks the role with the real effect.
+    expect(rawSd(thin) > rawSd(solid), true,
+      `raw sds are ${rawSd(thin).toFixed(4)} thin against ${rawSd(solid).toFixed(4)} solid`);
+    expect(fit.roles[0].name, 'Solid',
+      `noise put ${fit.roles[0].name} first: ${fit.roles.map((r) => `${r.name} ${r.spread.toFixed(4)}`)}`);
+    expect(thin.spread < 0.01, true, `a role with no effect reports spread ${thin.spread}`);
+  });
+
+  /** Everything a `SummaryPanel` reads, over matrices built by fragmentation: no fragment column ran
+   *  across the top, so `axisRole` and `coreRole` are null and navigation is inert. */
+  const summaryHost = (matrices: SarMatrix[], rowCount: number): SummaryHost => ({
+    matrices, matrixRoots: matrices.map((m) => m.parentId ?? m.id), matrixTiers: matrices.map((m) => m.level),
+    assayedCount: matrices.length ? 1 : 0, higherIsBetter: true, scalingLabel: 'none', activityIsLog: true,
+    activityColumnName: 'activity', hostRowCount: rowCount, unscalableCount: 0, axisRole: null, coreRole: null,
+    // Read the same way the viewer reads it, so the stub cannot disagree with the host it stands in for.
+    coresAreSeries: matrices.length > 0 &&
+      matrices.every((m) => new Set(m.rows.map((r) => r.coreSmiles)).size === 1),
+    roleColumns: [], predictVirtual: true, computing: false,
+    noMatricesMessage: () => 'no matrices', formatActivity: (value: number) => value.toFixed(2),
+    cellIdText: () => null, observedNeighbours: () => 0, selectRoleValue: () => {}, selectRows: () => {},
+    revealCell: () => {}, revealMatrix: () => {}, addCellsToMakeList: () => {},
+  });
+
+  test('a compound the table holds but never assayed is predicted and offered for testing', async () => {
+    const {molecules, activity, columns} = paraGrid();
+    for (const [mode, fragmentColumns] of [['cut from the molecules', null], ['read from columns', columns]] as const) {
+      const matrices = await runSarMatrix(molecules, activity, {...e2eParams(false), fragmentColumns});
+      const cells = cellsOf(matrices).filter((cell) => cell.molIdx === PARA_UNTESTED);
+      const found = cells.map((cell) => `${cell.kind} ${cell.value} n=${cell.support}`).join('; ') || 'in none';
+      expect(cells.length > 0 && cells.every((cell) => cell.kind === 'unmeasured' && cell.value !== null &&
+        (cell.support ?? 0) >= 3), true, `${mode}: the blank compound is in its matrix, predicted from its row ` +
+        `and its column: ${found}`);
+      const shelf = new SummaryCollector(summaryHost(matrices, molecules.length), null).collect().test.take();
+      expect(shelf.map((row) => row.key).join(','), String(PARA_UNTESTED),
+        `${mode}: the Summary offers it, and only it, for testing`);
+    }
+  });
+
+  test('a Key series row carries only the reasons its own series won', async () => {
+    const grid = (values: number[][], mols: number[][]): SarMatrixCell[][] =>
+      values.map((row, ri) => row.map((value, ci) => realCell(value, mols[ri][ci])));
+    // One lineage: the parent has the most compounds and the widest range, only the child's fit is validated,
+    // and both hold the best compound, which the id tie-break hands to the child.
+    const parent: SarMatrix = {...makeMatrix(grid([[5.0, 6.0, 7.0], [5.5, 6.5, 9.0]], [[0, 1, 2], [3, 4, 5]])),
+      id: 'c1', label: 'Parent', level: 3, minActivity: 5.0, maxActivity: 9.0};
+    const child: SarMatrix = {...makeMatrix(grid([[6.5, 9.0], [5.5, 6.0]], [[4, 5], [3, 1]])),
+      id: 'c0', label: 'Child', parentId: 'c1', confidence: {r2: 0.9, rmse: 0.2, n: 8, total: 8},
+      minActivity: 5.5, maxActivity: 9.0};
+    const rows = new SummaryCollector(summaryHost([parent, child], 6), null).collect().startHere;
+    // Reasons by index: 0 most compounds, 1 widest range, 2 best compound, 4 best-validated fit.
+    expect(rows.map((row) => `${row.primary.matrix.label}: ${row.reasons.join(',')}`).join(' | '),
+      'Parent: 0,1,2 | Child: 4', 'the child\'s validated fit is not credited to the parent, whose own fit is ' +
+      'unchecked; the best compound both hold stays on the parent\'s row');
+  });
+
+  test('cross-validation reacts to non-additivity, whatever the row order', async () => {
+    const clean = fitRoleEffects(roleFixture())!;
+    expect(clean.cvR2! > 0.9, true, `an additive table cross-validates, got ${clean.cvR2}`);
+    const spiked = (size: number): RoleFit => {
+      const design = roleFixture();
+      design.activity[0] += size;
+      return fitRoleEffects(design)!;
+    };
+    const mild = spiked(0.5);
+    // One cell no combination of role offsets can reach: the fit absorbs part of it in sample and pays
+    // for the rest on the held-out compound, so the in-sample error stays under the cross-validated one
+    // and the cross-validated R² is the number that moves.
+    expect(mild.residualSd < mild.cvRmse!, true, 'an in-sample error cannot be the gate');
+    expect(mild.cvR2! < clean.cvR2! - 0.1, true, `cvR2 barely moved: ${mild.cvR2}`);
+    expect(mild.roles.map((r) => r.name).join(','), 'Core,Warhead,Ligand',
+      'the leaderboard still looks orderly, which is why the gate cannot be the ranking itself');
+    // The Summary tab withholds the ranking below 0.5 rather than ranking a table the additive reading
+    // does not describe.
+    expect(spiked(1.5).cvR2! < 0.5, true);
+
+    // Written core by warhead by ligand, the innermost value repeating every five rows: folds that follow
+    // the row number would hold out one ligand each, and no training fold would ever see it.
+    const rows: DesignRow[] = [];
+    const rnd = noise(777);
+    for (let c = 0; c < 10; c++) {
+      for (let w = 0; w < 4; w++) {
+        for (let l = 0; l < 5; l++)
+          rows.push([[`C${c}`, `W${w}`, `L${l}`], 6 + 0.3 * c - 0.2 * w + 0.25 * l + 0.05 * rnd(), rows.length]);
+      }
+    }
+    const enumerated = fitRoleEffects(design(['Core', 'Warhead', 'Ligand'], rows))!;
+    expect(enumerated.cvR2! > 0.9, true, `an additive table cross-validates in any row order, got ${enumerated.cvR2}`);
+  });
+});
+
+/** The viewer, its dialog and its Make list over a table. */
+category('SAR Matrix: viewer', () => {
+  before(async () => {
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
+  });
+
+  const fragmentingOptions = {moleculesColumnName: 'smiles', activityColumnName: 'activity',
+    scaling: SCALING_METHODS.NONE, fragmentCutoff: 1, fragmentationLevels: 2, minCompounds: 1};
+  const columnOptions = {moleculesColumnName: 'smiles', activityColumnName: 'activity', coreColumnName: 'Core',
+    rGroupColumnNames: ['R1', 'R2'], axisColumnName: 'R2'};
+  const fragmentFrame = (): DG.DataFrame => {
+    const {molecules, activity, core, r1, r2} = fragmentTable();
+    return DG.DataFrame.fromColumns([molecules, activity, core, r1, r2]);
+  };
+
+  /** Docked by hand, as `addViewer` hands back the platform's wrapper rather than this class. Settings
+   *  go through `props`: the platform never registered this instance, so `setOptions` changes nothing. */
+  const dockViewer = (tv: DG.TableView, options: {[name: string]: unknown}): SarMatrixViewer => {
+    const viewer = new SarMatrixViewer();
+    viewer.dataFrame = tv.dataFrame;
+    tv.dockManager.dock(viewer.root);
+    viewer.props.setAll(options);
+    return viewer;
+  };
+
+  /** Nothing building and nothing queued, whatever the build produced. */
+  const idle = (viewer: SarMatrixViewer): boolean => viewer.getWidgetStatus().values?.['computing'] === false;
+  const settled = (viewer: SarMatrixViewer): boolean => idle(viewer) && viewer.matrices.length > 0;
+
+  const withViewer = async (df: DG.DataFrame, options: {[name: string]: unknown},
+    body: (viewer: SarMatrixViewer) => Promise<void>): Promise<void> => {
+    const tv = grok.shell.addTableView(df);
+    const viewer = dockViewer(tv, options);
+    try {
+      await waitUntil(() => settled(viewer), 'the build never finished', 30000);
+      await body(viewer);
+    } finally {
+      viewer.detach();
+      tv.close();
+    }
+  };
+
+  const measured = (cell: SarMatrixCell): boolean => cell.kind === 'real' && cell.smiles !== null;
+  const findCell = (matrix: SarMatrix, pick: (cell: SarMatrixCell) => boolean): [number, number] => {
+    const ri = matrix.cells.findIndex((row) => row.some(pick));
+    return [ri, matrix.cells[ri].findIndex(pick)];
+  };
+
+  test('every visible cell is drawn when they outnumber the molecule renderer\'s cache', async () => {
+    // A zoomed-out matrix shows hundreds of cells, more than the shared renderer keeps images of (100). The
+    // depiction budget defers what one paint can't draw to the next; the paints must converge on every cell
+    // drawn, not leave the cells painted last deferred for good.
+    // The reported case: 18 rows of 20 cells, each 104x76 at a device pixel ratio of 2, far more rasterizing than
+    // the budget's 50 ms
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList().slice(0, 18 * 20);
+    const canvas = document.createElement('canvas');
+    canvas.width = 208;
+    canvas.height = 152;
+    const g = canvas.getContext('2d')!;
+    let deferred = -1;
+    let paints = 0;
+    for (; paints < 60 && deferred !== 0; paints++) {
+      deferred = 0;
+      for (const s of smiles)
+        drawDepiction(g, 0, 0, 208, 152, s, null, 0xFFFFFFFF, () => deferred++);
+      await new Promise((resolve) => setTimeout(resolve)); // the next paint is a new task, with its own budget
+    }
+    expect(deferred, 0, `${deferred} of ${smiles.length} cells still deferred after ${paints} paints`);
+    const pixels = g.getImageData(0, 0, 208, 152).data;
+    expect(pixels.some((v, i) => i % 4 === 0 && v < 128), true, 'a molecule was drawn (its bonds are dark)');
+  });
+
+  test('a swap selects every row whose R-group reads as its value', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('Core', new Array(5).fill('[*:1]c1ccc([*:2])cc1')),
+      DG.Column.fromStrings('R1', ['C[*:1]', 'CC[*:1]', 'C[*:1]', 'CC[*:1]', 'CCC[*:1]']),
+      DG.Column.fromStrings('R2', ['*F', '*F', '*Cl', '[*]Cl', 'Cl[*:2]'])]);
+    const columns: SarFragmentColumns = {core: df.col('Core')!, rows: [df.col('R1')!], column: df.col('R2')!};
+    // What a swap row hands over: the value the decomposition read, its bare * numbered after the column.
+    const chloro = decomposeByColumns(columns, null, new Float32Array(5).fill(1)).decomps[0].records
+      .find((record) => record.molIdx === 2)!.values['R2'];
+    const viewer = new SarMatrixViewer();
+    viewer.dataFrame = df;
+    try {
+      viewer.selectRoleValue('R2', chloro);
+      expect(df.selection.getSelectedIndexes().join(','), '2,3,4',
+        `*Cl, [*]Cl and Cl[*:2] are all ${chloro} to the matrices`);
+    } finally {
+      viewer.detach();
+    }
+  });
+
+  test('a saved set restores only under the settings that built it', async () => {
+    const tv = grok.shell.addTableView(fragmentFrame());
+    const opened: SarMatrixViewer[] = [];
+    // As a project load does it: every property written one by one, the saved set first.
+    const open = async (state: {[name: string]: unknown}): Promise<SarMatrixViewer> => {
+      const viewer = dockViewer(tv, state);
+      opened.push(viewer);
+      await waitUntil(() => settled(viewer), 'the viewer built no matrices', 30000);
+      return viewer;
+    };
+    const restored = (viewer: SarMatrixViewer): unknown => viewer.getWidgetStatus().values?.['restored'];
+    try {
+      const built = await open(columnOptions);
+      expect(restored(await open({matricesData: built.matricesData, ...columnOptions,
+        rankScheme: SarRankScheme.Discontinuity})), true, 'a ranking change reads the same set');
+      const rescaled = await open({matricesData: built.matricesData, ...columnOptions, scaling: SCALING_METHODS.NONE});
+      expect(restored(rescaled), false, 'a set built on the -lg scale is rebuilt, not shown under none');
+      expect(rescaled.matrices[0].maxActivity, 7, 'and its cells hold the unscaled values');
+      expect(restored(await open({matricesData: JSON.stringify(built.matrices), ...columnOptions})), false,
+        'a bare array cannot say what built it, so it is rebuilt');
+    } finally {
+      opened.forEach((viewer) => viewer.detach());
+      tv.close();
+    }
+  }, {timeout: 120000});
+
+  test('neither a stale cell pane nor the cart adds a cell no longer on screen', async () => {
+    // Two scaffolds, so the analysis holds more than one series.
+    const smiles = ['cc1', 'cn1'].flatMap((ring) => ['F', 'OC'].flatMap((x) =>
+      ['C', 'CC', 'Cl'].map((r) => `${r}c1ccc(${x})${ring}`)));
+    const df = DG.DataFrame.fromColumns([molColumn(smiles), activityColumn(smiles.map((_s, i) => 5 + (i % 4) * 0.5))]);
+    await withViewer(df, fragmentingOptions, async (viewer) => {
+      expect(viewer.matrices.length > 1, true, 'the fixture builds one series, so the cart check proves nothing');
+      const makeList: MakeListPanel = viewer['makeListPanel'];
+      const shown: number = viewer['selIndex'];
+      const matrix = viewer.matrices[shown];
+      const [ri, ci] = findCell(matrix, measured);
+      viewer['openCell'](matrix, ri, ci, viewer['matrixSlot'].state!.grid, null);
+      expect(viewer.selectedCell?.matrix === matrix, true, 'the click selected no cell');
+      // What a navigator card click does.
+      viewer['selectMatrix'](shown === 0 ? 1 : 0);
+      (viewer['host'] as HTMLElement).querySelector<HTMLElement>('.chem-sar-cart-icon')!.click();
+      expect(makeList['makeList'] === null, true, 'the cart added the cell of the series left behind');
+
+      const addButton = (): HTMLButtonElement => {
+        const first = viewer.matrices[0];
+        const panel = makeList.buildCellPanel(first,
+          ...findCell(first, (cell) => cell.smiles !== null && cell.value !== null));
+        return Array.from(panel.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Add to Make list')!;
+      };
+      const stale = addButton();
+      const built = viewer.matrices;
+      df.rows.removeAt(0);
+      await waitUntil(() => settled(viewer) && viewer.matrices !== built, 'the rebuild never finished', 30000);
+      stale.click();
+      expect(makeList.count, 0, 'a pane opened before the rebuild added its cell under the new analysis');
+      addButton().click();
+      expect(makeList.count, 1, 'a pane of the rebuilt analysis added nothing, so the check above proves nothing');
+    });
+  }, {timeout: 90000});
+
+  test('a make-list row opens its own compound after another row is deleted', async () => {
+    const cells = [5.1, 6.2, 7.3].map((value, i) => realCell(value, i, XFER_MOLS_A[i]));
+    const matrix = makeMatrix([cells]);
+    const opened: {smiles: string, build?: () => HTMLElement}[] = [];
+    const panel = new MakeListPanel({activityColumnName: 'activity', scalingLabel: 'raw', selectedCell: null,
+      matrices: [matrix], formatActivity: (value: number) => value.toFixed(2),
+      showMoleculeContext: (smiles, build) => opened.push({smiles, build})});
+    try {
+      panel.addCellsToMakeList(cells.map((_cell, ci) => ({matrix, ri: 0, ci})), 'no cell to add');
+      const list = panel['makeList']!;
+      /** The potency a row's SAR pane shows, opened the way a click on one of its cells opens it. */
+      const potencyShown = async (row: number, column: string): Promise<string> => {
+        const before = opened.length;
+        list.currentCell = list.cell(row, column);
+        await waitUntil(() => opened.length > before, `a click on row ${row} opened nothing`, 3000);
+        const shown = opened[opened.length - 1];
+        expect(shown.smiles, list.get(MAKELIST_STRUCTURE, row), 'the row opened another structure');
+        return shown.build?.().querySelector('.chem-sar-cp-value')?.textContent ?? 'no SAR pane';
+      };
+      // What Shift+Del in the list's grid does: the first row goes and the rest move up.
+      list.rows.removeAt(0);
+      expect(await potencyShown(0, MAKELIST_STRUCTURE), '6.20', 'the second compound opened the first one\'s pane');
+      Array.from(panel.root.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Remove')!.click();
+      expect(list.rowCount, 1, 'Remove left the current row in the list');
+      expect(await potencyShown(0, 'Status'), '7.30', 'the last compound opened another one\'s pane');
+    } finally {
+      panel.release();
+    }
+  });
+
+  test('a failed build leaves no grid alive and stays failed through a ranking change', async () => {
+    const {molecules, activity} = mixedCoverage();
+    await withViewer(DG.DataFrame.fromColumns([molecules, activity]), fragmentingOptions, async (viewer) => {
+      // A display-only change landing mid-build, then the build failing.
+      viewer['countUnscalable'] = (): number => {
+        viewer.props.setAll({idColumnName: 'smiles'});
+        throw new Error('induced failure');
+      };
+      viewer.props.setAll({minCompounds: 2});
+      await waitUntil(() => idle(viewer), 'the rebuild never finished', 30000);
+      expect(viewer['matrixSlot'].state === null, true, 'a grid drawn during the failed build is still alive');
+      viewer.props.setAll({rankScheme: SarRankScheme.Discontinuity});
+      await waitUntil(() => idle(viewer), 'the re-rank never settled', 30000);
+      expect(viewer.matrices.length, 0, 'a ranking change brought back the set the failed build replaced');
+      expect(((viewer['host'] as HTMLElement).textContent ?? '').includes('SAR Matrix failed'), true,
+        'the failure is no longer shown');
+    });
+  }, {timeout: 90000});
+
+  test('renamed columns are followed, not lost', async () => {
+    const df = fragmentFrame();
+    await withViewer(df, {...columnOptions, scaling: SCALING_METHODS.NONE, minCompounds: 1}, async (viewer) => {
+      df.col('smiles')!.name = 'structure';
+      df.col('activity')!.name = 'pIC50';
+      expect(`${viewer.moleculesColumnName} ${viewer.activityColumnName}`, 'structure pIC50',
+        'the settings still name the columns as they were');
+      expect(viewer.matrices.length > 0, true, 'renaming the molecules and activity dropped the analysis');
+      // The matrices name their positions after the R-group columns.
+      df.col('R2')!.name = 'Halogen';
+      await waitUntil(() => settled(viewer) && viewer.getWidgetStatus().values?.['axis'] === 'Halogen',
+        'the matrices still name the axis by its old name', 30000);
+      expect(viewer.rGroupColumnNames.join(','), 'R1,Halogen', 'the R-groups still name the old column');
+      const built = viewer.matrices;
+      viewer.props.setAll({minCompounds: 2});
+      await waitUntil(() => settled(viewer) && viewer.matrices !== built,
+        'a setting change found none of the renamed columns and built nothing', 30000);
+    });
+  }, {timeout: 90000});
+});
+
+/** Which compounds the built matrices hold, count and propose. */
+category('SAR Matrix: pipeline', () => {
+  before(async () => {
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
+  });
+
+  const para = '[*:1]c1ccc([*:2])cc1';
+  const decomposition = (cores: string[], r1: string[], r2: string[]): SarFragmentColumns => ({
+    core: DG.Column.fromStrings('Core', cores), rows: [DG.Column.fromStrings('R1', r1)],
+    column: DG.Column.fromStrings('R2', r2),
+  });
+  /** One compound per [R1, R2, counter-ion] read from columns over `core`, the rows in `coreless` without one. */
+  const fromColumns = (rows: string[][], activity: (number | null)[], params: Partial<SarMatrixParams> = {},
+    coreless: number[] = [], core = para): Promise<SarMatrix[]> => runSarMatrix(
+    molColumn(rows.map(([r1, r2, salt = '']) => core.replace('[*:1]', r1).replace('[*:2]', r2) + salt)),
+    activityColumn(activity), {...e2eParams(false), ...params, fragmentColumns: decomposition(
+      rows.map((_row, i) => coreless.includes(i) ? '' : core), rows.map(([r1]) => `${r1}[*:1]`),
+      rows.map(([, r2]) => `${r2}[*:2]`))});
+  /** Methyl and ethyl crossed with fluoro and chloro. */
+  const GRID = [['C', 'F'], ['CC', 'F'], ['C', 'Cl'], ['CC', 'Cl']];
+  /** A 2 x 2 grid read from columns, its fourth compound unassayed and without a core, so only the
+   *  table's structures can say whether the hole is that compound. */
+  const holeTable = (fourth: string): Promise<SarMatrix[]> => runSarMatrix(
+    molColumn(['Cc1ccc(F)cc1', 'CCc1ccc(F)cc1', 'Cc1ccc(Cl)cc1', fourth]), activityColumn([5.1, 5.8, 6.4, null]),
+    {...e2eParams(false), fragmentColumns: decomposition([para, para, para, ''], GRID.map(([r1]) => `${r1}[*:1]`),
+      GRID.map(([, r2]) => `${r2}[*:2]`))});
+  /** One series per core, each member a [molIdx, substituent]. */
+  const clusterOf = (series: {[core: string]: [number, string][]}): CoreCluster => ({id: 'c0', siteKey: '', level: 2,
+    series: Object.entries(series).map(([coreSmiles, members]) =>
+      ({coreSmiles, members: members.map(([molIdx, substSmiles]) => ({molIdx, substSmiles}))}))});
+  const canonical = (smiles: string): string => {
+    const mol = chemCommonRdKit.checkMoleculeValid(smiles);
+    try {
+      return mol?.get_smiles() ?? '';
+    } finally {
+      mol?.delete();
+    }
+  };
+
+  test('a series column makes one matrix per value', async () => {
+    // Two 2 x 3 grids with chloro at either site, so both cuts of a compound reach the same columns.
+    const smiles = [...['ccc', 'cnc'].flatMap((ring) => ['F', 'Cl'].flatMap((x) =>
+      ['C', 'CC', 'Cl'].map((r) => `${r}c1${ring}(${x})nc1`))), 'Brc1ccc(F)nc1'];
+    // The bromide shares a core with the pyridines but carries no value.
+    const series = DG.Column.fromStrings('Series',
+      [...new Array(6).fill('Pyridine'), ...new Array(6).fill('Pyrimidine'), '']);
+    const matrices = await runSarMatrix(molColumn(smiles),
+      activityColumn([5.1, 5.8, 6.4, 6.0, 6.7, 7.2, 5.3, 5.9, 6.1, 6.2, 6.8, 7.0, 6.9]),
+      {...e2eParams(false), seriesColumn: series});
+    expect(matrices.map((m) => m.label).sort().join(','), 'Pyridine,Pyrimidine', 'one matrix per value, named with it');
+    for (const matrix of matrices) {
+      const mols = matrix.cells.flat().flatMap((c) => c.molIdx !== null ? [c.molIdx] : []);
+      expect([...new Set(mols.map((molIdx) => series.get(molIdx)))].join(','), matrix.label,
+        `${matrix.label} must hold only its own series: a compound without a value is in no matrix`);
+      expect(mols.length, new Set(mols).size, `${matrix.label}: a compound fills one cell, not one per cut`);
+      expect(matrix.realCount, 6, `${matrix.label}: every compound of the series is placed`);
+    }
+    expect(matrices.some((m) => m.parentId !== undefined), false, 'a user\'s series are never folded together');
+  });
+
+  test('a value the scaling cannot take is left out, not read as zero', async () => {
+    const matrices = await runSarMatrix(twoSiteGrid().molecules, activityColumn([5.1, 5.8, 6.4, 6.0, 6.7, -7.2]),
+      {...e2eParams(false), scaling: SCALING_METHODS.LG});
+    const cells = cellsOf(matrices);
+    expect(matrices.length > 0, true, 'the five values lg can take still build a matrix');
+    expect(cells.some((c) => c.kind === 'real' && c.molIdx === 5), false,
+      'lg cannot take the negative value, so its compound has no measurement');
+    expect(cells.some((c) => c.value !== null && Math.abs(c.value) < 1e-6), false,
+      'no cell holds the scaled column\'s null as a value');
+  });
+
+  test('counts, best and Min compounds read only the compounds the grid keeps', async () => {
+    // C-Pr shares no core and no substituent with the CoreA/CoreB block, so the prune drops it, the
+    // most potent compound of the cluster. B-Et is in the table twice and the first record keeps the cell.
+    const matrix = assembleSinglePositionMatrix(clusterOf({CoreA: [[0, 'Me'], [1, 'Et']],
+      CoreB: [[2, 'Me'], [3, 'Et'], [5, 'Et']], CoreC: [[4, 'Pr']]}),
+    ['A-Me', 'A-Et', 'B-Me', 'B-Et', 'C-Pr', 'B-Et'], Float32Array.from([6, 7, 5, 6.5, 9.5, 3]), true);
+    expect(matrix.rows.some((row) => row.coreSmiles === 'CoreC'), false, 'the fixture must prune C-Pr');
+    expect(`${matrix.realCount} ${matrix.minActivity} ${matrix.maxActivity}`, '4 5 7',
+      'neither the pruned C-Pr (9.5) nor the second B-Et record (3) is in the grid\'s count or range');
+    expect(rankMatrices([matrix], SarRankScheme.Potency, true)[0].scores[SarRankScheme.Potency], 7,
+      'the potency ranking reads the best compound the grid shows');
+    expect(rankMatrices([matrix], SarRankScheme.Potency, false)[0].scores[SarRankScheme.Potency], -5);
+
+    // Read from columns: hydroxy/bromo shares no row or column with the 2 x 2 block, so four of five remain.
+    const columnRun = (minCompounds: number): Promise<SarMatrix[]> =>
+      fromColumns([...GRID, ['O', 'Br']], [5.1, 5.8, 6.4, 7.0, 9.0], {minCompounds});
+    expect((await columnRun(4)).map((m) => `${m.realCount} ${m.maxActivity}`).join(','), '4 7',
+      'one matrix, neither counting nor colouring the pruned compound');
+    expect((await columnRun(5)).length, 0, 'Min compounds 5 kept a matrix of four compounds');
+
+    // Fragmented: CCc1ccc(F)cc1 is in the table twice, its second copy the most potent.
+    const fragmented = (minCompounds: number): Promise<SarMatrix[]> => runSarMatrix(
+      molColumn([...twoSiteGrid().molecules.toList(), 'CCc1ccc(F)cc1']),
+      activityColumn([5.1, 5.8, 6.4, 6.0, 6.7, 7.2, 9.9]), {...e2eParams(false), minCompounds});
+    const matrices = await fragmented(1);
+    expect(matrices.some((m) => m.realCount === 6), true,
+      'no matrix holds all six compounds, so the checks below prove nothing');
+    const cells = cellsOf(matrices);
+    expect(cells.some((c) => c.kind === 'real' && c.molIdx === 1), true, 'the first copy is not shown');
+    expect(cells.some((c) => c.molIdx === 6), false, 'the second copy took a cell');
+    expect(matrices.every((m) => m.maxActivity < 9), true, 'a colour range reaches the copy not shown');
+    expect((await fragmented(7)).length, 0, 'Min compounds counted the copy the grid does not show');
+  });
+
+  test('a compound the table holds, as itself, a salt or a stereoisomer, is never offered to make', async () => {
+    const kindOf = (cells: SarMatrixCell[], molIdx: number): string | undefined =>
+      cells.find((c) => c.molIdx === molIdx)?.kind;
+    const proposed = (cells: SarMatrixCell[]): (string | null)[] =>
+      cells.filter((c) => c.kind === 'virtual').map((c) => c.smiles);
+
+    // lg cannot take CCc1ccc(Br)cc1's value, so it was assayed and has nothing to show. CCc1ccc(Cl)cc1
+    // has no core, so no record places it, and it was never assayed. Only the propyl row's holes are unmade.
+    const [held] = await fromColumns([...GRID, ['C', 'Br'], ['CC', 'Br'], ['CCC', 'F']],
+      [5.1, 5.8, 6.4, null, 6.9, -1, 6.0], {scaling: SCALING_METHODS.LG}, [3]);
+    let cells = held.cells.flat();
+    expect(kindOf(cells, 5), 'excluded', 'assayed, so neither an analog to make nor one to test');
+    expect(kindOf(cells, 3), 'unmeasured', 'the hole rebuilds a compound of the table: one to test, not to make');
+    expect(`${proposed(cells).sort().join(' ')} (${held.virtualCount})`, 'CCCc1ccc(Br)cc1 CCCc1ccc(Cl)cc1 (2)',
+      'only the combinations nobody made are proposed');
+
+    // Citrate outspells these bases but has fewer heavy atoms.
+    cells = cellsOf(await fromColumns([...GRID.slice(0, 3), ['CC', 'Cl', '.O=C(O)CC(O)(CC(=O)O)C(=O)O'],
+      ['C', 'Br'], ['CC', 'Br'], ['CC', 'Br', '.Cl']], [5.1, 5.8, 6.4, null, 6.0, null, 7.0], {}, [3, 5, 6],
+    '[*:1]c1ccc(-c2ccc([*:2])cc2)cc1'));
+    expect(kindOf(cells, 3), 'unmeasured', 'the chloro hole is the citrate salt\'s base, which was never assayed');
+    expect(kindOf(cells, 5), 'unmeasured',
+      'the bromo hole is the free base the table holds, not its assayed hydrochloride');
+    expect(proposed(cells).length, 0, 'both holes are compounds of the table');
+
+    // The fluoro row carries the hydroxyethyl unspecified, the chloro row one configuration of it.
+    cells = cellsOf(await runSarMatrix(
+      molColumn(['Cc1ccc(F)cc1', 'CC(O)c1ccc(F)cc1', 'Cc1ccc(Cl)cc1', 'C[C@@H](O)c1ccc(Cl)cc1']),
+      activityColumn([5.1, 5.8, 6.4, 6.9]), e2eParams(false)));
+    expect(proposed(cells).includes('CC(O)c1ccc(Cl)cc1'), false,
+      'the chloro compound without stereo may be the one the table holds, so it is not proposed');
+    expect(cells.some((c) => c.kind === 'excluded' && c.molIdx === null), true,
+      'it is left out, naming no compound, since it may be the other configuration');
+    expect(proposed(cells).includes('C[C@@H](O)c1ccc(F)cc1'), true,
+      'one configuration of a compound held without stereo is still a proposal');
+  });
+
+  test('a table\'s structures are never read for another table', async () => {
+    // Same column name, length and version; only the compound with no core differs.
+    const first = cellsOf(await holeTable('CCc1ccc(Cl)cc1'));
+    expect(first.find((c) => c.molIdx === 3)?.kind, 'unmeasured', 'the first table holds the hole\'s compound');
+    const second = cellsOf(await holeTable('c1ccncc1'));
+    expect(second.some((c) => c.molIdx === 3), false, 'the second table\'s fourth compound is no analog of the hole');
+    expect(second.find((c) => c.smiles === 'CCc1ccc(Cl)cc1')?.kind, 'virtual',
+      'the second table never made the hole\'s compound, so it is proposed');
+  });
+
+  test('an unreadable row sits out and a counter-ion rides on no core or substituent', async () => {
+    const {molecules, activity} = twoSiteGrid();
+    const smiles: string[] = molecules.toList();
+    const placements = (matrices: SarMatrix[]): string => matrices.flatMap((m) => m.cells.flatMap((row, ri) =>
+      row.map((cell, ci) => `${m.rows[ri].coreSmiles}|${m.columns[ci].substSmiles}|${cell.kind}|${cell.smiles}`)))
+      .sort().join('\n');
+    const clean = await runSarMatrix(molecules, activity, e2eParams(false));
+    const withBad = await runSarMatrix(molColumn(['C1CC(', ...smiles]),
+      activityColumn([9.9, ...activity.toList()]), e2eParams(false));
+    expect(clean.length > 0, true, 'the readable compounds build matrices on their own');
+    expect(placements(withBad), placements(clean),
+      'each compound must land where it lands without the unreadable row, showing its own row\'s structure');
+    expect(cellsOf(withBad).some((cell) => cell.molIdx === 0), false, 'the unreadable row is in no cell');
+
+    const salts = smiles.map((s, i) => i % 2 === 1 ? `${s}.Cl` : s);
+    const salted = await runSarMatrix(molColumn(salts), activity, e2eParams(false));
+    expect(salted.some((m) => m.rows.some((r) => r.coreSmiles.includes('.')) ||
+      m.columns.some((c) => c.substSmiles.includes('.'))), false, 'no core or substituent carries the chloride');
+    const cells = cellsOf(salted);
+    expect(cells.some((cell) => cell.kind === 'real' && cell.molIdx !== null && cell.molIdx % 2 === 1), true,
+      'the salts are placed');
+    expect(cells.every((cell) => cell.molIdx === null || cell.smiles === salts[cell.molIdx]), true,
+      'a compound\'s cell shows the table\'s own structure, salt included');
+  });
+
+  test('no predicted analog is the mirror image of a table compound', async () => {
+    const smiles = ['C[C@@H](O)c1ccc(F)cc1', 'C[C@@H](N)c1ccc(F)cc1', 'C[C@@H](O)c1ccc(Cl)cc1',
+      'C[C@@H](N)c1ccc(Cl)cc1', 'C[C@@H](O)c1ccc(Br)cc1', 'C[C@@H](OC)c1ccc(F)cc1'];
+    const matrices = await runSarMatrix(molColumn(smiles), activityColumn([5.1, 5.6, 6.0, 6.4, 6.3, 5.4]),
+      e2eParams(false));
+    const mirrors = new Set(smiles.map((s) => canonical(s.replace('@@', '@'))));
+    expect(matrices.length > 0, true, 'the set builds no matrix, so the check below proves nothing');
+    const mirrored = cellsOf(matrices).filter((c) => c.kind === 'virtual' && c.smiles !== null &&
+      mirrors.has(canonical(c.smiles)));
+    expect(mirrored.map((c) => c.smiles).join(', '), '', 'an analog came out as the mirror image of a table compound');
+  });
 });

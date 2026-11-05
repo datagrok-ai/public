@@ -8,6 +8,12 @@
   min-height: 0;
 }
 
+/* In the context panel (a molecule column's Filter pane) the panel sets the width: no preferred width there, which as
+   the pane's minimum content width kept Crux 500 px wide past a narrower panel. The 400 px height stays. */
+.grok-prop-panel .crux-sketcher {
+  contain-intrinsic-size: 0px 400px;
+}
+
 .crux-sketcher > crux-sketch {
   position: absolute;
   inset: 0;

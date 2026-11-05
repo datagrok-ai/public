@@ -70,8 +70,8 @@ export async function render(main) {
   });
   picker.root.style.width = '280px';
   const selected = el('code');
-  bindText(picker.scope, selected,
-    computed(() => picker.selected.value ? picker.selected.value.name : 'null'));
+  bindText(selected,
+    computed(() => picker.selected.value ? picker.selected.value.name : 'null'), {owner: picker.scope});
   const status = el('p', 'u2-gallery-status');
   status.append('selected = ', selected);
   main.append(picker.root, status);
@@ -86,7 +86,7 @@ export async function render(main) {
     const c = el('span', 'u2-chip');
     c.dataset.entity = 'Project';
     c.append(projectRenderer.markup(p));
-    Tooltip.bind(c, () => projectRenderer.tooltip(p), chipScope);
+    Tooltip.bind(c, () => projectRenderer.tooltip(p), {owner: chipScope});
     chips.append(c, ' ');
   }
   Scope.ambient?.own(() => chipScope.dispose());

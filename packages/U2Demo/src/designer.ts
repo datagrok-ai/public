@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import {SpecContext, signal} from '@datagrok-libraries/u2';
-import {platformContext} from '@datagrok-libraries/u2/src/dg/index.js';
+import {platformContext} from '@datagrok-libraries/u2/dg';
 
 /* What the designer opens on: one representative dg-ui/1 form — a splitter over a named form, a
    prop bound two-way to context data, a command-wired button and a text area — small enough to read

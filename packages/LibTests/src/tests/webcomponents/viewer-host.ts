@@ -1,6 +1,6 @@
 import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {of, Observable} from 'rxjs';
+import {of, Observable, throwError} from 'rxjs';
 import {TestScheduler} from 'rxjs/testing';
 import {ViewerHost, ViewerLike} from '@datagrok-libraries/webcomponents/src/Viewer/ViewerHost';
 import {createTestScheduler} from '../../test-utils';
@@ -51,6 +51,13 @@ function setup(createOverride?: (mk: (type: string, df: any) => MockViewer) => F
   const host = new ViewerHost<MockViewer>(factory);
   return {log, host};
 }
+
+// an unhandled stream error is rethrown from the virtual timer inside flush
+const flushQuietly = (flush: () => void) => {
+  try {
+    flush();
+  } catch {}
+};
 
 const df1 = {name: 'df1'};
 const df2 = {name: 'df2'};
@@ -350,6 +357,40 @@ category('WebComponents: ViewerHost', () => {
       flush();
       expectDeepEqual(log, [], {prefix: 'creation must be cancelled'});
       expectDeepEqual(attachLog, [undefined]);
+    });
+  });
+
+  test('a failed creation does not stop later transitions', async () => {
+    testScheduler.run(({flush}) => {
+      const {log, host} = setup((mk) => (type, df) =>
+        type === 'broken' ? throwError(() => new Error('no such viewer')) : of(mk(type, df)));
+      host.typeSetted$.next('broken');
+      host.dfSetted$.next(df1);
+      flushQuietly(flush);
+      host.typeSetted$.next('grid');
+      flushQuietly(flush);
+      expectDeepEqual(log, ['create:v1:grid:df1', 'options:v1:{}']);
+    });
+  });
+
+  test('a throwing options apply does not stop later transitions', async () => {
+    testScheduler.run(({flush}) => {
+      const {log, host} = setup();
+      host.typeSetted$.next('grid');
+      host.dfSetted$.next(df1);
+      flush();
+      const viewer = host.viewer$.value!;
+      const setOptions = viewer.setOptions.bind(viewer);
+      viewer.setOptions = (options) => {
+        if (options.broken)
+          throw new Error('options refused');
+        setOptions(options);
+      };
+      host.optionsSetted$.next({broken: true});
+      flushQuietly(flush);
+      host.optionsSetted$.next({a: 1});
+      flushQuietly(flush);
+      expectDeepEqual(log.slice(2), ['options:v1:{"a":1}']);
     });
   });
 });

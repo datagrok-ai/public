@@ -1,164 +1,95 @@
 ---
 feature: charts
 target_layer: playwright
-coverage_type: edge
+pyramid_layer: ui-smoke
+coverage_type: regression
 priority: p1
 realizes_atlas: [charts.int.timelines-legend-click-to-filter-stability]
 realizes: [charts.viewer.timelines]
 realized_as:
   - timelines-spec.ts
-produced_from: atlas-driven
-pyramid_layer: bug-focused
 related_bugs:
+  - GROK-18608
   - GROK-19033
-date_created: 2026-05-07
-authored_by: orchestrator-test-designer-charts-migrate-2026-05-07
+  - GROK-19034
+  - GROK-19535
+  - GROK-20800
 ---
 
-# Timelines viewer — legend filtering regression (GROK-19033)
+# Timelines viewer
 
-Bug-focused regression scenario for the Charts package Timelines
-viewer, covering GROK-19033: clicking a legend category to filter
-Timelines could cause a white screen or console errors. This scenario
-locks in the fix — legend click-to-filter, visual stability across
-legend-visibility transitions (Auto / Always / Never), and a
-mid-session `splitByColumnName` re-bind. This is not a general smoke
-test for the Timelines viewer (there isn't one yet in this section) —
-it specifically targets the legend-filtering regression.
+The Timelines viewer draws one lane per subject (**Split By**) with an interval per event from
+**Start** to **End**, colored by **Color**. Its legend narrows what the viewer draws; the table
+filter does not change.
 
 ## Setup
 
-A clean Datagrok session is the only shared setup. Single dataset
-across all scenario blocks: `System:AppData/ApiSamples/ae.csv`
-(SDTM Adverse Events shape — USUBJID, AESTDY, AEENDY, AETERM,
-AESEV, AESOC). This is the same dataset the Charts demo
-`Visualization | General | Timelines` loads (per
-`Charts/src/demos/demo.ts` `VIEWER_TABLES_PATH['Timelines']`) and
-the same dataset the ApiSamples timelines example uses
-(`scripts/ui/viewers/js viewers/timelines-viewer.js`). The file
-`Charts/files/ae.csv` is the package-local copy; `ApiSamples`
-publishes the same content under `System:AppData/ApiSamples/ae.csv`
-which is reachable via `grok.data.files.openTable` and via
-**Browse > Files > App Data > ApiSamples > ae.csv** in the UI.
+1. Open `System:AppData/Charts/ae.csv` (143 adverse events, 71 subjects; AESOC has 15 values:
+   SKIN AND SUBCUTANEOUS TISSUE DISORDERS 35, NERVOUS SYSTEM DISORDERS 33, GASTROINTESTINAL
+   DISORDERS 23, ...).
+2. On the Menu Ribbon, click **Add viewer** and select **Timelines**.
 
 ## Scenarios
 
-### Scenario 1: Legend click-to-filter on Timelines (GROK-19033 reproduction)
+### 1. The viewer draws, and the legend lists the colors (GROK-20800, GROK-19034)
 
-Steps:
-1. Open `System:AppData/ApiSamples/ae.csv` (e.g. via
-   **Browse > Files > App Data > ApiSamples**, or **File > Open**).
-2. On the Menu Ribbon, click **Add viewer** and select **Timelines**.
-   **Expected:** the Timelines viewer renders without console errors;
-   default property values are set per atlas
-   (splitByColumnName=`USUBJID`, startColumnName=`AESTDY`,
-   endColumnName=`AEENDY`, colorColumnName=`AESOC` or first matching
-   string column, marker=`circle`, lineWidth=`3`,
-   showZoomSliders=`true`, legendVisibility=`Auto`).
-3. Click the **Gear** icon on the Timelines viewer.
-   **Expected:** the Context Panel opens with the Timelines
-   property surface visible.
-4. In the Context Panel, set **Color > Color Column Name** to
-   **AESOC** (System Organ Class — string column with multiple
-   distinct categories, drives the legend categories).
-   **Expected:** the legend appears (visibility=Auto resolves to
-   visible because there are categories) and lists the AESOC
-   categories from `ae.csv` (e.g. `SKIN AND SUBCUTANEOUS TISSUE
-   DISORDERS`, `GENERAL DISORDERS AND ADMINISTRATION SITE
-   CONDITIONS`, `RENAL AND URINARY DISORDERS`,
-   `METABOLISM AND NUTRITION DISORDERS`).
-5. Click one of the AESOC legend categories (e.g.
-   `SKIN AND SUBCUTANEOUS TISSUE DISORDERS`).
-   **Expected:** the Timelines viewer filters cleanly to that
-   category's intervals — only rows whose AESOC matches the
-   clicked category remain rendered.
-   **Expected (GROK-19033 invariant):** NO white screen, NO
-   glitchy re-render, NO console error during the legend click.
-   The viewer transitions smoothly from full to filtered state.
-6. Click the same legend category a second time (toggle off).
-   **Expected:** the filter clears; all AESOC categories' intervals
-   are rendered again, with the same visual stability invariant
-   (no white screens, no console errors).
-7. Click two different legend categories in sequence (e.g.
-   `RENAL AND URINARY DISORDERS`, then
-   `METABOLISM AND NUTRITION DISORDERS`).
-   **Expected:** each click toggles its category's visibility on
-   the viewer; intermediate states are visually stable; final
-   state shows only the categories whose legend entries are
-   currently active.
+1. **Verify:** the Timelines viewer is painted; no errors.
+2. Click the **Gear** icon. In the Context Panel, open the **Color** column list.
+3. **Verify:** only string columns are offered (no AESTDY, AEENDY, AESEQ).
+4. Set **Color** to **AESOC**.
+5. **Verify:** the legend is visible and lists 15 items.
+6. Set **Legend Visibility** to **Always**.
+7. **Verify:** the legend is visible and lists 15 items.
+8. Set **Legend Visibility** to **Never**.
+9. **Verify:** the legend is hidden.
+10. Set **Legend Visibility** to **Auto**.
+11. **Verify:** the legend is visible and lists 15 items.
 
-### Scenario 2: Legend filter persists across legendVisibility transitions
+### 2. Legend clicks narrow the viewer without blanking it (GROK-19033, GROK-19535, GROK-18608)
 
-Steps:
-1. Continuing from Scenario 1's configured Timelines viewer
-   (or repeat Setup + Scenario 1 Steps 1-4 to reach the same
-   state). At least one AESOC legend category is currently
-   filtered out (Scenario 1 Step 5 state).
-2. In the Context Panel, set **legendVisibility** to **Always**.
-   **Expected:** the legend remains visible regardless of
-   category count; the previously toggled-off category remains
-   filtered out (filter state survives the visibility-mode
-   transition); no white screen / re-render glitch.
-3. In the Context Panel, set **legendVisibility** to **Never**.
-   **Expected:** the legend is hidden in the viewer; the
-   underlying filter state is preserved (the viewer continues to
-   exclude the previously toggled-off category's intervals).
-4. In the Context Panel, set **legendVisibility** back to
-   **Auto**.
-   **Expected:** the legend reappears (Auto resolves to visible
-   for >0 categories on a coloring column); the previously
-   toggled-off category is still toggled off in the legend
-   (visual state matches pre-transition); no white screen.
-5. Click the previously toggled-off legend category to re-enable
-   it.
-   **Expected:** the category's intervals re-appear on the
-   viewer, completing the round-trip; no console errors.
+1. Continue with **Color** = **AESOC**.
+2. Click `SKIN AND SUBCUTANEOUS TISSUE DISORDERS` in the legend.
+3. **Verify:** the viewer has less ink than before and is still painted; no errors; 143 rows pass
+   the table filter.
+4. Ctrl+Click `NERVOUS SYSTEM DISORDERS` in the legend.
+5. **Verify:** the viewer has more ink than before; no errors.
+6. Ctrl+Click `NERVOUS SYSTEM DISORDERS` again, then click
+   `SKIN AND SUBCUTANEOUS TISSUE DISORDERS` again, so no item is chosen.
+7. **Verify:** the viewer is painted with all events again; no errors.
+8. Set **Split By** to **AESEV**.
+9. **Verify:** the viewer repainted; the legend still lists 15 items; no errors.
+10. Click `CARDIAC DISORDERS` in the legend.
+11. **Verify:** the viewer is painted; no errors; 143 rows pass the table filter.
+12. Set **Split By** back to **USUBJID**.
+13. **Verify:** the viewer repainted; no errors.
 
-### Scenario 3: splitByColumnName re-bind mid-session preserves legend integrity
+### 3. Reset View
 
-Steps:
-1. Continuing from Scenario 2 (or repeat Setup + Scenario 1
-   Steps 1-4 to reach a fresh AESOC-colored Timelines).
-2. In the Context Panel, change **splitByColumnName** from
-   `USUBJID` to a different categorical column on `ae.csv`
-   (e.g. `AESEV` — Adverse Event Severity, values
-   {MILD, MODERATE, SEVERE}). If `AESEV` is not selectable as
-   a split-by column on the local atlas mapping, fall back to
-   any other categorical string column listed in the
-   property's selector dropdown.
-   **Expected:** the viewer's lanes (rows) re-organize to one
-   lane per distinct value of the new split-by column; the
-   legend remains coloring-driven (still bound to AESOC);
-   no white screen / no console error during the rebind.
-3. Click an AESOC legend category in the new split-by
-   configuration.
-   **Expected:** the legend filter applies cleanly to the
-   re-laned viewer (GROK-19033 invariant holds across
-   split-by transitions); no white screen, no console error.
-4. Revert **splitByColumnName** back to `USUBJID`.
-   **Expected:** the original lane layout is restored; the
-   legend filter from Step 3 either persists (if filter state
-   is split-by-independent) or cleanly resets (acceptable
-   either way) — the bug-class invariant is the absence of
-   visual glitches and console errors, not a specific
-   filter-persistence semantic.
+1. Right-click the Timelines viewer and choose **Reset View**.
+2. **Verify:** the viewer repainted; no errors.
 
-## Notes
+## Cleanup
 
-- This runs at the playwright/UI-driving layer because reproducing
-  GROK-19033 requires actually clicking legend items in the DOM and
-  checking for visual glitches across re-renders — that's not
-  something a pure JS-API check can validate.
-- There's no dedicated Timelines smoke scenario (Add Viewer →
-  Timelines, basic property-panel sweep) in this section yet — this
-  bug-focused scenario doesn't cover that ground. A general smoke
-  scenario for Timelines is a planned follow-up, not covered here.
-- The original GROK-19033 bug report was a brief 3-step repro (open
-  data with Timelines, click a legend category, observe
-  glitches/white screens). This scenario expands that into a
-  deterministic sequence with an explicit dataset (`ae.csv`), an
-  explicit legend-driving column (AESOC), and explicit category
-  labels, so it's reliably reproducible.
-- GROK-17222 (Line chart legend filtering) is the same bug class on a
-  different viewer. It is not covered here — Line chart is a separate
-  feature with its own test file.
+Close all.
+
+## Expected results
+
+- The Timelines viewer draws on `ae.csv` without errors; **Color** offers only string columns.
+- The legend follows **Legend Visibility**: shown for Auto and Always, hidden for Never.
+- A legend click narrows the drawn events, Ctrl+Click adds or removes an item, and clicking the
+  only chosen item shows all events again; the viewer never goes blank and the table filter
+  stays at 143 rows.
+- Changing **Split By** keeps the legend and its filtering working.
+- **Reset View** redraws the viewer without errors.
+
+## Automation notes
+
+- The legend is the standard DOM legend, so its items can be counted and clicked by name.
+- Ink comparisons are the only reading of the drawn events: the viewer has no widget status for
+  its lanes and intervals.
+
+---
+{
+  "order": 31,
+  "datasets": ["System:AppData/Charts/ae.csv"]
+}

@@ -9,7 +9,7 @@ const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const toolsDir = path.dirname(path.dirname(testsDir));
 const fixtureDir = path.join(testsDir, 'fixtures', 'domain-package');
 const manifestPath = path.join(fixtureDir, 'databases', 'testdb', 'schema.json');
-const u2Module = '@datagrok-libraries/u2/src/dg/index.js';
+const u2Module = '@datagrok-libraries/ems/src/dg';
 
 const cwd = process.cwd();
 afterEach(() => process.chdir(cwd));
@@ -57,7 +57,7 @@ describe('grok add app --domain', () => {
 
     const code = entry(dir);
     expect(code).toContain(`import {domains} from '${u2Module}';`);
-    expect(code).toContain(`import '@datagrok-libraries/u2/src/dg/domain/styles.js';`);
+    expect(code).toContain(`import '@datagrok-libraries/ems/src/dg/styles.js';`);
     expect(code).toContain('//name: Item');
     expect(code).toContain('//tags: app');
     expect(code).toContain('//output: view result');
@@ -69,7 +69,7 @@ describe('grok add app --domain', () => {
     expect(code.indexOf(u2Module)).toBeLessThan(code.indexOf('export const _package'));
 
     const packageObj = json(dir, 'package.json');
-    expect(packageObj.dependencies['@datagrok-libraries/u2']).toBe('workspace:^');
+    expect(packageObj.dependencies['@datagrok-libraries/ems']).toBe('workspace:^');
     // the css loaders come with @datagrok/build-config, not with the package
     expect(packageObj.devDependencies).toBeUndefined();
 
@@ -161,8 +161,8 @@ describe('grok add app --domain', () => {
     const manifest = read(dir, 'databases', 'tracker', 'schema.json');
     expect(addApp('tracker.item').result).toBe(true);
     expect(entry(dir).match(/export async function Item\(/g)).toHaveLength(1);
-    expect(entry(dir).match(/@datagrok-libraries\/u2\/src\/dg\/index\.js/g)).toHaveLength(1);
-    expect(entry(dir).match(/domain\/styles\.js/g)).toHaveLength(1);
+    expect(entry(dir).match(/@datagrok-libraries\/ems\/src\/dg'/g)).toHaveLength(1);
+    expect(entry(dir).match(/ems\/src\/dg\/styles\.js/g)).toHaveLength(1);
     expect(read(dir, 'src', 'app.spec.json')).toBe(spec);
     expect(read(dir, 'databases', 'tracker', 'schema.json')).toBe(manifest);
   });

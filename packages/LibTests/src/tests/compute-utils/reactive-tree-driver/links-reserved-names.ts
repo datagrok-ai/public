@@ -54,7 +54,7 @@ category('ComputeUtils: Driver reserved names', async () => {
     const pconf = await getProcessedConfig({id: 'pipeline1', type: 'static', steps: [{id: 'step', nqName: RESERVED}]});
     let inputs: string[] = [];
     testScheduler.run(() => {
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks: true});
       tree.init().subscribe();
       const link = [...tree.linksState.links.values()].find((item) => item.matchInfo.spec.id === '::x:validator')!;
       inputs = Object.keys(link.matchInfo.inputs);

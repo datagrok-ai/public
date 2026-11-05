@@ -54,7 +54,9 @@ export class DGToggleInput extends HTMLElement {
   set value(value: boolean) {
     if (!this.innerEditor) this.render();
 
+    this.innerEditor!.notify = false;
     this.innerEditor!.value = value;
+    this.innerEditor!.notify = true;
   }
 
   set tooltip(tooltip: string) {

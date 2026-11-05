@@ -1,0 +1,173 @@
+{
+  "kindsVersion": 1,
+  "kinds": [
+    {
+      "kind": "text-input",
+      "noun": "text input",
+      "aliases": ["text field", "textbox"],
+      "family": "input",
+      "tag": "u2-text-input",
+      "focusRole": "textbox",
+      "nameFrom": ["label", "aria", "placeholder"],
+      "parts": {"label": "[data-u2-part=\"label\"]", "editor": "[data-u2-part=\"editor\"]", "options": "[data-u2-part=\"options\"]", "error": "[data-u2-part=\"error\"]"},
+      "state": ["label", "value", "text", "placeholder", "valid", "error", "readOnly", "required"],
+      "props": ["label", "name", "value", "placeholder"],
+      "gestures": ["type", "clear"]
+    },
+    {
+      "kind": "qnum-input",
+      "noun": "number input",
+      "family": "input",
+      "tag": "u2-qnum-input",
+      "focusRole": "textbox",
+      "nameFrom": ["label", "aria", "placeholder"],
+      "parts": {"label": "[data-u2-part=\"label\"]", "editor": "[data-u2-part=\"editor\"]", "options": "[data-u2-part=\"options\"]", "error": "[data-u2-part=\"error\"]"},
+      "state": ["label", "value", "text", "valid", "error", "readOnly", "required"],
+      "props": ["label", "name", "value"],
+      "gestures": ["type", "clear"]
+    },
+    {
+      "kind": "number-input",
+      "noun": "number input",
+      "aliases": ["numeric input", "number field"],
+      "family": "input",
+      "tag": "u2-number-input",
+      "focusRole": "spinbutton",
+      "nameFrom": ["label", "aria", "placeholder"],
+      "parts": {"label": "[data-u2-part=\"label\"]", "editor": "[data-u2-part=\"editor\"]", "options": "[data-u2-part=\"options\"]", "error": "[data-u2-part=\"error\"]"},
+      "state": ["label", "value", "text", "valid", "error", "readOnly", "required"],
+      "props": ["label", "name", "value", "min", "max"],
+      "gestures": ["type", "clear"]
+    },
+    {
+      "kind": "bigint-input",
+      "noun": "number input",
+      "family": "input",
+      "focusRole": "spinbutton",
+      "nameFrom": ["label", "aria", "placeholder"],
+      "parts": {"label": "[data-u2-part=\"label\"]", "editor": "[data-u2-part=\"editor\"]", "options": "[data-u2-part=\"options\"]", "error": "[data-u2-part=\"error\"]"},
+      "state": ["label", "value", "text", "valid", "error", "readOnly", "required"],
+      "props": [],
+      "gestures": ["type", "clear"]
+    },
+    {
+      "kind": "bool-input",
+      "noun": "checkbox",
+      "aliases": ["bool input", "switch", "toggle"],
+      "family": "input",
+      "tag": "u2-bool-input",
+      "focusRole": "checkbox",
+      "nameFrom": ["label", "aria", "placeholder"],
+      "parts": {"label": "[data-u2-part=\"label\"]", "editor": "[data-u2-part=\"editor\"]", "options": "[data-u2-part=\"options\"]", "error": "[data-u2-part=\"error\"]"},
+      "state": ["label", "value", "checked", "readOnly"],
+      "props": ["label", "name", "value", "switch"],
+      "gestures": ["toggle"]
+    },
+    {
+      "kind": "choice-input",
+      "noun": "choice input",
+      "aliases": ["dropdown", "choice", "select"],
+      "family": "input",
+      "tag": "u2-choice-input",
+      "focusRole": "combobox",
+      "nameFrom": ["label", "aria", "placeholder"],
+      "parts": {"label": "[data-u2-part=\"label\"]", "editor": "[data-u2-part=\"editor\"]", "options": "[data-u2-part=\"options\"]", "error": "[data-u2-part=\"error\"]"},
+      "state": ["label", "value", "text", "valid", "error", "required", "open"],
+      "props": ["label", "name", "value", "items", "nullable"],
+      "items": {"role": "option", "noun": "item", "gestures": ["pick"]},
+      "gestures": ["open", "pick"]
+    },
+    {
+      "kind": "combobox",
+      "noun": "combobox",
+      "aliases": ["combo box", "editable choice"],
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": ["label", "aria", "placeholder"],
+      "parts": {"label": "[data-u2-part=\"label\"]", "editor": "[data-u2-part=\"editor\"]", "options": "[data-u2-part=\"options\"]", "error": "[data-u2-part=\"error\"]"},
+      "state": ["label", "value", "text", "open", "placeholder"],
+      "props": [],
+      "items": {"role": "option", "noun": "item", "gestures": ["pick"]},
+      "gestures": ["type", "open", "pick"]
+    },
+    {
+      "kind": "button",
+      "noun": "button",
+      "family": "action",
+      "role": "button",
+      "nameFrom": ["text", "aria", "title"],
+      "parts": {},
+      "state": ["label", "busy", "pressed"],
+      "props": [],
+      "gestures": ["press"]
+    },
+    {
+      "kind": "dialog",
+      "noun": "dialog",
+      "family": "overlay",
+      "role": "dialog",
+      "nameFrom": ["title", "aria"],
+      "parts": {"title": ".u2-dialog-title-text", "close button": ".u2-dialog-close", "body": ".u2-dialog-content", "footer": ".u2-dialog-buttons"},
+      "state": ["label", "open", "busy", "error", "valid"],
+      "props": [],
+      "gestures": ["close"]
+    },
+    {
+      "kind": "list",
+      "noun": "list",
+      "family": "collection",
+      "role": "listbox",
+      "nameFrom": ["aria"],
+      "parts": {},
+      "state": ["label", "items", "selection"],
+      "props": [],
+      "items": {"role": "option", "noun": "item", "gestures": ["select"]},
+      "gestures": ["select", "scroll"]
+    },
+    {
+      "kind": "functions-browser",
+      "noun": "functions browser",
+      "family": "collection",
+      "nameFrom": ["aria"],
+      "parts": {"list": "[data-u2=\"fb-list\"]"},
+      "state": ["items", "selection", "busy"],
+      "props": [],
+      "items": {"role": "option", "noun": "item", "gestures": ["select"]},
+      "gestures": ["type", "select"]
+    },
+    {
+      "kind": "fb-search",
+      "noun": "search",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "functions-browser"
+    },
+    {
+      "kind": "fb-clear",
+      "noun": "clear button",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "functions-browser"
+    },
+    {
+      "kind": "domain-list",
+      "noun": "domain list",
+      "family": "composite",
+      "nameFrom": ["aria"],
+      "parts": {},
+      "state": ["busy", "items", "selection"],
+      "props": [],
+      "items": {"role": "option", "noun": "item", "gestures": ["select"]},
+      "gestures": ["select", "scroll"],
+      "source": "ems"
+    }
+  ]
+}

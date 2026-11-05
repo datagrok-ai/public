@@ -92,7 +92,7 @@ management cases — keeping the two sets structurally aligned (same logins, sam
   - **Create new service user** — field: Login; OK / CANCEL.
   - **Invite a Friend** — field: Email; OK / CANCEL.
 - **User context menu (right-click):** `Details`, `Chat`, `Block`, `Groups...`, `Roles...`,
-  `ID` (copy entity id), `Add to favorites`.
+  `ID` (copy entity id), `Add To Favorites`.
   - `Groups...` → `<user> groups` dialog: checkbox list of groups, SAVE / CANCEL (edits the user's
     group memberships).
   - `Roles...` → `<user> roles` dialog: role list with a `Can assign` option, SAVE / CANCEL.

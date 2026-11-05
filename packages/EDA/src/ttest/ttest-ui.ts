@@ -363,7 +363,7 @@ export function runTwoSampleTTest(): void {
     value: factor,
     tooltipText: 'Categorical column defining the two groups',
     onValueChanged: (col) => {factor = col; updateRunButtonState();},
-    filter: (col: DG.Column) => factorColNames.includes(col.name),
+    filter: (col: DG.Column) => FACTOR_TYPES.includes(col.type),
     nullable: false,
   });
 
@@ -389,7 +389,7 @@ export function runTwoSampleTTest(): void {
     value: feature,
     tooltipText: 'Numeric column to compare across the two groups',
     onValueChanged: (col) => {feature = col; updateRunButtonState();},
-    filter: (col: DG.Column) => featureColNames.includes(col.name),
+    filter: (col: DG.Column) => FEATURE_TYPES.includes(col.type),
     nullable: false,
   });
 

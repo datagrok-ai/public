@@ -12,6 +12,14 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:GetAggregatedClicks', { date });
   }
 
+  export async function aiUsage(date: string , groups: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:AiUsage', { date, groups });
+  }
+
+  export async function aiChatContent(chatId: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:AiChatContent', { chatId });
+  }
+
   export async function allTestRuns(benchmarks: boolean ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:AllTestRuns', { benchmarks });
   }
@@ -92,10 +100,6 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:TopPackageErrors', { date, users });
   }
 
-  export async function topErrorSources(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:TopErrorSources', { date });
-  }
-
   export async function eventErrors(date: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:EventErrors', { date });
   }
@@ -106,10 +110,6 @@ export namespace queries {
 
   export async function sameErrors(date: string , event_id: string | null): Promise<number> {
     return await grok.data.query('UsageAnalysis:SameErrors', { date, event_id });
-  }
-
-  export async function topErrors(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:TopErrors', { date });
   }
 
   export async function packageInfo(name: string ): Promise<DG.DataFrame> {
@@ -178,10 +178,6 @@ export namespace queries {
 
   export async function eventByErrorMessageAndFriendlyName(errorMessage: string , friendlyName: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:EventByErrorMessageAndFriendlyName', { errorMessage, friendlyName });
-  }
-
-  export async function updateEventsIsErrorComment(errorMessage: string , friendlyName: string , isError: boolean , comment: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:UpdateEventsIsErrorComment', { errorMessage, friendlyName, isError, comment });
   }
 
   export async function functionErrors(date: string , users: any ): Promise<DG.DataFrame> {
@@ -402,10 +398,6 @@ export namespace queries {
 
   export async function userReportsSingle(reportNumber: number ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:UserReportsSingle', { reportNumber });
-  }
-
-  export async function reportsMigration(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:ReportsMigration', {});
   }
 
   export async function reportDataMigration(report_id: string , id: string , screenshot: string | null, details: string | null, client_settings: string | null, server_settings: string | null, errors: string | null, client_log: string | null, server_log: string | null, console: string | null, queries_log: string | null, containers_log: string | null, images_log: string | null, services: string | null): Promise<DG.DataFrame> {

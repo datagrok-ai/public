@@ -5,10 +5,13 @@ Feature: Calculated columns over a Northwind query result follow a rename and an
   100 are added through the Add New Column dialog; unitprice is renamed through its header's Column
   Properties dialog and one of its cells edited in the grid, and Price2's formula follows the new
   name while both columns recalculate. The view is saved as a project with Data sync on, closed and
-  reopened: the query runs again, so the edited cell holds the database's value, while the rename and
-  the two columns come back with their formulas and values that follow the source; a second rename
-  and edit on the reopened table are followed the same way (GROK-17109). Translated from TestTrack
+  reopened, and the renamed column and the two new ones are there. Translated from TestTrack
   PowerPack/add-new-column-advanced.md, its query sources.
+
+  That the query runs again on the reopen (the edited cell holds the database's value), that the
+  columns come back with their formulas and values that follow the source, and that a second rename
+  and edit on the reopened table are followed (GROK-17109) is ApiTests `Dapi: projects: data sync`
+  (src/dapi/projects.ts), over the DBTests query of the same products table.
 
   Tagged full-stand: the Postgres Northwind database is the NorthwindTest connection that dev carries (the
   DBTests package); localhost has no Northwind. The OrdersByEmployee query of the md is not
@@ -61,7 +64,7 @@ Feature: Calculated columns over a Northwind query result follow a rename and an
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
-  Scenario: Get All result saved with Data sync, closed and reopened
+  Scenario: Get All result saved with Data sync, closed and reopened from Dashboards
     When user clicks on Save button in toolbar
     Then "Save project" dialog should be visible
     When user enters "bdd-anc-all-{run}" into Name text input in "Save project" dialog
@@ -81,29 +84,9 @@ Feature: Calculated columns over a Northwind query result follow a rename and an
     When user double-clicks on "bdd-anc-all-{run}" gallery card
     Then the "products" view should be current
     And the table should have 77 rows
+    And the table should have a column "Price2"
+    And the table should have a column "Price3"
     And the table should have a column "BasePrice"
-    And "Price2" column should have tag "formula" equal to "${BasePrice} + 100"
-    And "Price3" column should have tag "formula" equal to "${Price2} + 100"
-    # Data sync runs the query again: the edited cell holds the database's value
-    And the value of "BasePrice" column in row 1 should be "18"
-    And every value of "Price2" column should equal "BasePrice" column plus 100
-    And every value of "Price3" column should equal "Price2" column plus 100
-    And no error or warning balloon should have been shown
-    And no errors should have been logged
-
-  Scenario: On the reopened Get All result a second rename and edit are followed too
-    When user picks "Column Properties..." from the context menu of the "header BasePrice" area of grid
-    And user types "BasePrice2" into "New name:" input in "BasePrice" dialog
-    And user clicks on OK button in "BasePrice" dialog
-    Then "Price2" column should have tag "formula" equal to "${BasePrice2} + 100"
-    And "Price3" column should have tag "formula" equal to "${Price2} + 100"
-    When user double-clicks on the "cell 2 of BasePrice2" area of grid
-    And user presses Control+A in cell editor
-    And user types "400" into cell editor
-    And user presses Enter
-    Then the value of "Price3" column in row 2 should be "600"
-    And every value of "Price2" column should equal "BasePrice2" column plus 100
-    And every value of "Price3" column should equal "Price2" column plus 100
     And no error or warning balloon should have been shown
     And no errors should have been logged
     When user closes all views
@@ -139,7 +122,7 @@ Feature: Calculated columns over a Northwind query result follow a rename and an
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
-  Scenario: Get Top 100 result saved with Data sync, closed and reopened
+  Scenario: Get Top 100 result saved with Data sync, closed and reopened from Dashboards
     When user clicks on Save button in toolbar
     Then "Save project" dialog should be visible
     When user enters "bdd-anc-top-{run}" into Name text input in "Save project" dialog
@@ -159,29 +142,9 @@ Feature: Calculated columns over a Northwind query result follow a rename and an
     When user double-clicks on "bdd-anc-top-{run}" gallery card
     Then the "products" view should be current
     And the table should have 77 rows
+    And the table should have a column "Price2"
+    And the table should have a column "Price3"
     And the table should have a column "BasePrice"
-    And "Price2" column should have tag "formula" equal to "${BasePrice} + 100"
-    And "Price3" column should have tag "formula" equal to "${Price2} + 100"
-    # Data sync runs the query again: the edited cell holds the database's value
-    And the value of "BasePrice" column in row 1 should be "18"
-    And every value of "Price2" column should equal "BasePrice" column plus 100
-    And every value of "Price3" column should equal "Price2" column plus 100
-    And no error or warning balloon should have been shown
-    And no errors should have been logged
-
-  Scenario: On the reopened Get Top 100 result a second rename and edit are followed too
-    When user picks "Column Properties..." from the context menu of the "header BasePrice" area of grid
-    And user types "BasePrice2" into "New name:" input in "BasePrice" dialog
-    And user clicks on OK button in "BasePrice" dialog
-    Then "Price2" column should have tag "formula" equal to "${BasePrice2} + 100"
-    And "Price3" column should have tag "formula" equal to "${Price2} + 100"
-    When user double-clicks on the "cell 2 of BasePrice2" area of grid
-    And user presses Control+A in cell editor
-    And user types "400" into cell editor
-    And user presses Enter
-    Then the value of "Price3" column in row 2 should be "600"
-    And every value of "Price2" column should equal "BasePrice2" column plus 100
-    And every value of "Price3" column should equal "Price2" column plus 100
     And no error or warning balloon should have been shown
     And no errors should have been logged
     When user closes all views

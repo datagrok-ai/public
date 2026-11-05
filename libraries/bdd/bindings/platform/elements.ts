@@ -1,8 +1,3 @@
-/* The Datagrok shell by name. Loaded for every profile, so these names are reserved: an app
-   registering "toolbox" for a bar of its own is refused — it registers "toolbar"-like names on its
-   context instead, and "toolbox" keeps meaning the platform's. Selector sources: toolbox.dart
-   (.d4-toolbox[caption]), console.dart, the shell's `name=` annotations (Browse, Toolbox), the selectors.ts
-   files under playwright-public. */
 import {element, kind} from '../../src/registry.js';
 
 // simple_mode.dart also uses d4-toolbox on an empty sliding host. Only Toolbox.root has caption.
@@ -10,6 +5,10 @@ element('toolbox', {selector: '.d4-toolbox[caption]', aliases: ['toolbox pane'],
   parts: {'viewers section': '[name="div-section--Viewers"]'}});
 element('toolbox tab', {selector: '[name="Toolbox"]', aliases: ['toolbox sidebar tab']});
 element('browse tab', {selector: '[name="Browse"]'});
+element('favorites sidebar tab', {selector: '[name="sidebar"] [name="Favorites"]',
+  description: 'the star of the sidebar: it docks the Favorites panel, and closes it while it is shown'});
+element('favorites panel', {selector: '.grok-favorites-pane',
+  description: 'the docked panel the sidebar\'s Favorites opens: the account\'s favorites as a tree, Browse\'s nodes, and a drop target that adds what is dropped on it'});
 element('browse toolbar', {selector: '.grok-browse-icons',
   description: 'the Browse header actions, outside the panel body and its tree'});
 element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases: ['browse view'],
@@ -41,8 +40,8 @@ element('gallery toolbar', {selector: '.grok-gallery-search-bar',
   description: 'the bar above a gallery: New, Refresh, the search, the view modes and the counter — the scope for its icons, which the Browse toolbar repeats'});
 element('gallery counter', {selector: '.grok-items-view-counts',
   description: 'how many items the gallery lists: "N", "shown / total" under a filter, "N of M" while only the first N are rendered'});
-element('chat input', {selector: '.grok-comments-post-input', aliases: ['chat post input'],
-  description: 'the message box of an entity\'s Chats pane: a bare textarea no input kind reaches'});
+element('chat input', {selector: '.grok-comments-post-input-host', aliases: ['chat post input'],
+  description: 'the message box of an entity\'s Chats pane: PowerPack\'s u2 message input (its contenteditable editor) where PowerPack is installed, a bare textarea otherwise'});
 element('chat header', {selector: '.grok-chat-header',
   description: 'the title line of the open chat thread: "Chats > <thread>"'});
 element('membership search', {selector: '.d4-user-selector-input', aliases: ['membership search input'],
@@ -52,6 +51,10 @@ element('code editor', {selector: '.cm-editor, .CodeMirror', aliases: ['source e
     'in the packages (.cm-editor), version 5 in the script view of the shell (.CodeMirror)'});
 element('share access selector', {selector: '[name="div-share-selector"]',
   description: 'the access level of the Share dialog: a Dart privilege selector showing the current level as text, a popup behind its triangle'});
+element('privilege tree', {selector: '.grok-privilege-selector-tree', aliases: ['access level list'],
+  description: 'the popup of an access selector, portaled outside its dialog: one tree node per level ("Full access", "View and use", …)'});
+element('share message', {selector: '.grok-permissions-message textarea',
+  description: 'the message box of a Share dialog, shown once a user is picked: a bare textarea no input kind reaches'});
 element('model preview', {selector: '.d4-pm-view-preview',
   description: 'the Train Model preview; ready only after training, predictions, charts and history are complete'});
 element('grid overlay', {selector: '[name="viewer-Grid"] canvas[name="overlay"]',
@@ -110,7 +113,21 @@ element('layouts pane', {selector: '.d4-toolbox .d4-pane-layouts',
   description: 'the Layouts section of the toolbox: its Save button and the cards of the layouts that fit the table'});
 element('file drop overlay', {selector: 'xpath=//div[./*[local-name()="svg"]//*[local-name()="text" and normalize-space()="Incoming!"]]',
   description: 'the "Incoming! Drop your CSV files to open them locally" layer the platform lays over the window while files are dragged over it'});
+/* A row of an entity's Details table in the context panel (Name, Author, Tags…): the caption in the first cell,
+   the value in the second. An editable value is a label with a pencil that shows only under the pointer; the
+   pencil turns the value into a bare input, which Enter saves. */
+kind('details field', {
+  aliases: ['details fields', 'details row'],
+  selector: '.d4-info-table tr',
+  match: ['label'],
+  labelSelector: 'td:first-child > span',
+  parts: {'edit icon': '[name="icon-pencil"]', value: ':scope > td:nth-child(2)'},
+  description: 'a row of an entity\'s Details table in the context panel, by its caption ("Name details field"); an edited value is its input',
+});
+element('layouts filter', {selector: '.d4-toolbox .d4-pane-layouts input.grok-suggestions-filter',
+  description: 'the "Filter by name or #tag" box of the Layouts section of the toolbox: a case-insensitive substring match on the cards\' names and tag chips'});
 kind('layout card', {
+  aliases: ['layout cards'],
   selector: '.d4-pane-layouts .grok-suggestions-chart-card',
   match: ['label'],
   labelSelector: '.grok-gallery-grid-item-title',

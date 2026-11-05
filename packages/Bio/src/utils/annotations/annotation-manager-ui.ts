@@ -43,7 +43,7 @@ export function showAnnotationManagerDialog(): void {
   });
 
   const listDiv = ui.divV([], {style: {maxHeight: '380px', overflowY: 'auto', paddingRight: '8px'}});
-  listDiv.setAttribute('data-u2', 'list');
+  listDiv.setAttribute('role', 'list');
   listDiv.setAttribute('data-u2-name', 'annotations');
 
   function refreshList(): void {
@@ -96,7 +96,7 @@ export function showAnnotationManagerDialog(): void {
         ui.divText(catLabel, {style: {color: '#888', fontSize: '11px', marginRight: '8px'}}),
         removeBtn,
       ], {style: {alignItems: 'center', padding: '4px 0', borderBottom: '1px solid #eee'}});
-      row.setAttribute('data-u2', 'item');
+      row.setAttribute('role', 'listitem');
       row.setAttribute('data-u2-name', annot.id);
 
       listDiv.append(row);

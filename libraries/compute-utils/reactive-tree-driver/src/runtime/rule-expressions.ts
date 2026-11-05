@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as jsonLogic from 'json-logic-js';
-import {isClientAtLeast} from '@datagrok-libraries/utils/src/format-version-utils';
 import {IControllerBase} from '../RuntimeControllers';
 import {RuleExpr, RuleTargets} from '../config/PipelineConfiguration';
 
@@ -15,27 +14,12 @@ let opsRegistered = false;
 let activeCtx: RuleContext = {$all: {}};
 // the literals of the expression being evaluated, read by the $literal op
 let activeLiterals: any[] = [];
-let scriptSupport: boolean | undefined;
-
-// GrokScript with a variables map is js-api 1.28+; the same method ignores the map on
-// older clients, so the version decides, not the method's presence
-function hasScriptSupport(): boolean {
-  if (scriptSupport === undefined) {
-    scriptSupport = typeof (grok.functions as any).scriptSync === 'function' && isClientAtLeast('1.28.0');
-    if (!scriptSupport)
-      console.warn('RTD: GrokScript expressions need platform 1.28.0 or later, expression checks are skipped');
-  }
-  return scriptSupport;
-}
-
 function scriptVariables(ctx: RuleContext): Record<string, any> {
   return Object.fromEntries(Object.entries(ctx).filter(([key]) => !key.startsWith('$')));
 }
 
-/** Evaluates a GrokScript expression over the rule context; `undefined` when unsupported or failing. */
+/** Evaluates a GrokScript expression over the rule context; `undefined` when it fails. */
 export function runScript(expr: string, ctx: RuleContext): any {
-  if (!hasScriptSupport())
-    return undefined;
   try {
     return grok.functions.scriptSync(expr, scriptVariables(ctx));
   } catch {
@@ -45,8 +29,6 @@ export function runScript(expr: string, ctx: RuleContext): any {
 
 /** The platform's `validator:` expression contract: `null` when valid, else the message. */
 export function scriptVerdict(expr: string, ctx: RuleContext): string | null {
-  if (!hasScriptSupport())
-    return null;
   let result: unknown;
   try {
     result = grok.functions.scriptSync(expr, scriptVariables(ctx));
@@ -177,6 +159,9 @@ export function isOn(when: RuleExpr | undefined, ctx: RuleContext): boolean {
 
 export function buildRuleContext(controller: IControllerBase): RuleContext {
   const ctx: RuleContext = {$all: {}};
+  const position = controller.getBasePosition()?.position;
+  if (position !== undefined)
+    ctx.$position = position;
   for (const name of controller.getMatchedInputs()) {
     const all = controller.getAll(name) ?? [];
     ctx[name] = all[0];
@@ -185,7 +170,8 @@ export function buildRuleContext(controller: IControllerBase): RuleContext {
   return ctx;
 }
 
-const scopedOps = new Set(['map', 'filter', 'reduce', 'all', 'some', 'none']);
+/** Array ops whose second argument runs over each element. */
+export const scopedOps = new Set(['map', 'filter', 'reduce', 'all', 'some', 'none']);
 
 /** Root input aliases referenced by `var`, `missing` and `missing_some`, with the `$all.` prefix stripped.
  *  `fields` collects the roots read as `{var: 'name'}` in the element argument of an array op, which JSON Logic

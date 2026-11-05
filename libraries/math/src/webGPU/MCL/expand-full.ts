@@ -5,6 +5,7 @@
 import {toOffsetForm} from '../umap/utils';
 import {MCLOpReturnType} from './types';
 import {knnToSparseForm} from './utils';
+import {WORKGROUP_DIM} from '../workgroup';
 
 
 export async function expand2(
@@ -12,7 +13,7 @@ export async function expand2(
 ): Promise<MCLOpReturnType> {
   const blockSizeDim = 4000;
   const neededThreads = blockSizeDim * blockSizeDim;
-  const workGroupThreadsPerDim = 10;
+  const workGroupThreadsPerDim = WORKGROUP_DIM;
   const totalWorkgroupThreads = workGroupThreadsPerDim * workGroupThreadsPerDim;
   const neededWorkGroups = Math.ceil(neededThreads / totalWorkgroupThreads);
   const workGroupDim = Math.ceil(Math.sqrt(neededWorkGroups));
@@ -203,7 +204,7 @@ export async function expand(
 ): Promise<MCLOpReturnType> {
   const blockSizeDim = 4000;
   const neededThreads = blockSizeDim * blockSizeDim;
-  const workGroupThreadsPerDim = 10;
+  const workGroupThreadsPerDim = WORKGROUP_DIM;
   const totalWorkgroupThreads = workGroupThreadsPerDim * workGroupThreadsPerDim;
   const neededWorkGroups = Math.ceil(neededThreads / totalWorkgroupThreads);
   const workGroupDim = Math.ceil(Math.sqrt(neededWorkGroups));

@@ -22,6 +22,12 @@ type BasePropertyDesirability = {
   computeFunction?: TemplateFunction;
 }
 
+export enum QualifierPolicy {
+  Worst = 'worst',
+  Limit = 'limit',
+  Best = 'best',
+}
+
 export enum MpoScale {
   Linear = 'linear',
   Log = 'log',
@@ -36,6 +42,7 @@ export type NumericalDesirability = BasePropertyDesirability & {
   rangeUserSet?: boolean;
 
   scale?: MpoScale;
+  qualifiers?: QualifierPolicy;
 
   mode?: DesirabilityMode;
 
@@ -70,6 +77,10 @@ export function getMpoScoreColumnName(name: string): string {
   return name ? `MPO ${name}` : 'MPO';
 }
 
+export function getMpoCoverageColumnName(scoreColumnName: string): string {
+  return `${scoreColumnName} coverage`;
+}
+
 /// A map of desirability lines with their weights
 export type DesirabilityProfile = {
   type: typeof DESIRABILITY_PROFILE_TYPE;
@@ -83,6 +94,7 @@ export type DesirabilityProfile = {
 export type MpoResult = {
   scoreColumn: DG.Column;
   desirabilityColumns?: DG.Column[];
+  coverageColumn?: DG.Column;
 }
 
 /// The raw-data array kinds DG.Column.getRawData() can return (int/categorical → Int32Array, float → Float32/64, etc).
@@ -101,6 +113,7 @@ export interface HoistedColumn {
   raw: MpoTypedArray;
   valNull: number;
   isCat: boolean;
+  isQnum: boolean;
   cats: string[] | null;
   catScore: Map<string, number> | null;
   staticW: number;

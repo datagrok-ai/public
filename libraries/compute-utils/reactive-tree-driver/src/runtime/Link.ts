@@ -4,9 +4,9 @@ import {HandlerBase} from '../config/PipelineConfiguration';
 import {BaseTree, NodePath, NodePathSegment, TreeNode} from '../data/BaseTree';
 import {descriptionOutputs, isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, MatchedIO, MatchedNodePaths, MatchInfo} from './link-matching';
-import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapScheduler} from 'rxjs';
-import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, distinctUntilChanged, take} from 'rxjs/operators';
-import {callHandler, indexFromEnd} from '../utils';
+import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapScheduler, timer} from 'rxjs';
+import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, debounce, distinctUntilChanged, take} from 'rxjs/operators';
+import {callHandler, copyDataFrame, indexFromEnd} from '../utils';
 import {defaultLinkHandler, Slot} from './default-handler';
 import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NodeMetaController, PipelineValidatorController, RuntimeReturnController, ValidatorController} from './LinkControllers';
 import {TemplateInfo} from '../RuntimeControllers';
@@ -58,12 +58,15 @@ export class Link {
   // the same ms/frame, reporting a link as not running while a handler is in flight
   private nextScheduled$ = new BehaviorSubject(0);
   private lastFinished$ = new BehaviorSubject(0);
-  public isRunning$ = combineLatest([this.nextScheduled$, this.lastFinished$]).pipe(
-    map(([next, last]) => next > last),
+  // inputs changed, the run is still waiting for its debounce or batch
+  private inputsPending$ = new BehaviorSubject(false);
+  public isRunning$ = combineLatest([this.inputsPending$, this.nextScheduled$, this.lastFinished$]).pipe(
+    map(([pending, next, last]) => pending || next > last),
     distinctUntilChanged(),
   );
 
   private isWired = false;
+  private linksState?: LinksState;
 
   constructor(
     public prefix: NodePath,
@@ -84,6 +87,7 @@ export class Link {
   wire(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     if (this.isWired)
       return;
+    this.linksState = linksState;
 
     const {slots: inputSlots, templates: inputTemplates} =
       this.buildSlotsAndTemplates(this.matchInfo.spec.from ?? [], this.matchInfo.inputs);
@@ -100,32 +104,23 @@ export class Link {
       state.getNode(([...this.prefix, ...this.matchInfo.basePath])) :
       undefined;
 
-    const actions: Record<string, Map<string, string>> = {};
-
-    if (linksState) {
-      for (const [name, minfos] of Object.entries(this.matchInfo.actions)) {
-        if (minfos.length > 1)
-          reportError('warning', `link:${this.matchInfo.spec.id}`, `Multiple action nodes with the same name ${name}`, this.logger, [this.matchInfo.spec.id]);
-        const nodeActions = minfos.map((minfo) => {
-          const node = state.getNode([...this.prefix, ...minfo.path]);
-          const actions = linksState.nodesActions.get(node.getItem().uuid) ?? [];
-          return new Map(actions.map((action) => [action.matchInfo.spec.id, action.uuid]));
-        })[0];
-        actions[name] = nodeActions;
-      }
+    for (const [name, minfos] of Object.entries(this.matchInfo.actions)) {
+      if (minfos.length > 1)
+        reportError('warning', `link:${this.matchInfo.spec.id}`, `Multiple action nodes with the same name ${name}`, this.logger, [this.matchInfo.spec.id]);
     }
 
     inputsChanges$.pipe(
       map((_, idx) => idx + 1),
       takeUntil(this.destroyed$),
-    ).subscribe(this.nextScheduled$);
-
-    const actionsVisibility = linksState?.actionsVisibility ?? new Map<string, boolean>();
+    ).subscribe((idx) => {
+      this.nextScheduled$.next(idx);
+      this.inputsPending$.next(false);
+    });
 
     inputsChanges$.pipe(
       switchMap(
         ([scope, inputs], runIdx) =>
-          defer(() => this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, actions, actionsVisibility, baseNode, scope, state)).pipe(
+          defer(() => this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, baseNode, scope, state)).pipe(
             map((controller) => this.setHandlerResults(controller, state)),
             catchError((error) => {
               // emit on errors as well, otherwise lastFinished$ never advances,
@@ -163,14 +158,11 @@ export class Link {
 
   private makeInputsChanges(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     const inputs = Object.entries(this.matchInfo.inputs).map(([inputAlias, inputItems]) => {
-      const nodes = inputItems.map(
-        (input) => [
-          input.ioName!,
-          state.getNode([...this.prefix, ...input.path]),
-        ] as const,
-      );
-      const inputStates = nodes.map(([ioName, node]) => {
-        const item = node.getItem();
+      const inputStates = inputItems.map(({path, ioName, count}) => {
+        // a changed count changes the match, so the link is recreated rather than updated
+        if (count !== undefined)
+          return of(count);
+        const item = state.getNode([...this.prefix, ...path]).getItem();
         const {dataFrameMutations} = this.matchInfo.spec;
         const includeDFMutations = Array.isArray(dataFrameMutations) ?
           dataFrameMutations.includes(inputAlias) :
@@ -198,20 +190,26 @@ export class Link {
     const toInputsChanges = ([scope, entries]: readonly [any, any]) =>
       [scope as ScopeInfo | undefined, Object.fromEntries(entries) as Record<string, any>] as const;
 
-    if (this.isBatchable && linksState?.batchLinks) {
-      inputsEntries$.pipe(
-        filter(() => this.isActive$.value),
-        takeUntil(this.destroyed$),
-      ).subscribe(() => linksState.scheduleBatch(this.uuid));
+    const isBatched = this.isBatchable && !!linksState?.batchLinks;
+    inputsEntries$.pipe(
+      filter(() => this.isActive$.value),
+      takeUntil(this.destroyed$),
+    ).subscribe(() => {
+      this.inputsPending$.next(true);
+      if (isBatched)
+        linksState!.scheduleBatch(this.uuid);
+    });
 
+    if (isBatched)
       return inputsTriggered$.pipe(map(toInputsChanges));
-    }
 
     const debounceVal = this.customDebounceTime ?? ((this.isValidator || this.isPipelineValidator) ? VALIDATOR_DEBOUNCE_TIME : 0);
 
     const activeInputs$ = inputsEntries$.pipe(
       filter(() => this.isActive$.value),
-      debounceTime(debounceVal, debounceVal === 0 ? asapScheduler : undefined),
+      debounceVal === 0 ?
+        debounceTime(0, asapScheduler) :
+        debounce(() => linksState?.skipDebounce ? timer(0, asapScheduler) : timer(debounceVal)),
       map((obs) => [undefined, obs] as const),
     );
 
@@ -227,20 +225,18 @@ export class Link {
     outputSlots: Slot[],
     inputTemplates: TemplateInfo[],
     outputTemplates: TemplateInfo[],
-    actions: Record<string, Map<string, string>>,
-    actionsVisibility: ReadonlyMap<string, boolean>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
   ) {
-    const controller = this.getControllerInstance(inputs, inputSet, outputSet, callInputs, inputTemplates, outputTemplates, actions, actionsVisibility, baseNode, scope, state);
+    const controller = this.getControllerInstance(inputs, inputSet, outputSet, callInputs, inputTemplates, outputTemplates, baseNode, scope, state);
     if (this.logger) {
       this.logger.logLink('linkRunStarted', {
         prefix: this.prefix,
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
         basePath: this.matchInfo.basePath,
-        isDefaultValidator: this.matchInfo.isDefaultValidator,
+        annotation: this.matchInfo.spec.annotation,
       });
     }
     if (this.matchInfo.spec.handler) {
@@ -280,8 +276,6 @@ export class Link {
     callInputs: Set<string>,
     inputTemplates: TemplateInfo[],
     outputTemplates: TemplateInfo[],
-    actions: Record<string, Map<string, string>>,
-    actionsVisibility: ReadonlyMap<string, boolean>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
@@ -296,7 +290,7 @@ export class Link {
     };
 
     if (this.isValidator)
-      return new ValidatorController({...baseArgs, actions, actionsVisibility, baseNode});
+      return new ValidatorController({...baseArgs, actions: this.matchInfo.actionsUUID, baseNode});
 
     if (this.isPipelineValidator) {
       const outline = this.resolveOutline(state);
@@ -311,8 +305,11 @@ export class Link {
       return new MutationController({...baseArgs, outputNodes});
     }
 
-    if (this.isNodeMeta)
-      return new NodeMetaController({...baseArgs, outputsSet: new Set(descriptionOutputs)});
+    if (this.isNodeMeta) {
+      return new NodeMetaController({
+        ...baseArgs, outputsSet: new Set(descriptionOutputs), actions: this.matchInfo.actionsUUID,
+      });
+    }
 
     if (this.isFuncallAction)
       return new FuncallActionController(baseArgs);
@@ -381,7 +378,7 @@ export class Link {
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
         basePath: this.matchInfo.basePath,
-        isDefaultValidator: this.matchInfo.isDefaultValidator,
+        annotation: this.matchInfo.spec.annotation,
       });
     }
     const outputsEntries = Object.entries(this.matchInfo.outputs).map(([outputAlias, outputItems]) => {
@@ -420,6 +417,8 @@ export class Link {
             throw new Error(`Unable to set meta to a raw memory store ${node.getItem().uuid}`);
           store.setMeta(ioName, this.uuid, controller.outputs[outputAlias]);
         } else if (controller instanceof MutationController) {
+          if (node.getItem().isReadonly)
+            continue;
           const initConfig = controller.outputs[outputAlias];
           if (initConfig)
             this.lastPipelineMutations.push({path: nodePath, initConfig});
@@ -447,14 +446,12 @@ export class Link {
           if (data) {
             const [state, restriction] = data;
             const item = node.getItem();
-            const isDf = state instanceof DG.DataFrame;
-            const nextValue = isDf ? state.clone() : state;
-            if (isDf)
-              (nextValue as DG.DataFrame).id = uuidv4();
             if (isFuncCallNode(item) && !item.instancesWrapper.isOutputOutdated$.value)
-              item.instancesWrapper.setRestriction(ioName, nextValue, restriction);
+              item.instancesWrapper.setRestriction(ioName, state, restriction);
+            else if (isFuncCallNode(item) && item.instancesWrapper.isReadonly)
+              item.instancesWrapper.setState(ioName, state, restriction);
             else
-              node.getItem().getStateStore().setState(ioName, nextValue, restriction);
+              item.getStateStore().setState(ioName, state instanceof DG.DataFrame ? copyDataFrame(state) : state, restriction);
           }
           if (controller instanceof LinkController && controller.consistencyResets.has(outputAlias)) {
             const item = node.getItem();
@@ -463,6 +460,13 @@ export class Link {
           }
         }
       }
+    }
+    if (controller instanceof NodeMetaController && this.linksState && this.matchInfo.actionsUUID.size) {
+      for (const ids of this.matchInfo.actionsUUID.values()) {
+        for (const uuid of [...ids.values()].flat())
+          this.linksState.actions.get(uuid)?.setVisibility(this.uuid, controller.actionsVisibility.get(uuid));
+      }
+      this.linksState.updateHiddenActions();
     }
     if (controller instanceof MutationController)
       checkMutationOverlap(this.matchInfo.spec.id, this.lastPipelineMutations, this.lastGranularMutations);
@@ -483,7 +487,13 @@ function checkMutationOverlap(
   }
 }
 
+/** The visibility entry of an action's own `showWhen`/`hideWhen`. */
+export const STRUCTURE_VISIBILITY = '$structure';
+
 export class Action extends Link {
+  // writer -> visible, merged like meta: a later writer overrides an earlier one
+  private visibility = new Map<string, boolean | undefined>();
+
   constructor(
     public prefix: NodePath,
     public matchInfo: MatchInfo,
@@ -491,6 +501,30 @@ export class Action extends Link {
     logger?: DriverLogger,
   ) {
     super(prefix, matchInfo, undefined, logger);
+  }
+
+  setVisibility(writer: string, visible: boolean | undefined) {
+    this.visibility.set(writer, visible);
+  }
+
+  removeVisibility(writer: string) {
+    this.visibility.delete(writer);
+  }
+
+  pruneVisibility(writers: ReadonlySet<string>) {
+    for (const writer of this.visibility.keys()) {
+      if (writer !== STRUCTURE_VISIBILITY && !writers.has(writer))
+        this.visibility.delete(writer);
+    }
+  }
+
+  isVisible() {
+    let visible = true;
+    for (const value of this.visibility.values()) {
+      if (value !== undefined)
+        visible = value;
+    }
+    return visible;
   }
 
   exec(additionalParams: Record<string, any>) {

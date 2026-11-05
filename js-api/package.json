@@ -101,14 +101,14 @@
     "utf-8-validate": "^6.0.5"
   },
   "scripts":   {
-    "build": "grok tsc -p tsconfig.json && grok build --skip-check && node scripts/smoke-bundle.cjs",
-    "build-docker": "grok tsc -p tsconfig.json && grok build --skip-check --only=browser && node scripts/smoke-bundle.cjs",
+    "build": "grok tsc -p tsconfig.json && node -e \"require('fs').copyFileSync('src/u2core/package.json', 'dist/src/u2core/package.json')\" && grok build --skip-check && node scripts/smoke-bundle.cjs",
+    "build-docker": "grok tsc -p tsconfig.json && node -e \"require('fs').copyFileSync('src/u2core/package.json', 'dist/src/u2core/package.json')\" && grok build --skip-check --only=browser && node scripts/smoke-bundle.cjs",
     "build-node": "grok build --skip-check --only=node",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src *.ts",
     "smoke": "node scripts/smoke-bundle.cjs",
     "check-links": "node scripts/check-sample-links.cjs",
     "inventory": "node scripts/inventory.cjs --check",
-    "test": "node --test scripts/unit/rect.test.cjs scripts/unit/color.test.cjs scripts/unit/qnum.test.cjs scripts/unit/utils.test.cjs"
+    "test": "node --test scripts/unit/rect.test.cjs scripts/unit/color.test.cjs scripts/unit/qnum.test.cjs scripts/unit/utils.test.cjs scripts/unit/row.test.cjs scripts/unit/operability.test.cjs"
   }
 }
