@@ -2,6 +2,7 @@
 
 ## v.next
 
+* `provideDgViewService`: the service is disposed when the app unmounts, so callers no longer call `dispose()`
 * InputForm: Toggling `isReadonly` alone updates whether the inputs are enabled
 * InputForm: Clearing `callMeta` drops the meta of the previous call
 * ResizeHandle: A cancelled pointer ends the drag, and only the primary button starts one

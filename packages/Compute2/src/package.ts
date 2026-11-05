@@ -187,7 +187,7 @@ export class PackageFunctions {
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
-    const viewService = provideDgViewService(app, view);
+    provideDgViewService(app, view);
 
     app.mount(view.root);
 
@@ -198,7 +198,6 @@ export class PackageFunctions {
       take(1),
     ).subscribe(() => {
       app.unmount();
-      viewService.dispose();
     });
 
     return view;
@@ -227,7 +226,7 @@ export class PackageFunctions {
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
-    const viewService = provideDgViewService(app, view);
+    provideDgViewService(app, view);
 
     app.mount(view.root);
 
@@ -238,7 +237,6 @@ export class PackageFunctions {
       take(1),
     ).subscribe(() => {
       app.unmount();
-      viewService.dispose();
       if (resolve)
         resolve();
     });
