@@ -2835,6 +2835,9 @@ importers:
       '@datagrok-libraries/test':
         specifier: workspace:^
         version: link:../../libraries/test
+      '@jupyterlab/application':
+        specifier: ~2.3.1
+        version: 2.3.1(bufferutil@4.1.0)(crypto@1.0.1)(react@16.9.0)(utf-8-validate@5.0.10)
       '@jupyterlab/apputils':
         specifier: ~2.3.1
         version: 2.3.1(bufferutil@4.1.0)(crypto@1.0.1)(utf-8-validate@5.0.10)
@@ -2871,6 +2874,9 @@ importers:
       '@jupyterlab/theme-light-extension':
         specifier: ~2.3.1
         version: 2.3.1(bufferutil@4.1.0)(crypto@1.0.1)(react@16.9.0)(utf-8-validate@5.0.10)
+      '@jupyterlab/ui-components':
+        specifier: ~2.3.1
+        version: 2.3.1(crypto@1.0.1)(react@16.9.0)
       '@lumino/commands':
         specifier: ^1.10.1
         version: 1.21.1(crypto@1.0.1)
@@ -2886,6 +2892,9 @@ importers:
       es6-promise:
         specifier: ~4.2.8
         version: 4.2.8
+      marked:
+        specifier: ^4.3.0
+        version: 4.3.0
       utf-8-validate:
         specifier: ^5.0.2
         version: 5.0.10
@@ -14012,6 +14021,11 @@ packages:
   marked@16.4.2:
     resolution: {integrity: sha512-TI3V8YYWvkVf3KJe1dRkpnjs68JUPyEa5vjKrp1XEEJUAOaQc+Qj+L1qWbPd0SJuAdQkFU0h73sXXqwDYxsiDA==}
     engines: {node: '>= 20'}
+    hasBin: true
+
+  marked@4.3.0:
+    resolution: {integrity: sha512-PRsaiG84bK+AMvxziE/lCFss8juXjNaWzVbN5tXAm4XjeaS9NAHhop+PjQxz2A9h8Q4M/xGmzP8vqNwy6JeK0A==}
+    engines: {node: '>= 12'}
     hasBin: true
 
   math-intrinsics@1.1.0:
@@ -32159,6 +32173,8 @@ snapshots:
   marked@0.8.2: {}
 
   marked@16.4.2: {}
+
+  marked@4.3.0: {}
 
   math-intrinsics@1.1.0: {}
 
