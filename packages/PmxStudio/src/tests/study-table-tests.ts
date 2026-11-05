@@ -2,8 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {DEFAULT_RULES, findOutliers, StudyColumns} from '../outlier-rules';
-import {EXCLUDED, FLAGGED, MARK_REASON, appendPasted, caliperVolume, emptyStudy, exclusionsOf, mark,
-  withoutExcluded}
+import {AnimalSelection, EXCLUDED, FLAGGED, MARK_REASON, appendPasted, caliperVolume, emptyStudy, exclusionsOf,
+  mark, mirrorSelection, withoutExcluded}
   from '../study-table';
 import {REVEALED, addLog, groupsShown, logOf, parseStudy, studyOf, tableOf} from '../study-file';
 import {dateOf, dosingDays, emptyMeta, metaOf, parseMeta, setMetaOn, startFrom, weekdayOf} from '../study-meta';
@@ -197,5 +197,35 @@ category('Study table', () => {
     expect(said.some((w) => w.startsWith('Flagged M1') && w.endsWith('(blinded)')), true);
     expect(said[said.length - 1].endsWith('(groups revealed)'), true);
     expect(metaOf(tableOf(parseStudy(JSON.stringify(studyOf(df, null)))))!.blinded, true);
+  });
+
+  test('an animal picked in one chart is selected in the study, and in every table of animals', async () => {
+    const s = study();
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', s.animal),
+      DG.Column.fromStrings('group', s.group), DG.Column.fromList('double', 'day', s.day),
+      DG.Column.fromList('double', 'volume', s.volume)]);
+    const sel = new AnimalSelection();
+    sel.attach({study: df, animal: 'animal', group: 'group', day: 'day', volume: 'volume', bodyWeight: null});
+    const settled = () => new Promise((r) => setTimeout(r, 50));
+    const animals = () => [...sel.animals.peek()].sort().join(',');
+    sel.pick('M2');
+    await settled();
+    expect(df.selection.trueCount, 3, 'its three rows');
+    expect(animals(), 'M2');
+    sel.pick('M4', new MouseEvent('click', {ctrlKey: true}));
+    await settled();
+    expect(animals(), 'M2,M4', 'Ctrl adds');
+    // a table of animals follows, and its own selection reaches the study
+    const each = DG.DataFrame.fromColumns([DG.Column.fromStrings('Animal', ['M1', 'M2', 'M3', 'M4'])]);
+    const stop = mirrorSelection(each, 'Animal', sel);
+    expect(each.selection.trueCount, 2);
+    each.selection.init((i) => i === 0);
+    await settled();
+    expect(animals(), 'M1', 'a selection on the derived table');
+    stop();
+    sel.pick('M1');
+    await settled();
+    expect(df.selection.trueCount, 0, 'picked again alone: none');
+    sel.dispose();
   });
 });

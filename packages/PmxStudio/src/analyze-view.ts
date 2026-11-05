@@ -34,7 +34,8 @@ import {BandChart} from './band-chart';
 import {explore, exploreContent, StudyInputs, studyInputsOf} from './explore';
 import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
-import {exclusionsOf, studyDataLine, studyMenu, studyOf, tagStudy, withoutExcluded} from './study-table';
+import {AnimalSelection, exclusionsOf, mirrorSelection, studyDataLine, studyMenu, studyOf, tagStudy,
+  withoutExcluded} from './study-table';
 import {metaOf, setMetaOn} from './study-meta';
 import {Exports, download, exportMenu, reportHtml} from './report';
 import {printSheet} from './sheet';
@@ -259,6 +260,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const planState = {stale, error, result, reading: Promise.resolve() as Promise<unknown>};
   // the study and columns the shown result read (Your data opens them)
   let resultStudy: StudyInputs | null = null;
+  // the animals selected, through the study table's own selection: what one chart picks, every chart marks
+  const selection = new AnimalSelection();
+  self.own(() => selection.dispose());
   // the twin inputs of the last analyses that got their twin, as many as the engine keeps (twinOf's 8)
   const twinsCached: string[] = [];
   const analyze = async (prepare?: () => Promise<void>) => {
@@ -283,6 +287,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         error.value = null;
         stale.value = askedOf(call) !== sent;
         resultStudy = reads;
+        selection.attach(reads);
         result.value = keepSame(result.peek(), frames);
         return;
       }
@@ -294,6 +299,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       error.value = null;
       stale.value = askedOf(call) !== sent;
       resultStudy = reads;
+      selection.attach(reads);
       result.value = keepSame(result.peek(), frames);
       void analysisFrames(analysisDeclarationOf(withTwin)).then((done) => {
         if (mine !== latest)
@@ -688,7 +694,11 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
           picked.value = a.animal;
           mark(a.animal);
         };
-        row.addEventListener('click', pick);
+        row.dataset.animal = a.animal;
+        row.addEventListener('click', (ev) => {
+          pick();
+          selection.pick(a.animal, ev);
+        });
         row.addEventListener('contextmenu', (ev) => {
           ev.preventDefault();
           studyMenu(studyOf(call.getParamValue('study') as DG.DataFrame | null), 'animal', a.animal,
@@ -705,11 +715,16 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       }
     }
     animalList.replaceChildren(...rows);
+    markSelected(selection.animals.peek());
     // the strongest animal of the first treated group, until one is picked
     const keep = picked.peek();
     picked.value = keep !== undefined && buttons.has(keep) ? keep : buttons.keys().next().value;
     mark(picked.peek());
   });
+  // the animals selected anywhere, outlined in the list
+  const markSelected = (on: ReadonlySet<string>) => animalList.querySelectorAll<HTMLElement>('.pmx-forest-row')
+    .forEach((row) => row.classList.toggle('is-selected', on.has(row.dataset.animal!)));
+  form.effect(() => markSelected(selection.animals.value));
   const twinsOnly = only(result, ['twins', 'effects'], groupsOf);
   const pickedRow = computed(() => {
     const e = twinsOnly.value?.effects;
@@ -783,7 +798,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     return bars.length ? {bars, colors: colorsOf(r), title: by.title, order: by.order, groups} : undefined;
   });
   const waterfall = new WaterfallChart(waterfallData, (animal, e) =>
-    studyMenu(studyOf(call.getParamValue('study') as DG.DataFrame | null), 'animal', animal, {causedBy: e}));
+    studyMenu(studyOf(call.getParamValue('study') as DG.DataFrame | null), 'animal', animal, {causedBy: e}),
+  selection);
   const waterfallMissing = infoNote('');
   form.effect(() => {
     const has = !!waterfallData.value;
@@ -797,7 +813,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const r = volumesOnly.value;
     const s = resultStudy;
     return r && s ? {lines: spiderLines(s), colors: colorsOf(r)} : undefined;
-  }));
+  }), selection);
 
   // the strict Kaplan-Meier: days to the endpoint as measured, an animal that never reached it censored
   // projected, by its slider: at the last day measured, what was measured; further right, each animal still under
@@ -872,19 +888,30 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       .join('; '), 'success')] : []));
   });
 
-  const slopes = viewers.boxPlot(computed(() => {
+  const slopesData = computed(() => {
     const r = animalsOnly.value;
     if (!r)
       return undefined;
     const a = r.animals;
     const df = DG.DataFrame.fromObjects(Array.from({length: a.rowCount}, (_, i) => ({'Group': a.get('group', i),
-      'Growth rate (ln V per day)': a.get('slope_per_day', i)})).filter((x) => x['Growth rate (ln V per day)'] !==
-      null))!;
+      'Animal': String(a.get('animal', i)), 'Growth rate (ln V per day)': a.get('slope_per_day', i)}))
+      .filter((x) => x['Growth rate (ln V per day)'] !== null))!;
     df.col('Group')!.meta.colors.setCategorical(colorsOf(r));
     // the control first, then the treated groups in their order
     df.col('Group')!.setCategoryOrder([r.analysis.get('control', 0), ...r.comparisons.col('arm')!.toList()]);
     return df;
-  }), {valueColumnName: 'Growth rate (ln V per day)', categoryColumnNames: ['Group'], showPValue: false,
+  });
+  // its points selected with the study's animals, and a lasso on it selects them in the study
+  let unmirror = () => {};
+  form.effect(() => {
+    const df = slopesData.value;
+    void selection.animals.value;
+    unmirror();
+    unmirror = df ? mirrorSelection(df, 'Animal', selection) : () => {};
+  });
+  self.own(() => unmirror());
+  const slopes = viewers.boxPlot(slopesData, {valueColumnName: 'Growth rate (ln V per day)',
+    categoryColumnNames: ['Group'], showPValue: false,
     showStatistics: false});
 
   // the study's data in Datagrok's own table view; here, one line on it and the way there

@@ -10,7 +10,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {button, divH, span} from '@datagrok-libraries/u2';
+import {button, divH, signal, span} from '@datagrok-libraries/u2';
 
 import {DEFAULT_RULES, Finding, OutlierRules, RulesSource, canEditLabRules, findOutliers, labRules, rulesInForce,
   saveLabRules, saveUserRules, userRules} from './outlier-rules';
@@ -451,4 +451,85 @@ export function studyDataLine(names: () => StudyNames | null): {root: HTMLElemen
       `${flagged} flagged · ${excluded} excluded. Right-click a value in the table to flag or exclude it.`;
   };
   return {root, refresh, dispose: onRulesChanged(refresh)};
+}
+
+/** The animals selected in a study, as Datagrok links its viewers: through the table's own selection. An animal is
+ *  selected when any of its rows is; picking one selects its rows (with Ctrl, Cmd or Shift, adds it to the selection
+ *  or takes it out; picked again alone, clears it). The table view, its viewers and the context panel follow, and a
+ *  chart that shows animals reads `animals` to mark them. */
+export class AnimalSelection {
+  readonly animals = signal<ReadonlySet<string>>(new Set());
+  private study: StudyNames | null = null;
+  private sub: {unsubscribe(): void} | null = null;
+
+  /** Follows `s`'s table (null: none). */
+  attach(s: StudyNames | null): void {
+    if (s?.study === this.study?.study && s?.animal === this.study?.animal)
+      return;
+    this.sub?.unsubscribe();
+    this.study = s;
+    this.sub = s ? s.study.onSelectionChanged.subscribe(() => this.read()) : null;
+    this.read();
+  }
+
+  /** Selects `animals` (and only them): their rows in the study table. */
+  select(animals: ReadonlySet<string>): void {
+    if (!this.study || sameSet(animals, this.animals.peek()))
+      return;
+    const col = this.study.study.col(this.study.animal)!;
+    this.study.study.selection.init((i) => animals.has(String(col.get(i))));
+  }
+
+  /** A click on an animal: it alone; with Ctrl, Cmd or Shift, added or taken out; alone and picked again, none. */
+  pick(animal: string, e?: MouseEvent | KeyboardEvent): void {
+    const now = this.animals.peek();
+    const next = new Set(now);
+    if (e && (e.ctrlKey || e.metaKey || e.shiftKey)) {
+      if (!next.delete(animal))
+        next.add(animal);
+    } else {
+      next.clear();
+      if (!(now.size === 1 && now.has(animal)))
+        next.add(animal);
+    }
+    this.select(next);
+  }
+
+  dispose(): void {
+    this.sub?.unsubscribe();
+    this.sub = null;
+  }
+
+  private read(): void {
+    const s = this.study;
+    const col = s?.study.col(s.animal);
+    const got = new Set<string>();
+    if (s && col) {
+      for (const i of s.study.selection.getSelectedIndexes())
+        got.add(String(col.get(i)));
+    }
+    if (!sameSet(got, this.animals.peek()))
+      this.animals.value = got;
+  }
+}
+
+const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) => a.size === b.size && [...a].every((x) => b.has(x));
+
+/** A derived table of animals (`col`: their names) kept in step with `sel` both ways: what is selected in the study
+ *  is selected here, and a selection made here (a lasso on its viewer) selects those animals in the study. */
+export function mirrorSelection(df: DG.DataFrame, col: string, sel: AnimalSelection): () => void {
+  const names = df.col(col)!;
+  let writing = false;
+  const fromStudy = () => {
+    writing = true;
+    const on = sel.animals.peek();
+    df.selection.init((i) => on.has(String(names.get(i))));
+    writing = false;
+  };
+  const sub = df.onSelectionChanged.subscribe(() => {
+    if (!writing)
+      sel.select(new Set(Array.from(df.selection.getSelectedIndexes(), (i) => String(names.get(i)))));
+  });
+  fromStudy();
+  return () => sub.unsubscribe();
 }

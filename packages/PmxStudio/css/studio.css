@@ -192,3 +192,6 @@
   color: var(--dg-grey-5, #717581); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .pmx-km-measured.is-projected { color: #b7791f; }
+
+/* an animal selected anywhere (the study table's selection), outlined in the twin list */
+.pmx-forest-row.is-selected { box-shadow: inset 3px 0 0 var(--dg-accent, #2083D5); font-weight: 500; }

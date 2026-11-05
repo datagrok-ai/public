@@ -41,7 +41,7 @@ export class KmChart extends Control {
         return;
       const [x0, x1] = [last, 2 * last].map((d) => this.chart.convertToPixel({xAxisIndex: 0}, d) as number);
       Object.assign(slider.style, {left: `${x0 - THUMB}px`, width: `${x1 - x0 + 2 * THUMB}px`});
-      Object.assign(measured.style, {left: `${GRID.left}px`, width: `${x0 - GRID.left - THUMB}px`});
+      Object.assign(measured.style, {left: `${GRID.left}px`, width: `${x0 - GRID.left - THUMB - 6}px`});
     };
     slider.addEventListener('input', () => {
       const v = Number(slider.value);

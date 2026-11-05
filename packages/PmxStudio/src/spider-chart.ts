@@ -12,6 +12,15 @@ import {initQuietly} from './band-chart';
 import {EXCLUDED, ticked} from './study-file';
 import type {StudyInputs} from './explore';
 
+/** The animals selected (marked on the chart, the others dimmed) and what a click on one does. */
+export interface Picking {animals: ReadonlySignal<ReadonlySet<string>>, pick(animal: string, e?: MouseEvent): void}
+
+/** Where an echarts click on an animal goes: to picking.pick, with the keys held. */
+function pickOn(chart: echarts.ECharts, picking?: Picking): void {
+  if (picking)
+    chart.on('click', (p: any) => p.data?.animal && picking.pick(p.data.animal, p.event?.event));
+}
+
 /** One animal's line: its days and its % change from its first volume (day 0, randomization, when measured). */
 export interface SpiderLine {animal: string, group: string, days: number[], change: number[]}
 
@@ -42,7 +51,8 @@ export class SpiderChart extends Control {
   private readonly chart: echarts.ECharts;
 
   /** `lines` and the groups' colours, redrawn as they change. */
-  constructor(data: ReadonlySignal<{lines: SpiderLine[], colors: {[group: string]: string}} | undefined>) {
+  constructor(data: ReadonlySignal<{lines: SpiderLine[], colors: {[group: string]: string}} | undefined>,
+    picking?: Picking) {
     super();
     this.root.classList.add('pmx-spider-chart');
     this.root.style.position = 'relative';
@@ -54,24 +64,31 @@ export class SpiderChart extends Control {
       size.unsubscribe();
       this.chart.dispose();
     });
+    pickOn(this.chart, picking);
     this.effect(() => {
       const x = data.value;
+      const on = picking?.animals.value ?? new Set<string>();
       if (!x) {
         this.chart.clear();
         return;
       }
+      const dim = (animal: string) => on.size > 0 && !on.has(animal);
       const fallback = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
       // each animal is a series named after its group: the legend toggles a group's animals together
       this.chart.setOption({
         animation: false,
         grid: {left: 56, right: 16, top: 32, bottom: 40},
-        legend: {top: 0, data: [...new Set(x.lines.map((l) => l.group))]},
+        // the legend in full colour whatever is dimmed
+        legend: {top: 0, data: [...new Set(x.lines.map((l) => l.group))], itemStyle: {opacity: 1},
+          lineStyle: {opacity: 1}},
         tooltip: {trigger: 'item', formatter: (p: any) => `${p.data.animal} (${p.seriesName})<br>Day ` +
           `${p.data.value[0]}: ${p.data.value[1] > 0 ? '+' : ''}${p.data.value[1]}%`},
         xAxis: {type: 'value', name: 'Day after randomization', nameLocation: 'middle', nameGap: 26},
         yAxis: {type: 'value', name: 'Change from randomization (%)', nameLocation: 'middle', nameGap: 42},
         series: x.lines.map((l) => ({type: 'line', name: l.group, color: x.colors[l.group] ?? fallback,
-          symbolSize: 4, lineStyle: {width: 1.2, opacity: 0.85}, emphasis: {focus: 'series'},
+          symbolSize: 4, triggerLineEvent: true, z: dim(l.animal) ? 1 : 2,
+          lineStyle: {width: on.has(l.animal) ? 2.5 : 1.2, opacity: dim(l.animal) ? 0.12 : 0.85},
+          itemStyle: {opacity: dim(l.animal) ? 0.12 : 1}, emphasis: {focus: 'series'},
           data: l.days.map((day, i) => ({value: [day, l.change[i]], animal: l.animal}))})),
       }, true);
     });
@@ -86,8 +103,10 @@ export interface Bar {animal: string, group: string, value: number}
 export class WaterfallChart extends Control {
   private readonly chart: echarts.ECharts;
 
-  constructor(data: ReadonlySignal<{bars: Bar[], colors: {[group: string]: string}, title: string,
-    order: 'asc' | 'desc', groups: string[]} | undefined>, onMenu?: (animal: string, e: MouseEvent) => void) {
+  constructor(
+    data: ReadonlySignal<{bars: Bar[], colors: {[group: string]: string}, title: string, order: 'asc' | 'desc',
+      groups: string[]} | undefined>,
+    onMenu?: (animal: string, e: MouseEvent) => void, picking?: Picking) {
     super();
     this.root.classList.add('pmx-waterfall-chart');
     this.root.style.position = 'relative';
@@ -99,6 +118,7 @@ export class WaterfallChart extends Control {
       size.unsubscribe();
       this.chart.dispose();
     });
+    pickOn(this.chart, picking);
     if (onMenu) {
       this.chart.on('contextmenu', (p: any) => {
         p.event?.event?.preventDefault();
@@ -108,6 +128,7 @@ export class WaterfallChart extends Control {
     }
     this.effect(() => {
       const x = data.value;
+      const on = picking?.animals.value ?? new Set<string>();
       if (!x) {
         this.chart.clear();
         return;
@@ -125,7 +146,8 @@ export class WaterfallChart extends Control {
           axisTick: {show: false}},
         yAxis: {type: 'value', name: x.title, nameLocation: 'middle', nameGap: 42},
         series: x.groups.map((g) => ({type: 'bar', name: g, stack: 'all', color: x.colors[g], barCategoryGap: '20%',
-          data: sorted.map((b) => b.group === g ? {value: b.value, animal: b.animal} : null)})),
+          data: sorted.map((b) => b.group === g ? {value: b.value, animal: b.animal,
+            itemStyle: {opacity: on.size > 0 && !on.has(b.animal) ? 0.2 : 1}} : null)})),
       }, true);
     });
   }
