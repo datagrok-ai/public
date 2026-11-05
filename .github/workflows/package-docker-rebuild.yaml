@@ -91,13 +91,28 @@ jobs:
           for image in ${{ steps.build.outputs.images }}; do
             echo "::group::Trivy $image"
             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache/ \
-              aquasec/trivy:0.75.0 image --scanners vuln --severity HIGH,CRITICAL --timeout 30m "$image" || true
+              aquasec/trivy:0.75.0 image --scanners vuln --timeout 30m "$image" || true
             echo "::endgroup::"
             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache/ \
-              aquasec/trivy:0.75.0 image --scanners vuln --severity HIGH,CRITICAL --skip-db-update --format json --quiet "$image" \
+              aquasec/trivy:0.75.0 image --scanners vuln --skip-db-update --format json --quiet "$image" \
               | jq -r --arg i "$image" '[.Results[]?.Vulnerabilities[]?] as $v
-                  | "\($i): CRITICAL=\([$v[]|select(.Severity=="CRITICAL")]|length) HIGH=\([$v[]|select(.Severity=="HIGH")]|length) fixable=\([$v[]|select(.FixedVersion!=null and .FixedVersion!="")]|length)"' \
+                  | "\($i): total=\($v|length) CRITICAL=\([$v[]|select(.Severity=="CRITICAL")]|length) HIGH=\([$v[]|select(.Severity=="HIGH")]|length) MEDIUM=\([$v[]|select(.Severity=="MEDIUM")]|length) LOW=\([$v[]|select(.Severity=="LOW")]|length) fixable=\([$v[]|select(.FixedVersion!=null and .FixedVersion!="")]|length)"' \
               | tee -a $GITHUB_STEP_SUMMARY || true
+          done
+
+      - name: Smoke run
+        run: |
+          # A long-running service must still be up after 60 s; a one-shot image must exit 0.
+          for image in ${{ steps.build.outputs.images }}; do
+            cid=$(docker run -d "$image")
+            sleep 60
+            state=$(docker inspect --format '{{.State.Status}} {{.State.ExitCode}}' "$cid")
+            echo "::group::Smoke $image: $state"
+            docker logs --tail 80 "$cid" 2>&1
+            echo "::endgroup::"
+            echo "$image smoke: $state" | tee -a $GITHUB_STEP_SUMMARY
+            docker rm -f "$cid" >/dev/null
+            case "$state" in running*|"exited 0") ;; *) exit 1 ;; esac
           done
 
       - name: Login to DockerHub
