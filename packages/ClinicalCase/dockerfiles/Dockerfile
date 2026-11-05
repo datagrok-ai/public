@@ -45,7 +45,10 @@ RUN mkdir -p /data /var/log/clinicalcase && \
     chown -R datagrok:datagrok /app /data /var/log/clinicalcase
 
 USER datagrok
-RUN ls /app; /app/core version && (cd / && python -c "import celery.app") && python -c "import celery.app" && python -c "import app"
+# /app holds the CORE bundle's own top-level packages (yaml, ...), so import the worker's deps
+# from the venv first, as the celery CLI does, before /app joins sys.path.
+RUN /app/core version && \
+    cd / && python -c "import celery.app, sys; sys.path.append('/app'); import app"
 
 EXPOSE 8000
 
