@@ -18,7 +18,8 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 RUN curl -fsSL https://mafft.cbrc.jp/alignment/software/mafft-${MAFFT_VERSION}-without-extensions-src.tgz -o /tmp/mafft.tgz ; \
     echo "edb34ae9b26d6b55328c18fa060ed741bca8cd599c2f4f8fad0e0871c8082265  /tmp/mafft.tgz" | sha256sum -c - ; \
     tar -xzf /tmp/mafft.tgz -C /tmp ; \
-    make -C /tmp/mafft-${MAFFT_VERSION}-without-extensions/core PREFIX=/usr/lib/mafft install ; \
+    # mafft's K&R-style prototypes do not compile as C23, gcc's default since 15 \
+    make -C /tmp/mafft-${MAFFT_VERSION}-without-extensions/core PREFIX=/usr/lib/mafft CFLAGS='-O3 -std=gnu17 -fpermissive' install ; \
     rm -rf /usr/lib/mafft/share /usr/lib/mafft/bin/*.rb /tmp/*
 
 # PepSeA's requirements.txt pins 2021 versions that do not install on python 3.11; only what alignment/ imports is installed.
