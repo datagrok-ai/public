@@ -8,7 +8,7 @@ ENV MODEL_NAME=datagrok-linear-regression
 ENV MODEL_VERSION=1
 
 RUN apk upgrade --no-cache && apk add --no-cache \
-    bash git curl wget python-3.11 py3.11-pip \
+    bash git curl wget patch python-3.11 py3.11-pip \
     build-base openssl-dev zlib-dev bzip2-dev readline-dev sqlite-dev ncurses-dev xz-dev \
     libffi-dev tk-dev libxml2-dev xmlsec-dev
 
