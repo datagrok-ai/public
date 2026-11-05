@@ -51,6 +51,14 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
            │                    │                                                    ui/results-layout.ts
            │                    ├─> ui/runs-panel.ts ──> metrics/, ui/data-grid.ts, ui/results-viewers.ts (resultsTitle),
            │                    │                       engines/, preparation/, training/, generated/db.ts (types)
+           │                    ├─> ui/tune-settings.ts ──> training/search.ts (searchSpaceOf, rangeProblem), engines/, metrics/
+           │                    ├─> ui/search-panel.ts ──> training/search.ts, metrics/, ui/data-grid.ts,
+           │                    │                         ui/results-viewers.ts (resultsTitle)
+           │                    ├─> ui/validation-inputs.ts ──> training/k-fold.ts, ui/collapsible-group.ts
+           │                    ├─> ui/button-gate.ts (Train, Tune)
+           │                    ├─> training/search.ts (tuneSearch) ──> training/k-fold.ts, training/train-model.ts, engines/
+           │                    ├─> training/browser-search.ts (browserSearch: the trials) ──> training/search.ts,
+           │                    │                                                            training/train-model.ts, metrics/
            │                    ├─> ui/save-model-dialog.ts, ui/apply-model-dialog.ts, ui/forge-app.ts (the balloon)
            │                    └─> storage/  ──> generated/db.ts  (grok.dapi.domains -> EMS schema forge)
            │                                  ├─> grok.dapi.files  (System:DomainFiles/forge/model)
@@ -170,12 +178,16 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   table (the boundary of the table pane's **Train**); `TrainView.open()` (`ML | Forge | Train...`) calls it with the
   current table, or says "Open a table first.". The form is one `ui.form`, so the platform
   aligns every label in it: the group **Data** (Table, Target, Features), the group **Preparation**
-  (`PreparationInputs`, below; hidden while none of its inputs applies), the group **Method** (Method and the
-  hyperparameters), all expanded at the start, and the **Train** row
-  (`ui.buttonsInput`, `trainButton`). The view is a resizable split (`ui.splitH(..., true)`): the form's panel starts 400 px wide
-  (`FORM_WIDTH`) and scrolls by itself; the results take the rest (`forge-train-results`, scrolling), with the
+  (`PreparationInputs`, below; hidden while none of its inputs applies), the group **Method** (Method and the method's
+  `TuneSettings`, see "Search": **Settings**, its status, then the hyperparameters in Manual or **Search options** and
+  the Tune bar with `tuneButton` in Auto-tune) and the group **Validation** (`ValidationInputs`, below; collapsed
+  at the start), the others expanded at the start, and last the row `trainRow` (`forge-train-row`, a
+  `ui.buttonsInput` with `trainButton` at its right; `position: sticky; bottom: 0` on the `--white` background, so it
+  sits right under Validation on a short form and stays at the bottom edge while a taller form scrolls). The view is a
+  resizable split (`ui.splitH(..., true)`): the left box starts 400 px wide (`FORM_WIDTH`) and holds the form's panel
+  (`forge-train-form`), which scrolls by itself; the results take the rest (`forge-train-results`, scrolling), with the
   training loader (`resultsStatus`) in the header of the pane's **Performance** panel.
-  The `trainRow` is right-aligned (`forge-train-row`). The ribbon holds only **Save** (`ui.bigButton`). The platform's column inputs keep a column removed from the
+  The ribbon holds only **Save** (`ui.bigButton`). The platform's column inputs keep a column removed from the
   table until their dialog is opened again, so the form listens to the table's `onColumnsRemoved` (in `formSubs`) and
   empties **Target** or unchecks the **Features** that are gone (`dropRemovedColumns`), each a change as any other. A
   Table change rebuilds the form; the groups'
@@ -200,15 +212,22 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   the metric rows and the value columns are the same, so the grid neither flickers nor loses its column widths; other
   rows (task, AUC-ROC, the Crux ids) build a new one (the rows are the ids with a validation value or an evaluation
   value, in `METRIC_IDS` order: `balancedAccuracy`, `mcc` and `averagePrecision` after `auc`; a model saved before
-  AUC-ROC or the Crux ids existed gets those rows with Train and Validation empty when evaluated); a hint shown in between detaches the grid and keeps it. It is a frame of **Metric**, **Train**, **Validation**
-  and, with `MetricsSummary.evaluation`, **Evaluation** (format `0.000`) in a
+  AUC-ROC or the Crux ids existed gets those rows with Train and Validation empty when evaluated; a change of the
+  Test or Evaluation column builds a new one too); a hint shown in between detaches the grid and keeps it. It is a frame of **Metric**, **Train**, **Validation**,
+  with `metrics.test` **Test** and, with `MetricsSummary.evaluation`, **Evaluation** (format `0.000`) in a
   `readOnlyGrid` with the header texts, the metric descriptions and the full-precision values as tooltips, then a
   bullet list (`ul`): `Missing values: kept (the method handles them)` (only under `keep` when the training features
   had gaps), `Rows: <used> used, <skipped> skipped (missing values)` (only when rows were skipped),
-  `Validation: <folds>-fold cross-validation on <rows> rows`, `Seed: <seed>` with the seed in a selectable
-  `forge-seed` span and the copy icon right after it (**Copy the seed**, balloon `Seed <seed> copied.`),
-  `Positive class: <class>` (two classes only) and `Evaluation: <table> (<rows> rows[, <n> skipped (missing values)])`
-  (with an evaluation). The `metricFindings` of the metrics mark their cells: `onCellPrepare` paints a marked value
+  `Validation: <folds>-fold cross-validation on <rows> rows` or `Validation: hold out of <p>% (<n> rows)` (from
+  `MetricsSummary.splitting`, `splittingOf(model.splitting)` for a stored model; `, stratified` after it when
+  `isStratified`; `heldOutCount` of the stored `trainFraction`), `Split seed: <seed>` (absent when `isShuffled` is
+  false; an older splitting without it counts as shuffled) with the seed in a selectable
+  `forge-seed` span and the copy icon right after it (**Copy the seed**, balloon `Split seed <seed> copied.`),
+  then, with `MetricsSummary.search` (the training's `search`, or `storedSummary`'s `searchRecordOf(model.search)`),
+  `Search: <Tune> by <metric>, <budget>: <N> trials of <M> method(s), chosen by the one-standard-error rule` and either
+  `Test: <rows> rows held out before the search` or `Validation after a search is optimistic: the best of the trials
+  was chosen on it`, `Positive class: <class>` (two classes only) and `Evaluation: <table> (<rows> rows[, <n> skipped
+  (missing values)])` (with an evaluation). The `metricFindings` of the metrics mark their cells: `onCellPrepare` paints a marked value
   (the finding's `splits`) in `DG.Color.failure`, and its tooltip ends with the finding's text (`R2 is below 0.3.`).
 - `CollapsibleGroup` (`ui/collapsible-group.ts`, classes `forge-group*` in `css/forge.css`) is the folding block of
   the Train view groups and of the Apply dialog's **Columns** and **More options**: a header with a chevron, the
@@ -240,6 +259,26 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   reappears as it first appeared, and the group is hidden while nothing in it is shown. `steps()` is the
   `PreparationSteps` of the selection; a hidden input's step is off (Skip unique categories, checked while hidden, is
   sent only while it is shown).
+- **Validation** (`ui/validation-inputs.ts`, `ValidationInputs`, Train view only) owns its `CollapsibleGroup`
+  (collapsed): **Scheme** (`K-fold, stratified` | `K-fold` | `Hold-out`; `update(target)` on every Target change lists
+  the stratified one only for a classification target, turns it into `K-fold` for a regression and gives it back on
+  the next classification target unless the user picked K-fold, `isSchemeChosen`), **Folds** (`ui.input.int` 2..20,
+  shown for the K-fold schemes), **Test fraction** (`ui.input.float` 0.05..0.5, shown for Hold-out), **Shuffle** and
+  **Split seed** (`ui.input.int` 0..`MAX_SEED`, 42, `showPlusMinus: false`, enabled while Shuffle is checked, no icons
+  after it: the user removed the dice and the copy icon). Every input has a tooltip of at most five words (`How rows
+  are split`, `Seed for random splitting`, ...).
+  `settings()` is the `ValidationSettings` (`training/k-fold.ts`; Hold-out is stratified, which a regression ignores),
+  `seedValue` the split seed, `usedInputs` the inputs `problem()` checks (Folds or Test fraction, the seed while
+  shuffled), `restore(validation, seed)` sets them as a user would (a **Runs** row). A Table change builds a new form
+  whose `ValidationInputs` takes the old one's values (`createForm(table, previous)`).
+- **Settings the method ignores** (`meta.mlenabled`, see "Engine contract"). `applyRules(form)` runs at the end of
+  `fillMethod`, on every hyperparameter change and on every Target and Predict probability change (`formSubs`): it
+  evaluates `isEnabled(enabledRules(engine), name, values, task)` per hyperparameter, with the task the method trains
+  (`taskOf(target)`, regression under Predict probability, unknown without a target), sets `input.enabled` (never
+  hides) and passes the ignored names to `form.tune.setInactive` (read back by `isActive`; in Auto-tune with the tuned
+  settings free and the target's task, see "Search"). `problem()` and `revalidate()` skip the inactive inputs
+  (`activeHyperparameters()`), so a disabled invalid value blocks nothing; `selection()` still sends every value. A
+  malformed `mlenabled` logs one warning per method (`loggedFailures`) and enables everything.
 - UI entry points and handlers are the only error boundaries (`ui/report-error.ts`): `ForgeError` becomes a warning,
   anything else an error balloon plus `_package.logger.error`. API functions do not catch: the error reaches the
   caller.
@@ -254,7 +293,9 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
 ## Training pipeline
 
 `training/train-model.ts`. A `TrainingSelection` is what the user chose: the engine, the checked feature columns
-themselves (a list, no frame), the target column, the hyperparameters, a seed, the number of folds (5), the
+themselves (a list, no frame), the target column, the hyperparameters, the split seed (`seed`), the validation
+(`validation`, a `ValidationSettings` of `training/k-fold.ts`: `scheme` `kfold` | `holdout`, `folds`, `testFraction`,
+`stratified`, `shuffle`; the view's **Validation** group, `DEFAULT_VALIDATION` for the API), the
 missing-value handling and the preparation steps (`steps`, a `PreparationSteps`, see "Preparation"; the Train view
 takes them from `PreparationInputs.steps()`). `prepareTraining(selection)`
 handles the missing values (see "Missing values"), then applies the steps (`prepareFeatures`), and returns the
@@ -263,8 +304,9 @@ columns where nothing changed; the model's feature list, target schema and data 
 (the selection's rows they hold, a `BitSet` over the table, or `null` when no row was skipped), and
 `prepared` (`PreparedFeatures`), what the method is trained on, with the `options` that record the whole preparation
 (`options.missingValues.skippedRows` is the one record of the skipped rows). No frame is built: the engine calls
-build their own. After preparation fewer than `2 * folds` rows is a `ForgeError` ("After skipping rows with missing
-values, N rows remain; training needs at least 10.").
+build their own. After preparation fewer than `minimumRows(validation)` rows (`2 * folds`, or two held out rows:
+`ceil(2 / testFraction)`) is a `ForgeError` ("After skipping rows with missing values, N rows remain; training needs
+at least 10.").
 
 **Missing values in the view.** **Missing values** (see Components) is the first input of **Preparation** and follows
 the checked features; `fillMethod`, which every method change goes through, hides it for a method that handles
@@ -297,7 +339,7 @@ as a method would get them); rule 8 calls the engines on those prepared columns,
 | 1 | no feature | Features |
 | 1b | Skip unique categories leaves no prepared feature: `Skip unique categories leaves no feature. Check more features.` | Features |
 | 2 | the target is also a feature | Features |
-| 3 | fewer rows with a target value than `2 * folds` (10) | Target |
+| 3 | fewer rows with a target value than `minimumRows(validation)` (`2 * folds`, 10 by default; `ceil(2 / testFraction)` for a hold out) | Target |
 | 4 | a bigint target ("holds very large whole numbers", `bigIntProblem` in `training/default-features.ts`) | Target |
 | 5 | a classification target with fewer than two values | Target |
 | 6 | the target is neither numerical, text nor boolean (dates included) | Target |
@@ -353,8 +395,11 @@ an input to train again."). A `ButtonGate` (`ui/button-gate.ts`, shared with the
 one tooltip overlay per disabled period (`ui.setDisabled` adds an overlay and a timer per call, both living until
 the button is enabled or leaves the document) whose content is a reusable element holding the reason: a new reason
 only changes its text (a function would show as its source), and a new overlay is built only when the last one is
-gone. On enabling it binds the button's own tooltip again (the enabled tooltip, or none), so
-the last disabled reason does not stay on it. A check that fails shows **Train** disabled with
+gone. The disabled reason is also bound as the button's own tooltip (the last binding wins), so on enabling the gate
+writes the enabled tooltip into that element instead of binding another listener (Train and Tune), and the last
+disabled reason does not stay on it; a gate without an enabled tooltip (the dialogs' OK) binds none on enabling, since
+an emptied element would still show as an empty box. `update(reason)` takes a reason computed by the caller (the view computes `problem()` once
+for both gates); `release()` enables a hidden button and forgets the reason, so no overlay timer polls for it. A check that fails shows **Train** disabled with
 the error as its tooltip and shows each distinct error once. Platform validators do not run on empty values, so an empty
 Features shows the platform's "Can't be empty". A rejected selection writes nothing.
 
@@ -376,16 +421,33 @@ that arrives after a newer change is recorded but not shown.
 follows the target the method learns: with Predict probability that is the float 0/1 target, so the task is
 regression, while the target schema stays the selection's (with its two categories).
 
-**Validation.** `kFold(rowCount, folds, seed)` shuffles the rows with a mulberry32 generator (Fisher-Yates) and
-deals them round-robin into the folds, so fold sizes differ by at most one and every row is validated exactly once.
-For each fold the engine trains on the other folds and predicts the held-out rows; the predictions form one
-out-of-fold column, and the **Validation** metrics are computed once on it. The **Train** metrics come from the final
-model, trained on all rows and applied to them. No stratification: a tiny table can leave a class out of a fold, and
-the engine then fails. The UI draws a random 31-bit seed per training and shows it; the seed and
-`splitting = {scheme: 'kfold', folds: 5, isStratified: false}` are saved.
+**Validation.** `validationSplit(request)` gives every row's fold by the request's `validation` and split `seed`
+(`splitRows` in `training/k-fold.ts`), stratified by the selection's target when `validation.stratified` and that
+target is a classification (with Predict probability too: the classes of the text target; a regression never is).
+`kFold(rowCount, folds, seed, stratify?, shuffle = true)` shuffles the rows with a mulberry32 generator
+(Fisher-Yates) and deals them round-robin into the folds, so fold sizes differ by at most one and every row is
+validated exactly once. With `stratify` the shuffled rows
+are grouped by class and each class is dealt in turn with one running counter, so every fold holds each class's share
+(a class's counts differ by at most one across the folds). Without `shuffle` the rows keep their order and the seed is
+unused: contiguous folds (`floor(j * folds / n)`), or each class dealt round-robin in row order. `holdOutFold(rowCount,
+testFraction, seed, stratify?, shuffle)` marks `heldOutCount` rows (`round(testFraction * n)`, at least one, one row
+left) 0 and the others -1: the last ones of the (shuffled) order, with `stratify` each class's share by `groupQuotas`
+(the largest remainders round up; shared with the search's own hold out) from its own rows. For each predicted fold
+(`validationFolds`: k, or the one hold out) the engine trains on the other rows and
+predicts the fold's rows (`foldPrediction`); the predictions form one out-of-fold column (`outOfFoldColumn`; a row of
+fold -1 is null there, and `FLOAT_NULL` in `outOfFoldProbabilities`), and the **Validation** metrics are computed once,
+on the held out rows' clones for a hold out (so the EDA report never sees a null). With Predict probability,
+`scores.validation` keeps that column with its nulls; `recutResult` measures it with `metricsOf`, which skips rows
+without a prediction. The **Train** metrics come from the final model, trained on all rows
+and applied to them. A class with fewer rows than folds still misses some folds. The split seed is the view's **Split
+seed** (42 by default, the API's `options.seed` too); the seed and `splitting` (`trainingSetupOf`: `{scheme: 'kfold',
+folds, isStratified, isShuffled}` or `{scheme: 'holdout', trainFraction: 1 - testFraction, isStratified, isShuffled}`;
+the schema's column description since 0.1.18) are saved; `splittingOf` reads a stored one. A request with `holdOut`
+(a search's, see "Search") also applies the final model to the held out rows: `metrics.test` (`measure`, without
+per-class values or curves).
 
 **Progress and cancel.** `trainModel(request, progress?)` (a `LoopProgress`, the cancel flag and `update` of a
-progress indicator, in `engines/engine-calls.ts`) reports "Fold i of 5" after each fit and throws
+progress indicator, in `engines/engine-calls.ts`) reports "Fold i of k" (a hold out: "Hold out") after each fit and throws
 `ForgeError('Training was cancelled.')` before a fit when the progress indicator was cancelled. Before that check it
 gives the event loop a turn (`yieldToEventLoop` in `engines/engine-calls.ts`): an engine call that finishes without
 I/O resumes as a microtask, so without the turn a click on the progress's cancel (and the progress repaint) would wait
@@ -410,15 +472,18 @@ training writes nothing, and neither does a failure before the data was prepared
 
 **Runs.** Each settled training that is not superseded also becomes a `SessionRun` (`ui/runs-panel.ts`) put first in
 `TrainView.runs`: its number in the view, the status, the method (the `Engine`), the target and feature names, the hyperparameters, the missing-values settings, the preparation steps, the
-record's row count (0 when nothing was recorded), the seed, and the metrics or the error. A training of a table the view has left adds nothing
+record's row count (0 when nothing was recorded), the validation settings and the split seed, and the metrics or the
+error. A training of a table the view has left adds nothing
 (`createForm` replaces the list, the training compares it). `RunsPanel` shows them under the results
-(`ui.panel([resultsPane.root, runsPanel.root], 'forge-train-results')`; the panel's own root is `forge-runs`, 12 px under the rows): the core's title `Runs` with its tooltip
+(`ui.panel([resultsPane.root, searchPanel.root, runsPanel.root], 'forge-train-results')`, the **Search** panel of
+"Search" between them; the panel's own root is `forge-runs`, 12 px under the rows): the core's title `Runs` with its tooltip
 (`PANEL_TEXTS.runs`, `resultsTitle`), hidden while the list is empty (`detach()` empties it, which drops the grid's
 click subscription), and a `readOnlyGrid` with the current-row
 indicator on, built again on every `update` over a copy of the list (a new frame, a new grid of the new height; the
 replaced grid goes with `ui.empty`, the platform's widget disposal): **#**, **Method**, **Target**,
 **Features** (the count), **Preparation** (`impute (<n> neighbors, <distance>)`, `one-hot`, `skip unique
-categories`, `probability (cutoff <c>)`, joined by commas), **Rows**, **Status**, **Seed**, then `<metric>
+categories`, `probability (cutoff <c>)`, joined by commas), **Rows**, **Status**, **Split seed** (null when the run
+was not shuffled), then `<metric>
 (validation)` for every metric of `METRIC_IDS` any run's validation has, with header tooltips (the metrics'
 `METRIC_DESCRIPTIONS`) and cell tooltips (the hyperparameters, the feature names, the error or `Stopped from the task
 bar.`, `Train <0.000>, validation <0.000>` with `-` for a missing value). The newest row is current; a click on a
@@ -426,15 +491,18 @@ row (`grid.onCellClick` on a table cell, the current row too) calls `restoreRun`
 row restores nothing (the read-only grid moves nothing with the arrow keys): a run whose target or a feature the
 table no longer has warns `The table no longer has the columns of this run: <names>.` and sets nothing; a run whose
 inputs equal the form's (`isSameInputs` over `runInputsOf` of the current selection: method, target, features,
-hyperparameters, missing values and preparation steps but the cutoff, the same values a run keeps) while the view
+hyperparameters, missing values, preparation steps but the cutoff, the validation and the split seed, the same values
+a run keeps) while the view
 shows the completed result of those inputs (`lastTraining`, which any change but the cutoff drops) trains nothing:
 it only sets the run's cutoff when that differs, which re-cuts the shown result; after a cancelled or failed
 training there is no such result, so the click sets the same inputs and trains; otherwise it stores the run's hyperparameters for its
 method, makes that method the user's choice and the current method (its inputs rebuilt with those values), sets
 **Target** and **Features**, then `PreparationInputs.restore`
 (Missing values with the impute settings, then Skip unique categories, One-hot encoding, Predict probability and the
-cutoff, each only while shown; a hidden input keeps its default) and requests a check: the view retrains as after any
-change, and the new training is a new first row.
+cutoff, each only while shown; a hidden input keeps its default), then `ValidationInputs.restore` (the run's
+validation and split seed) and requests a check: the view retrains as after any change, and the new training is a new
+first row. While the form is locked (`locked`: a **Train** training or a search, see "Search") `restoreRun` and `restoreLeader`
+set nothing.
 
 The result (`TrainingResult`) carries the blob, the task, the metrics, the target and feature schemas, the
 preparation options, the splitting, the seed, the hyperparameters, the row count (the prepared rows the model
@@ -465,6 +533,256 @@ nothing: `recut()` keeps the old result out of sight and shows `Fix the settings
 `problem()` blocks **Train** and the live training, as for any invalid setting. When the timer fires with no result
 to re-cut, no training running and no finished training of the selection (another input changed while the cutoff
 was invalid), it runs the check instead, so a valid cutoff then trains as any fixed setting does.
+
+## Search
+
+**Tune** searches the settings of the current method; the search is Forge's own loop and every trial is a regular
+fold training (`foldPrediction` through the method's `train` / `apply`), so a trial sees the same preparation, split
+and metrics as a training. The logic is `training/search.ts` (types, spaces, sampling, hold out, plan, leaders, record)
+and `training/browser-search.ts` (the executor); the UI is `ui/tune-settings.ts` (Settings and Search options),
+`ui/search-panel.ts` and `TrainView`.
+
+**Spaces.** `searchSpaceOf(engine)` reads `meta.mlspace` of the method's `train` function (`searchSpaceText`; see
+"Engine contract"): the `ml.tune` `space` JSON (`{"<input>": {"type": "int" | "float" | "categorical", "low", "high",
+"log"?, "step"?, "choices"?}}`, shorthands `[low, high]` and a list of choices) plus an optional `simpler: "low" |
+"high" | "first"`. It checks every name against the train inputs (`The search space of <Method> names no setting
+<name>.`), numeric bounds by `rangeProblem` (below; `The search space of <Method> gives <name> an invalid range:
+<problem>.`), the choices against the input's, and `simpler` (`first` only for a categorical); a malformed space throws.
+`tuneCandidate(engine, start, tune?, space?)` is the one candidate of Tune (`<Method> declares no search space, so it
+cannot be tuned.` without a space; `space` is the parsed one the view already has, read from the engine when absent). With the user's `tune` (`{space: TuneSpace, task}`, from Search options;
+`SearchChoice.space`, which the API never sets) its space is `userSpace(space, tune, rules, start, task)`: the pinned
+dimensions (`TuneSpace.pinned`) left out, and those whose `meta.mlenabled` rule fails with the fixed values and the
+task whatever the tuned ones are (`isEnabled(..., free)`: a clause on a free, tuned setting may hold); the others with
+the user's bounds or choice subset (`TuneSpace.ranges`: `TunedRange {low?, high?, choices?}`), their type, `log`,
+`step` and `simpler` kept, so `simplicityOf` measures within the user's bounds. The candidate keeps `pinned`.
+`rangeProblem(dim, property, low, high)` is the UI's check of a range (two numbers, whole for an int, `low < high`
+(`FROM_BELOW_TO`), inside the input's `min` / `max`, `low > 0` on a log scale, `>= 1` for a log int).
+
+**Sampling.** `drawnPoints(space, start, seed, name)` yields the candidate's draws one after another from its own
+stream `mulberry32(seed ^ fnv1a(FNV_OFFSET, utf8(name)))` (the FNV-1a of `storage/dataset-fingerprint.ts`), every
+dimension drawn in space order, one `u` each (`sampled`: int `low + floor(u (high - low + 1))`, log int rounded from
+log-uniform, float uniform or log-uniform rounded to `FLOAT_DIGITS` (3) significant digits (`toPrecision`) and clamped
+to `[low, high]`, so the model trains on the value the form shows, categorical uniform; `step` rounds ints; the start
+is never rounded), the other settings kept from `start` (the form's values, or
+the method's defaults with the API's `hyperparameters`), so the i-th point of a method does not depend on the
+interleaving. `trialPoints(candidate, seed, task)`, built once per search, yields the trials' points: each passes
+through `activePoint(space, point, rules, defaults, task)`: each dimension whose `meta.mlenabled` rule
+(`enabledRules`, `isEnabled`) fails for the drawn point, with the task the trials train (the search request's prepared
+target), takes the method's default (`defaultHyperparameters`; not the form's value, so the leaderboard shows the
+value the method documents; a dimension without a default keeps its draw), so points that differ only in ignored
+settings collapse. The rules, the defaults and the start's place are read once. The first point is `start` only when
+`isInsideSpace(space, start, rules, task)`: each value the method uses (by its rule) lies inside its dimension (a
+choice of a categorical, within the bounds and whole for an int); otherwise the draws start at once, so every trial
+lies inside the space (XGBoost's default `alpha` 0 is outside its range). Without a space the start is the only point.
+A point already tried is skipped; `MAX_DUPLICATES` (20) in a row exhaust the candidate (the rounding makes every
+space finite: a float range narrower than its rounding, `[0.1, 0.1001]`, draws one value).
+
+**Hold out.** `holdOutSplit(request, seed)`: with at least `HOLD_OUT_MIN_ROWS` (500) prepared rows,
+exactly `testRows = clamp(round(0.2 n), 100, 2000)` rows become `HoldOut {columns, target, rows, fraction}`: the first
+ones of the rows shuffled by `seed + 1` (`shuffledRows`); for a classification each class (`classGroups`) gives its
+first `share * testRows` rows, the quotas floored and the largest remainders rounded up so they sum to `testRows`
+(each class within one row of its share) (clones of the prepared columns and target); the
+search request holds masked clones of the rest with the whole table's preparation (`oneHotCategories`, options) and
+`keptRows` mapped to the table's rows (`maskedKeptRows`), so the results' viewers still link to the table. Below 500
+rows the request is returned as it is.
+
+**Plan and executor.** `searchPlanOf(mode, request, candidates, choice, seed)` checks the metric against the task
+(`SEARCH_METRICS`: regression `r2`, `rmse`, `mae`; classification `balancedAccuracy`, `accuracy`, `f1`, `mcc`, `auc`;
+the first is the default; `The search metric '<id>' does not apply to a <task>. Choose one of: ...`), sets the
+direction (`METRIC_DIRECTIONS`: -1 for errors), the budget, `maxTrials` and the split (`validationSplit` of the
+request with the plan's seed: the **Validation** group's folds, stratification and shuffle, or its one hold out; the
+same split the winner's training gets), and `parallelism = PARALLEL_FITS` (`max(1, min(4,
+floor(hardwareConcurrency / 2)))`, EDA's pool size) when every candidate's `train` declares `meta.mlparallel: 'true'`
+(`isParallel`), else 1. `runSearch(plan, progress, executor)` runs `SearchExecutor.run(plan, progress)` and then the
+leaders and the choice: the executor is the seam where a Crux-side search (or another scheduler) can replace the
+browser one without touching the plan, the record or the UI. `BrowserSearchExecutor` (`browserSearch`) launches
+trials while slots are free (a `Semaphore(parallelism)` gates fold fits; each fit gets its own masked clones, so
+concurrent fits never share a column): a trial runs folds 0-1 together, then the checks, then the other folds
+together; each wave waits for all its fits (`Promise.allSettled`) before its first error is rethrown, so `run()` never
+returns with a fit in flight; once a fold of a trial fails, its folds still waiting for a slot skip their fits. The
+fold masks (`foldMasks`) and the held out targets are built once per search. Abandon: once a trial has completed, a trial whose first two folds forecast `elapsed +
+forecast > budgetMs` stops (`abandoned`), where `forecast = fitMs / 2 * rest / min(parallelism, rest)` (`fitMs`: the
+sum of the first two fits' times, `rest`: the other folds, fitted up to the parallelism at once; other trials' fits
+sharing the slots are not counted). Pruning (as `ml.tune`'s median pruner): trial `n` is judged only against the
+trials numbered below `n` that passed their first folds: each trial publishes `early[n]`, a promise of its first
+`PRUNE_AFTER_FOLDS` (2) fold scores once it goes on to its other folds, or undefined when it was pruned, abandoned or
+failed there (resolved in `finally`, so it always settles); from trial 5 on a trial waits only for the earlier
+trials' `early` (not for them to complete), and with at least `PRUNE_MIN_TRIALS` (5) of them passed, a trial whose
+mean of its first two fold scores (signed by the direction) is below their median is `pruned`. So the prune decisions
+do not depend on the finish order, and a parallel search gives the same trial states and leaderboard as a sequential
+one (it may launch a few more trials after the last complete one); the 30-trial iris test runs in about 1160 ms one
+fit at a time and 480 ms with four. With no folds left after the first ones (a hold out, or 2 folds) nothing is
+pruned. A complete trial's `score` is the metric of the pooled out-of-fold predictions (as
+`trainModel`'s Validation, with the out-of-fold probabilities for `auc`; with a hold out, the held out rows only, the
+TS metrics skipping the nulls); `foldScores` are the per-fold values (one with a hold out). A
+metric the method cannot give (`auc` without probabilities) fails the trial (`The metric <label> needs class
+probabilities; <Method> gives none.`), and so does any error of a fit (`failed`, with `error`). Stops: `cancelled`
+(`progress.canceled`, read before every fit: fits in flight finish, nothing new starts, a cancel between fits marks
+the trial `abandoned`), `budget` (checked before every launch), `trials` (`maxTrials` complete trials; launches are
+capped so parallel and sequential runs give the same leaderboard), `failed` (`MAX_FAILED_WITHOUT_COMPLETE` (10)
+failed trials while none has completed; launches are capped meanwhile, so such a search has exactly 10 trials) and
+`exhausted`. Trials are kept in launch order;
+`progress.update(percent of the budget, '<N> trials, best <Metric> 0.000 (<Method>)')` follows every settled trial
+(a running best and counts, not a pass over the trials).
+
+**Leaders and the choice.** `leadersOf` applies the one-standard-error rule within each candidate: among its complete
+trials whose score is within one SE of its best trial's (`se` = the sample standard deviation of `foldScores` over
+`sqrt(folds)`), the smallest `simplicityOf` its point (the distance from each `simpler` end, 0..1 per dimension, in log
+space for a log dimension, index / (n - 1) for a categorical `first`; dimensions without one count 0), then the
+earlier trial. That trial is the leader (its `hyperparameters`, `score`, `se`, `foldScores`; `trials` counts all of
+the candidate's, pruned and failed ones too); leaders best first. `chooseLeader` applies the rule again across the
+leaders (the lowest `costRank`, then the smallest `simplicityOf`, among the leaders within one SE of the best) and
+marks it `chosen`; with one candidate (Tune) its leader is chosen. `searchRecordFrom` makes the `SearchRecord` saved with the run and the model (`search`, see "JSON column
+shapes"); for Tune it keeps `space: {searched, pinned}` (the candidate's dimensions as searched and its pinned
+settings). `searchRecordOf` narrows a stored value (undefined for anything malformed; a malformed `space` alone is
+dropped, as is a missing one). `tuneSearch(request, engine,
+start, choice, seed, progress, executor, space?)` is Tune for the view and the API: `holdOutSplit`, `searchPlanOf('tune', ...)`
+with `tuneCandidate`, `runSearch`, and the record; `failedSearchMessage` gives `No trial completed: <the first failed
+trial's error>` when a trial failed.
+
+**Settings and Search options.** `fillMethod` builds a `TuneSettings` (`ui/tune-settings.ts`, `form.tune`) per method
+over the method's own hyperparameter inputs. **Settings** is a `ui.input.radio` (`forge-inline-radio`; Manual / Auto-tune,
+Manual by default; a change runs no check and no training: it shows the mode's layout, saves, and calls the view's
+`onChanged(true)`: `applyRules`, `showTrainRow`, which shows **Train** in Manual only, and `updateControls`); the reset
+button (`resetButton`, a native `button` with `fa-undo`) sits in its options, the status row (`forge-tune-status`,
+30 px, a label column and the italic text, `aria-live`) under it. The status is computed from the values (`status`):
+the method's defaults (their text kept from the constructor) -> `Default`, else the view's `lastTuned` of the method
+(the values a tune set with its `TuneContext`, the table, the target's and the features' names, in memory like
+`hyperparameterValues`) when the host's `context()` is the same (`isSameContext`: the table by `dart`, the target by
+name, the features as a set of names; the preparation and the validation are not part of it) -> `Auto-tuned`, else
+`Customized`, the values compared as text over every setting. The status's tooltip (`statusTooltip`) is its
+`STATUS_TOOLTIPS` entry, except for the tuned values on other data: `Tuned for <target> on <table name>; tune again for
+this data`. Each hyperparameter change calls `updateStatus` from the settings' own `onChanged` subscription, a Target or
+Features change from the view's form subscription (a Table change builds new settings)
+(the status read once: text, the reset button's `aria-disabled` and label, the same as its tooltip: `<Method> settings
+are already default` / `Reset <Method> settings to defaults`). Reset sets each own input to its default at once under
+`isResetting` (the settings' own error and status pass runs once at the end), so the usual change flow (check, live
+retrain) follows. A method without a space (`noSpaceReason`: `<Method> declares no search space.`, or the malformed
+space's error) has its Auto-tune option (`autoItem`, found once) disabled with that tooltip, at construction and on
+every `setLocked` (the lock owns the mode: `mode.enabled` re-enables its options); the Settings label and the other options share `How the settings
+are chosen: by hand or by a search on this data`. A method without settings (no hyperparameter inputs: Naive Bayes)
+lays out no Settings row at all (no radio, reset or status) and is always Manual (`load` refuses a stored Auto-tune
+for it), so its Train shows as for any method. Both layouts are built once in the constructor (the radio, the status
+row, the own inputs, the Search options block `forge-tune-auto` with one `forge-tune-cell` per row, and the Tune bar
+`forge-tune-bar`, `tuneButton` at the right); a mode switch only shows Manual's own inputs or Auto-tune's block and
+Tune bar (`showMode`, `ui.setDisplay`). The Tune bar stays in the document in Manual, so a disabled Tune's tooltip
+overlay lives on in Auto-tune; in Manual the view releases Tune (`ButtonGate.release`), so a hidden Tune keeps no
+overlay timer. With the labels above the inputs the
+status row drops its empty label and the toggle has `margin-top: 10.5px`, so the status sits right under the radios and
+the gaps radios -> status -> Search options stay equal. The radios' editor drops the padding the platform gives it
+for its options (the reset button follows the radios in the row), so Auto-tune stays on the radios' line.
+
+**The Search options block is plain DOM, by the user's decision** (2026-11-04): platform inputs there were laid out
+wrongly by the platform form (it measures every `ui-input-root` for its label width and its switch to labels above the
+inputs, and nested inputs broke both), so the block follows the reference prototype
+with native controls in its own CSS grid (`forge-tune-grid`: the label column, then `minmax(0, 1fr)`, so nothing
+overflows at any width). The label column is the form's: `alignLabels` copies the width the platform gave the Settings
+label (`captionLabel`, followed by `ui.onSizeChanged`) into `--forge-tune-label`, with the labels' 8 px gap; when the
+platform switches the form to `ui-form-condensed` (a form narrower than its labels and widest input: the Train form at
+400 px sits near that line, so a resize such as opening Search options can switch it), the grid puts its labels above
+the fields too. The toggle (`toggle`, `forge-tune-toggle`, a `button`: an empty `forge-group-chevron` box and the
+groups' header gap first, so its chevron, `chevron-right` / `chevron-down` swapped as in `CollapsibleGroup`, starts
+where the Method header's text does; `aria-expanded` / `aria-controls`, collapsed by default, saved, as far under the
+status line as the status is under Settings) shows or hides the grid (`setExpanded`). Every input of a row shows the
+setting's Manual tooltip exactly, its `Property.description` (nothing without one): the label, the range fields, the
+pinned / fixed value, the choices button and its checkboxes. A pin's tooltip is `Pin to exclude from tuning. <its
+aria-label>` (a fixed one `<Caption>: Fixed, can’t be tuned`); the Metric label and select `Metric the search
+optimizes`, the Budget label `The search stops at the trial limit or the time limit, whichever comes first`, the trials
+`Maximum number of completed trials`, the time `Maximum search time`, the toggle `Show / Hide search options`. What
+the user sees ends on one vertical line, the block's right edge: the reset and pin glyphs (their 30 px buttons put the
+glyph at the right, `justify-content: flex-end`, the hit area extending left), the selects' underlines with their
+chevrons, and Tune's letters (no right margin or padding). The toggle (`margin-top: -3px`) puts the Search options text
+as far under the status text as the status text is under the Settings label; the layout test measures the text
+through DOM Ranges and the glyph boxes, beside and above the inputs. The fields, selects and choices button share
+`forge-tune-control` (the underline, focus, `aria-invalid` and disabled rules, scoped to the grid so they beat the
+platform's `select.ui-input-editor`). The selects are `ui-input-editor`s with the platform choice input's chevron and
+no focus frame; focused, they underline in `--blue-1`. The chevron rule (`url('/images/chevron.svg')`) is in
+`css/forge-platform-images.css`, listed in `package.json` `sources`: the platform loads it with the package, unbundled,
+so the path stays the platform's (the bundled `forge.css` would have the build resolve it). `togglePin` swaps only its
+row's slot and pin state, and hides the tooltip first: the pin's tooltip text changes with the click, and a hovered
+element that leaves the document gets no `mouseleave` (the stale `Rate` over Max Depth). Per setting in
+the train order (`TuneRow`, `row(name)`): a label, then on one line (`forge-tune-row`) the value and the pin, and the
+error line (`forge-tune-err`, `role="alert"`) under them. A tuned numeric setting is its range: two text fields
+(`forge-tune-field`, `from` / `to`, `aria-label` `<Caption> from` / `to`) around a dash; a tuned categorical one a
+`forge-tune-select`-looking button listing the checked choices that opens a list of checkboxes (`choices`; closed by a
+click outside or Escape); a pinned one, or one outside the space, its own value (`value`: a native `select` for a
+choice setting, a checkbox for a yes/no, a field otherwise) kept in step with the setting's input both ways
+(`own.stringValue` as typed, then `own.validate()`; `own.onChanged` writes it back), so its value is the setting's.
+Each line ends with its pin, a native `button` (`forge-tune-icon forge-tune-pin`, `fa-thumbtack`: `fal` `--grey-4`
+when tuned, `fas` `--blue-1` with `forge-tune-pinned` when pinned, `fas` `--grey-3` and `aria-disabled` outside the
+space; `aria-pressed`, `aria-label` `<Caption>: will be tuned` / `<Caption>: pinned,
+excluded from tuning` / `<Caption>: Fixed, can’t be tuned`). Then **Metric** (a native `select` of the
+task's `SEARCH_METRICS`, values the metric ids, set by `setTask` from `applyRules`; the chosen one kept while it
+applies, else the stored one, else the default) and **Budget** (`forge-tune-budget`: the trials field, `trials or`,
+the time `select` of `BUDGETS_SECONDS`). The colours are the platform tokens (`--text-color`, `--text-color-light`,
+`--grey-1..5`, `--blue-1`, `--red-3`), 13 / 12 px. `updateErrors` (after every change, in Auto-tune only; entering
+Auto-tune runs it) writes each row's problem (`rowProblem`: the tuned range by `rangeProblem`, `Choose at least one`,
+or a pinned / fixed value's own `validity`; none for a setting the method ignores), keeps it on the row, writes the
+trials' under Budget, marks the fields `aria-invalid`, and opens the grid on a problem. `setInactive` (one set, from
+`applyRules`, which the view's `activeHyperparameters` reads too through `isActive`) disables the value controls of a
+setting the method ignores, so it is not checked; `setLocked` disables every control and the mode. In Auto-tune
+`applyRules` evaluates the rules with the tuned settings free and the target's task (a search trains no probability).
+The view's `applyRules` runs only when the values, the task, the mode or the pins change (`onChanged(affectsRules)`),
+not on a range, the choices, Metric or Budget, and sets an input's `enabled` only when it differs; the rules are read
+once per method (`fillMethod`). `problem()` is the Tune part of `tuneBlocker`, from the rows' problems as
+`updateErrors` left them: `Fix the highlighted range`, `All settings are fixed` (no tuned setting the method uses),
+`Budget: Enter a whole number of trials, at least 1`. `choice()` is the `SearchChoice` (metric, `budgetSeconds`,
+`maxTrials` = the trials, `space` = pins and ranges). Everything but the values is saved on every change in
+`grok.userSettings` (storage `TuneSettings.storage`, `Forge Tune`; the UI tests set their own, `Forge Tune tests`, and
+empty it after each category, so the user's settings stay as they are; key = method name, JSON `{mode, expanded,
+pinned, ranges, metric, trials, seconds}`); `TuneSettings.load` checks each item (a pin or a range of a
+setting no longer in the space, a range `rangeProblem` refuses, a choice subset that is empty, trials not whole >= 1,
+seconds not a budget, a mode the method cannot have) and falls back to its default; a metric of the other task falls
+back in `setTask`.
+
+**In the view.** The **Tune** button (`startSearch('tune', form.tune.choice())`, gated by `tuneBlocker`: the
+selection's problem, a training, `noSpaceReason`, or `TuneSettings.problem()`; a trained selection can be tuned; its
+tooltip `Find the best settings`, plus `. Predict probability is off during a search.` while Predict probability is
+checked: `ButtonGate` takes a tooltip function). `startSearch(mode, choice)` runs through the view's `TrainingQueue` like a training (it counts in `activeTrainings`, so **Train**,
+**Save** and `aria-busy` behave as during one; `SHOWN_RUN` goes with the hint), on the selection with Predict
+probability off and the form's missing-values setting: `prepareTraining`, the `datasetFingerprint` of all its rows,
+`tuneSearch` with the queue's progress (`Tuning <Method>`, cancelable, closed in a `finally` before the winner's
+training starts). The split seed is the form's **Split seed**. Until the search and the winner's training end, the
+form is locked: `lockForm()` keeps each form input's `enabled` (Table, Target, Features, the Preparation and
+Validation inputs, Method and the hyperparameters) in `locked` and disables it, and `TuneSettings.setLocked(true)`
+disables Settings and every Search options control (`controls`: the reset button, the fields,
+choices, values and pins, Metric, Budget; not the toggle, which only shows and hides, as the group headers) until
+`setLocked(false)` (`fillMethod` under the lock locks the new settings too), **Train** and **Tune** wait as during a
+training, `restoreRun` / `restoreLeader` (the **Runs** and **Search** row clicks) set nothing, and `applyRules` under
+the lock records a rebuilt input's state (`setWinner`) instead of enabling it; `unlockForm()` in the `finally` gives
+every input its state back and applies the rules again, whatever the end (completed, failed, cancelled, an error).
+Cancel stays in the task bar. `train()` (the **Train** button) takes the same lock around its `startTraining(false)`
+and gives it back in its `finally`; a live retrain (`startTraining(true)`) does not lock the form. Locks never nest:
+both callers start only while nothing trains (`isTraining`, `tuneBlocker`). Then
+`SearchPanel.update({plan, leaders})`; without a chosen leader the warning `No trial completed: <error>` when a trial
+failed, else `No trial completed.`, and the hint (`idleHint`); else `setWinner` (`setMethod`: the method's values set to the chosen ones,
+the inputs rebuilt by `fillMethod` and **Settings** to Manual; **Method** set under `isSettingMethod`: no check is
+requested), `lastTuned` of the method = the form's values with the search's table, target and features (the status
+then reads `Auto-tuned`), the balloon (`Search stopped: ...` or
+`Search cancelled; the best so far is trained.`) and `startTraining(false, {selection, request, fingerprint})`: the
+override skips `prepareTraining`, records the fingerprint of all the selection's rows (as the API) and trains the search request with the chosen hyperparameters, `holdOut` and `search`, with the
+search's seed and split, so the model's Validation equals the leader's score. `trainModel` measures `metrics.test` on
+the hold out and returns `search`; the run record, the `SessionRun` (`Found by Tune: <N> trials` in the Runs Method
+tooltip), the Performance bullets and the saved model carry it. `SearchPanel` (`forge-search`, between the results and
+**Runs**) is a `readOnlyGrid` of `#`, `Method`, `<Metric> (CV)` (`<Metric> (hold-out)` when the search request's
+validation is a hold out), `SE`, `Trials`, `Chosen` with header and cell tooltips
+(the settings, then `Searched: <name> <low>–<high>, <name> (<choices>), ...` and `Pinned: ...` from the plan's
+candidate; `Folds: ...`, `Chosen by the one-standard-error rule.`), the chosen row current; a click calls
+`restoreLeader` (`setMethod`: the method and its values set, **Settings** to Manual, then a check, as after any
+change; a `restoreRun` switches to Manual first, whatever it then sets). `createForm` (a Table change) and
+`detach` hide it.
+
+**API.** `Forge:trainModel` with `options.search` (`searchChoiceOf`: keys `metric`, `budgetSeconds` (whole, >= 1,
+default 60), `maxTrials` (whole, >= 1)) tunes the chosen or suggested method in `trainAndSave` before its training,
+with Predict probability off as in the view (`optionsOf` drops `predictProbability` and skips its checks; the search
+and the winner's training are a classification): `tuned` runs the same `tuneSearch` with `browserSearch` and the call's progress
+(`Tuning <Method>`, then a new `Training <Method> model`), and trains the request with the chosen settings, the hold
+out and the record; no completed trial throws `No trial completed: <the first failed trial's error>` when a trial
+failed, else `No trial completed within the budget. Give the search more time.` (or `The search was cancelled before a
+trial completed.` first), and records nothing. `options.seed` (42 by default) is the one seed (the split, the
+search's hold out, sampling); `options.scheme`, `folds`, `testFraction`, `stratified` (ignored for a regression) and
+`shuffle` make the `ValidationSettings`, used by the search as by the training. The run's `duration_ms` includes the
+search.
 
 ## Missing values
 
@@ -686,7 +1004,7 @@ only; its tooltip the detail lines, the `items` as a bulleted list and, last, `S
 (`forge-tooltip-minor`) when the insight's `panel` is mounted; repeated texts once; hidden while empty). The insights of a viewer panel
 (every `InsightPanel` but `metrics`, whose grid marks its own findings) are also its viewer's `description`
 (`descriptionVisibilityMode: 'Always'`, the texts joined by a space, escaped as literal Markdown), refreshed with the
-list. Every panel's title is the built-in tool's widget title, `ui.div([span], 'd4-dialog-header d4-dialog-title
+list; **Confusions** shows it under the matrix (`descriptionPosition: 'Bottom'`), the others above the viewer. Every panel's title is the built-in tool's widget title, `ui.div([span], 'd4-dialog-header d4-dialog-title
 forge-results-title')`; `PANEL_TEXTS` holds each title (`<name>` for the target's or the method's name) with what the
 panel shows, the span's tooltip (the span takes the mouse, `d4-dialog-title` lets it through). The root holds the hint
 host (the two panels while there is no result) and the rows host (`forge-results-rows`).
@@ -1063,8 +1381,9 @@ model needs. Map them in columnNamesMap."). Missing values are handled in the mo
 `trainModel(table, target, features?, method?, hyperparameters?, options?, name?, description?, tags?, storage =
 'none', showProgress = true) -> object`, for scripts, other packages and fixtures, is the Train view's pipeline
 without the view (`runTrainModel` in `training/train-api.ts`; the view and the function share, from
-`training/train-model.ts`, `trainingEngines`, `FOLDS`, `randomSeed`, `problemMessages`, `checkSelection`,
-`prepareTraining` and `trainModel`, and `defaultFeatures`, `DEFAULT_STEPS`, `defaultOneHot`, `cutoffProblem`,
+`training/train-model.ts`, `trainingEngines`, `problemMessages`, `checkSelection`,
+`prepareTraining` and `trainModel`, from `training/k-fold.ts` `DEFAULT_VALIDATION` and `DEFAULT_SEED`, and
+`defaultFeatures`, `DEFAULT_STEPS`, `defaultOneHot`, `cutoffProblem`,
 `modelNameOf` (`NO_NAME`; the name is written trimmed) and `saveTrainedModel`):
 
 1. The target and the features by name ("The table has no column 'x'." / "The table has no columns 'a', 'b'."); without
@@ -1079,14 +1398,19 @@ without the view (`runTrainModel` in `training/train-api.ts`; the view and the f
    values is the check's Missing values problem, `needsRowsWithoutGaps`: when the suggestion replaces the chosen
    method, the selection is checked again against the suggested one), `oneHot` `defaultOneHot`, `skipUniqueCategories` `true`, `predictProbability`
    `false` (refused on a target without exactly two classes), `cutoff` `DEFAULT_CUTOFF` (with Predict probability,
-   0..1 or the view's `Enter a number from 0 to 1.`), `seed` random, `folds` 5.
+   0..1 or the view's `Enter a number from 0 to 1.`), `seed` 42 (`DEFAULT_SEED`), `scheme` `kfold`, `folds` 5, `testFraction` 0.2 (0.05..0.5),
+   `stratified` `true`, `shuffle` `true` (`DEFAULT_VALIDATION`), `search` none (`searchChoiceOf`:
+   an object of `metric` (a search metric of either task; the task's check is `searchPlanOf`'s), `budgetSeconds` (whole,
+   >= 1, default 60) and `maxTrials` (whole, >= 1), anything else refused with that key list).
 4. The save, checked before any work: a blank name ("Enter a name for the model."), an unknown storage, `reference`
    without `datasetRefOf(table)`.
 5. `checkSelection`; every problem goes into one `ForgeError`, target and features first.
 6. The hyperparameters: `defaultHyperparameters` overlaid with the given ones, each checked against its `train`
    input (an unknown name with the list of settings; the kind, a whole number for an int, `min`/`max`, `choices`).
 7. With `showProgress`, the task-bar indicator `Training <Method> model` (cancellable) is the `LoopProgress` of
-   `trainModel`; `prepareTraining`, then `trainModel`.
+   `trainModel`; `prepareTraining`, then `trainModel`. With `search`, `tuned` first runs the search on the prepared
+   request (see "Search": the indicator `Tuning <Method>`, then a new `Training <Method> model`) and `trainModel` gets
+   the search rows with the chosen settings, `holdOut` and `search`.
 8. The `training_run` row (`source: api`): `completed` with the metrics; `cancelled` or `failed` (with the error)
    before the error is rethrown. A refused input or a failed preparation records nothing.
 9. With a name, `saveTrainedModel` with the user's feature and target columns, which links the run; nothing is
@@ -1094,7 +1418,8 @@ without the view (`runTrainModel` in `training/train-api.ts`; the view and the f
    saved, so the caller gets no `modelId` for it (the model is found by its name).
 
 It returns `TrainModelResult` (`modelId` or null, `runId`, `name`, `method`, `task`, `target`, `features`, `rowCount`,
-`skippedRows`, `seed`, `metrics` with, for a classifier, `classes`) and adds nothing to the table. Errors are rethrown unchanged (`trainAndSave` records
+`skippedRows`, `seed`, `metrics` with, for a classifier, `classes`, and `test` after a search with a hold out, and
+`search` after a search) and adds nothing to the table. Errors are rethrown unchanged (`trainAndSave` records
 a failed or cancelled run first): `ForgeError` texts reach the caller as they are.
 
 ## `Forge:deleteModel`
@@ -1157,7 +1482,7 @@ author (`loginsOf`; a deleted or unknown user gives an empty `author`) together.
 `description`, `tags` (a list, `tagsOf`), `method`, `package` (the engine's namespace), `task`, `target`, `targetType`
 and `classes` (`targetSchemaOf`; null without them), `features` (in training order) and `featureTypes` (`{name: type}`)
 from one `featureSchemasOf`, `applicableTo` (the names of the open tables that fit, `applicableTables`), `hyperparameters`,
-`preparation` (`preparationOptionsOf` of `options`), `metrics` (`metricsRecordOf` with `classes`, null without them), `findings`
+`preparation` (`preparationOptionsOf` of `options`), `metrics` (`metricsRecordOf` with `classes` and `test`, null without them), `search` (`searchRecordOf`, null without one), `findings`
 (`{text, detail}` of `metricFindings`, none without metrics), `seed`, `splitting`, `storage` (`mode`, with a reference
 its `source`, `datasetRefCaption`, with a copy its `tableId`), `dataset` (`name`, `rows`, `summary`: the stored
 fingerprint), `hasModelFile` (`ownBlob`), `keepsTrainingRows`, `author` (login), `created` and `updated` (ISO texts),
@@ -1452,7 +1777,7 @@ are the features, where the built-in tool starts with nothing selected. Problems
 concern and nothing trains until they are fixed. The live retraining and the 200 ms delay are the built-in tool's,
 but a method chosen by the user stays chosen while it applies (the built-in tool reset it on every data change), its
 hyperparameter values are kept per method, an empty method list is a red **Method** instead of a line of text, the
-ribbon holds only **Save** (no TRAIN / SAVE switch of one button; a **Train** button under the inputs appears only
+ribbon holds only **Save** (no TRAIN / SAVE switch of one button; a **Train** button right under the inputs appears only
 for a method that does not retrain on every change), and the task bar names the method.
 Validation uses five folds that cover every row once,
 from a seed saved with the model, instead of five overlapping random samples, and it runs from 10 rows instead of
@@ -1519,6 +1844,12 @@ the platform's drag (see Sharing). Forge's Browse node is **Apps > Forge**; **Br
 and its **MLFlow** node stay the built-in tool's until the switchover. The Domains view of `model` can be filtered by
 **Tags** (the built-in catalog's tags filter); its **Author** filter has no counterpart.
 
+**Tune** is new (the built-in tool had no tuning or method search): a seeded random search of the method's
+declared settings, set in **Settings** (Manual / Auto-tune) with per-setting ranges, choices and pins, a
+trials-or-time budget, the **Search** leaderboard and a held out **Test** measurement. The **Validation** group is new
+too (the built-in tool always validated on five overlapping random samples): the scheme (stratified K-fold by default for a classifier, K-fold, Hold-out), the folds or the test fraction,
+the shuffle and a split seed (42 by default); settings a method ignores are disabled (`meta.mlenabled`).
+
 ## Automation surface
 
 The views publish their state in the DOM, so a test waits on what a view says instead of on a timer:
@@ -1576,7 +1907,9 @@ nothing trained reads once the view is settled (`aria-busy` not true).
 
 ## EMS schema `forge`
 
-Manifest: `databases/forge/schema.json`, version `0.1.16`. `grok publish` deploys it; a debug publish applies
+Manifest: `databases/forge/schema.json`, version `0.1.19` (0.1.17 added the `search` json column to `model` and
+`training_run`; 0.1.18 describes the current `splitting` shape and 0.1.19 the `space` of a Tune `search`, description
+changes that need only the bump). `grok publish` deploys it; a debug publish applies
 destructive changes without migration scripts, except a `promotion` change on a row table, which is always refused
 (`[promotion-change]`). To change it, publish a manifest with only a placeholder table, then the real one, bumping
 `version` both times; the first publish drops the tables with their data and their rows' entities and permissions,
@@ -1610,8 +1943,9 @@ EMS `json` columns hold objects only; a list is wrapped in an object. TS types: 
 | `model.features`, `training_run.features` | `FeaturesSchema` | `{columns: [{name, type, semType?}]}`, in training order |
 | `options` | `PreparationOptions` | Preparation replay, see below and "Preparation"; Forge writes `{preprocessingInfo, postprocessingInfo, missingValues: {mode, neighbors?, distance?, skippedRows}, skippedColumns?: [names], oneHotCategories?: {<column>: [categories]}}`, plus `positiveClass`, `negativeClass`, `binaryClassificationThreshold`, `targetType` with Predict probability |
 | `hyperparameters` | `Hyperparameters` | `{<train function input>: value}` |
-| `metrics` | `MetricsRecord` | `{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?, classes?: [{label, rows, train, validation}]}`; ids `mse`, `rmse`, `mae`, `r2`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv`, `auc`, `balancedAccuracy`, `mcc`, `averagePrecision` (`auc` and `averagePrecision` for classifiers whose method returns probabilities, and Predict probability; `balancedAccuracy` and `mcc` for every classifier; `classes` from Crux through `Eda:classificationReport`); class ids `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision` |
-| `splitting` | `Splitting` | `{scheme: none \| kfold \| holdout, folds?, trainFraction?, isStratified?}` |
+| `metrics` | `MetricsRecord` | `{train: {<metric id>: number}, validation: {<metric id>: number}, test?: {<metric id>: number} (the final model on the rows held out before a search), positiveClass?, classes?: [{label, rows, train, validation}]}`; ids `mse`, `rmse`, `mae`, `r2`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv`, `auc`, `balancedAccuracy`, `mcc`, `averagePrecision` (`auc` and `averagePrecision` for classifiers whose method returns probabilities, and Predict probability; `balancedAccuracy` and `mcc` for every classifier; `classes` from Crux through `Eda:classificationReport`); class ids `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision` |
+| `splitting` | `Splitting` | `{scheme: none \| kfold \| holdout, folds?, trainFraction?, isStratified?, isShuffled?}` (`folds` for kfold, `trainFraction` for holdout; `isStratified` when the split kept each class's share; `isShuffled` false for a split in row order, absent in older models: shuffled; read by `splittingOf`); `none` only in older models |
+| `search` (`model`, `training_run`) | `SearchRecord` | `{mode: tune \| best, metric, budgetSeconds, seed, trials, completed, pruned, failed, elapsedMs, stopped: budget \| cancelled \| exhausted \| trials \| failed, holdOut?: {rows, fraction}, space?: {searched: [{name, type, low?, high?, log?, step?, choices?, simpler?}], pinned: [names]}, leaders: [{method, hyperparameters, score, se, foldScores, trials, chosen, note?}]}`; absent without a search (`mode` `best` is reserved for a search over several methods); `space` (Tune) is in the schema's description since 0.1.19 |
 | `model.dataset_ref` | `DatasetRef` | Reference mode: `{kind: file \| query \| script, script, path?, id?, name?}`, see "Storage modes" |
 | `dataset_fingerprint` | `DatasetFingerprint` | `{rowCount, columnCount, hash, columns: [{name, type, missingCount, min?, max?, mean?, categories?}]}` |
 
@@ -1721,7 +2055,17 @@ An engine is the set of functions that share `meta.mlname` (the engine id). `met
 Three more `meta` keys on `train`: `mlhasrows: 'true'` (the model file embeds training rows; EDA's SVM and
 k-Nearest Neighbors), `mlserver: 'true'` (the method runs on the server) and `mlnativenans: 'true'` (the method takes
 rows with missing feature values as they are; EDA's XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting,
-CatBoost, Decision Tree and TabM; see "Missing values").
+CatBoost, Decision Tree and TabM; see "Missing values"). Two optional keys serve the search (see "Search"):
+`mlspace` (the JSON search space over the `train` inputs, read by `searchSpaceText` / `searchSpaceOf`; without it the
+method cannot be tuned; EDA declares one for every method but Naive Bayes) and `mlparallel: 'true'` (the method takes
+concurrent `train` / `apply` calls, read by `isParallel`; EDA's methods, run on its pool of Crux workers). The
+optional `mlenabled` says when a `train` input is used (`enabledRules` / `isEnabled` in `engines/engine.ts`, next to
+`searchSpaceText`): JSON `{"<input>": <condition> | [<condition>, ...]}`, a condition an object whose clauses all hold,
+a list any of them; a clause is `"<other input>": [<values>]` (compared as text), `"<other input>": {"gt": n}` / `{"lt":
+n}` or `"task": ["classification" | "regression"]` (the task the method trains; an unknown task holds). `enabledRules`
+gives `{}` without the key and undefined for a malformed one (the logic logs nothing; the view warns once and treats it
+as no rules). The view disables an input whose rule fails (see "Components"), the search fixes such a dimension to the
+default (see "Search"). EDA declares it for SVM (gamma, degree, coef0 by kernel, epsilon for a regression), Linear Regression (iterations while alpha > 0) and XGBoost (seed while subsample or colsample < 1).
 
 - An engine is complete, and usable, only with `train`, `apply` and `isApplicable`.
 - A function engine receives the feature table and the target column. A script engine (`DG.Script`) receives one

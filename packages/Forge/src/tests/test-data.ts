@@ -12,6 +12,7 @@ import {PreparationOptions} from '../preparation/preparation-options';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {ModelFields, modelFieldsOf} from '../storage/model-fields';
 import {deleteModel, modelsChanged, saveModel} from '../storage/model-store';
+import {DEFAULT_VALIDATION} from '../training/k-fold';
 import {prepareTraining, TrainingRequest, TrainingResult, TrainingSelection, trainModel}
   from '../training/train-model';
 
@@ -219,8 +220,8 @@ export function names(columns: DG.Column[]): string[] {
 export function selectionOf(features: DG.Column[] | DG.DataFrame, target: DG.Column,
   missingValues: MissingValuesSettings = {mode: 'skip'}, engine: Engine = xgboost()): TrainingSelection {
   const columns = features instanceof DG.DataFrame ? features.columns.toList() : features;
-  return {engine, features: columns, target, hyperparameters: defaultHyperparameters(engine), seed: 42, folds: 5,
-    missingValues, steps: NO_PREPARATION_STEPS};
+  return {engine, features: columns, target, hyperparameters: defaultHyperparameters(engine), seed: 42,
+    validation: DEFAULT_VALIDATION, missingValues, steps: NO_PREPARATION_STEPS};
 }
 
 /** Runs [action]; returns its result and every frame `DG.DataFrame.fromColumns` built meanwhile over any of

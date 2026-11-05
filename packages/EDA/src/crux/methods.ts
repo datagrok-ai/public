@@ -104,7 +104,7 @@ export function isXgboostInteractive(features: DG.ColumnList, target: DG.Column)
 }
 
 export function trainXgboost(df: DG.DataFrame, target: DG.Column, iterations: number, eta: number, maxDepth: number,
-  lambda: number, alpha: number): Promise<Uint8Array> {
+  lambda: number, alpha: number, subsample: number = 1, colsample: number = 1, seed: number = 0): Promise<Uint8Array> {
   const classification = isClassTarget(target);
   validate('XGBoost', [
     positiveInt(iterations, 'iterations'),
@@ -112,11 +112,13 @@ export function trainXgboost(df: DG.DataFrame, target: DG.Column, iterations: nu
     positiveInt(maxDepth, 'max depth'),
     [lambda >= 0, 'lambda must be non-negative'],
     [alpha >= 0, 'alpha must be non-negative'],
+    [subsample > 0 && subsample <= 1, 'row sample must be in (0, 1]'],
+    [colsample > 0 && colsample <= 1, 'column sample must be in (0, 1]'],
     [!classification || classCount(target) >= 2, 'classification target must have at least 2 categories'],
   ]);
   return cruxFit(taskOf(target), 'xgboost', df, target,
     {estimator: {n_estimators: iterations, learning_rate: eta, max_depth: maxDepth, reg_lambda: lambda,
-      reg_alpha: alpha}});
+      reg_alpha: alpha, subsample, colsample_bytree: colsample}, seed});
 }
 
 export function isSvmInteractive(features: DG.ColumnList, target: DG.Column): boolean {

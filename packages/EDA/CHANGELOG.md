@@ -2,6 +2,12 @@
 
 ## v.next
 
+* GROK-20932: Rewrote the XGBoost hyperparameter tooltips after the XGBoost parameter docs
+* GROK-20932: Added the Row sample and Column sample hyperparameters (subsample / colsample_bytree, default 1, searched in 0.5-1) and a Model seed to XGBoost; the seed matters only when a sample is below 1
+* GROK-20932: Added a Model seed hyperparameter to Linear Regression, where Crux takes one; with the current settings the model does not depend on it
+* GROK-20932: Added meta.mlenabled on train (the inputs Forge disables by the other inputs or the task): SVM gamma / degree / offset by kernel and epsilon for regression only; Linear Regression iterations only with L1 > 0; XGBoost seed only with a sample below 1
+* GROK-20932: Renamed the RealMLP and TabM Validation fraction input to Early stopping fraction
+* GROK-20932: Added a pool of Crux module workers (parallel fits for Forge's search) and the mlparallel / mlspace meta on every train function (search spaces for Forge's Tune)
 * GROK-20932: Added the classificationReport function: Crux (scikit-learn) classification metrics, confusion matrix, per-class values and ROC / precision-recall curves of an actual and a predicted column, used by Forge
 * GROK-20932: Added class probabilities to the apply functions of every classifier but SVM: one proba_<class> column per class after the prediction
 * GROK-21061: Pareto front: Fixed result columns staying in the table after the viewer is closed
@@ -16,9 +22,9 @@
 * GROK-20932: Changed regression predictions to float columns for integer targets
 * GROK-20932: Changed Linear Regression, Softmax, PLS Regression, XGBoost and SVM training to skip rows with a missing target instead of failing
 * GROK-20932: Removed the sci-comp-ml, XGBoost and LIBSVM wasm modules
-* GROK-20932: Added nine Forge methods on Crux: Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost, Decision Tree, k-Nearest Neighbors, Naive Bayes, LDA and Neural Network (MLP); the stochastic methods have a Seed hyperparameter; kNN keeps the training rows in the model (meta.mlhasrows)
+* GROK-20932: Added nine Forge methods on Crux: Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost, Decision Tree, k-Nearest Neighbors, Naive Bayes, LDA and Neural Network (MLP); the stochastic methods have a Model seed hyperparameter; kNN keeps the training rows in the model (meta.mlhasrows)
 * GROK-20932: Marked XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost and Decision Tree with meta.mlnativenans: they take rows with missing feature values (Forge no longer skips or imputes them by default)
-* GROK-20932: Added two Forge methods on Crux's neural tabular models: RealMLP (pytabkit 1.7.3) and TabM (TabM 0.0.3 with rtdl_num_embeddings); both have a Seed hyperparameter; TabM takes rows with missing feature values (meta.mlnativenans)
+* GROK-20932: Added two Forge methods on Crux's neural tabular models: RealMLP (pytabkit 1.7.3) and TabM (TabM 0.0.3 with rtdl_num_embeddings); both have a Model seed hyperparameter; TabM takes rows with missing feature values (meta.mlnativenans)
 * GROK-20932: Rebuilt the Crux module with crux-fn/realmlp and crux-fn/tabm (same crux revision; saved models keep working)
 * GROK-20932: Restored applying pre-Crux models with the same predictions as before (prediction only): PLS Regression with stored feature names, Linear Regression from 1.8.0, Softmax, XGBoost and SVM from 1.9.0 (src/legacy; XGBoost through Crux's ml.xgboost_predict); older models still require retraining; added files/legacy-models/reference.json and five more fixtures (regression, binary and bool targets)
 

@@ -88,7 +88,7 @@ Feature: Training a classifier on iris in the Train view
     And the "text of cell 1 of Train" reading of grid viewer in "Performance" results panel should be between 0.95 and 1
     And the "text of cell 1 of Validation" reading of grid viewer in "Performance" results panel should be between 0.85 and 1
     And "Performance" results panel should contain text "Validation: 5-fold cross-validation on 150 rows"
-    And "Performance" results panel should contain text "Seed: "
+    And "Performance" results panel should contain text "Split seed: "
     And "Insights & Tips" results panel should contain text "Features are highly correlated."
     And Save button should be enabled
     When user clicks on seed copy icon
@@ -106,7 +106,7 @@ Feature: Training a classifier on iris in the Train view
     And the "text of cell 1 of Preparation" reading of grid viewer in "Runs" results panel should be ""
     And the "text of cell 1 of Rows" reading of grid viewer in "Runs" results panel should be "150"
     And the "text of cell 1 of Status" reading of grid viewer in "Runs" results panel should be "completed"
-    And the "text of cell 1 of Seed" reading of grid viewer in "Runs" results panel should be the shown seed
+    And the "text of cell 1 of Split seed" reading of grid viewer in "Runs" results panel should be the shown seed
     And the "text of cell 1 of Accuracy (validation)" reading of grid viewer in "Runs" results panel should equal the "text of cell 1 of Validation" reading of grid viewer in "Performance" results panel
     And the "current row" reading of grid viewer in "Runs" results panel should be 1
     When user enters "30" into Iterations input
@@ -117,7 +117,7 @@ Feature: Training a classifier on iris in the Train view
       | hyperparameters.iterations | 30        |
     And the "rows" reading of grid viewer in "Runs" results panel should be 2
     And the "text of cell 1 of #" reading of grid viewer in "Runs" results panel should be "2"
-    And the "text of cell 1 of Seed" reading of grid viewer in "Runs" results panel should be the shown seed
+    And the "text of cell 1 of Split seed" reading of grid viewer in "Runs" results panel should be the shown seed
     And the "current row" reading of grid viewer in "Runs" results panel should be 1
     When user scrolls "Runs" results panel into view
     And user clicks on the "cell 2 of #" area of grid viewer in "Runs" results panel

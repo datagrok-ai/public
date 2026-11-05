@@ -6,6 +6,7 @@ import {PreparationOptions, preparationOptionsOf} from '../preparation/preparati
 import {datasetRefCaption, storedDatasetRef} from '../storage/dataset-ref';
 import {tagsOf} from '../storage/model-fields';
 import {findModelRow, ownBlob} from '../storage/model-store';
+import {SearchRecord, searchRecordOf} from '../training/search';
 import {MetricsRecord, metricsRecordOf} from '../training/train-model';
 import {applicableTables} from './applicable-tables';
 import {loginsOf} from './list-models';
@@ -15,7 +16,7 @@ import {modelActivity} from './model-activity';
 const GET_MODEL_COLUMNS = ['name', 'description', 'tags', 'engine_name', 'engine_namespace', 'engine_kind',
   'task', 'target_name', 'target', 'features', 'feature_count', 'options', 'hyperparameters', 'metrics', 'seed',
   'splitting', 'storage_mode', 'dataset_name', 'row_count', 'dataset_ref', 'dataset_table_id', 'dataset_fingerprint',
-  'blob', 'has_training_rows'] as const;
+  'blob', 'has_training_rows', 'search'] as const;
 
 /** What `Forge:getModel` returns: the Details, Performance and Activity panes of a model as one object. */
 export interface ModelDetails {
@@ -37,6 +38,8 @@ export interface ModelDetails {
   hyperparameters: {[name: string]: unknown};
   preparation: PreparationOptions;
   metrics: MetricsRecord | null;
+  /** The search that chose the method and settings; null without one. */
+  search: SearchRecord | null;
   findings: {text: string; detail: string}[];
   seed: number | null;
   splitting: {[key: string]: unknown} | null;
@@ -85,6 +88,7 @@ export async function runGetModel(idOrName: string, tables: DG.DataFrame[]): Pro
     hyperparameters: row.hyperparameters ?? {},
     preparation: preparationOptionsOf(row.options),
     metrics,
+    search: searchRecordOf(row.search) ?? null,
     findings: metrics === null ? [] : metricFindings(metrics).map(({text, detail}) => ({text, detail})),
     seed: row.seed ?? null,
     splitting: row.splitting ?? null,

@@ -42,7 +42,7 @@ Feature: Training on iris with missing values: Skip rows, Impute, and a cell cle
     And no errors should have been logged
 
   Scenario: Rows with missing values are skipped and counted; Missing values lives in Preparation (3.11, 5.11)
-    Then the groups of train form should be "Data, Preparation, Method"
+    Then the groups of train form should be "Data, Preparation, Method, Validation"
     And the "Preparation" group should show exactly the inputs "Missing values"
     And "Missing values" input in "Data" group should be absent
     And "Missing values" input in "Preparation" group should have "Skip rows" chosen
@@ -70,7 +70,7 @@ Feature: Training on iris with missing values: Skip rows, Impute, and a cell cle
     And the "text of cell 1 of Preparation" reading of grid viewer in "Runs" results panel should be ""
     When user selects "XGBoost" in Method input
     Then a new training's result should be shown
-    And the groups of train form should be "Data, Method"
+    And the groups of train form should be "Data, Method, Validation"
     And "Performance" results panel should contain text "Missing values: kept (the method handles them)"
     And "Performance" results panel should contain text "Validation: 5-fold cross-validation on 149 rows"
     And the shown training should be the newest training run of the table "forge-test-irisgaps-{time}", with:
@@ -80,18 +80,18 @@ Feature: Training on iris with missing values: Skip rows, Impute, and a cell cle
       | options.missingValues     | {"mode":"keep","skippedRows":1} |
     When user selects "SVM" in Method input
     Then a new training's result should be shown
-    And the groups of train form should be "Data, Preparation, Method"
+    And the groups of train form should be "Data, Preparation, Method, Validation"
     When user clicks on editor of Features input
     And user toggles the "Sepal.Width" column in the column list of "Select columns..." dialog
     And user clicks on OK button in "Select columns..." dialog
     Then a new training's result should be shown
-    And the groups of train form should be "Data, Method"
+    And the groups of train form should be "Data, Method, Validation"
     And "Performance" results panel should contain text "Rows: 149 used, 1 skipped (missing values)"
     When user clicks on editor of Features input
     And user toggles the "Sepal.Width" column in the column list of "Select columns..." dialog
     And user clicks on OK button in "Select columns..." dialog
     Then a new training's result should be shown
-    And the groups of train form should be "Data, Preparation, Method"
+    And the groups of train form should be "Data, Preparation, Method, Validation"
     And "Missing values" input in "Preparation" group should have "Skip rows" chosen
     And "Performance" results panel should contain text "Rows: 147 used, 3 skipped (missing values)"
     And no error or warning balloon should have been shown
@@ -148,7 +148,7 @@ Feature: Training on iris with missing values: Skip rows, Impute, and a cell cle
     And user toggles the "Sepal.Width" column in the column list of "Select columns..." dialog
     And user clicks on OK button in "Select columns..." dialog
     Then a new training's result should be shown
-    And the groups of train form should be "Data, Method"
+    And the groups of train form should be "Data, Method, Validation"
     When user switches to the "forge-test-irisgaps-{time}" table view
     And user clears "Petal.Length" column in rows "5"
     And user switches to the "Predictive model" view
@@ -157,7 +157,7 @@ Feature: Training on iris with missing values: Skip rows, Impute, and a cell cle
     And user clicks on OK button in "Select columns..." dialog
     Then a new training's result should be shown
     And editor of Features input should have text "(2) Sepal.Length, Petal.Length"
-    And the groups of train form should be "Data, Preparation, Method"
+    And the groups of train form should be "Data, Preparation, Method, Validation"
     And "Performance" results panel should contain text "Rows: 148 used, 2 skipped (missing values)"
     When user hovers over label of "Missing values" input
     Then tooltip should contain text "Rows with missing values in: Petal.Length: 1."

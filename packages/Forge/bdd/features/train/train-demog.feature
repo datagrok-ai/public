@@ -62,7 +62,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     Then editor of Target input should have text "SEVERITY"
     And editor of Features input should have text "(3) AGE, HEIGHT, WEIGHT"
     And Method input should have value "XGBoost"
-    And the groups of train form should be "Data, Method"
+    And the groups of train form should be "Data, Method, Validation"
     When user remembers the training run count of the table "forge-test-demog-{time}"
     And user clicks on editor of Features input
     And user types "STARTED" into column search in "Select columns..." dialog

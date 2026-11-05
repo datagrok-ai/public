@@ -495,6 +495,9 @@ export class PackageFunctions {
     'meta': {
       'mlname': 'Linear Regression',
       'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlspace': '{"alpha": {"type": "float", "low": 0.001, "high": 10, "log": true, "simpler": "high"}, "lambda": {"type": "float", "low": 0.001, "high": 10, "log": true, "simpler": "high"}}',
+      'mlenabled': '{"iterations": {"alpha": {"gt": 0}}}',
     },
     'name': 'trainLinearRegression',
     'outputs': [{'type': 'dynamic', 'name': 'model'}],
@@ -502,10 +505,11 @@ export class PackageFunctions {
   static async trainLinearRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'step': '50', 'max': '10000', 'initialValue': '1000', 'description': 'Largest number of solver iterations (elastic net).'}}) iterations: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'step': '50', 'max': '10000', 'initialValue': '1000', 'description': 'Largest number of solver iterations. Used only when L1 > 0 (elastic net).'}}) iterations: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'L1', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 (Lasso) regularization term. 0 means plain ordinary least squares.'}}) alpha: number,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 (Ridge) regularization term. 0 means plain ordinary least squares.'}}) lambda: number): Promise<Uint8Array> {
-    return trainLinearRegression(df, predictColumn, alpha, lambda, iterations);
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 (Ridge) regularization term. 0 means plain ordinary least squares.'}}) lambda: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed of the ridge and elastic net solvers. The solvers used here are deterministic, so with these settings the model does not depend on it.'}}) seed: number): Promise<Uint8Array> {
+    return trainLinearRegression(df, predictColumn, alpha, lambda, iterations, seed);
   }
 
 
@@ -556,6 +560,8 @@ export class PackageFunctions {
     'meta': {
       'mlname': 'Softmax',
       'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlspace': '{"penalty": {"type": "float", "low": 0.001, "high": 1, "log": true, "simpler": "high"}, "iterations": {"type": "int", "low": 50, "high": 500, "log": true}}',
     },
     'name': 'trainSoftmax',
     'outputs': [{'type': 'dynamic', 'name': 'model'}],
@@ -615,6 +621,8 @@ export class PackageFunctions {
     'meta': {
       'mlname': 'PLS Regression',
       'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlspace': '{"components": {"type": "int", "low": 1, "high": 10, "simpler": "low"}}',
     },
     'name': 'trainPLSRegression',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -703,6 +711,9 @@ export class PackageFunctions {
       'mlname': 'XGBoost',
       'mlrole': 'train',
       'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlspace': '{"iterations": {"type": "int", "low": 10, "high": 100, "log": true, "simpler": "low"}, "eta": {"type": "float", "low": 0.03, "high": 0.5, "log": true}, "maxDepth": {"type": "int", "low": 1, "high": 10, "simpler": "low"}, "lambda": {"type": "float", "low": 0.1, "high": 10, "log": true, "simpler": "high"}, "alpha": {"type": "float", "low": 0.01, "high": 10, "log": true, "simpler": "high"}, "subsample": {"type": "float", "low": 0.5, "high": 1, "simpler": "high"}, "colsample": {"type": "float", "low": 0.5, "high": 1, "simpler": "high"}}',
+      'mlenabled': '{"seed": [{"subsample": {"lt": 1}}, {"colsample": {"lt": 1}}]}',
     },
     'name': 'trainXGBooster',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -710,12 +721,15 @@ export class PackageFunctions {
   static async trainXGBooster(
     df: DG.DataFrame,
     predictColumn: DG.Column,
-    @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '100', 'initialValue': '20', 'description': 'Number of training iterations.'}}) iterations: number,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Rate', 'min': '0', 'max': '1', 'initialValue': '0.3', 'description': 'Learning rate.'}}) eta: number,
-    @grok.decorators.param({'type': 'int', 'options': {'min': '0', 'max': '20', 'initialValue': '6', 'description': 'Maximum depth of a tree.'}}) maxDepth: number,
-    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '1', 'description': 'L2 regularization term.'}}) lambda: number,
-    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 regularization term.'}}) alpha: number): Promise<Uint8Array> {
-    return trainXgboost(df, predictColumn, iterations, eta, maxDepth, lambda, alpha);
+    @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '100', 'initialValue': '20', 'description': 'Number of boosting rounds. Each round adds one tree (one per class for a multiclass target). More rounds fit the training data more closely. Use a lower Rate with more rounds.'}}) iterations: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Rate', 'min': '0', 'max': '1', 'initialValue': '0.3', 'description': 'Step-size shrinkage (eta) applied to the weights of each new tree. Lower values are more conservative and need more rounds.'}}) eta: number,
+    @grok.decorators.param({'type': 'int', 'options': {'min': '0', 'max': '20', 'initialValue': '6', 'description': 'Maximum depth of a tree. Deeper trees capture more feature interactions and overfit more easily.'}}) maxDepth: number,
+    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '1', 'description': 'L2 regularization on the leaf weights. Larger values give a more conservative model.'}}) lambda: number,
+    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 regularization on the leaf weights. Larger values give a more conservative model and can zero out leaves.'}}) alpha: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Row sample', 'min': '0.1', 'max': '1', 'initialValue': '1', 'description': 'Share of the rows sampled for each tree. Below 1 adds randomness that Model seed controls.'}}) subsample: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Column sample', 'min': '0.1', 'max': '1', 'initialValue': '1', 'description': 'Share of the features sampled for each tree. Below 1 adds randomness that Model seed controls.'}}) colsample: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed of the row and column sampling. Has an effect only when Row sample or Column sample is below 1.'}}) seed: number): Promise<Uint8Array> {
+    return trainXgboost(df, predictColumn, iterations, eta, maxDepth, lambda, alpha, subsample, colsample, seed);
   }
 
 
@@ -766,6 +780,9 @@ export class PackageFunctions {
       'mlname': 'SVM',
       'mlrole': 'train',
       'mlhasrows': 'true',
+      'mlparallel': 'true',
+      'mlspace': '{"kernel": {"type": "categorical", "choices": ["Linear", "RBF", "Polynomial"], "simpler": "first"}, "cost": {"type": "float", "low": 0.01, "high": 100, "log": true, "simpler": "low"}, "gamma": {"type": "float", "low": 0.001, "high": 10, "log": true, "simpler": "low"}, "degree": {"type": "int", "low": 2, "high": 4, "simpler": "low"}, "epsilon": {"type": "float", "low": 0.01, "high": 1, "log": true, "simpler": "high"}}',
+      'mlenabled': '{"gamma": {"kernel": ["RBF", "Polynomial", "Sigmoid"]}, "degree": {"kernel": ["Polynomial"]}, "coef0": {"kernel": ["Polynomial", "Sigmoid"]}, "epsilon": {"task": ["regression"]}}',
     },
     'name': 'trainSVM',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -830,6 +847,8 @@ export class PackageFunctions {
       'mlname': 'Random Forest',
       'mlrole': 'train',
       'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlspace': '{"trees": {"type": "int", "low": 20, "high": 200, "log": true, "simpler": "low"}, "maxDepth": {"type": "int", "low": 2, "high": 16, "simpler": "low"}, "minSamplesLeaf": {"type": "int", "low": 1, "high": 20, "log": true, "simpler": "high"}, "maxFeatures": {"type": "categorical", "choices": ["auto", "sqrt", "log2", "all"]}}',
     },
     'name': 'trainRandomForest',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -841,7 +860,7 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Max depth', 'min': '1', 'max': '50', 'initialValue': '10', 'description': 'Largest depth of a tree. Bounds the model size.'}}) maxDepth: number,
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Min rows per leaf', 'min': '1', 'max': '1000', 'initialValue': '1', 'description': 'Smallest number of training rows a leaf may hold.'}}) minSamplesLeaf: number,
     @grok.decorators.param({'type': 'string', 'options': {'caption': 'Features per split', 'choices': ['auto', 'sqrt', 'log2', 'all'], 'initialValue': 'auto', 'description': 'Features tried at each split: auto is sqrt for classification and all for regression.'}}) maxFeatures: string,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
     return trainRandomForest(df, predictColumn, trees, maxDepth, minSamplesLeaf, maxFeatures, seed);
   }
 
@@ -893,6 +912,8 @@ export class PackageFunctions {
       'mlname': 'Extra Trees',
       'mlrole': 'train',
       'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlspace': '{"trees": {"type": "int", "low": 20, "high": 200, "log": true, "simpler": "low"}, "maxDepth": {"type": "int", "low": 2, "high": 16, "simpler": "low"}, "minSamplesLeaf": {"type": "int", "low": 1, "high": 20, "log": true, "simpler": "high"}, "maxFeatures": {"type": "categorical", "choices": ["auto", "sqrt", "log2", "all"]}}',
     },
     'name': 'trainExtraTrees',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -904,7 +925,7 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Max depth', 'min': '1', 'max': '50', 'initialValue': '10', 'description': 'Largest depth of a tree. Bounds the model size.'}}) maxDepth: number,
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Min rows per leaf', 'min': '1', 'max': '1000', 'initialValue': '1', 'description': 'Smallest number of training rows a leaf may hold.'}}) minSamplesLeaf: number,
     @grok.decorators.param({'type': 'string', 'options': {'caption': 'Features per split', 'choices': ['auto', 'sqrt', 'log2', 'all'], 'initialValue': 'auto', 'description': 'Features tried at each split: auto is sqrt for classification and all for regression.'}}) maxFeatures: string,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
     return trainExtraTrees(df, predictColumn, trees, maxDepth, minSamplesLeaf, maxFeatures, seed);
   }
 
@@ -956,6 +977,8 @@ export class PackageFunctions {
       'mlname': 'Hist Gradient Boosting',
       'mlrole': 'train',
       'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlspace': '{"iterations": {"type": "int", "low": 20, "high": 300, "log": true, "simpler": "low"}, "learningRate": {"type": "float", "low": 0.01, "high": 0.3, "log": true}, "maxLeafNodes": {"type": "int", "low": 4, "high": 63, "log": true, "simpler": "low"}, "minSamplesLeaf": {"type": "int", "low": 5, "high": 50, "log": true, "simpler": "high"}, "l2": {"type": "float", "low": 0.01, "high": 10, "log": true, "simpler": "high"}}',
     },
     'name': 'trainHistGradientBoosting',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -969,7 +992,7 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Max depth', 'min': '0', 'max': '50', 'initialValue': '0', 'description': 'Largest depth of a tree. 0 means no limit.'}}) maxDepth: number,
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Min rows per leaf', 'min': '1', 'max': '1000', 'initialValue': '20', 'description': 'Smallest number of training rows a leaf may hold.'}}) minSamplesLeaf: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 penalty of the leaf values.'}}) l2: number,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
     return trainHistGradientBoosting(df, predictColumn, iterations, learningRate, maxLeafNodes, maxDepth, minSamplesLeaf,
       l2, seed);
   }
@@ -1022,6 +1045,8 @@ export class PackageFunctions {
       'mlname': 'CatBoost',
       'mlrole': 'train',
       'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlspace': '{"iterations": {"type": "int", "low": 30, "high": 300, "log": true, "simpler": "low"}, "learningRate": {"type": "float", "low": 0.01, "high": 0.3, "log": true}, "depth": {"type": "int", "low": 2, "high": 8, "simpler": "low"}, "l2LeafReg": {"type": "float", "low": 0.3, "high": 30, "log": true, "simpler": "high"}}',
     },
     'name': 'trainCatBoost',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -1033,7 +1058,7 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'Learning rate', 'min': '0.001', 'max': '1', 'initialValue': '0.1', 'description': 'Shrinkage of each tree\'s contribution.'}}) learningRate: number,
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Depth', 'min': '1', 'max': '16', 'initialValue': '6', 'description': 'Depth of the symmetric trees.'}}) depth: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '3', 'description': 'L2 regularization of the leaf values.'}}) l2LeafReg: number,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
     return trainCatBoost(df, predictColumn, iterations, learningRate, depth, l2LeafReg, seed);
   }
 
@@ -1085,6 +1110,8 @@ export class PackageFunctions {
       'mlname': 'Decision Tree',
       'mlrole': 'train',
       'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlspace': '{"maxDepth": {"type": "int", "low": 1, "high": 20, "simpler": "low"}, "minSamplesLeaf": {"type": "int", "low": 1, "high": 50, "log": true, "simpler": "high"}}',
     },
     'name': 'trainDecisionTree',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -1094,7 +1121,7 @@ export class PackageFunctions {
     predictColumn: DG.Column,
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Max depth', 'min': '1', 'max': '50', 'initialValue': '10', 'description': 'Largest depth of the tree. Bounds the model size.'}}) maxDepth: number,
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Min rows per leaf', 'min': '1', 'max': '1000', 'initialValue': '1', 'description': 'Smallest number of training rows a leaf may hold.'}}) minSamplesLeaf: number,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
     return trainDecisionTree(df, predictColumn, maxDepth, minSamplesLeaf, seed);
   }
 
@@ -1146,6 +1173,8 @@ export class PackageFunctions {
       'mlname': 'k-Nearest Neighbors',
       'mlrole': 'train',
       'mlhasrows': 'true',
+      'mlparallel': 'true',
+      'mlspace': '{"neighbors": {"type": "int", "low": 1, "high": 50, "log": true, "simpler": "high"}, "weights": {"type": "categorical", "choices": ["Uniform", "Distance"], "simpler": "first"}}',
     },
     'name': 'trainKnn',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -1205,6 +1234,7 @@ export class PackageFunctions {
     'meta': {
       'mlname': 'Naive Bayes',
       'mlrole': 'train',
+      'mlparallel': 'true',
     },
     'name': 'trainNaiveBayes',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -1262,6 +1292,8 @@ export class PackageFunctions {
     'meta': {
       'mlname': 'LDA',
       'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlspace': '{"shrinkage": {"type": "float", "low": 0.001, "high": 1, "log": true, "simpler": "high"}}',
     },
     'name': 'trainLda',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -1320,6 +1352,8 @@ export class PackageFunctions {
     'meta': {
       'mlname': 'Neural Network',
       'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlspace': '{"hiddenLayers": {"type": "categorical", "choices": ["32", "64", "100", "128", "64,32", "128,64"], "simpler": "first"}, "activation": {"type": "categorical", "choices": ["ReLU", "Tanh", "Logistic"]}, "iterations": {"type": "int", "low": 50, "high": 500, "log": true, "simpler": "low"}, "learningRate": {"type": "float", "low": 0.0001, "high": 0.01, "log": true}, "alpha": {"type": "float", "low": 0.00001, "high": 1, "log": true, "simpler": "high"}}',
     },
     'name': 'trainMlp',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -1332,7 +1366,7 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'max': '2000', 'initialValue': '200', 'description': 'Largest number of training epochs.'}}) iterations: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'Learning rate', 'min': '0.00001', 'max': '1', 'initialValue': '0.001', 'description': 'Step size of the weight updates.'}}) learningRate: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '10', 'initialValue': '0.0001', 'description': 'L2 penalty of the weights.'}}) alpha: number,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
     return trainMlp(df, predictColumn, hiddenLayers, activation, iterations, learningRate, alpha, seed);
   }
 
@@ -1383,6 +1417,8 @@ export class PackageFunctions {
     'meta': {
       'mlname': 'RealMLP',
       'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlspace': '{"variant": {"type": "categorical", "choices": ["TD", "TD-S"]}, "epochs": {"type": "int", "low": 32, "high": 256, "log": true, "simpler": "low"}, "hiddenLayers": {"type": "categorical", "choices": ["128,128", "256,256", "256,256,256"], "simpler": "first"}, "learningRate": {"type": "float", "low": 0.01, "high": 0.3, "log": true}}',
     },
     'name': 'trainRealMlp',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -1391,12 +1427,12 @@ export class PackageFunctions {
     df: DG.DataFrame,
     predictColumn: DG.Column,
     @grok.decorators.param({'type': 'string', 'options': {'caption': 'Variant', 'choices': ['TD', 'TD-S'], 'initialValue': 'TD', 'description': 'TD: the tuned defaults (numerical embeddings, parametric activations, dropout, weight decay). TD-S: the simplified variant.'}}) variant: string,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Epochs', 'min': '1', 'max': '2000', 'initialValue': '128', 'description': 'Training epochs. The best epoch on the validation split is kept.'}}) epochs: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Epochs', 'min': '1', 'max': '2000', 'initialValue': '128', 'description': 'Training epochs. The best epoch on the early-stopping rows is kept.'}}) epochs: number,
     @grok.decorators.param({'type': 'string', 'options': {'caption': 'Hidden layers', 'initialValue': '256,256,256', 'description': 'Comma-separated sizes of the hidden layers, e.g. 256,256,256 or 128,128.'}}) hiddenLayers: string,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'Learning rate', 'min': '0', 'max': '1', 'initialValue': '0', 'description': 'Base learning rate. 0 keeps the RealMLP default (0.04 for classification, 0.2 for regression).'}}) learningRate: number,
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Batch size', 'min': '1', 'max': '4096', 'initialValue': '256', 'description': 'Rows per optimizer step.'}}) batchSize: number,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Validation fraction', 'min': '0.05', 'max': '0.5', 'initialValue': '0.2', 'description': 'Share of the training rows held out to pick the best epoch.'}}) validationFraction: number,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Early stopping fraction', 'min': '0.05', 'max': '0.5', 'initialValue': '0.2', 'description': 'Rows held out for early stopping.'}}) validationFraction: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
     return trainRealMlp(df, predictColumn, variant, epochs, hiddenLayers, learningRate, batchSize, validationFraction,
       seed);
   }
@@ -1449,6 +1485,8 @@ export class PackageFunctions {
       'mlname': 'TabM',
       'mlrole': 'train',
       'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlspace': '{"ensembleSize": {"type": "int", "low": 4, "high": 16, "log": true, "simpler": "low"}, "width": {"type": "int", "low": 64, "high": 256, "log": true, "simpler": "low"}, "embeddings": {"type": "categorical", "choices": ["Piecewise linear", "Periodic", "None"]}, "epochs": {"type": "int", "low": 16, "high": 64, "log": true, "simpler": "low"}, "learningRate": {"type": "float", "low": 0.0005, "high": 0.01, "log": true}, "dropout": {"type": "float", "low": 0, "high": 0.3, "simpler": "high"}}',
     },
     'name': 'trainTabm',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -1460,11 +1498,11 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Width', 'min': '1', 'max': '2048', 'initialValue': '128', 'description': 'Units per hidden layer (the paper uses 512).'}}) width: number,
     @grok.decorators.param({'type': 'string', 'options': {'caption': 'Embeddings', 'choices': ['Piecewise linear', 'Periodic', 'Linear-ReLU', 'None'], 'initialValue': 'Piecewise linear', 'description': 'Embeddings of the numerical features. Piecewise linear over quantile bins is the paper\'s best.'}}) embeddings: string,
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Epochs', 'min': '1', 'max': '1000', 'initialValue': '32', 'description': 'Largest number of training epochs. Early stopping may end training sooner.'}}) epochs: number,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Patience', 'min': '1', 'max': '100', 'initialValue': '16', 'description': 'Epochs without a better validation score before training stops.'}}) patience: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Patience', 'min': '1', 'max': '100', 'initialValue': '16', 'description': 'Epochs without a better score on the early-stopping rows before training stops.'}}) patience: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'Learning rate', 'min': '0.00001', 'max': '1', 'initialValue': '0.002', 'description': 'AdamW learning rate.'}}) learningRate: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'Dropout', 'min': '0', 'max': '0.9', 'initialValue': '0.1', 'description': 'Dropout rate of the hidden layers.'}}) dropout: number,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Validation fraction', 'min': '0.05', 'max': '0.5', 'initialValue': '0.2', 'description': 'Share of the training rows held out to pick the best epoch.'}}) validationFraction: number,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Early stopping fraction', 'min': '0.05', 'max': '0.5', 'initialValue': '0.2', 'description': 'Rows held out for early stopping.'}}) validationFraction: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
     return trainTabm(df, predictColumn, ensembleSize, width, embeddings, epochs, patience, learningRate, dropout,
       validationFraction, seed);
   }

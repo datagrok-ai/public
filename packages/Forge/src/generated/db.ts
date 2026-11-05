@@ -48,6 +48,7 @@ export interface ModelRow {
   metrics?: {[key: string]: any};
   seed?: number;
   splitting?: {[key: string]: any};
+  search?: {[key: string]: any};
   storage_mode: ModelStorageMode;
   dataset_name?: string;
   row_count?: number;
@@ -77,6 +78,7 @@ export interface ModelInsert {
   metrics?: {[key: string]: any};
   seed?: number;
   splitting?: {[key: string]: any};
+  search?: {[key: string]: any};
   storage_mode: ModelStorageMode;
   dataset_name?: string;
   row_count?: number;
@@ -90,7 +92,7 @@ export interface ModelInsert {
 
 export type ModelColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'description' |
   'tags' | 'engine_name' | 'engine_namespace' | 'engine_kind' | 'task' | 'target_name' | 'target' | 'features' |
-  'feature_count' | 'options' | 'hyperparameters' | 'metrics' | 'seed' | 'splitting' | 'storage_mode' |
+  'feature_count' | 'options' | 'hyperparameters' | 'metrics' | 'seed' | 'splitting' | 'search' | 'storage_mode' |
   'dataset_name' | 'row_count' | 'dataset_ref' | 'dataset_table_id' | 'dataset_fingerprint' | 'blob' |
   'has_training_rows' | 'legacy_id';
 
@@ -118,6 +120,7 @@ export interface TrainingRunRow {
   hyperparameters?: {[key: string]: any};
   seed?: number;
   splitting?: {[key: string]: any};
+  search?: {[key: string]: any};
   metrics?: {[key: string]: any};
   dataset_name?: string;
   row_count?: number;
@@ -142,6 +145,7 @@ export interface TrainingRunInsert {
   hyperparameters?: {[key: string]: any};
   seed?: number;
   splitting?: {[key: string]: any};
+  search?: {[key: string]: any};
   metrics?: {[key: string]: any};
   dataset_name?: string;
   row_count?: number;
@@ -155,8 +159,8 @@ export interface TrainingRunInsert {
 
 export type TrainingRunColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'model_id' |
   'engine_name' | 'engine_namespace' | 'engine_kind' | 'task' | 'target_name' | 'features' | 'options' |
-  'hyperparameters' | 'seed' | 'splitting' | 'metrics' | 'dataset_name' | 'row_count' | 'dataset_fingerprint' |
-  'status' | 'source' | 'error' | 'started_on' | 'duration_ms';
+  'hyperparameters' | 'seed' | 'splitting' | 'search' | 'metrics' | 'dataset_name' | 'row_count' |
+  'dataset_fingerprint' | 'status' | 'source' | 'error' | 'started_on' | 'duration_ms';
 
 /** Expand keys of `forge.training_run` → fields each adds to the row (consumed by query()/builder). */
 export type TrainingRunExpand = {
@@ -166,10 +170,10 @@ export type TrainingRunExpand = {
     'model_id.features'?: {[key: string]: any}; 'model_id.feature_count'?: number;
     'model_id.options'?: {[key: string]: any}; 'model_id.hyperparameters'?: {[key: string]: any};
     'model_id.metrics'?: {[key: string]: any}; 'model_id.seed'?: number; 'model_id.splitting'?: {[key: string]: any};
-    'model_id.storage_mode'?: ModelStorageMode; 'model_id.dataset_name'?: string; 'model_id.row_count'?: number;
-    'model_id.dataset_ref'?: {[key: string]: any}; 'model_id.dataset_table_id'?: string;
-    'model_id.dataset_fingerprint'?: {[key: string]: any}; 'model_id.blob'?: string;
-    'model_id.has_training_rows'?: boolean; 'model_id.legacy_id'?: string};
+    'model_id.search'?: {[key: string]: any}; 'model_id.storage_mode'?: ModelStorageMode;
+    'model_id.dataset_name'?: string; 'model_id.row_count'?: number; 'model_id.dataset_ref'?: {[key: string]: any};
+    'model_id.dataset_table_id'?: string; 'model_id.dataset_fingerprint'?: {[key: string]: any};
+    'model_id.blob'?: string; 'model_id.has_training_rows'?: boolean; 'model_id.legacy_id'?: string};
 };
 
 /** Row of `forge.application`. */
@@ -214,10 +218,10 @@ export type ApplicationExpand = {
     'model_id.features'?: {[key: string]: any}; 'model_id.feature_count'?: number;
     'model_id.options'?: {[key: string]: any}; 'model_id.hyperparameters'?: {[key: string]: any};
     'model_id.metrics'?: {[key: string]: any}; 'model_id.seed'?: number; 'model_id.splitting'?: {[key: string]: any};
-    'model_id.storage_mode'?: ModelStorageMode; 'model_id.dataset_name'?: string; 'model_id.row_count'?: number;
-    'model_id.dataset_ref'?: {[key: string]: any}; 'model_id.dataset_table_id'?: string;
-    'model_id.dataset_fingerprint'?: {[key: string]: any}; 'model_id.blob'?: string;
-    'model_id.has_training_rows'?: boolean; 'model_id.legacy_id'?: string};
+    'model_id.search'?: {[key: string]: any}; 'model_id.storage_mode'?: ModelStorageMode;
+    'model_id.dataset_name'?: string; 'model_id.row_count'?: number; 'model_id.dataset_ref'?: {[key: string]: any};
+    'model_id.dataset_table_id'?: string; 'model_id.dataset_fingerprint'?: {[key: string]: any};
+    'model_id.blob'?: string; 'model_id.has_training_rows'?: boolean; 'model_id.legacy_id'?: string};
 };
 
 export type ForgeTransactionOp =

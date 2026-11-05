@@ -71,13 +71,15 @@ category('Engines', () => {
 
   test('hyperparameters exclude the table and the target', async () => {
     const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
-    expectArray(hyperparametersOf(xgboost).map((p) => p.name), ['iterations', 'eta', 'maxDepth', 'lambda', 'alpha']);
+    expectArray(hyperparametersOf(xgboost).map((p) => p.name), ['iterations', 'eta', 'maxDepth', 'lambda', 'alpha',
+      'subsample', 'colsample', 'seed']);
   });
 
   test('default hyperparameters are the train inputs\' initial values', async () => {
     const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
     expect(JSON.stringify(defaultHyperparameters(xgboost)),
-      JSON.stringify({iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0}));
+      JSON.stringify({iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0, subsample: 1, colsample: 1,
+        seed: 0}));
   });
 
   test('apply takes the first column and the proba_ columns after it, drops the rest', async () => {

@@ -99,9 +99,10 @@ Returns one object with what the model's **Details**, **Performance** and **Acti
 | `featureTypes` | `{name: type}` |
 | `hyperparameters` | the method's settings |
 | `preparation` | the recorded preparation |
-| `metrics` | `train`, `validation`, for two classes `positiveClass` and, for a classifier, `classes` (per class: `label`, `rows`, `train` and `validation` values of `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision`); null when none were saved |
+| `metrics` | `train`, `validation`, `test` (after a search that held rows out), for two classes `positiveClass` and, for a classifier, `classes` (per class: `label`, `rows`, `train` and `validation` values of `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision`); null when none were saved |
+| `search` | the search that chose the settings, as `trainModel` returns it; null without one |
 | `findings` | `{text, detail}` for a metric below its threshold or a validation value far from the training one |
-| `seed`, `splitting` | how the data was split |
+| `seed`, `splitting` | how the data was split: the split seed and `{scheme: kfold \| holdout, folds?, trainFraction?, isStratified?, isShuffled?}` |
 | `storage` | `mode`, with a reference its `source`, with a copy its `tableId` |
 | `dataset` | `name`, `rows` and `summary` (the data summary kept instead of the data) |
 | `hasModelFile`, `keepsTrainingRows` | booleans |
@@ -130,7 +131,7 @@ Forge:trainModel(table: dataframe, target: string, features?: list<string>, meth
   showProgress?: bool = true) -> object
 ```
 
-Trains as the Predictive model view does, with its defaults and 5-fold cross-validation:
+Trains as the Predictive model view does, with its defaults (5-fold cross-validation, the split seed 42):
 
 - `table`, `target` (a column name): a numerical target makes a regression model, a text or boolean one a classifier
 - `features`: column names; by default every numerical column except the target, bigint columns and integer columns
@@ -140,7 +141,7 @@ Trains as the Predictive model view does, with its defaults and 5-fold cross-val
   `SVM`, `TabM`, `XGBoost` (the installed methods, `listMethods`); by default the method the view suggests for the data
 - `hyperparameters`: the method's settings by name, for example `{iterations: 50}`; settings not named keep their
   defaults
-- `options`: the preparation, each key optional:
+- `options`: the preparation and the validation, each key optional:
 
   | Key | Default | Meaning |
   |---|---|---|
@@ -148,22 +149,35 @@ Trains as the Predictive model view does, with its defaults and 5-fold cross-val
   | `neighbors`, `distance` | the EDA imputer's (`4`, `Euclidean`) | the settings of `impute` |
   | `oneHot` | on when every text or yes/no feature has at most 20 categories (while `skipUniqueCategories` is on, features whose values are all different do not count) | One-hot encoding of text and yes/no features |
   | `skipUniqueCategories` | `true` | leaves out text features whose values are all different |
-  | `predictProbability` | `false` | for a target with exactly two classes: trains on the probability of the first class |
+  | `predictProbability` | `false` | for a target with exactly two classes: trains on the probability of the first class. Predict probability is off during a search: with `search` it is ignored, and the search and the model learn the plain target |
   | `cutoff` | `0.5` | the probability from which a row is predicted as the first class |
-  | `seed` | random | the seed of the cross-validation split, a whole number from 0 to 2147483647 |
-  | `folds` | `5` | the number of cross-validation parts, at least 2 |
+  | `scheme` | `kfold` | how Validation is measured: `kfold` (cross-validation) or `holdout` (one held out part, then the final model on all rows) |
+  | `folds` | `5` | `kfold`: the number of cross-validation parts, at least 2 |
+  | `testFraction` | `0.2` | `holdout`: the share of the rows held out, from 0.05 to 0.5 |
+  | `stratified` | `true` | each class keeps its share in every part or in the hold out; ignored for a regression |
+  | `shuffle` | `true` | shuffles the rows by `seed` before the split; `false`: blocks of consecutive rows, or the last rows held out |
+  | `seed` | `42` | the split seed, a whole number from 0 to 2147483647 (with `search`, also of the search's hold out and of the trials' settings) |
+  | `search` | none | `{metric, budgetSeconds, maxTrials}`, each key optional: tunes the method's settings first (a seeded random search of the space the method declares, validated as the options above say on a split every trial shares; with 500 rows or more a fifth, rounded and kept between 100 and 2000 rows, stratified for a classifier, is held out first), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`; `budgetSeconds`: a whole number, at least 1 (default `60`); `maxTrials`: stops after that many completed trials |
 
 - `name`: saves the model under this name; without a name the model is trained and measured but not saved.
   `description` and `tags` (comma-separated) go with it
 - `storage`: what the saved model keeps of its training data: `none`, `reference` (the table must come from a file,
   a query or a script) or `copy` (uploads the feature and target columns). Nothing is uploaded unless `copy` is asked
   for
-- `showProgress`: the task-bar progress `Training <method> model`; cancelling it fails the call with
-  `Training was cancelled.`
+- `showProgress`: the task-bar progress `Training <method> model` (with `search`, first `Tuning <method>`);
+  cancelling it fails the call with `Training was cancelled.` (a search cancelled after a completed trial trains the
+  best so far)
 
 Returns `modelId` (null when not saved), `runId`, `name`, `method`, `task`, `target`, `features`, `rowCount` (the
-rows trained on), `skippedRows`, `seed` and `metrics` (`train`, `validation`, for two classes `positiveClass` and, for
-a classifier, `classes`). Nothing is added to the table.
+rows trained on; after a search with a hold out, without the held out rows), `skippedRows`, `seed`, `metrics`
+(`train`, `validation`, `test` (after a search with a hold out: the final model on the held out rows), for two classes
+`positiveClass` and, for a classifier, `classes`) and, after a search, `search`: `mode` (`tune`), `metric`,
+`budgetSeconds`, `seed`, `trials`, `completed`, `pruned`, `failed`, `elapsedMs`, `stopped` (`budget`, `cancelled`,
+`exhausted`, `trials`, `failed`: 10 trials failed and none completed), `holdOut` (`rows`, `fraction`; absent below
+500 rows), `space` (`searched`: the dimensions searched, `pinned`: the settings kept at their values, none from the
+API), `leaders` (per method, the simplest trial within one standard error of its best: `method`,
+`hyperparameters`, `score` (the metric by the chosen validation on the search rows), `se`, `foldScores`, `trials`,
+`chosen`). Nothing is added to the table.
 
 Errors, for example:
 
@@ -171,7 +185,18 @@ Errors, for example:
 - `No method 'Boost' is installed. The methods are: <methods>.`
 - `The method XGBoost has no setting 'speed'. Its settings are: <settings>.`,
   `The setting 'rate' of Softmax needs a number.`, `The setting 'iterations' of XGBoost must be at most 100.`
-- `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories, predictProbability, cutoff, seed, folds.`
+- `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories, predictProbability, cutoff, seed, scheme, folds, testFraction, stratified, shuffle, search.`
+- `The option 'scheme' needs kfold or holdout.`, `The option 'testFraction' needs a number from 0.05 to 0.5.`,
+  `The option 'shuffle' needs true or false.`
+- `The option 'search' needs an object with metric, budgetSeconds, maxTrials.`,
+  `The search metric 'r3' is not one of: r2, rmse, mae, balancedAccuracy, accuracy, f1, mcc, auc.`,
+  `The search metric 'r2' does not apply to a classification. Choose one of: balancedAccuracy, accuracy, f1, mcc, auc.`,
+  `The option 'budgetSeconds' needs a whole number of at least 1.`
+- `Naive Bayes declares no search space, so it cannot be tuned.`,
+  `No trial completed within the budget. Give the search more time.`,
+  `No trial completed: <the first failed trial's error>` (e.g. `No trial completed: The metric AUC-ROC needs class
+  probabilities; SVM gives none.`),
+  `The search was cancelled before a trial completed.`
 - `Predict probability needs a target with exactly two classes.`
 - `The option 'missingValues' needs skip, impute, keep (keep: only for a method that handles missing values).`,
   `SVM needs rows without missing values. Choose Skip rows or Impute.`
@@ -276,6 +301,16 @@ return {modelId: result.modelId, method: result.method, validation: result.metri
 // verify
 const model = await grok.functions.call('Forge:getModel', {model: 'Iris species'});
 return {id: model.id, method: model.method, validation: model.metrics?.validation};
+```
+
+Tune a method's settings on the table and read what the search chose:
+
+```js
+const result = await grok.functions.call('Forge:trainModel', {table: t, target: 'Species', method: 'XGBoost',
+  options: {search: {metric: 'accuracy', budgetSeconds: 30}}});
+const chosen = result.search.leaders.find((l) => l.chosen);
+return {trials: result.search.trials, score: chosen.score, settings: chosen.hyperparameters,
+  validation: result.metrics.validation.accuracy, test: result.metrics.test?.accuracy};
 ```
 
 The models that fit the current table, as a grid in the chat:

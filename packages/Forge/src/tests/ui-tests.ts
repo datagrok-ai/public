@@ -10,6 +10,7 @@ import {applyAndRecord, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-mode
 import {exactMapping} from '../apply/column-matching';
 import {updateModelInfo} from '../catalog/model-edit';
 import {APP_NAME, MENU_PATH, MODEL_TYPE, PANEL_TABLE_MODELS} from '../constants';
+import {enabledRules, hyperparametersOf, isEnabled} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb, ModelStorageMode} from '../generated/db';
@@ -17,6 +18,7 @@ import {METRIC_DESCRIPTIONS} from '../metrics/metrics';
 import {preparationOptionsOf} from '../preparation/preparation-options';
 import {datasetRefOf, storedDatasetRef} from '../storage/dataset-ref';
 import {deleteModel, modelsChanged} from '../storage/model-store';
+import {FROM_BELOW_TO, SearchRecord, tuneCandidate} from '../training/search';
 import {metricsRecordOf, trainPredictionOf} from '../training/train-model';
 import {applyModelDialog, ApplyDialogOptions, isOpen, modelLabels} from '../ui/apply-model-dialog';
 import {ButtonGate} from '../ui/button-gate';
@@ -27,18 +29,19 @@ import {ForgeApp} from '../ui/forge-app';
 import {CATALOG_ACTIONS, MODEL_ACTIONS, openShareDialog} from '../ui/model-actions';
 import {hasFormsViewer, ModelComparison} from '../ui/model-comparison';
 import {ForgeModelHandler} from '../ui/model-handler';
-import {MetricsTable} from '../ui/metrics-table';
+import {MetricsTable, storedSummary} from '../ui/metrics-table';
 import {modelAccordion, refreshSharing} from '../ui/model-panes';
 import {PanelKey, resultsLayout} from '../ui/results-layout';
 import {saveModelDialog} from '../ui/save-model-dialog';
 import {tableModelsPane} from '../ui/table-models-panel';
 import {tagsOfInput} from '../ui/tags-input';
 import {CHECK_DELAY_MS, SHOWN_RUN, TrainView} from '../ui/train-view';
-import {balloonWith, cancelOnceShown, catalogState, CLASSIFIERS, columnsOf, deleteRunsOf, demoDemog, expectNoFrames,
-  expectReleased, expectGridsFillPanes, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris,
-  openIrisFromFile, readUntil, refreshThenChange, REGRESSORS, runsOf, savedFixture, saveIrisModel, saveKeptGapsModel,
-  saveSkipUniqueModel, saveTestModel, taskBarEntry, twoSpeciesIris, unbalancedIris, valuesOf, WINE,
-  XGBOOST_FIELDS} from './test-data';
+import {ALL_FIXED, AUTO_TUNE, FIX_RANGE, MANUAL, TuneRow, TuneSettings} from '../ui/tune-settings';
+import {balloonWith, cancelOnceShown, cancelTaskBarEntry, catalogState, CLASSIFIERS, columnsOf, deleteRunsOf,
+  demoDemog, expectNoFrames, expectReleased, expectGridsFillPanes, framesSharing, insertModelRow, IRIS, MEASUREMENTS,
+  openDemoTable, openIris, openIrisFromFile, readUntil, refreshThenChange, REGRESSORS, runsOf, savedFixture,
+  saveIrisModel, saveKeptGapsModel, saveSkipUniqueModel, saveTestModel, taskBarEntry, twoSpeciesIris, unbalancedIris,
+  valuesOf, WINE, XGBOOST_FIELDS} from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
@@ -72,6 +75,25 @@ async function closeTrainView(view: TrainView, tables: DG.DataFrame[]): Promise<
 
 const isDisabled = (button: HTMLElement) => button.classList.contains('d4-disabled');
 const isShown = (element: HTMLElement) => element.style.display !== 'none';
+/** Every input of [view]'s form: the data, the method, the preparation, the validation and the method's settings. */
+const formInputsOf = (view: TrainView) => [view.tableInput, view.targetInput, view.featuresInput, view.methodInput,
+  ...view.preparationInputs.inputs, ...view.validationInputs.inputs, ...view.hyperparameterInputs.values()];
+const formStates = (view: TrainView) => formInputsOf(view).map((input) => `${input.caption} ${input.enabled}`);
+/** The enabled inputs of [view]'s form and Settings, then the enabled controls of Search options. */
+const enabledInputs = (view: TrainView) => [...[...formInputsOf(view), ...view.tuneSettings.inputs]
+  .filter((input) => input.enabled).map((input) => input.caption),
+...view.tuneSettings.controls.filter((c) => !c.disabled).map((c) => c.getAttribute('aria-label') ?? c.className)];
+
+/** 10001 rows of two classes: SVM says it is too slow to retrain on every change. */
+function slowTable(): DG.DataFrame {
+  const rows = 10001;
+  const a = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i % 2 + (i % 7) / 100));
+  const b = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => (i % 11) / 10));
+  const label = DG.Column.fromStrings('label', Array.from({length: rows}, (_, i) => i % 2 === 0 ? 'even' : 'odd'));
+  const table = DG.DataFrame.fromColumns([a, b, label]);
+  table.name = `forge-test-slow-${Date.now()}`;
+  return table;
+}
 /** The title of [view]'s ROC Curve panel (`ROC Curve (AUC = ...)`); '' when there is none. */
 const rocTitleOf = (view: TrainView | EvaluationView) =>
   rowTitles(view).flat().find((t) => t.startsWith('ROC Curve')) ?? '';
@@ -250,6 +272,19 @@ function shows(modelId: string): boolean {
   return shown instanceof DG.DomainRow && shown.id === modelId;
 }
 
+/** The tests' own storage of the tune settings: the user's stay as they are, and each category's Train views start
+ * from the defaults. */
+const TEST_TUNE_STORAGE = 'Forge Tune tests';
+
+function useTestTuneStorage(): void {
+  TuneSettings.storage = TEST_TUNE_STORAGE;
+  clearTestTuneStorage();
+}
+
+function clearTestTuneStorage(): void {
+  grok.userSettings.put(TEST_TUNE_STORAGE, {});
+}
+
 category('UI', () => {
   test('Forge app opens', async () => {
     const view = await ForgeApp.create();
@@ -352,7 +387,9 @@ category('UI', () => {
       expect(view.root.querySelector('.fa-sync') === null, true, 'A sync icon');
       const forms = view.root.querySelectorAll('.ui-form');
       expect(forms.length, 1, 'Data and Method are not one form');
-      expect(forms[0].contains(view.trainButton), true, 'Train is not in the form');
+      const trainRow = view.trainButton.closest('.forge-train-row');
+      expect(trainRow?.parentElement === forms[0] && trainRow.previousElementSibling === view.groups[3].root, true,
+        'Train is not right after Validation in the form');
       expect(view.root.querySelectorAll('.ui-split-h-divider').length, 1, 'No splitter between the form and Results');
       expect(isDisabled(view.saveButton), true, 'Save is enabled before training');
       expect(isTrainShown(view), false, 'Train is shown before the check');
@@ -392,7 +429,7 @@ category('UI', () => {
       for (const caption of ['Accuracy', 'F1'])
         expect(metrics.includes(caption), true, `${caption} is missing: ${metrics}`);
       expect(metrics.includes('Recall (Sensitivity)'), false, 'Recall (Sensitivity) on three classes');
-      expect(text.includes('Seed: '), true, 'No seed line');
+      expect(text.includes('Split seed: 42'), true, 'No split seed line');
       expect(text.includes('Save...'), false, 'Save... is still in Results');
       measured = expectRowsFit('Results', results);
 
@@ -581,7 +618,8 @@ category('UI', () => {
         'Missing values is not under Preparation');
       const groupRoot = view.preparationInputs.group.root;
       expect(!isShown(groupRoot) && groupRoot.offsetHeight === 0, true, 'Preparation is shown for iris without gaps');
-      expectArray(view.groups.map((g) => Array.from(g.root.parentElement?.children ?? []).indexOf(g.root)), [0, 1, 2]);
+      expectArray(view.groups.map((g) => Array.from(g.root.parentElement?.children ?? []).indexOf(g.root)),
+        [0, 1, 2, 3]);
       const iterations = view.hyperparameterInputs.get('iterations');
       expect(iterations !== undefined && method.body.contains(iterations.root), true, 'Iterations is not under Method');
       expect(method.body.contains(view.methodInput.root), true, 'Method is not under Method');
@@ -841,12 +879,7 @@ category('UI: Train', () => {
   }, {timeout: TIMEOUT});
 
   test('Train is shown for a slow method, disabled after a training and enabled by a change', async () => {
-    const rows = 10001;
-    const a = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i % 2 + (i % 7) / 100));
-    const b = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => (i % 11) / 10));
-    const label = DG.Column.fromStrings('label', Array.from({length: rows}, (_, i) => i % 2 === 0 ? 'even' : 'odd'));
-    const table = DG.DataFrame.fromColumns([a, b, label]);
-    table.name = `forge-test-slow-${Date.now()}`;
+    const table = slowTable();
     const view = await openTrainView(table);
     const first = view.lastTraining?.engine.name;
     try {
@@ -879,7 +912,65 @@ category('UI: Train', () => {
     }
   }, {timeout: 120000});
 
-  test('a training completed after a cancelled one clears the invalid mark', async () => {
+  test('Train disables the form and ignores Runs rows; each input\'s state comes back after the training', async () => {
+    const table = slowTable();
+    const view = await openTrainView(table);
+    try {
+      view.methodInput.value = 'SVM';
+      await awaitCheck(() => isTrainShown(view) && !isDisabled(view.trainButton), 'Train is not offered for SVM',
+        WAIT_MS);
+      const degree = view.hyperparameterInputs.get('degree');
+      expect(degree?.enabled, false, 'Degree is enabled for the RBF kernel');
+      const before = formStates(view);
+      view.trainButton.click();
+      expect(view.isTraining, true, 'Train does not train');
+      expectArray(enabledInputs(view), []);
+      // Tune is gated only in Auto-tune: in Manual it is hidden.
+      expect(isDisabled(view.trainButton) && (isDisabled(view.tuneButton) || view.tuneButton.offsetParent === null),
+        true, 'Train or a shown Tune is enabled');
+      view.restoreRun(view.runs[0]);
+      expectArray(enabledInputs(view), []);
+      await awaitTrained(view);
+      expect(view.lastTraining?.engine.name, 'SVM', 'The training was superseded');
+      expectArray(formStates(view), before);
+      expect(degree?.enabled, false, 'Degree is enabled after the training');
+    } finally {
+      await closeTrainView(view, [table]);
+    }
+  }, {timeout: 120000});
+
+  test('Train stays in view at its right under a tall form and sits below Validation on a short one', async () => {
+    const table = slowTable();
+    const view = await openTrainView(table);
+    try {
+      view.methodInput.value = 'SVM';
+      await awaitCheck(() => isTrainShown(view), 'Train is not offered for SVM', WAIT_MS);
+      for (const group of view.groups)
+        group.setExpanded(true);
+      const trainRow = view.trainButton.closest<HTMLElement>('.forge-train-row')!;
+      const pane = view.root.querySelector<HTMLElement>('.forge-train-form')!;
+      const left = pane.parentElement!;
+      left.style.height = '300px';
+      expect(pane.scrollHeight > pane.clientHeight, true, `The form fits: ${pane.scrollHeight}, ${pane.clientHeight}`);
+      for (const top of [0, pane.scrollHeight]) {
+        pane.scrollTop = top;
+        const [r, p, b] = [trainRow, pane, view.trainButton].map((e) => e.getBoundingClientRect());
+        expect(r.height > 0 && r.top >= p.top - 1 && r.bottom <= p.bottom + 1 && b.left > r.left + r.width / 2, true,
+          `Scrolled to ${pane.scrollTop}: Train row ${r.top}-${r.bottom}, form ${p.top}-${p.bottom}, Train ${b.left}`);
+      }
+      left.style.height = '';
+      for (const group of view.groups)
+        group.setExpanded(false);
+      const [r, g, p] = [trainRow, view.groups[3].root, pane].map((e) => e.getBoundingClientRect());
+      const gap = r.top - g.bottom;
+      expect(pane.scrollHeight <= pane.clientHeight && gap > -1 && gap < 20 && r.bottom < p.bottom - 12, true,
+        `Short form: Validation ends at ${g.bottom}, Train row ${r.top}-${r.bottom}, form ends at ${p.bottom}`);
+    } finally {
+      await closeTrainView(view, [table]);
+    }
+  }, {timeout: 120000});
+
+  test('a cancel unlocks the form; a training completed after a cancelled one clears the invalid mark', async () => {
     const demog = demoDemog(50000);
     const view = await TrainView.create(demog);
     view.targetInput.value = demog.getCol('sex');
@@ -888,11 +979,14 @@ category('UI: Train', () => {
     try {
       await awaitCheck(() => isTrainShown(view) && !isDisabled(view.trainButton), 'Train is not offered for SVM',
         WAIT_MS);
+      const before = formStates(view);
       const cancelled = view.train();
+      expectArray(enabledInputs(view), []);
       await cancelOnceShown('Training SVM model', WAIT_MS);
       await cancelled;
       expect(`${view.runs[0]?.status} ${resultsState(view)}`, 'cancelled false/true',
         'The cancel came after the training ended');
+      expectArray(formStates(view), before);
       await view.train();
       await awaitCheck(() => resultsState(view).startsWith('false/'), 'The results stay busy', WAIT_MS);
       expect(`${view.runs[0]?.status} ${resultsState(view)}`, 'completed false/false');
@@ -902,6 +996,131 @@ category('UI: Train', () => {
     }
   }, {timeout: TIMEOUT});
 
+  test('Validation: collapsed, the schemes of the task, Folds or Test fraction, Split seed with Shuffle and no icons',
+    async () => {
+      const iris = await openIris();
+      const view = await openTrainView(iris);
+      const v = view.validationInputs;
+      try {
+        expectArray(view.groups.map((g) => g.root.querySelector('.forge-group-header label')?.textContent),
+          ['Data', 'Preparation', 'Method', 'Validation']);
+        expect(view.groups[2].root.nextElementSibling === v.group.root &&
+          view.groups[2].root.contains(view.tuneSettings.root), true,
+        'Validation is not right after Method and its Settings');
+        expect(v.group.isExpanded, false, 'Validation starts expanded');
+        expectAlignedCaptions(view.root, ['Data', 'Method', 'Validation']);
+        v.group.setExpanded(true);
+        expect(v.seed.root.querySelector('.ui-input-options i, .ui-input-plus, .ui-input-minus') === null, true,
+          'Split seed has icons');
+        expectArray(v.scheme.items, ['K-fold, stratified', 'K-fold', 'Hold-out']);
+        expectArray([v.scheme.value, v.folds.value, v.testFraction.value, v.shuffle.value, v.seed.value],
+          ['K-fold, stratified', 5, 0.2, true, 42]);
+        expect(isShown(v.folds.root) && !isShown(v.testFraction.root), true, 'Folds is hidden or Test fraction shown');
+        expect(resultsText(view).includes('Validation: 5-fold cross-validation on 150 rows, stratified'), true,
+          resultsText(view));
+
+        v.shuffle.value = false;
+        expect(v.seed.enabled, false, 'Split seed is enabled without Shuffle');
+        await awaitTrained(view);
+        expect(view.lastTraining?.result.splitting.isShuffled, false);
+        expect(resultsText(view).includes('Split seed'), false, 'A seed line without Shuffle');
+        expect(runsGrid(view).dataFrame.getCol('Split seed').isNone(0), true, 'A split seed without Shuffle');
+        expect(headerTooltip(runsGrid(view), 'Split seed').startsWith('The seed that shuffled'), true,
+          headerTooltip(runsGrid(view), 'Split seed'));
+        v.shuffle.value = true;
+        expect(v.seed.enabled, true, 'Split seed stays disabled with Shuffle');
+
+        v.scheme.value = 'Hold-out';
+        expect(!isShown(v.folds.root) && isShown(v.testFraction.root), true, 'Folds is shown for Hold-out');
+        await awaitTrained(view);
+        expect(view.lastTraining?.result.splitting.scheme, 'holdout');
+        expect(resultsText(view).includes('Validation: hold out of 20% (30 rows), stratified'), true,
+          resultsText(view));
+        expect(resultsText(view).includes('Split seed: 42'), true, resultsText(view));
+        const heldOut = view.runs[0];
+        expect(heldOut.validation.scheme, 'holdout');
+
+        v.scheme.value = 'K-fold, stratified';
+        view.featuresInput.value = columnsOf(iris, ['Sepal.Length', 'Sepal.Width', 'Petal.Width']);
+        view.targetInput.value = iris.getCol('Petal.Length');
+        expectArray(v.scheme.items, ['K-fold', 'Hold-out']);
+        expect(v.scheme.value, 'K-fold');
+        await awaitTrained(view);
+        expect(view.lastTraining?.result.splitting.isStratified, false);
+        view.targetInput.value = iris.getCol('Species');
+        view.featuresInput.value = columnsOf(iris, MEASUREMENTS);
+        expect(v.scheme.value, 'K-fold, stratified');
+        await awaitTrained(view);
+
+        v.folds.value = 25;
+        await awaitCheck(() => resultsState(view) === 'false/true', 'Folds 25 is not a problem', WAIT_MS);
+        v.folds.value = 5;
+        await awaitTrained(view);
+        view.restoreRun(heldOut);
+        expectArray([v.scheme.value, v.seed.value], ['Hold-out', 42]);
+        await awaitTrained(view);
+        expect(view.lastTraining?.result.splitting.scheme, 'holdout');
+      } finally {
+        await closeTrainView(view, [iris]);
+      }
+    }, {timeout: 120000});
+
+  test('the Validation values stay across a Table change', async () => {
+    const tables = [grok.shell.addTable(await openIris()), grok.shell.addTable(await openIris())];
+    const view = await openTrainView(tables[0]);
+    try {
+      const v = view.validationInputs;
+      v.scheme.value = 'Hold-out';
+      v.testFraction.value = 0.3;
+      v.shuffle.value = false;
+      view.tableInput.value = tables[1];
+      const kept = view.validationInputs;
+      expect(kept !== v, true, 'The form was not rebuilt');
+      expectArray([kept.scheme.value, kept.testFraction.value, kept.shuffle.value, kept.seed.enabled],
+        ['Hold-out', 0.3, false, false]);
+    } finally {
+      await closeTrainView(view, tables);
+      for (const table of tables)
+        grok.shell.closeTable(table);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('SVM settings follow the kernel and the task: disabled, kept and sent (EDA\'s meta.mlenabled)', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    const input = (name: string) => {
+      const found = view.hyperparameterInputs.get(name);
+      if (found === undefined)
+        throw new Error(`No ${name} input`);
+      return found;
+    };
+    const enabled = (names: string[]) => names.map((name) => `${name} ${input(name).enabled}`);
+    try {
+      view.methodInput.value = 'SVM';
+      await awaitTrained(view);
+      expect(view.hyperparameterInputs.has('seed'), false, 'SVM has a seed');
+      expectArray(enabled(['gamma', 'degree', 'coef0', 'epsilon']),
+        ['gamma true', 'degree false', 'coef0 false', 'epsilon false']);
+      input('kernel').value = 'Polynomial';
+      expectArray(enabled(['degree', 'coef0']), ['degree true', 'coef0 true']);
+      input('degree').value = 5;
+      await awaitTrained(view);
+      input('kernel').value = 'Linear';
+      expectArray(enabled(['gamma', 'degree', 'coef0']), ['gamma false', 'degree false', 'coef0 false']);
+      await awaitTrained(view);
+      expect(input('degree').value, 5);
+      expect(view.lastTraining?.result.hyperparameters.degree, 5);
+
+      view.featuresInput.value = columnsOf(iris, ['Sepal.Length', 'Sepal.Width', 'Petal.Width']);
+      view.targetInput.value = iris.getCol('Petal.Length');
+      expectArray(enabled(['epsilon']), ['epsilon true']);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: 120000});
+});
+
+category('UI: Preparation', () => {
   test('Preparation follows demog: Missing values, One-hot encoding, Skip unique categories', async () => {
     const demog = await openDemog();
     const view = await TrainView.create(demog);
@@ -1241,6 +1460,7 @@ async function expectRocCurve(): Promise<void> {
     expectMarked(pr, markRow(prFrame, 0.5, false), 'PR Curve');
     const content = (title: string) => panelOf(view, title).lastElementChild;
     const confusions = content('Confusions');
+    expect(panelViewer(view, 'Confusions').props.descriptionPosition, 'Bottom');
     let curveChanges = 0;
     const sub = frame.onValuesChanged.subscribe(() => curveChanges++);
     try {
@@ -2402,8 +2622,7 @@ async function typeTag(root: HTMLElement, text: string): Promise<void> {
   const box = root.querySelector('input.d4-tags-selector-input');
   if (!(box instanceof HTMLInputElement))
     throw new Error('No Tags text box');
-  box.value = text;
-  box.dispatchEvent(new Event('input', {bubbles: true}));
+  typeInto(box, text);
   for (const type of ['keydown', 'keypress', 'keyup'])
     box.dispatchEvent(new KeyboardEvent(type, {key: 'Enter', keyCode: 13, bubbles: true}));
   const chips = () => Array.from(root.querySelectorAll('.d4-tags-selector-tags-container > *'), (c) => c.textContent);
@@ -2733,7 +2952,7 @@ category('UI: Catalog', () => {
         'Data storage', 'None', 'Last run', 'Never', 'Applications', 'Features', 'Sepal.Length', 'Target', 'Species',
         'Method', 'XGBoost', 'Task', 'Tags']);
       expect(tagsAutofill(accordion.getPane('Details').root), 'off');
-      await expectPaneText(accordion, 'Performance', [`Seed: ${model.seed}`]);
+      await expectPaneText(accordion, 'Performance', [`Split seed: ${model.seed}`]);
       const performance = accordion.getPane('Performance').root;
       const metrics = gridWith(performance, 'Metric');
       expectArray(metrics.dataFrame.columns.names(), ['Metric', 'Train', 'Validation']);
@@ -2743,7 +2962,7 @@ category('UI: Catalog', () => {
         'No Validation header tooltip');
       expect(gridTooltip(metrics, metrics.cell('Metric', 0)), METRIC_DESCRIPTIONS.accuracy);
       expectArray(Array.from(performance.querySelectorAll('ul > li'), (li) => li.textContent?.trim()),
-        ['Validation: 5-fold cross-validation on 150 rows', `Seed: ${model.seed}`]);
+        ['Validation: 5-fold cross-validation on 150 rows, stratified', `Split seed: ${model.seed}`]);
       expect(performance.querySelector('.forge-seed')?.nextElementSibling?.classList.contains('fa-copy'), true,
         'The copy icon is not right after the seed');
       measured.push(expectRowsFit('Performance', metrics));
@@ -3031,12 +3250,14 @@ const runIconOf = (line: HTMLElement | undefined) => line?.querySelector<HTMLEle
 
 category('UI: Table panel', () => {
   before(async () => {
+    useTestTuneStorage();
     const iris = await openIris();
     const {id, name} = await saveIrisModel(iris);
     paneModel = {id, name, iris};
   });
 
   after(async () => {
+    clearTestTuneStorage();
     if (paneModel === undefined)
       return;
     if (isOpen(paneModel.iris))
@@ -3446,3 +3667,604 @@ category('UI: Runs', () => {
     }
   }, {timeout: TIMEOUT});
 });
+
+const SEARCH_TIMEOUT = 180000;
+
+/** Switches [view] to Auto-tune with Search options expanded. */
+function autoTune(view: TrainView): TuneSettings {
+  const tune = view.tuneSettings;
+  tune.setMode(AUTO_TUNE);
+  tune.setExpanded(true);
+  return tune;
+}
+
+const statusOf = (view: TrainView) => view.tuneSettings.statusText.textContent;
+
+/** The row of the setting [name] in Search options; fails without one. */
+function rowOf(tune: TuneSettings, name: string): TuneRow {
+  const row = tune.row(name);
+  if (row === undefined)
+    throw new Error(`No row for ${name}`);
+  return row;
+}
+
+/** Types [text] into [field], as the user does. */
+function typeInto(field: HTMLInputElement, text: string): void {
+  field.value = text;
+  field.dispatchEvent(new Event('input', {bubbles: true}));
+}
+
+/** Checks exactly [checked] of the choices of [row], as the user does. */
+function checkChoices(row: TuneRow, checked: string[]): void {
+  for (const check of row.choices ?? []) {
+    const isChecked = checked.includes(check.parentElement?.textContent ?? '');
+    if (check.checked !== isChecked) {
+      check.checked = isChecked;
+      check.dispatchEvent(new Event('change', {bubbles: true}));
+    }
+  }
+}
+
+/** Picks [value] in [select], as the user does. */
+function pick(select: HTMLSelectElement, value: string): void {
+  select.value = value;
+  select.dispatchEvent(new Event('change', {bubbles: true}));
+}
+
+const checkedChoices = (row: TuneRow) =>
+  (row.choices ?? []).filter((c) => c.checked).map((c) => c.parentElement?.textContent ?? '');
+
+/** Checks the layout of [view]'s Auto-tune block on the range [row], in the form's current layout (labels beside or
+ * above the inputs): the row on one line, its label beside it in the Settings label's column (or above it), the
+ * chevron under the Method header's text, the status as far from Settings as from Search options (beside only), no
+ * overflow, and the reset button, the pin, Metric and the time ending at Tune's right edge. */
+function expectTuneLayout(view: TrainView, row: TuneRow): void {
+  const tune = view.tuneSettings;
+  const pane = view.root.querySelector<HTMLElement>('.forge-train-form')!;
+  const isCondensed = tune.root.closest('.ui-form-condensed') !== null;
+  const [caption, label, from, to, pin] = [tune.mode.captionLabel, row.label, row.from!, row.to!, row.pin]
+    .map((e) => e.getBoundingClientRect());
+  const middle = (r: DOMRect) => r.top + r.height / 2;
+  const isLabelPlaced = isCondensed ? label.bottom <= from.top + 1 && Math.abs(label.left - caption.left) < 2 :
+    Math.abs(middle(label) - middle(from)) < 4 && label.right <= from.left && Math.abs(label.right - caption.right) < 2;
+  expect(isLabelPlaced && [to, pin].every((r) => Math.abs(middle(r) - middle(from)) < 4) &&
+    from.right < to.left && to.right <= pin.left, true, `Condensed ${isCondensed}: Settings label ` +
+    `${caption.left}-${caption.right}, label ${label.left}-${label.right} at ${middle(label)}, from ` +
+    `${from.left}-${from.right}, to ${to.left}-${to.right}, pin ${pin.left}, at ${middle(from)}`);
+  const headerText = view.groups[2].root.querySelector('.forge-group-header label')!.getBoundingClientRect();
+  const chevron = Array.from(tune.toggle.querySelectorAll<HTMLElement>('.grok-icon')).find(isShown)!
+    .getBoundingClientRect();
+  // What the user sees: the text of the Settings row (the radios when the label sits above them), the status and
+  // Search options, not their boxes.
+  const settingsRow = isCondensed ? tune.mode.input.querySelector<HTMLElement>('label')! : tune.mode.captionLabel;
+  const [settings, status, toggleText] = [settingsRow, tune.statusText, tune.toggle.querySelector('span')!]
+    .map(textRect);
+  const [above, below] = [status.top - settings.bottom, toggleText.top - status.bottom];
+  expect(Math.abs(chevron.left - headerText.left) <= 2 && Math.abs(above - below) <= 1, true,
+    `Condensed ${isCondensed}: Search options' chevron at ${chevron.left}, Method's text at ${headerText.left}; ` +
+    `status ${above} px under Settings, Search options ${below} px under the status`);
+  const boxes: [string, DOMRect][] = [['Settings', textRect(tune.mode.captionLabel)],
+    ['radios', tune.mode.input.getBoundingClientRect()], ['reset', tune.resetButton.getBoundingClientRect()],
+    ['status', status], ['Search options', toggleText], ['chevron', chevron],
+    ...Array.from(tune.grid.children).filter((e): e is HTMLElement => e instanceof HTMLElement && isShown(e))
+      .map((e, i): [string, DOMRect] => [`grid ${i} ${e.textContent?.slice(0, 12)}`, e.getBoundingClientRect()]),
+    ['Tune', view.tuneButton.getBoundingClientRect()]];
+  const overlaps = boxes.flatMap(([a, ra], i) => boxes.slice(i + 1).filter(([, rb]) =>
+    Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left) > 0.5 &&
+    Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top) > 0.5).map(([b]) => `${a} / ${b}`));
+  const rect = (r: DOMRect) => `${r.left},${r.top}-${r.right},${r.bottom}`;
+  expect(overlaps.join(', '), '', `Condensed ${isCondensed}: overlapping (${boxes.map(([n, r]) => `${n} ${rect(r)}`)
+    .slice(0, 6).join('; ')})`);
+  const button = view.tuneButton.getBoundingClientRect();
+  expect(tune.root.scrollWidth <= tune.root.clientWidth + 1 && button.right <= pane.getBoundingClientRect().right,
+    true, `Settings ${tune.root.scrollWidth} wide in ${tune.root.clientWidth}; Tune ends at ${button.right}`);
+  // The ink's right edges: the reset and pin glyphs, the selects' underlines, Tune's letters.
+  const tuneText = textRect(view.tuneButton).right;
+  const rights = [tune.resetButton.querySelector('i')!, row.pin.querySelector('i')!, tune.metric, tune.time]
+    .map((e) => e.getBoundingClientRect().right);
+  expect(rights.every((right) => Math.abs(right - tuneText) <= 1), true, `Condensed ${isCondensed}: Tune's ` +
+    `letters end at ${tuneText}; the reset and pin glyphs, Metric and the time at ${rights.join(', ')}`);
+}
+
+/** The box of the text inside [element], as a DOM Range over its text nodes gives it (not the boxes around them). */
+function textRect(element: HTMLElement): DOMRect {
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  const texts: Text[] = [];
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    if ((node.textContent ?? '').trim() !== '')
+      texts.push(node as Text);
+  }
+  const range = document.createRange();
+  range.setStart(texts[0], 0);
+  range.setEnd(texts[texts.length - 1], texts[texts.length - 1].length);
+  return range.getBoundingClientRect();
+}
+
+/** The option [caption] of the radio [input]. */
+const radioOption = (input: DG.InputBase, caption: string) =>
+  Array.from(input.root.querySelectorAll<HTMLElement>('.ui-radio-button')).find((o) => o.textContent === caption);
+
+/** The **Search** grid of [view]; fails without one. */
+function searchGrid(view: TrainView): DG.Grid {
+  const grid = view.searchPanel.grid;
+  if (grid === null)
+    throw new Error('No Search grid');
+  return grid;
+}
+
+const searchRecord = (holdOut?: {rows: number; fraction: number}): SearchRecord => ({mode: 'tune',
+  metric: 'accuracy', budgetSeconds: 60, seed: 1, trials: 12, completed: 10, pruned: 1, failed: 1, elapsedMs: 1000,
+  stopped: 'budget', ...(holdOut === undefined ? {} : {holdOut}), leaders: [{method: 'XGBoost',
+    hyperparameters: {iterations: 20}, score: 0.8, se: 0.01, foldScores: [0.8, 0.8, 0.8, 0.8, 0.8], trials: 12,
+    chosen: true}]});
+
+category('UI: Search', () => {
+  test('Tune follows the selection; a method without settings has no Settings row', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      expect(view.tuneSettings.isAuto, false, 'Auto-tune is the default mode');
+      expect(view.tuneButton.offsetParent === null, true, 'Tune is shown in Manual');
+      autoTune(view);
+      expect(view.tuneButton.textContent, 'Tune');
+      expect(isDisabled(view.tuneButton), false, 'Tune is disabled on a valid selection');
+      grok.userSettings.add(TuneSettings.storage, 'Naive Bayes', JSON.stringify({mode: AUTO_TUNE}));
+      view.methodInput.value = 'Naive Bayes';
+      await awaitTrained(view);
+      const bayes = view.tuneSettings;
+      expect(bayes.isAuto, false, 'Naive Bayes, which has no settings, is in Auto-tune');
+      const shown = [bayes.mode.root, bayes.resetButton, bayes.statusText, view.tuneButton]
+        .filter((e) => e.offsetParent !== null);
+      expect(shown.length, 0, 'Naive Bayes, which has no settings, shows Settings, its reset, its status or Tune');
+      expect(bayes.root.offsetHeight, 0, 'Naive Bayes leaves a gap where Settings was');
+      view.methodInput.value = 'XGBoost';
+      await awaitTrained(view);
+      expect(view.tuneSettings.isAuto, true, 'XGBoost forgot Auto-tune');
+      expect(view.tuneSettings.mode.root.offsetParent !== null, true, 'XGBoost does not show Settings again');
+      grok.userSettings.delete(TuneSettings.storage, 'Naive Bayes');
+      expect(isDisabled(view.tuneButton), false, 'Tune stays disabled for XGBoost');
+      view.featuresInput.value = [];
+      await awaitCheck(() => resultsState(view) === 'false/true', 'An empty Features is not a problem', WAIT_MS);
+      expect(isDisabled(view.tuneButton), true, 'Tune is enabled without features');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Settings: the status follows the values, reset sets the defaults, Auto-tune hides Train and runs nothing',
+    async () => {
+      const table = slowTable();
+      const view = await openTrainView(table);
+      try {
+        view.methodInput.value = 'SVM';
+        await awaitCheck(() => isTrainShown(view), 'Train is not offered for SVM', WAIT_MS);
+        const tune = view.tuneSettings;
+        expectArray(optionsOfRadio(tune.mode), [MANUAL, AUTO_TUNE]);
+        expectOptionsInRow(tune.mode);
+        expect(tune.mode.root.querySelector('.ui-input-options')?.contains(tune.resetButton), true,
+          'The reset button is not on the Settings row');
+        expect(`${statusOf(view)} ${tune.resetButton.getAttribute('aria-disabled')}`, 'Default true');
+        expect(await enterTooltip(tune.resetButton), 'SVM settings are already default');
+        expect(tune.resetButton.getAttribute('aria-label'), 'SVM settings are already default');
+        setHyperparameter(view, 'cost', 2);
+        expect(`${statusOf(view)} ${tune.resetButton.getAttribute('aria-disabled')}`, 'Customized false');
+        expect(await enterTooltip(tune.resetButton), 'Reset SVM settings to defaults');
+        expect(tune.resetButton.getAttribute('aria-label'), 'Reset SVM settings to defaults');
+        expect(await enterTooltip(tune.statusText), 'Changed by hand');
+        tune.resetButton.click();
+        expect(view.hyperparameterInputs.get('cost')?.value, 1);
+        expect(statusOf(view), 'Default');
+
+        const runs = view.runs.length;
+        tune.setMode(AUTO_TUNE);
+        expect(isTrainShown(view), false, 'Train is shown in Auto-tune');
+        expect(`${tune.isExpanded} ${tune.toggle.getAttribute('aria-expanded')}`, 'false false',
+          'Search options starts expanded');
+        expect(view.tuneButton.offsetParent !== null, true, 'Tune is hidden while Search options is collapsed');
+        expect(view.groups[2].root.contains(tune.toggle), true, 'Search options is not in Method');
+        await delay(CHECK_DELAY_MS * 3);
+        expect(view.isTraining || view.runs.length !== runs, false, 'A mode switch trained');
+        tune.setMode(MANUAL);
+        expect(isTrainShown(view), true, 'Train is hidden back in Manual');
+        expect(view.hyperparameterInputs.get('cost')?.root.isConnected, true, 'Manual hides Penalty');
+      } finally {
+        await closeTrainView(view, [table]);
+      }
+    }, {timeout: 120000});
+
+  test('Search options: ranges, choices and pins reach the space; rules and validation gate Tune', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      view.methodInput.value = 'SVM';
+      await awaitTrained(view);
+      const tune = autoTune(view);
+      const kernel = rowOf(tune, 'kernel');
+      expectArray(checkedChoices(kernel), ['Linear', 'RBF', 'Polynomial']);
+      expect(kernel.choicesButton?.textContent, 'Linear, RBF, Polynomial');
+      const cost = rowOf(tune, 'cost');
+      expectArray([cost.from!.value, cost.to!.value], ['0.01', '100']);
+      expect(tune.grid.contains(cost.from!), true, 'Penalty has no range in Search options');
+      // The platform may switch the form to labels above the inputs as the expanded group resizes it.
+      await delay(500);
+      const pane = view.root.querySelector<HTMLElement>('.forge-train-form')!;
+      const isCondensed = () => tune.root.closest('.ui-form-condensed') !== null;
+      expectTuneLayout(view, cost);
+      pane.parentElement!.style.width = '520px';
+      const labelEnd = (e: HTMLElement) => e.getBoundingClientRect().right;
+      await awaitCheck(() => !isCondensed() && Math.abs(labelEnd(cost.label) - labelEnd(tune.mode.captionLabel)) < 2,
+        'A 520 px form keeps its labels above the inputs, or Search options does not follow its label column', WAIT_MS);
+      expectTuneLayout(view, cost);
+      pane.parentElement!.style.width = '';
+
+      const coef0 = rowOf(tune, 'coef0');
+      expect(`${coef0.pin.getAttribute('aria-disabled')} ${coef0.pin.getAttribute('aria-label')}`,
+        'true Offset: Fixed, can’t be tuned');
+      expect(tune.grid.contains(coef0.value), true, 'Offset has no value in Search options');
+      const coef0Input = view.hyperparameterInputs.get('coef0')!;
+      coef0Input.value = 1;
+      expect(coef0.value.value, coef0Input.stringValue);
+      typeInto(coef0.value as HTMLInputElement, '2');
+      expect(coef0Input.value, 2);
+      await awaitTrained(view);
+      expect(rowOf(tune, 'epsilon').from!.disabled, true, 'Epsilon is searched for a classification');
+      expect(rowOf(tune, 'gamma').from!.disabled, false, 'Gamma is disabled while Kernel is tuned');
+      expect(`${kernel.pin.getAttribute('aria-pressed')} ${kernel.pin.getAttribute('aria-label')}`,
+        `false ${view.hyperparameterInputs.get('kernel')!.caption}: will be tuned`);
+
+      tune.togglePin('kernel');
+      expect(kernel.pin.getAttribute('aria-pressed'), 'true');
+      expect(tune.grid.contains(kernel.value) && kernel.value instanceof HTMLSelectElement, true,
+        'A pinned Kernel is not its own value');
+      pick(kernel.value as HTMLSelectElement, 'Linear');
+      expect(view.hyperparameterInputs.get('kernel')!.value, 'Linear');
+      await awaitTrained(view);
+      expectArray(['gamma', 'degree'].map((name) => rowOf(tune, name).from!.disabled), [true, true]);
+      expect(statusOf(view), 'Customized');
+      const svm = EngineRegistry.discover().find((e) => e.name === 'SVM')!;
+      const choice = tune.choice();
+      expectArray(choice.space?.pinned ?? [], ['kernel']);
+      const candidate = tuneCandidate(svm, view.lastTraining!.result.hyperparameters,
+        {space: choice.space!, task: 'classification'});
+      expectArray((candidate.space ?? []).map((d) => `${d.name} ${d.low} ${d.high}`), ['cost 0.01 100']);
+
+      tune.setExpanded(false);
+      typeInto(cost.from!, '200');
+      expect(tune.isExpanded, true, 'Search options stays collapsed on an error');
+      expect(`${cost.error.textContent} ${cost.from!.getAttribute('aria-invalid')}`, `${FROM_BELOW_TO} true`);
+      expect(await hoverText(view.tuneButton), FIX_RANGE);
+      typeInto(cost.from!, '0.0001');
+      expect(cost.error.textContent, '“From” must be at least 0.001');
+      typeInto(cost.from!, '0.1');
+      expect(`${cost.error.textContent}|${isShown(cost.error)}`, '|false');
+      await awaitCheck(() => !isDisabled(view.tuneButton), 'Tune stays disabled with a valid range', WAIT_MS);
+      expect(tune.choice().space?.ranges.cost?.low, 0.1);
+      tune.togglePin('cost');
+      expect(await hoverText(view.tuneButton), ALL_FIXED);
+      tune.togglePin('kernel');
+      checkChoices(kernel, []);
+      expect(`${kernel.error.textContent} ${kernel.choicesButton?.textContent}`, 'Choose at least one None');
+      expect(await hoverText(view.tuneButton), FIX_RANGE);
+      checkChoices(kernel, ['RBF']);
+      expectArray(tune.choice().space?.ranges.kernel?.choices ?? [], ['RBF']);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('each Search options row shows its setting\'s Manual tooltip, and a re-layout leaves none behind', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      const tune = autoTune(view);
+      tune.togglePin('maxDepth');
+      const caption = (name: string) => view.hyperparameterInputs.get(name)!.caption;
+      const description = (name: string) => rowOf(tune, name).property.description ?? '';
+      const wrong: string[] = [];
+      for (const name of view.hyperparameterInputs.keys()) {
+        const row = rowOf(tune, name);
+        const controls = [row.label, ...row.from === undefined || row.isPinned ? [row.value] : [row.from, row.to!]];
+        // A disabled control gets no mouse events, so its tooltip cannot show (its label's can).
+        for (const control of controls.filter((c) => !(c as HTMLInputElement).disabled)) {
+          const text = await enterTooltip(control as HTMLElement);
+          if (text !== description(name))
+            wrong.push(`${name} ${control.className || control.tagName}: "${text}"`);
+        }
+        const pin = await enterTooltip(row.pin);
+        if (!pin.includes(`${caption(name)}:`))
+          wrong.push(`${name} pin: "${pin}"`);
+      }
+      expectArray(wrong, []);
+      expect(description('iterations') !== '', true, 'XGBoost Iterations has no description');
+      const label = (text: string) => Array.from(tune.grid.querySelectorAll<HTMLElement>('.forge-tune-label'))
+        .find((l) => l.textContent === text)!;
+      const settingsTooltip = 'How the settings are chosen: by hand or by a search on this data';
+      expectArray([await enterTooltip(tune.mode.captionLabel), await enterTooltip(radioOption(tune.mode, MANUAL)!),
+        await enterTooltip(radioOption(tune.mode, AUTO_TUNE)!)], [settingsTooltip, settingsTooltip, settingsTooltip]);
+      const tooltips = [await enterTooltip(label('Metric')), await enterTooltip(tune.metric),
+        await enterTooltip(label('Budget')), await enterTooltip(tune.trials), await enterTooltip(tune.time),
+        await enterTooltip(tune.toggle)];
+      expectArray(tooltips, ['Metric the search optimizes', 'Metric the search optimizes',
+        'The search stops at the trial limit or the time limit, whichever comes first',
+        'Maximum number of completed trials', 'Maximum search time', 'Hide search options']);
+
+      const [rate, depth] = [rowOf(tune, 'eta').label, rowOf(tune, 'maxDepth').label];
+      rate.dispatchEvent(new MouseEvent('mouseenter'));
+      await delay(400);
+      rate.dispatchEvent(new MouseEvent('mouseleave'));
+      depth.dispatchEvent(new MouseEvent('mouseenter'));
+      await delay(400);
+      expect(ui.tooltip.root.textContent, description('maxDepth'));
+      depth.dispatchEvent(new MouseEvent('mouseleave'));
+      rate.dispatchEvent(new MouseEvent('mouseenter'));
+      await delay(400);
+      tune.togglePin('eta');
+      expect(ui.tooltip.isVisible, false, 'A re-layout leaves the tooltip of a hovered row');
+    } finally {
+      grok.userSettings.delete(TuneSettings.storage, 'XGBoost');
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: 120000});
+
+  test('Search options are remembered per user and method; a stale item falls back to its default', async () => {
+    const iris = await openIris();
+    let view = await openTrainView(iris);
+    try {
+      const tune = autoTune(view);
+      tune.togglePin('maxDepth');
+      typeInto(rowOf(tune, 'iterations').from!, '15');
+      typeInto(tune.trials, '20');
+      pick(tune.time, '300');
+      pick(tune.metric, 'f1');
+      const stored = JSON.parse(grok.userSettings.getValue(TuneSettings.storage, 'XGBoost') ?? '{}');
+      expect(JSON.stringify([stored.mode, stored.expanded, stored.pinned, stored.ranges.iterations, stored.metric,
+        stored.trials, stored.seconds]), JSON.stringify([AUTO_TUNE, true, ['maxDepth'], {low: 15, high: 100}, 'f1',
+        20, 300]));
+      await closeTrainView(view, [iris]);
+
+      view = await openTrainView(iris);
+      const again = view.tuneSettings;
+      expectArray([again.isAuto, again.isExpanded, rowOf(again, 'maxDepth').pin.getAttribute('aria-pressed'),
+        rowOf(again, 'iterations').from!.value, again.trials.value, again.time.value, again.metric.value],
+      [true, true, 'true', '15', '20', '300', 'f1']);
+      await closeTrainView(view, [iris]);
+
+      grok.userSettings.add(TuneSettings.storage, 'XGBoost', JSON.stringify({mode: AUTO_TUNE,
+        pinned: ['speed', 'eta'], ranges: {iterations: {low: 5, high: 500}, eta: {low: 0.1, high: 0.2}}, metric: 'r2',
+        trials: 0, seconds: 7}));
+      view = await openTrainView(iris);
+      const stale = view.tuneSettings;
+      expectArray([stale.isAuto, stale.isExpanded, rowOf(stale, 'eta').pin.getAttribute('aria-pressed'),
+        rowOf(stale, 'iterations').from!.value, rowOf(stale, 'eta').from!.value, stale.trials.value, stale.time.value,
+        stale.metric.value], [true, false, 'true', '10', '0.1', '50', '60', 'balancedAccuracy']);
+      grok.userSettings.add(TuneSettings.storage, 'XGBoost', '{not json');
+      const engine = view.lastTraining!.engine;
+      expect(JSON.stringify(TuneSettings.load(engine, stale.space, hyperparametersOf(engine))),
+        JSON.stringify({mode: MANUAL, expanded: false, pinned: [], ranges: {}, trials: 50, seconds: 60}));
+    } finally {
+      grok.userSettings.delete(TuneSettings.storage, 'XGBoost');
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: 120000});
+
+  test('a click on a Runs or Search row switches to Manual', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      setHyperparameter(view, 'iterations', 30);
+      await awaitTrained(view);
+      autoTune(view);
+      await delay(CHECK_DELAY_MS * 3);
+      clickRunsRow(runsGrid(view), 1);
+      await awaitCheck(() => !view.tuneSettings.isAuto, 'A Runs row click stays in Auto-tune', WAIT_MS);
+      await awaitTrained(view);
+      autoTune(view);
+      view.restoreLeader({method: 'XGBoost', hyperparameters: {iterations: 11}, score: 0, se: 0, foldScores: [],
+        trials: 1, chosen: false});
+      expect(view.tuneSettings.isAuto, false, 'A Search row click stays in Auto-tune');
+      await awaitTrained(view);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Tune trains the chosen settings in Manual as Auto-tuned and fills the Search panel', async () => {
+    const iris = await openIris();
+    const demog = grok.shell.addTable(await openDemog());
+    const view = await openTrainView(iris);
+    try {
+      expect(isShown(view.searchPanel.root), false, 'Search is shown before a search');
+      const tune = autoTune(view);
+      tune.togglePin('maxDepth');
+      typeInto(tune.trials, '6');
+      pick(tune.metric, 'accuracy');
+      await view.startSearch('tune', tune.choice());
+      expect(view.isTraining, false);
+      const search = view.lastTraining?.result.search;
+      expect(search?.mode, 'tune');
+      expect(`${view.tuneSettings.isAuto} ${statusOf(view)}`, 'false Auto-tuned');
+      expectArray(search?.space?.pinned ?? [], ['maxDepth']);
+      expect(search?.space?.searched.some((d) => d.name === 'maxDepth'), false, 'A pinned setting was searched');
+      expect(isShown(view.searchPanel.root), true, 'Search is hidden after a search');
+      const grid = searchGrid(view);
+      expectArray(grid.dataFrame.columns.names(), ['#', 'Method', 'Accuracy (CV)', 'SE', 'Trials', 'Chosen']);
+      expectArray([grid.dataFrame.rowCount, grid.dataFrame.get('Method', 0), grid.dataFrame.get('Chosen', 0)],
+        [1, 'XGBoost', true]);
+      expect(gridTooltip(grid, grid.cell('Accuracy (CV)', 0)).startsWith('Folds: '), true,
+        gridTooltip(grid, grid.cell('Accuracy (CV)', 0)));
+      expect(headerTooltip(grid, 'Accuracy (CV)').includes('By cross-validation'), true,
+        headerTooltip(grid, 'Accuracy (CV)'));
+      expect(headerTooltip(grid, 'SE').startsWith('The standard error'), true, headerTooltip(grid, 'SE'));
+      const leader = search!.leaders[0];
+      expectFloat(view.lastTraining!.result.metrics.validation.accuracy!, leader.score, 1e-9);
+      for (const [name, value] of Object.entries(leader.hyperparameters)) {
+        const shown: unknown = view.hyperparameterInputs.get(name)?.value;
+        if (typeof value === 'number')
+          expectFloat(Number(shown), value, 1e-6);
+        else
+          expect(shown, value, name);
+      }
+      expectArray(gridWith(view.resultsPane.root, 'Metric').dataFrame.columns.names(),
+        ['Metric', 'Train', 'Validation']);
+      expect(resultsText(view).includes('Search: Tune by Accuracy'), true, resultsText(view));
+      expect(resultsText(view).includes('Validation after a search is optimistic'), true, resultsText(view));
+      expect(shownRun(view) !== null && shownRun(view) === view.lastTraining?.runId, true, 'The shown run');
+      const runTooltip = gridTooltip(runsGrid(view), runsGrid(view).cell('Method', 0));
+      expect(runTooltip.startsWith(`Found by Tune: ${search!.trials} trials`), true, runTooltip);
+      const methodTooltip = gridTooltip(grid, grid.cell('Method', 0));
+      expect(methodTooltip.includes('Searched: iterations ') && methodTooltip.includes('Pinned: maxDepth'), true,
+        methodTooltip);
+
+      const tuned = view.hyperparameterInputs.get('iterations')!;
+      const value = tuned.value;
+      tuned.value = Number(value) === 50 ? 51 : 50;
+      expect(statusOf(view), 'Customized');
+      tuned.value = value;
+      expect(statusOf(view), 'Auto-tuned');
+      await awaitTrained(view);
+
+      view.tableInput.value = demog;
+      expect(isShown(view.searchPanel.root), false, 'Search stays shown after a Table change');
+    } finally {
+      await closeTrainView(view, [iris, demog]);
+      grok.shell.closeTable(demog);
+    }
+  }, {timeout: SEARCH_TIMEOUT});
+
+  test('the status reads Auto-tuned only on the table, target and features of the last tune', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      await view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 60, maxTrials: 2});
+      const tune = view.tuneSettings;
+      expect(statusOf(view), 'Auto-tuned');
+      const species = view.targetInput.value!;
+      expect(species.name, 'Species');
+      view.targetInput.value = iris.getCol('Petal.Width');
+      expect(statusOf(view), 'Customized');
+      expect(await enterTooltip(tune.statusText), `Tuned for Species on ${iris.name}; tune again for this data`);
+      view.targetInput.value = species;
+      expect(statusOf(view), 'Auto-tuned');
+      expect(await enterTooltip(tune.statusText), 'Found by Auto-tune; pinned values kept');
+      const features = view.featuresInput.value;
+      view.featuresInput.value = [...features].reverse();
+      expect(statusOf(view), 'Auto-tuned', 'The order of the features counts');
+      view.featuresInput.value = features.slice(1);
+      expect(statusOf(view), 'Customized');
+      expect(view.tuneSettings === tune, true, 'The method changed');
+      await awaitTrained(view);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: SEARCH_TIMEOUT});
+
+  test('a hold-out search names the score column <Metric> (hold-out)', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      view.validationInputs.scheme.value = 'Hold-out';
+      await awaitTrained(view);
+      await view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 60, maxTrials: 2});
+      const grid = searchGrid(view);
+      expectArray(grid.dataFrame.columns.names(), ['#', 'Method', 'Accuracy (hold-out)', 'SE', 'Trials', 'Chosen']);
+      expect(headerTooltip(grid, 'Accuracy (hold-out)').includes('On the hold out'), true,
+        headerTooltip(grid, 'Accuracy (hold-out)'));
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: SEARCH_TIMEOUT});
+
+  test('cancelling the search trains the best so far', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      // The search's own entry: an earlier one may still be in the task bar.
+      const entries = () => Array.from(document.querySelectorAll('.d4-task-bar-entry'));
+      const earlier = new Set(entries());
+      const searching = view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 900});
+      const entry = () => entries().find((e) => !earlier.has(e) && (e.textContent ?? '').includes(' trials'));
+      await awaitCheck(() => entry() !== undefined, 'The search reports no trials', TIMEOUT);
+      cancelTaskBarEntry(entry());
+      await awaitCheck(() => !view.isTraining, 'The cancelled search does not end', TIMEOUT);
+      await searching;
+      expect(view.lastTraining?.result.search?.stopped, 'cancelled');
+      expect(balloonWith('Search cancelled') !== null, true, 'No balloon on a cancel');
+      expect(searchGrid(view).dataFrame.rowCount, 1);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: SEARCH_TIMEOUT});
+
+  test('a search disables the form and ignores Runs and Search rows; each input\'s state comes back after it',
+    async () => {
+      const iris = await openIris();
+      const view = await openTrainView(iris);
+      try {
+        setHyperparameter(view, 'iterations', 30);
+        view.validationInputs.shuffle.value = false;
+        await awaitTrained(view);
+        const states = () => formStates(view);
+        const before = states();
+        expect(before.includes('Split seed false'), true, before.join(', '));
+        const count = view.runs.length;
+        const searching = view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 60, maxTrials: 6});
+        expectArray(enabledInputs(view), []);
+        // Tune is gated only in Auto-tune: in Manual it is hidden.
+        expect(isDisabled(view.tuneButton) || view.tuneButton.offsetParent === null, true,
+          'Tune is shown and enabled during the search');
+        view.restoreRun(view.runs[1]);
+        clickRunsRow(runsGrid(view), 1);
+        view.restoreLeader({method: 'XGBoost', hyperparameters: {iterations: 11}, score: 0, se: 0, foldScores: [],
+          trials: 1, chosen: false});
+        expectArray(enabledInputs(view), []);
+        await searching;
+        expect(view.lastTraining?.result.search?.mode, 'tune', 'The search was superseded');
+        expect(view.runs.length, count + 1);
+        // The winner's settings have their own rules.
+        const rules = enabledRules(EngineRegistry.discover().find((e) => e.name === 'XGBoost')!) ?? {};
+        const values = view.lastTraining!.result.hyperparameters;
+        const settings = [...view.hyperparameterInputs].map(([name, input]) => `${input.caption} ` +
+          `${isEnabled(rules, name, values, 'classification')}`);
+        expectArray(states(), [...before.slice(0, before.length - settings.length), ...settings]);
+      } finally {
+        await closeTrainView(view, [iris]);
+      }
+    }, {timeout: SEARCH_TIMEOUT});
+
+  test('a model with test and search shows the Test column, the bullets and Details', async () => {
+    const iris = await openIris();
+    const {id} = await saveIrisModel(iris, {metrics: {train: {accuracy: 0.9}, validation: {accuracy: 0.8},
+      test: {accuracy: 0.85}}, search: searchRecord({rows: 1170, fraction: 0.2})});
+    try {
+      const model = await forgeDb.models.get(id);
+      const summary = storedSummary(model);
+      expect(summary?.search?.holdOut?.rows, 1170);
+      const table = new MetricsTable(summary!);
+      expectArray(gridWith(table.root, 'Metric').dataFrame.columns.names(), ['Metric', 'Train', 'Validation', 'Test']);
+      const grid = gridWith(table.root, 'Metric');
+      expect(headerTooltip(grid, 'Test').startsWith('Value on the rows held out before the search'), true,
+        headerTooltip(grid, 'Test'));
+      const lines = Array.from(table.root.querySelectorAll('ul > li'), (li) => li.textContent ?? '');
+      expect(lines.includes('Search: Tune by Accuracy, 1 minute: 12 trials of 1 method, chosen by the ' +
+        'one-standard-error rule'), true, lines.join(' | '));
+      expect(lines.includes('Test: 1170 rows held out before the search'), true, lines.join(' | '));
+      const optimistic = new MetricsTable({...summary!, search: searchRecord()});
+      expect((optimistic.root.textContent ?? '').includes('Validation after a search is optimistic'), true,
+        optimistic.root.textContent ?? '');
+
+      const accordion = modelAccordion(ForgeModelHandler.rowOf(model), model);
+      await expectPaneText(accordion, 'Details', ['Search', 'Tune (Accuracy, 1 minute, 12 trials)']);
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+});
+
+// After the categories, so their order stays: the Train views of these keep their tune settings in the tests' storage
+// ('UI: Table panel' uses it in its own hooks).
+for (const name of ['UI', 'UI: Train', 'UI: Preparation', 'UI: Results', 'UI: Save model', 'UI: Runs', 'UI: Search']) {
+  category(name, () => {
+    before(async () => useTestTuneStorage());
+    after(async () => clearTestTuneStorage());
+  });
+}

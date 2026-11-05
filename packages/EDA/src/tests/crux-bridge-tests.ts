@@ -5,7 +5,7 @@ import {category, expect, expectArray, expectExceptionAsync, test} from '@datagr
 
 import {tableFromIPC} from 'apache-arrow';
 
-import {cruxMl} from '../crux/crux-loader';
+import {CruxWorker, cruxMl} from '../crux/crux-loader';
 import {toArrowIpc} from '../crux/crux-bridge';
 import {LEGACY_MODEL_ERROR, cruxFit, cruxPredict, cruxTerminate, readCruxManifest, runCrux} from '../crux/crux-model';
 import {GAP_ROWS, IRIS_SPECIES, accuracy, classificationDataset, copyCol, decoyColumns, expectProbabilities,
@@ -245,10 +245,11 @@ category('Crux bridge', () => {
 
   test('Failed model registration is retried', async () => {
     const {features, bytes} = await irisModel();
-    const module = cruxMl as unknown as {post: (op: string, args: object, transfer?: Transferable[]) => Promise<any>};
-    const post = module.post;
+    const proto = CruxWorker.prototype as unknown as
+      {post: (op: string, args: object, transfer?: Transferable[]) => Promise<any>};
+    const post = proto.post;
     let registrations = 0;
-    module.post = function(op: string, args: object, transfer?: Transferable[]) {
+    proto.post = function(op: string, args: object, transfer?: Transferable[]) {
       if (op === 'fnResource' && ++registrations === 1)
         return Promise.reject(new Error('registration failed'));
       return post.call(this, op, args, transfer);
@@ -262,15 +263,15 @@ category('Crux bridge', () => {
       expect(registrations, 2, 'the model must be registered again after a failed registration');
       expect(pred.length, features[0].length);
     } finally {
-      delete (module as {post?: unknown}).post;
+      proto.post = post;
     }
   }, {timeout: TIMEOUT});
 
   test('Live-model cap', async () => {
-    const module = cruxMl as unknown as {terminate: () => void};
-    const terminate = module.terminate;
+    const proto = CruxWorker.prototype as unknown as {terminate: () => void};
+    const terminate = proto.terminate;
     let terminations = 0;
-    module.terminate = function() {
+    proto.terminate = function() {
       ++terminations;
       terminate.call(this);
     };
@@ -285,7 +286,7 @@ category('Crux bridge', () => {
       }
       expect(terminations > 0, true, 'the worker was not restarted after 32 models');
     } finally {
-      delete (module as {terminate?: unknown}).terminate;
+      proto.terminate = terminate;
     }
   }, {timeout: TIMEOUT});
 

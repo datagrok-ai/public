@@ -191,6 +191,15 @@ category('Linear regression', () => {
     for (const manifest of [linear, ridge, enet])
       expect(manifest.pipeline?.[0].step, 'standard_scaler', `${manifest.model}: no standard scaler`);
   }, {timeout: CRUX_TIMEOUT});
+
+  test('Seed in the manifest', async () => {
+    const df = regressionDataset(ROWS, INDEP_COLS, 1);
+    const target = splitTarget(df, df.columns.byIndex(INDEP_COLS).name);
+
+    expect(readCruxManifest(await trainLinearRegression(df, target, 0, 0.5, 1000)).params.random_state, 0);
+    expect(readCruxManifest(await trainLinearRegression(df, target, 0, 0.5, 1000, 7)).params.random_state, 7);
+    expect(readCruxManifest(await trainLinearRegression(df, target, 0.3, 0.1, 1000, 7)).params.random_state, 7);
+  }, {timeout: CRUX_TIMEOUT});
 }); // Linear regression
 
 category('Hotelling ellipse', () => {

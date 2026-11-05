@@ -82,8 +82,327 @@
   overflow: visible;
 }
 
+/* Right under the inputs, held at the bottom edge while a taller form scrolls (ui.css .ui-form.ui-form-condensed
+   .ui-input-root is relative). */
+.forge-train-form > .ui-form > .ui-input-root.forge-train-row {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background-color: var(--white);
+}
+
 .forge-train-row > .ui-input-editor {
   justify-content: flex-end;
+}
+
+/* Settings: the reset button at the right edge, over the pins of Search options. */
+.ui-input-root.forge-tune-mode:not(.tag-editor-input) > .ui-input-options {
+  margin-left: auto;
+}
+
+/* The platform pads an editor by its options' width (inline, for options laid over it); the reset button follows the
+   radios in the row, so that room would only wrap Auto-tune onto a second line. */
+.ui-input-root.forge-tune-mode > .ui-input-editor {
+  padding-right: 0 !important;
+}
+
+.forge-tune-unavailable > label {
+  color: var(--text-color-light);
+}
+
+/* The status under the radio, one height whatever it reads. */
+.ui-form .ui-input-root.forge-tune-status {
+  height: 30px;
+  padding: 0;
+}
+
+/* Labels above the inputs: the status's empty label would take a line of its own above the status, pushing it out of its
+   30 px row onto the Search options toggle; without it the status sits right under the radios. */
+.ui-form.ui-form-condensed .ui-input-root.forge-tune-status {
+  height: auto;
+}
+
+.ui-form.ui-form-condensed .ui-input-root.forge-tune-status > label.ui-input-label {
+  display: none;
+}
+
+/* Without the 30 px status row the toggle's -3 px would lift Search options onto the status: as far under the status as
+   the status is under the radios instead. */
+.ui-form-condensed .forge-tune-toggle {
+  margin-top: 10.5px;
+}
+
+.forge-tune-status-text {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-color-light);
+}
+
+/* Search options is plain DOM in its own grid (the user's decision: the platform form laid platform inputs out by its
+   own measures there). The label column takes the form's measured label width (--forge-tune-label) and its 8 px gap. */
+.forge-tune-auto {
+  font-size: 13px;
+  color: var(--text-color);
+}
+
+/* The groups' header gap and chevron box (.forge-group-header); as far under the status line as the status is under
+   Settings. */
+.forge-tune-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -3px 0 0;
+  padding: 0 4px 4px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+.forge-tune-toggle > .grok-icon {
+  flex: none;
+  color: var(--grey-5);
+}
+
+.forge-tune-grid {
+  display: grid;
+  grid-template-columns: var(--forge-tune-label, 112px) minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 6px;
+  align-items: start;
+  padding-top: 4px;
+}
+
+.forge-tune-label {
+  min-width: 0;
+  line-height: 30px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-color-light);
+}
+
+/* A form too narrow for its inputs puts its labels above them (the platform's ui-form-condensed): so does the grid. */
+.ui-form-condensed .forge-tune-grid {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0;
+}
+
+.ui-form-condensed .forge-tune-label {
+  padding: 6px 0 0 3px;
+  line-height: normal;
+  font-size: 12px;
+  text-align: left;
+}
+
+.forge-tune-cell,
+.forge-tune-slot {
+  min-width: 0;
+}
+
+/* The value (a range, the choices or one value) and the pin on one line. */
+.forge-tune-row,
+.forge-tune-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+}
+
+.forge-tune-slot {
+  display: flex;
+  flex: 1 1 0;
+}
+
+.forge-tune-slot > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* The fields, the selects and the choices button: an underline, no frame; a focused one underlines in the accent, as a
+   focused input does. Scoped to the grid, so the selects' rules beat the platform's select.ui-input-editor. */
+.forge-tune-grid .forge-tune-control {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--grey-3);
+  border-radius: 0;
+  outline: none;
+  background-color: transparent;
+  font: inherit;
+  color: var(--text-color);
+}
+
+.forge-tune-grid .forge-tune-control:focus {
+  border-bottom-color: var(--blue-1);
+}
+
+.forge-tune-grid .forge-tune-control[aria-invalid="true"] {
+  border-bottom: 2px solid var(--red-3);
+  color: var(--red-3);
+}
+
+.forge-tune-grid .forge-tune-control:disabled {
+  color: var(--text-color-light);
+  cursor: default;
+}
+
+.forge-tune-range > .forge-tune-field {
+  flex: 1 1 0;
+  width: 0;
+}
+
+.forge-tune-field {
+  padding: 5px 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The selects as the platform's choice input draws its select (ui.css .ui-input-root > select.ui-input-editor): its
+   chevron image (css/forge-platform-images.css), 16 px at the right. */
+.forge-tune-select {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+.forge-tune-select > select.ui-input-editor,
+.forge-tune-choices-button {
+  flex: 1 1 0;
+  height: 28px;
+  padding: 0 20px 0 4px;
+  appearance: none;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  background-position: 100% 55%;
+  cursor: pointer;
+}
+
+.forge-tune-choices {
+  position: relative;
+}
+
+.forge-tune-choices-button {
+  display: flex;
+  align-items: center;
+  text-align: left;
+}
+
+.forge-tune-choices-text {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forge-tune-choice-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 4px 0;
+  border: 1px solid var(--grey-2);
+  background-color: var(--white);
+}
+
+.forge-tune-choice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.forge-tune-check {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+}
+
+.forge-tune-hint {
+  flex: none;
+  white-space: nowrap;
+  color: var(--text-color-light);
+}
+
+.forge-tune-budget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+}
+
+.forge-tune-budget > .forge-tune-field {
+  flex: none;
+  width: 48px;
+}
+
+.forge-tune-budget > .forge-tune-select {
+  flex: 1 1 0;
+}
+
+/* The pins and the reset: native buttons, 30 px, the icon in the button's colour at its right edge, so the glyphs end
+   on the block's right edge with Tune's letters and the selects' underlines; the hit area extends to the left. */
+.forge-tune-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--grey-5);
+  cursor: pointer;
+}
+
+.ui-input-root > .ui-input-options > .forge-tune-icon {
+  margin: 0;
+}
+
+.forge-tune-icon > .grok-icon {
+  color: inherit;
+}
+
+.forge-tune-icon:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: var(--text-color);
+}
+
+.forge-tune-pin {
+  color: var(--grey-4);
+}
+
+.forge-tune-pin.forge-tune-pinned {
+  color: var(--blue-1);
+}
+
+.forge-tune-icon:disabled,
+.forge-tune-icon[aria-disabled="true"] {
+  color: var(--grey-3);
+  cursor: default;
+}
+
+.forge-tune-err {
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--red-3);
+}
+
+/* Tune's letters end at the block's right edge, where the reset and pin glyphs and the selects end. */
+.forge-tune-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
+.forge-tune-bar > button.ui-btn {
+  margin-right: 0;
+  padding-right: 0;
 }
 
 .forge-train-results {
@@ -137,6 +456,7 @@ div.ui-box > div.ui-div.forge-results-panel {
 }
 
 .forge-results-rows,
+.forge-search,
 .forge-runs {
   margin-top: 12px;
 }

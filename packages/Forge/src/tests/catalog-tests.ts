@@ -471,6 +471,7 @@ category('Catalog', () => {
       expectMetrics(details.metrics?.validation ?? {}, stored.validation, 1e-9);
       expect(details.metrics?.classes?.length, 3);
       expectArray(details.findings.map((f) => f.text), metricFindings(stored).map((f) => f.text));
+      expect(details.search, null);
       expect(details.storage.mode, 'none');
       expect(details.storage.source === undefined && details.storage.tableId === undefined, true,
         JSON.stringify(details.storage));

@@ -7,6 +7,8 @@ import {TrainingRunStatus} from '../generated/db';
 import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricId, MetricValues} from '../metrics/metrics';
 import {MissingValuesSettings} from '../preparation/missing-values';
 import {PreparationSteps} from '../preparation/pipeline';
+import {ValidationSettings} from '../training/k-fold';
+import {SEARCH_CAPTIONS, SearchRecord} from '../training/search';
 import {MetricsRecord} from '../training/train-model';
 import {numberColumn, readOnlyGrid} from './data-grid';
 import {resultsTitle} from './results-viewers';
@@ -20,7 +22,7 @@ const HEADERS: {[column: string]: string} = {
   'Preparation': 'The preparation steps of the training.',
   'Rows': 'Rows the model learned from.',
   'Status': 'completed, failed or cancelled.',
-  'Seed': 'The seed of the data split.',
+  'Split seed': 'The seed that shuffled the rows into the folds or the hold out; empty when they were not shuffled.',
 };
 
 /** One recorded training of a Train view, with what it was trained on. */
@@ -38,14 +40,18 @@ export interface SessionRun {
   featureGaps: boolean;
   /** The record's training rows; 0 when nothing was recorded. */
   rowCount: number;
+  validation: ValidationSettings;
+  /** The split seed. */
   seed: number;
   metrics?: MetricsRecord;
   error?: string;
+  /** The search that chose the method and settings. */
+  search?: SearchRecord;
 }
 
 /** What a run trained on: the inputs a restore sets again. */
 export type RunInputs = Pick<SessionRun, 'engine' | 'targetName' | 'featureNames' | 'hyperparameters' |
-  'missingValues' | 'steps'>;
+  'missingValues' | 'steps' | 'validation' | 'seed'>;
 
 /** **Runs**: the trainings of a Train view in a grid, newest first, the newest current; a click on a row hands its
  * run to [onRestore]. Hidden while there is no run. */
@@ -84,14 +90,15 @@ export class RunsPanel {
       textColumn('Preparation', runs.map(RunsPanel.preparationText)),
       DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Rows', runs.map((run) => run.rowCount)),
       textColumn('Status', runs.map((run) => run.status)),
-      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Seed', runs.map((run) => run.seed)),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Split seed',
+        runs.map((run) => run.validation.shuffle ? run.seed : null)),
       ...metricIds.map((id) => numberColumn(RunsPanel.metricColumn(id),
         runs.map((run) => run.metrics?.validation[id] ?? null))),
     ]);
     const headers = {...HEADERS};
     const cells: {[column: string]: (row: number) => string} = {
-      'Method': (row) => Object.entries(runs[row].hyperparameters).map(([name, value]) => `${name}: ${value}`)
-        .join('\n'),
+      'Method': (row) => [...RunsPanel.searchText(runs[row].search),
+        ...Object.entries(runs[row].hyperparameters).map(([name, value]) => `${name}: ${value}`)].join('\n'),
       'Features': (row) => runs[row].featureNames.join('\n'),
       'Status': (row) => runs[row].status === 'failed' ? runs[row].error ?? '' :
         runs[row].status === 'cancelled' ? CANCELLED_TOOLTIP : '',
@@ -131,6 +138,10 @@ export class RunsPanel {
     if (mode !== 'impute')
       return [];
     return [impute === undefined ? 'impute' : `impute (${impute.neighbors} neighbors, ${impute.distance})`];
+  }
+
+  private static searchText(search: SearchRecord | undefined): string[] {
+    return search === undefined ? [] : [`Found by ${SEARCH_CAPTIONS[search.mode]}: ${search.trials} trials`];
   }
 
   private static metricColumn(id: MetricId): string {

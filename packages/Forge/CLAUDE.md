@@ -10,9 +10,11 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
   `get-model.ts`, `model-edit.ts`), `evaluateModel` (`training/evaluate-api.ts`), `shareModel` (`openShareDialog` in
   `ui/model-actions.ts`), `_initForge` (autostart), the column panel
   **Predicted by** and the table panel **Forge models** (`ui/table-models-panel.ts`).
-- `src/ui/`: `train-view.ts` (+ `runs-panel.ts`), `evaluation-view.ts` (on `results-*.ts`), `forge-app.ts` (catalog),
+- `src/ui/`: `train-view.ts` (+ `runs-panel.ts`, `tune-settings.ts`: Settings and Search options, `search-panel.ts`:
+  the Search leaderboard, `validation-inputs.ts`: the Validation group), `evaluation-view.ts` (on `results-*.ts`), `forge-app.ts` (catalog),
   `apply-model-dialog.ts`, `model-*.ts`; their readiness attributes: ARCHITECTURE.md, "Automation surface".
-- `src/training/` (`train-api.ts`: `Forge:trainModel`; `training-queue.ts`: one at a time; `evaluation.ts`: records
+- `src/training/` (`train-api.ts`: `Forge:trainModel`; `training-queue.ts`: one at a time; `search.ts`: the Tune search
+  and its record; `browser-search.ts`: its trials; `evaluation.ts`: records
   nothing, `storedTrainingTable` is the data Run Evaluation and `evaluateModel` default to), `src/apply/`, `src/preparation/` (`pipeline.ts`: steps and their replay; `Eda:knnImpute`), `src/catalog/`.
 - `databases/forge/schema.json` — the EMS schema; `src/generated/db.ts` is its generated typed client `forgeDb`.
 - `agents/` — Datagrok AI (Grokky) knowledge, published with the package: `package-knowledge.yaml` and the
@@ -74,6 +76,8 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
   'name = "X"'` matches the friendly name. A JS `ui.bind` row gets only **Properties...**: use `ui.contextActions(row)`.
 - A row reaches a Space only by the platform's drag of a model element (`ui.bind` / `ui.makeDraggable` with the row).
   Column inputs keep a removed column: the Train view drops it on `onColumnsRemoved`.
+- UI tests switch `TuneSettings.storage` to `Forge Tune tests` in the hooks loop at the end of `ui-tests.ts`: a new UI
+  category that opens a Train view must be added there.
 - Test rows are `forge-test-*`, deleted in `finally`; `expect(x, undefined)` checks against `true`; close a Train view
   with `closeTrainView` (waits for `isTraining`); `openTable` records no creation script (use `openIrisFromFile`).
 

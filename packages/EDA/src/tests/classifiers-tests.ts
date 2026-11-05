@@ -66,6 +66,11 @@ category('Softmax', () => {
     await expectRejected([['penalty 0', () => trainSoftmax(multi.df, multi.target, 100, 0, 0.001)]]);
   }, {timeout: TIMEOUT});
 
+  test('No seed in the manifest', async () => {
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    expect('random_state' in readCruxManifest(await softmax(df, target)).params, false);
+  }, {timeout: TIMEOUT});
+
   test('Class probabilities', async () => {
     const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
     await expectProbabilities(df, await softmax(df, target), sortedClasses(target));
@@ -165,6 +170,8 @@ category('XGBoost', () => {
       ['eta = 5', () => trainXgboost(df, target, 10, 5, 6, 1, 0)],
       ['maxDepth = 0', () => trainXgboost(df, target, 10, 0.3, 0, 1, 0)],
       ['lambda < 0', () => trainXgboost(df, target, 10, 0.3, 6, -1, 0)],
+      ['row sample = 0', () => trainXgboost(df, target, 10, 0.3, 6, 1, 0, 0, 1, 0)],
+      ['column sample > 1', () => trainXgboost(df, target, 10, 0.3, 6, 1, 0, 1, 1.5, 0)],
       ['single category', () => xgboost(df, DG.Column.fromStrings('y', new Array(target.length).fill('only')))],
     ]);
   }, {timeout: TIMEOUT});
@@ -177,6 +184,25 @@ category('XGBoost', () => {
     expect(params.max_depth, 6);
     expect(params.reg_lambda, 1);
     expect(params.reg_alpha, 0);
+    expect(params.subsample, 1);
+    expect(params.colsample_bytree, 1);
+    expect(params.random_state, 0);
+
+    const sampled = readCruxManifest(await trainXgboost(df, target, 20, 0.3, 6, 1, 0, 0.7, 0.8, 5)).params;
+    expect(sampled.subsample, 0.7);
+    expect(sampled.colsample_bytree, 0.8);
+    expect(sampled.random_state, 5);
+  }, {timeout: TIMEOUT});
+
+  test('Seed matters only with sampling', async () => {
+    const df = seededRegression(500, 4, CORRECTNESS_SEED);
+    const target = splitTarget(df, 'y');
+    const fit = (subsample: number, colsample: number, seed: number) =>
+      trainXgboost(df, target, 20, 0.3, 6, 1, 0, subsample, colsample, seed).then((m) => predictColumn(df, m));
+    expect(sameValues(await fit(1, 1, 1), await fit(1, 1, 2)), true, 'without sampling the seed changed the model');
+    expect(sameValues(await fit(0.5, 1, 1), await fit(0.5, 1, 1)), true, 'the same seed gave another model');
+    expect(sameValues(await fit(0.5, 1, 1), await fit(0.5, 1, 2)), false, 'row sampling: the seed had no effect');
+    expect(sameValues(await fit(1, 0.5, 1), await fit(1, 0.5, 2)), false, 'column sampling: the seed had no effect');
   }, {timeout: TIMEOUT});
 
   test('Missing feature values are kept', async () => {
@@ -324,6 +350,15 @@ category('SVM', () => {
     expect(rbf.kernel, 'rbf');
     expect(rbf.gamma, 1 / 4);
     expect(readCruxManifest(await svmKernel(df, target, 'Polynomial')).params.kernel, 'poly');
+  }, {timeout: TIMEOUT});
+
+  test('No seed in the manifest', async () => {
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    expect('random_state' in readCruxManifest(await svm(df, target)).params, false, 'svc');
+
+    const regression = seededRegression(100, 2, CORRECTNESS_SEED);
+    const y = splitTarget(regression, 'y');
+    expect('random_state' in readCruxManifest(await svm(regression, y)).params, false, 'svr');
   }, {timeout: TIMEOUT});
 
   test('Validation rejects bad inputs', async () => {

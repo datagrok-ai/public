@@ -2,12 +2,14 @@ import {Engine, hasTrainingRows} from '../engines/engine';
 import {ForgeError} from '../forge-error';
 import {ModelInsert, TrainingRunInsert, TrainingRunSource, TrainingRunStatus} from '../generated/db';
 import {PreparationOptions} from '../preparation/preparation-options';
+import {SearchRecord} from '../training/search';
 import {FeaturesSchema, MetricsRecord, Splitting, TargetSchema, TrainingRequest, TrainingResult, trainingSetupOf}
   from '../training/train-model';
 import {DatasetFingerprint} from './dataset-fingerprint';
 import {DatasetRef} from './dataset-ref';
 
-type JsonColumn = 'target' | 'features' | 'options' | 'metrics' | 'splitting' | 'dataset_fingerprint' | 'dataset_ref';
+type JsonColumn = 'target' | 'features' | 'options' | 'metrics' | 'splitting' | 'dataset_fingerprint' | 'dataset_ref' |
+  'search';
 
 /** Why a blank model name is refused, in the Save and Edit dialogs and in `Forge:trainModel`. */
 export const NO_NAME = 'Enter a name for the model.';
@@ -28,6 +30,7 @@ export type ModelFields = Omit<ModelInsert, JsonColumn> & {
   splitting: Splitting;
   dataset_fingerprint: DatasetFingerprint;
   dataset_ref?: DatasetRef;
+  search?: SearchRecord;
 };
 
 /** What a model keeps of its training data: only the fingerprint, a link to the source, or an uploaded copy. */
@@ -41,6 +44,7 @@ export type TrainingRunRecord = Omit<TrainingRunInsert, JsonColumn> & {
   metrics?: MetricsRecord;
   splitting: Splitting;
   dataset_fingerprint: DatasetFingerprint;
+  search?: SearchRecord;
 };
 
 export function modelFieldsOf(input: {name: string; description: string; tags: string[]; engine: Engine;
@@ -68,6 +72,7 @@ export function modelFieldsOf(input: {name: string; description: string; tags: s
     row_count: result.rowCount,
     dataset_fingerprint: input.fingerprint,
     has_training_rows: hasTrainingRows(engine),
+    ...(result.search === undefined ? {} : {search: result.search}),
   };
 }
 
@@ -94,6 +99,7 @@ export function trainingRunOf(input: {request: TrainingRequest; datasetName: str
     error: input.error,
     started_on: input.startedOn,
     duration_ms: input.durationMs,
+    ...(request.search === undefined ? {} : {search: request.search}),
   };
 }
 

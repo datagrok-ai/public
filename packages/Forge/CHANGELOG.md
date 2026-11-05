@@ -2,6 +2,10 @@
 
 ## v.next
 
+* GROK-20932: Added the Validation group to the Train view (stratified K-fold, K-fold or Hold-out, folds, test fraction, shuffle, a split seed 42 by default), used by Tune and stored in the model's splitting; Forge:trainModel options scheme, testFraction, stratified, shuffle and the seed 42 by default; the Runs column Split seed (empty when the rows were not shuffled)
+* GROK-20932: Added meta.mlenabled: settings a method ignores with the other values or the task are disabled in the Train view and fixed to their defaults by Tune
+* GROK-20932: Improved the Train view: Train right under the inputs and kept in view while a tall form scrolls
+* GROK-20932: Improved the Train view: a training started by Train locks the form, as during Tune; Confusions shows its comment under the matrix
 * GROK-20932: Added the EMS schema (models, training runs, applications), method discovery and the Forge app listing methods and models
 * GROK-20932: Added training with XGBoost, cross-validation metrics, the Predictive model view, saving models without their training data, and catalog refresh and delete
 * GROK-20932: Added applying saved models: Apply dialog, Forge:applyModel, missing-value handling (skip or impute) at training and application, prediction column tag and application records
@@ -37,5 +41,6 @@
 * GROK-20932: Added Balanced accuracy and MCC to the metrics of every classifier and Average precision from Crux (EDA's classificationReport), per-class values saved with the model (schema 0.1.16) and shown in the Per-class panel for three or more classes, the ROC Curve drawn from Crux's exact curve and a PR Curve panel for two classes, in training, Run Evaluation and the API
 * GROK-20932: Fixed Predict probability switching a two-class training to Linear Regression (the suggestion read the prepared 0 / 1 target) and the empty class the cut labels showed in Confusions
 * GROK-20932: Improved the results: the Per-class panel is a parallel coordinates plot in the target's class colors, without in-chart filters or a color selector, its legend on top when short and hidden otherwise; ROC Curve and PR Curve are thin lines with the cutoff circled, axes FPR (1 − Specificity), Recall (Sensitivity) and Precision, the PR Curve's non-informative baseline at the positive class's share; Performance moved to the second row and Wrong predictions to its own last row above Runs; the metric names Recall (Sensitivity) and Negative Predictive Value
+* GROK-20932: Added Tune to the Train view: Settings (Manual / Auto-tune) with a Default / Auto-tuned / Customized status and a reset button, Search options with per-setting ranges, choices and pins, a metric and a trials-or-time budget (remembered per user and method), a seeded random search of meta.mlspace on the folds every trial shares (fold fits in parallel with meta.mlparallel), median pruning, a held out Test for 500 rows or more, the Search leaderboard, the chosen settings trained as a regular run; the search saved with the model and the run (schema 0.1.19), shown in Performance and Details, and returned by Forge:trainModel (options.search) and Forge:getModel (search, metrics.test); stratified folds for every classifier
 
 ## 0.0.1 (2026-09-30)

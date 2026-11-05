@@ -10,8 +10,10 @@ const MAX_LIVE_MODELS = 32;
 
 export type CruxResource = {name: string, id: string, bytes: Uint8Array};
 
+const POOL_SIZE = Math.max(1, Math.min(4, Math.floor((navigator.hardwareConcurrency ?? 2) / 2)));
+
 /** One Crux wasm module in its own module worker (the protocol of crux-core `crux-modules.mjs`) */
-export class CruxModule {
+export class CruxWorker {
   private worker: Worker | null = null;
   private ready: Promise<void> | null = null;
   private next = 0;
@@ -20,8 +22,18 @@ export class CruxModule {
   private readonly resources = new Map<string, string>();
   /** Crux memoises every registered model and never frees it: the worker restarts after this many */
   private registered = 0;
+  /** Calls not settled yet, counted from the call itself: a call is posted only after the module loads */
+  private calls = 0;
 
   constructor(readonly name: string) {}
+
+  get pendingCount(): number {
+    return this.calls;
+  }
+
+  hasResource(resource: CruxResource): boolean {
+    return this.resources.get(resource.name) === resource.id;
+  }
 
   private init(): Promise<void> {
     if (this.ready !== null)
@@ -69,31 +81,41 @@ export class CruxModule {
 
   /** Runs a Crux function on an Arrow IPC stream (transferred); `resource` is registered first unless live */
   async callFn(name: string, ipc: Uint8Array, params: object, resource?: CruxResource): Promise<Uint8Array> {
-    if (this.registered >= MAX_LIVE_MODELS && this.pending.size === 0)
+    if (this.registered >= MAX_LIVE_MODELS && this.calls === 0)
       this.terminate();
-    await this.init();
-    if (this.worker === null)
-      throw new Error('Crux worker terminated');
+    ++this.calls;
+    try {
+      await this.init();
+      if (this.worker === null)
+        throw new Error('Crux worker terminated');
 
-    let reg;
-    if (resource !== undefined && this.resources.get(resource.name) !== resource.id) {
-      reg = this.post('fnResource', resource).catch((e: Error) => {
-        if (this.resources.get(resource.name) === resource.id)
-          this.resources.delete(resource.name);
-        throw e;
-      });
-      this.resources.set(resource.name, resource.id);
-      this.registered++;
+      let reg;
+      if (resource !== undefined && this.resources.get(resource.name) !== resource.id) {
+        reg = this.post('fnResource', resource).catch((e: Error) => {
+          if (this.resources.get(resource.name) === resource.id)
+            this.resources.delete(resource.name);
+          throw e;
+        });
+        this.resources.set(resource.name, resource.id);
+        this.registered++;
+      }
+      const call = this.post('callFn', {name, ipc, params: JSON.stringify(params)}, [ipc.buffer]);
+
+      const [out] = await Promise.all([call, reg]);
+      return out;
+    } finally {
+      --this.calls;
     }
-    const call = this.post('callFn', {name, ipc, params: JSON.stringify(params)}, [ipc.buffer]);
-
-    const [out] = await Promise.all([call, reg]);
-    return out;
   }
 
   async fnDescribe(name: string): Promise<string> {
-    await this.init();
-    return this.post('fnDescribe', {name});
+    ++this.calls;
+    try {
+      await this.init();
+      return await this.post('fnDescribe', {name});
+    } finally {
+      --this.calls;
+    }
   }
 
   terminate(): void {
@@ -103,6 +125,48 @@ export class CruxModule {
     this.ready = null;
     this.resources.clear();
     this.registered = 0;
+  }
+}
+
+/** A pool of up to `size` module workers (each its own wasm instance): a call goes to a worker that holds its
+ * resource, else to an idle one, else to a new one while under the size, else to the least loaded */
+export class CruxModule {
+  private workers: CruxWorker[] = [];
+
+  constructor(readonly name: string, readonly size = POOL_SIZE) {}
+
+  get workerCount(): number {
+    return this.workers.length;
+  }
+
+  private pick(resource?: CruxResource): CruxWorker {
+    const byLoad = (list: CruxWorker[]) => [...list].sort((a, b) => a.pendingCount - b.pendingCount)[0];
+    const holder = resource === undefined ? undefined : byLoad(this.workers.filter((w) => w.hasResource(resource)));
+    if (holder !== undefined)
+      return holder;
+    const idle = this.workers.find((w) => w.pendingCount === 0);
+    if (idle !== undefined)
+      return idle;
+    if (this.workers.length < this.size) {
+      const worker = new CruxWorker(this.name);
+      this.workers.push(worker);
+      return worker;
+    }
+    return byLoad(this.workers);
+  }
+
+  callFn(name: string, ipc: Uint8Array, params: object, resource?: CruxResource): Promise<Uint8Array> {
+    return this.pick(resource).callFn(name, ipc, params, resource);
+  }
+
+  fnDescribe(name: string): Promise<string> {
+    return this.pick().fnDescribe(name);
+  }
+
+  terminate(): void {
+    for (const w of this.workers)
+      w.terminate();
+    this.workers = [];
   }
 }
 

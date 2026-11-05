@@ -4,6 +4,9 @@
   "version": "0.0.1",
   "description": "Predictive modeling: train, apply and manage machine learning models",
   "license": "MIT",
+  "sources": [
+    "css/forge-platform-images.css"
+  ],
   "dependencies": {
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",

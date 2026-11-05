@@ -41,9 +41,9 @@ export function isLinearRegressionInteractive(features: DG.ColumnList, target: D
 
 /** Ordinary least squares, ridge (L2 only) or elastic net, on standardised features */
 export function trainLinearRegression(df: DG.DataFrame, target: DG.Column, alpha: number, lambda: number,
-  iterations: number): Promise<Uint8Array> {
+  iterations: number, seed: number = 0): Promise<Uint8Array> {
   const {model, estimator}: {model: string, estimator: Record<string, number>} = alpha !== 0 ? {model: 'elasticnet',
     estimator: {alpha: alpha + lambda, l1_ratio: alpha / (alpha + lambda), max_iter: iterations}} :
     lambda !== 0 ? {model: 'ridge', estimator: {alpha: lambda}} : {model: 'linear', estimator: {}};
-  return cruxFit('regression', model, df, target, {estimator, preprocess: 'standard'});
+  return cruxFit('regression', model, df, target, {estimator, preprocess: 'standard', seed});
 }

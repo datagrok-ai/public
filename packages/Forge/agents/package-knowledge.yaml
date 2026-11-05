@@ -29,13 +29,17 @@ keywords:
   - softmax
   - SVM
   - hyperparameters
+  - hyperparameter tuning
+  - tune
+  - hold-out
   - one-hot encoding
   - missing values
   - imputation
   - evaluate a model
   - compare models
 overview: |
-  Trains a model on a table (a target column and feature columns), measures it with 5-fold cross-validation, saves it
+  Trains a model on a table (a target column and feature columns), measures it by k-fold cross-validation or a hold out
+  (stratified for classifiers), tunes a method's settings (Tune, `options.search`), saves it
   to the Forge catalog without its training data unless asked, applies it to new tables as a prediction column,
   evaluates it on data with known targets, and manages the catalog (list, describe, rename, tag, share, delete).
 

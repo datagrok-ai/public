@@ -18,7 +18,7 @@ const MIN_PC_COLUMNS = 3;
 const MAX_PC_COLUMNS = 20;
 
 type PanelText = Exclude<PanelKey, 'predictedVsActual' | `visualize:${number}`> | 'regressionVsActual' |
-  'classifierVsActual' | 'visualize' | 'runs';
+  'classifierVsActual' | 'visualize' | 'runs' | 'search';
 
 /** Each panel's title (`<name>` is the target's or the method's name) and what it shows, the title's tooltip. */
 export const PANEL_TEXTS: {[key in PanelText]: [title: string, tooltip: string]} = {
@@ -46,6 +46,8 @@ export const PANEL_TEXTS: {[key in PanelText]: [title: string, tooltip: string]}
   classBalance: ['Class balance', 'How many rows each class has.'],
   visualize: ['<name>', 'The method\'s own view of the model.'],
   runs: ['Runs', 'The trainings of this view, newest first; click one to set its inputs again.'],
+  search: ['Search', 'Per method, the simplest settings within one standard error of its best, best first; the ' +
+    'chosen one is marked. Click a row to set its method and settings.'],
 };
 const STATISTICS_HEADERS: {[column: string]: string} = {
   'Statistic': 'Summary statistic of the column.',
@@ -401,7 +403,7 @@ function classifierPanels(shown: Shown, {summary, cutoff}: ResultsData): void {
   }
   if (shown.classes.length < MAX_CONFUSION_CLASSES) {
     addViewer(shown, 'confusions', DG.Viewer.confusionMatrix(frame,
-      {xColumnName: target.name, yColumnName: prediction.name}));
+      {xColumnName: target.name, yColumnName: prediction.name, descriptionPosition: 'Bottom'}));
   }
   addViewer(shown, 'classBalance', DG.Viewer.barChart(frame, {splitColumnName: target.name,
     stackColumnName: target.name, valueColumnName: target.name, valueAggrType: DG.AGG.TOTAL_COUNT,

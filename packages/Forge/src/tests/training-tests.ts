@@ -4,22 +4,24 @@ import {awaitCheck, category, expect, expectArray, expectExceptionAsync, expectF
   from '@datagrok-libraries/test/src/test';
 import {defaultHyperparameters, Engine, hyperparametersOf} from '../engines/engine';
 import {applicableEngines} from '../engines/applicable-engines';
+import {runGetModel} from '../catalog/get-model';
 import {apply, EnginePrediction, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {defaultFeatures} from '../training/default-features';
-import {kFold} from '../training/k-fold';
-import {aucOf, aucOfProbabilities, MetricValues, probabilityOf} from '../metrics/metrics';
+import {DEFAULT_VALIDATION, heldOutCount, holdOutFold, kFold, minimumRows} from '../training/k-fold';
+import {aucOf, aucOfProbabilities, metricsOf, MetricValues, probabilityOf} from '../metrics/metrics';
 import {classificationReport} from '../metrics/report';
 import {MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
 import {prepareFeatures, replayPreprocessing} from '../preparation/pipeline';
 import {isRecord, PreparationOptions, stringsOf} from '../preparation/preparation-options';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {dataInsights, metricInsights, resultInsights} from '../training/insights';
+import {searchRecordOf} from '../training/search';
 import {runTrainModel, TrainModelInput} from '../training/train-api';
-import {checkSelection, needsRowsWithoutGaps, outOfFoldProbabilities, prepareTraining, recutResult, TrainingProblems,
-  TrainingRequest, TrainingResult, TrainingSelection, trainingEngines, trainModel, trainPredictionOf}
-  from '../training/train-model';
+import {checkSelection, foldMasks, foldPrediction, needsRowsWithoutGaps, outOfFoldProbabilities, prepareTraining,
+  recutResult, TrainingProblems, TrainingRequest, TrainingResult, TrainingSelection, trainingEngines, trainModel,
+  trainPredictionOf, validationSplit} from '../training/train-model';
 import {QueuedTraining, TrainingQueue} from '../training/training-queue';
 import {cancelTaskBarEntry, CLASSIFIERS, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, EDA_METHODS,
   engineByName, expectMetrics, expectNoFrames, expectReleased, failsWith, framesSharing, GAP_ROWS, IMPUTE,
@@ -102,6 +104,12 @@ function cancelledAfter(ms: number): () => LoopProgress {
   };
 }
 
+/** [value] as JSON with every object's keys sorted: a stored json value comes back with its keys reordered. */
+function sortedJson(value: unknown): string {
+  return JSON.stringify(value, (_, v) => isRecord(v) ?
+    Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]])) : v);
+}
+
 const errorOf = (queued: QueuedTraining<unknown>) =>
   queued.outcome === 'failed' || queued.outcome === 'cancelled' ? queued.error : undefined;
 
@@ -120,6 +128,90 @@ category('Training', () => {
     expectArray(sizes, [21, 21, 21, 20, 20]);
     expect(kFold(103, 5, 43).some((f, i) => f !== folds[i]), true, 'Another seed gives the same folds');
   });
+
+  test('kFold stratifies by the target', async () => {
+    const classes = DG.Column.fromStrings('class',
+      Array.from({length: 103}, (_, i) => i < 50 ? 'a' : i < 83 ? 'b' : 'c'));
+    const folds = kFold(103, 5, 42, classes);
+    expectArray(kFold(103, 5, 42, classes), folds);
+    const spreads = ['a', 'b', 'c'].map((cls) => {
+      const counts = [0, 0, 0, 0, 0];
+      for (let r = 0; r < 103; r++) {
+        if (classes.get(r) === cls)
+          counts[folds[r]]++;
+      }
+      return Math.max(...counts) - Math.min(...counts);
+    });
+    expectArray(spreads, [0, 1, 0]);
+    const sizes = [0, 0, 0, 0, 0];
+    for (const f of folds)
+      sizes[f]++;
+    expect(Math.max(...sizes) - Math.min(...sizes) <= 1, true, `Fold sizes ${sizes}`);
+  });
+
+  test('kFold without shuffle: contiguous folds, classes dealt in row order, the seed unused', async () => {
+    const plain = Array.from(kFold(10, 5, 42, undefined, false));
+    expectArray(plain, [0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
+    expectArray(Array.from(kFold(10, 5, 7, undefined, false)), plain);
+    const classes = DG.Column.fromStrings('class', ['a', 'b', 'a', 'b', 'a', 'a']);
+    expectArray(Array.from(kFold(6, 2, 42, classes, false)), [0, 0, 1, 1, 0, 1]);
+  });
+
+  test('holdOutFold holds out each class\'s share; without shuffle the last rows', async () => {
+    const classes = DG.Column.fromStrings('class', Array.from({length: 100}, (_, i) => i < 60 ? 'a' : 'b'));
+    const fold = holdOutFold(100, 0.2, 42, classes);
+    expectArray(Array.from(holdOutFold(100, 0.2, 42, classes)), Array.from(fold));
+    const held = (cls: string) => Array.from(fold).filter((f, r) => f === 0 && classes.get(r) === cls).length;
+    expectArray([held('a'), held('b')], [12, 8]);
+    expect(Array.from(fold).filter((f) => f === -1).length, 80);
+    const last = Array.from(holdOutFold(10, 0.3, 42, undefined, false));
+    expectArray(last, [-1, -1, -1, -1, -1, -1, -1, 0, 0, 0]);
+    const perClass = Array.from(holdOutFold(100, 0.2, 1, classes, false));
+    expectArray(perClass.flatMap((f, r) => f === 0 ? [r] : []),
+      [...Array.from({length: 12}, (_, i) => 48 + i), ...Array.from({length: 8}, (_, i) => 92 + i)]);
+    expectArray([minimumRows({...DEFAULT_VALIDATION, scheme: 'holdout', testFraction: 0.2}),
+      minimumRows(DEFAULT_VALIDATION), heldOutCount(150, 0.2)], [10, 10, 30]);
+  });
+
+  test('trainModel with a hold out measures Validation on the held out rows, then fits all rows', async () => {
+    const request = {...await irisRequest(MEASUREMENTS, 'Species'),
+      validation: {...DEFAULT_VALIDATION, scheme: 'holdout' as const}};
+    const result = await trainModel(request);
+    expect(sortedJson(result.splitting), sortedJson({scheme: 'holdout', trainFraction: 0.8, isStratified: true,
+      isShuffled: true}));
+    expect(result.rowCount, 150);
+    const fold = validationSplit(request);
+    expect(Array.from(fold).filter((f) => f === 0).length, 30);
+    const {columns, target} = request.prepared;
+    const held = DG.BitSet.create(150, (r) => fold[r] === 0);
+    const fit = await foldPrediction(request.engine, columns, target, request.hyperparameters, foldMasks(fold, 0));
+    expectFloat(result.metrics.validation.accuracy ?? NaN,
+      metricsOf('classification', target.clone(held), fit.prediction).accuracy ?? NaN, 1e-9);
+    expect(result.prediction.length, 150);
+    expect(typeof result.metrics.validation.auc, 'number');
+  }, {timeout: TIMEOUT});
+
+  test('the validation choice: K-fold unstratified, unshuffled, and Predict probability on a hold out', async () => {
+    const request = await irisRequest(MEASUREMENTS, 'Species');
+    const plain = await trainModel({...request, validation: {...DEFAULT_VALIDATION, stratified: false}});
+    expect(sortedJson(plain.splitting), sortedJson({scheme: 'kfold', folds: 5, isStratified: false,
+      isShuffled: true}));
+    expectArray(Array.from(validationSplit({...request, validation: {...DEFAULT_VALIDATION, stratified: false}})),
+      Array.from(kFold(150, 5, request.seed)));
+    const ordered = await trainModel({...request, validation: {...DEFAULT_VALIDATION, shuffle: false}});
+    expect(ordered.splitting.isShuffled, false);
+    const otherSeed = await trainModel({...request, seed: 7, validation: {...DEFAULT_VALIDATION, shuffle: false}});
+    expectMetrics(otherSeed.metrics.validation, ordered.metrics.validation, 1e-9);
+
+    const iris = await twoSpeciesIris();
+    const probability = await trainModel({...await requestOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'),
+      PREDICT_PROBABILITY), validation: {...DEFAULT_VALIDATION, scheme: 'holdout'}});
+    expect(probability.splitting.isStratified, true);
+    expect(probability.scores?.validation.stats.missingValueCount, 80);
+    const recut = recutResult(probability, 0.3);
+    expect(typeof recut.metrics.validation.accuracy, 'number');
+    expect(typeof recut.metrics.validation.auc, 'number');
+  }, {timeout: TIMEOUT});
 
   test('defaultFeatures skips the target, all-unique integer, date and very large integer columns', async () => {
     const table = DG.DataFrame.fromColumns([
@@ -267,7 +359,8 @@ category('Training', () => {
     expect(validation.f1 !== undefined, true, 'F1 is missing');
     expect(validation.sensitivity === undefined, true, 'Sensitivity on three classes');
     expect(result.blob.length > 0, true, 'Empty blob');
-    expect(JSON.stringify(result.splitting), JSON.stringify({scheme: 'kfold', folds: 5, isStratified: false}));
+    expect(JSON.stringify(result.splitting), JSON.stringify({scheme: 'kfold', folds: 5, isStratified: true,
+      isShuffled: true}));
     expect(JSON.stringify(result.options), JSON.stringify({preprocessingInfo: [], postprocessingInfo: [],
       missingValues: {mode: 'skip', skippedRows: 0}}));
     expect(result.target.categories?.length, 3);
@@ -1072,6 +1165,27 @@ category('Training', () => {
     }
   }, {timeout: TIMEOUT});
 
+  test('runTrainModel: the validation options and the split seed 42 by default', async () => {
+    const iris = await apiTable();
+    try {
+      const plain = await runTrainModel({table: iris, target: 'Species', showProgress: false});
+      expect(plain.seed, 42);
+      const held = await runTrainModel({table: iris, target: 'Species', options: {scheme: 'holdout',
+        testFraction: 0.3, shuffle: false}, showProgress: false});
+      const regression = await runTrainModel({table: iris, target: 'Petal.Length', features: ['Sepal.Length',
+        'Sepal.Width'], method: 'Linear Regression', options: {folds: 3, stratified: true}, showProgress: false});
+      const runs = await runsOf([iris]);
+      const splittingOf = (runId: string) => sortedJson(runs.find((r) => r.id === runId)?.splitting);
+      expect(splittingOf(plain.runId), sortedJson({scheme: 'kfold', folds: 5, isStratified: true, isShuffled: true}));
+      expect(splittingOf(held.runId), sortedJson({scheme: 'holdout', trainFraction: 0.7, isStratified: true,
+        isShuffled: false}));
+      expect(splittingOf(regression.runId), sortedJson({scheme: 'kfold', folds: 3, isStratified: false,
+        isShuffled: true}));
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: TIMEOUT});
+
   test('runTrainModel: a regression with the given features, method and settings', async () => {
     const iris = await apiTable();
     try {
@@ -1150,7 +1264,12 @@ category('Training', () => {
       [{method: 'Softmax', hyperparameters: {penalty: 'fast'}}, 'The setting \'penalty\' of Softmax needs a number.'],
       [{hyperparameters: {iterations: 500}}, 'The setting \'iterations\' of XGBoost must be at most 100.'],
       [{options: {cutof: 0.5}}, 'Unknown option \'cutof\'. The options are: missingValues, neighbors, distance, ' +
-        'oneHot, skipUniqueCategories, predictProbability, cutoff, seed, folds.'],
+        'oneHot, skipUniqueCategories, predictProbability, cutoff, seed, scheme, folds, testFraction, stratified, ' +
+        'shuffle, search.'],
+      [{options: {scheme: 'loo'}}, 'The option \'scheme\' needs kfold or holdout.'],
+      [{options: {scheme: 'holdout', testFraction: 0.6}}, 'The option \'testFraction\' needs a number from 0.05 to ' +
+        '0.5.'],
+      [{options: {shuffle: 'no'}}, 'The option \'shuffle\' needs true or false.'],
       [{options: {predictProbability: true}}, 'Predict probability needs a target with exactly two classes.'],
       [{options: {missingValues: 'fill'}}, 'The option \'missingValues\' needs skip, impute, keep ' +
         '(keep: only for a method that handles missing values).'],
@@ -1218,6 +1337,105 @@ category('Training', () => {
       await deleteRunsOf([iris]);
     }
   }, {timeout: TIMEOUT});
+
+  test('Forge:trainModel with a method and search tunes it', async () => {
+    const iris = await apiTable();
+    try {
+      const value: unknown = await grok.functions.call('Forge:trainModel', {table: iris, target: 'Species',
+        method: 'XGBoost', options: {seed: 11, search: {metric: 'accuracy', budgetSeconds: 20, maxTrials: 10}},
+        showProgress: false});
+      const result = isRecord(value) ? value : {};
+      const search = searchRecordOf(result.search);
+      if (search === undefined)
+        throw new Error(`No search in ${JSON.stringify(result)}`);
+      expect(`${search.mode} ${search.metric} ${search.budgetSeconds} ${search.seed}`, 'tune accuracy 20 11');
+      expect(search.completed <= 10 && search.completed >= 1, true, `${search.completed} trials completed`);
+      expectArray(search.leaders.map((l) => `${l.method} ${l.chosen}`), ['XGBoost true']);
+      expect(search.holdOut === undefined, true, 'A hold out on 150 rows');
+      const metrics = isRecord(result.metrics) ? result.metrics : {};
+      expect(metrics.test === undefined, true, 'A test without a hold out');
+      expectFloat(isRecord(metrics.validation) ? Number(metrics.validation.accuracy) : NaN, search.leaders[0].score,
+        1e-9);
+      const [run] = await runsOf([iris]);
+      expect(sortedJson(searchRecordOf(run.search)), sortedJson(search));
+      expect(run.hyperparameters?.iterations, search.leaders[0].hyperparameters.iterations);
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: ENGINE_TIMEOUT});
+
+  test('Forge:trainModel turns Predict probability off during a search', async () => {
+    const iris = await twoSpeciesIris();
+    try {
+      const result = await runTrainModel({table: iris, target: 'Species', method: 'XGBoost',
+        options: {predictProbability: true, cutoff: 0.4, seed: 3, search: {maxTrials: 2}}, showProgress: false});
+      expect(result.task, 'classification');
+      expect(result.search?.metric, 'balancedAccuracy');
+      const [run] = await runsOf([iris]);
+      expectArray(run.options?.postprocessingInfo ?? [], []);
+      expect(run.options?.binaryClassificationThreshold === undefined, true, 'A probability cutoff was recorded');
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: ENGINE_TIMEOUT});
+
+  test('Forge:trainModel refuses a bad search option', async () => {
+    const iris = await apiTable();
+    const refusals: [{[name: string]: unknown}, string][] = [
+      [{budget: 1}, 'The option \'search\' needs an object with metric, budgetSeconds, maxTrials.'],
+      [{metric: 'speed'}, 'The search metric \'speed\' is not one of: r2, rmse, mae, balancedAccuracy, accuracy, f1, ' +
+        'mcc, auc.'],
+      [{maxTrials: 0}, 'The option \'maxTrials\' needs a whole number of at least 1.'],
+      [{metric: 'r2'}, 'The search metric \'r2\' does not apply to a classification. Choose one of: ' +
+        'balancedAccuracy, accuracy, f1, mcc, auc.'],
+    ];
+    try {
+      const wrong: string[] = [];
+      for (const [search, message] of refusals) {
+        const error = await runTrainModel({table: iris, target: 'Species', options: {search}, showProgress: false})
+          .then(() => null, (e: unknown) => e);
+        if (!(error instanceof ForgeError) || error.message !== message)
+          wrong.push(`${JSON.stringify(search)}: ${String(error)}`);
+      }
+      expectArray(wrong, []);
+      expect((await runsOf([iris])).length, 0, 'A refused search was recorded');
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Forge:trainModel names the first failure of a search where every trial fails', async () => {
+    const iris = await apiTable();
+    try {
+      const error = await runTrainModel({table: iris, target: 'Species', method: 'SVM',
+        options: {seed: 3, search: {metric: 'auc'}}, showProgress: false}).then(() => null, (e: unknown) => e);
+      const message = error instanceof ForgeError ? error.message : String(error);
+      expect(message.startsWith('No trial completed: ') && message.includes('needs class probabilities'), true,
+        message);
+      expect((await runsOf([iris])).length, 0, 'A failed search was recorded');
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: ENGINE_TIMEOUT});
+
+  test('A saved search model carries search and test', async () => {
+    const demog = await apiTable('System:DemoFiles/demog.csv');
+    const name = `forge-test-search-${Date.now()}`;
+    try {
+      const result = await runTrainModel({table: demog, target: 'SEX', features: ['AGE', 'HEIGHT', 'WEIGHT'],
+        method: 'XGBoost', options: {seed: 5, search: {maxTrials: 3, budgetSeconds: 60}}, name, showProgress: false});
+      expect(typeof result.metrics.test?.accuracy, 'number');
+      const rows = result.search?.holdOut?.rows ?? 0;
+      expect(rows >= 1100 && rows <= 1200, true, `${rows} rows held out`);
+      expect(result.rowCount, demog.rowCount - result.skippedRows - rows);
+      const details = await runGetModel(result.modelId ?? '', []);
+      expect(sortedJson(details.search), sortedJson(result.search));
+      expect(sortedJson(details.metrics?.test), sortedJson(result.metrics.test));
+    } finally {
+      await deleteModelsNamed(name);
+      await deleteRunsOf([demog]);
+    }
+  }, {timeout: ENGINE_TIMEOUT});
 
   test('Forge:trainModel is registered with its inputs and output', async () => {
     const func = DG.Func.find({package: 'Forge', name: 'trainModel'})[0];

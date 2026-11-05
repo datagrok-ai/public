@@ -6,6 +6,7 @@ import {areValuesSimilar, aucOf, aucOfProbabilities, CLASS_METRIC_IDS, ClassProb
   METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, metricFindings, MetricId, MetricValues, probabilityOf,
   regressionMetrics} from '../metrics/metrics';
 import {ClassificationReport, classificationReport, curvesOf} from '../metrics/report';
+import {defaultMetric, directionOf, SEARCH_METRICS} from '../training/search';
 import {metricsRecordOf} from '../training/train-model';
 import {residualsOf, STATISTIC_IDS, statisticsOf} from '../metrics/statistics';
 
@@ -147,6 +148,23 @@ category('Metrics', () => {
     expect(a.train.precision, 1);
     expect(a.validation.precision, 0.5);
     expect(metricsRecordOf({train: {}, validation: {}})?.classes === undefined, true, 'classes without any');
+  });
+
+  test('metricsRecordOf keeps test', async () => {
+    const record = metricsRecordOf({train: {r2: 0.9}, validation: {r2: 0.7}, test: {r2: 0.5}});
+    expect(record?.test?.r2, 0.5);
+    expect(metricsRecordOf({train: {}, validation: {}})?.test === undefined, true, 'test without one');
+  });
+
+  test('SEARCH_METRICS and the directions', async () => {
+    const ids: readonly string[] = METRIC_IDS;
+    const all = [...SEARCH_METRICS.regression, ...SEARCH_METRICS.classification];
+    expectArray(all.filter((id) => !ids.includes(id)), []);
+    expect(directionOf('rmse'), -1);
+    expect(directionOf('mae'), -1);
+    expect(directionOf('r2'), 1);
+    expect(defaultMetric('classification'), 'balancedAccuracy');
+    expect(defaultMetric('regression'), 'r2');
   });
 
   test('curvesOf turns the PR curve\'s null threshold into Infinity and gives none without curves', async () => {

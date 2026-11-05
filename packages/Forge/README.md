@@ -13,8 +13,8 @@ share and delete models.
 
 Open a table, then **ML | Forge | Train...**. The **Predictive model** view opens with the inputs on the left, in
 groups you can fold with their chevrons: **Data** (Table, Target, Features), **Preparation** (see "Preparation"; shown
-only while one of its inputs applies) and **Method** (Method and its settings). They start open, and a group with a
-problem opens itself. The results are on the right; drag the splitter between them to resize.
+only while one of its inputs applies), **Method** (Method, **Settings** and the method's settings; see "Search") and **Validation** (see
+"Validation"). They start open but **Validation**, which starts folded, and a group with a problem opens itself. The results are on the right; drag the splitter between them to resize.
 
 * **Table**: the table to learn from, the current one by default
 * **Target**: the column to predict, the last column by default. A numerical target makes a regression model;
@@ -32,7 +32,11 @@ problem opens itself. The results are on the right; drag the splitter between th
   says `<Method> cannot be used with this selection; <suggested> is chosen.` When no method can learn from the
   data, **Method** is empty and red: `No method can learn from this selection. Check the features and the target.`
 * the method's settings (hyperparameters), with their default values. Values you change are kept per method while
-  the view is open, also when you switch the method or the table
+  the view is open, also when you switch the method or the table. A setting the method does not use with the other
+  values or the task is disabled (SVM: **Gamma** for the Linear kernel, **Degree** for any kernel but Polynomial,
+  **Offset** for Linear and RBF, **Epsilon** for a classifier; see "Methods"); it keeps its value, is not checked, and goes to the method, which
+  ignores it. **Settings** above them is **Manual** (the default: the settings as inputs) or **Auto-tune** (Search
+  options and **Tune**, which searches better values on this data; see "Search")
 
 Hover an input to see what it is for. The inputs are checked as you change them. A problem is shown on the input it
 concerns: the input turns red and its tooltip says what to fix, for example that the target is also checked as a
@@ -42,26 +46,37 @@ problem.
 The model trains by itself: 200 ms after each change that leaves a valid selection, a new training starts, and a
 change during a training stops it (it is not recorded). A method that says it is too slow for this data (for example
 SVM on 20000 rows) does not retrain on every change; **Performance** then reads `<Method> takes a while on <N> rows, so it
-does not retrain on every change. Click Train.` and a **Train** button appears under the inputs, at their right edge.
+does not retrain on every change. Click Train.` and, in **Manual**, a **Train** button appears at the right, right under
+the inputs; when the inputs are taller than the panel and scroll, it stays in view at the panel's bottom edge.
 It trains the current selection (its tooltip: `Train the model on the current selection.`). **Train** is never shown
 for a method that retrains by itself. For a slow method it is disabled, with the reason as its tooltip, while the
 selection has a problem (the target, the features, or a setting out of its range), is checked, a training runs, or
 after a training until you change an input. When the problem is a setting out of its range (a hyperparameter or a
 missing-values setting), **Performance** reads `Fix the settings.` A progress bar `Training <Method> model` shows each
-training in the task bar; you can cancel it there (`Training was cancelled.`). While a training runs, a small loader is
+training in the task bar; you can cancel it there (`Training was cancelled.`). A training started by **Train** locks
+the form, as a search does (see "Search"): until it ends (completed, failed, cancelled or superseded), every input of the
+form is disabled (Settings, its reset button, the pins and Search options too), **Train** and **Tune** wait and a click on
+a **Runs** or **Search** row does nothing; afterwards each input is as it was. A method that retrains by itself does not lock the form. While a training runs, a small loader is
 shown next to the **Performance** header (the previous results stay while the model retrains by itself). The
 **Performance** panel then shows a grid of metrics with a **Metric**, a **Train** and a **Validation** column:
 
 * **Train**: the quality of the model on the rows it was trained on
-* **Validation**: the quality on rows the model has not seen. Forge splits the table into five parts at random,
-  trains five times on four parts and predicts the fifth, and measures all these predictions together
-  (5-fold cross-validation). Each training draws a new random split; its seed is shown and saved with the model
+* **Validation**: the quality on rows the model has not seen, as the **Validation** group sets it (see "Validation").
+  By default Forge splits the table into five parts at random, trains five times on four parts and predicts the
+  fifth, and measures all these predictions together (5-fold cross-validation); for a classifier the split is
+  stratified: each part holds each class's share of the rows. The split seed (42 by default) is shown and saved with
+  the model, so the same seed gives the same parts. The final model is always trained on all the rows
+* **Test** (only after a search that held rows out, see "Search"): the quality of the final model on the rows held out
+  before the search, which neither the search nor the training saw
 
 Under the grid, a bullet list gives `Missing values: kept (the method handles them)` when the method kept the empty
 cells of the training features, `Rows: <used> used, <skipped> skipped (missing values)` when rows were left out
-because of missing values, `Validation: 5-fold cross-validation on <rows> rows`, `Seed: <seed>` (the seed can be
-selected, and the copy icon right after it, **Copy the seed**, copies it) and, for two classes, `Positive class:
-<class>`.
+because of missing values, `Validation: 5-fold cross-validation on <rows> rows` (or `Validation: hold out of 20% (<N>
+rows)`; `, stratified` after it when the split was), `Split seed: <seed>` (only when the rows were shuffled; the seed
+can be selected, and the copy icon right after it, **Copy the seed**, copies it), after a search `Search: Tune by <metric>,
+<budget>: <N> trials of 1 method, chosen by the one-standard-error rule` with either `Test: <N> rows held out before
+the search` or, when nothing was held out, `Validation after a search is optimistic: the best of the trials was chosen
+on it`, and, for two classes, `Positive class: <class>`.
 
 Hover a column header or a metric name to see what it means; hover a value to see it in full precision:
 
@@ -103,7 +118,8 @@ only the **Performance** panel (its title and a hint) with **Insights & Tips** u
 **Insights & Tips** lists what is worth a look in the data and in the trained model (the panel is absent when there is
 nothing to say). Each line is short; hover it to see the numbers behind it, and the tooltip's last line, in grey
 (`See Class balance.`), names the panel that shows what it is about, when that panel is shown. That panel's viewer
-shows the line as its description too (not **Performance**, whose grid marks its own values):
+shows the line as its description too, above the viewer, under the matrix for **Confusions** (not **Performance**,
+whose grid marks its own values):
 
 * about the data, after every check: the target's classes far from equally frequent (`The classes are unbalanced.`;
   hover: each class with its share, `red: 24.6%`, `white: 75.4%`, the shares adding up to 100%; see **Class
@@ -166,15 +182,110 @@ cancelled), newest first, the newest one current: **#** (its number in this view
 **Target**, **Features** (how many; hover for the names), **Preparation** (`impute (4 neighbors, Euclidean)`,
 `one-hot`, `skip unique categories`, `probability (cutoff 0.5)`; empty when none), **Rows**, **Status** (`completed`,
 `failed` or `cancelled`; hover a failed one for the error, a cancelled one reads `Stopped from the task bar.`),
-**Seed**, and the validation value of every metric any run has (`Accuracy (validation)`; hover for `Train 0.912,
-validation 0.845`). Click a row to set its target, features, preparation, method and settings again when they differ
-from the form's. A click on a row whose inputs the form already has, while the results show that training, only makes
+**Split seed** (empty when the rows were not shuffled), and the validation value of every metric any run has
+(`Accuracy (validation)`; hover for `Train 0.912, validation 0.845`). Click a row to set its target, features,
+preparation, validation (with the split seed), method and settings again when they differ from the form's. A click on a row whose inputs the form already has, while the results show that training, only makes
 it current; when only **Positive class cutoff** differs, the click sets the cutoff back and the results are re-cut
 without training; after a cancelled or failed training, a click on its row trains it again. The read-only grid moves
 nothing with the arrow keys. After a click that sets other inputs, the view
 then trains as after any change (a slow method waits for **Train**), and the new training becomes the first row. When
 the table no longer has a column of that run, a warning says `The table no longer has the columns of this run:
 <columns>.` and nothing changes. A **Table** change starts an empty list; the runs stay recorded.
+
+### Search
+
+**Settings** under **Method** (a radio, **Manual** by default; hover: `How the settings are chosen: by hand or by a
+search on this data`) chooses how the method's settings are set; switching it runs nothing. **Manual** shows the
+settings as inputs. Under the radio a status reads `Default` (the method's defaults; hover: `Recommended values for this
+method`), `Auto-tuned` (the values the last tune of this method set in this view, on the table, target and features
+it ran on, in any order: `Found by Auto-tune; pinned values kept`) or `Customized` (`Changed by hand`; the tuned values
+on other data: `Tuned for <target> on <table>; tune again for this data`); it follows the values and the data, so a
+value or a target changed back reads as before. The reset
+button at the right of the radio sets the method's defaults at once (`Reset <Method> settings to defaults`; grey with
+`<Method> settings are already default` when they are); the mode, the pins, the ranges, the metric and the budget stay.
+A method with settings but without a search space (Chemprop, scripts) has its **Auto-tune** disabled (`<Method>
+declares no search space.`); a method without settings (Naive Bayes) has no Settings row at all: no radio, reset or
+status, and no **Tune**.
+
+**Auto-tune** hides **Train** and shows **Search options** (folded at first, its chevron under the **Method** header's
+text; a click on it opens it) and **Tune** at the right under it. **Search options** lists the settings in the same order, each on one line
+with a pin button at the right:
+
+* a setting the search tunes: its range, two fields `<from> – <to>` (a choice setting, such as SVM's **Kernel**: a field
+  listing the checked choices, all at first, that opens a list of checkboxes); the ranges are the ones the method
+  declares
+* a pinned setting (a click on its pin, `Pin to exclude from tuning. <Setting>: will be tuned`; pinned: `Pin to exclude
+  from tuning. <Setting>: pinned, excluded from tuning`): one field (a list for a choice setting, a checkbox for a
+  yes/no setting) with the setting's value, which the search keeps; it is the same value as in **Manual**, both ways. A
+  click on the filled pin gives the kept range back
+* a setting the method declares no range for (for example **Model seed**): one field with its value and a grey pin,
+  `<Setting>: Fixed, can’t be tuned`
+* a setting the method ignores with the pinned values or the task (SVM: **Gamma** with **Kernel** pinned to Linear,
+  **Epsilon** for a classifier) is disabled and not searched; one whose use depends on a tuned setting is searched
+* **Metric**: what the search maximizes (or minimizes for an error), measured by the validation the **Validation**
+  group sets: `Balanced accuracy` (the default), `Accuracy`, `F1`, `MCC`, `AUC-ROC` for a classifier (`AUC-ROC` needs
+  a method that returns class probabilities: with SVM every trial fails), `R2` (the default), `RMSE`, `MAE` for a
+  regression
+* **Budget**: `<N> trials or <time>`: the search stops after N completed trials (pruned and failed ones do not count;
+  50 by default) or at the time limit (`1 minute`, the default, `5 minutes` or `15 minutes`), whichever comes first
+
+The ranges are checked as you type, and a problem turns the fields red with its text on a line under the row:
+`“From” must be less than “to”`, `“From” must be at least <min>`, `“To” must be at most <max>`, `The bounds must be
+whole numbers` for a whole setting, `“From” must be above 0` where the method searches on a log scale (`“From” must be
+at least 1` for a whole setting), `Enter both
+bounds`, `Choose at least one` for a choice setting; a pinned value out of its range shows the setting's own message,
+and a trial count that is not a whole number of 1 or more `Enter a whole number of trials, at least 1`. **Search
+options** opens on a problem. The pins and the reset are buttons, so the keyboard reaches them. Each user keeps the mode, the folded
+state, the pins, the ranges, the metric and the budget per method (an entry that no longer fits the method falls back
+to its default).
+
+**Tune** (its tooltip: `Find the best settings`) searches better values of the tuned settings on the current
+selection. It is disabled, with the reason as its tooltip, while the selection has a problem or is checked, while a
+training runs, while a range has a problem (`Fix the highlighted range`), when nothing is left to tune (`All
+settings are fixed`) and while the trial count is invalid (`Budget: Enter a whole number of trials, at least 1`). With **Predict probability** checked, its tooltip adds `Predict probability is off during a
+search.`: the search and the model it trains learn the plain target. **Missing values** stays as the form has it.
+
+Each trial is a regular training of the method with other settings, validated as the **Validation** group says (its
+folds, stratification, shuffle and split seed) on the same folds for every trial; with **Hold-out**, each trial is
+scored on that one held out part. The first trial takes the form's current values when each tuned one lies in its
+range; otherwise it is drawn too. The trials draw values at random (the split seed) from the ranges, on a log scale
+where the method declares one, a fractional value rounded to 3 significant digits (`0.245`, `2.12`, `54.3`) and kept within the range, so the
+settings show the value the model trains on; the pinned settings keep their values. A setting the method ignores with the drawn
+values (see "Methods") takes its default instead, so trials that differ only there are one trial, and the leaderboard
+shows the default. After five trials that passed their first two folds, a trial whose
+first two folds score below the median of those earlier trials (the ones started before it that were not pruned there)
+stops there (pruned), so parallel fits give the same result as one at a time; a hold out prunes nothing.
+EDA's methods run up to four fold fits at a time (half the processor's threads, at most four), each in its own Crux
+worker. The budget is checked between fits: no new trial starts after it, and a trial whose first two folds forecast an
+overrun stops (the first trial always completes); one fit of a slow method can run past the budget. The task bar shows
+`Tuning <Method>` with the trials so far and the best value (`12 trials, best Balanced accuracy 0.960 (XGBoost)`);
+**Save**, **Train** and **Tune** wait, and the loader is next to the **Performance** header. Until the search and the
+training of its winner end, every input of the form is disabled and a click on a **Runs** or **Search** row does
+nothing; afterwards each input is as it was (a setting the method ignores stays disabled). To stop the search, cancel
+it in the task bar. When 10 trials have failed and none has completed, the search stops.
+
+The chosen trial follows the one-standard-error rule: among the completed trials whose value is within one standard
+error (over the folds) of the best trial's, the simplest settings win (the settings the method marks as simpler: fewer
+trees, shallower trees, stronger regularization), then the earlier trial.
+
+When the table has 500 rows or more (after the skipped ones), a fifth of them, rounded and kept between 100 and 2000
+rows (each class in its share, within one row, for a classifier), is held out before the search; the search never sees it, and **Performance** shows the final
+model's values on it as **Test**. Below 500 rows nothing is held out and the bullets say the validation is optimistic.
+
+When the search stops, the balloon `Search stopped: <N> trials in <S> s; the best is <Method>.` appears (cancelled from
+the task bar: `Search cancelled; the best so far is trained.`), the settings are set to the chosen trial's values,
+**Settings** switches to **Manual** and reads `Auto-tuned`, and the model trains on the search rows with the same split (`Training <Method> model`), so its **Validation** is the
+chosen trial's value. That training is a regular run: **Runs** gets its row (hover its **Method**: `Found by Tune: <N>
+trials` above the settings) and **Save** saves it with the search. When no trial completed, a warning says `No trial
+completed.`, or `No trial completed: <the first failed trial's error>` when a trial failed, and nothing changes.
+
+The panel **Search** (above **Runs**; hover its title: `Per method, the simplest settings within one standard error of
+its best, best first; the chosen one is marked. Click a row to set its method and settings.`) shows the leaderboard:
+**#**, **Method** (hover for the chosen settings, then `Searched: <setting> <from>–<to>, <setting> (<choices>), ...` and
+`Pinned: <settings>`), **<Metric> (CV)**, or **<Metric> (hold-out)** with **Hold-out**
+(hover for the fold values; one value with a hold out), **SE** (the standard error of the metric over the folds; 0 with a hold out),
+**Trials** (pruned and failed ones included) and **Chosen**. A click on its row sets the method and those settings in
+**Manual**, and the view trains as after any change (a click on a **Runs** row switches to **Manual** too). The panel stays until the next search or a **Table** change.
 
 ### Preparation
 
@@ -215,6 +326,28 @@ that disappears goes back to its default. Hover an input to see what it does.
   **Save** saves the model with the current cutoff. Applied to a table, the model adds the class labels, not the
   scores. Most methods' own class probabilities already give AUC-ROC and the ROC curve; check this to pick the
   positive class cutoff
+
+### Validation
+
+The **Validation** group, after **Method** and folded at first, sets how **Validation** is
+measured. Its values are part of the selection: a change trains again, they stay when you change the table, a **Runs**
+row sets them again, and a search uses them (see "Search"). Hover an input to see what it does.
+
+* **Scheme**: `K-fold, stratified` (the default for a classifier, listed only for one), `K-fold` (the default for a
+  regression; a target that becomes numerical turns the stratified choice into it) or `Hold-out`. K-fold predicts each
+  part by a model of the other parts; stratified keeps each class's share in every part. Hold-out predicts one part,
+  held out (each class's share for a classifier), by a model of the other rows; the out-of-fold predictions then cover
+  only the held out rows
+* **Folds** (K-fold only): the number of parts, from 2 to 20 (5 by default)
+* **Test fraction** (Hold-out only): the share of the rows held out, from 0.05 to 0.5 (0.2 by default)
+* **Shuffle** (checked by default): shuffles the rows by the split seed before they are split. Unchecked, the parts are
+  blocks of consecutive rows (with stratification, each class is dealt in row order) or the last rows are held out
+  (the last of each class for a classifier), and **Split seed** is disabled
+* **Split seed** (42 by default): the seed of the shuffle, so the same seed gives the same parts; with a search, also of
+  its own hold out and of the settings it draws
+
+In every scheme the final model is trained on all the rows. A training needs at least two rows per part, or two held
+out rows.
 
 ## Save a model
 
@@ -359,7 +492,8 @@ await grok.functions.call('Forge:getModel', {model: 'Iris species'});
 classifier's classes), `features` (in training order), `featureTypes`, `hyperparameters`, `preparation` (the recorded
 preparation), `metrics` (`train`, `validation`, for two classes `positiveClass` and, for a classifier, `classes`:
 each class's `label`, `rows` and `train` / `validation` values of `precision`, `sensitivity`, `f1`, `auc`,
-`averagePrecision`; null when none were saved),
+`averagePrecision`; `test` after a search that held rows out; null when none were saved), `search` (the search that
+chose the settings, as `trainModel` returns it; null without one),
 `findings` (`{text, detail}` for a metric below its threshold or a validation value far from the training one, as
 the metrics grid marks them), `seed`, `splitting`, `storage` (`mode`, with a reference its `source`, with a copy its
 `tableId`), `dataset` (`name`, `rows` and `summary`, the data summary kept instead of the data), `hasModelFile`,
@@ -383,7 +517,8 @@ await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Pet
   features: ['Sepal.Length', 'Sepal.Width'], method: 'Linear Regression', hyperparameters: {iterations: 50}});
 ```
 
-`Forge:trainModel` trains as the **Predictive model** view does, with its defaults and 5-fold cross-validation:
+`Forge:trainModel` trains as the **Predictive model** view does, with its defaults (5-fold cross-validation, the split
+seed 42):
 
 * `table`, `target` (a column name): a numerical target makes a regression model, a text or boolean one a classifier
 * `features`: column names; by default every numerical column except the target, bigint columns and integer columns
@@ -392,7 +527,7 @@ await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Pet
   `Linear Regression`, `Naive Bayes`, `Neural Network`, `PLS Regression`, `Random Forest`, `RealMLP`, `Softmax`,
   `SVM`, `TabM`, `XGBoost` (the installed methods); by default the method the view suggests for the data
 * `hyperparameters`: the method's settings by name; settings not named keep their defaults
-* `options`: the preparation, each key optional:
+* `options`: the preparation and the validation, each key optional:
 
   | Key | Default | Meaning |
   |---|---|---|
@@ -400,31 +535,60 @@ await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Pet
   | `neighbors`, `distance` | the EDA imputer's (`4`, `Euclidean`) | the settings of `impute` |
   | `oneHot` | on when every text or yes/no feature has at most 20 categories (while `skipUniqueCategories` is on, features whose values are all different do not count) | One-hot encoding of text and yes/no features |
   | `skipUniqueCategories` | `true` | leaves out text features whose values are all different |
-  | `predictProbability` | `false` | for a target with exactly two classes: trains on the probability of the first class |
+  | `predictProbability` | `false` | for a target with exactly two classes: trains on the probability of the first class. Predict probability is off during a search: with `search` it is ignored, and the search and the model learn the plain target |
   | `cutoff` | `0.5` | the probability from which a row is predicted as the first class |
-  | `seed` | random | the seed of the cross-validation split, a whole number from 0 to 2147483647 |
-  | `folds` | `5` | the number of cross-validation parts, at least 2 |
+  | `scheme` | `kfold` | how Validation is measured: `kfold` (cross-validation) or `holdout` (one held out part, then the final model on all rows), as **Scheme** in "Validation" |
+  | `folds` | `5` | `kfold`: the number of cross-validation parts, at least 2 |
+  | `testFraction` | `0.2` | `holdout`: the share of the rows held out, from 0.05 to 0.5 |
+  | `stratified` | `true` | each class keeps its share in every part or in the hold out; ignored for a regression |
+  | `shuffle` | `true` | shuffles the rows by `seed` before the split; `false`: blocks of consecutive rows, or the last rows held out |
+  | `seed` | `42` | the split seed, a whole number from 0 to 2147483647 (with `search`, also of the search's hold out and of the trials' settings) |
+  | `search` | none | `{metric, budgetSeconds, maxTrials}`, each key optional: tunes the method's settings first, as **Tune** does (see "Search"), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`; `budgetSeconds`: a whole number of seconds, at least 1 (default `60`); `maxTrials`: stops after that many completed trials |
 
 * `name`: saves the model under this name; without a name the model is trained and measured but not saved.
   `description` and `tags` (comma-separated) go with it
 * `storage` (`none` by default): what the saved model keeps of its training data, as in "Data storage": `none`,
   `reference` (the table must come from a file, a query or a script) or `copy` (uploads the feature and target
   columns). Nothing is uploaded unless you ask for `copy`
-* `showProgress` (`true` by default): the task-bar progress `Training <method> model`; cancel it there to stop the
-  training, which fails the call with `Training was cancelled.`
+* `showProgress` (`true` by default): the task-bar progress `Training <method> model` (with `search`, first `Tuning
+  <method>`); cancel it there to stop the training, which fails the call with `Training was cancelled.` (a search
+  cancelled after a completed trial trains the best so far)
+
+```javascript
+// Tune XGBoost's settings for at most 30 seconds, then train and save the chosen ones
+await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Species', method: 'XGBoost',
+  options: {seed: 7, search: {metric: 'accuracy', budgetSeconds: 30}}, name: 'Iris species tuned'});
+```
 
 The result: `modelId` (null when not saved), `runId`, `name`, `method`, `task`, `target`, `features`, `rowCount` (the
-rows trained on), `skippedRows`, `seed` and `metrics` (`train`, `validation`, for two classes `positiveClass` and, for
-a classifier, `classes`, the per-class values as `getModel` gives them).
+rows trained on; after a search with a hold out, without the held out rows), `skippedRows`, `seed`, `metrics` (`train`,
+`validation`, `test` (after a search with 500 rows or more: the final model on the held out rows), for two classes
+`positiveClass` and, for a classifier, `classes`, the per-class values as `getModel` gives them) and, after a search,
+`search`: `mode` (`tune`), `metric`, `budgetSeconds`, `seed`, `trials`, `completed`, `pruned`, `failed`, `elapsedMs`,
+`stopped` (`budget`, `cancelled`, `exhausted`, `trials` or `failed`), `holdOut` (`rows`, `fraction`; absent below 500
+rows), `space` (`searched`: the dimensions searched, each `{name, type, low?, high?, log?, step?, choices?, simpler?}` (a categorical dimension has no bounds);
+`pinned`: the settings kept at their values, none from the API) and `leaders` (per method, its trial chosen by the one-standard-error rule: `method`, `hyperparameters`, `score`
+(the metric by the chosen validation on the search rows), `se`, `foldScores`, `trials`, `chosen`).
 Nothing is added to the table. Every training that runs is recorded as a training run with the source `api`, saved or
-not, cancelled and failed ones too; a call refused for its inputs, or whose data preparation fails, records nothing. The errors a call gets, for example:
+not, cancelled and failed ones too (after a search, the chosen settings' training, with `search`); a call refused for
+its inputs, whose data preparation fails or whose search completes no trial records nothing. The errors a call gets, for example:
 
 * `The table has no column 'Specie'.`, `The table has no columns 'a', 'b'.`
 * `No method 'Boost' is installed. The methods are: <methods>.`
 * `The method XGBoost has no setting 'speed'. Its settings are: <settings>.`, `The setting 'rate' of Softmax needs a
   number.`, `The setting 'iterations' of XGBoost must be at most 100.`
 * `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories,
-  predictProbability, cutoff, seed, folds.`
+  predictProbability, cutoff, seed, scheme, folds, testFraction, stratified, shuffle, search.`
+* `The option 'scheme' needs kfold or holdout.`, `The option 'testFraction' needs a number from 0.05 to 0.5.`,
+  `The option 'shuffle' needs true or false.`, `Training needs at least 10 rows; the table has 8.` (two rows per
+  part, or two held out rows)
+* `The option 'search' needs an object with metric, budgetSeconds, maxTrials.`, `The search metric 'r3' is not one
+  of: r2, rmse, mae, balancedAccuracy, accuracy, f1, mcc, auc.`, `The search metric 'r2' does not apply to a
+  classification. Choose one of: balancedAccuracy, accuracy, f1, mcc, auc.`, `The option 'budgetSeconds' needs a
+  whole number of at least 1.`
+* `Naive Bayes declares no search space, so it cannot be tuned.`, `No trial completed within the budget. Give the
+  search more time.`, `No trial completed: <the first failed trial's error>` (for example `No trial completed: The
+  metric AUC-ROC needs class probabilities; SVM gives none.`), `The search was cancelled before a trial completed.`
 * `Predict probability needs a target with exactly two classes.`
 * `The option 'missingValues' needs skip, impute, keep (keep: only for a method that handles missing values).`,
   `SVM needs rows without missing values. Choose Skip rows or Impute.`
@@ -549,10 +713,12 @@ model's commands, then come the panes:
 * **Details**: the description, **Author**, **Created**, **Updated**, **Table** (the training table and its rows),
   **Data storage** (`None`, `Reference` or `Copy`), **Data source** (with a reference: the file path, the query name
   or `a script`), **Data copy** (with a copy: the uploaded table, or `missing` when it is gone), **Last run** (the newest application, with `(failed)` or `(cancelled)` when it did not complete; `Never` before the
-  first one), **Applications**, **Features**, **Target**, **Method**, **Task**, **Applicable to** (the open tables
-  that fit), and **Tags**, which you can edit right there
-* **Performance**: the metrics saved with the model (the **Metric / Train / Validation** grid of the training, a value
-  below its threshold or far from the training one in red, as in the results) and how it was validated, then **Run
+  first one), **Applications**, **Features**, **Target**, **Method**, **Task**, **Search** (for a model whose settings a
+  search chose: `Tune (Balanced accuracy, 1 minute, 120 trials)`), **Applicable to** (the open tables that fit), and
+  **Tags**, which you can edit right there
+* **Performance**: the metrics saved with the model (the **Metric / Train / Validation** grid of the training, with
+  **Test** after a search that held rows out, a value below its threshold or far from the training one in red, as in
+  the results) and how it was validated (with the search bullets), then **Run
   Evaluation** (for a model trained and saved in Forge; its tooltip: "Apply the model to its training data, or to an
   open table, and show how well it predicts."). It measures the model again on data with known targets: the
   file or query the model keeps a reference to, or its uploaded copy; for a model that keeps neither, the **Evaluate
@@ -653,7 +819,25 @@ To add a method, register functions that share the same `meta.mlname` (the metho
 | `visualize` | no | Shows method-specific views of a trained model |
 
 The inputs of the `train` function, except the table and the target column, become the method's hyperparameters;
-their default values and descriptions (shown as tooltips) come from the function's annotation.
+their default values and descriptions (shown as tooltips) come from the function's annotation. The optional key
+`meta.mlenabled` says when a setting is used: a JSON object `{"<input>": <condition> | [<condition>, ...]}`, where a
+condition is an object whose clauses all hold and a list holds when any of its conditions does. A clause is
+`"<other input>": [<values>]` (the other input's value is one of them), `"<other input>": {"gt": <n>}` or
+`{"lt": <n>}` (above / below a number; both may be given), or `"task": ["classification" | "regression"]` (the task the
+method trains; Predict probability trains a regression). An input whose rule fails is disabled in the view (it keeps its
+value, is not checked, and is still passed to `train`, which must ignore it), and a search sets it to its default. A
+malformed value counts as no rules (the view logs a warning once). EDA declares, for example, SVM
+`{"gamma": {"kernel": ["RBF", "Polynomial", "Sigmoid"]}, "degree": {"kernel": ["Polynomial"]}, "coef0": {"kernel":
+["Polynomial", "Sigmoid"]}, "epsilon": {"task": ["regression"]}}` and XGBoost `{"seed": [{"subsample": {"lt": 1}}, {"colsample": {"lt": 1}}]}`. Two optional keys of
+the `train` function serve **Tune**:
+
+* `meta.mlspace`: the search space, a JSON object over the `train` inputs:
+  `{"<input>": {"type": "int" | "float" | "categorical", "low", "high", "log"?, "step"?, "choices"?, "simpler"?: "low" |
+  "high" | "first"}}` (the bounds inside the input's min and max, the choices among its own; `[low, high]` and a list
+  of choices are short forms); its ranges are the ones **Search options** starts from. A method without it cannot be
+  tuned: its **Auto-tune** is disabled (`<Method> declares no search space.`) (EDA declares one for every method but Naive Bayes, which has no settings)
+* `meta.mlparallel: 'true'`: the method accepts concurrent `train` and `apply` calls, so a search runs its fold fits in
+  parallel (EDA's methods: a pool of Crux workers); without it they run one at a time
 
 ## Data storage
 

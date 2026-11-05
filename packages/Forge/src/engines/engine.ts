@@ -1,5 +1,7 @@
 import * as DG from 'datagrok-api/dg';
+import type {ModelTask} from '../generated/db';
 import type {MissingValuesSettings} from '../preparation/missing-values';
+import {isRecord} from '../preparation/preparation-options';
 
 export const ENGINE_ROLES = ['train', 'apply', 'isApplicable', 'isInteractive', 'visualize'] as const;
 export type EngineRole = typeof ENGINE_ROLES[number];
@@ -39,6 +41,76 @@ export function hasTrainingRows(engine: Engine): boolean {
 /** The method takes rows with missing feature values as they are (`meta.mlnativenans: true` on `train`). */
 export function handlesMissingValues(engine: Engine): boolean {
   return engine.functions.train?.options['mlnativenans'] === 'true';
+}
+
+/** The method accepts concurrent train and apply calls (`meta.mlparallel: true` on `train`): a search runs its fits
+ * in parallel. */
+export function isParallel(engine: Engine): boolean {
+  return engine.functions.train?.options['mlparallel'] === 'true';
+}
+
+/** The method's search space, as its `train` declares it (`meta.mlspace`, JSON text); undefined without one. */
+export function searchSpaceText(engine: Engine): string | undefined {
+  const text: unknown = engine.functions.train?.options['mlspace'];
+  return typeof text === 'string' && text !== '' ? text : undefined;
+}
+
+/** A `meta.mlenabled` condition: every clause holds. A clause on another setting holds when its value is one of a list
+ * or above `gt` / below `lt`; `task` holds when the method trains one of the tasks listed. */
+export type EnabledCondition = {[name: string]: (string | number | boolean)[] | {gt?: number; lt?: number}};
+/** When each setting of a method is used: any of its conditions holds; a setting without one is always used. */
+export type EnabledRules = {[setting: string]: EnabledCondition[]};
+
+/** The rules of the method's `meta.mlenabled` on `train` (JSON text `{"<setting>": <condition> | [<condition>, ...]}`):
+ * empty without one, undefined when it is malformed. */
+export function enabledRules(engine: Engine): EnabledRules | undefined {
+  const text: unknown = engine.functions.train?.options['mlenabled'];
+  if (typeof text !== 'string' || text === '')
+    return {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  if (!isRecord(parsed))
+    return undefined;
+  const rules: EnabledRules = {};
+  for (const [setting, value] of Object.entries(parsed)) {
+    const conditions = Array.isArray(value) ? value : [value];
+    if (conditions.length === 0 || !conditions.every(isCondition))
+      return undefined;
+    rules[setting] = conditions;
+  }
+  return rules;
+}
+
+/** Whether the method uses [setting] with the settings [values] when it trains a [task] (unknown: any task); a clause
+ * on a [free] setting, whose value a search chooses, may hold. */
+export function isEnabled(rules: EnabledRules, setting: string, values: Hyperparameters,
+  task: ModelTask | undefined, free?: ReadonlySet<string>): boolean {
+  const holds = ([name, clause]: [string, EnabledCondition[string]]) => {
+    if (name !== 'task' && free?.has(name))
+      return true;
+    if (Array.isArray(clause)) {
+      const value = name === 'task' ? task : values[name];
+      return value === undefined ? name === 'task' : clause.some((v) => String(v) === String(value));
+    }
+    const value = Number(values[name]);
+    return (clause.gt === undefined || value > clause.gt) && (clause.lt === undefined || value < clause.lt);
+  };
+  const conditions = rules[setting];
+  return conditions === undefined || conditions.some((condition) => Object.entries(condition).every(holds));
+}
+
+export function isChoice(value: unknown): value is string | number | boolean {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+}
+
+function isCondition(value: unknown): value is EnabledCondition {
+  return isRecord(value) && Object.values(value).every((clause) => Array.isArray(clause) ? clause.every(isChoice) :
+    isRecord(clause) && Object.keys(clause).length > 0 &&
+      Object.entries(clause).every(([op, n]) => (op === 'gt' || op === 'lt') && typeof n === 'number'));
 }
 
 /** The missing-values handling when none is chosen: `keep` for a method that handles missing values, else `skip`. */

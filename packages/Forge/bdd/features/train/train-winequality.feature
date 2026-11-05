@@ -96,7 +96,7 @@ Feature: Training a regressor of wine quality in the Train view
     And the "text of cell 4 of Train" reading of grid viewer in "Performance" results panel should be higher than the "text of cell 4 of Validation" reading of grid viewer in "Performance" results panel
     And the "text of cell 2 of Validation" reading of grid viewer in "Performance" results panel should be between 0.6 and 0.8
     And "Performance" results panel should contain text "Validation: 5-fold cross-validation on 6497 rows"
-    And "Performance" results panel should contain text "Seed: "
+    And "Performance" results panel should contain text "Split seed: "
     When user clicks on Save button
     Then Name input in "Save model" dialog should have value "Predict quality by fixed.acidity, volatile.acidit..."
     When user selects "None" in "Data storage" input in "Save model" dialog

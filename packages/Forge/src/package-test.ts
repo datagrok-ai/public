@@ -3,6 +3,7 @@ import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagro
 import './tests/engines-tests';
 import './tests/metrics-tests';
 import './tests/training-tests';
+import './tests/search-tests';
 import './tests/preparation-tests';
 import './tests/storage-tests';
 import './tests/apply-tests';

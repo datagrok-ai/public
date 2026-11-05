@@ -17,7 +17,8 @@ import {BLOB_ROOT, deleteModel, modelsChanged, ownBlob, runDeleteModel, saveMode
   from '../storage/model-store';
 import {linkTrainingRun, recordTrainingRun} from '../storage/training-run-store';
 import {runTrainModel} from '../training/train-api';
-import {FeaturesSchema, prepareTraining, TrainingResult, trainModel} from '../training/train-model';
+import {DEFAULT_VALIDATION} from '../training/k-fold';
+import {FeaturesSchema, prepareTraining, splittingOf, TrainingResult, trainModel} from '../training/train-model';
 import {columnsOf, deleteModelsNamed, deleteRunsOf, engineByName, expectReleased, failsWith, framesSharing,
   insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, requestOf, selectionOf, XGBOOST_FIELDS}
   from './test-data';
@@ -58,6 +59,25 @@ category('Storage', () => {
     }
     expect(run.get('options')?.startsWith('Preparation replay; keys compatible with the old models'), true);
   });
+
+  test('a model keeps its splitting: the scheme, the hold out and whether it was stratified and shuffled', async () => {
+    const iris = await openIris();
+    const request = {...await requestOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species')),
+      validation: {...DEFAULT_VALIDATION, scheme: 'holdout' as const, testFraction: 0.25, shuffle: false}};
+    const result = await trainModel(request);
+    const id = await saveModel(modelFieldsOf({name: `forge-test-model-${Date.now()}`, description: '', tags: [],
+      engine: request.engine, datasetName: iris.name, result,
+      fingerprint: datasetFingerprint(request.features, request.target), storage: {mode: 'none'}}), result.blob);
+    try {
+      const stored = splittingOf((await forgeDb.models.get(id)).splitting);
+      expect(JSON.stringify(stored), JSON.stringify({scheme: 'holdout', trainFraction: 0.75, isStratified: true,
+        isShuffled: false}));
+      expect(splittingOf({scheme: 'kfold', folds: 5})?.isShuffled === undefined, true, 'An old splitting got a flag');
+      expect(splittingOf({scheme: 'loo'}) === undefined, true, 'An unknown scheme was kept');
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: 60000});
 
   test('model, run and application round trip', async () => {
     const [{id: modelId}] = await forgeDb.models.insert({
@@ -378,6 +398,15 @@ category('Storage', () => {
     const {tables} = await grok.dapi.domains.schema('forge').manifest();
     expect(tables?.model?.promotion, 'eager');
     expect(tables?.training_run?.promotion, 'eager');
+  });
+
+  test('models and training runs keep the search with one description', async () => {
+    const {tables} = await grok.dapi.domains.schema('forge').manifest();
+    const model = tables?.model?.columns?.search;
+    const run = tables?.training_run?.columns?.search;
+    expect(`${model?.type} ${run?.type}`, 'json json');
+    expect(typeof model?.description === 'string' && model.description.length > 0, true, 'No description');
+    expect(run?.description, model?.description);
   });
 
   test('Forge:trainModel with a name saves the model without data and links the run', async () => {

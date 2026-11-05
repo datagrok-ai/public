@@ -45,7 +45,7 @@ test.describe("Training on demog in the Train view: dates, one-hot, ids, Predict
       await session.step(62, "Then editor of Target input should have text \"SEVERITY\"", () => shouldHaveText(page, el("editor of Target input"), "SEVERITY"));
       await session.step(63, "And editor of Features input should have text \"(3) AGE, HEIGHT, WEIGHT\"", () => shouldHaveText(page, el("editor of Features input"), "(3) AGE, HEIGHT, WEIGHT"));
       await session.step(64, "And Method input should have value \"XGBoost\"", () => shouldHaveValue(page, el("Method input"), "XGBoost"));
-      await session.step(65, "And the groups of train form should be \"Data, Method\"", () => groupsOfTrainForm(page, "Data, Method"));
+      await session.step(65, "And the groups of train form should be \"Data, Method, Validation\"", () => groupsOfTrainForm(page, "Data, Method, Validation"));
       await session.step(66, "When user remembers the training run count of the table \"forge-test-demog-{time}\"", () => rememberRunCount(page, session.text("forge-test-demog-{time}")));
       await session.step(67, "And user clicks on editor of Features input", () => clickOn(page, el("editor of Features input")));
       await session.step(68, "And user types \"STARTED\" into column search in \"Select columns...\" dialog", () => typeInto(page, "STARTED", el("column search in \"Select columns...\" dialog")));

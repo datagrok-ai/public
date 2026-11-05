@@ -186,12 +186,13 @@ export namespace funcs {
   }
 
   /**
-   * @param {number} iterations - Largest number of solver iterations (elastic net).
+   * @param {number} iterations - Largest number of solver iterations. Used only when L1 > 0 (elastic net).
    * @param {number} alpha - L1 (Lasso) regularization term. 0 means plain ordinary least squares.
    * @param {number} lambda - L2 (Ridge) regularization term. 0 means plain ordinary least squares.
+   * @param {number} seed - Random seed of the ridge and elastic net solvers. The solvers used here are deterministic, so with these settings the model does not depend on it.
    */
-  export async function trainLinearRegression(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , alpha: number , lambda: number ): Promise<any> {
-    return await grok.functions.call('EDA:TrainLinearRegression', { df, predictColumn, iterations, alpha, lambda });
+  export async function trainLinearRegression(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , alpha: number , lambda: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainLinearRegression', { df, predictColumn, iterations, alpha, lambda, seed });
   }
 
   /**
@@ -263,14 +264,17 @@ export namespace funcs {
   }
 
   /**
-   * @param {number} iterations - Number of training iterations.
-   * @param {number} eta - Learning rate.
-   * @param {number} maxDepth - Maximum depth of a tree.
-   * @param {number} lambda - L2 regularization term.
-   * @param {number} alpha - L1 regularization term.
+   * @param {number} iterations - Number of boosting rounds. Each round adds one tree (one per class for a multiclass target). More rounds fit the training data more closely. Use a lower Rate with more rounds.
+   * @param {number} eta - Step-size shrinkage (eta) applied to the weights of each new tree. Lower values are more conservative and need more rounds.
+   * @param {number} maxDepth - Maximum depth of a tree. Deeper trees capture more feature interactions and overfit more easily.
+   * @param {number} lambda - L2 regularization on the leaf weights. Larger values give a more conservative model.
+   * @param {number} alpha - L1 regularization on the leaf weights. Larger values give a more conservative model and can zero out leaves.
+   * @param {number} subsample - Share of the rows sampled for each tree. Below 1 adds randomness that the seed controls.
+   * @param {number} colsample - Share of the features sampled for each tree. Below 1 adds randomness that the seed controls.
+   * @param {number} seed - Random seed of the row and column sampling. Has an effect only when Row sample or Column sample is below 1.
    */
-  export async function trainXGBooster(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , eta: number , maxDepth: number , lambda: number , alpha: number ): Promise<any> {
-    return await grok.functions.call('EDA:TrainXGBooster', { df, predictColumn, iterations, eta, maxDepth, lambda, alpha });
+  export async function trainXGBooster(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , eta: number , maxDepth: number , lambda: number , alpha: number , subsample: number , colsample: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainXGBooster', { df, predictColumn, iterations, eta, maxDepth, lambda, alpha, subsample, colsample, seed });
   }
 
   /**
@@ -555,11 +559,11 @@ export namespace funcs {
   /**
    * @param {string} variant - TD: the tuned defaults (numerical embeddings, parametric activations, dropout, weight decay). TD-S: the simplified variant.
    *   choices: ["TD","TD-S"]
-   * @param {number} epochs - Training epochs. The best epoch on the validation split is kept.
+   * @param {number} epochs - Training epochs. The best epoch on the early-stopping rows is kept.
    * @param {string} hiddenLayers - Comma-separated sizes of the hidden layers, e.g. 256,256,256 or 128,128.
    * @param {number} learningRate - Base learning rate. 0 keeps the RealMLP default (0.04 for classification, 0.2 for regression).
    * @param {number} batchSize - Rows per optimizer step.
-   * @param {number} validationFraction - Share of the training rows held out to pick the best epoch.
+   * @param {number} validationFraction - Rows held out for early stopping.
    * @param {number} seed - Random seed. The same seed gives the same model.
    */
   export async function trainRealMlp(df: DG.DataFrame , predictColumn: DG.Column , variant: string , epochs: number , hiddenLayers: string , learningRate: number , batchSize: number , validationFraction: number , seed: number ): Promise<any> {
@@ -588,10 +592,10 @@ export namespace funcs {
    * @param {string} embeddings - Embeddings of the numerical features. Piecewise linear over quantile bins is the paper's best.
    *   choices: ["Piecewise linear","Periodic","Linear-ReLU","None"]
    * @param {number} epochs - Largest number of training epochs. Early stopping may end training sooner.
-   * @param {number} patience - Epochs without a better validation score before training stops.
+   * @param {number} patience - Epochs without a better score on the early-stopping rows before training stops.
    * @param {number} learningRate - AdamW learning rate.
    * @param {number} dropout - Dropout rate of the hidden layers.
-   * @param {number} validationFraction - Share of the training rows held out to pick the best epoch.
+   * @param {number} validationFraction - Rows held out for early stopping.
    * @param {number} seed - Random seed. The same seed gives the same model.
    */
   export async function trainTabm(df: DG.DataFrame , predictColumn: DG.Column , ensembleSize: number , width: number , embeddings: string , epochs: number , patience: number , learningRate: number , dropout: number , validationFraction: number , seed: number ): Promise<any> {

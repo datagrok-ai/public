@@ -18,7 +18,7 @@ export interface DatasetFingerprint {
 }
 
 const MAX_CATEGORIES = 20;
-const FNV_OFFSET = 0x811c9dc5;
+export const FNV_OFFSET = 0x811c9dc5;
 const FNV_PRIME = 0x01000193;
 
 export function datasetFingerprint(features: DG.Column[], target: DG.Column): DatasetFingerprint {
@@ -55,7 +55,7 @@ function rawBytes(col: DG.Column): Uint8Array {
   return new Uint8Array(data.buffer, data.byteOffset, col.length * data.BYTES_PER_ELEMENT);
 }
 
-function fnv1a(hash: number, bytes: Uint8Array): number {
+export function fnv1a(hash: number, bytes: Uint8Array): number {
   let h = hash;
   for (let i = 0; i < bytes.length; i++)
     h = Math.imul(h ^ bytes[i], FNV_PRIME) >>> 0;

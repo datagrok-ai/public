@@ -224,14 +224,18 @@ export async function classificationReport(actual: DG.Column, predicted: DG.Colu
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: int iterations = 1000 { caption: Iterations; min: 1; step: 50; max: 10000; description: Largest number of solver iterations (elastic net). }
+//input: int iterations = 1000 { caption: Iterations; min: 1; step: 50; max: 10000; description: Largest number of solver iterations. Used only when L1 > 0 (elastic net). }
 //input: double alpha = 0 { caption: L1; min: 0; max: 100; description: L1 (Lasso) regularization term. 0 means plain ordinary least squares. }
 //input: double lambda = 0 { caption: L2; min: 0; max: 100; description: L2 (Ridge) regularization term. 0 means plain ordinary least squares. }
+//input: int seed = 0 { caption: Model seed; min: 0; max: 2147483647; description: Random seed of the ridge and elastic net solvers. The solvers used here are deterministic, so with these settings the model does not depend on it. }
 //output: dynamic model
 //meta.mlname: Linear Regression
 //meta.mlrole: train
-export async function trainLinearRegression(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, alpha: number, lambda: number) : Promise<Uint8Array> {
-  return await PackageFunctions.trainLinearRegression(df, predictColumn, iterations, alpha, lambda);
+//meta.mlparallel: true
+//meta.mlspace: {"alpha": {"type": "float", "low": 0.001, "high": 10, "log": true, "simpler": "high"}, "lambda": {"type": "float", "low": 0.001, "high": 10, "log": true, "simpler": "high"}}
+//meta.mlenabled: {"iterations": {"alpha": {"gt": 0}}}
+export async function trainLinearRegression(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, alpha: number, lambda: number, seed: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainLinearRegression(df, predictColumn, iterations, alpha, lambda, seed);
 }
 
 //name: Apply Linear Regression
@@ -271,6 +275,8 @@ export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: D
 //output: dynamic model
 //meta.mlname: Softmax
 //meta.mlrole: train
+//meta.mlparallel: true
+//meta.mlspace: {"penalty": {"type": "float", "low": 0.001, "high": 1, "log": true, "simpler": "high"}, "iterations": {"type": "int", "low": 50, "high": 500, "log": true}}
 export async function trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, penalty: number, tolerance: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainSoftmax(df, predictColumn, iterations, penalty, tolerance);
 }
@@ -310,6 +316,8 @@ export function isInteractiveSoftmax(df: DG.DataFrame, predictColumn: DG.Column)
 //output: dynamic model
 //meta.mlname: PLS Regression
 //meta.mlrole: train
+//meta.mlparallel: true
+//meta.mlspace: {"components": {"type": "int", "low": 1, "high": 10, "simpler": "low"}}
 export async function trainPLSRegression(df: DG.DataFrame, predictColumn: DG.Column, components: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainPLSRegression(df, predictColumn, components);
 }
@@ -356,17 +364,23 @@ export function isInteractivePLSRegression(df: DG.DataFrame, predictColumn: DG.C
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: int iterations = 20 { min: 1; max: 100; description: Number of training iterations. }
-//input: double eta = 0.3 { caption: Rate; min: 0; max: 1; description: Learning rate. }
-//input: int maxDepth = 6 { min: 0; max: 20; description: Maximum depth of a tree. }
-//input: double lambda = 1 { min: 0; max: 100; description: L2 regularization term. }
-//input: double alpha = 0 { min: 0; max: 100; description: L1 regularization term. }
+//input: int iterations = 20 { min: 1; max: 100; description: Number of boosting rounds. Each round adds one tree (one per class for a multiclass target). More rounds fit the training data more closely. Use a lower Rate with more rounds. }
+//input: double eta = 0.3 { caption: Rate; min: 0; max: 1; description: Step-size shrinkage (eta) applied to the weights of each new tree. Lower values are more conservative and need more rounds. }
+//input: int maxDepth = 6 { min: 0; max: 20; description: Maximum depth of a tree. Deeper trees capture more feature interactions and overfit more easily. }
+//input: double lambda = 1 { min: 0; max: 100; description: L2 regularization on the leaf weights. Larger values give a more conservative model. }
+//input: double alpha = 0 { min: 0; max: 100; description: L1 regularization on the leaf weights. Larger values give a more conservative model and can zero out leaves. }
+//input: double subsample = 1 { caption: Row sample; min: 0.1; max: 1; description: Share of the rows sampled for each tree. Below 1 adds randomness that Model seed controls. }
+//input: double colsample = 1 { caption: Column sample; min: 0.1; max: 1; description: Share of the features sampled for each tree. Below 1 adds randomness that Model seed controls. }
+//input: int seed = 0 { caption: Model seed; min: 0; max: 2147483647; description: Random seed of the row and column sampling. Has an effect only when Row sample or Column sample is below 1. }
 //output: dynamic model
 //meta.mlname: XGBoost
 //meta.mlrole: train
 //meta.mlnativenans: true
-export async function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number) : Promise<Uint8Array> {
-  return await PackageFunctions.trainXGBooster(df, predictColumn, iterations, eta, maxDepth, lambda, alpha);
+//meta.mlparallel: true
+//meta.mlspace: {"iterations": {"type": "int", "low": 10, "high": 100, "log": true, "simpler": "low"}, "eta": {"type": "float", "low": 0.03, "high": 0.5, "log": true}, "maxDepth": {"type": "int", "low": 1, "high": 10, "simpler": "low"}, "lambda": {"type": "float", "low": 0.1, "high": 10, "log": true, "simpler": "high"}, "alpha": {"type": "float", "low": 0.01, "high": 10, "log": true, "simpler": "high"}, "subsample": {"type": "float", "low": 0.5, "high": 1, "simpler": "high"}, "colsample": {"type": "float", "low": 0.5, "high": 1, "simpler": "high"}}
+//meta.mlenabled: {"seed": [{"subsample": {"lt": 1}}, {"colsample": {"lt": 1}}]}
+export async function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number, subsample: number, colsample: number, seed: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainXGBooster(df, predictColumn, iterations, eta, maxDepth, lambda, alpha, subsample, colsample, seed);
 }
 
 //name: Apply XGBoost
@@ -410,6 +424,9 @@ export function isApplicableXGBooster(df: DG.DataFrame, predictColumn: DG.Column
 //meta.mlname: SVM
 //meta.mlrole: train
 //meta.mlhasrows: true
+//meta.mlparallel: true
+//meta.mlspace: {"kernel": {"type": "categorical", "choices": ["Linear", "RBF", "Polynomial"], "simpler": "first"}, "cost": {"type": "float", "low": 0.01, "high": 100, "log": true, "simpler": "low"}, "gamma": {"type": "float", "low": 0.001, "high": 10, "log": true, "simpler": "low"}, "degree": {"type": "int", "low": 2, "high": 4, "simpler": "low"}, "epsilon": {"type": "float", "low": 0.01, "high": 1, "log": true, "simpler": "high"}}
+//meta.mlenabled: {"gamma": {"kernel": ["RBF", "Polynomial", "Sigmoid"]}, "degree": {"kernel": ["Polynomial"]}, "coef0": {"kernel": ["Polynomial", "Sigmoid"]}, "epsilon": {"task": ["regression"]}}
 export async function trainSVM(df: DG.DataFrame, predictColumn: DG.Column, kernel: string, cost: number, gamma: number, degree: number, coef0: number, epsilon: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainSVM(df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon);
 }
@@ -449,11 +466,13 @@ export function isInteractiveSVM(df: DG.DataFrame, predictColumn: DG.Column) : b
 //input: int maxDepth = 10 { caption: Max depth; min: 1; max: 50; description: Largest depth of a tree. Bounds the model size. }
 //input: int minSamplesLeaf = 1 { caption: Min rows per leaf; min: 1; max: 1000; description: Smallest number of training rows a leaf may hold. }
 //input: string maxFeatures = 'auto' { caption: Features per split; choices: ["auto","sqrt","log2","all"]; description: Features tried at each split: auto is sqrt for classification and all for regression. }
-//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//input: int seed = 0 { caption: Model seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
 //output: dynamic model
 //meta.mlname: Random Forest
 //meta.mlrole: train
 //meta.mlnativenans: true
+//meta.mlparallel: true
+//meta.mlspace: {"trees": {"type": "int", "low": 20, "high": 200, "log": true, "simpler": "low"}, "maxDepth": {"type": "int", "low": 2, "high": 16, "simpler": "low"}, "minSamplesLeaf": {"type": "int", "low": 1, "high": 20, "log": true, "simpler": "high"}, "maxFeatures": {"type": "categorical", "choices": ["auto", "sqrt", "log2", "all"]}}
 export async function trainRandomForest(df: DG.DataFrame, predictColumn: DG.Column, trees: number, maxDepth: number, minSamplesLeaf: number, maxFeatures: string, seed: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainRandomForest(df, predictColumn, trees, maxDepth, minSamplesLeaf, maxFeatures, seed);
 }
@@ -493,11 +512,13 @@ export function isInteractiveRandomForest(df: DG.DataFrame, predictColumn: DG.Co
 //input: int maxDepth = 10 { caption: Max depth; min: 1; max: 50; description: Largest depth of a tree. Bounds the model size. }
 //input: int minSamplesLeaf = 1 { caption: Min rows per leaf; min: 1; max: 1000; description: Smallest number of training rows a leaf may hold. }
 //input: string maxFeatures = 'auto' { caption: Features per split; choices: ["auto","sqrt","log2","all"]; description: Features tried at each split: auto is sqrt for classification and all for regression. }
-//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//input: int seed = 0 { caption: Model seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
 //output: dynamic model
 //meta.mlname: Extra Trees
 //meta.mlrole: train
 //meta.mlnativenans: true
+//meta.mlparallel: true
+//meta.mlspace: {"trees": {"type": "int", "low": 20, "high": 200, "log": true, "simpler": "low"}, "maxDepth": {"type": "int", "low": 2, "high": 16, "simpler": "low"}, "minSamplesLeaf": {"type": "int", "low": 1, "high": 20, "log": true, "simpler": "high"}, "maxFeatures": {"type": "categorical", "choices": ["auto", "sqrt", "log2", "all"]}}
 export async function trainExtraTrees(df: DG.DataFrame, predictColumn: DG.Column, trees: number, maxDepth: number, minSamplesLeaf: number, maxFeatures: string, seed: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainExtraTrees(df, predictColumn, trees, maxDepth, minSamplesLeaf, maxFeatures, seed);
 }
@@ -539,11 +560,13 @@ export function isInteractiveExtraTrees(df: DG.DataFrame, predictColumn: DG.Colu
 //input: int maxDepth = 0 { caption: Max depth; min: 0; max: 50; description: Largest depth of a tree. 0 means no limit. }
 //input: int minSamplesLeaf = 20 { caption: Min rows per leaf; min: 1; max: 1000; description: Smallest number of training rows a leaf may hold. }
 //input: double l2 = 0 { caption: L2; min: 0; max: 100; description: L2 penalty of the leaf values. }
-//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//input: int seed = 0 { caption: Model seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
 //output: dynamic model
 //meta.mlname: Hist Gradient Boosting
 //meta.mlrole: train
 //meta.mlnativenans: true
+//meta.mlparallel: true
+//meta.mlspace: {"iterations": {"type": "int", "low": 20, "high": 300, "log": true, "simpler": "low"}, "learningRate": {"type": "float", "low": 0.01, "high": 0.3, "log": true}, "maxLeafNodes": {"type": "int", "low": 4, "high": 63, "log": true, "simpler": "low"}, "minSamplesLeaf": {"type": "int", "low": 5, "high": 50, "log": true, "simpler": "high"}, "l2": {"type": "float", "low": 0.01, "high": 10, "log": true, "simpler": "high"}}
 export async function trainHistGradientBoosting(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, learningRate: number, maxLeafNodes: number, maxDepth: number, minSamplesLeaf: number, l2: number, seed: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainHistGradientBoosting(df, predictColumn, iterations, learningRate, maxLeafNodes, maxDepth, minSamplesLeaf, l2, seed);
 }
@@ -583,11 +606,13 @@ export function isInteractiveHistGradientBoosting(df: DG.DataFrame, predictColum
 //input: double learningRate = 0.1 { caption: Learning rate; min: 0.001; max: 1; description: Shrinkage of each tree's contribution. }
 //input: int depth = 6 { caption: Depth; min: 1; max: 16; description: Depth of the symmetric trees. }
 //input: double l2LeafReg = 3 { caption: L2; min: 0; max: 100; description: L2 regularization of the leaf values. }
-//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//input: int seed = 0 { caption: Model seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
 //output: dynamic model
 //meta.mlname: CatBoost
 //meta.mlrole: train
 //meta.mlnativenans: true
+//meta.mlparallel: true
+//meta.mlspace: {"iterations": {"type": "int", "low": 30, "high": 300, "log": true, "simpler": "low"}, "learningRate": {"type": "float", "low": 0.01, "high": 0.3, "log": true}, "depth": {"type": "int", "low": 2, "high": 8, "simpler": "low"}, "l2LeafReg": {"type": "float", "low": 0.3, "high": 30, "log": true, "simpler": "high"}}
 export async function trainCatBoost(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, learningRate: number, depth: number, l2LeafReg: number, seed: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainCatBoost(df, predictColumn, iterations, learningRate, depth, l2LeafReg, seed);
 }
@@ -625,11 +650,13 @@ export function isInteractiveCatBoost(df: DG.DataFrame, predictColumn: DG.Column
 //input: column predictColumn 
 //input: int maxDepth = 10 { caption: Max depth; min: 1; max: 50; description: Largest depth of the tree. Bounds the model size. }
 //input: int minSamplesLeaf = 1 { caption: Min rows per leaf; min: 1; max: 1000; description: Smallest number of training rows a leaf may hold. }
-//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//input: int seed = 0 { caption: Model seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
 //output: dynamic model
 //meta.mlname: Decision Tree
 //meta.mlrole: train
 //meta.mlnativenans: true
+//meta.mlparallel: true
+//meta.mlspace: {"maxDepth": {"type": "int", "low": 1, "high": 20, "simpler": "low"}, "minSamplesLeaf": {"type": "int", "low": 1, "high": 50, "log": true, "simpler": "high"}}
 export async function trainDecisionTree(df: DG.DataFrame, predictColumn: DG.Column, maxDepth: number, minSamplesLeaf: number, seed: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainDecisionTree(df, predictColumn, maxDepth, minSamplesLeaf, seed);
 }
@@ -671,6 +698,8 @@ export function isInteractiveDecisionTree(df: DG.DataFrame, predictColumn: DG.Co
 //meta.mlname: k-Nearest Neighbors
 //meta.mlrole: train
 //meta.mlhasrows: true
+//meta.mlparallel: true
+//meta.mlspace: {"neighbors": {"type": "int", "low": 1, "high": 50, "log": true, "simpler": "high"}, "weights": {"type": "categorical", "choices": ["Uniform", "Distance"], "simpler": "first"}}
 export async function trainKnn(df: DG.DataFrame, predictColumn: DG.Column, neighbors: number, weights: string) : Promise<Uint8Array> {
   return await PackageFunctions.trainKnn(df, predictColumn, neighbors, weights);
 }
@@ -709,6 +738,7 @@ export function isInteractiveKnn(df: DG.DataFrame, predictColumn: DG.Column) : b
 //output: dynamic model
 //meta.mlname: Naive Bayes
 //meta.mlrole: train
+//meta.mlparallel: true
 export async function trainNaiveBayes(df: DG.DataFrame, predictColumn: DG.Column) : Promise<Uint8Array> {
   return await PackageFunctions.trainNaiveBayes(df, predictColumn);
 }
@@ -748,6 +778,8 @@ export function isInteractiveNaiveBayes(df: DG.DataFrame, predictColumn: DG.Colu
 //output: dynamic model
 //meta.mlname: LDA
 //meta.mlrole: train
+//meta.mlparallel: true
+//meta.mlspace: {"shrinkage": {"type": "float", "low": 0.001, "high": 1, "log": true, "simpler": "high"}}
 export async function trainLda(df: DG.DataFrame, predictColumn: DG.Column, shrinkage: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainLda(df, predictColumn, shrinkage);
 }
@@ -788,10 +820,12 @@ export function isInteractiveLda(df: DG.DataFrame, predictColumn: DG.Column) : b
 //input: int iterations = 200 { caption: Iterations; min: 1; max: 2000; description: Largest number of training epochs. }
 //input: double learningRate = 0.001 { caption: Learning rate; min: 0.00001; max: 1; description: Step size of the weight updates. }
 //input: double alpha = 0.0001 { caption: L2; min: 0; max: 10; description: L2 penalty of the weights. }
-//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//input: int seed = 0 { caption: Model seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
 //output: dynamic model
 //meta.mlname: Neural Network
 //meta.mlrole: train
+//meta.mlparallel: true
+//meta.mlspace: {"hiddenLayers": {"type": "categorical", "choices": ["32", "64", "100", "128", "64,32", "128,64"], "simpler": "first"}, "activation": {"type": "categorical", "choices": ["ReLU", "Tanh", "Logistic"]}, "iterations": {"type": "int", "low": 50, "high": 500, "log": true, "simpler": "low"}, "learningRate": {"type": "float", "low": 0.0001, "high": 0.01, "log": true}, "alpha": {"type": "float", "low": 0.00001, "high": 1, "log": true, "simpler": "high"}}
 export async function trainMlp(df: DG.DataFrame, predictColumn: DG.Column, hiddenLayers: string, activation: string, iterations: number, learningRate: number, alpha: number, seed: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainMlp(df, predictColumn, hiddenLayers, activation, iterations, learningRate, alpha, seed);
 }
@@ -828,15 +862,17 @@ export function isInteractiveMlp(df: DG.DataFrame, predictColumn: DG.Column) : b
 //input: dataframe df 
 //input: column predictColumn 
 //input: string variant = 'TD' { caption: Variant; choices: ["TD","TD-S"]; description: TD: the tuned defaults (numerical embeddings, parametric activations, dropout, weight decay). TD-S: the simplified variant. }
-//input: int epochs = 128 { caption: Epochs; min: 1; max: 2000; description: Training epochs. The best epoch on the validation split is kept. }
+//input: int epochs = 128 { caption: Epochs; min: 1; max: 2000; description: Training epochs. The best epoch on the early-stopping rows is kept. }
 //input: string hiddenLayers = 256,256,256 { caption: Hidden layers; description: Comma-separated sizes of the hidden layers, e.g. 256,256,256 or 128,128. }
 //input: double learningRate = 0 { caption: Learning rate; min: 0; max: 1; description: Base learning rate. 0 keeps the RealMLP default (0.04 for classification, 0.2 for regression). }
 //input: int batchSize = 256 { caption: Batch size; min: 1; max: 4096; description: Rows per optimizer step. }
-//input: double validationFraction = 0.2 { caption: Validation fraction; min: 0.05; max: 0.5; description: Share of the training rows held out to pick the best epoch. }
-//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//input: double validationFraction = 0.2 { caption: Early stopping fraction; min: 0.05; max: 0.5; description: Rows held out for early stopping. }
+//input: int seed = 0 { caption: Model seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
 //output: dynamic model
 //meta.mlname: RealMLP
 //meta.mlrole: train
+//meta.mlparallel: true
+//meta.mlspace: {"variant": {"type": "categorical", "choices": ["TD", "TD-S"]}, "epochs": {"type": "int", "low": 32, "high": 256, "log": true, "simpler": "low"}, "hiddenLayers": {"type": "categorical", "choices": ["128,128", "256,256", "256,256,256"], "simpler": "first"}, "learningRate": {"type": "float", "low": 0.01, "high": 0.3, "log": true}}
 export async function trainRealMlp(df: DG.DataFrame, predictColumn: DG.Column, variant: string, epochs: number, hiddenLayers: string, learningRate: number, batchSize: number, validationFraction: number, seed: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainRealMlp(df, predictColumn, variant, epochs, hiddenLayers, learningRate, batchSize, validationFraction, seed);
 }
@@ -876,15 +912,17 @@ export function isInteractiveRealMlp(df: DG.DataFrame, predictColumn: DG.Column)
 //input: int width = 128 { caption: Width; min: 1; max: 2048; description: Units per hidden layer (the paper uses 512). }
 //input: string embeddings = 'Piecewise linear' { caption: Embeddings; choices: ["Piecewise linear","Periodic","Linear-ReLU","None"]; description: Embeddings of the numerical features. Piecewise linear over quantile bins is the paper's best. }
 //input: int epochs = 32 { caption: Epochs; min: 1; max: 1000; description: Largest number of training epochs. Early stopping may end training sooner. }
-//input: int patience = 16 { caption: Patience; min: 1; max: 100; description: Epochs without a better validation score before training stops. }
+//input: int patience = 16 { caption: Patience; min: 1; max: 100; description: Epochs without a better score on the early-stopping rows before training stops. }
 //input: double learningRate = 0.002 { caption: Learning rate; min: 0.00001; max: 1; description: AdamW learning rate. }
 //input: double dropout = 0.1 { caption: Dropout; min: 0; max: 0.9; description: Dropout rate of the hidden layers. }
-//input: double validationFraction = 0.2 { caption: Validation fraction; min: 0.05; max: 0.5; description: Share of the training rows held out to pick the best epoch. }
-//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//input: double validationFraction = 0.2 { caption: Early stopping fraction; min: 0.05; max: 0.5; description: Rows held out for early stopping. }
+//input: int seed = 0 { caption: Model seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
 //output: dynamic model
 //meta.mlname: TabM
 //meta.mlrole: train
 //meta.mlnativenans: true
+//meta.mlparallel: true
+//meta.mlspace: {"ensembleSize": {"type": "int", "low": 4, "high": 16, "log": true, "simpler": "low"}, "width": {"type": "int", "low": 64, "high": 256, "log": true, "simpler": "low"}, "embeddings": {"type": "categorical", "choices": ["Piecewise linear", "Periodic", "None"]}, "epochs": {"type": "int", "low": 16, "high": 64, "log": true, "simpler": "low"}, "learningRate": {"type": "float", "low": 0.0005, "high": 0.01, "log": true}, "dropout": {"type": "float", "low": 0, "high": 0.3, "simpler": "high"}}
 export async function trainTabm(df: DG.DataFrame, predictColumn: DG.Column, ensembleSize: number, width: number, embeddings: string, epochs: number, patience: number, learningRate: number, dropout: number, validationFraction: number, seed: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainTabm(df, predictColumn, ensembleSize, width, embeddings, epochs, patience, learningRate, dropout, validationFraction, seed);
 }
