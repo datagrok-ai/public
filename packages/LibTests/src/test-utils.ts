@@ -19,6 +19,7 @@ import {isFuncCallSerializedState, PipelineSerializedState} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 declare global {
+  // eslint-disable-next-line no-var
   var SNAPSHOTS_UPDATE_MODE: boolean;
 }
 
@@ -59,7 +60,8 @@ export function createTestScheduler(): TestScheduler {
 
 export type ExpectObservableNamed = (name: string, observable: Observable<any>, subscriptionMarbles?: string) => void;
 
-export async function runRXTreeSnapshotTest(testName: string, fn: (expectObservable: ExpectObservableNamed, cold: typeof TestScheduler.prototype.createColdObservable) => void) {
+export async function runRXTreeSnapshotTest(testName: string,
+  fn: (expectObservable: ExpectObservableNamed, cold: typeof TestScheduler.prototype.createColdObservable) => void) {
   const current: {data: any, expectName?: string}[] = [];
   const snapshotName = testName;
 
@@ -186,7 +188,8 @@ export function getTreeStates(config: PipelineConfigurationProcessed): [StateTre
   ] as const;
 }
 
-function expectTreeStates(tree$: Observable<StateTree>, expectObservable: ExpectObservableNamed, prefix: string, lister: (node: StateTreeNode) => string[], getter: (node: StateTreeNode, name: string) => Observable<any>) {
+function expectTreeStates(tree$: Observable<StateTree>, expectObservable: ExpectObservableNamed, prefix: string,
+  lister: (node: StateTreeNode) => string[], getter: (node: StateTreeNode, name: string) => Observable<any>) {
   const addedUUIDs = new Set<string>();
   tree$.pipe(
     map((tree, idx) => {

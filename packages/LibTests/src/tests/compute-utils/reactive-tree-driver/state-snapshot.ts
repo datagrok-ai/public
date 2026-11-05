@@ -113,7 +113,8 @@ category('ComputeUtils: Driver state snapshots', async () => {
         {prefix: 'Structure'});
       expectDeepEqual(stepValues(fromSnapshot!), stepValues(fromTree!), {prefix: 'Values'});
       expectDeepEqual([metaCall.friendlyName, treeCall!.friendlyName], ['Snapshot', 'Snapshot'], {prefix: 'Name'});
-      const nested = async (id: string) => (await historyUtils.shallowLoadRun(id)).options[NESTED_ENTITY_OPTION] ?? null;
+      const nested = async (id: string) =>
+        (await historyUtils.shallowLoadRun(id)).options[NESTED_ENTITY_OPTION] ?? null;
       const stepIds = [...callIds(snapshot), ...savedCallIds(tree.toSerializedState())];
       expectDeepEqual(await Promise.all(stepIds.map(nested)), stepIds.map(() => 'true'), {prefix: 'Steps nested'});
       expectDeepEqual(await Promise.all([metaCall.id, treeCall!.id].map(nested)), [null, null],
