@@ -140,7 +140,8 @@ ENV ADD_HTTPS_MIDDLEWARE=""
 ENV MAFFT_DIR="/usr/lib/mafft/bin/"
 
 RUN "${MAFFT_DIR}ginsi" --version && python -c "import alignment.api, uvloop, httptools, ujson, pymsa" && \
-    printf '>a\nMKVLA\n>b\nMKVA\n' > /tmp/t.fa && "${MAFFT_DIR}mafft" --quiet /tmp/t.fa && rm -f /tmp/t.fa
+    printf '>a\nMKVLA\n>b\nMKVA\n' > /tmp/t.fa && "${MAFFT_DIR}mafft" --quiet /tmp/t.fa && rm -f /tmp/t.fa && \
+    python -c "import alignment.api as a; from alignment.AlignSubPeptides import align_sub_peptides; e = chr(36) * 4; out, err, score = align_sub_peptides('PEPTIDE1{A.C.D.E.G.K}' + e + chr(10) + 'PEPTIDE1{A.C.E.G.K}' + e, gap_opening_penalty=1.53, gap_extension_penalty=0.0, polymer_to_align=None, path_to_mafft=a.mafft_dir + 'ginsi', path_to_subst_matrix=a.rocs_path, path_to_monomer_table=a.monomers_map_file); print(out, score); assert out"
 
 # CMD can be changed easially, you need ENTRYPOINT in this case
 ENTRYPOINT ["uvicorn", "--host", "0.0.0.0", "alignment.api:api"]
