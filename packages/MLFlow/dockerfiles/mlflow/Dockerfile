@@ -14,7 +14,9 @@ RUN apk upgrade --no-cache && apk add --no-cache \
     build-base openssl-3.6-dev zlib-dev bzip2-dev readline-dev sqlite-dev ncurses-dev xz-dev \
     libffi-dev libxml2-dev
 
-# cryptography capped <51 to stay within mlflow's own cryptography<51 requirement
+# cryptography capped <51 to stay within mlflow's own cryptography<51 requirement. azureml-core caps
+# pyopenssl<=26.0.0, which needs cryptography<47, so pip backtracks to the vulnerable pyopenssl 22.0.0;
+# 26.4 is the first release that accepts cryptography 50.
 RUN python3.11 -m venv --without-pip /opt/mlflow && \
     python3.11 -m pip --python /opt/mlflow/bin/python install --no-cache-dir \
       "mlflow[extras,azure,db,gateway,genai,auth]==3.17.2" boto3 "cryptography>=50.0.0,<51" && \
@@ -26,7 +28,8 @@ ENV PATH="/opt/mlflow/bin:/root/.pyenv/bin:${PATH}"
 
 # Every pyenv Python (pre-built here or built by mlflow at serve time) bootstraps pip for the
 # model's `python -m venv` from the current wheels in WHEEL_PKG_DIR instead of its stale
-# ensurepip/_bundled copies, which are removed.
+# ensurepip/_bundled copies, which are removed. Their site-packages pip goes too (it vendors
+# setuptools 70.3.0): mlflow only runs pip inside the model venv.
 ENV PYTHON_CONFIGURE_OPTS="--with-wheel-pkg-dir=/opt/python-wheels"
 RUN git clone --depth 1 https://github.com/pyenv/pyenv.git /root/.pyenv && \
     rm -rf /root/.pyenv/.git && \
@@ -34,11 +37,10 @@ RUN git clone --depth 1 https://github.com/pyenv/pyenv.git /root/.pyenv && \
     rm -rf /root/.pyenv/versions/*/lib/python*/ensurepip/_bundled/*.whl \
       /root/.pyenv/versions/*/lib/python*/test/wheeldata/*.whl /tmp/python-build.* && \
     for v in /root/.pyenv/versions/*; do \
+      $v/bin/python -m pip uninstall -y pip && \
       $v/bin/python -m venv /tmp/venv-check && /tmp/venv-check/bin/python -m pip --version && rm -rf /tmp/venv-check || exit 1; \
     done && \
     mlflow --version
-
-RUN find / -xdev -iname "setuptools*" 2>/dev/null | grep -v "/setuptools/" ; grep -rls --include=PKG-INFO --include=METADATA "^Version: 70.3.0" / 2>/dev/null; true
 
 COPY run.sh run.sh
 RUN chmod +x run.sh
