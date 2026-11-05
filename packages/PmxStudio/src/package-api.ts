@@ -33,7 +33,7 @@ export namespace funcs {
    * @param {string} plan - The plan saved in Plan (its .pmxplan file’s contents).
    * @param {any} looks - The study days fixed at the start to review each treated group, comma-separated, e.g. 7, 10.
    * @param {string} line - The tumor model: its growth model from the atlas of historical controls makes the forecasts.
-   *   choices: ["MC38","CT26","B16F10"]
+   *   choices: ["MC38","CT26","B16F10","4T1","LLC","Panc02","Hepa1-6","PDX-NSCLC","PDX-PDAC"]
    * @param {string} control - The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).
    * @param {number} endpoint - The study ends when the median control reaches it.
    * @param {number} humane - Your protocol’s limit: an animal near it is listed.

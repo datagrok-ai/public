@@ -28,7 +28,7 @@ export async function pmxStudyFileHandler(content: string) : Promise<any> {
 //input: column bodyWeight { category: Study; caption: Body weight; type: numerical; optional: true; nullable: true; description: Body weight (g), weighed with the tumor (empty: no weight checks). }
 //input: string plan { category: Study; caption: Plan; optional: true; nullable: true; visible: false; description: The plan saved in Plan (its .pmxplan file’s contents). }
 //input: dynamic looks { category: Study; caption: Planned reviews; optional: true; nullable: true; description: The study days fixed at the start to review each treated group, comma-separated, e.g. 7, 10. }
-//input: string line = 'MC38' { category: Monitoring; caption: Cell line; choices: ["MC38","CT26","B16F10"]; description: The tumor model: its growth model from the atlas of historical controls makes the forecasts. }
+//input: string line = 'MC38' { category: Monitoring; caption: Cell line; choices: ["MC38","CT26","B16F10","4T1","LLC","Panc02","Hepa1-6","PDX-NSCLC","PDX-PDAC"]; description: The tumor model: its growth model from the atlas of historical controls makes the forecasts. }
 //input: string control { category: Monitoring; caption: Control group; optional: true; nullable: true; description: The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first). }
 //input: double endpoint = 1500 { category: Monitoring; caption: Endpoint volume; units: mm³; min: 500; max: 3000; description: The study ends when the median control reaches it. }
 //input: double humane = 2000 { category: Monitoring; caption: Humane limit; units: mm³; min: 500; max: 4000; description: Your protocol’s limit: an animal near it is listed. }

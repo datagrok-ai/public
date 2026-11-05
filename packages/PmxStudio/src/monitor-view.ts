@@ -516,7 +516,8 @@ function monitorContent(self: ViewHost, initial?: DG.DataFrame): ViewContent {
     resultsFrame([failure, outdated, start, content], overlay, bar)],
   {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
   // a session's values pasted or typed into the table: the forecasts follow, after a pause (one value, then the next)
-  self.own(onTableEdits(form, result, studyTable, () => auto.changed(TABLE_EDITS)));
+  self.own(onTableEdits(form, computed(() => [result.value, error.value]),
+    studyTable, () => auto.changed(TABLE_EDITS)));
   // the table's own subscriptions are not built under the host: dropped with it
   self.own(stopWatching);
   return {

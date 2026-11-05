@@ -846,7 +846,8 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
     resultsFrame([failure, outdated, start, content], overlay, bar)],
   {direction: 'horizontal', sizes: [0.3, 0.7], minSize: DECLARATION_MIN});
   // an edit of the study table (a value corrected, rows added): analyzed again, after a pause
-  self.own(onTableEdits(form, result, () => call.getParamValue('study'), () => auto.changed(TABLE_EDITS)));
+  self.own(onTableEdits(form, computed(() => [result.value, error.value]),
+    () => call.getParamValue('study'), () => auto.changed(TABLE_EDITS)));
   return {
     root: panes,
     ribbon: [[studyHeader(form, 'analyze', computed(() => {

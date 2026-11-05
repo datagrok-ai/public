@@ -50,10 +50,17 @@ export interface SavedStudy {
 
 export const logOf = (df: DG.DataFrame): LogEntry[] => JSON.parse(df.getTag(LOG_TAG) || '[]');
 
-/** What a table says of itself into a form on it: its body weight column and the protocol's limits. */
+/** What a table says of itself into a form on it: its plan's tumor model, its body weight column and the protocol's
+ *  limits. */
 export function restoreFields(form: FuncCallForm, df: DG.DataFrame): void {
   const limits = JSON.parse(df.getTag(LIMITS_TAG) || '{}');
-  const fields = {bodyWeight: df.getTag(WEIGHT_TAG) || null, humane: limits.humane ?? null,
+  let line: string | null = null;
+  try {
+    line = df.getTag(PLAN_TAG) ? parsePlan(df.getTag(PLAN_TAG)!).predicted.line : null;
+  } catch {
+    // a damaged plan: Analyze says so; the field stays as it is
+  }
+  const fields = {line, bodyWeight: df.getTag(WEIGHT_TAG) || null, humane: limits.humane ?? null,
     weightLimit: limits.weightLimit ?? null};
   for (const [name, value] of Object.entries(fields)) {
     const input = form.getInput(name);

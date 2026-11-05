@@ -84,10 +84,9 @@ export const compoundsOf = (m: StudyMeta | null) =>
   [...new Set((m?.groups ?? []).map((g) => g.compound.trim()).filter((c) => c))].join(', ');
 
 /** The study's details to edit: its fields, and its groups as a table (one row per group, typed or pasted into like
- *  any Datagrok grid). `save` gets them on OK, with an ID. */
-export function detailsDialog(name: string, m: StudyMeta, groups: string[], save: (m: StudyMeta) => void): void {
-  const meta = withId(m);
-  const id = ui.input.string('ID', {value: meta.id});
+ *  any Datagrok grid). `save` gets them on OK; an ID left empty is given when the study is first saved. */
+export function detailsDialog(name: string, meta: StudyMeta, groups: string[], save: (m: StudyMeta) => void): void {
+  const id = ui.input.string('ID', {value: meta.id, placeholder: 'Given when the study is first saved'});
   const description = ui.input.textArea('Description', {value: meta.description});
   const owner = ui.input.string('Owner', {value: meta.owner});
   const project = ui.input.string('Project', {value: meta.project});
