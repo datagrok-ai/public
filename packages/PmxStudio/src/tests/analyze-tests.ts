@@ -4,6 +4,7 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {OBSERVED, PREDICTED, REANCHOR, exampleStudy} from '../analyze';
 import {PLAN_TAG, parsePlan, powerAt} from '../plan-file';
 import {noEffectNote} from '../plan-vs-observed';
+import {projectedRows} from '../survival';
 
 const OUTPUTS = ['analysis', 'comparisons', 'animals', 'volumes', 'twins', 'effects', 'checks', 'versusPlan',
   'predicted', 'tolerability', 'weights'];
@@ -267,4 +268,18 @@ category('Analyze', () => {
     expect(x('mde') > 0 && x('mde') <= 100, true, `mde ${x('mde')}`);
     expect(noEffectNote(x, (k) => s.analysis.get(k, 0))!.includes(`a TGI of ${Math.round(x('mde'))}% or more`), true);
   }, {timeout: 300000});
+  test('projected KM: each animal carried on at its last rate, to the endpoint or the horizon', async () => {
+    const r = (animal: string, day: number, volume: number) => ({animal, group: 'G', day, volume});
+    const rows = [r('A', 0, 100), r('A', 2, 200), r('A', 4, 400), r('B', 0, 100), r('B', 2, 80), r('B', 4, 60),
+      r('C', 0, 900), r('C', 2, 2000), r('D', 0, 100)];
+    const near = (x: number, y: number) => Math.abs(x - y) < 1e-6;
+    const out = projectedRows(rows, 1600, 20);
+    const a = out.find((x) => x.animal === 'A')!;
+    expect(near(a.day, 8) && a.volume === 1600, true, 'A doubles every 2 days: 1600 on day 8');
+    const b = out.find((x) => x.animal === 'B')!;
+    expect(b.day === 20 && near(b.volume, 60), true, 'B shrinks: followed to the horizon as it is');
+    expect(out.some((x) => x.animal === 'C' || x.animal === 'D'), false, 'past the endpoint, or one measurement');
+    const short = projectedRows(rows, 1600, 6).find((x) => x.animal === 'A')!;
+    expect(short.day === 6 && near(short.volume, 800), true, 'A by an earlier horizon: under the endpoint');
+  });
 });

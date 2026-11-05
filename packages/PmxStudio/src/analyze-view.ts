@@ -9,7 +9,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {badge, BasicTable, button, computed, div, divH, divV, dot, loader, signal, span, Splitter, tableFromMap,
+import {badge, BasicTable, button, computed, div, divH, divV, dot, loader, RadioInput, signal, span, Splitter,
+  tableFromMap,
   Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
@@ -787,18 +788,35 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   }));
 
   // the strict Kaplan-Meier: days to the endpoint as measured, an animal that never reached it censored
+  // projected, on request: each animal still under the endpoint carried on at its last rate to a horizon
   const survival = signal<Survival | undefined>(undefined);
   const kmOnly = only(result, ['volumes'], (r) => [...groupsOf(r), r.analysis.get('endpoint', 0)]);
+  const kmMode = new RadioInput({items: ['Measured', 'Projected'], buttons: true, value: 'Measured',
+    itemTooltips: {Measured: 'Days to the endpoint as measured', Projected: 'Each animal still under the endpoint ' +
+      'carried on at the rate of its last three measurements, to the horizon'}});
+  const kmHorizon = ui.input.int('Horizon', {nullable: true, tooltipText: 'The day the projection goes to (empty: ' +
+    'the last day measured plus two weeks)'});
+  const horizon = signal<number | null>(null);
+  const horizonSub = kmHorizon.onChanged.subscribe((v) => horizon.value = v === null || v === undefined || !(v > 0) ?
+    null : v);
+  self.own(() => horizonSub.unsubscribe());
+  kmHorizon.root.style.width = '150px';
+  const kmControls = divH([kmMode.root, kmHorizon.root], 'pmx-noprint');
+  Object.assign(kmControls.style, {justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--dg-space-m)'});
   form.effect(() => {
     const r = kmOnly.value;
     const s = resultStudy;
+    const projected = kmMode.value === 'Projected';
+    kmHorizon.root.hidden = !projected;
+    const h = horizon.value;
     if (!r || !s) {
       survival.value = undefined;
       return;
     }
-    void survivalOf(s, r.analysis.get('control', 0), r.analysis.get('endpoint', 0), colorsOf(r))
+    void survivalOf(s, r.analysis.get('control', 0), r.analysis.get('endpoint', 0), colorsOf(r),
+      projected ? {horizon: h} : undefined)
       .then((k) => {
-        if (kmOnly.peek() === r)
+        if (kmOnly.peek() === r && (kmMode.peek() === 'Projected') === projected && horizon.peek() === h)
           survival.value = k;
       }, () => survival.value = undefined);
   });
@@ -809,9 +827,14 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   form.effect(() => {
     const k = survival.value;
     const p = new Map((k?.logrank ?? []).map((t) => [t.group, t.p_value]));
-    kmWords.replaceChildren(...(k?.medians ?? []).map((m) => noteLine(`${m.group}: median ${m.median === null ?
-      'not reached' : dayText(m.median)}, ${m.events} of ${m.n} reached the endpoint` +
-      (p.has(m.group) ? `; log-rank against the control ${pValue(p.get(m.group))}` : ''))));
+    // projected: no test (the tests are the measured study's), every figure said to be projected
+    const on = k?.horizon !== undefined;
+    kmWords.replaceChildren(...(on ? [noteLine(`Projected beyond day ${k!.lastDay} to day ${k!.horizon}: each ` +
+      'animal still under the endpoint carried on at the rate of its last three measurements. Not a result: the ' +
+      'tests and the report\'s conclusions are the measured study\'s.', 'warning')] : []),
+    ...(k?.medians ?? []).map((m) => noteLine(`${m.group}: ${on ? 'projected ' : ''}median ${m.median === null ?
+      'not reached' : dayText(m.median)}, ${m.events} of ${m.n} ${on ? 'would reach' : 'reached'} the endpoint` +
+      (!on && p.has(m.group) ? `; log-rank against the control ${pValue(p.get(m.group))}` : ''))));
   });
 
   const slopes = viewers.boxPlot(computed(() => {
@@ -853,7 +876,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     content: [sized(spider, 300)]},
     {id: 'km', title: 'Time to endpoint', hint: 'Kaplan-Meier: the animals of each group still below the ' +
       'endpoint volume, day by day, as measured; an animal that never reached it counts until its last measurement',
-    content: [sized(km, 300), kmWords]},
+    content: [kmControls, sized(km, 300), kmWords]},
     {id: 'animals', title: 'Each animal against its untreated twin', hint: 'How each treated tumor compares with ' +
       'what it would have measured untreated. Select an animal to see its growth', content: [animals]},
     {id: 'tolerability', title: 'Tolerability', hint: 'Whether the treatments were well tolerated',
