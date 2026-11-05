@@ -1,6 +1,7 @@
 # Wolfi (glibc, near-zero CVEs) instead of Debian: `mlflow models serve` keeps its default
 # virtualenv env manager, which needs pyenv, a C toolchain and the -dev libraries at runtime
 # (pyenv builds the model's Python when it is not one of the pre-built versions, pip builds sdists).
+# OpenSSL 3.6 headers: these Python versions do not build _ssl against OpenSSL 4.
 FROM cgr.dev/chainguard/wolfi-base
 
 ENV MLFLOW_TRACKING_URI=http://192.168.1.101:5000
@@ -9,7 +10,7 @@ ENV MODEL_VERSION=1
 
 RUN apk upgrade --no-cache && apk add --no-cache \
     bash git curl wget patch python-3.11 py3.11-pip \
-    build-base openssl-dev zlib-dev bzip2-dev readline-dev sqlite-dev ncurses-dev xz-dev \
+    build-base openssl-3.6-dev zlib-dev bzip2-dev readline-dev sqlite-dev ncurses-dev xz-dev \
     libffi-dev tk-dev libxml2-dev xmlsec-dev
 
 # cryptography capped <51 to stay within mlflow's own cryptography<51 requirement
