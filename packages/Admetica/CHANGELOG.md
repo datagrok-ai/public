@@ -4,6 +4,7 @@
 
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Chem | Admetica | Calculate is disabled unless the current table view has a molecule column, instead of showing a message
 * Calculate dialog: Moved to u2 components
+* Docker: Moved the image from the nvidia/cuda Ubuntu base to a multi-stage build on Wolfi with torch 2.14.1+cu126 (bundled CUDA runtime, CPU fallback), dropped unused torchvision/torchaudio and pip/setuptools/wheel, zero CVEs
 
 ## 1.3.2 (2026-09-16)
 
