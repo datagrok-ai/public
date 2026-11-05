@@ -34,12 +34,13 @@ import {panelGrid, Slot} from './panels';
 import {studyHeader} from './study-header';
 import {exclusionsOf, studyDataLine, tagStudy, withoutExcluded} from './study-table';
 import {metaOf, setMetaOn} from './study-meta';
+import {SpiderChart, spiderLines} from './spider-chart';
 import {LineInput} from './line-input';
 import {KM, Survival, survivalOf} from './survival';
 
 /** Analyze's panels, in order and width (twelfths): the answer, how the tumors grew, each animal, then the rest. */
 const ANALYZE_LAYOUT: Slot[] = [{id: 'groups', span: 12}, {id: 'growth', span: 8}, {id: 'rates', span: 4},
-  {id: 'waterfall', span: 12}, {id: 'km', span: 6}, {id: 'animals', span: 12},
+  {id: 'waterfall', span: 12}, {id: 'spider', span: 6}, {id: 'km', span: 6}, {id: 'animals', span: 12},
   {id: 'tolerability', span: 12},
   {id: 'plan', span: 12}, {id: 'controls', span: 6},
   {id: 'explore', span: 6}, {id: 'report', span: 12}];
@@ -734,6 +735,13 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
     waterfallMissing.hidden = has || !result.value;
   });
 
+  // each animal's growth as a % change from randomization, in its group's colour (the study's own rows, as analyzed)
+  const spider = new SpiderChart(computed(() => {
+    const r = volumesOnly.value;
+    const s = resultStudy;
+    return r && s ? {lines: spiderLines(s), colors: colorsOf(r)} : undefined;
+  }));
+
   // the strict Kaplan-Meier: days to the endpoint as measured, an animal that never reached it censored
   const survival = signal<Survival | undefined>(undefined);
   const kmOnly = only(result, ['volumes'], (r) => [...groupsOf(r), r.analysis.get('endpoint', 0)]);
@@ -795,6 +803,9 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
       content: [sized(slopes, 380)]},
     {id: 'waterfall', title: 'Best response', hint: 'Each treated animal\u2019s smallest volume from day 10, against ' +
       'its volume at randomization, coloured by its mRECIST class', content: [waterfallMissing, sized(waterfall, 300)]},
+    {id: 'spider', title: 'Each tumor over time', hint: 'Every animal’s volume as a % change from ' +
+      'randomization, in its group’s colour; click a group in the legend to hide or show its animals',
+    content: [sized(spider, 300)]},
     {id: 'km', title: 'Time to endpoint', hint: 'Kaplan-Meier: the animals of each group still below the ' +
       'endpoint volume, day by day, as measured; an animal that never reached it counts until its last measurement',
     content: [sized(km, 300), kmWords]},

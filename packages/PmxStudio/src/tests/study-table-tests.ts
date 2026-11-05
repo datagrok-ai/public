@@ -7,6 +7,7 @@ import {EXCLUDED, FLAGGED, MARK_REASON, appendPasted, emptyStudy, exclusionsOf, 
 import {parseStudy, studyOf, tableOf} from '../study-file';
 import {dateOf, dosingDays, emptyMeta, metaOf, parseMeta, setMetaOn, startFrom, weekdayOf} from '../study-meta';
 import {entryOf, libraryOf, matches} from '../library';
+import {spiderLines} from '../spider-chart';
 
 /** Six animals of one group on days 0, 3 and 7; M4's day 7 a caliper typo (2400 for ~240), M1 losing weight. */
 function study(): StudyColumns {
@@ -93,6 +94,18 @@ category('Study table', () => {
     expect([...df.col(EXCLUDED)!.toList(), ...df.col(FLAGGED)!.toList()].every((v) => !v), true);
     expect(df.rowCount, 3, 'nothing deleted');
     expect(JSON.parse(df.getTag('pmx.log') || '[]').length, 3);
+  });
+
+  test('the spider plot: each animal from its first volume, excluded rows left out', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1', 'M1', 'M1', 'M2', 'M2']),
+      DG.Column.fromStrings('group', ['A', 'A', 'A', 'B', 'B']), DG.Column.fromList('double', 'day', [7, 0, 3, 0, 3]),
+      DG.Column.fromList('double', 'volume', [50, 100, 150, 0, 80]),
+      DG.Column.fromList('bool', EXCLUDED, [false, false, true, false, false])]);
+    const lines = spiderLines({study: df, animal: 'animal', group: 'group', day: 'day', volume: 'volume',
+      bodyWeight: null});
+    expect(lines.length, 1, 'M2 starts at 0 mm³: no line');
+    expect(lines[0].days.join(','), '0,7', 'by day, day 3 excluded');
+    expect(lines[0].change.join(','), '0,-50');
   });
 
   test('the calendar’s dates, doses and notes', async () => {

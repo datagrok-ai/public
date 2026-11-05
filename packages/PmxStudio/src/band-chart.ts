@@ -88,7 +88,7 @@ export class BandChart extends Control {
 }
 
 /** echarts.init without its warning about a host not sized yet (it is resized when it is). */
-function initQuietly(host: HTMLElement): echarts.ECharts {
+export function initQuietly(host: HTMLElement): echarts.ECharts {
   const warn = console.warn;
   console.warn = () => {};
   try {
