@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as Vue from 'vue';
 import {category, test} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {BigButton, ComboPopup, IconFA, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
+import {BigButton, Button, ComboPopup, IconFA, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
 import {awaitWebComponents} from '../../test-utils';
 import {consistency, findLink, openPopover} from '../webcomponents/fixtures';
 
@@ -75,6 +75,24 @@ category('WebComponentsVue: element wrappers', () => {
       disabled.value = false;
       await Vue.nextTick();
       expectDeepEqual(classes(), ['b', ...base], {prefix: 'enabled'});
+    } finally {
+      h.dispose();
+    }
+  });
+
+  test('a button keeps its button classes and passes attributes through', async () => {
+    await awaitWebComponents();
+    const cls = Vue.ref('a');
+    const h = mount(() => Vue.h(Button, {class: cls.value, title: 'Go'}, () => 'Go'));
+    const button = () => h.root.querySelector('button')!;
+    const classes = () => button().className.split(' ').filter((c) => c).sort();
+    try {
+      await Vue.nextTick();
+      expectDeepEqual(classes(), ['a', 'ui-btn', 'ui-btn-ok'], {prefix: 'mounted'});
+      expectDeepEqual(button().title, 'Go', {prefix: 'title'});
+      cls.value = 'b';
+      await Vue.nextTick();
+      expectDeepEqual(classes(), ['b', 'ui-btn', 'ui-btn-ok'], {prefix: 'class changed'});
     } finally {
       h.dispose();
     }

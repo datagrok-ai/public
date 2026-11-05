@@ -19,10 +19,13 @@ declare global {
 
 export const Button = Vue.defineComponent({
   name: 'Button',
-  emits: ['click'],
-  setup(_props, {slots, attrs, emit}) {
-    return () => (<button v-bind={attrs} onClick={(p) => emit('click', p)} is="dg-button">
-      {slots.default ? slots.default() : ''}
+  emits: {
+    click: (_e: MouseEvent) => true,
+  },
+  setup(_props, {slots, emit}) {
+    // Vue rewrites className whenever a class is bound, so the element's own classes are repeated here
+    return () => (<button class={['ui-btn', 'ui-btn-ok']} onClick={(p) => emit('click', p)} is="dg-button">
+      {slots.default?.()}
     </button>);
   },
 });
@@ -35,7 +38,9 @@ export const BigButton = Vue.defineComponent({
       default: false,
     },
   },
-  emits: ['click'],
+  emits: {
+    click: (_e: MouseEvent) => true,
+  },
   setup(props, {slots, emit}) {
     // Vue rewrites className whenever a class is bound, so the element's own classes are repeated here
     return () => (<button
@@ -43,7 +48,7 @@ export const BigButton = Vue.defineComponent({
       onClick={(p) => emit('click', p)}
       is="dg-big-button"
     >
-      {slots.default ? slots.default() : ''}
+      {slots.default?.()}
     </button>);
   },
 });
@@ -73,9 +78,9 @@ export const IconFA = Vue.defineComponent({
       default: false,
     },
   },
-  emits: [
-    'click',
-  ],
+  emits: {
+    click: (_e: MouseEvent) => true,
+  },
   setup(props, {emit}) {
     const instance = Vue.getCurrentInstance();
 
@@ -90,7 +95,7 @@ export const IconFA = Vue.defineComponent({
         role={props.tooltip ? (instance?.vnode.props?.onClick ? 'button' : 'img') : undefined}
         aria-label={props.tooltip ?? undefined}
         faStyle={props.faStyle}
-        onClick={(e: Event) => emit('click', e)}
+        onClick={(e: MouseEvent) => emit('click', e)}
       >
       </dg-icon-fa>);
     };
