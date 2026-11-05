@@ -112,6 +112,52 @@ category('WebComponentsVue: InputForm', () => {
     }
   });
 
+  test('an injected input forwards the consistency reset with its name', async () => {
+    await awaitWebComponents();
+    const input = ui.input.forProperty(DG.Property.js('x', DG.TYPE.FLOAT));
+    const emitted: any[] = [];
+    injectInputBaseStatus((...args: any[]) => emitted.push(args), 'x', input);
+    document.body.append(input.root);
+    try {
+      (input as any).setStatus({consistency: consistency('restricted', true)});
+      findLink(await openPopover(input.root), 'Reset to consistent value')!.click();
+      expectDeepEqual(emitted, [['consistencyReset', 'x']]);
+    } finally {
+      input.root.remove();
+    }
+  });
+
+  test('each input keeps one validation icon across status updates and call swaps', async () => {
+    const funcCall = Vue.shallowRef(scriptWith('double x').prepare({x: 1}));
+    const states = Vue.shallowRef<Record<string, any>>({});
+    const h = await mountInputForm(() =>
+      ({funcCall: funcCall.value, skipLogic: true, validationStates: states.value}));
+    const icons = () => h.input('x').root.querySelectorAll('dg-validation-icon').length;
+    const expectMarked = (cls: string) => waitUntil(() => marks(h.input('x')).every((m) => m === cls),
+      () => `expected ${cls || 'no marks'}, got ${marks(h.input('x'))}`, 3000);
+    try {
+      await h.awaitForm('x');
+      await delay(500);
+      for (const [status, cls] of [[{errors: ['e']}, 'd4-invalid'], [{warnings: ['w']}, 'd4-partially-invalid'],
+        [undefined, ''], [{errors: ['e']}, 'd4-invalid']] as const) {
+        states.value = status ? {x: status} : {};
+        await expectMarked(cls);
+      }
+      expect(icons(), 1, 'status updates added icons');
+
+      const first = h.input('x');
+      funcCall.value = scriptWith('double x').prepare({x: 2});
+      await waitUntil(() => h.input('x') !== first, 'the form was not replaced', 10000);
+      await delay(500);
+      await expectMarked('d4-invalid');
+      states.value = {x: {warnings: ['w']}};
+      await expectMarked('d4-partially-invalid');
+      expect(icons(), 1, 'the swapped form has a single icon');
+    } finally {
+      h.dispose();
+    }
+  });
+
   test('driver validation marks the editor and the caption', async () => {
     const call = scriptWith('double x').prepare({x: 1});
     const states = Vue.shallowRef<Record<string, any>>({});

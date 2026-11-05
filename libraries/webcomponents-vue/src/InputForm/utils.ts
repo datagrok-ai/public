@@ -2,30 +2,21 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {Observable} from 'rxjs';
 import {G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
 import type {
-  ConsistencyInfo, ValidationIcon, ValidationResult,
+  ConsistencyInfo, ValidationIcon, ValidationIconInput,
 } from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
 
 export type {
   RestrictionType, ConsistencyInfo, ActionItem, Advice, ValidationItem, ValidationResult, ValidationIconInput,
 } from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
 
-export interface SubscriptionLike {
-  unsubscribe(): void;
-}
+type StatusInput = DG.InputBase & {setStatus?: (status: ValidationIconInput) => void};
 
-export interface FuncCallInput<T = any> {
-  root: HTMLElement;
-  value: T | null | undefined;
-  notify: boolean;
-  enabled: boolean;
-  onInput: ((cb: Function) => SubscriptionLike) | Observable<T>;
-}
-
-
-export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.InputBase) => {
+// the setter lives on the input: getInput returns the same cached wrapper on every call
+export const injectInputBaseStatus = (emit: Function, ioName: string, t: StatusInput) => {
+  if (t.setStatus)
+    return t.setStatus;
   const icon = new (customElements.get('dg-validation-icon')!)() as ValidationIcon;
   icon.isScalar = DG.TYPES_SCALAR.has(t.property.type);
   icon.isDataFrame = t.property.type === DG.TYPE.DATA_FRAME;
@@ -38,10 +29,7 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
   wrapper.appendChild(icon);
   t.addOptions(wrapper);
 
-  function setStatus(status: {
-    validation?: ValidationResult,
-    consistency?: ConsistencyInfo,
-  }) {
+  return t.setStatus = (status: ValidationIconInput) => {
     const {validation} = status;
 
     icon.validationStatus = status;
@@ -52,9 +40,7 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
       marked.addClass('d4-invalid');
     else if (validation?.warnings && validation.warnings.length)
       marked.addClass('d4-partially-invalid');
-  }
-
-  (t as any).setStatus = setStatus;
+  };
 };
 
 // mutateOnly: the dataframe is edited in its viewers, so the input that replaces it is locked
@@ -83,22 +69,7 @@ export function applyInputsVisibility(
   }
 }
 
-export interface FuncCallInputStatusable<T = any> extends FuncCallInput<T> {
-  setStatus: (status: {
-    validation?: ValidationResult,
-    consistency?: ConsistencyInfo,
-  }) => void;
-}
-
-export function isFuncCallInput<T = any>(arg: any): arg is FuncCallInput<T> {
-  return arg && arg.root && arg.onInput;
-}
-
-export function isInputInjected(arg: any): arg is FuncCallInputStatusable {
-  return arg?.setStatus && isFuncCallInput(arg);
-}
-
-export {DEFAULT_FLOAT_FORMAT, G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
+export {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
 
 export function applyDefaultFloatFormats(call: DG.FuncCall): void {
   for (const param of call.inputParams.values()) {
