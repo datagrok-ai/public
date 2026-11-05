@@ -13,7 +13,7 @@ ARG MAFFT_VERSION
 
 RUN apk add --no-cache bash build-base curl unzip python-${PYTHON_VERSION} py${PYTHON_VERSION}-pip
 
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 RUN curl -fsSL https://mafft.cbrc.jp/alignment/software/mafft-${MAFFT_VERSION}-without-extensions-src.tgz -o /tmp/mafft.tgz ; \
     echo "edb34ae9b26d6b55328c18fa060ed741bca8cd599c2f4f8fad0e0871c8082265  /tmp/mafft.tgz" | sha256sum -c - ; \
@@ -117,7 +117,12 @@ ARG HOME_DIR
 ARG VIRTUAL_ENV
 
 # bash: the mafft driver scripts are bash
-RUN apk upgrade --no-cache ;     apk add --no-cache bash python-${PYTHON_VERSION} ;     rm -rf /usr/lib/python3*/ensurepip ;     addgroup -g 2001 grok ;     adduser -D -h ${HOME_DIR} -G grok -u 1001 grok
+RUN set -e ; \
+    apk upgrade --no-cache ; \
+    apk add --no-cache bash python-${PYTHON_VERSION} ; \
+    rm -rf /usr/lib/python3*/ensurepip ; \
+    addgroup -g 2001 grok ; \
+    adduser -D -h ${HOME_DIR} -G grok -u 1001 grok
 
 COPY --from=builder /usr/lib/mafft /usr/lib/mafft
 COPY --from=builder --chown=grok:grok ${VIRTUAL_ENV} ${VIRTUAL_ENV}
@@ -133,11 +138,8 @@ WORKDIR /opt/PepSeA-main
 ENV ADD_HTTPS_MIDDLEWARE=""
 ENV MAFFT_DIR="/usr/lib/mafft/bin/"
 
-RUN "${MAFFT_DIR}ginsi" --version && python -c "import alignment.api, uvloop, httptools, ujson, pymsa" &&     printf '>a
-MKVLA
->b
-MKVA
-' > /tmp/t.fa && "${MAFFT_DIR}mafft" --quiet /tmp/t.fa && rm -f /tmp/t.fa
+RUN "${MAFFT_DIR}ginsi" --version && python -c "import alignment.api, uvloop, httptools, ujson, pymsa" && \
+    printf '>a\nMKVLA\n>b\nMKVA\n' > /tmp/t.fa && "${MAFFT_DIR}mafft" --quiet /tmp/t.fa && rm -f /tmp/t.fa
 
 # CMD can be changed easially, you need ENTRYPOINT in this case
 ENTRYPOINT ["uvicorn", "--host", "0.0.0.0", "alignment.api:api"]
