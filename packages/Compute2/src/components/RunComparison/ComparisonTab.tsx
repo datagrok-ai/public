@@ -347,7 +347,9 @@ export const ComparisonTab = Vue.defineComponent({
                 {target.displayName}
                 { context && <span class='c2-comparison-context'>{context}</span> }
               </span>
-              <span class='c2-comparison-units' title={target.units ? 'Units of the first run' : ''}>{target.units ?? ''}</span>
+              <span class='c2-comparison-units' title={target.units ? 'Units of the first run' : ''}>
+                {target.units ?? ''}
+              </span>
               { target.unitsWarning ?
                 <IconFA name='exclamation-triangle' tooltip='Units are missing on some runs'/> :
                 target.kind === 'column' && target.rawWithoutUnits ?

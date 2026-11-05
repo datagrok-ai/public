@@ -128,7 +128,9 @@ export function useReactiveTreeDriver(
     states.meta[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
-  Vue.watch([() => providerFunc.value, () => version.value, () => instanceConfig.value], ([providerFunc, version, instanceConfig]) => {
+  Vue.watch([
+    () => providerFunc.value, () => version.value, () => instanceConfig.value,
+  ], ([providerFunc, version, instanceConfig]) => {
     initPipeline(providerFunc, version, instanceConfig);
   });
 
@@ -170,7 +172,9 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'runStep', uuid});
   };
 
-  const runSequence = async (startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean, includeInfo?: boolean) => {
+  const runSequence = async (
+    startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean, includeInfo?: boolean,
+  ) => {
     await overlayService?.show();
     driver.sendCommand({event: 'runSequence', startUuid, rerunWithConsistent, includeNonNested, includeInfo});
   };

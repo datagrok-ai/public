@@ -31,7 +31,8 @@ import {
   findNextStep,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
-  findTreeNodeParrent, getRelevantGlobalActions, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
+  findTreeNodeParrent, getRelevantGlobalActions, hasInconsistencies, hasSubtreeFixableInconsistencies,
+  hasSubtreeAnyInconsistencies,
   resolveChosenUuid, resolveSingleStep, SELECTED_STEP_BACKGROUND,
   isEachDraggable, isDeletable, isDuplicable,
 } from './tree-utils';
@@ -120,7 +121,9 @@ export const TreeWizard = Vue.defineComponent({
       returnResult,
       inspectLinks,
       inspectConfig,
-    } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'), Vue.toRef(props, 'instanceConfig'), overlayService);
+    } = useReactiveTreeDriver(
+      Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'), Vue.toRef(props, 'instanceConfig'), overlayService,
+    );
 
     setHelpService();
 
@@ -199,10 +202,10 @@ export const TreeWizard = Vue.defineComponent({
       (state.isReadonly ? state.sourceRunId : undefined);
     const addNodeToComparison = (state: PipelineState) => {
       const runId = savedRunOf(state);
-      if (runId)
+      if (runId) {
         addRunToComparison(runId, state.uuid === treeState.value?.uuid ? currentMetaCallData.value?.title :
           sourceTitle(state), modelOf(state));
-      else
+      } else
         addToComparison(snapshotOf(state), modelOf(state));
     };
     const addModelToComparison = () => addNodeToComparison(treeState.value!);
@@ -478,8 +481,8 @@ export const TreeWizard = Vue.defineComponent({
             meta: currentMetaCallData.value,
             ...exportStates(),
             metaStates: states.meta,
-            hasNotSavedEdits: hasNotSavedEdits.value
-          })
+            hasNotSavedEdits: hasNotSavedEdits.value,
+          }),
         };
         activeExports.push(defaultExport);
       }
@@ -489,9 +492,11 @@ export const TreeWizard = Vue.defineComponent({
 
     const exportHandler = async (exportData: CustomExport) => {
       if (!treeState.value)
-        return
+        return;
       const utils = {
-        reportFuncCallExcel: async (fc: DG.FuncCall, uuid: string, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>) => {
+        reportFuncCallExcel: async (
+          fc: DG.FuncCall, uuid: string, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>,
+        ) => {
           const viewers = await getViewers(fc, viewersHook, metaState);
           return richFunctionViewReport(
             'Excel',
@@ -516,7 +521,7 @@ export const TreeWizard = Vue.defineComponent({
         getExportSummary: (state: PipelineState) => getExportSummary(state, exportStates()),
         reportSummaryExcel: (state: PipelineState) => reportSummary(getExportSummary(state, exportStates())),
         getFuncCallCustomExports: (fc: DG.FuncCall) => {
-          return Utils.getCustomExports(fc.func).map(x => x.name);
+          return Utils.getCustomExports(fc.func).map((x) => x.name);
         },
         runFuncCallCustomExport: async (fc: DG.FuncCall, uuid: string, exportName: string) => {
           return applyCustomExport(fc, exportName, {
@@ -533,7 +538,7 @@ export const TreeWizard = Vue.defineComponent({
       } catch (e: any) {
         grok.shell.error(e);
       }
-    }
+    };
 
     ////
     // chosen step state
@@ -587,7 +592,8 @@ export const TreeWizard = Vue.defineComponent({
       const callState = states.calls[chosenStepUuid.value];
       if (!callState)
         return true;
-      return (!callState.isRunnable || callState.isRunning || treeMutationsLocked.value || chosenStepState.value?.isReadonly);
+      return (!callState.isRunnable || callState.isRunning || treeMutationsLocked.value ||
+        chosenStepState.value?.isReadonly);
     });
 
     const isOutputOutdated = Vue.computed(() => {
@@ -631,7 +637,7 @@ export const TreeWizard = Vue.defineComponent({
       if (!treeState.value || !chosenStepUuid.value)
         return {};
       const globalActions = getRelevantGlobalActions(treeState.value, chosenStepUuid.value);
-      const currentStepActions = chosenStepState.value?.actions?.filter(action => action.position === 'menu') ?? [];
+      const currentStepActions = chosenStepState.value?.actions?.filter((action) => action.position === 'menu') ?? [];
       const actions = [...globalActions, ...currentStepActions]
         .filter((action) => !hiddenActions.value?.has(action.uuid));
       return actions.reduce((acc, action) => {
@@ -858,12 +864,15 @@ export const TreeWizard = Vue.defineComponent({
                         isDuplicable={isDuplicable(stat)}
                         isReadonly={stat.data.isReadonly}
                         isSelected={stat.data.uuid === chosenStepUuid.value}
-                        hasInconsistentSubsteps={!!hasSubtreeAnyInconsistencies(stat.data, states.calls, states.consistency)}
+                        hasInconsistentSubsteps={
+                          !!hasSubtreeAnyInconsistencies(stat.data, states.calls, states.consistency)
+                        }
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
                         onRemoveNode={() => removeStepWithConfirm(stat.data)}
                         onDuplicateNode={() => duplicateStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
-                        onRunSubtree={(startUuid, rerunWithConsistent) => runSubtreeWithConfirm(startUuid, rerunWithConsistent)}
+                        onRunSubtree={(startUuid, rerunWithConsistent) =>
+                          runSubtreeWithConfirm(startUuid, rerunWithConsistent)}
                         onRunStep={(uuid) => runStep(uuid)}
                         onSaveStep={(uuid) => saveSubTreeState(uuid)}
                         onCompareWithOriginal={() => compareNodeWithOriginal(stat.data)}
@@ -947,7 +956,8 @@ export const TreeWizard = Vue.defineComponent({
               </RichFunctionView>
           }
           {
-            !pipelineViewHidden.value && chosenStepUuid.value && chosenStepState.value && !isFuncCallState(chosenStepState.value) &&
+            !pipelineViewHidden.value && chosenStepUuid.value && chosenStepState.value &&
+            !isFuncCallState(chosenStepState.value) &&
             <PipelineView
               funcCall={chosenPipelineFuncCall.value}
               key={chosenStepUuid.value!}
@@ -956,9 +966,9 @@ export const TreeWizard = Vue.defineComponent({
               isRoot={isRootChoosen.value}
               isParentReadonly={isChosenParentReadonly.value}
               buttonActions={buttonActions.value}
-              body={typeof states.descriptions[chosenStepUuid.value]?.body === 'string'
-                ? states.descriptions[chosenStepUuid.value]?.body as string
-                : undefined}
+              body={typeof states.descriptions[chosenStepUuid.value]?.body === 'string' ?
+                states.descriptions[chosenStepUuid.value]?.body as string :
+                undefined}
               onActionRequested={runActionWithConfirmation}
               onCompareWithOriginal={() => compareNodeWithOriginal(chosenStepState.value!)}
               dock-spawn-title='Step sequence review'
