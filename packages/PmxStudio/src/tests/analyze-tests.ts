@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {OBSERVED, PREDICTED, exampleStudy} from '../analyze';
+import {OBSERVED, PREDICTED, REANCHOR, exampleStudy} from '../analyze';
 import {PLAN_TAG, parsePlan, powerAt} from '../plan-file';
 import {noEffectNote} from '../plan-vs-observed';
 
@@ -211,6 +211,34 @@ category('Analyze', () => {
     expect([...new Set(n.predicted.col('series')!.toList())].sort().join(), [OBSERVED, PREDICTED].sort().join());
     expect(n.analysis.get('control_verdict', 0) !== null, true);
   }, {timeout: 300000});
+
+  test('plan vs observed: a study randomized larger than planned, its controls predicted from its own start',
+    async () => {
+      const study = await exampleStudy();
+      const plan = parsePlan(study.getTag(PLAN_TAG)!);
+      const bandStart = (o: {[k: string]: DG.DataFrame}) => {
+        const p = o.predicted;
+        const i = Array.from({length: p.rowCount}, (_, k) => k)
+          .find((k) => p.get('series', k) === PREDICTED && p.get('day', k) === 0)!;
+        return p.get('median', i);
+      };
+      const notes = (o: {[k: string]: DG.DataFrame}) => String(o.analysis.get('plan_notes', 0));
+      // as planned (the example's start near the plan's): the plan's own band, nothing said
+      const asPlanned = await analyze(study);
+      const planned = plan.predicted.checks.controls[0].median;
+      expect(Math.abs(bandStart(asPlanned) - planned) < 1e-3, true, `${bandStart(asPlanned)} vs ${planned}`);
+      expect(notes(asPlanned).includes('Randomized at'), false, notes(asPlanned));
+      // every tumor 1.5 times larger: the band starts at the study's own start, the endpoint comes earlier
+      const larger = study.clone();
+      larger.setTag(PLAN_TAG, study.getTag(PLAN_TAG)!);
+      larger.col('volume')!.init((i) => study.col('volume')!.get(i) * 1.5);
+      const start = bandStart(asPlanned) * 1.5;
+      const o = await analyze(larger);
+      expect(Math.abs(Math.log(bandStart(o) / start)) < Math.log(REANCHOR), true, `band ${bandStart(o)} vs ${start}`);
+      expect(o.analysis.get('end_median', 0) < plan.predicted.checks.end.median, true,
+        `end ${o.analysis.get('end_median', 0)} vs the plan's ${plan.predicted.checks.end.median}`);
+      expect(notes(o).includes('Randomized at'), true, notes(o));
+    }, {timeout: 300000});
 
   test('no clear effect: what the study could have detected, said with it', async () => {
     // with a plan, the power it gave the arm with these animals, and the animals it needed

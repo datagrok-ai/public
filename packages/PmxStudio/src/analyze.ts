@@ -19,11 +19,11 @@ import * as DG from 'datagrok-api/dg';
 import {crux, CruxResult, MAX_SETS, named, rows} from './crux';
 import {Correction, EffectMetric, HUMANE, LAB_WEEKDAYS, SEED, StudyDeclaration, StudyDesign, correctionOf,
   designStudy, finite, isFiniteNumber as ok, lineModel} from './engine';
-import {armColors} from './frames';
+import {PlanInputs, armColors, declarationOf} from './frames';
 import {gpu} from './gpu';
 import {LineDensity, linePrior, tumourDensity} from './priors';
 import {PLAN_TAG, SavedPlan, parsePlan, powerAt, savedPlan} from './plan-file';
-import {PlanChecks, Range, planChecks} from './plan-checks';
+import {ChecksInput, PlanChecks, Range, planChecks} from './plan-checks';
 
 /** `volume`: NaN where the row has none; `weight`: the body weight (g) of each row, null when the study has none;
  *  `mass`: the tumor's ex vivo weight (g) on the row of the day it was excised, null when the study has none;
@@ -440,20 +440,38 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
     twins, effects, checks, controlCoverage: checks.length ? inside / checks.length : null, oddControls, notes};
 }
 
-/** The designs an analysis with no plan reads its study against: the same line, endpoint, volume, comparisons and
- *  animals give the same design, so a rerun (another correction, a tab opened again) does not search again. */
-const noPlanDesigns = new Map<string, Promise<StudyDesign>>();
-
-function noPlanDesign(d: StudyDeclaration): Promise<StudyDesign> {
-  const key = JSON.stringify(d);
-  let design = noPlanDesigns.get(key);
-  if (!design) {
-    design = designStudy(d);
-    noPlanDesigns.set(key, design);
-    design.catch(() => noPlanDesigns.delete(key));
-  }
-  return design;
+/** fn's results by its input (a failure not kept, so the next call tries again): a rerun (another correction, a tab
+ *  opened again) does not compute them again. */
+function remembered<A, R>(fn: (a: A) => Promise<R>): (a: A) => Promise<R> {
+  const seen = new Map<string, Promise<R>>();
+  return (a) => {
+    const key = JSON.stringify(a);
+    let r = seen.get(key);
+    if (!r) {
+      r = fn(a);
+      seen.set(key, r);
+      r.catch(() => seen.delete(key));
+    }
+    return r;
+  };
 }
+
+/** The designs an analysis with no plan reads its study against, and the checks of a study's own start. */
+const noPlanDesign = remembered<StudyDeclaration, StudyDesign>(designStudy);
+const checksAt = remembered<ChecksInput, PlanChecks>(planChecks);
+
+/** The study's volume at randomization: the median of every animal's day-0 volume (before any treatment, so every
+ *  group's); null when none was measured. */
+function startVolume(d: AnalysisDeclaration): number | null {
+  const day0 = d.data.volume.filter((v, i) => d.data.day[i] === 0 && Number.isFinite(v));
+  return day0.length ? median(day0) : null;
+}
+
+/** A study randomized at a volume this far from the plan's (either way) has its controls and its end predicted
+ *  again from its own start, where its early controls fall outside the band in 4 to 5 of 100 studies of normal growth
+ *  whatever the start. Against the plan's band (MC38, CT26, B16F10): at most 8 from 10% off, 12 from 15%, 18 from
+ *  20%. Lower costs nothing but more studies shown recomputed numbers (the observed start alone varies ~8%). */
+export const REANCHOR = 1.10;
 
 /** Each treated group with the plan's arm it ran as: the same name (any case), else, for the groups left, the arms
  *  left in their order when they are as many (said in a note). */
@@ -489,17 +507,16 @@ function verdictOf(metric: EffectMetric, observed: number | null, activity: Acti
 
 /** The study against its plan's predictive checks: the controls' growth, the end and each treated group's effect,
  *  each against the 95% range a study run as planned shows. With no plan, the controls and the end against the
- *  line's atlas: the checks of Plan's design for this line and endpoint, randomized at the controls' median on day
- *  0, with this study's controls (ponytail: on Mon / Wed / Fri; the study's own weekdays if the calendar matters). */
+ *  line's atlas: the checks of Plan's design for this line and endpoint, randomized at the study's median on day 0,
+ *  with this study's controls (ponytail: on Mon / Wed / Fri; the study's own weekdays if the calendar matters). */
 async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: ArmAnalysis[],
   controls: number): Promise<PlanComparison> {
   const notes: string[] = [];
   let p = d.plan?.predicted;
   const mde = new Map<string, number | null>();
+  const start = startVolume(d);
   if (!p) {
-    const day0 = d.data.volume.filter((v, i) => d.data.group[i] === d.control && d.data.day[i] === 0 &&
-      Number.isFinite(v));
-    const vRand = day0.length ? median(day0) : 100;
+    const vRand = start ?? 100;
     const design = (n: number | null) => noPlanDesign({line: d.line, vRand, endpoint: d.endpoint, power: 0.8,
       alpha: d.alpha, correction: d.correction, n, treatedArms: arms.length,
       arms: [{name: 'x', therapy: 'small_molecule', metric: 'TGI', effect: 60}],
@@ -510,7 +527,7 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
     // comparisons) detects, which only it shows (a search of seconds: not for the groups with an effect)
     for (const a of arms.filter((x) => activityOf(x) === 'No clear effect'))
       mde.set(a.arm, (await design(Math.max(3, a.n))).arms[0].mde);
-    const checks = await planChecks({line: d.line, vRand, endpoint: d.endpoint, humane: HUMANE,
+    const checks = await checksAt({line: d.line, vRand, endpoint: d.endpoint, humane: HUMANE,
       weekdays: LAB_WEEKDAYS, startWeekday: 0, endpointDay: s.endpointDay, nControl: controls, arms: []});
     p = {line: d.line, endpoint: d.endpoint, vRand, studyEnd: s.endpointDay, endpointDay: s.endpointDay,
       durationQ10: s.durationQ10, durationQ90: s.durationQ90, nControl: controls, arms: [], checks};
@@ -520,18 +537,20 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
     if (p.endpoint !== d.endpoint)
       notes.push(`The plan's endpoint is ${p.endpoint} mm³; this analysis uses ${d.endpoint} mm³`);
   }
-  // the band starts from the plan's volume at randomization: a study randomized much larger or smaller grows apart
-  // from it from day 0 (said, not corrected)
-  const atStart = d.data.volume.filter((v, i) => d.data.group[i] === d.control && d.data.day[i] === 0 &&
-    Number.isFinite(v));
-  if (d.plan && atStart.length) {
-    const start = median(atStart);
-    if (start / p.vRand > 1.25 || start / p.vRand < 0.8) {
-      notes.push(`The controls were randomized at ${Math.round(start)} mm³ (median), the plan at ${p.vRand} mm³: ` +
-        'their growth is predicted from another volume');
-    }
+  // a study randomized larger or smaller than planned grows apart from the plan's band from day 0: its controls and
+  // its end predicted again from its own start, by the plan's model, line and schedule (the .pmxplan unchanged; each
+  // arm's range stays the plan's: it moves little with the start, and the plan keeps no kill rate to compute it again)
+  let c = p.checks;
+  if (d.plan && start !== null && Math.abs(Math.log(start / p.vRand)) > Math.log(REANCHOR)) {
+    const pd = declarationOf(d.plan.inputs as unknown as PlanInputs);
+    const own = await checksAt({line: p.line, vRand: start, endpoint: p.endpoint, humane: pd.humane,
+      weekdays: pd.weekdays, startWeekday: pd.startWeekday, endpointDay: p.endpointDay,
+      nControl: p.nControl ?? controls, arms: []});
+    notes.push(`Randomized at ${Math.round(start)} mm³ (median), the plan at ${p.vRand} mm³: the controls and the ` +
+      `end are predicted from ${Math.round(start)} mm³, the median control reaching ${p.endpoint} mm³ about day ` +
+      `${Math.round(own.end.median)} (the plan: day ${Math.round(c.end.median)})`);
+    c = {...c, end: own.end, notReached: own.notReached, controlSlope: own.controlSlope, controls: own.controls};
   }
-  const c = p.checks;
 
   // the controls' growth: their mean slope of log V to the evaluation day (the test's own quantity)
   const slope = arms.length ? arms[0].slopeControl : null;
