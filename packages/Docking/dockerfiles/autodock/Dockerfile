@@ -66,7 +66,11 @@ RUN mamba remove -n autodock --force -y pip setuptools wheel certifi && \
     python -c "import flask, concurrent.futures; from MolKit import Read; from AutoDockTools.MoleculePreparation import AD4LigandPreparation, AD4ReceptorPreparation" && \
     rm -f /usr/local/miniforge/envs/autodock/lib/python2.7/ensurepip/_bundled/*.whl \
           /usr/local/miniforge/lib/python3.*/ensurepip/_bundled/*.whl && \
-    /usr/local/miniforge/bin/pip install --no-cache-dir --upgrade 'urllib3>=2.7' 'msgpack>=1.2.1'
+    /usr/local/miniforge/bin/pip install --no-cache-dir --upgrade 'urllib3>=2.8' 'msgpack>=1.2.3' && \
+    mamba install -n base -c conda-forge -y 'py-rattler>=0.28.1' && \
+    mamba remove -n base --force -y pip && \
+    mamba clean -afy
+RUN (find / -xdev \( -name '*.whl' -o -name 'vendor.txt' -o -iname 'setuptools-*' -o -iname 'urllib3-*' -o -iname 'msgpack*' -o -name 'rattler*.so' \) 2>/dev/null | grep -v '^/proc'; grep -l 'rattler' /usr/local/miniforge/conda-meta/*.json; ls /usr/local/miniforge/conda-meta/ | grep -i -E 'rattler|conda-|mamba|pip|setuptools'; python -c "import flask, concurrent.futures; from MolKit import Read") || true
 
 COPY autodock.py /app/autodock.py
 
