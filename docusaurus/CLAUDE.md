@@ -1,7 +1,7 @@
 # Docusaurus (Main Documentation Site)
 
 Docusaurus 3.10 (React/Node.js) static site that serves the datagrok.ai documentation:
-- `/help/*` — Platform documentation (Markdown from `public/help/`)
+- `/help/*` — Platform documentation (Markdown from the datagrok-ai/help repository, `../../help` from here)
 - `/api/js/*` — JavaScript API reference (TypeDoc-generated)
 - `/api/py/*` — Python API reference (custom AST-based generator)
 - `/blog/*` — Blog (Markdown from `docusaurus/blog/`, see `blog/_README.md` for the authoring guide)
@@ -59,4 +59,4 @@ Build runs three pre-build scripts automatically: `generatePluginsPages.js`, `ge
 
 ## Deployment
 
-Push to `master` in the `public` repo with changes in `help/`, `docusaurus/`, `js-api/`, or `python-api/`. GitHub Actions workflow (`.github/workflows/docusaurus.yaml`) handles build, deploy (rsync), and Typesense search re-indexing.
+Push to `master` in the `public` repo with changes in `docusaurus/`, `js-api/`, or `python-api/`, or a push to `master` in the `help` repo (its `bump-public` workflow dispatches the build). GitHub Actions workflow (`.github/workflows/docusaurus.yaml`) handles build, deploy (rsync), and Typesense search re-indexing.

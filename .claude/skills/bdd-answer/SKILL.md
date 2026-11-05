@@ -83,7 +83,7 @@ What a guide shows, and what the runtime guarantees (`grok-bdd guide` sets it up
 2. Grep `features/` for a scenario that already does it — a test scenario often is the answer,
    only written for a checker rather than a reader. Prefer filming it as it is.
 3. Otherwise write `features/guides/<slug>.feature`: tag `@guide` (and `@help:<page dir>` when it
-   illustrates a help page under `public/help/`), a description that quotes the question, one
+   illustrates a help page under `help/`), a description that quotes the question, one
    scenario of 5–12 steps. Every `When` names the element a person would click, in the order they
    would; a `Then` after the decisive step shows the result. Step text is the caption of the video
    (`user clicks on X inside Y` → "Click on X in Y"), so it is written for the person asking; where a
@@ -150,7 +150,7 @@ strip or dimming, no zoom, and no set-up — every `Given` is left out, and the 
 before the first action and holds its result two seconds.
 
 1. **Write the feature** in `features/guides/` of the package that owns the area, tagged
-   `@guide @help:<page dir>` (the dir under `public/help/`), named by what it shows:
+   `@guide @help:<page dir>` (the dir under `help/`), named by what it shows:
    - one action and its result; set, then undone where the flow allows (a filter applied and reset,
      a column hidden and shown), ending where it started so the loop does not jump;
    - cause before effect: nothing changes on screen before the gesture that changes it;
@@ -166,9 +166,9 @@ before the first action and holds its result two seconds.
    `guide-thumb.png` and single frames at 800 px: nothing cut off, labels readable, cause before effect.
 3. **Film it on the stand the help is reviewed on**: `npx grok-bdd guide --help-pages` films every
    `@help:` feature of the package and puts each `<scenario slug>.gif` and `-thumb.png` into
-   `public/help/<page dir>/img/`. A GIF the page already has is not overwritten: the new one is
+   `help/<page dir>/img/`. A GIF the page already has is not overwritten: the new one is
    `<slug>.new.gif`, swapped in after the reviewer approves it; the old file goes only when nothing
-   else references it. `public/help` is the datagrok-ai/help submodule: the GIFs are committed there,
+   else references it. `help` is the datagrok-ai/help repository: the GIFs are committed there,
    the feature to `public`.
 4. **Leave the stand as it was.** What a feature makes goes at feature end (the library's rule), and a
    killed run's leftovers are swept by the fixture's own name family — so on a shared stand a fixture

@@ -15,11 +15,13 @@ public/
 ├── packages/        # Extension packages (viewers, connectors, scientific tools)
 ├── tools/           # CLI tool "grok" (datagrok-tools)
 ├── python-api/      # Python API bindings
-├── help/            # Documentation: the datagrok-ai/help submodule (commit doc changes there)
 ├── docker/          # Docker deployment configs
 ├── environments/    # Environment configurations
 └── misc/            # ESLint config, utilities
 ```
+
+Documentation is the datagrok-ai/help repository, a sibling of `public/` in the datagrok umbrella
+(`../help`): commit doc changes there.
 
 ## js-api (datagrok-api)
 

@@ -1,14 +1,14 @@
 ---
 paths:
-  - help/**
   - docusaurus/**
   - docusaurus-static/**
 ---
 
 # Documentation
 
-`help/` is a submodule of datagrok-ai/help: commit and push doc changes in that repo, never the
-`help` pointer in public (a bot bumps it on every help merge).
+Help pages live in the datagrok-ai/help repository, a sibling of `public/` in the datagrok umbrella
+(`../help`): commit and push doc changes there. A help merge to master redeploys the site
+(help's `bump-public` workflow dispatches `docusaurus.yaml` here).
 
 Documentation uses Docusaurus. Files are Markdown with YAML frontmatter:
 
