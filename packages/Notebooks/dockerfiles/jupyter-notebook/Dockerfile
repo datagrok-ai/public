@@ -189,7 +189,8 @@ RUN set -e ; \
     apk add --no-cache \
       bash procps gettext-envsubst \
       python-${PYTHON_VERSION} libstdc++ libgomp zlib libprotobuf \
-      nginx-stable nginx-stable-mime-types \
+      # Wolfi's nginx-stable lags behind its security fixes \
+      nginx-mainline nginx-mainline-mime-types \
       # NLP \
       tesseract tesseract-eng tesseract-osd unrtf poppler-utils \
       # NLP END \
@@ -257,6 +258,7 @@ USER grok:grok
 # executed by the kernel and exported to PDF exactly as grok_helper's /notebooks/convert does
 RUN cd /tmp ; \
     command -v antiword unrtf pdftotext xelatex ; \
+    find / -xdev \( -name 'setuptools*.dist-info' -o -name 'setuptools*.egg-info' -o -name 'setuptools*.whl' -o -name 'setuptools*.tar.gz' \) 2>/dev/null || true ; \
     tesseract --list-langs ; gdalinfo --version ; gs --version ; pandoc --version > /dev/null ; \
     gnuplot -e 'set terminal dumb; plot sin(x)' > /dev/null ; \
     RESOLVER_ADDR=127.0.0.1 envsubst '${RESOLVER_ADDR}' < /etc/nginx/nginx.conf.template > /tmp/nginx.conf ; \
