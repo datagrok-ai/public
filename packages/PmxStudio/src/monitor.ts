@@ -5,9 +5,43 @@ import * as DG from 'datagrok-api/dg';
 
 import {AnalysisInputs, analysisDeclarationOf, pairGroups, tolerabilityFrames, twinModel} from './analyze';
 import {ARCHETYPES} from './archetypes';
-import {crux, named, rows} from './crux';
+import {crux, CruxResult, named, rows} from './crux';
 import {LAB_WEEKDAYS, designStudy} from './engine';
+import {gpu} from './gpu';
 import {SavedPlan} from './plan-file';
+
+type Study = {animal: string[], group: string[], day: Float64Array, volume: Float64Array};
+
+/** stats.tumor_monitor on the twin's WebGPU device where there is one (its study posterior is the twin's grid work,
+ *  most of the call), else on the CPU workers. */
+async function fastMonitor(study: Study, params: {[k: string]: any}): Promise<CruxResult> {
+  if (await gpu()) {
+    try {
+      return await crux('stats.tumor_monitor', study, {...params, device: 'webgpu'});
+    } catch (e) {
+      console.warn('PMX Studio: the Monitor on WebGPU failed, on the CPU workers instead', e);
+    }
+  }
+  return crux('stats.tumor_monitor', study, params);
+}
+
+/** The last forecasts by their inputs, as twinOf keeps the twins: a value set back (a limit tried and undone) costs
+ *  nothing. */
+const monitorCache = new Map<string, Promise<CruxResult>>();
+function monitorOf(study: Study, params: {[k: string]: any}): Promise<CruxResult> {
+  const key = JSON.stringify([study.animal, study.group, Array.from(study.day), Array.from(study.volume), params]);
+  let result = monitorCache.get(key);
+  if (result)
+    monitorCache.delete(key); // re-inserted below: most recently used last
+  else {
+    result = fastMonitor(study, params);
+    result.catch(() => monitorCache.delete(key));
+    if (monitorCache.size >= 8) // ponytail: 8 forecasts, the least recently used out
+      monitorCache.delete(monitorCache.keys().next().value!);
+  }
+  monitorCache.set(key, result);
+  return result;
+}
 
 /** Chance of passing the limit by the next measurement from which an animal is listed. */
 export const LIMIT_ALERT = 0.2;
@@ -130,7 +164,7 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   const arms = await armsOf(d.plan, names.filter((g) => g !== d.control), d.endpoint, d.humane, notes);
   const latest = Math.max(...day);
   const future = futureDays(day);
-  const r = await crux('stats.tumor_monitor', {animal, group, day: Float64Array.from(day),
+  const r = await monitorOf({animal, group, day: Float64Array.from(day),
     volume: Float64Array.from(volume)}, {...await twinModel(d.line), control: d.control,
     ...arms.length ? {arms: JSON.stringify(arms)} : {}, future: future.join(','), endpoint: d.endpoint,
     humane: d.humane, alpha: d.alpha, correction: d.correction, ...d.day === null ? {} : {last_day: d.day}});

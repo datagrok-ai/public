@@ -241,8 +241,8 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
   const planState = {stale, error, result, reading: Promise.resolve() as Promise<unknown>};
   // the study and columns the shown result read (Your data opens them)
   let resultStudy: StudyInputs | null = null;
-  // the twin inputs of the last analysis that got its twin (the twin then in the engine's cache)
-  let twinCached: string | null = null;
+  // the twin inputs of the last analyses that got their twin, as many as the engine keeps (twinOf's 8)
+  const twinsCached: string[] = [];
   const analyze = async (prepare?: () => Promise<void>) => {
     busy.value = true;
     const mine = ++latest;
@@ -257,7 +257,7 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
       const reads = studyInputsOf(call);
       const twinSent = askedOf(call, TWIN_INPUTS);
       // the twin unchanged (cached): one call, with it
-      if (twinSent === twinCached) {
+      if (twinsCached.includes(twinSent)) {
         call.setParamValue('withTwin', true);
         const c = await call.call();
         if (mine !== latest)
@@ -283,7 +283,8 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
       void full.call().then((done) => {
         if (mine !== latest)
           return;
-        twinCached = twinSent;
+        if (!twinsCached.includes(twinSent) && twinsCached.push(twinSent) > 8)
+          twinsCached.shift();
         result.value = keepSame(result.peek(), read(done));
       }, (e) => {
         if (mine === latest)
@@ -405,7 +406,8 @@ function analyzeContent(self: ViewHost, opening?: AnalyzeStart): ViewContent {
       ?.scrollIntoView({behavior: 'smooth', block: 'center'}));
   };
   // what a panel reads besides its own tables: the control and the treated groups (their colours follow from them)
-  const groupsOf = (r: AnalysisFrames) => [r.analysis.get('control', 0), r.comparisons.col('arm')!.toList().join(' ')];
+  const groupsOf = (r: AnalysisFrames) => [r.analysis.get('control', 0),
+    r.comparisons.col('arm')!.toList().join('\u0000')];
   const colorsOf = (r: AnalysisFrames) => {
     const colors = armColors(r.comparisons.col('arm')!.toList());
     colors[r.analysis.get('control', 0)] = colors['Control'];
