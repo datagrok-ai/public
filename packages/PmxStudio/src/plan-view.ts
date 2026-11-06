@@ -65,7 +65,7 @@ function calendarGrid(p: DG.DataFrame, calendar: DG.DataFrame, startDay: HTMLEle
   const end = v('study_end') as number;
   const endpointDay = v('endpoint_day') as number;
   const humane = v('humane_limit');
-  const watch = v('humane_watch_day') as number | null;
+  const watch = finite(v('humane_watch_day'));
   const details = new Map<number, string>(Array.from({length: calendar.rowCount},
     (_, i) => [calendar.get('day', i), calendar.get('activity', i)]));
   const measured = new Set(String(v('measurement_days')).split(', ').map(Number));

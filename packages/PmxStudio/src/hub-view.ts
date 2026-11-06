@@ -285,22 +285,28 @@ function yourStudies(): HTMLElement {
       showNone();
     }});
   const muted = (s: string) => h('span', 'pmx-muted', [s]);
-  const table = new BasicTable<LibraryEntry>({items, keyOf: (e) => e.file?.fullPath ?? e.id + e.name,
+  // fixed columns, so the table keeps its shape whatever the filter shows: a longer cell ends in an ellipsis and
+  // shows its whole text on hover (u2-table-clip: the table titles it when cut)
+  const clip = (c: Node | string, cls = '') => h('div', `u2-table-clip pmx-clip ${cls}`, [c]);
+  const table = new BasicTable<LibraryEntry>({items, keyOf: (e) => e.file?.fullPath ?? e.id + e.name, fixedLayout: true,
     columns: [
-      {header: 'Study', render: (e) => h('div', 'pmx-study-cell', [h('div', '', [e.name]), muted(e.id)])},
-      {header: 'Compound and schedule', render: (e) => e.treatment},
-      {header: 'Line', render: (e) => e.line},
-      {header: 'Stage', render: stageMarker},
-      {header: 'Progress', render: progressOf},
-      {header: 'Owner', render: (e) => muted(e.owner)},
-      {header: 'Updated', render: (e) => muted(e.updated ? new Date(e.updated).toLocaleDateString('en-GB',
-        {day: 'numeric', month: 'short', year: 'numeric'}) : '')},
-      {header: 'Tags', render: (e) => h('span', '', e.tags.map((t) => h('span', 'pmx-tag', [t])))},
+      {header: 'Study', width: '22%', render: (e) => h('div', 'pmx-study-cell', [clip(e.name), clip(muted(e.id))])},
+      {header: 'Compound and schedule', width: '20%', render: (e) => clip(e.treatment)},
+      {header: 'Line', width: '7%', render: (e) => clip(e.line)},
+      {header: 'Stage', width: '11%', render: (e) => clip(stageMarker(e))},
+      {header: 'Progress', width: '15%', render: (e) => clip(progressOf(e))},
+      {header: 'Owner', width: '8%', render: (e) => clip(muted(e.owner))},
+      {header: 'Updated', width: '9%', render: (e) => clip(muted(e.updated ? new Date(e.updated)
+        .toLocaleDateString('en-GB', {day: 'numeric', month: 'short', year: 'numeric'}) : ''))},
+      {header: 'Tags', width: '8%', render: (e) => {
+        const tags = clip(h('span', '', e.tags.map((t) => h('span', 'pmx-tag', [t]))));
+        tags.title = e.tags.join(', ');
+        return tags;
+      }},
     ],
     onRowClick: (e) => void (e.open ? e.open() : e.kind === 'plan' ?
       planView(parsePlan(e.text)).then((v) => showStage('plan', v)) : openStudyFile(e.text))
       .catch((err) => grok.shell.error(String(err?.message ?? err)))});
-  table.root.style.width = '100%';
   table.root.style.cursor = 'pointer';
   host.append(h('div', 'pmx-library-head', [h('h3', '', ['Your studies']), search.root, chips]), today,
     h('div', 'pmx-library', [table.root, none]));

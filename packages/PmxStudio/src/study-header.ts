@@ -127,5 +127,24 @@ export function steps(current: Stage, open: (stage: Stage) => void): HTMLElement
     }
     nav.append(step);
   });
+  // centred in the header while the view's own buttons leave room around it, else just after them
+  // (after the observer's turn: moving it within the turn would be a ResizeObserver loop)
+  const place = () => {
+    const ribbon = nav.closest('.d4-ribbon');
+    // a view out of sight is detached: placed again when it shows
+    if (!ribbon)
+      return;
+    fit.observe(ribbon);
+    Object.assign(nav.style, {left: '', transform: ''});
+    const me = nav.getBoundingClientRect();
+    const own = nav.closest('.d4-ribbon-item');
+    const others = [...ribbon.querySelectorAll('.d4-ribbon-item')].filter((it) => it !== own)
+      .map((it) => it.getBoundingClientRect()).filter((r) => r.width > 0);
+    const left = Math.max(ribbon.getBoundingClientRect().left, ...others.map((r) => r.right)) + 24;
+    if (me.left < left && nav.offsetParent)
+      Object.assign(nav.style, {left: `${left - nav.offsetParent.getBoundingClientRect().left}px`, transform: 'none'});
+  };
+  const fit = new ResizeObserver(() => requestAnimationFrame(place));
+  fit.observe(nav);
   return nav;
 }

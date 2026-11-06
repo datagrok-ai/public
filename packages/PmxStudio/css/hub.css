@@ -122,7 +122,7 @@
 /* the search takes the row's free width, from the title to the filters */
 .pmx-library-head .ui-input-root:has(input) { flex: 1 1 260px; max-width: none; }
 .pmx-library-head .ui-input-root:has(input) .ui-input-editor, .pmx-library-head .ui-input-string input { width: 100%; max-width: none; }
-.pmx-library { max-height: 520px; overflow: auto; }
+.pmx-library { max-height: 520px; overflow: auto; scrollbar-gutter: stable; }
 .pmx-muted { color: var(--dg-grey-5, #717581); }
 .pmx-tag { display: inline-block; margin-right: 4px; padding: 0 6px; border-radius: 8px; font-size: 11px;
   background: var(--dg-grey-1, #f2f3f5); color: var(--dg-grey-6, #4d5261); }
@@ -234,3 +234,4 @@
 .pmx-studies .u2-table td { padding-top: 9px; padding-bottom: 9px; border-bottom: 1px solid var(--dg-grey-1, #eef0f3); vertical-align: middle; }
 .pmx-study-cell { line-height: 1.35; }
 .pmx-study-cell .pmx-muted { font-size: 12px; }
+.pmx-clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
