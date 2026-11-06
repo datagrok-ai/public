@@ -2120,6 +2120,11 @@ export class AddNewColumnDialog {
       return;
     }
     const emptyColumnType = this.getEmptyColumnType(this.codeMirror!.state.doc.toString());
+    const df = this.sourceDf!;
+    const edited = this.edit ? df.col(this.call!.getParamValue('name')) : null;
+    const before = edited?.clone() ?? null;
+    const beforeIndex = edited ? df.columns.names().indexOf(edited.name) : -1;
+    let added: DG.Column | null = null;
     if (this.edit) {
       const colToUpdate = this.sourceDf?.col(this.call!.getParamValue('name'));
       if (colToUpdate) {
@@ -2145,12 +2150,13 @@ export class AddNewColumnDialog {
             .prepare({table: this.sourceDf, oldColName: oldName, newColName: finalName})
             .call(false, undefined, {processed: false});
         }
-        grok.shell.o = this.sourceDf!.col(finalName);
-        this.reportFailedRows(this.sourceDf!.col(finalName));
+        added = this.sourceDf!.col(finalName);
+        grok.shell.o = added;
+        this.reportFailedRows(added);
       } else
         grok.shell.error(`Column ${this.call!.getParamValue('name')} is missing in the table`);
     } else if (emptyColumnType)
-      this.sourceDf!.columns.addNew(this.getResultColumnName().unusedName, emptyColumnType as DG.ColumnType);
+      added = this.sourceDf!.columns.addNew(this.getResultColumnName().unusedName, emptyColumnType as DG.ColumnType);
     else {
       if (!this.call.getParamValue('table'))
         this.call.setParamValue('table', this.sourceDf);
@@ -2165,10 +2171,29 @@ export class AddNewColumnDialog {
         this.call.setParamValue('errorBehavior', this.getErrorBehaviorParam());
       await this.call.call(false, undefined, {processed: false});
       const result = this.call.getOutputParamValue();
-      this.reportFailedRows(result instanceof DG.Column ? result : null);
+      added = result instanceof DG.Column ? result : null;
+      this.reportFailedRows(added);
     }
     if (this.sourceDf)
       grok.data.detectSemanticTypes(this.sourceDf);
+    if (added)
+      this.pushUndo(df, before, beforeIndex, added);
+  }
+
+  /** Makes the add or the edit one undo step: the column is swapped for its copy from before (none for an add) and back. */
+  pushUndo(df: DG.DataFrame, before: DG.Column | null, beforeIndex: number, added: DG.Column): void {
+    const after = added.clone();
+    const afterIndex = df.columns.names().indexOf(added.name);
+    const swap = (from: DG.Column | null, to: DG.Column | null, at: number) => {
+      if (from && df.col(from.name))
+        df.columns.remove(from.name);
+      if (to)
+        df.columns.insert(to.clone(), at);
+    };
+    DG.UndoService.push(`${before ? 'Edit' : 'Add'} column ${after.name}`, () => swap(after, before, beforeIndex), {
+      redo: () => swap(before, after, afterIndex),
+      context: df,
+    });
   }
 
   /** Closes Add New Column Dialog Window. */
