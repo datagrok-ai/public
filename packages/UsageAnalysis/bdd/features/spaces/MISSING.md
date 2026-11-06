@@ -12,17 +12,9 @@ defect blocks the path, or the check belongs to another test layer.
    the delete of such a space is refused. How the refusal works is what core#378 is to design; the scenario (the
    refusal message, and the space and the entity still listed) is written once it is built.
 
-### Waiting for core#1042 (Link of a file into a space)
+### core#1042 (Link of a file into a space), fixed
 
-**The linked file in the target space.** The known failure of core#1042 in `spaces-known-failures` ends at its pin, the
-"Move entity" dialog closing. Claimed once core#1042 is fixed, after that step:
-
-```gherkin
-And no error or warning balloon should have been shown
-When user double-clicks on BDDEdgeFileDst{time} tree node inside browse tree
-Then the "BDDEdgeFileDst{time}" view should be current
-And "edgelinkcars{time}.csv" link in gallery should be visible
-```
+**The linked file in the target space** is claimed in `spaces-drag-and-drop.feature`, the last scenario.
 
 2. **The same file linked twice into one space**: the second Link changes nothing, the space shows the file once
    and no error is logged (decided).

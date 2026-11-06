@@ -19,9 +19,8 @@ Feature: Putting files into a space by dragging them
 
   Edge cases: a link follows its original: a project moved into one space, linked into a second and
   then moved from the first into a third still shows its details when its link is clicked, with no
-  error and no refresh of the tree (core#382, claimed on a project: a file's Link is core#1042). A file
-  linked from one space into another is expected to show in the target space; today the Link fails
-  (core#1042), a known failure in `spaces-known-failures.feature`. The scenario uses spaces, a file
+  error and no refresh of the tree (core#382, claimed on a project). A file linked from one space into
+  another shows in the target space (core#1042, fixed); the last scenario. The scenarios use spaces, a file
   (the project's fixtures/cars-small.csv) and a project of its own, named with the run's time and
   swept with what they hold when the feature starts and ends.
 
@@ -157,3 +156,23 @@ Feature: Putting files into a space by dragging them
     Then the context panel should show "BDDEdgeMoved{time}"
     And no errors should have been logged
     And no error or warning balloon should have been shown
+
+  @edge-cases @realizes:core#1042
+  Scenario: A file linked from one space into another shows in the target space
+    Given a space named "BDDEdgeFileSrc{time}" is on the server
+    And a space named "BDDEdgeFileDst{time}" is on the server
+    And the "fixtures/cars-small.csv" file of the project is in the space "BDDEdgeFileSrc{time}" as "edgelinkcars{time}.csv"
+    And Spaces tree node inside browse tree is expanded
+    When user double-clicks on BDDEdgeFileSrc{time} tree node inside browse tree
+    Then the "BDDEdgeFileSrc{time}" view should be current
+    And "edgelinkcars{time}.csv" link in gallery should be visible
+    When user drags "edgelinkcars{time}.csv" link in gallery to BDDEdgeFileDst{time} tree node inside browse tree
+    Then Move entity dialog should be visible
+    And choice input in Move entity dialog should have value "Link"
+    When user clicks on YES button in Move entity dialog
+    Then Move entity dialog should be hidden
+    And no error or warning balloon should have been shown
+    When user double-clicks on BDDEdgeFileDst{time} tree node inside browse tree
+    Then the "BDDEdgeFileDst{time}" view should be current
+    And "edgelinkcars{time}.csv" link in gallery should be visible
+    And no errors should have been logged
