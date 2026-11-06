@@ -7,6 +7,9 @@
   display: flex; flex-wrap: nowrap; align-items: center; gap: 24px; min-width: 0; overflow: hidden; color: var(--dg-text-color, #4D5261);
   font-family: var(--dg-font-family, Roboto, sans-serif); font-size: 13px;
 }
+/* the platform dims a ribbon item's child while pressed with a filter, which would make the header the stages'
+   containing block: they would jump away under the pointer and the click land on the ribbon */
+.d4-ribbon-item > .pmx-head:active { filter: none !important; background: none !important; }
 /* the stages centred in the view's header, apart from the menus and the view's own buttons */
 .pmx-head-steps { display: flex; align-items: center; gap: 6px; flex: none; position: absolute; left: 50%; transform: translateX(-50%); z-index: 1; }
 .pmx-head-step {
