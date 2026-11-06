@@ -156,8 +156,8 @@ export const treatmentOf = (m: StudyMeta | null) => [...new Set((m?.groups ?? []
     .filter((s) => s).join(' ')))].join(' + ');
 
 /** The study's details to edit: its fields, and its groups as a table (one row per group, typed or pasted into like
- *  any Datagrok grid). `save` gets them on OK; an ID left empty is given when the study is first saved. */
-export function detailsDialog(name: string, meta: StudyMeta, groups: string[], save: (m: StudyMeta) => void): void {
+ *  any Datagrok grid); `read` gives them as edited. An ID left empty is given when the study is first saved. */
+export function detailsForm(meta: StudyMeta, groups: string[]): {root: HTMLElement, read: () => StudyMeta} {
   const id = ui.input.string('ID', {value: meta.id, placeholder: 'Given when the study is first saved'});
   const description = ui.input.textArea('Description', {value: meta.description});
   const owner = ui.input.string('Owner', {value: meta.owner});
@@ -181,18 +181,18 @@ export function detailsDialog(name: string, meta: StudyMeta, groups: string[], s
   const grid = DG.Viewer.grid(table, {allowEdit: true, showAddNewRowIcon: false, showRemoveRowIcon: false});
   grid.root.style.width = '640px';
   grid.root.style.height = `${Math.min(8, rows.length + 1) * 30 + 8}px`;
-  ui.dialog(`Study details: ${name}`)
-    .add(ui.inputs([id, description, owner, project, tags, start, blinded]))
-    .add(ui.divText('What each group receives (the schedule as written in the protocol, e.g. Q3D×4 or QD×14):'))
-    .add(grid.root)
-    .onOK(() => {
-      const day = (start.value as unknown as {format(f: string): string} | null)?.format('YYYY-MM-DD') ?? null;
-      const cell = (c: string, i: number) => table.col(c)!.isNone(i) ? '' : String(table.get(c, i)).trim();
-      save({id: id.value.trim() || meta.id, description: description.value.trim(), owner: owner.value.trim(),
-        project: project.value.trim(), tags: tags.value.split(',').map((t) => t.trim()).filter((t) => t),
-        start: day, groups: rows.map((g, i) => ({group: g.group, compound: cell('compound', i),
-          dose: table.col('dose')!.isNone(i) ? null : table.get('dose', i), unit: cell('unit', i),
-          route: cell('route', i), schedule: cell('schedule', i)})), notes: meta.notes,
-        blinded: blinded.value});
-    }).show();
+  const root = ui.divV([ui.inputs([id, description, owner, project, tags, start, blinded], 'pmx-details-fields'),
+    ui.divText('What each group receives (the schedule as written in the protocol, e.g. Q3D×4 or QD×14):'),
+    grid.root], 'pmx-details');
+  const read = (): StudyMeta => {
+    const day = (start.value as unknown as {format(f: string): string} | null)?.format('YYYY-MM-DD') ?? null;
+    const cell = (c: string, i: number) => table.col(c)!.isNone(i) ? '' : String(table.get(c, i)).trim();
+    return {id: id.value.trim() || meta.id, description: description.value.trim(), owner: owner.value.trim(),
+      project: project.value.trim(), tags: tags.value.split(',').map((t) => t.trim()).filter((t) => t),
+      start: day, groups: rows.map((g, i) => ({group: g.group, compound: cell('compound', i),
+        dose: table.col('dose')!.isNone(i) ? null : table.get('dose', i), unit: cell('unit', i),
+        route: cell('route', i), schedule: cell('schedule', i)})), notes: meta.notes,
+      blinded: blinded.value};
+  };
+  return {root, read};
 }

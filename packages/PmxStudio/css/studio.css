@@ -43,7 +43,8 @@
 /* the study's row, over the panes (the stages stay in the ribbon) */
 .pmx-stage { height: 100%; }
 .pmx-stage > :last-child { flex: 1 1 auto; min-height: 0; }
-.pmx-stage > .pmx-head-study {
+.pmx-stage > .pmx-head-block { flex: none; }
+.pmx-head-block > .pmx-head-study {
   flex: none; padding: 8px var(--dg-space-l, 16px); border-bottom: 1px solid var(--dg-border, #DBDCDF);
   background: linear-gradient(90deg, var(--dg-grey-1, #f4f6f8), var(--dg-bg, #fff) 70%);
   font-family: var(--dg-font-family, Roboto, sans-serif); font-size: 13px; color: var(--dg-text-color, #4D5261);
@@ -208,3 +209,12 @@
 
 /* a figure that asks for attention (Monitor's animals needing it) */
 .pmx-stat.pmx-stat-attn { border-color: color-mix(in srgb, #d99a12 60%, var(--dg-border, #DBDCDF)); box-shadow: inset 3px 0 0 #d99a12; }
+
+/* the study's details, open under its row */
+.pmx-head-sheet {
+  padding: 12px var(--dg-space-l, 16px); border-bottom: 1px solid var(--dg-border, #DBDCDF);
+  background: var(--dg-grey-1, #f4f6f8); max-height: 60vh; overflow: auto;
+}
+.pmx-details { gap: 8px; }
+.pmx-details-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); column-gap: 24px; max-width: none; }
+.pmx-head-sheet-actions { display: flex; gap: 8px; margin-top: 12px; }

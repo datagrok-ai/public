@@ -35,6 +35,8 @@ export interface BandChartOptions {
   markers?: boolean;
   /** a forecast's chart: its scale set by the reference lines (see chartOption), not by how far its range reaches */
   fit?: boolean;
+  /** drawn again when this changes: what changes the table's reference lines but not the table (Monitor's notes) */
+  redrawOn?: ReadonlySignal<unknown>;
 }
 
 /** One category's points, sorted by X; `row` is one of its rows, where its colour is read. */
@@ -64,7 +66,10 @@ export class BandChart extends Control {
       size.unsubscribe();
       this.chart.dispose();
     });
-    this.effect(() => this.draw(table.value, options.log?.value ?? false));
+    this.effect(() => {
+      void options.redrawOn?.value;
+      this.draw(table.value, options.log?.value ?? false);
+    });
   }
 
   private draw(df: DG.DataFrame | undefined, log: boolean): void {

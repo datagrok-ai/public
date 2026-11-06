@@ -2,12 +2,13 @@
    gives them, where the study stands (Overview · Plan — Monitor — Analyze, the stages behind it filled) and a line of
    status. It takes the place of the stage strip at the top of the view; the view's actions stay in its ribbon. */
 import '../css/studio.css';
+import * as ui from 'datagrok-api/ui';
 import {div, divV, span} from '@datagrok-libraries/u2';
 import type {Child} from '@datagrok-libraries/u2';
 import type {ReadonlySignal} from '@datagrok-libraries/u2';
 
 import {MONITOR_READY, Stage, STAGES} from './ui';
-import {StudyMeta, detailsDialog, emptyMeta} from './study-meta';
+import {StudyMeta, detailsForm, emptyMeta} from './study-meta';
 
 /** What the header says of the study: its name, its groups (the control first) and a status line; its details
  *  (ID, owner, day 0, what each group receives), edited from its name when `setMeta` keeps them. */
@@ -36,17 +37,34 @@ export function studyHeader(owner: {effect: (fn: () => void) => unknown}, stage:
   // the details as last saved here: the identity's own are read again only when the study changes
   let meta: StudyMeta | null = null;
   const showId = () => id.textContent = meta?.id ?? '';
+  // the details open under the header, the study still in view: a sheet, not a dialog; again, or Escape, closes it
+  const sheet = div([], 'pmx-head-sheet');
+  sheet.hidden = true;
+  const close = () => {
+    sheet.hidden = true;
+    sheet.replaceChildren();
+    details.setAttribute('aria-expanded', 'false');
+  };
+  sheet.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape')
+      close();
+  });
   name.addEventListener('click', () => {
     const s = identity.peek();
-    if (!s?.setMeta)
-      return;
+    if (!s?.setMeta || !sheet.hidden)
+      return close();
     const m = meta ?? emptyMeta();
     const names = s.groups.length ? s.groups.map((g) => g.name) : m.groups.map((g) => g.group);
-    detailsDialog(s.name, m, names, (saved) => {
-      meta = saved;
+    const form = detailsForm(m, names);
+    const save = ui.bigButton('Save', () => {
+      meta = form.read();
       showId();
-      s.setMeta!(saved);
+      s.setMeta!(meta);
+      close();
     });
+    sheet.replaceChildren(form.root, div([save, ui.button('Cancel', close)], 'pmx-head-sheet-actions'));
+    sheet.hidden = false;
+    details.setAttribute('aria-expanded', 'true');
   });
   owner.effect(() => {
     const s = identity.value;
@@ -78,7 +96,7 @@ export function studyHeader(owner: {effect: (fn: () => void) => unknown}, stage:
   details.textContent = 'Study details';
   details.addEventListener('click', () => name.click());
   owner.effect(() => details.hidden = !identity.value?.setMeta);
-  const row = div([name, id, groups, status, span('', 'pmx-head-gap'), details], 'pmx-head-study');
+  const row = div([div([name, id, groups, status, span('', 'pmx-head-gap'), details], 'pmx-head-study'), sheet], 'pmx-head-block');
   owner.effect(() => row.hidden = !identity.value);
   return {steps: div([steps(stage, open)], 'pmx-head'), row};
 }

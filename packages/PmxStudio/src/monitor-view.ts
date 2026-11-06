@@ -423,10 +423,20 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     const end = r.status.get('end_median', 0);
     if (Number.isFinite(end) && end !== null)
       lines.addLine({title: `Expected end, day ${end}`, formula: `\${day} = ${end}`, color: '#9aa5b1'});
+    // the notebook on the days it speaks of: what happened stays next to how the groups grew
+    const notes = new Map<number, string[]>();
+    for (const n of meta.value.notes)
+      notes.set(n.day, [...notes.get(n.day) ?? [], n.animal ? `${n.animal}: ${n.text}` : n.text]);
+    for (const [day, texts] of notes) {
+      const text = texts.join('; ');
+      lines.addLine({title: text.length > 32 ? `${text.slice(0, 31)}…` : text, formula: `\${day} = ${day}`,
+        color: '#8b5cc4'});
+    }
     return r.days;
   });
   const growth = new BandChart(growthData, {x: 'day', lower: 'lower', upper: 'upper', line: 'median', split: 'group',
-    xTitle: 'Study day', yTitle: 'Median volume (mm³)', log: growthAxis.log, markers: true, fit: true});
+    xTitle: 'Study day', yTitle: 'Median volume (mm³)', log: growthAxis.log, markers: true, fit: true,
+    redrawOn: meta});
   const growthHidden = infoNote('<b>The groups are hidden.</b> Reveal them to see each group\'s growth.');
   form.effect(() => {
     growth.root.hidden = !revealed.value;
