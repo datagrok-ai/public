@@ -54,8 +54,8 @@ The checks of these rules for the sunburst, the tree and the word cloud are `@ed
 scenarios of their own, after the master scenarios of: `sunburst/sunburst.feature`, `tree/tree-on-click-filter.feature`, `tree/tree.feature` and
 `word-cloud/word-cloud-appearance.feature`. For the bar chart, calendar, histogram, pie chart and
 trellis plot: `bar-chart/bar-chart-interaction.feature`, `bar-chart/bar-chart-known-failures.feature`,
-`calendar/calendar-selection.feature`, `histogram/histogram.feature`, `pie-chart/pie-chart-known-failures.feature`
-and `trellis-plot/trellis-plot-known-failures.feature`. The known failures of a journey wait in the
+`calendar/calendar-selection.feature`, `histogram/histogram.feature`, `pie-chart/pie-chart.feature`
+and `trellis-plot/trellis-plot-tiles-and-layout.feature`. The known failures of a journey wait in the
 `<folder>-known-failures.feature` of its folder while their tickets are open.
 
 A viewer that breaks a rule carries the check as the known failure of its ticket. Run on localhost
@@ -122,8 +122,9 @@ logged and the viewer reports no error.
 - **A layout naming a removed column** is applied, the viewer is shown and the setting keeps the
   name: scatter plot Color RACE, PC plot columns AGE, HEIGHT, WEIGHT without HEIGHT, tree map split
   RACE, SEX without SEX.
-- **Out of bounds through the API**: histogram Bins 201 and 0 keep 20, pie chart Max Radius 600
-  keeps 150, trellis plot Tiles Per Row 0 keeps 4. core#1200, still open: the value is written.
+- **Out of bounds through the API**: histogram Bins 201 and 0 become 200 and 1, pie chart Max Radius
+  600 becomes 500, trellis plot Tiles Per Row 0 becomes 1 (core#1200, fixed: the property brings a
+  value to the nearest declared bound).
 - **An empty value**: a tile viewer with lanes on a column holding an empty value shows 3 tiles,
   and the lane is titled `(no value)` (core#1217, fixed, claimed in `tile-viewer/tile-viewer-lanes.feature`).
   The status still names that lane `""`.

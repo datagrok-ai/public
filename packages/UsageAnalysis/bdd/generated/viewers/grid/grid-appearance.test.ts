@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/grid/grid-appearance.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.grid]
+sub_features_covered: [viewers.grid, core#1200]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -25,14 +25,14 @@ import {clearField, clickOn, enterInto, isExpanded, pressKey, shouldBe, shouldCo
 import {columnIncomplete, columnTag, makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {colorCodedCategorically, colorConditional, colorOff, noColorCoding, noneSelected, rowsRangeSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {contextPanelOpen, contextPanelShows, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {areaAtLeastTall, areaColor, areaNotColor, areasDiffer, areasSame, clickArea, dragAreaBy, dragSelectionBetweenAreas, noErrors, pickColorSwatch, pickFromAreaContextMenu, pointerAway, propertyShouldBe, readingAsRemembered, readingDoesNotRead, readingLower, readingReads, readingsDiffer, rememberReading, repainted, repaintedBy, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {areaAtLeastTall, areaColor, areaNotColor, areasDiffer, areasSame, clickArea, dragAreaBy, dragSelectionBetweenAreas, hoverArea, noErrors, pickColorSwatch, pickFromAreaContextMenu, pointerAway, propertyShouldBe, readingAsRemembered, readingDoesNotRead, readingLower, readingReads, readingsDiffer, rememberReading, repainted, repaintedBy, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Grid cell appearance", () => {
   const session = feature(test, "features/viewers/grid/grid-appearance.feature", import.meta.url);
-  test("Grid cell appearance", {tag: ["@journey", "@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
+  test("Grid cell appearance", {tag: ["@journey", "@viewers", "@realizes:viewers.grid", "@edge-cases", "@realizes:core#1200"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 10, page);
+    const run = journey(test, 12, page);
     await session.step(28, "Given user is logged in", () => loggedIn(page));
     await session.step(29, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(30, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
@@ -167,6 +167,24 @@ test.describe("Grid cell appearance", () => {
       await session.step(162, "When user removes the coloring of \"SEVERITY\" column", () => colorOff(page, "SEVERITY"));
       await session.step(163, "Then the \"color of cell 1 of SEVERITY\" reading of grid should be \"#ffa500\"", () => readingReads(page, "color of cell 1 of SEVERITY", el("grid"), "#ffa500"));
       await session.step(164, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("Row Height typed in the context panel as 0 is clamped to 1 (core#1200) [typed=0, clamped=1]", async () => {
+      await session.step(168, "Given user sets \"Row Height\" property of grid to \"28\"", () => setProperty(page, "Row Height", el("grid"), "28"));
+      await session.step(169, "When user hovers over the \"header AGE\" area of grid", () => hoverArea(page, "header AGE", el("grid")));
+      await session.step(170, "And user clicks on \"Edit properties (F4)\" icon in grid", () => clickOn(page, el("\"Edit properties (F4)\" icon in grid")));
+      await session.step(171, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
+      await session.step(172, "Given \"Rows\" category in context panel is expanded", () => isExpanded(page, el("\"Rows\" category in context panel")));
+      await session.step(173, "When user enters \"0\" into \"Row Height\" property in context panel", () => enterInto(page, "0", el("\"Row Height\" property in context panel")));
+      await session.step(174, "Then \"Row Height\" property of grid should be \"1\"", () => propertyShouldBe(page, "Row Height", el("grid"), "1"));
+    });
+    await run.scenario("Row Height typed in the context panel as 501 is clamped to 500 (core#1200) [typed=501, clamped=500]", async () => {
+      await session.step(168, "Given user sets \"Row Height\" property of grid to \"28\"", () => setProperty(page, "Row Height", el("grid"), "28"));
+      await session.step(169, "When user hovers over the \"header AGE\" area of grid", () => hoverArea(page, "header AGE", el("grid")));
+      await session.step(170, "And user clicks on \"Edit properties (F4)\" icon in grid", () => clickOn(page, el("\"Edit properties (F4)\" icon in grid")));
+      await session.step(171, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
+      await session.step(172, "Given \"Rows\" category in context panel is expanded", () => isExpanded(page, el("\"Rows\" category in context panel")));
+      await session.step(173, "When user enters \"501\" into \"Row Height\" property in context panel", () => enterInto(page, "501", el("\"Row Height\" property in context panel")));
+      await session.step(174, "Then \"Row Height\" property of grid should be \"500\"", () => propertyShouldBe(page, "Row Height", el("grid"), "500"));
     });
     run.finish();
   });

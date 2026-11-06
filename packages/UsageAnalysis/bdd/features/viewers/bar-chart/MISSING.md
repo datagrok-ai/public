@@ -34,7 +34,7 @@ and the Legend Position Bottom claim in `bar-chart.feature`.
 
 ## Edge cases
 
-The edge-case round of 2026-10-26 (localhost). Its checks are now `@edge-cases` scenarios of their own, after the master scenarios of `bar-chart.feature`, `bar-chart-tooltip.feature`, `bar-chart-interaction.feature`, `bar-chart-stack-aggregation.feature`; the two known failures (core#1200 from `bar-chart.feature`, core#1174 from `bar-chart-selection-overlays.feature`) are in `bar-chart-known-failures.feature` while their tickets are open. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+The edge-case round of 2026-10-26 (localhost). Its checks are now `@edge-cases` scenarios of their own, after the master scenarios of `bar-chart.feature`, `bar-chart-tooltip.feature`, `bar-chart-interaction.feature`, `bar-chart-stack-aggregation.feature`; the known failure of core#1174 (from `bar-chart-selection-overlays.feature`) is in `bar-chart-known-failures.feature` while its ticket is open. Max Bar Height typed below 1 is brought to 1 (core#1200, fixed), claimed in `bar-chart.feature`; Max Category Width and Category Value Width declare no bounds, so 0 typed into them is taken (measured 2026-11-06 on localhost). Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
 
 ### Still open
 

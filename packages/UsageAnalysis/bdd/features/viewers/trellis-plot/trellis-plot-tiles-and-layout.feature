@@ -13,10 +13,8 @@ Feature: Trellis plot tiled view and auto layout
 
   Edge cases: on a trellis split by DIS_POP alone (six categories, which the scenario sets itself),
   Tiles Per Row 0 lays the tiles out one a row and logs no error: it threw a truncating division by
-  zero on every render before core#1057. A Tiles Per Row typed in the context panel outside the
-  property's declared bounds (1 to 10; 11 here) is not taken; the property keeps its value. The
-  panel's number input marks such a value invalid but writes it into the property: a known failure
-  (core#1200), claimed in trellis-plot-known-failures.feature while the ticket is open.
+  zero on every render before core#1057. A Tiles Per Row typed in the context panel above the
+  declared 1 to 10 (11) is brought to 10 (core#1200, fixed: the property brings a value to the nearest declared bound); the last scenario.
 
   Background:
     Given user is logged in
@@ -184,3 +182,12 @@ Feature: Trellis plot tiled view and auto layout
     And no errors should have been logged
     When user sets "Tiles Per Row" property of trellis plot viewer to "4"
     Then the cells of trellis plot viewer should be 4 wide and 2 tall
+
+  @edge-cases @realizes:core#1200
+  Scenario: A Tiles Per Row of 11 typed in the context panel is clamped to 10 (core#1200)
+    Given user sets "Tiles Per Row" property of trellis plot viewer to "4"
+    When user clicks on settings icon of trellis plot viewer
+    Then context panel should be visible
+    Given "Misc" category in context panel is expanded
+    When user enters "11" into "Tiles Per Row" property in context panel
+    Then "Tiles Per Row" property of trellis plot viewer should be "10"

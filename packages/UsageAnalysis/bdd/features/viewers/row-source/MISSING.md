@@ -7,7 +7,7 @@ Written for the Row Source edge cases (now in `row-source-mouse-over-group.featu
 **Decided**
 
 1. A viewer Filter `${AGE} > 44` follows a rename of AGE: core#1213, still open, requested from ApiTests in `../MISSING.md` (today the formula keeps the old name, is treated as empty and the viewer widens to every row, `validateColumnFormulaFields`).
-2. Under MouseOverGroup, closing the viewer whose group is hovered (a pie) clears the group (a filter left by a closed viewer goes with it): written in `row-source-mouse-over-group.feature` on the `rows shown` of a MouseOverGroup scatter plot, core#1227, a known failure (the scatter plot keeps drawing the closed pie's 5 Asian rows its own `${AGE} > 44` keeps).
+2. Under MouseOverGroup, closing the viewer whose group is hovered (a pie) clears the group (a filter left by a closed viewer goes with it): written in `row-source-mouse-over-group.feature` on the `rows shown` of a MouseOverGroup scatter plot, core#1227, fixed.
 
 **Questions for owners**
 

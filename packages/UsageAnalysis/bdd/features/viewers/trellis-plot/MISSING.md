@@ -69,7 +69,7 @@ The edge-case round of 26 Oct 2026: data shapes, columns removed or renamed unde
 layouts naming a missing column, property bounds, closing the viewer. Its checks are now `@edge-cases`
 scenarios of their own, after the master scenarios of `trellis-plot-keyboard.feature`,
 `trellis-plot-categories.feature`, `trellis-plot-click-actions.feature` and
-`trellis-plot-tiles-and-layout.feature`; the known failure is in `trellis-plot-known-failures.feature`. Nothing here asks
+`trellis-plot-tiles-and-layout.feature`. Nothing here asks
 for a library, binding or code change; it lists what the features could not claim and why.
 
 ### Edge cases: Still open
@@ -80,10 +80,9 @@ None.
 
 #### 2. Decided (the rules in `../MISSING.md`)
 
-1. **Values outside a property's declared bounds typed in the context panel are not taken.** The
-   number input carries min/max validators (`number_input.dart` `addMinMaxValidators`), but
-   `InputBase.bind` writes every change into the property. Tiles Per Row 11 is a known failure of
-   core#1200, in `trellis-plot-known-failures.feature`; 0 on a
+1. **Values outside a property's declared bounds typed in the context panel are brought to the
+   nearest bound** (core#1200, fixed): Tiles Per Row 11 becomes 10, claimed in
+   `trellis-plot-tiles-and-layout.feature`; 0 on a
    one-column trellis crashed it (core#1057, fixed, in `trellis-plot-tiles-and-layout.feature`). No rows, a renamed split column and Tiles Per Row 0 set
    through the API are requested from ApiTests in `../MISSING.md`.
 

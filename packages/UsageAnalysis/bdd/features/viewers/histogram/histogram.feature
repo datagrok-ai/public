@@ -10,10 +10,8 @@ Feature: Histogram property surface
   Closed issues (core#998): a logarithmic X axis over a column with no positive value and a Y Min
   above the Y Max are reported in the viewer's error instead of throwing on every frame.
 
-  Edge cases: a Bins value typed in the context panel outside the property's declared bounds (201) is
-  not taken; the property keeps its value. The panel's number input marks it invalid but writes it
-  into the property (core#1200, a known failure, in histogram-known-failures.feature while the
-  ticket is open).
+  Edge cases: a Bins value typed in the context panel above the declared maximum of 200 (201) is
+  brought to 200 (core#1200, fixed: the property brings a value to the nearest declared bound); the last scenario.
 
   Background:
     Given user is logged in
@@ -277,3 +275,11 @@ Feature: Histogram property surface
     Then histogram viewer should be bound to table "demog-1000"
     And histogram viewer should show 1000 rows
     And the "axis min" reading of histogram viewer should be 18
+
+  @edge-cases @realizes:core#1200
+  Scenario: A Bins value of 201 typed in the context panel is clamped to 200 (core#1200)
+    When user clicks on settings icon of histogram viewer
+    Then context panel should be visible
+    Given "X Axis" category in context panel is expanded
+    When user enters "201" into "Bins" property in context panel
+    Then "Bins" property of histogram viewer should be "200"

@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/tooltips/edit-tooltip.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.tooltips, public#1208, public#373, core#474]
+sub_features_covered: [viewers.tooltips, public#1208, public#373, core#474, core#1215]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -21,7 +21,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {check, clearField, clickOn, shouldBe, shouldHaveValue, typeInto, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {check, clearField, clickOn, enterInto, shouldBe, shouldHaveValue, typeInto, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {addCalculated} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {closeCurrentView, dialogCloses, openDataset, switchTableView, switchView, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
@@ -31,9 +31,9 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Editing the table's tooltip from a viewer", () => {
   const session = feature(test, "features/viewers/tooltips/edit-tooltip.feature", import.meta.url);
-  test("Editing the table's tooltip from a viewer", {tag: ["@journey", "@viewers", "@realizes:viewers.tooltips", "@realizes:public#1208", "@realizes:public#373", "@realizes:core#474", "@edge-cases"]}, async ({browser}) => {
+  test("Editing the table's tooltip from a viewer", {tag: ["@journey", "@viewers", "@realizes:viewers.tooltips", "@realizes:public#1208", "@realizes:public#373", "@realizes:core#474", "@edge-cases", "@realizes:core#1215"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 8, page);
+    const run = journey(test, 9, page);
     await session.step(39, "Given user is logged in", () => loggedIn(page));
     await session.step(40, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(41, "And user sets properties of grid:", () => setProperties(page, el("grid"), [["Show Tooltip","inherit from table"],["Show Column Names","Always"],["Show Visible Columns In Tooltip","true"]]), [["Show Tooltip","inherit from table"],["Show Column Names","Always"],["Show Visible Columns In Tooltip","true"]]);
@@ -196,6 +196,26 @@ test.describe("Editing the table's tooltip from a viewer", () => {
       await session.step(212, "Then the tooltip should show columns in the order \"AGE, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, WEIGHT"));
       await session.step(213, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
       await session.step(214, "Then no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("A tooltip column renamed is shown under its new name", async () => {
+      await session.step(218, "When user picks \"Tooltip > Edit...\" from the context menu of box plot viewer", () => pickFromContextMenu(page, "Tooltip > Edit...", el("box plot viewer")));
+      await session.step(219, "Then \"Edit Tooltip\" dialog should be visible", () => shouldBe(page, el("\"Edit Tooltip\" dialog"), "visible"));
+      await session.step(220, "When user checks checkbox in \"Edit Tooltip\" dialog", () => check(page, el("checkbox in \"Edit Tooltip\" dialog")));
+      await session.step(221, "And user unchecks checkbox in \"Edit Tooltip\" dialog", () => uncheck(page, el("checkbox in \"Edit Tooltip\" dialog")));
+      await session.step(222, "Then the \"WEIGHT\" column should not be checked in the column list of \"Edit Tooltip\" dialog", () => uncheckedInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
+      await session.step(223, "When user toggles the \"AGE\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "AGE", el("\"Edit Tooltip\" dialog")));
+      await session.step(224, "And user toggles the \"WEIGHT\" column in the column list of \"Edit Tooltip\" dialog", () => toggleInColumnList(page, "WEIGHT", el("\"Edit Tooltip\" dialog")));
+      await session.step(225, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
+      await session.step(226, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
+      await session.step(227, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+      await session.step(228, "Then the tooltip should show columns in the order \"AGE, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, WEIGHT"));
+      await session.step(229, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+      await session.step(230, "And user scrolls the grid to the \"WEIGHT\" column", () => scrollGridTo(page, "WEIGHT"));
+      await session.step(231, "And user picks \"Column Properties...\" from the context menu of the \"header WEIGHT\" area of grid", () => pickFromAreaContextMenu(page, "Column Properties...", "header WEIGHT", el("grid")));
+      await session.step(232, "And user enters \"MASS\" into \"New name:\" input in \"WEIGHT\" dialog", () => enterInto(page, "MASS", el("\"New name:\" input in \"WEIGHT\" dialog")));
+      await session.step(233, "And user clicks on OK button in \"WEIGHT\" dialog", () => clickOn(page, el("OK button in \"WEIGHT\" dialog")));
+      await session.step(234, "And user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
+      await session.step(235, "Then the tooltip should show columns in the order \"AGE, MASS\"", () => tooltipColumnsInOrder(page, "AGE, MASS"));
     });
     run.finish();
   });

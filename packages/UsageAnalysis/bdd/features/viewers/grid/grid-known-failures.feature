@@ -2,7 +2,7 @@
 Feature: Grid known failures
   Temporary: the known failures of the grid while their tickets are open. Each scenario is expected
   to fail on its pinned step; when its ticket is fixed, remove the tag and move the scenario back
-  into its topical feature as an ordinary @edge-cases scenario: core#1200 and core#1198 into
+  into its topical feature as an ordinary @edge-cases scenario: core#1198 into
   grid-appearance.feature, core#1195 into grid-column-groups.feature, core#1193 into
   grid-editing.feature, core#1194 into grid-rows.feature. The known failures of grid-pinning.feature
   and grid-forms-column.feature are not here: those features are not journeys.
@@ -14,29 +14,14 @@ Feature: Grid known failures
     And user opens demog-1000 dataset
     Then grid should show 1000 rows
 
-  @edge-cases @known-failure:25 @realizes:core#1200
-  Scenario Outline: Row Height typed in the context panel as <typed> is not taken
-    Given user sets "Row Height" property of grid to "28"
-    When user hovers over the "header AGE" area of grid
-    And user clicks on "Edit properties (F4)" icon in grid
-    Then context panel should be visible
-    Given "Rows" category in context panel is expanded
-    When user enters "<typed>" into "Row Height" property in context panel
-    Then "Row Height" property of grid should be "28"
-
-    Examples: The typed value is taken although the property declares 1..500
-      | typed |
-      | 0     |
-      | 501   |
-
-  @edge-cases @known-failure:37 @realizes:core#1198
+  @edge-cases @known-failure:22 @realizes:core#1198
   Scenario: A malformed number format marks the format field invalid
     When user picks "Format > Custom..." from the context menu of the "header AGE" area of grid
     Then Format AGE dialog should be visible
     When user enters "0.0.0" into Custom input in Format AGE dialog
     Then Custom input in Format AGE dialog should be invalid
 
-  @edge-cases @known-failure:45 @realizes:core#1198
+  @edge-cases @known-failure:30 @realizes:core#1198
   Scenario: A malformed number format is not taken and the old format stays
     When user picks "Format > Custom..." from the context menu of the "header AGE" area of grid
     Then Format AGE dialog should be visible
@@ -44,7 +29,7 @@ Feature: Grid known failures
     And user clicks on OK button in Format AGE dialog
     Then "AGE" column should have tag "format" equal to ""
 
-  @edge-cases @known-failure:57 @realizes:core#1195
+  @edge-cases @known-failure:42 @realizes:core#1195
   Scenario: A column group named with spaces only is not made
     When user clicks on the "header AGE" area of grid holding Control
     And user clicks on the "header SEX" area of grid holding Control
@@ -56,7 +41,7 @@ Feature: Grid known failures
     And user clicks on OK button in dialog
     Then "AGE" column should have tag "group" equal to ""
 
-  @edge-cases @known-failure:65 @realizes:core#1193
+  @edge-cases @known-failure:50 @realizes:core#1193
   Scenario: A read-only grid keeps its rows on Shift+Delete
     When user sets "Allow Edit" property of grid to "false"
     And user clicks on the "row header 5" area of grid holding Control
@@ -64,7 +49,7 @@ Feature: Grid known failures
     When user presses Shift+Delete
     Then the table should have 1000 rows
 
-  @edge-cases @known-failure:76 @realizes:core#1194
+  @edge-cases @known-failure:61 @realizes:core#1194
   Scenario: Shift+Enter selects nothing while Allow Row Selection is off
     When user clicks on the "cell 4 of SEX" area of grid
     And user presses Shift+Enter
@@ -75,7 +60,7 @@ Feature: Grid known failures
     And user presses Shift+Enter
     Then no rows should be selected
 
-  @edge-cases @known-failure:85 @realizes:core#1194
+  @edge-cases @known-failure:70 @realizes:core#1194
   Scenario: Shift+Enter selects only the same rows that pass the filter
     When user filters rows where "AGE" is between 20 and 30
     And user clicks on the "cell 2 of SEX" area of grid

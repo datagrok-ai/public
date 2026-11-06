@@ -24,7 +24,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, hoverArea, noErrors, setProperty, showsRows, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Row Source MouseOverGroup on seven viewers", () => {
   const session = feature(test, "features/viewers/row-source/row-source-mouse-over-group.feature", import.meta.url);
@@ -168,7 +168,7 @@ test.describe("Row Source MouseOverGroup on seven viewers", () => {
     await session.step(53, "Then pie chart viewer should show 463 rows", () => showsRows(page, el("pie chart viewer"), 463));
     await session.step(54, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Closing the pie chart whose group is hovered clears the group, and the scatter plot draws no row again", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.line-chart", "@realizes:viewers.histogram", "@realizes:viewers.bar-chart", "@realizes:viewers.pie-chart", "@realizes:viewers.box-plot", "@realizes:viewers.pc-plot", "@edge-cases", "@known-failure:77", "@realizes:core#1227"]}, async ({browser}) => {
+  test("Closing the pie chart whose group is hovered clears the group, and the scatter plot draws no row again", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.line-chart", "@realizes:viewers.histogram", "@realizes:viewers.bar-chart", "@realizes:viewers.pie-chart", "@realizes:viewers.box-plot", "@realizes:viewers.pc-plot", "@edge-cases", "@realizes:core#1227"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
     await session.step(18, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -179,15 +179,13 @@ test.describe("Row Source MouseOverGroup on seven viewers", () => {
     await session.step(35, "And user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["categoryColumnName","RACE"],["filter","${AGE} > 44"]]), [["categoryColumnName","RACE"],["filter","${AGE} > 44"]]);
     await session.step(38, "And user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["categoryColumnNames","RACE"],["valueColumnName","AGE"],["filter","${AGE} > 44"]]), [["categoryColumnNames","RACE"],["valueColumnName","AGE"],["filter","${AGE} > 44"]]);
     await session.step(42, "And user adds a pc plot viewer with:", () => addViewerWith(page, "pc plot", [["columnNames","AGE, WEIGHT"],["filter","${AGE} > 44"]]), [["columnNames","AGE, WEIGHT"],["filter","${AGE} > 44"]]);
-    await knownFailure(async () => {
-      await session.step(70, "When user sets \"filter\" property of pie chart viewer to \"\"", () => setProperty(page, "filter", el("pie chart viewer"), ""));
-      await session.step(71, "And user sets \"rowSource\" property of scatter plot viewer to \"MouseOverGroup\"", () => setProperty(page, "rowSource", el("scatter plot viewer"), "MouseOverGroup"));
-      await session.step(72, "Then scatter plot viewer should show 0 rows", () => showsRows(page, el("scatter plot viewer"), 0));
-      await session.step(73, "When user hovers over the \"slice Asian\" area of pie chart viewer", () => hoverArea(page, "slice Asian", el("pie chart viewer")));
-      await session.step(74, "Then scatter plot viewer should show 5 rows", () => showsRows(page, el("scatter plot viewer"), 5));
-      await session.step(75, "When user clicks on close icon of pie chart viewer", () => clickOn(page, el("close icon of pie chart viewer")));
-      await session.step(76, "Then the open tableview should have 0 pie chart viewers", () => viewerCount(page, 0, "pie chart"));
-      await session.step(77, "And scatter plot viewer should show 0 rows", () => showsRows(page, el("scatter plot viewer"), 0));
-    }, 77);
+    await session.step(70, "When user sets \"filter\" property of pie chart viewer to \"\"", () => setProperty(page, "filter", el("pie chart viewer"), ""));
+    await session.step(71, "And user sets \"rowSource\" property of scatter plot viewer to \"MouseOverGroup\"", () => setProperty(page, "rowSource", el("scatter plot viewer"), "MouseOverGroup"));
+    await session.step(72, "Then scatter plot viewer should show 0 rows", () => showsRows(page, el("scatter plot viewer"), 0));
+    await session.step(73, "When user hovers over the \"slice Asian\" area of pie chart viewer", () => hoverArea(page, "slice Asian", el("pie chart viewer")));
+    await session.step(74, "Then scatter plot viewer should show 5 rows", () => showsRows(page, el("scatter plot viewer"), 5));
+    await session.step(75, "When user clicks on close icon of pie chart viewer", () => clickOn(page, el("close icon of pie chart viewer")));
+    await session.step(76, "Then the open tableview should have 0 pie chart viewers", () => viewerCount(page, 0, "pie chart"));
+    await session.step(77, "And scatter plot viewer should show 0 rows", () => showsRows(page, el("scatter plot viewer"), 0));
   });
 });

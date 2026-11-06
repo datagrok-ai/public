@@ -19,7 +19,7 @@ None.
    handler cleans the hierarchy only (`:629-633`), and a removed Size or Color column throws on every
    render: public#4423, fixed, API test 5.
 3. **Values above the declared maximum typed in the panel** (Initial Tree Depth 6, Font Size 31) are
-   not taken: core#1200, known failures in a scenario outline of `tree.feature`, one Examples
+   brought to it (5, 30): core#1200, fixed, a scenario outline of `tree.feature`, one Examples
    row per property. A negative Label
    Rotate has no declared minimum (`:130`), so the rule does not reach it.
 4. **Closing the tree in Filter mode** gives every row back (public#4425); the removed column of the
@@ -47,8 +47,7 @@ None.
    no error logged (public#4423, fixed).
 6. A layout saved with CONTROL, SEX, RACE and loaded after RACE is removed: the tree is shown, the
    hierarchy setting stays CONTROL, SEX, RACE, no error.
-7. Initial Tree Depth 6 and Font Size 31 set through the API are not taken (3 and 12 stay): known
-   failure core#1200, still open.
+7. Initial Tree Depth 6 and Font Size 31 set through the API become 5 and 30 (core#1200, fixed).
 8. Hierarchy USUBJID shows the 500-category message; filtered to SEX M (447 rows) the message goes;
    no error.
 

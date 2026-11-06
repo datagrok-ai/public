@@ -12,9 +12,8 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
   hierarchy is checked in the order CONTROL, SEX, RACE; the dialog keeps the check order, so no row
   is dragged.
 
-  Edge cases: a value typed in the context panel above a property's declared maximum (Font Size 31,
-  Initial Tree Depth 6) should not be taken; today it is written into the property although the input
-  marks it invalid (core#1200, known failures, the last scenario outline).
+  Edge cases: a value typed in the context panel above a property's declared maximum is brought to
+  it: Initial Tree Depth 6 to 5, Font Size 31 to 30 (core#1200, fixed: the property brings a value to the nearest declared bound); the last scenario outline.
 
   Background:
     Given user is logged in
@@ -236,15 +235,14 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
     And no errors should have been logged
 
   @edge-cases @realizes:core#1200
-  Scenario Outline: <caption> <typed> typed in the context panel above its declared maximum is not taken (core#1200)
+  Scenario Outline: <caption> <typed> typed in the context panel above its declared maximum is clamped to <clamped> (core#1200)
     When user clicks on settings icon of tree viewer
     Then context panel should be visible
     Given "Style" category in context panel is expanded
     When user enters "<typed>" into "<caption>" property in context panel
-    Then "<caption>" property of tree viewer should be "<kept>"
+    Then "<caption>" property of tree viewer should be "<clamped>"
 
-    @known-failure:244 @realizes:core#1200
-    Examples: The value is written into the property although the input marks it invalid
-      | caption            | typed | kept |
-      | Initial Tree Depth | 6     | 3    |
-      | Font Size          | 31    | 12   |
+    Examples: The value is brought to the declared maximum
+      | caption            | typed | clamped |
+      | Initial Tree Depth | 6     | 5       |
+      | Font Size          | 31    | 30      |

@@ -92,8 +92,8 @@ None.
 
 1. **A tooltip column renamed** is shown under its new name (every setting that named a column
    follows the new name). The table tag keeps column names (`tooltip.dart:574-577`) and
-   nothing renames them, so the column drops out: core#1215, a known failure in
-   `tooltips-known-failures.feature` (back into `edit-tooltip.feature` once fixed).
+   nothing renamed them, so the column dropped out: core#1215, fixed, claimed in
+   `edit-tooltip.feature`.
 2. **Ten columns ticked, seven shown**: the cut stays, and the tooltip says that part of the
    columns was dropped (the silent-cut rule). Today an explicit selection is cut to `colAmount` = 7
    (`tooltip.dart:590`) with no sign of it. Steps requested: the note has no wording yet, and no step

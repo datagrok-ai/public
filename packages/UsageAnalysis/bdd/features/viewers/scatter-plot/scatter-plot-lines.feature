@@ -11,9 +11,7 @@ Feature: Scatter plot trend lines
   The Formula Lines dialog is PowerPack's and has no scenarios here.
 
   Edge cases: a Moving Average Window typed in the context panel outside the 2..100 the property
-  declares (1, 101) is not taken; the property keeps its value. The panel's number input marks such
-  a value invalid but writes it into the property: a known failure (core#1200), claimed in
-  scatter-plot-known-failures.feature while the ticket is open.
+  declares (1, 101) is brought to the nearest bound (core#1200, fixed: the property brings a value to the nearest declared bound); the last scenario outline.
 
   Background:
     Given user is logged in
@@ -117,3 +115,18 @@ Feature: Scatter plot trend lines
     And scatter plot viewer should have less ink than before
     And the "formula lines" reading of scatter plot viewer should be 0
     And no errors should have been logged
+
+  @edge-cases @realizes:core#1200
+  Scenario Outline: A Moving Average Window of <typed> typed in the context panel is clamped to <clamped> (core#1200)
+    Given user sets "Moving Average Window" property of scatter plot viewer to "10"
+    When user sets "Show Moving Average Line" property of scatter plot viewer to "true"
+    And user clicks on settings icon of scatter plot viewer
+    Then context panel should be visible
+    Given "Statistics" category in context panel is expanded
+    When user enters "<typed>" into "Moving Average Window" property in context panel
+    Then "Moving Average Window" property of scatter plot viewer should be "<clamped>"
+
+    Examples: The value is brought to the nearest bound of 2..100
+      | typed | clamped |
+      | 1     | 2       |
+      | 101   | 100     |

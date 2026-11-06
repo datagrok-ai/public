@@ -14,10 +14,9 @@ Feature: Pie chart property surface
   pie-chart-spec (Appearance, Labels, Outline, Column selector, Legend, Title and description,
   Selection, Auto layout), which are folded into the geometric claims below.
 
-  Edge cases: a value typed in the context panel outside the property's declared bounds is not
-  taken; the property keeps its value: Max Radius 600 (150 stays), Start Angle -30 and 400 (0
-  stays). The panel's number input marks such a value invalid but writes it into the property: a
-  known failure (core#1200), claimed in pie-chart-known-failures.feature while the ticket is open.
+  Edge cases: a value typed in the context panel outside the property's declared bounds is brought
+  to the nearest bound: Max Radius 600 to 500, Start Angle -30 to 0 and 400 to 360 (core#1200, fixed: the property brings a value to the nearest declared bound);
+  the last scenario outline.
 
   Background:
     Given user is logged in
@@ -227,3 +226,18 @@ Feature: Pie chart property surface
     And pie chart viewer should not have a "centre label" area
     And pie chart viewer should have more ink than before
     And no errors should have been logged
+
+  @edge-cases @realizes:core#1200
+  Scenario Outline: <caption> <typed> typed in the context panel outside its declared bounds is clamped to <clamped> (core#1200)
+    Given user sets "<caption>" property of pie chart viewer to "<start>"
+    When user clicks on settings icon of pie chart viewer
+    Then context panel should be visible
+    Given "Misc" category in context panel is expanded
+    When user enters "<typed>" into "<caption>" property in context panel
+    Then "<caption>" property of pie chart viewer should be "<clamped>"
+
+    Examples: The value is brought to the nearest bound
+      | caption     | start | typed | clamped |
+      | Max Radius  | 150   | 600   | 500     |
+      | Start Angle | 90    | -30   | 0       |
+      | Start Angle | 90    | 400   | 360     |

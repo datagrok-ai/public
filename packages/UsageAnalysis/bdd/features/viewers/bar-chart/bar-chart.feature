@@ -11,11 +11,8 @@ Feature: Bar chart property surface
   what it changed.
 
   Edge cases: text typed into a numeric property in the context panel (Min, Max Bar Height, Max
-  Category Width) is not taken and the old value stays. A value typed in the context panel outside
-  the property's declared bounds is not taken either; the property keeps its value: Max Bar Height 0
-  or -5, Max Category Width 0, Category Value Width 0. The panel's number input marks such a value
-  invalid but writes it into the property (core#1200): that check is in
-  bar-chart-known-failures.feature while the ticket is open.
+  Category Width) is not taken and the old value stays. Max Bar Height typed below its declared
+  minimum of 1 (0, -5) is brought to 1 (core#1200, fixed: the property brings a value to the nearest declared bound); the last scenario outline.
 
   Background:
     Given user is logged in
@@ -289,3 +286,17 @@ Feature: Bar chart property surface
     And no errors should have been logged
     When user presses F4
     Then context panel should be hidden
+
+  @edge-cases @realizes:core#1200
+  Scenario Outline: <caption> <typed> typed in the context panel outside its declared bounds is clamped to <clamped> (core#1200)
+    Given user sets "<caption>" property of bar chart viewer to "<start>"
+    When user clicks on settings icon of bar chart viewer
+    Then context panel should be visible
+    Given "Style" category in context panel is expanded
+    When user enters "<typed>" into "<caption>" property in context panel
+    Then "<caption>" property of bar chart viewer should be "<clamped>"
+
+    Examples: The value is brought to the nearest bound
+      | caption        | start | typed | clamped |
+      | Max Bar Height | 50    | 0     | 1       |
+      | Max Bar Height | 50    | -5    | 1       |

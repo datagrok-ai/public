@@ -48,8 +48,8 @@ Added in the edge-case round of 2026-10-26 (localhost); its green checks are now
    - Default HTML Form with no column ticked cannot be confirmed (OK is enabled): core#1197 (`grid-forms-column.feature`).
    - A malformed format (`0.0.0`) marks the Custom field invalid and is not taken (the field is not
      marked and the column's format tag becomes `0.0.0`): core#1198 (`grid-known-failures.feature`, from `grid-appearance.feature`).
-   - Row Height typed in the context panel as 0 or 501 is not taken (the property declares 1..500;
-     the value is written): core#1200 (`grid-known-failures.feature`, from `grid-appearance.feature`).
+   - Row Height typed in the context panel as 0 or 501 is brought to 1 or 500 (the property declares
+     1..500): core#1200, fixed, claimed in `grid-appearance.feature`.
 
    Green (`grid-editing.feature`, `grid-columns.feature`, `grid-pinning.feature`,
    `grid-column-groups.feature`, `grid-forms-column.feature`): a value refused in the last row (`abc` in AGE under Add New Row On Last Row Edit) keeps the
