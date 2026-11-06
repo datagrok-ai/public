@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1145](https://github.com/datagrok-ai/core/issues/1145): Sketcher: Fixed mouse moves throwing "Cannot read properties of undefined (reading 'a')" after a molecule loaded while a drawing tool gesture was in progress
 * [core#877](https://github.com/datagrok-ai/core/issues/877): Sketcher: Fixed "couldnt find ketcher instance" when a Ketcher sketcher was closed or suspended while a SMARTS export waited for its turn
 * Fixed Ketcher staying 500 px wide in a dialog shown with a size until the dialog was resized by hand: it fills its host's width (500 px at least, which the host keeps)
 * README: known limitations: a recursive SMARTS (`$(...)`) is not held (Indigo's SMARTS reader drops it)

@@ -191,6 +191,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         if (ketcher === this._sketcher)
           return;
         this._sketcher = ketcher;
+        KetcherSketcher._endGestureOnLoad(ketcher);
         // workaround for sketcher not to be truncated when showed in a popup menu
         // in the end of the screen (on last dataframe column)
         if (this.host && this.host.isInPopupContainer()) {
@@ -235,6 +236,25 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   private static _hasDrawing(ketcher: Ketcher): boolean {
     const struct = ketcher.editor.struct();
     return [...struct.atoms.values()].some((a) => !a.isPreview) || struct.rxnArrows.size > 0 || struct.texts.size > 0;
+  }
+
+  /** A tool reverts its stroke in progress (`dragCtx.action`) or preview by atom and bond ids on its next mouse event:
+   * reverted on a molecule loaded meanwhile, it deleted the loaded atoms that took those ids. Before a structure is
+   * loaded, the stroke is reverted on the structure it was drawn on and dropped, and the tool is cancelled, as Ketcher
+   * cancels it before an undo or redo (with `dragCtx` gone, no tool's cancel commits the stroke). */
+  private static _endGestureOnLoad(ketcher: Ketcher): void {
+    const editor = ketcher.editor as any;
+    const struct: (...args: unknown[]) => unknown = editor.struct;
+    editor.struct = function(this: any, ...args: unknown[]): unknown {
+      const tool = args.length > 0 ? this.tool() : null;
+      if (tool?.dragCtx) {
+        tool.dragCtx.stopTapping?.();
+        tool.dragCtx.action?.perform(this.render.ctab);
+        delete tool.dragCtx;
+      }
+      tool?.cancel?.();
+      return struct.apply(this, args);
+    };
   }
 
   /** Runs a conversion of this adapter's once the ones before it have ended: the standalone struct service hands a
