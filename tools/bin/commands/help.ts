@@ -534,7 +534,8 @@ Commands:
     status                      Branch, unpushed commits and changes of every repo
     pull                        git pull --ff-only in every repo
     at <ref>                    Check out an umbrella ref with its pinned children
-    bump [path...]              Pin children to the tip of their branch on origin; commit in each umbrella
+    bump [path...]              Pin children to their branch tip on origin and move clean checkouts
+                                there; commit in each umbrella (never pushes)
     wt add <name> <path>...     Worktrees of the umbrella and the given children on branch <name>
     doctor [--fix]              Detached HEADs, unpushed commits, stale URLs; --fix resets those URLs
 

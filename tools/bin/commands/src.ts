@@ -253,49 +253,81 @@ function at(root: string, ref: string): boolean {
 }
 
 function bump(root: string, rels: string[]): boolean {
-  const targets: {c: Child, owner: string}[] = [];
-  for (const rel of rels) {
-    const chain = locate(root, rel);
-    if (!chain || !cloned(chain[chain.length - 1].dir))
-      return (color.error(`${rel}: not a cloned submodule (grok src add ${rel})`), false);
-    targets.push({c: chain[chain.length - 1], owner: chain.length > 1 ? chain[chain.length - 2].dir : root});
-  }
-  if (!rels.length)
-    targets.push(...[...repos(root)].flatMap(({c, owner}) => c ? [{c, owner}] : []));
   const failed: string[] = [];
-  const bumped = new Map<string, string[]>();
-  for (const {c, owner} of targets) {
-    if (!c.branch) {
-      if (rels.length)
-        failed.push(`${label(root, c.dir)} (no branch in .gitmodules)`);
-      continue;
+  const owners = new Map<string, {ok: boolean, links: {path: string, tip: string}[]}>();
+  let checked = 0;
+  const visit = (c: Child, owner: string) => {
+    let o = owners.get(owner);
+    if (!o) {
+      const staged = !git(owner, ['diff', '--cached', '--quiet', '--ignore-submodules=none']).ok;
+      const detached = !state(owner).branch;
+      if (staged || (detached && rels.length))
+        failed.push(`${label(root, owner)} (${staged ? 'staged changes' : 'not on a branch'})`);
+      owners.set(owner, o = {ok: !staged && !detached, links: []});
     }
-    if (!step(c.dir, ['fetch', 'origin', c.branch])) {
-      failed.push(label(root, c.dir));
-      continue;
+    const name = label(root, c.dir);
+    const branch = c.branch === '.' ? state(owner).branch : c.branch;
+    if (!o.ok || !branch) {
+      if (o.ok && rels.length)
+        failed.push(`${name} (no branch in .gitmodules)`);
+      return;
     }
-    const tip = (explain ? git(c.dir, ['ls-remote', 'origin', `refs/heads/${c.branch}`]).out.split('\t')[0] :
-      git(c.dir, ['rev-parse', 'FETCH_HEAD']).out) || `<origin/${c.branch}>`;
-    if (tip === git(owner, ['rev-parse', `:${c.path}`]).out)
-      continue;
-    if (state(c.dir).branch === c.branch && !step(c.dir, ['merge', '--ff-only', 'FETCH_HEAD']))
-      color.warn(`${label(root, c.dir)}: not fast-forwarded; pinned to origin/${c.branch} anyway`);
-    bumped.set(owner, [...bumped.get(owner) ?? [], `160000,${tip},${c.path}`]);
+    if (git(c.dir, ['config', 'remote.origin.url']).out !== git(owner, ['config', `submodule.${c.name}.url`]).out)
+      return failed.push(`${name} (origin differs from .gitmodules: grok src doctor --fix)`);
+    checked++;
+    const ref = `refs/remotes/origin/${branch}`;
+    if (!step(c.dir, ['fetch', 'origin', `+refs/heads/${branch}:${ref}`]))
+      return failed.push(name);
+    const tip = explain ? git(c.dir, ['ls-remote', 'origin', `refs/heads/${branch}`]).out.split('\t')[0] :
+      git(c.dir, ['rev-parse', '--verify', '-q', `${ref}^{commit}`]).out;
+    const pin = git(owner, ['rev-parse', `HEAD:${c.path}`]).out;
+    if (!tip)
+      return failed.push(`${name} (origin has no ${branch})`);
+    if (tip === pin)
+      return;
+    if (!explain && !git(c.dir, ['merge-base', '--is-ancestor', pin, tip]).ok)
+      return failed.push(`${name} (the pin is not on origin/${branch}; move it by hand)`);
+    const s = state(c.dir);
+    const head = git(c.dir, ['rev-parse', 'HEAD']).out;
+    const moved = head === tip || (!s.changed && (s.branch === branch ? step(c.dir, ['merge', '--ff-only', ref]) :
+      !s.branch && head === pin && step(c.dir, ['checkout', '--detach', tip])));
+    if (!moved)
+      color.warn(`${name}: checkout left as it is (local changes, or not on ${branch} or the pin); pinned to origin/${branch}`);
+    o.links.push({path: c.path, tip});
+  };
+  const wanted = [...new Set(rels.map((r) => r.replace(/^(\.\/)+/, '').replace(/\/+$/, '')))];
+  for (const rel of wanted.sort((a, b) => a.split('/').length - b.split('/').length)) {
+    const chain = locate(root, rel);
+    const c = chain?.[chain.length - 1];
+    if (!chain || !c || !cloned(c.dir))
+      failed.push(chain ? `${rel} (not cloned: grok src add ${rel})` : `${rel} (not a submodule)`);
+    else
+      visit(c, chain.length > 1 ? chain[chain.length - 2].dir : root);
   }
-  for (const [owner, links] of bumped) {
-    const paths = links.map((l) => l.split(',')[2]);
-    if (!git(owner, ['diff', '--cached', '--quiet', '--ignore-submodules=none']).ok || !state(owner).branch) {
-      failed.push(`${label(root, owner)} (staged changes or no branch; not committed: ${paths.join(', ')})`);
-      continue;
+  if (!rels.length) {
+    for (const {c, owner} of repos(root)) {
+      if (c)
+        visit(c, owner);
     }
-    if (!(links.every((l) => step(owner, ['update-index', '--cacheinfo', l])) &&
-      step(owner, ['commit', '-m', `Bump ${paths.join(', ')}`])))
+  }
+  let bumped = false;
+  for (const [owner, {links}] of owners) {
+    if (!links.length)
+      continue;
+    bumped = true;
+    const paths = links.map((l) => l.path);
+    if (step(owner, ['update-index', ...links.flatMap((l) => ['--cacheinfo', `160000,${l.tip},${l.path}`])]) &&
+      step(owner, ['commit', '-m', `Bump ${paths.join(', ')}`])) {
+      if (owner !== root)
+        console.log(`${label(root, owner)}: push it, then grok src bump ${path.relative(root, owner).split(path.sep).join('/')}`);
+    } else {
+      if (!explain)
+        git(owner, ['reset', '-q', '--', ...paths]);
       failed.push(label(root, owner));
-    else if (owner !== root)
-      console.log(`${label(root, owner)}: push it, then grok src bump ${label(root, owner)}`);
+    }
   }
-  if (!bumped.size && !failed.length)
-    color.success('Every pin is at the tip of its branch.');
+  if (!bumped && !failed.length)
+    console.log(checked ? 'Every pin is at the tip of its branch.' : 'No child with a branch to bump.');
   if (failed.length)
     color.error(`Not bumped: ${failed.join(', ')}`);
   return !failed.length;
