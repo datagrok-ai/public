@@ -55,7 +55,8 @@ const editors = new WeakMap<HTMLElement, Editor>();
 
 /** The panels of `layout`, in its order and widths (a panel it leaves out is not shown); with `stage`, the user's
  *  layout or the lab's in its place, and the grid's layout editor (editLayout). */
-export function panelGrid(panels: Panel[], layout: Slot[], cls: string, stage?: string): HTMLElement {
+export function panelGrid(panels: Panel[], layout: Slot[], cls: string, stage?: string,
+  name = stage ? `${stage[0].toUpperCase()}${stage.slice(1)}` : ''): HTMLElement {
   const cells = new Map(panels.map((p) => {
     const cell = div([block(p.title, p.hint, ...p.content)], 'pmx-panel');
     cell.dataset.panel = p.id;
@@ -78,7 +79,7 @@ export function panelGrid(panels: Panel[], layout: Slot[], cls: string, stage?: 
   apply(stage ? userLayout(stage, defaults) ?? labLayout(stage, defaults) ?? defaults : defaults);
   const host = div([grid], `pmx-grid-host ${cls}`);
   if (stage)
-    editors.set(host, () => layoutDialog(stage, defaults, current, titles, apply));
+    editors.set(host, () => layoutDialog(stage, name, defaults, current, titles, apply));
   return host;
 }
 
@@ -102,7 +103,8 @@ export interface Tabbed {
  *  edits the open tab's. The tabs are a row of their own, under what stays on top (the study, the figures). */
 export function panelTabs(panels: Panel[], tabs: Tab[], cls: string, stage: string): Tabbed {
   const grids = tabs.map((t) => panelGrid(panels.filter((p) => t.layout.some((s) => s.id === p.id)), t.layout, cls,
-    `${stage}-${t.name.toLowerCase().replace(/\W+/g, '-')}`));
+    `${stage}-${t.name.toLowerCase().replace(/\W+/g, '-')}`,
+    `${stage[0].toUpperCase()}${stage.slice(1)} · ${t.name}`));
   const heads = tabs.map((t, i) => {
     const b = document.createElement('button');
     b.className = 'pmx-tab';
@@ -158,7 +160,7 @@ export function panelTabs(panels: Panel[], tabs: Tab[], cls: string, stage: stri
 
 /** The editor: the panels as tiles on the twelve columns, as they will sit; drag a tile to move it (or Alt+arrows on
  *  a focused one), its numbers set its width, × hides it, a hidden one comes back from the tray. */
-function layoutDialog(stage: string, defaults: Slot[], now: Slot[], titles: Map<string, string>,
+function layoutDialog(stage: string, name: string, defaults: Slot[], now: Slot[], titles: Map<string, string>,
   apply: (l: Slot[]) => void): void {
   let work = now.map((s) => ({...s}));
   const board = div([], 'pmx-layout-board');
@@ -345,7 +347,7 @@ function layoutDialog(stage: string, defaults: Slot[], now: Slot[], titles: Map<
   const help = span('Drag a panel to move it, its corner to widen or narrow it; × hides it. On a focused panel, ' +
     'Alt+arrows move it and Alt+Shift+arrows change its width. The header and the figures stay on top.',
   'pmx-layout-help');
-  const d = ui.dialog(`Layout of ${stage[0].toUpperCase()}${stage.slice(1)}`)
+  const d = ui.dialog(`Layout of ${name}`)
     .add(div([help, board, tray, status], 'pmx-layout'))
     .onOK(() => {
       // the lab's layout (or the stage's) kept as it is is no layout of one's own: a later lab change reaches it
