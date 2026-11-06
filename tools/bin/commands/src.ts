@@ -256,6 +256,7 @@ function bump(root: string, rels: string[]): boolean {
   const failed: string[] = [];
   const owners = new Map<string, {ok: boolean, links: {path: string, tip: string}[]}>();
   let checked = 0;
+  const skipped: string[] = [];
   const visit = (c: Child, owner: string) => {
     let o = owners.get(owner);
     if (!o) {
@@ -263,6 +264,8 @@ function bump(root: string, rels: string[]): boolean {
       const detached = !state(owner).branch;
       if (staged || (detached && rels.length))
         failed.push(`${label(root, owner)} (${staged ? 'staged changes' : 'not on a branch'})`);
+      else if (detached)
+        skipped.push(label(root, owner));
       owners.set(owner, o = {ok: !staged && !detached, links: []});
     }
     const name = label(root, c.dir);
@@ -276,26 +279,26 @@ function bump(root: string, rels: string[]): boolean {
       return failed.push(`${name} (origin differs from .gitmodules: grok src doctor --fix)`);
     checked++;
     const ref = `refs/remotes/origin/${branch}`;
-    if (!step(c.dir, ['fetch', 'origin', `+refs/heads/${branch}:${ref}`]))
+    if (!step(c.dir, ['fetch', '--no-recurse-submodules', 'origin', `+refs/heads/${branch}:${ref}`]))
       return failed.push(name);
     const tip = explain ? git(c.dir, ['ls-remote', 'origin', `refs/heads/${branch}`]).out.split('\t')[0] :
       git(c.dir, ['rev-parse', '--verify', '-q', `${ref}^{commit}`]).out;
     const pin = git(owner, ['rev-parse', `HEAD:${c.path}`]).out;
     if (!tip)
       return failed.push(`${name} (origin has no ${branch})`);
-    if (tip === pin)
-      return;
-    if (!explain && !git(c.dir, ['merge-base', '--is-ancestor', pin, tip]).ok)
+    if (tip !== pin && !explain && !git(c.dir, ['merge-base', '--is-ancestor', pin, tip]).ok)
       return failed.push(`${name} (the pin is not on origin/${branch}; move it by hand)`);
     const s = state(c.dir);
     const head = git(c.dir, ['rev-parse', 'HEAD']).out;
     const moved = head === tip || (!s.changed && (s.branch === branch ? step(c.dir, ['merge', '--ff-only', ref]) :
-      !s.branch && head === pin && step(c.dir, ['checkout', '--detach', tip])));
+      !s.branch && git(c.dir, ['merge-base', '--is-ancestor', head, tip]).ok && step(c.dir, ['checkout', '--detach', tip])));
+    if (tip === pin)
+      return;
     if (!moved)
       color.warn(`${name}: checkout left as it is (local changes, or not on ${branch} or the pin); pinned to origin/${branch}`);
     o.links.push({path: c.path, tip});
   };
-  const wanted = [...new Set(rels.map((r) => r.replace(/^(\.\/)+/, '').replace(/\/+$/, '')))];
+  const wanted = [...new Set(rels.map((r) => r.replace(/\\/g, '/').replace(/^(\.\/)+/, '').replace(/\/+$/, '')))];
   for (const rel of wanted.sort((a, b) => a.split('/').length - b.split('/').length)) {
     const chain = locate(root, rel);
     const c = chain?.[chain.length - 1];
@@ -326,7 +329,9 @@ function bump(root: string, rels: string[]): boolean {
       failed.push(label(root, owner));
     }
   }
-  if (!bumped && !failed.length)
+  if (skipped.length)
+    color.warn(`Not on a branch, so their children were not bumped: ${skipped.join(', ')}`);
+  else if (!bumped && !failed.length)
     console.log(checked ? 'Every pin is at the tip of its branch.' : 'No child with a branch to bump.');
   if (failed.length)
     color.error(`Not bumped: ${failed.join(', ')}`);
