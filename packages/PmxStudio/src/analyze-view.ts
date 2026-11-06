@@ -588,6 +588,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   // each treated animal against its twin: the animals listed by group, the strongest first, the one selected drawn
   type AnimalRow = {animal: string, group: string, effect: number, lower: number, upper: number};
   const picked = signal<string | undefined>(undefined);
+  // a control animal selected elsewhere (the waterfall, a line): it has no twin, which the twin's side says
+  const untwinned = signal<string | undefined>(undefined);
   // what the badges mean, on each badge and under the list
   const day = () => cell('evaluation_day').value;
   const responderText = () => `Responder: on day ${day()} its tumor is below the range its untreated twin would ` +
@@ -736,10 +738,15 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const on = selection.animals.value;
     markSelected(on);
     const [one] = on;
-    if (on.size === 1 && one !== picked.peek() && animalList.querySelector(`[data-animal="${CSS.escape(one)}"]`)) {
-      picked.value = one;
+    const listed = on.size === 1 && !!animalList.querySelector(`[data-animal="${CSS.escape(one)}"]`);
+    untwinned.value = on.size === 1 && !listed && animalList.querySelector('.pmx-forest-row') ? one : undefined;
+    if (untwinned.peek() !== undefined)
+      picked.value = undefined;
+    if ((listed && one !== picked.peek()) || untwinned.peek() !== undefined) {
+      if (listed)
+        picked.value = one;
       animalList.querySelectorAll<HTMLElement>('.pmx-forest-row').forEach((b) => {
-        const at = b.dataset.animal === one;
+        const at = listed && b.dataset.animal === one;
         b.setAttribute('aria-pressed', String(at));
         b.style.background = at ? 'color-mix(in srgb, var(--dg-accent, #2083d5) 12%, transparent)' : '';
       });
@@ -761,15 +768,20 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const twinAxis = volumeAxis();
   const animalTwin = new BandChart(twinTable, {x: 'day', lower: 'lower', upper: 'upper', line: 'median',
     split: 'series', xTitle: 'Day after randomization', yTitle: 'Tumor volume', log: twinAxis.log, markers: true});
+  const sizedTwin = sized(animalTwin, 320);
   const effectLine = span('');
   form.effect(() => {
     const p = pickedRow.value;
-    effectLine.textContent = !p ? '' : `${p.animal}, day ${cell('evaluation_day').value}: ` +
-      effectWords(p.effect, p.lower, p.upper) + '.';
+    const alone = untwinned.value;
+    effectLine.textContent = p ? `${p.animal}, day ${cell('evaluation_day').value}: ` +
+      effectWords(p.effect, p.lower, p.upper) + '.' : alone ? `${alone} has no twin: only a treated animal is ` +
+      'compared with an untreated twin (a control is the untreated growth itself). Pick a treated one, in the list ' +
+      'or the waterfall.' : '';
+    sizedTwin.style.display = twinAxis.row.style.display = alone && !p ? 'none' : '';
   });
   const twinHead = divV([effectLine, twinAxis.row]);
   Object.assign(twinHead.style, {gap: 'var(--dg-space-s)', margin: '0 0 var(--dg-space-s)', fontWeight: '500'});
-  twinSide.append(twinHead, sized(animalTwin, 320));
+  twinSide.append(twinHead, sizedTwin);
   const animals = div([divV([animalList, responderNote]), twinSide], 'pmx-animals');
   Object.assign(animals.style, {display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))',
     gap: 'var(--dg-space-l)', alignItems: 'start'});

@@ -42,7 +42,7 @@ import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, day
 /** Monitor's tabs and their panels, in order and width (twelfths): today's work and how the groups grow; the
  *  measurements and the groups formed; how the animals bear it; whether each group is worth continuing. */
 const MONITOR_TABS: Tab[] = [
-  {name: 'Today', layout: [{id: 'growth', span: 6}, {id: 'today', span: 6}, {id: 'calendar', span: 12}]},
+  {name: 'Today', layout: [{id: 'growth', span: 12}, {id: 'today', span: 12}, {id: 'calendar', span: 12}]},
   {name: 'Measurements', layout: [{id: 'sheet', span: 12}, {id: 'enrollment', span: 12}]},
   {name: 'Welfare', layout: [{id: 'welfare', span: 12}]},
   {name: 'Decisions', layout: [{id: 'decisions', span: 12}]}];
