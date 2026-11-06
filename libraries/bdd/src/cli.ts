@@ -152,7 +152,7 @@ function exec(command: string, args: string[], cwd: string): Promise<number> {
   return new Promise((resolve) => child.on('exit', (exit) => resolve(exit ?? 1)).on('error', () => resolve(127)));
 }
 
-/** The `help/` tree of the public repository, from the package upwards; `BDD_HELP_ROOT` names another. */
+/** The `help/` tree (the help repository, a sibling of public), from the package upwards; `BDD_HELP_ROOT` names another. */
 function helpRoot(from: string): string | undefined {
   if (process.env.BDD_HELP_ROOT)
     return process.env.BDD_HELP_ROOT;
