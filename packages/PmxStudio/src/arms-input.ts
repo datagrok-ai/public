@@ -25,12 +25,12 @@ export function armsFrame(arms: Arm[]): DG.DataFrame {
   ]);
 }
 
-/** The arms of such a table (none: one default arm); a missing name is the arm's number. A value that went
- *  through a FuncCall can come back as the platform's own object: DG.toJs gives the DataFrame. */
-export function armsOf(value: DG.DataFrame | null | undefined): Arm[] {
+/** The arms of such a table (none: one default arm, unless `fallback` is off); a missing name is the arm's number.
+ *  A value that went through a FuncCall can come back as the platform's own object: DG.toJs gives the DataFrame. */
+export function armsOf(value: DG.DataFrame | null | undefined, fallback = true): Arm[] {
   const df: DG.DataFrame | null | undefined = value instanceof DG.DataFrame || value == null ? value : DG.toJs(value);
   if (!df || !(df.rowCount > 0))
-    return [newArm(1)];
+    return fallback ? [newArm(1)] : [];
   const get = (c: string, i: number) => df.col(c)?.get(i);
   return Array.from({length: df.rowCount}, (_, i) => ({
     name: String(get('name', i) ?? '').trim() || `Treatment ${i + 1}`,
@@ -45,7 +45,7 @@ class ArmCard extends Control {
   /** What holds the arm's fields back, or null; followed by whoever reads it in a signal's scope. */
   problem: () => string | null = () => null;
 
-  constructor(arm: Arm, index: number, removable: boolean, onChange: (a: Arm) => void, onRemove: () => void) {
+  constructor(arm: Arm, index: number, onChange: (a: Arm) => void, onRemove: () => void) {
     super();
     this.root.classList.add('u2-card', 'pmx-arm');
     Object.assign(this.root.style, {padding: 'var(--dg-space-m)', gap: 'var(--dg-space-s)', display: 'flex',
@@ -61,8 +61,7 @@ class ArmCard extends Control {
         itemTooltips: {'TGI': 'Tumor growth inhibition', 'T/C': 'Treated / control volume ratio'}});
       const effect = new NumberInput({label: 'Expected', value: arm.effect, min: 5, max: 95, postfix: '%',
         nullable: false, tooltipText: 'The effect expected when the median control reaches the endpoint'});
-      const remove = iconButton('times', () => onRemove(), {tooltip: 'Remove this arm',
-        disabled: removable ? null : 'A study needs at least one treated arm'});
+      const remove = iconButton('times', () => onRemove(), {tooltip: 'Remove this arm'});
       const head = divH([span(`Arm ${index + 1}`, 'pmx-arm-title'), remove]);
       Object.assign(head.style, {justifyContent: 'space-between', alignItems: 'center', fontWeight: '500'});
       // a form of its own, captions above: the card keeps its look whatever layout the outer form takes
@@ -103,19 +102,19 @@ export class ArmsInput extends Input<DG.DataFrame | null> {
   protected createEditor(): HTMLElement {
     this._arms = [];
     this._cards = signal<ArmCard[]>([]);
-    (this as {count: Signal<number>}).count = signal(1);
+    (this as {count: Signal<number>}).count = signal(0);
     this._list = div([], 'pmx-arms');
     Object.assign(this._list.style, {display: 'flex', flexDirection: 'column', gap: 'var(--dg-space-m)'});
-    this._add = buttonWithIcon('Add treatment arm', 'plus',
-      () => this._set([...this._arms, newArm(this._arms.length + 1)]));
+    this._add = buttonWithIcon('Add treatment arm', 'plus', () => this.add());
     this._add.dataset.u2 = 'pmx-add-arm';
-    this._set(armsOf(this.peek()), false);
+    // none at first: a new plan starts with no arm (the user adds them)
+    this._set(armsOf(this.peek(), false), false);
     // a table written from outside (a run from the history, a script) rebuilds the cards; anything else is
     // u2 funcForm following the call's param back, which reads a table param as its text: ignored
     this.effect(() => {
       const df = this.value as unknown;
-      if (df instanceof DG.DataFrame && !sameArms(armsOf(df), this._arms))
-        this._set(armsOf(df), false);
+      if (df instanceof DG.DataFrame && !sameArms(armsOf(df, false), this._arms))
+        this._set(armsOf(df, false), false);
     });
     const box = div([this._list, this._add]);
     // the editor takes the cards' height (u2 gives an editor one control's height)
@@ -124,15 +123,20 @@ export class ArmsInput extends Input<DG.DataFrame | null> {
     return box;
   }
 
+  /** Adds a treated arm, numbered after the others. */
+  add(): void {
+    if (this._arms.length < MAX_ARMS)
+      this._set([...this._arms, newArm(this._arms.length + 1)]);
+  }
+
   private _set(arms: Arm[], commit = true): void {
     this._cards.peek().forEach((c) => c.dispose());
     this._arms = arms.slice(0, MAX_ARMS);
-    this._cards.value = this._arms.map((a, i) => this.runInScope(() => new ArmCard(a, i, this._arms.length > 1,
-      (next) => {
-        this._arms[i] = next;
-        this._commit();
-      },
-      () => this._set(this._arms.filter((_, j) => j !== i)))));
+    this._cards.value = this._arms.map((a, i) => this.runInScope(() => new ArmCard(a, i, (next) => {
+      this._arms[i] = next;
+      this._commit();
+    },
+    () => this._set(this._arms.filter((_, j) => j !== i)))));
     this._list.replaceChildren(...this._cards.peek().map((c) => c.root));
     const full = this._arms.length >= MAX_ARMS;
     Reason.apply(this._add, full ? `At most ${MAX_ARMS} treated arms` : null);
@@ -144,7 +148,7 @@ export class ArmsInput extends Input<DG.DataFrame | null> {
 
   private _commit(): void {
     const v = this.peek() as unknown;
-    if (!(v instanceof DG.DataFrame) || !sameArms(armsOf(v), this._arms))
+    if (!(v instanceof DG.DataFrame) || !sameArms(armsOf(v, false), this._arms))
       this.value = armsFrame(this._arms);
   }
 }

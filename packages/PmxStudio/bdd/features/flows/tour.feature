@@ -10,6 +10,8 @@ Feature: A tour of PMX Studio
     And user opens PMX Studio
     # caption: Start a new study in Plan
     When user clicks on plan card
+    # caption: A new plan starts with no arm: add one
+    And user clicks on "Add treatment arm" button
     Then the study should have finished running
     And "Experimental groups" section should be visible
     # caption: Go to Analyze

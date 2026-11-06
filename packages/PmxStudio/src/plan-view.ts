@@ -7,8 +7,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, loader, Reason, signal, span,
-  Splitter, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
+import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, emptyState, loader, Reason,
+  signal, span, Splitter, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
@@ -263,6 +263,13 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const flag = fromCalendar ? refreshing : planning;
     flag.value = true;
     const once = (): Promise<void> => {
+      // no treated arm yet (a new plan): nothing to design, the page says what to add
+      if (armsInput.count.peek() === 0) {
+        error.value = null;
+        stale.value = false;
+        result.value = undefined;
+        return Promise.resolve();
+      }
       const sent = askedOf(call);
       const next = () => {
         again = false;
@@ -765,7 +772,17 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     content.style.opacity = stale.value ? '0.5' : '';
   });
 
-  const results = resultsFrame([failure, outdated, content], overlay, bar);
+  // no treated arm yet: what to add, in place of a plan
+  const noArms = emptyState('Add a treatment arm: the animals, the end of the study, the calendar and the power ' +
+    'follow from it.', {icon: 'flask', actions: [buttonWithIcon('Add the first arm', 'plus', () => armsInput.add())]});
+  noArms.style.marginTop = '96px';
+  form.effect(() => {
+    const none = armsInput.count.value === 0;
+    noArms.style.display = none ? '' : 'none';
+    content.style.display = none ? 'none' : '';
+  });
+
+  const results = resultsFrame([failure, outdated, noArms, content], overlay, bar);
   const declaration = declarationPane(form.root);
 
   // the plan carries the schedules while their section is open; opened on a plan without them, they are computed
@@ -809,8 +826,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // form has written its defaults into the call
   void form.settled.then(() => {
     call.setParamValue('detectableEffect', false);
-    // a new plan opens on the tumor model picked last, with its one default arm: not the table in view, which the
-    // platform gives a table parameter by default (Monitor's study would read as 267 arms)
+    // a new plan opens on the tumor model picked last, with no arm: not the table in view, which the platform gives
+    // a table parameter by default (Monitor's study would read as 267 arms)
     const last = initial ? null : lastLine();
     for (const [name, value] of Object.entries(initial?.inputs ?? {arms: null, ...last ? {line: last} : {}})) {
       const v = name === 'arms' && value ? armsFrame(value as SavedPlan['inputs']['arms']) : value;
@@ -892,8 +909,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   }, {primary: true, iconRight: true});
   followButton.title = 'Start following this study in Monitor, with this plan';
   form.effect(() => {
-    const off = !result.value ? 'The plan is not ready yet' : busy.value ? 'The plan is being updated' :
-      saving.value ? 'The plan is being prepared' : null;
+    const off = armsInput.count.value === 0 ? 'Add a treatment arm first' :
+      !result.value ? 'The plan is not ready yet' : busy.value ? 'The plan is being updated' :
+        saving.value ? 'The plan is being prepared' : null;
     [saveButton, downloadButton, followButton].forEach((b) => Reason.apply(b, off));
   });
 
