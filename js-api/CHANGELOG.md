@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4549](https://github.com/datagrok-ai/public/issues/4549): Fixed `Column.fromList('bigint', ...)` with JS `BigInt` values creating a column whose `get()` threw and whose table view could not render
 * TreeView: `TreeViewNode.remove` takes an optional `kill` argument (false by default): true also runs the node's registered cleanups, for a node that will not be added back
 * TreeView: Fixed `TreeViewGroup.loadSources` ignoring the source's `filter`, `by` and `page` (since the immutable data-source verbs): it loaded with whatever query an earlier request on the same Dart handle had left, so the Model Hub tree listed every model under each node
 * Chem: `grok.chem.drawMolecule` takes an optional last `cache` argument (true by default): false keeps no picture in Chem's renderer caches, for very large one-off drawings
