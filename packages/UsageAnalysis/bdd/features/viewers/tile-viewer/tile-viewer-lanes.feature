@@ -61,6 +61,12 @@ Feature: Tile viewer lanes
     And tile viewer should not have a "lane Caucasian" area
     And the "lane of row 1" reading of tile viewer should be "F"
     And the "lane of row 4" reading of tile viewer should be "M"
+    When user clicks on settings icon of tile viewer
+    And user selects "RACE" in "Lanes" property in context panel
+    Then "Lanes Column Name" property of tile viewer should be "RACE"
+    And the "lane names" reading of tile viewer should be "Asian, Black, Caucasian, Other"
+    When user selects "SEX" in "Lanes" property in context panel
+    Then the "lane names" reading of tile viewer should be "F, M"
     And no errors should have been logged
 
   Scenario: An explicit lane list overrides the column's category order

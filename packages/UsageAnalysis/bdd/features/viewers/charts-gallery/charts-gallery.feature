@@ -58,6 +58,19 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
     Then globe viewer should be visible
     And the "points" reading of globe viewer should be 2426
     And no errors should have been logged
+    When user clicks on filter icon in toolbar
+    And user clicks on the "category Mb of MagType" area of filter panel
+    Then 72 rows should pass the filter
+    And the "points" reading of globe viewer should be 72
+    When user hovers over filter panel
+    And user clicks on reset icon of filter panel
+    Then the "points" reading of globe viewer should be 2426
+    When user clicks on grid
+    And user clicks on settings icon of globe viewer
+    And user selects "Depth" in "Color By" property in context panel
+    Then "colorByColumnName" property of globe viewer should be "Depth"
+    And the "points" reading of globe viewer should be 2426
+    And no errors should have been logged
     When user clicks on close icon of globe viewer
     Then globe viewer should be absent
     And no errors should have been logged

@@ -67,6 +67,18 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     Then tooltip should contain text "7 rows"
     When user moves the pointer away from sankey viewer
     Then no errors should have been logged
+    When user clicks on the "link F -> Caucasian" area of sankey viewer
+    Then 480 rows should be selected
+    And every selected row should pass the filter
+    And no rows where "RACE" is "Other" should be selected
+    When user clicks on the "node Asian" area of sankey viewer holding Control
+    Then some rows where "RACE" is "Asian" should be selected
+    And some rows where "RACE" is "Caucasian" should be selected
+    And no rows where "RACE" is "Other" should be selected
+    When user clicks on the "node Asian" area of sankey viewer
+    Then some rows where "RACE" is "Asian" should be selected
+    And no rows where "RACE" is "Caucasian" should be selected
+    And no errors should have been logged
     When user hovers over filter panel
     And user clicks on reset icon of filter panel
     Then 1000 rows should pass the filter
@@ -123,4 +135,11 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     And user clicks on reset icon of filter panel
     Then 1000 rows should pass the filter
     And chord viewer should have a "category Black" area
+    And no errors should have been logged
+    When user clicks on the "category Black" area of chord viewer
+    Then only rows where "RACE" is "Black" should be selected
+    When user clicks on the "category Asian" area of chord viewer holding Control
+    Then only rows where "RACE" is one of "Asian, Black" should be selected
+    When user clicks on the "category Asian" area of chord viewer
+    Then only rows where "RACE" is "Asian" should be selected
     And no errors should have been logged

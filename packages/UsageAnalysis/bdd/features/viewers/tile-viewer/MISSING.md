@@ -32,18 +32,9 @@ Written during the viewer-gaps round of 23 Oct 2026, against
     And no errors should have been logged
   ```
 
-- **Picking the lanes column in the property panel** (`tile-viewer-ui.md`). The Lanes column picker
-  is a column combo in the property grid; every lanes scenario sets the property through the API.
-  Needs a library step that opens a column-typed property row's picker and chooses a column
-  (`user picks {string} for the {string} property of {widget}`), then:
-
-  ```gherkin
-  Scenario: Choosing RACE in the Lanes picker regroups the cards
-    When user picks "RACE" for the "Lanes Column Name" property of tile viewer
-    Then the "lanes" reading of tile viewer should be 4
-    And the "lane names" reading of tile viewer should be "Asian, Black, Caucasian, Other"
-    And no errors should have been logged
-  ```
+- **Picking the lanes column in the property panel**: claimed in `tile-viewer-lanes.feature` ("Lanes =
+  SEX"): the Data category's "Lanes" column picker in the Context Panel takes RACE and SEX back, through the
+  generic `user selects ... in "Lanes" property in context panel`; no new step was needed.
 
 ## Closed issues the regression round of 26 Oct 2026 could not claim
 

@@ -15,6 +15,8 @@ Feature: The confusion matrix filters the way the other viewers do
 
   @realizes:core#233
   Scenario: Closing the matrix lets go of its filter
+    When user hovers over the "cell M as false" area of confusion matrix viewer
+    Then tooltip should contain text "Number of M predicted as false"
     When user clicks on the "cell M as false" area of confusion matrix viewer
     Then 446 rows should pass the filter
     When user clicks on close icon of confusion matrix viewer
@@ -46,6 +48,15 @@ Feature: The confusion matrix filters the way the other viewers do
     When user picks "View > Reset Filter" from the top menu
     Then 1000 rows should pass the filter
     When user clicks on the "cell M as false" area of confusion matrix viewer
+    Then 446 rows should pass the filter
+    When user clicks on settings icon of confusion matrix viewer
+    And user selects "DIS_POP" in "Y" property in context panel
+    Then "yColumnName" property of confusion matrix viewer should be "DIS_POP"
+    And 1000 rows should pass the filter
+    And confusion matrix viewer should have a "cell M as PsA" area
+    And confusion matrix viewer should have a "cell PsA as PsA" area
+    When user selects "CONTROL" in "Y" property in context panel
+    And user clicks on the "cell M as false" area of confusion matrix viewer
     Then 446 rows should pass the filter
     And no errors should have been logged
 
