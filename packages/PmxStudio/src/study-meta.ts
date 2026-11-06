@@ -149,6 +149,12 @@ export function groupsOf(m: StudyMeta, groups: string[]): GroupDetails[] {
 export const compoundsOf = (m: StudyMeta | null) =>
   [...new Set((m?.groups ?? []).map((g) => g.compound.trim()).filter((c) => c))].join(', ');
 
+/** What the groups receive, each compound once with its dose, route and schedule ('anti-PD-1 10 mg/kg i.p. Q3D×4 +
+ *  …'); empty when no group names a compound. */
+export const treatmentOf = (m: StudyMeta | null) => [...new Set((m?.groups ?? []).filter((g) => g.compound.trim())
+  .map((g) => [g.compound.trim(), g.dose === null ? '' : `${g.dose} ${g.unit}`.trim(), g.route, g.schedule]
+    .filter((s) => s).join(' ')))].join(' + ');
+
 /** The study's details to edit: its fields, and its groups as a table (one row per group, typed or pasted into like
  *  any Datagrok grid). `save` gets them on OK; an ID left empty is given when the study is first saved. */
 export function detailsDialog(name: string, meta: StudyMeta, groups: string[], save: (m: StudyMeta) => void): void {

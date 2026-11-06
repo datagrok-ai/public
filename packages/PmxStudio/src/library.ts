@@ -7,7 +7,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {myPlans, parsePlan} from './plan-file';
 import {parseStudy, studiesFolder, STUDY_EXT} from './study-file';
-import {compoundsOf, parseMeta} from './study-meta';
+import {compoundsOf, parseMeta, treatmentOf} from './study-meta';
+import {futureDays} from './monitor';
 
 export interface LibraryEntry {
   kind: 'plan' | 'study';
@@ -23,19 +24,31 @@ export interface LibraryEntry {
   tags: string[];
   /** ms since the epoch */
   updated: number;
+  /** what each group receives, with its dose, route and schedule (else the compounds, else the arms) */
+  treatment: string;
+  /** day 0, YYYY-MM-DD (null: not fixed yet) */
+  start: string | null;
+  /** a followed study's last day measured and its next (from its usual gap); null for a plan */
+  day: number | null;
+  next: number | null;
+  /** the study's last day as planned (null: no plan) */
+  end: number | null;
 }
 
 /** A plan or study file's entry (null: not one, or damaged). */
 export function entryOf(text: string, updated: number, file: DG.FileInfo | null = null): LibraryEntry | null {
   try {
     const x = JSON.parse(text);
-    const study = x?.format === 'pmx-study';
-    const plan = study ? parseStudy(text).plan : parsePlan(text);
+    const study = x?.format === 'pmx-study' ? parseStudy(text) : null;
+    const plan = study ? study.plan : parsePlan(text);
     const meta = parseMeta(study ? x.meta : plan?.study) ?? parseMeta(plan?.study);
+    const days = (study?.rows ?? []).map((r) => r.day).filter((d) => Number.isFinite(d));
+    const compounds = compoundsOf(meta) || (plan?.predicted.arms ?? []).map((a) => a.name).join(', ');
     return {kind: study ? 'study' : 'plan', stage: study ? 2 : 1, file, text, id: meta?.id ?? '', name: x.name ?? '',
-      line: plan?.predicted.line ?? '', compounds: compoundsOf(meta) ||
-        (plan?.predicted.arms ?? []).map((a) => a.name).join(', '),
-      owner: meta?.owner || plan?.author || '', tags: meta?.tags ?? [], updated};
+      line: plan?.predicted.line ?? '', compounds, owner: meta?.owner || plan?.author || '', tags: meta?.tags ?? [],
+      updated, treatment: treatmentOf(meta) || compounds, start: meta?.start ?? null,
+      day: days.length ? days.reduce((a, b) => Math.max(a, b)) : null, next: days.length ? futureDays(days)[0] : null,
+      end: plan?.predicted.studyEnd ?? null};
   } catch {
     return null;
   }
@@ -55,9 +68,9 @@ export function libraryOf(entries: (LibraryEntry | null)[]): LibraryEntry[] {
   return [...kept.values()].sort((a, b) => b.updated - a.updated);
 }
 
-/** Whether an entry has every word of `query` in its ID, name, line, compounds, owner or tags. */
+/** Whether an entry has every word of `query` in its ID, name, line, treatment, owner or tags. */
 export function matches(e: LibraryEntry, query: string): boolean {
-  const text = [e.id, e.name, e.line, e.compounds, e.owner, ...e.tags].join(' ').toLowerCase();
+  const text = [e.id, e.name, e.line, e.treatment, e.owner, ...e.tags].join(' ').toLowerCase();
   return query.toLowerCase().split(/\s+/).filter((w) => w).every((w) => text.includes(w));
 }
 

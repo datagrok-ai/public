@@ -183,6 +183,8 @@ category('Study table', () => {
     expect(listed[0].kind, 'study');
     expect(matches(listed[0], 'pd-1 pmx-2026'), true);
     expect(matches(listed[0], 'cisplatin'), false);
+    expect(study.treatment, 'anti-PD-1 10 mg/kg i.p. Q3D×4', 'each compound with its dose, route and schedule');
+    expect([study.start, study.day, study.end].join(), '2026-11-02,0,', 'day 0, the last day measured, no plan');
     expect(parseMeta({id: 3, start: '2 Nov', groups: [{group: 'A', dose: 'ten'}]})!.groups[0].dose, null,
       'a damaged field is dropped, not trusted');
     // blinded entry: the groups hidden until revealed; each mark says whether its author knew them

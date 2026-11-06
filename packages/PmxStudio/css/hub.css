@@ -213,3 +213,19 @@
 .pmx-explore .pmx-name { font-size: 16px; }
 .pmx-explore-tips { display: flex; flex-direction: column; gap: 6px; line-height: 1.5; color: var(--pmx-muted); }
 .pmx-explore-tip b { font-weight: 500; color: var(--dg-text-color, #4D5261); }
+
+/* the library's stage filters, today's line, and its richer cells */
+.pmx-filters { display: flex; gap: 6px; }
+.pmx-filter {
+  font: 12px var(--dg-font-family, Roboto, sans-serif); color: var(--dg-text-color, #4D5261); cursor: pointer;
+  background: var(--dg-bg, #fff); border: 1px solid var(--dg-border, #DBDCDF); border-radius: 12px; padding: 2px 10px;
+}
+.pmx-filter:hover { border-color: var(--dg-accent, #2083D5); }
+.pmx-filter.is-on { background: color-mix(in srgb, var(--dg-accent, #2083D5) 12%, transparent);
+  border-color: var(--dg-accent, #2083D5); color: var(--dg-accent, #2083D5); }
+.pmx-library-today { margin: -4px 0 10px; color: var(--dg-grey-5, #717581); font-size: 13px; }
+.pmx-study-cell > div { font-weight: 500; }
+.pmx-stage-cell { display: inline-flex; align-items: center; gap: 8px; }
+.pmx-progress-cell { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pmx-progress { display: inline-block; width: 56px; height: 4px; border-radius: 2px; background: var(--dg-border, #DBDCDF); overflow: hidden; }
+.pmx-progress > i { display: block; height: 100%; background: var(--dg-accent, #2083D5); }

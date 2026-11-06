@@ -204,7 +204,36 @@ function hubContent(): ViewContent {
 function stageMarker(e: LibraryEntry): HTMLElement {
   const marker = h('span', 'pmx-stage-marker', [1, 2, 3].map((k) => h('span', k <= e.stage ? 'on' : '')));
   marker.title = e.stage === 1 ? 'Planned' : 'Followed in Monitor';
-  return marker;
+  return h('span', 'pmx-stage-cell', [marker, e.stage === 1 ? 'Plan' : 'Monitor']);
+}
+
+const DAY_MS = 86_400_000;
+/** The study day today is, from its day 0 (null: day 0 not fixed). */
+const todayOf = (e: LibraryEntry) => e.start ? Math.floor((Date.now() - Date.parse(`${e.start}T00:00`)) / DAY_MS) :
+  null;
+const shortDate = (iso: string) => new Date(`${iso}T00:00`).toLocaleDateString('en-GB',
+  {weekday: 'short', day: 'numeric', month: 'short'});
+
+/** How far a study is: a followed one, its last day measured of the planned end (a bar); a plan, when it starts. */
+function progressOf(e: LibraryEntry): HTMLElement {
+  if (e.kind === 'plan')
+    return h('span', 'pmx-muted', [e.start ? `starts ${shortDate(e.start)}` : 'not started']);
+  const share = e.day !== null && e.end ? Math.min(1, e.day / e.end) : 0;
+  const bar = h('span', 'pmx-progress', [h('i', '')]);
+  (bar.firstChild as HTMLElement).style.width = `${Math.round(share * 100)}%`;
+  return h('span', 'pmx-progress-cell', [bar, `day ${e.day ?? 0}${e.end ? ` of ~${e.end}` : ''}`]);
+}
+
+/** Today across the followed studies: how many, and which are due a measurement today (day 0 known). */
+function todayLine(entries: LibraryEntry[]): string {
+  const followed = entries.filter((e) => e.kind === 'study');
+  if (!followed.length)
+    return '';
+  const due = followed.filter((e) => todayOf(e) !== null && e.next === todayOf(e)).length;
+  const measured = followed.filter((e) => todayOf(e) !== null && e.day === todayOf(e)).length;
+  const date = new Date().toLocaleDateString('en-GB', {weekday: 'short', day: 'numeric', month: 'short'});
+  return [`Today, ${date}: ${followed.length} ${followed.length === 1 ? 'study' : 'studies'} followed`,
+    due ? `${due} to measure today` : '', measured ? `${measured} measured today` : ''].filter((s) => s).join(' · ');
 }
 
 /** The user's plans and studies, newest first, found by any word of their ID, name, line, compounds, owner or tags;
@@ -214,35 +243,48 @@ function yourStudies(): HTMLElement {
   const all = signal<LibraryEntry[]>([]);
   const query = signal('');
   const stage = signal('All');
-  const items = computed(() => all.value.filter((e) => matches(e, query.value) &&
-    (stage.value === 'All' || (stage.value === 'Planned') === (e.stage === 1))));
+  const inStage = (e: LibraryEntry, s: string) => s === 'All' || (s === 'Planned') === (e.stage === 1);
+  const items = computed(() => all.value.filter((e) => matches(e, query.value) && inStage(e, stage.value)));
   const host = h('div', 'pmx-studies pmx-rise');
   host.hidden = true;
   const none = h('div', 'pmx-muted', ['No study matches']);
   const showNone = () => none.hidden = items.peek().length > 0;
+  const today = h('div', 'pmx-library-today');
+  // the stage filters, each with its count
+  const chips = h('div', 'pmx-filters');
+  const drawChips = () => chips.replaceChildren(...['All', 'Planned', 'Followed'].map((s) => {
+    const b = h('button', `pmx-filter${stage.peek() === s ? ' is-on' : ''}`,
+      [`${s} · ${all.peek().filter((e) => inStage(e, s)).length}`]);
+    b.setAttribute('aria-pressed', String(stage.peek() === s));
+    b.onclick = () => {
+      stage.value = s;
+      drawChips();
+      showNone();
+    };
+    return b;
+  }));
   void myLibrary().catch(() => [] as LibraryEntry[]).then((entries) => {
     all.value = entries;
     host.hidden = entries.length === 0;
+    today.textContent = todayLine(entries);
+    today.hidden = !today.textContent;
+    drawChips();
     showNone();
   });
-  const search = ui.input.string('', {placeholder: 'Search: ID, line, compound, owner, tag…',
+  const search = ui.input.string('', {placeholder: 'Search studies',
+    tooltipText: 'Any word of the ID, name, line, compound, owner or tags',
     onValueChanged: (v) => {
       query.value = v ?? '';
-      showNone();
-    }});
-  const stages = ui.input.choice('', {value: 'All', items: ['All', 'Planned', 'Followed'],
-    onValueChanged: (v) => {
-      stage.value = v ?? 'All';
       showNone();
     }});
   const muted = (s: string) => h('span', 'pmx-muted', [s]);
   const table = new BasicTable<LibraryEntry>({items, keyOf: (e) => e.file?.fullPath ?? e.id + e.name,
     columns: [
-      {header: 'ID', render: (e) => muted(e.id)},
-      {header: 'Study', render: (e) => e.name},
+      {header: 'Study', render: (e) => h('div', 'pmx-study-cell', [h('div', '', [e.name]), muted(e.id)])},
+      {header: 'Compound and schedule', render: (e) => e.treatment},
       {header: 'Line', render: (e) => e.line},
-      {header: 'Groups receive', render: (e) => e.compounds},
       {header: 'Stage', render: stageMarker},
+      {header: 'Progress', render: progressOf},
       {header: 'Owner', render: (e) => muted(e.owner)},
       {header: 'Updated', render: (e) => muted(e.updated ? new Date(e.updated).toLocaleDateString('en-GB',
         {day: 'numeric', month: 'short', year: 'numeric'}) : '')},
@@ -252,7 +294,7 @@ function yourStudies(): HTMLElement {
       openStudyFile(e.text)).catch((err) => grok.shell.error(String(err?.message ?? err)))});
   table.root.style.width = '100%';
   table.root.style.cursor = 'pointer';
-  host.append(h('div', 'pmx-library-head', [h('h3', '', ['Your studies']), search.root, stages.root]),
+  host.append(h('div', 'pmx-library-head', [h('h3', '', ['Your studies']), search.root, chips]), today,
     h('div', 'pmx-library', [table.root, none]));
   return host;
 }
