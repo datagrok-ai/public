@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect} from '@datagrok-libraries/test/src/test';
+import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
+import {skipWithoutChemblDatabase} from './utils';
 
 /* The enrichments this package ships (enrichments/*.json) are written by the server into PowerPack's folder
    when the package is published. Each is applied to the first rows of its key table the way the Enrich pane
@@ -10,6 +11,8 @@ import {category, test, expect} from '@datagrok-libraries/test/src/test';
 const ROOT = 'System:AppData/PowerPack/enrichments/Chembl_Chembl/';
 
 category('Enrichments', () => {
+  before(() => skipWithoutChemblDatabase('Enrichments'));
+
   test('Every shipped enrichment applies', async () => {
     const run = DG.Func.find({package: 'PowerPack', name: 'runEnrichment'})[0];
     expect(run != null, true, 'PowerPack:runEnrichment is not registered');

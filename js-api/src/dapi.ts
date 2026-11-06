@@ -2272,6 +2272,22 @@ export class DockerDataSource {
   getAvailableServices(): Promise<string[]> {
     return api.grok_Dapi_DockersDataSource_GetAvailableServices();
   }
+
+  /** Whether the server can run containers: Grok Spawner is switched on (`enabled`) and its last poll found
+   * no connection failure (`isActive`). Resolves `{enabled: false}`, with no `isActive`, when the status
+   * could not be read. */
+  getStatus(): Promise<DockerStatus> {
+    return api.grok_Dapi_DockersDataSource_GetStatus();
+  }
+}
+
+/** Grok Spawner status, see {@link DockerDataSource.getStatus}. */
+export interface DockerStatus {
+  /** Grok Spawner is switched on for this server. */
+  enabled: boolean,
+  /** No recent connection failure: the server's last poll of Grok Spawner succeeded. This is not a live probe.
+   * Absent when the status could not be read. */
+  isActive?: boolean,
 }
 
 /** Functionality to work with Docker images. See also {@link DockerContainersDataSource}. */
@@ -2861,7 +2877,9 @@ export class FilesDataSource {
   async readFilesAsBlobs(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: Blob}> {
     const folderPath = this.setRoot(folder);
     const conn = folderPath.replace(":", ".").split('/')[0];
-    let url = `${api.grok_Dapi_Root()}/connectors/connections/${conn}/folder/${folderPath.substring(folderPath.indexOf('/') + 1)}?recursive=${recursive}`;
+    const slash = folderPath.indexOf('/');
+    const dir = slash < 0 ? '' : folderPath.substring(slash + 1);
+    let url = `${api.grok_Dapi_Root()}/connectors/connections/${conn}/folder/${dir}?recursive=${recursive}`;
     if (ext) {
       if (!ext.startsWith('.'))
         ext = `.${ext}`;

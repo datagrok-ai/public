@@ -2052,6 +2052,7 @@ export interface IDartApi {
   grok_Dapi_DockerContainersDataSource_GetContainerLogs(s: any, id: String, limit: Num): Promise<any>;
   grok_Dapi_DockersDataSource_GetServiceLogs(serviceName: String, limit: Num): Promise<any>;
   grok_Dapi_DockersDataSource_GetAvailableServices(): Promise<any>;
+  grok_Dapi_DockersDataSource_GetStatus(): Promise<any>;
   grok_DockerContainer_Status(dc: any): any;
   grok_MathActions_GetDensity(dataFrame: any, xBins: Num, yBins: Num, xColName: String, yColName: String): any;
   grok_DayJs_To_DateTime(milliseconds: Num): any;
