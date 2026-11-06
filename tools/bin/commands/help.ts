@@ -28,6 +28,7 @@ Commands:
     testall     Run packages tests
     migrate     Migrate legacy tags to meta.role
     server (s)  Manage a Datagrok server (list/get/delete entities, run functions)
+    src         Work across the repos of an umbrella checkout (git submodules)
     connect-folder  Connect a local folder to Datagrok as a connection (runs a Docker container)
 
 To get help on a particular command, use:
@@ -517,6 +518,38 @@ Examples:
 The instance name must match a server alias in ~/.grok/config.yaml.
 `;
 
+const HELP_SRC = `
+Usage: grok src <command> [options]
+
+Git recipes across the repos of the datagrok umbrella (git submodules). Runs from anywhere
+in the tree; paths are relative to the umbrella root. Every git command that changes
+something is printed; a repo that fails is listed and the exit code is 1.
+
+Commands:
+    clone [profile | path...]   Clone the umbrella and the given children (profiles: .gitprofiles;
+                                none: profile "default", else every child)
+    add <profile | path>...     Clone more children, each on its branch
+    sparse <path> <glob>...     Clone a child with only the matching files
+    switch                      Put every child on its branch from .gitmodules
+    status                      Branch, unpushed commits and changes of every repo
+    pull                        git pull --ff-only in every repo
+    at <ref>                    Check out an umbrella ref with its pinned children
+    bump [path...]              Pin children to the tip of their branch on origin; commit in each umbrella
+    wt add <name> <path>...     Worktrees of the umbrella and the given children on branch <name>
+    doctor [--fix]              Detached HEADs, unpushed commits, stale URLs; --fix resets those URLs
+
+Options:
+    --explain     Print the git commands without running them
+    --url <url>   clone: the umbrella (default git@github.com:datagrok-ai/datagrok.git)
+    --dir <dir>   clone: target directory; wt add: worktree root (default <umbrella>-worktrees/<name>)
+
+Examples:
+    grok src clone platform
+    grok src sparse help '*.md'
+    grok src bump core public
+    grok src wt add fix-login core public
+`;
+
 
 export const help = {
   add: HELP_ADD,
@@ -540,6 +573,7 @@ export const help = {
   server: HELP_SERVER,
   s: HELP_SERVER,
   setup: HELP_SETUP,
+  src: HELP_SRC,
   'connect-folder': HELP_CONNECT_FOLDER,
   help: HELP,
 };

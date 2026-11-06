@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Added `grok src`: git recipes across the repos of the datagrok umbrella (`clone`, `add`, `sparse`, `switch`, `status`, `pull`, `at`, `bump`, `wt add`, `doctor`)
+* Kept positionals, `--url` and `--dir` verbatim (`1.10` no longer becomes 1.1), and an explicit boolean such as `--force` now reaches every command instead of being dropped
 * Added `grok s o groups list|get|add|set|rm|put|reset`, `endpoints list|rm`, `logs match '<filter>'` (with `--space`) and `logs activations [stop]`: log groups and endpoints of Settings > Logger
 * `grok publish`: A local container build that fails for the host platform on Apple Silicon is retried for linux/amd64, so a package whose base image has no arm64 variant (the Chembl ChEMBL database) builds
 * `grok test`: A package built on u2 or ems runs with u2 strict — a u2 misuse throws a `U2UsageError` naming the fix, and one the page caught and logged fails the run when it is the package's own (a stack frame in its bundle, or none to tell; another package's prints as a warning); `U2_STRICT=report` lists them instead without failing
