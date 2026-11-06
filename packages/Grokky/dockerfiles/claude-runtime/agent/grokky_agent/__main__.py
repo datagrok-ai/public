@@ -1,6 +1,5 @@
 """python -m grokky_agent: one chat session. The first stdin line is the init command (credentials and settings, so no
-secret is in this process's environment); every later line is a command, every stdout line an event. With --check it
-instead makes one short call to the model, prints a `checked` event and exits: the runtime's connection test."""
+secret is in this process's environment); every later line is a command, every stdout line an event."""
 import ctypes
 import json
 import os
@@ -60,13 +59,6 @@ def main() -> int:
     hermes.describe_skills(s.skills)
     if provider.format.mode == 'bedrock_converse':
         hermes.use_bedrock_key(provider.key)
-    if '--check' in sys.argv:
-        try:
-            error = s.check()
-        except Exception as e:
-            error = f'{type(e).__name__}: {e}'
-        emit({'type': 'checked', 'error': error})
-        return 0
     if settings['warm']:
         s.build_agent()
     emit({'type': 'ready'})

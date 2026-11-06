@@ -7,7 +7,8 @@ import {
   historyUtils, RunMetadata, SaveTarget,
 } from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {PlacesTree} from './PlacesTree';
-import {Breadcrumbs, FolderRows, spaceFolders} from './RunList';
+import {Breadcrumbs, FolderRows} from './RunList';
+import {spaceFolders} from './space-index';
 import {useFavorites} from './use-favorites';
 import {useSpaceIndex} from './use-space-index';
 import {MY_RUNS, SPACES, locationKey, useSpaceNavigation} from './use-space-navigation';

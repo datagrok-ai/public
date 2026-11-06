@@ -2,6 +2,13 @@
 
 ## v.next
 
+* Docker: Rebuilt the clinical-case image on Wolfi (multi-stage, no pip or build tools in the final image) to clear the Debian CVEs; the worker starts with default queue and host names when TASK_QUEUE_NAME/CELERY_HOSTNAME are unset
+* Docker: Fixed the check_health task: CDISC CORE 1.0.0 has a `version` command, not a `--version` option
+
+## 1.4.2 (2026-11-03)
+
+* [public#4476](https://github.com/datagrok-ai/public/issues/4476): ClinicalCase: Import study... on the start page closes the app unless the tree node was expanded
+* Docker: Rebuilt the clinical-case image with patched dependencies (cryptography 48.0.1+, redis 4.5.4+); the 1.4.1 image was never pushed
 * App: The landing header is u2's `AppHeader` (moved out of `@datagrok-libraries/utils`): the same icon, bullets and Learn more
 * [core#993](https://github.com/datagrok-ai/core/issues/993): Timelines: Fixed an error when no event domain is selected or available
 * GROK-20800: Adverse events: Fixed the treatment-arm legend sizing — it fills its container and wraps horizontally

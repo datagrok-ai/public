@@ -22,7 +22,7 @@ class OpenAIProvider(Provider):
         base_url = (credentials.get('baseUrl') or '').strip()
         m = BASE_URL.fullmatch(base_url) if base_url else None
         if base_url and not m:
-            raise ProviderError('The baseUrl container credential is not an OpenAI API address: set '
+            raise ProviderError('The baseUrl Grokky credential is not an OpenAI API address: set '
                                 f'https://<region>.api.openai.com, region one of {", ".join(REGIONS)}, for a project '
                                 'with data residency, or leave it empty')
         return {'codex_responses': Route(self.endpoint(f'https://{m[1] or ""}api.openai.com/v1' if m else API))}
@@ -30,12 +30,12 @@ class OpenAIProvider(Provider):
     def check_key(self, key: str) -> None:
         # A ChatGPT or Codex login and a workload identity federation token are JWTs.
         if key.startswith('eyJ'):
-            raise ProviderError('The apiKey container credential is a token, such as a ChatGPT or Codex login: '
+            raise ProviderError('The apiKey Grokky credential is a token, such as a ChatGPT or Codex login: '
                                 'set an API key of an OpenAI project')
         if key.startswith('sk-admin-'):
-            raise ProviderError('The apiKey container credential is an OpenAI Admin API key, which works only on the '
+            raise ProviderError('The apiKey Grokky credential is an OpenAI Admin API key, which works only on the '
                                 'administration endpoints: set an API key of a project')
 
     def error_hint(self, status: int | None) -> str:
-        return (' (check the apiKey container credential, an API key of an OpenAI project, and for a project with '
+        return (' (check the apiKey Grokky credential, an API key of an OpenAI project, and for a project with '
                 'data residency the baseUrl one)') if status == 401 else ''

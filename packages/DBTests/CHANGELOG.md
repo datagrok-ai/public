@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Docker: Rebuilt the dbtests image on postgres:17-alpine with ICU en-US collation to clear the Debian CVEs
 * Tests: Added `Database Meta: DbSchemaInfo` tests that one deleted table or column field leaves the others, that a column's string-list Values round-trip, and that a table's or a column's annotation is absent on its namesakes
 * Tests: Added the `Queries: expected rows` category: every query declaring `meta.testExpectedRows` returns that count for its default inputs, and a `PostgresByStringChoices` choice filters the rows to that country
 * Tests: Fixed the `MSSQLByInt` default order id — the MSSQL Northwind numbers its orders 1–830, so 10330 matched no row

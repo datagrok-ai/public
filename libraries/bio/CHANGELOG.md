@@ -2,6 +2,7 @@
 
 ## v.next
 
+* `utils/cell-renderer-monomer-placer.ts`: Fixed monomers drawn above or below the others after the font size changed (e.g. to 18 and back): the cell drawn first after a change printed in the old font and cached its monomers' text metrics in it, and later cells centred those monomers by them. `MonomerPlacer.render` resets before it sets the font
 * Dependencies: `@datagrok-libraries/hwe` 1.1.1 (`parseHelm` about 15-20% faster with the same results; a `trailing-monomer-separator` warning)
 * `utils/cell-renderer-monomer-placer.ts`: Fixed the multiline sequence renderer wrapping its lines at the grid's visible edge instead of at the cell: in a column wider than the grid, the lines re-wrapped as the grid scrolled horizontally. They now wrap at the cell's own width (the single line still lays out only what is visible)
 * `utils/macromolecule/utils.ts`: faster, the same results: `BilnSeqSplitted.getCanonical` / `getOriginal` skip their regular expressions when a monomer has no cyclization mark / brackets, `splitterAsBiln` skips restoring bracketed dashes where there are none, `splitterAsFasta` loops over the matches without wu (1.7× on multi-character FASTA); `monomer-works/assembly-input.ts`: `MonomerResolver` caches by polymer type, then symbol (no key string per monomer)

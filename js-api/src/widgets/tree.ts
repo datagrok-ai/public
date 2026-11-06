@@ -138,9 +138,9 @@ export class TreeViewNode<T = any> {
   /** Occurs when the selected node is changed. */
   get onSelected(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-current', this.dart); }
 
-  /** Removes the node and its children from the parent */
-  remove(): void {
-    api.grok_TreeViewNode_Remove(this.dart);
+  /** Removes the node and its children from the parent; pass `kill: true` to also dispose of it when it will not be added back */
+  remove(kill: boolean = false): void {
+    api.grok_TreeViewNode_Remove(this.dart, kill);
   }
 }
 

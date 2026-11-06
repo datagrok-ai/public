@@ -1,5 +1,9 @@
 # Compute changelog
 
+## v.next
+
+* Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
+
 ## 1.45.4 (2026-09-23)
 
 * Removed the developer-only Test runner menu (Run/Execute/Update Test JSON) and the `testPipeline` export; the helper's import cycle in compute-utils broke package initialization on the workspace build

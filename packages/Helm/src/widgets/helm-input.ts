@@ -241,6 +241,7 @@ export class HelmInput extends HelmInputBase {
     const webEditorApp = this.helmHelper.createWebEditorApp(webEditorHost, this.viewer.editor.getHelm());
 
     const destroyEditorDialog = () => {
+      webEditorApp.destroy();
       $(webEditorHost).empty();
     };
 
@@ -261,13 +262,14 @@ export class HelmInput extends HelmInputBase {
           this.fireChanged();
         } catch (err: any) {
           defaultErrorHandler(err);
-        } finally {
-          destroyEditorDialog();
         }
       })
-      .onCancel(() => {
-        destroyEditorDialog();
-      })
       .show({modal: true, fullScreen: true});
+    // OK, Cancel and Escape close the dialog, after its OK handler: the editor goes with it (its document listeners,
+    // and the monomer that follows the mouse, which stayed on the page after Escape)
+    const closeSub = _editorDialog.onClose.subscribe(() => {
+      closeSub.unsubscribe();
+      destroyEditorDialog();
+    });
   }
 }

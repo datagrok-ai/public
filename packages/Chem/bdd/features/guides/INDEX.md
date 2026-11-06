@@ -6,6 +6,7 @@ skill is the recipe.
 
 | Question | Feature | Date | Help page |
 |---|---|---|---|
+| How do I see the 3D structure, the Gasteiger charges and the properties of each molecule I click, without reopening them in the Context Panel? | `following-panels.feature` | 2026-11-05 | |
 | How do I split my series into the common core and its substituents, and see which combinations of substituents I have? | r-groups-from-mcs.feature | 2026-09-24 | datagrok/solutions/domains/chem |
 | How does an MPO profile score a qualified value such as <-5, and can I change it? | mpo-qnum-score-as.feature | 2026-10-20 | datagrok/solutions/domains/chem |
 | How do I draw a molecule in Crux with bonds, a chain and hotkeys? | crux/drawing.feature | 2026-10-07 | |

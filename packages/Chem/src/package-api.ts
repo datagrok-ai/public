@@ -1523,7 +1523,7 @@ export namespace funcs {
    *   choices: ["Average","Sum","Product","Geomean","Min","Max"]
    * @param {boolean} createCoverageColumn - Add a column counting non-empty properties per row
    */
-  export async function mpoCalculate(df: DG.DataFrame , columns: string[] , profileName: string , aggregation: string , createDesirabilityColumns: boolean , createCoverageColumn: boolean ): Promise<DG.DataFrame> {
+  export async function mpoCalculate(df: DG.DataFrame , columns: string[] , profileName: string , aggregation: string , createDesirabilityColumns: boolean , createCoverageColumn?: boolean ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:MpoCalculate', { df, columns, profileName, aggregation, createDesirabilityColumns, createCoverageColumn });
   }
 

@@ -8,6 +8,14 @@ import path from 'path';
 
 export const LABEL = 'ai.datagrok.folder';
 export const SHARE_ROOT = '/share';
+/** The only image run with the user's folder mounted unless `--image` names another. */
+export const AGENT_REPOSITORY = 'datagrok/proxy_storage';
+
+/** Whether [image] is [AGENT_REPOSITORY] on Docker Hub, by tag or digest: a server cannot name any other. */
+export function isAgentImage(image: string): boolean {
+  return /^((docker\.io|index\.docker\.io)\/)?datagrok\/proxy_storage(:\w[\w.-]{0,127})?(@sha256:[0-9a-f]{64})?$/.test(image);
+}
+
 const DOCKER_HOST = 'host.docker.internal';
 
 export class DockerError extends Error {

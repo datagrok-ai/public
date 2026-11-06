@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "1.11.6",
+  "version": "1.11.7",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -45,6 +45,9 @@
     "wu": "catalog:",
     "rxjs": "catalog:",
     "lru-cache": "^11.0.0"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",

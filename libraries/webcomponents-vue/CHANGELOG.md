@@ -2,6 +2,16 @@
 
 ## v.next
 
+* IconFA, BigButton: Fixed `isDisabled` and the button styling being lost when the parent sets or changes the class
+* Button: Fixed the button styling being lost when the parent sets a class
+* Removed the unused `IconImage` component and the `nullable` prop of `ToggleInput`
+* DockManager: Removed `saveLayout`, `loadLayout` and `setActivePanel`; use `preferredPanelTitle` to pick the active tab
+* `provideDgViewService`: the service is disposed when the app unmounts, so callers no longer call `dispose()`
+* InputForm: Toggling `isReadonly` alone updates whether the inputs are enabled
+* InputForm: Clearing `callMeta` drops the meta of the previous call
+* ResizeHandle: A cancelled pointer ends the drag, and only the primary button starts one
+* tooltip: The directive follows changes of its value
+* ValidationIcon: Forwards the dataframe diff request as `showDataFrameDiff`
 * Tabs: Added a tab strip styled like `ui.tabControl`, with closable tabs and an optional + tab; every pane stays mounted, inactive ones are hidden, and a pane taller than the strip's host scrolls; headers and + work from the keyboard (Enter, Space) and are linked to their panes for screen readers
 * InputForm: Added the `hiddenInputs` prop; the `hidden` meta still hides an input
 * InputForm: A dataframe input with the `mutateOnly` annotation is disabled under the `restricted` or `info` restriction

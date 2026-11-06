@@ -580,6 +580,15 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         tableCol.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.false;
         this.dirty = true;
       }
+      // The reset reads the props anew (the font among them) and empties the monomers' text metrics: before the font is
+      // set, so this cell prints and measures in the new font. After it, this cell printed in the old font and its
+      // monomers kept the old metrics, by which every later cell placed them above or below the others.
+      if (this.dirty) {
+        try { this.reset(); } catch (err) {
+          const [errMsg, errStack] = errInfo(err);
+          this.logger.error(errMsg, undefined, errStack);
+        }
+      }
 
 
       const rowIdx = gridCell.cell.rowIndex;

@@ -58,7 +58,9 @@ export function disposeViewers(mapping: {[key: string]: (DG.Viewer | undefined)[
   }
 }
 
-export async function getViewers(call: DG.FuncCall, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>) {
+export async function getViewers(
+  call: DG.FuncCall, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>,
+) {
   const mappings = await dfToViewerMapping(call);
   if (viewersHook) {
     for (const [ioName, viewers] of Object.entries(mappings ?? {})) {

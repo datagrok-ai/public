@@ -2,6 +2,7 @@
 
 ## v.next
 
+* HELM editor: Fixed the monomer that follows the mouse after a click on a palette tile staying on the page once Escape closed the editor. The cell editor (a double click) and the HELM input's editor destroy the editor when their dialog closes, however it closes; it kept its document listeners after every edit. Test: `helm-web-editor`, cell editor Escape
 * Dependencies: `@datagrok-libraries/hwe` 1.1.1 (`parseHelm` about 15-20% faster with the same results; a `trailing-monomer-separator` warning)
 * Renderer: Keeps the hover data of the last 1,000 values drawn, not of every value ever drawn (memory grew while scrolling large tables), and builds a cell's hover view only when the cell is hovered or highlighted
 * Molecular Structure pane: Bio's panel, now linear by default with the assembler's per-row non-linear fallback

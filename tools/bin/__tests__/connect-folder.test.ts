@@ -93,6 +93,20 @@ describe('runArgs', () => {
   });
 });
 
+describe('isAgentImage', () => {
+  it('accepts the Docker Hub agent by tag or digest', () => {
+    for (const image of ['datagrok/proxy_storage', 'datagrok/proxy_storage:1.27.12', 'docker.io/datagrok/proxy_storage:bleeding-edge',
+      `datagrok/proxy_storage@sha256:${'a'.repeat(64)}`, `datagrok/proxy_storage:latest@sha256:${'0'.repeat(64)}`])
+      expect(dk.isAgentImage(image), image).toBe(true);
+  });
+
+  it('refuses any other repository or registry a server may name', () => {
+    for (const image of ['evil/proxy_storage:latest', 'registry.example.com/datagrok/proxy_storage:latest', 'datagrok/proxy_storage2',
+      'datagrok/proxy_storage:latest --privileged', 'datagrok/proxy_storage@sha256:abc', ''])
+      expect(dk.isAgentImage(image), image).toBe(false);
+  });
+});
+
 describe('containerUrl / containerName', () => {
   it('leaves a real host alone', () => {
     expect(dk.containerUrl('https://dev.datagrok.ai/api')).toEqual({url: 'https://dev.datagrok.ai/api', rewritten: false});

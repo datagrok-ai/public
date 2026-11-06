@@ -25,7 +25,7 @@ Tabs are a **fixed list** in `ViewHandler.init()`:
 
 ```ts
 const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
-                     SystemActivityView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
+                     SystemActivityView, AiUsageView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
 ```
 
 `SystemActivityView` (tab `System Activity`) lists the platform-level audit records datlas writes —
@@ -38,6 +38,11 @@ const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, Clic
 resolves the record's user from its `user` parameter first (a failed login or a server start has no
 session), so the groups filter applies to records with a user and passes the rest through. The
 packages input is hidden on it, like Projects. Both queries are uncached: this is a security log.
+
+`AiUsageView` (tab `AI Usage`) shows Grokky's `ai-turn` events: one cached query, `AiUsage` (5 minutes), returns a row
+per request that every card, chart, filter and the grid share. Charts open on cost only when every request with tokens
+is priced, otherwise on tokens. `AiChatContent` (uncached; prompt and answer arrive as separate events) fills the
+context panel with the chat's prompts, answers and tool calls. The packages input is hidden on it.
 
 `ErrorsView` (tab `Errors`): Top errors and Top source come from one `grok.dapi.admin.getMetrics` call
 (`GET /admin/metrics`, `errorsBy: 'signature'`, the toolbox's date; needs `ViewTelemetry`, else both say so); a Top
@@ -82,6 +87,8 @@ Toolbox "Apply" → filterStream.next(UaFilter)
 - `filterStream` is a `BehaviorSubject<UaFilter>` on the toolbox; **one stream, all tabs subscribe**.
 - Viewers only re-query when `activated` — hidden tabs stay idle until visited.
 - `UaQueryViewer` applies shared formatting (count format, per-user color hashing) before `createViewer`.
+- Only the latest `reloadViewer` call renders: a slower earlier query's result or error is dropped, and its
+  `dataFrame` promise never resolves.
 
 ## Shared toolbox (`UaToolbox`)
 

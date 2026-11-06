@@ -6,6 +6,7 @@ import {getMacromoleculeAssembler} from '@datagrok-libraries/bio/src/monomer-wor
 import {getAsmMonomerCount} from '@datagrok-libraries/bio/src/monomer-works/assembly-input';
 import {_package, PackageFunctions, toAtomicLevelDo} from '../package';
 import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {nglStageOnPage} from '@datagrok-libraries/utils/src/ngl-stage';
 
 
 /** One sequence cell to a molblock. The linear layout by default: the assembler falls back per row to the
@@ -309,7 +310,7 @@ export async function embedMolecule3d(molBlock2D: string,
  * @return {Promise<DG.Widget>} Widget.
  */
 export async function molecular3DStructureWidget(
-  sequence: DG.SemanticValue
+  sequence: DG.SemanticValue,
 ): Promise<DG.Widget> {
   const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
   let widgetHost;
@@ -349,20 +350,29 @@ export async function molecular3DStructureWidget(
       const stringBlob = new Blob([molBlock3D], {type: 'text/plain'});
       const nglHost = ui.div([], {classes: 'd4-ngl-viewer', id: 'ngl-3d-host'});
       nglHost.style.setProperty('height', '100%', 'important');
-      //@ts-ignore
-      const stage = new NGL.Stage(nglHost, {backgroundColor: 'white'});
-      //@ts-ignore
-      stage.loadFile(stringBlob, {ext: 'sdf'}).then(function(comp: NGL.StructureComponent) {
-        stage.setSize(300, 300);
-        comp.addRepresentation('ball+stick');
-        comp.autoView();
-      });
+      const unreadable = () => nglHost.replaceChildren(ui.divText('Couldn\'t get 3D structure'));
+      // the stage while the panel is on the page (WebGL contexts are few)
+      nglStageOnPage(nglHost, (host) => {
+        //@ts-ignore
+        const stage = new NGL.Stage(host, {backgroundColor: 'white'});
+        //@ts-ignore
+        stage.loadFile(stringBlob, {ext: 'sdf'}).then(function(comp: NGL.StructureComponent) {
+          if (!comp?.structure?.atomCount) // NGL loads a V3000 block as no atoms
+            return unreadable();
+          stage.handleResize();
+          comp.addRepresentation('ball+stick');
+          comp.autoView();
+        }, unreadable);
+        return stage;
+      }).catch(unreadable);
       widgetHost = ui.div([nglHost], {style: {aspectRatio: '1'}});
     } catch (e) {
       widgetHost = ui.divText('Couldn\'t get 3D structure');
+      console.error(e);
     }
   } catch (e) {
     widgetHost = ui.divText('Couldn\'t get 3D structure');
+    console.error(e);
   }
   pi.close();
   return new DG.Widget(widgetHost);

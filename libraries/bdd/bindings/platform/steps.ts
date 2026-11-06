@@ -7,7 +7,7 @@ import {expectState, type State} from '../../src/runtime/assertions.js';
 import {click, dblclick, drag, editorOf, setExpanded} from '../../src/runtime/gestures.js';
 import {atFeatureEnd, atScenarioStop} from '../../src/runtime/harness.js';
 import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
-import {cssString, escapeRegExp, exactText, locate} from '../../src/runtime/locate.js';
+import {cssString, escapeRegExp, exactText, locate, locateActionable} from '../../src/runtime/locate.js';
 import {armEvent, openContextMenuOf} from '../../src/runtime/viewer-menus.js';
 import {pickMenuPath, settleAll} from '../../src/runtime/viewers.js';
 import {RUN_SUFFIX, type SavedScript, deleteChatsOf, deleteLayoutsAtEnd, deletePictures, fixtureFamilies, isStaleFixture,
@@ -647,6 +647,42 @@ export const contextPanelShowsCurrentCell = Then('the context panel should show 
   }), {message: 'the current object (grok.shell.o) against the table\'s current cell'}).toBe('the current cell');
 }, {description: 'the current object is the value of the table\'s current cell, as the panel shows it after a row or cell move'});
 
+/* A pane dragged out of an accordion floats in a panel of its own, which the first pixels of the drag make. The drop
+   point keeps the panel off the grid's first columns, whose cells a feature goes on clicking, and off the dock compass,
+   which opens over the middle of the panel under the pointer. */
+export const dragPaneOut = When('user drags {element} out of the accordion', async (page: Page, pane: ElementRef) => {
+  const box = await (await locateActionable(page, pane)).first().boundingBox();
+  if (!box)
+    throw new Error(`${pane.phrase} has no box to drag`);
+  const floating = page.locator('.dialog-floating');
+  const before = await floating.count();
+  const view = page.viewportSize()!;
+  await page.mouse.move(box.x + 30, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(view.width * 0.45, view.height * 0.25, {steps: 8});
+  await page.mouse.up();
+  await expect(floating, `${pane.phrase} dragged out into a panel of its own`).toHaveCount(before + 1);
+}, {description: 'drops it clear of the grid\'s first columns and the dock compass: "<pane name>" floating panel'});
+
+/* With the page's mouse: a locator's click keeps the element it hit in Playwright's injected script, which reads as a leak. */
+export const closePanelWatched = When('user closes {element}, watching that nothing keeps it', async (page: Page, panel: ElementRef) => {
+  const loc = (await locateActionable(page, panel)).first();
+  await loc.evaluate((e) => { (window as any).__bddClosedPanel = [e, e.querySelector('.d4-viewer') ?? e].map((x) => new WeakRef(x)); });
+  const box = (await loc.locator('.panel-titlebar-button-close').boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+});
+
+export const closedPanelReleased = Then('nothing should keep the closed panel', async (page: Page) => {
+  const cdp = await page.context().newCDPSession(page);
+  // closing a viewer is undoable, and the undo record holds it for Ctrl+Z: that is the one holder allowed
+  await page.evaluate(() => (window as any).grok_UndoService_Clear());
+  await expect.poll(async () => {
+    await cdp.send('HeapProfiler.collectGarbage');
+    return page.evaluate(() => (window as any).__bddClosedPanel.every((r: WeakRef<Element>) => r.deref() === undefined));
+  }, {message: 'the closed panel and its viewer after a garbage collection: something keeps them'}).toBe(true);
+  await cdp.detach();
+}, {description: 'after another click, whose mouse event replaces the shell\'s last one; the panel and the viewer in it, once the undo record is dropped'});
+
 /* --- the second account ------------------------------------------------------------------------
    A sharing feature needs a user other than the one running it: DATAGROK_SHARING_LOGIN — the same
    variable the hand-written suites read from playwright-tests/.env — or, when it is unset, the
@@ -971,6 +1007,11 @@ export const doubleClickOpensProject = When('user double-clicks on {element} and
 export const dragShared = When('user drags {string} shared by the running account to {string} shared by the running account',
   (page: Page, source: string, target: string) => drag(page, sharedByRunningAccount(page, source), sharedByRunningAccount(page, target)),
   {tier: 'ui', description: 'one node under My stuff > Shared with me > <the account the feature started with> onto another'});
+
+export const openSharedMenu = When('user opens the context menu of {string} shared by the running account',
+  async (page: Page, path: string) => {
+    await openContextMenuOf(page, sharedByRunningAccount(page, path));
+  }, {tier: 'ui', description: 'right-clicks a node under My stuff > Shared with me > <the account the feature started with>, and leaves the menu open for menu item checks'});
 
 export const pickFromSharedMenu = When('user picks {string} from the context menu of {string} shared by the running account',
   async (page: Page, menuPath: string, path: string) => {

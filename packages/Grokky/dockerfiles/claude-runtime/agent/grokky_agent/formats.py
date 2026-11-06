@@ -52,7 +52,7 @@ def _openai_schema(output_schema: JsonObject) -> JsonObject:
 
 class ApiFormat(ABC):
     mode: ClassVar[ApiMode]
-    # The value of the apiFormat container credential that picks this format for a custom endpoint.
+    # The value of the apiFormat Grokky credential that picks this format for a custom endpoint.
     credential: ClassVar[str]
     refusal: ClassVar[JsonObject]
 
@@ -145,7 +145,7 @@ class BedrockConverse(ApiFormat):
 
 FORMATS: dict[str, ApiFormat] = {f.mode: f for f in (AnthropicMessages(), OpenAIResponses(), ChatCompletions(),
                                                     BedrockConverse())}
-# The apiFormat container credential's values.
+# The apiFormat Grokky credential's values.
 BY_CREDENTIAL: dict[str, ApiFormat] = {f.credential: f for f in FORMATS.values() if f.credential}
 
 

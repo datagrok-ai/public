@@ -90,12 +90,6 @@ class ReadyEvent(TypedDict):
     type: Literal['ready']
 
 
-class CheckedEvent(TypedDict):
-    """The answer of `python -m grokky_agent --check`: why the model could not be reached, if it could not."""
-    type: Literal['checked']
-    error: str | None
-
-
 class FatalEvent(TypedDict):
     type: Literal['fatal']
     message: str
@@ -166,7 +160,7 @@ class SessionLostEvent(TypedDict):
     type: Literal['session_lost']
 
 
-Event = (ReadyEvent | CheckedEvent | FatalEvent | SessionEvent | TextEvent | ActivityEvent | ToolStartEvent |
+Event = (ReadyEvent | FatalEvent | SessionEvent | TextEvent | ActivityEvent | ToolStartEvent |
          ToolEndEvent | BrowserCallEvent | UsageEvent | StoppedEvent | LimitEvent | ErrorEvent |
          CancelledEvent | SessionLostEvent)
 Emit = Callable[[Event], None]

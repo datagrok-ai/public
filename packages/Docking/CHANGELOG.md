@@ -1,5 +1,13 @@
 # Docking changelog
 
+## v.next
+
+* Docker: autodock — raised build-only base env floors (urllib3>=2.8, msgpack>=1.2.3, py-rattler>=0.28.1 for the zip crate CVE) and removed the base env's pip with its vendored urllib3/msgpack/setuptools (VEX)
+
+## 1.3.4 (2026-11-03)
+
+* Docker: rebuilt the autodock image without the install-only pip/setuptools/wheel/certifi in the Python 2.7 env (VEX)
+
 ## 1.3.3 (2026-07-12)
 
 * Docker: autodock — raised build-only base env floors (urllib3>=2.7, msgpack>=1.2.1) and removed stale py2.7 ensurepip bootstrap wheels (VEX)

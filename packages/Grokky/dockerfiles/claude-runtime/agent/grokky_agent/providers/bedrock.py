@@ -23,7 +23,7 @@ class BedrockProvider(Provider):
     def routes(self, credentials: Credentials) -> dict[ApiMode, Route]:
         region = credentials.get('region') or ''
         if not REGION.fullmatch(region):
-            raise ProviderError('The region container credential must name the AWS commercial region the Bedrock API '
+            raise ProviderError('The region Grokky credential must name the AWS commercial region the Bedrock API '
                                 'key was created in, such as us-east-1')
         host = f'https://bedrock-runtime.{region}.amazonaws.com'
         return {'anthropic_messages': Route(self.endpoint(host + '/anthropic')),
@@ -42,5 +42,5 @@ class BedrockProvider(Provider):
         return {'provider': 'bedrock', 'api_mode': 'bedrock_converse', 'base_url': self.route.url, 'api_key': 'aws-sdk'}
 
     def error_hint(self, status: int | None) -> str:
-        return (' (check the apiKey and region container credentials: a Bedrock API key works only in the region it '
+        return (' (check the apiKey and region Grokky credentials: a Bedrock API key works only in the region it '
                 'was created in, and only for the models its IAM user may invoke)') if status in (401, 403) else ''

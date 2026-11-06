@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {category, test, expect, expectFloat, before, waitUntil} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectFloat, before, waitUntil, delay} from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {QED_PROPERTIES, assessDruglikeness, cruxQed, drugLikenessWidget} from '../widgets/drug-likeness';
 import {getIdentifiersSingle} from '../widgets/identifiers';
@@ -18,7 +18,7 @@ import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import * as CONST from './const';
 import {structure2dWidget} from '../widgets/structure2d';
-import {cruxEmbed3d, embed3dOptions, isEmbedTimeout, structure3dWidget} from '../widgets/structure3d';
+import {NO_3D_VIEW, cruxEmbed3d, embed3dOptions, isEmbedTimeout, structure3dWidget} from '../widgets/structure3d';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {molV2000, molV3000} from './utils';
 import {checkPackage} from '../utils/elemental-analysis-utils';
@@ -117,7 +117,7 @@ category('cell panel', async () => {
 
   test('properties', async () => {
     const expectedRes: {[key: string]: any} = {
-      'MW': 133.089149,
+      'MW': 133.19333999999998, // the average molecular weight (the monoisotopic mass until 2026-11-04: 133.089149)
       'HBA': 1,
       'HBD': 1,
       'LogP': 1.1253999918699265,
@@ -249,6 +249,106 @@ category('cell panel', async () => {
       const widget = await structure3dWidget(CONST.SMILES);
       expect(widget.root.textContent?.includes('No 3D coordinates'), false, 'the pane draws');
     });
+  }, {timeout: 60000});
+
+  /** The WebGL context of the pane's NGL canvas, null before the stage is made. */
+  const glContext = (root: HTMLElement): WebGLRenderingContext | null =>
+    root.querySelector('canvas')?.getContext('webgl') ?? null;
+  /** The pane's canvas pixels that are not the white background (NGL keeps its drawing buffer). */
+  const drawnPixels = (root: HTMLElement): number => {
+    const canvas = root.querySelector('canvas');
+    if (!canvas?.width || !canvas.height)
+      return 0;
+    const copy = new OffscreenCanvas(canvas.width, canvas.height).getContext('2d')!;
+    copy.drawImage(canvas, 0, 0);
+    const rgba = copy.getImageData(0, 0, canvas.width, canvas.height).data;
+    let drawn = 0;
+    for (let i = 0; i < rgba.length; i += 4) {
+      if (rgba[i + 3] > 0 && Math.min(rgba[i], rgba[i + 1], rgba[i + 2]) < 200)
+        drawn++;
+    }
+    return drawn;
+  };
+
+  test('structure3d-widget: a pane leaving the page releases its WebGL context', async () => {
+    // The panes' NGL stages were never released, and a page keeps 16 WebGL contexts (Chrome drops the one used least
+    // recently): after a few molecules the pane on screen lost its context and showed an empty white box (3 November)
+    const neverShown = await structure3dWidget(CONST.SMILES);
+    await delay(500);
+    expect(glContext(neverShown.root), null, 'a pane never shown makes no stage');
+    const panes: HTMLElement[] = [];
+    try {
+      for (const smiles of [CONST.SMILES, 'Cn1cnc2c1c(=O)n(C)c(=O)n2C', 'CC(C)Cc1ccc(cc1)C(C)C(=O)O']) {
+        panes.at(-1)?.remove(); // the context panel makes a new pane for each molecule
+        const pane = ui.div([(await structure3dWidget(smiles)).root]);
+        document.body.append(pane);
+        panes.push(pane);
+        await waitUntil(() => drawnPixels(pane) > 0, `${smiles}: the pane draws`, 15000);
+      }
+      await waitUntil(() => panes.slice(0, -1).every((pane) => glContext(pane)?.isContextLost() === true),
+        'the panes off the page release their contexts', 10000);
+      expect(glContext(panes.at(-1)!)?.isContextLost(), false, 'the pane on the page keeps its context');
+      expect(drawnPixels(panes.at(-1)!) > 0, true, 'and its drawing');
+    } finally {
+      panes.at(-1)?.remove();
+    }
+  }, {timeout: 60000});
+
+  /** A 3D V3000 block of `atoms` atoms: a zigzag chain, its own coordinates (the pane draws it without embedding). */
+  const v3000Chain = (atoms: number): string => ['', '  3D', '', '  0  0  0     0  0            999 V3000',
+    'M  V30 BEGIN CTAB', `M  V30 COUNTS ${atoms} ${atoms - 1} 0 0 0`, 'M  V30 BEGIN ATOM',
+    ...Array.from({length: atoms}, (_, i) => `M  V30 ${i + 1} C ${(i * 1.3).toFixed(1)} ${i % 2} ${i % 3 * 0.5} 0`),
+    'M  V30 END ATOM', 'M  V30 BEGIN BOND',
+    ...Array.from({length: atoms - 1}, (_, i) => `M  V30 ${i + 1} 1 ${i + 1} ${i + 2}`),
+    'M  V30 END BOND', 'M  V30 END CTAB', 'M  END'].join('\n');
+
+  test('structure3d-widget: V3000 blocks are drawn, a structure NGL cannot read shows a message', async () => {
+    // NGL reads V2000 only and loads a V3000 block as no atoms: an empty white box, also for a molecule with enhanced
+    // stereo, which goes to V3000 at any size (the product owner's RNA with `|a:...|`, 3 November)
+    const drawn = [['a 3D V3000 block', v3000Chain(6)], ['enhanced stereo', 'C[C@H](N)C(=O)O |a:1|']];
+    for (const [what, molecule] of drawn) {
+      const pane = ui.div([(await structure3dWidget(molecule)).root]);
+      document.body.append(pane);
+      try {
+        await waitUntil(() => drawnPixels(pane) > 0, `${what}: the pane draws`, 15000);
+      } finally {
+        pane.remove();
+      }
+    }
+    const pane = ui.div([(await structure3dWidget(v3000Chain(1000))).root]); // V2000 holds 999 atoms
+    document.body.append(pane);
+    try {
+      await waitUntil(() => pane.textContent === NO_3D_VIEW, 'no message for the block over 999 atoms', 10000);
+    } finally {
+      pane.remove();
+    }
+  }, {timeout: 60000});
+
+  test('structure3d-widget: a square pane in the context panel', async () => {
+    // The context panel's stylesheet sizes an NGL host `initial`: the stage, made once the pane is on the page, sized
+    // its canvas by a host a line high and the pane showed a strip (3 November)
+    const df = DG.DataFrame.fromCsv(`smiles\n${CONST.SMILES}`);
+    await grok.data.detectSemanticTypes(df);
+    const showContextPanel = grok.shell.windows.showContextPanel;
+    const tv = grok.shell.addTableView(df);
+    try {
+      grok.shell.windows.showContextPanel = true;
+      df.currentCell = df.cell(0, 'smiles');
+      const header = (name: string) => [...document.querySelectorAll<HTMLElement>(
+        '.grok-prop-panel .d4-accordion-pane-header')].find((h) => h.textContent?.trim() === name);
+      for (const name of ['Structure', '3D Structure']) {
+        await waitUntil(() => header(name) !== undefined, `no ${name} pane in the context panel`, 10000);
+        if (!header(name)!.classList.contains('expanded'))
+          header(name)!.click();
+      }
+      const host = () => document.querySelector<HTMLElement>('.grok-prop-panel #ngl-3d-host');
+      await waitUntil(() => host() !== null && drawnPixels(host()!) > 0, 'the pane draws', 20000);
+      const {width, height} = host()!.querySelector('canvas')!.getBoundingClientRect();
+      expect(width > 200 && Math.abs(height - width) < 0.1 * width, true, `a square canvas, not ${width} x ${height}`);
+    } finally {
+      grok.shell.windows.showContextPanel = showContextPanel;
+      tv.close();
+    }
   }, {timeout: 60000});
 
 

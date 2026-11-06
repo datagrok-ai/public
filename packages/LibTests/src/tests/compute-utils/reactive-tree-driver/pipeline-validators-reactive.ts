@@ -182,7 +182,8 @@ category('ComputeUtils: Driver pipeline validators: descendant routing', async (
             const innerStep = tree.nodeTree.getNode([{idx: 0}, {idx: 0}]);
             innerStep.getItem().getStateStore().setState('a', 1);
           } else if (v === 'b') {
-            expectDeepEqual(Object.keys(innerNode.pipelineValidations$.value).length, 1, {prefix: 'inner has validation'});
+            expectDeepEqual(Object.keys(innerNode.pipelineValidations$.value).length, 1,
+              {prefix: 'inner has validation'});
             expectDeepEqual(Object.keys(outerNode.pipelineValidations$.value).length, 0, {prefix: 'outer has none'});
           }
         },
@@ -338,7 +339,8 @@ category('ComputeUtils: Driver pipeline validators: action step target', async (
       cold('400ms a').subscribe({
         next: () => {
           const vals = Object.values(actionNode.pipelineValidations$.value);
-          expectDeepEqual(vals, [{warnings: [{description: 'action-warn'}]}], {prefix: 'action step received validation'});
+          expectDeepEqual(vals, [{warnings: [{description: 'action-warn'}]}],
+            {prefix: 'action step received validation'});
           const state = tree.toState({skipFuncCalls: true}) as any;
           const actionState = state.steps?.[1];
           expectDeepEqual(actionState?.isActionStep, true, {prefix: 'confirmed action step'});
@@ -461,7 +463,7 @@ category('ComputeUtils: Driver pipeline validators: funccall target rejection', 
         id: 'misrouted',
         type: 'pipelineValidator',
         from: 'a:step1/a',
-        to: 'check:first(step1)',                  // FuncCall node — invalid target
+        to: 'check:first(step1)', // FuncCall node — invalid target
         handler({controller}) {
           controller.setValidation('check', {errors: [{description: 'should not appear'}]});
         },
@@ -478,7 +480,8 @@ category('ComputeUtils: Driver pipeline validators: funccall target rejection', 
       });
       cold('400ms a').subscribe({
         next: () => {
-          expectDeepEqual(Object.keys(pipelineNode.pipelineValidations$.value).length, 0, {prefix: 'no validation written'});
+          expectDeepEqual(Object.keys(pipelineNode.pipelineValidations$.value).length, 0,
+            {prefix: 'no validation written'});
           const warning = logger.errors.find((e) => e.context === 'link:misrouted');
           expectDeepEqual(!!warning, true, {prefix: 'warning logged'});
           expectDeepEqual(warning?.severity, 'warning', {prefix: 'severity is warning'});
@@ -506,8 +509,12 @@ category('ComputeUtils: Driver pipeline validators: cancelled controller', async
       controller.close();
       let outlineThrew = false;
       let setValThrew = false;
-      try { controller.getOutline(); } catch (e) { outlineThrew = e instanceof ControllerCancelled; }
-      try { controller.setValidation('check', {errors: [{description: 'x'}]}); } catch (e) { setValThrew = e instanceof ControllerCancelled; }
+      try {controller.getOutline();} catch (e) {outlineThrew = e instanceof ControllerCancelled;}
+      try {
+        controller.setValidation('check', {errors: [{description: 'x'}]});
+      } catch (e) {
+        setValThrew = e instanceof ControllerCancelled;
+      }
       expectDeepEqual(outlineThrew, true, {prefix: 'getOutline throws'});
       expectDeepEqual(setValThrew, true, {prefix: 'setValidation throws'});
     });
@@ -615,7 +622,7 @@ category('ComputeUtils: Driver pipeline validators: getOutline', async () => {
         id: 'outerCheck',
         type: 'pipelineValidator',
         from: 'a:first(inner)/first(inStep)/a',
-        to: 'check:first(inner)',                   // result lands on inner
+        to: 'check:first(inner)', // result lands on inner
         handler({controller}) {
           observedConfigId = controller.getOutline().configId;
           controller.setValidation('check');

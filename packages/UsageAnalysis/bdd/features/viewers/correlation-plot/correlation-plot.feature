@@ -93,9 +93,9 @@ Feature: Correlation plot — the matrix and the numbers in it
     Then the "correlation type" reading of correlation plot viewer should be "Spearman"
     And the correlation of "HEIGHT" and "AGE" of correlation plot viewer should match the Spearman coefficient of the table
     And the correlation of "WEIGHT" and "HEIGHT" of correlation plot viewer should match the Spearman coefficient of the table
-    And the "correlation of HEIGHT and AGE" reading of correlation plot viewer should be between -0.2400 and -0.2399
-    And the "correlation of WEIGHT and AGE" reading of correlation plot viewer should be between 0.0943 and 0.0944
-    And the "correlation of WEIGHT and HEIGHT" reading of correlation plot viewer should be between 0.4453 and 0.4454
+    And the "correlation of HEIGHT and AGE" reading of correlation plot viewer should be between -0.2388 and -0.2387
+    And the "correlation of WEIGHT and AGE" reading of correlation plot viewer should be between 0.0951 and 0.0952
+    And the "correlation of WEIGHT and HEIGHT" reading of correlation plot viewer should be between 0.4456 and 0.4457
     And the "text of cell HEIGHT x AGE" reading of correlation plot viewer should be "-0.24"
     And correlation plot viewer should have repainted
     When user sets "correlationType" property of correlation plot viewer to "Pearson"

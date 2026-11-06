@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Vocabulary: Added `user drags the right border of {widget} by {int} pixels left` and `user opens the context menu of {string} shared by the running account`
+* Guides: The dock and border drags light what they press, the title bar and the splitbar, not the viewer
+* Vocabulary: Added the `floating panel` kind, `user drags {element} out of the accordion`, `user closes {element}, watching that nothing keeps it` and `nothing should keep the closed panel` (a weak reference, read after garbage collections)
+* Viewers: A reading of an element the platform does not know as a viewer (one being built, or one closed with a pane that is being replaced) no longer fails the step at once: the read threw "the element is not a viewer", `expect.poll` does not retry a throw, and the step reported "no readings". The read now returns nothing and the poll reads again; a reading that never comes says the element is not a viewer. Test: `tests/steps.test.ts` "a reading waits for a viewer the platform knows only after its element is on the page"
 * Gates: Fixed `the stand has a reachable {string} connection` (and `the stand can reach the database of`) hanging a test to its timeout when the connection test never answers (a database host out of reach): with no answer in 30 s the rest of the test is skipped with that reason
 * Gestures: Fixed `user hovers over {element}` missing a row wider than the panel that clips it (a browse tree with one long name): the pointer landed on the row's centre, outside the panel, and no tooltip came; it now lands on the centre of the row's visible part
 * Session: The shell is reset only after its preloader is gone, so a reload with a start-up URL (a script, a project) no longer has its view replace the Home view a step expects
