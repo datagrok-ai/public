@@ -2,6 +2,7 @@
 
 ## v.next
 
+* TabStrip: Added `TabOptions.disabled`: a reason, or a signal of one, keeps a tab from opening and says why as its tooltip; a tab turned off while open hands over to the first tab that is on
 * Inputs: Fixed `disabled: false` (and `input.disabled = false`) from plain JS turning the input off with no reason and taking it out of its form's verdict; `false` now means on
 * Inputs: Added the `reason-boolean` usage report for `disabled: true`; where it is only reported, the reason reads "Unavailable" instead of "true"
 * Inputs: Added the `bind-readonly` usage report: an input bound to a signal it cannot write (`bind: computed(…)`) is shown read-only instead of throwing on every keystroke; `readOnly: true` says it is read-only on purpose

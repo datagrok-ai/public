@@ -1,0 +1,55 @@
+{
+  "name": "@datagrok/pmxstudio",
+  "friendlyName": "PMX Studio",
+  "version": "0.0.1",
+  "description": "PMX Studio Preclinical: de novo design of xenograft and syngeneic efficacy studies from a curated atlas of historical controls",
+  "dependencies": {
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
+    "datagrok-api": "workspace:^",
+    "echarts": "^5.0.0"
+  },
+  "scripts": {
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts src",
+    "test": "grok test",
+    "test:bdd": "grok-bdd run"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/PmxStudio"
+  },
+  "author": {
+    "name": "Guillermo Canudo-Barreras",
+    "email": "gcbarreras@datagrok.ai"
+  },
+  "category": "Health",
+  "properties": [
+    {
+      "name": "labGroup",
+      "propertyType": "string",
+      "defaultValue": "",
+      "nullable": true,
+      "description": "The Datagrok group whose members may change the lab's outlier rules for everyone (Administrators always can)"
+    },
+    {
+      "name": "outlierRules",
+      "propertyType": "string",
+      "defaultValue": "",
+      "nullable": true,
+      "description": "The lab's outlier rules for the study table (JSON, written from the table's Rules dialog; empty: the defaults)"
+    }
+  ],
+  "devDependencies": {
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.62.1"
+  }
+}
