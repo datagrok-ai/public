@@ -1,9 +1,9 @@
 /* PMX Studio's own names: the form's Run (the Context Panel shows the app's Run beside it), the wait for a plan or an
    analysis, read from the view's loader, and the study's figures, remembered and compared as a change of the form
    should move them (the numbers themselves are the package tests'). */
-import {Page} from '@playwright/test';
+import {Page, test} from '@playwright/test';
 import {element, Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, expect, pollMs, silent} from '@datagrok-libraries/bdd/runtime';
+import {atFeatureEnd, expect, openTopMenu, pollMs, silent} from '@datagrok-libraries/bdd/runtime';
 
 element('form run button', {selector: '.pmx-declaration [data-u2="button"]:has-text("Run")'});
 element('advanced header', {selector: '.pmx-declaration .u2-form-category:has-text("Advanced")'});
@@ -32,7 +32,8 @@ element('growth rates corner', {selector: '.pmx-layout-tile[data-panel="rates"] 
 element('survival tile', {selector: '.pmx-layout-tile[data-panel="km"]'});
 element('waterfall chart', {selector: '.pmx-waterfall-chart'});
 element('first animal row', {selector: '.pmx-forest-row >> nth=0'});
-element('km slider', {selector: '.pmx-km-slider'});
+// the row, not the input: the drag step looks for the range input inside the element
+element('km slider', {selector: '.pmx-km-row'});
 element('km chart', {selector: '.pmx-km-chart'});
 element('results tab', {selector: '.pmx-tab:has-text("Results")'});
 element('each animal tab', {selector: '.pmx-tab:has-text("Each animal")'});
@@ -134,3 +135,55 @@ export const twinDiffers = Then('the twin line should differ from remembered', a
   await expect.poll(() => page.locator('.pmx-twin-side').innerText(), {message: 'the animal drawn'})
     .not.toBe(remembered(page, 'twin'));
 });
+
+// the teaser guide: the stage steps, Monitor's attention list, the Overview's studies, and what filming needs
+element('overview step', {selector: '.pmx-head-steps button:has-text("Overview")'});
+element('monitor step', {selector: '.pmx-head-steps button:has-text("Monitor")'});
+element('first attention row', {selector: '.pmx-monitor-attention .u2-table-row >> nth=0'});
+element('your studies', {selector: '.pmx-library'});
+// the demo MC38 study at its three moments, as the Overview lists it
+element('demo plan row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response (its plan)")'});
+element('demo followed row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response"):not(:has-text("(its plan)")):not(:has-text("(all its data)"))'});
+element('demo finished row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response (all its data)")'});
+
+export const presenting = Given('the shell is in presentation mode without tooltips', async (page: Page) => {
+  silent(page);
+  // a film shows the app, not the platform's panels, and no hint a pointer left over a control would raise
+  await page.addStyleTag({content: '.d4-tooltip, [role="tooltip"] { display: none !important; }'});
+  await page.evaluate(() => {
+    const strip = (root: ParentNode) => root.querySelectorAll('[title]').forEach((e) => e.removeAttribute('title'));
+    strip(document);
+    new MutationObserver((records) => records.forEach((r) => {
+      if (r.type === 'attributes')
+        (r.target as Element).removeAttribute('title');
+      else
+        r.addedNodes.forEach((n) => n instanceof Element && (n.removeAttribute('title'), strip(n)));
+    })).observe(document.body, {subtree: true, childList: true, attributes: true, attributeFilter: ['title']});
+    (window as any).grok.shell.windows.presentationMode = true;
+  });
+}, {tier: 'api', description: 'for a guide that is filmed: presentation mode on, tooltips and native titles hidden'});
+
+export const pointAtMenu = When('user points at {string} in the top menu', async (page: Page, path: string) => {
+  await openTopMenu(page, path, false);
+  await page.waitForTimeout(1500);
+  await page.keyboard.press('Escape');
+  await page.mouse.move(960, 600);
+}, {tier: 'ui', description: 'the menu walked to the item and left open a moment, nothing run'});
+
+export const stageOpen = Then('the {word} stage should be open', async (page: Page, stage: string) => {
+  silent(page);
+  await page.locator('.pmx-head-step.on').filter({visible: true, hasText: new RegExp(`^${stage}$`, 'i')}).first()
+    .waitFor({timeout: pollMs(120000)});
+  await expect.poll(() => page.locator('.pmx-busy').filter({visible: true}).count(),
+    {timeout: pollMs(120000), message: 'the view\'s loader shows'}).toBe(0);
+}, {description: 'the stage\'s view is current and its loader gone (a demo study is simulated as it opens); silent in a guide'});
+
+export const guideBudget = Given('the guide may take up to {int} minutes', async (page: Page, minutes: number) => {
+  test.info().setTimeout(Math.max(test.info().timeout, minutes * 60000));
+}, {tier: 'api', description: 'a filmed walk through every stage outlasts a test\'s budget'});
+
+export const studiesListed = Then('the studies should be listed', async (page: Page) => {
+  silent(page);
+  await expect.poll(() => page.locator('.pmx-library .u2-table-row').filter({visible: true}).count(),
+    {timeout: pollMs(120000), message: 'the Overview\'s studies'}).toBeGreaterThan(3);
+}, {description: 'the Overview lists the user\'s and the demo studies (each demo is simulated first); silent in a guide'});
