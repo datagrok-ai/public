@@ -181,10 +181,16 @@ for (const backend of backends) {
 }
 
 category('Scatter plot: GPU', () => {
-  test('Leaves jittered and packed plots to the CPU', async () => {
+  test('Leaves jittered, packed and category-ordered plots to the CPU', async () => {
     const sp = await scatterPlot(60000, {jitterSize: 5});
     expect(isGpuRenderValid(sp), false);
     Object.assign(sp.props, {jitterSize: 0, zoomAndFilter: 'pack and zoom by filter'});
     expect(isGpuRenderValid(sp), false);
+    Object.assign(sp.props, {zoomAndFilter: 'filter by zoom', xColumnName: 'race',
+      xCategoryOrder: '{"manual":["Other"]}'});
+    expect(isGpuRenderValid(sp), false);
+    // an order left on an axis turned numeric does not apply
+    sp.props.xColumnName = 'height';
+    expect(isGpuRenderValid(sp), true);
   });
 });
