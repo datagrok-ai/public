@@ -17,8 +17,8 @@ export const FIX_RANGE = 'Fix the highlighted range';
 export const ALL_FIXED = 'All settings are fixed';
 const CHOOSE_ONE = 'Choose at least one';
 const TRIALS_PROBLEM = 'Enter a whole number of trials, at least 1';
-type TuneStatus = 'Default' | 'Auto-tuned' | 'Customized';
-const STATUS_TOOLTIPS: Record<TuneStatus, string> = {'Default': 'Recommended values for this method',
+export type TuneStatus = 'Default' | 'Auto-tuned' | 'Customized';
+export const STATUS_TOOLTIPS: Record<TuneStatus, string> = {'Default': 'Recommended values for this method',
   'Auto-tuned': 'Found by Auto-tune; pinned values kept', 'Customized': 'Changed by hand'};
 const PIN_TOOLTIP = 'Pin to exclude from tuning';
 const SETTINGS_TOOLTIP = 'How the settings are chosen: by hand or by a search on this data';

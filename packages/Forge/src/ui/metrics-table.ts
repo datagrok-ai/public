@@ -14,7 +14,7 @@ import {numberColumn, readOnlyGrid} from './data-grid';
 import {reportError} from './report-error';
 import {bulletList} from './rich-tooltip';
 
-const METRIC_HEADERS: {[column: string]: string} = {
+export const METRIC_HEADERS: {[column: string]: string} = {
   'Metric': 'Quality measure of the model.',
   'Train': 'Value on the training rows, from the model trained on all of them.',
   'Validation': 'Value on rows the model did not see: the pooled out-of-fold predictions of k-fold cross-validation, ' +
@@ -53,13 +53,35 @@ const SPLIT_COLUMNS: Record<Split, string> = {train: 'Train', validation: 'Valid
 
 /** The value columns of [summary] with their values: **Train**, **Validation**, after a search with a hold out
  * **Test** and, with an evaluation, **Evaluation**. */
-function valueColumns({metrics, evaluation}: MetricsSummary): [string, MetricValues][] {
+export function valueColumns({metrics, evaluation}: Pick<MetricsSummary, 'metrics' | 'evaluation'>):
+  [string, MetricValues][] {
   const columns: [string, MetricValues][] = [['Train', metrics.train], ['Validation', metrics.validation]];
   if (metrics.test !== undefined)
     columns.push(['Test', metrics.test]);
   if (evaluation !== undefined)
     columns.push(['Evaluation', evaluation.values]);
   return columns;
+}
+
+/** The metric rows of [summary]: every metric a value column other than Train has, in {@link METRIC_IDS} order. */
+export function metricIdsOf({metrics, evaluation}: Pick<MetricsSummary, 'metrics' | 'evaluation'>): MetricId[] {
+  return METRIC_IDS.filter((id) => metrics.validation[id] !== undefined || metrics.test?.[id] !== undefined ||
+    evaluation?.values[id] !== undefined);
+}
+
+/** The [findings] that mark the value of the metric [id] in [column]. */
+export function findingsOf(findings: MetricFinding[], id: MetricId, column: string): MetricFinding[] {
+  return findings.filter((f) => f.id === id && f.splits.some((split) => SPLIT_COLUMNS[split] === column));
+}
+
+/** A value in full precision, what [column] measures and the texts of [findings]; '' without a value. */
+export function metricTooltip(value: number | undefined, column: string, findings: MetricFinding[]): string {
+  return value === undefined ? '' : [`${value}. ${METRIC_HEADERS[column]}`, ...findings.map((f) => f.text)].join(' ');
+}
+
+/** `Test: <rows> rows held out before the search`. */
+export function holdOutLine(rows: number): string {
+  return `Test: ${rows} rows held out before the search`;
 }
 
 /** The metrics [ids], one row each: **Metric** (the label), then the value columns of [summary]. */
@@ -85,7 +107,7 @@ export class MetricsTable {
 
   constructor(summary: MetricsSummary) {
     this.summary = summary;
-    this.ids = MetricsTable.idsOf(summary);
+    this.ids = metricIdsOf(summary);
     this.hasEvaluation = summary.evaluation !== undefined;
     this.hasTest = summary.metrics.test !== undefined;
     this.findings = metricFindings(summary.metrics);
@@ -93,8 +115,7 @@ export class MetricsTable {
     // summary.
     const valueTooltip = (column: string) => (row: number) => {
       const value = valueColumns(this.summary).find(([name]) => name === column)?.[1][this.ids[row]];
-      return value === undefined ? '' :
-        [`${value}. ${METRIC_HEADERS[column]}`, ...this.findingsOf(column, row).map((f) => f.text)].join(' ');
+      return metricTooltip(value, column, this.findingsOf(column, row));
     };
     this.grid = readOnlyGrid(metricsFrame(summary, this.ids), {headers: METRIC_HEADERS, cells: {
       'Metric': (row) => METRIC_DESCRIPTIONS[this.ids[row]],
@@ -116,7 +137,7 @@ export class MetricsTable {
   /** Shows [summary] and returns true when it has the metric rows and the value columns of the grid; false (nothing
    * changed) when not. */
   update(summary: MetricsSummary): boolean {
-    const ids = MetricsTable.idsOf(summary);
+    const ids = metricIdsOf(summary);
     if (ids.length !== this.ids.length || ids.some((id, i) => id !== this.ids[i]) ||
       (summary.evaluation !== undefined) !== this.hasEvaluation ||
       (summary.metrics.test !== undefined) !== this.hasTest)
@@ -130,15 +151,9 @@ export class MetricsTable {
     return true;
   }
 
-  private static idsOf({metrics, evaluation}: MetricsSummary): MetricId[] {
-    return METRIC_IDS.filter((id) => metrics.validation[id] !== undefined || metrics.test?.[id] !== undefined ||
-      evaluation?.values[id] !== undefined);
-  }
-
   /** The findings that mark the value of [column] in [row]. */
   private findingsOf(column: string, row: number): MetricFinding[] {
-    const id = this.ids[row];
-    return this.findings.filter((f) => f.id === id && f.splits.some((split) => SPLIT_COLUMNS[split] === column));
+    return findingsOf(this.findings, this.ids[row], column);
   }
 
   private fillList(): void {
@@ -159,7 +174,7 @@ export class MetricsTable {
       items.push([`Search: ${SEARCH_CAPTIONS[search.mode]} by ${METRIC_LABELS[search.metric]}, ` +
         `${budgetCaption(search.budgetSeconds)}: ${search.trials} trials of ${search.leaders.length} ${methods}, ` +
         'chosen by the one-standard-error rule']);
-      items.push([search.holdOut !== undefined ? `Test: ${search.holdOut.rows} rows held out before the search` :
+      items.push([search.holdOut !== undefined ? holdOutLine(search.holdOut.rows) :
         'Validation after a search is optimistic: the best of the trials was chosen on it']);
     }
     if (metrics.positiveClass !== undefined)

@@ -47,7 +47,8 @@ The model trains by itself: 200 ms after each change that leaves a valid selecti
 change during a training stops it (it is not recorded). A method that says it is too slow for this data (for example
 SVM on 20000 rows) does not retrain on every change; **Performance** then reads `<Method> takes a while on <N> rows, so it
 does not retrain on every change. Click Train.` and, in **Manual**, a **Train** button appears at the right, right under
-the inputs; when the inputs are taller than the panel and scroll, it stays in view at the panel's bottom edge.
+the inputs; when the inputs are taller than the panel and scroll, it stays in view at the panel's bottom edge until
+the end of the inputs (see "Compare models").
 It trains the current selection (its tooltip: `Train the model on the current selection.`). **Train** is never shown
 for a method that retrains by itself. For a slow method it is disabled, with the reason as its tooltip, while the
 selection has a problem (the target, the features, or a setting out of its range), is checked, a training runs, or
@@ -56,7 +57,7 @@ missing-values setting), **Performance** reads `Fix the settings.` A progress ba
 training in the task bar; you can cancel it there (`Training was cancelled.`). A training started by **Train** locks
 the form, as a search does (see "Search"): until it ends (completed, failed, cancelled or superseded), every input of the
 form is disabled (Settings, its reset button, the pins and Search options too), **Train** and **Tune** wait and a click on
-a **Runs** or **Search** row does nothing; afterwards each input is as it was. A method that retrains by itself does not lock the form. While a training runs, a small loader is
+a **Runs** or **Search** row or on a pinned model card does nothing; afterwards each input is as it was. A method that retrains by itself does not lock the form. While a training runs, a small loader is
 shown next to the **Performance** header (the previous results stay while the model retrains by itself). The
 **Performance** panel then shows a grid of metrics with a **Metric**, a **Train** and a **Validation** column:
 
@@ -192,6 +193,42 @@ then trains as after any change (a slow method waits for **Train**), and the new
 the table no longer has a column of that run, a warning says `The table no longer has the columns of this run:
 <columns>.` and nothing changes. A **Table** change starts an empty list; the runs stay recorded.
 
+### Compare models
+
+Under the inputs (and **Train** when shown), a card shows the current model: the newest completed training of the
+table in this view, on a light blue background. The cards are as wide as the inputs (their right edge is **Tune**'s)
+and as tall as their content. A failed or cancelled training, or an input changed before the next
+training, leaves it as it is. Its header is the method in bold; under it a line reads `<n> features` followed by the
+preparation steps as **Runs** lists them (`4 features · impute (4 neighbors, Euclidean) · one-hot`); hover the line
+for the feature names, the preparation (`none` when there is none) and, after a search with a hold out, `Test: <n>
+rows held out before the search`. Two tabs follow, both small tables of one look (the header row darker than the
+rows, the names light grey, the values a shade darker and right-aligned, no colored values):
+
+* **Performance** (open at first): the metrics of that training in the rows and columns of the **Performance** grid
+  (**Metric**, **Train**, **Validation**, and **Test** after a search with a hold out), with three decimals;
+  hovering a value shows it in full with what the column measures and, for a value **Performance** marks, the
+  finding; hover a header or a metric for its meaning. The values are the ones recorded with the training: a later
+  move of **Positive class cutoff** re-cuts **Performance**, not the card.
+* **Settings**: first, in italics and aligned with the table's text, `Default`, `Customized` or `Auto-tuned` as
+  **Settings** read when the training started (hover it for its meaning, followed by `Found by Tune: <n> trials` for
+  a search's winner); then every setting of the method (**Setting**, **Value**) with its value as trained, the ones
+  the method ignored included (hover a row for its meaning; `No settings` for a method without any).
+
+The tabs switch together: a click on a tab of one card shows that tab on every card, and a new card opens on it.
+
+The "+" at the right of the current card's header (hover: `Pin to compare with other models`) pins the model: a light
+grey card of the same training appears right under the current card, above the cards pinned before, with a trash icon
+(`Remove from the comparison`) that removes it. While a pinned card has the current model's inputs (every input but
+**Positive class cutoff**), the current card shows no icon; removing that pinned card brings "+" back. Nothing limits the number of pinned cards. Click a pinned card (not its tab headers or its icon) to set
+its inputs again, as a click on its **Runs** row does.
+
+The cards compare models of the same data: a card is shown only while **Target** and the **Validation** inputs (the
+scheme, its folds or test fraction, shuffle, and the split seed when shuffled) are the ones it was trained with; a
+change hides the other cards at once, and setting the inputs back shows them again before any retraining.
+**Features**, the preparation, the method and its settings may differ. The cards are kept for the session of the view
+and are not saved; a **Table** change starts an empty list. **Train** stays at the panel's bottom edge while the inputs
+scroll; once the cards come into view, it scrolls up with the end of the inputs.
+
 ### Search
 
 **Settings** under **Method** (a radio, **Manual** by default; hover: `How the settings are chosen: by hand or by a
@@ -260,8 +297,8 @@ worker. The budget is checked between fits: no new trial starts after it, and a 
 overrun stops (the first trial always completes); one fit of a slow method can run past the budget. The task bar shows
 `Tuning <Method>` with the trials so far and the best value (`12 trials, best Balanced accuracy 0.960 (XGBoost)`);
 **Save**, **Train** and **Tune** wait, and the loader is next to the **Performance** header. Until the search and the
-training of its winner end, every input of the form is disabled and a click on a **Runs** or **Search** row does
-nothing; afterwards each input is as it was (a setting the method ignores stays disabled). To stop the search, cancel
+training of its winner end, every input of the form is disabled and a click on a **Runs** or **Search** row or on a
+pinned model card does nothing; afterwards each input is as it was (a setting the method ignores stays disabled). To stop the search, cancel
 it in the task bar. When 10 trials have failed and none has completed, the search stops.
 
 The chosen trial follows the one-standard-error rule: among the completed trials whose value is within one standard
@@ -272,7 +309,7 @@ When the table has 500 rows or more (after the skipped ones), a fifth of them, r
 rows (each class in its share, within one row, for a classifier), is held out before the search; the search never sees it, and **Performance** shows the final
 model's values on it as **Test**. Below 500 rows nothing is held out and the bullets say the validation is optimistic.
 
-When the search stops, the balloon `Search stopped: <N> trials in <S> s; the best is <Method>.` appears (cancelled from
+When the search stops, the balloon `Optimal settings for <Method> found.` appears (cancelled from
 the task bar: `Search cancelled; the best so far is trained.`), the settings are set to the chosen trial's values,
 **Settings** switches to **Manual** and reads `Auto-tuned`, and the model trains on the search rows with the same split (`Training <Method> model`), so its **Validation** is the
 chosen trial's value. That training is a regular run: **Runs** gets its row (hover its **Method**: `Found by Tune: <N>

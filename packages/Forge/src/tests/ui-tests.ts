@@ -952,7 +952,12 @@ category('UI: Train', () => {
       const left = pane.parentElement!;
       left.style.height = '300px';
       expect(pane.scrollHeight > pane.clientHeight, true, `The form fits: ${pane.scrollHeight}, ${pane.clientHeight}`);
-      for (const top of [0, pane.scrollHeight]) {
+      // The model cards follow Train: it is held up to its own place, then scrolls away above them.
+      trainRow.style.position = 'static';
+      const formEnd = trainRow.getBoundingClientRect().bottom - pane.getBoundingClientRect().top +
+        pane.scrollTop - pane.clientHeight;
+      trainRow.style.position = '';
+      for (const top of [0, formEnd]) {
         pane.scrollTop = top;
         const [r, p, b] = [trainRow, pane, view.trainButton].map((e) => e.getBoundingClientRect());
         expect(r.height > 0 && r.top >= p.top - 1 && r.bottom <= p.bottom + 1 && b.left > r.left + r.width / 2, true,
@@ -3798,6 +3803,63 @@ const searchRecord = (holdOut?: {rows: number; fraction: number}): SearchRecord 
     hyperparameters: {iterations: 20}, score: 0.8, se: 0.01, foldScores: [0.8, 0.8, 0.8, 0.8, 0.8], trials: 12,
     chosen: true}]});
 
+/** The current model card of [view]; fails without one. */
+function currentCard(view: TrainView): HTMLElement {
+  const card = view.modelCards.root.querySelector<HTMLElement>('.forge-card-current');
+  if (card === null)
+    throw new Error('No current model card');
+  return card;
+}
+
+/** The pinned model cards of [view], top to bottom. */
+const pinnedCards = (view: TrainView) =>
+  Array.from(view.modelCards.root.querySelectorAll<HTMLElement>('.forge-card:not(.forge-card-current)'));
+const cardNumbers = (cards: HTMLElement[]) => cards.map((card) => card.dataset.forgeRun ?? '');
+const cardLine = (card: HTMLElement) => card.querySelector('.forge-card-line')?.textContent ?? '';
+const pinIcon = (card: HTMLElement) => card.querySelector<HTMLElement>('.forge-card-pin')!;
+const unpinIcon = (card: HTMLElement) => card.querySelector<HTMLElement>('.forge-card-unpin')!;
+/** The icons [card] shows, as "+" and "trash". */
+const visibleIcons = (card: HTMLElement) => Array.from(card.querySelectorAll<HTMLElement>('.forge-card-icon'))
+  .filter((icon) => isShown(icon) && icon.style.visibility !== 'hidden')
+  .map((icon) => icon.classList.contains('forge-card-pin') ? '+' : 'trash');
+const tabHeader = (card: HTMLElement, name: string) =>
+  card.querySelector<HTMLElement>(`.d4-tab-header[data-source="tab-pane-${name}"]`)!;
+
+/** The tabs of [card] in [view]; fails without them. */
+function cardTabs(view: TrainView, card: HTMLElement): DG.TabControl {
+  const tabs = view.modelCards.tabsOf(card);
+  if (tabs === undefined)
+    throw new Error(`No tabs of the card of run ${card.dataset.forgeRun}`);
+  return tabs;
+}
+
+/** The table of the pane [name] of [card]'s tabs. */
+function paneTable(view: TrainView, card: HTMLElement, name: string): HTMLTableElement {
+  const content = cardTabs(view, card).getPane(name).content;
+  const table = content instanceof HTMLTableElement ? content : content.querySelector('table');
+  if (table === null)
+    throw new Error(`No table in ${name}`);
+  return table;
+}
+
+/** The room between [last], the shown pane's last line, and [card]'s padding: 0 when the card is as tall as its
+ * content. */
+function spaceUnder(card: HTMLElement, last: Element): number {
+  const style = getComputedStyle(card);
+  return card.getBoundingClientRect().bottom - parseFloat(style.paddingBottom) -
+    parseFloat(style.borderBottomWidth) - last.getBoundingClientRect().bottom;
+}
+
+/** The cells of [table] but the first column's, the header row's included. */
+const valueCells = (table: HTMLTableElement) =>
+  Array.from(table.rows).flatMap((row) => Array.from(row.cells).slice(1));
+const notRightAligned = (table: HTMLTableElement) =>
+  valueCells(table).filter((cell) => getComputedStyle(cell).textAlign !== 'right').length;
+
+/** Each row of [table] as its cells' texts. */
+const tableText = (table: HTMLTableElement) =>
+  Array.from(table.rows, (row) => Array.from(row.cells, (cell) => cell.textContent ?? ''));
+
 category('UI: Search', () => {
   test('Tune follows the selection; a method without settings has no Settings row', async () => {
     const iris = await openIris();
@@ -4075,6 +4137,8 @@ category('UI: Search', () => {
     try {
       expect(isShown(view.searchPanel.root), false, 'Search is shown before a search');
       const tune = autoTune(view);
+      const [cardRight, tuneRight] = [currentCard(view), view.tuneButton].map((e) => e.getBoundingClientRect().right);
+      expect(tuneRight > 0 && cardRight <= tuneRight + 1, true, `The card ends at ${cardRight}, Tune at ${tuneRight}`);
       tune.togglePin('maxDepth');
       typeInto(tune.trials, '6');
       pick(tune.metric, 'accuracy');
@@ -4083,6 +4147,14 @@ category('UI: Search', () => {
       const search = view.lastTraining?.result.search;
       expect(search?.mode, 'tune');
       expect(`${view.tuneSettings.isAuto} ${statusOf(view)}`, 'false Auto-tuned');
+      expect(view.runs[0].settingsStatus, 'Auto-tuned');
+      const card = currentCard(view);
+      expect(cardLine(card).startsWith('4 features'), true, cardLine(card));
+      tabHeader(card, 'Settings').click();
+      const cardStatus = card.querySelector<HTMLElement>('.forge-tune-status-text')!;
+      expect(cardStatus.textContent, 'Auto-tuned');
+      expect(await enterTooltip(cardStatus),
+        `Found by Auto-tune; pinned values kept. Found by Tune: ${search!.trials} trials`);
       expectArray(search?.space?.pinned ?? [], ['maxDepth']);
       expect(search?.space?.searched.some((d) => d.name === 'maxDepth'), false, 'A pinned setting was searched');
       expect(isShown(view.searchPanel.root), true, 'Search is hidden after a search');
@@ -4260,9 +4332,192 @@ category('UI: Search', () => {
   }, {timeout: TIMEOUT});
 });
 
+category('UI: Cards', () => {
+  test('the current card is the newest completed training: title, line, Performance as the grid, the status; a ' +
+    'Table change empties it', async () => {
+    const iris = await openIris();
+    const demog = grok.shell.addTable(await openDemog());
+    const view = await openTrainView(iris);
+    const cards = view.modelCards;
+    try {
+      expect(cards.current === view.runs[0], true, 'The current card is not the newest run');
+      const first = currentCard(view);
+      expect(isShown(cards.root) && isShown(first), true, 'The current card is hidden');
+      expectArray([first.dataset.forgeRun ?? '', first.querySelector('.forge-card-title')?.textContent ?? '',
+        cardLine(first)], ['1', 'XGBoost', '4 features']);
+      expect(await enterTooltip(first.querySelector<HTMLElement>('.forge-card-line')!),
+        `Features: ${MEASUREMENTS.join(', ')}Preparation: none`);
+      expectArray(visibleIcons(first), ['+']);
+      expect(pinIcon(first).getAttribute('aria-label'), 'Pin to compare with other models');
+      expect(cardTabs(view, first).currentPane.name, 'Performance');
+
+      const grid = gridWith(view.resultsPane.root, 'Metric').dataFrame;
+      const performance = paneTable(view, first, 'Performance');
+      const rows = tableText(performance);
+      expectArray(rows[0], ['Metric', 'Train', 'Validation']);
+      expectArray(rows.slice(1).map((row) => row[0]), grid.getCol('Metric').toList());
+      for (const [i, row] of rows.slice(1).entries()) {
+        expectArray(row.slice(1), ['Train', 'Validation'].map((column) => {
+          const value: number | null = grid.get(column, i);
+          return value === null ? '' : value.toFixed(3);
+        }));
+      }
+      expect(notRightAligned(performance), 0, 'A value of Performance is not right-aligned');
+      const valueColors = new Set(valueCells(performance).slice(performance.rows[0].cells.length - 1)
+        .map((cell) => getComputedStyle(cell.firstElementChild ?? cell).color));
+      expect(valueColors.size, 1, `The values of Performance have the colors ${[...valueColors].join(', ')}`);
+      expect(Math.abs(spaceUnder(first, performance)) <= 1, true,
+        `${spaceUnder(first, performance)} px under Performance`);
+
+      expect(view.runs[0].settingsStatus, 'Default');
+      tabHeader(first, 'Settings').click();
+      const settingsTable = paneTable(view, first, 'Settings');
+      const settings = tableText(settingsTable);
+      expectArray(settings[0], ['Setting', 'Value']);
+      expectArray(settings.slice(1).map((row) => row[0]),
+        [...view.hyperparameterInputs.values()].map((input) => input.caption));
+      const iterations = view.hyperparameterInputs.get('iterations')!.caption;
+      expect(settings.find((row) => row[0] === iterations)?.[1], '20');
+      const status = first.querySelector<HTMLElement>('.forge-tune-status-text')!;
+      expect(status.textContent, 'Default');
+      expect(notRightAligned(settingsTable), 0, 'A value of Settings is not right-aligned');
+      expect(Math.abs(spaceUnder(first, settingsTable)) <= 1, true,
+        `${spaceUnder(first, settingsTable)} px under Settings`);
+      const [statusBox, keyBox] = [status, settingsTable.rows[1].cells[0].firstElementChild!]
+        .map((e) => e.getBoundingClientRect());
+      expect(statusBox.bottom <= settingsTable.getBoundingClientRect().top + 1, true,
+        'The status is not above the Settings table');
+      expect(Math.abs(statusBox.left - keyBox.left) <= 1, true,
+        `The status starts at ${statusBox.left}, the settings at ${keyBox.left}`);
+      const form = view.root.querySelector<HTMLElement>('.forge-train-form')!;
+      expect(form.scrollWidth <= form.clientWidth, true, `${form.scrollWidth} > ${form.clientWidth}`);
+
+      setHyperparameter(view, 'iterations', 30);
+      await awaitTrained(view);
+      expect(cards.current === view.runs[0] && view.runs.length === 2, true, 'The current card is not the new run');
+      expect(first.isConnected, false, 'The previous current card stays');
+      const second = currentCard(view);
+      expect(second.dataset.forgeRun, '2');
+      expect(cards.root.querySelectorAll('.forge-card').length, 1);
+      expect(cards.root.querySelectorAll('.d4-tab-host').length, 1);
+      expect(cardTabs(view, second).currentPane.name, 'Settings', 'The new card is not on the shared tab');
+      expect(second.querySelector('.forge-tune-status-text')?.textContent, 'Customized');
+
+      view.tableInput.value = demog;
+      expect(cards.current === undefined && cards.pinned.length === 0, true, 'A Table change keeps the cards');
+      expect(isShown(cards.root), false, 'The cards stay shown after a Table change');
+    } finally {
+      await closeTrainView(view, [iris, demog]);
+      grok.shell.closeTable(demog);
+    }
+  }, {timeout: TIMEOUT});
+
+  /** A click while the form is locked is restoreRun's own guard (UI: Train, UI: Search): not repeated here. */
+  test('pin: under the current card, newest first; the trash unpins; a click on a pinned card restores it',
+    async () => {
+      const iris = await openIris();
+      const view = await openTrainView(iris);
+      const cards = view.modelCards;
+      try {
+        const first = currentCard(view);
+        pinIcon(first).click();
+        expectArray(cards.pinned.map((run) => run.number), [1]);
+        const [pinned] = pinnedCards(view);
+        expect(first.nextElementSibling === pinned, true, 'The pinned card is not under the current one');
+        expect(pinned.dataset.forgeRun, '1');
+        expectArray(visibleIcons(pinned), ['trash']);
+        expect(unpinIcon(pinned).getAttribute('aria-label'), 'Remove from the comparison');
+        expectArray(visibleIcons(first), []);
+        expect(first.querySelector('.forge-card-unpin'), null, 'The current card has a trash');
+
+        unpinIcon(pinned).click();
+        expect(cards.pinned.length === 0 && !pinned.isConnected, true, 'The pinned card\'s trash does not unpin');
+        expectArray(visibleIcons(first), ['+']);
+
+        pinIcon(first).click();
+        setHyperparameter(view, 'iterations', 30);
+        await awaitTrained(view);
+        const second = currentCard(view);
+        expectArray(visibleIcons(second), ['+']);
+        pinIcon(second).click();
+        expectArray(cardNumbers(pinnedCards(view)), ['2', '1']);
+        expect(second.nextElementSibling === pinnedCards(view)[0], true, 'The newest pinned card is not first');
+
+        pinnedCards(view)[1].querySelector<HTMLElement>('.forge-card-header')!.click();
+        await awaitCheck(() => view.hyperparameterInputs.get('iterations')?.value === 20,
+          'A click on a pinned card does not set its inputs', WAIT_MS);
+        await awaitTrained(view);
+        expect(view.runs.length, 3);
+        const third = currentCard(view);
+        expect(third.dataset.forgeRun, '3');
+        expectArray(visibleIcons(third), []);
+        expect(third.querySelector('.forge-tune-status-text') === null, true, 'Settings built before a switch');
+
+        tabHeader(pinnedCards(view)[0], 'Settings').click();
+        await delay(CHECK_DELAY_MS * 3);
+        expect(!view.isTraining && view.runs.length === 3, true, 'A tab header click trained');
+        expectArray([third, ...pinnedCards(view)].map((card) => cardTabs(view, card).currentPane.name),
+          ['Settings', 'Settings', 'Settings']);
+        expect(third.querySelector('.forge-tune-status-text')?.textContent, 'Default');
+
+        const other = pinnedCards(view)[0];
+        unpinIcon(other).click();
+        await delay(CHECK_DELAY_MS * 3);
+        expectArray(cardNumbers(pinnedCards(view)), ['1']);
+        const iterations = view.hyperparameterInputs.get('iterations')?.value;
+        expect(!other.isConnected && !view.isTraining && view.runs.length === 3 && iterations === 20, true,
+          'The trash of a pinned card of other inputs does not remove it only');
+        expectArray(visibleIcons(third), []);
+
+        unpinIcon(pinnedCards(view)[0]).click();
+        expect(cards.pinned.length, 0);
+        expectArray(visibleIcons(third), ['+']);
+      } finally {
+        await closeTrainView(view, [iris]);
+      }
+    }, {timeout: TIMEOUT});
+
+  test('cards hide while the target, the validation or the seed differ and come back at once', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    const {seed, scheme} = view.validationInputs;
+    try {
+      const first = currentCard(view);
+      pinIcon(first).click();
+      const [pinned] = pinnedCards(view);
+      const species = view.targetInput.value!;
+      view.featuresInput.value = columnsOf(iris, ['Sepal.Length', 'Sepal.Width', 'Petal.Width']);
+      expect(isShown(first) && isShown(pinned), true, 'A Features change hides a card');
+      view.targetInput.value = iris.getCol('Petal.Length');
+      expect(isShown(first) || isShown(pinned), false, 'A card of another target is shown');
+      await awaitTrained(view);
+      const regression = currentCard(view);
+      expect(isShown(regression) && !isShown(pinned), true, 'The regression card is hidden or the pinned one shown');
+      expectArray(tableText(paneTable(view, regression, 'Performance')).slice(1).map((row) => row[0]),
+        ['MSE', 'RMSE', 'MAE', 'R2']);
+
+      view.targetInput.value = species;
+      expect(isShown(pinned) && !isShown(regression), true, 'The pinned card is not back at once');
+      const shownSeed = seed.value;
+      seed.value = (shownSeed ?? 0) + 1;
+      expect(isShown(pinned), false, 'Shown on another seed');
+      seed.value = shownSeed;
+      expect(isShown(pinned), true, 'Not back on its seed');
+      const shownScheme = scheme.value;
+      scheme.value = 'Hold-out';
+      expect(isShown(pinned), false, 'Shown on another scheme');
+      scheme.value = shownScheme;
+      expect(isShown(pinned), true, 'Not back on its scheme');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+});
+
 // After the categories, so their order stays: the Train views of these keep their tune settings in the tests' storage
 // ('UI: Table panel' uses it in its own hooks).
-for (const name of ['UI', 'UI: Train', 'UI: Preparation', 'UI: Results', 'UI: Save model', 'UI: Runs', 'UI: Search']) {
+for (const name of ['UI', 'UI: Train', 'UI: Preparation', 'UI: Results', 'UI: Save model', 'UI: Runs', 'UI: Search',
+  'UI: Cards']) {
   category(name, () => {
     before(async () => useTestTuneStorage());
     after(async () => clearTestTuneStorage());

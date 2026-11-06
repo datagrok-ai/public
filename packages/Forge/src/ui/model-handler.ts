@@ -187,7 +187,8 @@ export class ForgeModelHandler extends DG.DomainObjectHandler {
     return line;
   }
 
-  private static featureCount(count: number): string {
+  /** `1 feature`, `<n> features`. */
+  static featureCount(count: number): string {
     return `${count} ${count === 1 ? 'feature' : 'features'}`;
   }
 

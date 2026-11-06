@@ -50,7 +50,11 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
            │                    │                                                    apply/ (scatteredColumn, copyInto), ui/data-grid.ts,
            │                    │                                                    ui/results-layout.ts
            │                    ├─> ui/runs-panel.ts ──> metrics/, ui/data-grid.ts, ui/results-viewers.ts (resultsTitle),
-           │                    │                       engines/, preparation/, training/, generated/db.ts (types)
+           │                    │                       engines/, preparation/, training/, generated/db.ts (types),
+           │                    │                       ui/tune-settings.ts (TuneStatus)
+           │                    ├─> ui/model-cards.ts ──> ui/metrics-table.ts (the exported pieces), ui/runs-panel.ts,
+           │                    │                        ui/tune-settings.ts (STATUS_TOOLTIPS), ui/model-handler.ts
+           │                    │                        (featureCount), metrics/, engines/, training/k-fold.ts (types)
            │                    ├─> ui/tune-settings.ts ──> training/search.ts (searchSpaceOf, rangeProblem), engines/, metrics/
            │                    ├─> ui/search-panel.ts ──> training/search.ts, metrics/, ui/data-grid.ts,
            │                    │                         ui/results-viewers.ts (resultsTitle)
@@ -120,7 +124,8 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   (`DG.ObjectHandler.list()`) and both `registerOnce` calls skip a handler already there, so a second `_initForge` (or
   the test bundle) registers nothing twice; the model commands and the follower are set up only with a newly
   registered handler.
-- Every table of data in the UI is `readOnlyGrid` (`ui/data-grid.ts`): `DG.Viewer.grid` without editing, row header,
+- Every table of data in the UI but the model cards' (plain `ui.table` by the user's decision of
+  2026-11-05, see "Model cards") is `readOnlyGrid` (`ui/data-grid.ts`): `DG.Viewer.grid` without editing, row header,
   current-row indicator and new-row icon, as wide as its host and as tall as its rows (up to 15 by default,
   then it scrolls: an inline height of `(rows + 1) * rowHeight + 2` px; the app's Methods grid shows every method), with tooltips from `{headers, cells}` (by column name; the cells
   as functions of the row) through `onCellTooltip` (`gridTooltip`; a cell without its own text shows its value).
@@ -472,8 +477,9 @@ training writes nothing, and neither does a failure before the data was prepared
 
 **Runs.** Each settled training that is not superseded also becomes a `SessionRun` (`ui/runs-panel.ts`) put first in
 `TrainView.runs`: its number in the view, the status, the method (the `Engine`), the target and feature names, the hyperparameters, the missing-values settings, the preparation steps, the
-record's row count (0 when nothing was recorded), the validation settings and the split seed, and the metrics or the
-error. A training of a table the view has left adds nothing
+record's row count (0 when nothing was recorded), the validation settings and the split seed, the settings status
+(`settingsStatus`: `form.tune.status` read when `startTraining` starts, so a search's winner is `Auto-tuned`), and the
+metrics or the error. A training of a table the view has left adds nothing
 (`createForm` replaces the list, the training compares it). `RunsPanel` shows them under the results
 (`ui.panel([resultsPane.root, searchPanel.root, runsPanel.root], 'forge-train-results')`, the **Search** panel of
 "Search" between them; the panel's own root is `forge-runs`, 12 px under the rows): the core's title `Runs` with its tooltip
@@ -490,7 +496,7 @@ bar.`, `Train <0.000>, validation <0.000>` with `-` for a missing value). The ne
 row (`grid.onCellClick` on a table cell, the current row too) calls `restoreRun`, while code that moves the current
 row restores nothing (the read-only grid moves nothing with the arrow keys): a run whose target or a feature the
 table no longer has warns `The table no longer has the columns of this run: <names>.` and sets nothing; a run whose
-inputs equal the form's (`isSameInputs` over `runInputsOf` of the current selection: method, target, features,
+inputs equal the form's (`isSameInputs` of `ui/runs-panel.ts` over `runInputsOf` of the current selection: method, target, features,
 hyperparameters, missing values, preparation steps but the cutoff, the validation and the split seed, the same values
 a run keeps) while the view
 shows the completed result of those inputs (`lastTraining`, which any change but the cutoff drops) trains nothing:
@@ -503,6 +509,47 @@ cutoff, each only while shown; a hidden input keeps its default), then `Validati
 validation and split seed) and requests a check: the view retrains as after any change, and the new training is a new
 first row. While the form is locked (`locked`: a **Train** training or a search, see "Search") `restoreRun` and `restoreLeader`
 set nothing.
+
+**Model cards.** `ModelCards` (`ui/model-cards.ts`, `TrainView.modelCards`) is a column of cards at the end of the
+`ui.form`, after the **Train** row (`formRoot.append(...groups, trainRow, modelCards.root)`): the cards take the
+form's width (`ui.css` caps a `.ui-form` at 700 px), so their right edge is the inputs', **Tune**'s and the Settings
+reset's in any pane width. The sticky **Train** row is still held at the pane's bottom edge only while its place is
+below it, then scrolls away above the cards. The colors are the core's (`predictive_modeling.css`) in tokens: a pinned
+card `color-mix` of `--grey-1` and `--white` (#f9f9f9), the current one `--blue-1` at 8% over transparent
+(#b8d3ed3b), the border `--grey-2` (#ccc). A card is a plain `div` (`ui.element`), not a `ui.div`: a tab control in
+a `ui-div` gets the platform's 400 x 300 px box (`ui.css div.ui-div > div.ui-box`), so a card is as tall as its shown
+pane.
+`addRun` of a completed run calls `setCurrent(run)`: the current card (`forge-card-current`) is
+built from the same `SessionRun` as the Runs row, and the previous current card is disposed; a failed or cancelled run
+leaves it. A card is a header (the method in a bold `forge-card-title`, then its icon: the current card's "+", a
+pinned card's trash), a line (`ForgeModelHandler.featureCount` and `RunsPanel.preparationItems`, joined by ` · `; its
+tooltip the feature names, the preparation and the search's hold out) and a `ui.tabControl` with two lazy panes:
+**Performance**, a `ui.table` of the run's metrics with the rows (`metricIdsOf`), the value columns (`valueColumns`),
+the findings (`findingsOf` over `metricFindings`) and the tooltips (`METRIC_HEADERS`, `metricTooltip`;
+`METRIC_DESCRIPTIONS` of `metrics/`) that `ui/metrics-table.ts` shares with `MetricsTable`, values `toFixed(3)`, uncolored (the
+user's decision: no failure color on a card; a value's findings stay in its tooltip); **Settings**, the run's
+`settingsStatus` in `forge-tune-status-text` with `STATUS_TOOLTIPS` and `RunsPanel.searchLines` as its tooltip, indented
+as the tables' text (`--forge-card-indent`, the cells' left padding) and placed where Performance's header row is, then
+a `ui.table` (**Setting**, **Value**) of every setting of `hyperparametersOf(run.engine)` (captioned as
+`ui.input.forProperty` captions it: `camelCaseToSentence` of the caption or name; the description as the row
+tooltip). Both tables are `forge-card-table`: one row height and padding, the names in `--text-color-light`, the
+values in `--grey-5` (as the platform's key-value tables) and right-aligned with their headers, the header row in
+`--text-color` at weight 500 (darker than both, lighter than the bold title). The plain tables are the one exception to "tables of data are grids" (the
+user's decision: the core's look, no Dart grid per card). The current card's "+" (`forge-card-pin`) calls `pin(run)`:
+a pinned card of the same run goes right under the current card, newest first, with a trash (`forge-card-unpin`)
+calling `unpin(run)` (the pinned card of that `SessionRun`); a pin whose inputs a pinned card has (`isSameInputs`)
+adds nothing. `refreshPin` hides the
+current card's "+" (`visibility: hidden`, so the header keeps its height) while a pinned card has its inputs, as the
+core did; the current card has no trash, and `unpin` of that pinned card shows "+" again. A click on a pinned
+card outside its tab headers (`TabControl.header`) and its icon calls `restoreRun` (its guards apply). Each card has a
+key (`ModelCards.keyOf`: the target, the scheme, the folds or the test fraction, stratified, shuffle and the seed when
+shuffled); `updateControls` calls `update(key)` with the form's key (undefined while there is no form or target) and
+`show` displays only the cards of that key, the current one too, at once on any change. Tabs switch together:
+`onTabChanged` of a card calls `syncTabs`, which keeps the shared tab and sets `currentPane` of every card on another
+tab (the echo of that set finds every card on the shared tab and sets nothing); a new card opens on the shared tab.
+`dispose` unsubscribes the card's `onTabChanged` and `ui.remove`s the card (the TabControl's widget disposal);
+`clear()` runs in `createForm`
+before `ui.empty(formPane)` and in `detach`. Nothing is written: the cards and the pins live with the view.
 
 The result (`TrainingResult`) carries the blob, the task, the metrics, the target and feature schemas, the
 preparation options, the splitting, the seed, the hyperparameters, the row count (the prepared rows the model
@@ -758,7 +805,7 @@ both callers start only while nothing trains (`isTraining`, `tuneBlocker`). Then
 failed, else `No trial completed.`, and the hint (`idleHint`); else `setWinner` (`setMethod`: the method's values set to the chosen ones,
 the inputs rebuilt by `fillMethod` and **Settings** to Manual; **Method** set under `isSettingMethod`: no check is
 requested), `lastTuned` of the method = the form's values with the search's table, target and features (the status
-then reads `Auto-tuned`), the balloon (`Search stopped: ...` or
+then reads `Auto-tuned`), the balloon (`Optimal settings for <Method> found.` or
 `Search cancelled; the best so far is trained.`) and `startTraining(false, {selection, request, fingerprint})`: the
 override skips `prepareTraining`, records the fingerprint of all the selection's rows (as the API) and trains the search request with the chosen hyperparameters, `holdOut` and `search`, with the
 search's seed and split, so the model's Validation equals the leader's score. `trainModel` measures `metrics.test` on
@@ -1833,11 +1880,15 @@ icon (`model-run`) is **Run prediction** as in the built-in pane, the model's me
 commands (the built-in menu had **Run** and the model's commands), the tooltip has no **Links** row, and the empty
 list says `No model fits this table.` above **Train**. The catalog view's `aiDescription` is Forge's own text.
 
-The view's history is the **Runs** grid instead of a card per training: one row per training that was not superseded (a cancelled or
-failed one too, also a failure before any run was recorded), every row side by side, so there is no pinning; a click
-on a row whose inputs differ from the form's sets them again and trains (a click on a row the form already matches
-and shows the completed result of only makes it current; a cutoff-only difference re-cuts), as a click on a pinned
-card reloaded its parameters.
+The view's history is the **Runs** grid and the model cards. **Runs** has one row per training that was not
+superseded (a cancelled or failed one too, also a failure before any run was recorded), every row side by side; a
+click on a row whose inputs differ from the form's sets them again and trains (a click on a row the form already
+matches and shows the completed result of only makes it current; a cutoff-only difference re-cuts). The model cards
+are the built-in tool's compare cards (the current model, "+" to pin, hidden while the current model is pinned, a
+trash to remove, a click on a pinned card setting its inputs again, and their colors), extended with the **Performance** and **Settings** tabs switched together, the
+settings status as trained, and the
+same-data rule: a card is shown only on the target and validation it was trained with (the core cleared every card on
+a data change).
 
 The model's menu has no **Add to** (the built-in tool added a model to an open project): a model reaches a Space by
 the platform's drag (see Sharing). Forge's Browse node is **Apps > Forge**; **Browse > Platform > Predictive models**
@@ -1883,9 +1934,15 @@ The views publish their state in the DOM, so a test waits on what a view says in
   `data-forge-catalog-load` to it and `aria-busy="false"`; a failed load sets only `aria-busy="false"`, and only while
   its number is the newest. Each change or click advances the number by one. A reload is thus a load number above the
   one remembered with `aria-busy` not true; every open catalog, hidden ones too, reloads on `modelsChanged`.
+- The model cards (`.forge-cards` at the end of the form): each card is a `.forge-card` with `data-forge-run="<number>"` (the
+  run's number in the view; a pinned card has its run's number), the current one also `forge-card-current`; a card
+  of other data has `style.display` `none`. The current card has `.forge-card-pin` ("+") only, with `style.visibility`
+  `hidden` while a pinned card has its inputs; a pinned card has `.forge-card-unpin` (its trash) only; each icon carries its tooltip as
+  `aria-label`. The tabs' headers are the platform's `.d4-tab-header[data-source="tab-pane-<name>"]` (`Performance`,
+  `Settings`); both panes' tables are `.forge-card-table` (`tr.header` the header row).
 - `CollapsibleGroup`: `aria-expanded` on `.forge-group-header` follows `setExpanded`; `aria-invalid` on
   `.forge-group-summary` follows `setSummary` (the Apply dialog's red `N of M matched`).
-- Every table of data is the platform's grid, whose widget status publishes the hit areas `cell <row> of <column>`,
+- Every table of data but the model cards' is the platform's grid, whose widget status publishes the hit areas `cell <row> of <column>`,
   `header <column>` and `row header <row>` (table rows counted from 1) and the readings `rows`, `rows shown`, `columns
   shown`, `current row`, `current column` and `text of cell <row> of <column>`.
 

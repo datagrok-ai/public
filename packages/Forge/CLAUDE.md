@@ -11,7 +11,7 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
   `ui/model-actions.ts`), `_initForge` (autostart), the column panel
   **Predicted by** and the table panel **Forge models** (`ui/table-models-panel.ts`).
 - `src/ui/`: `train-view.ts` (+ `runs-panel.ts`, `tune-settings.ts`: Settings and Search options, `search-panel.ts`:
-  the Search leaderboard, `validation-inputs.ts`: the Validation group), `evaluation-view.ts` (on `results-*.ts`), `forge-app.ts` (catalog),
+  the Search leaderboard, `validation-inputs.ts`: the Validation group, `model-cards.ts`: the cards under the form), `evaluation-view.ts` (on `results-*.ts`), `forge-app.ts` (catalog),
   `apply-model-dialog.ts`, `model-*.ts`; their readiness attributes: ARCHITECTURE.md, "Automation surface".
 - `src/training/` (`train-api.ts`: `Forge:trainModel`; `training-queue.ts`: one at a time; `search.ts`: the Tune search
   and its record; `browser-search.ts`: its trials; `evaluation.ts`: records
@@ -68,7 +68,8 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
   `_initForge`; a gone model empties the panel, a new `version` rebuilds it). `modelsChanged` is per bundle: a test
   that writes from the test bundle and checks the panel starts its own `followChanges` and unsubscribes it.
 - `grok.dapi.permissions.get` reads the wrapper project; a `grant` on a row is refused in tests (`shareRow`, `grok s`).
-- Tables of data are grids (`readOnlyGrid`), never `ui.table`. A plain `grok.shell.o =` freezes the panel for a
+- Tables of data are grids (`readOnlyGrid`), never `ui.table`; the one exception is the model cards (`ui.table`
+  by the user's decision of 2026-11-05). A plain `grok.shell.o =` freezes the panel for a
   second and ignores the next plain set: the catalog sets with `setCurrentObject(x, true, true)`.
 - Tests type a tag chip into `input.d4-tags-selector-input` (`typeTag`); assigning the Tags `value` skips Enter.
 - Never reuse the old tool's identifiers: no `ML | Models` items, `Models` node or pane, `predictive.model` tag.

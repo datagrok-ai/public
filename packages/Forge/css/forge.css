@@ -405,6 +405,109 @@
   padding-right: 0;
 }
 
+/* The model cards at the end of the form, so they span its width; a pinned card is a click target, so it darkens while
+   pressed. */
+.forge-cards {
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.forge-card {
+  --forge-card-indent: 12px;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid var(--grey-2);
+  border-radius: 5px;
+  background-color: color-mix(in srgb, var(--grey-1) 50%, var(--white));
+  overflow: hidden;
+}
+
+.forge-card:not(.forge-card-current) {
+  cursor: pointer;
+}
+
+.forge-card:not(.forge-card-current):active {
+  background-color: var(--grey-2);
+}
+
+.forge-card.forge-card-current {
+  background-color: color-mix(in srgb, var(--blue-1) 8%, transparent);
+}
+
+/* Performance and Settings alike: the names in the light text colour, the values as the platform's key-value tables
+   show them (d4.css .d4-info-table) and right-aligned, the header darker than both and lighter than the bold title. */
+.forge-card-table {
+  align-self: flex-start;
+  margin-top: 6px;
+  color: var(--grey-5);
+}
+
+.forge-card-table td {
+  padding: 0 0 0 var(--forge-card-indent);
+}
+
+.forge-card-table td:not(:first-child) {
+  min-width: 52px;
+  text-align: right;
+}
+
+.forge-card-table td:first-child {
+  color: var(--text-color-light);
+}
+
+.forge-card-table tr.header > td {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.forge-card-header {
+  align-items: center;
+  gap: 8px;
+}
+
+.forge-card-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.forge-card-icon {
+  flex: none;
+  padding: 4px 0 4px 8px;
+  font-size: larger;
+  color: var(--blue-1);
+  cursor: pointer;
+}
+
+.forge-card-line {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-color-light);
+}
+
+.forge-card-settings {
+  align-items: flex-start;
+}
+
+/* The status and a note start where the tables' text does; the status is where Performance's header row is. */
+.forge-card .forge-note {
+  margin-left: var(--forge-card-indent);
+}
+
+.forge-card-settings > .forge-tune-status-text {
+  margin: 6px 0 0 var(--forge-card-indent);
+}
+
+.forge-card-settings > .forge-card-table {
+  margin-top: 2px;
+}
+
 .forge-train-results {
   overflow: auto;
 }

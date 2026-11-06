@@ -27,13 +27,14 @@ import {ButtonGate} from './button-gate';
 import {CollapsibleGroup} from './collapsible-group';
 import {ForgeApp} from './forge-app';
 import {MissingValuesInputs} from './missing-values-inputs';
+import {ModelCards} from './model-cards';
 import {PreparationInputs} from './preparation-inputs';
 import {reportError} from './report-error';
 import {ResultsPane} from './results-pane';
-import {RunInputs, RunsPanel, SessionRun} from './runs-panel';
+import {isSameInputs, RunInputs, RunsPanel, SessionRun} from './runs-panel';
 import {saveModelDialog} from './save-model-dialog';
 import {SearchPanel} from './search-panel';
-import {MANUAL, TuneContext, TuneSettings} from './tune-settings';
+import {MANUAL, TuneContext, TuneSettings, TuneStatus} from './tune-settings';
 import {ValidationInputs} from './validation-inputs';
 
 /** The built-in tool's delay after the last change before the preview is trained again. */
@@ -98,6 +99,8 @@ export class TrainView extends DG.ViewBase {
   readonly runsPanel = new RunsPanel((run) => this.restoreRun(run));
   /** **Search** above **Runs**: the leaders of the last search of this table. */
   readonly searchPanel = new SearchPanel((leader) => this.restoreLeader(leader));
+  /** The model cards under the form: the current model and the pinned ones (same data only). */
+  readonly modelCards = new ModelCards((run) => this.restoreRun(run));
   lastTraining: Training | undefined;
   /** The recorded trainings of the current table, newest first; a Table change starts a new list. */
   runs: SessionRun[] = [];
@@ -188,6 +191,7 @@ export class TrainView extends DG.ViewBase {
     this.resultsPane.clear();
     this.searchPanel.update(undefined);
     this.runsPanel.update([]);
+    this.modelCards.clear();
     super.detach();
   }
 
@@ -358,10 +362,11 @@ export class TrainView extends DG.ViewBase {
       rxjs.merge(targetInput.onChanged, preparation.predictProbability.onChanged)
         .subscribe(() => this.applyRules(this.form)),
       rxjs.merge(targetInput.onChanged, featuresInput.onChanged).subscribe(() => this.form.tune.updateStatus())];
+    this.modelCards.clear();
     ui.empty(this.formPane);
     // One form, so the labels of every group line up.
     const formRoot = ui.form([]);
-    formRoot.append(...groups.map((g) => g.root), this.trainRow);
+    formRoot.append(...groups.map((g) => g.root), this.trainRow, this.modelCards.root);
     this.formPane.append(formRoot);
     this.lastTraining = undefined;
     this.runs = [];
@@ -641,6 +646,9 @@ export class TrainView extends DG.ViewBase {
       this.tuneGate.update(this.tuneBlocker(problem));
     else
       this.tuneGate.release();
+    const target = this.form?.target.value;
+    this.modelCards.update(target == null ? undefined :
+      ModelCards.keyOf(target.name, this.form.validation.settings(), this.form.validation.seedValue));
     const training = this.lastTraining;
     ui.setDisabled(this.saveButton, this.isTraining || training === undefined || training.isSaved ||
       this.form.preparation.cutoffProblem !== null);
@@ -670,6 +678,7 @@ export class TrainView extends DG.ViewBase {
     const selection = override?.selection ?? this.selection();
     if (selection === null)
       return;
+    const settingsStatus = this.form.tune.status;
     const checkNumber = this.checkNumber;
     // A Table change starts a new list: a training of the old table adds no row to it.
     const runs = this.runs;
@@ -704,7 +713,7 @@ export class TrainView extends DG.ViewBase {
       const isCurrent = () => checkNumber === this.checkNumber;
       const addRun = (status: TrainingRunStatus, outcome: {metrics?: MetricsRecord; error?: string}) => {
         if (runs === this.runs)
-          this.addRun(selection, run.record, status, outcome);
+          this.addRun(selection, run.record, status, outcome, settingsStatus);
       };
       if (queued.outcome === 'completed') {
         const {result} = queued;
@@ -749,13 +758,15 @@ export class TrainView extends DG.ViewBase {
   }
 
   /** Puts the training of [selection] whose outcome was recorded as [record] (undefined when nothing was) first in
-   * **Runs**, numbered after the runs before it. */
+   * **Runs**, numbered after the runs before it; a completed one becomes the current model card. */
   private addRun(selection: TrainingSelection, record: TrainingRunRecord | undefined, status: TrainingRunStatus,
-    outcome: {metrics?: MetricsRecord; error?: string}): void {
+    outcome: {metrics?: MetricsRecord; error?: string}, settingsStatus: TuneStatus): void {
     this.runs.unshift({number: this.runs.length + 1, status, ...TrainView.runInputsOf(selection),
       featureGaps: missingColumnsOf(selection.features).length > 0, rowCount: record?.row_count ?? 0,
-      search: record?.search, ...outcome});
+      search: record?.search, settingsStatus, ...outcome});
     this.runsPanel.update(this.runs);
+    if (status === 'completed')
+      this.modelCards.setCurrent(this.runs[0]);
   }
 
   /** Sets the target, the features, the preparation, the validation, the method and its hyperparameters of [run]
@@ -775,8 +786,7 @@ export class TrainView extends DG.ViewBase {
     this.form.tune.setMode(MANUAL);
     // Any change but the cutoff drops lastTraining: while it is there, it is the result of the form's inputs.
     const current = this.selection();
-    if (this.lastTraining !== undefined && current !== null &&
-      TrainView.isSameInputs(run, TrainView.runInputsOf(current))) {
+    if (this.lastTraining !== undefined && current !== null && isSameInputs(run, TrainView.runInputsOf(current))) {
       if (this.form.preparation.cutoff.value !== run.steps.cutoff)
         this.form.preparation.cutoff.value = run.steps.cutoff;
       return;
@@ -846,13 +856,10 @@ export class TrainView extends DG.ViewBase {
       this.lastTuned.set(engine.name, {values: TrainView.valuesOf(this.form.hyperparameters), context: {
         table: this.form.table, target: selection.target.name, features: selection.features.map((c) => c.name)}});
       this.form.tune.updateStatus();
-      const seconds = Math.round(outcome.elapsedMs / 1000);
       if (outcome.stopped === 'cancelled')
         grok.shell.warning('Search cancelled; the best so far is trained.');
-      else {
-        grok.shell.info(`Search stopped: ${outcome.trials.length} trials in ${seconds} s; ` +
-          `the best is ${chosen.method}.`);
-      }
+      else
+        grok.shell.info(`Optimal settings for ${chosen.method} found.`);
       const hyperparameters = {...chosen.hyperparameters};
       await this.startTraining(false, {selection: {...selection, hyperparameters},
         request: {...plan.request, hyperparameters, holdOut, search: record}, fingerprint});
@@ -1004,13 +1011,6 @@ export class TrainView extends DG.ViewBase {
     const {engine, target, features, hyperparameters, steps, validation, seed} = selection;
     return {engine, targetName: target.name, featureNames: features.map((c) => c.name), hyperparameters,
       missingValues: selectedMissingValues(selection), steps, validation, seed};
-  }
-
-  /** Whether [a] and [b] train the same model: every input but the cutoff, which only re-cuts a result. */
-  private static isSameInputs(a: RunInputs, b: RunInputs): boolean {
-    const text = (x: RunInputs) => JSON.stringify([x.engine.name, x.targetName, x.featureNames, x.hyperparameters,
-      x.missingValues, {...x.steps, cutoff: undefined}, x.validation, x.seed]);
-    return text(a) === text(b);
   }
 
   private static valuesOf(inputs: ReadonlyMap<string, DG.InputBase>): Hyperparameters {

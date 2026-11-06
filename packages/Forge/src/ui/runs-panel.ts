@@ -12,6 +12,7 @@ import {SEARCH_CAPTIONS, SearchRecord} from '../training/search';
 import {MetricsRecord} from '../training/train-model';
 import {numberColumn, readOnlyGrid} from './data-grid';
 import {resultsTitle} from './results-viewers';
+import {TuneStatus} from './tune-settings';
 
 const CANCELLED_TOOLTIP = 'Stopped from the task bar.';
 const HEADERS: {[column: string]: string} = {
@@ -47,11 +48,20 @@ export interface SessionRun {
   error?: string;
   /** The search that chose the method and settings. */
   search?: SearchRecord;
+  /** Default, Customized or Auto-tuned, as the settings read when the training started. */
+  settingsStatus: TuneStatus;
 }
 
 /** What a run trained on: the inputs a restore sets again. */
 export type RunInputs = Pick<SessionRun, 'engine' | 'targetName' | 'featureNames' | 'hyperparameters' |
   'missingValues' | 'steps' | 'validation' | 'seed'>;
+
+/** Whether [a] and [b] train the same model: every input but the cutoff, which only re-cuts a result. */
+export function isSameInputs(a: RunInputs, b: RunInputs): boolean {
+  const text = (x: RunInputs) => JSON.stringify([x.engine.name, x.targetName, x.featureNames, x.hyperparameters,
+    x.missingValues, {...x.steps, cutoff: undefined}, x.validation, x.seed]);
+  return text(a) === text(b);
+}
 
 /** **Runs**: the trainings of a Train view in a grid, newest first, the newest current; a click on a row hands its
  * run to [onRestore]. Hidden while there is no run. */
@@ -87,7 +97,7 @@ export class RunsPanel {
       textColumn('Method', runs.map((run) => run.engine.name)),
       textColumn('Target', runs.map((run) => run.targetName)),
       DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Features', runs.map((run) => run.featureNames.length)),
-      textColumn('Preparation', runs.map(RunsPanel.preparationText)),
+      textColumn('Preparation', runs.map((run) => RunsPanel.preparationItems(run).join(', '))),
       DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Rows', runs.map((run) => run.rowCount)),
       textColumn('Status', runs.map((run) => run.status)),
       DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Split seed',
@@ -97,7 +107,7 @@ export class RunsPanel {
     ]);
     const headers = {...HEADERS};
     const cells: {[column: string]: (row: number) => string} = {
-      'Method': (row) => [...RunsPanel.searchText(runs[row].search),
+      'Method': (row) => [...RunsPanel.searchLines(runs[row].search),
         ...Object.entries(runs[row].hyperparameters).map(([name, value]) => `${name}: ${value}`)].join('\n'),
       'Features': (row) => runs[row].featureNames.join('\n'),
       'Status': (row) => runs[row].status === 'failed' ? runs[row].error ?? '' :
@@ -121,15 +131,16 @@ export class RunsPanel {
   }
 
   /** `keep missing values` (only when the features had gaps) or `impute (<neighbors> neighbors, <distance>)`,
-   * `one-hot`, `skip unique categories`, `probability (cutoff <c>)`: the steps the training used; '' for none. */
-  private static preparationText(run: SessionRun): string {
+   * `one-hot`, `skip unique categories`, `probability (cutoff <c>)`: the steps the training used, as the Preparation
+   * cell lists them; empty for none. */
+  static preparationItems(run: SessionRun): string[] {
     const {steps} = run;
     return [
       ...RunsPanel.missingValuesText(run),
       ...(steps.oneHot ? ['one-hot'] : []),
       ...(steps.skipUniqueCategories ? ['skip unique categories'] : []),
       ...(steps.predictProbability ? [`probability (cutoff ${steps.cutoff})`] : []),
-    ].join(', ');
+    ];
   }
 
   private static missingValuesText({missingValues: {mode, impute}, featureGaps}: SessionRun): string[] {
@@ -140,7 +151,8 @@ export class RunsPanel {
     return [impute === undefined ? 'impute' : `impute (${impute.neighbors} neighbors, ${impute.distance})`];
   }
 
-  private static searchText(search: SearchRecord | undefined): string[] {
+  /** `Found by <mode>: <n> trials` for a run a search chose; empty for another. */
+  static searchLines(search: SearchRecord | undefined): string[] {
     return search === undefined ? [] : [`Found by ${SEARCH_CAPTIONS[search.mode]}: ${search.trials} trials`];
   }
 
