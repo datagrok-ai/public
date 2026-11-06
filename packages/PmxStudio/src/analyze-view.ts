@@ -548,6 +548,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   });
 
   const versus = planTab(form, result, colorsOf);
+  versus.own.forEach((o) => self.own(() => o.dispose()));
   const tolerability = tolerabilityTab(form, only(result, ['tolerability', 'weights', 'volumes'], groupsOf),
     colorsOf);
 
@@ -696,10 +697,15 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
           mark(a.animal);
         };
         row.dataset.animal = a.animal;
-        row.addEventListener('click', (ev) => {
+        // a plain click selects it (never clears it: picked from the waterfall, it stays); Ctrl, Cmd or Shift toggle
+        const choose = (ev: MouseEvent | KeyboardEvent) => {
           pick();
-          selection.pick(a.animal, ev);
-        });
+          if (ev.ctrlKey || ev.metaKey || ev.shiftKey)
+            selection.pick(a.animal, ev);
+          else
+            selection.select(new Set([a.animal]));
+        };
+        row.addEventListener('click', choose);
         row.addEventListener('contextmenu', (ev) => {
           ev.preventDefault();
           studyMenu(studyOf(call.getParamValue('study') as DG.DataFrame | null), 'animal', a.animal,
@@ -708,7 +714,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         row.addEventListener('keydown', (ev) => {
           if (ev.key === 'Enter' || ev.key === ' ') {
             ev.preventDefault();
-            pick();
+            choose(ev);
           }
         });
         buttons.set(a.animal, row);
@@ -725,7 +731,20 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   // the animals selected anywhere, outlined in the list
   const markSelected = (on: ReadonlySet<string>) => animalList.querySelectorAll<HTMLElement>('.pmx-forest-row')
     .forEach((row) => row.classList.toggle('is-selected', on.has(row.dataset.animal!)));
-  form.effect(() => markSelected(selection.animals.value));
+  // one animal selected anywhere (a bar, a line): drawn against its twin too
+  form.effect(() => {
+    const on = selection.animals.value;
+    markSelected(on);
+    const [one] = on;
+    if (on.size === 1 && one !== picked.peek() && animalList.querySelector(`[data-animal="${CSS.escape(one)}"]`)) {
+      picked.value = one;
+      animalList.querySelectorAll<HTMLElement>('.pmx-forest-row').forEach((b) => {
+        const at = b.dataset.animal === one;
+        b.setAttribute('aria-pressed', String(at));
+        b.style.background = at ? 'color-mix(in srgb, var(--dg-accent, #2083d5) 12%, transparent)' : '';
+      });
+    }
+  });
   const twinsOnly = only(result, ['twins', 'effects'], groupsOf);
   const pickedRow = computed(() => {
     const e = twinsOnly.value?.effects;
@@ -1040,7 +1059,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const control = r.analysis.get('control', 0) as string;
     const arms = r.comparisons.col('arm')!.toList() as string[];
     const df = call.getParamValue('study') as DG.DataFrame | null;
-    return {name: r.analysis.name, groups: [control, ...arms].map((name) => ({name, color: colors[name]})),
+    // the study's own name, as Monitor's header (the analysis table's name says only what was compared)
+    return {name: df?.name || r.analysis.name, groups: [control, ...arms].map((name) => ({name, color: colors[name]})),
       status: `${r.analysis.get('line', 0)} · evaluated on ${dayText(r.analysis.get('evaluation_day', 0))}`,
       meta: metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined,
       groupMenu: (g, e) => studyMenu(studyOf(df), 'group', g, {causedBy: e})};
@@ -1049,6 +1069,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     root: stagePage(head.row, panes),
     ribbon: [[head.steps]],
     path: '/analyze',
-    status: computed(() => busy.value ? 'Analyzing the study…' : result.value ? result.value.analysis.name : ''),
+    status: computed(() => busy.value ? 'Analyzing the study…' : result.value ?
+      (call.getParamValue('study') as DG.DataFrame | null)?.name || result.value.analysis.name : ''),
   };
 }

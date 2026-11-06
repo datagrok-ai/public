@@ -12,8 +12,8 @@ import {futureDays} from './monitor';
 
 export interface LibraryEntry {
   kind: 'plan' | 'study';
-  /** 1 planned, 2 followed (Monitor) */
-  stage: 1 | 2;
+  /** 1 planned, 2 followed (Monitor), 3 finished (Analyze: the demo's) */
+  stage: 1 | 2 | 3;
   file: DG.FileInfo | null;
   text: string;
   id: string;
@@ -33,6 +33,8 @@ export interface LibraryEntry {
   next: number | null;
   /** the study's last day as planned (null: no plan) */
   end: number | null;
+  /** opens it in its stage (the demo studies, which are no files); else the hub opens `text` */
+  open?: () => Promise<void>;
 }
 
 /** A plan or study file's entry (null: not one, or damaged). */
@@ -47,7 +49,8 @@ export function entryOf(text: string, updated: number, file: DG.FileInfo | null 
     return {kind: study ? 'study' : 'plan', stage: study ? 2 : 1, file, text, id: meta?.id ?? '', name: x.name ?? '',
       line: plan?.predicted.line ?? '', compounds, owner: meta?.owner || plan?.author || '', tags: meta?.tags ?? [],
       updated, treatment: treatmentOf(meta) || compounds, start: meta?.start ?? null,
-      day: days.length ? days.reduce((a, b) => Math.max(a, b)) : null, next: days.length ? futureDays(days)[0] : null,
+      day: days.length ? days.reduce((a, b) => Math.max(a, b)) : null,
+      next: days.length ? futureDays(days, plan, meta?.start)[0] : null,
       end: plan?.predicted.studyEnd ?? null};
   } catch {
     return null;

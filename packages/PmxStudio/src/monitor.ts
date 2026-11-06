@@ -9,6 +9,9 @@ import {crux, CruxResult, named, rows} from './crux';
 import {LAB_WEEKDAYS, designStudy} from './engine';
 import {gpu} from './gpu';
 import {SavedPlan} from './plan-file';
+import {oneDecimal} from './study-file';
+import {WEEKDAY_NAMES, weekdaysOf} from './frames';
+import {metaOf, weekdayOf} from './study-meta';
 
 type Study = {animal: string[], group: string[], day: Float64Array, volume: Float64Array};
 
@@ -78,9 +81,17 @@ export function parseLooks(text: string | null | undefined): number[] {
   return [...new Set(days)].sort((a, b) => a - b);
 }
 
-/** The days to come. ponytail: the study's own usual gap, not the plan's weekdays (a 2-3-2 week reads as every 2
- *  days); the calendar when a study's dates are recorded. */
-export function futureDays(days: number[]): number[] {
+/** The days to come: the plan's measurement weekdays; without a plan, the study's own usual gap (ponytail: a
+ *  2-3-2 week reads as every 2 days). */
+export function futureDays(days: number[], plan?: SavedPlan | null, start?: string | null): number[] {
+  // with a plan, its measurement weekdays from day 0's (the study's date, else the plan's start weekday)
+  if (plan && days.length) {
+    const on = new Set(weekdaysOf(plan.inputs.measurementDays as string | undefined));
+    const day0 = start ? weekdayOf(start) :
+      Math.max(0, WEEKDAY_NAMES.indexOf(String(plan.inputs.startWeekday ?? 'Monday')));
+    const from = Math.max(...days);
+    return Array.from({length: 60}, (_, i) => from + i + 1).filter((d) => on.has((day0 + d) % 7));
+  }
   const seen = [...new Set(days)].sort((a, b) => a - b);
   const gaps = seen.slice(1).map((d, i) => d - seen[i]).sort((a, b) => a - b);
   const gap = gaps.length ? Math.max(gaps[Math.floor(gaps.length / 2)], 1) : 3;
@@ -163,7 +174,7 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   const notes: string[] = [];
   const arms = await armsOf(d.plan, names.filter((g) => g !== d.control), d.endpoint, d.humane, notes);
   const latest = Math.max(...day);
-  const future = futureDays(day);
+  const future = futureDays(day, d.plan, metaOf(x.study)?.start);
   const r = await monitorOf({animal, group, day: Float64Array.from(day),
     volume: Float64Array.from(volume)}, {...await twinModel(d.line), control: d.control,
     ...arms.length ? {arms: JSON.stringify(arms)} : {}, future: future.join(','), endpoint: d.endpoint,
@@ -219,6 +230,18 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   const days = DG.DataFrame.fromObjects(named(r, 'days').map((g) => ({group: g.group, day: g.day, lower: g.q05,
     median: g.median, upper: g.q95, animals: g.animals})))!;
   days.col('day')!.meta.units = 'd';
+  // volumes to one decimal in every viewer's tooltip and cell (Crux's floats carry a dozen)
+  const animalsDf = DG.DataFrame.fromObjects(animals)!;
+  for (const [df, cols] of [[days, ['lower', 'median', 'upper']], [animalsDf, ['last_volume', 'next_lower',
+    'next_median', 'next_upper', 'check_lower', 'check_upper']]] as const) {
+    for (const q of cols) {
+      const c = df.col(q);
+      if (c) {
+        c.meta.units = 'mm³';
+        c.meta.format = '0.0';
+      }
+    }
+  }
   return {
     status: DG.DataFrame.fromObjects([{line: d.line, control: d.control, day: latest, next_day: future[0],
       end_median: study.end_median, end_lower: study.end_q10, end_upper: study.end_q90,
@@ -226,7 +249,7 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
       attention: animals.filter((a) => a.attention).length, animals: animals.length,
       next_look: looks.find((l) => l > latest) ?? null, at_look: atLook, looks: looks.join(', '), humane: d.humane,
       notes: notes.join(' | ')}])!,
-    animals: DG.DataFrame.fromObjects(animals)!,
+    animals: animalsDf,
     days,
     decisions: atLook && decisions.length ? DG.DataFrame.fromObjects(decisions)! : emptyDecisions(),
     tolerability,
@@ -254,6 +277,6 @@ export async function allocateGroups(animal: string[], volume: number[], groups:
   seed: number): Promise<{allocation: DG.DataFrame, balance: DG.DataFrame}> {
   const r = await crux('stats.tumor_allocate', {animal, volume: Float64Array.from(volume)},
     {groups: JSON.stringify(groups), seed});
-  return {allocation: DG.DataFrame.fromObjects(rows(r.main as any))!,
-    balance: DG.DataFrame.fromObjects(named(r, 'balance'))!};
+  return {allocation: oneDecimal(DG.DataFrame.fromObjects(rows(r.main as any))!),
+    balance: oneDecimal(DG.DataFrame.fromObjects(named(r, 'balance'))!)};
 }

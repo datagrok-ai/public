@@ -47,7 +47,7 @@ category('Analyze', () => {
         .find((k) => t.get('group', k) === group && t.get('basis', k) === basis)!;
       return (c: string) => t.get(c, i);
     };
-    const [vehicle, strong] = ['Vehicle', 'Cpd TGI 70%'].map((g) => row(g, 'Measured'));
+    const [vehicle, strong] = ['Vehicle', 'Cpd-A 30 mg/kg'].map((g) => row(g, 'Measured'));
     // the stronger arm loses more weight than the vehicle, whose animals never lose 20%
     expect(strong('mean_nadir') < vehicle('mean_nadir'), true,
       `mean nadir ${strong('mean_nadir')} vs ${vehicle('mean_nadir')}`);
@@ -62,7 +62,7 @@ category('Analyze', () => {
     };
     expect(last('Tumor-corrected') < last('Measured'), true, `${last('Tumor-corrected')} vs ${last('Measured')}`);
     // the NCI limits: a mean nadir over 20% as weighed, or over 10% of the animals dead or removed for their weight
-    for (const g of ['Vehicle', 'Cpd TGI 40%', 'Cpd TGI 70%'].map((x) => row(x, 'Measured'))) {
+    for (const g of ['Vehicle', 'Cpd-A 10 mg/kg', 'Cpd-A 30 mg/kg'].map((x) => row(x, 'Measured'))) {
       expect(g('toxic'), g('mean_nadir') < -20 || (g('removed_death') + g('removed_weight')) / g('n') > 0.1,
         `nadir ${g('mean_nadir')}, removed ${g('removed_weight')} of ${g('n')}`);
     }

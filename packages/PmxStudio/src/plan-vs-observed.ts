@@ -5,14 +5,16 @@
    pmxAnalyzeStudy's (analyze.ts); this file only shows it. */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {badge, div, divH, iconButton, span, Tooltip} from '@datagrok-libraries/u2';
+import {badge, computed, div, divH, iconButton, span, Tooltip} from '@datagrok-libraries/u2';
 import type {BadgeVariant, ReadonlySignal, Signal} from '@datagrok-libraries/u2';
 import {FileInput, FuncCallForm} from '@datagrok-libraries/u2/dg';
 
-import {AnalysisFrames} from './analyze';
+import {AnalysisFrames, PREDICTED} from './analyze';
+import {BandChart} from './band-chart';
 import {finite} from './engine';
 import {SavedPlan, myPlans, parsePlan, plansFolder} from './plan-file';
-import {axisAt, block, guide, infoNote, noteLine, notes, notesBox, pct, pValue, swatch} from './ui';
+import {axisAt, block, guide, infoNote, noteLine, notes, notesBox, pct, pValue, sized, swatch,
+  volumeAxis} from './ui';
 
 /** A treated group's effect against the plan's on a shared percent axis from `lo` to 100: the range a study run as
  *  planned shows, shaded in the group's colour; the assumed effect a dark tick; the observed one a dot with its 95%
@@ -357,9 +359,16 @@ export function planTab(form: FuncCallForm, result: ReadonlySignal<AnalysisFrame
         (range ? ` (expected ${range})` : ''),
     ].filter((x) => x).join(' · ') + (planned ? ` (plan: ${v('plan')})` : '');
   });
-  return {own: [], content: [planSummary, planNotes, noPlan, effectsBlock,
-    block('Control growth against the prediction', 'The median control, against the range of a study\'s median ' +
-      'control run as planned (95 of 100 labs), drawn in grey on the growth chart', controlLine),
+  // the observed median control (solid, its measurements marked) over the plan's prediction (dashed, its 95% range)
+  const predictedAxis = volumeAxis();
+  const predictedGrowth = new BandChart(computed(() => result.value?.predicted), {x: 'day', lower: 'lower',
+    upper: 'upper', line: 'median', split: 'series', xTitle: 'Day after randomization', yTitle: 'Tumor volume',
+    log: predictedAxis.log, markers: true, dashed: [PREDICTED]});
+
+  return {own: [predictedAxis.input, predictedGrowth], content: [planSummary, planNotes, noPlan, effectsBlock,
+    block('Control growth against the prediction', 'The median control (solid), against a study\'s median ' +
+      'control run as planned (dashed, its range in 95 of 100 labs)', controlLine, predictedAxis.row,
+    sized(predictedGrowth, 340)),
     block('End of the study', 'The day the median control reached the endpoint, against a study run as planned',
       endLine),
     block('Contribute to the atlas', 'This study\'s controls could strengthen the model\'s next predictions for ' +

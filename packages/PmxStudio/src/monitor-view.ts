@@ -42,7 +42,7 @@ import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, day
 /** Monitor's tabs and their panels, in order and width (twelfths): today's work and how the groups grow; the
  *  measurements and the groups formed; how the animals bear it; whether each group is worth continuing. */
 const MONITOR_TABS: Tab[] = [
-  {name: 'Today', layout: [{id: 'today', span: 4}, {id: 'growth', span: 8}, {id: 'calendar', span: 12}]},
+  {name: 'Today', layout: [{id: 'growth', span: 6}, {id: 'today', span: 6}, {id: 'calendar', span: 12}]},
   {name: 'Measurements', layout: [{id: 'sheet', span: 12}, {id: 'enrollment', span: 12}]},
   {name: 'Welfare', layout: [{id: 'welfare', span: 12}]},
   {name: 'Decisions', layout: [{id: 'decisions', span: 12}]}];
@@ -192,10 +192,6 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     const today = days.filter((d) => d <= plan.predicted.studyEnd / 2).pop()!;
     const df = whole.clone(DG.BitSet.create(whole.rowCount, (i) => whole.get('day', i) <= today));
     df.name = `Example ${plan.predicted.line} study, day ${today}`;
-    // ids that say nothing of the group, as a blinded study's
-    const ids = [...new Set(df.col('animal')!.toList() as string[])].sort(() => Math.random() - 0.5);
-    const coded = new Map(ids.map((a, i) => [a, `M${String(i + 1).padStart(3, '0')}`]));
-    df.col('animal')!.init((i) => coded.get(df.get('animal', i))!);
     df.setTag(PLAN_TAG, whole.getTag(PLAN_TAG)!);
     df.setTag(LOOKS_TAG, String(today));
     df.setTag(WEIGHT_TAG, 'body_weight');
@@ -552,10 +548,11 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
         marks.push(mark('Planned end', CAL.dark, false));
       const detail = d === today ? 'today' : measured.has(d) ? 'measured' : planned(d) ? (d < now ?
         'a measurement day with no values' : 'a measurement day') : undefined;
+      // the days gone by shaded, so where the study stands reads at a glance; the likely end's days in amber
       return {marks, detail, border: d === today ? `2px solid ${CAL.blue}` : undefined,
-        tint: lo !== undefined && hi !== undefined && d >= lo && d <= hi ?
-          `color-mix(in srgb, ${CAL.dark} 6%, transparent)` : d < now ?
-            `color-mix(in srgb, ${CAL.slate} 4%, transparent)` : undefined};
+        tint: d < now ? `color-mix(in srgb, ${CAL.slate} 16%, transparent)` :
+          lo !== undefined && hi !== undefined && d >= lo && d <= hi ?
+            `color-mix(in srgb, ${CAL.amber} 10%, transparent)` : undefined};
     };
     // from today (or the last day measured) on: what is still to do, for the .ics export
     monitorEvents = {last, events: Array.from({length: last - Math.max(0, now) + 1}, (_, i) => Math.max(0, now) + i)

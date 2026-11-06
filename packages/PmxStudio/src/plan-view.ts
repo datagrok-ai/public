@@ -34,10 +34,11 @@ import {LineInput, lastLine, tumorsOf} from './line-input';
 import {BandChart} from './band-chart';
 
 /** Where the plan's first stage is run: Monitor takes the implanted pool to randomization. */
-/** Plan's panels, in order and width (twelfths): the groups, their growth and power, the calendar, the trade-offs,
- *  the scenarios, the protocol. */
-const PLAN_LAYOUT: Slot[] = [{id: 'groups', span: 12}, {id: 'growth', span: 8}, {id: 'power', span: 4},
-  {id: 'calendar', span: 12}, {id: 'end', span: 6}, {id: 'schedule', span: 6}, {id: 'scenarios', span: 12},
+/** Plan's panels, in order and width (twelfths), as the demo reads: the growth and under it the calendar, then what
+ *  a smaller effect would need beside the power by group size (one height), then the groups, the trade-offs of the
+ *  end and the schedule, the protocol. */
+const PLAN_LAYOUT: Slot[] = [{id: 'growth', span: 12}, {id: 'calendar', span: 12}, {id: 'scenarios', span: 6},
+  {id: 'power', span: 6}, {id: 'groups', span: 12}, {id: 'end', span: 6}, {id: 'schedule', span: 6},
   {id: 'protocol', span: 12}];
 
 const monitorNote = () => infoNote('<b>From randomization on, in Monitor.</b> Follow this study to form the groups, ' +
@@ -203,7 +204,10 @@ export async function openPlanFile(content: string): Promise<DG.DataFrame[]> {
 }
 
 /** The Plan view; given a saved plan, its declaration in the form and planned again. */
-export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
+/** What Plan opens with: a saved plan, or only its name, details and form (a demo's). */
+export type PlanStart = Pick<SavedPlan, 'name' | 'study'> & {inputs: {[param: string]: unknown}};
+
+export async function planView(initial?: PlanStart): Promise<DG.ViewBase> {
   const exports: Exports = [];
   const host = ViewHost.create({name: 'PMX Studio', content: (self) => planContent(self, initial, exports)});
   exportMenu(host.view, exports);
@@ -211,7 +215,7 @@ export async function planView(initial?: SavedPlan): Promise<DG.ViewBase> {
 }
 
 /** What the view shows, built under its host, which owns it all. */
-function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Exports): ViewContent {
+function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Exports): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxPlanStudy').prepare();
   // the engine itself on the form's inputs (with `extra` over them), not the registered function's FuncCall (see
   // callInputs); a wrong field rejects, as the call did
@@ -312,7 +316,7 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
   const groupNotes = notesBox();
   const growthNotes = notesBox();
   growthNotes.style.margin = 'var(--dg-space-s) 0 var(--dg-space-m)';
-  const analysis = div([]);
+  const analysis = div([], 'pmx-protocol');
   let protocolText = '';
   const groupsTable = div([]);
   const scheduleBox = div([]);
@@ -694,7 +698,7 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
       'control', content: [groupsTable, groupNotes, monitorNote()]},
     {id: 'growth', title: 'Predicted tumor growth', hint: 'Median and 90% range of each group\u2019s tumor volume, ' +
       'to the end of the study', content: [growthNotes, scaleRow, sized(growth, 380)]},
-    {id: 'power', title: 'Power by group size', hint: 'With more or fewer animals', content: [sized(power, 380)]},
+    {id: 'power', title: 'Power by group size', hint: 'With more or fewer animals', content: [sized(power, 280)]},
     {id: 'calendar', title: 'Study calendar', hint: 'Week by week from randomization. Click a weekday to measure ' +
       'on it or not; double-click a day to note what happened, right-click it for more', content: [calendarLoader,
       calendarStatus, calendarBox]},
@@ -703,8 +707,8 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
     {id: 'schedule', title: 'Measurement schedule', hint: 'Measuring more or less often', content: [scheduleBox]},
     {id: 'scenarios', title: 'Assumed TGI', hint: 'What the study would need if the treatment had each TGI: ' +
       'scenarios you read across, not predictions. The animals of the whole study with every arm at that TGI, ' +
-      'sized for the target power whatever animals per arm is set', content: [sweepNote,
-      sized(sensitivityChart, 280), noScenarios, scenarioEnd, scenarioBox]},
+      'sized for the target power whatever animals per arm is set', content: [
+      sized(sensitivityChart, 280), sweepNote, noScenarios, scenarioEnd, scenarioBox]},
     {id: 'protocol', title: 'Study protocol', hint: 'Design, sample size and analysis, ready to paste',
       content: [copyRow(() => protocolText, 'Study protocol'), analysis]},
   ], PLAN_LAYOUT, 'pmx-plan-panels', 'plan');

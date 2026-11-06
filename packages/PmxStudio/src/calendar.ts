@@ -20,8 +20,8 @@ export const WEEKDAYS = WEEKDAY_NAMES.map((d) => d.slice(0, 3));
 /** A day's mark: a short label in its kind's colour. */
 export function mark(text: string, color: string, filled: boolean): HTMLElement {
   const el = span(text);
-  Object.assign(el.style, {display: 'inline-block', padding: '1px 6px', borderRadius: '3px', fontSize: '11px',
-    lineHeight: '16px', whiteSpace: 'nowrap', fontWeight: '500', color: filled ? '#fff' : color,
+  Object.assign(el.style, {display: 'inline-block', padding: '0 5px', borderRadius: '3px', fontSize: '10.5px',
+    lineHeight: '15px', whiteSpace: 'nowrap', fontWeight: '500', color: filled ? '#fff' : color,
     background: filled ? color : `color-mix(in srgb, ${color} 12%, transparent)`});
   return el;
 }
@@ -61,18 +61,24 @@ export function weeksGrid(o: {meta: StudyMeta, startWeekday: number, last: numbe
     grid.append(label);
     for (let d = 0; d < 7; d++) {
       const day = 7 * w + d - start;
+      // as the demo draws a day: a soft chip (the weekend's clear), the day bold and its date muted, small marks
       const cell = divV([], 'pmx-calendar-day');
-      Object.assign(cell.style, {minHeight: '48px', padding: '4px 6px', gap: '3px', borderRadius: '4px',
-        border: '1px solid var(--dg-border-color, #e1e6ec)', boxSizing: 'border-box', alignItems: 'flex-start'});
+      Object.assign(cell.style, {minHeight: '40px', padding: '3px 5px', gap: '2px', borderRadius: '4px',
+        border: `1px solid ${d >= 5 ? 'transparent' : 'var(--dg-grey-2, #e4e7ec)'}`, boxSizing: 'border-box',
+        alignItems: 'flex-start', background: d >= 5 ? 'transparent' : 'var(--dg-bg, #fff)'});
       if (day < 0 || day > last) {
-        cell.style.borderStyle = 'dashed';
-        cell.style.opacity = '0.4';
+        cell.style.background = 'transparent';
         grid.append(cell);
         continue;
       }
       const on = dateOf(meta.start, day);
-      const num = span(`Day ${day}${on ? ` · ${dateText(on)}` : ''}`);
-      Object.assign(num.style, {fontSize: '11px', color: 'var(--dg-text-color-muted, #68727f)'});
+      const num = span(`Day ${day}`);
+      Object.assign(num.style, {fontSize: '11px', fontWeight: '500', color: 'var(--dg-text-color, #4d5261)'});
+      if (on) {
+        const date = span(` · ${dateText(on)}`);
+        Object.assign(date.style, {fontWeight: '400', color: 'var(--dg-text-color-muted, #68727f)'});
+        num.append(date);
+      }
       const notes = notesOn.get(day) ?? [];
       const study = [...doses.has(day) ? [mark('Dose', CAL.green, false)] : [],
         ...notes.length > 0 ? [mark(notes.length === 1 ? '1 note' : `${notes.length} notes`, CAL.amber, false)] : []];

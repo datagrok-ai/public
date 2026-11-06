@@ -82,11 +82,20 @@ export function addLog(df: DG.DataFrame, what: string): LogEntry[] {
   return log;
 }
 
+/** Volumes and weights to one decimal in every cell and tooltip (Crux's and the caliper's floats carry a dozen). */
+export function oneDecimal(df: DG.DataFrame): DG.DataFrame {
+  for (const c of df.columns.numerical) {
+    if (c.type === DG.TYPE.FLOAT && !c.meta.format && /volume|weight/i.test(c.name))
+      c.meta.format = '0.0';
+  }
+  return df;
+}
+
 /** The measurements table of a plan just followed: empty, carrying its plan, ready to paste into. */
 export function newStudyTable(plan: SavedPlan): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([DG.Column.string('animal', 0), DG.Column.string('group', 0),
     DG.Column.float('day', 0), DG.Column.float('volume', 0)]);
-  df.name = plan.name;
+  oneDecimal(df).name = plan.name;
   df.setTag(PLAN_TAG, JSON.stringify(plan));
   if (plan.study)
     setMetaOn(df, plan.study);
@@ -143,6 +152,7 @@ export function tableOf(s: SavedStudy): DG.DataFrame {
     df.columns.add(DG.Column.fromFloat64Array('body_weight', Float64Array.from(s.rows, (r) => r.weight ?? NaN)));
     df.setTag(WEIGHT_TAG, 'body_weight');
   }
+  oneDecimal(df);
   if (s.rows.some((r) => r.excluded || r.flagged || r.reason)) {
     df.columns.add(DG.Column.fromList(DG.TYPE.BOOL, EXCLUDED, s.rows.map((r) => r.excluded === true)));
     df.columns.add(DG.Column.fromList(DG.TYPE.BOOL, FLAGGED, s.rows.map((r) => r.flagged === true)));

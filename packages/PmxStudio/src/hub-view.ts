@@ -13,6 +13,7 @@ import {MONITOR_READY, markStage} from './ui';
 import {steps} from './study-header';
 import type {Stage} from './ui';
 import {openStage, showStage} from './stages';
+import {demoEntries} from './demo';
 import {planView} from './plan-view';
 import {analyzeView} from './analyze-view';
 import {monitorView, openStudyFile} from './monitor-view';
@@ -66,23 +67,24 @@ const ICON = {
 // ---- the growth behind the page ------------------------------------------------------------------------------------
 
 /** A study as the atlas draws one, for the page's background: a control on a reduced Gompertz curve and two treated
- *  arms (kill rates from day 2), each with the band of 50% and of 90% of its animals widening over 28 days and its
- *  median. Illustrative parameters, fixed: the same picture every time. */
+ *  arms (kill rates from day 2), each with the band of 90% of its animals widening over 28 days and its median.
+ *  Illustrative parameters, fixed: the same picture every time. */
 function growthArt(): SVGSVGElement {
   const xAt = (t: number) => (t / 28 * 1440).toFixed(1);
-  const yAt = (v: number) => (400 - v * 84).toFixed(1);
-  const gompertz = (t: number) => (0.24 / 0.035) * (1 - Math.exp(-0.035 * t));
+  const yAt = (v: number) => (400 - v * 70).toFixed(1);
+  // Gompertz on a linear axis, as tumors grow: slow from the implant, fastest midway, levelling off at each group's
+  // plateau (the treated lower and later); the 90% band log-normal around the median
+  const gompertz = (vMax: number, b: number) => (t: number) =>
+    vMax * Math.exp(Math.log(0.15 / vMax) * Math.exp(-b * t));
   const steps = Array.from({length: 57}, (_, i) => i / 2);
-  const arms = [{cls: 'arm2', k: 0.12, s0: 0.1, s1: 0.022},
-    {cls: 'arm1', k: 0.075, s0: 0.1, s1: 0.02},
-    {cls: 'ctrl', k: 0, s0: 0.08, s1: 0.016}];
-  const groups = arms.map((p) => {
-    const m = (t: number) => gompertz(t) - p.k * Math.max(0, t - 2);
-    const s = (t: number) => p.s0 + p.s1 * t;
-    const band = (z: number) => 'M' + steps.map((t) => `${xAt(t)},${yAt(m(t) + z * s(t))}`).join(' L') + ' L' +
-      steps.slice().reverse().map((t) => `${xAt(t)},${yAt(m(t) - z * s(t))}`).join(' L') + ' Z';
+  const arms = [{cls: 'arm2', m: gompertz(1.9, 0.11)}, {cls: 'arm1', m: gompertz(3.1, 0.13)},
+    {cls: 'ctrl', m: gompertz(4.4, 0.16)}];
+  const groups = arms.map(({cls, m}) => {
+    const s = (t: number) => 0.1 + 0.004 * t;
+    const band = (z: number) => 'M' + steps.map((t) => `${xAt(t)},${yAt(m(t) * Math.exp(z * s(t)))}`).join(' L') +
+      ' L' + steps.slice().reverse().map((t) => `${xAt(t)},${yAt(m(t) * Math.exp(-z * s(t)))}`).join(' L') + ' Z';
     const median = 'M' + steps.map((t) => `${xAt(t)},${yAt(m(t))}`).join(' L');
-    return `<g class="${p.cls}"><path class="b90" d="${band(1.645)}"/><path class="b50" d="${band(0.674)}"/>` +
+    return `<g class="${cls}"><path class="b90" d="${band(1.645)}"/>` +
       `<path class="med" pathLength="1" d="${median}"/></g>`;
   });
   const t = document.createElement('template');
@@ -203,8 +205,8 @@ function hubContent(): ViewContent {
 /** How far a study has gone: Plan — Monitor — Analyze, the stages behind it filled. */
 function stageMarker(e: LibraryEntry): HTMLElement {
   const marker = h('span', 'pmx-stage-marker', [1, 2, 3].map((k) => h('span', k <= e.stage ? 'on' : '')));
-  marker.title = e.stage === 1 ? 'Planned' : 'Followed in Monitor';
-  return h('span', 'pmx-stage-cell', [marker, e.stage === 1 ? 'Plan' : 'Monitor']);
+  marker.title = e.stage === 1 ? 'Planned' : e.stage === 2 ? 'Followed in Monitor' : 'Finished: analyzed';
+  return h('span', 'pmx-stage-cell', [marker, ['Plan', 'Monitor', 'Analyze'][e.stage - 1]]);
 }
 
 const DAY_MS = 86_400_000;
@@ -218,6 +220,8 @@ const shortDate = (iso: string) => new Date(`${iso}T00:00`).toLocaleDateString('
 function progressOf(e: LibraryEntry): HTMLElement {
   if (e.kind === 'plan')
     return h('span', 'pmx-muted', [e.start ? `starts ${shortDate(e.start)}` : 'not started']);
+  if (e.stage === 3)
+    return h('span', 'pmx-muted', [`finished, day ${e.day}`]);
   const share = e.day !== null && e.end ? Math.min(1, e.day / e.end) : 0;
   const bar = h('span', 'pmx-progress', [h('i', '')]);
   (bar.firstChild as HTMLElement).style.width = `${Math.round(share * 100)}%`;
@@ -226,7 +230,7 @@ function progressOf(e: LibraryEntry): HTMLElement {
 
 /** Today across the followed studies: how many, and which are due a measurement today (day 0 known). */
 function todayLine(entries: LibraryEntry[]): string {
-  const followed = entries.filter((e) => e.kind === 'study');
+  const followed = entries.filter((e) => e.stage === 2);
   if (!followed.length)
     return '';
   const due = followed.filter((e) => todayOf(e) !== null && e.next === todayOf(e)).length;
@@ -243,7 +247,7 @@ function yourStudies(): HTMLElement {
   const all = signal<LibraryEntry[]>([]);
   const query = signal('');
   const stage = signal('All');
-  const inStage = (e: LibraryEntry, s: string) => s === 'All' || (s === 'Planned') === (e.stage === 1);
+  const inStage = (e: LibraryEntry, s: string) => s === 'All' || ['Planned', 'Followed', 'Finished'][e.stage - 1] === s;
   const items = computed(() => all.value.filter((e) => matches(e, query.value) && inStage(e, stage.value)));
   const host = h('div', 'pmx-studies pmx-rise');
   host.hidden = true;
@@ -252,7 +256,7 @@ function yourStudies(): HTMLElement {
   const today = h('div', 'pmx-library-today');
   // the stage filters, each with its count
   const chips = h('div', 'pmx-filters');
-  const drawChips = () => chips.replaceChildren(...['All', 'Planned', 'Followed'].map((s) => {
+  const drawChips = () => chips.replaceChildren(...['All', 'Planned', 'Followed', 'Finished'].map((s) => {
     const b = h('button', `pmx-filter${stage.peek() === s ? ' is-on' : ''}`,
       [`${s} · ${all.peek().filter((e) => inStage(e, s)).length}`]);
     b.setAttribute('aria-pressed', String(stage.peek() === s));
@@ -263,14 +267,17 @@ function yourStudies(): HTMLElement {
     };
     return b;
   }));
-  void myLibrary().catch(() => [] as LibraryEntry[]).then((entries) => {
-    all.value = entries;
-    host.hidden = entries.length === 0;
-    today.textContent = todayLine(entries);
-    today.hidden = !today.textContent;
-    drawChips();
-    showNone();
-  });
+  // the user's own, then the demo portfolio after them (each demo's design takes a moment)
+  void Promise.all([myLibrary().catch(() => [] as LibraryEntry[]), demoEntries().catch(() => [] as LibraryEntry[])])
+    .then(([own, demos]) => {
+      const entries = [...own, ...demos];
+      all.value = entries;
+      host.hidden = entries.length === 0;
+      today.textContent = todayLine(entries);
+      today.hidden = !today.textContent;
+      drawChips();
+      showNone();
+    });
   const search = ui.input.string('', {placeholder: 'Search studies',
     tooltipText: 'Any word of the ID, name, line, compound, owner or tags',
     onValueChanged: (v) => {
@@ -290,8 +297,9 @@ function yourStudies(): HTMLElement {
         {day: 'numeric', month: 'short', year: 'numeric'}) : '')},
       {header: 'Tags', render: (e) => h('span', '', e.tags.map((t) => h('span', 'pmx-tag', [t])))},
     ],
-    onRowClick: (e) => void (e.kind === 'plan' ? planView(parsePlan(e.text)).then((v) => showStage('plan', v)) :
-      openStudyFile(e.text)).catch((err) => grok.shell.error(String(err?.message ?? err)))});
+    onRowClick: (e) => void (e.open ? e.open() : e.kind === 'plan' ?
+      planView(parsePlan(e.text)).then((v) => showStage('plan', v)) : openStudyFile(e.text))
+      .catch((err) => grok.shell.error(String(err?.message ?? err)))});
   table.root.style.width = '100%';
   table.root.style.cursor = 'pointer';
   host.append(h('div', 'pmx-library-head', [h('h3', '', ['Your studies']), search.root, chips]), today,

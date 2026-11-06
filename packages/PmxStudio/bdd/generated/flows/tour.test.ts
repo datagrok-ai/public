@@ -1,0 +1,53 @@
+/* eslint-disable max-len */
+/* eslint-disable comma-spacing */
+/* eslint-disable quotes */
+/* ---
+generated: features/flows/tour.feature
+generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+--- */
+import {test} from '@playwright/test';
+import '../../bindings/elements.js';
+import '@datagrok-libraries/bdd/bindings/common/kinds';
+import '@datagrok-libraries/bdd/bindings/common/parameter-types';
+import '@datagrok-libraries/bdd/bindings/platform/datasets';
+import '@datagrok-libraries/bdd/bindings/platform/elements';
+import {finishedRunning} from '../../bindings/pmx.js';
+import {openApp} from '../../bindings/steps.js';
+import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
+import {clickOn, dragBy, dragSliderTo, dragTo, scrollIntoView, selectIn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
+import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
+
+test.describe("A tour of PMX Studio", () => {
+  const session = feature(test, "features/flows/tour.feature", import.meta.url);
+  test("A tour of PMX Studio", {tag: ["@journey"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    const run = journey(test, 1, page);
+    await run.scenario("From the Overview to the analysis of an example study", async () => {
+      await session.step(9, "Given user is logged in", () => loggedIn(page));
+      await session.step(10, "And user opens PMX Studio", () => openApp(page));
+      await session.step(12, "When user clicks on plan card", () => clickOn(page, el("plan card")), undefined, "Start a new study in Plan");
+      await session.step(13, "Then the study should have finished running", () => finishedRunning(page));
+      await session.step(14, "And \"Experimental groups\" section should be visible", () => shouldBe(page, el("\"Experimental groups\" section"), "visible"));
+      await session.step(16, "When user clicks on analyze step", () => clickOn(page, el("analyze step")), undefined, "Go to Analyze");
+      await session.step(18, "And user clicks on \"Analyze an example study\" button", () => clickOn(page, el("\"Analyze an example study\" button")), undefined, "Analyze an example study");
+      await session.step(19, "Then the study should have finished running", () => finishedRunning(page));
+      await session.step(20, "And \"Observed tumor growth\" section should be visible", () => shouldBe(page, el("\"Observed tumor growth\" section"), "visible"));
+      await session.step(22, "When user picks \"View > Layout…\" from the top menu", () => pickFromTopMenu(page, "View > Layout…"), undefined, "Arrange the panels: View > Layout");
+      await session.step(23, "Then \"Layout of Analyze · Results\" dialog should be visible", () => shouldBe(page, el("\"Layout of Analyze · Results\" dialog"), "visible"));
+      await session.step(25, "When user drags growth rates corner by 120 and 0 pixels", () => dragBy(page, el("growth rates corner"), 120, 0), undefined, "Widen a panel from its corner");
+      await session.step(27, "And user drags survival tile to growth rates tile", () => dragTo(page, el("survival tile"), el("growth rates tile")), undefined, "Move a panel: the others make room");
+      await session.step(29, "And user clicks on \"OK\" button in \"Layout of Analyze · Results\" dialog", () => clickOn(page, el("\"OK\" button in \"Layout of Analyze · Results\" dialog")), undefined, "Keep the layout");
+      await session.step(31, "When user clicks on each animal tab", () => clickOn(page, el("each animal tab")), undefined, "Every animal, compared by what you choose");
+      await session.step(32, "And user scrolls waterfall chart into view", () => scrollIntoView(page, el("waterfall chart")));
+      await session.step(33, "And user selects \"Best response\" in \"Compare by\" input", () => selectIn(page, "Best response", el("\"Compare by\" input")));
+      await session.step(35, "When user scrolls first animal row into view", () => scrollIntoView(page, el("first animal row")), undefined, "Pick an animal: every chart marks it");
+      await session.step(36, "And user clicks on first animal row", () => clickOn(page, el("first animal row")));
+      await session.step(38, "When user clicks on results tab", () => clickOn(page, el("results tab")), undefined, "Follow the study past its last measurement");
+      await session.step(39, "And user scrolls km chart into view", () => scrollIntoView(page, el("km chart")));
+      await session.step(40, "And user drags the slider of km slider to 40", () => dragSliderTo(page, el("km slider"), 40));
+      await session.step(41, "Then \"Time to endpoint\" section should contain text \"projected\"", () => shouldContainText(page, el("\"Time to endpoint\" section"), "projected"));
+    });
+    run.finish();
+  });
+});

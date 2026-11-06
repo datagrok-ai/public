@@ -24,6 +24,18 @@ element('tuesday header', {selector: '.pmx-calendar-weekday:has-text("Tue")'});
 element('thursday header', {selector: '.pmx-calendar-weekday:has-text("Thu")'});
 element('randomization day picker', {selector: '.pmx-calendar-summary [data-u2="choice-input"]'});
 element('first copy button', {selector: '[data-u2="button"]:visible:has-text("Copy") >> nth=0'});
+// the redesign: the Overview's cards, the stage stepper, the layout editor's tiles and the Analyze charts
+element('plan card', {selector: '.pmx-card[data-stage="plan"]'});
+element('analyze step', {selector: '.pmx-head-steps button:has-text("Analyze")'});
+element('growth rates tile', {selector: '.pmx-layout-tile[data-panel="rates"]'});
+element('growth rates corner', {selector: '.pmx-layout-tile[data-panel="rates"] .pmx-layout-grip'});
+element('survival tile', {selector: '.pmx-layout-tile[data-panel="km"]'});
+element('waterfall chart', {selector: '.pmx-waterfall-chart'});
+element('first animal row', {selector: '.pmx-forest-row >> nth=0'});
+element('km slider', {selector: '.pmx-km-slider'});
+element('km chart', {selector: '.pmx-km-chart'});
+element('results tab', {selector: '.pmx-tab:has-text("Results")'});
+element('each animal tab', {selector: '.pmx-tab:has-text("Each animal")'});
 
 const figure = (page: Page, label: string) => page.locator('[data-u2="stat-card"]').filter({visible: true})
   .filter({hasText: label}).first();

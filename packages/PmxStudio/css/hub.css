@@ -85,18 +85,17 @@
 /* the growth behind: control and two treated arms, 50% and 90% of the animals and the median, kept faint */
 .pmx-bg { position: absolute; top: 0; right: 0; width: 100%; height: 440px; opacity: .42; pointer-events: none; }
 .pmx-bg .b90 { fill-opacity: .4; animation: pmx-fade 1.6s var(--pmx-ease) backwards; }
-.pmx-bg .b50 { fill-opacity: .55; animation: pmx-fade 1.6s var(--pmx-ease) backwards; }
 .pmx-bg .med { fill: none; stroke-width: 1.5; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: pmx-draw 2.4s var(--pmx-ease-out) forwards; }
-.pmx-bg .ctrl .b90 { fill: var(--dg-steel-2, #D7DFE7); } .pmx-bg .ctrl .b50 { fill: var(--dg-steel-3, #B3BFCC); }
+.pmx-bg .ctrl .b90 { fill: var(--dg-steel-2, #D7DFE7); }
 .pmx-bg .ctrl .med { stroke: var(--dg-steel-4, #7990A5); }
-.pmx-bg .arm1 .b90 { fill: var(--dg-orange-1, #FFECDB); } .pmx-bg .arm1 .b50 { fill: color-mix(in srgb, var(--dg-orange-2, #FFA24A) 35%, var(--dg-bg, #fff)); }
+.pmx-bg .arm1 .b90 { fill: var(--dg-orange-1, #FFECDB); }
 .pmx-bg .arm1 .med { stroke: color-mix(in srgb, var(--dg-orange-2, #FFA24A) 75%, var(--dg-grey-5, #717581)); }
-.pmx-bg .arm2 .b90 { fill: var(--dg-green-1, #DCF3E7); } .pmx-bg .arm2 .b50 { fill: color-mix(in srgb, var(--dg-green-2, #3CB173) 30%, var(--dg-bg, #fff)); }
+.pmx-bg .arm2 .b90 { fill: var(--dg-green-1, #DCF3E7); }
 .pmx-bg .arm2 .med { stroke: color-mix(in srgb, var(--dg-green-2, #3CB173) 70%, var(--dg-grey-5, #717581)); }
 .pmx-bg .ctrl .med { animation-delay: .15s; } .pmx-bg .arm1 .med { animation-delay: .4s; } .pmx-bg .arm2 .med { animation-delay: .65s; }
-.pmx-bg .ctrl .b90, .pmx-bg .ctrl .b50 { animation-delay: .3s; }
-.pmx-bg .arm1 .b90, .pmx-bg .arm1 .b50 { animation-delay: .55s; }
-.pmx-bg .arm2 .b90, .pmx-bg .arm2 .b50 { animation-delay: .8s; }
+.pmx-bg .ctrl .b90 { animation-delay: .3s; }
+.pmx-bg .arm1 .b90 { animation-delay: .55s; }
+.pmx-bg .arm2 .b90 { animation-delay: .8s; }
 @keyframes pmx-draw { to { stroke-dashoffset: 0; } }
 @keyframes pmx-fade { from { opacity: 0; } to { opacity: 1; } }
 
@@ -118,10 +117,12 @@
 .pmx-studies h3 { margin: 0 0 10px; font-size: 15px; font-weight: 500; color: var(--dg-text-color, #4D5261); }
 .pmx-studies .u2-table tr { transition: background-color .3s var(--pmx-ease); }
 .pmx-library-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 10px; }
-.pmx-library-head h3 { margin: 0 auto 0 0; }
+.pmx-library-head h3 { margin: 0 8px 0 0; }
 .pmx-library-head .ui-input-root { margin: 0; }
-.pmx-library-head .ui-input-string input { width: 260px; max-width: 100%; }
-.pmx-library { max-height: 360px; overflow-y: auto; }
+/* the search takes the row's free width, from the title to the filters */
+.pmx-library-head .ui-input-root:has(input) { flex: 1 1 260px; max-width: none; }
+.pmx-library-head .ui-input-root:has(input) .ui-input-editor, .pmx-library-head .ui-input-string input { width: 100%; max-width: none; }
+.pmx-library { max-height: 520px; overflow: auto; }
 .pmx-muted { color: var(--dg-grey-5, #717581); }
 .pmx-tag { display: inline-block; margin-right: 4px; padding: 0 6px; border-radius: 8px; font-size: 11px;
   background: var(--dg-grey-1, #f2f3f5); color: var(--dg-grey-6, #4d5261); }
@@ -229,3 +230,7 @@
 .pmx-progress-cell { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .pmx-progress { display: inline-block; width: 56px; height: 4px; border-radius: 2px; background: var(--dg-border, #DBDCDF); overflow: hidden; }
 .pmx-progress > i { display: block; height: 100%; background: var(--dg-accent, #2083D5); }
+/* each study its own band: a rule between rows, room above and below, the ID a smaller second line */
+.pmx-studies .u2-table td { padding-top: 9px; padding-bottom: 9px; border-bottom: 1px solid var(--dg-grey-1, #eef0f3); vertical-align: middle; }
+.pmx-study-cell { line-height: 1.35; }
+.pmx-study-cell .pmx-muted { font-size: 12px; }

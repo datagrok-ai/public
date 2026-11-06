@@ -19,6 +19,7 @@ import * as DG from 'datagrok-api/dg';
 import {crux, CruxResult, MAX_SETS, named, rows} from './crux';
 import {Correction, EffectMetric, HUMANE, LAB_WEEKDAYS, SEED, StudyDeclaration, StudyDesign, correctionOf,
   designStudy, finite, isFiniteNumber as ok, lineModel} from './engine';
+import type {Therapy} from './archetypes';
 import {PlanInputs, armColors, declarationOf} from './frames';
 import {gpu} from './gpu';
 import {LineDensity, linePrior, tumourDensity} from './priors';
@@ -750,6 +751,31 @@ export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFr
  *  weights): per group its median loss at the nadir (%), the stronger arm losing more. */
 const EXAMPLE_NADIR = [0, 4, 10];
 
+/** An example's study: its tumor model and treated arms (the control is the vehicle), and the atlas lab drawn
+ *  (`seed`, else the package's); `name` names its table and plan. */
+export interface ExampleSpec {
+  line: string;
+  arms: {name: string, therapy: Therapy, metric: EffectMetric, effect: number}[];
+  seed?: number;
+  name?: string;
+}
+
+/** MC38, a vehicle and Cpd-A at 10 and 30 mg/kg (small molecule, TGI 40% and 70%): the example Monitor and Analyze
+ *  offer, and the Overview's demo study. */
+export const MC38_EXAMPLE: ExampleSpec = {line: 'MC38', arms: [[10, 40], [30, 70]].map(([dose, effect]) =>
+  ({name: `Cpd-A ${dose} mg/kg`, therapy: 'small_molecule' as const, metric: 'TGI' as const, effect}))};
+
+/** Plan's form for an example: what Plan reopens it with, and what its study's plan carries. */
+export const exampleInputs = (spec: ExampleSpec) => ({line: spec.line, endpoint: 1500, arms: spec.arms, power: 80,
+  correction: 'dunnett', n: null, vRand: 100, measurementDays: 'Mon, Wed, Fri', startWeekday: 'Monday',
+  humane: HUMANE, alpha: 0.05, preLoss: 0, postLoss: 0});
+
+/** An example's design, as Plan makes it from exampleInputs (its end, its animals per arm). */
+export const exampleDesign = (spec: ExampleSpec) => designStudy({line: spec.line, vRand: 100, endpoint: 1500,
+  power: 0.8, alpha: 0.05, correction: 'dunnett', n: null, arms: spec.arms, preLoss: 0, postLoss: 0,
+  lossRule: 'confident', confidence: 0.9, weekdays: LAB_WEEKDAYS, startWeekday: 0, humane: HUMANE, schedules: false,
+  lastDay: null});
+
 /** An example study run as Plan designs it: MC38, a vehicle and two small-molecule arms (TGI 40% and 70%), each
  *  with the animals Plan asks for its power, measured 3 times a week up to a week past the design's end of study.
  *  One lab of the line's atlas, drawn with the design's seed (whatever it shows: nothing is picked by its outcome),
@@ -757,13 +783,10 @@ const EXAMPLE_NADIR = [0, 4, 10];
  *  same controls, and each treated group takes animals of its own (no shared mice). Each animal is weighed with
  *  every measurement: an illustrative body weight (EXAMPLE_NADIR), removed at the weight endpoint like a lab would;
  *  its tumor is weighed when excised, after its last measurement (tumor_weight, on that row). */
-export async function exampleStudy(): Promise<DG.DataFrame> {
-  const line = 'MC38';
-  const arms = [40, 70].map((effect) => ({name: `Cpd TGI ${effect}%`, therapy: 'small_molecule' as const,
-    metric: 'TGI' as const, effect}));
-  const design = await designStudy({line, vRand: 100, endpoint: 1500, power: 0.8, alpha: 0.05, correction: 'dunnett',
-    n: null, arms, preLoss: 0, postLoss: 0, lossRule: 'confident', confidence: 0.9, weekdays: LAB_WEEKDAYS,
-    startWeekday: 0, humane: HUMANE, schedules: false, lastDay: null});
+export async function exampleStudy(spec: ExampleSpec = MC38_EXAMPLE): Promise<DG.DataFrame> {
+  const {line, arms} = spec;
+  const seed = spec.seed ?? SEED;
+  const design = await exampleDesign(spec);
   const sizes = design.arms.map((a) => a.n);
   if (design.nControl === null || sizes.some((x) => x === null))
     throw new Error('The example needs more than 40 animals per arm');
@@ -774,7 +797,7 @@ export async function exampleStudy(): Promise<DG.DataFrame> {
   const {prior, params} = await lineModel(line);
   // a week past the plan's end: the study is read on the first day its median control reaches the endpoint
   const shared = {...params, v_rand: 100, n: Math.max(nControl, offsets[n.length - 1] + n[n.length - 1]),
-    last_day: design.studyEnd + 7, per_week: 3, study: 'prior', reps: 1, seed: SEED};
+    last_day: design.studyEnd + 7, per_week: 3, study: 'prior', reps: 1, seed};
   const out: {animal: string, group: string, day: number, volume: number, body_weight: number,
     tumor_weight: number | null}[] = [];
   const density = (await tumourDensity()).lines[line].density;
@@ -792,7 +815,8 @@ export async function exampleStudy(): Promise<DG.DataFrame> {
     for (const [group, rs] of groups) {
       const animal = rs.map((r) => `${group} #${r.animal}`);
       const bw = rows((await crux('stats.tumor_body_weight_simulate', {animal, day: Float64Array.from(rs, (r) => r.day),
-        volume: Float64Array.from(rs, (r) => r.volume)}, {nadir: EXAMPLE_NADIR[g], density, seed: SEED + g}))
+        volume: Float64Array.from(rs, (r) => r.volume)},
+      {nadir: EXAMPLE_NADIR[Math.min(g, EXAMPLE_NADIR.length - 1)], density, seed: seed + g}))
         .main as any);
       const weighed = new Map(bw.map((r) => [`${r.animal}|${r.day}`, r]));
       rs.forEach((r, i) => {
@@ -805,15 +829,21 @@ export async function exampleStudy(): Promise<DG.DataFrame> {
       g++;
     }
   }
+  // lab ids that say nothing of the group (as a blinded study's), in an order drawn from the seed: the same animal
+  // has the same id at every look at the study
+  let draw = seed;
+  const ids = [...new Set(out.map((r) => r.animal))]
+    .map((a) => [a, draw = (Math.imul(draw, 1103515245) + 12345) >>> 0] as const).sort((a, b) => a[1] - b[1]);
+  const coded = new Map(ids.map(([a], i) => [a, `M${String(i + 1).padStart(3, '0')}`]));
+  out.forEach((r) => r.animal = coded.get(r.animal)!);
   const df = DG.DataFrame.fromObjects(out)!;
-  df.name = `Example ${line} study`;
+  df.name = spec.name ?? `Example ${line} study`;
   // its plan in a tag: the plan Plan would save for it, with its predictive checks and each arm's power by n
   const checks = await planChecks({line, vRand: 100, endpoint: 1500, humane: HUMANE, weekdays: LAB_WEEKDAYS,
     startWeekday: 0, endpointDay: design.endpointDay, nControl, arms: design.arms.map((a, k) => ({
       name: a.declaration.name, therapy: a.declaration.therapy, killRate: a.killRate, n: n[k]}))});
-  const plan = savedPlan(`Example ${line} plan`, {line, endpoint: 1500, arms, power: 80, correction: 'dunnett',
-    n: null, vRand: 100, measurementDays: 'Mon, Wed, Fri', startWeekday: 'Monday', humane: HUMANE, alpha: 0.05,
-    preLoss: 0, postLoss: 0}, {line, endpoint: 1500, vRand: 100, studyEnd: design.studyEnd,
+  const plan = savedPlan(spec.name ? `${spec.name} plan` : `Example ${line} plan`, exampleInputs(spec), {line,
+    endpoint: 1500, vRand: 100, studyEnd: design.studyEnd,
     endpointDay: design.endpointDay, durationQ10: design.durationQ10, durationQ90: design.durationQ90, nControl,
     arms: arms.map((a, k) => ({...a, n: n[k], nNeeded: design.arms[k].nAssurance,
       power: design.arms[k].power.flatMap((r) => r.assurance === null ? [] : [{n: r.n, assurance: r.assurance}])})),

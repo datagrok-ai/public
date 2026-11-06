@@ -43,7 +43,7 @@ export function studyHeader(owner: {effect: (fn: () => void) => unknown}, stage:
   const close = () => {
     sheet.hidden = true;
     sheet.replaceChildren();
-    details.setAttribute('aria-expanded', 'false');
+    name.setAttribute('aria-expanded', 'false');
   };
   sheet.addEventListener('keydown', (e) => {
     if (e.key === 'Escape')
@@ -64,7 +64,7 @@ export function studyHeader(owner: {effect: (fn: () => void) => unknown}, stage:
     });
     sheet.replaceChildren(form.root, div([save, ui.button('Cancel', close)], 'pmx-head-sheet-actions'));
     sheet.hidden = false;
-    details.setAttribute('aria-expanded', 'true');
+    name.setAttribute('aria-expanded', 'true');
   });
   owner.effect(() => {
     const s = identity.value;
@@ -90,13 +90,7 @@ export function studyHeader(owner: {effect: (fn: () => void) => unknown}, stage:
     }));
     status.textContent = s?.status ?? '';
   });
-  const details = document.createElement('button');
-  details.type = 'button';
-  details.className = 'pmx-head-details';
-  details.textContent = 'Study details';
-  details.addEventListener('click', () => name.click());
-  owner.effect(() => details.hidden = !identity.value?.setMeta);
-  const row = div([div([name, id, groups, status, span('', 'pmx-head-gap'), details], 'pmx-head-study'), sheet], 'pmx-head-block');
+  const row = div([div([name, id, groups, status], 'pmx-head-study'), sheet], 'pmx-head-block');
   owner.effect(() => row.hidden = !identity.value);
   return {steps: div([steps(stage, open)], 'pmx-head'), row};
 }

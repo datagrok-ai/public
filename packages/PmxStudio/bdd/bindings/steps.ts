@@ -8,7 +8,7 @@ const open = async (page: Page, path?: string) => {
     const g = (window as any).grok;
     g.shell.addView(await g.functions.call('PmxStudio:pmxStudioApp', p ? {path: p} : {}));
   }, path);
-  await page.locator('.pmx-stages').filter({visible: true}).waitFor({timeout: 60000});
+  await page.locator('.pmx-head-steps').filter({visible: true}).waitFor({timeout: 60000});
 };
 
 export const openApp = Given('user opens PMX Studio', (page: Page) => open(page),

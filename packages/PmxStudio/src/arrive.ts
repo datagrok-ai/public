@@ -30,10 +30,11 @@ export function arriveItems(f: ArriveFacts): ArriveItem[] {
       `${f.evaluationDay}`),
     item(7, 'Statistical methods', f.protocol !== '', f.protocol || 'Analyze the study to write its methods'),
     item(8, 'Experimental animals', !!m?.description.trim(), m?.description.trim() ? m.description :
-      'Add species, strain, sex, age, weight and source in Study details'),
+      'Add species, strain, sex, age, weight and source in the study’s details (its name)'),
     item(9, 'Experimental procedures', given.length > 0, given.length ? given.map((g) => `${g.group}: ` +
       `${g.compound}${g.dose === null ? '' : ` ${g.dose} ${g.unit}`}${g.route ? ` ${g.route}` : ''}` +
-      `${g.schedule ? ` ${g.schedule}` : ''}`).join('; ') : 'Add what each group receives in Study details'),
+      `${g.schedule ? ` ${g.schedule}` : ''}`).join('; ') :
+      'Add what each group receives in the study’s details (its name)'),
     item(10, 'Results', f.analyzed.length > 0, f.analyzed.map((a) => `${a.group}: ${a.n} analyzed`).join('; ')),
   ];
 }

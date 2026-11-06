@@ -7,7 +7,8 @@
   display: flex; flex-wrap: nowrap; align-items: center; gap: 24px; min-width: 0; overflow: hidden; color: var(--dg-text-color, #4D5261);
   font-family: var(--dg-font-family, Roboto, sans-serif); font-size: 13px;
 }
-.pmx-head-steps { display: flex; align-items: center; gap: 6px; flex: none; }
+/* the stages centred in the view's header, apart from the menus and the view's own buttons */
+.pmx-head-steps { display: flex; align-items: center; gap: 6px; flex: none; position: absolute; left: 50%; transform: translateX(-50%); z-index: 1; }
 .pmx-head-step {
   display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 2px 2px; font: inherit;
   color: var(--dg-accent, #2083D5); cursor: pointer;
@@ -50,16 +51,6 @@
   font-family: var(--dg-font-family, Roboto, sans-serif); font-size: 13px; color: var(--dg-text-color, #4D5261);
 }
 .pmx-head-study .pmx-head-name { font-size: 17px; }
-.pmx-head-gap { flex: 1 1 auto; }
-.pmx-head-details {
-  flex: none; border: 0; background: none; font: inherit; color: var(--dg-accent, #2083D5); cursor: pointer; padding: 2px 6px;
-}
-.pmx-head-details:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; border-radius: 3px; }
-
-/* the declaration: its sections titled as the demo's rail, small and quiet */
-.pmx-declaration .u2-form-category .u2-section-title {
-  font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; color: var(--dg-grey-5, #717581);
-}
 
 /* a KPI's change: a pill at the card's top right */
 /* compact, as the demo's: the figure, its label, its change */
@@ -218,3 +209,15 @@
 .pmx-details { gap: 8px; }
 .pmx-details-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); column-gap: 24px; max-width: none; }
 .pmx-head-sheet-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+/* Plan's study protocol: each item its own row, with air between them */
+.pmx-protocol table { border-collapse: collapse; width: 100%; }
+.pmx-protocol td { padding: 7px 12px 7px 0; vertical-align: top; line-height: 1.45; border-bottom: 1px solid var(--dg-grey-1, #f2f3f5); }
+.pmx-protocol td:first-child { white-space: nowrap; font-weight: 500; }
+
+/* Against the plan: the summary, then each block with room above it and a rule between them */
+.u2-section-body:has(> .pmx-plan-summary) > .u2-section { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--dg-grey-1, #eef0f3); }
+.u2-section-body:has(> .pmx-plan-summary) > .pmx-plan-summary { display: block; margin-bottom: 4px; }
+.u2-section-body:has(> .pmx-plan-summary) .u2-section-body > * + * { margin-top: 8px; }
+.pmx-plan-table > * + * { border-top: 1px solid var(--dg-grey-1, #eef0f3); }
+.pmx-plan-table > * { padding-top: 7px !important; padding-bottom: 7px !important; }

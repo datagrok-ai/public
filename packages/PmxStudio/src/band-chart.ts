@@ -37,6 +37,8 @@ export interface BandChartOptions {
   fit?: boolean;
   /** drawn again when this changes: what changes the table's reference lines but not the table (Monitor's notes) */
   redrawOn?: ReadonlySignal<unknown>;
+  /** the categories whose line is dashed (a prediction beside what was observed) */
+  dashed?: string[];
 }
 
 /** One category's points, sorted by X; `row` is one of its rows, where its colour is read. */
@@ -85,7 +87,7 @@ export class BandChart extends Control {
     this.bands = collectBands(df, x, lower, upper, line, split);
     const y = line ?? upper;
     const fmt = {xUnits: x.meta.units ?? '', yUnits: y.meta.units ?? '', x: x.meta.format || DEFAULT_FORMAT,
-      y: y.meta.format || DEFAULT_FORMAT, xTitle: o.xTitle || x.name};
+      y: y.meta.format || '0.0', xTitle: o.xTitle || x.name};
     const xTitle = axisTitle(fmt.xTitle, fmt.xUnits);
     const yTitle = axisTitle(o.yTitle || (line ? line.name : `${lower.name} – ${upper.name}`), fmt.yUnits, log);
     // the split column's colour coding when it has one, else the categorical palette in band order
@@ -93,7 +95,7 @@ export class BandChart extends Control {
     const colors = this.bands.map((b, k) =>
       DG.Color.toHtml(coded ? DG.Color.getRowColor(coded, b.row) : DG.Color.getCategoricalColor(k)));
     this.chart.setOption(chartOption(this.bands, colors, refLines(df.meta.formulaLines.items, x.name),
-      {xTitle, yTitle, log, markers: o.markers ?? false, fit: o.fit ?? false, fmt}), true);
+      {xTitle, yTitle, log, markers: o.markers ?? false, fit: o.fit ?? false, fmt, dashed: o.dashed ?? []}), true);
   }
 }
 
@@ -110,7 +112,7 @@ export function initQuietly(host: HTMLElement): echarts.ECharts {
   }
 }
 
-type Look = {xTitle: string, yTitle: string, log: boolean, markers: boolean, fit: boolean,
+type Look = {xTitle: string, yTitle: string, log: boolean, markers: boolean, fit: boolean, dashed: string[],
   fmt: {xUnits: string, yUnits: string, x: string, y: string, xTitle: string}};
 
 function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Look): EChartsOption {
@@ -126,8 +128,9 @@ function chartOption(bands: Band[], colors: string[], refs: RefLine[], look: Loo
       renderItem: (params: any, api: any) => params.dataIndex !== 0 ? null : {type: 'polygon',
         shape: {points: outline.map((p) => api.coord(p))}, style: {fill: color, opacity: 0.25}}});
     if (b.line) {
-      series.push({name: b.name, type: 'line', data: pairs(b.line), symbol: look.markers ? 'circle' : 'none',
-        lineStyle: {color, width: 2}, itemStyle: {color}});
+      const dashed = look.dashed.includes(b.name);
+      series.push({name: b.name, type: 'line', data: pairs(b.line), symbol: look.markers && !dashed ? 'circle' : 'none',
+        lineStyle: {color, width: 2, type: dashed ? 'dashed' : 'solid'}, itemStyle: {color}});
     }
   });
   if (refs.length && bands.length) {
