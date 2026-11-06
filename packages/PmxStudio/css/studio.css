@@ -205,3 +205,6 @@
 
 /* an animal selected anywhere (the study table's selection), outlined in the twin list */
 .pmx-forest-row.is-selected { box-shadow: inset 3px 0 0 var(--dg-accent, #2083D5); font-weight: 500; }
+
+/* a figure that asks for attention (Monitor's animals needing it) */
+.pmx-stat.pmx-stat-attn { border-color: color-mix(in srgb, #d99a12 60%, var(--dg-border, #DBDCDF)); box-shadow: inset 3px 0 0 #d99a12; }

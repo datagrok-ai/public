@@ -805,10 +805,11 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
   // form has written its defaults into the call
   void form.settled.then(() => {
     call.setParamValue('detectableEffect', false);
-    // a new plan opens on the tumor model picked last
+    // a new plan opens on the tumor model picked last, with its one default arm: not the table in view, which the
+    // platform gives a table parameter by default (Monitor's study would read as 267 arms)
     const last = initial ? null : lastLine();
-    for (const [name, value] of Object.entries(initial?.inputs ?? (last ? {line: last} : {}))) {
-      const v = name === 'arms' ? armsFrame(value as SavedPlan['inputs']['arms']) : value;
+    for (const [name, value] of Object.entries(initial?.inputs ?? {arms: null, ...last ? {line: last} : {}})) {
+      const v = name === 'arms' && value ? armsFrame(value as SavedPlan['inputs']['arms']) : value;
       const field = form.getInput(name);
       if (field)
         field.value = v;
@@ -876,14 +877,15 @@ function planContent(self: ViewHost, initial: SavedPlan | undefined, exports: Ex
     const name = defaultName(ready()!) ?? 'Plan';
     download(`${name}.ics`, icsOf(name, meta.peek(), planEvents.last, planEvents.events), 'text/calendar');
   }]);
-  const followButton = buttonWithIcon('Follow this study', 'eye', () => {
+  // the way on: the page's one primary action
+  const followButton = buttonWithIcon('Follow this study', 'arrow-right', () => {
     const r = ready();
     if (!r)
       return;
     saving.value = true;
     void planFor(defaultName(r), r).then(followPlan).catch((e) => error.value = String(e?.message ?? e))
       .finally(() => saving.value = false);
-  });
+  }, {primary: true, iconRight: true});
   followButton.title = 'Start following this study in Monitor, with this plan';
   form.effect(() => {
     const off = !result.value ? 'The plan is not ready yet' : busy.value ? 'The plan is being updated' :

@@ -239,18 +239,44 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     const s = status.value;
     return (s && !s.col(name)?.isNone(0) ? s.get(name, 0) ?? undefined : undefined) as T | undefined;
   });
-  const card = (label: string, value: ReadonlySignal<StatValue | undefined>, tip: () => string,
+  const card = (label: string | ReadonlySignal<string>, value: ReadonlySignal<StatValue | undefined>, tip: () => string,
     format?: (x: StatValue) => string) => statCard(form, label, value, tip, format);
+  const metaVersion = signal(0);
+  const meta = computed(() => {
+    void result.value;
+    void metaVersion.value;
+    return metaOf(studyTable()) ?? emptyMeta();
+  });
+  // a day's card says its date once day 0 has one; the expected end, how it stands against the plan's
+  const dated = (label: string, day: ReadonlySignal<number | undefined>, also?: () => string) => computed(() => {
+    const d = day.value;
+    const date = d === undefined ? null : dateOf(meta.value.start, d);
+    return [label, date ? dateText(date) : '', also?.() ?? ''].filter((x) => x).join(' · ');
+  });
+  const [needing, nextDay, endMedian, plannedEnd] = [cell('attention'), cell('next_day'), cell('end_median'),
+    cell('planned_end')];
+  const versusPlan = () => {
+    const [e, p] = [endMedian.value, plannedEnd.value];
+    if (e === undefined || p === undefined)
+      return '';
+    const d = Math.round(e - p);
+    return d === 0 ? 'as planned' : `${Math.abs(d)} ${Math.abs(d) === 1 ? 'day' : 'days'} ` +
+      `${d > 0 ? 'later' : 'earlier'} than planned`;
+  };
+  const attentionCard = card('Animals needing attention', needing,
+    () => 'Animals listed under Today, each with its reason');
+  form.effect(() => attentionCard.classList.toggle('pmx-stat-attn', (needing.value ?? 0) > 0));
   const cards = cardGrid([
-    card('Animals needing attention', cell('attention'), () => 'Animals listed under Today, each with its reason'),
-    card('Next measurement', cell('next_day'), () => 'The next day at the study\'s usual interval', dayText),
-    card('Expected end', cell('end_median'), () => {
+    attentionCard,
+    card(dated('Next measurement', nextDay), nextDay, () => 'The next day at the study\'s usual interval', dayText),
+    card(dated('Expected end', endMedian, versusPlan), endMedian, () => {
       const [a, b] = [cell('end_lower').value, cell('end_upper').value];
       // not "8 in 10": halfway through, the atlas's MC38 studies fell in this range about half the time (§8)
       return `The day the median control reaches the endpoint, likely between ${dayText(a)} and ` +
         `${b === undefined ? 'later than the days forecast' : dayText(b)}`;
     }, dayText),
-    card('End in the plan', cell('planned_end'), () => 'The last day the plan predicted (empty: no plan)', dayText),
+    card(dated('End in the plan', plannedEnd), plannedEnd,
+      () => 'The last day the plan predicted (empty: no plan)', dayText),
   ], 'pmx-monitor-cards', 150);
 
   // Today
@@ -409,12 +435,6 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   });
 
   // Calendar: the study by its days, today among them once day 0 has a date
-  const metaVersion = signal(0);
-  const meta = computed(() => {
-    void result.value;
-    void metaVersion.value;
-    return metaOf(studyTable()) ?? emptyMeta();
-  });
   const setMeta = (m: StudyMeta) => {
     const df = studyTable();
     if (df) {

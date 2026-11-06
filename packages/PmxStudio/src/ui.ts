@@ -43,7 +43,7 @@ export function guide(x: number, lo: number): HTMLElement {
 }
 
 /** A figure of the results with what it covers in its tooltip, owned by `owner` (the view's form). */
-export function statCard(owner: {runInScope: <T>(f: () => T) => T}, label: string,
+export function statCard(owner: {runInScope: <T>(f: () => T) => T}, label: string | ReadonlySignal<string>,
   value: ReadonlySignal<StatValue | undefined>, tip: () => string, format?: (x: StatValue) => string): HTMLElement {
   return owner.runInScope(() => {
     // the change from the previous result, or from the figures pinned (cardGrid's right click): u2's delta, as a
