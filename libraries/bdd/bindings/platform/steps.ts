@@ -1008,6 +1008,11 @@ export const dragShared = When('user drags {string} shared by the running accoun
   (page: Page, source: string, target: string) => drag(page, sharedByRunningAccount(page, source), sharedByRunningAccount(page, target)),
   {tier: 'ui', description: 'one node under My stuff > Shared with me > <the account the feature started with> onto another'});
 
+export const openSharedMenu = When('user opens the context menu of {string} shared by the running account',
+  async (page: Page, path: string) => {
+    await openContextMenuOf(page, sharedByRunningAccount(page, path));
+  }, {tier: 'ui', description: 'right-clicks a node under My stuff > Shared with me > <the account the feature started with>, and leaves the menu open for menu item checks'});
+
 export const pickFromSharedMenu = When('user picks {string} from the context menu of {string} shared by the running account',
   async (page: Page, menuPath: string, path: string) => {
     await openContextMenuOf(page, sharedByRunningAccount(page, path));

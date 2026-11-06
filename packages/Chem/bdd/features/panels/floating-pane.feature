@@ -7,8 +7,9 @@ Feature: A pane dragged out of the context panel becomes a viewer of the current
   sight it does not recalculate, and shows the latest molecule once it is back. Once closed, a later molecule does not
   bring it back.
 
-  Here on the Properties pane, whose formula tells the molecules apart. The Gasteiger Partial Charges pane behaves the
-  same, but it is a server-side Python script: see the bdd library's CLAUDE.md, "What never becomes a feature". The
+  Here on the Properties pane, whose formula tells the molecules apart, in either Chemical Engine. The Gasteiger Partial
+  Charges pane behaves the same; guides/following-panels.feature films it in Crux mode, as in RDKit mode it is a
+  server-side Python script: see the bdd library's CLAUDE.md, "What never becomes a feature". The
   rules behind this (the function's condition and units, a result that comes late, Close All, undoing the close, a query
   or a converter behind the pane, a view that cannot hold viewers) are the platform's tests
   `xamgle | Context panel | Dragged out pane`.
