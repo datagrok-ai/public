@@ -36,7 +36,7 @@ import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, day
   infoNote,
   onTableEdits, TABLE_EDITS,
   isBodyWeight, keepNamedColumns, noteLine, notes,
-  notesBox, num, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
+  notesBox, num, pct, resultsFrame, settleForm, sized, staleNote,
   markStage, signed, stageOf, statCard, swatch, volumeAxis, wrapCells} from './ui';
 
 /** Monitor's tabs and their panels, in order and width (twelfths): today's work and how the groups grow; the
@@ -722,7 +722,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       download(`${df.name}.ics`, icsOf(df.name, meta.peek(), monitorEvents.last, monitorEvents.events),
         'text/calendar');
     }]);
-  Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
+  Object.assign(content.style, {gap: 'var(--dg-space-l)'});
   form.effect(() => {
     content.hidden = !result.value;
     start.hidden = !!result.value;
@@ -784,13 +784,11 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
 
 /** Plan's "Follow this study": a new measurements table carrying the plan, opened in Monitor. */
 export async function followPlan(plan: SavedPlan): Promise<void> {
-  const view = grok.shell.addView(await monitorView(newStudyTable(plan)));
-  view.path = '/apps/PmxStudio/monitor';
+  await showStage('monitor', await monitorView(newStudyTable(plan)));
 }
 
 /** A .pmxstudy file opened from Files or a drop. */
 export async function openStudyFile(content: string): Promise<DG.DataFrame[]> {
-  const view = grok.shell.addView(await monitorView(tableOf(parseStudy(content))));
-  view.path = '/apps/PmxStudio/monitor';
+  await showStage('monitor', await monitorView(tableOf(parseStudy(content))));
   return [];
 }

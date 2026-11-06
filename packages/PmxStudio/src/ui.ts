@@ -26,9 +26,8 @@ export const signed = (x: number) => pct(x / 100).replace('-', '−');
 /** A study day: whole, as the calendar counts them. */
 export const dayText = (d: unknown) => typeof d === 'number' && Number.isFinite(d) ? `Day ${Math.round(d)}` : '—';
 
-/** Narrowest the two panes get; below it the results pane scrolls instead of squeezing its charts. */
+/** Narrowest the declaration pane gets. */
 export const DECLARATION_MIN = 260;
-export const RESULTS_MIN = 560;
 
 /** Where x (%, from `lo` to 100) falls on an effect axis, as a CSS length. */
 export const axisAt = (x: number, lo: number) =>
@@ -353,11 +352,12 @@ export function busyBar(): HTMLElement {
   return div([], 'pmx-busy-bar');
 }
 
-/** The results pane, scrolling, in a frame that does not scroll: the loader always covers the visible part, the bar
- *  sits on its top edge. */
+/** The results pane, scrolling down (never sideways: it fits its width, and a table or calendar too wide for it
+ *  scrolls by itself, studio.css), in a frame that does not scroll: the loader always covers the visible part, the
+ *  bar sits on its top edge. */
 export function resultsFrame(content: HTMLElement[], ...overlays: HTMLElement[]): HTMLElement {
   const results = div(content, 'pmx-results');
-  Object.assign(results.style, {height: '100%', overflow: 'auto', boxSizing: 'border-box',
+  Object.assign(results.style, {height: '100%', overflowX: 'hidden', overflowY: 'auto', boxSizing: 'border-box',
     padding: 'var(--dg-space-m) var(--dg-space-l) var(--dg-space-xl, 24px)'});
   const frame = div([results, ...overlays], 'pmx-results-frame');
   Object.assign(frame.style, {position: 'relative', height: '100%', overflow: 'hidden',

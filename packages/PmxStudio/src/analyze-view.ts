@@ -24,7 +24,7 @@ import {askedOf, autoRun, axisAt, busyBar, busyOverlay, callInputs, cardGrid, da
   keepSame,
   onTableEdits, only, TABLE_EDITS,
   DECLARATION_MIN, guide,
-  infoNote, noteLine, notesBox, num, pct, pValue, RESULTS_MIN, resultsFrame, settleForm, signed,
+  infoNote, noteLine, notesBox, num, pct, pValue, resultsFrame, settleForm, signed,
   isBodyWeight, keepNamedColumns, sized, markStage, staleNote, statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {logOf, restoreFields} from './study-file';
 import {openStage} from './stages';
@@ -1019,7 +1019,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     ['Measurements (CSV)', () => download(`${studyNow().df.name}.csv`, studyNow().df.toCsv(), 'text/csv')],
     ['Per-animal results (CSV)', () => download(`${studyNow().df.name} - animals.csv`, studyNow().r.animals.toCsv(),
       'text/csv')]);
-  Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
+  Object.assign(content.style, {gap: 'var(--dg-space-l)'});
   form.effect(() => {
     content.hidden = !result.value;
     start.hidden = !!result.value;

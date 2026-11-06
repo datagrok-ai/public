@@ -135,14 +135,21 @@ export function steps(current: Stage, open: (stage: Stage) => void): HTMLElement
     if (!ribbon)
       return;
     fit.observe(ribbon);
-    Object.assign(nav.style, {left: '', transform: ''});
+    Object.assign(nav.style, {position: '', left: '', transform: ''});
     const me = nav.getBoundingClientRect();
     const own = nav.closest('.d4-ribbon-item');
     const others = [...ribbon.querySelectorAll('.d4-ribbon-item')].filter((it) => it !== own)
       .map((it) => it.getBoundingClientRect()).filter((r) => r.width > 0);
     const left = Math.max(ribbon.getBoundingClientRect().left, ...others.map((r) => r.right)) + 24;
-    if (me.left < left && nav.offsetParent)
-      Object.assign(nav.style, {left: `${left - nav.offsetParent.getBoundingClientRect().left}px`, transform: 'none'});
+    const box = nav.offsetParent?.getBoundingClientRect();
+    if (me.left >= left || !box)
+      return;
+    // the view's own controls (menu, close) on the right end of the header
+    const controls = ribbon.parentElement?.querySelector('.d4-view-ribbon-controls')?.getBoundingClientRect();
+    const right = Math.min(box.right, controls && controls.width > 0 ? controls.left : box.right) - 8;
+    // no room after the buttons either (a narrow window): in line with the header, before them
+    Object.assign(nav.style, left + me.width <= right ? {left: `${left - box.left}px`, transform: 'none'} :
+      {position: 'static', transform: 'none'});
   };
   const fit = new ResizeObserver(() => requestAnimationFrame(place));
   fit.observe(nav);

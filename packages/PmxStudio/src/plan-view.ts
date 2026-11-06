@@ -19,7 +19,7 @@ import {ArmsInput, CorrectionInput, armsFrame} from './arms-input';
 import {MIN_GROUP, finite} from './engine';
 import {askedOf, autoRun, busyBar, busyOverlay, callInputs, cardGrid, copyRow, declarationPane, DECLARATION_MIN,
   infoNote, notes,
-  notesBox, num, pct, RESULTS_MIN, resultsFrame, settleForm, sized, staleNote,
+  notesBox, num, pct, resultsFrame, settleForm, sized, staleNote,
   markStage, statCard, swatch, volumeAxis, wrapCells} from './ui';
 import {openStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
@@ -458,7 +458,10 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     for (let i = 0; i < a.rowCount; i++) {
       const g = (c: string) => a.get(c, i);
       const metric = g('metric') === 'TC' ? 'T/C' : 'TGI';
-      rows.push({name: g('arm'), cells: [swatch(g('arm'), colors[g('arm')]), g('therapy'),
+      // the therapy's short name (its kind in brackets on hover): the table stays compact
+      const therapy = span(String(g('therapy')).split(' (')[0]);
+      therapy.title = String(g('therapy'));
+      rows.push({name: g('arm'), cells: [swatch(g('arm'), colors[g('arm')]), therapy,
         `${metric} ${num(g('effect'))}%`, animals(finite(g('n')) ?? 'over 40', true),
         animals(finite(g('randomise')), false),
         pct(g('assurance')),
@@ -742,7 +745,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     scenarioBox.replaceChildren(scenariosTable(r.scenarios, r.plan.get('per_week', 0)));
   });
   const content = divV([cards, panels], 'pmx-plan-content');
-  Object.assign(content.style, {gap: 'var(--dg-space-l)', minWidth: `${RESULTS_MIN}px`});
+  Object.assign(content.style, {gap: 'var(--dg-space-l)'});
 
   // the first plan under u2's loader; every later one under the thin bar, what was shown left in view
   const overlay = busyOverlay('Designing the study…');

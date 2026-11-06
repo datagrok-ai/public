@@ -221,3 +221,9 @@
 .u2-section-body:has(> .pmx-plan-summary) .u2-section-body > * + * { margin-top: 8px; }
 .pmx-plan-table > * + * { border-top: 1px solid var(--dg-grey-1, #eef0f3); }
 .pmx-plan-table > * { padding-top: 7px !important; padding-bottom: 7px !important; }
+
+/* the results pane fits its width: its panels shrink with it, and a table or the calendar wider than its panel
+   scrolls sideways by itself, not the pane */
+.pmx-results .pmx-grid-host, .pmx-results .u2-section, .pmx-results .u2-section-body { min-width: 0; }
+.pmx-results div:has(> table.u2-table), .pmx-results div:has(> .pmx-calendar) { overflow-x: auto; max-width: 100%; }
+.pmx-results .pmx-calendar { min-width: 520px; }

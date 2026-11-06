@@ -25,17 +25,22 @@ export async function openStage(stage: Stage): Promise<void> {
   try {
     const view = stage === 'plan' ? await planView() : stage === 'analyze' ? await analyzeView() :
       stage === 'monitor' ? await monitorView() : await hubView();
-    showStage(stage, view);
+    await showStage(stage, view);
   } finally {
     progress.close();
   }
 }
 
-/** A stage's view opened with something in it (a study, a plan): always a view of its own. */
-export function showStage(stage: Stage, view: DG.ViewBase): void {
-  grok.shell.addView(view);
-  // the platform puts the app's root before the path of the view it opens as the app, not of one added later
-  view.path = pathOf(stage);
+/** A stage's view opened with something in it (a study, a plan): always a view of its own. Added after the click
+ *  that asked for it: the platform makes the clicked view current once the click is handled (in a task of its own),
+ *  so a view ready at once (its data at hand) would be put behind the one clicked. */
+export function showStage(stage: Stage, view: DG.ViewBase): Promise<DG.ViewBase> {
+  return new Promise((resolve) => setTimeout(() => {
+    grok.shell.addView(view);
+    // the platform puts the app's root before the path of the view it opens as the app, not of one added later
+    view.path = pathOf(stage);
+    resolve(view);
+  }));
 }
 
 /** The shell's panels a PMX Studio view hides: the context panel in every stage, and on the Overview also the
