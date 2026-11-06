@@ -31,11 +31,22 @@ export async function openStage(stage: Stage): Promise<void> {
   }
 }
 
+/** `base`, else `base (2)`, … : the shell keys its list of views by name (a second "PMX Studio" logs "Mapping for PMX
+ *  Studio exists" each time the list is drawn). */
+export function uniqueName(base: string): string {
+  const taken = new Set([...grok.shell.views].map((v) => v.name));
+  let name = base;
+  for (let k = 2; taken.has(name); k++)
+    name = `${base} (${k})`;
+  return name;
+}
+
 /** A stage's view opened with something in it (a study, a plan): always a view of its own. Added after the click
  *  that asked for it: the platform makes the clicked view current once the click is handled (in a task of its own),
  *  so a view ready at once (its data at hand) would be put behind the one clicked. */
 export function showStage(stage: Stage, view: DG.ViewBase): Promise<DG.ViewBase> {
   return new Promise((resolve) => setTimeout(() => {
+    view.name = uniqueName(stage === 'home' ? 'PMX Studio' : `PMX Studio · ${STAGES.find((s) => s.stage === stage)?.label}`);
     grok.shell.addView(view);
     // the platform puts the app's root before the path of the view it opens as the app, not of one added later
     view.path = pathOf(stage);

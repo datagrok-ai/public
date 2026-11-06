@@ -21,7 +21,7 @@ import {askedOf, autoRun, busyBar, busyOverlay, callInputs, cardGrid, copyRow, d
   infoNote, notes,
   notesBox, num, pct, resultsFrame, settleForm, sized, staleNote,
   markStage, statCard, swatch, volumeAxis, wrapCells} from './ui';
-import {openStage} from './stages';
+import {openStage, showStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
@@ -197,9 +197,7 @@ function scenariosTable(sc: DG.DataFrame, own: number | undefined): HTMLElement 
 
 /** A .pmxplan file opened from Files or dropped on the platform: Plan with it (no table to open). */
 export async function openPlanFile(content: string): Promise<DG.DataFrame[]> {
-  const view = grok.shell.addView(await planView(parsePlan(content)));
-  // as stages.ts opens a stage: the app's root before the view's path
-  view.path = '/apps/PmxStudio/plan';
+  await showStage('plan', await planView(parsePlan(content)));
   return [];
 }
 

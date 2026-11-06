@@ -330,7 +330,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const df = await getStudy();
     if (!grok.shell.tables.includes(df))
       grok.shell.addTableView(df);
-    grok.shell.v = self.view;
+    // a view not yet shown is left to showStage: making it current would add it, and showStage add it a second time
+    if ([...grok.shell.views].some((v) => v.dart === self.view.dart))
+      grok.shell.v = self.view;
     const study = form.getInput('study');
     if (study)
       study.value = df.name;

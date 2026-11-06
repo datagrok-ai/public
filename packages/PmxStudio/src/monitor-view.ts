@@ -165,7 +165,10 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
 
   const setStudy = async (df: DG.DataFrame) => {
     grok.shell.addTableView(df);
-    grok.shell.v = self.view;
+    // back to Monitor once the table is open; a view not yet shown is left to showStage: making it current would add
+    // it, and showStage would add it a second time
+    if ([...grok.shell.views].some((v) => v.dart === self.view.dart))
+      grok.shell.v = self.view;
     const study = form.getInput('study');
     if (study)
       study.value = df.name;
