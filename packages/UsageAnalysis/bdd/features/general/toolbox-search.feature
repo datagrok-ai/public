@@ -38,8 +38,17 @@ Feature: The table view's Search box filters the rows its text matches
     Then 15 rows should pass the filter
     And no errors should have been logged
 
-  Scenario: An empty Search box gives every row back
+  @realizes:public#3963
+  Scenario: An empty Search box gives every row back, and Extract Rows takes only the rows a search left
     When user clears table search
     And user presses Enter in table search
     Then all rows should pass the filter
+    And no errors should have been logged
+    When user types "RACE = Asian" into table search
+    And user presses Enter in table search
+    Then 15 rows should pass the filter
+    When user clicks on "Filtered: 15" text in status bar
+    And user picks "Extract Rows" from the open menu
+    Then the table should have 15 rows
+    And the table should have no rows where "RACE" is "Caucasian"
     And no errors should have been logged

@@ -59,6 +59,7 @@ Feature: A project moved between spaces, and access through a shared space
     Then the "Home" view should be current
     And no errors should have been logged
 
+  @realizes:core#625
   Scenario: The project is moved into the first space from its card and opens there
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
@@ -80,6 +81,12 @@ Feature: A project moved between spaces, and access through a shared space
     And no error or warning balloon should have been shown
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
+    Given the browse panel is open
+    When user double-clicks on BDDMoveA{time} tree node inside browse tree
+    Then the "BDDMoveA{time}" view should be current
+    And "BDDMoveProj{time}" link in gallery should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   Scenario: The space is shared, and the project's access is inherited from it
     Given the browse panel is open

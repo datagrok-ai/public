@@ -54,7 +54,8 @@ Feature: Matched Molecular Pairs over molecules and their activities
     And no errors should have been logged
 
   @GROK-18517
-  Scenario: A run with two activities names both and gives each its mean difference
+  @realizes:public#4435
+  Scenario: A run with two activities names both and gives each its mean difference; a run on filtered data opens one view
     When user clicks on close icon of Matched Molecular Pairs Analysis viewer
     Then Matched Molecular Pairs Analysis viewer should be absent
     When user picks "Chem > Analyze > Matched Molecular Pairs..." from the top menu
@@ -75,4 +76,19 @@ Feature: Matched Molecular Pairs over molecules and their activities
     And the "fragment columns" reading of Matched Molecular Pairs Analysis viewer should contain "Δ LD(50)"
     And the "fragment columns" reading of Matched Molecular Pairs Analysis viewer should contain "Δ In-vivo Activity"
     And the "pairs" reading of Matched Molecular Pairs Analysis viewer should be at least 1
+    And no errors should have been logged
+    When user clicks on close icon of Matched Molecular Pairs Analysis viewer
+    And user filters rows where "Mol Wt." is between 300 and 1000
+    And user picks "Chem > Analyze > Matched Molecular Pairs..." from the top menu
+    Then "Matched Molecular Pairs" dialog should be visible
+    When user clicks on editor of Activities input in "Matched Molecular Pairs" dialog
+    Then "Select columns..." dialog should be visible
+    When user clicks on None label in "Select columns..." dialog
+    And user clicks on the "cell 6 of x" area of grid viewer in "Select columns..." dialog
+    And user clicks on OK button in "Select columns..." dialog
+    Then Activities input in "Matched Molecular Pairs" dialog should contain text "Activities(1)"
+    When user clicks on OK button in "Matched Molecular Pairs" dialog
+    Then Matched Molecular Pairs Analysis viewer should be visible
+    And Matched Molecular Pairs Analysis viewer should have finished its analysis
+    And the open table views should be exactly "sar_small, sar_small (Filtered)"
     And no errors should have been logged

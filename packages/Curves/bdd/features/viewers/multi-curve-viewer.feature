@@ -33,7 +33,8 @@ Feature: The Multi curve viewer from the Add Viewer dialog, its curve columns, U
     Then "Add Viewer" dialog should be absent
     And no errors should have been logged
 
-  Scenario: On the curves table the card adds the viewer with one curve column, and All takes five
+  @realizes:public#4294
+  Scenario: On the curves table the card adds the viewer with one curve column and its legend checked, and All takes five
     Given user closes all views
     And user opens curves dataset
     Then the context panel should show the current cell
@@ -48,6 +49,9 @@ Feature: The Multi curve viewer from the Add Viewer dialog, its curve columns, U
     And the "curves" reading of MultiCurveViewer viewer should be 2
     When user picks "Properties..." from the viewer menu of MultiCurveViewer viewer
     Then "Curves" property in context panel should contain text "1 / 5"
+    When user expands "Misc" category in context panel
+    Then "Show Legend" property in context panel should be checked
+    And the "legend shown" reading of MultiCurveViewer viewer should be "true"
     When user clicks on "..." button in "Curves" property in context panel
     Then "Select columns..." dialog should be visible
     When user clicks on "All" link in "Select columns..." dialog

@@ -4,6 +4,7 @@
 /* ---
 generated: features/general/toolbox-search.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+sub_features_covered: [public#3963]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -20,15 +21,15 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clearField, pressKeyIn, shouldBe, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {filterPasses, filterPassesAll} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {clearField, clickOn, pressKeyIn, shouldBe, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {filterPasses, filterPassesAll, noRowsWhere, rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {noErrors, pickFromOpenMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The table view's Search box filters the rows its text matches", () => {
   const session = feature(test, "features/general/toolbox-search.feature", import.meta.url);
-  test("The table view's Search box filters the rows its text matches", {tag: ["@journey"]}, async ({browser}) => {
+  test("The table view's Search box filters the rows its text matches", {tag: ["@journey", "@realizes:public#3963"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 3, page);
     await session.step(20, "Given user is logged in", () => loggedIn(page));
@@ -51,11 +52,19 @@ test.describe("The table view's Search box filters the rows its text matches", (
       await session.step(38, "Then 15 rows should pass the filter", () => filterPasses(page, 15));
       await session.step(39, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("An empty Search box gives every row back", async () => {
-      await session.step(42, "When user clears table search", () => clearField(page, el("table search")));
-      await session.step(43, "And user presses Enter in table search", () => pressKeyIn(page, "Enter", el("table search")));
-      await session.step(44, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(45, "And no errors should have been logged", () => noErrors(page));
+    await run.scenario("An empty Search box gives every row back, and Extract Rows takes only the rows a search left", async () => {
+      await session.step(43, "When user clears table search", () => clearField(page, el("table search")));
+      await session.step(44, "And user presses Enter in table search", () => pressKeyIn(page, "Enter", el("table search")));
+      await session.step(45, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(46, "And no errors should have been logged", () => noErrors(page));
+      await session.step(47, "When user types \"RACE = Asian\" into table search", () => typeInto(page, "RACE = Asian", el("table search")));
+      await session.step(48, "And user presses Enter in table search", () => pressKeyIn(page, "Enter", el("table search")));
+      await session.step(49, "Then 15 rows should pass the filter", () => filterPasses(page, 15));
+      await session.step(50, "When user clicks on \"Filtered: 15\" text in status bar", () => clickOn(page, el("\"Filtered: 15\" text in status bar")));
+      await session.step(51, "And user picks \"Extract Rows\" from the open menu", () => pickFromOpenMenu(page, "Extract Rows"));
+      await session.step(52, "Then the table should have 15 rows", () => rowCount(page, 15));
+      await session.step(53, "And the table should have no rows where \"RACE\" is \"Caucasian\"", () => noRowsWhere(page, "RACE", "Caucasian"));
+      await session.step(54, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

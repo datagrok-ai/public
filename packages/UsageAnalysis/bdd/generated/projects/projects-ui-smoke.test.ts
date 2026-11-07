@@ -4,7 +4,7 @@
 /* ---
 generated: features/projects/projects-ui-smoke.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [views.projects, sharing.share-dialog]
+sub_features_covered: [views.projects, sharing.share-dialog, core#938, public#3752]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -24,13 +24,14 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, clipboardContains, clipboardHas, collapse, downloadContains, enterInto, expand, fileDownloaded, hoverOver, isExpanded, pressKey, rememberVisibleCount, shouldBe, shouldContainText, shouldHaveText, shouldHaveValue, shouldNotContainText, typeAtCaret, uncheck, visibleCount, visibleMoreThanRemembered, watchDownloads} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {favoriteOnServer, notFavorite, notFavoriteOnServer} from '@datagrok-libraries/bdd/bindings/platform/browse';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, contextPanelOpen, contextPanelShows, dialogCloses, doubleClickOpensProject, noProjectOnServer, pickSharingUser, projectTaggedOnServer, projectsOnServer, sharingPaneLists, sharingPaneListsNot, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, contextPanelOpen, contextPanelShows, dialogCloses, doubleClickOpensProject, noProjectOnServer, pickSharingUser, projectTaggedOnServer, projectsOnServer, sharingPaneLists, sharingPaneListsNot, simpleModeOff, viewIsCurrent, viewTabsInOrder} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {openTableViewsExactly} from '@datagrok-libraries/bdd/bindings/platform/workspace';
 import {infoBalloonText, noBalloons, noErrors, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("A project through its card in the Dashboards gallery", () => {
   const session = feature(test, "features/projects/projects-ui-smoke.feature", import.meta.url);
-  test("A project through its card in the Dashboards gallery", {tag: ["@journey", "@realizes:views.projects", "@realizes:sharing.share-dialog"]}, async ({browser}) => {
+  test("A project through its card in the Dashboards gallery", {tag: ["@journey", "@realizes:views.projects", "@realizes:sharing.share-dialog", "@realizes:core#938", "@realizes:public#3752"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 10, page);
     await session.step(30, "Given user is logged in", () => loggedIn(page));
@@ -141,57 +142,76 @@ test.describe("A project through its card in the Dashboards gallery", () => {
       await session.step(138, "Then the clipboard should contain text \"/p/Admin.BDDSmokeRenamed{time}\"", () => clipboardContains(page, session.text("/p/Admin.BDDSmokeRenamed{time}")));
     });
     await run.scenario("The project is added to favorites and taken out again", async () => {
-      await session.step(141, "Given \"BDDSmokeRenamed{time}\" is not in favorites", () => notFavorite(page, session.text("BDDSmokeRenamed{time}")));
-      await session.step(142, "And \"My stuff\" tree node inside browse tree is expanded", () => isExpanded(page, el("\"My stuff\" tree node inside browse tree")));
-      await session.step(143, "And \"My stuff > Favorites\" tree node inside browse tree is expanded", () => isExpanded(page, el("\"My stuff > Favorites\" tree node inside browse tree")));
-      await session.step(144, "Then \"My stuff > Favorites > BDDSmokeRenamed{time}\" tree node inside browse tree should be absent", () => shouldBe(page, el(session.text("\"My stuff > Favorites > BDDSmokeRenamed{time}\" tree node inside browse tree")), "absent"));
-      await session.step(145, "When user picks \"Add To Favorites > Only for me\" from the context menu of BDDSmokeRenamed{time} gallery card", () => pickFromContextMenu(page, "Add To Favorites > Only for me", el(session.text("BDDSmokeRenamed{time} gallery card"))));
-      await session.step(146, "Then \"BDDSmokeRenamed{time}\" should be in favorites on the server", () => favoriteOnServer(page, session.text("BDDSmokeRenamed{time}")));
-      await session.step(147, "When user collapses \"My stuff > Favorites\" tree node inside browse tree", () => collapse(page, el("\"My stuff > Favorites\" tree node inside browse tree")));
-      await session.step(148, "And user expands \"My stuff > Favorites\" tree node inside browse tree", () => expand(page, el("\"My stuff > Favorites\" tree node inside browse tree")));
-      await session.step(149, "Then \"My stuff > Favorites > BDDSmokeRenamed{time}\" tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("\"My stuff > Favorites > BDDSmokeRenamed{time}\" tree node inside browse tree")), "visible"));
-      await session.step(150, "When user picks \"Add To Favorites > Only for me\" from the context menu of BDDSmokeRenamed{time} gallery card", () => pickFromContextMenu(page, "Add To Favorites > Only for me", el(session.text("BDDSmokeRenamed{time} gallery card"))));
-      await session.step(151, "Then \"BDDSmokeRenamed{time}\" should not be in favorites on the server", () => notFavoriteOnServer(page, session.text("BDDSmokeRenamed{time}")));
-      await session.step(152, "When user collapses \"My stuff > Favorites\" tree node inside browse tree", () => collapse(page, el("\"My stuff > Favorites\" tree node inside browse tree")));
-      await session.step(153, "And user expands \"My stuff > Favorites\" tree node inside browse tree", () => expand(page, el("\"My stuff > Favorites\" tree node inside browse tree")));
-      await session.step(154, "Then \"My stuff > Favorites > BDDSmokeRenamed{time}\" tree node inside browse tree should be absent", () => shouldBe(page, el(session.text("\"My stuff > Favorites > BDDSmokeRenamed{time}\" tree node inside browse tree")), "absent"));
+      await session.step(142, "Given \"BDDSmokeRenamed{time}\" is not in favorites", () => notFavorite(page, session.text("BDDSmokeRenamed{time}")));
+      await session.step(143, "And \"My stuff\" tree node inside browse tree is expanded", () => isExpanded(page, el("\"My stuff\" tree node inside browse tree")));
+      await session.step(144, "And \"My stuff > Favorites\" tree node inside browse tree is expanded", () => isExpanded(page, el("\"My stuff > Favorites\" tree node inside browse tree")));
+      await session.step(145, "Then \"My stuff > Favorites > BDDSmokeRenamed{time}\" tree node inside browse tree should be absent", () => shouldBe(page, el(session.text("\"My stuff > Favorites > BDDSmokeRenamed{time}\" tree node inside browse tree")), "absent"));
+      await session.step(146, "When user picks \"Add To Favorites > Only for me\" from the context menu of BDDSmokeRenamed{time} gallery card", () => pickFromContextMenu(page, "Add To Favorites > Only for me", el(session.text("BDDSmokeRenamed{time} gallery card"))));
+      await session.step(147, "Then \"BDDSmokeRenamed{time}\" should be in favorites on the server", () => favoriteOnServer(page, session.text("BDDSmokeRenamed{time}")));
+      await session.step(148, "When user collapses \"My stuff > Favorites\" tree node inside browse tree", () => collapse(page, el("\"My stuff > Favorites\" tree node inside browse tree")));
+      await session.step(149, "And user expands \"My stuff > Favorites\" tree node inside browse tree", () => expand(page, el("\"My stuff > Favorites\" tree node inside browse tree")));
+      await session.step(150, "Then \"My stuff > Favorites > BDDSmokeRenamed{time}\" tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("\"My stuff > Favorites > BDDSmokeRenamed{time}\" tree node inside browse tree")), "visible"));
+      await session.step(151, "When user picks \"Close All\" from the context menu of browse tab", () => pickFromContextMenu(page, "Close All", el("browse tab")));
+      await session.step(152, "Then the \"Home\" view should be current", () => viewIsCurrent(page, "Home"));
+      await session.step(153, "When user clicks on favorites sidebar tab", () => clickOn(page, el("favorites sidebar tab")));
+      await session.step(154, "Then favorites panel should be visible", () => shouldBe(page, el("favorites panel"), "visible"));
+      await session.step(155, "And \"BDDSmokeRenamed{time}\" tree node in favorites panel should be visible", () => shouldBe(page, el(session.text("\"BDDSmokeRenamed{time}\" tree node in favorites panel")), "visible"));
+      await session.step(156, "When user double-clicks on \"BDDSmokeRenamed{time}\" tree node in favorites panel and the project opens", () => doubleClickOpensProject(page, el(session.text("\"BDDSmokeRenamed{time}\" tree node in favorites panel"))));
+      await session.step(157, "Then the \"cars\" view should be current", () => viewIsCurrent(page, "cars"));
+      await session.step(158, "And the open table views should be exactly \"cars\"", () => openTableViewsExactly(page, "cars"));
+      await session.step(159, "Given simple mode is off", () => simpleModeOff(page));
+      await session.step(160, "Then the view tabs should be in the order \"Home, cars\"", () => viewTabsInOrder(page, "Home, cars"));
+      await session.step(161, "And no errors should have been logged", () => noErrors(page));
+      await session.step(162, "When user clicks on favorites sidebar tab", () => clickOn(page, el("favorites sidebar tab")));
+      await session.step(163, "Then favorites panel should be absent", () => shouldBe(page, el("favorites panel"), "absent"));
+      await session.step(164, "Given the browse panel is open", () => browsePanelOpen(page));
+      await session.step(165, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
+      await session.step(166, "And user enters \"BDDSmokeRenamed{time}\" into gallery search", () => enterInto(page, session.text("BDDSmokeRenamed{time}"), el("gallery search")));
+      await session.step(167, "Then BDDSmokeRenamed{time} gallery card should be visible", () => shouldBe(page, el(session.text("BDDSmokeRenamed{time} gallery card")), "visible"));
+      await session.step(168, "When user picks \"Add To Favorites > Only for me\" from the context menu of BDDSmokeRenamed{time} gallery card", () => pickFromContextMenu(page, "Add To Favorites > Only for me", el(session.text("BDDSmokeRenamed{time} gallery card"))));
+      await session.step(169, "Then \"BDDSmokeRenamed{time}\" should not be in favorites on the server", () => notFavoriteOnServer(page, session.text("BDDSmokeRenamed{time}")));
+      await session.step(170, "When user collapses \"My stuff > Favorites\" tree node inside browse tree", () => collapse(page, el("\"My stuff > Favorites\" tree node inside browse tree")));
+      await session.step(171, "And user expands \"My stuff > Favorites\" tree node inside browse tree", () => expand(page, el("\"My stuff > Favorites\" tree node inside browse tree")));
+      await session.step(172, "Then \"My stuff > Favorites > BDDSmokeRenamed{time}\" tree node inside browse tree should be absent", () => shouldBe(page, el(session.text("\"My stuff > Favorites > BDDSmokeRenamed{time}\" tree node inside browse tree")), "absent"));
     });
     await run.scenario("The project is saved as a zip file", async () => {
-      await session.step(157, "Given user watches downloads", () => watchDownloads(page));
-      await session.step(158, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
-      await session.step(159, "And user enters \"BDDSmokeRenamed{time}\" into gallery search", () => enterInto(page, session.text("BDDSmokeRenamed{time}"), el("gallery search")));
-      await session.step(160, "And user picks \"Save as Zip\" from the context menu of BDDSmokeRenamed{time} gallery card", () => pickFromContextMenu(page, "Save as Zip", el(session.text("BDDSmokeRenamed{time} gallery card"))));
-      await session.step(161, "Then a file \"BDDSmokeRenamed{time}.zip\" should have been downloaded", () => fileDownloaded(page, session.text("BDDSmokeRenamed{time}.zip")));
-      await session.step(162, "And the downloaded file \"BDDSmokeRenamed{time}.zip\" should contain text \"cars\"", () => downloadContains(page, session.text("BDDSmokeRenamed{time}.zip"), "cars"));
+      await session.step(175, "Given user watches downloads", () => watchDownloads(page));
+      await session.step(176, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
+      await session.step(177, "And user enters \"BDDSmokeRenamed{time}\" into gallery search", () => enterInto(page, session.text("BDDSmokeRenamed{time}"), el("gallery search")));
+      await session.step(178, "And user picks \"Save as Zip\" from the context menu of BDDSmokeRenamed{time} gallery card", () => pickFromContextMenu(page, "Save as Zip", el(session.text("BDDSmokeRenamed{time} gallery card"))));
+      await session.step(179, "Then a file \"BDDSmokeRenamed{time}.zip\" should have been downloaded", () => fileDownloaded(page, session.text("BDDSmokeRenamed{time}.zip")));
+      await session.step(180, "And the downloaded file \"BDDSmokeRenamed{time}.zip\" should contain text \"cars\"", () => downloadContains(page, session.text("BDDSmokeRenamed{time}.zip"), "cars"));
     });
     await run.scenario("The card reopens the project with its data", async () => {
-      await session.step(165, "When user picks \"Close All\" from the context menu of browse tab", () => pickFromContextMenu(page, "Close All", el("browse tab")));
-      await session.step(166, "Then the \"Home\" view should be current", () => viewIsCurrent(page, "Home"));
-      await session.step(167, "Given the browse panel is open", () => browsePanelOpen(page));
-      await session.step(168, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
-      await session.step(169, "And user enters \"BDDSmokeRenamed{time}\" into gallery search", () => enterInto(page, session.text("BDDSmokeRenamed{time}"), el("gallery search")));
-      await session.step(170, "And user double-clicks on BDDSmokeRenamed{time} gallery card and the project opens", () => doubleClickOpensProject(page, el(session.text("BDDSmokeRenamed{time} gallery card"))));
-      await session.step(171, "Then the \"cars\" view should be current", () => viewIsCurrent(page, "cars"));
-      await session.step(172, "And the table should have 30 rows", () => rowCount(page, 30));
-      await session.step(173, "And status bar should contain text \"Rows: 30\"", () => shouldContainText(page, el("status bar"), "Rows: 30"));
-      await session.step(174, "And no errors should have been logged", () => noErrors(page));
-      await session.step(175, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(183, "When user picks \"Close All\" from the context menu of browse tab", () => pickFromContextMenu(page, "Close All", el("browse tab")));
+      await session.step(184, "Then the \"Home\" view should be current", () => viewIsCurrent(page, "Home"));
+      await session.step(185, "Given the browse panel is open", () => browsePanelOpen(page));
+      await session.step(186, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
+      await session.step(187, "And user enters \"BDDSmokeRenamed{time}\" into gallery search", () => enterInto(page, session.text("BDDSmokeRenamed{time}"), el("gallery search")));
+      await session.step(188, "And user double-clicks on BDDSmokeRenamed{time} gallery card and the project opens", () => doubleClickOpensProject(page, el(session.text("BDDSmokeRenamed{time} gallery card"))));
+      await session.step(189, "Then the \"cars\" view should be current", () => viewIsCurrent(page, "cars"));
+      await session.step(190, "And the table should have 30 rows", () => rowCount(page, 30));
+      await session.step(191, "And status bar should contain text \"Rows: 30\"", () => shouldContainText(page, el("status bar"), "Rows: 30"));
+      await session.step(192, "And no errors should have been logged", () => noErrors(page));
+      await session.step(193, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("The project is deleted from its card", async () => {
-      await session.step(178, "When user picks \"Close All\" from the context menu of browse tab", () => pickFromContextMenu(page, "Close All", el("browse tab")));
-      await session.step(179, "Then the \"Home\" view should be current", () => viewIsCurrent(page, "Home"));
-      await session.step(180, "Given the browse panel is open", () => browsePanelOpen(page));
-      await session.step(181, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
-      await session.step(182, "And user enters \"BDDSmokeRenamed{time}\" into gallery search", () => enterInto(page, session.text("BDDSmokeRenamed{time}"), el("gallery search")));
-      await session.step(183, "Then BDDSmokeRenamed{time} gallery card should be visible", () => shouldBe(page, el(session.text("BDDSmokeRenamed{time} gallery card")), "visible"));
-      await session.step(184, "When user picks \"Delete Project\" from the context menu of BDDSmokeRenamed{time} gallery card", () => pickFromContextMenu(page, "Delete Project", el(session.text("BDDSmokeRenamed{time} gallery card"))));
-      await session.step(185, "Then \"Are you sure?\" dialog should contain text 'Delete project \"BDDSmokeRenamed{time}\"?'", () => shouldContainText(page, el("\"Are you sure?\" dialog"), session.text("Delete project \"BDDSmokeRenamed{time}\"?")));
-      await session.step(186, "When user clicks on DELETE button in \"Are you sure?\" dialog", () => clickOn(page, el("DELETE button in \"Are you sure?\" dialog")));
-      await session.step(187, "Then the \"Are you sure?\" dialog should close", () => dialogCloses(page, "Are you sure?"));
-      await session.step(188, "And 0 projects named \"BDDSmokeRenamed{time}\" should be on the server", () => projectsOnServer(page, 0, session.text("BDDSmokeRenamed{time}")));
-      await session.step(189, "When user clicks on Refresh icon in gallery toolbar", () => clickOn(page, el("Refresh icon in gallery toolbar")));
-      await session.step(190, "Then gallery counter should have text \"0\"", () => shouldHaveText(page, el("gallery counter"), "0"));
-      await session.step(191, "And BDDSmokeRenamed{time} gallery card should be absent", () => shouldBe(page, el(session.text("BDDSmokeRenamed{time} gallery card")), "absent"));
+      await session.step(197, "When user picks \"Close All\" from the context menu of browse tab", () => pickFromContextMenu(page, "Close All", el("browse tab")));
+      await session.step(198, "Then the \"Home\" view should be current", () => viewIsCurrent(page, "Home"));
+      await session.step(199, "Given the browse panel is open", () => browsePanelOpen(page));
+      await session.step(200, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
+      await session.step(201, "And user enters \"BDDSmokeRenamed{time}\" into gallery search", () => enterInto(page, session.text("BDDSmokeRenamed{time}"), el("gallery search")));
+      await session.step(202, "Then BDDSmokeRenamed{time} gallery card should be visible", () => shouldBe(page, el(session.text("BDDSmokeRenamed{time} gallery card")), "visible"));
+      await session.step(203, "When user picks \"Delete Project\" from the context menu of BDDSmokeRenamed{time} gallery card", () => pickFromContextMenu(page, "Delete Project", el(session.text("BDDSmokeRenamed{time} gallery card"))));
+      await session.step(204, "Then \"Are you sure?\" dialog should contain text 'Delete project \"BDDSmokeRenamed{time}\"?'", () => shouldContainText(page, el("\"Are you sure?\" dialog"), session.text("Delete project \"BDDSmokeRenamed{time}\"?")));
+      await session.step(205, "When user clicks on DELETE button in \"Are you sure?\" dialog", () => clickOn(page, el("DELETE button in \"Are you sure?\" dialog")));
+      await session.step(206, "Then the \"Are you sure?\" dialog should close", () => dialogCloses(page, "Are you sure?"));
+      await session.step(207, "And 0 projects named \"BDDSmokeRenamed{time}\" should be on the server", () => projectsOnServer(page, 0, session.text("BDDSmokeRenamed{time}")));
+      await session.step(208, "When user clicks on Refresh icon in gallery toolbar", () => clickOn(page, el("Refresh icon in gallery toolbar")));
+      await session.step(209, "Then gallery counter should have text \"0\"", () => shouldHaveText(page, el("gallery counter"), "0"));
+      await session.step(210, "And BDDSmokeRenamed{time} gallery card should be absent", () => shouldBe(page, el(session.text("BDDSmokeRenamed{time} gallery card")), "absent"));
+      await session.step(211, "And no errors should have been logged", () => noErrors(page));
+      await session.step(212, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     run.finish();
   });

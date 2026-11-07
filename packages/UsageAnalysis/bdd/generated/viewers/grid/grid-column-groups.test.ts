@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/grid/grid-column-groups.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.grid]
+sub_features_covered: [viewers.grid, public#3907]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -21,16 +21,16 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clearField, clickOn, isExpanded, pressKey, shouldBe, shouldContainText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {check, clearField, clickOn, isExpanded, pressKey, shouldBe, shouldContainText, typeInto, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnTag} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {columnsSelected, noColumnsSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {columnsSelected, noColumnsSelected, openFilterPanel} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {closeAllViews, contextPanelOpen, openDataset, openProject, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {areaColor, areaNotColor, clickArea, clickAreaHolding, hasArea, hasNoArea, loadLayout, noErrors, saveLayoutToServer, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {areaColor, areaNotColor, clickArea, clickAreaHolding, hasArea, hasNoArea, loadLayout, noErrors, pickFromAreaContextMenu, saveLayoutToServer, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Grid column groups", () => {
   const session = feature(test, "features/viewers/grid/grid-column-groups.feature", import.meta.url);
-  test("Grid column groups", {tag: ["@journey", "@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
+  test("Grid column groups", {tag: ["@journey", "@viewers", "@realizes:viewers.grid", "@realizes:public#3907"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 8, page);
     await session.step(55, "Given user is logged in", () => loggedIn(page));
@@ -160,20 +160,31 @@ test.describe("Grid column groups", () => {
       await session.step(180, "When user presses Escape", () => pressKey(page, "Escape"));
       await session.step(181, "Then no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Grouping with an empty name ungroups the columns", async () => {
-      await session.step(184, "When user clicks on the \"group Measures\" area of grid", () => clickArea(page, "group Measures", el("grid")));
-      await session.step(185, "Then columns \"AGE, SEX\" should be selected", () => columnsSelected(page, "AGE, SEX"));
-      await session.step(186, "Given the context panel is open", () => contextPanelOpen(page));
-      await session.step(187, "Then context panel should contain text \"AGE\"", () => shouldContainText(page, el("context panel"), "AGE"));
-      await session.step(188, "Given Actions accordion header in context panel is expanded", () => isExpanded(page, el("Actions accordion header in context panel")));
-      await session.step(189, "When user clicks on \"Group columns...\" text in context panel", () => clickOn(page, el("\"Group columns...\" text in context panel")));
-      await session.step(190, "And user clears Group input in dialog", () => clearField(page, el("Group input in dialog")));
-      await session.step(191, "And user clicks on OK button in dialog", () => clickOn(page, el("OK button in dialog")));
-      await session.step(192, "Then dialog should be hidden", () => shouldBe(page, el("dialog"), "hidden"));
-      await session.step(193, "And grid should not have a \"group Measures\" area", () => hasNoArea(page, el("grid"), "group Measures"));
-      await session.step(194, "And grid should have a \"group Body\" area", () => hasArea(page, el("grid"), "group Body"));
-      await session.step(195, "When user presses Escape", () => pressKey(page, "Escape"));
-      await session.step(196, "Then no errors should have been logged", () => noErrors(page));
+    await run.scenario("Grouping with an empty name ungroups the columns, and a member hidden before its group is hidden and shown stays hidden", async () => {
+      await session.step(185, "When user clicks on the \"group Measures\" area of grid", () => clickArea(page, "group Measures", el("grid")));
+      await session.step(186, "Then columns \"AGE, SEX\" should be selected", () => columnsSelected(page, "AGE, SEX"));
+      await session.step(187, "Given the context panel is open", () => contextPanelOpen(page));
+      await session.step(188, "Then context panel should contain text \"AGE\"", () => shouldContainText(page, el("context panel"), "AGE"));
+      await session.step(189, "Given Actions accordion header in context panel is expanded", () => isExpanded(page, el("Actions accordion header in context panel")));
+      await session.step(190, "When user clicks on \"Group columns...\" text in context panel", () => clickOn(page, el("\"Group columns...\" text in context panel")));
+      await session.step(191, "And user clears Group input in dialog", () => clearField(page, el("Group input in dialog")));
+      await session.step(192, "And user clicks on OK button in dialog", () => clickOn(page, el("OK button in dialog")));
+      await session.step(193, "Then dialog should be hidden", () => shouldBe(page, el("dialog"), "hidden"));
+      await session.step(194, "And grid should not have a \"group Measures\" area", () => hasNoArea(page, el("grid"), "group Measures"));
+      await session.step(195, "And grid should have a \"group Body\" area", () => hasArea(page, el("grid"), "group Body"));
+      await session.step(196, "When user presses Escape", () => pressKey(page, "Escape"));
+      await session.step(197, "Then no errors should have been logged", () => noErrors(page));
+      await session.step(198, "When user picks \"Hide\" from the context menu of the \"header WEIGHT\" area of grid", () => pickFromAreaContextMenu(page, "Hide", "header WEIGHT", el("grid")));
+      await session.step(199, "Then grid should not have a \"header WEIGHT\" area", () => hasNoArea(page, el("grid"), "header WEIGHT"));
+      await session.step(200, "And grid should have a \"header HEIGHT\" area", () => hasArea(page, el("grid"), "header HEIGHT"));
+      await session.step(201, "When user opens the filter panel", () => openFilterPanel(page));
+      await session.step(202, "And user unchecks \"Body\" tree node in filter panel", () => uncheck(page, el("\"Body\" tree node in filter panel")));
+      await session.step(203, "Then grid should not have a \"header HEIGHT\" area", () => hasNoArea(page, el("grid"), "header HEIGHT"));
+      await session.step(204, "And grid should not have a \"group Body\" area", () => hasNoArea(page, el("grid"), "group Body"));
+      await session.step(205, "When user checks \"Body\" tree node in filter panel", () => check(page, el("\"Body\" tree node in filter panel")));
+      await session.step(206, "Then grid should have a \"header HEIGHT\" area", () => hasArea(page, el("grid"), "header HEIGHT"));
+      await session.step(207, "And grid should not have a \"header WEIGHT\" area", () => hasNoArea(page, el("grid"), "header WEIGHT"));
+      await session.step(208, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

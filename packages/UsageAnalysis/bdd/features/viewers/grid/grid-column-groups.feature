@@ -180,7 +180,8 @@ Feature: Grid column groups
     When user presses Escape
     Then no errors should have been logged
 
-  Scenario: Grouping with an empty name ungroups the columns
+  @realizes:public#3907
+  Scenario: Grouping with an empty name ungroups the columns, and a member hidden before its group is hidden and shown stays hidden
     When user clicks on the "group Measures" area of grid
     Then columns "AGE, SEX" should be selected
     Given the context panel is open
@@ -194,3 +195,14 @@ Feature: Grid column groups
     And grid should have a "group Body" area
     When user presses Escape
     Then no errors should have been logged
+    When user picks "Hide" from the context menu of the "header WEIGHT" area of grid
+    Then grid should not have a "header WEIGHT" area
+    And grid should have a "header HEIGHT" area
+    When user opens the filter panel
+    And user unchecks "Body" tree node in filter panel
+    Then grid should not have a "header HEIGHT" area
+    And grid should not have a "group Body" area
+    When user checks "Body" tree node in filter panel
+    Then grid should have a "header HEIGHT" area
+    And grid should not have a "header WEIGHT" area
+    And no errors should have been logged

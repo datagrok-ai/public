@@ -64,7 +64,10 @@ Feature: Crux in Chem's hosts
 
   # HOST-053: Sketch opens a sketcher in a dialog of its own, with no OK and no Cancel: only its close icon. A table of
   # its own name: the 2D Structure pane is kept from an earlier table of the same name, column and row
-  Scenario: Sketch in the menu of a molecule's drawing shows it in Crux, and an edit there changes nothing when it closes
+  # public#4305: the context panel's Actions > Sketch opened Crux empty on every open after the first (the value it
+  # passes as SMILES is a molblock once a sketcher has synced the current object)
+  @realizes:public#4305
+  Scenario: Sketch in the menu of a molecule's drawing shows it in Crux, and an edit there changes nothing when it closes; Actions > Sketch shows it on every open
     Given user opens a table "sketch-menu" with:
       | molecule           |
       | CC(=O)Nc1ccc(O)cc1 |
@@ -84,6 +87,20 @@ Feature: Crux in Chem's hosts
     When user closes sketcher dialog
     Then sketcher dialog should be absent
     And the value of "molecule" column in row 1 should be, byte for byte, as remembered
+    Given Actions accordion header in context panel is expanded
+    When user clicks on "Sketch" text in context panel
+    Then the "smiles" reading of crux sketcher widget should be the molecule in row 1 of "molecule" column
+    When user clicks on CANCEL button in sketcher dialog
+    Then sketcher dialog should be absent
+    When user clicks on "Sketch" text in context panel
+    Then the "smiles" reading of crux sketcher widget should be the molecule in row 1 of "molecule" column
+    When user clicks on CANCEL button in sketcher dialog
+    Then sketcher dialog should be absent
+    When user clicks on "Sketch" text in context panel
+    Then the "smiles" reading of crux sketcher widget should be the molecule in row 1 of "molecule" column
+    When user clicks on CANCEL button in sketcher dialog
+    Then sketcher dialog should be absent
+    And no errors should have been logged
 
   # HOST-054: spgi-100 has 17 molecules with a pyridine; the card's sketcher opens Crux in query mode
   Scenario: A pyridine drawn in Crux on a filter card keeps the 17 rows that contain it

@@ -43,11 +43,14 @@ Feature: Opening what the address names
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  @realizes:public#3873
   Scenario: A query address runs the query with the parameter it carries
     # the query runs on db.datagrok.ai, outside the stand
     Given the stand has a reachable "PostgresTest" connection
     When user opens the address "/func/Dbtests.PostgresByStringChoices?shipCountry=%22Germany%22"
     Then the "PostgresByStringChoices" view should be current
+    And the current view should be a TableView view
+    And the page address should not contain "preview"
     And the table should have 122 rows
     And every value of "shipcountry" column should match "^Germany$"
     And no errors should have been logged
