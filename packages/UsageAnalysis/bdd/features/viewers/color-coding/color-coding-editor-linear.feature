@@ -15,6 +15,8 @@ Feature: The color coding editor of a numeric column: type, Apply to, Min and Ma
   with the scheme or the type the column holds. Each scenario opens the editor itself and puts back
   what it changed.
 
+  Edge cases: a Min typed above Max inverts the scheme, and the editor keeps the two as typed.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -168,4 +170,28 @@ Feature: The color coding editor of a numeric column: type, Apply to, Min and Ma
     Then "Color-coding: WEIGHT" dialog should be hidden
     When user picks "Color Coding > Off" from the context menu of the "header WEIGHT" area of grid
     Then "WEIGHT" column should have no color coding
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: A Min typed above Max inverts the scheme, and the editor keeps the two as typed
+    When user picks "Color Coding > Linear" from the context menu of the "header AGE" area of grid
+    And user picks "Color Coding > Edit..." from the context menu of the "header AGE" area of grid
+    Then "Color-coding: AGE" dialog should be visible
+    When user enters "50" into Min input in "Color-coding: AGE" dialog
+    And user enters "60" into Max input in "Color-coding: AGE" dialog
+    Then the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should differ
+    When user remembers the "color of cell 3 of AGE" reading of grid
+    And user clears Min input in "Color-coding: AGE" dialog
+    And user clears Max input in "Color-coding: AGE" dialog
+    And user enters "50" into Max input in "Color-coding: AGE" dialog
+    And user enters "60" into Min input in "Color-coding: AGE" dialog
+    Then the "color of cell 3 of AGE" reading of grid should not be as remembered
+    And Min input in "Color-coding: AGE" dialog should have value "60"
+    And Max input in "Color-coding: AGE" dialog should have value "50"
+    When user clears Min input in "Color-coding: AGE" dialog
+    And user clears Max input in "Color-coding: AGE" dialog
+    And user clicks on CLOSE button in "Color-coding: AGE" dialog
+    Then "Color-coding: AGE" dialog should be hidden
+    When user picks "Color Coding > Off" from the context menu of the "header AGE" area of grid
+    Then "AGE" column should have no color coding
     And no errors should have been logged

@@ -57,3 +57,42 @@ selectors (public#2131), and the categorical gate.
   with a repaint, not a pixel scan of the band.
 - **What a layout stores for Show Selected Rows / Auto Layout**: a layout round trip is ApiTests',
   `tree-map-color-size-selection.feature` already claims the one the md asks for.
+
+## Edge cases
+
+The edge cases of the tree map (26 Oct 2026): data shapes, columns removed or renamed under the
+open viewer, layouts naming a missing column, property bounds, closing the viewer. None of them has
+a user gesture, so no feature holds them; the checks are requested from ApiTests below. Nothing here
+asks for a library, binding or code change; it lists what could not be claimed and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+None.
+
+#### 2. Decided
+
+1. **After the Color or Size column is removed** the encoding is dropped, with no other column
+   picked (core#1135, fixed). This check, with no rows, a renamed split column and a layout naming
+   a missing split column, is requested from ApiTests in `../MISSING.md`.
+
+#### 3. Questions for owners
+
+None. Decided (2026-10-30): outer margins larger than half the viewer or negative are taken and
+break nothing (no viewer bounds its margins); a category whose sizes sum to a negative number
+cannot be picked.
+
+#### 4. API or Dart tests to write
+
+1. Dart regTest: a Size or Color column empty within one leaf (NaN score) leaves the other leaves
+   laid out and colored.
+2. Dart benchmark: split by a 1000-category column.
+3. ApiTests: on a map split by RACE, SEX, removing SEX leaves the split on RACE with 4 leaves,
+   896 rows under Caucasian; nothing logged.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
+
+### Edge cases: Won't do
+
+Nothing.

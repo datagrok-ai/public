@@ -74,3 +74,44 @@ Nothing planned.
   (`libraries/bdd/CLAUDE.md`). edit-tooltip and the others use demog-1000 for this reason.
 - **The `.tooltip` and `.tooltip-visibility` tags the old specs read** — echoes of what the gesture wrote;
   the features claim the tooltip a hover shows instead.
+
+## Edge cases (now in `edit-tooltip.feature` and `line-chart-aggregated-tooltip.feature`)
+
+Written for the tooltip edge cases (26 Oct 2026; their checks are now `@edge-cases` scenarios of their own, after the master scenarios of `edit-tooltip.feature` and `line-chart-aggregated-tooltip.feature`), the guard suite of edge cases: data shapes,
+columns removed or renamed under the open viewer, layouts naming a missing column, property bounds,
+closing the viewer. Nothing here asks for a library, binding or code change made by that feature; it
+lists what the feature could not claim and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+None.
+
+#### 2. Decided
+
+1. **A tooltip column renamed** is shown under its new name (every setting that named a column
+   follows the new name). The table tag keeps column names (`tooltip.dart:574-577`) and
+   nothing renamed them, so the column dropped out: core#1215, fixed, claimed in
+   `edit-tooltip.feature`.
+2. **Ten columns ticked, seven shown**: the cut stays, and the tooltip says that part of the
+   columns was dropped (the silent-cut rule). Today an explicit selection is cut to `colAmount` = 7
+   (`tooltip.dart:590`) with no sign of it. Steps requested: the note has no wording yet, and no step
+   reads the lines of a tooltip; then: tick ten columns, hover a row, claim seven value lines and the
+   note.
+
+3. **Edit Aggregated Tooltip with an added row** (Add aggregation, OK): the row takes a column by
+   default and is saved as `avg(AGE)`: right as it is (2026-10-30), claimed in
+   `line-chart-aggregated-tooltip.feature` on the spgi-100 line chart (saved as `avg(CAST Idea ID)`).
+
+#### 3. Questions for owners
+
+None.
+
+#### 3. API or Dart tests to write
+
+None.
+
+### Edge cases: Won't do
+
+Nothing.

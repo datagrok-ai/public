@@ -79,6 +79,30 @@ slider handles, a Shift-drag selection and Escape, the Table property).
   sorts that grid only — the heat map keeps the table's order (`row order` stays 1..10), since each
   grid holds its own order. That is how every grid behaves, not a heat map claim.
 
+## Edge cases
+
+The edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today; the claimed ones are `@edge-cases` scenarios of their own, after the master scenarios of `heat-map-navigation.feature`, and the core#1202 known failure is in `heat-map-known-failures.feature` while the ticket is open (it goes back into `heat-map.feature` once fixed). No library, binding or code change was made for them.
+
+### Still open
+
+**Steps requested**
+
+1. Alt-drag zoom on a sorted map (TestTrack `Heatmap/heatmap-ui.md`: "view zooms into that area"): the zoom passes table row indexes to the grid-row scroll (`grid_core.dart`), so on a map sorted by AGE the window may land elsewhere. Needs a reading of the first and last grid rows in the vertical window (`first row shown`, `last row shown`) to claim that the zoomed window starts at the sorted top rows.
+2. Sort > Custom on a categorical column with the empty value moved to the top, then Ascending / Descending (heatmap-ui.md, "Custom sorting on categorical column"): needs steps for the custom sort dialog's order list (drag an item to the top).
+
+**Decided**
+
+1. An Alt-click without moving zooms the map to one row and an Alt-drag to the rows it spans (no row is selected): claimed green in `heat-map-navigation.feature` on `y scroll span`.
+2. Max Heatmap Columns counts only the visible columns, so a column hidden in the Columns dialog stays hidden when the cap is raised (core#1202, fixed): claimed in `heat-map.feature`; the hidden column also no longer counts toward the cap, so 5 columns stay on screen.
+
+**API or Dart tests to write**
+
+1. AGE removed from demog-1000 while the map shows it: 10 columns shown, no AGE band, WEIGHT kept, no error reported or logged.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
+
+### Won't do
+
 ## Closed issues the regression round of 26 Oct 2026 could not claim
 
 - **The grid status does not publish the viewer's error** (measured 26 Oct 2026 on localhost, master).

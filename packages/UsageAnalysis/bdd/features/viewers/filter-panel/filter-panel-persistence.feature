@@ -7,6 +7,10 @@ Feature: Filter panel persistence
   indicator, and Select all from it takes the categories back (public#377). One journey on demog-1000, where RACE is Caucasian in 896 rows and
   633 of those are aged 30 to 60.
 
+  Edge cases: a layout whose hierarchical card names a level column the table no longer has should
+  bring the card back without that level (core#1223: today the layout brings no card back; a known
+  failure, in filter-panel-known-failures.feature while the ticket is open).
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset

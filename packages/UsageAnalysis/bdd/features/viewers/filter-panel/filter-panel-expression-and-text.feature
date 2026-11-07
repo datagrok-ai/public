@@ -22,6 +22,14 @@ Feature: Expression and text filter cards
   free-text rule is a different predicate from the form's rather than an equivalent one, since
   Enter commits it as a further rule and an equal one could not move the count.
 
+  Edge cases: on demog-1000 again, after the text cards. A free-text rule that does not parse is
+  refused on Enter: no rule is added and the rows stay (`text_filter.dart`); it is typed before a
+  valid rule, so the rules the card lists after the valid one say that the refused one added none
+  (HEIGHT < 150 alone keeps 16 rows). The is null and is not null operations of a numeric column
+  keep the blank and the filled rows (HEIGHT: 128 and 872; help filters.md, "numerical columns").
+  Removing the column a rule filters by should release its rows: a known failure (core#1174) in
+  `expression-filter-all-columns.feature`, with the other rules a removed column leaves behind.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -179,4 +187,39 @@ Feature: Expression and text filter cards
     When user remembers the "rows shown" reading of filter panel
     And user drags the slider of Fuzzyness input in "Aroma" filter card to 1
     Then the "rows shown" reading of filter panel should be higher than remembered
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: A free-text rule that does not parse is refused on Enter, and the rows stay
+    When user switches to the "demog-1000" table view
+    Then all rows should pass the filter
+    When user picks "Add Filter | Expression" from the filter panel menu
+    And user hovers over "Expression" filter card
+    And user clicks on "Switch to free-text mode" icon in "Expression" filter card
+    Then Column input in "Expression" filter card should be hidden
+    When user types "${HEIGHT} <" into the search of the "Expression" filter card
+    And user presses Enter
+    And user types "${HEIGHT} < 150" into the search of the "Expression" filter card
+    And user presses Enter
+    Then the "categories of Expression" reading of filter panel should be "${HEIGHT} < 150"
+    And 16 rows should pass the filter
+    When user picks "Remove All" from the filter panel menu
+    Then all rows should pass the filter
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: The is null and is not null operations of a numeric column keep the blank and the filled rows
+    When user picks "Add Filter | Expression" from the filter panel menu
+    And user selects "HEIGHT" in Column input in "Expression" filter card
+    And user selects "is not null" in Operation input in "Expression" filter card
+    And user clicks on "Add filter" button in "Expression" filter card
+    Then 872 rows should pass the filter
+    When user picks "Remove Query" from the context menu of the "category ${HEIGHT} is not null of Expression" area of filter panel
+    Then all rows should pass the filter
+    When user selects "HEIGHT" in Column input in "Expression" filter card
+    And user selects "is null" in Operation input in "Expression" filter card
+    And user clicks on "Add filter" button in "Expression" filter card
+    Then 128 rows should pass the filter
+    When user picks "Remove All" from the filter panel menu
+    Then all rows should pass the filter
     And no errors should have been logged

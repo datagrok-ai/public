@@ -31,28 +31,28 @@ test.describe("Deleting a space", () => {
   test("Deleting a space", {tag: ["@journey", "@serial", "@spaces", "@realizes:views.space"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 3, page);
-    await session.step(16, "Given user is logged in", () => loggedIn(page));
-    await session.step(17, "And the browse panel is open", () => browsePanelOpen(page));
-    await session.step(18, "And Spaces tree node inside browse tree is expanded", () => isExpanded(page, el("Spaces tree node inside browse tree")));
-    await session.step(19, "And a space named \"BDD-Del\" is on the server", () => spaceOnServer(page, "BDD-Del"));
-    await session.step(20, "And Spaces tree node inside browse tree is expanded", () => isExpanded(page, el("Spaces tree node inside browse tree")));
+    await session.step(20, "Given user is logged in", () => loggedIn(page));
+    await session.step(21, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(22, "And Spaces tree node inside browse tree is expanded", () => isExpanded(page, el("Spaces tree node inside browse tree")));
+    await session.step(23, "And a space named \"BDD-Del\" is on the server", () => spaceOnServer(page, "BDD-Del"));
+    await session.step(24, "And Spaces tree node inside browse tree is expanded", () => isExpanded(page, el("Spaces tree node inside browse tree")));
     await run.scenario("Deleting asks first", async () => {
-      await session.step(23, "When user picks \"Delete Space\" from the context menu of Spaces---BDD-Del tree node inside browse tree", () => pickFromContextMenu(page, "Delete Space", el("Spaces---BDD-Del tree node inside browse tree")));
-      await session.step(24, "Then \"Are you sure?\" dialog should be visible", () => shouldBe(page, el("\"Are you sure?\" dialog"), "visible"));
-      await session.step(25, "And \"Are you sure?\" dialog should contain text \"BDD-Del\"", () => shouldContainText(page, el("\"Are you sure?\" dialog"), "BDD-Del"));
+      await session.step(27, "When user picks \"Delete Space\" from the context menu of Spaces---BDD-Del tree node inside browse tree", () => pickFromContextMenu(page, "Delete Space", el("Spaces---BDD-Del tree node inside browse tree")));
+      await session.step(28, "Then \"Are you sure?\" dialog should be visible", () => shouldBe(page, el("\"Are you sure?\" dialog"), "visible"));
+      await session.step(29, "And \"Are you sure?\" dialog should contain text \"BDD-Del\"", () => shouldContainText(page, el("\"Are you sure?\" dialog"), "BDD-Del"));
     });
     await run.scenario("Cancelling the confirmation keeps the space", async () => {
-      await session.step(28, "When user clicks on CANCEL button in \"Are you sure?\" dialog", () => clickOn(page, el("CANCEL button in \"Are you sure?\" dialog")));
-      await session.step(29, "Then the \"Are you sure?\" dialog should close", () => dialogCloses(page, "Are you sure?"));
-      await session.step(30, "And 1 space named \"BDD-Del\" should be on the server", () => spacesOnServer(page, 1, "BDD-Del"));
-      await session.step(31, "And Spaces---BDD-Del tree node inside browse tree should be visible", () => shouldBe(page, el("Spaces---BDD-Del tree node inside browse tree"), "visible"));
+      await session.step(32, "When user clicks on CANCEL button in \"Are you sure?\" dialog", () => clickOn(page, el("CANCEL button in \"Are you sure?\" dialog")));
+      await session.step(33, "Then the \"Are you sure?\" dialog should close", () => dialogCloses(page, "Are you sure?"));
+      await session.step(34, "And 1 space named \"BDD-Del\" should be on the server", () => spacesOnServer(page, 1, "BDD-Del"));
+      await session.step(35, "And Spaces---BDD-Del tree node inside browse tree should be visible", () => shouldBe(page, el("Spaces---BDD-Del tree node inside browse tree"), "visible"));
     });
     await run.scenario("Confirming removes it from the server and the tree", async () => {
-      await session.step(34, "When user picks \"Delete Space\" from the context menu of Spaces---BDD-Del tree node inside browse tree", () => pickFromContextMenu(page, "Delete Space", el("Spaces---BDD-Del tree node inside browse tree")));
-      await session.step(35, "And user clicks on DELETE button in \"Are you sure?\" dialog", () => clickOn(page, el("DELETE button in \"Are you sure?\" dialog")));
-      await session.step(36, "Then the \"Are you sure?\" dialog should close", () => dialogCloses(page, "Are you sure?"));
-      await session.step(37, "And 0 spaces named \"BDD-Del\" should be on the server", () => spacesOnServer(page, 0, "BDD-Del"));
-      await session.step(38, "And Spaces---BDD-Del tree node inside browse tree should be absent", () => shouldBe(page, el("Spaces---BDD-Del tree node inside browse tree"), "absent"));
+      await session.step(38, "When user picks \"Delete Space\" from the context menu of Spaces---BDD-Del tree node inside browse tree", () => pickFromContextMenu(page, "Delete Space", el("Spaces---BDD-Del tree node inside browse tree")));
+      await session.step(39, "And user clicks on DELETE button in \"Are you sure?\" dialog", () => clickOn(page, el("DELETE button in \"Are you sure?\" dialog")));
+      await session.step(40, "Then the \"Are you sure?\" dialog should close", () => dialogCloses(page, "Are you sure?"));
+      await session.step(41, "And 0 spaces named \"BDD-Del\" should be on the server", () => spacesOnServer(page, 0, "BDD-Del"));
+      await session.step(42, "And Spaces---BDD-Del tree node inside browse tree should be absent", () => shouldBe(page, el("Spaces---BDD-Del tree node inside browse tree"), "absent"));
     });
     run.finish();
   });

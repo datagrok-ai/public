@@ -11,6 +11,9 @@ Feature: Trellis plot categories, labels and scrolling
   the category scroll slider and the wheel over the grid — the two gestures the old spec left as
   manual gaps; the handle's extent, asserted here, is the state they would leave.
 
+  Edge cases: a click on a category label under a filter selects only the rows that pass it, as a
+  cell click does; it selected the filtered-out rows of the category too before core#1057.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -157,3 +160,15 @@ Feature: Trellis plot categories, labels and scrolling
       | X Column Names  | SEX   |
       | Y Column Names  | RACE  |
       | Pack Categories | false |
+
+  @edge-cases @realizes:core#1057
+  Scenario: A category label clicked under a filter selects only the rows that pass it (core#1057)
+    Given user clears the row selection
+    When user filters rows where "AGE" is between 20 and 40
+    And user clicks on the "x label F" area of trellis plot viewer
+    Then 180 rows should be selected
+    And every selected row should pass the filter
+    When user clears the row selection
+    And user resets the filter
+    Then all rows should pass the filter
+    And no errors should have been logged

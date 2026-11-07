@@ -51,6 +51,10 @@ Feature: Grid column groups
   checked by the column names it lists, not by the current object: a list of columns has no name
   for `the context panel should show`.
 
+  Edge cases: a group follows a renamed column: the renamed member keeps the group's name and the
+  band stays. A column group named with spaces only should not be made (core#1195, a known failure,
+  in grid-known-failures.feature while the ticket is open).
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -194,3 +198,15 @@ Feature: Grid column groups
     And grid should have a "group Body" area
     When user presses Escape
     Then no errors should have been logged
+
+  @edge-cases
+  Scenario: A group follows a renamed column
+    Then "HEIGHT" column should have tag "group" equal to "Body"
+    When user picks "Column Properties..." from the context menu of the "header HEIGHT" area of grid
+    And user enters "TALL" into "New name:" input in "HEIGHT" dialog
+    And user clicks on OK button in "HEIGHT" dialog
+    Then "TALL" column should have tag "group" equal to "Body"
+    And grid should have a "group Body" area
+    When user renames "TALL" column to "HEIGHT"
+    Then "HEIGHT" column should have tag "group" equal to "Body"
+    And no errors should have been logged

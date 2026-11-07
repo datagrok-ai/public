@@ -12,6 +12,10 @@ Feature: Deleting a space
   landed on the Spaces root. The mechanism is not pinned down (no server push of spaces reaches the tree); the two
   do not overlap any more.
 
+  Edge cases: deleting a space is to remove the space and the links it holds, not a project that was
+  only linked into it (core#976). Today the linked project is deleted with the space, a known failure
+  in `spaces-known-failures.feature`.
+
   Background:
     Given user is logged in
     And the browse panel is open

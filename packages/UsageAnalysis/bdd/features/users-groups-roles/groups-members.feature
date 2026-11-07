@@ -13,6 +13,18 @@ Feature: A group's members
   so the user's login is found nowhere in the gallery. That the personal group is made is tested in
   datlas users_groups/users_test.dart 'Save user'.
 
+  Edge cases: CANCEL in MANAGE leaves the members as they were. The account that creates a group
+  becomes its only admin (`groups_repository.dart` save), and "if user is the only admin in group,
+  they can't leave the group or revoke their admin privileges" (help
+  govern/access-control/users-and-groups.md): unticking its Admin box or removing itself keeps the
+  MANAGE dialog open with the server's message in an error balloon, and nothing changes. These run on
+  a group made through the API before each of them (the Background of their Rule), so the running
+  account is its only admin and bddmanaged is not a member. The running account is named by its login
+  in the membership editor, which lists a user by name: on a stand where the two differ those
+  scenarios cannot find its row. A group added as a member of its own member is refused as a circular
+  reference: two groups of the scenario's own, made through the API, one nested into the other through
+  MANAGE first. Every group these scenarios make is named with the run's time and deleted at the end.
+
   Background:
     Given user is logged in
     And a user "bddmanaged" is on the server
@@ -87,3 +99,83 @@ Feature: A group's members
     When user clears gallery search
     Then no errors should have been logged
     And no error or warning balloon should have been shown
+
+  @edge-cases
+  Scenario: A group added as a member of its own member is refused as a circular reference
+    Given a group named "BDD-GM-Outer-{time}" is on the server
+    And a group named "BDD-GM-Inner-{time}" is on the server
+    When user clears gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user remembers the gallery counter
+    And user types "BDD-GM-Outer-{time}" into gallery search
+    Then the gallery counter should be lower than remembered
+    When user clicks on "BDD-GM-Outer-{time}" link in gallery
+    Then the context panel should show "BDD-GM-Outer-{time}"
+    When user clicks on MANAGE button in "Members" section in context panel
+    Then "BDD-GM-Outer-{time} members" dialog should be visible
+    When user types "BDD-GM-Inner-{time}" into membership search
+    And user clicks on add button of "BDD-GM-Inner-{time}" membership candidate
+    Then "BDD-GM-Inner-{time}" membership row should be visible
+    When user clicks on SAVE button in "BDD-GM-Outer-{time} members" dialog
+    Then the "BDD-GM-Outer-{time} members" dialog should close
+    And "BDD-GM-Inner-{time}" should be a member of "BDD-GM-Outer-{time}" on the server
+    When user clears gallery search
+    And user types "BDD-GM-Inner-{time}" into gallery search
+    And user clicks on "BDD-GM-Inner-{time}" link in gallery
+    Then the context panel should show "BDD-GM-Inner-{time}"
+    When user clicks on MANAGE button in "Members" section in context panel
+    Then "BDD-GM-Inner-{time} members" dialog should be visible
+    When user types "BDD-GM-Outer-{time}" into membership search
+    And user clicks on add button of "BDD-GM-Outer-{time}" membership candidate
+    Then "BDD-GM-Outer-{time}" membership row should be visible
+    When user clicks on SAVE button in "BDD-GM-Inner-{time} members" dialog
+    Then an error balloon containing "Circular reference detected" should have been shown
+    And "BDD-GM-Outer-{time}" should not be a member of "BDD-GM-Inner-{time}" on the server
+    And "BDD-GM-Inner-{time}" should be a member of "BDD-GM-Outer-{time}" on the server
+    When user clicks on CANCEL button in "BDD-GM-Inner-{time} members" dialog
+    Then the "BDD-GM-Inner-{time} members" dialog should close
+    When user clears gallery search
+
+  Rule: MANAGE on a group of the scenario's own, whose only admin is the running account
+    Background:
+      Given a group named "BDD-GM-Edge-{time}" is on the server
+      When user clears gallery search
+      And user clicks on "Refresh" icon inside gallery toolbar
+      And user remembers the gallery counter
+      And user types "BDD-GM-Edge-{time}" into gallery search
+      Then the gallery counter should be lower than remembered
+      When user clicks on "BDD-GM-Edge-{time}" link in gallery
+      Then the context panel should show "BDD-GM-Edge-{time}"
+
+    @edge-cases
+    Scenario: CANCEL in MANAGE leaves the members as they were
+      When user clicks on MANAGE button in "Members" section in context panel
+      Then "BDD-GM-Edge-{time} members" dialog should be visible
+      When user types "bddmanaged" into membership search
+      And user clicks on add button of "bddmanaged" membership candidate
+      Then "bddmanaged" membership row should be visible
+      When user clicks on CANCEL button in "BDD-GM-Edge-{time} members" dialog
+      Then the "BDD-GM-Edge-{time} members" dialog should close
+      And "bddmanaged" should not be a member of "BDD-GM-Edge-{time}" on the server
+      When user clears gallery search
+      Then no errors should have been logged
+      And no error or warning balloon should have been shown
+
+    @edge-cases
+    Scenario Outline: The only admin <change> is refused and stays the admin
+      Then "{login}" should be an admin member of "BDD-GM-Edge-{time}" on the server
+      When user clicks on MANAGE button in "Members" section in context panel
+      Then "BDD-GM-Edge-{time} members" dialog should be visible
+      When user <gesture> of "{login}" membership row
+      And user clicks on SAVE button in "BDD-GM-Edge-{time} members" dialog
+      Then an error balloon containing "should have at least one admin user" should have been shown
+      And "BDD-GM-Edge-{time} members" dialog should be visible
+      And "{login}" should be an admin member of "BDD-GM-Edge-{time}" on the server
+      When user clicks on CANCEL button in "BDD-GM-Edge-{time} members" dialog
+      Then the "BDD-GM-Edge-{time} members" dialog should close
+      When user clears gallery search
+
+      Examples:
+        | change                        | gesture                      |
+        | unticking their Admin box     | unchecks checkbox            |
+        | removing themselves           | clicks on remove button      |

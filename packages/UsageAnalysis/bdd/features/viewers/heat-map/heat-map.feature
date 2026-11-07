@@ -11,6 +11,10 @@ Feature: Heat map layout, column labels, column cap and scrollbars
   because only the second says whether the header actually rotated; the spec this replaces set
   the property three times, read it back three times and never looked at the header.
 
+  Edge cases: Max Heatmap Columns counts only the visible columns, so a column hidden in the Columns
+  dialog under a cap of 5 leaves 5 columns on screen and stays hidden when the cap is raised to 6
+  (core#1202), after the scenarios above; it shows AGE again and puts the cap back to 100.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -119,3 +123,28 @@ Feature: Heat map layout, column labels, column cap and scrollbars
     When user sets "maxHeatmapColumns" property of heat map viewer to "3"
     Then the "max heatmap columns" reading of heat map viewer should be 3
     And the "columns shown" reading of heat map viewer should be 3
+
+  @edge-cases @realizes:core#1202
+  Scenario: A column hidden under Max Heatmap Columns stays hidden when the cap is raised (core#1202)
+    When user clicks on settings icon of heat map viewer
+    And user sets "maxHeatmapColumns" property of heat map viewer to "5"
+    Then the "columns shown" reading of heat map viewer should be 5
+    And heat map viewer should have a "column AGE" area
+    Given "Columns" category in context panel is expanded
+    When user clicks on first button in "Columns" property in context panel
+    Then Order or Hide Columns dialog should be visible
+    When user toggles the "AGE" column in the column list of Order or Hide Columns dialog
+    And user clicks on CLOSE button in Order or Hide Columns dialog
+    Then the "columns shown" reading of heat map viewer should be 5
+    And heat map viewer should not have a "column AGE" area
+    When user enters "6" into "Max Heatmap Columns" property in context panel
+    Then the "columns shown" reading of heat map viewer should be 6
+    And heat map viewer should not have a "column AGE" area
+    When user clicks on first button in "Columns" property in context panel
+    Then Order or Hide Columns dialog should be visible
+    When user toggles the "AGE" column in the column list of Order or Hide Columns dialog
+    And user clicks on CLOSE button in Order or Hide Columns dialog
+    And user enters "100" into "Max Heatmap Columns" property in context panel
+    Then the "columns shown" reading of heat map viewer should be 11
+    And heat map viewer should have a "column AGE" area
+    And no errors should have been logged

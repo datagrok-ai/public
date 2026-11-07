@@ -19,6 +19,11 @@ Feature: Grid cell appearance
   fail - and the format shown in the HEIGHT column's panel - the tag is AGE's, and AGE's own Details
   show it.
 
+  Edge cases: Row Height typed in the context panel as 0 or 501 is brought to the nearest bound of
+  the 1..500 it declares (core#1200, fixed: the property brings a value to the nearest declared bound); the last scenario outline. A malformed number format (0.0.0)
+  should mark the format field invalid and should not be taken, the old format staying (core#1198):
+  a known failure, in grid-known-failures.feature while the ticket is open.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -157,3 +162,18 @@ Feature: Grid cell appearance
     When user removes the coloring of "SEVERITY" column
     Then the "color of cell 1 of SEVERITY" reading of grid should be "#ffa500"
     And no errors should have been logged
+
+  @edge-cases @realizes:core#1200
+  Scenario Outline: Row Height typed in the context panel as <typed> is clamped to <clamped> (core#1200)
+    Given user sets "Row Height" property of grid to "28"
+    When user hovers over the "header AGE" area of grid
+    And user clicks on "Edit properties (F4)" icon in grid
+    Then context panel should be visible
+    Given "Rows" category in context panel is expanded
+    When user enters "<typed>" into "Row Height" property in context panel
+    Then "Row Height" property of grid should be "<clamped>"
+
+    Examples: The value is brought to the nearest bound of 1..500
+      | typed | clamped |
+      | 0     | 1       |
+      | 501   | 500     |

@@ -12,6 +12,9 @@ Feature: The line chart's aggregated tooltip with a split
 
   The case's title also names an in-viewer filter, which none of its steps sets; not translated.
 
+  Edge cases: an aggregation row added with Add aggregation and confirmed as it is takes the
+  table's first numeric column, averaged: avg(CAST Idea ID) on spgi-100.
+
   Background:
     Given user is logged in
     And the "Chem" package is installed
@@ -49,3 +52,17 @@ Feature: The line chart's aggregated tooltip with a split
     When user moves the pointer away from line chart viewer
     And no errors should have been logged
     And no error or warning balloon should have been shown
+
+  @edge-cases
+  Scenario: An aggregation row added and confirmed as it is takes the first numeric column, averaged
+    When user sets "aggTooltipColumns" property of line chart viewer to ""
+    Then "aggTooltipColumns" property of line chart viewer should be ""
+    When user picks "Tooltip > Edit..." from the context menu of line chart viewer
+    Then "Edit Aggregated Tooltip" dialog should be visible
+    When user clicks on "Add aggregation" button in "Edit Aggregated Tooltip" dialog
+    And user clicks on OK button in "Edit Aggregated Tooltip" dialog
+    Then the "Edit Aggregated Tooltip" dialog should close
+    And "aggTooltipColumns" property of line chart viewer should be "avg(CAST Idea ID)"
+    When user sets "aggTooltipColumns" property of line chart viewer to ""
+    Then "aggTooltipColumns" property of line chart viewer should be ""
+    And no errors should have been logged

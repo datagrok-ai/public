@@ -18,6 +18,9 @@ Feature: The Statistics and Histograms submenus, and what they turn on
   Playwright Chromium the same key takes it back), so the way out is not a claim this suite can
   make yet.
 
+  Edge cases: a column picked for Histograms is dropped from them when it is removed from the
+  table, and the other statistics stay: AGE still averages 45.68 over the 1000 rows.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -105,4 +108,17 @@ Feature: The Statistics and Histograms submenus, and what they turn on
     When user closes the current view
     And user switches to the "demog-1000" table view
     Then the "columns shown" reading of statistics viewer should be 11
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: A column picked for Histograms is dropped from them when it is removed from the table
+    When user adds a calculated column "SEX2" with formula "${SEX}"
+    And user picks "Histograms > SEX2" from the context menu of the "row AGE" area of statistics viewer
+    Then the "histogram columns" reading of statistics viewer should be 1
+    When user scrolls the grid to the "SEX2" column
+    And user picks "Remove" from the context menu of the "header SEX2" area of grid
+    Then the table should not have a column "SEX2"
+    And the "histogram columns" reading of statistics viewer should be 0
+    And the "avg of AGE" reading of statistics viewer should be "45.68"
+    And statistics viewer should report no error
     And no errors should have been logged

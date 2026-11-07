@@ -20,6 +20,8 @@ Feature: Word cloud text size, rotation, shape and font
   20 is replaced by 40 because at 20 the cloud still draws about as many words as at the default. The context menu lists the viewer's commands, General > Save as PNG among them, and
   its Properties... makes the viewer the object the context panel shows.
 
+  Edge cases: Rotation Step 0 typed in the context panel still draws every word (public#4424).
+
   Background:
     Given user is logged in
     And the package autostarts have completed
@@ -135,3 +137,25 @@ Feature: Word cloud text size, rotation, shape and font
     And user picks "Properties..." from the context menu of word cloud viewer
     Then the context panel should show "Word cloud"
     And no errors should have been logged
+
+  @edge-cases @realizes:public#4424
+  Scenario: Rotation Step 0 typed in the context panel still draws every word (public#4424)
+    When user sets properties of word cloud viewer:
+      | minRotationDegree | 0  |
+      | maxRotationDegree | 90 |
+    And user clicks on settings icon of word cloud viewer
+    Then context panel should be visible
+    Given "Misc" category in context panel is expanded
+    When user takes a snapshot of word cloud viewer
+    And user enters "0" into "Rotation Step" property in context panel
+    Then word cloud viewer should have repainted
+    And the "words" reading of word cloud viewer should be 4
+    When user enters "5" into "Rotation Step" property in context panel
+    Then "Rotation Step" property of word cloud viewer should be "5"
+    And no errors should have been logged
+    When user presses F4
+    Then context panel should be hidden
+    When user sets properties of word cloud viewer:
+      | minRotationDegree | 0 |
+      | maxRotationDegree | 0 |
+    Then the "words" reading of word cloud viewer should be 4

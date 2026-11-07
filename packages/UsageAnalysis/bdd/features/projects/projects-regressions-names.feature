@@ -21,6 +21,12 @@ Feature: Projects regressions: names of projects and their tables
   only the new table is read in the reopened workspace (no demog-1000 view); the server-side claim on the
   project's tables is parked in the request document.
 
+  Edge cases: the Save dialog's own guards. CANCEL on a new dashboard saves nothing (no Share dialog,
+  no project of the typed name); a name must contain at least one letter (`isValidEntityName`,
+  `project_meta.dart`), so an emptied name, spaces only, digits only or a "/" alone mark the Name box
+  invalid and disable OK, and a letter added enables OK again; a "/" between letters is taken, and the
+  project saved under it opens from the address the page shows after the save.
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -205,3 +211,78 @@ Feature: Projects regressions: names of projects and their tables
     And the table should have been reloaded by data sync
     And no error or warning balloon should have been shown
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: CANCEL on a new dashboard saves nothing, and an emptied name or spaces keep OK disabled
+    Given no project named "BDDEdgeSave{time}" is on the server
+    And user opens demog-1000 dataset
+    When user clicks on Save ribbon item
+    Then "Save project" dialog should be visible
+    When user enters "BDDEdgeSave{time}" into Name text input in "Save project" dialog
+    And user clicks on CANCEL button in "Save project" dialog
+    Then the "Save project" dialog should close
+    And 0 projects named "BDDEdgeSave{time}" should be on the server
+    And "Share BDDEdgeSave{time}" dialog should be absent
+    And no errors should have been logged
+    When user clicks on Save ribbon item
+    Then "Save project" dialog should be visible
+    And OK button in "Save project" dialog should be enabled
+    When user clears Name text input in "Save project" dialog
+    Then Name text input in "Save project" dialog should be invalid
+    And OK button in "Save project" dialog should be disabled
+    When user types "x" into Name text input in "Save project" dialog
+    Then Name text input in "Save project" dialog should be valid
+    And OK button in "Save project" dialog should be enabled
+    When user types "   " into Name text input in "Save project" dialog
+    Then Name text input in "Save project" dialog should be invalid
+    And OK button in "Save project" dialog should be disabled
+    When user clicks on CANCEL button in "Save project" dialog
+    Then the "Save project" dialog should close
+
+  @edge-cases
+  Scenario: A "/" between letters is taken, and the project opens from the address the page shows
+    Given no project named "BDDEdge/Slash{time}" is on the server
+    And Files tree node inside browse tree is expanded
+    And Files---Demo tree node inside browse tree is expanded
+    When user double-clicks Files---Demo---cars.csv tree node inside browse tree
+    Then the "cars" view should be current
+    When user clicks on Save ribbon item
+    Then "Save project" dialog should be visible
+    When user enters "BDDEdge/Slash{time}" into Name text input in "Save project" dialog
+    Then OK button in "Save project" dialog should be enabled
+    When user clicks on OK button in "Save project" dialog
+    Then the "Save project" dialog should close
+    And 1 project named "BDDEdge/Slash{time}" should be on the server
+    And "Share BDDEdge/Slash{time}" dialog should be visible
+    When user clicks on CANCEL button in "Share BDDEdge/Slash{time}" dialog
+    Then the "Share BDDEdge/Slash{time}" dialog should close
+    And the page address should contain "/p/"
+    When user remembers the page address
+    And user closes all views
+    And user opens the remembered address
+    Then the "cars" view should be current
+    And the table should have 30 rows
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario Outline: A name without a letter (<case>) is marked invalid and OK is disabled until a letter is added
+    Given Files tree node inside browse tree is expanded
+    And Files---Demo tree node inside browse tree is expanded
+    When user double-clicks Files---Demo---cars.csv tree node inside browse tree
+    Then the "cars" view should be current
+    When user clicks on Save ribbon item
+    Then "Save project" dialog should be visible
+    When user enters "<name>" into Name text input in "Save project" dialog
+    Then Name text input in "Save project" dialog should be invalid
+    And OK button in "Save project" dialog should be disabled
+    When user enters "<name>x" into Name text input in "Save project" dialog
+    Then Name text input in "Save project" dialog should be valid
+    And OK button in "Save project" dialog should be enabled
+    When user clicks on CANCEL button in "Save project" dialog
+    Then the "Save project" dialog should close
+
+    Examples:
+      | case        | name |
+      | digits only | 123  |
+      | a "/" alone | /    |
+      | digits, "/" | 1/2  |

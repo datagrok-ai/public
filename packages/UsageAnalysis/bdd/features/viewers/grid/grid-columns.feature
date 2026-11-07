@@ -43,6 +43,9 @@ Feature: Grid column geometry
   does not listen to the coloring). Reproduced twice in the suite on 2026-10-13. Take the mark off
   when the panel follows the coloring.
 
+  Edge cases: the sort follows a renamed column, and empty values go last in a sort, descending and
+  ascending (on a four-row table opened for it).
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -216,7 +219,7 @@ Feature: Grid column geometry
     Then all rows should pass the filter
     And no errors should have been logged
 
-  @GROK-19288 @known-failure:235
+  @GROK-19288 @known-failure:238
   Scenario: A coloring picked in the column popup shows in the Context Panel's Colors pane for that column
     When user clicks on the "header AGE" area of grid
     Given the context panel is open
@@ -296,3 +299,39 @@ Feature: Grid column geometry
     And user switches to the "demog-1000" table view
     Then the table should have 1000 rows
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: The sort follows a renamed column
+    When user clicks on "Columns: 11" text in status bar
+    Then column manager should be absent
+    When user double-clicks on the "header AGE" area of grid
+    Then the "sort column" reading of grid should be "AGE"
+    And the "sort direction" reading of grid should be "descending"
+    When user picks "Column Properties..." from the context menu of the "header AGE" area of grid
+    And user enters "YEARS" into "New name:" input in "AGE" dialog
+    And user clicks on OK button in "AGE" dialog
+    Then the "sort column" reading of grid should be "YEARS"
+    When user renames "YEARS" column to "AGE"
+    Then the "sort column" reading of grid should be "AGE"
+    When user double-clicks on the "header AGE" area of grid
+    And user double-clicks on the "header AGE" area of grid
+    Then the "sort column" reading of grid should be ""
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: Empty values go last in a sort, descending and ascending
+    Given user opens a table "sort-empty" with:
+      | id | v |
+      | a  | 2 |
+      | b  |   |
+      | c  | 1 |
+      | d  | 3 |
+    When user double-clicks on the "header v" area of grid
+    Then the "sort direction" reading of grid should be "descending"
+    And the "row order" reading of grid should be "4, 1, 3, 2"
+    When user double-clicks on the "header v" area of grid
+    Then the "sort direction" reading of grid should be "ascending"
+    And the "row order" reading of grid should be "3, 1, 4, 2"
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    Then no errors should have been logged

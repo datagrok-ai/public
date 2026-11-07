@@ -39,6 +39,22 @@ fast). Section numbers are the first list's.
 
 Nothing planned.
 
+## Edge cases
+
+Written for the edge cases, with no library, binding or code change. `table-manager` claims the Table Manager
+with no table open (an empty list, no error).
+
+### Decided and written
+
+The answers of 2026-10-27 are @edge-cases scenarios of `profile` and `molecule-in-exported-csv`: an emptied first name keeps OK disabled, a
+first name longer than the 64 characters the profile stores (`users.first_name` VARCHAR(64)) is refused with a
+message (both known failures, core#1180; decided 2026-10-28, a 200-character name is not to be allowed), and an empty
+molecule cell goes out of a CSV export as an empty field.
+
+Claimed once core#1180 is fixed: the long-name scenario ends at the dialog's message, its pin. With the
+tag gone it goes on to claim `no errors should have been logged` and `the user "bddprofile" should have the
+name "bddprofile" on the server` (the long name not saved).
+
 ## Won't do (the lead's triage, 2026-10-11)
 
 - **"and" / "or" in the table view's Search box (GROK-20229).** Deferred: the box parses its whole text with one

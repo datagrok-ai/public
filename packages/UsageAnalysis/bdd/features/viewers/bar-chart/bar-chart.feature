@@ -10,6 +10,10 @@ Feature: Bar chart property surface
   own. One journey on demog-1000 with a bar chart of average AGE by RACE; every scenario puts back
   what it changed.
 
+  Edge cases: text typed into a numeric property in the context panel (Min, Max Bar Height, Max
+  Category Width) is not taken and the old value stays. Max Bar Height typed below its declared
+  minimum of 1 (0, -5) is brought to 1 (core#1200, fixed: the property brings a value to the nearest declared bound); the last scenario outline.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -260,3 +264,39 @@ Feature: Bar chart property surface
     When user selects "demog-1000" in "Table" property in context panel
     Then bar chart viewer should be bound to table "demog-1000"
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: Text typed into a numeric property in the context panel is not taken
+    Given user sets properties of bar chart viewer:
+      | Split           | RACE |
+      | Value           | AGE  |
+      | Value Aggr Type | avg  |
+    Then the "bars" reading of bar chart viewer should be 4
+    When user clicks on settings icon of bar chart viewer
+    Then context panel should be visible
+    Given "Y Axis" category in context panel is expanded
+    When user enters "abc" into "Min" property in context panel
+    Then "Min" property of bar chart viewer should be ""
+    Given "Style" category in context panel is expanded
+    When user enters "abc" into "Max Bar Height" property in context panel
+    Then "Max Bar Height" property of bar chart viewer should be "50"
+    When user enters "abc" into "Max Category Width" property in context panel
+    Then "Max Category Width" property of bar chart viewer should be "300"
+    And the "bars" reading of bar chart viewer should be 4
+    And no errors should have been logged
+    When user presses F4
+    Then context panel should be hidden
+
+  @edge-cases @realizes:core#1200
+  Scenario Outline: <caption> <typed> typed in the context panel outside its declared bounds is clamped to <clamped> (core#1200)
+    Given user sets "<caption>" property of bar chart viewer to "<start>"
+    When user clicks on settings icon of bar chart viewer
+    Then context panel should be visible
+    Given "Style" category in context panel is expanded
+    When user enters "<typed>" into "<caption>" property in context panel
+    Then "<caption>" property of bar chart viewer should be "<clamped>"
+
+    Examples: The value is brought to the nearest bound
+      | caption        | start | typed | clamped |
+      | Max Bar Height | 50    | 0     | 1       |
+      | Max Bar Height | 50    | -5    | 1       |

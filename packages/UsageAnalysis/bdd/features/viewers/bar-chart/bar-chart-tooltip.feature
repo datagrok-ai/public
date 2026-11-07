@@ -5,6 +5,10 @@ Feature: Bar chart bar tooltip
   value is switched to the average of WEIGHT it reports that average (79.49) instead of the count. One
   journey on demog-1000 with a bar chart counting rows by RACE (Caucasian 896 rows).
 
+  Edge cases: a category whose name holds markup characters (`a<b`, `x &amp; y`, on a table of its
+  own, closed again) is shown in the tooltip as typed, not as HTML, which would show `a` and `x & y`
+  (core#974).
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -30,4 +34,24 @@ Feature: Bar chart bar tooltip
     When user moves the pointer away from grid
     And user sets properties of bar chart viewer:
       | Value Aggr Type | count |
+    Then no errors should have been logged
+
+  @edge-cases @realizes:core#974
+  Scenario: A category with markup characters is shown in the bar tooltip as typed (core#974)
+    Given user opens a table "markup-categories" with:
+      | Category  | Value |
+      | a<b       | 1     |
+      | a<b       | 2     |
+      | x &amp; y | 3     |
+    And user adds a bar chart viewer with:
+      | Split | Category |
+    Then the "bars" reading of bar chart viewer should be 2
+    When user hovers over the "bar a<b" area of bar chart viewer
+    Then tooltip should contain text "a<b"
+    And tooltip should contain text "2 rows"
+    When user hovers over the "bar x &amp; y" area of bar chart viewer
+    Then tooltip should contain text "x &amp; y"
+    When user moves the pointer away from bar chart viewer
+    And user closes the current view
+    And user switches to the "demog-1000" table view
     Then no errors should have been logged

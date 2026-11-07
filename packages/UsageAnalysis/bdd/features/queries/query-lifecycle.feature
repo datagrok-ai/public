@@ -17,6 +17,12 @@ Feature: A SQL query from creation to deletion
   The ms-sql case repeats these four on an MS SQL connection: the editor, the tree and the panes are
   the same for every provider, and what differs is the provider's server side.
 
+  Edge cases: a guard on a System:Datagrok query of its own (entity_types, where "Project" is one row
+  on every stand), named with the run's time and deleted when the feature ends: the Rename dialog
+  refuses a name with no letter ("123", spaces), and its CANCEL keeps the query's name on the server
+  (`DbEntityMeta.getRenameDialog`). Run query... on a parameterized query not saved yet (core#641) is
+  in `parameterized-queries.feature`.
+
   Background:
     Given user is logged in
     And the stand has a reachable "PostgresTest" connection
@@ -107,3 +113,26 @@ Feature: A SQL query from creation to deletion
     Then Databases---Postgres---NorthwindTest---BDD-Q-life-renamed-{time} tree node inside browse tree should be absent
     And no errors should have been logged
     And no error or warning balloon should have been shown
+
+  @edge-cases
+  Scenario: Rename... refuses a name with no letter and keeps the name on CANCEL
+    Given no query named "BDDQRenamedEdge{time}" is on the server
+    And a query "BDDQRenameEdge{time}" on "System:Datagrok" reads "select name from entity_types"
+    And the browse panel is open
+    When user clicks on "Refresh" icon inside browse toolbar
+    Given Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    And Databases---Postgres---Datagrok tree node inside browse tree is expanded
+    When user picks "Rename..." from the context menu of Databases---Postgres---Datagrok---BDDQRenameEdge{time} tree node inside browse tree
+    Then "Rename dataquery" dialog should be visible
+    When user enters "123" into Name input in "Rename dataquery" dialog
+    Then OK button in "Rename dataquery" dialog should be disabled
+    When user enters "   " into Name input in "Rename dataquery" dialog
+    Then OK button in "Rename dataquery" dialog should be disabled
+    When user enters "BDDQRenamedEdge{time}" into Name input in "Rename dataquery" dialog
+    Then OK button in "Rename dataquery" dialog should be enabled
+    When user clicks on CANCEL button in "Rename dataquery" dialog
+    Then the "Rename dataquery" dialog should close
+    And 1 query named "BDDQRenameEdge{time}" should be on the server
+    And 0 queries named "BDDQRenamedEdge{time}" should be on the server
+    And no errors should have been logged

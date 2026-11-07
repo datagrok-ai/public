@@ -13,6 +13,9 @@ Feature: Pivot table — the aggregation it publishes and the parameters it reme
   claimed here through the entries the menu actually offers, which is the same store filtered the way
   the product filters it.
 
+  Edge cases: with every row filtered out, ADD still publishes the table, empty; on demog-1000
+  opened again, so that the tables the scenarios before published are gone.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -131,4 +134,22 @@ Feature: Pivot table — the aggregation it publishes and the parameters it reme
     And 1 rows of table "demog-1000 aggregation" should pass the filter
     When user clicks on CLOSE button in "Link Tables" dialog
     Then no error or warning balloon should have been shown
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: With every row filtered out, ADD still publishes the table, empty
+    When user closes all views
+    And user opens demog-1000 dataset
+    And user adds a pivot table viewer
+    Then the "aggregated rows" reading of pivot table viewer should be 6
+    When user filters rows where "AGE" is between 200 and 300
+    Then 0 rows should pass the filter
+    When user clicks on the "add to workspace" area of pivot table viewer
+    Then table "demog-1000 aggregation" should be open
+    And the "demog-1000 aggregation" view should be current
+    And the table should have 0 rows
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    And user resets the filter
+    Then all rows should pass the filter
     And no errors should have been logged

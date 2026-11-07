@@ -25,6 +25,58 @@ out of scope, as `grid-rows.feature` records.
   (the filter panel's `category <label> of <caption>` areas are the panel's, not the popup's). Needs
   the popup's filter to publish `category <label>` areas like the panel's card does.
 
+## Edge cases (now in the grid features named below)
+
+Added in the edge-case round of 2026-10-26 (localhost); its green checks are now `@edge-cases` scenarios of their own, after the master scenarios of the grid features named below, and each known failure is a scenario of its own: the ones taken out of a journey (core#1193, core#1194, core#1195, core#1198, core#1200) are in `grid-known-failures.feature` while their tickets are open, the ones of `grid-pinning.feature` and `grid-forms-column.feature` (not journeys) stay there. Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+
+### Still open
+
+1. **Decided and claimed** (localhost 2026-10-29, core master 575f6ae603), each known failure a scenario of its own in the feature named with it (`grid-known-failures.feature` names the journey it goes back to).
+   Known failures, each with its ticket and what the grid does today:
+   - Frozen Columns typed in the context panel as 20 or -1 is not taken (the value is written):
+     core#1137 (`grid-pinning.feature`, which also claims Unpin Column under Frozen Columns 20).
+   - Allow Edit off: Shift+Delete keeps the rows (the selected row is deleted): core#1193 (`grid-known-failures.feature`, from `grid-editing.feature`).
+   - Shift+Enter ("select same") selects nothing while Allow Row Selection is off (553 rows are
+     selected), and only rows that pass the filter otherwise (471 selected rows are filtered out):
+     core#1194 (`grid_row_selection.dart` selects over the whole table and does not check the setting; `grid-known-failures.feature`, from `grid-rows.feature`).
+   - A column group named with spaces only is not made (the group tag is set to the spaces): core#1195 (`grid-known-failures.feature`, from `grid-column-groups.feature`).
+   - Twelve rows pinned show ten and the grid says that pinned rows are hidden (claimed as a warning
+     balloon naming 10; the message's form is not decided), and Unpin All Rows also unpins the rows
+     pinned beyond the ten shown (after Unpin All a layout pins 2 rows back): core#1191 (`grid-pinning.feature`).
+   - A pinned row deleted and brought back by Control+Z is pinned again (it comes back unpinned):
+     core#1196 (`grid-pinning.feature`).
+   - Default HTML Form with no column ticked cannot be confirmed (OK is enabled): core#1197 (`grid-forms-column.feature`).
+   - A malformed format (`0.0.0`) marks the Custom field invalid and is not taken (the field is not
+     marked and the column's format tag becomes `0.0.0`): core#1198 (`grid-known-failures.feature`, from `grid-appearance.feature`).
+   - Row Height typed in the context panel as 0 or 501 is brought to 1 or 500 (the property declares
+     1..500): core#1200, fixed, claimed in `grid-appearance.feature`.
+
+   Green (`grid-editing.feature`, `grid-columns.feature`, `grid-pinning.feature`,
+   `grid-column-groups.feature`, `grid-forms-column.feature`): a value refused in the last row (`abc` in AGE under Add New Row On Last Row Edit) keeps the
+   cell as it was and keeps the added row; a paste into a read-only grid changes nothing and shows no
+   notice (a paste needs the cell in edit mode, and the double-click that opens it already says the
+   grid is read-only); empty values go last in a sort both ways; the sort, a pinned row (through a
+   layout) and a column group follow a renamed column.
+2. **Steps requested**:
+   - Design a Form... closed by the cross of its view tab works as Cancel (no form column). The tab's
+     close icon is not found by `user clicks on close icon of {element}` (the tab reports one icon,
+     "i"), and the view tab's context menu offers only Close others. Wanted: the close icon of a view
+     tab, then `When user clicks on close icon of "Summary" view tab` and a claim on `column order`.
+3. **Product suggestion**: Editable by could take its users from a user picker instead of free text
+   (spaces only, another letter case). No scenario.
+4. **API or Dart tests to write**: a layout applied to a table missing its sort, pinned and frozen
+   columns (ApiTests); a multi-line external text pasted into the last row (Dart regTest dispatching a
+   `ClipboardEvent`).
+   - Frozen Columns 6, then every column but USUBJID, AGE and SEX removed: Frozen Columns is brought
+     down to 4. core#1137, still open: it stays at 6.
+
+   Moved out of BDD (no user gesture); requested from ApiTests.
+
+### Won't do
+
+- **Header height dragged to 0 and a row resizer dragged past 500 px**: no source says what the drag
+  may reach.
+
 ## Closed issues the regression round of 26 Oct 2026 could not claim
 
 - **A cut-off cell's whole value in its tooltip (public#989, public#996)** regressed: the tooltip is empty;

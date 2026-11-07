@@ -11,6 +11,9 @@ Feature: Markup — the keyboard in the grid moves it, Show Title hides its titl
   because on a stand with no internet the help pane's preloader covered OK; if the preloader comes
   back on a stand, this scenario is where it shows.
 
+  Edge cases: new text typed into Edit content and then dismissed with CANCEL or Escape leaves the
+  content as it was.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -51,6 +54,27 @@ Feature: Markup — the keyboard in the grid moves it, Show Title hides its titl
     Then Edit dialog should be visible
     When user enters "Weight: ${WEIGHT}" into input in Edit dialog
     And user clicks on "OK" button in Edit dialog
+    Then Edit dialog should be absent
+    And "content" property of markup viewer should be "Weight: ${WEIGHT}"
+    And the "text" reading of markup viewer should be "Weight: 74.10"
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: New text in Edit content... dismissed with CANCEL or Escape leaves the content as it was
+    Given user makes row 1 current
+    When user sets "content" property of markup viewer to "Weight: ${WEIGHT}"
+    Then the "text" reading of markup viewer should be "Weight: 74.10"
+    When user picks "Edit content..." from the context menu of markup viewer
+    Then Edit dialog should be visible
+    When user enters "Age: ${AGE}" into input in Edit dialog
+    And user clicks on "CANCEL" button in Edit dialog
+    Then Edit dialog should be absent
+    And "content" property of markup viewer should be "Weight: ${WEIGHT}"
+    And the "text" reading of markup viewer should be "Weight: 74.10"
+    When user picks "Edit content..." from the context menu of markup viewer
+    Then Edit dialog should be visible
+    When user enters "Age: ${AGE}" into input in Edit dialog
+    And user presses Escape
     Then Edit dialog should be absent
     And "content" property of markup viewer should be "Weight: ${WEIGHT}"
     And the "text" reading of markup viewer should be "Weight: 74.10"

@@ -10,6 +10,9 @@ Feature: Row Source MouseOverGroup on seven viewers
   The pie chart is the source for the other six and the bar chart the source for the pie chart.
   demog-1000: 5 of the 15 Asian rows and 463 of the 896 Caucasian rows have AGE > 44.
 
+  Edge cases: closing the viewer whose group is hovered clears the group, so the viewer draws no row
+  again (core#1227, fixed); the last scenario ends on it.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -59,3 +62,16 @@ Feature: Row Source MouseOverGroup on seven viewers
       | box plot     | pie chart | slice Asian | 5          | slice Caucasian | 463        |
       | pc plot      | pie chart | slice Asian | 5          | slice Caucasian | 463        |
       | pie chart    | bar chart | bar Asian   | 5          | bar Caucasian   | 463        |
+
+  @edge-cases @realizes:core#1227
+  Scenario: Closing the pie chart whose group is hovered clears the group, and the scatter plot draws no row again
+    Today the closed pie's hovered group stays on the table, and the scatter plot keeps drawing its
+    5 Asian rows.
+    When user sets "filter" property of pie chart viewer to ""
+    And user sets "rowSource" property of scatter plot viewer to "MouseOverGroup"
+    Then scatter plot viewer should show 0 rows
+    When user hovers over the "slice Asian" area of pie chart viewer
+    Then scatter plot viewer should show 5 rows
+    When user clicks on close icon of pie chart viewer
+    Then the open tableview should have 0 pie chart viewers
+    And scatter plot viewer should show 0 rows

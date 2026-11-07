@@ -26,6 +26,18 @@ Feature: A project through its card in the Dashboards gallery
   when the feature starts and ends, with its table, view and grant; the favorite the scenario
   adds is removed by the scenario.
 
+  Edge cases: with its only table left out (the times icon), the Save dialog keeps OK disabled until
+  the plus icon brings the table back (core#1161). Rename refuses an emptied name (its validator,
+  `DbEntityMeta.getRenameDialog`: the Name box is marked invalid and OK is disabled; the validator's
+  text is not shown, so it is not claimed), and CANCEL on Rename or on the Delete Project confirmation
+  changes nothing on the server or in the gallery. The owner's Save dialog of the reopened project
+  holds the project's name; the View and use recipient's opens in its Save a copy mode, its Name box
+  holding "Copy of <name>" (`dashboard.md`, "Saving a dashboard"). These run after the journey's
+  project is deleted, each on a project of cars of its own (BDDSmokeEdge and BDDSmokeEdgeShared with
+  the run's time) saved through the API and deleted with its table, view and grant when the feature
+  ends. The recipient's Rename... in the card menu (core#1162) is in
+  `projects-regressions-shared-tag.feature`.
+
   Background:
     Given user is logged in
     And the context panel is open
@@ -189,3 +201,99 @@ Feature: A project through its card in the Dashboards gallery
     When user clicks on Refresh icon in gallery toolbar
     Then gallery counter should have text "0"
     And BDDSmokeRenamed{time} gallery card should be absent
+
+  @edge-cases @realizes:core#1161
+  Scenario: With its only table left out, the Save dialog keeps OK disabled until the table is back
+    When user closes all views
+    Given the browse panel is open
+    And Files tree node inside browse tree is expanded
+    And Files---Demo tree node inside browse tree is expanded
+    When user picks "Open" from the context menu of Files---Demo---cars.csv tree node inside browse tree
+    Then the "cars" view should be current
+    When user clicks on Save ribbon item
+    Then "Save project" dialog should be visible
+    When user clicks on times icon in "cars" project table in "Save project" dialog
+    Then plus icon in "cars" project table in "Save project" dialog should be visible
+    And OK button in "Save project" dialog should be disabled
+    When user clicks on plus icon in "cars" project table in "Save project" dialog
+    Then OK button in "Save project" dialog should be enabled
+    And Data sync switch in "cars" project table in "Save project" dialog should be checked
+    When user clicks on CANCEL button in "Save project" dialog
+    Then the "Save project" dialog should close
+    When user closes all views
+    Then no errors should have been logged
+
+  @edge-cases
+  Scenario: Rename refuses an emptied name, and CANCEL on Rename or on Delete Project changes nothing
+    Given no project named "BDDSmokeEdgeRenamed{time}" is on the server
+    And user opens cars dataset
+    When user saves the current view as project "BDDSmokeEdge{time}"
+    And user closes all views
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDSmokeEdge{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then BDDSmokeEdge{time} gallery card should be visible
+    When user picks "Rename..." from the context menu of BDDSmokeEdge{time} gallery card
+    Then Rename project dialog should be visible
+    And OK button in Rename project dialog should be enabled
+    When user clears Name input in Rename project dialog
+    Then Name input in Rename project dialog should be invalid
+    And OK button in Rename project dialog should be disabled
+    When user types "BDDSmokeEdgeRenamed{time}" into Name input in Rename project dialog
+    Then Name input in Rename project dialog should be valid
+    And OK button in Rename project dialog should be enabled
+    When user clicks on CANCEL button in Rename project dialog
+    Then the "Rename project" dialog should close
+    And 0 projects named "BDDSmokeEdgeRenamed{time}" should be on the server
+    And 1 project named "BDDSmokeEdge{time}" should be on the server
+    When user clicks on "Refresh" icon inside gallery toolbar
+    Then BDDSmokeEdge{time} gallery card should be visible
+    When user picks "Delete Project" from the context menu of BDDSmokeEdge{time} gallery card
+    Then "Are you sure?" dialog should contain text 'Delete project "BDDSmokeEdge{time}"?'
+    When user clicks on CANCEL button in "Are you sure?" dialog
+    Then the "Are you sure?" dialog should close
+    And 1 project named "BDDSmokeEdge{time}" should be on the server
+    When user clicks on "Refresh" icon inside gallery toolbar
+    Then BDDSmokeEdge{time} gallery card should be visible
+
+  @edge-cases
+  Scenario: The reopened project's Save dialog holds its name for the owner and offers the recipient a copy
+    Given user opens cars dataset
+    When user saves the current view as project "BDDSmokeEdgeShared{time}"
+    And user closes all views
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDSmokeEdgeShared{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then BDDSmokeEdgeShared{time} gallery card should be visible
+    When user picks "Share..." from the context menu of BDDSmokeEdgeShared{time} gallery card
+    Then "Share BDDSmokeEdgeShared{time}" dialog should be visible
+    When user picks the sharing user in "User, group, or email" input in "Share BDDSmokeEdgeShared{time}" dialog
+    And user unchecks "Send notifications" input in "Share BDDSmokeEdgeShared{time}" dialog
+    And user clicks on OK button in "Share BDDSmokeEdgeShared{time}" dialog
+    Then the "Share BDDSmokeEdgeShared{time}" dialog should close
+    When user double-clicks on BDDSmokeEdgeShared{time} gallery card and the project opens
+    Then the "cars" view should be current
+    When user clicks on Save ribbon item
+    Then "Save project" dialog should be visible
+    And Name text input in "Save project" dialog should have value "BDDSmokeEdgeShared{time}"
+    When user clicks on CANCEL button in "Save project" dialog
+    Then the "Save project" dialog should close
+    When user closes all views
+    And user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDSmokeEdgeShared{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDSmokeEdgeShared{time} gallery card and the project opens
+    Then the "cars" view should be current
+    When user clicks on Save ribbon item
+    Then "Save project" dialog should be visible
+    And Name text input in "Save project" dialog should have value "Copy of BDDSmokeEdgeShared{time}"
+    When user clicks on CANCEL button in "Save project" dialog
+    Then the "Save project" dialog should close
+    When user closes all views
+    And user signs in as themselves again
+    Then the running account should be signed in

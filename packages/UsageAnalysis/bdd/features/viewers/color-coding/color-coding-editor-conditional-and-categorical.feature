@@ -16,6 +16,10 @@ Feature: The color coding editor of conditional and categorical columns: bins, r
   single value colours the cells equal to it (public#1967), and a pattern that cannot be read is marked
   invalid with an "Invalid pattern" tooltip.
 
+  Edge cases: Bin... refuses fewer than one bin: its OK stays disabled for 0, and CANCEL then leaves
+  the coloring as it was (core#1171). A value on the edge two Bin... ranges share goes to the lower
+  bin (0, 5 and 10 in two bins: 5 with 0), on a three-row table of its own, closed again.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -140,3 +144,45 @@ Feature: The color coding editor of conditional and categorical columns: bins, r
     When user picks "Color Coding > Off" from the context menu of the "header SEX" area of grid
     Then "SEX" column should have no color coding
     And no errors should have been logged
+
+  @edge-cases @realizes:core#1171
+  Scenario: Bin... refuses fewer than one bin, and CANCEL leaves the coloring as it was (core#1171)
+    When user picks "Color Coding > Conditional" from the context menu of the "header AGE" area of grid
+    And user picks "Color Coding > Edit..." from the context menu of the "header AGE" area of grid
+    Then "Color-coding: AGE" dialog should be visible
+    When user clicks on "Bin..." link in "Color-coding: AGE" dialog
+    Then "Edit" dialog should be visible
+    When user enters "0" into "Number of bins" input in "Edit" dialog
+    Then OK button in "Edit" dialog should be disabled
+    When user clicks on CANCEL button in "Edit" dialog
+    Then "Edit" dialog should be hidden
+    And "AGE" column should be color-coded conditionally
+    And the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should differ
+    When user clicks on CLOSE button in "Color-coding: AGE" dialog
+    Then "Color-coding: AGE" dialog should be hidden
+    When user picks "Color Coding > Off" from the context menu of the "header AGE" area of grid
+    Then "AGE" column should have no color coding
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: A value on the edge two Bin... ranges share goes to the lower bin
+    Given user opens a table "bin-edge" with:
+      | Name | Level |
+      | a    | 0     |
+      | b    | 5     |
+      | c    | 10    |
+    When user picks "Color Coding > Conditional" from the context menu of the "header Level" area of grid
+    And user picks "Color Coding > Edit..." from the context menu of the "header Level" area of grid
+    Then "Color-coding: Level" dialog should be visible
+    When user clicks on "Bin..." link in "Color-coding: Level" dialog
+    Then "Edit" dialog should be visible
+    When user enters "2" into "Number of bins" input in "Edit" dialog
+    And user clicks on OK button in "Edit" dialog
+    Then "Level" column should be color-coded conditionally
+    And the "color of cell 1 of Level" and "color of cell 3 of Level" readings of grid should differ
+    And the "color of cell 1 of Level" and "color of cell 2 of Level" readings of grid should be the same
+    When user clicks on CLOSE button in "Color-coding: Level" dialog
+    Then "Color-coding: Level" dialog should be hidden
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    Then no errors should have been logged

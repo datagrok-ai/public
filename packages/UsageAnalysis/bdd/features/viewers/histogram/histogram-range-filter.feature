@@ -7,6 +7,13 @@ Feature: Histogram range filter
   survives a stacked split; a saved layout carries the look but not the range. One journey on
   demog-1000 with a histogram of AGE; every scenario puts the full range back.
 
+  Edge cases: text typed into a range input is not taken and the filter stays as it was. Switching
+  Value in the on-chart column selector while a range filters releases the range. A range normalized
+  to the filter logs no error when every row is filtered out (Deselect all in the SEX card), on AGE
+  and on a date column, one outline (degenerate ranges made the axis throw on
+  every frame until core#998). On the date column STARTED a maximum below the minimum empties the
+  filter and is reported (483 rows start on or after 1/1/1991).
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -193,3 +200,72 @@ Feature: Histogram range filter
     And the "bins shown" reading of histogram viewer should be 20
     And all rows should pass the filter
     And no errors should have been logged
+
+  @edge-cases @realizes:core#998
+  Scenario Outline: On <column> a range normalized to the filter logs no error when every row is filtered out (core#998)
+    When user sets properties of histogram viewer:
+      | Value               | <column> |
+      | Normalize To Filter | true     |
+    And user enters "<min>" into the "range min input" area of histogram viewer
+    Then <rows> rows should pass the filter
+    When user opens an empty filter panel
+    And user adds a card for "SEX" to the filter panel
+    And user picks "Deselect all" from the indicator menu of the "SEX" filter card
+    Then 0 rows should pass the filter
+    And histogram viewer should show 0 rows
+    And no errors should have been logged
+    When user picks "Select all" from the indicator menu of the "SEX" filter card
+    Then <rows> rows should pass the filter
+    When user hovers over "SEX" filter card
+    And user clicks on close of "SEX" filter card
+    Then the filter panel should have no "SEX" filter card
+    When user sets properties of histogram viewer:
+      | Normalize To Filter | false |
+      | Value               | AGE   |
+    And user enters "18" into the "range min input" area of histogram viewer
+    Then all rows should pass the filter
+    And no errors should have been logged
+
+    Examples:
+      | column  | min      | rows |
+      | AGE     | 40       | 665  |
+      | STARTED | 1/1/1991 | 483  |
+
+  @edge-cases
+  Scenario: Switching Value while a range filters releases the range
+    When user enters "30" into the "range min input" area of histogram viewer
+    And user enters "50" into the "range max input" area of histogram viewer
+    Then the filter should pass exactly the rows where "AGE" is between 30 and 50
+    When user picks "WEIGHT" in the "value" column selector of histogram viewer
+    Then all rows should pass the filter
+    And no errors should have been logged
+    When user sets "Value" property of histogram viewer to "AGE"
+    Then all rows should pass the filter
+    And the "range min" reading of histogram viewer should be 18
+
+  @edge-cases
+  Scenario: On a date column a maximum below the minimum empties the filter and is reported
+    When user sets "Value" property of histogram viewer to "STARTED"
+    And user enters "1/1/1991" into the "range min input" area of histogram viewer
+    Then 483 rows should pass the filter
+    And the "error" reading of histogram viewer should be ""
+    When user enters "1/1/1990" into the "range max input" area of histogram viewer
+    Then 0 rows should pass the filter
+    And the "error" reading of histogram viewer should be "max should be greater than min"
+    When user enters "1/1/1992" into the "range max input" area of histogram viewer
+    Then 483 rows should pass the filter
+    And the "error" reading of histogram viewer should be ""
+    And no errors should have been logged
+    When user sets "Value" property of histogram viewer to "AGE"
+    Then all rows should pass the filter
+
+  @edge-cases
+  Scenario: Text typed into a range input is not taken and the filter stays as it was
+    When user enters "40" into the "range min input" area of histogram viewer
+    Then 665 rows should pass the filter
+    When user enters "abc" into the "range min input" area of histogram viewer
+    Then 665 rows should pass the filter
+    And the "range min" reading of histogram viewer should be 40
+    And no errors should have been logged
+    When user enters "18" into the "range min input" area of histogram viewer
+    Then all rows should pass the filter

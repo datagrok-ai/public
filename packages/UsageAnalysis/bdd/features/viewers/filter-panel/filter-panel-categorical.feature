@@ -24,6 +24,10 @@ Feature: Categorical filter card
   card (core#479); the card's sort menu orders the categories by count, and a layout keeps that
   order (public#1889, last, as it ends on a layout).
 
+  Edge cases: a bracket or another special character typed into the in-card search finds the
+  category with that literal text (core#1134): "a(b", "a.b", "a+b" and "a[b" on a six-row table of
+  their own, closed again.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -226,3 +230,32 @@ Feature: Categorical filter card
     Then "DIS_POP" filter card should be visible
     And the "category RA of DIS_POP" area of filter panel should lie above the "category Psoriasis of DIS_POP" area
     And no errors should have been logged
+
+  @edge-cases @realizes:core#1134
+  Scenario Outline: "<typed>" typed into the in-card search finds the category with that literal text
+    Given user opens a table "special-categories" with:
+      | Name | Value |
+      | a(b  | 1     |
+      | a.b  | 2     |
+      | axb  | 3     |
+      | a+b  | 4     |
+      | aab  | 5     |
+      | a[b  | 6     |
+    When user opens an empty filter panel
+    And user adds a card for "Name" to the filter panel
+    And user hovers over "Name" filter card
+    And user clicks on search icon of "Name" filter card
+    And user types "<typed>" into the search of the "Name" filter card
+    Then 1 row should pass the filter
+    And the filter should pass exactly the rows where "Name" is "<typed>"
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    Then all rows should pass the filter
+    And no errors should have been logged
+
+    Examples:
+      | typed |
+      | a(b   |
+      | a.b   |
+      | a+b   |
+      | a[b   |

@@ -20,6 +20,11 @@ Feature: Grid form columns
   sketch view, and a field box is a DOM element whose place no step reads), so the claim is that
   Edit reopens the designer and Close and Apply leaves one form column, not where the field went.
 
+  Edge cases: an HTML summary column keeps rendering after a column it shows is removed, and the grid
+  scrolls to its last row with no error (`grid.md` "Summary Column Surviving a Removed Source
+  Column", the GROK-19942 contract). Default HTML Form with no column ticked should not be
+  confirmable (core#1197, a known failure).
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -65,3 +70,25 @@ Feature: Grid form columns
     And the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY, html"
     And the "cell type of html" reading of grid should be "html"
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: An HTML summary column keeps rendering after a column it shows is removed
+    When user picks "Add > Summary Columns > Default HTML Form" from the context menu of the "cell 2 of USUBJID" area of grid
+    Then "Select columns..." dialog should be visible
+    When user clicks on All link in "Select columns..." dialog
+    And user clicks on OK button in "Select columns..." dialog
+    Then "Select columns..." dialog should be hidden
+    And the "cell type of html" reading of grid should be "html"
+    When user picks "Remove" from the context menu of the "header CONTROL" area of grid
+    Then the table should not have a column "CONTROL"
+    When user clicks on the "cell 2 of AGE" area of grid
+    And user presses Control+End
+    Then grid should have a "cell 1000 of html" area
+    And the "cell type of html" reading of grid should be "html"
+    And no errors should have been logged
+
+  @edge-cases @known-failure:94 @realizes:core#1197
+  Scenario: Default HTML Form with no column ticked cannot be confirmed
+    When user picks "Add > Summary Columns > Default HTML Form" from the context menu of the "cell 2 of USUBJID" area of grid
+    Then "Select columns..." dialog should be visible
+    And OK button in "Select columns..." dialog should be disabled

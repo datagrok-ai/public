@@ -28,6 +28,13 @@ Feature: The Users view
   Elsewhere: Users-05 and 07 (creating users) are users-create.feature; Users-18 to 21 are
   users-manage.feature.
 
+  Edge cases: "You can't disable your own account" (help govern/access-control/users-and-groups.md):
+  the running account's own card, found by its login (the gallery shows the user's name; on a stand
+  where the two differ the card is not found), offers no Disable.... Invite a Friend... with the email
+  of the bddprofile fixture user says "User is already registered" as the email is typed
+  (`cmdUsersInvite` in users_browser.dart); the dialog is cancelled, since OK would send a new
+  invitation.
+
   Background:
     Given user is logged in
     And a user "bddviewed" is on the server
@@ -223,5 +230,31 @@ Feature: The Users view
     And "Joined" filter card should be visible
     When user clicks on "Toggle filters" icon inside gallery toolbar
     Then filter panel should be hidden
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  @edge-cases
+  Scenario: The running account's own context menu offers no Disable
+    When user remembers the gallery counter
+    And user types "{login}" into gallery search
+    Then the gallery counter should be lower than remembered
+    When user opens the context menu of "{login}" link in gallery
+    Then the open menu should list "Details"
+    And the open menu should not list "Disable..."
+    When user closes the context menu
+    And user clears gallery search
+    Then no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  @edge-cases
+  Scenario: Invite a Friend says an email already registered is taken
+    Given a user "bddprofile" is on the server
+    When user clicks on New button
+    And user picks "Invite a Friend..." from the open menu
+    Then "Invite a Friend" dialog should be visible
+    When user enters "bddprofile@datagrok.ai" into Email input in "Invite a Friend" dialog
+    Then "Invite a Friend" dialog should contain text "User is already registered"
+    When user clicks on CANCEL button in "Invite a Friend" dialog
+    Then the "Invite a Friend" dialog should close
     And no errors should have been logged
     And no error or warning balloon should have been shown

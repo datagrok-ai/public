@@ -17,6 +17,9 @@ Feature: Filter panel regressions
   itself is an ApiTests `FilterGroup` test), public#2359's focus half (MISSING.md), public#1103 (the
   per-card switches through a layout are filter-panel-cloned-view's, the master toggle the ladder's).
 
+  Edge cases: the card's missing-values menu also keeps only the blank rows (Show only missing value,
+  128) and all of them again (help filters.md "Missing values").
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -143,4 +146,20 @@ Feature: Filter panel regressions
     When user presses Escape
     And user resets the filter
     Then all rows should pass the filter
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: Show only missing value keeps the blank rows alone, and Keep missing values gives every row back
+    When user hovers over filter panel
+    And user clicks on reset icon of filter panel
+    When user adds a card for "HEIGHT" to the filter panel
+    And user picks "Missing values | Show only missing value" from the indicator menu of the "HEIGHT" filter card
+    And user closes the context menu
+    Then 128 rows should pass the filter
+    When user picks "Missing values | Keep missing values" from the indicator menu of the "HEIGHT" filter card
+    And user closes the context menu
+    Then all rows should pass the filter
+    When user hovers over "HEIGHT" filter card
+    And user clicks on close of "HEIGHT" filter card
+    Then "HEIGHT" filter card should be absent
     And no errors should have been logged

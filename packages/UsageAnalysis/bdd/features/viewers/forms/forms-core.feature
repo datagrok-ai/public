@@ -32,6 +32,10 @@ Feature: Forms viewer field set, row binding, sort mirroring and pinning
   rows — 215, 304, 428, 430, 512, all SEX M, AGE 29 / 59 / 44 / 31 / 46, WEIGHT 71.5 / 123.9 / 88 /
   83 / 85 — which is what makes an expected card order writable.
 
+  Edge cases: a pinned row the filter hides stays pinned, as in the grid; claimed after the grid's
+  sort is reset. A pinned row that is deleted leaves the pinned pane: pinned rows are found again
+  by their value whenever rows are removed, and a value no row holds any more is dropped.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -253,3 +257,52 @@ Feature: Forms viewer field set, row binding, sort mirroring and pinning
     And the "sort column" reading of forms viewer should be "AGE"
     And the "cards" reading of forms viewer should be 7
     And the record cards of forms viewer should show rows "304, 512, 428, 430, 215"
+
+  @edge-cases
+  Scenario: A pinned row the filter hides stays pinned, as in the grid
+    When user picks "Sort > Reset" from the context menu of the "header AGE" area of grid
+    And user makes row 1 current
+    And user clears the row selection
+    And user selects rows where "SEVERITY" is "Critical"
+    And user sets "showMouseOverRow" property of forms viewer to "false"
+    Then the record cards of forms viewer should show rows "215, 304, 428, 430, 512"
+    When user picks "Pin Row" from the context menu of the "field USUBJID of card 3" area of forms viewer
+    Then the "pinned records" reading of forms viewer should be 1
+    And the "pinned values" reading of forms viewer should be "X0273T29012500105"
+    When user opens an empty filter panel
+    And user adds a card for "SEVERITY" to the filter panel
+    And user clicks on the "category Low of SEVERITY" area of filter panel
+    Then 177 rows should pass the filter
+    And the "pinned records" reading of forms viewer should be 1
+    And the "pinned values" reading of forms viewer should be "X0273T29012500105"
+    When user resets the filter
+    And user clicks on close icon of filters viewer
+    Then all rows should pass the filter
+    And the "pinned records" reading of forms viewer should be 1
+    When user picks "Unpin Row" from the context menu of the "field USUBJID of pinned card 1" area of forms viewer
+    Then the "pinned records" reading of forms viewer should be 0
+    When user sets "showMouseOverRow" property of forms viewer to "true"
+    And user clears the row selection
+    Then no errors should have been logged
+
+  @edge-cases
+  Scenario: A pinned row that is deleted leaves the pinned pane
+    When user picks "Sort > Reset" from the context menu of the "header AGE" area of grid
+    And user makes row 1 current
+    And user clears the row selection
+    And user selects rows where "SEVERITY" is "Critical"
+    And user sets "showMouseOverRow" property of forms viewer to "false"
+    Then the record cards of forms viewer should show rows "215, 304, 428, 430, 512"
+    When user picks "Pin Row" from the context menu of the "field USUBJID of card 3" area of forms viewer
+    Then the "pinned records" reading of forms viewer should be 1
+    And the "pinned values" reading of forms viewer should be "X0273T29012500105"
+    When user clears the row selection
+    And user selects rows where "USUBJID" is "X0273T29012500105"
+    And user clicks on the "cell 1 of AGE" area of grid
+    And user presses Shift+Delete
+    Then the table should have 999 rows
+    And the "pinned records" reading of forms viewer should be 0
+    And the "pinned pane shown" reading of forms viewer should be "false"
+    And the "pinned values" reading of forms viewer should be ""
+    When user sets "showMouseOverRow" property of forms viewer to "true"
+    Then no errors should have been logged

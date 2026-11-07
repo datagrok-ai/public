@@ -6,6 +6,11 @@ Feature: Bar chart stack aggregation and datetime split
   filtered out draws no bar and logs nothing (core#974). One journey on demog-1000 with a bar
   chart of AGE by RACE.
 
+  Edge cases: a Filter click on a chart stacked by a date column (STARTED) is released by a click on
+  empty space after an unrelated setting changed (the click was lost before core#974). The Stack Map
+  of a date column is the year, so the 15 Asian rows stack as 1990 (6) and 1991 (9); the click at the
+  middle of the Asian bar lands on the larger, 1991 segment and keeps its 9 rows.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -74,3 +79,22 @@ Feature: Bar chart stack aggregation and datetime split
     Then the "bars" reading of bar chart viewer should be 4
     And bar chart viewer should show 1000 rows
     And no errors should have been logged
+
+  @edge-cases @realizes:core#974
+  Scenario: A Filter click on a chart stacked by a date column is released by a click on empty space after another setting changed (core#974)
+    When user sets properties of bar chart viewer:
+      | Value Aggr Type | count   |
+      | Stack           | STARTED |
+      | On Click        | Filter  |
+    And user clicks on the "bar Asian" area of bar chart viewer
+    Then 9 rows should pass the filter
+    When user sets "Bar Corner Radius" property of bar chart viewer to "4"
+    And user clicks on empty plot space of bar chart viewer
+    Then all rows should pass the filter
+    And no errors should have been logged
+    When user sets properties of bar chart viewer:
+      | On Click          | Select |
+      | Bar Corner Radius | 0      |
+      | Value Aggr Type   | avg    |
+    And user sets "Stack" property of bar chart viewer to ""
+    Then the "stack segments" reading of bar chart viewer should be 0

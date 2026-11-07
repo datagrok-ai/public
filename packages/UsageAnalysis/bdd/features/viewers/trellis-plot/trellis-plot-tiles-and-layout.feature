@@ -11,6 +11,11 @@ Feature: Trellis plot tiled view and auto layout
   whose every row is missing the HEIGHT or the WEIGHT the inner scatter plot draws. UC is the cell
   that is drawn and stays blank in the two rungs wide enough to show it.
 
+  Edge cases: on a trellis split by DIS_POP alone (six categories, which the scenario sets itself),
+  Tiles Per Row 0 lays the tiles out one a row and logs no error: it threw a truncating division by
+  zero on every render before core#1057. A Tiles Per Row typed in the context panel above the
+  declared 1 to 10 (11) is brought to 10 (core#1200, fixed: the property brings a value to the nearest declared bound); the last scenario.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -162,3 +167,27 @@ Feature: Trellis plot tiled view and auto layout
     When user sets "Allow Viewer Full Screen" property of trellis plot viewer to "true"
     And user moves the pointer away from trellis plot viewer
     Then no errors should have been logged
+
+  @edge-cases @realizes:core#1057
+  Scenario: Tiles Per Row 0 on a one-column trellis lays the tiles out one a row and logs no error (core#1057)
+    When user sets properties of trellis plot viewer:
+      | X Column Names | DIS_POP |
+      | Y Column Names |         |
+      | Tiles Per Row  | 4       |
+    Then the "y categories" reading of trellis plot viewer should be 1
+    And the cells of trellis plot viewer should be 4 wide and 2 tall
+    When user sets "Tiles Per Row" property of trellis plot viewer to "0"
+    Then the cells of trellis plot viewer should be 1 wide and 5 tall
+    And trellis plot viewer should report no error
+    And no errors should have been logged
+    When user sets "Tiles Per Row" property of trellis plot viewer to "4"
+    Then the cells of trellis plot viewer should be 4 wide and 2 tall
+
+  @edge-cases @realizes:core#1200
+  Scenario: A Tiles Per Row of 11 typed in the context panel is clamped to 10 (core#1200)
+    Given user sets "Tiles Per Row" property of trellis plot viewer to "4"
+    When user clicks on settings icon of trellis plot viewer
+    Then context panel should be visible
+    Given "Misc" category in context panel is expanded
+    When user enters "11" into "Tiles Per Row" property in context panel
+    Then "Tiles Per Row" property of trellis plot viewer should be "10"

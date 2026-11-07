@@ -15,6 +15,11 @@ Feature: Pick Up / Apply Coloring from the header menu, and a column's coloring 
   `legend/legend-across-viewers.feature`; a conditional coloring's legend is
   `guides/scatter-plot-conditional-colors.feature`.
 
+  Edge cases: Apply Coloring offers a picked-up coloring only to a column of a type it applies to
+  (`grid_popup_menu.dart`, "<type> type is not applicable" and the selected-columns branch): a
+  categorical coloring leaves the item disabled on the numeric AGE, and a linear one applied to a
+  selection of columns (SEX and HEIGHT, on a 100-row copy of its own) colours HEIGHT and leaves SEX.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -105,4 +110,37 @@ Feature: Pick Up / Apply Coloring from the header menu, and a column's coloring 
     And the categorical color of "Caucasian" in "RACE" column should be "3366CC"
     And the categorical color of "Other" in "RACE" column should be "CC6699"
     And the "color of cell 1 of RACE" reading of grid should be "#3366cc"
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: A linear coloring applied to a selection of columns colours the column it applies to and leaves the other
+    Given user opens demog-1000 dataset keeping the first 100 rows as "demog-100-columns"
+    When user picks "Color Coding > Linear" from the context menu of the "header AGE" area of grid
+    Then "AGE" column should be color-coded linearly
+    When user picks "Color Coding > Pick Up Coloring" from the context menu of the "header AGE" area of grid
+    And user clicks on the "header SEX" area of grid holding Control
+    And user clicks on the "header HEIGHT" area of grid holding Control
+    Then columns "SEX, HEIGHT" should be selected
+    When user picks "Color Coding > Apply Coloring" from the context menu of the "header HEIGHT" area of grid
+    Then "HEIGHT" column should be color-coded linearly
+    And "SEX" column should have no color coding
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    Then no errors should have been logged
+
+  @edge-cases
+  Scenario: A categorical coloring picked up is not offered to a numeric column
+    Given user switches to the "demog-1000" table view
+    When user colors "RACE" column categorically:
+      | Caucasian | #3366CC |
+      | Other     | #CC6699 |
+    Then "RACE" column should be color-coded categorically
+    When user picks "Color Coding > Pick Up Coloring" from the context menu of the "header RACE" area of grid
+    And user right-clicks on the "header AGE" area of grid
+    And user hovers over "Color Coding" menu item
+    Then "Color-Coding---Apply-Coloring" menu item should be disabled
+    When user closes the context menu
+    Then "AGE" column should have no color coding
+    When user removes the coloring of "RACE" column
+    Then "RACE" column should have no color coding
     And no errors should have been logged

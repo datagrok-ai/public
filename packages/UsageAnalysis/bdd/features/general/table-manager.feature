@@ -13,6 +13,8 @@ Feature: The Table Manager lists the open tables and moves between them
   takes as a drag, not a click. Nothing is put on the server; the docked panel is the browser's state,
   and the journey closes it.
 
+  Edge cases: with every table closed, Alt+T docks the manager with an empty list and no error.
+
   Background:
     Given user is logged in
     And the context panel is open
@@ -71,3 +73,17 @@ Feature: The Table Manager lists the open tables and moves between them
     When user presses Alt+T
     Then "Tables" dock panel should be absent
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: With no table open, Alt+T docks the manager with an empty list
+    When user closes all views
+    Then no table view is open
+    And no table should be left in the workspace
+    When user presses Alt+T
+    Then "Tables" dock panel should be visible
+    And the "rows" reading of Grid viewer in "Tables" dock panel should be 0
+    And no errors should have been logged
+    When user presses Alt+T
+    Then "Tables" dock panel should be absent
+    And no errors should have been logged
+    And no error or warning balloon should have been shown

@@ -23,6 +23,9 @@ Feature: Tile viewer form designer
   a `label` region for it, so the caption channel is claimed on the designer, where both host sets
   are visible, and not on the card.
 
+  Edge cases: Escape in the designer, a view and not a dialog, leaves it open with the edits it
+  holds: a value field deleted before Escape is gone from the card CLOSE AND APPLY then gives.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -156,3 +159,16 @@ Feature: Tile viewer form designer
     And no errors should have been logged
     When user adds a calculated column "AGE" with formula "${HEIGHT}"
     Then the table should have 11 columns
+
+  @edge-cases
+  Scenario: Escape in the designer leaves it open with the edits it holds
+    When user picks "Edit Form..." from the viewer menu of tile viewer
+    Then form designer should be visible
+    When user deletes the "WEIGHT" value field in the form designer
+    And user presses Escape
+    Then form designer should be visible
+    When user clicks on "CLOSE AND APPLY" button
+    Then form designer should be absent
+    And the "fields" reading of tile viewer should not contain "WEIGHT"
+    And the "form designed" reading of tile viewer should be "true"
+    And no errors should have been logged

@@ -11,6 +11,10 @@ Feature: Density plot selection, zoom and axis bounds
   only that a reset moved the pixels *less far* from the baseline than the zoom had, which passes
   for any partial restoration.
 
+  Edge cases: with rectangular bins a change of Bins after a zoom bins the same rows while Bin To
+  Range is off: the column's range is binned unless Bin To Range is on (rows were dropped before
+  core#1048).
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -108,4 +112,26 @@ Feature: Density plot selection, zoom and axis bounds
     Then density plot viewer should have repainted
     And density plot viewer should show the remembered value range
     When user sets "invertYAxis" property of density plot viewer to "false"
+    Then no errors should have been logged
+
+  @edge-cases @realizes:core#1048
+  Scenario: With rectangular bins a change of Bins after a zoom bins the same rows while Bin To Range is off (core#1048)
+    When user sets "binShape" property of density plot viewer to "rectangle"
+    Then the "rows shown" reading of density plot viewer should be 1000
+    And the "bin to range" reading of density plot viewer should be "false"
+    When user drags a zoom box over the "view" area of density plot viewer
+    Then density plot viewer should show a narrower value range than before
+    When user remembers the "bins drawn" reading of density plot viewer
+    And user clicks on settings icon of density plot viewer
+    Then context panel should be visible
+    Given "Misc" category in context panel is expanded
+    When user enters "30" into "Bins" property in context panel
+    Then the "bins drawn" reading of density plot viewer should not be as remembered
+    And the "rows shown" reading of density plot viewer should be 1000
+    When user presses F4
+    Then context panel should be hidden
+    When user sets properties of density plot viewer:
+      | bins     | 50      |
+      | binShape | hexagon |
+    And user picks "Reset View" from the context menu of density plot viewer
     Then no errors should have been logged

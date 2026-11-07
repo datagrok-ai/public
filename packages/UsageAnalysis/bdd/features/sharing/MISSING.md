@@ -33,9 +33,8 @@ Question: which entities are expected to show it — a query and its connection,
 
 ## 2. The level the Sharing pane names for a connection
 
-Filed into core#977 (2026-10-21): right after a View and use share the Sharing pane of a connection says
-"has special permissions", not "can view and use". `sharing-connection` claims the label in a
-`@known-failure` scenario; drop the tag when core#977 is fixed.
+core#977 is fixed: right after a View and use share the Sharing pane of a connection says "can view and
+use". `sharing-connection` guards the label (`@realizes:core#977`, no longer a known failure).
 
 ## 3. Steps the Share dialog lacks
 
@@ -91,3 +90,45 @@ Still to write: a folder share gives read but not write, and files outside the f
 `share-files-and-spaces-permissions` A/B). A script has no Execute privilege of its own (its type lists
 only View, Edit, Delete and Share), so View is what lets the grantee run it, and the existing View and
 use test covers it.
+
+## 8. Edge cases (now in `sharing-dialog` and `sharing-table`) — still open
+
+Written for the edge cases, with no library, binding or code change. `sharing-dialog` claims a removal
+cancelled, and `sharing-table` OK disabled on a fresh dialog, no recipient accepted (core#980, a known failure: an
+email becomes a recipient only once Enter accepts it).
+
+Claimed once core#980 is fixed: the `sharing-table` scenario ends at its pin, OK disabled on the fresh dialog.
+With the tag gone, these steps go after it:
+
+```gherkin
+When user types "bdd-share-edge-{time}@example.com" into "User, group, or email" input in "Share BDD-ShareTable-{time}" dialog
+Then OK button in "Share BDD-ShareTable-{time}" dialog should be disabled
+When user presses Enter in "User, group, or email" input in "Share BDD-ShareTable-{time}" dialog
+Then "Remove" icon in "Share BDD-ShareTable-{time}" dialog should be visible
+And OK button in "Share BDD-ShareTable-{time}" dialog should be enabled
+When user clicks on CANCEL button in "Share BDD-ShareTable-{time}" dialog
+Then the "Share BDD-ShareTable-{time}" dialog should close
+```
+
+### Steps requested
+
+1. **A disabled user is not offered in the suggestions** (decided). Needs a set-up step that disables an account
+   made for the feature (`a disabled user named {string} is on the server`) and a reading of the suggestions
+   (`the user suggestions should not offer {string}`, beside the existing `the user suggestions should not offer
+   the current user`). Then:
+
+   ```gherkin
+   When user types "<disabled user's name>" into "User, group, or email" input in "Share ShareDialog1" dialog
+   Then the user suggestions should not offer "<disabled user's name>"
+   ```
+2. **A grant revoked while the recipient has the entity open** (decided): the revoked privilege is closed on the
+   recipient's next save, refresh or reopen of the entity, whichever privilege it was. Needs the recipient's session kept open while the owner revokes,
+   which one browser page cannot do (`user signs in as the sharing user` replaces the running session): a second
+   page for the sharing user, or a step that revokes a grant through the API while the recipient's page stays open.
+
+### Won't do
+
+- **What a View-and-use recipient may do with a shared query or space** beyond re-sharing and putting it into a
+  view-only space: the server's answer is ApiTests `permissions.ts` (§7); `sharing-recipient` claims the UI side.
+- **Escape on the Share dialog**: it closes as CANCEL does (`Dialog._closeOnEsc`); `sharing-dialog` claims CANCEL
+  and the one branch of its own, Escape closing the list of levels first.

@@ -18,6 +18,10 @@ Feature: A table saved in a project, shared from its Sharing pane
   or share it further) and the per-privilege matrix of the PermissionsView are the server's answers, an API
   test (ApiTests, Dapi: permissions); the dialog has no Advanced editor link any more.
 
+  Edge cases: a fresh Share dialog, with no recipient accepted, keeps OK disabled (core#980): today OK is
+  enabled on a fresh dialog and says "Shared" while nothing is shared, a known failure. It is claimed
+  on the same BDD-ShareTable table the Background saves, its dialog opened from the table's Sharing pane.
+
   Background:
     Given user is logged in
     And no project named "BDD-ShareTable-{time}" is on the server
@@ -56,3 +60,16 @@ Feature: A table saved in a project, shared from its Sharing pane
     Then the "Share BDD-ShareTable-{time}" dialog should close
     And no errors should have been logged
     And no error or warning balloon should have been shown
+
+  @edge-cases @known-failure:75 @realizes:core#980
+  Scenario: A fresh Share dialog keeps OK disabled
+    core#980: OK is enabled on a fresh dialog and with an email typed but not accepted with Enter, and
+    says "Shared" while nothing is shared. Remove the tag when core#980 is fixed, and claim then that
+    OK stays disabled with an email typed and is enabled once Enter accepts it.
+    Given the context panel is open
+    When user clicks on "My stuff > My dashboards > BDD-ShareTable-{time} > BDD-ShareTable-{time}" tree node inside browse tree
+    Then the context panel should show "BDD-ShareTable-{time}"
+    When user expands Sharing section in context panel
+    And user clicks on "Share..." button in Sharing section in context panel
+    Then "Share BDD-ShareTable-{time}" dialog should be visible
+    And OK button in "Share BDD-ShareTable-{time}" dialog should be disabled

@@ -17,6 +17,10 @@ Feature: Filter panel over linked tables
   switched through the shell and each panel is opened empty through its API; the reads of the
   tables that must not move are single reads, not two a settle apart.
 
+  Edge cases: closing the view of a table whose filter narrows a linked table releases the linked
+  table's filter: a four-row races table linked filter to filter to demog-1000 by RACE, its card on
+  Asian leaving 15 demog rows, gives all 1000 back once its view is closed.
+
   Background:
     Given user is logged in
     And user opens spgi-100 dataset
@@ -83,4 +87,23 @@ Feature: Filter panel over linked tables
     When user switches to the "SPGI-linked1" table view
     Then 9 rows should be selected
     And 51 rows should pass the filter
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: Closing the view of a table whose filter narrows a linked table releases the linked table's filter
+    Given user opens demog-1000 dataset
+    And user opens a table "races" with:
+      | RACE      |
+      | Asian     |
+      | Black     |
+      | Caucasian |
+      | Other     |
+    And the "races" table is linked to the "demog-1000" table by "RACE" to "RACE" as "filter to filter"
+    When user opens an empty filter panel
+    And user adds a card for "RACE" to the filter panel
+    And user clicks on the "category Asian of RACE" area of filter panel
+    Then 1 row should pass the filter
+    And 15 rows of table "demog-1000" should pass the filter
+    When user closes the current view
+    Then 1000 rows of table "demog-1000" should pass the filter
     And no errors should have been logged

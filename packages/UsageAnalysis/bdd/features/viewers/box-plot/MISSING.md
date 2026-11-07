@@ -52,6 +52,44 @@ into claims added to `box-plot.feature` (category selector, the month and quarte
     And no errors should have been logged
   ```
 
+## Edge cases
+
+The edge-case round of 2026-10-26 (localhost). Its check is an `@edge-cases` scenario of its own, after the master scenarios of `box-plot.feature`: it shrinks the plot under Auto Layout itself and restores its size. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+
+### Still open
+
+1. **Steps requested**:
+   - The log-axis warning: the box plot draws "… can't be visualized in the log scale" over a value
+     with zero or negative values but reports no area for it. Wanted: a `y warning` area as the density
+     plot reports.
+   - Alpha typed in the property panel as 0, 1, 1.5 or -0.1 (help: 0 < alpha < 1) needs a step that
+     types into a property row (the property step goes through the API).
+   - A group of one row under Show Group Comparison gets the info mark whose tooltip says it has only
+     1 value and is left out of the comparison (`_leafNaReason`; decided 2026-10-28). The mark has no
+     area in the status: with groups A, B and a one-row C the status lists `category C` and
+     `C values` only, and a hover over `category C` shows the label's tooltip ("Group"). Wanted: a
+     `marker of <group>` area per drawn name-row marker (`_markerHits` / `_markerHitGroups` in
+     `box_plot_group_comparison.dart`), then the scenario hovers `marker of C` and claims the
+     tooltip contains "only 1 value".
+2. **Data**: the group comparison shown at 30 categories and hidden at 31 (help box-plot.md) needs a
+   categorical column with exactly 30 and 31 categories; demog-1000 has none.
+3. **Decided** (2026-10-28): the Category column removed while in use drops the grouping, with no
+   error; today `BoxPlotLook.auto`, run on every removal, picks another category column (no ticket
+   yet). The control group (picked on the chart) filtered out: the control moves to the next group, and the
+   picked group is the control again once the filter is released (checked by hand 2026-10-28); a step
+   reading the chart's control selector is needed to claim it.
+4. **API or Dart tests to write**: a value column holding NaN (not an empty value) with the violin
+   style, and retained listeners after ten add/close cycles and ten table swaps (core#960). On
+   demog-1000, a box plot of AGE by SEX:
+   - Show Group Comparison on: the comparison goes when a filter leaves only SEX = F (553 rows) and
+     comes back when both SEX values pass.
+   - Category 1 (SEX) removed from the table: Category 1 no longer names SEX and no error is
+     reported or logged.
+   - Every row filtered out (AGE 500 to 600) shows 0 rows and no error; the filter reset gives the
+     1000 rows back.
+
+   Moved out of BDD (no user gesture); requested from ApiTests.
+
 ## Closed issues the regression round of 26 Oct 2026 could not claim
 
 Written while folding the closed box plot issues into the box plot journeys.

@@ -27,3 +27,20 @@ surface" and the TestTrack `correlation-plot.md` / `correlation-plot-ui.md`. Wha
     And no errors should have been logged
   ```
 
+## Edge cases
+
+Written in the edge-case round of 2026-10-26 (localhost). No library, binding or code change was made. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+
+### Still open
+
+1. **Decided** (2026-10-28): a column removed from narrowed axes leaves only that column: core#1172,
+   fixed. No row passing, Row Source Selected with one row and a table with no numeric column give an
+   empty plot with no message; that is right as it is.
+2. **API or Dart tests to write**: a table with 120 numeric columns opens with Show Coefficients off.
+   On demog-1000 with the plot open:
+   - AGE renamed to AGE2: both axes read "AGE2, HEIGHT, WEIGHT, STARTED", the cell HEIGHT x AGE2
+     exists (HEIGHT x AGE does not) and shows -0.23, with no error.
+   - Axes narrowed to AGE, HEIGHT, WEIGHT, then WEIGHT removed: both axes read "AGE, HEIGHT", with
+     no error (core#1172).
+
+   Moved out of BDD (no user gesture); requested from ApiTests.

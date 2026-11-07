@@ -16,6 +16,11 @@ Feature: Who holds a role, and what it grants
   Deleting a role that holds a global permission (GROK-20904) is tested in datlas
   users_groups/groups_test.dart 'deleteGroupWithGlobalPermission'.
 
+  Edge cases: CANCEL in the Global Permissions dialog grants nothing (the box ticked before it is
+  unticked when the dialog is opened again, and the pane still says "No global permissions"); it is
+  claimed inside the new role's scenario, on its state as it is, since after the next scenario the role
+  holds that very permission.
+
   Background:
     Given user is logged in
     And a user "bddmanaged" is on the server
@@ -87,6 +92,21 @@ Feature: Who holds a role, and what it grants
   Scenario: A new role has no global permissions in its pane (Roles-14)
     When user expands "Global Permissions" section in context panel
     Then "Global Permissions" section in context panel should contain text "No global permissions"
+    When user clicks on MANAGE button in "Global Permissions" section in context panel
+    Then "BDD-RA-Role-{time}: Global Permissions" dialog should be visible
+    When user expands "Browse" tree node in "BDD-RA-Role-{time}: Global Permissions" dialog
+    And user checks "Browse > Browse Apps" tree node in "BDD-RA-Role-{time}: Global Permissions" dialog
+    Then "Browse > Browse Apps" tree node in "BDD-RA-Role-{time}: Global Permissions" dialog should be checked
+    When user clicks on CANCEL button in "BDD-RA-Role-{time}: Global Permissions" dialog
+    Then the "BDD-RA-Role-{time}: Global Permissions" dialog should close
+    When user clicks on MANAGE button in "Global Permissions" section in context panel
+    And user expands "Browse" tree node in "BDD-RA-Role-{time}: Global Permissions" dialog
+    Then "Browse > Browse Apps" tree node in "BDD-RA-Role-{time}: Global Permissions" dialog should be unchecked
+    When user clicks on CANCEL button in "BDD-RA-Role-{time}: Global Permissions" dialog
+    Then the "BDD-RA-Role-{time}: Global Permissions" dialog should close
+    And "Global Permissions" section in context panel should contain text "No global permissions"
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   Scenario: Global Permissions grants the role a permission (Roles-14)
     When user expands "Global Permissions" section in context panel

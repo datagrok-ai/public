@@ -24,6 +24,11 @@ Feature: Grid row selection, navigation and row source
   click had left it (measured on dev). Rows pinned under a scroll are `grid-pinning.feature`'s;
   Control+F and the block drag across the cells are out of scope by operator decision.
 
+  Edge cases: two known failures, in grid-known-failures.feature while core#1194 is open.
+  Shift+Enter, which selects every row holding the current cell's value, should select only the
+  rows that pass the filter (82 F rows aged 20 to 30), and nothing while Allow Row Selection is off
+  (core#1194).
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset

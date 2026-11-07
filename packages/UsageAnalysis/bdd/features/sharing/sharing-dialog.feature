@@ -25,6 +25,11 @@ Feature: The Share dialog and the Sharing pane
   Serial: the Queries view's search text is the account's own setting, shared with every feature
   that searches it.
 
+  Edge cases: one share is made, to be removed in the dialog and cancelled: ShareDialog2 is shared with
+  the sharing user, with Send notifications off, and that grant, removed in the dialog and then
+  cancelled, stays. The grant goes with the query. OK with no recipient accepted (core#980) is in
+  `sharing-table.feature`.
+
   Background:
     Given user is logged in
     And a query "ShareDialog1" on "System:Datagrok" reads "select 1 as x"
@@ -143,6 +148,37 @@ Feature: The Share dialog and the Sharing pane
     Then "Resulting permissions" dialog should contain text "No access"
     When user clicks on CANCEL button in "Resulting permissions" dialog
     Then the "Resulting permissions" dialog should close
+    When user clears gallery search
+    Then gallery search should have value ""
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  @edge-cases
+  Scenario: A grant removed in the Share dialog and then cancelled stays
+    Given the sharing user has no notifications, now and when the feature ends
+    When user enters "ShareDialog" into gallery search
+    Then "ShareDialog2" gallery card should be visible
+    When user picks "Share..." from the context menu of "ShareDialog2" gallery card
+    And user picks the sharing user in "User, group, or email" input in "Share ShareDialog2" dialog
+    And user unchecks "Send notifications" input in "Share ShareDialog2" dialog
+    And user clicks on OK button in "Share ShareDialog2" dialog
+    Then the "Share ShareDialog2" dialog should close
+    And an info balloon containing "Shared" should have been shown
+    When user picks "Share..." from the context menu of "ShareDialog2" gallery card
+    Then "Share ShareDialog2" dialog should be visible
+    And the access level of the sharing user in "Share ShareDialog2" dialog should be "View and use"
+    When user removes the sharing user from "Share ShareDialog2" dialog
+    And user clicks on CANCEL button in "Share ShareDialog2" dialog
+    Then the "Share ShareDialog2" dialog should close
+    When user clicks on "ShareDialog1" gallery card
+    Then the context panel should show "ShareDialog1"
+    When user clicks on "ShareDialog2" gallery card
+    Then the context panel should show "ShareDialog2"
+    And the sharing pane should list the sharing user
+    When user picks "Share..." from the context menu of "ShareDialog2" gallery card
+    Then the access level of the sharing user in "Share ShareDialog2" dialog should be "View and use"
+    When user clicks on CANCEL button in "Share ShareDialog2" dialog
+    Then the "Share ShareDialog2" dialog should close
     When user clears gallery search
     Then gallery search should have value ""
     And no errors should have been logged

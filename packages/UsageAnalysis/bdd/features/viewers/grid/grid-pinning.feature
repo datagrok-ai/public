@@ -32,6 +32,14 @@ Feature: Grid pinned rows and pinned columns
   after the load left the grid unscrolled on dev (reported to the operator as a possible product
   symptom), and which gesture scrolls is not the subject.
 
+  Edge cases: a pinned row follows its column through a rename and a layout. The grid's defects at
+  these edges are scenarios of their own, each ending on its known failure: a pinned row deleted and
+  brought back by Control+Z should be pinned again (core#1196); with twelve rows pinned the grid
+  shows ten and should say that pinned rows are hidden, and Unpin All Rows should unpin the ones it
+  does not show (core#1191); Unpin Column with Frozen Columns above the column count should log no
+  error, and Frozen Columns typed in the context panel above the column count or below 0 should not
+  be taken (core#1137).
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -188,4 +196,69 @@ Feature: Grid pinned rows and pinned columns
     When user clicks on the "row header 7" area of grid holding Shift
     Then rows 5 to 7 should be selected
     And 3 rows should be selected
+    And no errors should have been logged
+
+  @edge-cases @known-failure:210 @realizes:core#1196
+  Scenario: A pinned row deleted and brought back by Control+Z is pinned again
+    When user picks "Pin > Pin Row" from the context menu of the "cell 3 of USUBJID" area of grid
+    Then the "pinned rows" reading of grid should be 1
+    When user clicks on the "row header 3" area of grid holding Control
+    And user presses Shift+Delete
+    Then the table should have 999 rows
+    When user presses Control+Z
+    Then the table should have 1000 rows
+    And the "pinned rows" reading of grid should be 1
+
+  @edge-cases @known-failure:219 @realizes:core#1191
+  Scenario: Twelve rows pinned show ten, and the grid says that pinned rows are hidden
+    When user clicks on the "row header 1" area of grid
+    And user clicks on the "row header 12" area of grid holding Shift
+    Then 12 rows should be selected
+    When user picks "Pin > Pin Selected Rows" from the context menu of the "cell 1 of USUBJID" area of grid
+    Then the "pinned rows" reading of grid should be 10
+    And a warning balloon containing "10" should have been shown
+
+  @edge-cases @known-failure:231 @realizes:core#1191
+  Scenario: Unpin All Rows unpins the pinned rows the grid does not show
+    When user clicks on the "row header 1" area of grid
+    And user clicks on the "row header 12" area of grid holding Shift
+    And user picks "Pin > Pin Selected Rows" from the context menu of the "cell 1 of USUBJID" area of grid
+    Then the "pinned rows" reading of grid should be 10
+    When user picks "Pin > Unpin All Rows" from the context menu of the "cell 1 of USUBJID" area of grid
+    Then the "pinned rows" reading of grid should be 0
+    When user saves the layout of the current table view
+    And user loads the saved layout
+    Then the "pinned rows" reading of grid should be 0
+
+  @edge-cases @known-failure:237 @realizes:core#1137
+  Scenario: Unpin Column with Frozen Columns above the column count logs no error
+    When user sets "Frozen Columns" property of grid to "20"
+    And user picks "Pin > Unpin Column" from the context menu of the "header AGE" area of grid
+    Then no errors should have been logged
+
+  @edge-cases
+  Scenario Outline: Frozen Columns typed in the context panel as <typed> is not taken
+    When user hovers over the "header AGE" area of grid
+    And user clicks on "Edit properties (F4)" icon in grid
+    Then context panel should be visible
+    Given "Columns" category in context panel is expanded
+    When user enters "<typed>" into "Frozen Columns" property in context panel
+    Then "Frozen Columns" property of grid should be "1"
+
+    @known-failure:246 @realizes:core#1137
+    Examples: The typed value is taken
+      | typed |
+      | 20    |
+      | -1    |
+
+  @edge-cases
+  Scenario: A pinned row follows its column through a rename and a layout
+    When user picks "Pin > Pin Row" from the context menu of the "cell 6 of USUBJID" area of grid
+    Then the "pinned rows" reading of grid should be 1
+    When user picks "Column Properties..." from the context menu of the "header USUBJID" area of grid
+    And user enters "ID" into "New name:" input in "USUBJID" dialog
+    And user clicks on OK button in "USUBJID" dialog
+    And user saves the layout of the current table view
+    And user loads the saved layout
+    Then the "pinned rows" reading of grid should be 1
     And no errors should have been logged

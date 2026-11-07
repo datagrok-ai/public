@@ -13,6 +13,10 @@ Feature: Hierarchical filter card
   ticked in the card's own column list (its tree icon), and the reorder is a drag of RACE's row above
   SEX's there — a reorder clears the criterion (GROK-16528), as the manual case notes.
 
+  Edge cases: a level whose column is removed should drop out of the card, which keeps the other two
+  (core#1223: today the card keeps its three levels; a known failure, in
+  filter-panel-known-failures.feature while the ticket is open).
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset

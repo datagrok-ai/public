@@ -10,6 +10,9 @@ Feature: Trellis plot click actions
   viewer's canvas. One journey on demog-1000 with SEX by RACE; every scenario puts back what it
   changed.
 
+  Edge cases: closing the trellis gives back the rows its clicked cell filtered out: a filter that
+  outlives its viewer is a defect (core#233); the last scenario, as it closes the trellis.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -165,4 +168,14 @@ Feature: Trellis plot click actions
     Then "d4-trellis-plot-current-cell-changed" event should have fired on trellis plot viewer
     And "d4-trellis-plot-inner-viewer-clicked" event should have fired on trellis plot viewer
     And the "current cell" reading of trellis plot viewer should be "F | Black"
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: Closing the trellis gives back the rows its clicked cell filtered out
+    When user sets "On Click" property of trellis plot viewer to "Filter"
+    And user clicks on the "cell F | Caucasian" area of trellis plot viewer
+    Then 480 rows should pass the filter
+    When user clicks on close icon of trellis plot viewer
+    Then the open tableview should have 0 trellis plot viewers
+    And all rows should pass the filter
     And no errors should have been logged

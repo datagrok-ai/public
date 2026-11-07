@@ -16,6 +16,13 @@ Feature: Creating a space
   Serial with spaces-delete, whose tree lost its fixture space while this feature made root spaces (twice in four
   full runs; see spaces-delete.feature).
 
+  Edge cases: a child space dropped onto the Spaces node asks "Move <name> out?" in the "Move space"
+  dialog; MOVE saves it as a root space (`_initSpacesDragDrop` in browse_panel_tree.dart). A root name
+  must be unique: a child named like an existing root space is refused with the server's message in an
+  error balloon, the dialog stays open, and the child keeps its parent. Each scenario makes its own
+  parent and child, and for the refusal the root space, through the API, named with the run's time and
+  swept, the child moved out included, when the feature starts and ends.
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -76,3 +83,40 @@ Feature: Creating a space
     And user clicks on OK button in Create Space dialog
     Then the "Create Space" dialog should close
     And BDD-Child tree node inside browse tree should be visible
+
+  @edge-cases
+  Scenario: A child space dropped on the Spaces node is moved out to the root
+    Given no space named "BDDEdgeOut{time}, BDDEdgeOutParent{time}" is on the server
+    And a space named "BDDEdgeOutParent{time}" is on the server
+    And a space named "BDDEdgeOut{time}" under "BDDEdgeOutParent{time}" is on the server
+    And Spaces tree node inside browse tree is expanded
+    And Spaces---BDDEdgeOutParent{time} tree node inside browse tree is expanded
+    Then Spaces---BDDEdgeOutParent{time}---BDDEdgeOut{time} tree node inside browse tree should be visible
+    When user drags Spaces---BDDEdgeOutParent{time}---BDDEdgeOut{time} tree node inside browse tree to Spaces tree node inside browse tree
+    Then "Move space" dialog should be visible
+    And "Move space" dialog should contain text "Move BDDEdgeOut{time} out?"
+    When user clicks on MOVE button in "Move space" dialog
+    Then the "Move space" dialog should close
+    And Spaces---BDDEdgeOut{time} tree node inside browse tree should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  @edge-cases
+  Scenario: A child named like a root space is refused at the root and keeps its parent
+    Given no space named "BDDEdgeTaken{time}, BDDEdgeParent{time}" is on the server
+    And a space named "BDDEdgeTaken{time}" is on the server
+    And a space named "BDDEdgeParent{time}" is on the server
+    And a space named "BDDEdgeTaken{time}" under "BDDEdgeParent{time}" is on the server
+    And Spaces tree node inside browse tree is expanded
+    And Spaces---BDDEdgeParent{time} tree node inside browse tree is expanded
+    Then Spaces---BDDEdgeTaken{time} tree node inside browse tree should be visible
+    And Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree should be visible
+    When user drags Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree to Spaces tree node inside browse tree
+    Then "Move space" dialog should be visible
+    When user clicks on MOVE button in "Move space" dialog
+    Then an error balloon containing "already exists" should have been shown
+    And "Move space" dialog should be visible
+    When user clicks on CANCEL button in "Move space" dialog
+    Then the "Move space" dialog should close
+    And Spaces---BDDEdgeParent{time}---BDDEdgeTaken{time} tree node inside browse tree should be visible
+    And Spaces---BDDEdgeTaken{time} tree node inside browse tree should be visible

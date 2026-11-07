@@ -13,6 +13,62 @@ PowerPack's `formula-lines-dialog.feature`.
   `x axis labels drawn as` reading (`text` / `structure`, from the axis painter's renderer), claimed
   after the pick and again after a saved layout is applied.
 
+## Edge cases
+
+The edge-case round of 26 Oct 2026: data shapes, columns removed or renamed under the open viewer,
+layouts naming a missing column, property bounds, closing the viewer. Its checks are now `@edge-cases`
+scenarios of their own, after the master scenarios of `scatter-plot-zoom-filter.feature` and
+`scatter-plot-lines.feature`. Nothing here asks for a
+library, binding or code change; it lists what the features could not claim and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+1. **`rows shown` counts the rows an empty size hides.** With Size = HEIGHT on demog-1000 the plot
+   does not draw the 128 rows whose HEIGHT is empty (help scatter-plot.md, "X, Y, Colors, Sizes,
+   Markers"), yet `rows shown` reads 1000 with Show Markers With Empty Size off and on: the status
+   counts `visibleMarkers`, which ignores the option (`scatterplot_status.dart` `_markers` against
+   `scatterplot_renderer.dart:201`). The ink check is requested from ApiTests below. Needs `rows shown` to
+   skip rows the renderer skips (or a `markers drawn` reading); then: `Then scatter plot viewer
+   should show 872 rows` with the option off and 1000 with it on.
+
+#### 2. Questions for owners
+
+1. **Per-category lines at exactly 20 categories.** The help says per-category regression and
+   moving average lines work "up to 20 categories" (help scatter-plot.md:121, :161, :448, :456);
+   the code requires fewer than 20 (`features/regression_line.dart:20`,
+   `features/moving_average.dart:13`). At 20 categories the help promises per-category lines and
+   the code draws one common line. Which one is right: "fewer than 20" in the help, or `<= 20` in
+   the code?
+
+#### Decided
+
+1. A layout naming a missing Color column is applied and keeps the name in Color, and a removed
+   Color or Size column is dropped with no other column picked. These checks, with no rows and
+   renamed X and Color columns, are requested from ApiTests in `../MISSING.md`.
+2. Moving Average Window typed as 1 or 101 in the context panel is brought to 2 or 100: the last
+   scenario outline of `scatter-plot-lines.feature`, one Examples row per value, with the moving
+   average switched on first (core#1200, fixed).
+
+#### 3. API or Dart tests to write
+
+1. Dart regTest: a layout whose X, Color or Label column the table lacks (as
+   `viewers_test.dart:1881` for the trellis and `:1728` for the pivot).
+2. Dart benchmarks for core#1122: hover miss and selection drag count on 1M rows (timing is not a
+   UI claim).
+3. ApiTests: Moving Average Window round trip at 1 and 101, once the bound question is answered.
+4. ApiTests: with Size = HEIGHT, Show Markers With Empty Size on adds ink to the plot and off takes
+   it away; nothing logged.
+5. ApiTests: a one-row table plotted on x and y shows 1 row and the marker of row 1; nothing logged.
+6. ApiTests: removing AGE, the X column, takes it out of X; nothing logged.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
+
+### Edge cases: Won't do
+
+- Scale (1M-row hover and drag): timing belongs to the Dart benchmarks, not a feature.
+
 ## Closed issues the regression round of 26 Oct 2026 could not claim
 
 Written while turning the closed scatter plot issues into scenarios, now in the scatter plot's own

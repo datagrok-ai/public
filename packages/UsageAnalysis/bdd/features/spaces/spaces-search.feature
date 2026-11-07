@@ -8,6 +8,10 @@ Feature: Searching spaces
   search box that hides everything passes a one-sided check. The spaces are made through the API: the
   Create Space dialog is spaces-create's subject.
 
+  Edge cases: characters of the search syntax typed as text (an opening parenthesis, a double quote, a
+  condition with no value: "name =") match no space here: each search empties the list with no error,
+  and clearing the box brings the spaces back.
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -49,3 +53,31 @@ Feature: Searching spaces
     Then BDD-Find-Child link in gallery should be absent
     When user clears gallery search
     Then BDD-Find-Child link in gallery should be visible
+
+  @edge-cases
+  Scenario: Characters of the search syntax match no space, and clearing the search brings both back
+    When user clicks on Spaces tree node inside browse tree
+    And user clicks on "Refresh" icon
+    Then BDD-Find link in gallery should be visible
+    And BDD-Miss link in gallery should be visible
+    When user enters "(" into gallery search
+    Then gallery should have finished updating
+    And BDD-Find link in gallery should be absent
+    And BDD-Miss link in gallery should be absent
+    When user clears gallery search
+    Then BDD-Find link in gallery should be visible
+    When user enters "\"" into gallery search
+    Then gallery should have finished updating
+    And BDD-Find link in gallery should be absent
+    And BDD-Miss link in gallery should be absent
+    When user clears gallery search
+    Then BDD-Find link in gallery should be visible
+    When user enters "name =" into gallery search
+    Then gallery should have finished updating
+    And BDD-Find link in gallery should be absent
+    And BDD-Miss link in gallery should be absent
+    When user clears gallery search
+    Then BDD-Find link in gallery should be visible
+    And BDD-Miss link in gallery should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown

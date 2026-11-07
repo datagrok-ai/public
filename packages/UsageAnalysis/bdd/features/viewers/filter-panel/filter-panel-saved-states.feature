@@ -11,6 +11,10 @@ Feature: Saved filter panel states
   is set through the card's state; the second table's menu is the panel's title-bar menu, its
   default cards leaving no blank panel to right-click.
 
+  Edge cases: saving a filter state under a name already taken should ask before overwriting it
+  (core#1224: no dialog asks; a known failure, in filter-panel-known-failures.feature while the
+  ticket is open, on a state of its own name).
+
   Background:
     Given user is logged in
     And no saved filter state "bdd filter state" is kept, now or when the feature ends

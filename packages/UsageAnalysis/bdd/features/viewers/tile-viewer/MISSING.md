@@ -45,6 +45,60 @@ Written during the viewer-gaps round of 23 Oct 2026, against
     And no errors should have been logged
   ```
 
+## Edge cases (now in `tile-viewer.feature`, `tile-viewer-form-editor.feature` and `tile-viewer-known-failures.feature`)
+
+Written for the guard suite of edge cases of 26 Oct 2026 (its checks are now in
+`tile-viewer.feature`, and `@edge-cases` scenarios of their own after the master scenarios of
+`tile-viewer-form-editor.feature`, and the known failure in `tile-viewer-known-failures.feature`): data
+shapes, columns removed or renamed under the open viewer, layouts naming a missing column, property
+bounds, closing the viewer. Nothing here asks for a library, binding or code change made by that
+feature; it lists what the feature could not claim and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+None.
+
+#### 2. Decided
+
+1. **The lanes column removed** is dropped from the settings, as clearing it does, and no other
+   column is picked (`TileViewerLook.auto` keeps only a lanes name the table has). This check, with
+   no rows and a renamed lanes column, is requested from ApiTests in `../MISSING.md`.
+2. **A lanes column with empty values** has a lane titled `(no value)` (core#1217, fixed): claimed in
+   `tile-viewer-lanes.feature`. A card dropped into that lane gets an empty value, but the drop is not
+   claimed there: with a tile viewer open in another view (the journey's demog-1000), a card drag
+   logs `NullError: method not found: 'cZ' on null` while the value is still written (measured
+   2026-11-03 on localhost, not filed).
+3. **Escape in the form designer** after deleting a field does nothing: the designer is a view, not
+   a dialog. Right as it is (2026-10-30), claimed in `tile-viewer-form-editor.feature`. Escape in the
+   Edit dialog (the EDIT icon of the ribbon) cancels it: not written.
+
+#### 3. Questions for owners
+
+None.
+
+**Decided (2026-10-30):** a lanes column with more than 20 categories cannot be picked as Lanes; closing
+the form designer's tab after deleting a field works as it does today. Neither has a scenario.
+
+**Decided:** a drag between the lanes of a calculated column writes the lane's value: core#1237 was
+closed as won't fix (2026-10-30), not tested.
+
+#### 3. API or Dart tests to write
+
+1. Dart regTest: the Data Manipulation loop (`viewers_test.dart:904-950`) runs for
+   `ViewerDescriptor.all.take(30)` and skips the tile viewer (index 30); drop the `take(30)`.
+2. ApiTests: Row Source Selected with nothing selected shows 0 rows and 0 tiles; selecting the
+   Asian rows brings 15 rows, with row 10 in lane Asian; nothing logged.
+3. ApiTests: a one-row table with lanes on its group column shows 1 row and 1 tile, in lane g1.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
+
+### Edge cases: Won't do
+
+- core#1088 (a designer edit reaches one lane only): already pinned in
+  `tile-viewer-persistence.feature:71`.
+
 ## Closed issues the regression round of 26 Oct 2026 could not claim
 
 - **A value the card cuts off shows whole in a tooltip (public#1593, the value half)** regressed: no tooltip

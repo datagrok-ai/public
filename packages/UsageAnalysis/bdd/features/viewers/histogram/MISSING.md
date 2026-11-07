@@ -45,6 +45,39 @@ slider against the Bins property (github-2296) in `histogram.feature`, and exact
     And no errors should have been logged
   ```
 
+## Edge cases
+
+The edge-case round of 2026-10-26 (localhost). Its checks are now `@edge-cases` scenarios of their own, after the master scenarios of `histogram-range-filter.feature`; Bins typed as 201 is brought to 200 (core#1200, fixed), claimed in `histogram.feature`. Only the features were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+
+### Still open
+
+1. **Steps requested**: the range inputs' own validation. Min equal to max (50 and 50) is flagged by
+   the input validator ("Max should be greater than min", `histogram_core.dart`), while the viewer's
+   `error` reading stays empty (measured on localhost; the viewer reports only max below min). No step
+   reads the inputs' invalid state.
+2. **Decided**: Bins typed as 201 is brought to the declared maximum of 200 (core#1200, fixed:
+   a value outside the bounds is clamped, not refused), claimed in `histogram.feature`.
+3. **Decided (2026-10-30)**, claimed in `histogram-range-filter.feature`: `abc` in a range input is not
+   taken and the filter stays; switching Value while a range filters releases the range. Bin labels
+   dropped above 100 bins are right as they are (no scenario: no reading of the axis labels).
+4. **Not written yet**: the selectors hidden at 200 × 200 and shown at 201 × 201. The range checks
+   for a date value column (`STARTED`, date inputs) are in `histogram-range-filter.feature`: a maximum
+   below the minimum is reported, a range normalized to the filter logs no error with every row
+   filtered out (green, 2026-10-29). Not claimed: a bound past the dates (1/1/1992 as the maximum,
+   the last STARTED is in November 1991). Clamped or taken, the filter keeps the same 483 rows and the input
+   shows the typed text; telling them apart needs the `range max` reading on a date column,
+   measured in a run.
+
+### API or Dart tests to write
+
+- A layout whose Value column (HEIGHT) the table no longer has, loaded back, leaves the histogram
+  with no bin and the message `value: Column "HEIGHT" does not exist.`, and logs no error.
+- With every row filtered out the histogram shows 0 rows and reports no error; once the filter is
+  reset it shows 1000 rows again.
+- Bins set to 201 or 0 becomes 200 or 1 (core#1200, fixed).
+
+Moved out of BDD (no user gesture); requested from ApiTests.
+
 ## Closed issues the regression round of 26 Oct 2026 could not claim
 
 Written while turning the closed histogram issues into scenarios, now in the histogram's own journeys.

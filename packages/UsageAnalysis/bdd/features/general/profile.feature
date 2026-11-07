@@ -13,6 +13,10 @@ Feature: A person edits their own name on their profile
   reset code instead of opening its dialog, and whether a wrong current password is refused is the
   server's answer, not the page's.
 
+  Edge cases: an emptied first name is to keep OK disabled, and a first name longer than the 64
+  characters the profile stores is to be refused with a message, not saved, with no error logged.
+  Neither holds today (core#1180): both are known failures.
+
   Background:
     Given user is logged in
     And a user "bddprofile" is on the server
@@ -34,3 +38,28 @@ Feature: A person edits their own name on their profile
     When user signs in as themselves again
     Then the running account should be signed in
     And no errors should have been logged
+
+  @edge-cases @known-failure:51 @realizes:core#1180
+  Scenario: An emptied first name keeps OK disabled
+    core#1180: OK stays enabled with the first name emptied. Remove the tag when OK is disabled.
+    When user signs in as "bddprofile"
+    And user opens the address "/u"
+    Then "Logout" link should be visible
+    When user clicks on second "Edit" icon
+    Then "Enter new name" dialog should be visible
+    When user clears "First name" input in "Enter new name" dialog
+    Then OK button in "Enter new name" dialog should be disabled
+
+  @edge-cases @known-failure:65 @realizes:core#1180
+  Scenario: A first name longer than 64 characters is refused with a message
+    core#1180: the profile stores 64 characters of a first name (`users.first_name` is VARCHAR(64)).
+    Today the page shows the long name, the name is not saved, and the dialog stays open with no
+    message. Remove the tag when the dialog says the name is longer than 64 characters.
+    When user signs in as "bddprofile"
+    And user opens the address "/u"
+    Then "Logout" link should be visible
+    When user clicks on second "Edit" icon
+    Then "Enter new name" dialog should be visible
+    When user enters "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL" into "First name" input in "Enter new name" dialog
+    And user clicks on OK button in "Enter new name" dialog
+    Then "Enter new name" dialog should contain text "64"

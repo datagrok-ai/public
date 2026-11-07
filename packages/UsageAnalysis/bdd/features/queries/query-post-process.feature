@@ -11,6 +11,11 @@ Feature: A query's post-process runs on its result
   Not translated, and why: the case's layout half — two viewers on the Layout tab kept with the
   query — is query-layout.feature, which owns the layout and its cleanup.
 
+  Edge cases: a post-process script that throws (on a second query of the feature's, over
+  System:Datagrok's entity_types, named with the run's time and removed when the feature ends) shows an
+  error balloon carrying the error and opens no table: post-processing is a step of the data
+  transformation, so the SQL's raw result is not the query's result.
+
   Background:
     Given user is logged in
     And the stand has a reachable "PostgresTest" connection
@@ -51,3 +56,25 @@ Feature: A query's post-process runs on its result
     And user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree
     Then the table should have 77 rows
     And an info balloon containing "PP77" should have been shown
+
+  @edge-cases
+  Scenario: A post-process that throws shows its error and opens no table
+    Given no query named "BDDQPostFail{time}" is on the server
+    And the browse panel is open
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    When user picks "New Query..." from the context menu of Databases---Postgres---Datagrok tree node inside browse tree
+    Then the current view should be a DataQueryView view
+    When user enters "BDDQPostFail{time}" into Name input
+    And user replaces the code of code editor with "select name from entity_types where name = 'Project'"
+    And user clicks on Post-Process tab
+    And user appends "throw new Error('BDD post-process failure');" to code editor
+    And user clicks on Save button
+    Then 1 query named "BDDQPostFail{time}" should be on the server
+    When user closes all views
+    Given the browse panel is open
+    And Databases---Postgres---Datagrok tree node inside browse tree is expanded
+    When user refreshes the browse tree
+    And user picks "Run" from the context menu of Databases---Postgres---Datagrok---BDDQPostFail{time} tree node inside browse tree
+    Then an error balloon containing "BDD post-process failure" should have been shown
+    And no table view is open

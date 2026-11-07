@@ -23,6 +23,14 @@ Feature: Form viewer
   Table switching — the Table property moves a default form to spgi-100's columns and back, and a
   form built from columns chosen in that dialog shows spgi-100's columns too.
 
+  Edge cases: on a form added again after the title-bar close, the previous-row arrow on the first
+  row and the next-row arrow on the last row leave the current row where it is. In an editable form,
+  text typed into a numeric field leaves the cell as it was (core#1192). A file that is not a form, a
+  CSV file or a JSON file with no form in it (a saved table layout), is refused with an error balloon
+  "<file> is not a valid form file" and the form keeps its fields (core#1138); the files are fixtures
+  the project already keeps (`fixtures/cars-small.csv`, `fixtures/nx/spgi-legend-position-old.layout`).
+  A column removed from the table takes its field off a default form.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -353,3 +361,59 @@ Feature: Form viewer
     Then form viewer should be absent
     And no errors should have been logged
 
+  @edge-cases
+  Scenario: The previous-row arrow on the first row and the next-row arrow on the last row leave the current row where it is
+    When user adds a form viewer
+    Then the "fields shown" reading of form viewer should be 11
+    And row 1 should be current
+    When user clicks on the "previous row" area of form viewer
+    Then row 1 should be current
+    And the "row" reading of form viewer should be 1
+    When user makes the last row current
+    Then the "row" reading of form viewer should be 1000
+    When user clicks on the "next row" area of form viewer
+    Then row 1000 should be current
+    And the "row" reading of form viewer should be 1000
+    When user makes row 1 current
+    Then no errors should have been logged
+
+  @edge-cases @realizes:core#1192
+  Scenario: Text typed into a numeric field of an editable form leaves the cell as it was (core#1192)
+    When user clicks on the "edit" area of form viewer
+    Then the "editable" reading of form viewer should be "true"
+    When user enters "31" into the "field AGE" area of form viewer
+    Then the value of "AGE" column in row 1 should be "31"
+    When user enters "abc" into the "field AGE" area of form viewer
+    Then the value of "AGE" column in row 1 should be "31"
+    When user enters "26" into the "field AGE" area of form viewer
+    And user clicks on the "edit" area of form viewer
+    Then the "editable" reading of form viewer should be "false"
+    And the value of "AGE" column in row 1 should be "26"
+
+  @edge-cases @realizes:core#1138
+  Scenario: A file that is not a form is refused and the form keeps its fields (core#1138)
+    Given user sets "columnNames" property of form viewer to "AGE, HEIGHT, WEIGHT"
+    Then the "fields shown" reading of form viewer should be 3
+    When user uploads "fixtures/cars-small.csv" through folder open icon in form viewer
+    Then an error balloon containing "cars-small.csv is not a valid form file" should have been shown
+    And the "fields shown" reading of form viewer should be 3
+    When user uploads "fixtures/nx/spgi-legend-position-old.layout" through folder open icon in form viewer
+    Then an error balloon containing "spgi-legend-position-old.layout is not a valid form file" should have been shown
+    And the "fields shown" reading of form viewer should be 3
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: A column removed from the table takes its field off a default form
+    When user clicks on close icon of form viewer
+    And user adds a form viewer
+    Then the "fields shown" reading of form viewer should be 11
+    When user clicks on a "USUBJID" cell of grid other than the current one
+    And user moves the current cell of grid to the "DEMOG" column
+    And user picks "Remove" from the context menu of the "header DEMOG" area of grid
+    Then the table should not have a column "DEMOG"
+    And the "fields shown" reading of form viewer should be 10
+    And form viewer should not have a "field DEMOG" area
+    And form viewer should report no error
+    And no errors should have been logged
+    When user adds a calculated column "DEMOG" with formula "${RACE}"
+    Then the table should have a column "DEMOG"

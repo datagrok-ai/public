@@ -7,6 +7,10 @@ Feature: Bar chart selected and filtered rows overlays
   `filtered <category>` hit areas. The filtered share needs Row Source All (a chart of the
   filtered rows has nothing to outline). One journey on demog-1000 with a bar chart of AGE by RACE.
 
+  Edge cases: removing the column of the category a click filtered by gives the rows back (Asian
+  keeps 15 rows); the removal does not refilter the table, and the rows come back only on the next
+  refilter (core#1174). That check is in bar-chart-known-failures.feature while the ticket is open.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset

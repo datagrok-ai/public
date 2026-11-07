@@ -29,3 +29,27 @@ and the viewer's "Automation surface" (`public/libraries/utils/src/viewers/CLAUD
   renderer draws, on a card or in the grid, is the renderer's package test, not a feature (the
   library's "What never becomes a feature"). `forms-cards-drawn.feature` claims which row each card
   shows (`record of card <n>`).
+
+## Edge cases (now in `forms-core.feature`)
+
+Added in the edge-case round of 2026-10-26 (localhost); its scenarios are now `@edge-cases` scenarios of their own, after the master scenarios of `forms-core.feature` (a pinned row the filter hides, a pinned row deleted). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+
+### Still open
+
+1. **Decided**: a layout naming a column the table no longer has is applied without that column.
+   Observed on localhost: fields AGE, HEIGHT, SEX; layout saved; HEIGHT removed (`fields` =
+   "AGE, SEX"); the saved layout loaded: `fields` is "AGE, HEIGHT, SEX" again, and every render logs
+   "TypeError: Cannot read properties of null (reading 'semType')" (`buildForm`; rechecked 2026-10-29,
+   the removal itself logs nothing): public#4452, still open.
+2. **Decided**: a pinned row the filter hides stays pinned, as in the grid (claimed in
+   `forms-core.feature`). A row pinned by an empty cell is stored as the text "null" and
+   matches the first empty row on reload, with the non-unique warning shown at the pin: not a defect.
+3. **Package tests to write (PowerGrid)**: the Data Manipulation set the Dart viewers get (remove all
+   columns, all values empty, every row filtered out) for the Forms viewer, which is a JS viewer the
+   Dart regTest does not run; `fixedRowNumbers` set before Show Current Row.
+4. **API or Dart tests to write** (demog-1000):
+   - Every row deleted: 0 record cards and no error logged.
+   - Fields AGE, HEIGHT, SEX, the layout saved, HEIGHT removed and the layout loaded: 2 fields shown,
+     `fields` is "AGE, SEX", no error logged. public#4452, still open.
+
+   Moved out of BDD (no user gesture); requested from ApiTests.

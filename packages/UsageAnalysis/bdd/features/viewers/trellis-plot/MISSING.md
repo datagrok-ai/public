@@ -63,6 +63,48 @@ Nothing planned.
 - Pick Up / Apply, inner color, scroll: `x label <category>` / `y label <category>` areas are the way to
   tell which categories a scroll brought into the window.
 
+## Edge cases
+
+The edge-case round of 26 Oct 2026: data shapes, columns removed or renamed under the open viewer,
+layouts naming a missing column, property bounds, closing the viewer. Its checks are now `@edge-cases`
+scenarios of their own, after the master scenarios of `trellis-plot-keyboard.feature`,
+`trellis-plot-categories.feature`, `trellis-plot-click-actions.feature` and
+`trellis-plot-tiles-and-layout.feature`. Nothing here asks
+for a library, binding or code change; it lists what the features could not claim and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+None.
+
+#### 2. Decided (the rules in `../MISSING.md`)
+
+1. **Values outside a property's declared bounds typed in the context panel are brought to the
+   nearest bound** (core#1200, fixed): Tiles Per Row 11 becomes 10, claimed in
+   `trellis-plot-tiles-and-layout.feature`; 0 on a
+   one-column trellis crashed it (core#1057, fixed, in `trellis-plot-tiles-and-layout.feature`). No rows, a renamed split column and Tiles Per Row 0 set
+   through the API are requested from ApiTests in `../MISSING.md`.
+
+#### 3. Questions for owners
+
+None. Decided (2026-10-30): a layout naming an inner viewer type that is not installed falls back to
+the default inner type, the pie chart a trellis opens with, with a warning (core#1057 W2). No scenario: no viewer can be uninstalled from
+a feature.
+
+#### 4. API or Dart tests to write
+
+1. Dart regTest: `viewerType` with another case (`PC plot`) from a layout or `setOptions`
+   (core#1057 W2).
+2. Dart regTest: `tilesPerRow: 0` from JS or a layout (core#1057 W3; the UI path is pinned in the
+   feature).
+3. Dart regTests for the core#1057 leaks: full-screen dialog viewers, inner-look listeners on
+   property toggles, off-screen cells kept alive while scrolling 100 categories.
+
+### Edge cases: Won't do
+
+Nothing.
+
 ## Closed issues the regression round of 26 Oct 2026 could not claim
 
 public#2144 is claimed in `trellis-plot-split-and-inner-type.feature`, public#3617 and public#1547 in

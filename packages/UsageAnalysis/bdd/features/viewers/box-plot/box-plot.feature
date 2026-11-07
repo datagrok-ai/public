@@ -11,6 +11,9 @@ Feature: Box plot property surface
   One journey: demog-1000 (a stratified 1000-row demog: one marker per row per paint) with a box
   plot of AGE by SEX is opened once, and every scenario puts back what it changed.
 
+  Edge cases: a pointer moved over the plot shrunk under Auto Layout logs no error — it threw on
+  every mouse move before core#960.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -278,3 +281,15 @@ Feature: Box plot property surface
     When user double-clicks on empty plot space of box plot viewer
     Then "d4-boxplot-reset-view" event should have fired on box plot viewer
     And box plot viewer should show the remembered value range
+
+  @edge-cases @realizes:core#960
+  Scenario: A pointer moved over the plot shrunk under Auto Layout logs no error (core#960)
+    Given user sets "Auto Layout" property of box plot viewer to "true"
+    When user resizes box plot viewer to 170 by 150
+    Then box plot viewer should not have a "stats" area
+    When user hovers over box plot viewer
+    And user moves the pointer away from box plot viewer
+    And user hovers over box plot viewer
+    Then no errors should have been logged
+    When user restores the size of box plot viewer
+    Then box plot viewer should have a "stats" area

@@ -79,3 +79,52 @@ the properties is open there, and a scenario would then claim the wrong thing.
 - **Dynamic Camera Movement.** An endless rotation timer: nothing settles, a signature claim has no fixed frame.
 - **Marker size as a number.** The `point` area is a fixed 6×6 box, so Size and Marker Size Scaling are
   claimed as frame changes, not as marker sizes.
+
+## Edge cases
+
+The edge cases of the 3D scatter plot (26 Oct 2026): data shapes, columns removed or renamed under
+the open viewer, layouts naming a missing column, property bounds, closing the viewer. None of them
+has a user gesture, so no feature holds them; the checks are requested from ApiTests below. Nothing
+here asks for a library, binding or code change; it lists what could not be claimed and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+1. **Markers drawn.** `rows shown` is the filter count, not what the scene holds, so two core#1027
+   defects have no claim: a one-row table draws nothing (the marker scale `1/(10*ln 1)` is
+   Infinity) and rows removed while the plot is open stay drawn (200 markers after 50 of 200 rows
+   are removed). Needs a `markers drawn` reading from the instanced mesh (`JsScatterPlot3dCore`);
+   then a one-row table → 1, and remove 50 of 200 rows → 150, both tagged `@realizes:core#1027` (closed).
+
+#### 2. Decided
+
+1. **No column takes over** after the Size, Color or Label column is removed: the encoding is
+   dropped. The removal checks (core#1027: the X, Y and Z kept, the plot still answering a property
+   change) are in the API tests below.
+
+#### 3. Questions for owners
+
+None. A null label is empty, as on the scatter plot (2026-10-30, not reproduced).
+
+#### 3. API or Dart tests to write
+
+1. Dart regTest: WebGL contexts released after 17 plots are opened and closed (core#1027; a loop no
+   user claim measures).
+2. Dart regTest: options or a layout naming a Label or Size column the table lacks (core#1027, same
+   throw path as the removal).
+3. ApiTests: a filter that passes no row (AGE between 500 and 600) shows 0 rows and changes the
+   scene; resetting it brings back 872 rows and the same scene, with nothing logged and no balloon.
+4. ApiTests: AGE and HEIGHT renamed to AGE_YEARS and HEIGHT_CM are followed by X and Z; 872 rows shown.
+5. ApiTests: with Size = WEIGHT, removing WEIGHT logs nothing, and a Marker Type change after it
+   still redraws the scene (core#1027, fixed).
+6. ApiTests: with Color = RACE, removing RACE keeps X, Y and Z at AGE, WEIGHT and HEIGHT and logs
+   nothing (core#1027, fixed).
+7. ApiTests: the plot's table switched to cars and back to demog-1000 keeps the X, Y, Z and Color
+   column selectors on the viewer (core#1027, fixed).
+
+Moved out of BDD (no user gesture); requested from ApiTests.
+
+### Edge cases: Won't do
+
+Nothing.

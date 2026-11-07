@@ -10,6 +10,9 @@ Feature: Heat map navigation and grid mode
   redraws as a plain grid" used to be a repaint of at least 1000 pixels; it is `row height` going
   from under a pixel to 28 and the per-cell areas replacing the column bands.
 
+  Edge cases: an Alt-click without moving zooms the map to one row (`y scroll span` 0), an Alt-drag
+  to the rows it spans; neither selects a row.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -72,3 +75,22 @@ Feature: Heat map navigation and grid mode
     And the "row height" reading of heat map viewer should be between 0 and 8
     And the "y scroll span" reading of heat map viewer should be 1
     And heat map viewer should have a "column AGE" area
+
+  @edge-cases
+  Scenario: An Alt-drag zooms to the rows it spans and an Alt-click to one row, and neither selects a row
+    Then the "y scroll span" reading of heat map viewer should be 1
+    When user drags a zoom box over the "column AGE" area of heat map viewer
+    Then the "y scroll span" reading of heat map viewer should be lower than before
+    And no rows should be selected
+    When user double-clicks on the "y scroll slider" area of heat map viewer
+    And user double-clicks on the "x scroll slider" area of heat map viewer
+    Then the "y scroll span" reading of heat map viewer should be 1
+    When user clicks on the "column AGE" area of heat map viewer holding Alt
+    Then the "y scroll span" reading of heat map viewer should be 0
+    And the "row height" reading of heat map viewer should be higher than before
+    And no rows should be selected
+    When user double-clicks on the "y scroll slider" area of heat map viewer
+    And user double-clicks on the "x scroll slider" area of heat map viewer
+    Then the "y scroll span" reading of heat map viewer should be 1
+    And the "x scroll span" reading of heat map viewer should be 1
+    And no errors should have been logged

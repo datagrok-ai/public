@@ -8,6 +8,10 @@ Feature: Pie chart's own filter and the Auto legend
   with its category, since it would only repeat them (GROK-20793). One journey on demog-1000 with
   a pie chart of RACE; every scenario puts back what it changed.
 
+  Edge cases: a Filter formula no row passes (`${AGE} > 1000`, typed in the context panel) leaves an
+  empty chart, and a click on
+  its empty space leaves the table filter (SEX = M, 447 rows) alone.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -50,3 +54,25 @@ Feature: Pie chart's own filter and the Auto legend
     When user sets "Show Label" property of pie chart viewer to "false"
     Then legend of pie chart viewer should be visible
     And no errors should have been logged
+
+  @edge-cases
+  Scenario: A Filter formula no row passes leaves an empty pie, and a click on it leaves the table filter alone
+    When user sets "On Click" property of pie chart viewer to "Filter"
+    And user adds a categorical filter on "SEX" keeping "M"
+    Then 447 rows should pass the filter
+    When user clicks on settings icon of pie chart viewer
+    Then context panel should be visible
+    When user types "${AGE} > 1000" into "Filter" property in context panel
+    And user presses Enter
+    Then pie chart viewer should show 0 rows
+    And the "slices" reading of pie chart viewer should be 0
+    And 447 rows should pass the filter
+    When user clicks on the "view" area of pie chart viewer
+    Then 447 rows should pass the filter
+    And no errors should have been logged
+    When user hovers over "SEX" filter card
+    And user clicks on close of "SEX" filter card
+    Then all rows should pass the filter
+    When user sets "On Click" property of pie chart viewer to "Select"
+    And user sets "Filter" property of pie chart viewer to ""
+    Then pie chart viewer should show 1000 rows

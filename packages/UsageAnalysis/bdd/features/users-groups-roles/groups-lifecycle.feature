@@ -12,6 +12,12 @@ Feature: A group from creation to deletion
   as "New Group", and cleared it is marked invalid and OK is disabled (grok_group_meta.dart
   propertiesDialog). The feature claims what the dialog does.
 
+  Edge cases: a group made in the New Group dialog under the name of a group made through the API
+  (named with the run's time, deleted at feature end) is refused ("A group or role with the same name
+  already exists", `groups_repository.dart`), the dialog staying open. Properties refuses a name of
+  spaces only (`propertiesDialog`), and its CANCEL leaves the group on the server under its name; that
+  is claimed on the same API group.
+
   Background:
     Given user is logged in
     And no group named "BDD-GL-Group-{time}, BDD-GL-Renamed-{time}, BDD-GL-Cancelled-{time}" is on the server
@@ -93,6 +99,36 @@ Feature: A group from creation to deletion
     When user clears gallery search
     And user types "BDD-GL-Renamed-{time}" into gallery search
     Then "BDD-GL-Renamed-{time}" link in gallery should be absent
+    When user clears gallery search
+    Then no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  @edge-cases
+  Scenario: The New Group dialog refuses a name a group already has
+    Given a group named "BDDGEApi{time}" is on the server
+    When user clicks on "New Group..." button
+    And user types "BDDGEApi{time}" into Name input in "Create New Group" dialog
+    And user clicks on OK button in "Create New Group" dialog
+    Then an error balloon containing "A group or role with the same name already exists" should have been shown
+    And "Create New Group" dialog should be visible
+    And 1 group named "BDDGEApi{time}" should be on the server
+    When user clicks on CANCEL button in "Create New Group" dialog
+    Then the "Create New Group" dialog should close
+
+  @edge-cases
+  Scenario: Properties... refuses a name of spaces, and CANCEL keeps the group's name
+    Given a group named "BDDGEApi{time}" is on the server
+    When user clicks on "Refresh" icon inside gallery toolbar
+    And user types "BDDGEApi{time}" into gallery search
+    Then "BDDGEApi{time}" link in gallery should be visible
+    When user picks "Properties..." from the context menu of "BDDGEApi{time}" link in gallery
+    Then "BDDGEApi{time} Properties" dialog should be visible
+    When user types "   " into Name input in "BDDGEApi{time} Properties" dialog
+    Then Name input in "BDDGEApi{time} Properties" dialog should be invalid
+    And OK button in "BDDGEApi{time} Properties" dialog should be disabled
+    When user clicks on CANCEL button in "BDDGEApi{time} Properties" dialog
+    Then the "BDDGEApi{time} Properties" dialog should close
+    And 1 group named "BDDGEApi{time}" should be on the server
     When user clears gallery search
     Then no errors should have been logged
     And no error or warning balloon should have been shown

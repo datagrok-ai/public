@@ -42,6 +42,39 @@ surface" and `pivot-table.md`. The Table switch is in `pivot-table-table-switch.
 - **Dragging a key column header inside the inner grid** is now a `@known-failure` scenario in
   `pivot-table-inner-grid-drag.feature` (core#467).
 
+## Edge cases (now in `pivot-table-aggregation.feature`)
+
+Written for the pivot table edge cases, now an `@edge-cases` scenario of its own, after the master scenarios of `pivot-table-aggregation.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+
+### Still open
+
+**Decided, steps requested**: a blank key clicked under Filtering Enabled is the `(empty)` category (an empty value is a category named `(empty)`), so the `filter label` should say `(empty)`. The claim needs a click on the blank key cell, which has no hit area yet (`key cell <row> of <column>`).
+
+**Decided, steps requested**: a pivot on a column with thousands of categories (demog USUBJID) says that part of the categories was dropped (the silent-cut rule). Today `auto()` stops at 100 and the + picker has no cap, with no sign of either. The note has no wording yet, and the pivot reports no reading of it.
+
+**Questions for owners**
+
+None. ADD with nothing passing the filter adds an empty table, the user's choice (2026-10-30): claimed in `pivot-table-aggregation.feature`.
+
+**Remark on the code docs**
+
+- `pivot_viewer/CLAUDE.md` says a removed Group by column leaves `missingColumnError` over the grid. On the
+  stand the removal re-picks a column (`look.auto` from `onColumnsRemoved`) and no error shows. The re-pick is
+  the expected behaviour (a viewer that picks another column after its column is removed is correct), and it
+  is requested from ApiTests below; the document is left as it is.
+
+**API or Dart tests to write**
+
+1. Dart regTest: the Data Manipulation crash test runs for `ViewerDescriptor.all.take(30)` and skips the pivot, the tile viewer and the points viewer.
+2. Dart regTest: column names holding `, `, `[`, `]` or quotes through Save parameters and the history menu.
+3. ApiTests: on demog-1000 grouped by DIS_POP, removing DIS_POP re-picks SEVERITY as Group by; the pivot shows no error, aggregates 5 rows and logs nothing.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
+
+### Won't do
+
+- A layout grouping by a column the table lacks: covered by the Dart regTest "Grouped by a column the table lacks" (`viewers_test.dart`).
+
 ## Closed issues the regression round of 26 Oct 2026 could not claim
 
 Written while folding the closed pivot table issues into `pivot-table-inner-grid.feature` and

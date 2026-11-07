@@ -41,6 +41,34 @@ Nothing planned.
 - **The legend's own picker, its Cancel and a second pick (github-3132)**: `legend/legend-across-viewers.feature`;
   a conditional coloring's legend: `guides/scatter-plot-conditional-colors.feature`.
 
+## Edge cases (now `@edge-cases` scenarios of the color-coding journeys)
+
+Added with the color-coding edge cases (edge-case round of 2026-10-26, localhost), now `@edge-cases` scenarios of their own, after the master scenarios of `color-coding.feature`, `color-coding-editor-linear.feature`, `color-coding-editor-conditional-and-categorical.feature` and `color-coding-pick-up-apply-and-viewers.feature`. Only the scenarios were written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+
+### Still open
+
+1. **Decided** (2026-10-28):
+   - A linked coloring whose source column is removed paints nothing (core#1139, fixed). The
+     column's menu still shows it as Linked.
+   - Bin... takes a number of bins in a range (for example 1 to 100): core#1171, fixed (OK stays
+     disabled for 0), claimed in `color-coding-editor-conditional-and-categorical.feature`. 10000 bins hangs the tab, so no scenario
+     runs it.
+   - A coloring picked up from an uncoloured column and applied to a coloured one: the present
+     behaviour is right, the coloring is applied as if the source had it on.
+2. **Needs a ruling**: a one-value column (Level = 5, 5, 5), colored linearly or conditionally: the
+   coloring paints nothing (the cells are as an uncoloured column, the colour of Name). "Every cell the
+   same colour" holds with no coloring at all, so the scenarios were dropped; what the coloring should
+   paint for one value has to be decided first.
+3. **Steps requested**: the stop values typed in Edit scheme... (`abc`, stops out of order) have no
+   invalid state to read; the conditional editor's "Invalid pattern" mark is the model.
+4. **API or Dart tests to write** (demog-1000, AGE colored linearly, RACE linked to AGE):
+   - AGE renamed to AGE2: AGE2 stays linearly colored and RACE's cells keep AGE2's colors
+     (core#1139).
+   - AGE removed: RACE's cells paint as an uncolored column (as SEX) and no error is logged
+     (core#1139).
+
+   Moved out of BDD (no user gesture); requested from ApiTests.
+
 ## Closed issues the regression round of 26 Oct 2026 could not claim
 
 - **A colour-coded category column paints the bar chart's category names (public#3621)** regressed: filed

@@ -24,6 +24,17 @@ Feature: Editing the table's tooltip from a viewer
   names and the boxes, not the grid's columns; and that every viewer lists the picked columns in the
   same order — the tooltip steps claim the set, not the order (MISSING.md).
 
+  Edge cases: all on the box plot, after the scenarios above. Edit Tooltip writes the picked columns
+  on OK only (`edit_tooltip.dart`), so a change made in it and cancelled leaves the tooltip as it was.
+  Every column unticked and confirmed is a tooltip set to no column (`tooltip.dart`, "Columns
+  explicitly set to none"): the dialog opened again has every column unticked, and one ticked column
+  brings the tooltip back. A tooltip column removed from the table (a calculated copy of SEX, removed
+  from the grid header's menu) is skipped and the others still show, without an error. A tooltip
+  column renamed in its Column Properties is shown under its new name (core#1215, fixed); the last
+  scenario.
+  The check box above the list reads unchecked while only some columns are ticked, so unticking it
+  then changes nothing; a scenario that starts from a partial tooltip ticks it first, then unticks it.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -131,3 +142,94 @@ Feature: Editing the table's tooltip from a viewer
     Then the tooltip should show columns in the order "AGE, SEX"
     When user moves the pointer away from grid
     Then no errors should have been logged
+
+  @edge-cases
+  Scenario: A change made in Edit Tooltip and cancelled leaves the tooltip as it was
+    When user picks "Tooltip > Edit..." from the context menu of box plot viewer
+    Then "Edit Tooltip" dialog should be visible
+    When user toggles the "AGE" column in the column list of "Edit Tooltip" dialog
+    And user toggles the "RACE" column in the column list of "Edit Tooltip" dialog
+    Then the "AGE" column should not be checked in the column list of "Edit Tooltip" dialog
+    And the "RACE" column should be checked in the column list of "Edit Tooltip" dialog
+    When user clicks on CANCEL button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    When user hovers over the "marker" area of box plot viewer
+    Then the tooltip should show columns in the order "AGE, SEX"
+    And the tooltip should not show columns "RACE"
+    When user moves the pointer away from grid
+    Then no errors should have been logged
+
+  @edge-cases
+  Scenario: Every column unticked and confirmed is kept, and one ticked column brings the tooltip back
+    When user picks "Tooltip > Edit..." from the context menu of box plot viewer
+    Then "Edit Tooltip" dialog should be visible
+    When user checks checkbox in "Edit Tooltip" dialog
+    Then the "RACE" column should be checked in the column list of "Edit Tooltip" dialog
+    When user unchecks checkbox in "Edit Tooltip" dialog
+    Then the "AGE" column should not be checked in the column list of "Edit Tooltip" dialog
+    And the "RACE" column should not be checked in the column list of "Edit Tooltip" dialog
+    When user clicks on OK button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    When user picks "Tooltip > Edit..." from the context menu of box plot viewer
+    Then "Edit Tooltip" dialog should be visible
+    And the "AGE" column should not be checked in the column list of "Edit Tooltip" dialog
+    And the "SEX" column should not be checked in the column list of "Edit Tooltip" dialog
+    When user toggles the "AGE" column in the column list of "Edit Tooltip" dialog
+    And user clicks on OK button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    When user hovers over the "marker" area of box plot viewer
+    Then the tooltip should show columns in the order "AGE"
+    When user moves the pointer away from grid
+    And user picks "Tooltip > Edit..." from the context menu of box plot viewer
+    Then "Edit Tooltip" dialog should be visible
+    When user toggles the "SEX" column in the column list of "Edit Tooltip" dialog
+    And user clicks on OK button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    When user hovers over the "marker" area of box plot viewer
+    Then the tooltip should show columns in the order "AGE, SEX"
+    When user moves the pointer away from grid
+    Then no errors should have been logged
+
+  @edge-cases
+  Scenario: A tooltip column removed from the table is skipped and the others still show
+    Given user adds a calculated column "SEX_copy" with formula "${SEX}"
+    When user picks "Tooltip > Edit..." from the context menu of box plot viewer
+    Then "Edit Tooltip" dialog should be visible
+    When user checks checkbox in "Edit Tooltip" dialog
+    And user unchecks checkbox in "Edit Tooltip" dialog
+    Then the "WEIGHT" column should not be checked in the column list of "Edit Tooltip" dialog
+    When user toggles the "AGE" column in the column list of "Edit Tooltip" dialog
+    And user toggles the "SEX_copy" column in the column list of "Edit Tooltip" dialog
+    And user toggles the "WEIGHT" column in the column list of "Edit Tooltip" dialog
+    And user clicks on OK button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    When user hovers over the "marker" area of box plot viewer
+    Then the tooltip should show columns "AGE, SEX_copy, WEIGHT"
+    When user moves the pointer away from grid
+    And user scrolls the grid to the "SEX_copy" column
+    And user picks "Remove" from the context menu of the "header SEX_copy" area of grid
+    And user hovers over the "marker" area of box plot viewer
+    Then the tooltip should show columns in the order "AGE, WEIGHT"
+    When user moves the pointer away from grid
+    Then no errors should have been logged
+
+  @edge-cases @realizes:core#1215
+  Scenario: A tooltip column renamed is shown under its new name
+    When user picks "Tooltip > Edit..." from the context menu of box plot viewer
+    Then "Edit Tooltip" dialog should be visible
+    When user checks checkbox in "Edit Tooltip" dialog
+    And user unchecks checkbox in "Edit Tooltip" dialog
+    Then the "WEIGHT" column should not be checked in the column list of "Edit Tooltip" dialog
+    When user toggles the "AGE" column in the column list of "Edit Tooltip" dialog
+    And user toggles the "WEIGHT" column in the column list of "Edit Tooltip" dialog
+    And user clicks on OK button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    When user hovers over the "marker" area of box plot viewer
+    Then the tooltip should show columns in the order "AGE, WEIGHT"
+    When user moves the pointer away from grid
+    And user scrolls the grid to the "WEIGHT" column
+    And user picks "Column Properties..." from the context menu of the "header WEIGHT" area of grid
+    And user enters "MASS" into "New name:" input in "WEIGHT" dialog
+    And user clicks on OK button in "WEIGHT" dialog
+    And user hovers over the "marker" area of box plot viewer
+    Then the tooltip should show columns in the order "AGE, MASS"

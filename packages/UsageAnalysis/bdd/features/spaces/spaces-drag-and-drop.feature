@@ -17,6 +17,13 @@ Feature: Putting files into a space by dragging them
   what the old spec's "add waitForTimeout(600) before clicking YES (let the dialog initialize)" was
   covering up.
 
+  Edge cases: a link follows its original: a project moved into one space, linked into a second and
+  then moved from the first into a third still shows its details when its link is clicked, with no
+  error and no refresh of the tree (core#382, claimed on a project). A file linked from one space into
+  another shows in the target space (core#1042, fixed); the last scenario. The scenarios use spaces, a file
+  (the project's fixtures/cars-small.csv) and a project of its own, named with the run's time and
+  swept with what they hold when the feature starts and ends.
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -99,3 +106,73 @@ Feature: Putting files into a space by dragging them
     And demog.csv link in gallery should be visible
     And TSLA.csv link in gallery should be visible
     And beer.csv link in gallery should be visible
+
+  @edge-cases
+  Scenario: A linked project follows its original moved to a third space
+    Given a space named "BDDEdgeSrc{time}" is on the server
+    And a space named "BDDEdgeDst{time}" is on the server
+    And a space named "BDDEdgeMoveTo{time}" is on the server
+    And the "fixtures/cars-small.csv" file of the project is in the space "BDDEdgeSrc{time}" as "edgecars{time}.csv"
+    And no project named "BDDEdgeMoved{time}" is on the server
+    And user opens demog-1000 dataset
+    When user saves the current view as project "BDDEdgeMoved{time}"
+    And user closes all views
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDEdgeMoved{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user picks "Move to Space..." from the context menu of BDDEdgeMoved{time} gallery card
+    Then "Move to space" dialog should be visible
+    When user selects "BDDEdgeSrc{time}" in Space input in "Move to space" dialog
+    And user clicks on OK button in "Move to space" dialog
+    Then the "Move to space" dialog should close
+    When user clears gallery search
+    Given Spaces tree node inside browse tree is expanded
+    When user double-clicks on BDDEdgeSrc{time} tree node inside browse tree
+    Then "BDDEdgeMoved{time}" link in gallery should be visible
+    When user drags "BDDEdgeMoved{time}" link in gallery to BDDEdgeDst{time} tree node inside browse tree
+    Then Move entity dialog should be visible
+    And choice input in Move entity dialog should have value "Link"
+    When user clicks on YES button in Move entity dialog
+    Then Move entity dialog should be hidden
+    When user drags "BDDEdgeMoved{time}" link in gallery to BDDEdgeMoveTo{time} tree node inside browse tree
+    Then Move entity dialog should be visible
+    And choice input in Move entity dialog should be visible
+    When user selects "Move" in Move entity dialog
+    And user clicks on YES button in Move entity dialog
+    Then Move entity dialog should be hidden
+    When user double-clicks on BDDEdgeMoveTo{time} tree node inside browse tree
+    Then the "BDDEdgeMoveTo{time}" view should be current
+    And "BDDEdgeMoved{time}" link in gallery should be visible
+    When user double-clicks on BDDEdgeSrc{time} tree node inside browse tree
+    Then the "BDDEdgeSrc{time}" view should be current
+    And "edgecars{time}.csv" link in gallery should be visible
+    And "BDDEdgeMoved{time}" link in gallery should be absent
+    Given the context panel is open
+    When user double-clicks on BDDEdgeDst{time} tree node inside browse tree
+    Then the "BDDEdgeDst{time}" view should be current
+    And "BDDEdgeMoved{time}" link in gallery should be visible
+    When user clicks on "BDDEdgeMoved{time}" link in gallery
+    Then the context panel should show "BDDEdgeMoved{time}"
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  @edge-cases @realizes:core#1042
+  Scenario: A file linked from one space into another shows in the target space
+    Given a space named "BDDEdgeFileSrc{time}" is on the server
+    And a space named "BDDEdgeFileDst{time}" is on the server
+    And the "fixtures/cars-small.csv" file of the project is in the space "BDDEdgeFileSrc{time}" as "edgelinkcars{time}.csv"
+    And Spaces tree node inside browse tree is expanded
+    When user double-clicks on BDDEdgeFileSrc{time} tree node inside browse tree
+    Then the "BDDEdgeFileSrc{time}" view should be current
+    And "edgelinkcars{time}.csv" link in gallery should be visible
+    When user drags "edgelinkcars{time}.csv" link in gallery to BDDEdgeFileDst{time} tree node inside browse tree
+    Then Move entity dialog should be visible
+    And choice input in Move entity dialog should have value "Link"
+    When user clicks on YES button in Move entity dialog
+    Then Move entity dialog should be hidden
+    And no error or warning balloon should have been shown
+    When user double-clicks on BDDEdgeFileDst{time} tree node inside browse tree
+    Then the "BDDEdgeFileDst{time}" view should be current
+    And "edgelinkcars{time}.csv" link in gallery should be visible
+    And no errors should have been logged

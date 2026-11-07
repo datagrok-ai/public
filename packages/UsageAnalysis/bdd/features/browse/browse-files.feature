@@ -24,6 +24,13 @@ Feature: The Files section of the Browse tree
   or App Data, and a bare name matches whichever of them another feature happened to leave
   open: the tree remembers its expanded set per user, across features and across runs.
 
+  Edge cases: files Browse cannot preview. The help says: "Unsupported file formats cannot be
+  previewed, but you can download them" (help/access/files/files.md, the note under File browsing and
+  preview). A file with an extension no reader claims (".qqq") is downloaded from its menu with its
+  content, and it and an empty (0-byte) .csv and .txt show their details in the context panel when
+  clicked, with no error. Those files are written into App Data the way the Refresh scenario's file is,
+  under fixed names, deleted when the feature starts and when it ends.
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -72,6 +79,32 @@ Feature: The Files section of the Browse tree
     And Files---App-Data tree node inside browse tree is expanded
     And user expands Files---App-Data---UsageAnalysis tree node inside browse tree
     Then Files---App-Data---UsageAnalysis---bdd-browse-refresh.txt tree node inside browse tree should be visible
+    When user collapses Files---App-Data tree node inside browse tree
+    Then no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  @edge-cases
+  Scenario: Files of no readable format download with their content and show their details with no error
+    Given a file "System:AppData/UsageAnalysis/bdd-edge-odd.qqq" with text "an unreadable format" is on the server
+    And a file "System:AppData/UsageAnalysis/bdd-edge-empty.csv" with text "" is on the server
+    And a file "System:AppData/UsageAnalysis/bdd-edge-empty.txt" with text "" is on the server
+    And the context panel is open
+    And Files---App-Data tree node inside browse tree is expanded
+    When user refreshes the browse tree
+    And Files---App-Data tree node inside browse tree is expanded
+    And user expands Files---App-Data---UsageAnalysis tree node inside browse tree
+    Then Files---App-Data---UsageAnalysis---bdd-edge-odd.qqq tree node inside browse tree should be visible
+    Given user watches downloads
+    When user opens the context menu of Files---App-Data---UsageAnalysis---bdd-edge-odd.qqq tree node inside browse tree
+    And user downloads a file through "Download" menu item in context menu
+    Then a file "bdd-edge-odd.qqq" should have been downloaded
+    And the downloaded file "bdd-edge-odd.qqq" should contain text "an unreadable format"
+    When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-odd.qqq tree node inside browse tree
+    Then the context panel should show "bdd-edge-odd.qqq"
+    When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-empty.csv tree node inside browse tree
+    Then the context panel should show "bdd-edge-empty.csv"
+    When user clicks on Files---App-Data---UsageAnalysis---bdd-edge-empty.txt tree node inside browse tree
+    Then the context panel should show "bdd-edge-empty.txt"
     When user collapses Files---App-Data tree node inside browse tree
     Then no errors should have been logged
     And no error or warning balloon should have been shown

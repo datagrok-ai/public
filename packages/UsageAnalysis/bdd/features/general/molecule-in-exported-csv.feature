@@ -8,6 +8,8 @@ Feature: A molecule column exported to CSV as SMILES
   The conversion calls Chem:convertNotation, so Chem must be installed. Nothing is put on the server;
   the dialog keeps its last options in the browser, so the scenario sets every box itself.
 
+  Edge cases: an empty molecule cell goes out as an empty field, with no placeholder text.
+
   Background:
     Given user is logged in
     And the "Chem" package is installed
@@ -35,3 +37,26 @@ Feature: A molecule column exported to CSV as SMILES
     And the downloaded file should not contain "CAST Idea ID"
     And no errors should have been logged
     And no error or warning balloon should have been shown
+
+  @edge-cases
+  Scenario: An empty molecule cell is exported as an empty field
+    Given user opens a table "mols" with:
+      | id | smiles   | tag |
+      | 1  | CCO      | a   |
+      | 2  |          | b   |
+      | 3  | c1ccccc1 | c   |
+    Then "smiles" column should have semantic type "Molecule"
+    Given user watches downloads
+    When user clicks on Export icon in toolbar
+    And user clicks on "As CSV (options)..." text in toolbar
+    Then "Save as CSV" dialog should be visible
+    When user checks "Molecules as Smiles" checkbox in "Save as CSV" dialog
+    And user unchecks "Selected Columns Only" checkbox in "Save as CSV" dialog
+    And user unchecks "Selected Rows Only" checkbox in "Save as CSV" dialog
+    And user unchecks "Filtered Rows Only" checkbox in "Save as CSV" dialog
+    And user downloads a file through OK button in "Save as CSV" dialog
+    Then a file "mols.csv" should have been downloaded
+    And the downloaded file "mols.csv" should contain text "2,,b"
+    And the downloaded file should not contain "null"
+    And the downloaded file "mols.csv" should contain text "1,CCO,a"
+    And no errors should have been logged

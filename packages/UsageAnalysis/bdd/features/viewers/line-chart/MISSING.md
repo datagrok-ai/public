@@ -36,6 +36,48 @@ surface". What could be said about the mouse-over row line and the overview stri
     Then no errors should have been logged
   ```
 
+## Edge cases
+
+The edge cases of this viewer that the features could not state with the current step library and the expected behaviour documented today; the claimed ones are `@edge-cases` scenarios of their own, after the master scenarios of `line-chart.feature` and `line-chart-selection.feature`. No library, binding or code change was made for them.
+
+### Still open
+
+**Steps requested**
+
+1. Regression line and moving average after a table swap (core#1100, wrong behaviour 1): `regression lines` and `moving average lines` read what the status reports, which may survive the dead subscriptions. Needs a reading of what the last frame actually drew (the draw calls of the regression and moving-average passes), then: `When user sets "table" property … to "demog-1000"` and back, `Then the "regression lines drawn" reading of line chart viewer should be 1`, tagged `@realizes:core#1100` (closed).
+2. Stacked Area under a filter (core#1100, wrong behaviour 6): the expected Y maximum is the stack of the rows shown. Needs a fixture with a known stacked maximum per filter state (a small `user opens a table … with:` table whose stacked maximum is computed by hand), then `the 'y axis max of "<col>"' reading … should be between …` tagged with core#1100.
+
+3. Min above Max is swapped (the rule in `../MISSING.md`): X Min / X Max and Y Min / Y Max (`resetView` takes `math.min` / `math.max` of the two), and the Lower and Upper Control Limits (`line_chart_spc_feature.dart` has no cross-check yet). No scenario: the `x axis min` / `x axis max` readings are the range slider's bounds (`rangeSlider.minValue`), not the drawn window, and there is no reading of the Y range or of the control limits drawn. Needs readings of the drawn X and Y windows and of the control-limit lines.
+4. A layout whose split column the table does not have: the split is dropped. X and Y are required, so `auto()` re-picking them is kept.
+
+**Decided**
+
+1. X Min / X Max outside every X value (700000..800000 on spgi-100) are kept and the data stays in view (all 100 markers drawn): requested below as an API test.
+3. Line Width 0 (only the markers) and a negative width are taken and break nothing (2026-10-30): requested below as an API test.
+2. The chart bound to another table whose view is then closed keeps drawing that table, with no error: right as it is (2026-10-30).
+
+**Questions for owners**
+
+None.
+
+**API or Dart tests to write**
+
+1. Dart regTest: a layout or `setOptions` with `chartTypes: ['Bar Chart']` or an unknown type throws in `LineChartRenderer.getRenderer` on every frame.
+2. Dart regTest: the viewport-restore timer armed by `afterDeserialization` fires on a chart closed within 4 s (core#1100).
+3. Dart regTest: the aggregated marker map selects (61, Other) for the rows of (61, R) (core#1100, wrong behaviour 7); hidden rows hit-tested under Row Source Selected (wrong behaviour 2).
+4. ApiTests: a logarithmic Y axis over `Chemical Space X` on spgi-100 (starts at −4.25) drops the 41 non-positive points: 59 markers drawn, no error.
+5. ApiTests: SPC computes its process average over the rows that pass the filter (core#1100, fixed): `spc average` about 3.48 over all 100 rows, about 2.50 with CAST Idea ID kept between 634783 and 634834 (50 rows).
+6. ApiTests: X Min 700000 and X Max 800000 (outside every X value) are kept in the settings and all 100 markers are still drawn, no error.
+7. ApiTests: Line Width 0 and −3 are kept in the settings and all 100 markers are still drawn, no error.
+8. ApiTests: once every row of the table is deleted, a line chart of X = AGE draws 0 markers and reports no error.
+
+Moved out of BDD (no user gesture); requested from ApiTests.
+
+### Won't do
+
+- Whiskers over single-row groups, ±Inf in X and Y, all-null columns: core#1100 found them clean and the crash-only Data Manipulation test covers the class.
+- The SPC "Invalid formula" path of the viewer Filter: requested once for three viewers from ApiTests in `row-source/MISSING.md`.
+
 ## Closed issues the regression round of 26 Oct 2026 could not claim
 
 Written while turning the closed line chart issues into scenarios, now in the line chart's own

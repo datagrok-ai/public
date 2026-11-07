@@ -16,6 +16,9 @@ Feature: Tile viewer lanes
   is also the last scenario, because the first drag made after a context menu closes is swallowed
   by the platform and does nothing — a defect of its own, not something the drag scenarios claim.
 
+  Edge cases: on a table opened for it, the lane of an empty value is titled "(no value)" (core#1217),
+  before the viewer menu; it closes that table's view.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -167,6 +170,23 @@ Feature: Tile viewer lanes
     And user drags the card of row 10 of tile viewer into lane "Asian"
     Then the value of "RACE" column in row 10 should be "Asian"
     And the "lane of row 10" reading of tile viewer should be "Asian"
+    And no errors should have been logged
+
+  @edge-cases @realizes:core#1217
+  Scenario: The lane of an empty value is titled (no value) (core#1217)
+    Given user opens a table "with-empty" with:
+      | site | arm |
+      | A    | x   |
+      | A    |     |
+      | B    | y   |
+    And user adds a tile viewer with:
+      | Lanes Column Name | arm |
+    Then the "lane of row 1" reading of tile viewer should be "x"
+    And the "lanes" reading of tile viewer should be 3
+    And tile viewer should show the text "(no value)"
+    When user closes the current view
+    Then tile viewer should show 1000 rows
+    And the "lanes" reading of tile viewer should be 4
     And no errors should have been logged
 
   Scenario: The viewer's menu is reached where no card is
