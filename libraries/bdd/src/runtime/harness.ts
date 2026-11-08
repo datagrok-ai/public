@@ -87,7 +87,7 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
         failed.push({name, error: new Error(KNOWN_FAILURE_PASSED)});
       else if (page && usable(page)) {
         const info = test.info();
-        const error = settleAudit(await audited(() => auditScenario(page, () => takeLoggedErrors(page))),
+        const error = settleAudit(await audited(() => auditScenario(page, () => stackedErrors(page))),
           `${info.title} › ${name}`, info, name);
         if (error)
           failed.push({name, error});
@@ -224,6 +224,8 @@ function ignoredError(text: string, url: string): boolean {
   return text.startsWith('Permissions policy violation') && /^https:\/\/(www\.)?youtube\.com\//.test(url);
 }
 
+const LOOK_BELOW = /Look below, ID = (\S+)/;
+
 /** Starts collecting the page's console errors and uncaught exceptions. */
 export function watchErrors(page: Page): void {
   if (errors.has(page))
@@ -238,12 +240,14 @@ export function watchErrors(page: Page): void {
       return;
     const continuation = /^Stack trace (\S+)/.exec(text);
     if (continuation && announced.has(continuation[1])) {
-      const parent = list.findIndex((e) => new RegExp(`Look below, ID = ${continuation[1]}(\\s|$)`).test(e.message));
-      if (parent >= 0)
+      const parent = list.findIndex((e) => LOOK_BELOW.exec(e.message)?.[1] === continuation[1]);
+      if (parent >= 0) {
         list[parent].message += `\n${text}`;
+        stackJoined.get(page)?.();
+      }
       return;
     }
-    const id = /Look below, ID = (\S+)/.exec(text);
+    const id = LOOK_BELOW.exec(text);
     if (id)
       announced.add(id[1]);
     list.push({message: text, url: m.location().url ?? ''});
@@ -254,6 +258,37 @@ export function watchErrors(page: Page): void {
   // through beforeunload, and dismissing it, Playwright's default, cancels the navigation, which then waits
   // out its timeout. A listener ends that default for every dialog, so the others are dismissed here.
   page.on('dialog', (d) => (d.type() === 'beforeunload' ? d.accept() : d.dismiss()).catch(() => undefined));
+}
+
+const stackJoined = new WeakMap<Page, () => void>();
+const awaitsStack = (e: LoggedError): boolean => {
+  const id = LOOK_BELOW.exec(e.message)?.[1];
+  return id !== undefined && !e.message.includes(`\nStack trace ${id}`);
+};
+
+/** The translator's first answer loads the client's source maps, which takes the longest. */
+const STACK_MS = 30000;
+
+/** Until every error on the record has its translated stack, for a check about to report them; a stack that
+ * never comes (a stand without source maps) ends the wait at `ms`. With no such error, returns at once. */
+export async function stacksLogged(page: Page, ms = STACK_MS): Promise<void> {
+  const list = errors.get(page) ?? [];
+  const deadline = Date.now() + ms;
+  while (list.some(awaitsStack) && Date.now() < deadline) {
+    await new Promise<void>((done) => {
+      const timer = setTimeout(done, deadline - Date.now());
+      stackJoined.set(page, () => {
+        clearTimeout(timer);
+        done();
+      });
+    });
+  }
+  stackJoined.delete(page);
+}
+
+async function stackedErrors(page: Page): Promise<LoggedError[]> {
+  await stacksLogged(page);
+  return takeLoggedErrors(page);
 }
 
 /** The errors logged since the last call (or since the page opened), and clears them. */
@@ -336,7 +371,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
     const info = test.info();
     const audit = shouldAudit(info);
     const outcome: AuditOutcome = audit && !inJourney ?
-      await audited(() => auditScenario(p, () => takeLoggedErrors(p))) : {ran: [], findings: []};
+      await audited(() => auditScenario(p, () => stackedErrors(p))) : {ran: [], findings: []};
     if (!audit)
       await scenarioRestores.get(p)?.().catch((r) =>
         console.warn(`bdd: what "${info.title}" changed could not be put back: ${r instanceof Error ? r.message.split('\n')[0] : r}`));

@@ -3,6 +3,7 @@
 ## v.next
 
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
+* Substructure filter: Fixed removing a filter that never got its column (the column was not found, or the filter was never attached) failing with "Cannot read properties of null (reading 'temp')", as Remove All did when a view opened
 * Docker: chem-chem and chem-chemprop moved to a minimal Wolfi base with only the Python runtime and the service's venv; chemprop runs on CPU torch instead of the CUDA base image
 * Chemical Properties, the Properties panel: In RDKit mode, MW is the average molecular weight (OpenChemLib's average weight, within 0.01 of RDKit's MolWt), as in Crux mode, instead of the monoisotopic mass: MW meant a different number in each mode (HitTriage's MW in RDKit mode: 78.047 for benzene, now 78.114)
 * 3D Structure: Fixed the pane showing an empty white box after some molecules: each pane's 3D viewer (NGL) kept its WebGL context, a page keeps 16 (the browser drops the one used least recently), so the pane on screen lost its own. The viewer is made once the pane is on the page and released, with its context, once the pane leaves it. A V3000 block (any molecule with enhanced stereo, e.g. a CXSMILES with `|a:...|`, is written so), which the viewer loaded as no atoms, goes to V2000 with its 3D coordinates and is drawn; one over 999 atoms shows a message instead of an empty box. Tests: `cell panel` structure3d-widget
@@ -21,6 +22,7 @@
 * Tests: Added the category `crux: biopolymer`
 * `Chem:drawMolecule`: Added the optional `cache` parameter (true by default): false keeps no picture or canvas in the renderer afterwards, for very large one-off drawings (Bio's full-screen molecule dialog, Chem's Enlarge dialog)
 * Rendering: One molecule renderer for every drawing (the grid, `Chem:rdKitCellRenderer`, so `drawMolecule` and the panels, the SAR Matrix): one set of caches and one subscription. `Chem:rdKitCellRenderer` made a new renderer per call, and each stayed alive through its event subscription with its canvas and pictures
+* [core#1311](https://github.com/datagrok-ai/core/issues/1311): mol2: Fixed the page hanging on a file whose atom lines have no charge column or that ends without a line break
 * [#2628](https://github.com/datagrok-ai/public/issues/2628): Substructure filter: Fixed Use as filter keeping the previous query's rows when the table was re-filtered within a second of it (e.g. after another view removed its Structure card)
 * [#2626](https://github.com/datagrok-ai/public/issues/2626): Scaffold Tree: Added a package test: the child dialog of a scaffold drawn with an explicit H opens with no warning
 * [#2628](https://github.com/datagrok-ai/public/issues/2628): Substructure filter: Added a package test: Use as filter filters after a second view removed its Structure card
