@@ -8,6 +8,7 @@
 * Multiline Rendering: Marks chain breaks with `|`, as the single line does
 * Detectors: A column is detected as BILN when at least half of the sampled values are one chain or carry a connection mark in every chain; one value with a free chain left the whole column undetected. Test: `detectors`, BILN with a free chain in one value
 * Samples: `BILN_W_HELM.csv` wrote the dashed monomers `D-Hyp` and `D-Pen` unbracketed in two rows, which BILN reads as two monomers each; they are bracketed now, and those rows' HELM and molfiles rebuilt
+* Samples: New `BILN_complex.csv`, 120 peptides in BILN with their connections (168 bonds): disulfide-rich hormones and toxins, head-to-tail and side-chain rings, lasso and lariat peptides, multi-chain insulins, lipidated branches, a lysine dendrimer, 3-arm scaffolds, linear drugs, and rows of long non-natural monomer names. They use 96 non-natural monomers of the default library, where one is missing a stand-in says so in the `notes` column. Test: `detectors`, samplesBilnComplexCsv
 
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Docker: Moved the PepSeA image onto Wolfi with mafft 7.525 built from source and no pip in the final image; it reports no known vulnerabilities (was 2797)
