@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4461](https://github.com/datagrok-ai/public/issues/4461): Add New Column: Fixed adding a column or editing its formula not being undoable
 * [core#342](https://github.com/datagrok-ai/core/issues/342): Excel import: Fixed an unreadable .xlsx file leaving its loading indicator spinning forever; it now reports the error
 * Chat: Fixed the compose box building its u2 input with no owner, which threw in strict mode (tests, dev) and leaked the input; it now lives on a root of its own that the chat disposes
 * [public#4445](https://github.com/datagrok-ai/public/issues/4445): Add New Column: Fixed the preview wrapping a long double onto two lines when the column name is short

@@ -83,8 +83,7 @@ export class Column<T = any, TInit = T> {
 
   /** Creates BigIntColumn from BigInt64Array / BigUint64Array */
   static fromBigInt64Array(name: string, array: BigInt64Array | BigUint64Array) {
-    return this.fromList(TYPE.BIG_INT as ColumnType, name, Array.from(array, (v: any, _) =>
-      api.grok_BigIntJs_To_BigInt(v.toString())));
+    return this.fromList(TYPE.BIG_INT as ColumnType, name, Array.from(array));
   }
 
   /**
@@ -93,7 +92,9 @@ export class Column<T = any, TInit = T> {
    * @param name - column name
    * @param list - list of values */
   static fromList(type: ColumnType, name: string, list: any[]): Column {
-    const values = type === TYPE.DATE_TIME ? list.map((v: any) => v?.valueOf()) : list;
+    const values = type === TYPE.DATE_TIME ? list.map((v: any) => v?.valueOf())
+      : type === TYPE.BIG_INT ? list.map((v: any) => typeof v === 'bigint' ? api.grok_BigIntJs_To_BigInt(v.toString()) : v)
+      : list;
     return toJs(api.grok_Column_FromList(type, name, values));
   }
 
