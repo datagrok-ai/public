@@ -280,15 +280,17 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
 
   // Today
   const attention = div([], 'pmx-monitor-attention');
-  // an animal's menu on its row (its name, the first cell)
-  attention.addEventListener('contextmenu', (e) => {
-    const name = (e.target as HTMLElement).closest('.u2-table-row')?.querySelector('td')?.textContent?.trim();
-    if (!name)
-      return;
-    e.preventDefault();
-    studyMenu(studyNamesOf(studyTable()), 'animal', name, {causedBy: e});
-  });
   const sheet = div([], 'pmx-monitor-sheet');
+  // an animal's menu on its row (its name, the first cell), in the attention list and the measurement sheet alike
+  for (const list of [attention, sheet]) {
+    list.addEventListener('contextmenu', (e) => {
+      const name = (e.target as HTMLElement).closest('.u2-table-row')?.querySelector('td')?.textContent?.trim();
+      if (!name)
+        return;
+      e.preventDefault();
+      studyMenu(studyNamesOf(studyTable()), 'animal', name, {causedBy: e});
+    });
+  }
   const noteBox = notesBox();
   // each value as it goes in, against what the last run expected: no run needed to hear "measure again"
   const entered = div([], 'pmx-monitor-entered');
