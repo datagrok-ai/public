@@ -18,6 +18,7 @@ import {filter} from 'rxjs/operators';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import wu from 'wu';
 import {getWebLogoChunkFrequencies} from '../utils/web-logo-chunk';
+import {getBioRendererDefaults} from '../utils/renderer-defaults';
 
 // ============================================================================
 // OPTIMIZED VIEWPORT-AWARE CACHING WITH FORCE UPDATE SUPPORT
@@ -364,7 +365,8 @@ export function handleSequenceHeaderRendering() {
         const ifNan = (a: number, els: number) => (Number.isNaN(a) || a == null ? els : a);
         const getStart = () => ifNan(Math.max(Number.parseInt(seqCol.getTag(bioTAGS.positionShift) ?? '0'), 0), 0) + 1;
         const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
-        const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
+        // the position width the placer gives an MSA column: the column's font size, else the package default
+        const getFontSize = () => MonomerPlacer.getFontSettings(seqCol, getBioRendererDefaults().fontSize).fontWidth;
 
         // Get maximum sequence length. since this scroller is only applicable to Single character monomeric sequences,
         // we do not need to check every single sequence and split it, instead, max length will coorelate with length of the longest string

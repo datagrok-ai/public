@@ -15,6 +15,7 @@ import './tests/monomer-libraries-tests';
 import './tests/monomer-manager-tests';
 import './tests/renderers-test';
 import './tests/renderers-monomer-placer-tests';
+import './tests/renderers-connections-tests';
 import './tests/converters-test';
 import './tests/fasta-handler-test';
 import './tests/fasta-export-tests';

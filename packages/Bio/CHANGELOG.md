@@ -2,6 +2,13 @@
 
 ## v.next
 
+* Macromolecule renderer: Connections drawn as lines. A BILN row's cyclizations and bonds between chains (disulfides, lactams, staples, head-to-tail rings, bonds to a scaffold) are drawn as brackets over the monomers, which print their plain symbols instead of marks like `C(1,3)`, when the row is tall enough (three lanes fit the default 30 px rows); otherwise the marks stay. In tall rows, two chains, ladders and branches go one line per chain; a scaffold bonded to three monomers is one comb; hovering a bonded monomer marks its partners and its tooltip lists the bonds; multiline rows bracket the bonds within a line and number the bonds a line break cuts, when that room costs no line of the sequence. New package setting `ShowConnections` (on by default) and the column's Renderer Settings input "Show Connections" (the `.mm.cellRenderer.showConnections` tag). Test: `renderers: connections`
+* Macromolecule renderer: The package's `FontSize` is the default of every column without its own font size (the renderer used 12), `MaxMonomerLength` 'long' means no shortening in BILN columns too (they read it as 4), and changes of these settings reach open grids without a reload. Test: `renderers: connections`, package defaults
+* Macromolecule renderer: A font size set on a column reaches every grid that shows it; the first grid to redraw consumed the change. Test: `renderers: connections`, font size in two grids
+* Multiline Rendering: Marks chain breaks with `|`, as the single line does
+* Detectors: A column is detected as BILN when at least half of the sampled values are one chain or carry a connection mark in every chain; one value with a free chain left the whole column undetected. Test: `detectors`, BILN with a free chain in one value
+* Samples: `BILN_W_HELM.csv` wrote the dashed monomers `D-Hyp` and `D-Pen` unbracketed in two rows, which BILN reads as two monomers each; they are bracketed now, and those rows' HELM and molfiles rebuilt
+
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Docker: Moved the PepSeA image onto Wolfi with mafft 7.525 built from source and no pip in the final image; it reports no known vulnerabilities (was 2797)
 
