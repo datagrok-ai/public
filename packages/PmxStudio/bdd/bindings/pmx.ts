@@ -3,7 +3,8 @@
    should move them (the numbers themselves are the package tests'). */
 import {Page, test} from '@playwright/test';
 import {element, Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, expect, openTopMenu, pollMs, silent} from '@datagrok-libraries/bdd/runtime';
+import {atFeatureEnd, expect, gestures, openTopMenu, pollMs, silent} from '@datagrok-libraries/bdd/runtime';
+import type {ElementRef} from '@datagrok-libraries/bdd/runtime';
 
 element('form run button', {selector: '.pmx-declaration [data-u2="button"]:has-text("Run")'});
 element('advanced header', {selector: '.pmx-declaration .u2-form-category:has-text("Advanced")'});
@@ -139,7 +140,9 @@ export const twinDiffers = Then('the twin line should differ from remembered', a
 // the teaser guide: the stage steps, Monitor's attention list, the Overview's studies, and what filming needs
 element('overview step', {selector: '.pmx-head-steps button:has-text("Overview")'});
 element('monitor step', {selector: '.pmx-head-steps button:has-text("Monitor")'});
+element('analyze header step', {selector: '.pmx-head-steps button:has-text("Analyze")'});
 element('first attention row', {selector: '.pmx-monitor-attention .u2-table-row >> nth=0'});
+element('first sheet row', {selector: '.pmx-monitor-sheet .u2-table-row >> nth=0'});
 element('your studies', {selector: '.pmx-library'});
 // the demo MC38 study at its three moments, as the Overview lists it
 element('demo plan row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response (its plan)")'});
@@ -166,8 +169,10 @@ export const presenting = Given('the shell is in presentation mode without toolt
 export const pointAtMenu = When('user points at {string} in the top menu', async (page: Page, path: string) => {
   await openTopMenu(page, path, false);
   await page.waitForTimeout(1500);
-  await page.keyboard.press('Escape');
-  await page.mouse.move(960, 600);
+  // closed by the page, not a key press: a filmed key shows as a badge over the caption
+  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})));
+  // parked in the bottom-left corner, over the form's blank foot: over a chart it would raise the chart's tooltip
+  await page.mouse.move(12, 1070);
 }, {tier: 'ui', description: 'the menu walked to the item and left open a moment, nothing run'});
 
 export const stageOpen = Then('the {word} stage should be open', async (page: Page, stage: string) => {
@@ -187,3 +192,51 @@ export const studiesListed = Then('the studies should be listed', async (page: P
   await expect.poll(() => page.locator('.pmx-library .u2-table-row').filter({visible: true}).count(),
     {timeout: pollMs(120000), message: 'the Overview\'s studies'}).toBeGreaterThan(3);
 }, {description: 'the Overview lists the user\'s and the demo studies (each demo is simulated first); silent in a guide'});
+
+/** What a guide films as the step's last picture is the page once PMX Studio has finished: a view a click opens (added
+ *  a task later; a demo study is simulated first), and the loader of what it computes. */
+async function settled(page: Page, viewChanges: boolean, before: string): Promise<void> {
+  if (viewChanges)
+    await page.waitForFunction((b) => (window as any).grok.shell.v?.name !== b, before, {timeout: pollMs(120000)});
+  await page.waitForTimeout(400);
+  // the view's loader, and the inline ones of what follows later (the twins in Analyze) — those on screen: a pane below
+  // the fold (Plan's sweeps) is not in the picture
+  await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.pmx-busy, .u2-loader-spinner'))
+    .filter((e) => {
+      const r = e.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < window.innerHeight;
+    }).length), {timeout: pollMs(120000), message: 'a loader shows on screen'}).toBe(0);
+}
+const currentView = (page: Page) => page.evaluate(() => String((window as any).grok.shell.v?.name ?? ''));
+
+export const clickOpensStage = When('user clicks on {element} and the stage opens', async (page: Page, target: ElementRef) => {
+  const before = await currentView(page);
+  await gestures.click(page, target);
+  await settled(page, true, before);
+}, {tier: 'ui', description: 'the click, then the view it opens current and its loader gone'});
+
+export const clickSettles = When('user clicks on {element} and PMX Studio settles', async (page: Page, target: ElementRef) => {
+  await gestures.click(page, target);
+  await settled(page, false, '');
+}, {tier: 'ui', description: "the click, then the view's loader gone"});
+
+export const enterSettles = When('user enters {string} into {element} and PMX Studio settles',
+  async (page: Page, text: string, target: ElementRef) => {
+    await gestures.typeInto(page, target, text, true);
+    await settled(page, false, '');
+  }, {tier: 'ui', description: 'the value typed and committed, then the recompute it starts finished'});
+
+export const openOverview = Given('user opens PMX Studio on its Overview', async (page: Page) => {
+  silent(page);
+  await page.evaluate(async () => {
+    const g = (window as any).grok;
+    g.shell.addView(await g.functions.call('PmxStudio:pmxStudioApp', {}));
+  });
+  await expect.poll(() => page.locator('.pmx-library .u2-table-row').filter({visible: true}).count(),
+    {timeout: pollMs(120000), message: "the Overview's studies"}).toBeGreaterThan(3);
+  await page.mouse.move(12, 1070);
+}, {tier: 'api', description: 'the app opened and its studies listed (each demo is simulated first); silent in a guide'});
+
+export const studiesShown = Then("the lab's studies should be on the Overview", async (page: Page) => {
+  await expect(page.locator('.pmx-library .u2-table-row').filter({visible: true}).first()).toBeVisible();
+}, {description: 'the step a guide opens on: the Overview with its studies'});

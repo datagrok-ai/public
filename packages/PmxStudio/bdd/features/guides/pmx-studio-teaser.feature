@@ -1,71 +1,48 @@
 @guide
-Feature: PMX Studio in two minutes
-  A teaser: the answer to "what does PMX Studio do for a preclinical efficacy study?". A lab's portfolio on the
-  Overview; one study, MC38, at its three moments: its plan, followed halfway through (an animal flagged, the forecasts
-  recomputed) and analyzed with each animal against its digital twin and followed past its last measurement.
+Feature: PMX Studio
+  A teaser: the answer to "what does PMX Studio do for a preclinical efficacy study?". The lab's portfolio on the
+  Overview; an MC38 study planned, followed halfway through (an animal flagged) and analyzed, each animal against its
+  digital twin and the study followed past its last measurement; moving between the stages from the header.
 
-  Scenario: One study from its plan to its analysis
+  Scenario: An efficacy study from its design to its analysis
     Given the guide may take up to 8 minutes
     And user is logged in
     And simple mode is off
     And the shell is in presentation mode without tooltips
-    # caption: PMX Studio: the lab's studies, planned, running and finished
-    And user opens PMX Studio
-    Then the studies should be listed
-    # caption: PMX Studio: the lab's studies, planned, running and finished
-    And user waits 3 seconds
-    # caption: The plan of an MC38 study, sized from the atlas of historical controls
-    When user clicks on demo plan row
-    Then the plan stage should be open
-    # caption: The plan of an MC38 study, sized from the atlas of historical controls
-    And user waits 2 seconds
-    # caption: Change an assumption: the design follows at once
-    When user enters "1200" into "Endpoint volume" input
-    Then the study should have finished running
-    # caption: Change an assumption: the design follows at once
-    And user waits 2 seconds
-    # caption: The same study, halfway through
-    When user clicks on overview step
-    # caption: The same study, halfway through
-    And user clicks on demo followed row
-    Then the monitor stage should be open
-    # caption: Monitor: who needs attention today, and when the study should end
-    And user waits 3 seconds
-    # caption: Flag an animal from its row
-    When user picks "Flag this animal…" from the context menu of first attention row
-    # caption: With its reason: it goes in the study's log
+    And user opens PMX Studio on its Overview
+    # caption: Every tumor efficacy study of the lab, from its design to its analysis
+    Then the lab's studies should be on the Overview
+    # caption: Plan: group sizes, duration and power, predicted from historical control studies
+    When user clicks on demo plan row and the stage opens
+    # caption: Every assumption is live: lower the endpoint volume and the design follows
+    And user enters "1200" into "Endpoint volume" input and PMX Studio settles
+    # caption: Monitor: the running study against what its plan predicted
+    When user clicks on monitor step and the stage opens
+    # caption: Monitor: the running study against what its plan predicted
+    And user clicks on "Follow an example study" button and PMX Studio settles
+    # caption: Halfway through: each group against its forecast, and when the study should end
+    Then "Needs attention" section should be visible
+    # caption: For every animal, the range its next measurement should fall in
+    When user clicks on "Measurements" tab
+    # caption: Any animal can be flagged for review, with its reason
+    And user picks "Flag this animal…" from the context menu of first sheet row
+    # caption: Any animal can be flagged for review, with its reason
     And user enters "Ulcerated tumor: check at the next session" into "Reason" input
-    # caption: With its reason: it goes in the study's log
-    And user clicks on "OK" button
-    Then the study should have finished running
-    # caption: The forecasts are recomputed with it
-    And user waits 2 seconds
-    # caption: The study with all its data
-    When user clicks on overview step
-    # caption: The study with all its data
-    And user clicks on demo finished row
-    Then the analyze stage should be open
-    # caption: Analyze: every arm against the control
-    And user waits 2 seconds
-    # caption: Each animal against its digital twin, untreated
-    When user clicks on each animal tab
-    Then the study should have finished running
-    # caption: Each animal against its digital twin, untreated
-    And user waits 3 seconds
-    # caption: Survival to the endpoint
+    # caption: Flags and exclusions are logged with who, when and why, and travel with the study
+    And user clicks on "OK" button and PMX Studio settles
+    # caption: Analyze: the finished study, every arm against the control
+    When user clicks on analyze header step and the stage opens
+    # caption: Analyze: the finished study, every arm against the control
+    And user clicks on "Analyze an example study" button and PMX Studio settles
+    # caption: Each animal against its digital twin: the same tumor, predicted untreated
+    When user clicks on each animal tab and PMX Studio settles
+    # caption: Time to the endpoint, as measured
     When user clicks on results tab
-    # caption: Survival to the endpoint
+    # caption: Time to the endpoint, as measured
     And user scrolls km chart into view
-    # caption: Follow the study past its last measurement
+    # caption: … and projected past the last measurement, marked as a projection
     And user drags the slider of km slider to 40
-    # caption: A projection, marked as such
-    Then "Time to endpoint" section should contain text "projected"
-    # caption: A projection, marked as such
-    And user waits 2 seconds
-    # caption: Next: combination therapies. A, B and A+B: synergy or antagonism
+    # caption: Coming next: combination therapies, A + B against A and B, synergy or antagonism
     When user points at "Analyze > Combination synergy…" in the top menu
-    # caption: Back on the Overview: planned, followed and finished, in one place
-    When user clicks on overview step
-    Then the studies should be listed
-    # caption: Back on the Overview: planned, followed and finished, in one place
-    And user waits 3 seconds
+    # caption: The whole portfolio in one place: planned, running and finished
+    When user clicks on overview step and the stage opens
