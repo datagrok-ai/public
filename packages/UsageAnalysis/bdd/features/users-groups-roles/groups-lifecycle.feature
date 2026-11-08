@@ -12,6 +12,9 @@ Feature: A group from creation to deletion
   as "New Group", and cleared it is marked invalid and OK is disabled (grok_group_meta.dart
   propertiesDialog). The feature claims what the dialog does.
 
+  A second group under the name of the one just created is refused by the server, and the New Group
+  dialog stays open with the message; the server's rule is ApiTests `Dapi: groups`.
+
   Background:
     Given user is logged in
     And no group named "BDD-GL-Group-{time}, BDD-GL-Renamed-{time}, BDD-GL-Cancelled-{time}" is on the server
@@ -46,7 +49,7 @@ Feature: A group from creation to deletion
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: A group is created (Groups-04)
+  Scenario: A group is created, and a second one under its name is refused (Groups-04)
     When user clicks on "New Group..." button
     And user types "BDD-GL-Group-{time}" into Name input in "Create New Group" dialog
     And user types "created by the BDD suite" into Description input in "Create New Group" dialog
@@ -62,6 +65,14 @@ Feature: A group from creation to deletion
     And "BDD-GL-Group-{time}" link in gallery should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
+    # the refusal is logged, so it comes after the scenario's error claims
+    When user clicks on "New Group..." button
+    And user types "BDD-GL-Group-{time}" into Name input in "Create New Group" dialog
+    And user clicks on OK button in "Create New Group" dialog
+    Then an error balloon containing "A group or role with the same name already exists" should have been shown
+    And "Create New Group" dialog should be visible
+    When user clicks on CANCEL button in "Create New Group" dialog
+    Then the "Create New Group" dialog should close
 
   Scenario: Properties... renames the group and rewrites its description (Groups-09)
     When user picks "Properties..." from the context menu of "BDD-GL-Group-{time}" link in gallery

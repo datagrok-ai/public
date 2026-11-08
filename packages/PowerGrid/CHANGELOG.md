@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Added `Forms viewer` 'A pinned row stays pinned under a filter that hides it and leaves the pinned pane once deleted', moved from BDD
 * VlaaiVis: Fixed the settings growing wider than the Context Panel when Columns lists many columns, which hid the columns' gear icons and scrolled the panel sideways
 * [public#4378](https://github.com/datagrok-ai/public/issues/4378): Summary columns: Fixed a source column brought back by Ctrl+Z not returning to its summary column (a Tags column stayed blank)
 * [public#4431](https://github.com/datagrok-ai/public/issues/4431): PowerGrid: Pie Chart summary column throws an error on hover when all its source columns are removed

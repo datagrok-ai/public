@@ -147,8 +147,11 @@ Feature: PC plot axes, vertical scale and chrome
     Then pc plot viewer should have a "range slider \"AGE\"" area
     And no errors should have been logged
 
-  Scenario: To Script > To JavaScript prints the call that rebuilds the plot
+  Scenario: To Script > To JavaScript prints the call that rebuilds the plot, General > Save as PNG downloads its picture
     Given the package autostarts have completed
     When user picks "To Script > To JavaScript" from the context menu of pc plot viewer
     Then balloon should contain text "addViewer"
     And no errors should have been logged
+    Given user watches downloads
+    When user picks "General > Save as PNG" from the context menu of pc plot viewer
+    Then a file matching "\.png$" should have been downloaded

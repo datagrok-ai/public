@@ -2,6 +2,11 @@
 
 ## v.next
 
+* Viewers: Added `AI: Viewers: Shared rules` (a column rename followed by every viewer's settings, and by a viewer's Filter formula, core#1213) and a test moved from BDD: `AI: Viewers: PcPlot Extras` 'a layout with Line Width 0 and density on draws and takes a hover without an error (core#967)'
+* Viewers: Added a test moved from BDD: `AI: Viewers: BoxPlot extras` 'a pointer over a box plot shrunk under Auto Layout logs no error (core#960)'
+* Layouts, projects: Added tests moved from BDD: `Dapi: layouts` 'get applicable' now checks which tables a scatter plot layout and a grid-only layout are offered to (core#1179) and 'filter' that the saved layout is found by name (both asserted nothing before); `Dapi: projects: data sync` 'A data-synced file that lost a column a calculated column reads opens with it empty and a warning (GROK-19725)'
+* DataFrame: Link: Added a test moved from BDD: `DataFrame: Methods: Link` 'filter to filter: closing the source table releases the target'
+* Groups, connections, inputs: Added tests moved from BDD: `Dapi: groups` 'a name a group or role already has is refused' and 'the only admin cannot leave a group or lose Admin', `Dapi: connection` 'deleting a connection deletes its queries', `Widgets: InputForm validation and events` 'an emptied input invalidates the form unless it is nullable'
 * Docker: Added `Packages: Docker` "Get status" for `grok.dapi.docker.getStatus()`
 * Files: Added `Dapi: files` "readFilesAsBlobs: connection root without a slash"
 * Docker: Removed pip, setuptools and wheel from the apitests-docker-test1 image and raised Werkzeug to 3.1.9, so it has no known CVEs

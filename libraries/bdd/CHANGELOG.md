@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Viewers: A viewer area waited for (`should have a … area`, a gesture on an area) gets the 15 s every other check gets, so an area fed by a server call (the Recent view's calendar) is found; waiting for an area to go keeps 5 s
 * Vocabulary: Added `user drags the right border of {widget} by {int} pixels left` and `user opens the context menu of {string} shared by the running account`
 * Guides: The dock and border drags light what they press, the title bar and the splitbar, not the viewer
 * Vocabulary: Added the `floating panel` kind, `user drags {element} out of the accordion`, `user closes {element}, watching that nothing keeps it` and `nothing should keep the closed panel` (a weak reference, read after garbage collections)

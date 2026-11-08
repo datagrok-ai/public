@@ -47,19 +47,19 @@ Feature: The Files section of the Browse tree
 
   Scenario: A tabular file opens as a preview with its rows
     Given Files---Demo tree node inside browse tree is expanded
-    When user clicks on Files---Demo---demog.csv tree node inside browse tree
-    Then the "demog" view should be current
-    And grid should show 5850 rows
+    When user clicks on Files---Demo---demog-1000.csv tree node inside browse tree
+    Then the "demog-1000" view should be current
+    And grid should show 1000 rows
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
   Scenario: Download from a file's menu hands over the file
     Given user watches downloads
     And Files---Demo tree node inside browse tree is expanded
-    When user opens the context menu of Files---Demo---demog.csv tree node inside browse tree
+    When user opens the context menu of Files---Demo---demog-1000.csv tree node inside browse tree
     And user downloads a file through "Download" menu item in context menu
-    Then a file "demog.csv" should have been downloaded
-    And the downloaded file "demog.csv" should contain text "USUBJID"
+    Then a file "demog-1000.csv" should have been downloaded
+    And the downloaded file "demog-1000.csv" should contain text "USUBJID"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

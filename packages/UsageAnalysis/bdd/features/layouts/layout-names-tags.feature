@@ -14,6 +14,10 @@ Feature: A layout saved from the toolbox gets a name and tags
   that hides it. Edit tags... on a card acts on the layout as last saved: it is tried on a second
   layout, saved and renamed in the panel after the table was opened again, and keeps that name.
 
+  A name emptied in the panel is refused and the layout keeps its name (core#1252): the card of the table
+  opened again is the server's copy. Which tables a layout is suggested for is ApiTests `Dapi: layouts`
+  ('get applicable').
+
   Background:
     Given user is logged in
     And the layouts named "bdd-layout-{time}, BDD height vs weight-{time}, BDD tags-{time}" are deleted when the feature ends
@@ -69,7 +73,14 @@ Feature: A layout saved from the toolbox gets a name and tags
     When user clears layouts filter
     Then "BDD height vs weight-{time}" layout card should be visible
 
-  Scenario: The table opened again lists the renamed, tagged layout, and a click on its card applies it
+  @realizes:core#1252
+  Scenario: An emptied name is refused, the table opened again lists the renamed, tagged layout, and a click on its card applies it
+    Given the context panel should show "BDD height vs weight-{time}"
+    When user hovers over Name details row in context panel
+    And user clicks on edit icon of Name details row in context panel
+    And user clears Name details field in context panel
+    And user presses Enter
+    Then value of Name details field in context panel should have text "BDD height vs weight-{time}"
     When user closes all views
     And user opens demog-1000 dataset keeping the first 100 rows as "bdd-layout-{time}"
     And the toolbox pane is shown

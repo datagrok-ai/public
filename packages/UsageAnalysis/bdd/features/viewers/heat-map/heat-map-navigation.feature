@@ -1,7 +1,7 @@
 @journey @viewers @realizes:viewers.heat-map
 Feature: Heat map navigation and grid mode
-  Which row a click lands on, how an Alt-drag and a double-click move the two sliders, and what
-  the viewer becomes when Is Heatmap is turned off.
+  Which row a click lands on, how an Alt-drag (which selects no row) and a double-click move the two
+  sliders, and what the viewer becomes when Is Heatmap is turned off.
   The spec this replaces read the sliders' geometry off the `cx`/`cy` attributes of the SVG
   circles that draw their handles; the grid now reports `x scroll span` and `y scroll span` — the
   share of the track the window covers, 1 when everything fits — so a zoom and a reset are two
@@ -36,6 +36,7 @@ Feature: Heat map navigation and grid mode
     And the "y scroll span" reading of heat map viewer should be lower than before
     And the "row height" reading of heat map viewer should be higher than before
     And heat map viewer should have repainted
+    And no rows should be selected
     When user double-clicks on the "y scroll slider" area of heat map viewer
     Then the "y scroll span" reading of heat map viewer should be 1
     And the "x scroll span" reading of heat map viewer should be between 0 and 0.99

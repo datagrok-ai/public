@@ -108,6 +108,19 @@ when translating, not when looking for gaps, not when a TestTrack case asks for 
   paint and goes stale when the column is removed or a second column of the type shows. The package
   tests the renderer (`src/tests`, `grok test`); a feature claims what the platform reports around
   the cell — its value, semantic type, menus and panes (ruling of 2026-10-06).
+- **Edge cases that permute one rule** (lead's ruling, 2026-11-08). The rule is tested once where it
+  lives; a feature claims a dialog's or viewer's use of it once, as steps of an existing scenario:
+  - a name that is empty, blank, digits only or has odd characters, in any Save, Rename, New or
+    Properties dialog (`friendlyNameToName`, `Validators.notEmpty`, `getRenameDialog`);
+  - CANCEL or Escape changing nothing (every dialog writes on OK or SAVE only);
+  - a property value out of its bounds (`Property` clamps it: prop_gen and xamgle tests);
+  - a viewer with no rows, rows deleted, a column removed or renamed, non-finite values, or a layout
+    naming a missing column (the loops over every viewer in xamgle `viewers_test.dart`, ApiTests
+    `AI: Viewers: Shared rules`);
+  - search or filter syntax (the matcher and filter-grammar tests).
+  What a round removes gets one line under `## Won't do` in its folder's MISSING.md. A known failure
+  is a last resort: fix the defect, or record it as one `## Still open` line with the claim to add
+  once it is fixed; never a new feature file of known failures.
 
 One exception, by the lead's ruling: the Scaffold Tree features stay. The viewer's tree comes from
 the Python `GenerateScaffoldTree`, but what they test is the viewer's own UI (checking, colouring,

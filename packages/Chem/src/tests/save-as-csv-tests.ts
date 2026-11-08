@@ -33,4 +33,18 @@ category('save as csv', async () => {
     const csv = await df.toCsvEx({moleculesAsSmiles: false});
     expect(csv.includes('M  END'), true);
   });
+
+  test('an empty molecule exports as an empty field', async () => {
+    const structures = df.col('Structure')!;
+    const t = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('id', ['1', '2', '3']),
+      DG.Column.fromStrings('structure', [structures.get(0), '', structures.get(1)]),
+      DG.Column.fromStrings('tag', ['a', 'b', 'c']),
+    ]);
+    await grok.data.detectSemanticTypes(t);
+    const csv = await t.toCsvEx({moleculesAsSmiles: true});
+    expect(csv.includes('M  END'), false);
+    expect(csv.includes('\n2,,b'), true);
+    expect(csv.includes('null'), false);
+  });
 });

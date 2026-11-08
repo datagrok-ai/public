@@ -1,43 +1,58 @@
 # Cross-viewer features — what cannot be said yet
 
-Written during the viewer gaps round of 23 Oct 2026 for the features that sit in
-this folder rather than in a viewer's own: `viewers-docking.feature`,
-`viewers-layout-download.feature` (added in that round: View > Layout > Download gives a `.layout`
-file; what it holds is the layout API's test) and `molecule-categories.feature`.
+The features in this folder rather than in a viewer's own: `viewers-docking.feature`,
+`viewers-layout-download.feature` (View > Layout > Download gives a `.layout` file; what it holds is the layout API's
+test) and `molecule-categories.feature`; and where the rules every viewer shares are checked.
+
+## Rules shared by every viewer
+
+Each rule is tested once where it lives; a viewer's feature claims it only where its own gesture is the subject.
+
+- A value past a property's declared min or max is brought to the bound (core#1200): prop_gen `property_test.dart`
+  "Property.clamp keeps a number inside min and max…", xamgle `d4 | Viewers | Fixed issues | A property keeps a value
+  inside its declared bounds` (the panel's input, `setOptions`, a layout), ApiTests `AI: Viewers: JsViewer` "a property
+  keeps a value inside its declared min and max".
+- No rows, every row deleted, every column removed, empty, constant and non-finite values: xamgle `d4 | Viewers | Data
+  Manipulation | <viewer>` and `d4 | Viewers | Non-finite values | <viewer>` (every d4 viewer); Charts `Viewers: no rows`.
+- A removed column leaves the settings that named it: `DataFrameViewer` (`look.auto`), xamgle `d4 | Viewers | Column
+  removal | …`; Charts `subscribeToColumnRemoval` and `Viewers`.
+- A renamed column is followed by every setting that named it, the Filter formula included (core#1213): ApiTests
+  `AI: Viewers: Shared rules`.
+- A layout naming a missing column is applied and the viewer drawn: xamgle `d4 | Viewers | Invalid settings | Trellis
+  plot reports a split column the table lacks…` and `d4 | Viewers | Fixed issues | Scatter plot reports its status after
+  a layout with missing columns`, ApiTests `Shell: ViewLayout` (public#2867).
+- A click filter goes when its viewer is closed: a gesture, claimed in each filtering viewer's own feature
+  (`bar-chart-interaction`, `pie-chart-interaction`, `pc-plot-filter`, `calendar-filter`,
+  `filter-panel/compose-with-viewers` for the scatter plot's zoom, `sunburst`, `tree-on-click-filter`,
+  `trellis-plot-click-actions`).
+
+## Resolved
+
+- core#1174: a click filter goes when the clicked column is removed — the sunburst and the tree (Charts; claimed in
+  `sunburst.feature` and `tree-on-click-filter.feature`), the bar chart and the filter-panel cards (d4; their Dart
+  tests, see `bar-chart/MISSING.md` and `filter-panel/MISSING.md`).
 
 ## Still open
 
-- **Properties set through the API step, not the Context Panel** (every viewer's TestTrack case: "In Context
-  Panel > X set Y"). Most viewer features change a property with `user sets {string} property of {widget}`,
-  which writes the look directly; the property-grid editor the user actually clicks is exercised only in a
-  few places (`user selects ... in ... property in context panel`, `user checks ... property in context
-  panel`). Not rewritten in this round: switching every feature to the property-grid gestures is a sweep over
-  others' features. The gestures exist; what is missing is the decision to use them by default.
-- **The splitter between two docked viewers** (`viewers-docking-ui.md`: "drag the splitter between
-  them"). dock-spawn's splitter bars carry no name and report no box, so neither a drag nor "the
-  left viewer got wider" can be aimed. Needs a name per splitter (`dock-splitter-<n>`, or named by
-  the two panels it divides) in `core/client/libs/dock_spawn`; the claim is then
-  `histogram viewer should be wider than before` from a `user drags {element} by N and 0 pixels`.
-- **Dropping a downloaded `.layout` back onto the view** (`viewers-docking-ui.md`, last step): a
-  file dragged in from the desktop. `user drops the {string} file of the project onto {element}`
-  takes a fixture file, not the file just downloaded; a step that drops the downloaded file would
-  close the round trip.
-- **The range sliders over molecule categories on the box plot and the trellis plot**
-  (`rendering-structures-on-the-axes-ui.md`, #2330). The bar chart and the scatter plot are walked
-  in `molecule-categories.feature`. The box plot reports no slider area (`box_plot/CLAUDE.md`), so
-  its category slider cannot be aimed at. The trellis plot reports its `x scroll handle`, and a drag
-  of it moves the categories on screen, but every reading stays the same (`x categories shown` 5,
-  `x scroll handle share` 0.05 on spgi-100 by Structure) and the label areas are named by the
-  molblock text — no phrase can spell them. Needs a `first x category` reading (its row index or
-  position) on the trellis, and `x range slider` / handle areas on the box plot:
+- public#4452 — the forms viewer throws a TypeError on every render after a layout naming a removed column.
+- core#1239 — the markup viewer renders HTML from a layout or a project as trusted (Mode Html, Markup off); what may stay
+  is the owner's call.
+- Min above Max is swapped (bar chart and box plot value axis, line chart, radar, word cloud): no viewer reports the
+  window it drew; needs `value axis min` / `value axis max` readings.
+- The splitter between two docked viewers: dock_spawn's splitters carry no name and report no box; needs a name per
+  splitter, then `… should be wider than before` after a drag.
+- Dropping the downloaded `.layout` back onto the view: needs a step that drops the file just downloaded.
+- The range sliders over molecule categories: the box plot reports no slider area, the trellis plot no `first x
+  category` reading.
 
-  ```gherkin
-  Scenario: Dragging the trellis plot's category scroll handle over the molecules moves the window
-    When user adds a trellis plot viewer with:
-      | xColumnNames | Structure |
-    Then the "x scroll handle share" reading of trellis plot viewer should be 0.05
-    When user drags the "x scroll handle" area of trellis plot viewer by 100 pixels to the right
-    Then the "first x category" reading of trellis plot viewer should be higher than before
-    And the "blank cells" reading of trellis plot viewer should be 0
-    And trellis plot viewer should report no error
-  ```
+## Won't do
+
+- Every viewer property set through the Context Panel instead of the API step: the property grid's editors are generic,
+  claimed once per kind.
+- `(empty)` names of empty categories per viewer (Sankey nodes, pivot keys, tree map leaves): one category formatter;
+  the sunburst and the tree claim it.
+- A viewer announcing the part it cuts (pivot groups, Sankey categories, sunburst levels, tooltip columns): the caps are
+  by design.
+- core#714's dock drop preview box: cosmetic, for a closed bug; it needs a dock_spawn name for one claim.
+- The per-viewer rule scenarios of the 2026-11-08 round (out of bounds, no rows, deleted rows, removed or renamed
+  columns, layouts naming a missing column): the tests above.

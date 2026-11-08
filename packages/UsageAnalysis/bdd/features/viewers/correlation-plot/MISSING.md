@@ -1,29 +1,21 @@
 # Correlation plot — what the features cannot say yet
 
 Written during the viewer gap round of 23 Oct 2026 against `correlation_plot/CLAUDE.md` "Automation
-surface" and the TestTrack `correlation-plot.md` / `correlation-plot-ui.md`. What could be said is in
-`correlation-plot-colors-and-chrome.feature`.
+surface" and the TestTrack `correlation-plot.md` / `correlation-plot-ui.md`; trimmed in the BDD PR round of 8 Nov 2026.
 
-## Waiting for the product
+## Resolved
 
-- **Selection highlighting in the diagonal histograms** is now a scenario in
-  `correlation-plot-colors-and-chrome.feature` (core#1087, fixed).
+- Selection highlighting in the diagonal histograms (core#1087): a scenario in `correlation-plot-colors-and-chrome.feature`.
+- A column removed from narrowed axes leaves only that column (core#1172): Dart `Correlation plot | Removing a column
+  takes only that column off the axes`.
 
-## Needs a reading
+## Still open
 
-- **Grid > Grid Color Coding > Apply to text** (GROK-19052). The coloured text is drawn on the inner
-  grid's canvas; neither the plot's status nor the re-exported grid readings say whether a cell's
-  text is coloured, so the scenario would end on a lone `no errors should have been logged`. Needs a
-  `text color of cell <X> x <Y>` reading (the colour the cell's text was drawn with, from the grid's
-  `GridCellStyle.textColor` at render time, `correlation_status.dart` beside `color of cell`):
+- **Grid > Grid Color Coding > Apply to text** (GROK-19052): the coloured text is drawn on the inner grid's canvas;
+  needs a `text color of cell <X> x <Y>` reading (`GridCellStyle.textColor` at render time, in `correlation_status.dart`).
 
-  ```gherkin
-  Scenario: Apply to text paints the coefficients instead of the cells
-    When user picks "Grid > Grid Color Coding > Apply to text" from the context menu of the "cell HEIGHT x AGE" area of correlation plot viewer
-    Then the "text color of cell HEIGHT x AGE" reading of correlation plot viewer should be "#c3c3ff"
-    And the "color of cell HEIGHT x AGE" reading of correlation plot viewer should be "#ffffff"
-    When user picks "Grid > Grid Color Coding > Apply to text" from the context menu of the "cell HEIGHT x AGE" area of correlation plot viewer
-    Then the "color of cell HEIGHT x AGE" reading of correlation plot viewer should be "#c3c3ff"
-    And no errors should have been logged
-  ```
+## Won't do
 
+- No row passing, Row Source Selected with one row, a table with no numeric column, 120 numeric columns opening without
+  coefficients, a column renamed on the axes: not UI checks (Dart `Data Manipulation`; renames: ApiTests
+  `AI: Viewers: Shared rules`).

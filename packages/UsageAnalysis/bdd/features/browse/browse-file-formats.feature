@@ -9,7 +9,8 @@ Feature: The file formats of the demo files preview and open from Browse
   PDF, SDF, Excel and ZIP. A format a package reads is gated on that package; a workbook opens a
   table per sheet, the demo ZIP a table per workbook it holds (PowerPack reads them), and one of
   them is claimed. The PDF preview was a view with no name, so its tab had no title (FileEditors
-  previewPdf, fixed 2026-10-13, the DOCX preview with it).
+  previewPdf, fixed 2026-10-13, the DOCX preview with it). A plate reader's text file (Plates) previews
+  as a plate.
 
   Not translated: the case's folder "My Files / all formats" is a hand-made fixture of 30 files that
   no stand provides; the formats the demo files do not hold (EDF, Feather, HDF5, NetCDF, Parquet,
@@ -92,5 +93,15 @@ Feature: The file formats of the demo files preview and open from Browse
     When user double-clicks on Files---Demo---texts---pdf---research-paper.pdf tree node inside browse tree
     Then the "research-paper.pdf" view should be current
     And pdf preview page should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: A plate reader's text file previews as a plate with a tab per channel
+    Given the "Plates" package is installed
+    And Files---Demo---hts tree node inside browse tree is expanded
+    And Files---Demo---hts---formats tree node inside browse tree is expanded
+    When user clicks on Files---Demo---hts---formats---BMG_Pherastar_96.txt tree node inside browse tree
+    Then the "BMG_Pherastar_96.txt" view should be current
+    And "Channel A" tab should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown

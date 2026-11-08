@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4473](https://github.com/datagrok-ai/public/issues/4473): MCL editor: number columns get their per-column parameters; it skipped them for the vector path of Reduce Dimensionality, so MCL clustered no column and never finished
 * core#1146: Multi-column dimensionality reduction no longer waits 300 ms before fitting (a timer cannot make the garbage collector run)
 * Activity cliffs: The Activities input defaults to a column named like an activity or potency (Activity, IC50, Ki, ...), else the first float column, instead of the first numeric one (an ID on most tables)
 * UMAP: The CPU fit runs its epochs in slices of about a frame instead of one timer per epoch; on a few hundred rows the fit took ~3 s, mostly the browser's timer clamp

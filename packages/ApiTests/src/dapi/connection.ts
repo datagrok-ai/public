@@ -54,6 +54,29 @@ category('Dapi: connection', () => {
     }
   }, {stressTest: true});
 
+  test('deleting a connection deletes its queries', async () => {
+    const dcName = `Local DG Test ${DG.Utils.randomString(8)}`;
+    let dc: _DG.DataConnection | null = DG.DataConnection.create(dcName, dcParams);
+    dc.newId();
+    let query: _DG.DataQuery | null = null;
+    try {
+      dc = await grok.dapi.connections.save(dc);
+      const q = dc.query(`${dcName} query`, 'select 1');
+      q.newId();
+      query = await grok.dapi.queries.save(q);
+      expect((await grok.dapi.queries.find(query.id))?.id, query.id);
+      await grok.dapi.connections.delete(dc);
+      dc = null;
+      expect(await grok.dapi.queries.find(query.id) == undefined);
+      query = null;
+    } finally {
+      if (query)
+        await grok.dapi.queries.delete(query);
+      if (dc)
+        await grok.dapi.connections.delete(dc);
+    }
+  });
+
   test('JS postprocess', async () => {
     const script = `//language: javascript
 //input: dataframe result
