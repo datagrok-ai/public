@@ -186,6 +186,9 @@ category('Scatter plot: GPU', () => {
     expect(isGpuRenderValid(sp), false);
     Object.assign(sp.props, {jitterSize: 0, zoomAndFilter: 'pack and zoom by filter'});
     expect(isGpuRenderValid(sp), false);
+    // a platform older than the category order has no such property
+    if (!sp.props.hasProperty('xCategoryOrder'))
+      return;
     Object.assign(sp.props, {zoomAndFilter: 'filter by zoom', xColumnName: 'race',
       xCategoryOrder: '{"manual":["Other"]}'});
     expect(isGpuRenderValid(sp), false);
