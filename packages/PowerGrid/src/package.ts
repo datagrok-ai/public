@@ -33,7 +33,7 @@ import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
 export * from './package.g';
 export const _package = new DG.Package();
 
-// Chrome on Windows computes on the GPU Windows gives it and ignores WebGPU's powerPreference: on a laptop that is
+// Chrome on Windows computes on the GPU Windows gives it and ignores WebGPU's powerPreference, so on a laptop that is
 // the integrated GPU, slower than the dedicated one. The browser can't tell whether a dedicated GPU exists, so the
 // tip says "if"; once per browser (localStorage).
 function tipIntegratedGPU(): void {
