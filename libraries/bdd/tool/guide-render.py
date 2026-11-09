@@ -17,6 +17,10 @@ says …`, or a caption) is a line over the page for as long as it takes to read
 quicker, and a step rests as long as its change takes to take in. review-sheet.png (the last frame of
 every step) and timeline.json (when each step starts and ends) are written for a review.
 
+--reel <out.mp4> cuts demo clips (the folders a --demo rendering wrote) together, in the order given, into
+one video; each clip is copied beside it as `NN - <scenario>.mp4`, and `<out>.md` lists them with where
+each starts in the reel.
+
 The pointer goes where the page says it went, and never skips: every frame's pointer continues
 from the frame before, so an action starts where the one before it ended — a skip is an error,
 not a frame. A press is marked where it landed, under the pointer's tip: a yellow ring for the
@@ -26,6 +30,7 @@ audit.json how far the mark's centre and the pointer's tip are from the press.
     py tool/guide-render.py <scenario dir> [--gif] [--help | --demo] [--fps 30] [--hold 1.4] [--travel 0.7]
         [--zoom 1.8] [--zoom-time 0.8] [--gif-fps 12] [--colors 256] [--gif-width <px>] [--end-hold <s>]
         [--ffmpeg <path>] [--quiet]
+    py tool/guide-render.py --reel <out.mp4> <demo clip dir>…   cuts the clips together in that order
     py tool/guide-render.py --selftest <dir>      renders a synthetic guide there, and checks its audit
 """
 import glob
@@ -999,7 +1004,7 @@ class Renderer:
             end = self.marks[i + 1][0] if i + 1 < len(self.marks) else count
             parts.append({'part': label, 'start': round(start / self.fps, 2), 'seconds': round((end - start) / self.fps, 2)})
         with open(os.path.join(self.folder, 'timeline.json'), 'w', encoding='utf-8') as f:
-            json.dump({'seconds': round(count / self.fps, 1), 'parts': parts}, f, indent=2)
+            json.dump({'seconds': round(count / self.fps, 2), 'parts': parts}, f, indent=2)
         cols, tw, th, label_h = 4, 480, 270, 40
         shown = [(thumb, part) for thumb, part in zip(ends, parts) if part['part'] != 'fade']
         sheet = Image.new('RGB', (cols * tw, math.ceil(len(shown) / cols) * (th + label_h)), (255, 255, 255))
@@ -1041,6 +1046,51 @@ def with_press_colours(path):
     palette = Image.new('RGBA', (16, 16))
     palette.putdata(colours)
     palette.save(path)
+
+
+def reel(ffmpeg, out, folders):
+    """Demo clips cut together in the order given: every demo is 1920×1080 at the same rate, so the cut is a
+    stream copy. Each clip is copied beside the reel under its scenario's name, and `<out>.md` lists them."""
+    clips = []
+    for folder in folders:
+        video, timeline = os.path.join(folder, 'guide.mp4'), os.path.join(folder, 'timeline.json')
+        if not (os.path.exists(video) and os.path.exists(timeline)):
+            print(f'guide-render: {folder} holds no demo clip (guide.mp4 and timeline.json): film it with @demo or --demo',
+                  file=sys.stderr)
+            return 2
+        with open(os.path.join(folder, 'steps.json'), encoding='utf-8') as f:
+            manifest = json.load(f)
+        with open(timeline, encoding='utf-8') as f:
+            clips.append((video, manifest, json.load(f)['seconds']))
+    target = os.path.dirname(os.path.abspath(out))
+    os.makedirs(target, exist_ok=True)
+    listing, rows, start = [], [], 0.0
+    for i, (video, manifest, seconds) in enumerate(clips, 1):
+        title = manifest['scenario']
+        # Windows takes no \ / : * ? " < > | in a file name, nor a trailing dot or space
+        name = ''.join('-' if c in '\\/:*?"<>|' else c for c in title).rstrip('. ')
+        shutil.copyfile(video, os.path.join(target, f'{i:02d} - {name}.mp4'))
+        # the concat list quotes with ', so a ' in a path ("A sequence's structure") is closed, escaped and reopened
+        listing.append("file '" + os.path.abspath(video).replace('\\', '/').replace("'", "'\\''") + "'")
+        rows.append(f"| {i:02d} | {int(start // 60)}:{start % 60:04.1f} | {seconds:.1f} s | {title} | "
+                    f"{manifest.get('description', '')} | {manifest['feature']} |")
+        start += seconds
+    stem = os.path.splitext(out)[0]
+    with open(stem + '.concat.txt', 'w', encoding='utf-8') as f:
+        f.write('\n'.join(listing) + '\n')
+    try:
+        cut = subprocess.run([ffmpeg, '-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', stem + '.concat.txt',
+                              '-c', 'copy', '-movflags', '+faststart', out])
+    finally:
+        os.remove(stem + '.concat.txt')
+    if cut.returncode != 0:
+        return cut.returncode
+    with open(stem + '.md', 'w', encoding='utf-8') as f:
+        f.write(f"# {os.path.basename(stem)}\n\n{len(clips)} clips, {start / 60:.1f} min; `{os.path.basename(out)}` is all of "
+                f"them in this order, and each is beside it as `NN - <title>.mp4`.\n\n"
+                "| # | Starts | Length | Title | Card text | Feature |\n|---|---|---|---|---|---|\n" + '\n'.join(rows) + '\n')
+    print(f'{len(clips)} clips, {start:.1f} s: {out}, {stem}.md')
+    return 0
 
 
 def selftest(folder):
@@ -1133,17 +1183,20 @@ def main(argv):
     zoom = float(opt('--zoom', 1.8))
     zoom_time = float(opt('--zoom-time', 0.8))
     ffmpeg = find_ffmpeg(opt('--ffmpeg'))
+    reel_out = opt('--reel')
     test_dir = opt('--selftest')
     if test_dir:
         selftest(test_dir)
         args.append(test_dir)
         gif = True
-    if len(args) != 1:
+    if len(args) != 1 and not (reel_out and args):
         print(__doc__, file=sys.stderr)
         return 2
     if not ffmpeg:
         print('guide-render: no ffmpeg — py -m pip install imageio-ffmpeg, or set FFMPEG', file=sys.stderr)
         return 3
+    if reel_out:
+        return reel(ffmpeg, reel_out, args)
     renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time, help, demo)
     renderer.write_markdown()
     outputs, count = renderer.encode(ffmpeg, gif, gif_fps, colors, gif_width, end_hold)

@@ -36,7 +36,7 @@ src/runtime/            args, locate (R9 order, item reveal, BDD_RESOLVE_TRACE),
 tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif from the lossless frames,
                         guide-thumb.png of the result, guide-sheet.png; --help: no title, strip, dimming, zoom or Given steps;
                         --demo: 1080p, a wrapped title card, notes over the page, no Given or uncaptioned check, review-sheet.png,
-                        timeline.json)
+                        timeline.json; --reel: demo clips cut into one video, with its index)
 tool/gen-u2-kinds.mjs   the u2 and EMS manifests → bindings/common/u2-kinds.g.ts (npm run vocab; vocab:check compares)
 tool/snapshot-kinds.mjs the built kind table → tests/fixtures/kinds-before.json (the compat test's reference)
 tool/audit-summary.mjs  a run's report.json (+ BDD_MEMORY_LOG files) → audit findings by rule, feature, scenario; heap per worker

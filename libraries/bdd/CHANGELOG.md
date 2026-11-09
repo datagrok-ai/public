@@ -3,6 +3,7 @@
 ## v.next
 
 * Guides: Added demo clips — `@demo` (or `grok-bdd guide --demo`) films a 1920×1080 clip of a 1600×900 window at twice its density (`@viewport:<w>x<h>` picks another) with a title card of the feature, the scenario and its description, no caption strip, dimming or zoom, presses still marked, a slightly quicker pace that rests as long as a step's change takes to take in, the Given steps and uncaptioned checks off camera and each action cut to the page its following steps settled on; the renderer writes `review-sheet.png` and `timeline.json` for a review
+* Guides: Added `tool/guide-render.py --reel <out.mp4> <clip dir>…` — demo clips cut together, in the order given, into one video (a stream copy), each clip also copied beside it as `NN - <scenario>.mp4`, and `<out>.md` listing them with where each starts
 * Guides: A title card wraps its scenario and feature names (they ran off both edges when long)
 * Guides: Fixed a filmed wheel turn landing elsewhere than the test's: it was sent as up to six notches, and a handler that moves a step per event (Bio's MSA header) went six steps where the test went one; it is now the one event a test sends, pictured after it
 * Vocabulary: Added `user hovers over monomer {int} of the {string} area of {widget}` — the pointer on one monomer of a sequence cell where its renderer drew it (`getMonomerPoint` of Bio's and Helm's renderers), done when the monomer's tooltip shows

@@ -4,7 +4,7 @@ description: Answer a "how do I …" question about the platform with a Gherkin 
 when-to-use: When a user or customer asks how to do something in Datagrok, when support wants a walkthrough video or GIF for a question, when a help page needs a GIF recorded or replaced, or when a showcase video of a feature area is wanted (demo clips)
 context: fork
 effort: medium
-argument-hint: "<the question, or a features/guides/*.feature path> [<package>]"
+argument-hint: "<the question, a showcase to make, or a features/guides|demos/*.feature path> [<package>]"
 ---
 
 # Answering a question with a filmed scenario
@@ -212,6 +212,13 @@ scenario per clip, filmed with the same `grok-bdd guide <feature>` (the tag film
 - **Review**: `review-sheet.png` (the last frame of every step, its start and length) and `timeline.json`
   next to `guide.mp4`. Read both, then single frames (`ffmpeg -ss <t> -i guide.mp4 -frames:v 1 x.png`) at
   the moments that matter: a tooltip that must show, a result after a long computation, the end.
+- **A quiet stand**: nothing is published to it while clips are filmed. A package publish shows "<Pkg>
+  installed. Reload page" in every open page, and the clip filmed then carries it.
+- **The reel**: `py public/libraries/bdd/tool/guide-render.py --reel <out.mp4> <clip dir>…` (`python3` off
+  Windows) cuts the clips together in the order given, a clip dir being the `guides/<feature slug>/<scenario
+  slug>/` folder `grok-bdd guide` printed; each clip is also copied beside the reel as `NN - <scenario>.mp4`,
+  and `<out>.md` lists them with where each starts. The set is listed in that order in
+  `features/demos/INDEX.md` of the package that owns it (Bio's: the bioinformatics showcase, from four packages).
 
 What makes a good clip: one idea, 20–90 s; the data opened off camera unless opening it is the point (a
 file format: open the files from Browse); the window arranged off camera so the sequences and results are

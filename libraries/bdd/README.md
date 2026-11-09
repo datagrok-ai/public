@@ -664,7 +664,10 @@ closed`, `the notification balloons are closed`, `the tooltip is hidden`, `the v
 every uncaptioned check stay off camera; an action is cut straight to the page the steps after it settled
 on. `the video says "<text>"` puts a line over the page for as long as it takes to
 read (a guide shows it as a caption; a test does nothing). `review-sheet.png` and `timeline.json`
-beside the video are for its review. The `bdd-answer` skill, section 5, has the conventions.
+beside the video are for its review. `py tool/guide-render.py --reel <out.mp4> <clip dir>…` cuts rendered
+clips together, in the order given, into one video (each clip also copied beside it as `NN -
+<scenario>.mp4`, and `<out>.md` saying where each starts). The `bdd-answer` skill, section 5, has the
+conventions.
 
 ## Generated specs
 
