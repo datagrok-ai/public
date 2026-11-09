@@ -23,17 +23,20 @@ function showOutputs(t1: { value: string; }, t2: { value: string; },
       () => selection.init((i) => col1.getString(i) != col2.getString(i)));
 
     const addColumnButton = ui.button('Add Column', () => {
-      const table = grok.shell.table(t1.value);
       const name = c1.value + ' == ' + c2.value;
-      if (t1.value === t2.value) {
-        table.columns.addNewCalculated(name, '${' + col1.name + '} == ${' + col2.name + '}', DG.TYPE.BOOL, false);
+      if (t1.value != t2.value) {
+        const table = grok.shell.table(t1.value);
+        table.columns.add(DG.Column.bool(table.columns.getUnusedName(name), col1.length)
+          .init((i) => col1.getString(i) == col2.getString(i)));
+        grok.shell.info('Column was added to ' + t1.value);
         return;
       }
-      // a formula cannot name a column of another table, so the comparison is added as values
-      const match = DG.Column.bool(table.columns.getUnusedName(name), table.rowCount);
-      match.init((i) => col1.getString(i) == col2.getString(i));
-      table.columns.add(match);
-      grok.shell.info('Column was added to ' + t1.value);
+      grok.shell.table(t1.value).columns.addNewCalculated(
+        name,
+        '${' + col1.name + '} == ${' + col2.name + '}',
+        DG.TYPE.BOOL,
+        false,
+      );
     });
 
     const matched = ui.divText('Matched: ' + counter.toString(), {});
