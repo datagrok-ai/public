@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
-const nodeSkip = typeof process !== 'undefined' ? 'grok.functions.register is browser-only' : undefined;
+const nodeSkip = typeof process !== 'undefined' ? 'browser-only: a table view and grok.functions.register' : undefined;
 
 category('Viewers: category order', () => {
   test('category order round-trip', async () => {
@@ -21,6 +21,27 @@ category('Viewers: category order', () => {
     bp.setOptions({categoryOrder: byProperty('Chem:molecularProperty(MW)')});
     expect(propertyOf(bp.getOptions(true).look, 'categoryOrder'), 'Chem:molecularProperty(MW)');
   });
+
+  test('category order reorders the boxes', async () => {
+    const df = DG.DataFrame.fromCsv('cat,val\na,1\nb,2\nb,3\nb,4\nc,5\nc,6');
+    const view = grok.shell.addTableView(df);
+    try {
+      const bp = view.addViewer(DG.VIEWER.BOX_PLOT, {valueColumnName: 'val', categoryColumnNames: ['cat']});
+      const boxes = () => {
+        const areas = bp.getWidgetStatus().hitAreas;
+        return ['a', 'b', 'c'].filter((c) => areas[`category ${c}`])
+          .sort((x, y) => areas[`category ${x}`].x - areas[`category ${y}`].x).join(',');
+      };
+      await waitUntil(() => boxes() === 'a,b,c', () => `default order: ${boxes()}`);
+      bp.setOptions({categoryOrder: JSON.stringify({column: 'cat', aggr: 'values', order: 'desc'})});
+      await waitUntil(() => boxes() === 'b,c,a', () => `row count, descending: ${boxes()}`);
+      bp.setOptions({categoryOrder: JSON.stringify({manual: ['c', 'a', 'b']})});
+      await waitUntil(() => boxes() === 'c,a,b', () => `manual order: ${boxes()}`);
+    } finally {
+      view.close();
+      grok.shell.closeTable(df);
+    }
+  }, {skipReason: nodeSkip});
 
   test('property keys computed for distinct categories', async () => {
     const calls: number[] = [];
@@ -42,9 +63,7 @@ category('Viewers: category order', () => {
       const sp = view.scatterPlot({x: 'names', y: 'val'});
       sp.setOptions({xCategoryOrder: JSON.stringify({property: `${f.nqName}(length)`})});
       // the keys arrive asynchronously, and the calculator only ever sees the distinct categories
-      for (let i = 0; i < 50 && calls.length === 0; i++)
-        await delay(100);
-      expect(calls.length > 0, true, 'calculator was called');
+      await waitUntil(() => calls.length > 0, 'the calculator was not called');
       // a recompute (filter, data change) may repeat the call - every one of them sees the categories
       expect(calls.every((n) => n === 3), true, `distinct categories, not rows: [${calls}]`);
     } finally {

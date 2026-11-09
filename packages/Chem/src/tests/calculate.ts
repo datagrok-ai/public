@@ -167,6 +167,22 @@ category('calculate', () => {
   });
 
 
+  test('molecular property: a category orderer key for every choice', async () => {
+    const f = DG.Func.find({package: 'Chem', name: 'molecularProperty', meta: {role: 'categoryOrderer'}})[0];
+    expect(f != null, true, 'Chem:molecularProperty with the categoryOrderer role');
+    const choices: string[] = f.inputs[1].choices;
+    const col = DG.Column.fromStrings('smiles', ['CN1CCC(CC1)Oc2ccc(cc2)C(F)(F)F', 'NCc1cnn(O)c1Br']);
+    col.semType = DG.SEMTYPE.MOLECULE;
+    await inEngine(ChemicalEngine.Crux, async () => {
+      for (const property of choices) {
+        const keys: DG.Column = await f.apply({molecules: col, property: property});
+        expect(keys.length, 2, property);
+        expect(keys.type === DG.TYPE.FLOAT || keys.type === DG.TYPE.INT, true, `${property}: ${keys.type} keys`);
+      }
+    });
+    expectFloat((await f.apply({molecules: col, property: 'MW'})).get(0), 259.271, 1e-3, 'MW');
+  });
+
   test('structural alerts', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
