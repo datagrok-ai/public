@@ -33,7 +33,7 @@ message state reports `0`/`''` and no area of an earlier frame.
 | Area | What |
 |---|---|
 | `node <name>` | the node's rect |
-| `link <source> -> <target>` | a 4 px square on the topmost link of that pair, at a point along it (middle first) where `elementFromPoint` finds that pair's link, not a crossing one |
+| `link <source> -> <target>` | a 4 px square on the topmost link of that pair, at a point along it (middle first) where `elementFromPoint` finds that link, not a crossing one |
 
 | Reading | What |
 |---|---|

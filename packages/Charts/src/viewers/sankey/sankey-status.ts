@@ -10,15 +10,13 @@ const ALONG = [0.5, 0.3, 0.7, 0.15, 0.85];
 
 const linkName = (d: any): string => `${categoryName(d?.source?.name)} -> ${categoryName(d?.target?.name)}`;
 
-/** A point of [path] that a click lands on — the path itself or another link of the same pair, which
- * selects the same rows. Links cross, so the middle of one can be under another. */
+/** A point of [path] that a click lands on. Links cross, so the middle of one can be under another. */
 function linkPoint(svg: SVGSVGElement, path: SVGPathElement): {x: number, y: number} | null {
-  const name = linkName((path as any).__data__);
   const length = path.getTotalLength();
   for (const t of ALONG) {
     const local = path.getPointAtLength(length * t);
     const p = svgPoint(path, local.x, local.y);
-    if (svgHits(svg, p, (hit) => hit.classList.contains('link') && linkName((hit as any).__data__) === name))
+    if (svgHits(svg, p, (hit) => hit === path))
       return p;
   }
   return null;
