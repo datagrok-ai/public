@@ -12,6 +12,9 @@ const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => str
 
 export enum TAGS {
   maxMonomerLength = '.mm.cellRenderer.maxMonomerLength',
+  /** 'true' / 'false': rows with connections (BILN cyclizations, HELM bonds) draw them as lines; unset, the package
+   * default decides */
+  showConnections = '.mm.cellRenderer.showConnections',
 }
 
 export enum MONOMER_RENDERER_TAGS {

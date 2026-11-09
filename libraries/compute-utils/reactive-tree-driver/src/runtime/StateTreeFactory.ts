@@ -213,7 +213,8 @@ export function loadOrCreateCalls(stateTree: StateTree, mockMode: boolean) {
           const obs$ = defer(() => {
             const adapter = new FuncCallMockAdapter(item.config.io!, item.isReadonly);
             const initialValues = item.instancesWrapper.initialValues;
-            const outputs = item.config.io!.filter((io) => io.direction === 'output' && initialValues[io.id] !== undefined);
+            const outputs = item.config.io!.filter(
+              (io) => io.direction === 'output' && initialValues[io.id] !== undefined);
             for (const io of outputs)
               adapter.setState(io.id, initialValues[io.id]);
             item.initAdapter({adapter, restrictions: {}, isOutputOutdated: !outputs.length, runError: undefined}, true);

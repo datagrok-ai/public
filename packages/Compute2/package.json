@@ -30,6 +30,9 @@
     "vue-json-pretty": "^2.4.0",
     "wu": "catalog:"
   },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
   "devDependencies": {
     "@babel/preset-typescript": "^7.29.7",
     "@types/lodash.isequal": "^4.5.8",

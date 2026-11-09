@@ -108,7 +108,7 @@ export async function buildMonomerHoverLink(
             const monomerMap = molMonomerMap.get(seqPosition); // single monomer
             if (!monomerMap) return {atoms: [], bonds: [], highlightAtomColors: [], highlightBondColors: []};
 
-            const res: ISubstruct = getMolHighlight([monomerMap], monomerLib);
+            const res: ISubstruct = getMolHighlight([monomerMap], monomerLib, 0.6);
             return res;
           }
         });

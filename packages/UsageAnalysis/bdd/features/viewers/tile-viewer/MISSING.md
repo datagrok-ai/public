@@ -8,44 +8,19 @@ Written during the viewer-gaps round of 23 Oct 2026, against
 
 ## Still open
 
-- **Colour coding on tiles** (`tile-viewer-ui.md`, "Colour coding on tiles"). A card field takes the
-  grid column's colour as the input's inline `backgroundColor` (`sketch_field.dart:63-75`,
-  `input.setColor`), and is cleared back when the column loses its colouring. Nothing reads it: the card
-  is DOM, so the area colour steps (`the "field AGE of row 1" area ... should contain the color`)
-  fail with "has no canvas", and no element phrase reaches a card's input (`"AGE" input in tile viewer`
-  resolves to nothing). Needs a `background of <COL> of row <r>` reading (computed background as
-  `#rrggbb`, `''` when transparent — the forms viewer's `background of <COL> of <label>` is the model):
+- Colour coding on tiles: a card field takes its column's colour as the input's background; needs a `background of
+  <COL> of row <r>` reading, as the forms viewer's `background of <COL> of <label>`.
+- core#1151 — a value the card cuts off shows no tooltip (public#1593, the value half; the caption half is claimed in
+  `tile-viewer-mirroring.feature`).
+- A card dragged between lanes while a tile viewer is open in another view logs `NullError: method not found: 'cZ' on
+  null` (2026-11-03): to be filed.
 
-  ```gherkin
-  Scenario: A linear AGE and a categorical RACE colour the fields, and switching them off clears them
-    When user colors "AGE" column linearly from "#0000ff" to "#ff0000"
-    Then the "background of AGE of row 1" and "background of AGE of row 3" readings of tile viewer should differ
-    When user colors "RACE" column categorically:
-      | Caucasian | #1f77b4 |
-      | Other     | #ff7f0e |
-    Then the "background of RACE of row 1" reading of tile viewer should be "#1f77b4"
-    And the "background of RACE of row 2" reading of tile viewer should be "#ff7f0e"
-    When user removes the coloring of "AGE" column
-    And user removes the coloring of "RACE" column
-    Then the "background of AGE of row 1" reading of tile viewer should be ""
-    And the "background of RACE of row 1" reading of tile viewer should be ""
-    And no errors should have been logged
-  ```
+## Won't do
 
-- **Picking the lanes column in the property panel** (`tile-viewer-ui.md`). The Lanes column picker
-  is a column combo in the property grid; every lanes scenario sets the property through the API.
-  Needs a library step that opens a column-typed property row's picker and chooses a column
-  (`user picks {string} for the {string} property of {widget}`), then:
-
-  ```gherkin
-  Scenario: Choosing RACE in the Lanes picker regroups the cards
-    When user picks "RACE" for the "Lanes Column Name" property of tile viewer
-    Then the "lanes" reading of tile viewer should be 4
-    And the "lane names" reading of tile viewer should be "Asian, Black, Caucasian, Other"
-    And no errors should have been logged
-  ```
-
-## Closed issues the regression round of 26 Oct 2026 could not claim
-
-- **A value the card cuts off shows whole in a tooltip (public#1593, the value half)** regressed: no tooltip
-  shows; filed as core#1151. The caption half is claimed in `tile-viewer-mirroring.feature`.
+- Lanes picked in the Context Panel: the property grid's column picker is generic, claimed on the scatter plot
+  (`sunburst.feature`) and the trellis plot (`trellis-plot-viewer-filter-and-menus.feature`).
+- The lane of an empty value titled "(no value)" (core#1217): xamgle `d4 | Viewers | Fixed issues | Tile viewer titles the
+  lane of an empty value`.
+- Escape in the form designer: a view, not a dialog; Escape changing nothing is no claim.
+- A removed or renamed lanes column, Row Source Selected with nothing selected, a one-row table: the rules every viewer
+  shares (`../MISSING.md`).

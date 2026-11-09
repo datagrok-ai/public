@@ -1,8 +1,10 @@
 @journey @viewers @realizes:viewers.legend
 Feature: Legend interaction
   The legend a viewer hosts: what it lists, what a click on a category does to the viewer and to
-  the table, how a selection is added to and taken back, and what a click must never do to the
-  legend's own placement, and that a selection outlives a row filter but not a change of the
+  the table, how a selection is added to and taken back, how Down and Up move a sole selection to
+  the next and the previous category (public#2548), and what a click must never do to the
+  legend's own placement, and that a selection outlives a row filter, even one that takes its
+  category off the legend for a while, but not a change of the
   column it was made on — the item at the same place in the new column's list is not selected and
   the plot draws every row again; the docked legend is measured to its labels, so the same four
   categories with long labels widen it and short ones narrow it again; and a legend placed by Auto
@@ -63,6 +65,20 @@ Feature: Legend interaction
     When user clicks on "Black" item in the legend of scatter plot viewer
     Then scatter plot viewer should show 872 rows
 
+  @realizes:public#2548 @realizes:core#1159
+  Scenario: Down and Up move the exclusive selection to the next and the previous category (public#2548)
+    When user clicks on "Asian" item in the legend of scatter plot viewer
+    Then "Asian" legend item in legend of scatter plot viewer should be selected
+    And "Black" legend item in legend of scatter plot viewer should not be selected
+    When user presses ArrowDown
+    Then "Black" legend item in legend of scatter plot viewer should be selected
+    And "Asian" legend item in legend of scatter plot viewer should not be selected
+    When user presses ArrowUp
+    Then "Asian" legend item in legend of scatter plot viewer should be selected
+    And "Black" legend item in legend of scatter plot viewer should not be selected
+    When user clicks on "Asian" item in the legend of scatter plot viewer
+    Then scatter plot viewer should show 872 rows
+
   Scenario: A click never moves the legend, and a filter never moves it either
     When user takes a snapshot of scatter plot viewer
     And user clicks on "Caucasian" item in the legend of scatter plot viewer
@@ -84,6 +100,11 @@ Feature: Legend interaction
     And scatter plot viewer should show 17 rows
     When user resets the filter
     Then scatter plot viewer should show 25 rows
+    When user filters rows where "RACE" is "Asian"
+    Then "Black" legend item in legend of scatter plot viewer should be absent
+    When user resets the filter
+    Then "Black" legend item in legend of scatter plot viewer should be selected
+    And scatter plot viewer should show 25 rows
     When user sets "Color" property of scatter plot viewer to "DIS_POP"
     Then the legend of scatter plot viewer should list 5 items
     And "Indigestion" legend item in legend of scatter plot viewer should not be selected

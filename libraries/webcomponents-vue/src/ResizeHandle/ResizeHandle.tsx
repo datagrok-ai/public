@@ -82,9 +82,8 @@ export const ResizeHandle = Vue.defineComponent({
               emit('update:size', lastSize);
             });
           }
-        } else {
+        } else
           ghost.value = {pos: handleStart + (lastSize - startSize) * direction, crossStart, crossSize};
-        }
       };
       // a cancelled pointer (lost capture, touch taken over by the browser) ends the drag like a release
       const onEnd = () => {

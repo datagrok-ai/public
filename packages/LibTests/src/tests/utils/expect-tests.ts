@@ -151,9 +151,9 @@ category('Utils: expectDeepEqual', async () => {
   test('map forbid additional props', async () => {
     throwTester(
       () => {
-        expectDeepEqual(new Map([['a', 1], ['b', 2]]), new Map([['a', 1]]), { forbidAdditionalProps: true });
+        expectDeepEqual(new Map([['a', 1], ['b', 2]]), new Map([['a', 1]]), {forbidAdditionalProps: true});
       },
-      `Additional key/col item in actual data found: b`
+      `Additional key/col item in actual data found: b`,
     );
   });
 
@@ -294,23 +294,23 @@ category('Utils: expectDeepEqual', async () => {
   });
 
   test('object allow additional props', async () => {
-    const o1 = { a: 2, b: 1, c: null };
-    const o2 = { a: 2, };
+    const o1 = {a: 2, b: 1, c: null};
+    const o2 = {a: 2};
     throwTester(
       () => {
-        expectDeepEqual(o1, o2, { floatTolerance: 0.1 });
+        expectDeepEqual(o1, o2, {floatTolerance: 0.1});
       },
     );
   });
 
   test('object forbid additonal props', async () => {
-    const o1 = { a: 2, b: 1, c: null };
-    const o2 = { a: 2, };
+    const o1 = {a: 2, b: 1, c: null};
+    const o2 = {a: 2};
     throwTester(
       () => {
-        expectDeepEqual(o1, o2, { floatTolerance: 0.1, forbidAdditionalProps: true });
+        expectDeepEqual(o1, o2, {floatTolerance: 0.1, forbidAdditionalProps: true});
       },
-      `Additional key/col item in actual data found: b\nAdditional key/col item in actual data found: c`
+      `Additional key/col item in actual data found: b\nAdditional key/col item in actual data found: c`,
     );
   });
 

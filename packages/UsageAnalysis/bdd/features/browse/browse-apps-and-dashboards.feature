@@ -46,12 +46,15 @@ Feature: The Apps and Dashboards sections of the Browse tree
     And no error or warning balloon should have been shown
 
   # Browse-ModelHub-01: the Model Catalog opening from Apps is where GROK-17896 / GROK-17664 were.
-  Scenario: The Model Hub opens from the Compute group
+  Scenario: The Model Hub opens from the Compute group, and its Tools menu opens Compare Runs
     Given the "Compute2" package is installed
     And Apps tree node inside browse tree is expanded
     And Apps---Compute tree node inside browse tree is expanded
     When user clicks on Apps---Compute---Model-Hub tree node inside browse tree
     Then the "Model Hub" view should be current
+    When user picks "Tools > Compare Runs..." from the top menu
+    Then the "Run Comparison" view should be current
+    And the current view should show the text "Add at least two runs (or tables) to compare"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

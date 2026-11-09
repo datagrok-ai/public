@@ -186,9 +186,11 @@ category('calculate', () => {
   test('structural alerts', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
+    const columnCount = smiles.columns.length;
     await PackageFunctions.structuralAlertsTopMenu(smiles, smiles.col('smiles')!, true, true, true, false, false, false, false, false);
     expect(['PAINS (smiles)', 'BMS (smiles)', 'SureChEMBL (smiles)'].every((it) => smiles.columns.names().includes(it)),
       true, 'Not all structural alerts columns have been added');
+    expect(smiles.columns.length, columnCount + 3, 'only the rule sets ticked get a column');
     expect(smiles.col('PAINS (smiles)')?.get(2), false, `incorrect PAINS (smiles) value`);
     expect(smiles.col('BMS (smiles)')?.get(2), true, `incorrect BMS (smiles) value`);
     expect(smiles.col('SureChEMBL (smiles)')?.get(2), true, `incorrect SureChEMBL (smiles) value`);

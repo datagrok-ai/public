@@ -18,7 +18,7 @@ export const ValidationIcon = Vue.defineComponent({
   props: {
     validationStatus: {
       type: Object as Vue.PropType<ValidationIconInput | undefined>,
-      required: false
+      required: false,
     },
     isScalar: {
       type: Boolean,
@@ -31,7 +31,7 @@ export const ValidationIcon = Vue.defineComponent({
     useHover: {
       type: Boolean,
       default: false,
-    }
+    },
   },
   emits: {
     consistencyReset: () => true,
@@ -42,7 +42,8 @@ export const ValidationIcon = Vue.defineComponent({
     const isScalar = Vue.computed(() => props.isScalar);
     const isDataFrame = Vue.computed(() => props.isDataFrame);
     const useHover = Vue.computed(() => props.useHover);
-    const validationStatus = Vue.computed(() => props.validationStatus ? Vue.markRaw(props.validationStatus) : undefined);
+    const validationStatus = Vue.computed(() =>
+      props.validationStatus ? Vue.markRaw(props.validationStatus) : undefined);
     return () => (
       <dg-validation-icon
         isScalar={isScalar.value}
@@ -55,5 +56,5 @@ export const ValidationIcon = Vue.defineComponent({
       >
       </dg-validation-icon>
     );
-  }
-})
+  },
+});

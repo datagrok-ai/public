@@ -19,3 +19,14 @@
 .ui-input-disabled.ui-input-root .ui-input-options:has(i.rfv2-validation-icon) {
     filter: none;
 }
+
+/* the platform turns the focus outline of buttons off; Compute2 views show the browser's ring */
+.compute2-scope button.ui-btn:focus-visible {
+  outline: revert;
+}
+
+/* d4-disabled turns off pointer events; a disabled big button keeps them to show why on hover */
+.compute2-scope button[is='dg-big-button'].ui-btn.d4-disabled[aria-disabled='true'] {
+  pointer-events: auto;
+  cursor: default;
+}

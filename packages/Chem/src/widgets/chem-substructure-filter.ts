@@ -433,7 +433,7 @@ export class SubstructureFilter extends DG.Filter {
       this.fireEnabledSync(true);
     }
     //in case detaching active filter -> send sync event to other filters and reset active filter id
-    if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
+    if (this.column?.temp[CHEM_APPLY_FILTER_SYNC]?.filterId === this.filterId) {
       this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: -1};
       this.fireFilterSync();
     };

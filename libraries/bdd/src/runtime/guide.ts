@@ -13,7 +13,7 @@ export interface GuideBox {
 export interface GuidePointer {
   /** `move`: where the pointer came to rest, or with `held` a point of a drag; `down` and `up`: a
    * button pressed or released there; `still`: a picture of the page while the step went on (text
-   * being typed, a wheel notch), the pointer where it was. */
+   * being typed, a wheel turn), the pointer where it was. */
   type: 'move' | 'down' | 'up' | 'still';
   x: number;
   y: number;
@@ -28,10 +28,11 @@ export interface GuidePointer {
   shot?: string;
 }
 
-export type GuideStepKind = 'action' | 'check' | 'setup';
+/** `note`: a line of text the video shows over the page (`the video says …`), no gesture of its own. */
+export type GuideStepKind = 'action' | 'check' | 'setup' | 'note';
 
 const DRAG_SHOTS = 8;
-/** At most this many pictures of one typing or one wheel turn. */
+/** At most this many pictures of one typing. */
 const BEATS = 6;
 
 /** A stop of a step: the page as the pointer set off for it, the element lit there, and what the
@@ -50,6 +51,8 @@ export interface GuideStep {
   text: string;
   /** The step as an instruction to a person: "Click the Open local file icon in the Browse toolbar". */
   caption: string;
+  /** The caption is the feature's own (`# caption:`), not one made from the step's text: a demo shows it. */
+  captioned?: boolean;
   kind: GuideStepKind;
   before: string;
   after: string;
@@ -60,6 +63,9 @@ export interface GuideStep {
   keys: string[];
   typed: string;
   ms: number;
+  /** The view in front when the step ended: a demo folds the steps after an action into its result only while
+   * they stay in its view. */
+  view?: string;
 }
 
 export interface GuideManifest {
@@ -89,6 +95,8 @@ interface Recording {
   dragShots: number;
   beats: number;
   silent: boolean;
+  /** The open step is a line of text for the video (`say`). */
+  note?: string;
   /** The step aimed at a hit area (`locatedArea`): finer than the viewer a later read of it locates. */
   area?: boolean;
   open?: {index: number; line: number; keyword: string; text: string; table?: string[][]; caption?: string; started: number; before: string};
@@ -104,6 +112,11 @@ export function guideDir(): string | undefined {
 /** A help-page GIF (`grok-bdd guide --help-mode`): the bare shell, no captions, no set-up. */
 export function helpMode(): boolean {
   return !!guideDir() && !!process.env.BDD_GUIDE_HELP;
+}
+
+/** A demo clip (`@demo`, `grok-bdd guide --demo`): the shell with its sidebar only, no captions, no set-up. */
+export function demoMode(): boolean {
+  return !!guideDir() && !!process.env.BDD_GUIDE_DEMO;
 }
 
 /** A guide films the full shell — the menus, view tabs and panels as a person has them; a test
@@ -291,7 +304,7 @@ async function drain(page: Page): Promise<GuidePointer[]> {
 }
 
 /** A picture of the page in the middle of the step — the text typed so far, the list after a wheel
- * notch — shown where the pointer is when it was taken. */
+ * turn — shown where the pointer is when it was taken. */
 async function beat(page: Page, r: Recording): Promise<void> {
   r.pending.push(...await drain(page));
   await page.evaluate(() => new Promise<void>((resolve) =>
@@ -348,7 +361,7 @@ function wrapLocatorTyping(loc: Locator): void {
 
 /** The pointer is followed in the page, whatever runtime path drives it (a gesture, a menu walk, a
  * viewer hit area, a locator's own click). The page's `mouse` is wrapped to picture drags and wheel
- * notches, and the typing to picture the text as it goes in. */
+ * turns, and the typing to picture the text as it goes in. */
 export async function attach(page: Page): Promise<void> {
   if (!guideDir() || attached.has(page))
     return;
@@ -385,16 +398,14 @@ export async function attach(page: Page): Promise<void> {
         r.pending.push({type: 'move', x: at.x, y: at.y, held: true, shot: name});
     }
   };
+  // one event, as a test sends it: split into notches, a handler that moves a step per event (Bio's MSA header)
+  // went further on film than in the test
   const wheel = mouse.wheel.bind(mouse);
   mouse.wheel = async (dx: number, dy: number) => {
+    await wheel(dx, dy);
     const r = rec();
-    const notches = Math.min(BEATS, Math.round(Math.max(Math.abs(dx), Math.abs(dy)) / 100));
-    if (!r?.open || r.silent || notches < 2)
-      return wheel(dx, dy);
-    for (let i = 0; i < notches; i++) {
-      await wheel(dx / notches, dy / notches);
+    if (r?.open && !r.silent)
       await beat(page, r);
-    }
   };
   mouse.down = async (options?: unknown) => {
     held = true;
@@ -518,6 +529,13 @@ export function silent(page: Page): void {
     r.silent = true;
 }
 
+/** The open step is a line of text the video shows over the page, whatever the step's own words. */
+export function say(page: Page, text: string): void {
+  const r = recordings.get(page);
+  if (r?.open)
+    r.note = text;
+}
+
 function sameFile(dir: string, a: string, b: string): boolean {
   try {
     return readFileSync(join(dir, a)).equals(readFileSync(join(dir, b)));
@@ -569,6 +587,7 @@ export async function begin(page: Page | undefined, info: TestInfo, line: number
   r.dragShots = 0;
   r.beats = 0;
   r.silent = false;
+  r.note = undefined;
   r.area = false;
   r.open = {index, line, keyword, text, table, caption, started: Date.now(), before: await shot(page, r.dir, `${stem}-before.png`)};
 }
@@ -589,6 +608,7 @@ export async function end(page: Page | undefined): Promise<void> {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())))).catch(() => undefined);
   const stem = String(open.index).padStart(2, '0');
   const after = await shot(page, r.dir, `${stem}-after.png`);
+  const view = await page.evaluate(() => (window as any).grok?.shell?.v?.name as string | undefined).catch(() => undefined);
   let target = r.target ?? undefined;
   if (!target && r.located)
     target = await r.located.first().boundingBox({timeout: 200}).catch(() => null) ?? undefined;
@@ -608,10 +628,12 @@ export async function end(page: Page | undefined): Promise<void> {
   // page after it is the point); left out are the login, a step that changed nothing on the page,
   // and a check or a wait a person has no use for — unless the feature gave it a caption to show
   const hidden = r.silent || (!open.caption && (type === 'Then' || type === 'Given') && hiddenInGuide(open.text));
-  const kind: GuideStepKind = hidden ? 'setup' : type === 'Then' ? 'check' :
+  const kind: GuideStepKind = r.note !== undefined ? 'note' : hidden ? 'setup' : type === 'Then' ? 'check' :
     acted || !sameFile(r.dir, open.before, after) ? 'action' : 'setup';
+  const caption = r.note ?? open.caption;
   r.manifest.steps.push({index: open.index, line: open.line, keyword: open.keyword, text: open.text,
-    caption: open.caption ?? captionOf(open.text, kind, open.table), kind, before: open.before, after, target, legs: r.legs,
-    keys: r.keys, typed: r.typed, ms: Date.now() - open.started});
+    caption: caption ?? captionOf(open.text, kind, open.table), ...(caption ? {captioned: true} : {}), kind,
+    before: open.before, after, target, legs: r.legs, keys: r.keys, typed: r.typed, ms: Date.now() - open.started,
+    ...(view ? {view} : {})});
   writeFileSync(join(r.dir, 'steps.json'), JSON.stringify(r.manifest, null, 2));
 }

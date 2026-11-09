@@ -3,7 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGIconImageT, DGToggleInputT} from '@datagrok-libraries/webcomponents';
+import {tooltip} from './directives/tooltip';
+import {onPress} from './on-press';
+
+import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGToggleInputT} from '@datagrok-libraries/webcomponents';
 
 declare global {
   namespace JSX {
@@ -11,7 +14,6 @@ declare global {
       'dg-button': DGButtonT,
       'dg-big-button': DGBigButtonT,
       'dg-icon-fa': DGIconFAT,
-      'dg-icon-image': DGIconImageT,
       'dg-toggle-input': DGToggleInputT
       'dg-combo-popup': DGComboPopupT
     }
@@ -20,9 +22,14 @@ declare global {
 
 export const Button = Vue.defineComponent({
   name: 'Button',
-  emits: ['click'],
-  setup(_props, {slots, attrs, emit}) {
-    return () => (<button v-bind={attrs} onClick={(p) => emit('click', p)} is="dg-button">{slots.default ? slots.default() : ''}</button>);
+  emits: {
+    click: (_e: MouseEvent) => true,
+  },
+  setup(_props, {slots, emit}) {
+    // Vue rewrites className whenever a class is bound, so the element's own classes are repeated here
+    return () => (<button class={['ui-btn', 'ui-btn-ok']} onClick={(p) => emit('click', p)} is="dg-button">
+      {slots.default?.()}
+    </button>);
   },
 });
 
@@ -33,24 +40,34 @@ export const BigButton = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
+    // why the button is disabled: its tooltip, and a warning when it is pressed anyway
+    disabledReason: {
+      type: String,
+      required: false,
+    },
   },
-  emits: ['click'],
+  emits: {
+    click: (_e: MouseEvent) => true,
+  },
   setup(props, {slots, emit}) {
-    const btn = Vue.shallowRef<HTMLElement | null>(null);
+    // a disabled button stays focusable, so it can tell why it does nothing; its tooltip shows only where the host
+    // keeps pointer events on it, which d4-disabled turns off
+    const onClick = (e: MouseEvent) => {
+      if (!props.isDisabled)
+        emit('click', e);
+      else if (props.disabledReason)
+        grok.shell.warning(props.disabledReason);
+    };
 
-    Vue.watch([() => props.isDisabled, btn] as const, ([isDisabled, btn]) => {
-      if (!btn) return;
-
-      btn.classList.toggle('d4-disabled', isDisabled);
-    }, {immediate: true});
-
-    return () => (<button
-      onClick={(p) => emit('click', p)}
-      ref={btn}
+    // Vue rewrites className whenever a class is bound, so the element's own classes are repeated here
+    return () => Vue.withDirectives(<button
+      class={['ui-btn', 'ui-btn-ok', 'ui-btn-raised', {'d4-disabled': props.isDisabled}]}
+      aria-disabled={props.isDisabled ? 'true' : undefined}
+      onClick={onClick}
       is="dg-big-button"
     >
-      {slots.default ? slots.default() : ''}
-    </button>);
+      {slots.default?.()}
+    </button>, [[tooltip, props.isDisabled ? props.disabledReason : undefined]]);
   },
 });
 
@@ -79,76 +96,33 @@ export const IconFA = Vue.defineComponent({
       default: false,
     },
   },
-  emits: [
-    'click',
-  ],
+  emits: {
+    click: (_e: MouseEvent) => true,
+  },
   setup(props, {emit}) {
-    const icon = Vue.shallowRef<HTMLElement | null>(null);
     const instance = Vue.getCurrentInstance();
 
-    Vue.watch([() => props.isDisabled, icon] as const, ([isDisabled, btn]) => {
-      if (!btn) return;
-
-      btn.classList.toggle('d4-disabled', isDisabled);
-    }, {immediate: true});
+    // a key press goes through a real click, so parents see the same event as from the mouse
+    const pressOnKey = onPress((e) => (e.currentTarget as HTMLElement).click());
 
     return () => {
+      const clickable = !!instance?.vnode.props?.onClick;
+      const focusable = clickable && !props.isDisabled;
+      // a class binding, so a parent's class change keeps the disabled state
       return (<dg-icon-fa
+        class={{'d4-disabled': props.isDisabled}}
         name={props.name}
-        ref={icon}
         cursor={props.cursor}
         animation={props.animation}
         tooltip={props.tooltip}
-        role={props.tooltip ? (instance?.vnode.props?.onClick ? 'button' : 'img') : undefined}
+        role={props.tooltip ? (clickable ? 'button' : 'img') : undefined}
         aria-label={props.tooltip ?? undefined}
+        tabindex={focusable ? 0 : undefined}
         faStyle={props.faStyle}
-        onClick={(e: Event) => emit('click', e)}
+        onClick={(e: MouseEvent) => emit('click', e)}
+        onKeydown={focusable ? pressOnKey : undefined}
       >
       </dg-icon-fa>);
-    };
-  },
-});
-
-export const IconImage = Vue.defineComponent({
-  name: 'IconImage',
-  props: {
-    name: String,
-    path: String,
-    cursor: {
-      type: String,
-      default: 'pointer',
-    },
-    tooltip: {
-      type: String as Vue.PropType<string | null>,
-      default: null,
-    },
-    isDisabled: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  emits: [
-    'click',
-  ],
-  setup(props, {emit}) {
-    const icon = Vue.shallowRef<HTMLElement | null>(null);
-
-    Vue.watch([() => props.isDisabled, icon] as const, ([isDisabled, btn]) => {
-      if (!btn) return;
-
-      btn.classList.toggle('d4-disabled', isDisabled);
-    }, {immediate: true});
-
-    return () => {
-      return (<dg-icon-image
-        name={props.name}
-        path={props.path}
-        ref={icon}
-        cursor={props.cursor}
-        tooltip={props.tooltip}
-        onClick={(e: Event) => emit('click', e)}
-      >
-      </dg-icon-image>);
     };
   },
 });
@@ -164,10 +138,6 @@ export const ToggleInput = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
-    nullable: {
-      type: Boolean,
-      default: false,
-    },
     tooltip: {
       type: String,
     },
@@ -179,7 +149,6 @@ export const ToggleInput = Vue.defineComponent({
     return () => <dg-toggle-input
       caption={props.caption}
       value={props.value}
-      nullable={props.nullable}
       tooltip={props.tooltip}
       onValueChanged={(event: any) => emit('update:value', event.detail)}
     />;

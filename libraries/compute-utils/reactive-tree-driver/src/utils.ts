@@ -190,7 +190,7 @@ function makeDeepEqual({abs, rel}: Tolerance) {
   return equal;
 }
 
-const deepEquals = new Map<string, (a: any, b: any) => boolean>();
+const deepEquals: Map<string, (a: any, b: any) => boolean> = new Map();
 
 function getDeepEqual(tolerance: Tolerance) {
   const key = `${tolerance.abs}|${tolerance.rel}`;

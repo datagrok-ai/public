@@ -58,7 +58,9 @@ export function disposeViewers(mapping: {[key: string]: (DG.Viewer | undefined)[
   }
 }
 
-export async function getViewers(call: DG.FuncCall, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>) {
+export async function getViewers(
+  call: DG.FuncCall, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>,
+) {
   const mappings = await dfToViewerMapping(call);
   if (viewersHook) {
     for (const [ioName, viewers] of Object.entries(mappings ?? {})) {
@@ -104,6 +106,50 @@ export function canUseResults(
     grok.shell.warning(`Results are outdated — run the model to update them before ${action}.`);
     return false;
   }
+  return true;
+}
+
+export interface Control {
+  shown: boolean;
+  disabledReason?: string;
+}
+
+export interface RunState {
+  isOutputOutdated?: boolean;
+  allowRerun: boolean;
+  autorun: boolean;
+  isRunnable?: boolean;
+  isRunning?: boolean;
+  isReadonly?: boolean;
+  isBlocked?: boolean;
+}
+
+export const READONLY_REASON = 'This step is read-only.';
+
+export const busyReason = (action: string) =>
+  `The workflow is busy — wait for the current run to finish before ${action}.`;
+
+/** The Run button: shown while the outputs are outdated or reruns are allowed, disabled with the first reason. */
+export function runControl(state: RunState): Control {
+  return {
+    shown: !state.autorun && (!!state.isOutputOutdated || state.allowRerun),
+    disabledReason:
+      state.isReadonly ? READONLY_REASON :
+        state.isRunning ? 'It is already running.' :
+          state.isBlocked ? busyReason('running') :
+            !state.isRunnable ? 'Fix the invalid inputs first.' :
+              undefined,
+  };
+}
+
+/** Presses a control like its button does: acts, or warns why it can't. False when the control isn't shown. */
+export function pressControl(control: Control, action: () => void): boolean {
+  if (!control.shown)
+    return false;
+  if (control.disabledReason)
+    grok.shell.warning(control.disabledReason);
+  else
+    action();
   return true;
 }
 

@@ -2,9 +2,13 @@
 
 ## v.next
 
+* [public#4548](https://github.com/datagrok-ai/public/issues/4548): Sankey: Fixed freezing on large tables by drawing one link per source-target pair instead of one per row
 * [public#4459](https://github.com/datagrok-ai/public/issues/4459): Timelines: Date Format resets to the default on any column change
 * [public#4462](https://github.com/datagrok-ai/public/issues/4462): Sankey: a Value column with negative values or only zeros draws with no message
+* [public#4514](https://github.com/datagrok-ai/public/issues/4514): Charts: Sankey: a click on a node selects rows the filter hides
 * [public#4477](https://github.com/datagrok-ai/public/issues/4477): Charts: Sunburst paints a partial selection as full on the outer rings and not at all on the inner ring
+* core#1174: Sunburst, Tree: Fixed the filter of a click staying after the clicked column is removed or the hierarchy changes
+* Tests: Added "Viewers: no rows": every viewer with every row filtered out and with every row deleted logs no error
 
 ## 1.8.2 (2026-10-29)
 

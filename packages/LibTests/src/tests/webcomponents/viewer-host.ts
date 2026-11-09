@@ -308,23 +308,61 @@ category('WebComponents: ViewerHost', () => {
     });
   });
 
-  test('frameApplied$ fires after an in-place swap only', async () => {
+  test('a viewer reading its frame back as a new wrapper is not swapped', async () => {
     testScheduler.run(({flush}) => {
-      const {log, host} = setup();
-      const applied: string[] = [];
-      host.frameApplied$.subscribe((viewer) => applied.push(`${viewer.id}:${viewer.dataFrame.name}`));
+      const {log, host} = setup((mk) => (type, df) => of(Object.defineProperty(mk(type, df), 'dataFrame', {
+        get: () => ({...df}),
+        set: (next: any) => log.push(`frame:${next.name}`),
+      })));
       host.typeSetted$.next('grid');
       host.dfSetted$.next(df1);
       flush();
-      expectDeepEqual(applied, [], {prefix: 'creation must not fire frameApplied$'});
       host.optionsSetted$.next({a: 1});
       flush();
-      expectDeepEqual(applied, [], {prefix: 'options-only must not fire frameApplied$'});
-      host.dfSetted$.next(df2);
+      expectDeepEqual(log.slice(2), ['options:v1:{"a":1}']);
+    });
+  });
+
+  test('a frame set on the viewer directly survives an options change', async () => {
+    testScheduler.run(({flush}) => {
+      const {log, host} = setup();
+      host.typeSetted$.next('grid');
+      host.dfSetted$.next(df1);
       flush();
-      expectDeepEqual(applied, ['v1:df2']);
-      expectDeepEqual(log.slice(3), ['frame:v1:df2', 'options:v1:{"a":1}'],
-        {prefix: 'frameApplied$ fires after the swap effects'});
+      host.viewer$.value!.dataFrame = df2;
+      host.optionsSetted$.next({a: 1});
+      flush();
+      expectDeepEqual(log.slice(2), ['frame:v1:df2', 'options:v1:{"a":1}']);
+    });
+  });
+
+  test('a new frame from the host replaces a frame set on the viewer directly', async () => {
+    testScheduler.run(({flush}) => {
+      const {log, host} = setup();
+      const df3 = {name: 'df3'};
+      host.typeSetted$.next('grid');
+      host.dfSetted$.next(df1);
+      flush();
+      host.viewer$.value!.dataFrame = df2;
+      host.dfSetted$.next(df3);
+      flush();
+      expectDeepEqual(log.slice(2), ['frame:v1:df2', 'frame:v1:df3', 'options:v1:{}']);
+    });
+  });
+
+  test('options changes while detached do not re-emit the detach', async () => {
+    testScheduler.run(({flush}) => {
+      const {host} = setup();
+      const attachLog: (string | undefined)[] = [];
+      host.viewer$.subscribe((viewer) => attachLog.push(viewer?.id));
+      host.typeSetted$.next('grid');
+      host.dfSetted$.next(df1);
+      flush();
+      host.dfSetted$.next(undefined);
+      flush();
+      host.optionsSetted$.next({a: 1});
+      flush();
+      expectDeepEqual(attachLog, [undefined, 'v1', undefined]);
     });
   });
 
@@ -387,6 +425,30 @@ category('WebComponents: ViewerHost', () => {
         setOptions(options);
       };
       host.optionsSetted$.next({broken: true});
+      flushQuietly(flush);
+      host.optionsSetted$.next({a: 1});
+      flushQuietly(flush);
+      expectDeepEqual(log.slice(2), ['options:v1:{"a":1}']);
+    });
+  });
+
+  test('refused options are applied when set again', async () => {
+    testScheduler.run(({flush}) => {
+      const {log, host} = setup();
+      host.typeSetted$.next('grid');
+      host.dfSetted$.next(df1);
+      flush();
+      const viewer = host.viewer$.value!;
+      const setOptions = viewer.setOptions.bind(viewer);
+      let refuse = true;
+      viewer.setOptions = (options) => {
+        if (refuse) {
+          refuse = false;
+          throw new Error('options refused');
+        }
+        setOptions(options);
+      };
+      host.optionsSetted$.next({a: 1});
       flushQuietly(flush);
       host.optionsSetted$.next({a: 1});
       flushQuietly(flush);

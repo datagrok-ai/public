@@ -15,6 +15,7 @@ export const enum BioPackagePropertiesNames {
   TooltipWebLogo = 'TooltipWebLogo',
   DefaultSeparator = 'DefaultSeparator',
   FontSize = 'FontSize',
+  ShowConnections = 'ShowConnections',
 }
 
 

@@ -34,6 +34,8 @@ fast). Section numbers are the first list's.
   with the preview flagging the rows replaced). Find what's message for a predicate naming no column
   (core#838) is the input's tooltip, read with the existing hover and tooltip steps; core#891's balloon is
   `an info balloon containing …`, so no new step was needed.
+- **core#1180, the profile's name dialog.** An emptied first name and one over the 64 characters a name is stored
+  in keep OK disabled (`user_profile.dart`), claimed in `profile.feature`.
 
 ## Still open
 
@@ -56,6 +58,11 @@ Nothing planned.
   predicates and their JSON are ddt `func_test.dart`, the replacement the ddt tests above.
 - **§13a, a query drawn in the HELM substructure filter.** It needs a name on the filter's clickable panel and an
   element for its editor dialog (`Bio/src/widgets/bio-substructure-filter-helm.ts`).
+- **The Table Manager with no table open**: a 0-row grid.
+- **An empty molecule cell in a CSV export**: Chem `save as csv` 'an empty molecule exports as an empty field'.
+- **Closed shell bugs without a step**: core#557 (Recent's feed beside its calendar) and core#754 (a top-menu
+  tooltip over the menus in a narrow window) are cosmetic; core#558 (Recent's "Filtered out N logs") is xamgle's
+  'Recent activity | Deleted entities' test.
 
 ### Not gaps
 

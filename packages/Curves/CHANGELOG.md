@@ -2,6 +2,11 @@
 
 ## v.next
 
+* Tests: Added the package test of Data to Curves: wells grouped into one curve per compound, assay, target and run, with each curve's and each group's maximum inhibition
+
+## 1.13.4 (2026-11-05)
+
+* Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Tests: Added BDD claims for Show Selected Rows Curves of the Multi curve viewer, Log Y kept by a saved layout in a trellis, the Level choices of the curve options and a JSON formula column typed as `fit`
 * Multi curve viewer: Added the axes it draws (`x range`, `y range`) and the number of points outside them to `getWidgetStatus()`; extracted the renderer's layout into one method (`layOutChart`) both use
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Data | Curves | Data to Curves is disabled unless the current view is a table view

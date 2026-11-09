@@ -319,6 +319,16 @@ category('Widgets: InputForm validation and events', () => {
     expect(fired, 1);
     sub.unsubscribe();
   });
+
+  test('an emptied input invalidates the form unless it is nullable', async () => {
+    form.getInput('boundedInt').value = 5;
+    form.getInput('boundedDouble').value = 0.5;
+    form.getInput('optionalText').value = '';
+    form.getInput('requiredText').value = '';
+    expect(form.validateInputs(), false);
+    form.getInput('requiredText').value = 'ok';
+    expect(form.validateInputs(), true);
+  });
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Widgets: InputForm skipLogic', () => {

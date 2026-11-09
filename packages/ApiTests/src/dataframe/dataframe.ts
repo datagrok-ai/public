@@ -493,6 +493,14 @@ category('DataFrame: Column', () => {
     expect(col.get(0), 'a');
   });
 
+  test('fromList bigint', async () => {
+    const col = DG.Column.fromList('bigint', 'col', [12345678901234567890n, 0n, null]);
+    expect(col.get(0), 12345678901234567890n);
+    expect(col.get(1), 0n);
+    expect(col.isNone(2), true);
+    expect(DG.Column.fromBigInt64Array('col', BigInt64Array.from([-5n])).get(0), -5n);
+  });
+
   test('fromStrings', async () => {
     const col = DG.Column.fromStrings('col', ['a', 'b', 'c']);
     expect(col.get(0), 'a');

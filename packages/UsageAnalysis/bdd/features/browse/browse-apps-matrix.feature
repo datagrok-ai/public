@@ -18,10 +18,11 @@ Feature: Every application a stand runs in the browser opens from Browse > Apps 
   Not rows: HELM Enumerator and Oligo Batch Calculator open a preview card whose only content is
   RUN — the application itself is behind it; Markush Enumerator's view shows no control of its own
   to claim; Excalidraw logs a React error on opening (a candidate finding, walked before anything is
-  claimed or filed); Plates > Create writes plates. Left out by the rule (a container, a server
-  script or an outside service behind the application): Boltz-1, Docking, Admetica, MolTrack,
-  Preclinical Case, Benchling, CDD Vault, Chemspace, Signals, Revvity Signals, KNIME, and Clinical Case
-  (a Python reader for its studies, and a file written into App Data).
+  claimed or filed); Plates' Search wells, Templates and Create: apps/plates.feature (opening Create
+  writes nothing, CREATE with a plate does). Left out by the rule (a container, a server script or an
+  outside service behind the application): Boltz-1, Docking, Admetica, MolTrack, Preclinical Case,
+  Benchling, CDD Vault, Chemspace, Signals, Revvity Signals, KNIME, and Clinical Case (listing its
+  studies writes a studyConfig.json into App Data).
 
   Background:
     Given user is logged in

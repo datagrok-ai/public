@@ -3,8 +3,9 @@ Feature: The confusion matrix filters the way the other viewers do
   A click on a cell keeps the table on the rows of that cell, on top of the filters already there. The
   matrix re-applies it every time the table refilters, so a filter panel change keeps it, and lets go
   of it when it is closed, when its columns change or when the filter is reset (core#233). A click on
-  the same cell takes the filter off, a click on another cell replaces it. On demog-1000 with SEX
-  against CONTROL the "M as false" cell holds 446 rows, "F as false" 548, and 8 of the 446 are Asian.
+  the same cell takes the filter off, a click on another cell replaces it; the cell's tooltip names what
+  it counts. On demog-1000 with SEX against CONTROL the "M as false" cell holds 446 rows, "F as false"
+  548, and 8 of the 446 are Asian.
 
   Background:
     Given user is logged in
@@ -15,6 +16,8 @@ Feature: The confusion matrix filters the way the other viewers do
 
   @realizes:core#233
   Scenario: Closing the matrix lets go of its filter
+    When user hovers over the "cell M as false" area of confusion matrix viewer
+    Then tooltip should contain text "Number of M predicted as false"
     When user clicks on the "cell M as false" area of confusion matrix viewer
     Then 446 rows should pass the filter
     When user clicks on close icon of confusion matrix viewer

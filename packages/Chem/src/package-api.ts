@@ -1217,7 +1217,7 @@ export namespace funcs {
   }
 
   /**
-   * Calculates chemical properties and adds them as columns to the input table. With the Chemical Engine setting on RDKit (the default) OpenChemLib calculates them, with Crux they follow RDKit's definitions (MW is then the average molecular weight, not the monoisotopic mass). Properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
+   * Calculates chemical properties and adds them as columns to the input table. With the Chemical Engine setting on Crux (the default) they follow RDKit's definitions, on RDKit OpenChemLib calculates them; MW is the average molecular weight in both. Properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
    * @param {DG.DataFrame} table - Input data table
    * @param {DG.Column} molecules
    *   semType: Molecule

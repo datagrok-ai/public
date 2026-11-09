@@ -2,7 +2,7 @@ numpy==1.26.4
 datagrok-celery-task
 celery
 datagrok-api>=0.0.9
-filelock
+filelock>=4.2.1
 # Runtime deps of aizynthfinder==4.3.2, which is installed with --no-deps: its pillow<10 cap blocks
 # the pillow CVE fixes, and the jupyter GUI and [all] extras (route-distances -> torch<2.6,
 # pytorch-lightning<1.8.4) are not used by app.py.
@@ -22,7 +22,7 @@ psutil
 molbloom>=2.1.0,<3.0.0
 # Security floors
 protobuf>=5.29.6
-pillow>=12.2
+pillow>=13.0.0
 wheel>=0.46.2
 jaraco.context>=6.1
 setuptools>=78.1.1

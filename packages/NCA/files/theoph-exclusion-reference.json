@@ -1,0 +1,93 @@
+{
+  "dataset": "theoph",
+  "pknca_version": "0.12.1",
+  "generated_by": "PKNCA 0.12.1 (R script theoph_pknca_exclusion_reference.R)",
+  "config": {
+    "auc_method": "lin up/log down",
+    "allow_tmax_in_half_life": false,
+    "min_hl_points": 3,
+    "min_hl_r_squared": 0.85,
+    "min_span_ratio": 1e-09
+  },
+  "statistics": "arithmetic mean, sample SD, N over the rows PKNCA exclude() left un-excluded",
+  "excluded": [
+    {
+      "subject": "1",
+      "reason": "span.ratio < 2",
+      "span_ratio": 1.07100081243347
+    },
+    {
+      "subject": "5",
+      "reason": "Terminal phase not reached within sampling window"
+    }
+  ],
+  "excluded_parameters": ["lambda.z", "half.life", "aucinf.obs", "aucpext.obs", "cl.obs", "vz.obs", "aumcinf.obs", "mrt.obs"],
+  "summary": {
+    "CMAX": {
+      "mean": 8.75916666666667,
+      "sd": 1.47295903993741,
+      "n": 12,
+      "n_excluded": 0
+    },
+    "TMAX": {
+      "mean": 1.78833333333333,
+      "sd": 1.1124079805321,
+      "n": 12,
+      "n_excluded": 0
+    },
+    "AUC_LAST": {
+      "mean": 100.979765941183,
+      "sd": 23.4809046148923,
+      "n": 12,
+      "n_excluded": 0
+    },
+    "AUC_INF": {
+      "mean": 108.115281230216,
+      "sd": 24.4067418003917,
+      "n": 10,
+      "n_excluded": 2
+    },
+    "PCT_EXTRAP": {
+      "mean": 12.1304732814535,
+      "sd": 3.34046474417654,
+      "n": 10,
+      "n_excluded": 2
+    },
+    "LAMBDA_Z": {
+      "mean": 0.0926537061739873,
+      "sd": 0.0114171274716723,
+      "n": 10,
+      "n_excluded": 2
+    },
+    "HALF_LIFE": {
+      "mean": 7.58590389223523,
+      "sd": 0.950972746470095,
+      "n": 10,
+      "n_excluded": 2
+    },
+    "CL": {
+      "mean": 3.01498174819476,
+      "sd": 0.565660974897287,
+      "n": 10,
+      "n_excluded": 2
+    },
+    "VZ": {
+      "mean": 32.800306451394,
+      "sd": 6.58290662756501,
+      "n": 10,
+      "n_excluded": 2
+    },
+    "AUMC_INF": {
+      "mean": 1303.88239675342,
+      "sd": 445.799794691435,
+      "n": 10,
+      "n_excluded": 2
+    },
+    "MRT": {
+      "mean": 11.8964283888468,
+      "sd": 1.37672255367589,
+      "n": 10,
+      "n_excluded": 2
+    }
+  }
+}

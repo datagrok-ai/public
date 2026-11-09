@@ -48,7 +48,9 @@ Nothing planned.
 - **A click right after OK reaching the context panel**: the freeze GROK-21024 keeps by design;
   `edit-column-formula.feature` makes the later columns current through the API.
 - **What each formula computes on every row, the validator's cases, the error messages**: PowerPack package
-  tests "Add new column" and ApiTests "DataFrame: Calculated columns".
+  tests "Add new column" and ApiTests "DataFrame: Calculated columns" (public#4404 `RowCount("nope")` and
+  `Avg(Column("nope"))`: 'validation'; public#4406 the type of `Avg($[x])`: 'a formula over the whole table is
+  previewed on the whole table').
 - **`appendAsync`, `appendMergeAsync`, `grok.data.appendTables`, `recalculateFormulaColumns`; layout apply
   adding the formula columns in one batch (GROK-21114); UnixTimestamp/DateDiff precision (core#789,
   public#3851); data sync of `addNewCalculated` (core#788)**: what a function or a layout computes and stores.

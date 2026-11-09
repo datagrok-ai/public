@@ -25,7 +25,7 @@ category('Composables: Viewers hook', async () => {
     let lastType: string | undefined;
     let lastViewer: DG.Viewer | undefined;
     let runCount = 0;
-    const hook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => {
+    const hook = (ioName: string, type: string, viewer?: DG.Viewer) => {
       lastIoName = ioName;
       lastType = type;
       lastViewer = viewer;

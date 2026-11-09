@@ -33,10 +33,10 @@
 }
 
 /* Sibling imports */
-@import '../node_modules/@jupyterlab/application/style/datagrid.css';
-@import '../node_modules/@jupyterlab/application/style/dockpanel.css';
-@import '../node_modules/@jupyterlab/application/style/menus.css';
-@import '../node_modules/@jupyterlab/application/style/scrollbar.css';
-@import '../node_modules/@jupyterlab/application/style/tabs.css';
-@import '../node_modules/@jupyterlab/application/style/buttons.css';
-@import '../node_modules/@jupyterlab/application/style/sidepanel.css';
+@import '~@jupyterlab/application/style/datagrid.css';
+@import '~@jupyterlab/application/style/dockpanel.css';
+@import '~@jupyterlab/application/style/menus.css';
+@import '~@jupyterlab/application/style/scrollbar.css';
+@import '~@jupyterlab/application/style/tabs.css';
+@import '~@jupyterlab/application/style/buttons.css';
+@import '~@jupyterlab/application/style/sidepanel.css';

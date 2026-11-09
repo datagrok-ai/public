@@ -26,6 +26,8 @@ Feature: The Viewers tutorial
     And the "Viewers" tutorial is not completed yet
     And the Tutorials app is open
 
+  @realizes:public#4346
+  @realizes:public#4436
   Scenario: A learner completes the Viewers tutorial
     When user starts the "Viewers" tutorial
     Then the tutorial progress should be 1 of 20
@@ -45,6 +47,11 @@ Feature: The Viewers tutorial
 
     When user clicks on "Add viewer" icon
     Then the tutorial step "Open the viewer gallery again" should be done
+    # public#4436: the gallery closed and opened again keeps the hint, and the step still completes
+    When user presses Escape
+    Then viewer gallery should be absent
+    When user clicks on "Add viewer" icon
+    Then viewer gallery search should be hinted
     When user types "Sunburst" into viewer gallery search
     Then the tutorial step "Type \"Sunburst\" in the search box" should be done
     When user clicks on "Sunburst" viewer card
@@ -83,7 +90,8 @@ Feature: The Viewers tutorial
     Then the tutorial step "Click on a point to set the current record" should be done
     And the "hovered row" reading of scatter plot viewer should be the current row
 
-    When user picks "Properties..." from the viewer menu of scatter plot viewer
+    # public#4346: the step names the settings icon in the plot's header (a click on the plot and F4 left the table current)
+    When user clicks on settings icon of scatter plot viewer
     Then the tutorial step "Open the scatter plot's properties" should be done
     And the context panel should show "Scatter plot"
     When user sets "markerDefaultSize" property of scatter plot viewer to "12"

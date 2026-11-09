@@ -1,31 +1,45 @@
 # Grid — what the features cannot say yet
 
-Written during the Grid / Filter panel / Legend gap round of 23 Oct 2026, against the grid's
-"Automation surface" (`core/client/d4/lib/src/viewers/grid/CLAUDE.md`), the TestTrack cases
-`files/TestTrack/Viewers/Grid/grid-ui.md`, `grid.md`, `grid-rows-select-filter-navigate.md` and the
-library's rules (`public/libraries/bdd/CLAUDE.md`). Added in that round: `grid-pin-if-editable.feature`,
-`grid-extracted-rows-project.feature` (GROK-19717), and the exact row count in `grid-columns.feature`
-(326 after the popup's min handle reaches bin 10). Control+F and the block drag across the cells stay
-out of scope, as `grid-rows.feature` records.
+## Resolved
+
+- **core#1195, core#1194 (Allow Row Selection)**: fixed in this round; a blank group name ungroups
+  (`grid-column-groups.feature`), Shift+Enter selects nothing while Allow Row Selection is off (`grid-rows.feature`).
+- **core#1137 (Pin / Unpin Column), core#1191**: fixed in this round; Dart tests "d4 | Viewers | Grid | Pin and Unpin
+  Column work with Frozen Columns above the column count" and "… | Rows pinned past the cap leave no values for a layout".
 
 ## Still open
 
-- **The header histogram and the stats rows** (`grid-ui.md` "Column Stats — Visual Verification").
-  The grid reports `stats rows` (which rows are drawn), not what they show: needs a
-  `text of <stat> of <col>` reading (the string the stats row paints, `grid_special_rows.dart`) to
-  claim "the Min row shows the minimum AGE". Same for the header histogram (`showColumnHistograms`):
-  nothing says it was drawn for a column; a `header histogram <col>` area would.
-- **Form designer field positions** (`grid-ui.md` "Summary Columns — Form Designer"): a field box
-  dragged in the designer "settles where it was dropped" and comes back on Edit. The designer's field
-  boxes carry no names and report no positions (`tile-viewer.ts` reads only which fields exist).
-  Needs a name per field box (`form-field-<column>`) and its position in the designer's status.
-- **The hamburger popup's categorical filter** (`grid-ui.md` "Context Panel — Column Hamburger Menu
-  Inline Filter", steps 4-5): `grid-columns.feature` drives the histogram filter of the popup; for a
-  string column the popup holds a categorical filter widget whose rows have no hit areas of their own
-  (the filter panel's `category <label> of <caption>` areas are the panel's, not the popup's). Needs
-  the popup's filter to publish `category <label>` areas like the panel's card does.
+- **Header histogram and stats rows** (`grid-ui.md` "Column Stats"): need `header histogram <col>` areas and
+  `text of <stat> of <col>` readings from the grid (`grid_special_rows.dart`).
+- **Form designer field positions** (`grid-ui.md` "Summary Columns — Form Designer"): the field boxes need names and
+  positions in the designer's status.
+- **The column popup's categorical filter** (`grid-ui.md` "Column Hamburger Menu Inline Filter"): needs
+  `category <label>` areas like the panel's card.
+- **public#989, public#996**: a cut-off cell's tooltip is empty again (core#441); claim in `grid-viewer.feature`.
+- **core#369**: nested linked-table sub-columns need `cell <r> of <table>/<col>` hit areas.
+- **core#1198**: Format > Custom... takes a malformed pattern (0.0.0) and the cells fall back silently; claim when fixed:
+  `Custom input in Format AGE dialog should be invalid` in `grid-appearance.feature`'s custom-format scenario.
+- **core#1196**: a pinned row deleted and brought back by Control+Z is no longer pinned; claim when fixed in
+  `grid-pinning.feature`: Pin Row, Shift+Delete, Control+Z, then `pinned rows` 1.
+- **core#1197**: Default HTML Form's column dialog takes OK with no column ticked; claim when fixed:
+  `OK button in "Select columns..." dialog should be disabled`.
+- **core#1137 (typed values)**: Frozen Columns declares no minimum, so -1 typed in the panel is kept; claim in the Dart
+  test "d4 | Viewers | Fixed issues | A property keeps a value inside its declared bounds" once `min: 0` is declared.
+- **core#1193**: Shift+Delete removes the rows of a grid with Allow Edit off — awaiting a product decision.
+- **core#1194 (the filter)**: Shift+Enter also selects the matching rows the filter hides — awaiting a product decision.
 
-## Closed issues the regression round of 26 Oct 2026 could not claim
+## Won't do
 
-- **A cut-off cell's whole value in its tooltip (public#989, public#996)** regressed: the tooltip is empty;
-  the steps and a video are on core#441. Claim it in `grid-viewer.feature` once fixed.
+- **Header height dragged to 0, a row resizer dragged past 500 px**: no source says what the drag may reach.
+- **Edge cases of the 2026-10-26 round dropped in review**: Row Height clamped to 1..500 (Dart "A property keeps a
+  value inside its declared bounds"); empty values last in a sort (ddt `sorted_order_keys_test.dart`); the sort, a
+  pinned row and a column group following a renamed column (Dart "d4 | Viewers | Grid | Sort and pinned rows follow a
+  column rename"; a group is the column's own tag); an html summary column after its source column is removed
+  (PowerGrid `summary-columns.feature`, GROK-19942); a value refused in the last row (no source says what it should do).
+- **core#417, the Sort dialog after a rename**: Dart "d4 | Inputs | Column input | Renamed column"; no user can rename a
+  column while the dialog is open.
+- **public#3787, the column-menu and settings icons overlapping**: cosmetic.
+- **public#2691, an image renderer in a pinned column**: a renderer's drawing, for Curves' package tests.
+- **public#1812 part 2, no source row selected**: not reachable, the selection-to-filter link stops filtering.
+- **Design a Form... closed by its tab's cross, Editable by as a user picker, a layout over a table missing its sort,
+  pinned or frozen columns, a multi-line external paste**: not planned.

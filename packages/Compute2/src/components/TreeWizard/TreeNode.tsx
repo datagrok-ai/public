@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {AugmentedStat, Status} from './types';
-import {ComboPopup, IconFA, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
+import {ComboPopup, IconFA, onPress, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
 import {useElementHover} from '@vueuse/core';
 import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -106,6 +106,7 @@ export const TreeNode = Vue.defineComponent({
   },
   emits: {
     addNode: (_data: {itemId: string, position: number}) => true,
+    chooseStepToAdd: () => true,
     removeNode: () => true,
     duplicateNode: () => true,
     toggleNode: () => true,
@@ -142,7 +143,7 @@ export const TreeNode = Vue.defineComponent({
     const gutterStyle = {alignSelf: 'center', left: '-20px', position: 'absolute'} as const;
 
     const sourceRunLockIcon = (tooltip: string, color?: string) =>
-      <IconFA name='lock' tooltip={tooltip} style={{...gutterStyle, color}} />;
+      <IconFA name='lock' tooltip={tooltip} style={{color}} />;
 
     const progressIcon = (status: Status, isReadOnly: boolean) => {
       const data: any = props.stat.data;
@@ -157,7 +158,7 @@ export const TreeNode = Vue.defineComponent({
         name={isReadOnly ? 'lock' : statusToIcon[status]}
         animation={status === `running` ? 'spin': null}
         tooltip={statusTooltip ?? null}
-        style={{...gutterStyle, color: statusToColor[status]}}
+        style={{color: statusToColor[status]}}
       />;
     };
 
@@ -167,18 +168,16 @@ export const TreeNode = Vue.defineComponent({
           <ValidationIcon
             validationStatus={pipelineValidation.value}
             useHover={true}
-            style={{
-              alignSelf: 'center',
-              left: '-20px',
-              position: 'absolute',
-            }}
           />);
       }
     };
 
     const pipelineLockIcon = () => sourceRunId.value ?
       sourceRunLockIcon(sourceRunLabel(true)) :
-      <IconFA name='lock' tooltip='This workflow is locked' style={gutterStyle} />;
+      <IconFA name='lock' tooltip='This workflow is locked' />;
+
+    const gutter = (icon?: Vue.VNode) => icon &&
+      <span style={gutterStyle} onClick={(e: MouseEvent) => e.stopPropagation()}>{icon}</span>;
 
     const nodeLabel = (state: AugmentedStat) =>
       state.data.friendlyName ?? state.data.configId;
@@ -207,112 +206,116 @@ export const TreeNode = Vue.defineComponent({
         }}
         ref={treeNodeRef}
       >
-      <div
-        style={{
-          display: 'flex',
-          width: '100%',
-          minHeight: '30px',
-          alignItems: 'center',
-        }}
-      >
-        { status.value && progressIcon(status.value, props.isReadonly) }
-        { !isFuncCallState(props.stat.data) && props.isReadonly ? pipelineLockIcon() : checkIcon() }
-        { props.stat.children.length ? openIcon() : null }
-        <span
-          class="mtl-ml text-nowrap text-ellipsis overflow-hidden"
+        <div
           style={{
-            opacity: (props.stat.data.type === 'funccall' && props.callState?.pendingDependencies?.length) ? 0.5 : 1.0,
+            display: 'flex',
+            width: '100%',
+            minHeight: '30px',
+            alignItems: 'center',
           }}
-        >{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
-        {
-          <div class='flex items-center px-2 w-fit justify-end ml-auto'>
-            { ...isHovered.value || props.isSelected ? [
-              ...couldBeSaved(props.stat.data) && !isRoot.value ? [<IconFA
-                name='save'
-                tooltip={'Save this subtree'}
-                style={{'padding-right': '3px'}}
-                onClick={() => emit('saveStep', props.stat.data.uuid)}
-                class='d4-ribbon-item'
-              />]: [],
-              ...hasAddControls(props.stat.data) ? [<ComboPopup
-                caption={ui.iconFA('plus')}
-                tooltip='Add a step'
-                rightAligned
-                items={props.stat.data.stepTypes
-                  .filter((stepType: StepDynamicDescription) => !stepType.disableUIAdding)
-                  .map((stepType: StepDynamicDescription) => stepType.friendlyName || stepType.nqName || stepType.configId)
-                }
-                onSelected={({itemIdx}) => {
-                  const data = props.stat.data as PipelineWithAdd;
-                  const visibleSteps = data.stepTypes
-                    .filter((stepType) => !stepType.disableUIAdding);
-                  emit('addNode', {
-                    itemId: visibleSteps[itemIdx].configId,
-                    position: data.steps.length,
-                  });
-                  isHovered.value = false;
-                }}
-                class='d4-ribbon-item'
-              />]: [],
-              ...props.isDraggable ? [<IconFA
-                name='grip-vertical'
-                tooltip='Drag to move'
-                cursor='grab'
-                class='d4-ribbon-item'
-              />]: [],
-              ...props.isDuplicable ? [<IconFA
-                name='copy'
-                tooltip='Duplicate'
-                onClick={(e: Event) => {emit('duplicateNode'); e.stopPropagation();}}
-                class='d4-ribbon-item'
-              />]: [],
-              ...props.isDeletable ? [<IconFA
-                name='times'
-                tooltip='Remove'
-                onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
-                class='d4-ribbon-item'
-              />]: [],
-            ]: [] }
-            { props.hasInconsistentSubsteps && !isFuncCallState(props.stat.data) && <IconFA
-              name='sync'
-              class='d4-ribbon-item'
-              tooltip='Update substeps with consistent values'
-              animation={props.callState?.isRunning ? 'spin': null}
-              onClick={() => {
-                emit('runSubtree', props.stat.data.uuid, true);
-              }}
-            /> }
-            {
-              isRunnable.value && !props.isReadonly &&
-                hasAnyInconsistency(props.consistencyStates) && !(props.callState?.pendingDependencies?.length) &&
-                <IconFA
-                  name='sync'
-                  tooltip={'Update this step with consistent values'}
+        >
+          { status.value && gutter(progressIcon(status.value, props.isReadonly)) }
+          { gutter(!isFuncCallState(props.stat.data) && props.isReadonly ? pipelineLockIcon() : checkIcon()) }
+          { props.stat.children.length ? openIcon() : null }
+          <span
+            class="mtl-ml text-nowrap text-ellipsis overflow-hidden"
+            style={{
+              opacity: (props.stat.data.type === 'funccall' && props.callState?.pendingDependencies?.length) ?
+                0.5 : 1.0,
+            }}
+          >{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
+          {
+            <div class='flex items-center px-2 w-fit justify-end ml-auto'>
+              { ...isHovered.value || props.isSelected ? [
+                ...couldBeSaved(props.stat.data) && !isRoot.value ? [<IconFA
+                  name='save'
+                  tooltip={'Save this subtree'}
                   style={{'padding-right': '3px'}}
-                  onClick={(e) => {
-                    emit('runSubtree', props.stat.data.uuid, true);
-                    e.stopPropagation();
+                  onClick={() => emit('saveStep', props.stat.data.uuid)}
+                  class='d4-ribbon-item'
+                />]: [],
+                ...hasAddControls(props.stat.data) ? [<ComboPopup
+                  caption={ui.iconFA('plus')}
+                  tooltip='Add a step'
+                  rightAligned
+                  // the platform dropdown has no keyboard support, so the keys open the workflow's steps to add
+                  {...{tabindex: 0, onKeydown: onPress(() => emit('chooseStepToAdd'))}}
+                  items={props.stat.data.stepTypes
+                    .filter((stepType: StepDynamicDescription) => !stepType.disableUIAdding)
+                    .map((stepType: StepDynamicDescription) =>
+                      stepType.friendlyName || stepType.nqName || stepType.configId)
+                  }
+                  onSelected={({itemIdx}) => {
+                    const data = props.stat.data as PipelineWithAdd;
+                    const visibleSteps = data.stepTypes
+                      .filter((stepType) => !stepType.disableUIAdding);
+                    emit('addNode', {
+                      itemId: visibleSteps[itemIdx].configId,
+                      position: data.steps.length,
+                    });
+                    isHovered.value = false;
                   }}
                   class='d4-ribbon-item'
-                />
-            }
-            {
-              status.value === 'next' && !props.isReadonly && <IconFA
-                name='play'
-                tooltip={'Run this step'}
-                style={{'padding-right': '3px'}}
-                onClick={(e) => {emit('runStep', props.stat.data.uuid); e.stopPropagation();}}
+                />]: [],
+                ...props.isDraggable ? [<IconFA
+                  name='grip-vertical'
+                  tooltip='Drag to move'
+                  cursor='grab'
+                  class='d4-ribbon-item'
+                />]: [],
+                ...props.isDuplicable ? [<IconFA
+                  name='copy'
+                  tooltip='Duplicate'
+                  onClick={(e: Event) => {emit('duplicateNode'); e.stopPropagation();}}
+                  class='d4-ribbon-item'
+                />]: [],
+                ...props.isDeletable ? [<IconFA
+                  name='times'
+                  tooltip='Remove'
+                  onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
+                  class='d4-ribbon-item'
+                />]: [],
+              ]: [] }
+              { props.hasInconsistentSubsteps && !isFuncCallState(props.stat.data) && <IconFA
+                name='sync'
                 class='d4-ribbon-item'
-              />
-            }
-            { sourceRunId.value && <IconFA
-              name='code-branch'
-              tooltip={sourceRunTooltip(props.isReadonly, sourceRunTitle.value)}
-              onClick={onSourceRunClick}
-              class='d4-ribbon-item'
-            /> }
-          </div> }
-      </div>
+                tooltip='Update substeps with consistent values'
+                animation={props.callState?.isRunning ? 'spin': null}
+                onClick={() => {
+                  emit('runSubtree', props.stat.data.uuid, true);
+                }}
+              /> }
+              {
+                isRunnable.value && !props.isReadonly &&
+                  hasAnyInconsistency(props.consistencyStates) && !(props.callState?.pendingDependencies?.length) &&
+                  <IconFA
+                    name='sync'
+                    tooltip={'Update this step with consistent values'}
+                    style={{'padding-right': '3px'}}
+                    onClick={(e) => {
+                      emit('runSubtree', props.stat.data.uuid, true);
+                      e.stopPropagation();
+                    }}
+                    class='d4-ribbon-item'
+                  />
+              }
+              {
+                status.value === 'next' && !props.isReadonly && <IconFA
+                  name='play'
+                  tooltip={'Run this step'}
+                  style={{'padding-right': '3px'}}
+                  onClick={(e) => {emit('runStep', props.stat.data.uuid); e.stopPropagation();}}
+                  class='d4-ribbon-item'
+                />
+              }
+              { sourceRunId.value && <IconFA
+                name='code-branch'
+                tooltip={sourceRunTooltip(props.isReadonly, sourceRunTitle.value)}
+                onClick={onSourceRunClick}
+                class='d4-ribbon-item'
+              /> }
+            </div> }
+        </div>
       </div>
     );
   },

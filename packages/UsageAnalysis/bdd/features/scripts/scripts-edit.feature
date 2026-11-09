@@ -24,6 +24,7 @@ Feature: Editing a script
       """
     And user opens the Scripts view
 
+  @realizes:core#468
   Scenario: A double-click opens the script in the editor, with nothing to save
     When user clears gallery search
     And user types "BddScriptEdit{time}" into gallery search
@@ -31,7 +32,12 @@ Feature: Editing a script
     Then the "BddScriptEdit{time}" view should be current
     And code editor should contain the text "count <- nrow(table) * ncol(table)"
     And Save button should be disabled
-    And no errors should have been logged
+    Given simple mode is off
+    When user opens the context menu of "BddScriptEdit{time}" view tab
+    Then the open menu should list "View"
+    And the open menu should not list "Table"
+    When user closes the context menu
+    Then no errors should have been logged
 
   Scenario: An appended line is saved to the server
     When user appends "newParam = \"test\"" to code editor

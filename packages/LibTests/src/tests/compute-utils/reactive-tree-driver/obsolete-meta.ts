@@ -4,7 +4,6 @@ import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tre
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
-import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {createTestScheduler} from '../../../test-utils';
 import {switchMap} from 'rxjs/operators';
 import {FuncCallNode, PipelineNodeBase} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -76,8 +75,10 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       cold('5ms a').subscribe(() => {
         tree.runMutateTree().subscribe();
       });
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('ab', {a: undefined, b: 10});
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('b'), '^ 1000ms !').toBe('ab', {a: undefined, b: 1});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !')
+        .toBe('ab', {a: undefined, b: 10});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('b'), '^ 1000ms !')
+        .toBe('ab', {a: undefined, b: 1});
       expectObservable(tree.getConsistency()[outNode.getItem().uuid], '^ 1000ms !').toBe('a (bc)d', {
         a: {},
         b: {
@@ -164,7 +165,8 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       const outNode = tree.nodeTree.getNode([{idx: 2}]);
 
       cold('-a').subscribe(() => {
-        (outNode.getItem() as FuncCallNode).instancesWrapper.setValidation('a', 'asdf', ({warnings: [{description: 'test warning2'}]}));
+        (outNode.getItem() as FuncCallNode).instancesWrapper.setValidation('a', 'asdf',
+          ({warnings: [{description: 'test warning2'}]}));
       });
       cold('10ms a').subscribe(() => {
         tree.runMutateTree().subscribe();
@@ -214,7 +216,9 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       cold('10ms a').subscribe(() => {
         tree.runMutateTree().subscribe();
       });
-      expectObservable((outNode.getItem() as PipelineNodeBase).nodeDescription.getStateChanges('tags')).toBe('ab 8ms c', {
+      expectObservable(
+        (outNode.getItem() as PipelineNodeBase).nodeDescription.getStateChanges('tags'),
+      ).toBe('ab 8ms c', {
         a: undefined,
         b: {
           '1234': [

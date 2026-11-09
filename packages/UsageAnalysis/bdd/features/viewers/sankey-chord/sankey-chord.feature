@@ -23,7 +23,7 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     Then sankey viewer should be visible
     And sankey viewer should be bound to table "demog-1000"
     And the "node names" reading of sankey viewer should be "F, M, Caucasian, Other, Asian, Black"
-    And the "links" reading of sankey viewer should be 1000
+    And the "links" reading of sankey viewer should be 8
     When user clicks on grid
     And user clicks on settings icon of sankey viewer
     Then "Source" property in context panel should be visible
@@ -48,7 +48,8 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     And the "node names" reading of sankey viewer should not contain "M"
     And no errors should have been logged
 
-  Scenario: Sankey follows the filter (GROK-18035)
+  @realizes:public#4514
+  Scenario: Sankey follows the filter, and a click on a link or a node selects only rows that pass it (GROK-18035, public#4514)
     When user clicks on "Add viewer" icon
     And user clicks on first "Sankey" card in "Add Viewer" dialog
     Then the "node names" reading of sankey viewer should contain "M"
@@ -57,7 +58,7 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     When user clicks on the "category F of SEX" area of filter panel
     Then 553 rows should pass the filter
     And the filter should pass exactly the rows where "SEX" is "F"
-    And the "links" reading of sankey viewer should be 553
+    And the "links" reading of sankey viewer should be 4
     And the "node names" reading of sankey viewer should contain "F"
     And the "node names" reading of sankey viewer should not contain "M"
     And no errors should have been logged
@@ -67,17 +68,27 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     Then tooltip should contain text "7 rows"
     When user moves the pointer away from sankey viewer
     Then no errors should have been logged
+    When user clicks on the "link F -> Caucasian" area of sankey viewer
+    Then 480 rows should be selected
+    And every selected row should pass the filter
+    And no rows where "RACE" is "Other" should be selected
+    When user clicks on the "node Asian" area of sankey viewer holding Control
+    Then 487 rows should be selected
+    And every selected row should pass the filter
+    When user clicks on the "node Asian" area of sankey viewer
+    Then 7 rows should be selected
+    And every selected row should pass the filter
     When user hovers over filter panel
     And user clicks on reset icon of filter panel
     Then 1000 rows should pass the filter
-    And the "links" reading of sankey viewer should be 1000
+    And the "links" reading of sankey viewer should be 8
     And the "node names" reading of sankey viewer should contain "M"
     And no errors should have been logged
 
   Scenario: Sankey with a filter no row passes draws nothing and logs no error (GROK-21110)
     When user clicks on "Add viewer" icon
     And user clicks on first "Sankey" card in "Add Viewer" dialog
-    Then the "links" reading of sankey viewer should be 1000
+    Then the "links" reading of sankey viewer should be 8
     When user clicks on filter icon in toolbar
     Then filter panel should be visible
     When user clicks on the "category true of CONTROL" area of filter panel
@@ -87,7 +98,7 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     And the "nodes" reading of sankey viewer should be 0
     And no errors should have been logged
 
-  Scenario: Chord takes From set to the column To holds, and redraws on a filter change without a click (GROK-21111, GROK-17772)
+  Scenario: Chord takes From set to the column To holds, redraws on a filter change without a click, and selects a category's rows on a click (GROK-21111, GROK-17772)
     When user clicks on "Add viewer" icon
     Then "Add Viewer" dialog should be visible
     When user clicks on first "Chord" card in "Add Viewer" dialog
@@ -123,4 +134,11 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     And user clicks on reset icon of filter panel
     Then 1000 rows should pass the filter
     And chord viewer should have a "category Black" area
+    And no errors should have been logged
+    When user clicks on the "category Black" area of chord viewer
+    Then only rows where "RACE" is "Black" should be selected
+    When user clicks on the "category Asian" area of chord viewer holding Control
+    Then only rows where "RACE" is one of "Asian, Black" should be selected
+    When user clicks on the "category Asian" area of chord viewer
+    Then only rows where "RACE" is "Asian" should be selected
     And no errors should have been logged

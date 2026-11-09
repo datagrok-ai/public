@@ -7,7 +7,7 @@ import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {of, Subject} from 'rxjs';
-import {delay, filter, map, mapTo, take} from 'rxjs/operators';
+import {delay, filter, map, take} from 'rxjs/operators';
 import {snapshotCompare, createTestScheduler} from '../../../test-utils';
 
 
@@ -75,7 +75,8 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       ).subscribe((uuid) => {
         tree.runAction(uuid);
       });
-      expectObservable(inNode.getItem().getStateStore().getStateChanges('a')).toBe('ab 250ms c', {a: undefined, b: 1, c: 10});
+      expectObservable(inNode.getItem().getStateStore().getStateChanges('a'))
+        .toBe('ab 250ms c', {a: undefined, b: 1, c: 10});
     });
   });
 
@@ -137,7 +138,8 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       ).subscribe((uuid) => {
         tree.runAction(uuid, {val: 100});
       });
-      expectObservable(inNode.getItem().getStateStore().getStateChanges('a')).toBe('ab 250ms c', {a: undefined, b: 1, c: 100});
+      expectObservable(inNode.getItem().getStateStore().getStateChanges('a'))
+        .toBe('ab 250ms c', {a: undefined, b: 1, c: 100});
     });
   });
 
@@ -198,7 +200,8 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       ).subscribe((uuid) => {
         tree.runAction(uuid);
       });
-      expectObservable(inNode.getItem().getStateStore().getStateChanges('a')).toBe('ab 250ms c', {a: undefined, b: 1, c: 10});
+      expectObservable(inNode.getItem().getStateStore().getStateChanges('a'))
+        .toBe('ab 250ms c', {a: undefined, b: 1, c: 10});
     });
   });
 
@@ -734,7 +737,8 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 3);
       });
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 300});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 300});
     });
   });
 
@@ -767,7 +771,8 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 3);
       });
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 3});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 3});
     });
   });
 
@@ -804,7 +809,9 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      expectObservable(errors$.pipe(map((e: any) => e instanceof Error && /unknown call input typo/.test(e.message))), '^ 500ms !').toBe('-a', {a: true});
+      expectObservable(
+        errors$.pipe(map((e: any) => e instanceof Error && /unknown call input typo/.test(e.message))), '^ 500ms !',
+      ).toBe('-a', {a: true});
     });
   });
 
@@ -982,7 +989,8 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
         const action = [...tree.linksState.actions.values()][0];
         tree.runAction(action.uuid);
       });
-      expectObservable(innerStep2Node.getItem().getStateStore().getStateChanges('a')).toBe('a-b', {a: undefined, b: 77});
+      expectObservable(innerStep2Node.getItem().getStateStore().getStateChanges('a'))
+        .toBe('a-b', {a: undefined, b: 77});
     });
   });
 
@@ -1190,7 +1198,7 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
 
     const pconf = await getProcessedConfig(config);
 
-    testScheduler.run((helpers) => {
+    testScheduler.run(() => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
 
@@ -1447,9 +1455,8 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
         type: 'validator',
         handler({controller}) {
           const v = controller.getFirst('in1');
-          if (v === 1) {
+          if (v === 1)
             observed.next(controller.getValidationAction('actions', 'action1'));
-          }
         },
       }],
       actions: [{

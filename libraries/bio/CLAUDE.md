@@ -133,7 +133,8 @@ The core engine for converting macromolecule sequences into V3000 molfiles.
 |---|---|
 | `cell-renderer-consts.ts` | Temp/tag name constants for renderer settings (font size, color coding, max monomer length, multiline) |
 | `cell-renderer.ts` | Low-level `drawMonomer()` function — paints individual monomers on canvas with MSA/classic styles, transparency, color coding |
-| `cell-renderer-monomer-placer.ts` | `MonomerPlacer` — the core rendering engine for macromolecule sequences in grid cells. Computes per-position widths, handles single-line/multiline layout, MSA alignment, reference sequence comparison, position scrolling, hit-testing for hover/click, monomer tooltips |
+| `cell-renderer-monomer-placer.ts` | `MonomerPlacer` — the core rendering engine for macromolecule sequences in grid cells. Computes per-position widths, handles single-line/multiline layout, MSA alignment, reference sequence comparison, position scrolling, hit-testing for hover/click, monomer tooltips; draws a row's connections (below) when the column's `.mm.cellRenderer.showConnections` tag or the `showConnections` prop says so and they fit the cell, printing canonical symbols then |
+| `cell-renderer-connections.ts` | Connections drawn in a sequence cell: `getDrawnConnections()` (the splitted's `graphInfo` in flat positions), `assignLanes()`, `combineHubs()` (3+ side bonds on one monomer → one comb), `layoutConnections()` (fit by cell height: normal, packed, one line per chain, or null), `drawConnections()` (brackets with R-group anchors, combs, hover), `drawBondNumbers()` (bonds a line break cuts), `measureConnectionsFont()` |
 | `cell-renderer-back-base.ts` | `CellRendererBackBase` — lifecycle management base class (dataframe subscriptions, dirty tracking, `IRenderer` implementation) |
 | `cell-renderer-async-base.ts` | `GridCellRendererBackAsyncBase` — async rendering with priority queue, LRU image cache, timeout/retry, stale task sweeping |
 

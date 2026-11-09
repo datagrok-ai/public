@@ -4,7 +4,7 @@ Feature: The color coding editor of a numeric column: type, Apply to, Min and Ma
   demog-1000 (AGE: row 1 26, row 2 30, row 3 58). Each Color Coding item of the header menu replaces
   the column's coding, Off removes it (GROK-8282), and the items are a radio group with only the
   picked one checked (public#1455). In the editor, the Type choice switches the column between Off,
-  Conditional and Linear; Apply to switches the column's text flag on and off (that the renderer then
+  Conditional, Linear and Linked to the Source column picked; Apply to switches the column's text flag on and off (that the renderer then
   paints the letters is the renderer's, MISSING.md); Min and Max clamp the scheme, so two ages below Min take the same colour; the invert icon
   swaps the ends of the gradient; Edit scheme... opens "Edit color scheme", where Use absolute values
   (stops spread over the column's own range, so it differs only under a Min and Max) and removing a
@@ -57,6 +57,9 @@ Feature: The color coding editor of a numeric column: type, Apply to, Min and Ma
     When user selects "Linear" in Type input in "Color-coding: AGE" dialog
     Then "AGE" column should be color-coded linearly
     And the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should differ
+    When user selects "Linked" in Type input in "Color-coding: AGE" dialog
+    And user selects "WEIGHT" in Source column input in "Color-coding: AGE" dialog
+    Then the coloring of "AGE" column should be linked to "WEIGHT" column
     When user clicks on CLOSE button in "Color-coding: AGE" dialog
     Then "Color-coding: AGE" dialog should be hidden
     When user picks "Color Coding > Off" from the context menu of the "header AGE" area of grid

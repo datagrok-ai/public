@@ -33,6 +33,8 @@ import './test/custom-function-view';
 import './test/feedback';
 import './test/tree-utils';
 import './test/inspector-annotation-links';
+import './test/keyboard';
+import './test/run-control';
 
 export const _package = new DG.Package();
 export {tests};
@@ -43,7 +45,9 @@ export {tests};
 //input: object testContext {optional: true}
 //input: bool stressTest {optional: true}
 //output: dataframe result
-export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean): Promise<DG.DataFrame> {
+export async function test(
+  category: string, test: string, testContext: TestContext, stressTest?: boolean,
+): Promise<DG.DataFrame> {
   const data = await runTests({category, test, testContext, stressTest});
   return DG.DataFrame.fromObjects(data)!;
 }

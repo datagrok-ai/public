@@ -3,9 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {
-  DockManager, IconFA, ifOverlapping, MarkDown, RibbonPanel, tooltip,
+  DockManager, IconFA, ifOverlapping, MarkDown, onPress, RibbonPanel, tooltip,
 } from '@datagrok-libraries/webcomponents-vue';
 import {RunBrowser} from '../RunStorage/RunBrowser';
+import {TAB_CYCLE_CLASS} from '../../composables/use-keyboard';
 import {KeptAlive} from '../KeptAlive/KeptAlive';
 import {STICKY_BAR_BACKGROUND} from '../../utils';
 import {hasAddControls, PipelineWithAdd} from '../TreeWizard/tree-utils';
@@ -51,7 +52,7 @@ export const PipelineView = Vue.defineComponent({
     'addNode': (_data: {itemId: string, position: number}) => true,
     'compareWithOriginal': () => true,
   },
-  setup(props, {emit, slots}) {
+  setup(props, {emit, slots, expose}) {
     Vue.onRenderTriggered((event) => {
       console.log('PipelineView onRenderTriggered', event);
     });
@@ -76,6 +77,25 @@ export const PipelineView = Vue.defineComponent({
 
     const buttonActions = Vue.computed(() => props.buttonActions);
     const isRoot = Vue.computed(() => props.isRoot);
+
+    // the steps to add take the focus once the dock has placed them, so the keyboard can pick one
+    let focusStepsToAdd = false;
+    const showStepsToAdd = () => {
+      if (!functionsHidden.value) {
+        functionsRef.value?.focus({preventScroll: true});
+        return;
+      }
+      focusStepsToAdd = true;
+      functionsHidden.value = false;
+    };
+    expose({showStepsToAdd});
+
+    const onPanelOpened = (el: HTMLElement) => {
+      if (focusStepsToAdd && el === functionsRef.value) {
+        focusStepsToAdd = false;
+        el.focus({preventScroll: true});
+      }
+    };
 
     const handlePanelClose = async (el: HTMLElement) => {
       if (el === historyRef.value?.$el) historyHidden.value = true;
@@ -118,9 +138,16 @@ export const PipelineView = Vue.defineComponent({
     });
 
     const cardsClasses = 'grok-app-card grok-gallery-grid-item-wrapper pr-4';
+    const card = (action: () => void) => ({
+      class: cardsClasses,
+      tabindex: 0,
+      role: 'button',
+      onClick: action,
+      onKeydown: onPress(action),
+    });
 
     return () => (
-      <div class='w-full h-full flex'>
+      <div class='w-full h-full flex outline-none' tabindex={-1}>
         <RibbonPanel items={[{
           icon: 'question',
           tooltip: helpHidden.value ? 'Open help panel' : 'Close help panel',
@@ -133,6 +160,7 @@ export const PipelineView = Vue.defineComponent({
         }]}/>
         <DockManager
           onPanelClosed={handlePanelClose}
+          onPanelOpened={onPanelOpened}
           key={props.uuid}
         >
           {
@@ -141,7 +169,7 @@ export const PipelineView = Vue.defineComponent({
               dock-spawn-dock-type='fill'
               dock-spawn-title='Actions'
               {...{mode: 'Card'}}
-              class={'p-2 flex flex-col'}
+              class={`p-2 flex flex-col ${TAB_CYCLE_CLASS}`}
               style={{overflow: 'auto'}}
             >
               <div
@@ -166,47 +194,32 @@ export const PipelineView = Vue.defineComponent({
 
                 <div class={'grok-gallery-grid'}>
                   { hasContextHelp(currentCall.value?.func) &&
-                    <div
-                      class={cardsClasses}
-                      onClick={() => {
-                        helpHidden.value = false;
-                        changeHelpFunc(currentCall.value?.func);
-                      }}
-                    >
+                    <div {...card(() => {
+                      helpHidden.value = false;
+                      changeHelpFunc(currentCall.value?.func);
+                    })}>
                       <IconFA name='question-circle' class={'d4-picture'} />
                       <div> Show help </div>
                     </div>
                   }
                   { canLoadRun.value &&
-                    <div
-                      class={cardsClasses}
-                      onClick={() => openHistory(false)}
-                    >
+                    <div {...card(() => openHistory(false))}>
                       <IconFA name='history' class={'d4-picture'} />
                       <div> Load completed run </div>
                     </div> }
                   { canLoadRun.value && !isRoot.value &&
-                    <div
-                      class={cardsClasses}
-                      onClick={() => openHistory(true)}
-                    >
+                    <div {...card(() => openHistory(true))}>
                       <IconFA name='lock' class={'d4-picture'} />
                       <div> Load completed run (read-only) </div>
                     </div> }
                   { buttonActions.value?.map((action) => Vue.withDirectives(
-                    <div
-                      class={cardsClasses}
-                      onClick={() => emit('actionRequested', action.uuid)}
-                    >
+                    <div {...card(() => emit('actionRequested', action.uuid))}>
                       <IconFA name={action.icon ?? 'play'} class={'d4-picture'} />
                       <div> { action.friendlyName ?? action.uuid } </div>
                     </div>, [[tooltip, action.description]]))
                   }
                   { !isActionStep.value && hasAddControls(state.value) &&
-                    <div
-                      class={cardsClasses}
-                      onClick={() => functionsHidden.value = false}
-                    >
+                    <div {...card(showStepsToAdd)}>
                       <IconFA name='plus' class={'d4-picture'} />
                       <div> Choose a step to add </div>
                     </div> }
@@ -221,7 +234,8 @@ export const PipelineView = Vue.defineComponent({
           }
           { (hasAddControls(state.value) && !functionsHidden.value) &&
             <div
-              class={'grok-gallery-grid'}
+              class={`grok-gallery-grid outline-none ${TAB_CYCLE_CLASS}`}
+              tabindex={-1}
               dock-spawn-title='Steps to add'
               dock-spawn-dock-type='down'
               dock-spawn-dock-ratio={0.5}
@@ -246,7 +260,9 @@ export const PipelineView = Vue.defineComponent({
                               <IconFA style={{'padding-right': '3px'}} name='folder-tree' />
                             }
                             <div>
-                              <span class='text-[color:var(--blue-1)]'> {stepType.friendlyName ?? stepType.configId} </span>
+                              <span class='text-[color:var(--blue-1)]'>
+                                {' '}{stepType.friendlyName ?? stepType.configId}{' '}
+                              </span>
                             </div>
                           </div>
                           <div class='flex flex-row'>

@@ -37,7 +37,8 @@ export function centerOf(box: Box): {x: number; y: number} {
 }
 
 /** Waits for the area the way a locator waits for its element: a viewer that renders twice on a
- * change (a category switch relays out after its first paint) reports the area after the second. */
+ * change (a category switch relays out after its first paint) reports the area after the second, and
+ * one fed by a server call (the Recent view's calendar) after the call — as long as any check waits. */
 async function awaitArea(page: Page, target: ElementRef, name: string, negate: boolean, beforeChange: boolean): Promise<Box | undefined> {
   const find = (): Promise<{box?: Box; has: string[]}> =>
     onViewer(page, target, (el, [n, b]) => (window as any).__bdd.findArea(el, n, b), [name, beforeChange] as [string, boolean]);
@@ -45,7 +46,7 @@ async function awaitArea(page: Page, target: ElementRef, name: string, negate: b
   if ((found.box !== undefined) === !negate)
     return found.box;
   const poll = expect.poll(async () => (found = await find()).box !== undefined,
-    {timeout: pollMs(5000), message: `${target.phrase} ${negate ? 'still reports' : 'reports no'} "${name}" area; it has: ${found.has.join(', ') || 'none'}`});
+    {timeout: pollMs(negate ? 5000 : 15000), message: `${target.phrase} ${negate ? 'still reports' : 'reports no'} "${name}" area; it has: ${found.has.join(', ') || 'none'}`});
   await (negate ? poll.not : poll).toBe(true);
   return found.box;
 }

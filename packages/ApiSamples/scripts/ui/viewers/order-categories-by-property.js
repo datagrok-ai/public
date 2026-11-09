@@ -1,6 +1,6 @@
 // Order a categorical axis by a number computed from the values themselves.
 // A `categoryOrderer` function receives the distinct values of its semantic type and
-// returns one comparable key per value; viewers list it under the axis menu Order | Property.
+// returns one comparable key per value; viewers offer it in the axis menu's Order... dialog.
 // An optional second string parameter with `choices` turns one function into one property
 // per choice, as in `Chem:molecularProperty(MW)`.
 const f = grok.functions.register({
@@ -17,5 +17,6 @@ df.col('name').semType = 'DemoNames';
 const view = grok.shell.addTableView(df);
 
 // the order is a JSON string with the same id a user would pick from the menu;
-// also: yCategoryOrder (scatterplot), xCategoryOrder (line chart), categoryOrder (box plot)
+// also: yCategoryOrder (scatterplot), xCategoryOrder (line chart), categoryOrder (box plot; bar and pie charts
+// under the 'custom' sort type), xCategoryOrder / yCategoryOrder / zCategoryOrder (3D scatter plot)
 view.scatterPlot({x: 'name', y: 'value'}).setOptions({xCategoryOrder: JSON.stringify({property: f.nqName, order: 'asc'})});

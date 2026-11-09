@@ -27,7 +27,8 @@ export type CheckOptions = {
 export type CheckSeverity = 'error' | 'warning' | 'notification';
 
 export type CheckKey =
-  'required' | 'min' | 'max' | 'validator' | 'validators' | 'visible' | 'choices' | 'type' | 'semType' | 'table' | 'allowNulls';
+  'required' | 'min' | 'max' | 'validator' | 'validators' | 'visible' | 'choices' | 'type' | 'semType' | 'table' |
+  'allowNulls';
 
 export type CheckFamily = 'validator' | 'meta';
 
@@ -51,7 +52,8 @@ export type CheckExtras = {
 };
 
 export const checkOptionKeys: (keyof CheckOptions)[] =
-  ['nullable', 'optional', 'min', 'max', 'validator', 'validators', 'visible', 'choices', 'type', 'semType', 'table', 'allowNulls'];
+  ['nullable', 'optional', 'min', 'max', 'validator', 'validators', 'visible', 'choices', 'type', 'semType', 'table',
+    'allowNulls'];
 
 // aliases shared by annotation-derived and config checks
 // `value` follows the platform's validator expressions; the rest are the driver's own names
@@ -92,8 +94,11 @@ function conditions(options: CheckOptions, validatorsViaCall: boolean): Conditio
   const out: Condition[] = [];
   const add = (key: CheckKey, when: RuleLogic, message: string, needsTable = false) =>
     out.push({key, needsTable, needsCall: false, when: {and: [present, when]}, message});
-  if (options.nullable === false)
-    out.push({key: 'required', needsTable: false, needsCall: false, when: {missing: [VALUE]}, message: 'Missing value'});
+  if (options.nullable === false) {
+    out.push({
+      key: 'required', needsTable: false, needsCall: false, when: {missing: [VALUE]}, message: 'Missing value',
+    });
+  }
   if (options.min != null)
     add('min', {'<': [value, options.min]}, `Must be at least ${options.min}`);
   if (options.max != null)

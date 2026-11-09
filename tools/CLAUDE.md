@@ -33,6 +33,7 @@ The CLI uses a modular command pattern. Each command is a separate module that:
 - `claude.ts` - Launch a Dockerized dev environment with Datagrok + Claude Code
 - `migrate.ts` - Update legacy packages
 - `init.ts` - Apply configuration to existing packages
+- `src.ts` - Git recipes across the repos of the datagrok umbrella (`grok src`)
 
 The commands `api`, `check`, `link`, `publish`, and `test` support the `--all` flag to run recursively across all packages in the current directory.
 

@@ -61,12 +61,16 @@ RUN mamba install -n base -c conda-forge awscli -y && \
 # VEX: the runtime autodock env is Python 2.7 — its flask/werkzeug/jinja2/numpy have no
 # py2.7 upgrades and are tracked in VEX. Its install-only pip/setuptools/wheel/certifi are
 # removed, as are the py2.7 (and base) ensurepip bootstrap wheels; the floors of the
-# build-only base (py3.13) env, where the leftover awscli deps live, are raised.
+# build-only base (py3.14) env, where the leftover awscli deps live, are raised; its pip is
+# removed too, as the vendored copies it ships (urllib3, msgpack, setuptools) are flagged.
 RUN mamba remove -n autodock --force -y pip setuptools wheel certifi && \
     python -c "import flask, concurrent.futures; from MolKit import Read; from AutoDockTools.MoleculePreparation import AD4LigandPreparation, AD4ReceptorPreparation" && \
     rm -f /usr/local/miniforge/envs/autodock/lib/python2.7/ensurepip/_bundled/*.whl \
           /usr/local/miniforge/lib/python3.*/ensurepip/_bundled/*.whl && \
-    /usr/local/miniforge/bin/pip install --no-cache-dir --upgrade 'urllib3>=2.7' 'msgpack>=1.2.1'
+    /usr/local/miniforge/bin/pip install --no-cache-dir --upgrade 'urllib3>=2.8' 'msgpack>=1.2.3' && \
+    mamba install -n base -c conda-forge -y 'py-rattler>=0.28.1' && \
+    mamba remove -n base --force -y pip && \
+    mamba clean -afy
 
 COPY autodock.py /app/autodock.py
 

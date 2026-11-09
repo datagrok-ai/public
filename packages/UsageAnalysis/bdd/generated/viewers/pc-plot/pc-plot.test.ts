@@ -22,7 +22,7 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {axesShouldBe, dragAxisLabel} from '../../../bindings/pc-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {hoverOver, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {fileMatchingDownloaded, hoverOver, shouldContainText, watchDownloads} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {autostartsCompleted, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, areaNarrower, areaShorter, areaTaller, areaWider, hasArea, hasNoArea, lessInk, moreInk, noErrors, painted, pickFromContextMenu, propertyShouldBe, readingIs, readingReads, repaintedBy, setProperties, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
@@ -156,11 +156,14 @@ test.describe("PC plot axes, vertical scale and chrome", () => {
       await session.step(147, "Then pc plot viewer should have a \"range slider \\\"AGE\\\"\" area", () => hasArea(page, el("pc plot viewer"), "range slider \"AGE\""));
       await session.step(148, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("To Script > To JavaScript prints the call that rebuilds the plot", async () => {
+    await run.scenario("To Script > To JavaScript prints the call that rebuilds the plot, General > Save as PNG downloads its picture", async () => {
       await session.step(151, "Given the package autostarts have completed", () => autostartsCompleted(page));
       await session.step(152, "When user picks \"To Script > To JavaScript\" from the context menu of pc plot viewer", () => pickFromContextMenu(page, "To Script > To JavaScript", el("pc plot viewer")));
       await session.step(153, "Then balloon should contain text \"addViewer\"", () => shouldContainText(page, el("balloon"), "addViewer"));
       await session.step(154, "And no errors should have been logged", () => noErrors(page));
+      await session.step(155, "Given user watches downloads", () => watchDownloads(page));
+      await session.step(156, "When user picks \"General > Save as PNG\" from the context menu of pc plot viewer", () => pickFromContextMenu(page, "General > Save as PNG", el("pc plot viewer")));
+      await session.step(157, "Then a file matching \"\\.png$\" should have been downloaded", () => fileMatchingDownloaded(page, "\\.png$"));
     });
     run.finish();
   });

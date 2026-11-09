@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Docker: Added `grok.dapi.docker.getStatus()`: whether Grok Spawner is switched on and its last poll found no connection failure, so a plugin can tell if the server can run containers; `isActive` is absent when the status could not be read
+* Files: Fixed `files.readFilesAsBlobs` and `readFilesAsJson` on a connection root given without a trailing slash (`System:DemoFiles`) asking the server for a folder named after the whole path; a path with no slash now reads the root, as `files.list` does
+* [public#4549](https://github.com/datagrok-ai/public/issues/4549): Fixed `Column.fromList('bigint', ...)` with JS `BigInt` values creating a column whose `get()` threw and whose table view could not render
+* Admin: Added `grok.dapi.admin.getGrowthMetrics({area, days})` — how the platform's data grows: database tables and their categories, storage by location and nature, disks, and what the garbage collector deleted and has pending, each with its change over 1, 7 and 30 days, a daily trend and the metric alerts that cover it (`ViewTelemetry`)
 * TreeView: `TreeViewNode.remove` takes an optional `kill` argument (false by default): true also runs the node's registered cleanups, for a node that will not be added back
 * TreeView: Fixed `TreeViewGroup.loadSources` ignoring the source's `filter`, `by` and `page` (since the immutable data-source verbs): it loaded with whatever query an earlier request on the same Dart handle had left, so the Model Hub tree listed every model under each node
 * Chem: `grok.chem.drawMolecule` takes an optional last `cache` argument (true by default): false keeps no picture in Chem's renderer caches, for very large one-off drawings

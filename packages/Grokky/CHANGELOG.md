@@ -1,5 +1,11 @@
 # Grokky changelog
 
+## v.next
+
+* [public#4552](https://github.com/datagrok-ai/public/issues/4552): Grokky: suggestions use an ID column (USUBJID) for categorical slots
+* [public#4551](https://github.com/datagrok-ai/public/issues/4551): Grokky: AI panel hangs for good when the final answer fails to render (markdown RangeError)
+* Docker: Moved the claude-runtime image to Wolfi and raised @hono/node-server to 2.x in claude-runtime and mcp-server, so both images have no known CVEs; the runtime no longer ships npm or virtualenv
+
 ## 1.0.5 (2026-11-03)
 
 * AI: Introduced per-group model credentials in the package's credentials (Plugins | Grokky | Credentials...): each user's chat runs on the key and model of their group, read by the runtime container through the platform and never sent to the browser. They are the only source: the runtime no longer takes credentials from its container's environment

@@ -22,6 +22,6 @@ category('Custom export: report handler', () => {
   test('throws for an unknown export name', async () => {
     const model = DG.Func.byName('Compute2:TestCustomExportModel');
     const fc = model.prepare({a: 1});
-    await expectExceptionAsync(async () => { await applyCustomExport(fc, 'missing', {}); });
+    await expectExceptionAsync(async () => {await applyCustomExport(fc, 'missing', {});});
   });
 });

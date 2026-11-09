@@ -2,6 +2,15 @@
 
 ## v.next
 
+* Added `onPress`, the Enter/Space key handler shared by Tabs, ribbon icons and IconFA
+* IconFA: A clickable icon takes the keyboard focus and is pressed with Enter or Space
+* BigButton: Added `disabledReason`; a disabled button no longer emits clicks, stays focusable, and shows the reason as a warning when pressed and as its tooltip where the host keeps pointer events on it
+* Ribbon: Panel icons take the keyboard focus, are pressed with Enter or Space, and report `aria-disabled`
+* IconFA, BigButton: Fixed `isDisabled` and the button styling being lost when the parent sets or changes the class
+* Button: Fixed the button styling being lost when the parent sets a class
+* Removed the unused `IconImage` component and the `nullable` prop of `ToggleInput`
+* DockManager: Removed `saveLayout`, `loadLayout` and `setActivePanel`; use `preferredPanelTitle` to pick the active tab
+* `provideDgViewService`: the service is disposed when the app unmounts, so callers no longer call `dispose()`
 * InputForm: Toggling `isReadonly` alone updates whether the inputs are enabled
 * InputForm: Clearing `callMeta` drops the meta of the previous call
 * ResizeHandle: A cancelled pointer ends the drag, and only the primary button starts one

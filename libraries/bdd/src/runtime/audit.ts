@@ -105,12 +105,16 @@ export function shouldAudit(info: Pick<TestInfo, 'status' | 'expectedStatus' | '
     !info.tags.some((t) => t === '@known-failure' || t.startsWith('@known-failure:'));
 }
 
+/** The first line of an error, with where it came from, then the first 30 lines of the stack the platform translated. */
 export function errorFindings(errors: LoggedError[], allow: AuditAllow['errors']): AuditFinding[] {
   return errors
     .filter((e) => !allow.some((a) => new RegExp(a.message).test(e.message) &&
       (a.url === undefined || new RegExp(a.url).test(e.url))))
-    .map((e) => ({audit: 'errors', rule: 'console-error',
-      detail: `${e.message.split('\n')[0].slice(0, 300)}${e.url ? ` (${e.url})` : ''}`}));
+    .map((e): AuditFinding => {
+      const [first, ...stack] = e.message.split('\n');
+      return {audit: 'errors', rule: 'console-error',
+        detail: [`${first.slice(0, 300)}${e.url ? ` (${e.url})` : ''}`, ...stack.slice(0, 30)].join('\n')};
+    });
 }
 
 /** The error and warning balloons left on the record — a balloon step takes off the ones it claims. An entry
@@ -279,7 +283,7 @@ export async function leakCheck(page: Page): Promise<AuditOutcome> {
 /** The layout audit and the console-error floor on the scenario's final state, when the current view or an overlay
  * over it shows u2; the balloon floor and the operability audit also when a step opened a u2 overlay. `errors` takes
  * the errors logged since the scenario's floor; the balloons are taken off the record. */
-export async function auditScenario(page: Page, errors: () => LoggedError[]): Promise<AuditOutcome> {
+export async function auditScenario(page: Page, errors: () => LoggedError[] | Promise<LoggedError[]>): Promise<AuditOutcome> {
   const {modes, allow} = auditSettings();
   const outcome: AuditOutcome = {ran: [], findings: []};
   const steps = stepFindings.get(page);
@@ -312,7 +316,7 @@ export async function auditScenario(page: Page, errors: () => LoggedError[]): Pr
   }
   if (u2 && modes.errors !== 'off') {
     outcome.ran.push('errors');
-    outcome.findings.push(...errorFindings(errors(), allow.errors));
+    outcome.findings.push(...errorFindings(await errors(), allow.errors));
   }
   const shown = u2 || steps !== undefined;
   if (shown && modes.balloons !== 'off') {

@@ -16,6 +16,7 @@ Feature: Filter panel regressions
   Not claimed: public#2364 (the min and max fields clamp a typed end to the column's span; the range
   itself is an ApiTests `FilterGroup` test), public#2359's focus half (MISSING.md), public#1103 (the
   per-card switches through a layout are filter-panel-cloned-view's, the master toggle the ladder's).
+  The first scenario also takes the menu's third choice, Show only missing value (the 128 blank rows).
 
   Background:
     Given user is logged in
@@ -37,6 +38,9 @@ Feature: Filter panel regressions
     When user picks "Missing values | Keep missing values" from the indicator menu of the "HEIGHT" filter card
     And user closes the context menu
     Then all rows should pass the filter
+    When user picks "Missing values | Show only missing value" from the indicator menu of the "HEIGHT" filter card
+    And user closes the context menu
+    Then 128 rows should pass the filter
     When user picks "Missing values | Filter out missing values" from the indicator menu of the "HEIGHT" filter card
     And user closes the context menu
     Then 872 rows should pass the filter

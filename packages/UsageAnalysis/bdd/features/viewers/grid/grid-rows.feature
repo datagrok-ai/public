@@ -22,7 +22,8 @@ Feature: Grid row selection, navigation and row source
   the grid clears the current row only for a key that reaches that canvas, and clears the selection
   alone for one that reaches its root, so without the focus step the claim depended on where the
   click had left it (measured on dev). Rows pinned under a scroll are `grid-pinning.feature`'s;
-  Control+F and the block drag across the cells are out of scope by operator decision.
+  Control+F and the block drag across the cells are out of scope by operator decision. While Allow
+  Row Selection is off, Shift+Enter selects nothing, as Space does (core#1194).
 
   Background:
     Given user is logged in
@@ -124,6 +125,7 @@ Feature: Grid row selection, navigation and row source
     When user clears the row selection
     Then no errors should have been logged
 
+  @realizes:core#1194
   Scenario: Allow Row Selection off keeps the caret moving and the selection empty
     When user sets "Allow Row Selection" property of grid to "false"
     And user clicks on the "cell 5 of AGE" area of grid
@@ -136,6 +138,8 @@ Feature: Grid row selection, navigation and row source
     Then row 9 should be current
     And no rows should be selected
     When user presses Space
+    Then no rows should be selected
+    When user presses Shift+Enter
     Then no rows should be selected
     When user sets "Allow Row Selection" property of grid to "true"
     And user presses Space

@@ -43,6 +43,7 @@ import {ModelCatalogView,
 import dayjs from 'dayjs';
 
 declare global {
+  // eslint-disable-next-line no-var
   var initialURLHandled: boolean;
 }
 
@@ -96,7 +97,6 @@ const modelCatalogOptions = {
 const providerOf = (nqName: string) => DG.Func.byName(nqName)?.options.provider ?? nqName;
 
 export class PackageFunctions {
-
   @grok.decorators.init()
   static async init() {
     if (initRunned)
@@ -148,7 +148,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    meta: { role: ' ', app: ' '}
+    meta: {role: ' ', app: ' '},
   })
   static modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.ViewBase) {
     makeModelTreeBrowser(treeNode as any, modelCatalogOptions.roleOnlyFilter);
@@ -162,9 +162,10 @@ export class PackageFunctions {
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     const detach = attachRunStorage(view, call.func);
-    if (call.aux.initialRunId)
+    if (call.aux.initialRunId) {
       await view.loadRun(call.aux.initialRunId)
         .catch((e) => grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`));
+    }
 
     grok.events.onViewRemoved.pipe(
       filter((closedView) => {
@@ -187,7 +188,7 @@ export class PackageFunctions {
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
-    const viewService = provideDgViewService(app, view);
+    provideDgViewService(app, view);
 
     app.mount(view.root);
 
@@ -198,7 +199,6 @@ export class PackageFunctions {
       take(1),
     ).subscribe(() => {
       app.unmount();
-      viewService.dispose();
     });
 
     return view;
@@ -223,11 +223,12 @@ export class PackageFunctions {
 
     const {resolve, initialRunId} = call.aux;
 
-    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, initialRunId});
+    const app = Vue.createApp(TreeWizardAppInstance,
+      {providerFunc, modelName, version, instanceConfig, resolve, initialRunId});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
-    const viewService = provideDgViewService(app, view);
+    provideDgViewService(app, view);
 
     app.mount(view.root);
 
@@ -238,7 +239,6 @@ export class PackageFunctions {
       take(1),
     ).subscribe(() => {
       app.unmount();
-      viewService.dispose();
       if (resolve)
         resolve();
     });
@@ -253,9 +253,14 @@ export class PackageFunctions {
     outputs: [{type: 'object', name: 'result'}],
   })
   static async StartWorkflow(
-    @grok.decorators.param({options: {description: 'Qualified name of the workflow function to launch'}}) nqName: string,
+    @grok.decorators.param({
+      options: {description: 'Qualified name of the workflow function to launch'},
+    }) nqName: string,
     @grok.decorators.param({options: {description: 'Workflow version to run'}}) version: string,
-    @grok.decorators.param({'type': 'object', options: {description: 'Optional initial pipeline configuration'}}) instanceConfig?: PipelineInstanceConfig) {
+    @grok.decorators.param({
+      'type': 'object',
+      'options': {description: 'Optional initial pipeline configuration'},
+    }) instanceConfig?: PipelineInstanceConfig) {
     const func = DG.Func.byName(nqName);
     // @ts-ignore-next-line
     const {promise, resolve} = Promise.withResolvers();
@@ -303,6 +308,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'OpenWorkflowRun',
+    // eslint-disable-next-line max-len
     description: 'Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.',
   })
   static async OpenWorkflowRun(
@@ -329,7 +335,10 @@ export class PackageFunctions {
     outputs: [{type: 'object', name: 'result'}],
   })
   static async RunOptimizer(
-    @grok.decorators.param({'type': 'object', options: {description: 'Optimizer parameters: target function, variables, and objective'}}) params: OptimizerParams,
+    @grok.decorators.param({
+      'type': 'object',
+      'options': {description: 'Optimizer parameters: target function, variables, and objective'},
+    }) params: OptimizerParams,
   ) {
     const fin = await runOptimizerFinalized(params);
     return fin.calls;
@@ -553,6 +562,92 @@ export class PackageFunctions {
               ]}));
           } else
             controller.setValidation('toInitTemp');
+        },
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
+    name: 'Mock Keyboard Pipeline',
+    description: 'Workflow with fixed steps, a reorderable list and an invalid step, used for testing keyboard use.',
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockKeyboardPipeline(
+    @grok.decorators.param({'type': 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'keyboardRoot',
+      nqName: 'Compute2:MockKeyboardPipeline',
+      friendlyName: 'Keyboard',
+      version: '1.0',
+      type: 'static',
+      steps: [{
+        id: 'fixedAdd',
+        nqName: 'Compute2:TestAdd2',
+        friendlyName: 'fixed add',
+        initialValues: {a: -1, b: 1},
+      }, {
+        id: 'fixedMul',
+        nqName: 'Compute2:TestMul2',
+        friendlyName: 'fixed mul',
+        initialValues: {a: 2, b: 3},
+      }, {
+        id: 'list',
+        type: 'dynamic',
+        friendlyName: 'list',
+        stepTypes: [{
+          id: 'item',
+          nqName: 'Compute2:TestAdd2',
+          friendlyName: 'item',
+        }, {
+          id: 'pinned',
+          nqName: 'Compute2:TestMul2',
+          friendlyName: 'pinned',
+          disableUIDragging: true,
+          disableUIRemoving: true,
+        }],
+        initialSteps: [
+          {id: 'item', initialValues: {a: 1, b: 0}},
+          {id: 'item', initialValues: {a: 2, b: 0}},
+          {id: 'item', initialValues: {a: 3, b: 0}},
+          {id: 'pinned', initialValues: {a: 1, b: 1}},
+        ],
+        links: [{
+          id: 'itemTitle',
+          type: 'nodemeta',
+          base: 'base:expand(item)',
+          from: 'a:same(@base, item)/a',
+          to: 'title:same(@base, item)/title',
+          handler({controller}) {
+            controller.setDescriptionItem('title', `item ${controller.getFirst('a')}`);
+          },
+        }],
+      }, {
+        id: 'slow',
+        nqName: 'Compute2:LongScript',
+        friendlyName: 'slow',
+        initialValues: {a: 1, b: 1},
+      }, {
+        id: 'group',
+        type: 'static',
+        friendlyName: 'group',
+        steps: [{id: 'grouped', nqName: 'Compute2:TestAdd2', friendlyName: 'grouped step'}],
+      }],
+      links: [{
+        id: 'firstItemB',
+        from: 'in:fixedMul/a',
+        to: 'out:list/first(item)/b',
+        defaultRestrictions: {out: 'restricted'},
+      }, {
+        id: 'fixedAddPositive',
+        type: 'validator',
+        from: 'a:fixedAdd/a',
+        to: 'out:fixedAdd/a',
+        handler({controller}) {
+          controller.setValidation('out',
+            controller.getFirst('a') < 0 ? {errors: ['a must not be negative']} : undefined);
         },
       }],
     };
@@ -793,7 +888,7 @@ export class PackageFunctions {
     name: 'Custom View (Compute 2 Test)',
     editor: 'Compute2:CustomFunctionViewEditor',
     // meta: { role: 'model' },
-    outputs: [{type: 'object', name: 'result'}]
+    outputs: [{type: 'object', name: 'result'}],
   })
   static async TestCustomView() {
     const view = new MyView();
@@ -841,7 +936,6 @@ export class PackageFunctions {
   ): Promise<DG.DataFrame> {
     return DG.DataFrame.create(x);
   }
-
 }
 
 

@@ -1,7 +1,10 @@
 # Datagrok-tools changelog
 
-## v.next
+## 6.7.10 (2026-11-06)
 
+* Added `grok src`: git recipes across the repos of the datagrok umbrella (`clone`, `add`, `sparse`, `switch`, `status`, `pull`, `at`, `bump`, `wt add`, `doctor`)
+* Kept positionals, `--url` and `--dir` verbatim (`1.10` no longer becomes 1.1), and an explicit boolean such as `--force` now reaches every command instead of being dropped
+* Added `grok s o groups list|get|add|set|rm|put|reset`, `endpoints list|rm`, `logs match '<filter>'` (with `--space`) and `logs activations [stop]`: log groups and endpoints of Settings > Logger
 * `grok publish`: A local container build that fails for the host platform on Apple Silicon is retried for linux/amd64, so a package whose base image has no arm64 variant (the Chembl ChEMBL database) builds
 * `grok test`: A package built on u2 or ems runs with u2 strict — a u2 misuse throws a `U2UsageError` naming the fix, and one the page caught and logged fails the run when it is the package's own (a stack frame in its bundle, or none to tell; another package's prints as a warning); `U2_STRICT=report` lists them instead without failing
 * `grok check`: A package built on u2 or ems fails on a problem of u2's consumer check whatever its version (a 0.x package only printed it), so a CSS rule over a new `.u2-*` class or `[data-u2…]` attribute fails the check
@@ -14,6 +17,12 @@
 * `grok s status`: server build, uptime, DB pool and HTTP connections from `/info/server`; for admins also the requests in flight (`?extended=true`)
 * `grok api`: Fixed double plurals in table accessors (`categorieses` → `categories`)
 * Build: Fixed `package-api.ts` of a decorator package lagging one build behind `package.g.ts`
+* Added a `restore` arm per soft-delete table to the `<Schema>TransactionOp` that `grok api` generates, so the typed `transaction()` accepts the restore ops the server runs
+* Made `grok api` type a required column with a `default` as optional on `<Table>Insert`: the server fills it when an insert omits it
+* Fixed `grok api` emitting a choices type that does not compile, or holds a different value, when a choice contains `'` or `\`
+
+## 6.7.9 (2026-10-16)
+
 * Upgraded Puppeteer to v25, which drops the vulnerable `extract-zip` and `basic-ftp` transitive dependencies; Node.js 22.12+ is now required
 * `grok add app --domain`, `grok api --ui`: scaffold against `@datagrok-libraries/ems`
 * GROK-20884: Added `grok s o errors get <signature|problem>`: each occurrence of an error with its time, user, function and session, so an error incident leads to its calls
@@ -23,9 +32,6 @@
 * GROK-20884: Added `grok s o logs capture <login|group> [--for 30m]`: saves every API request of a user or a group until the entry expires (a `logger set` of `saveHttpRequests`; an entry that expires later keeps its time); `logs capture stop` removes an expiring entry that holds only the capture, `logs capture` lists the active ones
 * GROK-20298: `grok s domains apply` sends the manifest JSON's `version` as the now-required `ifVersion` of a user-managed schema, accepts `--if-version current` to take the registered one, refuses such an apply without either, and forwards `friendlyName`, `description` and `storage` from the JSON for a user-managed schema (a package schema keeps its key set)
 * GROK-20298: `domain-schema.schema.json` accepts the root `storage` key (`{kind: external, connection, schema?, catalog?}`) and the remote-name keys `table`/`column`; `grok api` types an external table's rows with `id` only, an empty expand map, and emits no `<Schema>TransactionOp`/`transaction` for an external schema
-* Added a `restore` arm per soft-delete table to the `<Schema>TransactionOp` that `grok api` generates, so the typed `transaction()` accepts the restore ops the server runs
-* Made `grok api` type a required column with a `default` as optional on `<Table>Insert`: the server fills it when an insert omits it
-* Fixed `grok api` emitting a choices type that does not compile, or holds a different value, when a choice contains `'` or `\`
 
 ## 6.7.8 (2026-10-13)
 

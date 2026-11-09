@@ -5,8 +5,9 @@ Feature: Bar chart setup and interaction
   rows and leaves the filter alone, Control adds a category, a Shift-drag covers the bars it
   touches, Escape clears; an Alt-drag zooms the categories and a double-click resets the view; and
   the Split column's own color coding drives the bar colors and survives a layout round-trip
-  through the server. One journey on spgi-100 with a bar chart counting CAST Idea ID by Primary
-  Series Name.
+  through the server; closing the chart gives back the rows its Filter click filtered out (core#233),
+  last, as it takes the chart away. One journey on spgi-100 with a bar chart counting CAST Idea ID by
+  Primary Series Name.
 
   Background:
     Given user is logged in
@@ -120,3 +121,11 @@ Feature: Bar chart setup and interaction
     And bar chart viewer should have repainted by at least 500 pixels
     And the "bar Triazoles" area of bar chart viewer should contain the color "#96D794"
     And no errors should have been logged
+
+  @realizes:core#233
+  Scenario: Closing the bar chart gives back the rows its Filter click filtered out (core#233)
+    When user sets "On Click" property of bar chart viewer to "Filter"
+    And user clicks on the "bar Triazoles" area of bar chart viewer
+    Then 64 rows should pass the filter
+    When user clicks on close icon of bar chart viewer
+    Then all rows should pass the filter

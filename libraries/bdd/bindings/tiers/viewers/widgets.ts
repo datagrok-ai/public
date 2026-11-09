@@ -422,6 +422,84 @@ export const scrollGridTo = When('user scrolls the grid to the {string} column',
   await v.settleAll(page);
 }, {tier: 'api', description: 'grid.scrollToCell on the first row of the column, then the viewers settle'});
 
+/** The pointer on one monomer of a sequence cell, where the cell's renderer drew it: a renderer back that places
+ * monomers answers `getMonomerPoint(gridCell, position)` (Bio's sequence renderers, kept in the grid column's
+ * `temp.rendererBack` or a notation provider's on the table column, and Helm's). Its tooltip shows, and a molecule
+ * column made with Highlight monomers lights the monomer's atoms. */
+export const hoverMonomer = When('user hovers over monomer {int} of the {string} area of {widget}',
+  async (page: Page, monomer: number, area: string, target: ElementRef) => {
+    const cellOf = /^cell (\d+) of (.+)$/.exec(area);
+    if (!cellOf)
+      throw new Error(`"${area}" is no grid cell: a monomer is hovered in "cell <row> of <column>"`);
+    const cell = await v.hitArea(page, target, area, true);
+    // a renderer made by the paint before has its library and helper on the way: it answers once they are in
+    let found: unknown = null;
+    await expect.poll(async () => {
+      found = await v.onViewer(page, target, (el, [row, column, pos]) => {
+        const grid = (window as any).__bdd.viewerOf(el);
+        const gridCell = grid.cell(column, grid.tableRowToGrid(row - 1));
+        const back = gridCell.gridColumn.temp.rendererBack ?? gridCell.cell.column.temp.rendererBack;
+        if (!back?.getMonomerPoint)
+          return 'its renderer places no monomers';
+        try {
+          return back.getMonomerPoint(gridCell, pos - 1);
+        }
+        catch (e) {
+          return `its renderer is not ready: ${(e as Error).message}`;
+        }
+      }, [Number(cellOf[1]), cellOf[2], monomer]);
+      return typeof found === 'object' && found !== null;
+    }, {message: `monomer ${monomer} of ${area} of ${target.phrase}`}).toBe(true).catch(() => undefined);
+    const point = found as {x: number, y: number} | string | null;
+    if (point === null || typeof point === 'string')
+      throw new Error(`${area} of ${target.phrase} draws no monomer ${monomer}${point ? `: ${point}` : ''}`);
+    await page.mouse.move(cell.x + point.x - 3, cell.y + point.y - 3);
+    await page.mouse.move(cell.x + point.x, cell.y + point.y);
+    await expect(page.locator('.d4-tooltip').filter({visible: true}), `the tooltip of monomer ${monomer}`).toHaveCount(1);
+  }, {tier: 'ui', description: 'monomer counted from 1 as the sequence counts it; done when its tooltip shows'});
+
+/** A viewer just added or switched to a new row can still render (a deferred pass, a structure loading): a
+ * gesture on its own controls then lands on what the pass replaces, and a filmed step pictures it unfinished. */
+export const viewersSettled = When('the viewers have settled', async (page: Page) => {
+  guide.silent(page);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'no viewer of an open table view has a render or a load pending (`isRenderPending`), off camera in a filmed guide'});
+
+// What a filmed guide or demo needs the grid to look like (wide sequences, tall rows, fewer columns) is set
+// up off camera: a person would not watch the columns being sized.
+export const gridColumnWidth = When('the {string} column of the grid is {int} px wide', async (page: Page, column: string, width: number) => {
+  guide.silent(page);
+  await page.evaluate(([c, w]) => {
+    const col = (window as any).grok.shell.tv?.grid?.columns.byName(c);
+    if (!col)
+      throw new Error(`the grid of the current view has no "${c}" column`);
+    col.width = w;
+  }, [column, width] as [string, number]);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'set-up a filmed guide leaves out: the width of the column in the current view\'s grid'});
+export const gridRowHeight = When('the rows of the grid are {int} px tall', async (page: Page, height: number) => {
+  guide.silent(page);
+  await page.evaluate((h) => { (window as any).grok.shell.tv.grid.props.rowHeight = h; }, height);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'set-up a filmed guide leaves out: the row height of the current view\'s grid'});
+export const gridHeaderHeight = When('the column headers of the grid are {int} px tall', async (page: Page, height: number) => {
+  guide.silent(page);
+  await page.evaluate((h) => { (window as any).grok.shell.tv.grid.props.colHeaderHeight = h; }, height);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'set-up a filmed guide leaves out: the column header height of the current view\'s grid (room for a header a package draws, Bio\'s WebLogo)'});
+export const gridShowsColumns = When('the grid shows only the columns {string}', async (page: Page, columns: string) => {
+  guide.silent(page);
+  await page.evaluate((names) => {
+    const grid = (window as any).grok.shell.tv.grid;
+    const missing = names.filter((n) => !grid.dataFrame.col(n));
+    if (missing.length)
+      throw new Error(`the table has no column ${missing.join(', ')}`);
+    grid.columns.setVisible(names);
+    grid.columns.setOrder(names);
+  }, columns.split(',').map((c) => c.trim()));
+  await v.settleAll(page);
+}, {tier: 'api', description: 'set-up a filmed guide leaves out: the grid shows these columns, in this order, and hides the others (the table keeps them)'});
+
 /** The grid draws nothing to the right of its last column when the columns are narrower than the
  * view: a right-click there, in a row, once failed. The point is the middle of that
  * space, at the height of the row's cells. */
@@ -923,6 +1001,7 @@ async function dockViewer(page: Page, target: ElementRef, side: string, over: El
     throw new Error(`${over ? over.phrase : 'the table view'} has no box to dock against`);
   const aim = centreOf(view);
   const what = over ? `the "${side}" item of the dock compass over ${over.phrase}` : `the "${side}" edge item of the view`;
+  await guide.located(page, title);
   await page.mouse.move(t.x + Math.min(30, t.width / 4), t.y + t.height / 2);
   await page.mouse.down();
   await page.mouse.move(t.x + Math.min(30, t.width / 4) + 20, t.y + t.height / 2 + 20, {steps: 4});
@@ -1315,32 +1394,49 @@ export const clickOtherCell = When('user clicks on a {string} cell of {widget} o
 
 // --- the dock around a viewer ----------------------------------------------------------------------
 
-/* The border between a docked viewer and what is docked above it is the dock manager's horizontal
-   splitbar: a sibling of the container the viewer sits in, or of one of that container's ancestors.
-   The step drags it and claims the viewer grew. */
-export const dragTopBorder = When('user drags the top border of {widget} by {int} pixels up', async (page: Page, target: ElementRef, px: number) => {
+/* The border between a docked viewer and what is docked beside it is the dock manager's splitbar: a sibling of the
+   container the viewer sits in, or of one of that container's ancestors. The step drags it and claims the viewer's
+   size changed. */
+async function dragDockBorder(page: Page, target: ElementRef, side: 'top' | 'right', px: number): Promise<void> {
+  const top = side === 'top';
   const loc = await v.viewerLocator(page, target);
   const before = (await loc.boundingBox())!;
-  const bar = await loc.evaluate((root) => {
-    const top = root.getBoundingClientRect().top;
+  const bar = await loc.evaluate((root, top) => {
+    const rect = root.getBoundingClientRect();
     for (let e: Element | null = root; e != null; e = e.parentElement) {
-      const prev = e.previousElementSibling as HTMLElement | null;
-      if (prev != null && prev.classList.contains('splitbar-horizontal')) {
-        const r = prev.getBoundingClientRect();
-        if (Math.abs(r.bottom - top) < 40)
-          return {x: r.left + r.width / 2, y: r.top + r.height / 2};
+      const sibling = (top ? e.previousElementSibling : e.nextElementSibling) as HTMLElement | null;
+      if (sibling != null && sibling.classList.contains(top ? 'splitbar-horizontal' : 'splitbar-vertical')) {
+        const r = sibling.getBoundingClientRect();
+        if (Math.abs(top ? r.bottom - rect.top : r.left - rect.right) < 40)
+          return {x: r.left, y: r.top, width: r.width, height: r.height};
       }
     }
     return null;
-  });
+  }, top);
   if (bar == null)
-    throw new Error(`${target.phrase} has no dock border above it: it is not docked below another panel`);
-  await page.mouse.move(bar.x, bar.y);
+    throw new Error(`${target.phrase} has no dock border on its ${side}: nothing is docked there`);
+  guide.locatedArea(page, bar);
+  const at = centreOf(bar);
+  const [dx, dy] = top ? [0, -px] : [-px, 0];
+  await page.mouse.move(at.x, at.y);
   await page.mouse.down();
-  await page.mouse.move(bar.x, bar.y - px / 2);
-  await page.mouse.move(bar.x, bar.y - px);
+  await page.mouse.move(at.x + dx / 2, at.y + dy / 2);
+  await page.mouse.move(at.x + dx, at.y + dy);
   await page.mouse.up();
-  await expect.poll(async () => Math.round((await loc.boundingBox())?.height ?? 0),
-    {message: `the height of ${target.phrase} after the drag (was ${Math.round(before.height)})`}).toBeGreaterThan(Math.round(before.height) + px / 2);
+  const size = async () => {
+    const box = await loc.boundingBox();
+    return Math.round((top ? box?.height : box?.width) ?? 0);
+  };
+  const was = Math.round(top ? before.height : before.width);
+  const message = `the ${top ? 'height' : 'width'} of ${target.phrase} after the drag (was ${was})`;
+  await (top ? expect.poll(size, {message}).toBeGreaterThan(was + px / 2 - 1) : expect.poll(size, {message}).toBeLessThan(was - px / 2 + 1));
   await settle(page, target);
-}, {tier: 'ui', description: 'the dock splitbar right above the viewer dragged up; the viewer is claimed taller by at least half the distance'});
+}
+
+export const dragTopBorder = When('user drags the top border of {widget} by {int} pixels up', (page: Page, target: ElementRef, px: number) =>
+  dragDockBorder(page, target, 'top', px),
+  {tier: 'ui', description: 'the dock splitbar right above the viewer dragged up; the viewer is claimed taller by at least half the distance'});
+
+export const dragRightBorder = When('user drags the right border of {widget} by {int} pixels left', (page: Page, target: ElementRef, px: number) =>
+  dragDockBorder(page, target, 'right', px),
+  {tier: 'ui', description: 'the dock splitbar right of the viewer dragged left; the viewer is claimed narrower by at least half the distance'});

@@ -109,10 +109,14 @@ export async function testConnections(): Promise<DG.DataFrame> {
 }
 
 // Data sources with no reachable test connection — omitted from the suite entirely.
-const skip = ['Redshift', 'Athena', 'Files'];
+const skip = ['Redshift', 'Files'];
 // Data sources kept in the per-provider grouping but skipped (reported as skipped).
 const skipReasons: {[dataSource: string]: string} = {
   'ClickHouse': 'ClickHouse test connection is unavailable in CI',
+};
+// The Athena driver's first connection in a fresh grok_connect JVM takes ~40 s (AWS SDK class loading).
+const timeouts: {[dataSource: string]: number} = {
+  'Athena': 150000,
 };
 
 //tags: init
@@ -133,7 +137,7 @@ export async function initPackageTests() {
           const res = await conn.test();
           if (res !== 'ok')
             throw new Error(res);
-        }, {skipReason: skipReasons[cat]});
+        }, {skipReason: skipReasons[cat], timeout: timeouts[cat]});
       }
     });
 }

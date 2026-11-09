@@ -205,11 +205,11 @@ category('ComputeUtils: Driver instance bridge', async () => {
 
   test('SetState additional states changes', async () => {
     testScheduler.run((helpers) => {
-      const { expectObservable, cold } = helpers;
+      const {expectObservable, cold} = helpers;
       const adapter = new FuncCallMockAdapter(io, false);
       const bridge = new FuncCallInstancesBridge(io, [{id: 'someState'}], false);
       cold('-a').subscribe(() => {
-        bridge.init({ adapter, restrictions: {}, isOutputOutdated: true, initValues: false });
+        bridge.init({adapter, restrictions: {}, isOutputOutdated: true, initValues: false});
       });
       cold('--a').subscribe(() => {
         bridge.setState('arg1', 1);
@@ -218,16 +218,16 @@ category('ComputeUtils: Driver instance bridge', async () => {
         bridge.setState('someState', {x: 1});
       });
 
-      expectObservable(bridge.inputRestrictions$, '^ 1000ms !').toBe('abc', { a: {}, b: {}, c: {} });
-      expectObservable(bridge.isOutputOutdated$, '^ 1000ms !').toBe('a', { a: true });
-      expectObservable(bridge.validations$, '^ 1000ms !').toBe('a', { a: {} });
-      expectObservable(bridge.isRunning$, '^ 1000ms !').toBe('a', { a: false });
-      expectObservable(bridge.isRunable$, '^ 1000ms !').toBe('ab', { a: false, b: true });
+      expectObservable(bridge.inputRestrictions$, '^ 1000ms !').toBe('abc', {a: {}, b: {}, c: {}});
+      expectObservable(bridge.isOutputOutdated$, '^ 1000ms !').toBe('a', {a: true});
+      expectObservable(bridge.validations$, '^ 1000ms !').toBe('a', {a: {}});
+      expectObservable(bridge.isRunning$, '^ 1000ms !').toBe('a', {a: false});
+      expectObservable(bridge.isRunable$, '^ 1000ms !').toBe('ab', {a: false, b: true});
       expectObservable(bridge.inputRestrictionsUpdates$, '^ 1000ms !').toBe('');
-      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !').toBe('abc', { a: undefined, b: undefined, c: 1 });
-      expectObservable(bridge.getStateChanges('arg2'), '^ 1000ms !').toBe('ab', { a: undefined, b: undefined });
-      expectObservable(bridge.getStateChanges('res'), '^ 1000ms !').toBe('ab', { a: undefined, b: undefined });
-      expectObservable(bridge.getStateChanges('someState'), '^ 1000ms !').toBe('a---b', { a: undefined, b: {x: 1} });
+      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !').toBe('abc', {a: undefined, b: undefined, c: 1});
+      expectObservable(bridge.getStateChanges('arg2'), '^ 1000ms !').toBe('ab', {a: undefined, b: undefined});
+      expectObservable(bridge.getStateChanges('res'), '^ 1000ms !').toBe('ab', {a: undefined, b: undefined});
+      expectObservable(bridge.getStateChanges('someState'), '^ 1000ms !').toBe('a---b', {a: undefined, b: {x: 1}});
     });
   });
 
@@ -256,7 +256,8 @@ category('ComputeUtils: Driver instance bridge', async () => {
       expectObservable(bridge.isRunning$, '^ 1000ms !').toBe('a', {a: false});
       expectObservable(bridge.isRunable$, '^ 1000ms !').toBe('ab', {a: false, b: true});
       expectObservable(bridge.inputRestrictionsUpdates$, '^ 1000ms !').toBe('');
-      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !').toBe('abcd', {a: undefined, b: undefined, c: 1, d: 2});
+      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !')
+        .toBe('abcd', {a: undefined, b: undefined, c: 1, d: 2});
       expectObservable(bridge.getStateChanges('arg2'), '^ 1000ms !').toBe('ab', {a: undefined, b: undefined});
       expectObservable(bridge.getStateChanges('res'), '^ 1000ms !').toBe('ab', {a: undefined, b: undefined});
     });
@@ -319,7 +320,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
           'mock': {
             'arg1': {
               'errors': [
-                'mock error'
+                'mock error',
               ],
             },
           },
@@ -421,7 +422,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
           'mock1': {
             'arg1': {
               'errors': [
-                'mock error 1'
+                'mock error 1',
               ],
             },
           },
@@ -430,14 +431,14 @@ category('ComputeUtils: Driver instance bridge', async () => {
           'mock1': {
             'arg1': {
               'errors': [
-                'mock error 1'
+                'mock error 1',
               ],
             },
           },
           'mock2': {
             'arg1': {
               'errors': [
-                'mock error 2'
+                'mock error 2',
               ],
             },
           },
@@ -446,7 +447,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
           'mock1': {
             'arg1': {
               'errors': [
-                'mock error 1'
+                'mock error 1',
               ],
             },
           },

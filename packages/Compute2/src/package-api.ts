@@ -120,6 +120,13 @@ export namespace funcs {
   }
 
   /**
+   * Workflow with fixed steps, a reorderable list and an invalid step, used for testing keyboard use.
+   */
+  export async function mockKeyboardPipeline(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:MockKeyboardPipeline', { params });
+  }
+
+  /**
    * Single-step workflow used for testing the compact Tree Wizard view.
    */
   export async function mockSingleStepPipeline(params: any ): Promise<any> {
