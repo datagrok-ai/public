@@ -1,0 +1,29 @@
+/* Spotlight tour overlay (see src/tour/ui-describer.ts). The IDs are
+ * NCA-prefixed (`nca-tour-*`) to avoid colliding with the Tutorials package's
+ * overlay if both packages are loaded in the same Datagrok session.
+ *
+ * The overlay is a position:fixed, full-viewport SVG that paints a 60% black
+ * dim everywhere except inside three mask holes (popup, major target, extra
+ * target). The SVG ignores pointer events so users can still click the
+ * highlighted controls if a step needs interaction. */
+
+#nca-tour-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+#nca-tour-overlay svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Small gap between the Compute trigger and the guide icon on the analysis
+ * view's ribbon. Sized so Run → Info matches the post-separator Info →
+ * Y-axis-toggle gap, giving a single visually uniform spacing across the
+ * ribbon (per design feedback 2026-05-20). */
+.nca-ribbon-guide-icon {
+  margin-left: 6px;
+}

@@ -1,0 +1,41 @@
+{
+  "name": "@datagrok/nca",
+  "friendlyName": "NCA",
+  "version": "0.0.1",
+  "description": "Non-Compartmental Analysis for preclinical PK studies.",
+  "author": {
+    "name": "Viktor Makarichev",
+    "email": "vmakarichev@datagrok.ai"
+  },
+  "dependencies": {
+    "@datagrok-libraries/sci-comp": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "rxjs": "catalog:"
+  },
+  "scripts": {
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/NCA"
+  },
+  "category": "Compute",
+  "grok": {
+    "testDependencies": [
+      "@datagrok/power-grid"
+    ]
+  }
+}
