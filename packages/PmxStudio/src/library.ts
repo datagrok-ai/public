@@ -44,7 +44,7 @@ export function entryOf(text: string, updated: number, file: DG.FileInfo | null 
     const study = x?.format === 'pmx-study' ? parseStudy(text) : null;
     const plan = study ? study.plan : parsePlan(text);
     const meta = parseMeta(study ? x.meta : plan?.study) ?? parseMeta(plan?.study);
-    const days = (study?.rows ?? []).map((r) => r.day).filter((d) => Number.isFinite(d));
+    const days = (study?.rows ?? []).map((r) => r.day).filter((d): d is number => Number.isFinite(d));
     const compounds = compoundsOf(meta) || (plan?.predicted.arms ?? []).map((a) => a.name).join(', ');
     return {kind: study ? 'study' : 'plan', stage: study ? 2 : 1, file, text, id: meta?.id ?? '', name: x.name ?? '',
       line: plan?.predicted.line ?? '', compounds, owner: meta?.owner || plan?.author || '', tags: meta?.tags ?? [],

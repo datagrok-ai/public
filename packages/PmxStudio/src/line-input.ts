@@ -82,6 +82,7 @@ export class LineInput extends Input<string | null, InputOptions<string | null>>
     const pick = (line: string) => {
       this.value = line;
       grok.userSettings.add('PmxStudio', LAST, line);
+      void grok.userSettings.flush();
       open.value = false;
       field.focus();
     };

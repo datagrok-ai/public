@@ -7,6 +7,7 @@ import {noEffectNote} from '../plan-vs-observed';
 import {competingOf, projectedRows} from '../survival';
 import {synergyOf, synergyWords} from '../synergy';
 import {arriveItems} from '../arrive';
+import {tumorModels} from '../priors';
 
 const OUTPUTS = ['analysis', 'comparisons', 'animals', 'volumes', 'twins', 'effects', 'checks', 'versusPlan',
   'predicted', 'tolerability', 'weights'];
@@ -284,6 +285,14 @@ category('Analyze', () => {
     const short = projectedRows(rows, 1600, 6).find((x) => x.animal === 'A')!;
     expect(short.day === 6 && near(short.volume, 800), true, 'A by an earlier horizon: under the endpoint');
   });
+  test('an example study for every tumor model, lines without a density of their own included', async () => {
+    const arm = {name: 'Cpd 30 mg/kg', therapy: 'small_molecule' as const, metric: 'TGI' as const, effect: 70};
+    const failed: string[] = [];
+    await Promise.all(Object.keys(await tumorModels()).map((line) => exampleStudy({line, arms: [arm]})
+      .then((df) => df.rowCount > 0 || failed.push(`${line}: no rows`),
+        (e) => failed.push(`${line}: ${e?.message ?? e}`))));
+    expect(failed.join('; '), '');
+  }, {timeout: 180000});
   test('synergy, competing risks and ARRIVE on a made-up study', async () => {
     // four groups growing at known rates (ln V per day): A and B take 0.05 each off the control's 0.2, A+B 0.15
     const rates: {[g: string]: number} = {'Control': 0.2, 'A': 0.15, 'B': 0.15, 'A+B': 0.05};

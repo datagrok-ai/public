@@ -37,8 +37,8 @@ function monitorOf(study: Study, params: {[k: string]: any}): Promise<CruxResult
   if (result)
     monitorCache.delete(key); // re-inserted below: most recently used last
   else {
-    result = fastMonitor(study, params);
-    result.catch(() => monitorCache.delete(key));
+    const mine = result = fastMonitor(study, params);
+    result.catch(() => monitorCache.get(key) === mine && monitorCache.delete(key));
     if (monitorCache.size >= 8) // ponytail: 8 forecasts, the least recently used out
       monitorCache.delete(monitorCache.keys().next().value!);
   }
@@ -172,11 +172,14 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   if (!names.includes(d.control))
     throw new Error(`No group "${d.control}" in the study: the control must be one of ${names.join(', ')}`);
   const notes: string[] = [];
-  const arms = await armsOf(d.plan, names.filter((g) => g !== d.control), d.endpoint, d.humane, notes);
+  // the plan's arms, the line's twin and the body weights do not wait for one another
+  const [arms, model, {tolerability, weights, animals: weighed}] = await Promise.all([
+    armsOf(d.plan, names.filter((g) => g !== d.control), d.endpoint, d.humane, notes), twinModel(d.line),
+    tolerabilityFrames(d)]);
   const latest = Math.max(...day);
   const future = futureDays(day, d.plan, metaOf(x.study)?.start);
   const r = await monitorOf({animal, group, day: Float64Array.from(day),
-    volume: Float64Array.from(volume)}, {...await twinModel(d.line), control: d.control,
+    volume: Float64Array.from(volume)}, {...model, control: d.control,
     ...arms.length ? {arms: JSON.stringify(arms)} : {}, future: future.join(','), endpoint: d.endpoint,
     humane: d.humane, alpha: d.alpha, correction: d.correction, ...d.day === null ? {} : {last_day: d.day}});
 
@@ -192,7 +195,6 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   if ([...new Set(animal.map((a, i) => a.toLowerCase().includes(group[i].toLowerCase())))].includes(true))
     notes.push('Some animal ids contain their group\'s name, so the lists below show the group');
   // the body weight is optional: without it, none of this says anything
-  const {tolerability, weights, animals: weighed} = await tolerabilityFrames(d);
   const baseline = new Map(weighed.map((w) => [String(w.animal), w.baseline as number | null]));
   const lastWeight = new Map<string, {day: number, weight: number}>();
   const weighDays = new Set<number>();

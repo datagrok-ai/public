@@ -162,6 +162,15 @@ category('Study table', () => {
     expect(notes[1].kind, 'Observation', 'an unknown kind reads as an observation');
   });
 
+  test('a saved study keeps an empty day empty, not day 0', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1', 'M1']),
+      DG.Column.fromStrings('group', ['A', 'A']), DG.Column.fromList('double', 'day', [3, null]),
+      DG.Column.fromList('double', 'volume', [100, null])]);
+    const back = tableOf(parseStudy(JSON.stringify(studyOf(df, null))));
+    expect(back.get('day', 0), 3);
+    expect(back.col('day')!.isNone(1), true, 'the empty day came back as a value');
+    expect(back.col('volume')!.isNone(1), true, 'the empty volume came back as a value');
+  });
   test('a saved study keeps its marks and its details', async () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1', 'M2']),
       DG.Column.fromStrings('group', ['A', 'B']), DG.Column.fromList('double', 'day', [0, 0]),

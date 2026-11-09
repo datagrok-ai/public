@@ -6,7 +6,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {crux, named, rows} from './crux';
-import type {StudyInputs} from './explore';
+import {numbersOf, type StudyInputs} from './explore';
 
 /** The curves as a step line (two points per step), the medians and the log-rank tests. */
 export interface Survival {
@@ -33,17 +33,18 @@ export async function competingOf(s: StudyInputs, removal: string | null, contro
   const why = removal ? s.study.col(removal) : null;
   if (!why)
     return null;
-  const [an, gr, dy, vol] = [s.animal, s.group, s.day, s.volume].map((c) => s.study.col(c)!);
+  const [an, gr] = [s.animal, s.group].map((c) => s.study.col(c)!);
+  const [dy, vol] = [s.day, s.volume].map((c) => numbersOf(s.study.col(c)!));
   type Animal = {group: string, last: number, reached: number | null, removed: boolean};
   const animals = new Map<string, Animal>();
   for (let i = 0; i < s.study.rowCount; i++) {
-    const d = dy.get(i);
+    const d = dy[i];
     if (!Number.isFinite(d))
       continue;
     const a = String(an.get(i));
     const x = animals.get(a) ?? {group: String(gr.get(i)), last: -Infinity, reached: null, removed: false};
     x.last = Math.max(x.last, d);
-    if (vol.get(i) >= endpoint)
+    if (vol[i] >= endpoint)
       x.reached = x.reached === null ? d : Math.min(x.reached, d);
     const r = why.get(i);
     if (r !== null && r !== undefined && String(r).trim() !== '')
@@ -54,21 +55,21 @@ export async function competingOf(s: StudyInputs, removal: string | null, contro
   const status = (x: Animal) => x.reached !== null ? '1' : x.removed ? '2' : '0';
   if (!all.some((x) => status(x) === '2'))
     return null;
-  const out: Competing[] = [];
-  for (const g of [...new Set(all.map((x) => x.group))].filter((g) => g !== control)) {
+  // one fit per treated group, all at once
+  const fits = await Promise.all([...new Set(all.map((x) => x.group))].filter((g) => g !== control).map(async (g) => {
     const sub = all.filter((x) => x.group === control || x.group === g);
     try {
       const r = await crux('survival.fine_gray', {duration: Float64Array.from(sub, (x) => x.reached ?? x.last),
         status: sub.map(status), treated: Float64Array.from(sub, (x) => x.group === g ? 1 : 0)},
       {failcode: '1', cencode: '0'});
       const k = rows(r.main as any)[0];
-      out.push({group: g, shr: k.subdistribution_hazard_ratio, lower: k.shr_ci_lower, upper: k.shr_ci_upper, p: k.p,
-        competing: sub.filter((x) => status(x) === '2').length});
+      return {group: g, shr: k.subdistribution_hazard_ratio, lower: k.shr_ci_lower, upper: k.shr_ci_upper, p: k.p,
+        competing: sub.filter((x) => status(x) === '2').length} as Competing;
     } catch {
-      // a pair the fit cannot take (no event in it): left out
+      return null; // a pair the fit cannot take (no event in it): left out
     }
-  }
-  return out;
+  }));
+  return fits.filter((x): x is Competing => x !== null);
 }
 
 /** A measurement row, as tumor_survival takes them. */
@@ -84,8 +85,10 @@ const RATE_FROM = 3;
 export function projectedRows(rows: VolumeRow[], endpoint: number, horizon: number): VolumeRow[] {
   const by = new Map<string, VolumeRow[]>();
   for (const r of rows) {
-    if (Number.isFinite(r.day) && r.volume > 0)
-      by.set(r.animal, [...by.get(r.animal) ?? [], r]);
+    if (Number.isFinite(r.day) && r.volume > 0) {
+      const own = by.get(r.animal);
+      own ? own.push(r) : by.set(r.animal, [r]);
+    }
   }
   const out: VolumeRow[] = [];
   for (const own of by.values()) {
@@ -114,11 +117,12 @@ export const KM = {day: 'Day after randomization', share: 'Animals below the end
  *  horizon (null: the last day measured plus two weeks). */
 export async function survivalOf(s: StudyInputs, control: string, endpoint: number,
   colors: {[g: string]: string}, project?: {horizon: number | null}): Promise<Survival> {
-  const [an, gr, dy, vol] = [s.animal, s.group, s.day, s.volume].map((c) => s.study.col(c)!);
+  const [an, gr] = [s.animal, s.group].map((c) => s.study.col(c)!);
+  const [dy, vol] = [s.day, s.volume].map((c) => numbersOf(s.study.col(c)!));
   const keep = Array.from({length: s.study.rowCount}, (_, i) => i)
-    .filter((i) => Number.isFinite(dy.get(i)) && Number.isFinite(vol.get(i)));
+    .filter((i) => Number.isFinite(dy[i]) && Number.isFinite(vol[i]));
   const measured: VolumeRow[] = keep.map((i) => ({animal: String(an.get(i)), group: String(gr.get(i)),
-    day: dy.get(i), volume: vol.get(i)}));
+    day: dy[i], volume: vol[i]}));
   const lastDay = measured.reduce((m, x) => Math.max(m, x.day), 0);
   const horizon = project ? project.horizon ?? lastDay + 14 : undefined;
   const all = horizon === undefined ? measured : [...measured, ...projectedRows(measured, endpoint, horizon)];

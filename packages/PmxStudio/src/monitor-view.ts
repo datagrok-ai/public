@@ -314,7 +314,17 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     'warning')]);
   };
   let watching: {unsubscribe(): void}[] = [];
+  // edits come in bursts (a paste, values typed one after another): the checks and the lists redone once after them
+  let edits: ReturnType<typeof setTimeout> | undefined;
+  const edited = () => {
+    clearTimeout(edits);
+    edits = setTimeout(() => {
+      checkEntered();
+      dataVersion.value++;
+    }, 200);
+  };
   const stopWatching = () => {
+    clearTimeout(edits);
     watching.forEach((w) => w.unsubscribe());
     watching = [];
   };
@@ -323,8 +333,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     stopWatching();
     const df = studyTable();
     if (df)
-      watching = [df.onDataChanged.subscribe(checkEntered), df.onRowsAdded.subscribe(checkEntered),
-        df.onDataChanged.subscribe(() => dataVersion.value++)];
+      watching = [df.onDataChanged.subscribe(edited), df.onRowsAdded.subscribe(edited)];
     checkEntered();
   });
   const groupCols = (): [string, (r: AnimalRow) => string][] => revealed.value ? [['Group', (a) => a.group]] : [];

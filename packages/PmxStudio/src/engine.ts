@@ -229,8 +229,8 @@ function designArm(prior: object, params: Row, shards: number, power: number,
   if (r)
     armCache.delete(key); // re-inserted below: most recently used last
   else {
-    r = designArmNow(prior, params, shards, power, nFixed);
-    r.catch(() => armCache.delete(key));
+    const mine = r = designArmNow(prior, params, shards, power, nFixed);
+    r.catch(() => armCache.get(key) === mine && armCache.delete(key));
     if (armCache.size >= 64) // ponytail: oldest-used out at 64 arms; a few MB of tables at most
       armCache.delete(armCache.keys().next().value!);
   }
@@ -324,9 +324,10 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   // two stages of loss: randomised animals that end up not analysable (per group), then implanted animals that never
   // reach randomisation (one pool for every group); each covered with the declared confidence
   const postLoss = Math.max(d.postLoss, lp.take.nonprogressing_map);
-  for (const a of arms)
-    a.randomise = await enough(a.n, 1 - postLoss, d.confidence, d.lossRule);
-  const randomiseControl = await enough(nControl, 1 - postLoss, d.confidence, d.lossRule);
+  // every group's at once (each a worker round trip)
+  const [randomiseControl, ...randomise] = await Promise.all([nControl, ...sizes].map((n) =>
+    enough(n, 1 - postLoss, d.confidence, d.lossRule)));
+  arms.forEach((a, k) => a.randomise = randomise[k]);
   const sum = (xs: (number | null)[]) =>
     xs.some((x) => x === null) ? null : (xs as number[]).reduce((t, x) => t + x, 0);
   const nTotal = sum([nControl, ...sizes]);

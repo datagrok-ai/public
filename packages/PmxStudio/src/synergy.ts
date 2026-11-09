@@ -6,7 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {crux, rows} from './crux';
-import type {StudyInputs} from './explore';
+import {numbersOf, type StudyInputs} from './explore';
 import {pValue} from './ui';
 
 export interface Synergy {slopes: {control: number, a: number, b: number, ab: number}, dif: number, se: number,
@@ -15,13 +15,14 @@ export interface Synergy {slopes: {control: number, a: number, b: number, ab: nu
 /** The test over `groups`' measurements up to `lastDay`. */
 export async function synergyOf(s: StudyInputs, groups: {control: string, a: string, b: string, ab: string},
   lastDay = Infinity): Promise<Synergy> {
-  const [an, gr, dy, vol] = [s.animal, s.group, s.day, s.volume].map((c) => s.study.col(c)!);
+  const [an, gr] = [s.animal, s.group].map((c) => s.study.col(c)!);
+  const [dy, vol] = [s.day, s.volume].map((c) => numbersOf(s.study.col(c)!));
   const wanted = new Set(Object.values(groups));
   const keep = Array.from({length: s.study.rowCount}, (_, i) => i).filter((i) => wanted.has(String(gr.get(i))) &&
-    Number.isFinite(dy.get(i)) && dy.get(i) <= lastDay && vol.get(i) > 0);
+    Number.isFinite(dy[i]) && dy[i] <= lastDay && vol[i] > 0);
   const r = await crux('stats.tumor_growth_synergy', {group: keep.map((i) => String(gr.get(i))),
-    animal: keep.map((i) => String(an.get(i))), time: Float64Array.from(keep, (i) => dy.get(i)),
-    volume: Float64Array.from(keep, (i) => vol.get(i))}, groups);
+    animal: keep.map((i) => String(an.get(i))), time: Float64Array.from(keep, (i) => dy[i]),
+    volume: Float64Array.from(keep, (i) => vol[i])}, groups);
   const t = new Map(rows(r.main as any).map((x) => [x.term as string, x.estimate as number]));
   return {slopes: {control: t.get('slope_control')!, a: t.get('slope_a')!, b: t.get('slope_b')!,
     ab: t.get('slope_ab')!}, dif: t.get('dif')!, se: t.get('se')!, z: t.get('z')!, p: t.get('p_synergy')!,

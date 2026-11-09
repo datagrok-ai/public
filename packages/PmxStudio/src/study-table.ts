@@ -19,6 +19,7 @@ import type {MenuAt} from './calendar';
 import {ROLES, WEIGHT} from './open-study';
 import {EXCLUDED, FLAGGED, MARK_REASON, addLog, groupsShown, ticked} from './study-file';
 import {metaOf} from './study-meta';
+import {stageOf} from './ui';
 
 /** The columns' roles of a study table, as JSON: what makes a table a study (detectors.js reads it too). */
 export const STUDY_TAG = 'pmx.study';
@@ -422,7 +423,8 @@ export function decorateStudyView(view: DG.TableView): void {
     grok.shell.info(n ? `${n} row${n === 1 ? '' : 's'} added from the clipboard` : 'Nothing to paste');
   }, () => grok.shell.warning('The browser did not give the clipboard: allow it, then try again'));
   const back = () => {
-    const pmx = [...grok.shell.views].filter((v) => v.name.startsWith('PMX Studio ·')).pop();
+    // the stage views (every view is named PMX Studio; the stage is on its root): the last one opened, not the home
+    const pmx = [...grok.shell.views].filter((v) => stageOf(v) && stageOf(v) !== 'home').pop();
     if (pmx)
       setTimeout(() => grok.shell.v = pmx);
     else

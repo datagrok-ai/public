@@ -133,6 +133,7 @@ export function nextStudyId(): string {
   const key = `lastStudyId-${year}`;
   const n = (Number(grok.userSettings.getValue('PmxStudio', key)) || 0) + 1;
   grok.userSettings.add('PmxStudio', key, String(n));
+  void grok.userSettings.flush(); // at once: a reload before the 10 s sync would give the same ID again
   return `PMX-${year}-${String(n).padStart(3, '0')}`;
 }
 

@@ -10,6 +10,7 @@ import {div, span} from '@datagrok-libraries/u2';
 import {ViewHost} from '@datagrok-libraries/u2/dg';
 
 import type {AnalysisFrames} from './analyze';
+import {finite} from './engine';
 
 /** The study table and its columns as the analysis read them. */
 export interface StudyInputs {study: DG.DataFrame, animal: string, group: string, day: string, volume: string,
@@ -39,7 +40,11 @@ const RESPONSE_COLORS = {[RESPONSE.responder]: '#2ca02c', [RESPONSE.like]: '#9aa
 /** The group colours every chart of the analysis uses, by group. */
 export type GroupColors = {[group: string]: string};
 
-const finiteOrNull = (x: unknown) => typeof x === 'number' && Number.isFinite(x) ? x : null;
+const finiteOrNull = finite;
+
+/** A column's values as numbers, an empty cell NaN (an integer column's reads as INT_NULL, which is finite). */
+export const numbersOf = (c: DG.Column): Float64Array =>
+  Float64Array.from({length: c.length}, (_, i) => c.isNone(i) ? NaN : Number(c.get(i)));
 
 /** The animals, one row each: its growth, its endpoint and its response, under names a reader knows. */
 export function animalsTable(r: AnalysisFrames, s: StudyInputs, colors: GroupColors): DG.DataFrame {

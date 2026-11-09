@@ -316,8 +316,8 @@ function twinOf(window: Window, params: object) {
   if (result)
     twinCache.delete(key); // re-inserted below: most recently used last
   else {
-    result = fastTwin(window, params);
-    result.catch(() => twinCache.delete(key));
+    const mine = result = fastTwin(window, params);
+    result.catch(() => twinCache.get(key) === mine && twinCache.delete(key));
     if (twinCache.size >= 8) // ponytail: 8 twins, the least recently used out
       twinCache.delete(twinCache.keys().next().value!);
   }
@@ -443,16 +443,21 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
 
 /** fn's results by its input (a failure not kept, so the next call tries again): a rerun (another correction, a tab
  *  opened again) does not compute them again. */
-function remembered<A, R>(fn: (a: A) => Promise<R>): (a: A) => Promise<R> {
+function remembered<A, R>(fn: (a: A) => Promise<R>, keep = 16): (a: A) => Promise<R> {
   const seen = new Map<string, Promise<R>>();
   return (a) => {
     const key = JSON.stringify(a);
     let r = seen.get(key);
-    if (!r) {
+    if (r)
+      seen.delete(key); // the most recent last: the oldest goes first
+    else {
       r = fn(a);
-      seen.set(key, r);
-      r.catch(() => seen.delete(key));
+      const mine = r;
+      r.catch(() => seen.get(key) === mine && seen.delete(key));
     }
+    seen.set(key, r);
+    if (seen.size > keep)
+      seen.delete(seen.keys().next().value!);
     return r;
   };
 }
@@ -523,11 +528,11 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
       arms: [{name: 'x', therapy: 'small_molecule', metric: 'TGI', effect: 60}],
       preLoss: 0, postLoss: 0, lossRule: 'confident', confidence: 0.9, weekdays: LAB_WEEKDAYS, startWeekday: 0,
       humane: HUMANE, schedules: false, lastDay: null});
-    const s = await design(null);
     // a group the test cannot tell from the control: the smallest effect a study with its animals (and the study's
-    // comparisons) detects, which only it shows (a search of seconds: not for the groups with an effect)
-    for (const a of arms.filter((x) => activityOf(x) === 'No clear effect'))
-      mde.set(a.arm, (await design(Math.max(3, a.n))).arms[0].mde);
+    // comparisons) detects, which only it shows (a search of seconds: not for the groups with an effect); all at once
+    const unclear = arms.filter((x) => activityOf(x) === 'No clear effect');
+    const [s, ...searched] = await Promise.all([design(null), ...unclear.map((a) => design(Math.max(3, a.n)))]);
+    unclear.forEach((a, i) => mde.set(a.arm, searched[i].arms[0].mde));
     const checks = await checksAt({line: d.line, vRand, endpoint: d.endpoint, humane: HUMANE,
       weekdays: LAB_WEEKDAYS, startWeekday: 0, endpointDay: s.endpointDay, nControl: controls, arms: []});
     p = {line: d.line, endpoint: d.endpoint, vRand, studyEnd: s.endpointDay, endpointDay: s.endpointDay,
@@ -654,8 +659,7 @@ export const PREDICTED = 'Predicted controls';
 export const OBSERVED = 'Observed controls';
 
 export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFrames> {
-  const s = await analyzeStudy(d);
-  const {tolerability, weights} = await tolerabilityFrames(d);
+  const [s, {tolerability, weights}] = await Promise.all([analyzeStudy(d), tolerabilityFrames(d)]);
   const vp = s.versusPlan;
   const analysis = DG.DataFrame.fromObjects([{
     line: d.line, twinned: s.twinned, control: d.control, n_control: s.nControl, treated_arms: s.treated.length,
@@ -800,35 +804,36 @@ export async function exampleStudy(spec: ExampleSpec = MC38_EXAMPLE): Promise<DG
     last_day: design.studyEnd + 7, per_week: 3, study: 'prior', reps: 1, seed};
   const out: {animal: string, group: string, day: number, volume: number, body_weight: number,
     tumor_weight: number | null}[] = [];
-  const density = (await tumourDensity()).lines[line].density;
-  let g = 0;
-  for (const [k, a] of design.arms.entries()) {
-    const sim = rows((await crux('stats.tumor_study_simulate', prior, {...shared, kill_rate: a.killRate,
-      onset: a.archetype.onsetDays, kappa_sd: a.archetype.kappaSd, responders: a.archetype.responders})).main as any);
-    const take = (arm: string, from: number, count: number) =>
-      sim.filter((r) => r.arm === arm && r.animal >= from && r.animal < from + count);
-    const groups: [string, {[k: string]: any}[]][] = [[a.declaration.name, take('treated', offsets[k], n[k])]];
-    if (k === 0)
-      groups.unshift(['Vehicle', take('control', 0, nControl)]);
-    // each group weighed with its measurements (its own seed), each tumor weighed once excised (the animal's last
-    // measurement, at the line's density); an animal removed at the weight endpoint is no longer measured
-    for (const [group, rs] of groups) {
-      const animal = rs.map((r) => `${group} #${r.animal}`);
-      const bw = rows((await crux('stats.tumor_body_weight_simulate', {animal, day: Float64Array.from(rs, (r) => r.day),
-        volume: Float64Array.from(rs, (r) => r.volume)},
-      {nadir: EXAMPLE_NADIR[Math.min(g, EXAMPLE_NADIR.length - 1)], density, seed: seed + g}))
-        .main as any);
-      const weighed = new Map(bw.map((r) => [`${r.animal}|${r.day}`, r]));
-      rs.forEach((r, i) => {
-        const w = weighed.get(`${animal[i]}|${r.day}`);
-        if (w !== undefined) {
-          out.push({animal: animal[i], group, day: r.day, volume: r.volume, body_weight: w.weight,
-            tumor_weight: Number.isFinite(w.tumor_mass) ? w.tumor_mass : null});
-        }
-      });
-      g++;
-    }
-  }
+  // the line's density, or every line's where the atlas has none for it (as tolerabilityFrames)
+  const atlas = await tumourDensity();
+  const density = (atlas.lines[line] ?? atlas.all).density;
+  // every arm simulated at once (each call is seeded: the order they finish in changes nothing)
+  const sims = await Promise.all(design.arms.map((a) => crux('stats.tumor_study_simulate', prior, {...shared,
+    kill_rate: a.killRate, onset: a.archetype.onsetDays, kappa_sd: a.archetype.kappaSd,
+    responders: a.archetype.responders}).then((r) => rows(r.main as any))));
+  const take = (k: number, arm: string, from: number, count: number) =>
+    sims[k].filter((r) => r.arm === arm && r.animal >= from && r.animal < from + count);
+  const groups: [string, {[k: string]: any}[]][] = [['Vehicle', take(0, 'control', 0, nControl)],
+    ...design.arms.map((a, k) => [a.declaration.name, take(k, 'treated', offsets[k], n[k])] as [string, any[]])];
+  // each group weighed with its measurements (its own seed, g in the groups' order), each tumor weighed once excised
+  // (the animal's last measurement, at the line's density); an animal removed at the weight endpoint is no longer
+  // measured
+  const weighings = await Promise.all(groups.map(([group, rs], g) => crux('stats.tumor_body_weight_simulate',
+    {animal: rs.map((r) => `${group} #${r.animal}`), day: Float64Array.from(rs, (r) => r.day),
+      volume: Float64Array.from(rs, (r) => r.volume)},
+    {nadir: EXAMPLE_NADIR[Math.min(g, EXAMPLE_NADIR.length - 1)], density, seed: seed + g})
+    .then((r) => rows(r.main as any))));
+  groups.forEach(([group, rs], g) => {
+    const weighed = new Map(weighings[g].map((r) => [`${r.animal}|${r.day}`, r]));
+    rs.forEach((r) => {
+      const animal = `${group} #${r.animal}`;
+      const w = weighed.get(`${animal}|${r.day}`);
+      if (w !== undefined) {
+        out.push({animal, group, day: r.day, volume: r.volume, body_weight: w.weight,
+          tumor_weight: Number.isFinite(w.tumor_mass) ? w.tumor_mass : null});
+      }
+    });
+  });
   // lab ids that say nothing of the group (as a blinded study's), in an order drawn from the seed: the same animal
   // has the same id at every look at the study
   let draw = seed;

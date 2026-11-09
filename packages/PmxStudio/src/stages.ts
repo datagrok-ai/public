@@ -13,7 +13,19 @@ import type {Stage} from './ui';
 /** The URL path of a stage's view; the home's is the app's own. */
 export const pathOf = (stage: Stage) => stage === 'home' ? '/apps/PmxStudio' : `/apps/PmxStudio/${stage}`;
 
-export async function openStage(stage: Stage): Promise<void> {
+/** The stages being opened: a second click meanwhile (a double click) waits for the same view, not another. */
+const opening = new Map<Stage, Promise<void>>();
+
+export function openStage(stage: Stage): Promise<void> {
+  let p = opening.get(stage);
+  if (!p) {
+    p = openStageNow(stage).finally(() => opening.delete(stage));
+    opening.set(stage, p);
+  }
+  return p;
+}
+
+async function openStageNow(stage: Stage): Promise<void> {
   const open = [...grok.shell.views].find((v) => stageOf(v) === stage);
   // after the click that asked for it: the platform makes the clicked view current once the click is handled
   if (open) {

@@ -262,6 +262,13 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const planState = {stale, error, result, reading: Promise.resolve() as Promise<unknown>};
   // the study and columns the shown result read (Your data opens them)
   let resultStudy: StudyInputs | null = null;
+  // the same without its excluded rows: what the analysis read, and so what KM, Fine-Gray, synergy and Your data read
+  let keptStudy: StudyInputs | null = null;
+  const shown = (reads: StudyInputs | null) => {
+    resultStudy = reads;
+    keptStudy = reads && withoutExcluded(reads);
+    selection.attach(reads);
+  };
   // the animals selected, through the study table's own selection: what one chart picks, every chart marks
   const selection = new AnimalSelection();
   self.own(() => selection.dispose());
@@ -288,8 +295,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
           return;
         error.value = null;
         stale.value = askedOf(call) !== sent;
-        resultStudy = reads;
-        selection.attach(reads);
+        shown(reads);
         result.value = keepSame(result.peek(), frames);
         return;
       }
@@ -300,8 +306,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         return;
       error.value = null;
       stale.value = askedOf(call) !== sent;
-      resultStudy = reads;
-      selection.attach(reads);
+      shown(reads);
       result.value = keepSame(result.peek(), frames);
       void analysisFrames(analysisDeclarationOf(withTwin)).then((done) => {
         if (mine !== latest)
@@ -865,7 +870,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     try {
       for (;;) {
         const r = kmOnly.peek();
-        const s = resultStudy;
+        const s = keptStudy;
         const h = horizon.peek();
         if (!r || !s) {
           survival.value = undefined;
@@ -891,7 +896,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const competing = signal<Competing[] | null>(null);
   form.effect(() => {
     const r = kmOnly.value;
-    const s = resultStudy;
+    const s = keptStudy;
     const removal = call.getParamValue('removalReason');
     if (!r || !s) {
       competing.value = null;
@@ -985,8 +990,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     {id: 'explore', title: 'Your data', hint: 'The study’s animals and measurements as Datagrok tables, to chart, ' +
       'filter, group and compare as you like', content: exploreContent((which) => {
       const r = result.peek();
-      if (r && resultStudy)
-        explore(which, r, resultStudy, colorsOf(r), self.view);
+      if (r && keptStudy)
+        explore(which, r, keptStudy, colorsOf(r), self.view);
     })},
   ], ANALYZE_TABS, 'pmx-analyze-panels', 'analyze');
   exports.push(['Layout…', () => editLayout(panels.root), 'View']);
@@ -1023,9 +1028,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     }, 'Analyze'],
     ['Combination synergy…', () => {
       const {r} = studyNow();
-      if (!resultStudy)
+      if (!keptStudy)
         throw new Error('Analyze a study first');
-      synergyDialog(resultStudy, r.analysis.get('control', 0), r.comparisons.col('arm')!.toList() as string[],
+      synergyDialog(keptStudy, r.analysis.get('control', 0), r.comparisons.col('arm')!.toList() as string[],
         r.analysis.get('evaluation_day', 0));
     }, 'Analyze'],
     ['Copy the analysis protocol', () => copied(protocolText, 'Analysis protocol')],

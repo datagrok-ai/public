@@ -793,15 +793,20 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const r = result.value;
     schedules.value = r && r.schedules.rowCount > 0 ? r.schedules : undefined;
   });
+  let comparing: PlanFrames | null = null;
   form.effect(() => {
     const r = result.value;
-    if (!scheduleOpen.value || schedules.value || !r || stale.value || busy.value)
+    if (!scheduleOpen.value || schedules.value || !r || stale.value || busy.value || comparing === r)
       return;
+    comparing = r; // one computation per plan: an edit undone gives the same plan back, not a second run
     const fill = designed({compareSchedules: true, tgiScenarios: null});
     void fill.then((c) => {
       if (result.peek() === r)
         schedules.value = c.schedules;
-    }).catch((e) => error.value = String(e?.message ?? e));
+    }).catch((e) => error.value = String(e?.message ?? e)).finally(() => {
+      if (comparing === r)
+        comparing = null;
+    });
   });
 
   // with the animals per arm set, the plan shows first and each arm's smallest detectable effect fills in after it,
@@ -888,15 +893,21 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       .finally(() => saving.value = false);
   });
   downloadButton.title = 'Download the plan as a file, to send it to someone';
-  exports.push(['Report (PDF)…', async () => printSheet(await reportHtml({title: defaultName(ready()!) ?? 'Plan',
-    stage: 'Plan', meta: meta.peek(), content}))], ['Plan file (.pmxplan)', () => downloadButton.click()],
+  exports.push(['Report (PDF)…', async () => {
+    const r = ready();
+    if (r)
+      printSheet(await reportHtml({title: defaultName(r), stage: 'Plan', meta: meta.peek(), content}));
+  }], ['Plan file (.pmxplan)', () => downloadButton.click()],
   ['Copy the study protocol', () => {
     if (!ready())
       return;
     return navigator.clipboard.writeText(protocolText).then(() => grok.shell.info('Study protocol copied'));
   }],
   ['Calendar (.ics)', () => {
-    const name = defaultName(ready()!) ?? 'Plan';
+    const r = ready();
+    if (!r)
+      return;
+    const name = defaultName(r);
     download(`${name}.ics`, icsOf(name, meta.peek(), planEvents.last, planEvents.events), 'text/calendar');
   }]);
   // the way on: the page's one primary action
